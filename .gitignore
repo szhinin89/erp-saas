@@ -1,0 +1,45 @@
+# ==========================================
+# .NET (Backend)
+# ==========================================
+[Bb]in/
+[Oo]bj/
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.dbmdl
+*.jfm
+*.csproj.user
+*.pubxml
+*.publishproj
+
+# ==========================================
+# Node.js / React (Frontend)
+# ==========================================
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==========================================
+# Secretos y Configuración (Crucial)
+# ==========================================
+# NUNCA subas tus credenciales de PostgreSQL
+.env
+.env.local
+.env.*.local
+
+# ==========================================
+# Sistema Operativo y Varios
+# ==========================================
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak
