@@ -1,47 +1,51 @@
-using ERP.Domain.Entities;
-using ERP.Domain.Interfaces;
+using ERP.Domain.Products.Entities;
+using ERP.Domain.Products.Interfaces;   
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace ERP.Infrastructure.Repositories;
-
-public class ProductRepository : IProductRepository
+namespace ERP.Infrastructure.Repositories
 {
-    private readonly AppDbContext _context;
-
-    public ProductRepository(AppDbContext context)
+    public class ProductRepository : IProductRepository
     {
-        _context = context;
-    }
+        private readonly AppDbContext _context;
 
-    public async Task<IEnumerable<Product>> GetAllAsync()
-    {
-        return await _context.Products.ToListAsync();
-    }
+        public ProductRepository(AppDbContext context)
+        {
+            _context = context;
+        }
 
-    public async Task<Product?> GetByIdAsync(Guid id)
-    {
-        return await _context.Products.FindAsync(id);
-    }
+        public async Task<Product?> GetByIdAsync(int id)
+        {
+            return await _context.Products.FindAsync(id);
+        }
 
-    public async Task AddAsync(Product product)
-    {
-        await _context.Products.AddAsync(product);
-    }
+        public async Task<IEnumerable<Product>> GetAllAsync()
+        {
+            return await _context.Products.ToListAsync();
+        }
 
-    public void Update(Product product)
-    {
-        _context.Products.Update(product);
-    }
+        public async Task AddAsync(Product product)
+        {
+            await _context.Products.AddAsync(product);
+            await _context.SaveChangesAsync();
+        }
 
-    public void Delete(Product product)
-    {
-        _context.Products.Remove(product);
-    }
+        public async Task UpdateAsync(Product product)
+        {
+            _context.Products.Update(product);
+            await _context.SaveChangesAsync();
+        }
 
-    public async Task<bool> SaveChangesAsync()
-    {
-        // Retorna true si al menos una entidad fue modificada
-        return await _context.SaveChangesAsync() > 0;
+        public async Task DeleteAsync(int id)
+        {
+            var product = await GetByIdAsync(id);
+            if (product != null)
+            {
+                _context.Products.Remove(product);
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }

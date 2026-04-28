@@ -1,24 +1,25 @@
-using ERP.Domain.Interfaces;
-using ERP.Infrastructure.Persistence;
-using ERP.Infrastructure.Repositories;
-using Microsoft.EntityFrameworkCore; // Asegúrate de tener este using
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ERP.Domain.Products.Interfaces;
+using ERP.Infrastructure.Repositories;
+using ERP.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
-namespace ERP.Infrastructure;
-
-public static class DependencyInjection
+namespace ERP.Infrastructure
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static class DependencyInjection
     {
-        // 1. REGISTRA TU DB CONTEXT AQUÍ
-        // Asegúrate de que el nombre "DefaultConnection" coincida con tu appsettings.json
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
-
-        // 2. Registra tus repositorios
-        services.AddScoped<IProductRepository, ProductRepository>();
-        
-        return services;
+        public static IServiceCollection AddInfrastructure(
+            this IServiceCollection services, 
+            IConfiguration configuration)
+        {
+            // Registrar DbContext
+            services.AddDbContext<AppDbContext>(options =>
+                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+            // Registrar Repositorios
+            services.AddScoped<IProductRepository, ProductRepository>();
+            // Agrega aquí más repositorios en el futuro (Accounting, Tenants, etc.)
+            return services;
+        }
     }
 }

@@ -3,13 +3,13 @@ using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
 using System.IO;
 
-namespace ERP.Infrastructure.Persistence; // Ajusta según tu estructura de carpetas
-
-public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
+namespace ERP.Infrastructure.Persistence
 {
-    public AppDbContext CreateDbContext(string[] args)
+    public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
     {
-        // 1. Construimos la configuración apuntando a la carpeta de la API
+        public AppDbContext CreateDbContext(string[] args)
+        {
+            // 1. Construimos la configuración apuntando a la carpeta de la API
         IConfigurationRoot configuration = new ConfigurationBuilder()
             .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "../ERP.API"))
             .AddJsonFile("appsettings.json")
@@ -23,5 +23,6 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
         optionsBuilder.UseNpgsql(connectionString);
 
         return new AppDbContext(optionsBuilder.Options);
+        }
     }
 }
