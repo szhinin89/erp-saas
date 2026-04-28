@@ -1,0 +1,130 @@
+# =====================================
+# ZH TECHNOLOGIES - ERP SaaS RULES
+# =====================================
+
+## 1. MULTI-TENANT (CRÍTICO)
+
+- TODA entidad debe incluir TenantId (EmpresaId).
+- TODA consulta debe filtrar por TenantId.
+- PROHIBIDO acceso cruzado entre empresas.
+
+---
+
+## 2. ARQUITECTURA
+
+- Usar Clean Architecture:
+  - Domain: lógica contable y reglas
+  - Application: casos de uso
+  - Infrastructure: base de datos, servicios externos
+  - Presentation: API / UI
+
+- NO mezclar lógica de negocio con infraestructura.
+
+---
+
+## 3. MODELO CONTABLE (CORE)
+
+### Catálogo de cuentas
+
+- Jerárquico mediante:
+  - ParentAccountId (NO parsing de strings)
+
+- Codigo:
+  - string flexible (NO int)
+  - NO asumir formato fijo
+
+- Campos obligatorios:
+  - Id
+  - TenantId
+  - Codigo
+  - Nombre
+  - Tipo
+  - Naturaleza
+  - ParentAccountId
+  - EsMovimiento
+
+---
+
+## 4. ASIENTOS CONTABLES
+
+- Estructura obligatoria:
+
+  JournalEntry:
+  - Id
+  - TenantId
+  - Fecha
+  - Descripcion
+  - Origen
+  - CreatedAt
+  - CreatedBy
+
+  JournalEntryLine:
+  - CuentaId
+  - Debe
+  - Haber
+
+- Regla obligatoria:
+  SUM(Debe) == SUM(Haber)
+
+---
+
+## 5. INTEGRACIÓN CON MÓDULOS
+
+Cada módulo genera eventos contables:
+
+- Compras → Inventario + IVA + CxP
+- Ventas → Ingreso + IVA + Caja/CxC
+- Ajustes → Cuenta de ajuste
+- Caja → Movimientos de efectivo
+
+👉 NUNCA generar asientos hardcodeados  
+👉 Usar motor contable configurable
+
+---
+
+## 6. PARAMETRIZACIÓN
+
+Por Tenant:
+
+- Cuenta inventario
+- Cuenta ventas
+- Cuenta IVA
+- Cuenta caja
+- Cuenta compras
+- Cuenta ajustes
+
+- NO hardcodear cuentas en código
+
+---
+
+## 7. CONSULTAS Y PERFORMANCE
+
+- Para jerarquía usar:
+  - Recursive CTE (PostgreSQL)
+
+---
+
+## 8. AUDITORÍA
+
+- TODA transacción contable debe registrar:
+  - CreatedAt
+  - CreatedBy
+
+---
+
+## 9. FLEXIBILIDAD
+
+El sistema debe soportar:
+
+- Diferentes formatos de cuentas
+- Diferentes niveles jerárquicos
+- Diferentes configuraciones fiscales
+
+---
+
+## 10. PROHIBICIONES
+
+- NO asumir estructura fija de cuentas
+- NO usar int para códigos contables
+- NO hardcodear cuentas
+- NO mezclar lógica contable con UI
