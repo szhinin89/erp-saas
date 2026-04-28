@@ -1,25 +1,13 @@
-using ERP.Application;
-using ERP.Infrastructure;
+using Modules.Accounting.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// =============================================
-// Services Registration (Clean Architecture)
-// =============================================
-
-builder.Services.AddApplication();           // Capa de Aplicación
-builder.Services.AddInfrastructure(builder.Configuration);  // Capa de Infraestructura
-
-// API Services
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddAccountingModule(builder.Configuration);
 
 var app = builder.Build();
-
-// =============================================
-// Middleware Pipeline
-// =============================================
 
 if (app.Environment.IsDevelopment())
 {
@@ -27,9 +15,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

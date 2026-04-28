@@ -1,130 +1,123 @@
-# =====================================
-# ZH TECHNOLOGIES - ERP SaaS RULES
-# =====================================
+# ZH Technologies — ERP SaaS
+# Cursor AI Rules — Monolito Modular Vertical
+# Actualizado: 28/04/2026
 
-## 1. MULTI-TENANT (CRÍTICO)
-
-- TODA entidad debe incluir TenantId (EmpresaId).
-- TODA consulta debe filtrar por TenantId.
-- PROHIBIDO acceso cruzado entre empresas.
-
----
-
-## 2. ARQUITECTURA
-
-- Usar Clean Architecture:
-  - Domain: lógica contable y reglas
-  - Application: casos de uso
-  - Infrastructure: base de datos, servicios externos
-  - Presentation: API / UI
-
-- NO mezclar lógica de negocio con infraestructura.
+## ROL
+Eres un desarrollador senior .NET especializado en Clean Architecture,
+DDD y SaaS multi-tenant. Antes de escribir código, lee CONTEXT.md.
+Nunca sobreescribas archivos existentes sin instrucción explícita.
 
 ---
 
-## 3. MODELO CONTABLE (CORE)
-
-### Catálogo de cuentas
-
-- Jerárquico mediante:
-  - ParentAccountId (NO parsing de strings)
-
-- Codigo:
-  - string flexible (NO int)
-  - NO asumir formato fijo
-
-- Campos obligatorios:
-  - Id
-  - TenantId
-  - Codigo
-  - Nombre
-  - Tipo
-  - Naturaleza
-  - ParentAccountId
-  - EsMovimiento
+## STACK
+- .NET 10, C#, ASP.NET Core Web API
+- PostgreSQL + EF Core + Npgsql
+- Arquitectura: Monolito Modular Vertical
+- Multi-tenant por TenantId en cada entidad
 
 ---
 
-## 4. ASIENTOS CONTABLES
+## ESTRUCTURA DE PROYECTOS
 
-- Estructura obligatoria:
+```
+ERP.Shared          → BaseEntity, ITenantContext, IUnitOfWork
+Modules.*           → cada módulo tiene Domain/Application/Infrastructure
+ERP.API             → host, Controllers, Program.cs
+```
 
-  JournalEntry:
-  - Id
-  - TenantId
-  - Fecha
-  - Descripcion
-  - Origen
-  - CreatedAt
-  - CreatedBy
-
-  JournalEntryLine:
-  - CuentaId
-  - Debe
-  - Haber
-
-- Regla obligatoria:
-  SUM(Debe) == SUM(Haber)
+## REGLA DE DEPENDENCIAS
+- ERP.Shared → no depende de nadie
+- Modules.* → solo depende de ERP.Shared
+- ERP.API → depende de ERP.Shared + Modules.*
+- Módulos entre sí → NUNCA dependencia directa
 
 ---
 
-## 5. INTEGRACIÓN CON MÓDULOS
+## ANTES DE ESCRIBIR CÓDIGO
 
-Cada módulo genera eventos contables:
-
-- Compras → Inventario + IVA + CxP
-- Ventas → Ingreso + IVA + Caja/CxC
-- Ajustes → Cuenta de ajuste
-- Caja → Movimientos de efectivo
-
-👉 NUNCA generar asientos hardcodeados  
-👉 Usar motor contable configurable
+1. Lee CONTEXT.md completo
+2. Lee los archivos existentes del módulo afectado
+3. Confirma el plan antes de generar código
+4. No crees archivos que ya existen
 
 ---
 
-## 6. PARAMETRIZACIÓN
+## CONVENCIONES
 
-Por Tenant:
+### Entidades de Dominio
+```csharp
+// Siempre en Modules.{Modulo}/Domain/Entities/
+// Hereda BaseEntity (tiene Id, TenantId, CreatedAt, IsActive)
+// Constructor privado + factory method estático Create()
+// Sin setters públicos
+public class MiEntidad : BaseEntity
+{
+    private MiEntidad() { }
+    public static MiEntidad Create(Guid tenantId, ...) { ... }
+}
+```
 
-- Cuenta inventario
-- Cuenta ventas
-- Cuenta IVA
-- Cuenta caja
-- Cuenta compras
-- Cuenta ajustes
+### Repositorios
+```csharp
+// Interface → Modules.{Modulo}/Application/Interfaces/I{Entidad}Repository.cs
+// Implementación → Modules.{Modulo}/Infrastructure/Repositories/{Entidad}Repository.cs
+// SIEMPRE filtrar por tenantId en todas las queries
+// SIEMPRE CancellationToken ct = default
+```
 
-- NO hardcodear cuentas en código
+### DbContext por módulo
+```csharp
+// Modules.{Modulo}/Infrastructure/Persistence/{Modulo}DbContext.cs
+// Cada módulo tiene su propio DbContext
+// NUNCA un DbContext compartido entre módulos
+```
+
+### DependencyInjection por módulo
+```csharp
+// Modules.{Modulo}/Infrastructure/{Modulo}DependencyInjection.cs
+// Método de extensión: AddXxxModule(this IServiceCollection, IConfiguration)
+// Registra DbContext + Repositories + UseCases del módulo
+```
+
+### Controllers
+```csharp
+// ERP.API/Controllers/{Entidad}sController.cs
+// Ruta: api/v1/[controller]
+// TenantId desde header X-Tenant-Id
+// Inyecta UseCases, NUNCA repositorios directamente
+// [ProducesResponseType] en cada endpoint
+```
+
+### Migraciones
+```bash
+dotnet ef migrations add {Nombre} \
+  --project src/Modules.{Modulo} \
+  --startup-project src/ERP.API \
+  --context {Modulo}DbContext
+```
 
 ---
 
-## 7. CONSULTAS Y PERFORMANCE
+## REGLAS QUE NUNCA SE ROMPEN
 
-- Para jerarquía usar:
-  - Recursive CTE (PostgreSQL)
-
----
-
-## 8. AUDITORÍA
-
-- TODA transacción contable debe registrar:
-  - CreatedAt
-  - CreatedBy
-
----
-
-## 9. FLEXIBILIDAD
-
-El sistema debe soportar:
-
-- Diferentes formatos de cuentas
-- Diferentes niveles jerárquicos
-- Diferentes configuraciones fiscales
+1. Toda entidad hereda BaseEntity (TenantId incluido)
+2. Toda query filtra por TenantId
+3. Sin lógica de negocio en Controllers ni Infrastructure
+4. Sin entidades de dominio en la API — siempre DTOs
+5. Sin DbContext fuera de Infrastructure del módulo
+6. CancellationToken en todos los métodos async públicos
+7. Soft delete — nunca DELETE físico, usar IsActive = false
+8. Sin AutoMapper — mappings manuales en UseCases
+9. Sin dependencias directas entre módulos
+10. No sobreescribir archivos existentes sin instrucción explícita
 
 ---
 
-## 10. PROHIBICIONES
+## PATRÓN DE REFERENCIA
 
-- NO asumir estructura fija de cuentas
-- NO usar int para códigos contables
-- NO hardcodear cuentas
-- NO mezclar lógica contable con UI
+Para cualquier módulo nuevo, seguir exactamente:
+- Módulo completo → Modules.Accounting
+- Controller → ERP.API/Controllers/AccountsController.cs
+- Repository → Modules.Accounting/Infrastructure/Repositories/AccountRepository.cs
+- DbContext → Modules.Accounting/Infrastructure/Persistence/AccountingDbContext.cs
+- DI → Modules.Accounting/Infrastructure/AccountingDependencyInjection.cs

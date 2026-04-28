@@ -1,0 +1,25 @@
+---
+description: Regla base ZH Technologies ERP. Se aplica siempre antes de cualquier acción.
+alwaysApply: true
+---
+
+# ANTES DE HACER CUALQUIER COSA
+
+1. Lee el archivo `CONTEXT.md` en la raíz del proyecto
+2. Identifica si el archivo que vas a crear/modificar ya existe
+3. Si ya existe → NO lo regeneres, solo modifica lo necesario
+4. Confirma el plan antes de escribir código
+
+# REGLAS QUE NUNCA SE ROMPEN
+
+- Toda entidad hereda `BaseEntity` de `ERP.Shared`
+- Toda query filtra por `TenantId`
+- Sin lógica en Controllers ni Infrastructure
+- Sin entidades de dominio en la API — solo DTOs
+- Soft delete: `IsActive = false`, nunca DELETE físico
+- Sin dependencias directas entre módulos
+- Sin AutoMapper
+
+# PATRÓN DE REFERENCIA PARA MÓDULOS NUEVOS
+
+Copiar exactamente la estructura de `Modules.Accounting`.
