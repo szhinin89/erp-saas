@@ -1,123 +1,284 @@
-# ZH Technologies — ERP SaaS
-# Cursor AI Rules — Monolito Modular Vertical
-# Actualizado: 28/04/2026
+# ============================================================
+#  ZH Technologies – ERP SaaS Backend
+#  .cursorrules  |  Última revisión: 2025
+# ============================================================
+# Stack: .NET 10 · C# · Clean Architecture · DDD
+#         PostgreSQL 16 · EF Core · JWT · BCrypt
+# Ruta:  C:\ProyectCursor\erp-saas\backend\src
+# ============================================================
 
-## ROL
-Eres un desarrollador senior .NET especializado en Clean Architecture,
-DDD y SaaS multi-tenant. Antes de escribir código, lee CONTEXT.md.
-Nunca sobreescribas archivos existentes sin instrucción explícita.
+## 1. ESTRUCTURA DE PROYECTOS
 
----
+Siempre respetar esta separación de capas. Nunca saltarse una capa:
 
-## STACK
-- .NET 10, C#, ASP.NET Core Web API
-- PostgreSQL + EF Core + Npgsql
-- Arquitectura: Monolito Modular Vertical
-- Multi-tenant por TenantId en cada entidad
+  ERP.Domain          → Entidades, Value Objects, interfaces de dominio, reglas de negocio
+  ERP.Application     → Casos de uso, DTOs, interfaces de repositorios, servicios de aplicación
+  ERP.Infrastructure  → Implementaciones EF Core, repositorios, migraciones, servicios externos
+  ERP.API             → Controllers, middlewares, configuración DI, Program.cs
 
----
-
-## ESTRUCTURA DE PROYECTOS
-
-```
-ERP.Shared          → BaseEntity, ITenantContext, IUnitOfWork
-Modules.*           → cada módulo tiene Domain/Application/Infrastructure
-ERP.API             → host, Controllers, Program.cs
-```
-
-## REGLA DE DEPENDENCIAS
-- ERP.Shared → no depende de nadie
-- Modules.* → solo depende de ERP.Shared
-- ERP.API → depende de ERP.Shared + Modules.*
-- Módulos entre sí → NUNCA dependencia directa
+Regla de dependencias (solo hacia adentro):
+  API → Application → Domain
+  Infrastructure → Application → Domain
+  NUNCA: Domain → Application, Domain → Infrastructure, Application → Infrastructure
 
 ---
 
-## ANTES DE ESCRIBIR CÓDIGO
+## 2. DOMINIO (ERP.Domain)
 
-1. Lee CONTEXT.md completo
-2. Lee los archivos existentes del módulo afectado
-3. Confirma el plan antes de generar código
-4. No crees archivos que ya existen
+### 2.1 Entidades base
 
----
+Toda entidad hereda de una de estas dos clases base según su naturaleza:
 
-## CONVENCIONES
+#### Entidades maestras (clientes, productos, cuentas, usuarios, etc.)
+Se pueden DESHABILITAR pero nunca eliminar físicamente.
 
-### Entidades de Dominio
 ```csharp
-// Siempre en Modules.{Modulo}/Domain/Entities/
-// Hereda BaseEntity (tiene Id, TenantId, CreatedAt, IsActive)
-// Constructor privado + factory method estático Create()
-// Sin setters públicos
-public class MiEntidad : BaseEntity
+public abstract class MasterEntity
 {
-    private MiEntidad() { }
-    public static MiEntidad Create(Guid tenantId, ...) { ... }
+    public Guid Id { get; protected set; } = Guid.NewGuid();
+    public Guid TenantId { get; protected set; }
+    public bool IsActive { get; protected set; } = true;
+    public DateTime CreatedAt { get; protected set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; protected set; }
+    public string? CreatedBy { get; protected set; }
+    public string? UpdatedBy { get; protected set; }
+
+    public void Disable(string updatedBy)
+    {
+        IsActive = false;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
+    }
+
+    public void Enable(string updatedBy)
+    {
+        IsActive = true;
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
+    }
 }
 ```
 
-### Repositorios
+#### Documentos transaccionales (facturas, asientos contables, órdenes, etc.)
+Se pueden ANULAR pero nunca eliminar físicamente.
+
 ```csharp
-// Interface → Modules.{Modulo}/Application/Interfaces/I{Entidad}Repository.cs
-// Implementación → Modules.{Modulo}/Infrastructure/Repositories/{Entidad}Repository.cs
-// SIEMPRE filtrar por tenantId en todas las queries
-// SIEMPRE CancellationToken ct = default
+public abstract class DocumentEntity
+{
+    public Guid Id { get; protected set; } = Guid.NewGuid();
+    public Guid TenantId { get; protected set; }
+    public DocumentStatus Status { get; protected set; } = DocumentStatus.Draft;
+    public DateTime CreatedAt { get; protected set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; protected set; }
+    public DateTime? VoidedAt { get; protected set; }
+    public string? CreatedBy { get; protected set; }
+    public string? UpdatedBy { get; protected set; }
+    public string? VoidedBy { get; protected set; }
+    public string? VoidReason { get; protected set; }
+
+    public void Void(string voidedBy, string reason)
+    {
+        if (Status == DocumentStatus.Voided)
+            throw new InvalidOperationException("El documento ya está anulado.");
+
+        Status = DocumentStatus.Voided;
+        VoidedAt = DateTime.UtcNow;
+        VoidedBy = voidedBy;
+        VoidReason = reason;
+        UpdatedAt = DateTime.UtcNow;
+    }
+}
+
+public enum DocumentStatus
+{
+    Draft = 0,
+    Posted = 1,
+    Voided = 2
+}
 ```
 
-### DbContext por módulo
-```csharp
-// Modules.{Modulo}/Infrastructure/Persistence/{Modulo}DbContext.cs
-// Cada módulo tiene su propio DbContext
-// NUNCA un DbContext compartido entre módulos
-```
+### 2.2 Regla absoluta: NO DELETE físico
 
-### DependencyInjection por módulo
-```csharp
-// Modules.{Modulo}/Infrastructure/{Modulo}DependencyInjection.cs
-// Método de extensión: AddXxxModule(this IServiceCollection, IConfiguration)
-// Registra DbContext + Repositories + UseCases del módulo
-```
+- NUNCA generar métodos Delete(), Remove() ni llamadas a DbSet.Remove() en repositorios.
+- Las entidades maestras se deshabilitan con Disable().
+- Los documentos transaccionales se anulan con Void().
+- Las migraciones NUNCA deben eliminar registros.
+- Los endpoints DELETE de la API deben realizar anulación/deshabilitación lógica, nunca borrado real.
 
-### Controllers
-```csharp
-// ERP.API/Controllers/{Entidad}sController.cs
-// Ruta: api/v1/[controller]
-// TenantId desde header X-Tenant-Id
-// Inyecta UseCases, NUNCA repositorios directamente
-// [ProducesResponseType] en cada endpoint
-```
+### 2.3 Módulos de dominio actuales
 
-### Migraciones
-```bash
-dotnet ef migrations add {Nombre} \
-  --project src/Modules.{Modulo} \
-  --startup-project src/ERP.API \
-  --context {Modulo}DbContext
+#### Accounting (Contabilidad)
+- Account       → MasterEntity  (Plan de cuentas)
+- JournalEntry  → DocumentEntity (Asientos contables)
+- JournalEntryLine → (líneas de asiento, sin estado propio)
+
+#### Inventory (Inventario)
+- Product       → MasterEntity
+
+#### Core (Administración)
+- Tenant        → (raíz del multi-tenant)
+- User          → MasterEntity
+
+---
+
+## 3. MULTI-TENANT
+
+- Toda entidad tiene TenantId (Guid, no nulo).
+- Toda consulta a la base de datos DEBE filtrar por TenantId.
+- El TenantId se extrae del JWT en la capa API y se propaga hasta los repositorios.
+- Nunca confiar en el TenantId enviado por el cliente en el body; siempre usar el del token.
+- En EF Core usar Query Filters globales por TenantId donde sea posible.
+
+Ejemplo de Query Filter en DbContext:
+```csharp
+modelBuilder.Entity<Account>()
+    .HasQueryFilter(a => a.TenantId == _currentTenantId);
 ```
 
 ---
 
-## REGLAS QUE NUNCA SE ROMPEN
+## 4. APPLICATION LAYER
 
-1. Toda entidad hereda BaseEntity (TenantId incluido)
-2. Toda query filtra por TenantId
-3. Sin lógica de negocio en Controllers ni Infrastructure
-4. Sin entidades de dominio en la API — siempre DTOs
-5. Sin DbContext fuera de Infrastructure del módulo
-6. CancellationToken en todos los métodos async públicos
-7. Soft delete — nunca DELETE físico, usar IsActive = false
-8. Sin AutoMapper — mappings manuales en UseCases
-9. Sin dependencias directas entre módulos
-10. No sobreescribir archivos existentes sin instrucción explícita
+### 4.1 Interfaces de repositorios
+- Siempre en ERP.Application, nunca en Infrastructure ni Domain.
+- Usar el patrón del IAccountRepository existente como referencia:
+  - GetByIdAsync(Guid id, Guid tenantId, CancellationToken ct)
+  - Métodos de solo lectura devuelven IReadOnlyList<T>
+  - SaveChangesAsync separado (Unit of Work)
+  - CancellationToken en todos los métodos async
+
+### 4.2 Casos de uso
+- Un caso de uso = una clase con método Handle() o ExecuteAsync()
+- No poner lógica de negocio en los casos de uso; delegar al dominio
+- DTOs separados de las entidades (nunca exponer entidades directamente)
+- Validaciones con FluentValidation o DataAnnotations antes de tocar el dominio
+
+### 4.3 Convenciones de naming
+```
+GetAccountByIdQuery / GetAccountByIdQueryHandler
+CreateAccountCommand / CreateAccountCommandHandler
+VoidJournalEntryCommand / VoidJournalEntryCommandHandler
+DisableProductCommand / DisableProductCommandHandler
+```
 
 ---
 
-## PATRÓN DE REFERENCIA
+## 5. INFRASTRUCTURE LAYER
 
-Para cualquier módulo nuevo, seguir exactamente:
-- Módulo completo → Modules.Accounting
-- Controller → ERP.API/Controllers/AccountsController.cs
-- Repository → Modules.Accounting/Infrastructure/Repositories/AccountRepository.cs
-- DbContext → Modules.Accounting/Infrastructure/Persistence/AccountingDbContext.cs
-- DI → Modules.Accounting/Infrastructure/AccountingDependencyInjection.cs
+### 5.1 Base de datos (PostgreSQL + EF Core)
+- Tablas actuales: tenants, accounts, products, journal_entries, journal_entry_lines, users
+- Usar snake_case para nombres de tablas y columnas en PostgreSQL
+- Configurar mappings en clases separadas IEntityTypeConfiguration<T>
+- Índices en: TenantId, IsActive, Status, columnas de búsqueda frecuente
+- Nunca usar migrations con Down() que borre datos; siempre preservar historial
+
+### 5.2 Repositorios
+- Implementan las interfaces de Application
+- Siempre filtrar por TenantId en todas las queries
+- Nunca exponer IQueryable fuera del repositorio
+- Para entidades maestras: filtrar IsActive = true por defecto, salvo que se pida explícitamente lo contrario
+- Para documentos: filtrar Status != Voided por defecto en listados generales
+
+Ejemplo de repositorio correcto:
+```csharp
+public async Task<IReadOnlyList<Account>> GetAllByTenantAsync(
+    Guid tenantId, CancellationToken ct = default)
+{
+    return await _context.Accounts
+        .Where(a => a.TenantId == tenantId && a.IsActive)
+        .OrderBy(a => a.Code)
+        .ToListAsync(ct);
+}
+```
+
+### 5.3 Migraciones
+- Una migración por cambio lógico, con nombre descriptivo
+- Nunca modificar migraciones ya aplicadas en producción
+- Siempre revisar el SQL generado antes de aplicar
+
+---
+
+## 6. API LAYER
+
+### 6.1 Controllers
+- Un controller por módulo/entidad
+- Rutas: api/v1/{modulo}/{recurso}
+- Devolver siempre tipos Result<T> o ActionResult<T> con códigos HTTP correctos
+- No poner lógica de negocio en los controllers
+
+### 6.2 Autenticación y Autorización
+- JWT Bearer obligatorio en todos los endpoints protegidos
+- BCrypt para hash de contraseñas (nunca MD5, SHA1 o texto plano)
+- Claims del JWT: UserId, TenantId, Role
+- RBAC: validar permisos por rol antes de ejecutar el caso de uso
+
+### 6.3 Endpoints de "eliminación"
+- Los endpoints DELETE deben realizar anulación o deshabilitación, NUNCA borrado físico
+- Ejemplo correcto:
+  ```
+  DELETE api/v1/accounting/accounts/{id}  → deshabilita la cuenta (IsActive = false)
+  DELETE api/v1/accounting/journal-entries/{id}  → anula el asiento (Status = Voided)
+  ```
+- Documentar claramente en el endpoint que es una operación lógica, no física
+
+---
+
+## 7. CONVENCIONES DE CÓDIGO C#
+
+- Usar record para DTOs de solo lectura cuando sea posible
+- Propiedades con init en entidades cuando no deben cambiar post-construcción
+- Métodos privados para lógica interna de la entidad
+- No usar var cuando el tipo no es obvio
+- Usar el operador null-conditional (?.) y null-coalescing (??) apropiadamente
+- Async/await en toda operación I/O, sin .Result ni .Wait()
+- Siempre pasar CancellationToken en operaciones async de repositorios y servicios
+- Usar Guard Clauses al inicio de los métodos para fail-fast
+
+---
+
+## 8. SEGURIDAD
+
+- Sanitizar y validar todo input antes de procesarlo
+- Nunca loguear datos sensibles (contraseñas, tokens, datos personales)
+- Usar HTTPS siempre en producción
+- Proteger contra: SQL Injection (EF Core lo hace), XSS, CSRF
+- Rate limiting en endpoints de autenticación
+
+---
+
+## 9. ERRORES Y RESPUESTAS
+
+- Usar el patrón Result<T> para retornar éxito/error sin excepciones para casos de negocio
+- Las excepciones son para errores inesperados del sistema, no para validaciones de negocio
+- Respuestas de error consistentes con ProblemDetails (RFC 7807)
+- Códigos HTTP correctos:
+  - 200 OK, 201 Created, 204 No Content
+  - 400 Bad Request (validación), 401 Unauthorized, 403 Forbidden
+  - 404 Not Found, 409 Conflict
+  - 422 Unprocessable Entity (regla de negocio)
+
+---
+
+## 10. LO QUE NUNCA DEBES HACER
+
+- ❌ Nunca hacer DELETE físico de registros en ninguna entidad
+- ❌ Nunca omitir el filtro TenantId en una query
+- ❌ Nunca poner lógica de negocio fuera del Domain
+- ❌ Nunca exponer entidades de dominio directamente en la API
+- ❌ Nunca referenciar Infrastructure desde Domain o Application
+- ❌ Nunca guardar contraseñas en texto plano
+- ❌ Nunca usar .Result o .Wait() en código async
+- ❌ Nunca modificar migraciones ya aplicadas
+
+---
+
+## 11. TECNOLOGÍAS Y VERSIONES
+
+- .NET 10
+- C# (última versión del lenguaje con .NET 10)
+- Entity Framework Core (última compatible con .NET 10)
+- Npgsql (PostgreSQL provider para EF Core)
+- BCrypt.Net-Next (hash de contraseñas)
+- JWT Bearer (autenticación)
+- PostgreSQL 16
+- FluentValidation (validaciones de comandos/queries)
