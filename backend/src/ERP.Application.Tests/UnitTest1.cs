@@ -1,0 +1,51 @@
+﻿using FluentAssertions;
+using Moq;
+using ERP.Application.Common;
+using ERP.Application.Products.UseCases.CreateProduct;
+using ERP.Domain.Products.Interfaces;
+
+namespace ERP.Application.Tests;
+
+public class CreateProductHandlerTests
+{
+    [Fact]
+    public async Task HandleAsync_should_persist_product_for_current_tenant()
+    {
+        var tenantId = Guid.NewGuid();
+
+        var repo = new Mock<IProductRepository>(MockBehavior.Strict);
+        repo.Setup(r => r.AddAsync(It.IsAny<ERP.Domain.Products.Entities.Product>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var currentTenant = new Mock<ICurrentTenant>(MockBehavior.Strict);
+        currentTenant.SetupGet(t => t.TenantId).Returns(tenantId);
+
+        var handler = new CreateProductHandler(repo.Object, currentTenant.Object);
+
+        var cmd = new CreateProductCommand(
+            SaleCode: "S-001",
+            ShortName: "Producto",
+            Description: "Desc",
+            LineId: Guid.NewGuid(),
+            CategoryId: Guid.NewGuid(),
+            SubcategoryId: Guid.NewGuid(),
+            UnitOfMeasureId: Guid.NewGuid(),
+            BrandId: Guid.NewGuid(),
+            ProductTypeId: Guid.NewGuid(),
+            TariffId: Guid.NewGuid(),
+            SaleTaxId: Guid.NewGuid(),
+            PurchaseTaxId: Guid.NewGuid());
+
+        var result = await handler.HandleAsync(cmd);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value.Should().NotBeNull();
+        result.Value!.SaleCode.Should().Be("S-001");
+
+        repo.Verify(r => r.AddAsync(It.IsAny<ERP.Domain.Products.Entities.Product>(), It.IsAny<CancellationToken>()), Times.Once);
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        repo.VerifyNoOtherCalls();
+    }
+}
