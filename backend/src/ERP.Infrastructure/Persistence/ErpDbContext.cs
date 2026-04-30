@@ -6,6 +6,8 @@ using ERP.Domain.Auth.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Security.Entities;
 using ERP.Domain.Access.Entities;
+using ERP.Domain.Branches.Entities;
+using ERP.Domain.Geography.Entities;
 using ERP.Application.Common;
 using System.Linq.Expressions;
 
@@ -41,6 +43,11 @@ public class ErpDbContext : DbContext
     public DbSet<AccessProfilePermission> AccessProfilePermissions => Set<AccessProfilePermission>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<SecurityAdminScopeAssignment> SecurityAdminScopeAssignments => Set<SecurityAdminScopeAssignment>();
+    public DbSet<GeoCountry> GeoCountries => Set<GeoCountry>();
+    public DbSet<GeoProvince> GeoProvinces => Set<GeoProvince>();
+    public DbSet<GeoCanton> GeoCantons => Set<GeoCanton>();
+    public DbSet<GeoParish> GeoParishes => Set<GeoParish>();
+    public DbSet<Branch> Branches => Set<Branch>();
 
     /// <summary>
     /// Evaluada en cada query, no al compilar el modelo.

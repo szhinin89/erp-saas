@@ -12,6 +12,7 @@ import { SecuritySettingsPage } from './pages/SecuritySettingsPage';
 import { CompaniesPage } from './pages/CompaniesPage';
 import { TenantAccessPage } from './pages/TenantAccessPage';
 import { ProfilesPage } from './pages/ProfilesPage';
+import { BranchesPage } from './pages/BranchesPage';
 import {
   BrandsCatalogPage,
   ProductTypesCatalogPage,
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="/accounting"  element={<AccountingPage />} />
             <Route path="/security"    element={<SecuritySettingsPage />} />
             <Route path="/companies"   element={<CompaniesPage />} />
+            <Route path="/saas/branches" element={<BranchesPage />} />
             <Route path="/access"      element={<TenantAccessPage />} />
             <Route path="/profiles"    element={<ProfilesPage />} />
           </Route>

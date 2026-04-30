@@ -3,8 +3,9 @@ import axios from 'axios';
 /**
  * Instancia de Axios preconfigurada para llamar al backend.
  *
- * - La baseURL se toma de la variable de entorno VITE_API_URL.
- *   En desarrollo: definida en .env.development (http://localhost:5003).
+ * - La baseURL es VITE_API_URL si está definida (no vacía).
+ *   En desarrollo, si está vacía o no existe: baseURL '' → las rutas /api/*
+ *   van al mismo host que Vite y el proxy (vite.config) reenvía a la API (sin CORS).
  *
  * - Interceptor de request: inyecta el Bearer token desde el store
  *   persistido en localStorage, sin necesidad de pasarlo manualmente.
@@ -12,8 +13,12 @@ import axios from 'axios';
  * - Interceptor de response: ante un 401, limpia el estado de auth
  *   y redirige al login. Esto cubre tokens vencidos o revocados.
  */
+const viteApiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? '';
+const resolvedBaseUrl =
+  viteApiBase.length > 0 ? viteApiBase : import.meta.env.DEV ? '' : 'http://localhost:5003';
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:5003',
+  baseURL: resolvedBaseUrl,
   headers: { 'Content-Type': 'application/json' },
 });
 

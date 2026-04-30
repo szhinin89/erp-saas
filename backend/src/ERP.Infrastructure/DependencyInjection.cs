@@ -8,6 +8,8 @@ using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 using ERP.Domain.Security.Interfaces;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Branches.Interfaces;
+using ERP.Domain.Geography.Interfaces;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Services;
@@ -40,6 +42,8 @@ public static class DependencyInjection
         services.AddScoped<IAccessTokenService, AccessTokenService>();
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<ISecurityRepository, SecurityRepository>();
+        services.AddScoped<IBranchRepository, BranchRepository>();
+        services.AddScoped<IGeographyReadRepository, GeographyReadRepository>();
 
         return services;
     }

@@ -20,5 +20,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ERP.Infrastructure</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Seeding\Scripts\inec_ecuador_geography.sql" />
+  </ItemGroup>
 </Project>

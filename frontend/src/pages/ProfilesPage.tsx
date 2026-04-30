@@ -57,6 +57,10 @@ export function ProfilesPage() {
       { key: 'catalog.subcategories.create', label: t('profiles.perms.catalog.subcategories.create') },
       { key: 'catalog.subcategories.update', label: t('profiles.perms.catalog.subcategories.update') },
       { key: 'catalog.subcategories.delete', label: t('profiles.perms.catalog.subcategories.delete') },
+      { key: 'saas.branches.view', label: t('profiles.perms.saas.branches.view') },
+      { key: 'saas.branches.create', label: t('profiles.perms.saas.branches.create') },
+      { key: 'saas.branches.update', label: t('profiles.perms.saas.branches.update') },
+      { key: 'saas.branches.delete', label: t('profiles.perms.saas.branches.delete') },
     ],
     [t]
   );

@@ -81,6 +81,7 @@ export function AppLayout() {
       items: [
         { to: '/access', label: t('app.nav.access') },
         { to: '/profiles', label: t('app.nav.profiles') },
+        { to: '/saas/branches', label: t('app.nav.branches'), permissionKey: 'saas.branches.view' },
       ],
     },
     {
@@ -100,6 +101,7 @@ export function AppLayout() {
       items: [
         { to: '/companies', label: t('app.nav.companies') },
         { to: '/superadmin', label: t('app.nav.superadmin') },
+        { to: '/saas/branches', label: t('app.nav.branches'), permissionKey: 'saas.branches.view' },
       ],
     },
   ]), [t]);

@@ -1,6 +1,7 @@
-@ERP.API_HostAddress = http://localhost:5003
+@host = http://localhost:5003
 
-GET {{ERP.API_HostAddress}}/weatherforecast/
+### Catálogo de países (requiere JWT de sesión en Authorization: Bearer …)
+GET {{host}}/api/geography/countries
 Accept: application/json
 
 ###
