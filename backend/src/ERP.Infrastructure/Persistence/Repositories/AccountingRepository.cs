@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Accounting.Entities;
 using ERP.Domain.Accounting.Interfaces;
+using ERP.Domain.Accounting.ValueObjects;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
@@ -19,16 +20,16 @@ public class AccountingRepository : IAccountingRepository
 
     public async Task<Account?> GetByCodeAsync(string code, Guid tenantId, CancellationToken ct = default)
         => await _context.Accounts
-            .FirstOrDefaultAsync(a => a.Code.Value == code, ct);
+            .FirstOrDefaultAsync(a => a.Code == new AccountCode(code), ct);
 
     public async Task<IReadOnlyList<Account>> GetAllByTenantAsync(Guid tenantId, CancellationToken ct = default)
         => await _context.Accounts
-            .OrderBy(a => a.Code.Value)
+            .OrderBy(a => a.Code)
             .ToListAsync(ct);
 
     public async Task<bool> ExistsAsync(string code, Guid tenantId, CancellationToken ct = default)
         => await _context.Accounts
-            .AnyAsync(a => a.Code.Value == code, ct);
+            .AnyAsync(a => a.Code == new AccountCode(code), ct);
 
     public async Task AddAsync(Account account, CancellationToken ct = default)
         => await _context.Accounts.AddAsync(account, ct);
@@ -40,6 +41,12 @@ public class AccountingRepository : IAccountingRepository
         => await _context.JournalEntries
             .Include(e => e.Lines)
             .FirstOrDefaultAsync(e => e.Id == id, ct);
+
+    public async Task<IReadOnlyList<JournalEntry>> GetAllJournalEntriesAsync(Guid tenantId, CancellationToken ct = default)
+        => await _context.JournalEntries
+            .Include(e => e.Lines)
+            .OrderByDescending(e => e.Date)
+            .ToListAsync(ct);
 
     public async Task SaveChangesAsync(CancellationToken ct = default)
         => await _context.SaveChangesAsync(ct);

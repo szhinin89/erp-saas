@@ -1,5 +1,15 @@
 namespace ERP.Application.Common;
 
+/// <summary>
+/// Encapsula el resultado de un caso de uso, discriminando entre éxito y fallo
+/// sin lanzar excepciones para errores de negocio esperados.
+///
+/// Uso en handlers:
+///   return Result&lt;Dto&gt;.Failure("El código ya existe.");
+///
+/// Uso en controllers:
+///   return result.IsSuccess ? Ok(result.Value) : BadRequest(new { error = result.Error });
+/// </summary>
 public class Result<T>
 {
     public bool IsSuccess { get; }

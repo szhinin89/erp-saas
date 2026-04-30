@@ -11,5 +11,6 @@ public interface IAccountingRepository
     Task AddAsync(Account account, CancellationToken ct = default);
     Task AddJournalEntryAsync(JournalEntry entry, CancellationToken ct = default);
     Task<JournalEntry?> GetJournalEntryByIdAsync(Guid id, Guid tenantId, CancellationToken ct = default);
+    Task<IReadOnlyList<JournalEntry>> GetAllJournalEntriesAsync(Guid tenantId, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

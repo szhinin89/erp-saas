@@ -1,0 +1,33 @@
+using ERP.Application.Common;
+using ERP.Application.Products.DTOs;
+using ERP.Domain.Products.Interfaces;
+
+namespace ERP.Application.Products.UseCases.GetProducts;
+
+public class GetProductsHandler
+{
+    private readonly IProductRepository _repository;
+    private readonly ICurrentTenant _currentTenant;
+
+    public GetProductsHandler(IProductRepository repository, ICurrentTenant currentTenant)
+    {
+        _repository    = repository;
+        _currentTenant = currentTenant;
+    }
+
+    public async Task<Result<IReadOnlyList<ProductDto>>> HandleAsync(CancellationToken ct = default)
+    {
+        var tenantId = _currentTenant.TenantId;
+        var products = await _repository.GetAllByTenantAsync(tenantId, ct);
+
+        var dtos = products.Select(p => new ProductDto(
+            p.Id, p.SaleCode, p.PurchaseCode, p.ShortName, p.Description,
+            p.LineId, p.CategoryId, p.SubcategoryId, p.UnitOfMeasureId,
+            p.BrandId, p.ProductTypeId, p.SaleTaxId, p.PurchaseTaxId,
+            p.ExciseTaxId, p.IsService, p.IsActive, p.AvailableOnWeb,
+            p.AvailableOnMobile, p.IsForSale, p.CreatedAt))
+            .ToList();
+
+        return Result<IReadOnlyList<ProductDto>>.Success(dtos);
+    }
+}

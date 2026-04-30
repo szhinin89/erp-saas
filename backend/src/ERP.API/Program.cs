@@ -7,18 +7,26 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerWithJwt();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        var origins = builder.Configuration
+            .GetSection("Cors:AllowedOrigins")
+            .Get<string[]>() ?? ["http://localhost:5173"];
+
+        policy.WithOrigins(origins)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
-
-// Handlers
-builder.Services.AddScoped<ERP.Application.Auth.UseCases.Register.RegisterHandler>();
-builder.Services.AddScoped<ERP.Application.Auth.UseCases.Login.LoginHandler>();
-builder.Services.AddScoped<ERP.Application.Accounting.UseCases.CreateAccount.CreateAccountHandler>();
-builder.Services.AddScoped<ERP.Application.Modules.Accounting.UseCases.CreateJournalEntry.CreateJournalEntryHandler>();
-builder.Services.AddScoped<ERP.Application.Products.UseCases.CreateProduct.CreateProductHandler>();
-builder.Services.AddScoped<ERP.Application.Tenants.UseCases.CreateTenant.CreateTenantHandler>();
+builder.Services.AddApplication();
 
 var app = builder.Build();
 
@@ -29,6 +37,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionMiddleware>();
+app.UseCors("Frontend");
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();

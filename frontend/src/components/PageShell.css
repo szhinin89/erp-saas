@@ -1,0 +1,115 @@
+.page-shell {
+  max-width: 1100px;
+}
+
+.page-shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-shell-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111;
+  margin: 0;
+}
+
+.page-shell-action button {
+  padding: 9px 18px;
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.page-shell-action button:hover {
+  background: #6d28d9;
+}
+
+/* Table card */
+.table-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  overflow: hidden;
+}
+
+.table-card table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table-card th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.table-card td {
+  padding: 13px 16px;
+  color: #374151;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.table-card tr:last-child td {
+  border-bottom: none;
+}
+
+.table-card tr:hover td {
+  background: #fafaf9;
+}
+
+/* States */
+.empty-state,
+.loading-state {
+  text-align: center;
+  padding: 56px 24px;
+  color: #9ca3af;
+  font-size: 14px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+}
+
+.error-state {
+  padding: 16px 20px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: 10px;
+  font-size: 13px;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge--green  { background: #d1fae5; color: #065f46; }
+.badge--gray   { background: #f3f4f6; color: #6b7280; }
+.badge--red    { background: #fee2e2; color: #991b1b; }
+.badge--blue   { background: #dbeafe; color: #1e40af; }
+
+/* Mono text */
+.mono {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 12px;
+}

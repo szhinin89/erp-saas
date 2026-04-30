@@ -25,26 +25,32 @@ public class ErpDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
 
+    /// <summary>
+    /// Propiedad de instancia evaluada en cada query.
+    /// NO usar una variable local en OnModelCreating: EF Core compila el modelo
+    /// una sola vez por aplicación, por lo que una variable local capturaría el
+    /// valor en startup y todos los tenants verían los mismos datos.
+    /// </summary>
+    private Guid CurrentTenantId => _currentTenant.TenantId;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ErpDbContext).Assembly);
 
-        // Filtro global multi-tenant — se aplica automaticamente en todas las queries
-        var tenantId = _currentTenant.TenantId;
-
+        // Filtros globales de aislamiento multi-tenant.
+        // Al agregar una nueva entidad con TenantId, registrar su filtro aquí.
         modelBuilder.Entity<Account>()
-            .HasQueryFilter(e => e.TenantId == tenantId);
+            .HasQueryFilter(e => e.TenantId == CurrentTenantId);
 
         modelBuilder.Entity<JournalEntry>()
-            .HasQueryFilter(e => e.TenantId == tenantId);
+            .HasQueryFilter(e => e.TenantId == CurrentTenantId);
 
         modelBuilder.Entity<JournalEntryLine>()
-            .HasQueryFilter(e => e.TenantId == tenantId);
+            .HasQueryFilter(e => e.TenantId == CurrentTenantId);
 
         modelBuilder.Entity<Product>()
-            .HasQueryFilter(e => e.TenantId == tenantId);
+            .HasQueryFilter(e => e.TenantId == CurrentTenantId);
 
         base.OnModelCreating(modelBuilder);
     }
 }
-

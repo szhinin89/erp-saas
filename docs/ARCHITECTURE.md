@@ -1,141 +1,107 @@
-## Arquitectura (ERP SaaS)
+# Arquitectura del sistema
 
-Este repositorio está diseñado como **monolito modular** con separación estricta por capas (estilo Clean Architecture) y con el objetivo de poder **extraer módulos como microservicios** en el futuro sin reescribir el dominio.
+## Visión general
 
-### Estructura del repo
+Monolito modular con Clean Architecture. El objetivo es que cada módulo funcional sea independiente para poder extraerlo como microservicio cuando madure, sin reescribir el dominio.
+
+## Capas y dependencias
 
 ```
-erp-saas/
-├── backend/
-│   └── src/
-│       ├── ERP.slnx
-│       ├── ERP.API/                 # Host HTTP (Controllers, auth, middleware, swagger)
-│       ├── ERP.Application/         # Casos de uso (handlers), DTOs y contratos
-│       ├── ERP.Domain/              # Dominio (entidades, VOs, reglas, eventos)
-│       ├── ERP.Infrastructure/      # Persistencia/EF Core, repos, servicios técnicos
-│       ├── ERP.*.Tests/             # Tests por capa (Domain/App/Infra/API)
-│       └── erp_auth.ps1
-├── frontend/                        # Vite + React + TS
-└── docs/
+┌─────────────────────────────────────────────┐
+│  ERP.API  (controllers, middleware, host)   │
+├─────────────────────────────────────────────┤
+│  ERP.Application  (handlers, DTOs)          │
+├─────────────────────────────────────────────┤
+│  ERP.Infrastructure  (EF Core, repos)       │
+├─────────────────────────────────────────────┤
+│  ERP.Domain  (entidades, VOs, interfaces)   │
+└─────────────────────────────────────────────┘
 ```
 
-### Dependencias permitidas (reglas)
+**Regla estricta:** cada capa solo puede depender de la capa inferior. El dominio no referencia EF Core, ASP.NET ni ningún framework externo.
 
-- **`ERP.Domain`**: no depende de nada (solo BCL).
-- **`ERP.Application`**: depende de `ERP.Domain`. No depende de EF Core ni de `ERP.Infrastructure`.
-- **`ERP.Infrastructure`**: depende de `ERP.Application` y `ERP.Domain`. Aquí vive EF Core y repositorios concretos.
-- **`ERP.API`**: depende de `ERP.Application` y `ERP.Infrastructure`. Expone HTTP + Swagger.
+## Estructura de archivos por módulo
 
-Regla práctica: **el dominio no conoce la base de datos ni el framework web**.
+```
+ERP.Domain/Modules/{Modulo}/
+├── Entities/        ← Agregados y entidades hijas
+├── ValueObjects/    ← Tipos inmutables con lógica de validación
+├── Interfaces/      ← Contratos de repositorios (implementados en Infrastructure)
+├── Enums/
+├── Events/          ← Domain events (IDomainEvent)
+└── Rules/           ← Reglas de negocio reutilizables
 
-### Módulos (vertical slices)
+ERP.Application/Modules/{Modulo}/
+├── DTOs/            ← Records de salida (response)
+└── UseCases/{Nombre}/
+    ├── {Nombre}Command.cs   ← Datos de entrada (record inmutable)
+    └── {Nombre}Handler.cs   ← Lógica del caso de uso
 
-La modularidad se organiza por **módulos funcionales** dentro de Domain/Application/Infrastructure, por ejemplo:
+ERP.Infrastructure/Persistence/
+├── Configurations/  ← IEntityTypeConfiguration<T> por entidad
+├── Repositories/    ← Implementaciones concretas de los repos del dominio
+└── ErpDbContext.cs
+```
 
-- `ERP.Domain/Modules/Products/*`
-- `ERP.Application/Modules/Products/*`
-- `ERP.Infrastructure/Persistence/Configurations/*` y `Repositories/*`
+## Multi-tenant
 
-Esto permite que cada módulo tenga:
+Cada entidad de negocio tiene `TenantId: Guid`. El aislamiento se logra con **query filters globales** en EF Core aplicados en `ErpDbContext.OnModelCreating`.
 
-- **Dominio**: entidades, value objects, reglas, eventos
-- **Aplicación**: comandos/handlers, DTOs, validaciones (si aplica)
-- **Infra**: repos concretos, mapping EF, migraciones
+El `TenantId` activo se resuelve en cada request desde el claim `tenant_id` del JWT a través de `ICurrentTenant` → `CurrentTenantService`.
 
-### Multi-tenant
+**Importante:** el filtro referencia `CurrentTenantId` como propiedad de instancia del DbContext (no como variable local capturada), lo que garantiza que se evalúa en cada query y no en la compilación del modelo.
 
-La solución está pensada para multi-tenant.
+Cuando se agregue una nueva entidad con `TenantId`, registrar su filtro en `ErpDbContext.OnModelCreating`.
 
-- `ErpDbContext` aplica filtros globales por `TenantId`.
-- En API, `ICurrentTenant` debe resolver el `TenantId` (hoy puede venir de header/JWT).
+## Registro de handlers (Application)
 
-Recomendación: estandarizar el origen del tenant:
+`ERP.Application/DependencyInjection.cs` escanea el assembly en startup y registra como `Scoped` todas las clases que terminan en `Handler`. No es necesario registrar manualmente los nuevos handlers en `Program.cs`.
 
-- **Corto plazo**: header `X-Tenant-Id` (dev).
-- **Mediano plazo**: claim de JWT (`tenant_id`) + validación centralizada.
+## Patrón Result<T>
 
-### Persistencia (EF Core)
+Los handlers retornan `Result<T>` (en `ERP.Application/Modules/Common/Result.cs`) en lugar de lanzar excepciones para errores de dominio esperados. Los controllers traducen el resultado a la respuesta HTTP apropiada.
 
-- `ErpDbContext` vive en `ERP.Infrastructure/Persistence`.
-- Configuración de entidades en `ERP.Infrastructure/Persistence/Configurations`.
-- Repositorios en `ERP.Infrastructure/Persistence/Repositories`.
-- Migraciones en `ERP.Infrastructure/Migrations`.
+## Autenticación
 
-### API + Swagger
+JWT generado por `JwtService` (Infrastructure). El token incluye los claims: `sub`, `email`, `tenant_id`, `full_name`, `role`.
 
-El host HTTP está en `ERP.API`.
+La validación del token ocurre en el middleware de ASP.NET. Los controllers protegidos llevan `[Authorize]`.
 
-- Swagger se habilita en `Development`.
-- Puertos locales (launchSettings): `https://localhost:7253` y `http://localhost:5003`.
+## CORS
 
-### Pruebas
+La política `"Frontend"` permite los orígenes configurados en `appsettings.json` bajo `Cors:AllowedOrigins`. En desarrollo el default es `http://localhost:5173`.
 
-Se crearon proyectos de test por capa:
+## Módulos actuales
 
-- `ERP.Domain.Tests`: pruebas unitarias (VOs/reglas)
-- `ERP.Application.Tests`: pruebas de casos de uso (mocks)
-- `ERP.Infrastructure.Tests`: pruebas de persistencia (InMemory)
-- `ERP.API.Tests`: smoke/integration tests con `WebApplicationFactory`
+| Módulo     | Dominio                        | Endpoints                              |
+|------------|--------------------------------|----------------------------------------|
+| Auth       | User, Email (VO)               | POST /register, /login                 |
+| Tenants    | Tenant                         | POST /tenants                          |
+| Products   | Product, ProductBarcode        | GET /products, GET /products/{id}, POST |
+| Accounting | Account, JournalEntry, Money   | GET/POST /accounts, /journal-entries   |
 
-Comando:
+## Migraciones EF Core
 
 ```powershell
-cd c:\ProyectCursor\erp-saas\backend\src
-dotnet test .\ERP.slnx -c Release
+cd backend/src/ERP.Infrastructure
+dotnet ef migrations add {Nombre} --startup-project ../ERP.API
+dotnet ef database update --startup-project ../ERP.API
 ```
 
-## Guía para escalar y evolucionar a microservicios (recomendado)
+## Tests (estructura prevista)
 
-### 1) Definir límites (Bounded Contexts)
+| Proyecto                   | Tipo           | Herramientas sugeridas      |
+|----------------------------|----------------|-----------------------------|
+| ERP.Domain.Tests           | Unitario       | xUnit, FluentAssertions     |
+| ERP.Application.Tests      | Unitario       | xUnit, Moq/NSubstitute      |
+| ERP.Infrastructure.Tests   | Integración    | xUnit, Testcontainers       |
+| ERP.API.Tests              | Integración    | WebApplicationFactory       |
 
-Ejemplos típicos en ERP:
+## Próximos pasos para producción
 
-- Accounting (contabilidad)
-- Products/Catalog
-- Inventory
-- Orders
-- Invoicing
-
-Regla: **cada bounded context debe tener su propio modelo de dominio** (evitar “God entities” compartidas).
-
-### 2) Contratos entre módulos (hoy) y entre servicios (mañana)
-
-Evitar dependencias directas entre módulos usando:
-
-- **Interfaces** en `ERP.Application` (puertos) + implementaciones en `ERP.Infrastructure`
-- **Eventos de dominio / integración** para comunicación asíncrona
-
-Cuando extraigas a microservicio:
-
-- El contrato se vuelve **HTTP/gRPC + eventos** (en lugar de llamadas in-process).
-
-### 3) Estrategia de datos (database-per-service)
-
-Para microservicios reales, la recomendación es:
-
-- **Una base por servicio**, sin joins cross-service.
-- Consistencia eventual con **eventos** (y proyecciones si se necesita “read model”).
-
-### 4) Outbox + eventos (para evitar pérdida de eventos)
-
-Si vas a publicar eventos al crear/actualizar entidades:
-
-- Implementar **Outbox pattern** en `ERP.Infrastructure` (tabla outbox + publisher).
-- Publicar a un bus (RabbitMQ/Kafka/Azure Service Bus) desde un worker.
-
-### 5) Extraer un microservicio: pasos prácticos
-
-Cuando un módulo madure, la extracción típica es:
-
-- Copiar `Domain + Application` del módulo a un repo nuevo
-- Crear un `API host` nuevo para ese servicio
-- Mantener contratos (DTOs/eventos) compatibles
-- Mantener `TenantId` como parte del contrato (header/claim) y del storage
-
-### 6) Checklist de “microservicio listo”
-
-- El módulo tiene **tests** y CI estable
-- Dependencias con otros módulos son **por contrato** (no por referencia)
-- Persistencia encapsulada (repos + migraciones)
-- Logging/observabilidad listos (correlationId/traceId)
-
+- Agregar FluentValidation en los Commands
+- Implementar Serilog para logging estructurado
+- Configurar secrets reales (no hardcodear en appsettings.json)
+- Agregar health checks (`/health`)
+- Implementar refresh tokens
+- CI/CD via GitHub Actions (ver `.github/workflows/`)
