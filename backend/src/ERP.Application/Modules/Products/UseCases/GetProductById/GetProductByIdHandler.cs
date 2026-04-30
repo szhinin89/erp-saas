@@ -26,7 +26,7 @@ public class GetProductByIdHandler
         return Result<ProductDto>.Success(new ProductDto(
             product.Id, product.SaleCode, product.PurchaseCode, product.ShortName,
             product.Description, product.LineId, product.CategoryId, product.SubcategoryId,
-            product.UnitOfMeasureId, product.BrandId, product.ProductTypeId,
+            product.UnitOfMeasureId, product.BrandId, product.ProductTypeId, product.TariffId,
             product.SaleTaxId, product.PurchaseTaxId, product.ExciseTaxId,
             product.IsService, product.IsActive, product.AvailableOnWeb,
             product.AvailableOnMobile, product.IsForSale, product.CreatedAt));

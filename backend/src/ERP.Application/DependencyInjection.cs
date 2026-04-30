@@ -7,8 +7,8 @@ public static class DependencyInjection
 {
     /// <summary>
     /// Registra todos los handlers de la capa Application mediante assembly scan.
-    /// Cualquier clase cuyo nombre termine en "Handler" queda disponible en el contenedor
-    /// sin necesidad de registrarla manualmente en Program.cs.
+    /// Filtra por namespace "UseCases" para evitar registrar accidentalmente
+    /// otras clases que terminen en "Handler" fuera de los casos de uso.
     /// </summary>
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
@@ -16,7 +16,10 @@ public static class DependencyInjection
 
         var handlerTypes = assembly
             .GetTypes()
-            .Where(t => t.IsClass && !t.IsAbstract && t.Name.EndsWith("Handler"));
+            .Where(t => t.IsClass
+                     && !t.IsAbstract
+                     && t.Name.EndsWith("Handler")
+                     && t.Namespace?.Contains("UseCases") == true);
 
         foreach (var handlerType in handlerTypes)
             services.AddScoped(handlerType);

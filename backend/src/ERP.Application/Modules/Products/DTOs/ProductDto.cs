@@ -12,6 +12,7 @@ public record ProductDto(
     Guid UnitOfMeasureId,
     Guid BrandId,
     Guid ProductTypeId,
+    Guid TariffId,
     Guid SaleTaxId,
     Guid PurchaseTaxId,
     Guid? ExciseTaxId,

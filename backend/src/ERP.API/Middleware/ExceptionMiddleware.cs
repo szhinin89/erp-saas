@@ -22,7 +22,10 @@ public class ExceptionMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error no controlado: {Message}", ex.Message);
+            // Logueamos el detalle completo internamente; el cliente recibe solo un mensaje seguro.
+            _logger.LogError(ex, "Error no controlado en {Method} {Path}",
+                context.Request.Method, context.Request.Path);
+
             await HandleExceptionAsync(context, ex);
         }
     }
@@ -30,20 +33,18 @@ public class ExceptionMiddleware
     private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
-        context.Response.StatusCode  = exception switch
+
+        var (statusCode, message) = exception switch
         {
-            ArgumentException        => (int)HttpStatusCode.BadRequest,
-            InvalidOperationException => (int)HttpStatusCode.UnprocessableEntity,
-            UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
-            _                        => (int)HttpStatusCode.InternalServerError
+            ArgumentException           => (HttpStatusCode.BadRequest,            "Solicitud inválida."),
+            InvalidOperationException   => (HttpStatusCode.UnprocessableEntity,   "No se puede completar la operación."),
+            UnauthorizedAccessException => (HttpStatusCode.Unauthorized,           "No autorizado."),
+            _                          => (HttpStatusCode.InternalServerError,    "Error interno del servidor.")
         };
 
-        var response = new
-        {
-            status  = context.Response.StatusCode,
-            message = exception.Message
-        };
+        context.Response.StatusCode = (int)statusCode;
 
+        var response = new { status = context.Response.StatusCode, message };
         await context.Response.WriteAsync(JsonSerializer.Serialize(response));
     }
 }

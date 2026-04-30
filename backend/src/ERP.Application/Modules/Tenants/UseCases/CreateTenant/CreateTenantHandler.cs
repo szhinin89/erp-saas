@@ -8,10 +8,12 @@ namespace ERP.Application.Tenants.UseCases.CreateTenant;
 public class CreateTenantHandler
 {
     private readonly ITenantRepository _repository;
+    private readonly ICurrentUser _currentUser;
 
-    public CreateTenantHandler(ITenantRepository repository)
+    public CreateTenantHandler(ITenantRepository repository, ICurrentUser currentUser)
     {
-        _repository = repository;
+        _repository  = repository;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<TenantDto>> HandleAsync(
@@ -25,7 +27,7 @@ public class CreateTenantHandler
         var tenant = Tenant.Create(
             command.Name,
             command.Slug,
-            Guid.Empty);
+            _currentUser.UserId);
 
         await _repository.AddAsync(tenant, ct);
         await _repository.SaveChangesAsync(ct);

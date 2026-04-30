@@ -23,6 +23,9 @@ public class Account : MasterEntity
         Guid createdBy,
         Guid? parentId = null)
     {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("El nombre de la cuenta no puede estar vacío.");
+
         var account = new Account
         {
             Id        = Guid.NewGuid(),

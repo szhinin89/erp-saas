@@ -36,7 +36,7 @@ public class AuthController : ControllerBase
     {
         var result = await _registerHandler.HandleAsync(command, ct);
         return result.IsSuccess
-            ? Ok(result.Value)
+            ? CreatedAtAction(nameof(Login), result.Value)
             : BadRequest(new { error = result.Error });
     }
 

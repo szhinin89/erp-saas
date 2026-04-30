@@ -69,6 +69,7 @@ public class CreateProductHandler
             product.UnitOfMeasureId,
             product.BrandId,
             product.ProductTypeId,
+            product.TariffId,
             product.SaleTaxId,
             product.PurchaseTaxId,
             product.ExciseTaxId,

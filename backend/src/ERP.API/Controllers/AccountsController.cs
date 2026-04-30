@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using ERP.Application.Accounting.UseCases.CreateAccount;
 using ERP.Application.Accounting.UseCases.GetAccounts;
 using ERP.Application.Accounting.UseCases.GetAccountById;
-using ERP.Application.Accounting.UseCases.CreateJournalEntry;
 using ERP.Application.Modules.Accounting.UseCases.CreateJournalEntry;
+using CreateJournalEntryCommand = ERP.Application.Accounting.UseCases.CreateJournalEntry.CreateJournalEntryCommand;
 using ERP.Application.Accounting.UseCases.GetJournalEntries;
 using ERP.Application.Accounting.UseCases.GetJournalEntryById;
 using ERP.Application.Accounting.DTOs;
@@ -55,7 +55,9 @@ public class AccountsController : ControllerBase
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var result = await _getAccountsHandler.HandleAsync(ct);
-        return Ok(result.Value);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Error });
     }
 
     /// <summary>Retorna una cuenta contable por su ID.</summary>
@@ -108,7 +110,9 @@ public class AccountsController : ControllerBase
     public async Task<IActionResult> GetJournalEntries(CancellationToken ct)
     {
         var result = await _getJournalEntriesHandler.HandleAsync(ct);
-        return Ok(result.Value);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Error });
     }
 
     /// <summary>Retorna un asiento contable con todas sus líneas.</summary>

@@ -18,8 +18,8 @@ builder.Services.AddCors(options =>
             .Get<string[]>() ?? ["http://localhost:5173"];
 
         policy.WithOrigins(origins)
-              .AllowAnyHeader()
-              .AllowAnyMethod()
+              .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+              .WithHeaders("Authorization", "Content-Type", "Accept")
               .AllowCredentials();
     });
 });
@@ -38,7 +38,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseCors("Frontend");
-app.UseHttpsRedirection();
+
+if (!app.Environment.IsDevelopment())
+    app.UseHttpsRedirection();
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

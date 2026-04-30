@@ -40,7 +40,9 @@ public class ProductsController : ControllerBase
     public async Task<IActionResult> GetAll(CancellationToken ct)
     {
         var result = await _getListHandler.HandleAsync(ct);
-        return Ok(result.Value);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Error });
     }
 
     /// <summary>Retorna un producto por su ID.</summary>
