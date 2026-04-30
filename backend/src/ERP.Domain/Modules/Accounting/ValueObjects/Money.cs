@@ -7,10 +7,14 @@ public sealed record Money
 
     public Money(decimal amount, string currency)
     {
-        if (string.IsNullOrWhiteSpace(currency) || currency.Length != 3)
-            throw new ArgumentException("La moneda debe ser un codigo ISO de 3 letras.");
-        Amount = amount;
-        Currency = currency.ToUpperInvariant();
+        if (amount < 0)
+            throw new ArgumentException("El monto no puede ser negativo.");
+
+        if (string.IsNullOrWhiteSpace(currency) || currency.Trim().Length != 3)
+            throw new ArgumentException("La moneda debe ser un código ISO de 3 letras (ej: USD, EUR).");
+
+        Amount   = amount;
+        Currency = currency.Trim().ToUpperInvariant();
     }
 
     public static Money Zero(string currency) => new(0, currency);
@@ -18,11 +22,11 @@ public sealed record Money
     public Money Add(Money other)
     {
         if (Currency != other.Currency)
-            throw new InvalidOperationException("No se pueden sumar monedas distintas.");
+            throw new InvalidOperationException(
+                $"No se pueden sumar monedas distintas: {Currency} y {other.Currency}.");
+
         return new(Amount + other.Amount, Currency);
     }
-
-    public Money Negate() => new(-Amount, Currency);
 
     public override string ToString() => $"{Amount:F2} {Currency}";
 }

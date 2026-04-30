@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.Application.Tenants.UseCases.CreateTenant;
 using ERP.Application.Tenants.DTOs;
@@ -6,10 +7,12 @@ namespace ERP.API.Controllers;
 
 /// <summary>
 /// Gestión de tenants (empresas).
-/// En producción este endpoint debería estar restringido a administradores del sistema.
+/// Restringido: solo accesible por administradores del sistema.
+/// En producción considerar un rol dedicado como "SystemAdmin".
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 [Produces("application/json")]
 public class TenantsController : ControllerBase
 {
@@ -27,6 +30,7 @@ public class TenantsController : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(TenantDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create(
         [FromBody] CreateTenantCommand command,
         CancellationToken ct)

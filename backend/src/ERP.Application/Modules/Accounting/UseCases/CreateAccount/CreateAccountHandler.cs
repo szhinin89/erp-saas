@@ -9,13 +9,16 @@ public class CreateAccountHandler
 {
     private readonly IAccountingRepository _repository;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentUser _currentUser;
 
     public CreateAccountHandler(
         IAccountingRepository repository,
-        ICurrentTenant currentTenant)
+        ICurrentTenant currentTenant,
+        ICurrentUser currentUser)
     {
         _repository    = repository;
         _currentTenant = currentTenant;
+        _currentUser   = currentUser;
     }
 
     public async Task<Result<AccountDto>> HandleAsync(
@@ -23,6 +26,7 @@ public class CreateAccountHandler
         CancellationToken ct = default)
     {
         var tenantId = _currentTenant.TenantId;
+        var userId   = _currentUser.UserId;
 
         var exists = await _repository.ExistsAsync(command.Code, tenantId, ct);
         if (exists)
@@ -34,7 +38,7 @@ public class CreateAccountHandler
             command.Name,
             command.Type,
             command.Nature,
-            tenantId,
+            userId,
             command.ParentId);
 
         await _repository.AddAsync(account, ct);

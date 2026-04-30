@@ -9,13 +9,16 @@ public class CreateProductHandler
 {
     private readonly IProductRepository _repository;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentUser _currentUser;
 
     public CreateProductHandler(
         IProductRepository repository,
-        ICurrentTenant currentTenant)
+        ICurrentTenant currentTenant,
+        ICurrentUser currentUser)
     {
         _repository    = repository;
         _currentTenant = currentTenant;
+        _currentUser   = currentUser;
     }
 
     public async Task<Result<ProductDto>> HandleAsync(
@@ -23,6 +26,7 @@ public class CreateProductHandler
         CancellationToken ct = default)
     {
         var tenantId = _currentTenant.TenantId;
+        var userId   = _currentUser.UserId;
 
         var product = Product.Create(
             tenantId,
@@ -38,7 +42,7 @@ public class CreateProductHandler
             command.TariffId,
             command.SaleTaxId,
             command.PurchaseTaxId,
-            tenantId,
+            userId,
             command.PurchaseCode,
             command.ExciseTaxId,
             command.IsService,

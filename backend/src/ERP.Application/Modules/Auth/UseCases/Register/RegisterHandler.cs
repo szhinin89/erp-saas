@@ -36,14 +36,17 @@ public class RegisterHandler
 
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(command.Password);
 
-        var user = User.Create(
+        // En auto-registro el usuario es su propio creador: se pre-genera el ID
+        // para usarlo como createdBy antes de persistir.
+        var newId = Guid.NewGuid();
+        var user  = User.Create(
             command.TenantId,
             command.FirstName,
             command.LastName,
             command.Email,
             passwordHash,
             command.Role,
-            Guid.Empty);
+            createdBy: newId);
 
         await _userRepository.AddAsync(user, ct);
         await _userRepository.SaveChangesAsync(ct);

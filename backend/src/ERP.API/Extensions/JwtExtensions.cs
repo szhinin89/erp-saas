@@ -10,9 +10,16 @@ public static class JwtExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var secretKey = configuration["Jwt:SecretKey"]!;
-        var issuer    = configuration["Jwt:Issuer"]!;
-        var audience  = configuration["Jwt:Audience"]!;
+        var secretKey = configuration["Jwt:SecretKey"]
+            ?? throw new InvalidOperationException(
+                "Falta 'Jwt:SecretKey' en la configuración. " +
+                "Usar User Secrets o variable de entorno JWT__SECRETKEY.");
+
+        var issuer = configuration["Jwt:Issuer"]
+            ?? throw new InvalidOperationException("Falta 'Jwt:Issuer' en la configuración.");
+
+        var audience = configuration["Jwt:Audience"]
+            ?? throw new InvalidOperationException("Falta 'Jwt:Audience' en la configuración.");
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>

@@ -26,12 +26,20 @@ public class ErpDbContext : DbContext
     public DbSet<Tenant> Tenants => Set<Tenant>();
 
     /// <summary>
-    /// Propiedad de instancia evaluada en cada query.
-    /// NO usar una variable local en OnModelCreating: EF Core compila el modelo
-    /// una sola vez por aplicación, por lo que una variable local capturaría el
-    /// valor en startup y todos los tenants verían los mismos datos.
+    /// Evaluada en cada query, no al compilar el modelo.
+    /// Lanza UnauthorizedAccessException si el request no tiene tenant válido,
+    /// evitando que Guid.Empty actúe como "ver todos los datos sin tenant".
     /// </summary>
-    private Guid CurrentTenantId => _currentTenant.TenantId;
+    private Guid CurrentTenantId
+    {
+        get
+        {
+            var id = _currentTenant.TenantId;
+            if (id == Guid.Empty)
+                throw new UnauthorizedAccessException("Tenant no identificado. El request debe incluir un JWT válido.");
+            return id;
+        }
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,6 +57,9 @@ public class ErpDbContext : DbContext
             .HasQueryFilter(e => e.TenantId == CurrentTenantId);
 
         modelBuilder.Entity<Product>()
+            .HasQueryFilter(e => e.TenantId == CurrentTenantId);
+
+        modelBuilder.Entity<User>()
             .HasQueryFilter(e => e.TenantId == CurrentTenantId);
 
         base.OnModelCreating(modelBuilder);

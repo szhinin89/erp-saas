@@ -22,7 +22,10 @@ public class CreateProductHandlerTests
         var currentTenant = new Mock<ICurrentTenant>(MockBehavior.Strict);
         currentTenant.SetupGet(t => t.TenantId).Returns(tenantId);
 
-        var handler = new CreateProductHandler(repo.Object, currentTenant.Object);
+        var currentUser = new Mock<ICurrentUser>(MockBehavior.Strict);
+        currentUser.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
+
+        var handler = new CreateProductHandler(repo.Object, currentTenant.Object, currentUser.Object);
 
         var cmd = new CreateProductCommand(
             SaleCode: "S-001",
