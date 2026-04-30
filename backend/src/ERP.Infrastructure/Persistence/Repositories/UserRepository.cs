@@ -19,12 +19,55 @@ public class UserRepository : IUserRepository
         => await _context.Users
             .FirstOrDefaultAsync(u => u.Id == id, ct);
 
+    public async Task<User?> GetByIdSystemAsync(Guid id, CancellationToken ct = default)
+        => await _context.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Id == id, ct);
+
     public async Task<User?> GetByEmailAsync(string email, Guid tenantId, CancellationToken ct = default)
     {
         var normalized = new Email(email);
         return await _context.Users
             .FirstOrDefaultAsync(u => u.Email == normalized, ct);
     }
+
+    public async Task<User?> GetByEmailSystemAsync(string email, Guid tenantId, CancellationToken ct = default)
+    {
+        var normalized = new Email(email);
+        return await _context.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Email == normalized, ct);
+    }
+
+    public async Task<User?> GetSingleSuperAdminByEmailAsync(string email, CancellationToken ct = default)
+    {
+        var normalized = new Email(email);
+        return await _context.Users
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(u => u.Role == "SuperAdmin" && u.Email == normalized, ct);
+    }
+
+    public async Task<bool> AnySuperAdminAsync(CancellationToken ct = default)
+        => await _context.Users
+            .IgnoreQueryFilters()
+            .AnyAsync(u => u.Role == "SuperAdmin", ct);
+
+    public async Task<IReadOnlyList<User>> GetAllByTenantAsync(Guid tenantId, CancellationToken ct = default)
+        => await _context.Users
+            .Where(u => u.TenantId == tenantId)
+            .OrderBy(u => u.LastName)
+            .ThenBy(u => u.FirstName)
+            .ToListAsync(ct);
+
+    public async Task<int> CountAllSystemAsync(CancellationToken ct = default)
+        => await _context.Users
+            .IgnoreQueryFilters()
+            .CountAsync(ct);
+
+    public async Task<int> CountActiveSystemAsync(CancellationToken ct = default)
+        => await _context.Users
+            .IgnoreQueryFilters()
+            .CountAsync(u => u.IsActive, ct);
 
     public async Task<bool> ExistsAsync(string email, Guid tenantId, CancellationToken ct = default)
     {

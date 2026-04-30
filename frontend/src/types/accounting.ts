@@ -1,11 +1,13 @@
-export enum DocumentStatus {
-  Draft  = 0,
-  Posted = 1,
-  Voided = 2,
-}
+export const DocumentStatus = {
+  Draft: 0,
+  Posted: 1,
+  Voided: 2,
+} as const;
+
+export type DocumentStatus = (typeof DocumentStatus)[keyof typeof DocumentStatus];
 
 export const documentStatusLabel: Record<DocumentStatus, string> = {
-  [DocumentStatus.Draft]:  'Borrador',
+  [DocumentStatus.Draft]: 'Borrador',
   [DocumentStatus.Posted]: 'Contabilizado',
   [DocumentStatus.Voided]: 'Anulado',
 };

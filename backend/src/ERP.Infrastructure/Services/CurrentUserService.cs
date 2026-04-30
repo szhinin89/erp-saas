@@ -28,4 +28,14 @@ public class CurrentUserService : ICurrentUser
 
     public bool IsAuthenticated
         => _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false;
+
+    public string? Email
+        => _httpContextAccessor.HttpContext?.User.FindFirst("email")?.Value
+           ?? _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Email)?.Value;
+
+    public string? FullName
+        => _httpContextAccessor.HttpContext?.User.FindFirst("full_name")?.Value;
+
+    public string? Role
+        => _httpContextAccessor.HttpContext?.User.FindFirst(ClaimTypes.Role)?.Value;
 }

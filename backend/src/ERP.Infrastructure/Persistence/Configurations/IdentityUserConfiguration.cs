@@ -1,0 +1,39 @@
+using ERP.Domain.Access.Entities;
+using ERP.Domain.Auth.ValueObjects;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
+namespace ERP.Infrastructure.Persistence.Configurations;
+
+public class IdentityUserConfiguration : IEntityTypeConfiguration<IdentityUser>
+{
+    public void Configure(EntityTypeBuilder<IdentityUser> builder)
+    {
+        builder.ToTable("identity_users");
+
+        builder.HasKey(u => u.Id);
+        builder.Property(u => u.Id).HasColumnName("id");
+
+        builder.Property(u => u.FirstName).HasColumnName("first_name").HasMaxLength(100).IsRequired();
+        builder.Property(u => u.LastName).HasColumnName("last_name").HasMaxLength(100).IsRequired();
+
+        builder.Property(u => u.Email)
+            .HasColumnName("email")
+            .HasMaxLength(200)
+            .IsRequired()
+            .HasConversion(e => e.Value, v => new Email(v));
+
+        builder.Property(u => u.PasswordHash).HasColumnName("password_hash").IsRequired();
+        builder.Property(u => u.IsActive).HasColumnName("is_active").IsRequired();
+
+        builder.Property(u => u.CreatedAt).HasColumnName("created_at");
+        builder.Property(u => u.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(u => u.CreatedBy).HasColumnName("created_by");
+        builder.Property(u => u.UpdatedBy).HasColumnName("updated_by");
+
+        builder.HasIndex(u => u.Email)
+            .IsUnique()
+            .HasDatabaseName("ux_identity_users_email");
+    }
+}
+

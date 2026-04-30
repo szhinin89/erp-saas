@@ -27,6 +27,28 @@ public class AccountingRepository : IAccountingRepository
             .OrderBy(a => a.Code)
             .ToListAsync(ct);
 
+    public async Task<(IReadOnlyList<Account> Items, int TotalCount)> GetAccountsPageAsync(
+        Guid tenantId,
+        int pageNumber,
+        int pageSize,
+        CancellationToken ct = default)
+    {
+        if (pageNumber <= 0) pageNumber = 1;
+        if (pageSize <= 0) pageSize = 50;
+        if (pageSize > 200) pageSize = 200;
+
+        var query = _context.Accounts.AsQueryable();
+
+        var total = await query.CountAsync(ct);
+        var items = await query
+            .OrderBy(a => a.Code)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (items, total);
+    }
+
     public async Task<bool> ExistsAsync(string code, Guid tenantId, CancellationToken ct = default)
         => await _context.Accounts
             .AnyAsync(a => a.Code == new AccountCode(code), ct);
@@ -47,6 +69,31 @@ public class AccountingRepository : IAccountingRepository
             .Include(e => e.Lines)
             .OrderByDescending(e => e.Date)
             .ToListAsync(ct);
+
+    public async Task<(IReadOnlyList<JournalEntry> Items, int TotalCount)> GetJournalEntriesPageAsync(
+        Guid tenantId,
+        int pageNumber,
+        int pageSize,
+        CancellationToken ct = default)
+    {
+        if (pageNumber <= 0) pageNumber = 1;
+        if (pageSize <= 0) pageSize = 50;
+        if (pageSize > 200) pageSize = 200;
+
+        var query = _context.JournalEntries
+            .Include(e => e.Lines)
+            .AsQueryable();
+
+        var total = await query.CountAsync(ct);
+
+        var items = await query
+            .OrderByDescending(e => e.Date)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (items, total);
+    }
 
     public async Task SaveChangesAsync(CancellationToken ct = default)
         => await _context.SaveChangesAsync(ct);

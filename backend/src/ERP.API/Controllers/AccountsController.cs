@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERP.API.Contracts;
 using ERP.Application.Accounting.UseCases.CreateAccount;
 using ERP.Application.Accounting.UseCases.GetAccounts;
 using ERP.Application.Accounting.UseCases.GetAccountById;
@@ -50,14 +51,27 @@ public class AccountsController : ControllerBase
     /// <response code="200">Lista de cuentas contables (puede ser vacía).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpGet]
-    [ProducesResponseType(typeof(IReadOnlyList<AccountDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PagedResponse<AccountDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetAll(CancellationToken ct)
+    public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
     {
-        var result = await _getAccountsHandler.HandleAsync(ct);
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Error });
+        var result = await _getAccountsHandler.HandleAsync(pageNumber, pageSize, ct);
+        if (!result.IsSuccess || result.Value is null)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>(
+                Success: false,
+                Message: result.Error ?? "Error",
+                ResponseObject: new { }));
+        }
+
+        return Ok(new ApiResponse<PagedResponse<AccountDto>>(
+            Success: true,
+            Message: "OK",
+            ResponseObject: new PagedResponse<AccountDto>(
+                Items: result.Value.Items,
+                PageNumber: result.Value.PageNumber,
+                PageSize: result.Value.PageSize,
+                TotalCount: result.Value.TotalCount)));
     }
 
     /// <summary>Retorna una cuenta contable por su ID.</summary>
@@ -66,15 +80,24 @@ public class AccountsController : ControllerBase
     /// <response code="200">Cuenta encontrada.</response>
     /// <response code="404">La cuenta no existe o no pertenece al tenant.</response>
     [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(AccountDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<AccountDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
         var result = await _getAccountByIdHandler.HandleAsync(id, ct);
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : NotFound(new { error = result.Error });
+        if (!result.IsSuccess)
+        {
+            return NotFound(new ApiResponse<object>(
+                Success: false,
+                Message: result.Error ?? "No encontrado",
+                ResponseObject: new { }));
+        }
+
+        return Ok(new ApiResponse<AccountDto?>(
+            Success: true,
+            Message: "OK",
+            ResponseObject: result.Value));
     }
 
     /// <summary>Crea una nueva cuenta en el plan de cuentas del tenant.</summary>
@@ -86,7 +109,7 @@ public class AccountsController : ControllerBase
     /// <response code="201">Cuenta creada correctamente.</response>
     /// <response code="400">El código ya existe en el tenant.</response>
     [HttpPost]
-    [ProducesResponseType(typeof(AccountDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<AccountDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create(
@@ -95,8 +118,14 @@ public class AccountsController : ControllerBase
     {
         var result = await _createAccountHandler.HandleAsync(command, ct);
         return result.IsSuccess
-            ? CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value)
-            : BadRequest(new { error = result.Error });
+            ? StatusCode(StatusCodes.Status201Created, new ApiResponse<AccountDto?>(
+                Success: true,
+                Message: "Creado",
+                ResponseObject: result.Value))
+            : BadRequest(new ApiResponse<object>(
+                Success: false,
+                Message: result.Error ?? "Error",
+                ResponseObject: new { }));
     }
 
     // ── Asientos contables ─────────────────────────────────────────
@@ -105,14 +134,27 @@ public class AccountsController : ControllerBase
     /// <response code="200">Lista de asientos contables con sus líneas.</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpGet("journal-entries")]
-    [ProducesResponseType(typeof(IReadOnlyList<JournalEntryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PagedResponse<JournalEntryDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetJournalEntries(CancellationToken ct)
+    public async Task<IActionResult> GetJournalEntries([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
     {
-        var result = await _getJournalEntriesHandler.HandleAsync(ct);
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : StatusCode(StatusCodes.Status500InternalServerError, new { error = result.Error });
+        var result = await _getJournalEntriesHandler.HandleAsync(pageNumber, pageSize, ct);
+        if (!result.IsSuccess || result.Value is null)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>(
+                Success: false,
+                Message: result.Error ?? "Error",
+                ResponseObject: new { }));
+        }
+
+        return Ok(new ApiResponse<PagedResponse<JournalEntryDto>>(
+            Success: true,
+            Message: "OK",
+            ResponseObject: new PagedResponse<JournalEntryDto>(
+                Items: result.Value.Items,
+                PageNumber: result.Value.PageNumber,
+                PageSize: result.Value.PageSize,
+                TotalCount: result.Value.TotalCount)));
     }
 
     /// <summary>Retorna un asiento contable con todas sus líneas.</summary>
@@ -121,15 +163,24 @@ public class AccountsController : ControllerBase
     /// <response code="200">Asiento encontrado con líneas de débito/crédito.</response>
     /// <response code="404">El asiento no existe o no pertenece al tenant.</response>
     [HttpGet("journal-entries/{id:guid}")]
-    [ProducesResponseType(typeof(JournalEntryDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<JournalEntryDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetJournalEntryById(Guid id, CancellationToken ct)
     {
         var result = await _getJournalEntryByIdHandler.HandleAsync(id, ct);
-        return result.IsSuccess
-            ? Ok(result.Value)
-            : NotFound(new { error = result.Error });
+        if (!result.IsSuccess)
+        {
+            return NotFound(new ApiResponse<object>(
+                Success: false,
+                Message: result.Error ?? "No encontrado",
+                ResponseObject: new { }));
+        }
+
+        return Ok(new ApiResponse<JournalEntryDto?>(
+            Success: true,
+            Message: "OK",
+            ResponseObject: result.Value));
     }
 
     /// <summary>Crea un nuevo asiento contable.</summary>
@@ -140,7 +191,7 @@ public class AccountsController : ControllerBase
     /// <response code="201">Asiento creado en estado Borrador.</response>
     /// <response code="400">El asiento no está cuadrado u otro error de validación.</response>
     [HttpPost("journal-entries")]
-    [ProducesResponseType(typeof(JournalEntryDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<JournalEntryDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> CreateJournalEntry(
@@ -149,7 +200,13 @@ public class AccountsController : ControllerBase
     {
         var result = await _createJournalEntryHandler.HandleAsync(command, ct);
         return result.IsSuccess
-            ? CreatedAtAction(nameof(GetJournalEntryById), new { id = result.Value!.Id }, result.Value)
-            : BadRequest(new { error = result.Error });
+            ? StatusCode(StatusCodes.Status201Created, new ApiResponse<JournalEntryDto?>(
+                Success: true,
+                Message: "Creado",
+                ResponseObject: result.Value))
+            : BadRequest(new ApiResponse<object>(
+                Success: false,
+                Message: result.Error ?? "Error",
+                ResponseObject: new { }));
     }
 }

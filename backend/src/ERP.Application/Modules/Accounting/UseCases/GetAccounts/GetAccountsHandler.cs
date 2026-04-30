@@ -15,10 +15,10 @@ public class GetAccountsHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<IReadOnlyList<AccountDto>>> HandleAsync(CancellationToken ct = default)
+    public async Task<Result<PagedResult<AccountDto>>> HandleAsync(int pageNumber, int pageSize, CancellationToken ct = default)
     {
         var tenantId = _currentTenant.TenantId;
-        var accounts = await _repository.GetAllByTenantAsync(tenantId, ct);
+        var (accounts, totalCount) = await _repository.GetAccountsPageAsync(tenantId, pageNumber, pageSize, ct);
 
         var dtos = accounts.Select(a => new AccountDto(
             a.Id, a.Code.Value, a.Name,
@@ -26,6 +26,10 @@ public class GetAccountsHandler
             a.IsActive, a.ParentId, a.CreatedAt))
             .ToList();
 
-        return Result<IReadOnlyList<AccountDto>>.Success(dtos);
+        return Result<PagedResult<AccountDto>>.Success(new PagedResult<AccountDto>(
+            Items: dtos,
+            PageNumber: pageNumber,
+            PageSize: pageSize,
+            TotalCount: totalCount));
     }
 }

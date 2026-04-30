@@ -6,6 +6,8 @@ using ERP.Domain.Accounting.Interfaces;
 using ERP.Domain.Products.Interfaces;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Security.Interfaces;
+using ERP.Domain.Access.Interfaces;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Services;
@@ -30,9 +32,14 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUser, CurrentUserService>();
         services.AddScoped<IAccountingRepository, AccountingRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<ITaxRateRepository, TaxRateRepository>();
+        services.AddScoped<IProductCatalogRepository, ProductCatalogRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IAccessRepository, AccessRepository>();
         services.AddScoped<IJwtService, JwtService>();
+        services.AddScoped<IAccessTokenService, AccessTokenService>();
         services.AddScoped<ITenantRepository, TenantRepository>();
+        services.AddScoped<ISecurityRepository, SecurityRepository>();
 
         return services;
     }

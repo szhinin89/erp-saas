@@ -1,9 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Accounting.Entities;
+using ERP.Domain.Common;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Security.Entities;
+using ERP.Domain.Access.Entities;
 using ERP.Application.Common;
+using System.Linq.Expressions;
 
 namespace ERP.Infrastructure.Persistence;
 
@@ -22,22 +26,33 @@ public class ErpDbContext : DbContext
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
     public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<TaxRate> TaxRates => Set<TaxRate>();
+    public DbSet<ProductLine> ProductLines => Set<ProductLine>();
+    public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
+    public DbSet<ProductSubcategory> ProductSubcategories => Set<ProductSubcategory>();
+    public DbSet<Brand> Brands => Set<Brand>();
+    public DbSet<ProductType> ProductTypes => Set<ProductType>();
+    public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
+    public DbSet<Tariff> Tariffs => Set<Tariff>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<IdentityUser> IdentityUsers => Set<IdentityUser>();
+    public DbSet<Membership> Memberships => Set<Membership>();
+    public DbSet<AccessProfile> AccessProfiles => Set<AccessProfile>();
+    public DbSet<AccessProfilePermission> AccessProfilePermissions => Set<AccessProfilePermission>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<SecurityAdminScopeAssignment> SecurityAdminScopeAssignments => Set<SecurityAdminScopeAssignment>();
 
     /// <summary>
     /// Evaluada en cada query, no al compilar el modelo.
-    /// Lanza UnauthorizedAccessException si el request no tiene tenant válido,
-    /// evitando que Guid.Empty actúe como "ver todos los datos sin tenant".
+    /// Si el request no está autenticado, retorna Guid.Empty para que el filtro
+    /// global no retorne filas (ya que TenantId nunca debe ser Guid.Empty en
+    /// entidades multi-tenant). Esto permite endpoints anónimos como login/reset.
     /// </summary>
     private Guid CurrentTenantId
     {
         get
         {
-            var id = _currentTenant.TenantId;
-            if (id == Guid.Empty)
-                throw new UnauthorizedAccessException("Tenant no identificado. El request debe incluir un JWT válido.");
-            return id;
+            return _currentTenant.TenantId;
         }
     }
 
@@ -45,22 +60,28 @@ public class ErpDbContext : DbContext
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ErpDbContext).Assembly);
 
-        // Filtros globales de aislamiento multi-tenant.
-        // Al agregar una nueva entidad con TenantId, registrar su filtro aquí.
-        modelBuilder.Entity<Account>()
-            .HasQueryFilter(e => e.TenantId == CurrentTenantId);
+        // Filtro global multi-tenant automático:
+        // - Aplica a toda entidad NO-OWNED que implemente IMustHaveTenant.
+        // - Evita que al agregar una nueva entidad se nos olvide registrar el filtro.
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (entityType.IsOwned())
+                continue;
 
-        modelBuilder.Entity<JournalEntry>()
-            .HasQueryFilter(e => e.TenantId == CurrentTenantId);
+            var clrType = entityType.ClrType;
+            if (clrType == typeof(Tenant))
+                continue;
+            if (!typeof(IMustHaveTenant).IsAssignableFrom(clrType))
+                continue;
 
-        modelBuilder.Entity<JournalEntryLine>()
-            .HasQueryFilter(e => e.TenantId == CurrentTenantId);
+            var parameter = Expression.Parameter(clrType, "e");
+            var tenantProperty = Expression.Property(parameter, nameof(IMustHaveTenant.TenantId));
+            var currentTenant = Expression.Property(Expression.Constant(this), nameof(CurrentTenantId));
+            var body = Expression.Equal(tenantProperty, currentTenant);
+            var lambda = Expression.Lambda(body, parameter);
 
-        modelBuilder.Entity<Product>()
-            .HasQueryFilter(e => e.TenantId == CurrentTenantId);
-
-        modelBuilder.Entity<User>()
-            .HasQueryFilter(e => e.TenantId == CurrentTenantId);
+            modelBuilder.Entity(clrType).HasQueryFilter(lambda);
+        }
 
         base.OnModelCreating(modelBuilder);
     }

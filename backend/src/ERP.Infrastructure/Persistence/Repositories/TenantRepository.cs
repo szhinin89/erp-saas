@@ -19,6 +19,11 @@ public class TenantRepository : ITenantRepository
     public async Task<Tenant?> GetBySlugAsync(string slug, CancellationToken ct = default)
         => await _context.Tenants.FirstOrDefaultAsync(t => t.Slug == slug, ct);
 
+    public async Task<IReadOnlyList<Tenant>> GetAllAsync(CancellationToken ct = default)
+        => await _context.Tenants
+            .OrderBy(t => t.Name)
+            .ToListAsync(ct);
+
     public async Task<bool> ExistsAsync(Guid id, CancellationToken ct = default)
         => await _context.Tenants.AnyAsync(t => t.Id == id, ct);
 

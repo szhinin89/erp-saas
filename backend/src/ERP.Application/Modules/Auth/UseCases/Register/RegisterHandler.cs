@@ -26,6 +26,13 @@ public class RegisterHandler
         RegisterCommand command,
         CancellationToken ct = default)
     {
+        if (string.Equals(command.Role, "SuperAdmin", StringComparison.Ordinal))
+        {
+            var existsSuperAdmin = await _userRepository.AnySuperAdminAsync(ct);
+            if (existsSuperAdmin)
+                return Result<AuthResponseDto>.Failure("Ya existe un SuperAdmin en el sistema.");
+        }
+
         var tenantExists = await _tenantRepository.ExistsAsync(command.TenantId, ct);
         if (!tenantExists)
             return Result<AuthResponseDto>.Failure("El tenant no existe.");

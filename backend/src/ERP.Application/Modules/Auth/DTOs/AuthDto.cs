@@ -10,8 +10,7 @@ public record RegisterDto(
 
 public record LoginDto(
     string Email,
-    string Password,
-    Guid TenantId
+    string Password
 );
 
 public record AuthResponseDto(

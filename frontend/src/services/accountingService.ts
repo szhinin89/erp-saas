@@ -1,5 +1,6 @@
 import { api } from '../lib/api';
 import type { Account, JournalEntry } from '../types/accounting';
+import type { ApiResponse, PagedResponse } from '../types/api';
 
 export interface CreateAccountRequest {
   code: string;
@@ -24,13 +25,19 @@ export interface CreateJournalEntryRequest {
 }
 
 export const accountingService = {
-  getAccounts:         () => api.get<Account[]>('/api/accounts').then((r) => r.data),
-  getAccountById:      (id: string) => api.get<Account>(`/api/accounts/${id}`).then((r) => r.data),
-  createAccount:       (data: CreateAccountRequest) => api.post<Account>('/api/accounts', data).then((r) => r.data),
+  getAccounts:         (pageNumber = 1, pageSize = 50) =>
+    api.get<ApiResponse<PagedResponse<Account>>>('/api/accounts', { params: { pageNumber, pageSize } })
+      .then((r) => r.data.responseObject.items),
+  getAccountById:      (id: string) =>
+    api.get<ApiResponse<Account>>(`/api/accounts/${id}`).then((r) => r.data.responseObject),
+  createAccount:       (data: CreateAccountRequest) =>
+    api.post<ApiResponse<Account>>('/api/accounts', data).then((r) => r.data.responseObject),
 
-  getJournalEntries:   () => api.get<JournalEntry[]>('/api/accounts/journal-entries').then((r) => r.data),
+  getJournalEntries:   (pageNumber = 1, pageSize = 50) =>
+    api.get<ApiResponse<PagedResponse<JournalEntry>>>('/api/accounts/journal-entries', { params: { pageNumber, pageSize } })
+      .then((r) => r.data.responseObject.items),
   getJournalEntryById: (id: string) =>
-    api.get<JournalEntry>(`/api/accounts/journal-entries/${id}`).then((r) => r.data),
+    api.get<ApiResponse<JournalEntry>>(`/api/accounts/journal-entries/${id}`).then((r) => r.data.responseObject),
   createJournalEntry:  (data: CreateJournalEntryRequest) =>
-    api.post<JournalEntry>('/api/accounts/journal-entries', data).then((r) => r.data),
+    api.post<ApiResponse<JournalEntry>>('/api/accounts/journal-entries', data).then((r) => r.data.responseObject),
 };

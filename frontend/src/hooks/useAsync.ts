@@ -25,8 +25,12 @@ export function useAsync<T>(fn: () => Promise<T>): AsyncState<T> {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
-    setError(null);
+    // Avoid synchronous setState inside effect body (perf/lint rule).
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      setLoading(true);
+      setError(null);
+    });
 
     fn()
       .then((result) => { if (!cancelled) { setData(result); setLoading(false); } })

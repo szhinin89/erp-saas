@@ -18,6 +18,9 @@ public class JwtService : IJwtService
     }
 
     public string GenerateToken(User user)
+        => GenerateToken(user, user.TenantId);
+
+    public string GenerateToken(User user, Guid tenantIdOverride)
     {
         var secretKey  = _configuration["Jwt:SecretKey"]!;
         var issuer     = _configuration["Jwt:Issuer"]!;
@@ -29,9 +32,10 @@ public class JwtService : IJwtService
             new Claim(JwtRegisteredClaimNames.Sub,   user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email.Value),
             new Claim(JwtRegisteredClaimNames.Jti,   Guid.NewGuid().ToString()),
-            new Claim("tenant_id", user.TenantId.ToString()),
+            new Claim("tenant_id", tenantIdOverride.ToString()),
             new Claim("full_name", user.FullName),
-            new Claim(ClaimTypes.Role, user.Role)
+            new Claim(ClaimTypes.Role, user.Role),
+            new Claim("token_type", "session")
         };
 
         var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));

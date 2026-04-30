@@ -1,5 +1,6 @@
 import { api } from '../lib/api';
 import type { Product } from '../types/product';
+import type { ApiResponse } from '../types/api';
 
 export interface CreateProductRequest {
   saleCode: string;
@@ -23,7 +24,7 @@ export interface CreateProductRequest {
 }
 
 export const productService = {
-  getAll:   () => api.get<Product[]>('/api/products').then((r) => r.data),
-  getById:  (id: string) => api.get<Product>(`/api/products/${id}`).then((r) => r.data),
-  create:   (data: CreateProductRequest) => api.post<Product>('/api/products', data).then((r) => r.data),
+  getAll:   () => api.get<ApiResponse<Product[]>>('/api/products').then((r) => r.data.responseObject),
+  getById:  (id: string) => api.get<ApiResponse<Product>>(`/api/products/${id}`).then((r) => r.data.responseObject),
+  create:   (data: CreateProductRequest) => api.post<ApiResponse<Product>>('/api/products', data).then((r) => r.data.responseObject),
 };

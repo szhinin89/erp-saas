@@ -23,9 +23,12 @@ public class GetProductsHandler
         var dtos = products.Select(p => new ProductDto(
             p.Id, p.SaleCode, p.PurchaseCode, p.ShortName, p.Description,
             p.LineId, p.CategoryId, p.SubcategoryId, p.UnitOfMeasureId,
-            p.BrandId, p.ProductTypeId, p.TariffId, p.SaleTaxId, p.PurchaseTaxId,
-            p.ExciseTaxId, p.IsService, p.IsActive, p.AvailableOnWeb,
-            p.AvailableOnMobile, p.IsForSale, p.CreatedAt))
+            p.BrandId, p.ProductTypeId, p.TariffId,
+            p.AppliesVatOnSale, p.SaleTaxId,
+            p.AppliesVatOnPurchase, p.PurchaseTaxId,
+            p.AppliesExciseTax, p.ExciseTaxId,
+            p.IsService, p.TracksStock, p.IsActive, p.AvailableOnWeb,
+            p.AvailableOnMobile, p.IsEcommerceActive, p.IsForSale, p.CreatedAt))
             .ToList();
 
         return Result<IReadOnlyList<ProductDto>>.Success(dtos);

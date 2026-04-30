@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import './Modal.css';
+import { useI18n } from '../i18n/i18n';
 
 interface Props {
   title: string;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function Modal({ title, onClose, children, width = 480 }: Props) {
+  const { t } = useI18n();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
@@ -24,7 +26,7 @@ export function Modal({ title, onClose, children, width = 480 }: Props) {
       >
         <div className="modal-header">
           <h2 className="modal-title">{title}</h2>
-          <button className="modal-close" onClick={onClose} type="button">✕</button>
+          <button className="modal-close" onClick={onClose} type="button" aria-label={t('common.close')}>✕</button>
         </div>
         <div className="modal-body">{children}</div>
       </div>

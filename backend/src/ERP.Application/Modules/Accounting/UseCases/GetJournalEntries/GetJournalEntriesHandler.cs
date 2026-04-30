@@ -16,10 +16,10 @@ public class GetJournalEntriesHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<IReadOnlyList<JournalEntryDto>>> HandleAsync(CancellationToken ct = default)
+    public async Task<Result<PagedResult<JournalEntryDto>>> HandleAsync(int pageNumber, int pageSize, CancellationToken ct = default)
     {
         var tenantId = _currentTenant.TenantId;
-        var entries  = await _repository.GetAllJournalEntriesAsync(tenantId, ct);
+        var (entries, totalCount)  = await _repository.GetJournalEntriesPageAsync(tenantId, pageNumber, pageSize, ct);
 
         var dtos = entries.Select(e => new JournalEntryDto(
             e.Id, e.Reference, e.Date, e.Description, e.Status,
@@ -30,6 +30,10 @@ public class GetJournalEntriesHandler
             e.CreatedAt))
             .ToList();
 
-        return Result<IReadOnlyList<JournalEntryDto>>.Success(dtos);
+        return Result<PagedResult<JournalEntryDto>>.Success(new PagedResult<JournalEntryDto>(
+            Items: dtos,
+            PageNumber: pageNumber,
+            PageSize: pageSize,
+            TotalCount: totalCount));
     }
 }

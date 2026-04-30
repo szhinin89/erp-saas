@@ -10,6 +10,7 @@ export interface Product {
   unitOfMeasureId: string;
   brandId: string;
   productTypeId: string;
+  tariffId: string;
   saleTaxId: string;
   purchaseTaxId: string;
   exciseTaxId?: string;

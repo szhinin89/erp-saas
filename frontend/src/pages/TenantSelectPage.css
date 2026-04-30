@@ -1,0 +1,151 @@
+.tenant-bg {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #f8fafc;
+  padding: 24px;
+}
+
+.tenant-card {
+  width: min(720px, 100%);
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
+}
+
+.tenant-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.tenant-logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: #003366;
+  color: white;
+  font-weight: 800;
+}
+
+.tenant-title {
+  margin: 0;
+  color: #1e293b;
+  font-size: 18px;
+}
+
+.tenant-subtitle {
+  margin: 2px 0 0;
+  color: rgba(30, 41, 59, 0.75);
+  font-size: 13px;
+}
+
+.tenant-search {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  outline: none;
+}
+
+.tenant-search:focus {
+  border-color: rgba(0, 229, 255, 0.9);
+  box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.15);
+}
+
+.tenant-list {
+  margin-top: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.tenant-item {
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: white;
+  padding: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.tenant-item:hover {
+  border-color: rgba(0, 229, 255, 0.7);
+  background: #e0fbff;
+}
+
+.tenant-item:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.tenant-item-name {
+  color: #1e293b;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.tenant-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.tenant-pill {
+  background: rgba(0, 229, 255, 0.22);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  color: #003366;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.tenant-muted {
+  color: rgba(30, 41, 59, 0.75);
+  font-size: 12px;
+}
+
+.tenant-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  color: rgba(30, 41, 59, 0.7);
+  font-size: 12px;
+}
+
+.tenant-footer {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tenant-link {
+  background: transparent;
+  border: none;
+  color: #003366;
+  cursor: pointer;
+  padding: 8px 0;
+}
+
+.tenant-btn {
+  margin-top: 12px;
+  background: #00e5ff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 800;
+  color: #003366;
+  cursor: pointer;
+}
+
+.tenant-error {
+  margin: 10px 0 0;
+  color: #b91c1c;
+  font-size: 13px;
+}
+

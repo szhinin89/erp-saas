@@ -5,5 +5,12 @@ public record TenantDto(
     string Name,
     string Slug,
     bool IsActive,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string? Ruc,
+    string? ShortName,
+    string? TradeName,
+    string? Dinardap,
+    string? LogoUrl,
+    int DisplayOrder,
+    int Priority
 );

@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERP.API.Contracts;
 using ERP.Application.Tenants.UseCases.CreateTenant;
+using ERP.Application.Tenants.UseCases.UpdatePasswordResetMode;
 using ERP.Application.Tenants.DTOs;
+using ERP.Domain.Tenants.Interfaces;
 
 namespace ERP.API.Controllers;
 
@@ -17,10 +20,17 @@ namespace ERP.API.Controllers;
 public class TenantsController : ControllerBase
 {
     private readonly CreateTenantHandler _createHandler;
+    private readonly UpdateTenantPasswordResetModeHandler _updatePasswordResetModeHandler;
+    private readonly ITenantRepository _tenantRepository;
 
-    public TenantsController(CreateTenantHandler createHandler)
+    public TenantsController(
+        CreateTenantHandler createHandler,
+        UpdateTenantPasswordResetModeHandler updatePasswordResetModeHandler,
+        ITenantRepository tenantRepository)
     {
         _createHandler = createHandler;
+        _updatePasswordResetModeHandler = updatePasswordResetModeHandler;
+        _tenantRepository = tenantRepository;
     }
 
     /// <summary>Crea un nuevo tenant (empresa) en el sistema.</summary>
@@ -28,7 +38,7 @@ public class TenantsController : ControllerBase
     /// <response code="201">Tenant creado correctamente.</response>
     /// <response code="400">El slug ya está en uso.</response>
     [HttpPost]
-    [ProducesResponseType(typeof(TenantDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create(
@@ -37,7 +47,57 @@ public class TenantsController : ControllerBase
     {
         var result = await _createHandler.HandleAsync(command, ct);
         return result.IsSuccess
-            ? CreatedAtAction(nameof(Create), new { id = result.Value!.Id }, result.Value)
-            : BadRequest(new { error = result.Error });
+            ? StatusCode(StatusCodes.Status201Created, new ApiResponse<TenantDto?>(
+                Success: true,
+                Message: "Creado",
+                ResponseObject: result.Value))
+            : BadRequest(new ApiResponse<object>(
+                Success: false,
+                Message: result.Error ?? "Error",
+                ResponseObject: new { }));
+    }
+
+    /// <summary>
+    /// Retorna configuración pública mínima del tenant (sin datos sensibles).
+    /// Útil para flujos anónimos como recuperación de contraseña.
+    /// </summary>
+    [HttpGet("{id:guid}/public-settings")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<TenantPublicSettingsDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPublicSettings([FromRoute] Guid id, CancellationToken ct)
+    {
+        var tenant = await _tenantRepository.GetByIdAsync(id, ct);
+        if (tenant is null || !tenant.IsActive)
+            return NotFound(new ApiResponse<object>(false, "Empresa no encontrada.", new { }));
+
+        return Ok(new ApiResponse<TenantPublicSettingsDto?>(
+            true,
+            "OK",
+            new TenantPublicSettingsDto(tenant.Id, (int)tenant.PasswordResetMode)));
+    }
+
+    /// <summary>
+    /// Actualiza el modo de recuperación de contraseña del tenant.
+    /// Restringido a Admin.
+    /// </summary>
+    [HttpPatch("{id:guid}/password-reset-mode")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdatePasswordResetMode(
+        [FromRoute] Guid id,
+        [FromBody] UpdateTenantPasswordResetModeCommand command,
+        CancellationToken ct)
+    {
+        if (id != command.TenantId)
+            return BadRequest(new ApiResponse<object>(false, "TenantId no coincide con la ruta.", new { }));
+
+        var result = await _updatePasswordResetModeHandler.HandleAsync(command, ct);
+        return result.IsSuccess
+            ? Ok(new ApiResponse<object>(true, "OK", new { }))
+            : BadRequest(new ApiResponse<object>(false, result.Error ?? "Error", new { }));
     }
 }

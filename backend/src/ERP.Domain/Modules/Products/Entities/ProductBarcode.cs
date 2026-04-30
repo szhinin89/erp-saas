@@ -11,6 +11,7 @@ public class ProductBarcode : BaseEntity
     public Guid ProductId { get; private set; }
     public string Code { get; private set; } = null!;
     public BarcodeType Type { get; private set; }
+    public bool IsActive { get; private set; } = true;
 
     private ProductBarcode() { }
 
@@ -27,6 +28,21 @@ public class ProductBarcode : BaseEntity
             ProductId = productId,
             Code      = code,
             Type      = type,
+            IsActive  = true,
         };
+    }
+
+    public void Disable()
+    {
+        if (!IsActive)
+            throw new InvalidOperationException("El registro ya está deshabilitado.");
+        IsActive = false;
+    }
+
+    public void Enable()
+    {
+        if (IsActive)
+            throw new InvalidOperationException("El registro ya está activo.");
+        IsActive = true;
     }
 }

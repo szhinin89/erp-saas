@@ -1,4 +1,5 @@
 import './PageShell.css';
+import { useI18n } from '../i18n/i18n';
 
 interface Props {
   title: string;
@@ -27,11 +28,13 @@ export function EmptyState({ message }: { message: string }) {
 }
 
 export function ErrorState({ message }: { message: string }) {
-  return <div className="error-state">Error: {message}</div>;
+  const { t } = useI18n();
+  return <div className="error-state">{t('common.errorPrefix')} {message}</div>;
 }
 
 export function LoadingState() {
-  return <div className="loading-state">Cargando...</div>;
+  const { t } = useI18n();
+  return <div className="loading-state">{t('common.loading')}</div>;
 }
 
 export function Badge({ label, variant }: { label: string; variant: 'green' | 'gray' | 'red' | 'blue' }) {

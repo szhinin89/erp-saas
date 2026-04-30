@@ -3,6 +3,7 @@ import { Modal } from './Modal';
 import { accountingService, type JournalEntryLineRequest, type CreateJournalEntryRequest } from '../services/accountingService';
 import type { Account } from '../types/accounting';
 import './CreateJournalEntryModal.css';
+import { useI18n } from '../i18n/i18n';
 
 interface Props {
   accounts: Account[];
@@ -18,6 +19,7 @@ const emptyLine = (): JournalEntryLineRequest => ({
 });
 
 export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props) {
+  const { t } = useI18n();
   const today = new Date().toISOString().split('T')[0];
 
   const [form, setForm] = useState<Omit<CreateJournalEntryRequest, 'lines'>>({
@@ -44,8 +46,8 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!balanced) { setError('El asiento no está cuadrado. Débitos ≠ Créditos.'); return; }
-    if (lines.some((l) => !l.accountId)) { setError('Todas las líneas deben tener una cuenta.'); return; }
+    if (!balanced) { setError(t('accounting.journal.modal.create.error.unbalanced')); return; }
+    if (lines.some((l) => !l.accountId)) { setError(t('accounting.journal.modal.create.error.missingAccount')); return; }
 
     setError('');
     setLoading(true);
@@ -63,7 +65,7 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { error?: string } } })
-          ?.response?.data?.error ?? 'Error al crear el asiento'
+          ?.response?.data?.error ?? t('accounting.journal.modal.create.error.generic')
       );
     } finally {
       setLoading(false);
@@ -71,22 +73,22 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
   };
 
   return (
-    <Modal title="Nuevo asiento contable" onClose={onClose} width={680}>
+    <Modal title={t('accounting.journal.modal.create.title')} onClose={onClose} width={680}>
       <form onSubmit={handleSubmit}>
         <div className="form-grid form-grid--2col" style={{ marginBottom: 16 }}>
           <div className="field">
-            <label htmlFor="reference">Referencia *</label>
+            <label htmlFor="reference">{t('accounting.journal.form.reference')}</label>
             <input
               id="reference"
               value={form.reference}
               onChange={(e) => setField('reference', e.target.value)}
-              placeholder="AST-001"
+              placeholder={t('accounting.journal.form.reference.placeholder')}
               required
             />
           </div>
 
           <div className="field">
-            <label htmlFor="date">Fecha *</label>
+            <label htmlFor="date">{t('accounting.journal.form.date')}</label>
             <input
               id="date"
               type="date"
@@ -97,12 +99,12 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
           </div>
 
           <div className="field field--span2">
-            <label htmlFor="description">Descripción *</label>
+            <label htmlFor="description">{t('accounting.journal.form.description')}</label>
             <input
               id="description"
               value={form.description}
               onChange={(e) => setField('description', e.target.value)}
-              placeholder="Descripción del asiento"
+              placeholder={t('accounting.journal.form.description.placeholder')}
               required
             />
           </div>
@@ -111,10 +113,10 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
         {/* Lines */}
         <div className="je-lines">
           <div className="je-lines-header">
-            <span>Cuenta</span>
-            <span>Débito</span>
-            <span>Crédito</span>
-            <span>Moneda</span>
+            <span>{t('accounting.journal.lines.account')}</span>
+            <span>{t('accounting.journal.lines.debit')}</span>
+            <span>{t('accounting.journal.lines.credit')}</span>
+            <span>{t('accounting.journal.lines.currency')}</span>
             <span></span>
           </div>
 
@@ -125,7 +127,7 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
                 onChange={(e) => setLine(i, 'accountId', e.target.value)}
                 required
               >
-                <option value="">— Seleccionar cuenta —</option>
+                <option value="">{t('accounting.journal.lines.selectAccount')}</option>
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>{a.code} · {a.name}</option>
                 ))}
@@ -137,7 +139,7 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
                 step="0.01"
                 value={line.debitAmount || ''}
                 onChange={(e) => setLine(i, 'debitAmount', e.target.value)}
-                placeholder="0.00"
+                placeholder={t('common.amount.placeholder')}
               />
 
               <input
@@ -146,13 +148,13 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
                 step="0.01"
                 value={line.creditAmount || ''}
                 onChange={(e) => setLine(i, 'creditAmount', e.target.value)}
-                placeholder="0.00"
+                placeholder={t('common.amount.placeholder')}
               />
 
               <input
                 value={line.currency}
                 onChange={(e) => setLine(i, 'currency', e.target.value)}
-                placeholder="USD"
+                placeholder={t('common.currency.placeholder')}
                 style={{ width: 60 }}
               />
 
@@ -166,15 +168,15 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
           ))}
 
           <button type="button" className="je-add-line" onClick={addLine}>
-            + Agregar línea
+            {t('accounting.journal.lines.addLine')}
           </button>
 
           <div className={`je-totals ${!balanced ? 'je-totals--unbalanced' : ''}`}>
-            <span>Totales</span>
+            <span>{t('accounting.journal.lines.totals')}</span>
             <span>{totalDebit.toFixed(2)}</span>
             <span>{totalCredit.toFixed(2)}</span>
             <span className="je-balance-label">
-              {balanced ? '✓ Cuadrado' : '✗ No cuadra'}
+              {balanced ? t('accounting.journal.lines.balanced') : t('accounting.journal.lines.unbalanced')}
             </span>
           </div>
         </div>
@@ -182,9 +184,9 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
         {error && <p className="form-error" style={{ marginTop: 14 }}>{error}</p>}
 
         <div className="form-actions">
-          <button type="button" className="btn btn--ghost" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn btn--ghost" onClick={onClose}>{t('common.cancel')}</button>
           <button type="submit" className="btn btn--primary" disabled={loading || !balanced}>
-            {loading ? 'Guardando...' : 'Crear asiento'}
+            {loading ? t('common.saving') : t('accounting.journal.modal.create.submit')}
           </button>
         </div>
       </form>

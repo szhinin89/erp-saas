@@ -1,0 +1,191 @@
+import { useEffect, useMemo, useState } from 'react';
+import { EmptyState, PageShell } from '../components/PageShell';
+import { useAuthStore } from '../store/authStore';
+import { securityService, type SecurityAdminMatrix, type SecurityUser } from '../services/securityService';
+import { useI18n } from '../i18n/i18n';
+import './SecuritySettingsPage.css';
+
+type ScopeKey = 'manageRoles' | 'manageModules' | 'manageScreens' | 'manageProcesses';
+
+const scopeMap: Record<ScopeKey, number> = {
+  manageRoles: 1,
+  manageModules: 2,
+  manageScreens: 3,
+  manageProcesses: 4,
+};
+
+const scopeColumns: Array<{ key: ScopeKey; labelKey: string }> = [
+  { key: 'manageRoles', labelKey: 'security.scopes.manageRoles' },
+  { key: 'manageModules', labelKey: 'security.scopes.manageModules' },
+  { key: 'manageScreens', labelKey: 'security.scopes.manageScreens' },
+  { key: 'manageProcesses', labelKey: 'security.scopes.manageProcesses' },
+];
+
+function userAllowedScopes(matrix: SecurityAdminMatrix, user: SecurityUser): Set<number> {
+  const allowed = new Set<number>();
+  for (const a of matrix.assignments) {
+    if (a.subjectType !== 'User') continue;
+    if (a.subjectKey !== user.id) continue;
+    if (a.isAllowed) allowed.add(a.scope);
+  }
+  return allowed;
+}
+
+export function SecuritySettingsPage() {
+  const { user } = useAuthStore();
+  const { t } = useI18n();
+
+  const [matrix, setMatrix] = useState<SecurityAdminMatrix | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoading(true);
+        const data = await securityService.getAdminMatrix();
+        if (cancelled) return;
+        setMatrix(data);
+      } catch (e) {
+        if (cancelled) return;
+        setError((e as { message?: string })?.message ?? t('common.errorGeneric'));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [t]);
+
+  const isSuperAdmin = (user?.role ?? '') === 'SuperAdmin';
+
+  const rows = useMemo(() => {
+    if (!matrix) return [];
+    return matrix.users
+      .slice()
+      .sort((a, b) => a.fullName.localeCompare(b.fullName));
+  }, [matrix]);
+
+  const scopeStateByUserId = useMemo(() => {
+    const map = new Map<string, Set<number>>();
+    if (!matrix) return map;
+    for (const u of matrix.users) map.set(u.id, userAllowedScopes(matrix, u));
+    return map;
+  }, [matrix]);
+
+  const toggleScope = async (targetUserId: string, scope: number) => {
+    if (!matrix) return;
+    const current = new Set(scopeStateByUserId.get(targetUserId) ?? []);
+    if (current.has(scope)) current.delete(scope);
+    else current.add(scope);
+
+    setSavingKey(targetUserId);
+    setError('');
+    try {
+      await securityService.upsertAdminScopes({
+        subjectType: 'User',
+        subjectKey: targetUserId,
+        allowedScopes: [...current.values()],
+      });
+
+      // Refresh local matrix assignments for this user (optimistic merge).
+      const nextAssignments = matrix.assignments
+        .filter((a) => !(a.subjectType === 'User' && a.subjectKey === targetUserId))
+        .concat(
+          [...current.values()].map((s) => ({
+            subjectType: 'User' as const,
+            subjectKey: targetUserId,
+            scope: s,
+            isAllowed: true,
+          }))
+        );
+
+      setMatrix({ ...matrix, assignments: nextAssignments });
+    } catch (e) {
+      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t('common.errorGeneric'));
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
+  if (!isSuperAdmin) {
+    return (
+      <PageShell title={t('security.title')}>
+        <div className="card">
+          <p style={{ margin: 0 }}>{t('security.noAccess')}</p>
+        </div>
+      </PageShell>
+    );
+  }
+
+  return (
+    <PageShell
+      title={t('security.title')}
+      action={<span style={{ fontSize: 13, color: '#475569' }}>{t('security.subtitle')}</span>}
+    >
+      <div className="security-toolbar">
+        {error ? <div className="security-error">{error}</div> : null}
+      </div>
+
+      <div className="card security-tableCard">
+        {loading ? (
+          <EmptyState message={t('common.loading')} />
+        ) : (
+          <div className="security-scroll">
+            <table className="security-table">
+              <thead>
+                <tr>
+                  <th className="sticky-col">{t('security.users')}</th>
+                  {scopeColumns.map((c) => (
+                    <th key={c.key}>{t(c.labelKey)}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((u) => {
+                  const current = scopeStateByUserId.get(u.id) ?? new Set<number>();
+                  const disabled = savingKey === u.id;
+                  return (
+                    <tr key={u.id} className={!u.isActive ? 'row--inactive' : ''}>
+                      <td className="sticky-col">
+                        <div className="userCell">
+                          <div className="userName">{u.fullName}</div>
+                          <div className="userMeta">
+                            <span className="mono">{u.email}</span>
+                            <span className="badge">{u.role}</span>
+                          </div>
+                        </div>
+                      </td>
+                      {scopeColumns.map((c) => {
+                        const scope = scopeMap[c.key];
+                        const checked = current.has(scope);
+                        return (
+                          <td key={c.key} className="cell-center">
+                            <label className={`toggle ${disabled ? 'toggle--disabled' : ''}`}>
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                disabled={disabled}
+                                onChange={() => toggleScope(u.id, scope)}
+                              />
+                              <span className="toggle-ui" />
+                            </label>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </PageShell>
+  );
+}
+

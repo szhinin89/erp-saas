@@ -32,8 +32,22 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('auth-storage');
-      window.location.href = '/login';
+      // No forzar redirect en endpoints públicos de autenticación,
+      // porque un 401 ahí es parte normal del flujo (credenciales inválidas)
+      // y debe manejarse en la UI (sin recargar la página).
+      const url = (err.config?.url as string | undefined) ?? '';
+      const isPublicAuth =
+        url.includes('/api/auth/login') ||
+        url.includes('/api/auth/register') ||
+        url.includes('/api/auth/password-reset') ||
+        url.includes('/api/access/bootstrap-login') ||
+        url.includes('/api/access/switch-tenant') ||
+        url.includes('/api/access/register-tenant');
+
+      if (!isPublicAuth) {
+        localStorage.removeItem('auth-storage');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(err);
   }

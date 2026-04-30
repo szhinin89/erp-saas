@@ -6,6 +6,7 @@ interface AuthState {
   user: Omit<AuthResponse, 'token'> | null;
   token: string | null;
   isAuthenticated: boolean;
+  hasHydrated: boolean;
   /** Guarda el usuario y el token tras un login o register exitoso. */
   login: (response: AuthResponse) => void;
   /** Limpia el estado; el interceptor de Axios redirige al login ante 401. */
@@ -25,11 +26,18 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       token: null,
       isAuthenticated: false,
+      hasHydrated: false,
       login: ({ token, ...user }) =>
         set({ user, token, isAuthenticated: true }),
       logout: () =>
         set({ user: null, token: null, isAuthenticated: false }),
     }),
-    { name: 'auth-storage' }
+    {
+      name: 'auth-storage',
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        state.hasHydrated = true;
+      },
+    }
   )
 );

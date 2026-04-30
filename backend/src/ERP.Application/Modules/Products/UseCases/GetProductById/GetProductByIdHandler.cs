@@ -27,8 +27,10 @@ public class GetProductByIdHandler
             product.Id, product.SaleCode, product.PurchaseCode, product.ShortName,
             product.Description, product.LineId, product.CategoryId, product.SubcategoryId,
             product.UnitOfMeasureId, product.BrandId, product.ProductTypeId, product.TariffId,
-            product.SaleTaxId, product.PurchaseTaxId, product.ExciseTaxId,
-            product.IsService, product.IsActive, product.AvailableOnWeb,
-            product.AvailableOnMobile, product.IsForSale, product.CreatedAt));
+            product.AppliesVatOnSale, product.SaleTaxId,
+            product.AppliesVatOnPurchase, product.PurchaseTaxId,
+            product.AppliesExciseTax, product.ExciseTaxId,
+            product.IsService, product.TracksStock, product.IsActive, product.AvailableOnWeb,
+            product.AvailableOnMobile, product.IsEcommerceActive, product.IsForSale, product.CreatedAt));
     }
 }

@@ -1,0 +1,8 @@
+.ai-suggestion {
+  border: 1px solid rgba(0, 229, 255, 0.55);
+  box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.12);
+  border-radius: var(--zh-radius-lg);
+  background: var(--zh-color-surface);
+  padding: 14px 16px;
+}
+

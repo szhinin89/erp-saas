@@ -2,12 +2,27 @@
   box-sizing: border-box;
 }
 
+:root {
+  --zh-color-primary: #003366; /* Deep Blue */
+  --zh-color-accent: #00e5ff;  /* Electric Cyan */
+  --zh-color-bg: #f8fafc;      /* App background */
+  --zh-color-text: #1e293b;    /* Primary text */
+
+  --zh-color-surface: #ffffff;
+  --zh-color-border: rgba(15, 23, 42, 0.12);
+
+  --zh-radius-lg: 12px;
+  --zh-radius-md: 10px;
+
+  --zh-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
 body {
   margin: 0;
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
-  background: #f5f6fa;
-  color: #111;
+  background: var(--zh-color-bg);
+  color: var(--zh-color-text);
 }
 
 #root {

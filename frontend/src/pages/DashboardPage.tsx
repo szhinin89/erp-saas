@@ -1,21 +1,23 @@
 import { useAuthStore } from '../store/authStore';
+import { useI18n } from '../i18n/i18n';
 import './DashboardPage.css';
-
-const stats = [
-  { label: 'Productos', value: '—', icon: '📦' },
-  { label: 'Asientos contables', value: '—', icon: '📒' },
-  { label: 'Cuentas', value: '—', icon: '🏦' },
-  { label: 'Usuarios', value: '—', icon: '👤' },
-];
 
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user);
+  const { t } = useI18n();
+
+  const stats = [
+    { label: t('dashboard.stats.products'), value: '—', icon: '📦' },
+    { label: t('dashboard.stats.journalEntries'), value: '—', icon: '📒' },
+    { label: t('dashboard.stats.accounts'), value: '—', icon: '🏦' },
+    { label: t('dashboard.stats.users'), value: '—', icon: '👤' },
+  ];
 
   return (
     <div className="dashboard">
       <div className="page-header">
-        <h1 className="page-title">Dashboard</h1>
-        <p className="page-subtitle">Bienvenido, {user?.fullName}</p>
+        <h1 className="page-title">{t('dashboard.title')}</h1>
+        <p className="page-subtitle">{t('dashboard.welcome')} {user?.fullName ?? ''}</p>
       </div>
 
       <div className="stats-grid">
@@ -31,15 +33,15 @@ export function DashboardPage() {
       </div>
 
       <div className="info-card">
-        <h2>Información de sesión</h2>
+        <h2>{t('dashboard.session.title')}</h2>
         <dl className="info-grid">
-          <dt>Usuario</dt>
+          <dt>{t('dashboard.session.user')}</dt>
           <dd>{user?.fullName}</dd>
-          <dt>Correo</dt>
+          <dt>{t('dashboard.session.email')}</dt>
           <dd>{user?.email}</dd>
-          <dt>Rol</dt>
+          <dt>{t('dashboard.session.role')}</dt>
           <dd>{user?.role}</dd>
-          <dt>Tenant ID</dt>
+          <dt>{t('dashboard.session.tenantId')}</dt>
           <dd className="mono">{user?.tenantId}</dd>
         </dl>
       </div>

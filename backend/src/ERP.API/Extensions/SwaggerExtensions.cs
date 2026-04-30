@@ -9,6 +9,9 @@ public static class SwaggerExtensions
     {
         services.AddSwaggerGen(options =>
         {
+            // Evita colisiones cuando existen tipos con el mismo nombre en distintos namespaces.
+            options.CustomSchemaIds(t => t.FullName);
+
             options.SwaggerDoc("v1", new OpenApiInfo
             {
                 Title       = "ERP SaaS API",
@@ -52,11 +55,22 @@ public static class SwaggerExtensions
                 }
             });
 
-            // Incluir comentarios XML de los controllers y DTOs
-            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-            if (File.Exists(xmlPath))
-                options.IncludeXmlComments(xmlPath);
+            // Incluir comentarios XML (controllers + modelos/DTOs)
+            // Nota: requiere <GenerateDocumentationFile>true</GenerateDocumentationFile> en los .csproj.
+            var assembliesToDocument = new[]
+            {
+                Assembly.GetExecutingAssembly(),           // ERP.API
+                typeof(ERP.Application.DependencyInjection).Assembly, // ERP.Application
+                typeof(ERP.Domain.Common.BaseEntity).Assembly // ERP.Domain
+            };
+
+            foreach (var asm in assembliesToDocument.Distinct())
+            {
+                var xmlFile = $"{asm.GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                if (File.Exists(xmlPath))
+                    options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+            }
         });
 
         return services;

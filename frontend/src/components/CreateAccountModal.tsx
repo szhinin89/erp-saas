@@ -1,28 +1,17 @@
 import { useState, type FormEvent } from 'react';
 import { Modal } from './Modal';
 import { accountingService, type CreateAccountRequest } from '../services/accountingService';
+import { useI18n } from '../i18n/i18n';
 
 interface Props {
   onClose: () => void;
   onCreated: () => void;
 }
 
-const ACCOUNT_TYPES = [
-  { value: 0, label: 'Activo' },
-  { value: 1, label: 'Pasivo' },
-  { value: 2, label: 'Patrimonio' },
-  { value: 3, label: 'Ingreso' },
-  { value: 4, label: 'Gasto' },
-];
-
-const ACCOUNT_NATURES = [
-  { value: 0, label: 'Débito' },
-  { value: 1, label: 'Crédito' },
-];
-
 const EMPTY: CreateAccountRequest = { code: '', name: '', type: 0, nature: 0, parentId: null };
 
 export function CreateAccountModal({ onClose, onCreated }: Props) {
+  const { t } = useI18n();
   const [form, setForm]     = useState<CreateAccountRequest>(EMPTY);
   const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,72 +33,85 @@ export function CreateAccountModal({ onClose, onCreated }: Props) {
     } catch (err: unknown) {
       setError(
         (err as { response?: { data?: { error?: string } } })
-          ?.response?.data?.error ?? 'Error al crear la cuenta'
+          ?.response?.data?.error ?? t('accounting.accounts.modal.create.error')
       );
     } finally {
       setLoading(false);
     }
   };
 
+  const accountTypes = [
+    { value: 0, label: t('accounting.accounts.type.asset') },
+    { value: 1, label: t('accounting.accounts.type.liability') },
+    { value: 2, label: t('accounting.accounts.type.equity') },
+    { value: 3, label: t('accounting.accounts.type.income') },
+    { value: 4, label: t('accounting.accounts.type.expense') },
+  ];
+
+  const accountNatures = [
+    { value: 0, label: t('accounting.accounts.nature.debit') },
+    { value: 1, label: t('accounting.accounts.nature.credit') },
+  ];
+
   return (
-    <Modal title="Nueva cuenta contable" onClose={onClose}>
+    <Modal title={t('accounting.accounts.modal.create.title')} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         <div className="form-grid form-grid--2col">
           <div className="field">
-            <label htmlFor="code">Código *</label>
+            <label htmlFor="code">{t('accounting.accounts.form.code')}</label>
             <input
               id="code"
               value={form.code}
               onChange={(e) => set('code', e.target.value)}
-              placeholder="1.1.01"
+              placeholder={t('accounting.accounts.form.code.placeholder')}
               required
             />
           </div>
 
           <div className="field">
-            <label htmlFor="name">Nombre *</label>
+            <label htmlFor="name">{t('accounting.accounts.form.name')}</label>
             <input
               id="name"
               value={form.name}
               onChange={(e) => set('name', e.target.value)}
-              placeholder="Caja general"
+              placeholder={t('accounting.accounts.form.name.placeholder')}
               required
             />
           </div>
 
           <div className="field">
-            <label htmlFor="type">Tipo *</label>
+            <label htmlFor="type">{t('accounting.accounts.form.type')}</label>
             <select
               id="type"
               value={form.type}
               onChange={(e) => set('type', Number(e.target.value))}
             >
-              {ACCOUNT_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
+              {accountTypes.map((x) => (
+                <option key={x.value} value={x.value}>{x.label}</option>
               ))}
             </select>
           </div>
 
           <div className="field">
-            <label htmlFor="nature">Naturaleza *</label>
+            <label htmlFor="nature">{t('accounting.accounts.form.nature')}</label>
             <select
               id="nature"
               value={form.nature}
               onChange={(e) => set('nature', Number(e.target.value))}
             >
-              {ACCOUNT_NATURES.map((n) => (
-                <option key={n.value} value={n.value}>{n.label}</option>
+              {accountNatures.map((x) => (
+                <option key={x.value} value={x.value}>{x.label}</option>
               ))}
             </select>
           </div>
 
           <div className="field field--span2">
-            <label htmlFor="parentId">Cuenta padre (ID opcional)</label>
+            <label htmlFor="parentId">{t('accounting.accounts.form.parentId')}</label>
             <input
               id="parentId"
               value={form.parentId ?? ''}
               onChange={(e) => set('parentId', e.target.value || null)}
-              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              placeholder={t('common.guid.placeholder')}
             />
           </div>
         </div>
@@ -117,9 +119,9 @@ export function CreateAccountModal({ onClose, onCreated }: Props) {
         {error && <p className="form-error" style={{ marginTop: 14 }}>{error}</p>}
 
         <div className="form-actions">
-          <button type="button" className="btn btn--ghost" onClick={onClose}>Cancelar</button>
+          <button type="button" className="btn btn--ghost" onClick={onClose}>{t('common.cancel')}</button>
           <button type="submit" className="btn btn--primary" disabled={loading}>
-            {loading ? 'Guardando...' : 'Crear cuenta'}
+            {loading ? t('common.saving') : t('accounting.accounts.modal.create.submit')}
           </button>
         </div>
       </form>

@@ -45,4 +45,10 @@ public class User : AuditableEntity
         IsActive = false;
         SetUpdated(updatedBy);
     }
+
+    public void SetPasswordHash(string passwordHash, Guid updatedBy)
+    {
+        PasswordHash = passwordHash;
+        SetUpdated(updatedBy);
+    }
 }

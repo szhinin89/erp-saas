@@ -7,10 +7,33 @@ public class Tenant : AuditableEntity
     public string Name { get; private set; } = null!;
     public string Slug { get; private set; } = null!;
     public bool IsActive { get; private set; }
+    public PasswordResetMode PasswordResetMode { get; private set; } = PasswordResetMode.Disabled;
+
+    // ── Datos legales/comerciales (opcionales) ─────────────────────
+    public string? Ruc { get; private set; }
+    public string? ShortName { get; private set; }          // abreviado
+    public string? TradeName { get; private set; }          // nombre comercial
+    public string? Dinardap { get; private set; }           // identificador/flag (según necesidad)
+    public string? LogoUrl { get; private set; }            // url/path logo
+
+    // ── Orden / prioridad (para listados) ─────────────────────────
+    public int DisplayOrder { get; private set; }
+    public int Priority { get; private set; }
 
     private Tenant() { }
 
-    public static Tenant Create(string name, string slug, Guid createdBy)
+    public static Tenant Create(
+        string name,
+        string slug,
+        Guid createdBy,
+        PasswordResetMode passwordResetMode = PasswordResetMode.Disabled,
+        string? ruc = null,
+        string? shortName = null,
+        string? tradeName = null,
+        string? dinardap = null,
+        string? logoUrl = null,
+        int displayOrder = 0,
+        int priority = 0)
     {
         var tenant = new Tenant
         {
@@ -18,10 +41,42 @@ public class Tenant : AuditableEntity
             TenantId = Guid.Empty,
             Name     = name,
             Slug     = slug.ToLowerInvariant(),
-            IsActive = true
+            IsActive = true,
+            PasswordResetMode = passwordResetMode,
+            Ruc = string.IsNullOrWhiteSpace(ruc) ? null : ruc.Trim(),
+            ShortName = string.IsNullOrWhiteSpace(shortName) ? null : shortName.Trim(),
+            TradeName = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim(),
+            Dinardap = string.IsNullOrWhiteSpace(dinardap) ? null : dinardap.Trim(),
+            LogoUrl = string.IsNullOrWhiteSpace(logoUrl) ? null : logoUrl.Trim(),
+            DisplayOrder = displayOrder,
+            Priority = priority,
         };
         tenant.SetCreated(createdBy);
         return tenant;
+    }
+
+    public void UpdateCompanyData(
+        string name,
+        string slug,
+        string? ruc,
+        string? shortName,
+        string? tradeName,
+        string? dinardap,
+        string? logoUrl,
+        int displayOrder,
+        int priority,
+        Guid updatedBy)
+    {
+        Name = name;
+        Slug = slug.ToLowerInvariant();
+        Ruc = string.IsNullOrWhiteSpace(ruc) ? null : ruc.Trim();
+        ShortName = string.IsNullOrWhiteSpace(shortName) ? null : shortName.Trim();
+        TradeName = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim();
+        Dinardap = string.IsNullOrWhiteSpace(dinardap) ? null : dinardap.Trim();
+        LogoUrl = string.IsNullOrWhiteSpace(logoUrl) ? null : logoUrl.Trim();
+        DisplayOrder = displayOrder;
+        Priority = priority;
+        SetUpdated(updatedBy);
     }
 
     public void Deactivate(Guid updatedBy)
@@ -29,4 +84,18 @@ public class Tenant : AuditableEntity
         IsActive = false;
         SetUpdated(updatedBy);
     }
+
+    public void SetPasswordResetMode(PasswordResetMode mode, Guid updatedBy)
+    {
+        PasswordResetMode = mode;
+        SetUpdated(updatedBy);
+    }
+}
+
+public enum PasswordResetMode
+{
+    Disabled = 0,
+    Direct = 1,
+    Email = 2,
+    Phone = 3,
 }

@@ -23,6 +23,21 @@ Regla de dependencias (solo hacia adentro):
 
 ---
 
+## 1.1 ZH Technologies – Target Architecture (Objective Standard)
+
+- **Patrón**: Modular Monolith + Clean Architecture.
+- **Estructura objetivo** (para nuevos repos o migraciones planificadas):
+  - `src/Modules/[ModuleName]/{Domain,Application,Infrastructure}`
+- **Backend objetivo**: .NET 8 + EF Core + PostgreSQL.
+- **Frontend objetivo**: Next.js + React + Tailwind CSS.
+
+### Importante (estado actual del repo)
+- Este repositorio actualmente usa:
+  - Backend: .NET 10 (no .NET 8)
+  - Frontend: Vite + React (no Next.js/Tailwind)
+  - Modularidad: por carpetas `ERP.* / Modules/*` (no `src/Modules/*`)
+- **No reestructurar masivamente** carpetas/stack sin una tarea explícita de migración.
+
 ## 2. DOMINIO (ERP.Domain)
 
 ### 2.1 Entidades base
@@ -127,7 +142,7 @@ public enum DocumentStatus
 - Toda consulta a la base de datos DEBE filtrar por TenantId.
 - El TenantId se extrae del JWT en la capa API y se propaga hasta los repositorios.
 - Nunca confiar en el TenantId enviado por el cliente en el body; siempre usar el del token.
-- En EF Core usar Query Filters globales por TenantId donde sea posible.
+- En EF Core usar Query Filters globales por TenantId donde sea posible (ideal: entidades implementan IMustHaveTenant y el DbContext aplica el filtro automáticamente).
 
 Ejemplo de Query Filter en DbContext:
 ```csharp
@@ -136,6 +151,47 @@ modelBuilder.Entity<Account>()
 ```
 
 ---
+
+## 3.1 REGLAS ZH – SEGURIDAD Y RENDIMIENTO (Backend/Frontend)
+
+### Seguridad
+- Validaciones críticas (reglas de negocio, cálculos contables, impuestos, inventario) deben residir en Domain.
+- Nunca confiar en cálculos del frontend.
+- Autenticación/autorización (roles/permisos) solo en backend.
+
+### Multi-tenant
+- Cualquier consulta debe filtrar TenantId.
+- Preferir Global Query Filters para evitar omisiones.
+
+### Rendimiento
+- Procesos pesados (SRI/XML, reportes masivos, IA) deben ejecutarse como Background Jobs y responder “Processing” al frontend.
+- Árbol de cuentas: usar CTEs recursivos en PostgreSQL (no cargar miles de registros a memoria).
+
+### Frontend (UX)
+- Solo validaciones de formato y presentación. No lógica sensible.
+
+### Modular Monolith
+- No mezclar lógica entre módulos (Accounting vs Inventory/Products).
+- Cada módulo mantiene sus carpetas Domain/Application/Infrastructure.
+
+---
+
+## 3.2 ZH – Identidad Visual / UI (Frontend)
+
+- Paleta:
+  - Primario (nav/sidebar): `#003366`
+  - Acento/acción: `#00E5FF`
+  - Fondo app: `#F8FAFC`
+- Tipografía: Sans Serif limpia (Inter/Roboto).
+- Tablas: padding generoso.
+- Sugerencias IA: borde sutil `#00E5FF`.
+
+---
+
+## 3.3 CONTABILIDAD – REGLAS ESPECÍFICAS
+
+- Plan de cuentas: recursivo (ParentAccountId) con niveles infinitos.
+- Máscaras de códigos (ej. 1.1.01): configurables por Tenant; nunca hardcodear formato.
 
 ## 4. APPLICATION LAYER
 
@@ -251,6 +307,12 @@ public async Task<IReadOnlyList<Account>> GetAllByTenantAsync(
 - Usar el patrón Result<T> para retornar éxito/error sin excepciones para casos de negocio
 - Las excepciones son para errores inesperados del sistema, no para validaciones de negocio
 - Respuestas de error consistentes con ProblemDetails (RFC 7807)
+- Todo lo generado debe estar documentado (XML docs en controllers/handlers públicos y docs cuando aplique)
+- Todo endpoint de reporte/listado debe ser paginado (pageNumber/pageSize + totalCount)
+- Formato estándar de respuesta de endpoints:
+  - Success: bool
+  - Message: string
+  - ResponseObject: object
 - Códigos HTTP correctos:
   - 200 OK, 201 Created, 204 No Content
   - 400 Bad Request (validación), 401 Unauthorized, 403 Forbidden
@@ -258,6 +320,53 @@ public async Task<IReadOnlyList<Account>> GetAllByTenantAsync(
   - 422 Unprocessable Entity (regla de negocio)
 
 ---
+
+## 9.1 ZH – REGLAS DE SEGURIDAD Y PERMISOS (OBLIGATORIO)
+
+- **Antes de generar cualquier pantalla o proceso**, el agente debe preguntar explícitamente:
+  - **"¿Este permiso es General, por Módulo, por Pantalla o por Proceso específico?"**
+- Los permisos deben permitir configuración por:
+  - **Rol general** (Admin, Contador, etc.)
+  - **Usuario específico** (excepciones manuales)
+  - **Secciones de datos / campos** (visibilidad de campos específicos en la UI)
+- Autorización siempre en backend (nunca confiar en UI).
+- La UI solo refleja permisos (mostrar/ocultar/inhabilitar), pero el backend debe bloquear acciones no permitidas.
+
+---
+
+## 9.2 ZH – REGLAS DE REPORTES (OBLIGATORIO)
+
+Todo reporte generado debe incluir:
+- **Imprimir** (formato PDF/Papel).
+- **Exportar** (Excel/CSV).
+- **Modal de configuración de columnas**:
+  - El usuario puede marcar/desmarcar columnas del reporte.
+  - Debe existir un set de columnas por defecto.
+  - Ideal: persistir preferencia por usuario (cuando se implemente el módulo de permisos/preferencias).
+
+---
+
+## 9.3 ZH – UI/UX RESPONSIVE (OBLIGATORIO)
+
+- Todas las vistas nuevas deben diseñarse **"Fluid Responsive"**.
+- Soporte obligatorio: **Mobile (320px+), Tablet, Desktop y TV (4K)**.
+- Tablas:
+  - En mobile deben ser **scrollable** (horizontal) o **stackable** (tarjetas/filas apiladas).
+  - Evitar layouts que corten columnas críticas.
+- **Tailwind CSS**:
+  - En el **Target Architecture** el frontend usa Tailwind; si el repo actual aún no está migrado, mantener consistencia con el stack actual y planificar la adopción sin refactor masivo.
+
+---
+
+## 12. i18n (MULTILINGÜE) – UI INTERACTION
+
+- Idiomas soportados: Español (es), Inglés (en), Kichwa (qu).
+- No hardcodear texto visible en componentes UI.
+  - Backend: usar `.resx` / `IStringLocalizer` cuando aplique.
+  - Frontend (Vite/React): usar archivos JSON por idioma y una función `t(key)`/hook, con fallback.
+- Consistencia técnica: todo el código fuente (clases, variables, nombres, comentarios técnicos) se escribe en **Inglés**.
+  - La traducción es solo para la capa de presentación.
+- Escalabilidad: añadir idioma nuevo = agregar un archivo de traducción (sin tocar lógica).
 
 ## 10. LO QUE NUNCA DEBES HACER
 

@@ -27,7 +27,15 @@ public class CreateTenantHandler
         var tenant = Tenant.Create(
             command.Name,
             command.Slug,
-            _currentUser.UserId);
+            _currentUser.UserId,
+            command.PasswordResetMode,
+            ruc: command.Ruc,
+            shortName: command.ShortName,
+            tradeName: command.TradeName,
+            dinardap: command.Dinardap,
+            logoUrl: command.LogoUrl,
+            displayOrder: command.DisplayOrder,
+            priority: command.Priority);
 
         await _repository.AddAsync(tenant, ct);
         await _repository.SaveChangesAsync(ct);
@@ -37,6 +45,13 @@ public class CreateTenantHandler
             tenant.Name,
             tenant.Slug,
             tenant.IsActive,
-            tenant.CreatedAt));
+            tenant.CreatedAt,
+            tenant.Ruc,
+            tenant.ShortName,
+            tenant.TradeName,
+            tenant.Dinardap,
+            tenant.LogoUrl,
+            tenant.DisplayOrder,
+            tenant.Priority));
     }
 }

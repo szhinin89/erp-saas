@@ -3,7 +3,6 @@ using Moq;
 using ERP.Application.Common;
 using ERP.Application.Products.UseCases.CreateProduct;
 using ERP.Domain.Products.Interfaces;
-
 namespace ERP.Application.Tests;
 
 public class CreateProductHandlerTests
@@ -25,7 +24,9 @@ public class CreateProductHandlerTests
         var currentUser = new Mock<ICurrentUser>(MockBehavior.Strict);
         currentUser.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
 
-        var handler = new CreateProductHandler(repo.Object, currentTenant.Object, currentUser.Object);
+        var taxRates = new Mock<ITaxRateRepository>(MockBehavior.Strict);
+
+        var handler = new CreateProductHandler(repo.Object, taxRates.Object, currentTenant.Object, currentUser.Object);
 
         var cmd = new CreateProductCommand(
             SaleCode: "S-001",
@@ -38,8 +39,12 @@ public class CreateProductHandlerTests
             BrandId: Guid.NewGuid(),
             ProductTypeId: Guid.NewGuid(),
             TariffId: Guid.NewGuid(),
-            SaleTaxId: Guid.NewGuid(),
-            PurchaseTaxId: Guid.NewGuid());
+            AppliesVatOnSale: false,
+            SaleTaxId: null,
+            SaleVatAccountId: null,
+            AppliesVatOnPurchase: false,
+            PurchaseTaxId: null,
+            PurchaseVatAccountId: null);
 
         var result = await handler.HandleAsync(cmd);
 

@@ -38,8 +38,12 @@ public class ErpDbContextTenantFilterTests
                 brandId: Guid.NewGuid(),
                 productTypeId: Guid.NewGuid(),
                 tariffId: Guid.NewGuid(),
+                appliesVatOnSale: true,
                 saleTaxId: Guid.NewGuid(),
+                saleVatAccountId: null,
+                appliesVatOnPurchase: true,
                 purchaseTaxId: Guid.NewGuid(),
+                purchaseVatAccountId: null,
                 createdBy: tenantA));
 
             seed.Products.Add(Product.Create(
@@ -54,8 +58,12 @@ public class ErpDbContextTenantFilterTests
                 brandId: Guid.NewGuid(),
                 productTypeId: Guid.NewGuid(),
                 tariffId: Guid.NewGuid(),
+                appliesVatOnSale: true,
                 saleTaxId: Guid.NewGuid(),
+                saleVatAccountId: null,
+                appliesVatOnPurchase: true,
                 purchaseTaxId: Guid.NewGuid(),
+                purchaseVatAccountId: null,
                 createdBy: tenantB));
 
             await seed.SaveChangesAsync();

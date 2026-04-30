@@ -8,6 +8,7 @@ import {
 import { CreateAccountModal } from '../components/CreateAccountModal';
 import { CreateJournalEntryModal } from '../components/CreateJournalEntryModal';
 import './AccountingPage.css';
+import { useI18n } from '../i18n/i18n';
 
 type Tab = 'accounts' | 'journal';
 
@@ -18,6 +19,7 @@ const statusVariant: Record<DocumentStatus, 'blue' | 'green' | 'red'> = {
 };
 
 export function AccountingPage() {
+  const { t } = useI18n();
   const [tab, setTab]             = useState<Tab>('accounts');
   const [showAccount, setShowAccount]   = useState(false);
   const [showJournal, setShowJournal]   = useState(false);
@@ -27,11 +29,11 @@ export function AccountingPage() {
 
   return (
     <PageShell
-      title="Contabilidad"
+      title={t('accounting.title')}
       action={
         tab === 'accounts'
-          ? <button type="button" onClick={() => setShowAccount(true)}>+ Nueva cuenta</button>
-          : <button type="button" onClick={() => setShowJournal(true)}>+ Nuevo asiento</button>
+          ? <button type="button" onClick={() => setShowAccount(true)}>{t('accounting.actions.createAccount')}</button>
+          : <button type="button" onClick={() => setShowJournal(true)}>{t('accounting.actions.createJournal')}</button>
       }
     >
       {showAccount && (
@@ -52,13 +54,13 @@ export function AccountingPage() {
           className={`tab${tab === 'accounts' ? ' tab--active' : ''}`}
           onClick={() => setTab('accounts')}
         >
-          Plan de cuentas
+          {t('accounting.tabs.accounts')}
         </button>
         <button
           className={`tab${tab === 'journal' ? ' tab--active' : ''}`}
           onClick={() => setTab('journal')}
         >
-          Asientos contables
+          {t('accounting.tabs.journal')}
         </button>
       </div>
 
@@ -67,18 +69,18 @@ export function AccountingPage() {
           {accounts.loading && <LoadingState />}
           {accounts.error   && <ErrorState message={accounts.error} />}
           {!accounts.loading && !accounts.error && accounts.data?.length === 0 && (
-            <EmptyState message="No hay cuentas registradas aún." />
+            <EmptyState message={t('accounting.accounts.empty')} />
           )}
           {!accounts.loading && !accounts.error && accounts.data && accounts.data.length > 0 && (
             <TableCard>
               <table>
                 <thead>
                   <tr>
-                    <th>Código</th>
-                    <th>Nombre</th>
-                    <th>Tipo</th>
-                    <th>Naturaleza</th>
-                    <th>Estado</th>
+                    <th>{t('accounting.accounts.table.code')}</th>
+                    <th>{t('accounting.accounts.table.name')}</th>
+                    <th>{t('accounting.accounts.table.type')}</th>
+                    <th>{t('accounting.accounts.table.nature')}</th>
+                    <th>{t('accounting.accounts.table.status')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -90,7 +92,7 @@ export function AccountingPage() {
                       <td>{a.nature}</td>
                       <td>
                         <Badge
-                          label={a.isActive ? 'Activa' : 'Inactiva'}
+                          label={a.isActive ? t('common.active') : t('common.inactive')}
                           variant={a.isActive ? 'green' : 'red'}
                         />
                       </td>
@@ -108,18 +110,18 @@ export function AccountingPage() {
           {journalEntries.loading && <LoadingState />}
           {journalEntries.error   && <ErrorState message={journalEntries.error} />}
           {!journalEntries.loading && !journalEntries.error && journalEntries.data?.length === 0 && (
-            <EmptyState message="No hay asientos contables registrados aún." />
+            <EmptyState message={t('accounting.journal.empty')} />
           )}
           {!journalEntries.loading && !journalEntries.error && journalEntries.data && journalEntries.data.length > 0 && (
             <TableCard>
               <table>
                 <thead>
                   <tr>
-                    <th>Referencia</th>
-                    <th>Fecha</th>
-                    <th>Descripción</th>
-                    <th>Líneas</th>
-                    <th>Estado</th>
+                    <th>{t('accounting.journal.table.reference')}</th>
+                    <th>{t('accounting.journal.table.date')}</th>
+                    <th>{t('accounting.journal.table.description')}</th>
+                    <th>{t('accounting.journal.table.lines')}</th>
+                    <th>{t('accounting.journal.table.status')}</th>
                   </tr>
                 </thead>
                 <tbody>

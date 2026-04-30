@@ -1,0 +1,58 @@
+.page-shell { padding: 18px; }
+.page-title { margin: 0; color: #1e293b; }
+.page-subtitle { margin: 6px 0 0; color: rgba(30,41,59,.75); }
+
+.companies-form {
+  margin-top: 14px;
+  background: white;
+  border: 1px solid rgba(15,23,42,.08);
+  border-radius: 16px;
+  padding: 14px;
+}
+.companies-form .grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.companies-form input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(15,23,42,.12);
+}
+.primary-btn {
+  margin-top: 12px;
+  background: #00e5ff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 800;
+  color: #003366;
+  cursor: pointer;
+}
+.secondary-btn {
+  background: white;
+  border: 1px solid rgba(15,23,42,.12);
+  border-radius: 12px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.form-error { margin: 10px 0 0; color: #b91c1c; font-size: 13px; }
+
+.companies-list { margin-top: 16px; }
+.companies-toolbar { display:flex; gap:10px; align-items:center; }
+.companies-toolbar .search {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(15,23,42,.12);
+}
+.table { margin-top: 10px; border: 1px solid rgba(15,23,42,.08); border-radius: 12px; overflow: hidden; background: white; }
+.row { display:grid; grid-template-columns: 1.2fr .8fr 1.2fr; gap:10px; padding: 10px 12px; border-top:1px solid rgba(15,23,42,.06); }
+.row.head { border-top: none; font-weight: 800; background: #f8fafc; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size: 12px; color: rgba(30,41,59,.75); }
+
+@media (max-width: 720px) {
+  .companies-form .grid { grid-template-columns: 1fr; }
+  .row { grid-template-columns: 1fr; }
+}
+
