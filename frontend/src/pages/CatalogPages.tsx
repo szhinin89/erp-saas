@@ -2,10 +2,12 @@ import { CatalogSimplePage, type CatalogRow } from './CatalogSimplePage';
 import { catalogService, type ProductCategoryListItem, type ProductSubcategoryListItem } from '../services/catalogService';
 export { CatalogStructurePage } from './CatalogStructurePage';
 import { useEffect, useMemo, useState } from 'react';
-import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge } from '../components/PageShell';
+import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { useAuthStore } from '../store/authStore';
+import { ZHBtn, ZHField, ZHGrid } from '../components/zh/ZHForm';
+import { ZHGridRow, ZHSection } from '../components/zh/ZHLayout';
 
 function mapBasic(items: { id: string; code: string; name: string; isActive: boolean }[]): CatalogRow[] {
   return (items ?? []).map((x) => ({ id: x.id, code: x.code, name: x.name, isActive: x.isActive }));
@@ -153,12 +155,7 @@ export function CategoriesCatalogPage() {
   }, [canView, filterLineId]);
 
   if (!canView) {
-    return (
-      <div className="page-shell">
-        <h1 className="page-title">{t('catalog.categories.title')}</h1>
-        <p className="page-subtitle">{t('common.noAccess')}</p>
-      </div>
-    );
+    return <NoAccessPage title={t('catalog.categories.title')} />;
   }
 
   const lineLabel = (row: ProductCategoryListItem) => `${row.lineCode} — ${row.lineName}`;
@@ -184,50 +181,51 @@ export function CategoriesCatalogPage() {
 
   return (
     <PageShell
+      kicker={t('app.nav.group.catalog')}
       title={t('catalog.categories.title')}
       action={
         canCreate ? (
-          <button className="btn" onClick={() => void onCreate()} disabled={saving || loading || !form.code.trim() || !form.name.trim() || !form.lineId}>
+          <ZHBtn variant="primary" type="button" onClick={() => void onCreate()} disabled={saving || loading || !form.code.trim() || !form.name.trim() || !form.lineId}>
             {saving ? t('common.saving') : t('common.create')}
-          </button>
+          </ZHBtn>
         ) : undefined
       }
     >
       <TableCard>
-        <div className="form-grid">
-          <label className="field">
-            <span className="label">{t('catalog.categories.line')}</span>
-            <select className="input" value={filterLineId} onChange={(e) => setFilterLineId(e.target.value)} disabled={loading}>
-              <option value="">{t('common.select')}</option>
-              {lines.map((x) => (
-                <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        {canCreate ? (
-          <div className="form-grid" style={{ marginTop: 10 }}>
-            <label className="field">
-              <span className="label">{t('common.code')}</span>
-              <input className="input" value={form.code} onChange={(e) => setForm((s) => ({ ...s, code: e.target.value }))} disabled={saving || loading} placeholder={t('common.codePlaceholder')} />
-            </label>
-            <label className="field">
-              <span className="label">{t('common.name')}</span>
-              <input className="input" value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} disabled={saving || loading} placeholder={t('common.namePlaceholder')} />
-            </label>
-            <label className="field">
-              <span className="label">{t('catalog.categories.line')}</span>
-              <select className="input" value={form.lineId} onChange={(e) => setForm((s) => ({ ...s, lineId: e.target.value }))} disabled={saving || loading}>
+        <ZHGridRow cols={2}>
+            <ZHField label={t('catalog.categories.line')}>
+              <select value={filterLineId} onChange={(e) => setFilterLineId(e.target.value)} disabled={loading}>
                 <option value="">{t('common.select')}</option>
                 {lines.map((x) => (
                   <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
                 ))}
               </select>
-            </label>
-          </div>
+            </ZHField>
+        </ZHGridRow>
+
+        {canCreate ? (
+          <ZHSection top={10}>
+            <ZHGrid cols={3}>
+              <ZHField label={t('common.code')}>
+                <input value={form.code} onChange={(e) => setForm((s) => ({ ...s, code: e.target.value }))} disabled={saving || loading} placeholder={t('common.codePlaceholder')} />
+              </ZHField>
+              <ZHField label={t('common.name')}>
+                <input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} disabled={saving || loading} placeholder={t('common.namePlaceholder')} />
+              </ZHField>
+              <ZHField label={t('catalog.categories.line')}>
+                <select value={form.lineId} onChange={(e) => setForm((s) => ({ ...s, lineId: e.target.value }))} disabled={saving || loading}>
+                  <option value="">{t('common.select')}</option>
+                  {lines.map((x) => (
+                    <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                  ))}
+                </select>
+              </ZHField>
+            </ZHGrid>
+          </ZHSection>
         ) : (
-          <div className="empty-state" style={{ marginTop: 10 }}>{t('common.readOnly')}</div>
+          <ZHSection top={10}>
+            <div className="empty-state">{t('common.readOnly')}</div>
+          </ZHSection>
         )}
 
         {error && <ErrorState message={error} />}
@@ -236,7 +234,7 @@ export function CategoriesCatalogPage() {
         ) : items.length === 0 ? (
           <EmptyState message={t('common.noData')} />
         ) : (
-          <table className="table" style={{ marginTop: 12 }}>
+          <table className="table zh-mt-12">
             <thead>
               <tr>
                 <th>{t('common.code')}</th>
@@ -344,12 +342,7 @@ export function SubcategoriesCatalogPage() {
   }, [canView, filterLineId, filterCategoryId]);
 
   if (!canView) {
-    return (
-      <div className="page-shell">
-        <h1 className="page-title">{t('catalog.subcategories.title')}</h1>
-        <p className="page-subtitle">{t('common.noAccess')}</p>
-      </div>
-    );
+    return <NoAccessPage title={t('catalog.subcategories.title')} />;
   }
 
   const onCreate = async () => {
@@ -376,72 +369,72 @@ export function SubcategoriesCatalogPage() {
 
   return (
     <PageShell
+      kicker={t('app.nav.group.catalog')}
       title={t('catalog.subcategories.title')}
       action={
         canCreate ? (
-          <button
-            className="btn"
+          <ZHBtn
+            variant="primary"
+            type="button"
             onClick={() => void onCreate()}
             disabled={saving || loading || !form.code.trim() || !form.name.trim() || !form.lineId || !form.categoryId}
           >
             {saving ? t('common.saving') : t('common.create')}
-          </button>
+          </ZHBtn>
         ) : undefined
       }
     >
       <TableCard>
-        <div className="form-grid">
-          <label className="field">
-            <span className="label">{t('catalog.categories.line')}</span>
-            <select className="input" value={filterLineId} onChange={(e) => onFilterLineChange(e.target.value)} disabled={loading}>
-              <option value="">{t('common.select')}</option>
-              {lines.map((x) => (
-                <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span className="label">{t('catalog.subcategories.category')}</span>
-            <select className="input" value={filterCategoryId} onChange={(e) => setFilterCategoryId(e.target.value)} disabled={loading || !filterLineId}>
-              <option value="">{t('common.select')}</option>
-              {categories.map((x) => (
-                <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        {canCreate ? (
-          <div className="form-grid" style={{ marginTop: 10 }}>
-            <label className="field">
-              <span className="label">{t('common.code')}</span>
-              <input className="input" value={form.code} onChange={(e) => setForm((s) => ({ ...s, code: e.target.value }))} disabled={saving || loading} placeholder={t('common.codePlaceholder')} />
-            </label>
-            <label className="field">
-              <span className="label">{t('common.name')}</span>
-              <input className="input" value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} disabled={saving || loading} placeholder={t('common.namePlaceholder')} />
-            </label>
-            <label className="field">
-              <span className="label">{t('catalog.categories.line')}</span>
-              <select className="input" value={form.lineId} onChange={(e) => onFormLineChange(e.target.value)} disabled={saving || loading}>
+        <ZHGridRow cols={2}>
+            <ZHField label={t('catalog.categories.line')}>
+              <select value={filterLineId} onChange={(e) => onFilterLineChange(e.target.value)} disabled={loading}>
                 <option value="">{t('common.select')}</option>
                 {lines.map((x) => (
                   <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
                 ))}
               </select>
-            </label>
-            <label className="field">
-              <span className="label">{t('catalog.subcategories.category')}</span>
-              <select className="input" value={form.categoryId} onChange={(e) => setForm((s) => ({ ...s, categoryId: e.target.value }))} disabled={saving || loading || !form.lineId}>
+            </ZHField>
+            <ZHField label={t('catalog.subcategories.category')}>
+              <select value={filterCategoryId} onChange={(e) => setFilterCategoryId(e.target.value)} disabled={loading || !filterLineId}>
                 <option value="">{t('common.select')}</option>
-                {formCategories.map((x) => (
+                {categories.map((x) => (
                   <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
                 ))}
               </select>
-            </label>
-          </div>
+            </ZHField>
+        </ZHGridRow>
+
+        {canCreate ? (
+          <ZHSection top={10}>
+            <ZHGrid cols={3}>
+              <ZHField label={t('common.code')}>
+                <input value={form.code} onChange={(e) => setForm((s) => ({ ...s, code: e.target.value }))} disabled={saving || loading} placeholder={t('common.codePlaceholder')} />
+              </ZHField>
+              <ZHField label={t('common.name')}>
+                <input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} disabled={saving || loading} placeholder={t('common.namePlaceholder')} />
+              </ZHField>
+              <ZHField label={t('catalog.categories.line')}>
+                <select value={form.lineId} onChange={(e) => onFormLineChange(e.target.value)} disabled={saving || loading}>
+                  <option value="">{t('common.select')}</option>
+                  {lines.map((x) => (
+                    <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                  ))}
+                </select>
+              </ZHField>
+              <ZHField label={t('catalog.subcategories.category')}>
+                <select value={form.categoryId} onChange={(e) => setForm((s) => ({ ...s, categoryId: e.target.value }))} disabled={saving || loading || !form.lineId}>
+                  <option value="">{t('common.select')}</option>
+                  {formCategories.map((x) => (
+                    <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                  ))}
+                </select>
+              </ZHField>
+            </ZHGrid>
+          </ZHSection>
         ) : (
-          <div className="empty-state" style={{ marginTop: 10 }}>{t('common.readOnly')}</div>
+          <ZHSection top={10}>
+            <div className="empty-state">{t('common.readOnly')}</div>
+          </ZHSection>
         )}
 
         {error && <ErrorState message={error} />}
@@ -450,7 +443,7 @@ export function SubcategoriesCatalogPage() {
         ) : items.length === 0 ? (
           <EmptyState message={t('common.noData')} />
         ) : (
-          <table className="table" style={{ marginTop: 12 }}>
+          <table className="table zh-mt-12">
             <thead>
               <tr>
                 <th>{t('common.code')}</th>

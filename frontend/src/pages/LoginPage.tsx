@@ -7,6 +7,8 @@ import type { ApiResponse } from '../types/api';
 import { useI18n } from '../i18n/i18n';
 import { accessService } from '../services/accessService';
 import { useAccessStore } from '../store/accessStore';
+import { ZHFormHeader, ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions } from '../components/zh/ZHForm';
+import { ZHCenteredCard } from '../components/zh/ZHCenteredCard';
 import './LoginPage.css';
 
 export function LoginPage() {
@@ -28,6 +30,20 @@ export function LoginPage() {
     setLoading(true);
 
     try {
+      // 0) SuperAdmin global login: entra directo al Panel Global.
+      // Si no es SuperAdmin, este endpoint responde 401 y seguimos con el flujo IAM normal.
+      try {
+        const { data } = await api.post<ApiResponse<AuthResponse>>('/api/auth/superadmin-login', {
+          email: form.email,
+          password: form.password,
+        });
+        login(data.responseObject);
+        navigate('/superadmin');
+        return;
+      } catch {
+        // noop
+      }
+
       // IAM flow: bootstrap login → tenant select → session token
       const bootstrap = await accessService.bootstrapLogin(form);
       setBootstrap(bootstrap);
@@ -73,57 +89,61 @@ export function LoginPage() {
   };
 
   return (
-    <div className="login-bg">
-      <div className="login-card">
-        <div className="login-header">
-          <div className="login-logo">ZH</div>
-          <h1 className="login-title">{t('login.title')}</h1>
-          <p className="login-subtitle">{t('login.subtitle')}</p>
-        </div>
+    <ZHCenteredCard bgClassName="login-bg" cardClassName="login-card">
+      <form className="login-form" onSubmit={handleSubmit}>
+          <ZHFormHeader
+            title={t('login.title')}
+            subtitle={t('login.subtitle')}
+          />
+          <ZHFormBody>
+            {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
-        <form className="login-form" onSubmit={handleSubmit}>
-          <div className="field">
-            <label htmlFor="email">{t('login.email.label')}</label>
-            <input
-              id="email"
-              type="email"
-              placeholder={t('login.email.placeholder')}
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              required
-              autoComplete="username"
+            <ZHFormSection title={t('login.title')}>
+              <ZHGrid cols={1}>
+                <ZHField label={t('login.email.label')} required>
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder={t('login.email.placeholder')}
+                    value={form.email}
+                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    required
+                    autoComplete="username"
+                    disabled={loading}
+                  />
+                </ZHField>
+
+                <ZHField label={t('login.password.label')} required>
+                  <input
+                    id="password"
+                    type="password"
+                    placeholder={t('login.password.placeholder')}
+                    value={form.password}
+                    onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                    required
+                    autoComplete="current-password"
+                    disabled={loading}
+                  />
+                </ZHField>
+              </ZHGrid>
+            </ZHFormSection>
+
+            <ZHFormActions
+              onCancel={() => navigate('/password-reset')}
+              onDraft={undefined}
+              onSave={undefined}
+              hideDraft
+              disableDraft
+              disableSave={loading}
+              saveButtonType="submit"
+              labels={{
+                cancel: t('login.forgotPassword'),
+                draft: t('common.saveDraft') ?? 'Guardar borrador',
+                save: loading ? t('login.button.loading') : t('login.button.submit'),
+              }}
             />
-          </div>
-
-          <div className="field">
-            <label htmlFor="password">{t('login.password.label')}</label>
-            <input
-              id="password"
-              type="password"
-              placeholder={t('login.password.placeholder')}
-              value={form.password}
-              onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-              required
-              autoComplete="current-password"
-            />
-          </div>
-
-          {error && <p className="login-error">{error}</p>}
-
-          <button className="login-btn" type="submit" disabled={loading}>
-            {loading ? t('login.button.loading') : t('login.button.submit')}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/password-reset')}
-            className="login-link"
-            style={{ marginTop: 12 }}
-          >
-            {t('login.forgotPassword')}
-          </button>
+          </ZHFormBody>
         </form>
-      </div>
-    </div>
+    </ZHCenteredCard>
   );
 }

@@ -5,6 +5,10 @@ export type SuperAdminTenant = {
   id: string;
   name: string;
   slug: string;
+  isActive: boolean;
+  createdAt: string;
+  totalUsers: number;
+  activeUsers: number;
 };
 
 export type SuperAdminMetrics = {

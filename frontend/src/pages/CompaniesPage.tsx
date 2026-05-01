@@ -2,11 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
 import { companyService, type CreateCompanyWithAdminRequest } from '../services/companyService';
+import { PageShell, TableCard, EmptyState, LoadingState, NoAccessPage, PageToolbar } from '../components/PageShell';
+import { ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions, ZHBtn } from '../components/zh/ZHForm';
+import { ZHSection } from '../components/zh/ZHLayout';
+import { ZHFormCard } from '../components/zh/ZHFormCard';
 import './CompaniesPage.css';
 
 export function CompaniesPage() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
+  const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
 
   const [items, setItems] = useState<Array<{ id: string; name: string; slug: string }>>([]);
   const [q, setQ] = useState('');
@@ -55,7 +60,7 @@ export function CompaniesPage() {
   }, []);
 
   if (user?.role !== 'SuperAdmin') {
-    return <div className="page-shell"><h1>{t('companies.title')}</h1><p>{t('companies.noAccess')}</p></div>;
+    return <NoAccessPage title={t('companies.title')} />;
   }
 
   const submit = async (e: React.FormEvent) => {
@@ -92,57 +97,107 @@ export function CompaniesPage() {
   };
 
   return (
-    <div className="page-shell">
-      <div className="companies-header">
-        <div>
-          <h1 className="page-title">{t('companies.title')}</h1>
-          <p className="page-subtitle">{t('companies.subtitle')}</p>
-        </div>
-      </div>
+    <PageShell kicker={t('app.nav.group.saas')} title={t('companies.title')} subtitle={t('companies.subtitle')}>
+      <ZHFormCard hideHeader title={t('companies.title')} subtitle={t('companies.subtitle')} onSubmit={submit}>
+        <input type="hidden" name="tenantId" value={tenantId} />
+        {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
-      <form className="companies-form" onSubmit={submit}>
-        <div className="grid">
-          <input placeholder={t('companies.form.tenantName')} value={form.tenantName} onChange={(e) => setForm((f) => ({ ...f, tenantName: e.target.value }))} required />
-          <input placeholder={t('companies.form.tenantSlug')} value={form.tenantSlug} onChange={(e) => setForm((f) => ({ ...f, tenantSlug: e.target.value }))} required />
-          <input placeholder={t('companies.form.ruc')} value={form.ruc ?? ''} onChange={(e) => setForm((f) => ({ ...f, ruc: e.target.value }))} />
-          <input placeholder={t('companies.form.shortName')} value={form.shortName ?? ''} onChange={(e) => setForm((f) => ({ ...f, shortName: e.target.value }))} />
-          <input placeholder={t('companies.form.tradeName')} value={form.tradeName ?? ''} onChange={(e) => setForm((f) => ({ ...f, tradeName: e.target.value }))} />
-          <input placeholder={t('companies.form.dinardap')} value={form.dinardap ?? ''} onChange={(e) => setForm((f) => ({ ...f, dinardap: e.target.value }))} />
-          <input placeholder={t('companies.form.logoUrl')} value={form.logoUrl ?? ''} onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))} />
-          <input placeholder={t('companies.form.displayOrder')} type="number" value={form.displayOrder ?? 0} onChange={(e) => setForm((f) => ({ ...f, displayOrder: Number(e.target.value) }))} />
-          <input placeholder={t('companies.form.priority')} type="number" value={form.priority ?? 0} onChange={(e) => setForm((f) => ({ ...f, priority: Number(e.target.value) }))} />
-          <input placeholder={t('companies.form.adminFirstName')} value={form.adminFirstName} onChange={(e) => setForm((f) => ({ ...f, adminFirstName: e.target.value }))} required />
-          <input placeholder={t('companies.form.adminLastName')} value={form.adminLastName} onChange={(e) => setForm((f) => ({ ...f, adminLastName: e.target.value }))} required />
-          <input placeholder={t('companies.form.adminEmail')} value={form.adminEmail} onChange={(e) => setForm((f) => ({ ...f, adminEmail: e.target.value }))} required />
-          <input placeholder={t('companies.form.adminPassword')} type="password" value={form.adminPassword} onChange={(e) => setForm((f) => ({ ...f, adminPassword: e.target.value }))} required />
-        </div>
-        {error && <p className="form-error">{error}</p>}
-        <button className="primary-btn" disabled={creating}>
-          {creating ? t('companies.form.creating') : t('companies.form.create')}
-        </button>
-      </form>
+        <ZHFormSection title={t('companies.form.create')}>
+          <ZHGrid cols={2}>
+            <ZHField label={t('companies.form.tenantName')} required>
+              <input value={form.tenantName} onChange={(e) => setForm((f) => ({ ...f, tenantName: e.target.value }))} required disabled={creating} />
+            </ZHField>
+            <ZHField label={t('companies.form.tenantSlug')} required>
+              <input value={form.tenantSlug} onChange={(e) => setForm((f) => ({ ...f, tenantSlug: e.target.value }))} required disabled={creating} />
+            </ZHField>
+            <ZHField label={t('companies.form.ruc')}>
+              <input value={form.ruc ?? ''} onChange={(e) => setForm((f) => ({ ...f, ruc: e.target.value }))} disabled={creating} />
+            </ZHField>
+            <ZHField label={t('companies.form.shortName')}>
+              <input value={form.shortName ?? ''} onChange={(e) => setForm((f) => ({ ...f, shortName: e.target.value }))} disabled={creating} />
+            </ZHField>
+            <ZHField label={t('companies.form.tradeName')}>
+              <input value={form.tradeName ?? ''} onChange={(e) => setForm((f) => ({ ...f, tradeName: e.target.value }))} disabled={creating} />
+            </ZHField>
+            <ZHField label={t('companies.form.dinardap')}>
+              <input value={form.dinardap ?? ''} onChange={(e) => setForm((f) => ({ ...f, dinardap: e.target.value }))} disabled={creating} />
+            </ZHField>
+            <ZHField label={t('companies.form.logoUrl')}>
+              <input value={form.logoUrl ?? ''} onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))} disabled={creating} />
+            </ZHField>
+            <ZHField label={t('companies.form.displayOrder')}>
+              <input type="number" value={form.displayOrder ?? 0} onChange={(e) => setForm((f) => ({ ...f, displayOrder: Number(e.target.value) }))} disabled={creating} />
+            </ZHField>
+            <ZHField label={t('companies.form.priority')}>
+              <input type="number" value={form.priority ?? 0} onChange={(e) => setForm((f) => ({ ...f, priority: Number(e.target.value) }))} disabled={creating} />
+            </ZHField>
+            <ZHField label={t('companies.form.adminFirstName')} required>
+              <input value={form.adminFirstName} onChange={(e) => setForm((f) => ({ ...f, adminFirstName: e.target.value }))} required disabled={creating} />
+            </ZHField>
+            <ZHField label={t('companies.form.adminLastName')} required>
+              <input value={form.adminLastName} onChange={(e) => setForm((f) => ({ ...f, adminLastName: e.target.value }))} required disabled={creating} />
+            </ZHField>
+            <ZHField label={t('companies.form.adminEmail')} required>
+              <input value={form.adminEmail} onChange={(e) => setForm((f) => ({ ...f, adminEmail: e.target.value }))} required disabled={creating} />
+            </ZHField>
+            <ZHField label={t('companies.form.adminPassword')} required>
+              <input type="password" value={form.adminPassword} onChange={(e) => setForm((f) => ({ ...f, adminPassword: e.target.value }))} required disabled={creating} />
+            </ZHField>
+          </ZHGrid>
+        </ZHFormSection>
 
-      <div className="companies-list">
-        <div className="companies-toolbar">
-          <input className="search" placeholder={t('companies.search')} value={q} onChange={(e) => setQ(e.target.value)} />
-          <button className="secondary-btn" onClick={refresh} disabled={loading}>{t('companies.refresh')}</button>
-        </div>
-        <div className="table">
-          <div className="row head">
-            <div>{t('companies.table.name')}</div>
-            <div>{t('companies.table.slug')}</div>
-            <div>{t('companies.table.id')}</div>
-          </div>
-          {filtered.map((x) => (
-            <div key={x.id} className="row">
-              <div>{x.name}</div>
-              <div>{x.slug}</div>
-              <div className="mono">{x.id}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+        <ZHFormActions
+          onCancel={() => setForm((s) => ({ ...s, adminPassword: '' }))}
+          onDraft={undefined}
+          onSave={undefined}
+          disableDraft
+          disableSave={creating}
+          saveButtonType="submit"
+          labels={{ cancel: t('common.cancel'), draft: t('common.saveDraft') ?? 'Guardar borrador', save: creating ? t('companies.form.creating') : t('companies.form.create') }}
+        />
+      </ZHFormCard>
+
+      <ZHSection top={16}>
+        <TableCard>
+          <PageToolbar>
+            <input
+              className="companies-search"
+              placeholder={t('companies.search')}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              disabled={loading}
+            />
+            <ZHBtn variant="secondary" type="button" onClick={refresh} disabled={loading}>
+              {t('companies.refresh')}
+            </ZHBtn>
+          </PageToolbar>
+          {loading ? (
+            <LoadingState />
+          ) : filtered.length === 0 ? (
+            <EmptyState message={t('common.noData')} />
+          ) : (
+            <table className="companies-table">
+              <thead>
+                <tr>
+                  <th>{t('companies.table.name')}</th>
+                  <th>{t('companies.table.slug')}</th>
+                  <th>{t('companies.table.id')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((x) => (
+                  <tr key={x.id}>
+                    <td>{x.name}</td>
+                    <td>{x.slug}</td>
+                    <td className="mono companies-mono">{x.id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </TableCard>
+      </ZHSection>
+    </PageShell>
   );
 }
 

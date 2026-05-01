@@ -2,6 +2,10 @@ import { useState, type FormEvent } from 'react';
 import { Modal } from './Modal';
 import { accountingService, type CreateAccountRequest } from '../services/accountingService';
 import { useI18n } from '../i18n/i18n';
+import { useAuthStore } from '../store/authStore';
+import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions } from './zh/ZHForm';
+import { ZHColSpan } from './zh/ZHLayout';
+import { ZHModalHeader } from './zh/ZHModalHeader';
 
 interface Props {
   onClose: () => void;
@@ -12,6 +16,7 @@ const EMPTY: CreateAccountRequest = { code: '', name: '', type: 0, nature: 0, pa
 
 export function CreateAccountModal({ onClose, onCreated }: Props) {
   const { t } = useI18n();
+  const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
   const [form, setForm]     = useState<CreateAccountRequest>(EMPTY);
   const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
@@ -54,75 +59,88 @@ export function CreateAccountModal({ onClose, onCreated }: Props) {
   ];
 
   return (
-    <Modal title={t('accounting.accounts.modal.create.title')} onClose={onClose}>
+    <Modal
+      title=""
+      onClose={onClose}
+      header={
+        <ZHModalHeader
+          title={t('accounting.accounts.modal.create.title')}
+          subtitle={t('accounting.accounts.form.name')}
+          onClose={onClose}
+          closeLabel={t('common.close')}
+        />
+      }
+    >
       <form onSubmit={handleSubmit}>
-        <div className="form-grid form-grid--2col">
-          <div className="field">
-            <label htmlFor="code">{t('accounting.accounts.form.code')}</label>
-            <input
-              id="code"
-              value={form.code}
-              onChange={(e) => set('code', e.target.value)}
-              placeholder={t('accounting.accounts.form.code.placeholder')}
-              required
+        <input type="hidden" name="tenantId" value={tenantId} />
+        <div className="zh-form">
+          <ZHFormBody>
+            {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
+
+            <ZHFormSection title={t('accounting.accounts.modal.create.title')}>
+              <ZHGrid cols={2}>
+                <ZHField label={t('accounting.accounts.form.code')} required>
+                  <input
+                    id="code"
+                    value={form.code}
+                    onChange={(e) => set('code', e.target.value)}
+                    placeholder={t('accounting.accounts.form.code.placeholder')}
+                    required
+                    disabled={loading}
+                  />
+                </ZHField>
+
+                <ZHField label={t('accounting.accounts.form.name')} required>
+                  <input
+                    id="name"
+                    value={form.name}
+                    onChange={(e) => set('name', e.target.value)}
+                    placeholder={t('accounting.accounts.form.name.placeholder')}
+                    required
+                    disabled={loading}
+                  />
+                </ZHField>
+
+                <ZHField label={t('accounting.accounts.form.type')} required>
+                  <select id="type" value={form.type} onChange={(e) => set('type', Number(e.target.value))} disabled={loading}>
+                    {accountTypes.map((x) => (
+                      <option key={x.value} value={x.value}>{x.label}</option>
+                    ))}
+                  </select>
+                </ZHField>
+
+                <ZHField label={t('accounting.accounts.form.nature')} required>
+                  <select id="nature" value={form.nature} onChange={(e) => set('nature', Number(e.target.value))} disabled={loading}>
+                    {accountNatures.map((x) => (
+                      <option key={x.value} value={x.value}>{x.label}</option>
+                    ))}
+                  </select>
+                </ZHField>
+
+                <ZHColSpan span={2}>
+                  <ZHField label={t('accounting.accounts.form.parentId')} hint={t('common.guid.placeholder')} hintType="info">
+                    <input
+                      id="parentId"
+                      value={form.parentId ?? ''}
+                      onChange={(e) => set('parentId', e.target.value || null)}
+                      placeholder={t('common.guid.placeholder')}
+                      disabled={loading}
+                    />
+                  </ZHField>
+                </ZHColSpan>
+              </ZHGrid>
+            </ZHFormSection>
+
+            <ZHFormActions
+              onCancel={onClose}
+              onDraft={undefined}
+              onSave={undefined}
+              disableDraft
+              disableSave={loading}
+              saveButtonType="submit"
+              labels={{ cancel: t('common.cancel'), draft: t('common.saveDraft') ?? 'Guardar borrador', save: t('accounting.accounts.modal.create.submit') }}
             />
-          </div>
-
-          <div className="field">
-            <label htmlFor="name">{t('accounting.accounts.form.name')}</label>
-            <input
-              id="name"
-              value={form.name}
-              onChange={(e) => set('name', e.target.value)}
-              placeholder={t('accounting.accounts.form.name.placeholder')}
-              required
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="type">{t('accounting.accounts.form.type')}</label>
-            <select
-              id="type"
-              value={form.type}
-              onChange={(e) => set('type', Number(e.target.value))}
-            >
-              {accountTypes.map((x) => (
-                <option key={x.value} value={x.value}>{x.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="field">
-            <label htmlFor="nature">{t('accounting.accounts.form.nature')}</label>
-            <select
-              id="nature"
-              value={form.nature}
-              onChange={(e) => set('nature', Number(e.target.value))}
-            >
-              {accountNatures.map((x) => (
-                <option key={x.value} value={x.value}>{x.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="field field--span2">
-            <label htmlFor="parentId">{t('accounting.accounts.form.parentId')}</label>
-            <input
-              id="parentId"
-              value={form.parentId ?? ''}
-              onChange={(e) => set('parentId', e.target.value || null)}
-              placeholder={t('common.guid.placeholder')}
-            />
-          </div>
-        </div>
-
-        {error && <p className="form-error" style={{ marginTop: 14 }}>{error}</p>}
-
-        <div className="form-actions">
-          <button type="button" className="btn btn--ghost" onClick={onClose}>{t('common.cancel')}</button>
-          <button type="submit" className="btn btn--primary" disabled={loading}>
-            {loading ? t('common.saving') : t('accounting.accounts.modal.create.submit')}
-          </button>
+          </ZHFormBody>
         </div>
       </form>
     </Modal>

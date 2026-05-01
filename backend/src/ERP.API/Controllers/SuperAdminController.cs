@@ -39,10 +39,28 @@ public class SuperAdminController : ControllerBase
     public async Task<IActionResult> GetTenants(CancellationToken ct)
     {
         var tenants = await _tenantRepository.GetAllAsync(ct);
-        var items = tenants
-            .Where(t => t.IsActive)
-            .Select(t => new { t.Id, t.Name, t.Slug })
-            .ToList();
+        var active = tenants.Where(t => t.IsActive).ToList();
+
+        // Métricas por empresa (globales del tenant): usuarios total/activos.
+        // Nota: usamos ejecución SECUENCIAL para evitar concurrencia sobre el mismo DbContext scoped.
+        // Si este endpoint crece en carga, se optimiza con queries agregadas (COUNT/GROUP BY) a nivel DB.
+        var items = new List<object>(active.Count);
+        foreach (var t in active)
+        {
+            var users = await _userRepository.GetAllByTenantAsync(t.Id, ct);
+            var totalUsers = users.Count;
+            var activeUsers = users.Count(u => u.IsActive);
+            items.Add(new
+            {
+                t.Id,
+                t.Name,
+                t.Slug,
+                t.IsActive,
+                t.CreatedAt,
+                totalUsers,
+                activeUsers
+            });
+        }
 
         return Ok(new ApiResponse<object>(true, "OK", new { tenants = items }));
     }

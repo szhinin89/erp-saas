@@ -4,6 +4,10 @@ import { accountingService, type JournalEntryLineRequest, type CreateJournalEntr
 import type { Account } from '../types/accounting';
 import './CreateJournalEntryModal.css';
 import { useI18n } from '../i18n/i18n';
+import { useAuthStore } from '../store/authStore';
+import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions } from './zh/ZHForm';
+import { ZHColSpan } from './zh/ZHLayout';
+import { ZHModalHeader } from './zh/ZHModalHeader';
 
 interface Props {
   accounts: Account[];
@@ -20,6 +24,7 @@ const emptyLine = (): JournalEntryLineRequest => ({
 
 export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props) {
   const { t } = useI18n();
+  const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
   const today = new Date().toISOString().split('T')[0];
 
   const [form, setForm] = useState<Omit<CreateJournalEntryRequest, 'lines'>>({
@@ -73,42 +78,61 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
   };
 
   return (
-    <Modal title={t('accounting.journal.modal.create.title')} onClose={onClose} width={680}>
+    <Modal
+      title=""
+      onClose={onClose}
+      width={680}
+      header={
+        <ZHModalHeader
+          title={t('accounting.journal.modal.create.title')}
+          subtitle={t('accounting.journal.form.description')}
+          onClose={onClose}
+          closeLabel={t('common.close')}
+        />
+      }
+    >
       <form onSubmit={handleSubmit}>
-        <div className="form-grid form-grid--2col" style={{ marginBottom: 16 }}>
-          <div className="field">
-            <label htmlFor="reference">{t('accounting.journal.form.reference')}</label>
-            <input
-              id="reference"
-              value={form.reference}
-              onChange={(e) => setField('reference', e.target.value)}
-              placeholder={t('accounting.journal.form.reference.placeholder')}
-              required
-            />
-          </div>
+        <input type="hidden" name="tenantId" value={tenantId} />
+        <div className="zh-form">
+          <ZHFormBody>
+            {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
-          <div className="field">
-            <label htmlFor="date">{t('accounting.journal.form.date')}</label>
-            <input
-              id="date"
-              type="date"
-              value={form.date}
-              onChange={(e) => setField('date', e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="field field--span2">
-            <label htmlFor="description">{t('accounting.journal.form.description')}</label>
-            <input
-              id="description"
-              value={form.description}
-              onChange={(e) => setField('description', e.target.value)}
-              placeholder={t('accounting.journal.form.description.placeholder')}
-              required
-            />
-          </div>
-        </div>
+            <ZHFormSection title={t('accounting.journal.modal.create.title')}>
+              <ZHGrid cols={2}>
+                <ZHField label={t('accounting.journal.form.reference')} required>
+                  <input
+                    id="reference"
+                    value={form.reference}
+                    onChange={(e) => setField('reference', e.target.value)}
+                    placeholder={t('accounting.journal.form.reference.placeholder')}
+                    required
+                    disabled={loading}
+                  />
+                </ZHField>
+                <ZHField label={t('accounting.journal.form.date')} required>
+                  <input
+                    id="date"
+                    type="date"
+                    value={form.date}
+                    onChange={(e) => setField('date', e.target.value)}
+                    required
+                    disabled={loading}
+                  />
+                </ZHField>
+                <ZHColSpan span={2}>
+                  <ZHField label={t('accounting.journal.form.description')} required>
+                    <input
+                      id="description"
+                      value={form.description}
+                      onChange={(e) => setField('description', e.target.value)}
+                      placeholder={t('accounting.journal.form.description.placeholder')}
+                      required
+                      disabled={loading}
+                    />
+                  </ZHField>
+                </ZHColSpan>
+              </ZHGrid>
+            </ZHFormSection>
 
         {/* Lines */}
         <div className="je-lines">
@@ -155,7 +179,7 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
                 value={line.currency}
                 onChange={(e) => setLine(i, 'currency', e.target.value)}
                 placeholder={t('common.currency.placeholder')}
-                style={{ width: 60 }}
+                className="je-currency"
               />
 
               <button
@@ -180,14 +204,16 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
             </span>
           </div>
         </div>
-
-        {error && <p className="form-error" style={{ marginTop: 14 }}>{error}</p>}
-
-        <div className="form-actions">
-          <button type="button" className="btn btn--ghost" onClick={onClose}>{t('common.cancel')}</button>
-          <button type="submit" className="btn btn--primary" disabled={loading || !balanced}>
-            {loading ? t('common.saving') : t('accounting.journal.modal.create.submit')}
-          </button>
+            <ZHFormActions
+              onCancel={onClose}
+              onDraft={undefined}
+              onSave={undefined}
+              disableDraft
+              disableSave={loading || !balanced}
+              saveButtonType="submit"
+              labels={{ cancel: t('common.cancel'), draft: t('common.saveDraft') ?? 'Guardar borrador', save: t('accounting.journal.modal.create.submit') }}
+            />
+          </ZHFormBody>
         </div>
       </form>
     </Modal>

@@ -29,6 +29,7 @@ export function AccountingPage() {
 
   return (
     <PageShell
+      kicker={t('app.nav.group.accounting')}
       title={t('accounting.title')}
       action={
         tab === 'accounts'
@@ -129,8 +130,8 @@ export function AccountingPage() {
                     <tr key={e.id}>
                       <td><span className="mono">{e.reference}</span></td>
                       <td>{new Date(e.date).toLocaleDateString('es-EC')}</td>
-                      <td style={{ color: '#6b7280' }}>{e.description}</td>
-                      <td style={{ textAlign: 'center' }}>{e.lines.length}</td>
+                      <td className="subtle">{e.description}</td>
+                      <td className="zh-text-center">{e.lines.length}</td>
                       <td>
                         <Badge
                           label={documentStatusLabel[e.status]}

@@ -1,0 +1,220 @@
+.zh-card-section {
+  padding: 16px;
+}
+
+.zh-card-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.zh-card-section-title {
+  font-weight: 900;
+}
+
+.zh-card-section-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.zh-card-section-body {
+  min-width: 0;
+}
+
+.zh-inline-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.zh-inline-row-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.zh-grid-row {
+  margin-bottom: 12px;
+}
+
+.zh-col-span-2 {
+  grid-column: 1 / span 2;
+}
+
+.zh-col-span-3 {
+  grid-column: 1 / span 3;
+}
+
+.zh-relative {
+  position: relative;
+}
+
+.zh-flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.zh-flex-end {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.zh-wrap {
+  flex-wrap: wrap;
+}
+
+.zh-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.zh-gap-6 { gap: 6px; }
+.zh-gap-12 { gap: 12px; }
+.zh-gap-14 { gap: 14px; }
+.zh-gap-16 { gap: 16px; }
+
+.zh-mt-6 { margin-top: 6px; }
+.zh-mt-8 { margin-top: 8px; }
+
+.zh-mt-10 { margin-top: 10px; }
+.zh-mt-12 { margin-top: 12px; }
+.zh-mt-14 { margin-top: 14px; }
+.zh-mt-16 { margin-top: 16px; }
+.zh-mb-10 { margin-bottom: 10px; }
+.zh-mb-12 { margin-bottom: 12px; }
+.zh-mb-14 { margin-bottom: 14px; }
+.zh-mb-16 { margin-bottom: 16px; }
+.zh-m-0 { margin: 0; }
+.zh-mb-6 { margin-bottom: 6px; }
+.zh-mb-8 { margin-bottom: 8px; }
+
+.zh-text-center { text-align: center; }
+.zh-text-muted { color: var(--color-text-secondary); }
+.zh-text-xs { font-size: 12px; }
+
+.subtle {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.zh-gap-8 { gap: 8px; }
+.zh-gap-10 { gap: 10px; }
+
+.zh-dirtybar {
+  position: sticky;
+  bottom: 12px;
+  z-index: var(--zh-z-toast, 300);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(0, 229, 255, 0.12);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  color: #00303a;
+  margin-top: 12px;
+}
+
+.zh-dirtybar-text {
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.zh-dirtybar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+/* Compact screen title — junto al menú global, sin barra azul duplicada */
+.zh-screen-heading {
+  margin: 0 0 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--zh-color-border, #e8eef4);
+}
+
+.zh-screen-heading-kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--zh-text-muted, #64748b);
+  margin-bottom: 8px;
+}
+
+.zh-screen-heading-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.zh-screen-heading-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.zh-screen-heading-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.zh-screen-heading-chip {
+  width: 5px;
+  height: 26px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--zh-blue, #1e5eff), var(--zh-accent-cyan, #00e5ff));
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.28);
+}
+
+.zh-screen-heading-copy {
+  min-width: 0;
+}
+
+.zh-screen-heading-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--zh-text-primary, #0f172a);
+  line-height: 1.25;
+}
+
+.zh-screen-heading-sub {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--zh-text-muted, #64748b);
+  line-height: 1.35;
+}
+

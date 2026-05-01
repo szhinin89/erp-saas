@@ -6,6 +6,8 @@ import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
 import type { AuthResponse } from '../types/auth';
 import { useI18n } from '../i18n/i18n';
+import { ZHBtn, ZHFormAlert } from '../components/zh/ZHForm';
+import { ZHCenteredCard } from '../components/zh/ZHCenteredCard';
 import './TenantSelectPage.css';
 
 export function TenantSelectPage() {
@@ -33,15 +35,13 @@ export function TenantSelectPage() {
 
   if (!bootstrapToken || tenants.length === 0) {
     return (
-      <div className="tenant-bg">
-        <div className="tenant-card">
-          <h1 className="tenant-title">{t('tenantSelect.title')}</h1>
-          <p className="tenant-subtitle">{t('tenantSelect.missing')}</p>
-          <button className="tenant-btn" onClick={() => navigate('/login')}>
-            {t('tenantSelect.back')}
-          </button>
-        </div>
-      </div>
+      <ZHCenteredCard bgClassName="tenant-bg" cardClassName="tenant-card">
+        <h1 className="tenant-title">{t('tenantSelect.title')}</h1>
+        <p className="tenant-subtitle">{t('tenantSelect.missing')}</p>
+        <ZHBtn variant="primary" type="button" onClick={() => navigate('/login')}>
+          {t('tenantSelect.back')}
+        </ZHBtn>
+      </ZHCenteredCard>
     );
   }
 
@@ -64,18 +64,27 @@ export function TenantSelectPage() {
       clearBootstrap();
       navigate('/dashboard');
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        t('tenantSelect.error.default');
-      setError(msg);
+      const ax = err as { response?: { status?: number; data?: { message?: string } } };
+      const status = ax?.response?.status;
+      const apiMsg = ax?.response?.data?.message;
+
+      // Si el bootstrap token expira o es inválido, el policy "Bootstrap" suele responder 401 sin cuerpo.
+      // En ese caso, hay que volver al login para re-bootstrap.
+      if (status === 401) {
+        clearBootstrap();
+        setError(t('tenantSelect.missing'));
+        navigate('/login');
+        return;
+      }
+
+      setError(apiMsg ?? t('tenantSelect.error.default'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="tenant-bg">
-      <div className="tenant-card">
+    <ZHCenteredCard bgClassName="tenant-bg" cardClassName="tenant-card">
         <div className="tenant-header">
           <div className="tenant-logo">ZH</div>
           <div>
@@ -94,7 +103,7 @@ export function TenantSelectPage() {
           disabled={loading}
         />
 
-        {error && <p className="tenant-error">{error}</p>}
+        {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
         <div className="tenant-list">
           {filtered.map((x) => (
@@ -108,19 +117,17 @@ export function TenantSelectPage() {
               <div className="tenant-item-meta">
                 <span className="tenant-pill">{x.role}</span>
                 <span className="tenant-muted">{x.slug}</span>
-                <span className="tenant-mono">{x.tenantId}</span>
               </div>
             </button>
           ))}
         </div>
 
         <div className="tenant-footer">
-          <button className="tenant-link" onClick={() => navigate('/login')} disabled={loading}>
+          <ZHBtn variant="ghost" size="sm" type="button" onClick={() => navigate('/login')} disabled={loading}>
             {t('tenantSelect.back')}
-          </button>
+          </ZHBtn>
         </div>
-      </div>
-    </div>
+    </ZHCenteredCard>
   );
 }
 

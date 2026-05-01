@@ -5,6 +5,7 @@ import { LoginPage } from './pages/LoginPage';
 import { PasswordResetPage } from './pages/PasswordResetPage';
 import { TenantSelectPage } from './pages/TenantSelectPage';
 import { SuperAdminPanelPage } from './pages/SuperAdminPanelPage';
+import { SuperAdminFormsPage } from './pages/SuperAdminFormsPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { AccountingPage } from './pages/AccountingPage';
@@ -20,7 +21,7 @@ import {
   TaxRatesCatalogPage,
   TariffsCatalogPage,
   CatalogStructurePage,
-} from './pages/CatalogPages';
+} from './modules/catalog/pages/CatalogPages';
 
 export default function App() {
   return (
@@ -31,8 +32,9 @@ export default function App() {
         <Route path="/select-tenant" element={<TenantSelectPage />} />
 
         <Route element={<ProtectedRoute />}>
-          <Route path="/superadmin" element={<SuperAdminPanelPage />} />
           <Route element={<AppLayout />}>
+            <Route path="/superadmin" element={<SuperAdminPanelPage />} />
+            <Route path="/superadmin/forms" element={<SuperAdminFormsPage />} />
             <Route path="/dashboard"   element={<DashboardPage />} />
             <Route path="/products"    element={<ProductsPage />} />
             <Route path="/catalog/brands" element={<BrandsCatalogPage />} />

@@ -2,10 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
 import { profileService, type Profile } from '../services/profileService';
+import { PageShell, TableCard, EmptyState, LoadingState, NoAccessPage } from '../components/PageShell';
+import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions, ZHBtn } from '../components/zh/ZHForm';
+import { ZHCardSection, ZHInlineRowRight, ZHActionsRow, ZHSection } from '../components/zh/ZHLayout';
+import { ZHFormCard } from '../components/zh/ZHFormCard';
+import './ProfilesPage.css';
 
 export function ProfilesPage() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
+  const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
 
   const [items, setItems] = useState<Profile[]>([]);
   const [name, setName] = useState('');
@@ -156,99 +162,134 @@ export function ProfilesPage() {
   };
 
   if (!user || (user.role !== 'Admin' && user.role !== 'SuperAdmin')) {
-    return <div className="page-shell"><h1>{t('profiles.title')}</h1><p>{t('profiles.noAccess')}</p></div>;
+    return <NoAccessPage title={t('profiles.title')} />;
   }
 
   return (
-    <div className="page-shell">
-      <h1 className="page-title">{t('profiles.title')}</h1>
-      <p className="page-subtitle">{t('profiles.subtitle')}</p>
+    <PageShell kicker={t('app.nav.group.access')} title={t('profiles.title')} subtitle={t('profiles.subtitle')}>
+      <ZHFormCard
+        hideHeader
+        title={t('profiles.title')}
+        subtitle={t('profiles.subtitle')}
+        onSubmit={create}
+      >
+        <input type="hidden" name="tenantId" value={tenantId} />
+        {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
-      <form className="companies-form" onSubmit={create}>
-        <div className="grid">
-          <input placeholder={t('profiles.form.name')} value={name} onChange={(e) => setName(e.target.value)} required />
-          <input placeholder={t('profiles.form.description')} value={description} onChange={(e) => setDescription(e.target.value)} />
-        </div>
-        {error && <p className="form-error">{error}</p>}
-        <button className="primary-btn" disabled={loading}>{t('profiles.form.create')}</button>
-      </form>
+        <ZHFormSection title={t('profiles.form.create')}>
+          <ZHGrid cols={2}>
+            <ZHField label={t('profiles.form.name')} required>
+              <input value={name} onChange={(e) => setName(e.target.value)} required disabled={loading} />
+            </ZHField>
+            <ZHField label={t('profiles.form.description')}>
+              <input value={description} onChange={(e) => setDescription(e.target.value)} disabled={loading} />
+            </ZHField>
+          </ZHGrid>
+        </ZHFormSection>
 
-      <div className="companies-list">
-        <div className="table">
-          <div className="row head">
-            <div>{t('profiles.table.name')}</div>
-            <div>{t('profiles.table.active')}</div>
-            <div>{t('profiles.table.id')}</div>
-          </div>
-          {items.map((p) => (
-            <div key={p.id} className="row">
-              <div>
-                <div style={{ fontWeight: 800 }}>{p.name}</div>
-                {p.description && <div style={{ color: 'rgba(30,41,59,.75)', fontSize: 12 }}>{p.description}</div>}
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="secondary-btn" onClick={() => toggle(p)} type="button">
-                  {p.isActive ? t('profiles.actions.disable') : t('profiles.actions.enable')}
-                </button>
-                <button className="secondary-btn" onClick={() => void selectProfile(p)} type="button">
-                  {t('profiles.actions.permissions')}
-                </button>
-              </div>
-              <div className="mono">{p.id}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+        <ZHFormActions
+          onCancel={() => {
+            setName('');
+            setDescription('');
+          }}
+          onDraft={undefined}
+          onSave={undefined}
+          disableDraft
+          disableSave={loading}
+          saveButtonType="submit"
+          labels={{ cancel: t('common.cancel'), draft: t('common.saveDraft') ?? 'Guardar borrador', save: t('profiles.form.create') }}
+        />
+      </ZHFormCard>
+
+      <ZHSection top={16}>
+        <TableCard>
+          {loading ? (
+            <LoadingState />
+          ) : items.length === 0 ? (
+            <EmptyState message={t('common.noData')} />
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>{t('profiles.table.name')}</th>
+                  <th>{t('profiles.table.active')}</th>
+                  <th>{t('profiles.table.id')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <div className="zh-card-section-title">{p.name}</div>
+                      {p.description ? <div className="zh-text-muted zh-text-xs">{p.description}</div> : null}
+                    </td>
+                    <td>
+                      <ZHActionsRow>
+                        <ZHBtn variant="secondary" onClick={() => toggle(p)} type="button">
+                          {p.isActive ? t('profiles.actions.disable') : t('profiles.actions.enable')}
+                        </ZHBtn>
+                        <ZHBtn variant="ghost" onClick={() => void selectProfile(p)} type="button">
+                          {t('profiles.actions.permissions')}
+                        </ZHBtn>
+                      </ZHActionsRow>
+                    </td>
+                    <td className="mono">{p.id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </TableCard>
+      </ZHSection>
 
       {selected && (
-        <div className="companies-list" style={{ marginTop: 16 }}>
-          <div className="table-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-              <div>
-                <div style={{ fontWeight: 900, fontSize: 16 }}>
-                  {t('profiles.perms.title')} — {selected.name}
-                </div>
-                <div style={{ color: 'rgba(30,41,59,.75)', fontSize: 12 }}>
-                  {t('profiles.perms.subtitle')}
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button className="secondary-btn" type="button" onClick={() => setSelected(null)} disabled={permSaving}>
-                  {t('common.cancel')}
-                </button>
-                <button className="primary-btn" type="button" onClick={() => void savePermissions()} disabled={permLoading || permSaving}>
-                  {permSaving ? t('common.saving') : t('profiles.perms.save')}
-                </button>
-              </div>
-            </div>
+        <ZHSection top={16}>
+          <TableCard>
+            <ZHFormBody standalone>
+              <ZHCardSection
+                title={`${t('profiles.perms.title')} — ${selected.name}`}
+                right={
+                  <ZHInlineRowRight>
+                    <ZHBtn variant="ghost" type="button" onClick={() => setSelected(null)} disabled={permSaving}>
+                      {t('common.cancel')}
+                    </ZHBtn>
+                    <ZHBtn variant="primary" type="button" onClick={() => void savePermissions()} disabled={permLoading || permSaving}>
+                      {permSaving ? t('common.saving') : t('profiles.perms.save')}
+                    </ZHBtn>
+                  </ZHInlineRowRight>
+                }
+              >
+                <div className="subtle">{t('profiles.perms.subtitle')}</div>
+              </ZHCardSection>
 
-            {permError && <p className="form-error" style={{ marginTop: 8 }}>{permError}</p>}
-            {permLoading ? (
-              <div style={{ marginTop: 12 }}>{t('common.loading')}</div>
-            ) : (
-              <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 8 }}>
-                {permissionCatalog.map((def) => (
-                  <label
-                    key={def.key}
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, border: '1px solid rgba(148,163,184,.35)', borderRadius: 12 }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={!!permState[def.key]}
-                      onChange={(e) => setPermState((s) => ({ ...s, [def.key]: e.target.checked }))}
-                    />
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontWeight: 700 }}>{def.label}</span>
-                      <span className="mono" style={{ fontSize: 12, opacity: 0.7 }}>{def.key}</span>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+              {permError ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={permError} /> : null}
+              {permLoading ? (
+                <LoadingState />
+              ) : (
+                <div className="profiles-permsGrid">
+                  {permissionCatalog.map((def) => (
+                    <label
+                      key={def.key}
+                      className="profiles-permItem"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!permState[def.key]}
+                        onChange={(e) => setPermState((s) => ({ ...s, [def.key]: e.target.checked }))}
+                      />
+                      <div className="profiles-permText">
+                        <span className="profiles-permLabel">{def.label}</span>
+                        <span className="mono profiles-permKey">{def.key}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </ZHFormBody>
+          </TableCard>
+        </ZHSection>
       )}
-    </div>
+    </PageShell>
   );
 }
 

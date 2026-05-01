@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge } from '../components/PageShell';
+import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { useAuthStore } from '../store/authStore';
@@ -13,6 +13,9 @@ import {
 } from '../services/branchService';
 import '../components/Modal.css';
 import './BranchesPage.css';
+import { ZHBtn, ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions, ZHToggle } from '../components/zh/ZHForm';
+import { ZHActionsRow, ZHColSpan, ZHSection } from '../components/zh/ZHLayout';
+import { ZHModalHeader } from '../components/zh/ZHModalHeader';
 
 type FormState = {
   name: string;
@@ -69,6 +72,7 @@ export function BranchesPage() {
   const hasPerm = usePermissionsStore((s) => s.has);
   const role = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin = role === 'Admin' || role === 'SuperAdmin';
+  const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
 
   const canView = isAdmin || hasPerm('saas.branches.view');
   const canCreate = isAdmin || hasPerm('saas.branches.create');
@@ -335,59 +339,48 @@ export function BranchesPage() {
   };
 
   if (!canView) {
-    return (
-      <div className="page-shell">
-        <h1 className="page-title">{t('branches.title')}</h1>
-        <p className="page-subtitle">{t('common.noAccess')}</p>
-      </div>
-    );
+    return <NoAccessPage title={t('branches.title')} />;
   }
 
   return (
     <PageShell
+      kicker={t('app.nav.group.saas')}
       title={t('branches.title')}
       action={
         canCreate ? (
-          <button type="button" className="btn btn--primary" onClick={openNew}>
+          <ZHBtn variant="primary" type="button" onClick={openNew}>
             {t('branches.new')}
-          </button>
+          </ZHBtn>
         ) : undefined
       }
     >
       <TableCard>
-        <div className="form-grid form-grid--2col" style={{ marginBottom: 16 }}>
-          <label className="field">
-            <span className="label">{t('branches.filter.status')}</span>
-            <select
-              value={activeStatus}
-              onChange={(e) => setActiveStatus(e.target.value as CatalogActiveStatus)}
-            >
-              <option value="all">{t('branches.filter.all')}</option>
-              <option value="active">{t('branches.filter.active')}</option>
-              <option value="inactive">{t('branches.filter.inactive')}</option>
-            </select>
-          </label>
-          <label className="field">
-            <span className="label">{t('branches.filter.search')}</span>
-            <input
-              value={searchDraft}
-              onChange={(e) => setSearchDraft(e.target.value)}
-              placeholder={t('branches.filter.searchPlaceholder')}
-            />
-          </label>
-          <div className="field" style={{ alignSelf: 'end' }}>
-            <button
-              type="button"
-              className="btn btn--primary"
-              onClick={() => {
-                setAppliedSearch(searchDraft.trim());
-              }}
-              disabled={loading}
-            >
-              {t('branches.filter.apply')}
-            </button>
-          </div>
-        </div>
+        <ZHSection bottom={16}>
+          <ZHGrid cols={3}>
+            <ZHField label={t('branches.filter.status')}>
+              <select value={activeStatus} onChange={(e) => setActiveStatus(e.target.value as CatalogActiveStatus)}>
+                <option value="all">{t('branches.filter.all')}</option>
+                <option value="active">{t('branches.filter.active')}</option>
+                <option value="inactive">{t('branches.filter.inactive')}</option>
+              </select>
+            </ZHField>
+            <ZHField label={t('branches.filter.search')}>
+              <input value={searchDraft} onChange={(e) => setSearchDraft(e.target.value)} placeholder={t('branches.filter.searchPlaceholder')} />
+            </ZHField>
+            <ZHActionsRow>
+              <ZHBtn
+                variant="secondary"
+                type="button"
+                onClick={() => {
+                  setAppliedSearch(searchDraft.trim());
+                }}
+                disabled={loading}
+              >
+                {t('branches.filter.apply')}
+              </ZHBtn>
+            </ZHActionsRow>
+          </ZHGrid>
+        </ZHSection>
 
         {error && <ErrorState message={error} />}
         {loading ? (
@@ -424,14 +417,14 @@ export function BranchesPage() {
                   </td>
                   <td>
                     {canUpdate && (
-                      <button type="button" className="btn btn--ghost" onClick={() => void openEdit(x.id)}>
+                      <ZHBtn variant="secondary" size="xs" type="button" onClick={() => void openEdit(x.id)}>
                         {t('common.edit')}
-                      </button>
+                      </ZHBtn>
                     )}
                     {(x.isActive ? canDelete : canUpdate) && (
-                      <button type="button" className="btn btn--ghost" onClick={() => void toggleDisable(x)}>
+                      <ZHBtn variant="ghost" size="xs" type="button" onClick={() => void toggleDisable(x)}>
                         {x.isActive ? t('branches.disable') : t('branches.enable')}
-                      </button>
+                      </ZHBtn>
                     )}
                   </td>
                 </tr>
@@ -444,184 +437,161 @@ export function BranchesPage() {
       {createPortal(
         <dialog ref={dialogRef} className="branches-dialog">
         <div className="branches-dialog-inner">
-          <h2 className="branches-dialog-title">{editingId ? t('branches.editTitle') : t('branches.createTitle')}</h2>
-          {geoBootstrapError ? (
-            <p className="branches-dialog-geo-error" role="alert">
-              {geoBootstrapError}
-            </p>
-          ) : null}
+          <ZHModalHeader
+            title={editingId ? t('branches.editTitle') : t('branches.createTitle')}
+            subtitle={t('branches.form.locationSection')}
+            onClose={closeDialog}
+            closeLabel={t('common.close')}
+          />
 
-          <div className="form-grid form-grid--2col">
-            <label className="field field--span2">
-              <span className="label">{t('branches.form.name')}</span>
-              <input
-                value={form.name}
-                onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-                disabled={formDisabled}
-              />
-            </label>
-            <label className="field field--span2">
-              <span className="label">{t('branches.form.address')}</span>
-              <input
-                value={form.address}
-                onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))}
-                disabled={formDisabled}
-              />
-            </label>
-            <label className="field">
-              <span className="label">{t('branches.form.reference')}</span>
-              <input
-                value={form.reference}
-                onChange={(e) => setForm((s) => ({ ...s, reference: e.target.value }))}
-                disabled={formDisabled}
-              />
-            </label>
-            <label className="field">
-              <span className="label">{t('branches.form.phones')}</span>
-              <input
-                value={form.phones}
-                onChange={(e) => setForm((s) => ({ ...s, phones: e.target.value }))}
-                disabled={formDisabled}
-              />
-            </label>
+          <input type="hidden" name="tenantId" value={tenantId} />
+          <div className="zh-form">
+            <ZHFormBody>
+              {geoBootstrapError ? <ZHFormAlert type="warning" message={t('branches.error.geography')} detail={geoBootstrapError} /> : null}
+              {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
-            <fieldset className="branches-location field--span2">
-              <legend className="branches-location-legend">{t('branches.form.locationSection')}</legend>
-              <div className="form-grid form-grid--2col branches-location-grid">
-                <label className="field">
-                  <span className="label">
-                    {t('branches.form.country')}
-                    {countries.length === 0 ? (
-                      <span className="branches-geo-hint"> {t('branches.form.loadingCountries')}</span>
-                    ) : null}
-                  </span>
-                  <select
-                    value={form.countryId}
-                    onChange={(e) => void onCountryChange(e.target.value)}
-                    disabled={formDisabled || countries.length === 0}
-                    aria-busy={countries.length === 0}
-                  >
-                    <option value="">{t('common.select')}</option>
-                    {form.countryId && !countries.some((c) => c.id === form.countryId) ? (
-                      <option value={form.countryId}>{form.countryId}</option>
-                    ) : null}
-                    {countries.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span className="label">
-                    {t('branches.form.province')}
-                    {loadingProvinces ? (
-                      <span className="branches-geo-hint"> {t('branches.form.loading')}</span>
-                    ) : null}
-                  </span>
-                  <select
-                    value={form.provinceId}
-                    onChange={(e) => void onProvinceChange(e.target.value)}
-                    disabled={!form.countryId || formDisabled}
-                    aria-busy={loadingProvinces}
-                  >
-                    <option value="">{t('common.select')}</option>
-                    {provinces.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span className="label">
-                    {t('branches.form.canton')}
-                    {loadingCantons ? (
-                      <span className="branches-geo-hint"> {t('branches.form.loading')}</span>
-                    ) : null}
-                  </span>
-                  <select
-                    value={form.cantonId}
-                    onChange={(e) => void onCantonChange(e.target.value)}
-                    disabled={!form.provinceId || formDisabled}
-                    aria-busy={loadingCantons}
-                  >
-                    <option value="">{t('common.select')}</option>
-                    {cantons.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="field">
-                  <span className="label">
-                    {t('branches.form.parish')}
-                    {loadingParishes ? (
-                      <span className="branches-geo-hint"> {t('branches.form.loading')}</span>
-                    ) : null}
-                  </span>
-                  <select
-                    value={form.parishId}
-                    onChange={(e) => setForm((s) => ({ ...s, parishId: e.target.value }))}
-                    disabled={!form.cantonId || formDisabled}
-                    aria-busy={loadingParishes}
-                  >
-                    <option value="">{t('common.select')}</option>
-                    {parishes.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            </fieldset>
+              <ZHFormSection title={t('branches.form.name')}>
+                <ZHGrid cols={2}>
+                  <ZHColSpan span={2}>
+                    <ZHField label={t('branches.form.name')} required>
+                      <input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} disabled={formDisabled} />
+                    </ZHField>
+                  </ZHColSpan>
+                  <ZHColSpan span={2}>
+                    <ZHField label={t('branches.form.address')} required>
+                      <input value={form.address} onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))} disabled={formDisabled} />
+                    </ZHField>
+                  </ZHColSpan>
+                  <ZHField label={t('branches.form.reference')}>
+                    <input value={form.reference} onChange={(e) => setForm((s) => ({ ...s, reference: e.target.value }))} disabled={formDisabled} />
+                  </ZHField>
+                  <ZHField label={t('branches.form.phones')}>
+                    <input value={form.phones} onChange={(e) => setForm((s) => ({ ...s, phones: e.target.value }))} disabled={formDisabled} />
+                  </ZHField>
+                </ZHGrid>
+              </ZHFormSection>
 
-            <label className="field">
-              <span className="label">{t('branches.form.latitude')}</span>
-              <input
-                value={form.latitude}
-                onChange={(e) => setForm((s) => ({ ...s, latitude: e.target.value }))}
-                disabled={formDisabled}
-              />
-            </label>
-            <label className="field">
-              <span className="label">{t('branches.form.longitude')}</span>
-              <input
-                value={form.longitude}
-                onChange={(e) => setForm((s) => ({ ...s, longitude: e.target.value }))}
-                disabled={formDisabled}
-              />
-            </label>
-            <label className="field field--span2">
-              <span className="label">{t('branches.form.recharge')}</span>
-              <input
-                value={form.rechargeOption}
-                onChange={(e) => setForm((s) => ({ ...s, rechargeOption: e.target.value }))}
-                disabled={formDisabled}
-              />
-            </label>
+              <ZHFormSection title={t('branches.form.locationSection')}>
+                <ZHGrid cols={2}>
+                  <ZHField
+                    label={t('branches.form.country')}
+                    hint={countries.length === 0 ? t('branches.form.loadingCountries') : undefined}
+                    hintType={countries.length === 0 ? 'info' : undefined}
+                  >
+                    <select
+                      value={form.countryId}
+                      onChange={(e) => void onCountryChange(e.target.value)}
+                      disabled={formDisabled || countries.length === 0}
+                      aria-busy={countries.length === 0}
+                    >
+                      <option value="">{t('common.select')}</option>
+                      {form.countryId && !countries.some((c) => c.id === form.countryId) ? (
+                        <option value={form.countryId}>{form.countryId}</option>
+                      ) : null}
+                      {countries.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </ZHField>
 
-            <label className="field field--inline field--span2">
-              <input
-                type="checkbox"
-                checked={form.isActive}
-                onChange={(e) => setForm((s) => ({ ...s, isActive: e.target.checked }))}
-                disabled={formDisabled}
-              />
-              <span>{t('branches.form.enabled')}</span>
-            </label>
-            <label className="field field--inline field--span2">
-              <input
-                type="checkbox"
-                checked={form.isMainBranch}
-                onChange={(e) => setForm((s) => ({ ...s, isMainBranch: e.target.checked }))}
-                disabled={formDisabled}
-              />
-              <span>{t('branches.form.mainBranch')}</span>
-            </label>
-          </div>
+                  <ZHField
+                    label={t('branches.form.province')}
+                    hint={loadingProvinces ? t('branches.form.loading') : undefined}
+                    hintType={loadingProvinces ? 'info' : undefined}
+                  >
+                    <select
+                      value={form.provinceId}
+                      onChange={(e) => void onProvinceChange(e.target.value)}
+                      disabled={!form.countryId || formDisabled}
+                      aria-busy={loadingProvinces}
+                    >
+                      <option value="">{t('common.select')}</option>
+                      {provinces.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </ZHField>
+
+                  <ZHField
+                    label={t('branches.form.canton')}
+                    hint={loadingCantons ? t('branches.form.loading') : undefined}
+                    hintType={loadingCantons ? 'info' : undefined}
+                  >
+                    <select
+                      value={form.cantonId}
+                      onChange={(e) => void onCantonChange(e.target.value)}
+                      disabled={!form.provinceId || formDisabled}
+                      aria-busy={loadingCantons}
+                    >
+                      <option value="">{t('common.select')}</option>
+                      {cantons.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </ZHField>
+
+                  <ZHField
+                    label={t('branches.form.parish')}
+                    hint={loadingParishes ? t('branches.form.loading') : undefined}
+                    hintType={loadingParishes ? 'info' : undefined}
+                  >
+                    <select
+                      value={form.parishId}
+                      onChange={(e) => setForm((s) => ({ ...s, parishId: e.target.value }))}
+                      disabled={!form.cantonId || formDisabled}
+                      aria-busy={loadingParishes}
+                    >
+                      <option value="">{t('common.select')}</option>
+                      {parishes.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </ZHField>
+                </ZHGrid>
+              </ZHFormSection>
+
+              <ZHFormSection title={t('branches.form.recharge')}>
+                <ZHGrid cols={2}>
+                  <ZHField label={t('branches.form.latitude')}>
+                    <input value={form.latitude} onChange={(e) => setForm((s) => ({ ...s, latitude: e.target.value }))} disabled={formDisabled} />
+                  </ZHField>
+                  <ZHField label={t('branches.form.longitude')}>
+                    <input value={form.longitude} onChange={(e) => setForm((s) => ({ ...s, longitude: e.target.value }))} disabled={formDisabled} />
+                  </ZHField>
+                  <ZHColSpan span={2}>
+                    <ZHField label={t('branches.form.recharge')}>
+                      <input value={form.rechargeOption} onChange={(e) => setForm((s) => ({ ...s, rechargeOption: e.target.value }))} disabled={formDisabled} />
+                    </ZHField>
+                  </ZHColSpan>
+                </ZHGrid>
+              </ZHFormSection>
+
+              <ZHFormSection title={t('common.status')}>
+                <ZHGrid cols={1}>
+                  <ZHToggle
+                    label={t('branches.form.enabled')}
+                    description={t('branches.form.enabled')}
+                    value={form.isActive}
+                    onChange={(v) => setForm((s) => ({ ...s, isActive: v }))}
+                    disabled={formDisabled}
+                  />
+                  <ZHToggle
+                    label={t('branches.form.mainBranch')}
+                    description={t('branches.form.mainBranch')}
+                    value={form.isMainBranch}
+                    onChange={(v) => setForm((s) => ({ ...s, isMainBranch: v }))}
+                    disabled={formDisabled}
+                  />
+                </ZHGrid>
+              </ZHFormSection>
 
           {audit && (
             <div className="branches-audit">
@@ -641,15 +611,15 @@ export function BranchesPage() {
             </div>
           )}
 
-          <div className="branches-dialog-actions">
-            <button type="button" className="btn btn--ghost" onClick={closeDialog}>
-              {t('common.cancel')}
-            </button>
-            {(editingId ? canUpdate : canCreate) && (
-              <button type="button" className="btn" onClick={() => void save()} disabled={saving}>
-                {saving ? t('common.saving') : t('common.save')}
-              </button>
-            )}
+              <ZHFormActions
+                onCancel={closeDialog}
+                onDraft={undefined}
+                onSave={() => void save()}
+                disableDraft
+                disableSave={saving || !(editingId ? canUpdate : canCreate)}
+                labels={{ cancel: t('common.cancel'), draft: t('common.saveDraft') ?? 'Guardar borrador', save: t('common.save') }}
+              />
+            </ZHFormBody>
           </div>
         </div>
       </dialog>,

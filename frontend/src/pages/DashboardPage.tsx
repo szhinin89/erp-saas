@@ -1,50 +1,61 @@
-import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n/i18n';
-import './DashboardPage.css';
+import { useAuthStore } from '../store/authStore';
+import { PageShell } from '../components/PageShell';
+import {
+  ZHActivityPanel,
+  ZHChartPanel,
+  ZHDashboardScaffold,
+  ZHKpiGrid,
+  ZHModulesPanel,
+  ZHPanelGrid,
+  type ZHProgressPct,
+  type ZHModuleTone,
+} from '../components/zh/ZHDashboard';
 
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const { t } = useI18n();
 
-  const stats = [
-    { label: t('dashboard.stats.products'), value: '—', icon: '📦' },
-    { label: t('dashboard.stats.journalEntries'), value: '—', icon: '📒' },
-    { label: t('dashboard.stats.accounts'), value: '—', icon: '🏦' },
-    { label: t('dashboard.stats.users'), value: '—', icon: '👤' },
+  const kpis = [
+    { label: t('dashboard.kpis.totalIncome'), value: '—', tone: 'neutral' as const },
+    { label: t('dashboard.kpis.monthExpenses'), value: '—', tone: 'danger' as const },
+    { label: t('dashboard.kpis.netProfit'), value: '—', tone: 'success' as const },
+    { label: t('dashboard.kpis.activeAccounts'), value: '—', tone: 'info' as const },
   ];
 
+  const activity = [
+    { title: 'Asiento #A-0248 registrado', meta: 'Contabilidad · hace 12 min' },
+    { title: 'Cuenta 1.1.02.003 creada', meta: 'Carlos M. · hace 1 hora' },
+    { title: 'Conciliación pendiente: Banco Pichincha', meta: 'Sistema · hace 3 horas' },
+  ];
+
+  const modules = [
+    { label: 'Contabilidad', value: '—', pct: 78, tone: 'success' },
+    { label: 'Inventario', value: '—', pct: 45, tone: 'info' },
+    { label: 'Ventas', value: '—', pct: 92, tone: 'warning' },
+    { label: 'RRHH', value: '—', pct: 30, tone: 'neutral' },
+  ] satisfies { label: string; value: string; pct: ZHProgressPct; tone: ZHModuleTone }[];
+
   return (
-    <div className="dashboard">
-      <div className="page-header">
-        <h1 className="page-title">{t('dashboard.title')}</h1>
-        <p className="page-subtitle">{t('dashboard.welcome')} {user?.fullName ?? ''}</p>
-      </div>
+    <PageShell
+      kicker={t('app.nav.group.home')}
+      title={t('dashboard.title')}
+      subtitle={`${t('dashboard.welcome')} ${user?.fullName ?? ''}`}
+    >
+      <ZHDashboardScaffold>
+        <ZHKpiGrid items={kpis} />
 
-      <div className="stats-grid">
-        {stats.map((s) => (
-          <div key={s.label} className="stat-card">
-            <span className="stat-icon">{s.icon}</span>
-            <div className="stat-body">
-              <span className="stat-value">{s.value}</span>
-              <span className="stat-label">{s.label}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+        <ZHPanelGrid>
+          <ZHChartPanel title="Ingresos vs Egresos" yearLabel="2025" />
+          <ZHActivityPanel title="Actividad reciente" items={activity} />
+        </ZHPanelGrid>
 
-      <div className="info-card">
-        <h2>{t('dashboard.session.title')}</h2>
-        <dl className="info-grid">
-          <dt>{t('dashboard.session.user')}</dt>
-          <dd>{user?.fullName}</dd>
-          <dt>{t('dashboard.session.email')}</dt>
-          <dd>{user?.email}</dd>
-          <dt>{t('dashboard.session.role')}</dt>
-          <dd>{user?.role}</dd>
-          <dt>{t('dashboard.session.tenantId')}</dt>
-          <dd className="mono">{user?.tenantId}</dd>
-        </dl>
-      </div>
-    </div>
+        <ZHModulesPanel
+          title="Módulos del sistema"
+          rightLabel="Ejercicio fiscal 2025"
+          items={modules}
+        />
+      </ZHDashboardScaffold>
+    </PageShell>
   );
 }

@@ -42,6 +42,10 @@ secrets.json
 Thumbs.db
 desktop.ini
 
+# Instaladores / artefactos locales (no versionar)
+*.exe
+.claude/
+
 # Artefactos
 backend/src/ERP.Domain/*.zip
 

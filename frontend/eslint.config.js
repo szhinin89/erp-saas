@@ -19,4 +19,20 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  // ZH Form System: evitar estilos inline por pantalla.
+  // Si se necesita un patrón visual nuevo, se agrega a componentes ZH y se reutiliza.
+  {
+    files: ['src/pages/**/*.{ts,tsx}', 'src/components/**/*.{ts,tsx}'],
+    ignores: ['src/components/zh/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'JSXAttribute[name.name="style"]',
+          message:
+            'No uses style={{...}} en pantallas/componentes. Usa tokens CSS + clases, o agrega un helper/componente en ZHLayout/ZHForm para reutilizar.',
+        },
+      ],
+    },
+  },
 ])

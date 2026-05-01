@@ -45,6 +45,10 @@
   box-sizing: border-box;
 }
 
+.je-currency {
+  width: 60px;
+}
+
 .je-line select:focus,
 .je-line input:focus {
   border-color: #7c3aed;

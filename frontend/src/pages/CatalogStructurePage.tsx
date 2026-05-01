@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge } from '../components/PageShell';
+import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { useAuthStore } from '../store/authStore';
@@ -10,7 +10,9 @@ import {
   type ProductCategoryListItem,
   type ProductSubcategoryListItem,
 } from '../services/catalogService';
-import '../components/Modal.css';
+import { activityService, type UserActivityDto } from '../services/activityService';
+import { ZHBtn, ZHField, ZHGrid } from '../components/zh/ZHForm';
+import { ZHActionsRow, ZHGridRow, ZHInlineRow, ZHInlineRowRight, ZHSection } from '../components/zh/ZHLayout';
 import './CatalogStructurePage.css';
 
 type Tab = 'line' | 'category' | 'subcategory';
@@ -18,6 +20,31 @@ type Tab = 'line' | 'category' | 'subcategory';
 function errMsg(err: unknown, fallback: string): string {
   const ax = err as { response?: { data?: { message?: string } } };
   return ax?.response?.data?.message ?? fallback;
+}
+
+function activityLabel(action: string): string {
+  const [entityRaw, verbRaw] = action.split('.');
+  const verb = (verbRaw ?? action).toLowerCase();
+  const entity = (entityRaw ?? action).toLowerCase();
+  const verbLabel =
+    verb === 'create' ? 'Creó' :
+    verb === 'update' ? 'Actualizó' :
+    verb === 'enable' ? 'Habilitó' :
+    verb === 'disable' ? 'Deshabilitó' :
+    verb;
+
+  const entityLabel =
+    entity === 'unitofmeasure' ? 'Unidad de medida' :
+    entity === 'brand' ? 'Marca' :
+    entity === 'producttype' ? 'Tipo de producto' :
+    entity === 'taxrate' ? 'Impuesto' :
+    entity === 'tariff' ? 'Arancel' :
+    entity === 'productline' ? 'Línea' :
+    entity === 'productcategory' ? 'Categoría' :
+    entity === 'productsubcategory' ? 'Subcategoría' :
+    entityRaw ?? action;
+
+  return `${verbLabel} ${entityLabel}`;
 }
 
 export function CatalogStructurePage() {
@@ -67,9 +94,24 @@ export function CatalogStructurePage() {
   const [catForm, setCatForm] = useState({ code: '', name: '', lineId: '' });
   const [subForm, setSubForm] = useState({ code: '', name: '', lineId: '', categoryId: '' });
 
+  const [activity, setActivity] = useState<UserActivityDto[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+
   const [linesPick, setLinesPick] = useState<CatalogItem[]>([]);
   const [catsForSubForm, setCatsForSubForm] = useState<ProductCategoryListItem[]>([]);
   const [subFilterCategories, setSubFilterCategories] = useState<ProductCategoryListItem[]>([]);
+
+  const loadMyActivity = useCallback(async () => {
+    setActivityLoading(true);
+    try {
+      const data = await activityService.my({ module: 'catalog', page: 1, pageSize: 12 });
+      setActivity(data ?? []);
+    } catch {
+      setActivity([]);
+    } finally {
+      setActivityLoading(false);
+    }
+  }, []);
 
   const loadLinesPick = useCallback(async () => {
     try {
@@ -84,9 +126,10 @@ export function CatalogStructurePage() {
     if (!canView) return;
     const id = window.setTimeout(() => {
       void loadLinesPick();
+      void loadMyActivity();
     }, 0);
     return () => window.clearTimeout(id);
-  }, [canView, loadLinesPick]);
+  }, [canView, loadLinesPick, loadMyActivity]);
 
   const loadLines = useCallback(async () => {
     setError('');
@@ -391,18 +434,36 @@ export function CatalogStructurePage() {
   );
 
   if (!canView) {
-    return (
-      <div className="page-shell">
-        <h1 className="page-title">{t('catalog.structure.title')}</h1>
-        <p className="page-subtitle">{t('common.noAccess')}</p>
-      </div>
-    );
+    return <NoAccessPage title={t('catalog.structure.title')} />;
   }
 
   return (
-    <PageShell title={t('catalog.structure.title')}>
+    <PageShell kicker={t('app.nav.group.catalog')} title={t('catalog.structure.title')}>
       <TableCard>
         {error && <ErrorState message={error} />}
+
+        <ZHInlineRow className="zh-mb-10">
+          <div className="zh-card-section-title">Historial (Catálogo)</div>
+          <ZHInlineRowRight>
+            <ZHBtn variant="ghost" size="sm" type="button" onClick={() => void loadMyActivity()} disabled={activityLoading}>
+              {activityLoading ? t('common.loading') : t('common.refresh')}
+            </ZHBtn>
+          </ZHInlineRowRight>
+        </ZHInlineRow>
+        {activityLoading ? (
+          <LoadingState />
+        ) : activity.length === 0 ? (
+          <div className="empty-state zh-mb-12">{t('common.noData')}</div>
+        ) : (
+          <ul className="catalog-structure-activityList">
+            {activity.map((a) => (
+              <li key={a.id} className="zh-mb-6">
+                {new Date(a.createdAt).toLocaleString()} · {activityLabel(a.action)}
+                {a.description ? ` — ${a.description}` : ''}
+              </li>
+            ))}
+          </ul>
+        )}
 
         <div className="catalog-structure-tabs" role="tablist">
           <button type="button" className={tab === 'line' ? 'is-active' : ''} onClick={() => setTab('line')}>
@@ -418,70 +479,60 @@ export function CatalogStructurePage() {
 
         {tab === 'line' && (
           <>
-            <div className="catalog-structure-filters">
-              <label className="field">
-                <span className="label">{t('catalog.structure.filterStatus')}</span>
-                <select
-                  className="input"
-                  value={lineStatus}
-                  onChange={(e) => setLineStatus(e.target.value as CatalogActiveStatus)}
-                  disabled={linesLoading}
-                >
-                  {statusSelect}
-                </select>
-              </label>
-              <label className="field" style={{ minWidth: 200, flex: 1 }}>
-                <span className="label">{t('catalog.structure.search')}</span>
-                <input
-                  className="input"
-                  value={lineSearch}
-                  onChange={(e) => setLineSearch(e.target.value)}
-                  disabled={linesLoading}
-                  placeholder={t('catalog.structure.searchPlaceholder')}
-                />
-              </label>
-            </div>
+            <ZHGridRow cols={2} className="zh-mb-14">
+                <ZHField label={t('catalog.structure.filterStatus')}>
+                  <select value={lineStatus} onChange={(e) => setLineStatus(e.target.value as CatalogActiveStatus)} disabled={linesLoading}>
+                    {statusSelect}
+                  </select>
+                </ZHField>
+                <ZHField label={t('catalog.structure.search')}>
+                  <input value={lineSearch} onChange={(e) => setLineSearch(e.target.value)} disabled={linesLoading} placeholder={t('catalog.structure.searchPlaceholder')} />
+                </ZHField>
+            </ZHGridRow>
 
             {canCreateLines && (
-              <div className="form-grid" style={{ marginBottom: 14 }}>
-                <label className="field">
-                  <span className="label">{t('common.code')}</span>
-                  <input className="input" value={lineForm.code} onChange={(e) => setLineForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
-                </label>
-                <label className="field">
-                  <span className="label">{t('common.name')}</span>
-                  <input className="input" value={lineForm.name} onChange={(e) => setLineForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
-                </label>
-                <button
-                  type="button"
-                  className="btn btn--primary"
-                  onClick={() => void createLine()}
-                  disabled={saving || !lineForm.code.trim() || !lineForm.name.trim()}
-                >
-                  {saving ? t('common.saving') : t('common.create')}
-                </button>
-              </div>
+              <ZHSection bottom={14}>
+                <ZHGrid cols={3}>
+                  <ZHField label={t('common.code')}>
+                    <input value={lineForm.code} onChange={(e) => setLineForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
+                  </ZHField>
+                  <ZHField label={t('common.name')}>
+                    <input value={lineForm.name} onChange={(e) => setLineForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
+                  </ZHField>
+                  <ZHActionsRow>
+                    <ZHBtn
+                      variant="primary"
+                      size="md"
+                      type="button"
+                      onClick={() => void createLine()}
+                      disabled={saving || !lineForm.code.trim() || !lineForm.name.trim()}
+                    >
+                      {saving ? t('common.saving') : t('common.create')}
+                    </ZHBtn>
+                  </ZHActionsRow>
+                </ZHGrid>
+              </ZHSection>
             )}
 
             {editLine && (
-              <div className="table-card" style={{ marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, marginBottom: 8 }}>{t('catalog.structure.editLine')}</div>
-                <div className="form-grid">
-                  <label className="field">
-                    <span className="label">{t('common.code')}</span>
-                    <input className="input" value={editLineForm.code} onChange={(e) => setEditLineForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
-                  </label>
-                  <label className="field">
-                    <span className="label">{t('common.name')}</span>
-                    <input className="input" value={editLineForm.name} onChange={(e) => setEditLineForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
-                  </label>
-                  <button type="button" className="btn btn--primary" onClick={() => void saveLineEdit()} disabled={saving}>
-                    {t('catalog.structure.save')}
-                  </button>
-                  <button type="button" className="btn btn--ghost" onClick={() => setEditLine(null)} disabled={saving}>
-                    {t('catalog.structure.cancel')}
-                  </button>
-                </div>
+              <div className="table-card zh-mb-14">
+                <div className="zh-card-section-title zh-mb-8">{t('catalog.structure.editLine')}</div>
+                <ZHGrid cols={3}>
+                  <ZHField label={t('common.code')}>
+                    <input value={editLineForm.code} onChange={(e) => setEditLineForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
+                  </ZHField>
+                  <ZHField label={t('common.name')}>
+                    <input value={editLineForm.name} onChange={(e) => setEditLineForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
+                  </ZHField>
+                  <ZHActionsRow>
+                    <ZHBtn variant="ghost" size="sm" type="button" onClick={() => setEditLine(null)} disabled={saving}>
+                      {t('catalog.structure.cancel')}
+                    </ZHBtn>
+                    <ZHBtn variant="primary" size="sm" type="button" onClick={() => void saveLineEdit()} disabled={saving}>
+                      {t('catalog.structure.save')}
+                    </ZHBtn>
+                  </ZHActionsRow>
+                </ZHGrid>
               </div>
             )}
 
@@ -509,14 +560,15 @@ export function CatalogStructurePage() {
                       </td>
                       <td className="catalog-structure-actions">
                         {canUpdateLines && (
-                          <button type="button" className="btn btn--primary btn-sm" onClick={() => startEditLine(x)} disabled={saving}>
+                          <ZHBtn variant="secondary" size="xs" type="button" onClick={() => startEditLine(x)} disabled={saving}>
                             {t('catalog.structure.edit')}
-                          </button>
+                          </ZHBtn>
                         )}
                         {x.isActive && canDeleteLines && (
-                          <button
+                          <ZHBtn
+                            variant="ghost"
+                            size="xs"
                             type="button"
-                            className="btn btn--primary btn-sm"
                             onClick={() => {
                               void (async () => {
                                 setSaving(true);
@@ -535,12 +587,13 @@ export function CatalogStructurePage() {
                             disabled={saving}
                           >
                             {t('catalog.structure.disable')}
-                          </button>
+                          </ZHBtn>
                         )}
                         {!x.isActive && canUpdateLines && (
-                          <button
+                          <ZHBtn
+                            variant="secondary"
+                            size="xs"
                             type="button"
-                            className="btn btn--primary btn-sm"
                             onClick={() => {
                               void (async () => {
                                 setSaving(true);
@@ -559,7 +612,7 @@ export function CatalogStructurePage() {
                             disabled={saving}
                           >
                             {t('catalog.structure.enable')}
-                          </button>
+                          </ZHBtn>
                         )}
                       </td>
                     </tr>
@@ -572,102 +625,83 @@ export function CatalogStructurePage() {
 
         {tab === 'category' && (
           <>
-            <div className="catalog-structure-filters">
-              <label className="field">
-                <span className="label">{t('catalog.structure.filterStatus')}</span>
-                <select
-                  className="input"
-                  value={catStatus}
-                  onChange={(e) => setCatStatus(e.target.value as CatalogActiveStatus)}
-                  disabled={catsLoading}
-                >
-                  {statusSelect}
-                </select>
-              </label>
-              <label className="field">
-                <span className="label">{t('catalog.categories.line')}</span>
-                <select className="input" value={catFilterLineId} onChange={(e) => setCatFilterLineId(e.target.value)} disabled={catsLoading}>
-                  <option value="">{t('catalog.structure.allLines')}</option>
-                  {linesPick.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.code} — {l.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="field" style={{ minWidth: 200, flex: 1 }}>
-                <span className="label">{t('catalog.structure.search')}</span>
-                <input
-                  className="input"
-                  value={catSearch}
-                  onChange={(e) => setCatSearch(e.target.value)}
-                  disabled={catsLoading}
-                  placeholder={t('catalog.structure.searchPlaceholder')}
-                />
-              </label>
-            </div>
-
-            {canCreateCategories && (
-              <div className="form-grid" style={{ marginBottom: 14 }}>
-                <label className="field">
-                  <span className="label">{t('common.code')}</span>
-                  <input className="input" value={catForm.code} onChange={(e) => setCatForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
-                </label>
-                <label className="field">
-                  <span className="label">{t('common.name')}</span>
-                  <input className="input" value={catForm.name} onChange={(e) => setCatForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
-                </label>
-                <label className="field">
-                  <span className="label">{t('catalog.categories.line')}</span>
-                  <select className="input" value={catForm.lineId} onChange={(e) => setCatForm((s) => ({ ...s, lineId: e.target.value }))} disabled={saving}>
-                    <option value="">{t('common.select')}</option>
+            <ZHGridRow cols={3} className="zh-mb-14">
+                <ZHField label={t('catalog.structure.filterStatus')}>
+                  <select value={catStatus} onChange={(e) => setCatStatus(e.target.value as CatalogActiveStatus)} disabled={catsLoading}>
+                    {statusSelect}
+                  </select>
+                </ZHField>
+                <ZHField label={t('catalog.categories.line')}>
+                  <select value={catFilterLineId} onChange={(e) => setCatFilterLineId(e.target.value)} disabled={catsLoading}>
+                    <option value="">{t('catalog.structure.allLines')}</option>
                     {linesPick.map((l) => (
                       <option key={l.id} value={l.id}>
                         {l.code} — {l.name}
                       </option>
                     ))}
                   </select>
-                </label>
-                <button
-                  type="button"
-                  className="btn btn--primary"
-                  onClick={() => void createCat()}
-                  disabled={saving || !catForm.code.trim() || !catForm.name.trim() || !catForm.lineId}
-                >
-                  {saving ? t('common.saving') : t('common.create')}
-                </button>
-              </div>
-            )}
+                </ZHField>
+                <ZHField label={t('catalog.structure.search')}>
+                  <input value={catSearch} onChange={(e) => setCatSearch(e.target.value)} disabled={catsLoading} placeholder={t('catalog.structure.searchPlaceholder')} />
+                </ZHField>
+            </ZHGridRow>
 
-            {editCat && (
-              <div className="table-card" style={{ marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, marginBottom: 8 }}>{t('catalog.structure.editCategory')}</div>
-                <div className="form-grid">
-                  <label className="field">
-                    <span className="label">{t('common.code')}</span>
-                    <input className="input" value={editCatForm.code} onChange={(e) => setEditCatForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
-                  </label>
-                  <label className="field">
-                    <span className="label">{t('common.name')}</span>
-                    <input className="input" value={editCatForm.name} onChange={(e) => setEditCatForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
-                  </label>
-                  <label className="field">
-                    <span className="label">{t('catalog.categories.line')}</span>
-                    <select className="input" value={editCatForm.lineId} onChange={(e) => setEditCatForm((s) => ({ ...s, lineId: e.target.value }))} disabled={saving}>
+            {canCreateCategories && (
+              <ZHSection bottom={14}>
+                <ZHGrid cols={3}>
+                  <ZHField label={t('common.code')}>
+                    <input value={catForm.code} onChange={(e) => setCatForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
+                  </ZHField>
+                  <ZHField label={t('common.name')}>
+                    <input value={catForm.name} onChange={(e) => setCatForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
+                  </ZHField>
+                  <ZHField label={t('catalog.categories.line')}>
+                    <select value={catForm.lineId} onChange={(e) => setCatForm((s) => ({ ...s, lineId: e.target.value }))} disabled={saving}>
+                      <option value="">{t('common.select')}</option>
                       {linesPick.map((l) => (
                         <option key={l.id} value={l.id}>
                           {l.code} — {l.name}
                         </option>
                       ))}
                     </select>
-                  </label>
-                  <button type="button" className="btn btn--primary" onClick={() => void saveCatEdit()} disabled={saving || !editCatForm.lineId}>
-                    {t('catalog.structure.save')}
-                  </button>
-                  <button type="button" className="btn btn--ghost" onClick={() => setEditCat(null)} disabled={saving}>
-                    {t('catalog.structure.cancel')}
-                  </button>
-                </div>
+                  </ZHField>
+                  <ZHActionsRow>
+                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void createCat()} disabled={saving || !catForm.code.trim() || !catForm.name.trim() || !catForm.lineId}>
+                      {saving ? t('common.saving') : t('common.create')}
+                    </ZHBtn>
+                  </ZHActionsRow>
+                </ZHGrid>
+              </ZHSection>
+            )}
+
+            {editCat && (
+              <div className="table-card zh-mb-14">
+                <div className="zh-card-section-title zh-mb-8">{t('catalog.structure.editCategory')}</div>
+                <ZHGrid cols={3}>
+                  <ZHField label={t('common.code')}>
+                    <input value={editCatForm.code} onChange={(e) => setEditCatForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
+                  </ZHField>
+                  <ZHField label={t('common.name')}>
+                    <input value={editCatForm.name} onChange={(e) => setEditCatForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
+                  </ZHField>
+                  <ZHField label={t('catalog.categories.line')}>
+                    <select value={editCatForm.lineId} onChange={(e) => setEditCatForm((s) => ({ ...s, lineId: e.target.value }))} disabled={saving}>
+                      {linesPick.map((l) => (
+                        <option key={l.id} value={l.id}>
+                          {l.code} — {l.name}
+                        </option>
+                      ))}
+                    </select>
+                  </ZHField>
+                  <ZHActionsRow>
+                    <ZHBtn variant="ghost" size="sm" type="button" onClick={() => setEditCat(null)} disabled={saving}>
+                      {t('catalog.structure.cancel')}
+                    </ZHBtn>
+                    <ZHBtn variant="primary" size="sm" type="button" onClick={() => void saveCatEdit()} disabled={saving || !editCatForm.lineId}>
+                      {t('catalog.structure.save')}
+                    </ZHBtn>
+                  </ZHActionsRow>
+                </ZHGrid>
               </div>
             )}
 
@@ -699,14 +733,15 @@ export function CatalogStructurePage() {
                       </td>
                       <td className="catalog-structure-actions">
                         {canUpdateCategories && (
-                          <button type="button" className="btn btn--primary btn-sm" onClick={() => startEditCat(x)} disabled={saving}>
+                          <ZHBtn variant="secondary" size="xs" type="button" onClick={() => startEditCat(x)} disabled={saving}>
                             {t('catalog.structure.edit')}
-                          </button>
+                          </ZHBtn>
                         )}
                         {x.isActive && canDeleteCategories && (
-                          <button
+                          <ZHBtn
+                            variant="ghost"
+                            size="xs"
                             type="button"
-                            className="btn btn--primary btn-sm"
                             onClick={() => {
                               void (async () => {
                                 setSaving(true);
@@ -724,12 +759,13 @@ export function CatalogStructurePage() {
                             disabled={saving}
                           >
                             {t('catalog.structure.disable')}
-                          </button>
+                          </ZHBtn>
                         )}
                         {!x.isActive && canUpdateCategories && (
-                          <button
+                          <ZHBtn
+                            variant="secondary"
+                            size="xs"
                             type="button"
-                            className="btn btn--primary btn-sm"
                             onClick={() => {
                               void (async () => {
                                 setSaving(true);
@@ -747,7 +783,7 @@ export function CatalogStructurePage() {
                             disabled={saving}
                           >
                             {t('catalog.structure.enable')}
-                          </button>
+                          </ZHBtn>
                         )}
                       </td>
                     </tr>
@@ -760,149 +796,114 @@ export function CatalogStructurePage() {
 
         {tab === 'subcategory' && (
           <>
-            <div className="catalog-structure-filters">
-              <label className="field">
-                <span className="label">{t('catalog.structure.filterStatus')}</span>
-                <select
-                  className="input"
-                  value={subStatus}
-                  onChange={(e) => setSubStatus(e.target.value as CatalogActiveStatus)}
-                  disabled={subsLoading}
-                >
-                  {statusSelect}
-                </select>
-              </label>
-              <label className="field">
-                <span className="label">{t('catalog.categories.line')}</span>
-                <select className="input" value={subFilterLineId} onChange={(e) => onSubFilterLineChange(e.target.value)} disabled={subsLoading}>
-                  <option value="">{t('catalog.structure.allLines')}</option>
-                  {linesPick.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.code} — {l.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="field">
-                <span className="label">{t('catalog.subcategories.category')}</span>
-                <select
-                  className="input"
-                  value={subFilterCategoryId}
-                  onChange={(e) => setSubFilterCategoryId(e.target.value)}
-                  disabled={subsLoading || !subFilterLineId}
-                >
-                  <option value="">{t('catalog.structure.allCategories')}</option>
-                  {subFilterCategories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.code} — {c.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="field" style={{ minWidth: 200, flex: 1 }}>
-                <span className="label">{t('catalog.structure.search')}</span>
-                <input
-                  className="input"
-                  value={subSearch}
-                  onChange={(e) => setSubSearch(e.target.value)}
-                  disabled={subsLoading}
-                  placeholder={t('catalog.structure.searchPlaceholder')}
-                />
-              </label>
-            </div>
-
-            {canCreateSubcategories && (
-              <div className="form-grid" style={{ marginBottom: 14 }}>
-                <label className="field">
-                  <span className="label">{t('common.code')}</span>
-                  <input className="input" value={subForm.code} onChange={(e) => setSubForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
-                </label>
-                <label className="field">
-                  <span className="label">{t('common.name')}</span>
-                  <input className="input" value={subForm.name} onChange={(e) => setSubForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
-                </label>
-                <label className="field">
-                  <span className="label">{t('catalog.categories.line')}</span>
-                  <select
-                    className="input"
-                    value={subForm.lineId}
-                    onChange={(e) => setSubForm((s) => ({ ...s, lineId: e.target.value, categoryId: '' }))}
-                    disabled={saving}
-                  >
-                    <option value="">{t('common.select')}</option>
+            <ZHGridRow cols={3} className="zh-mb-14">
+                <ZHField label={t('catalog.structure.filterStatus')}>
+                  <select value={subStatus} onChange={(e) => setSubStatus(e.target.value as CatalogActiveStatus)} disabled={subsLoading}>
+                    {statusSelect}
+                  </select>
+                </ZHField>
+                <ZHField label={t('catalog.categories.line')}>
+                  <select value={subFilterLineId} onChange={(e) => onSubFilterLineChange(e.target.value)} disabled={subsLoading}>
+                    <option value="">{t('catalog.structure.allLines')}</option>
                     {linesPick.map((l) => (
                       <option key={l.id} value={l.id}>
                         {l.code} — {l.name}
                       </option>
                     ))}
                   </select>
-                </label>
-                <label className="field">
-                  <span className="label">{t('catalog.subcategories.category')}</span>
-                  <select className="input" value={subForm.categoryId} onChange={(e) => setSubForm((s) => ({ ...s, categoryId: e.target.value }))} disabled={saving || !subForm.lineId}>
-                    <option value="">{t('common.select')}</option>
-                    {catsForSubForm.map((c) => (
+                </ZHField>
+                <ZHField label={t('catalog.subcategories.category')}>
+                  <select value={subFilterCategoryId} onChange={(e) => setSubFilterCategoryId(e.target.value)} disabled={subsLoading || !subFilterLineId}>
+                    <option value="">{t('catalog.structure.allCategories')}</option>
+                    {subFilterCategories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.code} — {c.name}
                       </option>
                     ))}
                   </select>
-                </label>
-                <button
-                  type="button"
-                  className="btn btn--primary"
-                  onClick={() => void createSub()}
-                  disabled={saving || !subForm.code.trim() || !subForm.name.trim() || !subForm.lineId || !subForm.categoryId}
-                >
-                  {saving ? t('common.saving') : t('common.create')}
-                </button>
-              </div>
-            )}
+                </ZHField>
+            </ZHGridRow>
+            <ZHGridRow cols={1} className="zh-mb-14">
+              <ZHField label={t('catalog.structure.search')}>
+                <input value={subSearch} onChange={(e) => setSubSearch(e.target.value)} disabled={subsLoading} placeholder={t('catalog.structure.searchPlaceholder')} />
+              </ZHField>
+            </ZHGridRow>
 
-            {editSub && (
-              <div className="table-card" style={{ marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, marginBottom: 8 }}>{t('catalog.structure.editSubcategory')}</div>
-                <div className="form-grid">
-                  <label className="field">
-                    <span className="label">{t('common.code')}</span>
-                    <input className="input" value={editSubForm.code} onChange={(e) => setEditSubForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
-                  </label>
-                  <label className="field">
-                    <span className="label">{t('common.name')}</span>
-                    <input className="input" value={editSubForm.name} onChange={(e) => setEditSubForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
-                  </label>
-                  <label className="field">
-                    <span className="label">{t('catalog.categories.line')}</span>
-                    <select
-                      className="input"
-                      value={editSubForm.lineId}
-                      onChange={(e) => setEditSubForm((s) => ({ ...s, lineId: e.target.value, categoryId: '' }))}
-                      disabled={saving}
-                    >
+            {canCreateSubcategories && (
+              <ZHSection bottom={14}>
+                <ZHGrid cols={3}>
+                  <ZHField label={t('common.code')}>
+                    <input value={subForm.code} onChange={(e) => setSubForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
+                  </ZHField>
+                  <ZHField label={t('common.name')}>
+                    <input value={subForm.name} onChange={(e) => setSubForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
+                  </ZHField>
+                  <ZHField label={t('catalog.categories.line')}>
+                    <select value={subForm.lineId} onChange={(e) => setSubForm((s) => ({ ...s, lineId: e.target.value, categoryId: '' }))} disabled={saving}>
+                      <option value="">{t('common.select')}</option>
                       {linesPick.map((l) => (
                         <option key={l.id} value={l.id}>
                           {l.code} — {l.name}
                         </option>
                       ))}
                     </select>
-                  </label>
-                  <label className="field">
-                    <span className="label">{t('catalog.subcategories.category')}</span>
-                    <select className="input" value={editSubForm.categoryId} onChange={(e) => setEditSubForm((s) => ({ ...s, categoryId: e.target.value }))} disabled={saving || !editSubForm.lineId}>
+                  </ZHField>
+                  <ZHField label={t('catalog.subcategories.category')}>
+                    <select value={subForm.categoryId} onChange={(e) => setSubForm((s) => ({ ...s, categoryId: e.target.value }))} disabled={saving || !subForm.lineId}>
+                      <option value="">{t('common.select')}</option>
+                      {catsForSubForm.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.code} — {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </ZHField>
+                  <ZHActionsRow>
+                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void createSub()} disabled={saving || !subForm.code.trim() || !subForm.name.trim() || !subForm.lineId || !subForm.categoryId}>
+                      {saving ? t('common.saving') : t('common.create')}
+                    </ZHBtn>
+                  </ZHActionsRow>
+                </ZHGrid>
+              </ZHSection>
+            )}
+
+            {editSub && (
+              <div className="table-card zh-mb-14">
+                <div className="zh-card-section-title zh-mb-8">{t('catalog.structure.editSubcategory')}</div>
+                <ZHGrid cols={3}>
+                  <ZHField label={t('common.code')}>
+                    <input value={editSubForm.code} onChange={(e) => setEditSubForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
+                  </ZHField>
+                  <ZHField label={t('common.name')}>
+                    <input value={editSubForm.name} onChange={(e) => setEditSubForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
+                  </ZHField>
+                  <ZHField label={t('catalog.categories.line')}>
+                    <select value={editSubForm.lineId} onChange={(e) => setEditSubForm((s) => ({ ...s, lineId: e.target.value, categoryId: '' }))} disabled={saving}>
+                      {linesPick.map((l) => (
+                        <option key={l.id} value={l.id}>
+                          {l.code} — {l.name}
+                        </option>
+                      ))}
+                    </select>
+                  </ZHField>
+                  <ZHField label={t('catalog.subcategories.category')}>
+                    <select value={editSubForm.categoryId} onChange={(e) => setEditSubForm((s) => ({ ...s, categoryId: e.target.value }))} disabled={saving || !editSubForm.lineId}>
                       {editSubCats.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.code} — {c.name}
                         </option>
                       ))}
                     </select>
-                  </label>
-                  <button type="button" className="btn btn--primary" onClick={() => void saveSubEdit()} disabled={saving || !editSubForm.categoryId}>
-                    {t('catalog.structure.save')}
-                  </button>
-                  <button type="button" className="btn btn--ghost" onClick={() => setEditSub(null)} disabled={saving}>
-                    {t('catalog.structure.cancel')}
-                  </button>
-                </div>
+                  </ZHField>
+                  <ZHActionsRow>
+                    <ZHBtn variant="ghost" size="sm" type="button" onClick={() => setEditSub(null)} disabled={saving}>
+                      {t('catalog.structure.cancel')}
+                    </ZHBtn>
+                    <ZHBtn variant="primary" size="sm" type="button" onClick={() => void saveSubEdit()} disabled={saving || !editSubForm.categoryId}>
+                      {t('catalog.structure.save')}
+                    </ZHBtn>
+                  </ZHActionsRow>
+                </ZHGrid>
               </div>
             )}
 
@@ -934,14 +935,15 @@ export function CatalogStructurePage() {
                       </td>
                       <td className="catalog-structure-actions">
                         {canUpdateSubcategories && (
-                          <button type="button" className="btn btn--primary btn-sm" onClick={() => startEditSub(x)} disabled={saving}>
+                          <ZHBtn variant="secondary" size="xs" type="button" onClick={() => startEditSub(x)} disabled={saving}>
                             {t('catalog.structure.edit')}
-                          </button>
+                          </ZHBtn>
                         )}
                         {x.isActive && canDeleteSubcategories && (
-                          <button
+                          <ZHBtn
+                            variant="ghost"
+                            size="xs"
                             type="button"
-                            className="btn btn--primary btn-sm"
                             onClick={() => {
                               void (async () => {
                                 setSaving(true);
@@ -959,12 +961,13 @@ export function CatalogStructurePage() {
                             disabled={saving}
                           >
                             {t('catalog.structure.disable')}
-                          </button>
+                          </ZHBtn>
                         )}
                         {!x.isActive && canUpdateSubcategories && (
-                          <button
+                          <ZHBtn
+                            variant="secondary"
+                            size="xs"
                             type="button"
-                            className="btn btn--primary btn-sm"
                             onClick={() => {
                               void (async () => {
                                 setSaving(true);
@@ -982,7 +985,7 @@ export function CatalogStructurePage() {
                             disabled={saving}
                           >
                             {t('catalog.structure.enable')}
-                          </button>
+                          </ZHBtn>
                         )}
                       </td>
                     </tr>

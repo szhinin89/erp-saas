@@ -3,6 +3,17 @@
 }
 
 :root {
+  /* ZH Technologies — Form System (mandatory palette) */
+  --zh-blue: #4F7BA6;
+  --zh-blue-dark: #2C4E72;
+  --zh-blue-light: #EBF2FA;
+  --zh-blue-mid: #D0E3F4;
+  --zh-accent: #3A6A94;
+  --zh-success: #1D9E75;
+  --zh-danger: #E24B4A;
+  --zh-warning: #BA7517;
+  --zh-radius: 8px;
+
   --zh-color-primary: #003366; /* Deep Blue */
   --zh-color-accent: #00e5ff;  /* Electric Cyan */
   --zh-color-bg: #f8fafc;      /* App background */
@@ -15,6 +26,94 @@
   --zh-radius-md: 10px;
 
   --zh-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.08);
+
+  /* Shared neutral tokens used by ZH forms */
+  --color-border-tertiary: var(--zh-color-border);
+  --color-text-secondary: rgba(30, 41, 59, 0.75);
+  --color-text-muted: rgba(30, 41, 59, 0.55);
+  --color-bg-secondary: #f3f6fa;
+
+  /* Template compatibility aliases (zh_erp_component_library.html) */
+  --B: var(--zh-blue);
+  --BD: var(--zh-blue-dark);
+  --BL: var(--zh-blue-light);
+  --BM: var(--zh-blue-mid);
+  --S: var(--zh-success);
+  --D: var(--zh-danger);
+  --W: var(--zh-warning);
+  --r: var(--zh-radius);
+
+  --color-background-primary: var(--zh-color-surface);
+  --color-background-secondary: var(--color-bg-secondary);
+  --color-text-primary: var(--zh-color-text);
+  --color-text-tertiary: var(--color-text-muted);
+  --color-border-secondary: rgba(15, 23, 42, 0.18);
+
+  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+
+  /* ── Tokens extra (compatibilidad zh-ui-library) ── */
+  --zh-primary: var(--zh-blue);
+  --zh-primary-dark: var(--zh-blue-dark);
+  --zh-primary-light: var(--zh-blue-light);
+  --zh-primary-mid: var(--zh-blue-mid);
+
+  --zh-focus-ring: 0 0 0 3px rgba(79, 123, 166, 0.15);
+  --zh-focus-ring-danger: 0 0 0 3px rgba(226, 75, 74, 0.15);
+  --zh-focus-ring-success: 0 0 0 3px rgba(29, 158, 117, 0.15);
+
+  --zh-font: var(--font-sans);
+  --zh-font-mono: var(--font-mono);
+
+  --zh-text-xs: 11px;
+  --zh-text-sm: 12px;
+  --zh-text-base: 13px;
+  --zh-text-md: 14px;
+  --zh-text-lg: 15px;
+  --zh-text-xl: 16px;
+  --zh-text-2xl: 18px;
+
+  --zh-transition: all 0.15s ease;
+  --zh-transition-slow: all 0.25s ease;
+
+  --zh-z-dropdown: 100;
+  --zh-z-modal: 200;
+  --zh-z-toast: 300;
+}
+
+/* ── Utilidades de animación (compatibilidad zh-ui-library) ── */
+@keyframes zh-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes zh-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes zh-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.zh-skeleton {
+  background: #E5E7EB;
+  border-radius: 4px;
+  animation: zh-pulse 1.4s ease-in-out infinite;
+}
+
+.zh-fade-in {
+  animation: zh-fade-in 0.2s ease forwards;
+}
+
+.zh-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(79,123,166,.25);
+  border-top-color: var(--zh-primary);
+  border-radius: 50%;
+  animation: zh-spin 0.6s linear infinite;
+  display: inline-block;
 }
 
 body {

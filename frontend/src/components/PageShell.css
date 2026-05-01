@@ -1,40 +1,23 @@
 .page-shell {
-  max-width: 1100px;
+  max-width: 1400px;
+  width: 100%;
 }
 
-.page-shell-header {
+.page-shell--compactHeading {
+  margin-top: -8px;
+}
+
+.page-shell-heading {
+  margin-bottom: 16px;
+}
+
+.zh-page-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
-}
-
-.page-shell-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--zh-color-text);
-  margin: 0;
-}
-
-.page-shell-action button {
-  padding: 9px 18px;
-  background: var(--zh-color-accent);
-  color: #00303a;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.12s, box-shadow 0.15s, background 0.15s;
-}
-
-.page-shell-action button:hover {
-  background: #00d5ee;
-  box-shadow: 0 0 0 4px rgba(0,229,255,0.22);
-}
-
-.page-shell-action button:active {
-  transform: translateY(1px);
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
 }
 
 /* Table card */

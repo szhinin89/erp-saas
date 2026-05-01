@@ -8,6 +8,7 @@ using ERP.Domain.Security.Entities;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Geography.Entities;
+using ERP.Domain.Audit.Entities;
 using ERP.Application.Common;
 using System.Linq.Expressions;
 
@@ -48,6 +49,7 @@ public class ErpDbContext : DbContext
     public DbSet<GeoCanton> GeoCantons => Set<GeoCanton>();
     public DbSet<GeoParish> GeoParishes => Set<GeoParish>();
     public DbSet<Branch> Branches => Set<Branch>();
+    public DbSet<UserActivity> UserActivities => Set<UserActivity>();
 
     /// <summary>
     /// Evaluada en cada query, no al compilar el modelo.

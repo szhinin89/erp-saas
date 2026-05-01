@@ -402,6 +402,75 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("journal_entry_lines", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Audit.Entities.UserActivity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("action");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(800)
+                        .HasColumnType("character varying(800)")
+                        .HasColumnName("description");
+
+                    b.Property<Guid?>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("EntityType")
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("entity_type");
+
+                    b.Property<string>("Module")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("module");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("UserEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("user_email");
+
+                    b.Property<string>("UserFullName")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
+                        .HasColumnName("user_full_name");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "Module", "CreatedAt")
+                        .HasDatabaseName("ix_user_activity_tenant_module_created_at");
+
+                    b.HasIndex("TenantId", "UserId", "CreatedAt")
+                        .HasDatabaseName("ix_user_activity_tenant_user_created_at");
+
+                    b.HasIndex("TenantId", "EntityType", "EntityId", "CreatedAt")
+                        .HasDatabaseName("ix_user_activity_tenant_entity_created_at");
+
+                    b.ToTable("user_activity", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Auth.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")

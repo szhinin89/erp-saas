@@ -1,18 +1,3 @@
-.table-card .field > .label,
-.branches-dialog-inner .field > .label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.branches-dialog-inner .field--inline span:last-child {
-  font-size: 13px;
-  font-weight: 500;
-  color: #374151;
-}
-
 .branches-dialog {
   border: none;
   border-radius: 14px;
@@ -49,10 +34,6 @@
   background: #fffbeb;
   border: 1px solid #fcd34d;
   border-radius: 8px;
-}
-
-.branches-dialog .form-grid--2col {
-  margin-bottom: 8px;
 }
 
 .branches-audit {

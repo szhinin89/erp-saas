@@ -3,15 +3,22 @@ import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
 import { tenantAccessService, type TenantMembershipItem } from '../services/tenantAccessService';
 import { profileService, type Profile } from '../services/profileService';
+import { PageShell, TableCard, EmptyState, LoadingState, NoAccessPage } from '../components/PageShell';
+import { ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions, ZHBtn } from '../components/zh/ZHForm';
+import { ZHSection, ZHActionsRow } from '../components/zh/ZHLayout';
+import { ZHFormCard } from '../components/zh/ZHFormCard';
+import { ZHConfirmModal } from '../components/zh/ZHConfirmModal';
 
 export function TenantAccessPage() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
+  const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
 
   const [items, setItems] = useState<TenantMembershipItem[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [revokeConfirmEmail, setRevokeConfirmEmail] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     email: '',
@@ -49,7 +56,7 @@ export function TenantAccessPage() {
   }, [refresh]);
 
   if (!user || (user.role !== 'Admin' && user.role !== 'SuperAdmin')) {
-    return <div className="page-shell"><h1>{t('tenantAccess.title')}</h1><p>{t('tenantAccess.noAccess')}</p></div>;
+    return <NoAccessPage title={t('tenantAccess.title')} />;
   }
 
   const submit = async (e: React.FormEvent) => {
@@ -85,57 +92,114 @@ export function TenantAccessPage() {
   };
 
   return (
-    <div className="page-shell">
-      <h1 className="page-title">{t('tenantAccess.title')}</h1>
-      <p className="page-subtitle">{t('tenantAccess.subtitle')}</p>
+    <PageShell kicker={t('app.nav.group.access')} title={t('tenantAccess.title')} subtitle={t('tenantAccess.subtitle')}>
+      <ZHFormCard
+        hideHeader
+        title={t('tenantAccess.title')}
+        subtitle={t('tenantAccess.subtitle')}
+        onSubmit={submit}
+      >
+        <input type="hidden" name="tenantId" value={tenantId} />
+        {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
-      <form className="companies-form" onSubmit={submit}>
-        <div className="grid">
-          <input placeholder={t('tenantAccess.form.email')} value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required />
-          <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}>
-            <option value="User">{t('tenantAccess.form.role.user')}</option>
-            <option value="Admin">{t('tenantAccess.form.role.admin')}</option>
-          </select>
-          <select value={form.profileId} onChange={(e) => setForm((f) => ({ ...f, profileId: e.target.value }))}>
-            <option value="">{t('tenantAccess.form.noProfile')}</option>
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-          <input placeholder={t('tenantAccess.form.firstName')} value={form.firstName} onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))} />
-          <input placeholder={t('tenantAccess.form.lastName')} value={form.lastName} onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))} />
-          <input placeholder={t('tenantAccess.form.password')} type="password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
-        </div>
-        {error && <p className="form-error">{error}</p>}
-        <button className="primary-btn" disabled={loading}>{t('tenantAccess.form.save')}</button>
-      </form>
+        <ZHFormSection title={t('tenantAccess.section.manage')}>
+          <ZHGrid cols={2}>
+            <ZHField label={t('tenantAccess.form.email')} required>
+              <input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required disabled={loading} />
+            </ZHField>
+            <ZHField label={t('tenantAccess.form.role.user')} required>
+              <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} disabled={loading}>
+                <option value="User">{t('tenantAccess.form.role.user')}</option>
+                <option value="Admin">{t('tenantAccess.form.role.admin')}</option>
+              </select>
+            </ZHField>
+            <ZHField label={t('tenantAccess.form.noProfile')}>
+              <select value={form.profileId} onChange={(e) => setForm((f) => ({ ...f, profileId: e.target.value }))} disabled={loading}>
+                <option value="">{t('tenantAccess.form.noProfile')}</option>
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </ZHField>
+            <ZHField label={t('tenantAccess.form.firstName')}>
+              <input value={form.firstName} onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))} disabled={loading} />
+            </ZHField>
+            <ZHField label={t('tenantAccess.form.lastName')}>
+              <input value={form.lastName} onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))} disabled={loading} />
+            </ZHField>
+            <ZHField label={t('tenantAccess.form.password')}>
+              <input type="password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} disabled={loading} />
+            </ZHField>
+          </ZHGrid>
+        </ZHFormSection>
 
-      <div className="companies-list">
-        <div className="table">
-          <div className="row head">
-            <div>{t('tenantAccess.table.user')}</div>
-            <div>{t('tenantAccess.table.role')}</div>
-            <div>{t('tenantAccess.table.profile')}</div>
-            <div>{t('tenantAccess.table.actions')}</div>
-          </div>
-          {items.map((m) => (
-            <div key={`${m.identityUserId}-${m.email}`} className="row">
-              <div>
-                <div style={{ fontWeight: 800 }}>{m.fullName || m.email}</div>
-                <div className="mono">{m.email}</div>
-              </div>
-              <div>{m.role}</div>
-              <div className="mono">{m.profileId ?? '-'}</div>
-              <div>
-                <button className="secondary-btn" type="button" onClick={() => revoke(m.email)}>
-                  {t('tenantAccess.actions.revoke')}
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+        <ZHFormActions
+          onCancel={() => setForm({ email: '', role: 'User', profileId: '', firstName: '', lastName: '', password: '' })}
+          onDraft={undefined}
+          onSave={undefined}
+          disableDraft
+          disableSave={loading}
+          saveButtonType="submit"
+          labels={{ cancel: t('common.cancel'), draft: t('common.saveDraft') ?? 'Guardar borrador', save: t('tenantAccess.form.save') }}
+        />
+      </ZHFormCard>
+
+      <ZHSection top={16}>
+        <TableCard>
+          {loading ? (
+            <LoadingState />
+          ) : items.length === 0 ? (
+            <EmptyState message={t('common.noData')} />
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>{t('tenantAccess.table.user')}</th>
+                  <th>{t('tenantAccess.table.role')}</th>
+                  <th>{t('tenantAccess.table.profile')}</th>
+                  <th>{t('tenantAccess.table.actions')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((m) => (
+                  <tr key={`${m.identityUserId}-${m.email}`}>
+                    <td>
+                      <div className="zh-card-section-title">{m.fullName || m.email}</div>
+                      <div className="mono">{m.email}</div>
+                    </td>
+                    <td>{m.role}</td>
+                    <td className="mono">{m.profileId ?? '-'}</td>
+                    <td>
+                      <ZHActionsRow>
+                        <ZHBtn variant="destructive" type="button" onClick={() => setRevokeConfirmEmail(m.email)}>
+                          {t('tenantAccess.actions.revoke')}
+                        </ZHBtn>
+                      </ZHActionsRow>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </TableCard>
+      </ZHSection>
+
+      {revokeConfirmEmail ? (
+        <ZHConfirmModal
+          title={t('tenantAccess.actions.revoke')}
+          message={`${t('common.confirm')} ${t('tenantAccess.actions.revoke')} ${revokeConfirmEmail}?`}
+          confirmLabel={t('tenantAccess.actions.revoke')}
+          variant="destructive"
+          loading={loading}
+          onCancel={() => setRevokeConfirmEmail(null)}
+          onConfirm={async () => {
+            const email = revokeConfirmEmail;
+            setRevokeConfirmEmail(null);
+            await revoke(email);
+          }}
+        />
+      ) : null}
+    </PageShell>
   );
 }
 

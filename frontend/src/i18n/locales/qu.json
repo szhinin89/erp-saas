@@ -102,6 +102,14 @@
   "login.error.default": "Mana atiparichu yaykuy",
   "login.forgotPassword": "Ñawpaq rimayta qhipay?",
   "login.superadmin": "Ñuka SuperAdmin kani",
+
+  "tenantSelect.title": "Akllay huk kompaniyata",
+  "tenantSelect.subtitle": "Kaykuna kumpañiyakuna kaypaq",
+  "tenantSelect.search": "Maskay sutiwan, slugwan, idwan utaq rolwan…",
+  "tenantSelect.back": "Kutiy qallariyman",
+  "tenantSelect.missing": "Mana kanchu sesión de selección activa. Yapamanta yaykuy.",
+  "tenantSelect.error.default": "Mana atirkanchu kompaniyaman yaykuy.",
+
   "reset.title": "Rimayta kutichiy",
   "reset.subtitle": "Mushuk rimayta churay",
   "reset.email.label": "Email",
@@ -126,7 +134,9 @@
 
   "common.loading": "Cargando...",
   "common.errorPrefix": "Error:",
+  "common.refresh": "Actualizar",
   "common.cancel": "Cancelar",
+  "common.saveDraft": "Guardar borrador",
   "common.saving": "Guardando...",
   "common.active": "Activo",
   "common.inactive": "Inactivo",

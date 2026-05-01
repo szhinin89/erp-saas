@@ -46,3 +46,8 @@
   padding: 4px 10px;
   font-size: 0.85rem;
 }
+
+.catalog-structure-activityList {
+  margin: 0 0 12px 0;
+  padding-left: 18px;
+}

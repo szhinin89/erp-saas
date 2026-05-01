@@ -1,0 +1,31 @@
+.profiles-permsGrid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px;
+}
+
+.profiles-permItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--color-border-tertiary);
+  border-radius: 12px;
+  background: var(--color-bg-secondary);
+}
+
+.profiles-permText {
+  display: flex;
+  flex-direction: column;
+}
+
+.profiles-permLabel {
+  font-weight: 700;
+}
+
+.profiles-permKey {
+  font-size: 12px;
+  opacity: 0.7;
+}
+

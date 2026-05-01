@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge } from '../components/PageShell';
+import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { useAuthStore } from '../store/authStore';
+import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHBtn } from '../components/zh/ZHForm';
 
 export type CatalogRow = { id: string; code: string; name: string; isActive: boolean };
 
@@ -69,12 +70,7 @@ export function CatalogSimplePage({ titleKey, load, create, fields, viewPermissi
   }, [refresh]);
 
   if (!canView) {
-    return (
-      <div className="page-shell">
-        <h1 className="page-title">{t(titleKey)}</h1>
-        <p className="page-subtitle">{t('common.noAccess')}</p>
-      </div>
-    );
+    return <NoAccessPage title={t(titleKey)} />;
   }
 
   const onCreate = async () => {
@@ -104,52 +100,58 @@ export function CatalogSimplePage({ titleKey, load, create, fields, viewPermissi
 
   return (
     <PageShell
+      kicker={t('app.nav.group.catalog')}
       title={t(titleKey)}
       action={
         canCreate ? (
-          <button className="btn" onClick={onCreate} disabled={saving || loading}>
+          <ZHBtn variant="primary" type="button" onClick={onCreate} disabled={saving || loading}>
             {saving ? t('common.saving') : t('common.create')}
-          </button>
+          </ZHBtn>
         ) : undefined
       }
     >
       <TableCard>
         {!canCreate && (
-          <div className="empty-state" style={{ marginBottom: 12 }}>
+          <div className="empty-state zh-mb-12">
             {t('common.readOnly')}
           </div>
         )}
-        <div className="form-grid">
-          {actualFields.map((f) => (
-            <label key={f.key} className="field">
-              <span className="label">{t(f.labelKey)}</span>
-              {f.type === 'select' ? (
-                <select
-                  className="input"
-                  value={form[f.key] ?? ''}
-                  onChange={(e) => setForm((s) => ({ ...s, [f.key]: e.target.value }))}
-                  disabled={!canCreate || saving || loading}
-                >
-                  <option value="">{t('common.select')}</option>
-                  {(f.options ?? []).map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  className="input"
-                  value={form[f.key] ?? ''}
-                  onChange={(e) => setForm((s) => ({ ...s, [f.key]: e.target.value }))}
-                  placeholder={t(f.placeholderKey)}
-                  type={f.type === 'number' ? 'number' : 'text'}
-                  step={f.type === 'number' ? '0.01' : undefined}
-                  disabled={!canCreate || saving || loading}
-                />
-              )}
-            </label>
-          ))}
+        <div className="zh-form">
+          <ZHFormBody>
+            <ZHFormSection title={t(titleKey)}>
+              <ZHGrid cols={2}>
+                {actualFields.map((f) => (
+                  <ZHField key={f.key} label={t(f.labelKey)} required={f.key === 'code' || f.key === 'name'}>
+                    {f.type === 'select' ? (
+                      <select
+                        value={form[f.key] ?? ''}
+                        onChange={(e) => setForm((s) => ({ ...s, [f.key]: e.target.value }))}
+                        disabled={!canCreate || saving || loading}
+                      >
+                        <option value="">{t('common.select')}</option>
+                        {(f.options ?? []).map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        value={form[f.key] ?? ''}
+                        onChange={(e) => setForm((s) => ({ ...s, [f.key]: e.target.value }))}
+                        placeholder={t(f.placeholderKey)}
+                        type={f.type === 'number' ? 'number' : 'text'}
+                        step={f.type === 'number' ? '0.01' : undefined}
+                        disabled={!canCreate || saving || loading}
+                      />
+                    )}
+                  </ZHField>
+                ))}
+              </ZHGrid>
+            </ZHFormSection>
+
+            {/* Acción principal ya está en el header del PageShell */}
+          </ZHFormBody>
         </div>
 
         {error && <ErrorState message={error} />}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { EmptyState, PageShell } from '../components/PageShell';
+import { EmptyState, PageShell, NoAccessPage, PageToolbar } from '../components/PageShell';
 import { useAuthStore } from '../store/authStore';
 import { securityService, type SecurityAdminMatrix, type SecurityUser } from '../services/securityService';
 import { useI18n } from '../i18n/i18n';
@@ -113,23 +113,14 @@ export function SecuritySettingsPage() {
   };
 
   if (!isSuperAdmin) {
-    return (
-      <PageShell title={t('security.title')}>
-        <div className="card">
-          <p style={{ margin: 0 }}>{t('security.noAccess')}</p>
-        </div>
-      </PageShell>
-    );
+    return <NoAccessPage title={t('security.title')} />;
   }
 
   return (
-    <PageShell
-      title={t('security.title')}
-      action={<span style={{ fontSize: 13, color: '#475569' }}>{t('security.subtitle')}</span>}
-    >
-      <div className="security-toolbar">
+    <PageShell kicker={t('app.nav.group.security')} title={t('security.title')} subtitle={t('security.subtitle')}>
+      <PageToolbar>
         {error ? <div className="security-error">{error}</div> : null}
-      </div>
+      </PageToolbar>
 
       <div className="card security-tableCard">
         {loading ? (
@@ -155,8 +146,8 @@ export function SecuritySettingsPage() {
                         <div className="userCell">
                           <div className="userName">{u.fullName}</div>
                           <div className="userMeta">
-                            <span className="mono">{u.email}</span>
-                            <span className="badge">{u.role}</span>
+                            <span className="mono security-mono">{u.email}</span>
+                            <span className="security-badge">{u.role}</span>
                           </div>
                         </div>
                       </td>

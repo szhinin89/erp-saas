@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PageShell } from '../components/PageShell';
+import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge } from '../components/PageShell';
 import { superAdminService, type SuperAdminTenant } from '../services/superAdminService';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n/i18n';
+import { ZHBtn, ZHField } from '../components/zh/ZHForm';
+import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../components/zh/ZHLayout';
+import { ZHDashboardScaffold, ZHKpiPanel, ZHPanelGrid } from '../components/zh/ZHDashboard';
 import './SuperAdminPanelPage.css';
 
 function storeImpersonationTenantName(name: string) {
@@ -73,10 +76,10 @@ export function SuperAdminPanelPage() {
 
   if (!isSuperAdmin) {
     return (
-      <PageShell title={t('superadmin.title')}>
-        <div className="card">
-          <p style={{ margin: 0 }}>{t('superadmin.noAccess')}</p>
-        </div>
+      <PageShell kicker={t('app.nav.group.saas')} title={t('superadmin.title')}>
+        <TableCard>
+          <div className="empty-state">{t('superadmin.noAccess')}</div>
+        </TableCard>
       </PageShell>
     );
   }
@@ -84,78 +87,100 @@ export function SuperAdminPanelPage() {
   if (hasSelectedTenant) {
     return (
       <PageShell
+        kicker={t('app.nav.group.saas')}
         title={t('superadmin.title')}
-        action={<button onClick={() => navigate('/dashboard')}>{t('superadmin.goToTenant')}</button>}
+        action={
+          <ZHBtn variant="primary" size="sm" type="button" onClick={() => navigate('/dashboard')}>
+            {t('superadmin.goToTenant')}
+          </ZHBtn>
+        }
       >
-        <div className="card">
-          <p style={{ margin: 0 }}>{t('superadmin.alreadyInTenant')}</p>
-        </div>
+        <TableCard>
+          <div className="empty-state">{t('superadmin.alreadyInTenant')}</div>
+        </TableCard>
       </PageShell>
     );
   }
 
   return (
-    <PageShell title={t('superadmin.title')} action={<span className="subtle">{t('superadmin.subtitle')}</span>}>
-      {error ? <div className="error-state">{error}</div> : null}
+    <PageShell kicker={t('app.nav.group.saas')} title={t('superadmin.title')} subtitle={t('superadmin.subtitle')}>
+      {error ? <ErrorState message={error} /> : null}
 
-      <div className="sa-grid">
-        <div className="sa-metrics card">
-          <h2 className="sa-sectionTitle">{t('superadmin.metrics')}</h2>
-          {loading || !metrics ? (
-            <div className="empty-state">{t('common.loading')}</div>
-          ) : (
-            <div className="sa-metricCards">
-              <div className="sa-metric">
-                <div className="sa-metricLabel">{t('superadmin.totalTenants')}</div>
-                <div className="sa-metricValue">{metrics.totals.totalTenants}</div>
-              </div>
-              <div className="sa-metric">
-                <div className="sa-metricLabel">{t('superadmin.activeTenants')}</div>
-                <div className="sa-metricValue">{metrics.totals.activeTenants}</div>
-              </div>
-              <div className="sa-metric">
-                <div className="sa-metricLabel">{t('superadmin.totalUsers')}</div>
-                <div className="sa-metricValue">{metrics.totals.totalUsers}</div>
-              </div>
-              <div className="sa-metric">
-                <div className="sa-metricLabel">{t('superadmin.activeUsers')}</div>
-                <div className="sa-metricValue">{metrics.totals.activeUsers}</div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="sa-tenants card">
-          <h2 className="sa-sectionTitle">{t('superadmin.tenantPicker')}</h2>
-
-          <input
-            className="sa-search"
-            placeholder={t('superadmin.searchPlaceholder')}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-
-          <div className="sa-tenantList">
-            {filtered.map((tenant) => (
-              <button
-                key={tenant.id}
-                className="sa-tenantRow"
-                onClick={() => handleSwitch(tenant)}
-                disabled={switching !== null}
-              >
-                <div className="sa-tenantName">{tenant.name}</div>
-                <div className="sa-tenantMeta">
-                  <span className="mono">{tenant.slug}</span>
-                  <span className="mono">{tenant.id}</span>
-                </div>
-                <div className="sa-tenantAction">
-                  {switching === tenant.id ? t('superadmin.switching') : t('superadmin.enter')}
-                </div>
-              </button>
-            ))}
+      <ZHDashboardScaffold>
+        <ZHPanelGrid className="zh-dash-panels--leftNarrow">
+          <div>
+            {loading || !metrics ? (
+              <TableCard><LoadingState /></TableCard>
+            ) : (
+              <ZHKpiPanel
+                title={t('superadmin.metrics')}
+                items={[
+                  { label: t('superadmin.totalTenants'), value: String(metrics.totals.totalTenants), tone: 'neutral' },
+                  { label: t('superadmin.activeTenants'), value: String(metrics.totals.activeTenants), tone: 'info' },
+                  { label: t('superadmin.totalUsers'), value: String(metrics.totals.totalUsers), tone: 'neutral' },
+                  { label: t('superadmin.activeUsers'), value: String(metrics.totals.activeUsers), tone: 'success' },
+                ]}
+              />
+            )}
           </div>
-        </div>
-      </div>
+
+          <TableCard>
+            <ZHCardSection title={t('superadmin.tenantPicker')}>
+              <ZHGridRow cols={1}>
+                <ZHField label={t('superadmin.searchPlaceholder')}>
+                  <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder={t('superadmin.searchPlaceholder')}
+                    disabled={loading || switching !== null}
+                  />
+                </ZHField>
+              </ZHGridRow>
+
+              {loading ? (
+                <LoadingState />
+              ) : filtered.length === 0 ? (
+                <EmptyState message={t('common.noData')} />
+              ) : (
+                <div className="sa-tenantList">
+                  {filtered.map((tenant) => (
+                    <div key={tenant.id} className="sa-tenantRow">
+                      <div className="sa-tenantName">{tenant.name}</div>
+                      <div className="sa-tenantMeta">
+                        <span className="mono">{tenant.slug}</span>
+                        <span className="mono">{tenant.id}</span>
+                      </div>
+                      <div className="sa-tenant-stats">
+                        <Badge
+                          label={tenant.isActive ? t('common.active') : t('common.inactive')}
+                          variant={tenant.isActive ? 'green' : 'gray'}
+                        />
+                        <span className="subtle">
+                          {t('common.users') ?? 'Usuarios'}: <strong>{tenant.totalUsers}</strong> · {t('common.active')}: <strong>{tenant.activeUsers}</strong>
+                        </span>
+                        <span className="subtle">
+                          {new Date(tenant.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <ZHInlineRowRight>
+                        <ZHBtn
+                          variant="primary"
+                          size="sm"
+                          type="button"
+                          onClick={() => void handleSwitch(tenant)}
+                          disabled={switching !== null}
+                        >
+                          {switching === tenant.id ? t('superadmin.switching') : t('superadmin.enter')}
+                        </ZHBtn>
+                      </ZHInlineRowRight>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ZHCardSection>
+          </TableCard>
+        </ZHPanelGrid>
+      </ZHDashboardScaffold>
     </PageShell>
   );
 }

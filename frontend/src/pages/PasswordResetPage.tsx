@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import type { ApiResponse } from '../types/api';
 import { useI18n } from '../i18n/i18n';
+import { ZHFormHeader, ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions } from '../components/zh/ZHForm';
+import { ZHCenteredCard } from '../components/zh/ZHCenteredCard';
 import './LoginPage.css';
 
 type PasswordResetRequest = {
@@ -101,85 +103,98 @@ export function PasswordResetPage() {
   };
 
   return (
-    <div className="login-bg">
-      <div className="login-card">
-        <div className="login-header">
-          <div className="login-logo">ZH</div>
-          <h1 className="login-title">{t('reset.title')}</h1>
-          <p className="login-subtitle">{t('reset.subtitle')}</p>
-        </div>
+    <ZHCenteredCard bgClassName="login-bg" cardClassName="login-card">
+      <form className="login-form" onSubmit={handleSubmit}>
+          <ZHFormHeader title={t('reset.title')} subtitle={t('reset.subtitle')} />
+          <ZHFormBody>
+            {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
+            {success ? <ZHFormAlert type="success" message={success} /> : null}
 
-        <form className="login-form" onSubmit={handleSubmit}>
-          <div className="field">
-            <label htmlFor="tenantId">{t('login.tenantId.label')}</label>
-            <input
-              id="tenantId"
-              type="text"
-              placeholder={t('login.tenantId.placeholder')}
-              value={form.tenantId}
-              onChange={(e) => setForm((f) => ({ ...f, tenantId: e.target.value }))}
-              required
-              autoComplete="off"
+            <ZHFormSection title={t('reset.title')}>
+              <ZHGrid cols={1}>
+                <ZHField
+                  label={t('login.tenantId.label')}
+                  required
+                  hint={
+                    tenantAllowsDirectReset === true
+                      ? t('reset.tenantCheck.enabled')
+                      : tenantAllowsDirectReset === false
+                        ? t('reset.error.disabled')
+                        : tenantCheckError || undefined
+                  }
+                  hintType={
+                    tenantAllowsDirectReset === true ? 'success' : tenantAllowsDirectReset === false ? 'error' : tenantCheckError ? 'info' : undefined
+                  }
+                >
+                  <input
+                    id="tenantId"
+                    type="text"
+                    placeholder={t('login.tenantId.placeholder')}
+                    value={form.tenantId}
+                    onChange={(e) => setForm((f) => ({ ...f, tenantId: e.target.value }))}
+                    required
+                    autoComplete="off"
+                    disabled={loading}
+                  />
+                </ZHField>
+
+                <ZHField label={t('reset.email.label')} required>
+                  <input
+                    id="email"
+                    type="email"
+                    placeholder={t('login.email.placeholder')}
+                    value={form.email}
+                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    required
+                    autoComplete="username"
+                    disabled={loading}
+                  />
+                </ZHField>
+
+                <ZHField label={t('reset.newPassword.label')} required>
+                  <input
+                    id="newPassword"
+                    type="password"
+                    placeholder={t('login.password.placeholder')}
+                    value={form.newPassword}
+                    onChange={(e) => setForm((f) => ({ ...f, newPassword: e.target.value }))}
+                    required
+                    autoComplete="new-password"
+                    disabled={loading}
+                  />
+                </ZHField>
+
+                <ZHField label={t('reset.confirmPassword.label')} required>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder={t('login.password.placeholder')}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    autoComplete="new-password"
+                    disabled={loading}
+                  />
+                </ZHField>
+              </ZHGrid>
+            </ZHFormSection>
+
+            <ZHFormActions
+              onCancel={() => navigate('/login')}
+              onDraft={undefined}
+              onSave={undefined}
+              disableDraft
+              disableSave={loading || tenantAllowsDirectReset === false}
+              saveButtonType="submit"
+              labels={{
+                cancel: t('tenantSelect.back') ?? t('common.cancel'),
+                draft: t('common.saveDraft') ?? 'Guardar borrador',
+                save: loading ? t('reset.button.loading') : t('reset.button.submit'),
+              }}
             />
-            {tenantAllowsDirectReset === true && (
-              <small style={{ color: '#065f46' }}>{t('reset.tenantCheck.enabled')}</small>
-            )}
-            {tenantAllowsDirectReset === false && (
-              <small style={{ color: '#b91c1c' }}>{t('reset.error.disabled')}</small>
-            )}
-            {tenantAllowsDirectReset === null && tenantCheckError && (
-              <small style={{ color: '#b45309' }}>{tenantCheckError}</small>
-            )}
-          </div>
-
-          <div className="field">
-            <label htmlFor="email">{t('reset.email.label')}</label>
-            <input
-              id="email"
-              type="email"
-              placeholder={t('login.email.placeholder')}
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              required
-              autoComplete="username"
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="newPassword">{t('reset.newPassword.label')}</label>
-            <input
-              id="newPassword"
-              type="password"
-              placeholder={t('login.password.placeholder')}
-              value={form.newPassword}
-              onChange={(e) => setForm((f) => ({ ...f, newPassword: e.target.value }))}
-              required
-              autoComplete="new-password"
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="confirmPassword">{t('reset.confirmPassword.label')}</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              placeholder={t('login.password.placeholder')}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-              autoComplete="new-password"
-            />
-          </div>
-
-          {error && <p className="login-error">{error}</p>}
-          {success && <p style={{ color: '#065f46', margin: 0 }}>{success}</p>}
-
-          <button className="login-btn" type="submit" disabled={loading || tenantAllowsDirectReset === false}>
-            {loading ? t('reset.button.loading') : t('reset.button.submit')}
-          </button>
+          </ZHFormBody>
         </form>
-      </div>
-    </div>
+    </ZHCenteredCard>
   );
 }
 

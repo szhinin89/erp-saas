@@ -8,7 +8,11 @@ alwaysApply: true
 1. Lee el archivo `CONTEXT.md` en la raíz del proyecto
 2. Identifica si el archivo que vas a crear/modificar ya existe
 3. Si ya existe → NO lo regeneres, solo modifica lo necesario
-4. Confirma el plan antes de escribir código
+4. Define un plan breve antes de escribir código (no bloquear esperando confirmación salvo ambigüedad real)
+
+# PRIORIDAD DE REGLAS
+
+- Si estás tocando **formularios del frontend**, aplicar además `10-zh-form-system.mdc` (ZH Form System) como estándar obligatorio.
 
 # REGLAS QUE NUNCA SE ROMPEN
 
