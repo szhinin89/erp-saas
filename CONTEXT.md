@@ -19,8 +19,19 @@ C:\ProyectCursor\erp-saas\
 │       └── Modules.Products/                 ← Módulo Productos (estructura lista)
 ├── database/
 ├── docs/
+│   └── zh-form-template/
+│       ├── README.md
+│       └── zh_erp_component_library.html     ← Plantilla visual ZH Form (referencia, abrir en navegador)
 └── frontend/
 ```
+
+**Plantilla visual ZH Form:** `docs/zh-form-template/zh_erp_component_library.html` (HTML estático + CSS embebido). Regla Cursor: `10-zh-form-system.mdc`.
+
+### 🌐 Tercer idioma en la UI (Kichwa Cañar)
+
+- Archivo `frontend/src/i18n/locales/qu.json` y código de locale **`qu`** (localStorage / tipo `Locale`): el contenido es **Kichwa de la provincia de Cañar, Ecuador**, no “quechua” genérico ni variantes de otros países.
+- Convención y copy para agentes: `.cursor/rules/17-kichwa-canar-locale.mdc` y bullet en `.cursor/rules/00-always.mdc`.
+- Selector de idioma: claves `app.langMenu.*` en `es.json` / `en.json` / `qu.json` (Español+Inglés+Kichwa · Spanish+English+Kichwa · con UI en kichwa: Kastilla shimi, Inglés shimi, Kichwa shimi).
 
 ---
 
@@ -180,6 +191,13 @@ Para cualquier módulo nuevo, copiar exactamente la estructura de `Modules.Accou
 - DbContext → `AccountingDbContext.cs`
 - DI → `AccountingDependencyInjection.cs`
 - Controller → `AccountsController.cs`
+
+---
+
+## Primer clone (config local, no versionada)
+
+1. Copiar `backend/src/ERP.API/appsettings.Development.json.example` → `backend/src/ERP.API/appsettings.Development.json` y definir cadena PostgreSQL + `Jwt:SecretKey` (solo en tu máquina).
+2. Opcional: `frontend/.env.development.example` → `frontend/.env.development` si necesitas `VITE_API_URL` explícito.
 
 ---
 

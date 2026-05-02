@@ -1,9 +1,9 @@
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5435;Database=dberpsaas;Username=postgres;Password=zhin@2024"
+    "DefaultConnection": "Host=localhost;Port=5435;Database=dberpsaas;Username=postgres;Password=CHANGE_ME"
   },
   "Jwt": {
-    "SecretKey": "ZH-Technologies-ERP-SecretKey-2025-ChangeInProduction!"
+    "SecretKey": "CHANGE_ME_USE_A_LONG_RANDOM_SECRET_FOR_DEV_ONLY"
   },
   "Cors": {
     "AllowedOrigins": [
@@ -18,7 +18,13 @@
       "http://127.0.0.1:5175",
       "http://127.0.0.1:5176",
       "http://127.0.0.1:5177",
-      "http://127.0.0.1:5178"
+      "http://127.0.0.1:5178",
+      "http://localhost:4173",
+      "http://localhost:4174",
+      "http://localhost:4175",
+      "http://127.0.0.1:4173",
+      "http://127.0.0.1:4174",
+      "http://127.0.0.1:4175"
     ]
   },
   "Logging": {

@@ -9,6 +9,8 @@ export type UserActivityDto = {
   entityId?: string | null;
   description?: string | null;
   createdAt: string;
+  userEmail?: string | null;
+  userFullName?: string | null;
 };
 
 function getList<T>(url: string) {
@@ -23,6 +25,15 @@ export const activityService = {
     if (opts?.pageSize) q.set('pageSize', String(opts.pageSize));
     const qs = q.toString();
     return getList<UserActivityDto[]>(`/api/activity/my${qs ? `?${qs}` : ''}`);
+  },
+
+  /** Últimos movimientos sobre una entidad (tenant), cualquier usuario. */
+  forEntity: (opts: { entityType: string; entityId: string; take?: number }) => {
+    const q = new URLSearchParams();
+    q.set('entityType', opts.entityType);
+    q.set('entityId', opts.entityId);
+    if (opts.take != null) q.set('take', String(opts.take));
+    return getList<UserActivityDto[]>(`/api/activity/entity?${q.toString()}`);
   },
 };
 

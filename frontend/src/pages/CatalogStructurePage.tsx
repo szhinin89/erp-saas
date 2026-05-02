@@ -13,13 +13,13 @@ import {
 import { activityService, type UserActivityDto } from '../services/activityService';
 import { ZHBtn, ZHField, ZHGrid } from '../components/zh/ZHForm';
 import { ZHActionsRow, ZHGridRow, ZHInlineRow, ZHInlineRowRight, ZHSection } from '../components/zh/ZHLayout';
+import { formatApiError } from '../lib/formatApiError';
 import './CatalogStructurePage.css';
 
 type Tab = 'line' | 'category' | 'subcategory';
 
-function errMsg(err: unknown, fallback: string): string {
-  const ax = err as { response?: { data?: { message?: string } } };
-  return ax?.response?.data?.message ?? fallback;
+function errMsg(err: unknown): string {
+  return formatApiError(err);
 }
 
 function activityLabel(action: string): string {
@@ -141,11 +141,11 @@ export function CatalogStructurePage() {
       });
       setLines(data ?? []);
     } catch (err: unknown) {
-      setError(errMsg(err, t('common.errorGeneric')));
+      setError(errMsg(err));
     } finally {
       setLinesLoading(false);
     }
-  }, [lineStatus, lineSearch, t]);
+  }, [lineStatus, lineSearch]);
 
   const loadCategories = useCallback(async () => {
     setError('');
@@ -158,11 +158,11 @@ export function CatalogStructurePage() {
       });
       setCategories(data ?? []);
     } catch (err: unknown) {
-      setError(errMsg(err, t('common.errorGeneric')));
+      setError(errMsg(err));
     } finally {
       setCatsLoading(false);
     }
-  }, [catStatus, catSearch, catFilterLineId, t]);
+  }, [catStatus, catSearch, catFilterLineId]);
 
   const loadSubcategories = useCallback(async () => {
     setError('');
@@ -176,11 +176,11 @@ export function CatalogStructurePage() {
       });
       setSubcategories(data ?? []);
     } catch (err: unknown) {
-      setError(errMsg(err, t('common.errorGeneric')));
+      setError(errMsg(err));
     } finally {
       setSubsLoading(false);
     }
-  }, [subStatus, subSearch, subFilterLineId, subFilterCategoryId, t]);
+  }, [subStatus, subSearch, subFilterLineId, subFilterCategoryId]);
 
   useEffect(() => {
     if (!canView || tab !== 'line') return;
@@ -324,7 +324,7 @@ export function CatalogStructurePage() {
       await loadLines();
       await loadLinesPick();
     } catch (err: unknown) {
-      setError(errMsg(err, t('common.errorGeneric')));
+      setError(errMsg(err));
     } finally {
       setSaving(false);
     }
@@ -344,7 +344,7 @@ export function CatalogStructurePage() {
       await loadCategories();
       await loadLinesPick();
     } catch (err: unknown) {
-      setError(errMsg(err, t('common.errorGeneric')));
+      setError(errMsg(err));
     } finally {
       setSaving(false);
     }
@@ -363,7 +363,7 @@ export function CatalogStructurePage() {
       setEditSub(null);
       await loadSubcategories();
     } catch (err: unknown) {
-      setError(errMsg(err, t('common.errorGeneric')));
+      setError(errMsg(err));
     } finally {
       setSaving(false);
     }
@@ -378,7 +378,7 @@ export function CatalogStructurePage() {
       await loadLines();
       await loadLinesPick();
     } catch (err: unknown) {
-      setError(errMsg(err, t('common.errorGeneric')));
+      setError(errMsg(err));
     } finally {
       setSaving(false);
     }
@@ -397,7 +397,7 @@ export function CatalogStructurePage() {
       setCatForm({ code: '', name: '', lineId: '' });
       await loadCategories();
     } catch (err: unknown) {
-      setError(errMsg(err, t('common.errorGeneric')));
+      setError(errMsg(err));
     } finally {
       setSaving(false);
     }
@@ -416,7 +416,7 @@ export function CatalogStructurePage() {
       setSubForm({ code: '', name: '', lineId: '', categoryId: '' });
       await loadSubcategories();
     } catch (err: unknown) {
-      setError(errMsg(err, t('common.errorGeneric')));
+      setError(errMsg(err));
     } finally {
       setSaving(false);
     }
@@ -443,7 +443,7 @@ export function CatalogStructurePage() {
         {error && <ErrorState message={error} />}
 
         <ZHInlineRow className="zh-mb-10">
-          <div className="zh-card-section-title">Historial (Catálogo)</div>
+          <div className="zh-card-section-title">{t('catalog.structure.activityHistoryTitle')}</div>
           <ZHInlineRowRight>
             <ZHBtn variant="ghost" size="sm" type="button" onClick={() => void loadMyActivity()} disabled={activityLoading}>
               {activityLoading ? t('common.loading') : t('common.refresh')}
@@ -465,7 +465,7 @@ export function CatalogStructurePage() {
           </ul>
         )}
 
-        <div className="catalog-structure-tabs" role="tablist">
+        <div className="zh-form-tabs" role="tablist">
           <button type="button" className={tab === 'line' ? 'is-active' : ''} onClick={() => setTab('line')}>
             {t('catalog.structure.tabLine')}
           </button>
@@ -507,7 +507,7 @@ export function CatalogStructurePage() {
                       onClick={() => void createLine()}
                       disabled={saving || !lineForm.code.trim() || !lineForm.name.trim()}
                     >
-                      {saving ? t('common.saving') : t('common.create')}
+                      {saving ? t('common.saving') : t('catalog.structure.primaryCreateLine')}
                     </ZHBtn>
                   </ZHActionsRow>
                 </ZHGrid>
@@ -525,11 +525,11 @@ export function CatalogStructurePage() {
                     <input value={editLineForm.name} onChange={(e) => setEditLineForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
                   </ZHField>
                   <ZHActionsRow>
-                    <ZHBtn variant="ghost" size="sm" type="button" onClick={() => setEditLine(null)} disabled={saving}>
+                    <ZHBtn variant="ghost" size="md" type="button" onClick={() => setEditLine(null)} disabled={saving}>
                       {t('catalog.structure.cancel')}
                     </ZHBtn>
-                    <ZHBtn variant="primary" size="sm" type="button" onClick={() => void saveLineEdit()} disabled={saving}>
-                      {t('catalog.structure.save')}
+                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void saveLineEdit()} disabled={saving}>
+                      {t('common.saveChanges')}
                     </ZHBtn>
                   </ZHActionsRow>
                 </ZHGrid>
@@ -578,7 +578,7 @@ export function CatalogStructurePage() {
                                   await loadLines();
                                   await loadLinesPick();
                                 } catch (err: unknown) {
-                                  setError(errMsg(err, t('common.errorGeneric')));
+                                  setError(errMsg(err));
                                 } finally {
                                   setSaving(false);
                                 }
@@ -603,7 +603,7 @@ export function CatalogStructurePage() {
                                   await loadLines();
                                   await loadLinesPick();
                                 } catch (err: unknown) {
-                                  setError(errMsg(err, t('common.errorGeneric')));
+                                  setError(errMsg(err));
                                 } finally {
                                   setSaving(false);
                                 }
@@ -667,7 +667,7 @@ export function CatalogStructurePage() {
                   </ZHField>
                   <ZHActionsRow>
                     <ZHBtn variant="primary" size="md" type="button" onClick={() => void createCat()} disabled={saving || !catForm.code.trim() || !catForm.name.trim() || !catForm.lineId}>
-                      {saving ? t('common.saving') : t('common.create')}
+                      {saving ? t('common.saving') : t('catalog.structure.primaryCreateCategory')}
                     </ZHBtn>
                   </ZHActionsRow>
                 </ZHGrid>
@@ -694,11 +694,11 @@ export function CatalogStructurePage() {
                     </select>
                   </ZHField>
                   <ZHActionsRow>
-                    <ZHBtn variant="ghost" size="sm" type="button" onClick={() => setEditCat(null)} disabled={saving}>
+                    <ZHBtn variant="ghost" size="md" type="button" onClick={() => setEditCat(null)} disabled={saving}>
                       {t('catalog.structure.cancel')}
                     </ZHBtn>
-                    <ZHBtn variant="primary" size="sm" type="button" onClick={() => void saveCatEdit()} disabled={saving || !editCatForm.lineId}>
-                      {t('catalog.structure.save')}
+                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void saveCatEdit()} disabled={saving || !editCatForm.lineId}>
+                      {t('common.saveChanges')}
                     </ZHBtn>
                   </ZHActionsRow>
                 </ZHGrid>
@@ -750,7 +750,7 @@ export function CatalogStructurePage() {
                                   await catalogService.disableCategory(x.id);
                                   await loadCategories();
                                 } catch (err: unknown) {
-                                  setError(errMsg(err, t('common.errorGeneric')));
+                                  setError(errMsg(err));
                                 } finally {
                                   setSaving(false);
                                 }
@@ -774,7 +774,7 @@ export function CatalogStructurePage() {
                                   await catalogService.enableCategory(x.id);
                                   await loadCategories();
                                 } catch (err: unknown) {
-                                  setError(errMsg(err, t('common.errorGeneric')));
+                                  setError(errMsg(err));
                                 } finally {
                                   setSaving(false);
                                 }
@@ -860,7 +860,7 @@ export function CatalogStructurePage() {
                   </ZHField>
                   <ZHActionsRow>
                     <ZHBtn variant="primary" size="md" type="button" onClick={() => void createSub()} disabled={saving || !subForm.code.trim() || !subForm.name.trim() || !subForm.lineId || !subForm.categoryId}>
-                      {saving ? t('common.saving') : t('common.create')}
+                      {saving ? t('common.saving') : t('catalog.structure.primaryCreateSubcategory')}
                     </ZHBtn>
                   </ZHActionsRow>
                 </ZHGrid>
@@ -896,11 +896,11 @@ export function CatalogStructurePage() {
                     </select>
                   </ZHField>
                   <ZHActionsRow>
-                    <ZHBtn variant="ghost" size="sm" type="button" onClick={() => setEditSub(null)} disabled={saving}>
+                    <ZHBtn variant="ghost" size="md" type="button" onClick={() => setEditSub(null)} disabled={saving}>
                       {t('catalog.structure.cancel')}
                     </ZHBtn>
-                    <ZHBtn variant="primary" size="sm" type="button" onClick={() => void saveSubEdit()} disabled={saving || !editSubForm.categoryId}>
-                      {t('catalog.structure.save')}
+                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void saveSubEdit()} disabled={saving || !editSubForm.categoryId}>
+                      {t('common.saveChanges')}
                     </ZHBtn>
                   </ZHActionsRow>
                 </ZHGrid>
@@ -952,7 +952,7 @@ export function CatalogStructurePage() {
                                   await catalogService.disableSubcategory(x.id);
                                   await loadSubcategories();
                                 } catch (err: unknown) {
-                                  setError(errMsg(err, t('common.errorGeneric')));
+                                  setError(errMsg(err));
                                 } finally {
                                   setSaving(false);
                                 }
@@ -976,7 +976,7 @@ export function CatalogStructurePage() {
                                   await catalogService.enableSubcategory(x.id);
                                   await loadSubcategories();
                                 } catch (err: unknown) {
-                                  setError(errMsg(err, t('common.errorGeneric')));
+                                  setError(errMsg(err));
                                 } finally {
                                   setSaving(false);
                                 }

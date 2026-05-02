@@ -1,39 +1,7 @@
-.branches-dialog {
-  border: none;
-  border-radius: 14px;
-  padding: 0;
-  max-width: 640px;
-  width: calc(100vw - 32px);
-  max-height: 90vh;
-  /* No recortar: los <select> nativos pintan el menú fuera de la caja; overflow:hidden rompe el clic en algunos navegadores. */
-  overflow: visible;
-}
-
-.branches-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.45);
-}
-
-.branches-dialog-inner {
-  padding: 22px 24px 24px;
-  overflow-y: auto;
-  max-height: 90vh;
-}
-
-.branches-dialog-title {
-  margin: 0 0 18px;
-  font-size: 17px;
-  font-weight: 600;
-  color: #111;
-}
-
-.branches-dialog-geo-error {
-  margin: 0 0 14px;
-  padding: 10px 12px;
-  font-size: 13px;
-  color: #b45309;
-  background: #fffbeb;
-  border: 1px solid #fcd34d;
-  border-radius: 8px;
+/* Panel Datos: mismo TableCard que pestañas/listado — sin caja interior extra */
+.branches-data-panel {
+  padding: 0 16px 20px;
+  min-width: 0;
 }
 
 .branches-audit {
@@ -47,43 +15,4 @@
 
 .branches-audit p {
   margin: 4px 0;
-}
-
-.branches-dialog-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
-}
-
-.branches-dialog fieldset.branches-location {
-  grid-column: span 2;
-  margin: 6px 0 0;
-  padding: 12px 14px 14px;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #fafafa;
-}
-
-.branches-location-legend {
-  padding: 0 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #6b7280;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.branches-location-grid {
-  margin-top: 10px;
-}
-
-.branches-geo-hint {
-  font-weight: 500;
-  font-size: 11px;
-  color: #9ca3af;
-  text-transform: none;
-  letter-spacing: 0;
 }

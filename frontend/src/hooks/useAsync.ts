@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { formatApiError } from '../lib/formatApiError';
 
 interface AsyncState<T> {
   data: T | null;
@@ -36,7 +37,7 @@ export function useAsync<T>(fn: () => Promise<T>): AsyncState<T> {
       .then((result) => { if (!cancelled) { setData(result); setLoading(false); } })
       .catch((err) => {
         if (!cancelled) {
-          setError(err?.response?.data?.error ?? err?.message ?? 'Error inesperado');
+          setError(formatApiError(err));
           setLoading(false);
         }
       });

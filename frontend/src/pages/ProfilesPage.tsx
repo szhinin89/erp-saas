@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
 import { profileService, type Profile } from '../services/profileService';
 import { PageShell, TableCard, EmptyState, LoadingState, NoAccessPage } from '../components/PageShell';
-import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions, ZHBtn } from '../components/zh/ZHForm';
-import { ZHCardSection, ZHInlineRowRight, ZHActionsRow, ZHSection } from '../components/zh/ZHLayout';
+import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHBtn } from '../components/zh/ZHForm';
+import { ZHCardSection, ZHInlineRowRight, ZHActionsRow } from '../components/zh/ZHLayout';
+import ZHSearchBar from '../components/shared/ZHSearchBar';
 import { ZHFormCard } from '../components/zh/ZHFormCard';
 import './ProfilesPage.css';
+
+type ProfileTab = 'data' | 'perms' | 'list';
 
 export function ProfilesPage() {
   const { t } = useI18n();
@@ -18,12 +21,15 @@ export function ProfilesPage() {
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState<ProfileTab>('data');
+  const [listQuery, setListQuery] = useState('');
 
   const [selected, setSelected] = useState<Profile | null>(null);
   const [permLoading, setPermLoading] = useState(false);
   const [permError, setPermError] = useState('');
   const [permSaving, setPermSaving] = useState(false);
   const [permState, setPermState] = useState<Record<string, boolean>>({});
+  const createFormRef = useRef<HTMLFormElement>(null);
 
   const permissionCatalog = useMemo(
     () => [
@@ -85,12 +91,21 @@ export function ProfilesPage() {
 
   useEffect(() => {
     let cancelled = false;
-    // Defer para evitar regla eslint react-hooks/set-state-in-effect
     void Promise.resolve().then(async () => {
       if (!cancelled) await refresh();
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [refresh]);
+
+  const listFiltered = useMemo(() => {
+    const q = listQuery.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((p) =>
+      `${p.name} ${p.description ?? ''} ${p.id}`.toLowerCase().includes(q)
+    );
+  }, [items, listQuery]);
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,6 +115,7 @@ export function ProfilesPage() {
       setName('');
       setDescription('');
       await refresh();
+      setTab('list');
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -118,29 +134,33 @@ export function ProfilesPage() {
     }
   };
 
-  const loadPermissions = useCallback(async (profileId: string) => {
-    setPermError('');
-    setPermLoading(true);
-    try {
-      const res = await profileService.getPermissions(profileId);
-      const next: Record<string, boolean> = {};
-      for (const p of res?.items ?? []) next[p.permissionKey] = !!p.isAllowed;
-      for (const def of permissionCatalog) {
-        if (next[def.key] === undefined) next[def.key] = false;
+  const loadPermissions = useCallback(
+    async (profileId: string) => {
+      setPermError('');
+      setPermLoading(true);
+      try {
+        const res = await profileService.getPermissions(profileId);
+        const next: Record<string, boolean> = {};
+        for (const p of res?.items ?? []) next[p.permissionKey] = !!p.isAllowed;
+        for (const def of permissionCatalog) {
+          if (next[def.key] === undefined) next[def.key] = false;
+        }
+        setPermState(next);
+      } catch (err: unknown) {
+        const msg =
+          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+          t('profiles.perms.error.load');
+        setPermError(msg);
+      } finally {
+        setPermLoading(false);
       }
-      setPermState(next);
-    } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-        t('profiles.perms.error.load');
-      setPermError(msg);
-    } finally {
-      setPermLoading(false);
-    }
-  }, [permissionCatalog, t]);
+    },
+    [permissionCatalog, t]
+  );
 
   const selectProfile = async (p: Profile) => {
     setSelected(p);
+    setTab('perms');
     await loadPermissions(p.id);
   };
 
@@ -149,8 +169,8 @@ export function ProfilesPage() {
     setPermError('');
     setPermSaving(true);
     try {
-      const items = Object.entries(permState).map(([permissionKey, isAllowed]) => ({ permissionKey, isAllowed }));
-      await profileService.upsertPermissions(selected.id, items);
+      const permItems = Object.entries(permState).map(([permissionKey, isAllowed]) => ({ permissionKey, isAllowed }));
+      await profileService.upsertPermissions(selected.id, permItems);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -166,130 +186,154 @@ export function ProfilesPage() {
   }
 
   return (
-    <PageShell kicker={t('app.nav.group.access')} title={t('profiles.title')} subtitle={t('profiles.subtitle')}>
-      <ZHFormCard
-        hideHeader
-        title={t('profiles.title')}
-        subtitle={t('profiles.subtitle')}
-        onSubmit={create}
-      >
-        <input type="hidden" name="tenantId" value={tenantId} />
+    <PageShell
+      kicker={t('app.nav.group.access')}
+      title={t('profiles.title')}
+      subtitle={t('profiles.subtitle')}
+      action={
+        tab === 'data' ? (
+          <ZHBtn variant="primary" size="md" type="button" disabled={loading} onClick={() => createFormRef.current?.requestSubmit()}>
+            {t('profiles.form.create')}
+          </ZHBtn>
+        ) : tab === 'perms' && selected ? (
+          <ZHBtn variant="primary" size="md" type="button" onClick={() => void savePermissions()} disabled={permLoading || permSaving}>
+            {permSaving ? t('common.saving') : t('common.saveChanges')}
+          </ZHBtn>
+        ) : undefined
+      }
+    >
+      <TableCard>
         {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
+        <div className="zh-form-tabs" role="tablist">
+          <button type="button" className={tab === 'data' ? 'is-active' : ''} onClick={() => setTab('data')}>
+            {t('common.formTab.data')}
+          </button>
+          <button type="button" className={tab === 'perms' ? 'is-active' : ''} onClick={() => setTab('perms')}>
+            {t('profiles.tab.permissions')}
+          </button>
+          <button type="button" className={tab === 'list' ? 'is-active' : ''} onClick={() => setTab('list')}>
+            {t('profiles.tabList')}
+          </button>
+        </div>
 
-        <ZHFormSection title={t('profiles.form.create')}>
-          <ZHGrid cols={2}>
-            <ZHField label={t('profiles.form.name')} required>
-              <input value={name} onChange={(e) => setName(e.target.value)} required disabled={loading} />
-            </ZHField>
-            <ZHField label={t('profiles.form.description')}>
-              <input value={description} onChange={(e) => setDescription(e.target.value)} disabled={loading} />
-            </ZHField>
-          </ZHGrid>
-        </ZHFormSection>
+        {tab === 'data' && (
+          <ZHFormCard ref={createFormRef} hideHeader title={t('profiles.title')} subtitle={t('profiles.subtitle')} onSubmit={create}>
+            <input type="hidden" name="tenantId" value={tenantId} />
 
-        <ZHFormActions
-          onCancel={() => {
-            setName('');
-            setDescription('');
-          }}
-          onDraft={undefined}
-          onSave={undefined}
-          disableDraft
-          disableSave={loading}
-          saveButtonType="submit"
-          labels={{ cancel: t('common.cancel'), draft: t('common.saveDraft') ?? 'Guardar borrador', save: t('profiles.form.create') }}
-        />
-      </ZHFormCard>
+            <ZHFormSection title={t('profiles.form.create')}>
+              <ZHGrid cols={2}>
+                <ZHField label={t('profiles.form.name')} required>
+                  <input value={name} onChange={(e) => setName(e.target.value)} required disabled={loading} />
+                </ZHField>
+                <ZHField label={t('profiles.form.description')}>
+                  <input value={description} onChange={(e) => setDescription(e.target.value)} disabled={loading} />
+                </ZHField>
+              </ZHGrid>
+            </ZHFormSection>
+          </ZHFormCard>
+        )}
 
-      <ZHSection top={16}>
-        <TableCard>
-          {loading ? (
-            <LoadingState />
-          ) : items.length === 0 ? (
-            <EmptyState message={t('common.noData')} />
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>{t('profiles.table.name')}</th>
-                  <th>{t('profiles.table.active')}</th>
-                  <th>{t('profiles.table.id')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((p) => (
-                  <tr key={p.id}>
-                    <td>
-                      <div className="zh-card-section-title">{p.name}</div>
-                      {p.description ? <div className="zh-text-muted zh-text-xs">{p.description}</div> : null}
-                    </td>
-                    <td>
-                      <ZHActionsRow>
-                        <ZHBtn variant="secondary" onClick={() => toggle(p)} type="button">
-                          {p.isActive ? t('profiles.actions.disable') : t('profiles.actions.enable')}
-                        </ZHBtn>
-                        <ZHBtn variant="ghost" onClick={() => void selectProfile(p)} type="button">
-                          {t('profiles.actions.permissions')}
-                        </ZHBtn>
-                      </ZHActionsRow>
-                    </td>
-                    <td className="mono">{p.id}</td>
+        {tab === 'list' && (
+          <>
+            <div className="zh-mb-12">
+              <ZHSearchBar
+                searchQuery={listQuery}
+                onSearch={setListQuery}
+                onClearAll={() => setListQuery('')}
+                filterValues={{}}
+                placeholder={t('common.zhList.searchPlaceholder')}
+                resultCount={listFiltered.length}
+                entityLabel={t('common.zhList.entityLabel')}
+                loading={loading}
+                actionLabel={t('profiles.list.newAction')}
+                onAction={() => setTab('data')}
+              />
+            </div>
+            {loading ? (
+              <LoadingState />
+            ) : items.length === 0 ? (
+              <EmptyState message={t('common.noData')} />
+            ) : listFiltered.length === 0 ? (
+              <EmptyState message={t('common.listTab.noMatch')} />
+            ) : (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>{t('profiles.table.name')}</th>
+                    <th>{t('profiles.table.active')}</th>
+                    <th>{t('profiles.table.id')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </TableCard>
-      </ZHSection>
-
-      {selected && (
-        <ZHSection top={16}>
-          <TableCard>
-            <ZHFormBody standalone>
-              <ZHCardSection
-                title={`${t('profiles.perms.title')} — ${selected.name}`}
-                right={
-                  <ZHInlineRowRight>
-                    <ZHBtn variant="ghost" type="button" onClick={() => setSelected(null)} disabled={permSaving}>
-                      {t('common.cancel')}
-                    </ZHBtn>
-                    <ZHBtn variant="primary" type="button" onClick={() => void savePermissions()} disabled={permLoading || permSaving}>
-                      {permSaving ? t('common.saving') : t('profiles.perms.save')}
-                    </ZHBtn>
-                  </ZHInlineRowRight>
-                }
-              >
-                <div className="subtle">{t('profiles.perms.subtitle')}</div>
-              </ZHCardSection>
-
-              {permError ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={permError} /> : null}
-              {permLoading ? (
-                <LoadingState />
-              ) : (
-                <div className="profiles-permsGrid">
-                  {permissionCatalog.map((def) => (
-                    <label
-                      key={def.key}
-                      className="profiles-permItem"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={!!permState[def.key]}
-                        onChange={(e) => setPermState((s) => ({ ...s, [def.key]: e.target.checked }))}
-                      />
-                      <div className="profiles-permText">
-                        <span className="profiles-permLabel">{def.label}</span>
-                        <span className="mono profiles-permKey">{def.key}</span>
-                      </div>
-                    </label>
+                </thead>
+                <tbody>
+                  {listFiltered.map((p) => (
+                    <tr key={p.id}>
+                      <td>
+                        <div className="zh-card-section-title">{p.name}</div>
+                        {p.description ? <div className="zh-text-muted zh-text-xs">{p.description}</div> : null}
+                      </td>
+                      <td>
+                        <ZHActionsRow>
+                          <ZHBtn variant="secondary" onClick={() => toggle(p)} type="button">
+                            {p.isActive ? t('profiles.actions.disable') : t('profiles.actions.enable')}
+                          </ZHBtn>
+                          <ZHBtn variant="ghost" onClick={() => void selectProfile(p)} type="button">
+                            {t('profiles.actions.permissions')}
+                          </ZHBtn>
+                        </ZHActionsRow>
+                      </td>
+                      <td className="mono">{p.id}</td>
+                    </tr>
                   ))}
-                </div>
-              )}
-            </ZHFormBody>
-          </TableCard>
-        </ZHSection>
-      )}
+                </tbody>
+              </table>
+            )}
+          </>
+        )}
+
+        {tab === 'perms' && (
+          <>
+            {!selected ? (
+              <EmptyState message={t('profiles.perms.pickFromList')} />
+            ) : (
+              <ZHFormBody standalone>
+                <ZHCardSection
+                  title={`${t('profiles.perms.title')} — ${selected.name}`}
+                  right={
+                    <ZHInlineRowRight>
+                      <ZHBtn variant="ghost" size="md" type="button" onClick={() => setSelected(null)} disabled={permSaving}>
+                        {t('common.cancel')}
+                      </ZHBtn>
+                    </ZHInlineRowRight>
+                  }
+                >
+                  <div className="subtle">{t('profiles.perms.subtitle')}</div>
+                </ZHCardSection>
+
+                {permError ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={permError} /> : null}
+                {permLoading ? (
+                  <LoadingState />
+                ) : (
+                  <div className="profiles-permsGrid">
+                    {permissionCatalog.map((def) => (
+                      <label key={def.key} className="profiles-permItem">
+                        <input
+                          type="checkbox"
+                          checked={!!permState[def.key]}
+                          onChange={(e) => setPermState((s) => ({ ...s, [def.key]: e.target.checked }))}
+                        />
+                        <div className="profiles-permText">
+                          <span className="profiles-permLabel">{def.label}</span>
+                          <span className="mono profiles-permKey">{def.key}</span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </ZHFormBody>
+            )}
+          </>
+        )}
+      </TableCard>
     </PageShell>
   );
 }
-

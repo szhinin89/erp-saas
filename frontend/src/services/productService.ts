@@ -2,6 +2,15 @@ import { api } from '../lib/api';
 import type { Product } from '../types/product';
 import type { ApiResponse } from '../types/api';
 
+/** Coincide con `ImageInput` del API (crear producto). */
+export interface ProductImageInput {
+  url: string;
+  altText?: string | null;
+  isMain: boolean;
+  isEcommerce: boolean;
+  sortOrder: number;
+}
+
 export interface CreateProductRequest {
   saleCode: string;
   purchaseCode?: string;
@@ -21,6 +30,7 @@ export interface CreateProductRequest {
   isForSale: boolean;
   availableOnWeb: boolean;
   availableOnMobile: boolean;
+  images?: ProductImageInput[];
 }
 
 export const productService = {

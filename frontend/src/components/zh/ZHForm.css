@@ -474,23 +474,6 @@
 .zh-field-hint--muted { color: var(--color-text-tertiary); }
 .zh-field-hint--info { color: var(--zh-blue-dark); }
 
-.zh-input-icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 18px;
-  height: 18px;
-  color: var(--color-text-muted);
-  pointer-events: none;
-}
-
-.zh-input-with-icon input,
-.zh-input-with-icon select,
-.zh-input-with-icon textarea {
-  padding-left: 36px;
-}
-
 .zh-toggle {
   display: flex;
   justify-content: space-between;
@@ -565,7 +548,7 @@
   border-top: 0.5px solid var(--color-border-tertiary);
 }
 
-/* ── Responsive rules aligned to zh_erp_responsive_library.html ── */
+/* ── Responsive rules (alineado a docs/zh-form-template/zh_erp_component_library.html) ── */
 @media (max-width: 560px) {
   .zh-grid--2,
   .zh-grid--3 {

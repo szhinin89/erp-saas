@@ -1,22 +1,27 @@
+import { forwardRef } from 'react';
 import { TableCard } from '../PageShell';
 import { ZHFormBody, ZHFormHeader } from './ZHForm';
 
-export function ZHFormCard(props: {
+export type ZHFormCardProps = {
   title: string;
   subtitle: string;
   /** Sin barra superior ZHFormHeader (útil cuando la página ya define un título compacto). */
   hideHeader?: boolean;
   onSubmit: (e: React.FormEvent) => void;
   children: React.ReactNode;
-}) {
-  const { title, subtitle, hideHeader, onSubmit, children } = props;
+};
+
+export const ZHFormCard = forwardRef<HTMLFormElement, ZHFormCardProps>(function ZHFormCard(
+  { title, subtitle, hideHeader, onSubmit, children },
+  ref
+) {
   return (
     <TableCard>
-      <form onSubmit={onSubmit}>
+      <form ref={ref} onSubmit={onSubmit}>
         {!hideHeader ? <ZHFormHeader title={title} subtitle={subtitle} /> : null}
         <ZHFormBody standalone={!!hideHeader}>{children}</ZHFormBody>
       </form>
     </TableCard>
   );
-}
+});
 

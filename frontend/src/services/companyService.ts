@@ -1,5 +1,6 @@
 import { api } from '../lib/api';
 import type { ApiResponse } from '../types/api';
+import type { SessionResponse } from '../types/access';
 
 export type CompanyItem = { id: string; name: string; slug: string };
 
@@ -26,7 +27,6 @@ export const companyService = {
       .then((r) => r.data.responseObject.tenants),
 
   create: (req: CreateCompanyWithAdminRequest) =>
-    api.post<ApiResponse<import('../types/access').SessionResponse>>('/api/access/superadmin/tenants', req)
-      .then((r) => r.data.responseObject),
+    api.post<ApiResponse<SessionResponse>>('/api/access/superadmin/tenants', req).then((r) => r.data.responseObject),
 };
 

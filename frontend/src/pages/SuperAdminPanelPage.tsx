@@ -90,7 +90,7 @@ export function SuperAdminPanelPage() {
         kicker={t('app.nav.group.saas')}
         title={t('superadmin.title')}
         action={
-          <ZHBtn variant="primary" size="sm" type="button" onClick={() => navigate('/dashboard')}>
+          <ZHBtn variant="primary" size="md" type="button" onClick={() => navigate('/dashboard')}>
             {t('superadmin.goToTenant')}
           </ZHBtn>
         }
@@ -165,7 +165,7 @@ export function SuperAdminPanelPage() {
                       <ZHInlineRowRight>
                         <ZHBtn
                           variant="primary"
-                          size="sm"
+                          size="md"
                           type="button"
                           onClick={() => void handleSwitch(tenant)}
                           disabled={switching !== null}

@@ -50,7 +50,9 @@ public class GetMyActivityHandler
                 x.EntityType,
                 x.EntityId,
                 x.Description,
-                x.CreatedAt))
+                x.CreatedAt,
+                x.UserEmail,
+                x.UserFullName))
             .ToList();
 
         return Result<IReadOnlyList<UserActivityDto>>.Success(dto);

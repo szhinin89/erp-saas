@@ -1,4 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
+/**
+ * i18n: es / en / **qu** donde **qu** = Kichwa de Cañar (Ecuador); ver `dictionaries.ts`.
+ */
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { dictionaries, defaultLocale, safeGetStoredLocale, storageKey, type Locale } from './dictionaries';
 

@@ -44,5 +44,27 @@ public class UserActivityRepository : IUserActivityRepository
             .Take(take)
             .ToListAsync(ct);
     }
+
+    public async Task<IReadOnlyList<UserActivity>> GetByEntityAsync(
+        Guid tenantId,
+        string entityType,
+        Guid entityId,
+        int take = 10,
+        CancellationToken ct = default)
+    {
+        if (entityId == Guid.Empty) return Array.Empty<UserActivity>();
+        if (take <= 0) return Array.Empty<UserActivity>();
+        if (take > 50) take = 50;
+
+        var et = entityType.Trim();
+        if (string.IsNullOrEmpty(et)) return Array.Empty<UserActivity>();
+
+        return await _context.UserActivities
+            .AsNoTracking()
+            .Where(x => x.TenantId == tenantId && x.EntityType == et && x.EntityId == entityId)
+            .OrderByDescending(x => x.CreatedAt)
+            .Take(take)
+            .ToListAsync(ct);
+    }
 }
 

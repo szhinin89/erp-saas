@@ -1,5 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Products.DTOs;
+using ERP.Domain.Audit.Entities;
+using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Products.Enums;
 using ERP.Domain.Products.Interfaces;
@@ -10,17 +12,20 @@ public class CreateProductHandler
 {
     private readonly IProductRepository _repository;
     private readonly ITaxRateRepository _taxRates;
+    private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentUser _currentUser;
 
     public CreateProductHandler(
         IProductRepository repository,
         ITaxRateRepository taxRates,
+        IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser)
     {
         _repository    = repository;
         _taxRates      = taxRates;
+        _activity      = activity;
         _currentTenant = currentTenant;
         _currentUser   = currentUser;
     }
@@ -162,6 +167,16 @@ public class CreateProductHandler
         }
 
         await _repository.AddAsync(product, ct);
+        await _activity.AddAsync(UserActivity.Create(
+            tenantId,
+            userId,
+            _currentUser.Email,
+            _currentUser.FullName,
+            module: "catalog",
+            action: "product.create",
+            entityType: "Product",
+            entityId: product.Id,
+            description: $"{product.SaleCode} — {product.ShortName}"), ct);
         await _repository.SaveChangesAsync(ct);
 
         return Result<ProductDto>.Success(new ProductDto(

@@ -116,6 +116,11 @@
   display: inline-block;
 }
 
+/* Tablas con fila clicable (evita style={{ cursor }} en TSX; cumple no-restricted-syntax) */
+.zh-tr-clickable {
+  cursor: pointer;
+}
+
 body {
   margin: 0;
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;

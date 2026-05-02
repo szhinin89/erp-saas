@@ -38,7 +38,7 @@ export function TenantSelectPage() {
       <ZHCenteredCard bgClassName="tenant-bg" cardClassName="tenant-card">
         <h1 className="tenant-title">{t('tenantSelect.title')}</h1>
         <p className="tenant-subtitle">{t('tenantSelect.missing')}</p>
-        <ZHBtn variant="primary" type="button" onClick={() => navigate('/login')}>
+        <ZHBtn variant="primary" size="md" type="button" onClick={() => navigate('/login')}>
           {t('tenantSelect.back')}
         </ZHBtn>
       </ZHCenteredCard>

@@ -12,11 +12,13 @@ alwaysApply: true
 
 # PRIORIDAD DE REGLAS
 
-- Si estás tocando **formularios del frontend**, aplicar además `10-zh-form-system.mdc` (ZH Form System) como estándar obligatorio.
+- **Formularios frontend**: `10-zh-form-system.mdc` (componentes/tokens) + **`20-ui-nav-form-copy.mdc`** (menú, drawer, pestañas `tabList`, `PageShell`/`ZHDirtyBar` solo en datos) + **`15-entity-form-tabs.mdc`** (orden tabs, patrón compacto `TableCard`, sin `ZHFormHeader` duplicado).
+- **Solo rutas duplicadas en `navConfig`**: `16-nav-menu-unique-routes.mdc` (el copy del menú no se documenta ahí; está en `20`).
+- **Tercer idioma (`qu` / `qu.json`)**: **Kichwa de Cañar, Ecuador** — no etiquetar como “quechua” genérico ni mezclar variantes de otros países. Detalle: **`17-kichwa-canar-locale.mdc`**.
 
 # REGLAS QUE NUNCA SE ROMPEN
 
-- Toda entidad hereda `BaseEntity` de `ERP.Shared`
+- Entidades de dominio: jerarquía **`ERP.Domain.Common`** (`BaseEntity` → raíz con `Id`/`TenantId`; agregados `AggregateRoot` → `AuditableEntity` → **`MasterEntity`** maestras o **`DocumentEntity`** documentos; hijos de valor pueden heredar `BaseEntity` directo). **No** existe `ERP.Shared` en este repo — no confundir con otros proyectos.
 - Toda query filtra por `TenantId`
 - Sin lógica en Controllers ni Infrastructure
 - Sin entidades de dominio en la API — solo DTOs

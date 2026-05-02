@@ -7,5 +7,7 @@ public record UserActivityDto(
     string? EntityType,
     Guid? EntityId,
     string? Description,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? UserEmail,
+    string? UserFullName);
 

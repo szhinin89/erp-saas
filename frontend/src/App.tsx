@@ -10,7 +10,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { AccountingPage } from './pages/AccountingPage';
 import { SecuritySettingsPage } from './pages/SecuritySettingsPage';
-import { CompaniesPage } from './pages/CompaniesPage';
+import CompaniesPage from './pages/CompaniesPage';
 import { TenantAccessPage } from './pages/TenantAccessPage';
 import { ProfilesPage } from './pages/ProfilesPage';
 import { BranchesPage } from './pages/BranchesPage';

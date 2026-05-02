@@ -1,0 +1,39 @@
+---
+description: Orden de pestañas en pantallas de entidad (crear/editar vs listar); más de 2 pestañas requiere confirmación.
+globs: frontend/src/pages/**/*.tsx
+alwaysApply: false
+---
+
+# Formularios de entidad con `zh-form-tabs`
+
+Pantallas tipo catálogo (sucursales, empresas, productos, etc.) que combinan **formulario** y **listado** con `.zh-form-tabs`.
+
+## Tab activo por **defecto**
+
+- El estado inicial del tab (`useState`, etc.) debe ser la pestaña de **ficha / datos**: **`'data'`** o el id equivalente del producto **`'general'`** — **nunca** `'list'` salvo excepción acordada.
+- **Excepción** (solo si aplica): cambios sin guardar, borrador o confirmación al cambiar de pestaña; **comentario** junto al `useState` con el motivo.
+
+## Orden fijo con **2 pestañas**
+
+1. **Primera pestaña**: siempre **crear / editar** — contenido del formulario (`common.formTab.data` o clave equivalente “Datos”). Con permiso de alta, el formulario debe mostrarse **al entrar en Datos** (sin exigir un clic extra en la barra). El contenido va **directo bajo las pestañas** dentro del mismo `TableCard` de la página (`ZHFormSection` / campos); **no** duplicar título o subtítulo de pantalla si `PageShell` / barra de acciones ya dan contexto. **Evitar** apilar `ZHCardSection` + `ZHFormBody` encima del `TableCard` (doble caja). **No** usar `ZHFormHeader` ni `ZHModalHeader` aquí.
+2. **Segunda pestaña**: siempre **listado / consulta** — tabla, filtros y acciones por fila; copy i18n con **`{módulo}.tabList`** (“Ver …” / “View …”; en tercer idioma: Kichwa Cañar en `qu.json`), no `app.nav.*`. Detalle y convención: `20-ui-nav-form-copy.mdc`.
+
+- El orden de los **botones** del `tablist`: primero **Datos** (`common.formTab.data`), luego pestañas extra si las hay, **listado al final** (etiqueta `*.tabList`).
+- El **orden en el DOM** de los paneles: coherente con el tablist (Datos → extras → listado).
+
+### Barra de acciones (`PageShell`)
+
+- **Solo en ficha/datos** (y en la pestaña que corresponda a “Datos” si hay varias no-listado): **crear** y **guardar/modificar** según `20-ui-nav-form-copy.mdc` (incluye `ZHDirtyBar` ligada al mismo submit de alta).
+- **Listado**: sin crear ni guardar entidad en la barra; tabla, filtros y acciones por fila que devuelvan a Datos si aplica.
+
+## Más de **2** pestañas
+
+Antes de implementar o reordenar, **preguntar al usuario** el orden (p. ej. imágenes, fiscal) y la relación con **Datos** y **listado**. Referencia implementada: **`ProductsPage`** (Datos → Imágenes → listado `products.tabList`).
+
+## Resumen
+
+| Pestaña | Rol |
+|--------|-----|
+| 1 | Formulario (alta/edición) |
+| 2 | Listado / consulta |
+| 3+ | Definir con el usuario |

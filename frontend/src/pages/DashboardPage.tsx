@@ -24,16 +24,16 @@ export function DashboardPage() {
   ];
 
   const activity = [
-    { title: 'Asiento #A-0248 registrado', meta: 'Contabilidad · hace 12 min' },
-    { title: 'Cuenta 1.1.02.003 creada', meta: 'Carlos M. · hace 1 hora' },
-    { title: 'Conciliación pendiente: Banco Pichincha', meta: 'Sistema · hace 3 horas' },
+    { title: t('dashboard.activity.demo1.title'), meta: t('dashboard.activity.demo1.meta') },
+    { title: t('dashboard.activity.demo2.title'), meta: t('dashboard.activity.demo2.meta') },
+    { title: t('dashboard.activity.demo3.title'), meta: t('dashboard.activity.demo3.meta') },
   ];
 
   const modules = [
-    { label: 'Contabilidad', value: '—', pct: 78, tone: 'success' },
-    { label: 'Inventario', value: '—', pct: 45, tone: 'info' },
-    { label: 'Ventas', value: '—', pct: 92, tone: 'warning' },
-    { label: 'RRHH', value: '—', pct: 30, tone: 'neutral' },
+    { label: t('dashboard.modules.demo.accounting'), value: '—', pct: 78, tone: 'success' },
+    { label: t('dashboard.modules.demo.inventory'), value: '—', pct: 45, tone: 'info' },
+    { label: t('dashboard.modules.demo.sales'), value: '—', pct: 92, tone: 'warning' },
+    { label: t('dashboard.modules.demo.hr'), value: '—', pct: 30, tone: 'neutral' },
   ] satisfies { label: string; value: string; pct: ZHProgressPct; tone: ZHModuleTone }[];
 
   return (
@@ -46,13 +46,13 @@ export function DashboardPage() {
         <ZHKpiGrid items={kpis} />
 
         <ZHPanelGrid>
-          <ZHChartPanel title="Ingresos vs Egresos" yearLabel="2025" />
-          <ZHActivityPanel title="Actividad reciente" items={activity} />
+          <ZHChartPanel title={t('dashboard.chart.incomeVsExpenses')} yearLabel={t('dashboard.chart.year')} />
+          <ZHActivityPanel title={t('dashboard.activity.title')} items={activity} />
         </ZHPanelGrid>
 
         <ZHModulesPanel
-          title="Módulos del sistema"
-          rightLabel="Ejercicio fiscal 2025"
+          title={t('dashboard.modules.title')}
+          rightLabel={t('dashboard.modules.fiscalLine')}
           items={modules}
         />
       </ZHDashboardScaffold>

@@ -3,8 +3,17 @@ export type NavGroup = { id: string; label: string; icon: string; items: NavItem
 
 export type TranslateFn = (key: string) => string;
 
+function collectNavTos(items: NavItem[]): string[] {
+  const out: string[] = [];
+  for (const it of items) {
+    out.push(it.to);
+    if (it.children?.length) out.push(...collectNavTos(it.children));
+  }
+  return out;
+}
+
 export function buildNavGroups(t: TranslateFn): NavGroup[] {
-  return [
+  const groups: NavGroup[] = [
     {
       id: 'home',
       label: t('app.nav.group.home'),
@@ -57,10 +66,22 @@ export function buildNavGroups(t: TranslateFn): NavGroup[] {
       items: [
         { to: '/companies', label: t('app.nav.companies') },
         { to: '/superadmin', label: t('app.nav.superadmin') },
-        { to: '/superadmin/forms', label: t('superadmin.forms.title') },
-        { to: '/saas/branches', label: t('app.nav.branches'), permissionKey: 'saas.branches.view' },
+        { to: '/superadmin/forms', label: t('app.nav.superadmin.forms') },
       ],
     },
   ];
+
+  if (import.meta.env.DEV) {
+    const tos = groups.flatMap((g) => collectNavTos(g.items));
+    const seen = new Set<string>();
+    for (const path of tos) {
+      if (seen.has(path)) {
+        console.warn(`[navConfig] Ruta de menú duplicada (mismo "to"): ${path}. Cada pantalla de formulario debe aparecer una sola vez en grupos; Favoritos es la excepción (copias en sesión).`);
+      }
+      seen.add(path);
+    }
+  }
+
+  return groups;
 }
 

@@ -14,8 +14,11 @@ import axios from 'axios';
  *   y redirige al login. Esto cubre tokens vencidos o revocados.
  */
 const viteApiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? '';
-const resolvedBaseUrl =
-  viteApiBase.length > 0 ? viteApiBase : import.meta.env.DEV ? '' : 'http://localhost:5003';
+/**
+ * Vacío = rutas relativas /api/* al mismo host (Vite dev o preview con proxy en vite.config).
+ * Solo usar URL absoluta si VITE_API_URL está definida (otro dominio/puerto sin proxy).
+ */
+const resolvedBaseUrl = viteApiBase.length > 0 ? viteApiBase : '';
 
 export const api = axios.create({
   baseURL: resolvedBaseUrl,

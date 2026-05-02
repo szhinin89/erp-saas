@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
@@ -8,14 +7,13 @@ import {
   branchService,
   type BranchDetailDto,
   type BranchDto,
-  type CatalogActiveStatus,
   type GeographyItemDto,
 } from '../services/branchService';
-import '../components/Modal.css';
 import './BranchesPage.css';
-import { ZHBtn, ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions, ZHToggle } from '../components/zh/ZHForm';
-import { ZHActionsRow, ZHColSpan, ZHSection } from '../components/zh/ZHLayout';
-import { ZHModalHeader } from '../components/zh/ZHModalHeader';
+import { ZHBtn, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHToggle } from '../components/zh/ZHForm';
+import { ZHColSpan } from '../components/zh/ZHLayout';
+import ZHSearchBar from '../components/shared/ZHSearchBar';
+import { EntityAuditPanel } from '../components/EntityAuditPanel';
 
 type FormState = {
   name: string;
@@ -79,14 +77,12 @@ export function BranchesPage() {
   const canUpdate = isAdmin || hasPerm('saas.branches.update');
   const canDelete = isAdmin || hasPerm('saas.branches.delete');
 
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const [items, setItems] = useState<BranchDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [activeStatus, setActiveStatus] = useState<CatalogActiveStatus>('all');
-  const [searchDraft, setSearchDraft] = useState('');
-  const [appliedSearch, setAppliedSearch] = useState('');
+  const [branchListQuery, setBranchListQuery] = useState('');
+  const [branchListApplied, setBranchListApplied] = useState('');
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -102,21 +98,28 @@ export function BranchesPage() {
   const [loadingProvinces, setLoadingProvinces] = useState(false);
   const [loadingCantons, setLoadingCantons] = useState(false);
   const [loadingParishes, setLoadingParishes] = useState(false);
-  /** 'new' | 'edit' cuando el modal está abierto; sincroniza país por defecto si los países cargan tarde. */
+  /** 'new' | 'edit' cuando el formulario en pestaña Datos está activo; sincroniza país por defecto si los países cargan tarde. */
   const [branchDialogMode, setBranchDialogMode] = useState<'closed' | 'new' | 'edit'>('closed');
+  const [uiTab, setUiTab] = useState<'data' | 'list' | 'audit'>('data');
+  const [auditRefreshKey, setAuditRefreshKey] = useState(0);
   const [geoBootstrapError, setGeoBootstrapError] = useState('');
 
   const fetchList = useCallback(async () => {
     setError('');
     setLoading(true);
     try {
-      setItems(await branchService.list(activeStatus, appliedSearch.trim() || undefined));
+      setItems(await branchService.list('all', branchListApplied.trim() || undefined));
     } catch {
       setError(t('branches.error.load'));
     } finally {
       setLoading(false);
     }
-  }, [activeStatus, appliedSearch, t]);
+  }, [branchListApplied, t]);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setBranchListApplied(branchListQuery.trim()), 320);
+    return () => window.clearTimeout(id);
+  }, [branchListQuery]);
 
   useEffect(() => {
     let cancelled = false;
@@ -213,7 +216,7 @@ export function BranchesPage() {
     };
   }, [branchDialogMode, countries, form.countryId, loadProvinces]);
 
-  const openNew = () => {
+  const beginNewBranchForm = useCallback(() => {
     setEditingId(null);
     const defaultCountry = countries.some((c) => c.id === 'EC') ? 'EC' : '';
     setForm({ ...emptyForm(), countryId: defaultCountry });
@@ -225,8 +228,15 @@ export function BranchesPage() {
     if (defaultCountry) {
       void loadProvinces(defaultCountry);
     }
-    dialogRef.current?.showModal();
-  };
+  }, [countries, loadProvinces]);
+
+  /** Listado → Datos: formulario de alta visible al entrar en Datos (crear/guardar solo en barra de Datos). */
+  useEffect(() => {
+    if (uiTab !== 'data' || branchDialogMode !== 'closed' || !canCreate) return;
+    queueMicrotask(() => {
+      beginNewBranchForm();
+    });
+  }, [uiTab, branchDialogMode, canCreate, beginNewBranchForm]);
 
   const openEdit = async (id: string) => {
     setError('');
@@ -244,7 +254,7 @@ export function BranchesPage() {
       await loadCantons(d.provinceId ?? '');
       await loadParishes(d.cantonId ?? '');
       setBranchDialogMode('edit');
-      dialogRef.current?.showModal();
+      setUiTab('data');
     } catch {
       setError(t('branches.error.loadOne'));
     }
@@ -276,8 +286,23 @@ export function BranchesPage() {
   };
 
   const closeDialog = () => {
+    setError('');
     setBranchDialogMode('closed');
-    dialogRef.current?.close();
+    setEditingId(null);
+    setAudit(null);
+    setUiTab('list');
+  };
+
+  /** Cancelar: en alta reinicia el borrador y permanece en Datos; en edición vuelve al listado. */
+  const cancelDataTab = () => {
+    setError('');
+    if (editingId) {
+      closeDialog();
+    } else if (canCreate) {
+      beginNewBranchForm();
+    } else {
+      closeDialog();
+    }
   };
 
   const payloadBody = useMemo(
@@ -301,17 +326,36 @@ export function BranchesPage() {
 
   const formDisabled = editingId ? !canUpdate : !canCreate;
 
+  const canSubmit = useMemo(
+    () =>
+      Boolean(form.name.trim() && form.address.trim()) && (editingId ? canUpdate : canCreate),
+    [form.name, form.address, editingId, canUpdate, canCreate]
+  );
+
   const save = async () => {
     setError('');
     setSaving(true);
     try {
       if (editingId) {
         await branchService.update(editingId, { id: editingId, ...payloadBody });
+        await fetchList();
+        const d = await branchService.getById(editingId);
+        setForm(fromDto(d));
+        setAudit({
+          createdAt: d.createdAt,
+          updatedAt: d.updatedAt,
+          createdBy: d.createdBy,
+          updatedBy: d.updatedBy,
+        });
+        await loadProvinces(d.countryId ?? '');
+        await loadCantons(d.provinceId ?? '');
+        await loadParishes(d.cantonId ?? '');
+        setAuditRefreshKey((k) => k + 1);
       } else {
         await branchService.create(payloadBody);
+        await fetchList();
+        beginNewBranchForm();
       }
-      closeDialog();
-      await fetchList();
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
@@ -347,132 +391,102 @@ export function BranchesPage() {
       kicker={t('app.nav.group.saas')}
       title={t('branches.title')}
       action={
-        canCreate ? (
-          <ZHBtn variant="primary" type="button" onClick={openNew}>
-            {t('branches.new')}
-          </ZHBtn>
+        uiTab === 'data' && branchDialogMode !== 'closed' ? (
+          <>
+            <ZHBtn variant="ghost" size="md" type="button" disabled={saving} onClick={cancelDataTab}>
+              {t('common.cancel')}
+            </ZHBtn>
+            <ZHBtn
+              variant="primary"
+              size="md"
+              type="button"
+              disabled={saving || !canSubmit}
+              onClick={() => void save()}
+            >
+              {saving ? t('common.saving') : editingId ? t('common.saveChanges') : t('branches.primaryCreate')}
+            </ZHBtn>
+          </>
         ) : undefined
       }
     >
       <TableCard>
-        <ZHSection bottom={16}>
-          <ZHGrid cols={3}>
-            <ZHField label={t('branches.filter.status')}>
-              <select value={activeStatus} onChange={(e) => setActiveStatus(e.target.value as CatalogActiveStatus)}>
-                <option value="all">{t('branches.filter.all')}</option>
-                <option value="active">{t('branches.filter.active')}</option>
-                <option value="inactive">{t('branches.filter.inactive')}</option>
-              </select>
-            </ZHField>
-            <ZHField label={t('branches.filter.search')}>
-              <input value={searchDraft} onChange={(e) => setSearchDraft(e.target.value)} placeholder={t('branches.filter.searchPlaceholder')} />
-            </ZHField>
-            <ZHActionsRow>
-              <ZHBtn
-                variant="secondary"
-                type="button"
-                onClick={() => {
-                  setAppliedSearch(searchDraft.trim());
-                }}
-                disabled={loading}
-              >
-                {t('branches.filter.apply')}
-              </ZHBtn>
-            </ZHActionsRow>
-          </ZHGrid>
-        </ZHSection>
+        {error ? <ErrorState message={error} /> : null}
+        <div className="zh-form-tabs" role="tablist">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={uiTab === 'data'}
+            className={uiTab === 'data' ? 'is-active' : ''}
+            onClick={() => setUiTab('data')}
+          >
+            {t('common.formTab.data')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={uiTab === 'list'}
+            className={uiTab === 'list' ? 'is-active' : ''}
+            onClick={() => setUiTab('list')}
+          >
+            {t('branches.tabList')}
+          </button>
+          {editingId && branchDialogMode !== 'closed' ? (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={uiTab === 'audit'}
+              className={uiTab === 'audit' ? 'is-active' : ''}
+              onClick={() => setUiTab('audit')}
+            >
+              {t('common.formTab.audit')}
+            </button>
+          ) : null}
+        </div>
 
-        {error && <ErrorState message={error} />}
-        {loading ? (
-          <LoadingState />
-        ) : items.length === 0 ? (
-          <EmptyState message={t('common.noData')} />
-        ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t('branches.col.name')}</th>
-                <th>{t('branches.col.address')}</th>
-                <th>{t('branches.col.main')}</th>
-                <th>{t('common.status')}</th>
-                <th>{t('branches.col.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((x) => (
-                <tr key={x.id}>
-                  <td>{x.name}</td>
-                  <td>{x.address}</td>
-                  <td>
-                    <Badge
-                      label={x.isMainBranch ? t('common.yes') : t('common.no')}
-                      variant={x.isMainBranch ? 'blue' : 'gray'}
-                    />
-                  </td>
-                  <td>
-                    <Badge
-                      label={x.isActive ? t('common.active') : t('common.inactive')}
-                      variant={x.isActive ? 'green' : 'gray'}
-                    />
-                  </td>
-                  <td>
-                    {canUpdate && (
-                      <ZHBtn variant="secondary" size="xs" type="button" onClick={() => void openEdit(x.id)}>
-                        {t('common.edit')}
-                      </ZHBtn>
-                    )}
-                    {(x.isActive ? canDelete : canUpdate) && (
-                      <ZHBtn variant="ghost" size="xs" type="button" onClick={() => void toggleDisable(x)}>
-                        {x.isActive ? t('branches.disable') : t('branches.enable')}
-                      </ZHBtn>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </TableCard>
+        {uiTab === 'data' && (
+          <>
+            {branchDialogMode === 'closed' ? (
+              <EmptyState message={t('branches.dataTabHintUpdateOnly')} />
+            ) : (
+              <div className="branches-data-panel">
+                <input type="hidden" name="tenantId" value={tenantId} />
+                {geoBootstrapError ? (
+                  <ZHFormAlert type="warning" message={t('branches.error.geography')} detail={geoBootstrapError || undefined} />
+                ) : null}
 
-      {createPortal(
-        <dialog ref={dialogRef} className="branches-dialog">
-        <div className="branches-dialog-inner">
-          <ZHModalHeader
-            title={editingId ? t('branches.editTitle') : t('branches.createTitle')}
-            subtitle={t('branches.form.locationSection')}
-            onClose={closeDialog}
-            closeLabel={t('common.close')}
-          />
+                <ZHFormSection title={t('branches.section.identity')}>
+                      <ZHGrid cols={2}>
+                        <ZHColSpan span={2}>
+                          <ZHField label={t('branches.form.name')} required>
+                            <input
+                              value={form.name}
+                              onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
+                              disabled={formDisabled}
+                              autoComplete="organization"
+                            />
+                          </ZHField>
+                        </ZHColSpan>
+                        <ZHColSpan span={2}>
+                          <ZHField label={t('branches.form.address')} required>
+                            <input
+                              value={form.address}
+                              onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))}
+                              disabled={formDisabled}
+                              autoComplete="street-address"
+                            />
+                          </ZHField>
+                        </ZHColSpan>
+                        <ZHField label={t('branches.form.reference')}>
+                          <input value={form.reference} onChange={(e) => setForm((s) => ({ ...s, reference: e.target.value }))} disabled={formDisabled} />
+                        </ZHField>
+                        <ZHField label={t('branches.form.phones')}>
+                          <input value={form.phones} onChange={(e) => setForm((s) => ({ ...s, phones: e.target.value }))} disabled={formDisabled} autoComplete="tel" />
+                        </ZHField>
+                      </ZHGrid>
+                    </ZHFormSection>
 
-          <input type="hidden" name="tenantId" value={tenantId} />
-          <div className="zh-form">
-            <ZHFormBody>
-              {geoBootstrapError ? <ZHFormAlert type="warning" message={t('branches.error.geography')} detail={geoBootstrapError} /> : null}
-              {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
-
-              <ZHFormSection title={t('branches.form.name')}>
-                <ZHGrid cols={2}>
-                  <ZHColSpan span={2}>
-                    <ZHField label={t('branches.form.name')} required>
-                      <input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} disabled={formDisabled} />
-                    </ZHField>
-                  </ZHColSpan>
-                  <ZHColSpan span={2}>
-                    <ZHField label={t('branches.form.address')} required>
-                      <input value={form.address} onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))} disabled={formDisabled} />
-                    </ZHField>
-                  </ZHColSpan>
-                  <ZHField label={t('branches.form.reference')}>
-                    <input value={form.reference} onChange={(e) => setForm((s) => ({ ...s, reference: e.target.value }))} disabled={formDisabled} />
-                  </ZHField>
-                  <ZHField label={t('branches.form.phones')}>
-                    <input value={form.phones} onChange={(e) => setForm((s) => ({ ...s, phones: e.target.value }))} disabled={formDisabled} />
-                  </ZHField>
-                </ZHGrid>
-              </ZHFormSection>
-
-              <ZHFormSection title={t('branches.form.locationSection')}>
-                <ZHGrid cols={2}>
+                    <ZHFormSection title={t('branches.form.locationSection')}>
+                      <ZHGrid cols={2}>
                   <ZHField
                     label={t('branches.form.country')}
                     hint={countries.length === 0 ? t('branches.form.loadingCountries') : undefined}
@@ -555,76 +569,155 @@ export function BranchesPage() {
                       ))}
                     </select>
                   </ZHField>
-                </ZHGrid>
-              </ZHFormSection>
+                      </ZHGrid>
+                    </ZHFormSection>
 
-              <ZHFormSection title={t('branches.form.recharge')}>
-                <ZHGrid cols={2}>
-                  <ZHField label={t('branches.form.latitude')}>
-                    <input value={form.latitude} onChange={(e) => setForm((s) => ({ ...s, latitude: e.target.value }))} disabled={formDisabled} />
-                  </ZHField>
-                  <ZHField label={t('branches.form.longitude')}>
-                    <input value={form.longitude} onChange={(e) => setForm((s) => ({ ...s, longitude: e.target.value }))} disabled={formDisabled} />
-                  </ZHField>
-                  <ZHColSpan span={2}>
-                    <ZHField label={t('branches.form.recharge')}>
-                      <input value={form.rechargeOption} onChange={(e) => setForm((s) => ({ ...s, rechargeOption: e.target.value }))} disabled={formDisabled} />
-                    </ZHField>
-                  </ZHColSpan>
-                </ZHGrid>
-              </ZHFormSection>
+                    <ZHFormSection title={t('branches.form.recharge')}>
+                      <ZHGrid cols={2}>
+                        <ZHField label={t('branches.form.latitude')}>
+                          <input value={form.latitude} onChange={(e) => setForm((s) => ({ ...s, latitude: e.target.value }))} disabled={formDisabled} />
+                        </ZHField>
+                        <ZHField label={t('branches.form.longitude')}>
+                          <input value={form.longitude} onChange={(e) => setForm((s) => ({ ...s, longitude: e.target.value }))} disabled={formDisabled} />
+                        </ZHField>
+                        <ZHColSpan span={2}>
+                          <ZHField label={t('branches.form.recharge')}>
+                            <input
+                              value={form.rechargeOption}
+                              onChange={(e) => setForm((s) => ({ ...s, rechargeOption: e.target.value }))}
+                              disabled={formDisabled}
+                            />
+                          </ZHField>
+                        </ZHColSpan>
+                      </ZHGrid>
+                    </ZHFormSection>
 
-              <ZHFormSection title={t('common.status')}>
-                <ZHGrid cols={1}>
-                  <ZHToggle
-                    label={t('branches.form.enabled')}
-                    description={t('branches.form.enabled')}
-                    value={form.isActive}
-                    onChange={(v) => setForm((s) => ({ ...s, isActive: v }))}
-                    disabled={formDisabled}
-                  />
-                  <ZHToggle
-                    label={t('branches.form.mainBranch')}
-                    description={t('branches.form.mainBranch')}
-                    value={form.isMainBranch}
-                    onChange={(v) => setForm((s) => ({ ...s, isMainBranch: v }))}
-                    disabled={formDisabled}
-                  />
-                </ZHGrid>
-              </ZHFormSection>
+                    <ZHFormSection title={t('common.status')}>
+                      <ZHGrid cols={1}>
+                        <ZHToggle
+                          label={t('branches.form.enabled')}
+                          description={t('branches.form.enabled')}
+                          value={form.isActive}
+                          onChange={(v) => setForm((s) => ({ ...s, isActive: v }))}
+                          disabled={formDisabled}
+                        />
+                        <ZHToggle
+                          label={t('branches.form.mainBranch')}
+                          description={t('branches.form.mainBranch')}
+                          value={form.isMainBranch}
+                          onChange={(v) => setForm((s) => ({ ...s, isMainBranch: v }))}
+                          disabled={formDisabled}
+                        />
+                      </ZHGrid>
+                    </ZHFormSection>
 
-          {audit && (
-            <div className="branches-audit">
-              <p>
-                <strong>{t('branches.audit.createdAt')}</strong> {new Date(audit.createdAt).toLocaleString()}
-              </p>
-              <p>
-                <strong>{t('branches.audit.updatedAt')}</strong>{' '}
-                {audit.updatedAt ? new Date(audit.updatedAt).toLocaleString() : '—'}
-              </p>
-              <p>
-                <strong>{t('branches.audit.createdBy')}</strong> {audit.createdBy}
-              </p>
-              <p>
-                <strong>{t('branches.audit.updatedBy')}</strong> {audit.updatedBy ?? '—'}
-              </p>
-            </div>
-          )}
+                    {audit ? (
+                      <div className="branches-audit">
+                        <p>
+                          <strong>{t('branches.audit.createdAt')}</strong> {new Date(audit.createdAt).toLocaleString()}
+                        </p>
+                        <p>
+                          <strong>{t('branches.audit.updatedAt')}</strong>{' '}
+                          {audit.updatedAt ? new Date(audit.updatedAt).toLocaleString() : '—'}
+                        </p>
+                        <p>
+                          <strong>{t('branches.audit.createdBy')}</strong> {audit.createdBy}
+                        </p>
+                        <p>
+                          <strong>{t('branches.audit.updatedBy')}</strong> {audit.updatedBy ?? '—'}
+                        </p>
+                      </div>
+                    ) : null}
+              </div>
+            )}
+          </>
+        )}
 
-              <ZHFormActions
-                onCancel={closeDialog}
-                onDraft={undefined}
-                onSave={() => void save()}
-                disableDraft
-                disableSave={saving || !(editingId ? canUpdate : canCreate)}
-                labels={{ cancel: t('common.cancel'), draft: t('common.saveDraft') ?? 'Guardar borrador', save: t('common.save') }}
+        {uiTab === 'audit' && editingId && branchDialogMode !== 'closed' ? (
+          <EntityAuditPanel entityType="Branch" entityId={editingId} take={10} refreshKey={auditRefreshKey} />
+        ) : null}
+
+        {uiTab === 'list' && (
+          <>
+            <div className="zh-mb-12">
+              <ZHSearchBar
+                searchQuery={branchListQuery}
+                onSearch={setBranchListQuery}
+                onClearAll={() => {
+                  setBranchListQuery('');
+                  setBranchListApplied('');
+                }}
+                filterValues={{}}
+                placeholder={t('branches.list.searchPlaceholder')}
+                resultCount={items.length}
+                entityLabel={t('branches.list.entityLabel')}
+                loading={loading}
+                actionLabel={canCreate ? t('branches.list.newAction') : undefined}
+                onAction={
+                  canCreate
+                    ? () => {
+                        setUiTab('data');
+                        beginNewBranchForm();
+                      }
+                    : undefined
+                }
               />
-            </ZHFormBody>
-          </div>
-        </div>
-      </dialog>,
-        document.body
-      )}
+            </div>
+
+            {loading ? (
+              <LoadingState />
+            ) : items.length === 0 ? (
+              <EmptyState
+                message={branchListApplied.trim() ? t('common.listTab.noMatch') : t('common.noData')}
+              />
+            ) : (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>{t('branches.col.name')}</th>
+                    <th>{t('branches.col.address')}</th>
+                    <th>{t('branches.col.main')}</th>
+                    <th>{t('common.status')}</th>
+                    <th>{t('branches.col.actions')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((x) => (
+                    <tr key={x.id}>
+                      <td>{x.name}</td>
+                      <td>{x.address}</td>
+                      <td>
+                        <Badge
+                          label={x.isMainBranch ? t('common.yes') : t('common.no')}
+                          variant={x.isMainBranch ? 'blue' : 'gray'}
+                        />
+                      </td>
+                      <td>
+                        <Badge
+                          label={x.isActive ? t('common.active') : t('common.inactive')}
+                          variant={x.isActive ? 'green' : 'gray'}
+                        />
+                      </td>
+                      <td>
+                        {canUpdate && (
+                          <ZHBtn variant="secondary" size="xs" type="button" onClick={() => void openEdit(x.id)}>
+                            {t('common.edit')}
+                          </ZHBtn>
+                        )}
+                        {(x.isActive ? canDelete : canUpdate) && (
+                          <ZHBtn variant="ghost" size="xs" type="button" onClick={() => void toggleDisable(x)}>
+                            {x.isActive ? t('branches.disable') : t('branches.enable')}
+                          </ZHBtn>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </>
+        )}
+      </TableCard>
     </PageShell>
   );
 }

@@ -1,5 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Branches.DTOs;
+using ERP.Domain.Audit.Entities;
+using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Branches.Interfaces;
 
 namespace ERP.Application.Modules.Branches.UseCases.EnableBranch;
@@ -7,12 +9,18 @@ namespace ERP.Application.Modules.Branches.UseCases.EnableBranch;
 public sealed class EnableBranchHandler
 {
     private readonly IBranchRepository _repo;
+    private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentUser _user;
 
-    public EnableBranchHandler(IBranchRepository repo, ICurrentTenant tenant, ICurrentUser user)
+    public EnableBranchHandler(
+        IBranchRepository repo,
+        IUserActivityRepository activity,
+        ICurrentTenant tenant,
+        ICurrentUser user)
     {
         _repo = repo;
+        _activity = activity;
         _tenant = tenant;
         _user = user;
     }
@@ -24,6 +32,16 @@ public sealed class EnableBranchHandler
             return Result<BranchDto>.Failure("Sucursal no encontrada.");
 
         entity.Enable(_user.UserId);
+        await _activity.AddAsync(UserActivity.Create(
+            _tenant.TenantId,
+            _user.UserId,
+            _user.Email,
+            _user.FullName,
+            module: "branches",
+            action: "branch.enable",
+            entityType: "Branch",
+            entityId: entity.Id,
+            description: entity.Name), ct);
         await _repo.SaveChangesAsync(ct);
 
         return Result<BranchDto>.Success(new BranchDto(

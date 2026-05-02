@@ -1,5 +1,7 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Branches.DTOs;
+using ERP.Domain.Audit.Entities;
+using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.Geography.Interfaces;
 
@@ -9,17 +11,20 @@ public sealed class UpdateBranchHandler
 {
     private readonly IBranchRepository _repo;
     private readonly IGeographyReadRepository _geo;
+    private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentUser _user;
 
     public UpdateBranchHandler(
         IBranchRepository repo,
         IGeographyReadRepository geo,
+        IUserActivityRepository activity,
         ICurrentTenant tenant,
         ICurrentUser user)
     {
         _repo = repo;
         _geo = geo;
+        _activity = activity;
         _tenant = tenant;
         _user = user;
     }
@@ -69,6 +74,16 @@ public sealed class UpdateBranchHandler
         else if (!command.IsActive && entity.IsActive)
             entity.Disable(userId);
 
+        await _activity.AddAsync(UserActivity.Create(
+            tenantId,
+            userId,
+            _user.Email,
+            _user.FullName,
+            module: "branches",
+            action: "branch.update",
+            entityType: "Branch",
+            entityId: entity.Id,
+            description: entity.Name), ct);
         await _repo.SaveChangesAsync(ct);
 
         return Result<BranchDto>.Success(new BranchDto(

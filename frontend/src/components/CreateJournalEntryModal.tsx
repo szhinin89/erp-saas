@@ -1,11 +1,11 @@
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Modal } from './Modal';
 import { accountingService, type JournalEntryLineRequest, type CreateJournalEntryRequest } from '../services/accountingService';
 import type { Account } from '../types/accounting';
 import './CreateJournalEntryModal.css';
 import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
-import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions } from './zh/ZHForm';
+import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions, ZHBtn } from './zh/ZHForm';
 import { ZHColSpan } from './zh/ZHLayout';
 import { ZHModalHeader } from './zh/ZHModalHeader';
 
@@ -35,6 +35,7 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
   const [lines, setLines]   = useState<JournalEntryLineRequest[]>([emptyLine(), emptyLine()]);
   const [error, setError]   = useState('');
   const [loading, setLoading] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const setField = (field: keyof typeof form, value: string) =>
     setForm((f) => ({ ...f, [field]: value }));
@@ -88,10 +89,21 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
           subtitle={t('accounting.journal.form.description')}
           onClose={onClose}
           closeLabel={t('common.close')}
+          right={
+            <ZHBtn
+              variant="primary"
+              size="md"
+              type="button"
+              disabled={loading || !balanced || lines.some((l) => !l.accountId)}
+              onClick={() => formRef.current?.requestSubmit()}
+            >
+              {loading ? t('common.saving') : t('accounting.journal.confirmEntry')}
+            </ZHBtn>
+          }
         />
       }
     >
-      <form onSubmit={handleSubmit}>
+      <form ref={formRef} onSubmit={handleSubmit}>
         <input type="hidden" name="tenantId" value={tenantId} />
         <div className="zh-form">
           <ZHFormBody>
@@ -191,9 +203,9 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
             </div>
           ))}
 
-          <button type="button" className="je-add-line" onClick={addLine}>
+          <ZHBtn variant="secondary" size="md" type="button" className="je-add-line" onClick={addLine}>
             {t('accounting.journal.lines.addLine')}
-          </button>
+          </ZHBtn>
 
           <div className={`je-totals ${!balanced ? 'je-totals--unbalanced' : ''}`}>
             <span>{t('accounting.journal.lines.totals')}</span>
@@ -205,13 +217,11 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
           </div>
         </div>
             <ZHFormActions
+              buttonSize="md"
+              hideSave
+              hideDraft
               onCancel={onClose}
-              onDraft={undefined}
-              onSave={undefined}
-              disableDraft
-              disableSave={loading || !balanced}
-              saveButtonType="submit"
-              labels={{ cancel: t('common.cancel'), draft: t('common.saveDraft') ?? 'Guardar borrador', save: t('accounting.journal.modal.create.submit') }}
+              labels={{ cancel: t('common.cancel') }}
             />
           </ZHFormBody>
         </div>

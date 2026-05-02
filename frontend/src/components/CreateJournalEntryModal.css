@@ -72,22 +72,14 @@
 .je-remove:hover:not(:disabled) { color: #ef4444; }
 .je-remove:disabled { opacity: 0.3; cursor: not-allowed; }
 
-.je-add-line {
-  display: block;
+/* Ancho completo dentro del bloque de líneas del asiento (sobreescribe padding del ZHBtn) */
+.zh-btn.je-add-line {
+  display: flex;
   width: 100%;
-  padding: 9px;
-  background: #f9fafb;
-  border: none;
-  border-top: 1px solid #f0f0f0;
-  color: #7c3aed;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  text-align: center;
-  transition: background 0.15s;
+  justify-content: center;
+  margin-top: 8px;
+  border-radius: var(--zh-radius, 8px);
 }
-
-.je-add-line:hover { background: #f3f0ff; }
 
 .je-totals {
   display: grid;

@@ -21,13 +21,13 @@ export function ZHDirtyBar(props: {
       </div>
       <div className="zh-dirtybar-actions">
         {onDiscard ? (
-          <ZHBtn variant="ghost" size="sm" type="button" onClick={onDiscard} disabled={loading}>
+          <ZHBtn variant="ghost" size="md" type="button" onClick={onDiscard} disabled={loading}>
             {discardLabel ?? t('common.discard')}
           </ZHBtn>
         ) : null}
         {onSave ? (
-          <ZHBtn variant="primary" size="sm" type="button" onClick={onSave} disabled={loading}>
-            {saveLabel ?? t('common.save')}
+          <ZHBtn variant="primary" size="md" type="button" onClick={onSave} disabled={loading}>
+            {saveLabel ?? t('common.saveChanges')}
           </ZHBtn>
         ) : null}
       </div>

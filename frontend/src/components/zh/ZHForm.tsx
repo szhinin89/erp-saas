@@ -1,5 +1,6 @@
 import './ZHForm.css';
 import { useMemo, useState } from 'react';
+import { useI18n } from '../../i18n/i18n';
 
 export function ZHFormHeader(props: {
   title: string;
@@ -8,6 +9,7 @@ export function ZHFormHeader(props: {
   zhLogoSrc?: string | null; // defaults to /zh-logo.png
   right?: React.ReactNode;
 }) {
+  const { t } = useI18n();
   const { title, subtitle, badge, zhLogoSrc, right } = props;
   return (
     <div className="zh-form-header">
@@ -38,7 +40,7 @@ export function ZHFormHeader(props: {
       <div className="zh-form-header-right">
         {right}
         {badge ? <span className="zh-form-badge">{badge}</span> : null}
-        <img className="zh-form-zh-logo" src={zhLogoSrc ?? '/zh-logo.png'} alt="ZH Technologies" />
+        <img className="zh-form-zh-logo" src={zhLogoSrc ?? '/zh-logo.png'} alt={t('app.zh.brandName')} />
       </div>
     </div>
   );
@@ -72,6 +74,8 @@ export function ZHMultiTenantHeader(props: {
     zhLogoSrc,
     right,
   } = props;
+
+  const { t } = useI18n();
 
   const initials = (tenantInitials ?? tenantName)
     .split(' ')
@@ -110,7 +114,7 @@ export function ZHMultiTenantHeader(props: {
           {right}
           {fiscalYear ? (
             <div className="zh-tenant-fy">
-              <div className="zh-tenant-fy-label">Ejercicio fiscal</div>
+              <div className="zh-tenant-fy-label">{t('app.fiscalYear.label')}</div>
               <div className="zh-tenant-fy-value">{fiscalYear}</div>
             </div>
           ) : null}
@@ -133,8 +137,8 @@ export function ZHMultiTenantHeader(props: {
           <span className="zh-tenant-status-dot" aria-hidden="true" />
           <span className="zh-tenant-status-text">{statusText ?? ''}</span>
         </div>
-        <div className="zh-tenant-credit" title="Sistema desarrollado por ZH Technologies">
-          <img className="zh-tenant-credit-logo" src={zhLogoSrc ?? '/zh-logo.png'} alt="ZH Technologies" />
+        <div className="zh-tenant-credit" title={t('app.zh.developedByTitle')}>
+          <img className="zh-tenant-credit-logo" src={zhLogoSrc ?? '/zh-logo.png'} alt={t('app.zh.brandName')} />
         </div>
       </div>
     </div>
@@ -186,17 +190,6 @@ export function ZHField(props: {
       <div className="zh-field-control">{children}</div>
       {hint ? <p className={`zh-field-hint${hintType ? ` zh-field-hint--${hintType}` : ''}`}>{hint}</p> : null}
     </label>
-  );
-}
-
-export function ZHInputWithIcon(props: { icon: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div className="zh-input-with-icon">
-      <span className="zh-input-icon" aria-hidden="true">
-        {props.icon}
-      </span>
-      {props.children}
-    </div>
   );
 }
 
@@ -282,35 +275,54 @@ export function ZHFormActions(props: {
   draftButtonType?: 'button' | 'submit';
   saveButtonType?: 'button' | 'submit';
   labels?: { cancel?: string; draft?: string; save?: string };
+  /** Si se define (p. ej. `md`), unifica tamaño de cancelar / borrador / guardar en formularios de datos. Omitir en login público. */
+  buttonSize?: ZHBtnSize;
 }) {
-  const { onCancel, onDraft, onSave, hideCancel, hideDraft, hideSave, disableDraft, disableSave, labels, draftButtonType, saveButtonType } = props;
+  const { t } = useI18n();
+  const {
+    onCancel,
+    onDraft,
+    onSave,
+    hideCancel,
+    hideDraft,
+    hideSave,
+    disableDraft,
+    disableSave,
+    labels,
+    draftButtonType,
+    saveButtonType,
+    buttonSize,
+  } = props;
   const allowDraftWithoutHandler = (draftButtonType ?? 'button') === 'submit';
   const allowSaveWithoutHandler = (saveButtonType ?? 'button') === 'submit';
+  const sz = buttonSize !== undefined ? { size: buttonSize } : {};
   return (
     <div className="zh-actions">
       {!hideCancel ? (
-        <ZHBtn type="button" variant="ghost" onClick={onCancel} disabled={!onCancel}>
-          {labels?.cancel ?? 'Cancelar'}
+        <ZHBtn type="button" variant="ghost" {...sz} onClick={onCancel} disabled={!onCancel}>
+          {labels?.cancel ?? t('common.cancel')}
         </ZHBtn>
       ) : null}
       {!hideDraft ? (
         <ZHBtn
           type={draftButtonType ?? 'button'}
           variant="secondary"
+          {...sz}
           onClick={onDraft}
           disabled={(!allowDraftWithoutHandler && !onDraft) || disableDraft}
         >
-          {labels?.draft ?? 'Guardar borrador'}
+          {labels?.draft ?? t('common.saveDraft')}
         </ZHBtn>
       ) : null}
       {!hideSave ? (
         <ZHBtn
           type={saveButtonType ?? 'button'}
           variant="primary"
+          {...sz}
           onClick={onSave}
           disabled={(!allowSaveWithoutHandler && !onSave) || disableSave}
         >
-          {labels?.save ?? 'Guardar'}
+          {labels?.save ?? t('common.saveChanges')}
         </ZHBtn>
       ) : null}
     </div>

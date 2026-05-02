@@ -98,11 +98,11 @@ export function ZHAppTenantHeader(props: {
           </div>
         </div>
 
-        <div className="zh-tenant-right" aria-label="Acciones">
-          <button type="button" className="zh-app-tenantIconBtn" aria-label="Notificaciones">
+        <div className="zh-tenant-right" aria-label={t('app.header.actions')}>
+          <button type="button" className="zh-app-tenantIconBtn" aria-label={t('app.header.notifications')}>
             🔔
           </button>
-          <button type="button" className="zh-app-tenantIconBtn" aria-label="Aplicaciones">
+          <button type="button" className="zh-app-tenantIconBtn" aria-label={t('app.header.apps')}>
             ⊞
           </button>
           {props.rightExtra ? <div className="zh-app-tenantRightExtra">{props.rightExtra}</div> : null}
@@ -110,7 +110,7 @@ export function ZHAppTenantHeader(props: {
             <button
               type="button"
               className="zh-app-tenantAvatarBtn"
-              aria-label="Menú de sesión"
+              aria-label={t('app.header.userMenu')}
               aria-haspopup="menu"
               aria-expanded={userMenuOpen}
               onClick={() => setUserMenuOpen((s) => !s)}
@@ -125,7 +125,7 @@ export function ZHAppTenantHeader(props: {
                   <div
                     className="zh-app-userMenuPopover"
                     role="menu"
-                    aria-label="Sesión"
+                    aria-label={t('app.header.sessionMenu')}
                     style={{ position: 'fixed', top: menuPos.top, right: menuPos.right }}
                     ref={popoverRef}
                   >
@@ -153,11 +153,11 @@ export function ZHAppTenantHeader(props: {
       </div>
 
       <div className="zh-tenant-bottom">
-        <div className="zh-tenant-status" aria-label="Menú principal">
+        <div className="zh-tenant-status" aria-label={t('app.header.bottomNav')}>
           {props.bottomLeft ?? null}
         </div>
-        <div className="zh-tenant-credit" aria-label="Crédito">
-          <span className="zh-tenant-credit-text">ZH Technologies</span>
+        <div className="zh-tenant-credit" aria-label={t('app.header.vendorCredit')}>
+          <span className="zh-tenant-credit-text">{t('app.zh.brandName')}</span>
         </div>
       </div>
     </div>

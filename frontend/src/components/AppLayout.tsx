@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n/i18n';
@@ -25,6 +25,13 @@ export function AppLayout() {
   const [superadminReturningGlobal, setSuperadminReturningGlobal] = useState(false);
   const isSuperAdminArea = location.pathname === '/superadmin' || location.pathname.startsWith('/superadmin/');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Tras elegir una pantalla en el drawer (p. ej. SAAS → Formularios o un enlace desde el catálogo de formularios), volver a ocultar el menú para ganar espacio.
+  useEffect(() => {
+    startTransition(() => {
+      setSidebarOpen(false);
+    });
+  }, [location.pathname]);
 
   // Auto-recupera permisos después de refresh/hidratación.
   useEffect(() => {
@@ -296,10 +303,10 @@ export function AppLayout() {
             >
               <span className="superadmin-banner-dot" aria-hidden="true" />
               <strong className="superadmin-banner-title">{t('superadmin.banner')}</strong>
-              <span className="superadmin-banner-tenantInline" title="Empresa">
+              <span className="superadmin-banner-tenantInline" title={t('superadmin.tenant.title')}>
                 {getImpersonationTenantName() ?? t('superadmin.tenant.unknown')}
               </span>
-              <span className="superadmin-banner-tenantIdInline mono" title="Tenant ID">
+              <span className="superadmin-banner-tenantIdInline mono" title={t('superadmin.tenant.idTitle')}>
                 {user.tenantId}
               </span>
               <span className="superadmin-banner-caret" aria-hidden="true">{superadminBannerOpen ? '▾' : '▸'}</span>
@@ -307,10 +314,10 @@ export function AppLayout() {
 
             {superadminBannerOpen ? (
               <div className="superadmin-banner-details">
-                <div className="superadmin-banner-tenant" title="Empresa">
+                <div className="superadmin-banner-tenant" title={t('superadmin.tenant.title')}>
                   {getImpersonationTenantName() ?? t('superadmin.tenant.unknown')}
                 </div>
-                <div className="superadmin-banner-tenantId mono" title="Tenant ID">
+                <div className="superadmin-banner-tenantId mono" title={t('superadmin.tenant.idTitle')}>
                   {user.tenantId}
                 </div>
                 <button className="superadmin-banner-btn" onClick={() => void returnToGlobal()} type="button" disabled={superadminReturningGlobal}>
@@ -327,7 +334,7 @@ export function AppLayout() {
               <button
                 type="button"
                 className="zh-app-hamburger"
-                aria-label="Abrir menú"
+                aria-label={t('app.layout.openMenu')}
                 aria-expanded={sidebarOpen}
                 onClick={() => setSidebarOpen((s) => !s)}
               >
@@ -336,7 +343,7 @@ export function AppLayout() {
             }
             rightExtra={<LanguageSwitcher />}
             bottomLeft={!isSuperAdminArea ? (
-              <div className="app-mainmenu" role="navigation" aria-label="Menú principal">
+              <div className="app-mainmenu" role="navigation" aria-label={t('app.layout.mainNav')}>
                 {mainMenuGroups.map((g) => (
                   <button
                     key={g.id}
@@ -365,7 +372,7 @@ export function AppLayout() {
               <div
                 className="app-mainmenu-popover"
                 role="menu"
-                aria-label="Formularios"
+                aria-label={t('app.layout.groupMenu')}
                 ref={mainMenuPopoverRef}
                 data-pos="fixed"
                 data-top={mainMenuPos.top}

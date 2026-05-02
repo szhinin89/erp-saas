@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { EmptyState, PageShell, NoAccessPage, PageToolbar } from '../components/PageShell';
+import {
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PageShell,
+  NoAccessPage,
+  TableCard,
+} from '../components/PageShell';
 import { useAuthStore } from '../store/authStore';
 import { securityService, type SecurityAdminMatrix, type SecurityUser } from '../services/securityService';
+import { formatApiError } from '../lib/formatApiError';
 import { useI18n } from '../i18n/i18n';
 import './SecuritySettingsPage.css';
 
@@ -45,12 +53,13 @@ export function SecuritySettingsPage() {
     (async () => {
       try {
         setLoading(true);
+        setError('');
         const data = await securityService.getAdminMatrix();
         if (cancelled) return;
         setMatrix(data);
       } catch (e) {
         if (cancelled) return;
-        setError((e as { message?: string })?.message ?? t('common.errorGeneric'));
+        setError(formatApiError(e));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -59,7 +68,7 @@ export function SecuritySettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, []);
 
   const isSuperAdmin = (user?.role ?? '') === 'SuperAdmin';
 
@@ -106,7 +115,7 @@ export function SecuritySettingsPage() {
 
       setMatrix({ ...matrix, assignments: nextAssignments });
     } catch (e) {
-      setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t('common.errorGeneric'));
+      setError(formatApiError(e));
     } finally {
       setSavingKey(null);
     }
@@ -118,13 +127,13 @@ export function SecuritySettingsPage() {
 
   return (
     <PageShell kicker={t('app.nav.group.security')} title={t('security.title')} subtitle={t('security.subtitle')}>
-      <PageToolbar>
-        {error ? <div className="security-error">{error}</div> : null}
-      </PageToolbar>
+      {error ? <ErrorState message={error} /> : null}
 
-      <div className="card security-tableCard">
+      <TableCard>
         {loading ? (
-          <EmptyState message={t('common.loading')} />
+          <LoadingState />
+        ) : rows.length === 0 ? (
+          <EmptyState message={t('security.emptyUsers')} />
         ) : (
           <div className="security-scroll">
             <table className="security-table">
@@ -154,6 +163,7 @@ export function SecuritySettingsPage() {
                       {scopeColumns.map((c) => {
                         const scope = scopeMap[c.key];
                         const checked = current.has(scope);
+                        const ariaLabel = `${t(c.labelKey)} — ${u.fullName}`;
                         return (
                           <td key={c.key} className="cell-center">
                             <label className={`toggle ${disabled ? 'toggle--disabled' : ''}`}>
@@ -161,6 +171,7 @@ export function SecuritySettingsPage() {
                                 type="checkbox"
                                 checked={checked}
                                 disabled={disabled}
+                                aria-label={ariaLabel}
                                 onChange={() => toggleScope(u.id, scope)}
                               />
                               <span className="toggle-ui" />
@@ -175,7 +186,7 @@ export function SecuritySettingsPage() {
             </table>
           </div>
         )}
-      </div>
+      </TableCard>
     </PageShell>
   );
 }

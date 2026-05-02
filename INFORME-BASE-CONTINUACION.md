@@ -14,7 +14,7 @@
 | Frontend (React 19, Vite 8, TypeScript) | `npm run lint` y `npm run build` OK. |
 | Tests automatizados | `ERP.Domain.Tests`, `ERP.Application.Tests`, `ERP.Infrastructure.Tests`, `ERP.API.Tests` pasan (ver §8). |
 | Sucursales + geografía Ecuador (INEC/DPA) | Tablas `branches`, `geo_*` + seed INEC; API `/api/geography/*` y UI en `/saas/branches` con cascada país → provincia → cantón → parroquia. |
-| Dev local (CORS / proxy) | Vite proxy `/api` → `localhost:5003`; `VITE_API_URL` vacío en dev; CORS ampliado en `appsettings.Development.json` (localhost + 127.0.0.1, varios puertos). |
+| Dev local (CORS / proxy) | Vite proxy `/api` → `localhost:5003`; `VITE_API_URL` vacío en dev; CORS según `appsettings.Development.json` (no versionado; plantilla `appsettings.Development.json.example`). |
 
 **Importante:** para compilar o probar `ERP.API.Tests` con la API ya corriendo, Windows puede bloquear DLLs en `ERP.API/bin`. Parar la API (`Ctrl+C` o liberar puerto 5003) antes de `dotnet test` sobre proyectos que referencian `ERP.API`.
 
@@ -23,8 +23,8 @@
 ## 2. Stack y versiones
 
 - **Backend:** .NET 10, ASP.NET Core Web API, JWT, EF Core 10, PostgreSQL (Npgsql).
-- **Frontend:** React 19, React Router 7, Vite 8, Axios, Zustand, i18n propio (es / en / qu).
-- **Base de datos:** PostgreSQL; cadena típica de desarrollo en `ERP.API/appsettings.Development.json` (Host `localhost`, puerto **5435**, base `dberpsaas`) — *el archivo suele estar en `.gitignore`; cada dev mantiene el suyo.*
+- **Frontend:** React 19, React Router 7, Vite 8, Axios, Zustand, i18n propio (es / en / **Kichwa de Cañar, Ecuador**; locale técnico `qu` en `qu.json` — no confundir con “quechua” genérico u otras variantes).
+- **Base de datos:** PostgreSQL; en dev copiar `ERP.API/appsettings.Development.json.example` → `appsettings.Development.json` y ajustar usuario/clave/JWT (archivo real ignorado por git). Frontend: copiar `frontend/.env.development.example` → `.env.development` si hace falta.
 
 ---
 

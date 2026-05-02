@@ -2,6 +2,8 @@ using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Audit.Entities;
+using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 using ERP.Domain.Tenants.Entities;
 
@@ -12,17 +14,20 @@ public class SuperAdminCreateTenantWithAdminHandler
     private readonly ITenantRepository _tenantRepository;
     private readonly IAccessRepository _accessRepository;
     private readonly IAccessTokenService _tokenService;
+    private readonly IUserActivityRepository _activity;
     private readonly ICurrentUser _currentUser;
 
     public SuperAdminCreateTenantWithAdminHandler(
         ITenantRepository tenantRepository,
         IAccessRepository accessRepository,
         IAccessTokenService tokenService,
+        IUserActivityRepository activity,
         ICurrentUser currentUser)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
         _tokenService = tokenService;
+        _activity = activity;
         _currentUser = currentUser;
     }
 
@@ -60,6 +65,17 @@ public class SuperAdminCreateTenantWithAdminHandler
 
         var membership = Membership.Create(tenant.Id, adminUser.Id, "Admin", profileId: null, createdBy: _currentUser.UserId);
         await _accessRepository.AddMembershipAsync(membership, ct);
+
+        await _activity.AddAsync(UserActivity.Create(
+            tenant.Id,
+            _currentUser.UserId,
+            _currentUser.Email,
+            _currentUser.FullName,
+            module: "tenants",
+            action: "tenant.create",
+            entityType: "Tenant",
+            entityId: tenant.Id,
+            description: $"{tenant.Name} ({tenant.Slug})"), ct);
 
         await _tenantRepository.SaveChangesAsync(ct);
         await _accessRepository.SaveChangesAsync(ct);

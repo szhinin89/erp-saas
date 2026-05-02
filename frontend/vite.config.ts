@@ -2,15 +2,21 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
+const apiProxy = {
+  '/api': {
+    target: 'http://localhost:5003',
+    changeOrigin: true,
+  },
+} as const;
+
 export default defineConfig({
   plugins: [react()],
   server: {
     // Mismo origen que el front (5173…): evita CORS al llamar a /api/* en desarrollo.
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5003',
-        changeOrigin: true,
-      },
-    },
+    proxy: { ...apiProxy },
+  },
+  // npm run preview: mismo patrón que dev (origen 4173 → API 5003).
+  preview: {
+    proxy: { ...apiProxy },
   },
 })

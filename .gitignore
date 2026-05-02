@@ -30,9 +30,10 @@
 *.log
 logs/
 
-# Env / Secrets
-appsettings.Development.json
-appsettings.Local.json
+# Env / Secrets (rutas explícitas: el patrón sin / solo aplica al raíz del repo)
+**/appsettings.Development.json
+**/appsettings.Local.json
+frontend/.env.development
 *.env
 .env
 secrets.json

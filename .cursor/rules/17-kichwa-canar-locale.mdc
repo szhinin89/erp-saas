@@ -1,0 +1,25 @@
+---
+description: Tercer idioma de la UI = Kichwa de Cañar (Ecuador). No confundir con quechua genérico ni otras variantes (Perú, Bolivia, etc.).
+globs: frontend/src/i18n/**/*
+alwaysApply: false
+---
+
+# Idioma Kichwa de Cañar (Ecuador)
+
+## Qué es y qué no es
+
+- **Sí:** traducciones en **Kichwa de la provincia de Cañar, Ecuador** (sierra centro-sur; variantes afines de la misma área cuando el término coincida).
+- **No:** no llamar al paquete “quechua” genérico, **no** mezclar léxico de quechua sureño/chanka (Perú), runasimi central (Cusco) ni otras normas sin revisión con hablantes de Cañar.
+- **Código técnico:** el locale y el archivo siguen siendo **`qu`** y **`qu.json`** (compatibilidad con localStorage, tipo `Locale`, selectores). Eso **no** implica “quechua unificado” como idioma: el **contenido** es Kichwa Cañar.
+
+## Para agentes y desarrolladores
+
+1. Nuevas claves i18n: añadir la misma clave en **`es.json`**, **`en.json`** y **`qu.json`**.
+2. **Selector de idioma (cabecera):** claves **`app.langMenu.spanish`**, **`app.langMenu.english`**, **`app.langMenu.kichwa`** — el texto depende del locale activo (UI español: Español, Inglés, Kichwa; UI inglés: Spanish, English, Kichwa; UI kichwa en `qu.json`: Kastilla shimi, Inglés shimi, Kichwa shimi). El nombre largo del tercer idioma sigue en **`app.language.kichwa`** (tooltip de la opción Kichwa).
+3. En comentarios de código y fuera del selector, usar **“Kichwa de Cañar (Ecuador)”** / equivalente en `qu.json`, no “quechua” genérico.
+4. Si se duda de una forma en `qu.json`, dejar nota breve en PR o pedir revisión a hablante local; no inventar neologismos masivos.
+
+## Referencia en código
+
+- `frontend/src/i18n/dictionaries.ts` — comentario sobre `qu` / `qu.json`.
+- `frontend/src/components/LanguageSwitcher.tsx` — menú de idioma (`app.langMenu.*`).

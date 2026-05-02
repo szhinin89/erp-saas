@@ -1,0 +1,62 @@
+---
+description: Copy UX — menú lateral (nombres sin «Ver»), pestañas de formulario/listado, y botones (verbos / Guardar cambios).
+alwaysApply: true
+---
+
+## Checklist — patrón actual de pantallas entidad (igual que páginas ya migradas)
+
+Al tocar un formulario con **`.zh-form-tabs`** + `PageShell` + `TableCard`:
+
+1. Pestaña listado: clave i18n **`{módulo}.tabList`** (ES/EN/Kichwa Cañar, locale técnico `qu`); **no** `app.nav.*` en esa pestaña; **no** `*.tabView` en código nuevo.
+2. **`PageShell` `action`**: crear / submit de alta **solo** cuando el estado activo es la pestaña de **datos principal** (`tab === 'data'`, `formTab === 'general'`, etc. — ver `ProductsPage`, `CatalogSimplePage`, `BranchesPage`…).
+3. **`ZHDirtyBar`** (si aplica al mismo submit de alta): **misma condición** de pestaña que el `action`; si el flujo es alta, `saveLabel` puede ser el verbo de crear (excepción al default “Guardar cambios”).
+4. Drawer lateral: tras **`location.pathname`** nuevo, cerrar sidebar (`AppLayout`).
+5. Estructura compacta y orden de tabs: **`15-entity-form-tabs.mdc`**.
+6. Pestaña **listado** (`*.tabList`): **`ZHSearchBar`** — búsqueda en vivo, chips, conteo (`common.zhList.*` como placeholder/leyenda genéricos salvo copy específica, p. ej. `companies.search`). Botón de **nueva fila / volver a datos** alineado con **Productos** y **Sucursales** (`*.list.newAction` o el verbo de alta del módulo). Sin duplicar lógica de tabla ni llamadas API dentro del componente de barra.
+
+## Menú lateral (`app.nav.*`, `buildNavGroups`)
+
+- Cada ítem es el **nombre del módulo o entidad** (p. ej. «Sucursales», «Productos», «Panel»), **sin** prefijo **«Ver»** / **«View»**: el menú no anticipa el modo consulta; la ruta ya abre la pantalla.
+- **Excepción**: textos que **no** son el menú principal (p. ej. descripciones de permisos `profiles.perms.*`, ayudas) pueden usar la palabra «ver» con sentido gramatical distinto.
+- Claves en `frontend/src/i18n/locales/*.json` bajo `app.nav.*`; rutas en `frontend/src/nav/navConfig.ts`.
+
+## Drawer lateral (favoritos + SAAS)
+
+El `aside` es un panel fijo que por defecto está fuera de pantalla y se abre con el botón hamburguesa (`AppLayout`, `AppLayout.css`). Tras **navegar a una pantalla** (cualquier cambio de `location.pathname` — ítem SAAS como «Formularios», enlace desde `SuperAdminFormsPage`, etc.), el layout **cierra el drawer** (`sidebarOpen = false`) para dejar espacio al formulario. No duplicar lógica contradictoria que mantenga el menú abierto tras la navegación.
+
+## Formularios con pestañas (Datos + listado u otras)
+
+Cuando una pantalla mezcla **ficha / alta** y **listado** de la misma entidad:
+
+1. **Datos** — `common.formTab.data` (ficha principal).
+2. **Pestañas extra** de la entidad — claves `{módulo}.tab.*` si aplica (p. ej. imágenes).
+3. **Pestaña de listado / consulta** — aquí **sí** va el copy **«Ver …» / «View …»** (o equivalente en Kichwa Cañar, locale `qu`) con la clave **`{módulo}.tabList`** (p. ej. `branches.tabList`, `catalog.brands.tabList`), **solo** en esa pestaña. El menú lateral sigue con nombre corto (`app.nav.*` sin «Ver»). **No** reutilizar `app.nav.*` para la pestaña de listado si el menú debe quedar corto y la pestaña debe aclarar «ver listado».
+
+- Convención: **`*.tabList`** para la pestaña de listado; evitar `*.tabView` salvo legado que aún no migre.
+
+Estilos: **`zh-form-tabs`** en `frontend/src/components/zh/ZHFormTabs.css` (import en `frontend/src/main.tsx`).
+
+## Botón primario de alta / envío en `PageShell` (y barra sucia equivalente)
+
+Cuando la pantalla tiene **pestaña Datos** (`common.formTab.data` o equivalente, p. ej. `general` en productos) **y** otras pestañas (imágenes, listado, permisos, etc.):
+
+- El **`action` de `PageShell`** que dispara **crear / registrar** la entidad debe mostrarse **solo** en la pestaña de **ficha / datos principal**, no en listado ni en pestañas secundarias (imágenes, etc.).
+- Si existe **`ZHDirtyBar`** (u otro CTA fijo) ligado al mismo envío de alta, aplicar la **misma condición** de pestaña que al botón del header, para no duplicar «Crear» fuera de Datos.
+- **`ZHFormActions`** con `hideSave` + `hideDraft` y **solo** «Cancelar» abajo suele **confundir** (el usuario no ve el primario en el pie). **No** usar ese patrón: si hace falta cancelar/descartar el flujo, poner **ghost** «Cancelar» en el **`action` de `PageShell`** junto al primario (p. ej. **Sucursales**). Para solo limpiar campos sin cerrar flujo, un ghost «Restablecer» junto a los campos o quitar la acción.
+
+Referencia: `ProductsPage` (`formTab === 'general'`), `CatalogSimplePage` / `CatalogPages` (`tab === 'data'`), `BranchesPage` (`uiTab === 'data'` y formulario abierto), `CompaniesPage`, `TenantAccessPage`, `ProfilesPage` (crear en `tab === 'data'`; guardar permisos sigue en su pestaña), `AccountingPage` (`accountSubTab === 'data'` para alta de cuenta), etc.
+
+## Botones dentro del formulario (primaria y edición)
+
+- Verbo de acción según dominio: **Crear**, **Registrar**, **Emitir**, **Confirmar**, **Generar**, etc.
+- **Edición**: primario **«Guardar cambios»** (`common.saveChanges`) de forma uniforme salvo excepciones ya acordadas.
+
+## Componentes compartidos
+
+- **`ZHDirtyBar`**: por defecto sin `saveLabel` → `t('common.saveChanges')`. En **altas** unificadas (p. ej. producto), `saveLabel` puede ser el texto de **crear** siempre que la visibilidad siga la misma regla de pestaña que el `action` de `PageShell`.
+- **`ZHFormActions`**: defaults `common.cancel`, `common.saveDraft`, `common.saveChanges`; login/reset con `labels` explícitos.
+
+## Cabecera `PageShell`
+
+- Alta: verbo + objeto alineado al dominio.
+- Confirmaciones puntuales: **Confirmar …** cuando aplique.

@@ -154,4 +154,4 @@ Stop-Process -Name "ERP.API" -Force
 ```
 
 ### Error de CORS en el navegador
-Verificar que `Cors:AllowedOrigins` en `appsettings.Development.json` incluya `http://localhost:5173`.
+Verificar que `Cors:AllowedOrigins` en tu copia local de `appsettings.Development.json` (plantilla: `appsettings.Development.json.example`) incluya `http://localhost:5173`.

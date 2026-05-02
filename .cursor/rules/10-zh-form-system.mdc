@@ -5,7 +5,7 @@ alwaysApply: true
 
 ## Regla obligatoria (Frontend): **ZH Form System**
 
-**Fuente de verdad visual**: `d:\Home\ZhTecnolo\PlnatillaSistema\zh_erp_component_library.html`.
+**Fuente de verdad visual** (dentro del monorepo): `docs/zh-form-template/zh_erp_component_library.html` — abrir en el navegador. Los tokens canónicos viven en `frontend/src/index.css` (`:root`) y las clases en `frontend/src/components/zh/ZHForm.css`; al cambiar paleta o piezas base, actualizar **tres** sitios: `index.css`, `ZHForm.css` y el `<style>` embebido del HTML de plantilla (ver `docs/zh-form-template/README.md`).
 
 ### Qué significa “basarse en la plantilla”
 
@@ -42,9 +42,8 @@ Compatibilidad con la plantilla (si aparecen en snippets/estilos): `--B`, `--BD`
 ### Reglas de implementación (cuando crees o migres un formulario)
 
 - **Estructura**:
-  - `ZHFormHeader` arriba
-  - `ZHFormBody` contiene secciones + fields
-  - `ZHFormActions` al final del body
+  - Formularios **completos** (modal, wizard, página sin patrón tabs entidad): `ZHFormHeader` arriba → `ZHFormBody` (secciones + fields) → `ZHFormActions` al final.
+  - **Patrón entidad ya usado en el repo** (`PageShell` + `TableCard` + `.zh-form-tabs`): cabecera y contexto vienen de `PageShell` / `ZHFormCard` con `hideHeader` si aplica; **no** añadir `ZHFormHeader` encima. Pestañas, listado y barra de acciones: **`15-entity-form-tabs.mdc`** + **`20-ui-nav-form-copy.mdc`**.
 - **Tenant**:
   - mostrar `badge="Tenant: <tenantId>"`
   - incluir `<input type="hidden" name="tenantId" value={tenantId} />` cuando aplique
@@ -72,6 +71,10 @@ Cuando el usuario es `SuperAdmin` y está **impersonando un tenant** (tenantId d
 - Por defecto debe mostrar solo el estado (“Modo Super Admin…”) y un control para expandir.
 - El **tenant** (ID o nombre) y el botón “Volver al Panel Global” se muestran **solo al desplegar**.
 - Este banner es **solo para SuperAdmin** (no mostrarlo a otros roles).
+
+### Pestañas en pantallas de entidad (formulario + listado)
+
+Orden estándar y casos con más pestañas: **`15-entity-form-tabs.mdc`**. Ahí se define la **excepción** al bloque “`ZHFormHeader` arriba”: en el patrón compacto `TableCard` + `zh-form-tabs` **no** se duplica cabecera con `ZHFormHeader` / `ZHModalHeader` si `PageShell` ya da contexto.
 
 ### Si falta un componente de la plantilla
 

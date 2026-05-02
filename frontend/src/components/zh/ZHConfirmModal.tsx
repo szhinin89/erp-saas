@@ -29,10 +29,16 @@ export function ZHConfirmModal(props: {
     <Modal title={title} onClose={onCancel} size="sm">
       <div className="zh-text-muted">{message}</div>
       <ZHActionsRow className="zh-mt-16">
-        <ZHBtn variant="ghost" type="button" onClick={onCancel} disabled={loading}>
+        <ZHBtn variant="ghost" size="md" type="button" onClick={onCancel} disabled={loading}>
           {cancelLabel ?? t('common.cancel')}
         </ZHBtn>
-        <ZHBtn variant={variant === 'destructive' ? 'destructive' : 'primary'} type="button" onClick={() => void onConfirm()} disabled={loading}>
+        <ZHBtn
+          variant={variant === 'destructive' ? 'destructive' : 'primary'}
+          size="md"
+          type="button"
+          onClick={() => void onConfirm()}
+          disabled={loading}
+        >
           {confirmLabel ?? t('common.confirm')}
         </ZHBtn>
       </ZHActionsRow>
