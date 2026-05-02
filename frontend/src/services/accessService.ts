@@ -4,6 +4,7 @@ import type {
   BootstrapLoginRequest,
   BootstrapLoginResponse,
   MyPermissionsResponse,
+  SessionMenuGroupDto,
   SessionResponse,
   SwitchTenantRequest,
 } from '../types/access';
@@ -24,6 +25,12 @@ export const accessService = {
   async getMyPermissions() {
     const { data } = await api.get<ApiResponse<MyPermissionsResponse>>('/api/access/me/permissions');
     return data.responseObject;
+  },
+
+  /** Menú lateral / cabecera definido en `ui_nav_groups` / `ui_nav_items`. */
+  async getSessionMenu() {
+    const { data } = await api.get<ApiResponse<SessionMenuGroupDto[]>>('/api/access/me/menu');
+    return data.responseObject ?? [];
   },
 };
 

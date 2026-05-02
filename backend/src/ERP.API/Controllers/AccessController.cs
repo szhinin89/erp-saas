@@ -9,6 +9,8 @@ using ERP.Application.Access.UseCases.Profiles;
 using ERP.Application.Access.UseCases.TenantAccess;
 using ERP.Application.Access.UseCases.SuperAdminTenants;
 using ERP.Application.Access.UseCases.Permissions;
+using ERP.Application.Navigation.DTOs;
+using ERP.Application.Navigation.UseCases.GetSessionMenu;
 using ERP.Application.Common;
 using ERP.Domain.Tenants.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -41,6 +43,7 @@ public class AccessController : ControllerBase
     private readonly GetMyPermissionsHandler _getMyPermissionsHandler;
     private readonly UpsertProfilePermissionsHandler _upsertProfilePermissionsHandler;
     private readonly GetProfilePermissionsHandler _getProfilePermissionsHandler;
+    private readonly GetSessionMenuHandler _getSessionMenuHandler;
 
     public AccessController(
         BootstrapLoginHandler bootstrapLoginHandler,
@@ -58,7 +61,8 @@ public class AccessController : ControllerBase
         SuperAdminCreateTenantWithAdminHandler superAdminCreateTenantWithAdminHandler,
         GetMyPermissionsHandler getMyPermissionsHandler,
         UpsertProfilePermissionsHandler upsertProfilePermissionsHandler,
-        GetProfilePermissionsHandler getProfilePermissionsHandler)
+        GetProfilePermissionsHandler getProfilePermissionsHandler,
+        GetSessionMenuHandler getSessionMenuHandler)
     {
         _bootstrapLoginHandler = bootstrapLoginHandler;
         _switchTenantHandler = switchTenantHandler;
@@ -76,6 +80,7 @@ public class AccessController : ControllerBase
         _getMyPermissionsHandler = getMyPermissionsHandler;
         _upsertProfilePermissionsHandler = upsertProfilePermissionsHandler;
         _getProfilePermissionsHandler = getProfilePermissionsHandler;
+        _getSessionMenuHandler = getSessionMenuHandler;
     }
 
     /// <summary>Login (paso 1): retorna bootstrap token + empresas accesibles.</summary>
@@ -291,6 +296,19 @@ public class AccessController : ControllerBase
     }
 
     // ── Permisos (por perfil) ───────────────────────────────────────
+
+    /// <summary>Definición del menú lateral (grupos e ítems) desde base de datos; el front aplica i18n y filtros por rol/módulo/permiso.</summary>
+    [HttpGet("me/menu")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<SessionMenuGroupDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSessionMenu(CancellationToken ct)
+    {
+        var result = await _getSessionMenuHandler.HandleAsync(ct);
+        return Ok(new ApiResponse<IReadOnlyList<SessionMenuGroupDto>>(
+            result.IsSuccess,
+            result.IsSuccess ? "OK" : (result.Error ?? "Error"),
+            result.Value ?? Array.Empty<SessionMenuGroupDto>()));
+    }
 
     /// <summary>Retorna los permisos efectivos del usuario en el tenant actual.</summary>
     [HttpGet("me/permissions")]

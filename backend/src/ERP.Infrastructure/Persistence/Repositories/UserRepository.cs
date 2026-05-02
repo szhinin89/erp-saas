@@ -78,6 +78,14 @@ public class UserRepository : IUserRepository
             .AnyAsync(u => u.Email == normalized, ct);
     }
 
+    public async Task<bool> ExistsByEmailGloballyAsync(string email, CancellationToken ct = default)
+    {
+        var normalized = new Email(email);
+        return await _context.Users
+            .IgnoreQueryFilters()
+            .AnyAsync(u => u.Email == normalized, ct);
+    }
+
     public async Task AddAsync(User user, CancellationToken ct = default)
         => await _context.Users.AddAsync(user, ct);
 

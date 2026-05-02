@@ -75,3 +75,23 @@
   color: rgba(30,41,59,.75);
 }
 
+.companies-quota-hint {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: var(--zh-color-text-muted, #5a6570);
+}
+
+.companies-checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.companies-checkbox-label input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+

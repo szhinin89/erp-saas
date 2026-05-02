@@ -42,9 +42,11 @@ public class TenantsController : ControllerBase
     /// <response code="201">Tenant creado correctamente.</response>
     /// <response code="400">El slug ya está en uso.</response>
     [HttpPost]
+    [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Create(
         [FromBody] CreateTenantCommand command,
         CancellationToken ct)

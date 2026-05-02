@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge } from '../components/PageShell';
 import { superAdminService, type SuperAdminPlan, type SuperAdminTenant } from '../services/superAdminService';
 import { useAuthStore } from '../store/authStore';
@@ -127,7 +127,14 @@ export function SuperAdminPanelPage() {
   }
 
   return (
-    <PageShell kicker={t('app.nav.group.saas')} title={t('superadmin.title')} subtitle={t('superadmin.subtitle')}>
+    <PageShell
+      kicker={t('app.nav.group.saas')}
+      title={t('superadmin.title')}
+      subtitle={t('superadmin.subtitle')}
+      action={
+        <NavLink to="/superadmin/instance-quota">{t('app.nav.superadmin.instanceQuota')}</NavLink>
+      }
+    >
       {error ? <ErrorState message={error} /> : null}
 
       <ZHDashboardScaffold>

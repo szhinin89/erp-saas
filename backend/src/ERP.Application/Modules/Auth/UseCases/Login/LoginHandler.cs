@@ -10,12 +10,18 @@ public class LoginHandler
     private readonly IUserRepository _userRepository;
     private readonly ITenantRepository _tenantRepository;
     private readonly IJwtService _jwtService;
+    private readonly IDeploymentFeatureFlags _deployment;
 
-    public LoginHandler(IUserRepository userRepository, ITenantRepository tenantRepository, IJwtService jwtService)
+    public LoginHandler(
+        IUserRepository userRepository,
+        ITenantRepository tenantRepository,
+        IJwtService jwtService,
+        IDeploymentFeatureFlags deployment)
     {
         _userRepository = userRepository;
         _tenantRepository = tenantRepository;
-        _jwtService     = jwtService;
+        _jwtService = jwtService;
+        _deployment = deployment;
     }
 
     public async Task<Result<AuthResponseDto>> HandleAsync(
@@ -26,6 +32,9 @@ public class LoginHandler
         var superAdmin = await _userRepository.GetSingleSuperAdminByEmailAsync(command.Email, ct);
         if (superAdmin is not null)
         {
+            if (!_deployment.IsSuperAdminPanelEnabled)
+                return Result<AuthResponseDto>.Failure(DeploymentAuthMessages.SuperAdminPanelDisabled);
+
             if (!superAdmin.IsActive)
                 return Result<AuthResponseDto>.Failure("Usuario inactivo.");
 

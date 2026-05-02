@@ -30,6 +30,9 @@
 *.log
 logs/
 
+# Cuotas de instancia editadas por SuperAdmin (no versionar)
+**/ERP.API/App_Data/instance-quota.json
+
 # Env / Secrets (rutas explícitas: el patrón sin / solo aplica al raíz del repo)
 **/appsettings.Development.json
 **/appsettings.Local.json

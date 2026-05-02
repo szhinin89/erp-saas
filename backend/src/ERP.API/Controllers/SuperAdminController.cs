@@ -3,6 +3,7 @@ using ERP.Application.Common;
 using ERP.Application.Subscriptions;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
+using ERP.Infrastructure.Deployment;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,15 +22,58 @@ public class SuperAdminController : ControllerBase
     private readonly ITenantRepository _tenantRepository;
     private readonly IUserRepository _userRepository;
     private readonly ISaasCatalogQuery _saasCatalogQuery;
+    private readonly IDeploymentFeatureFlags _deployment;
+    private readonly InstanceQuotaFileStore _instanceQuotaFile;
 
     public SuperAdminController(
         ITenantRepository tenantRepository,
         IUserRepository userRepository,
-        ISaasCatalogQuery saasCatalogQuery)
+        ISaasCatalogQuery saasCatalogQuery,
+        IDeploymentFeatureFlags deployment,
+        InstanceQuotaFileStore instanceQuotaFile)
     {
         _tenantRepository = tenantRepository;
         _userRepository = userRepository;
         _saasCatalogQuery = saasCatalogQuery;
+        _deployment = deployment;
+        _instanceQuotaFile = instanceQuotaFile;
+    }
+
+    /// <summary>Cuotas efectivas de la instancia (config + archivo <c>App_Data/instance-quota.json</c> si existe).</summary>
+    [HttpGet("instance-quota")]
+    [ProducesResponseType(typeof(ApiResponse<InstanceQuotaFileModel>), StatusCodes.Status200OK)]
+    public ActionResult<ApiResponse<InstanceQuotaFileModel>> GetInstanceQuota()
+    {
+        var dto = new InstanceQuotaFileModel
+        {
+            DedicatedSingleClientInstance = _deployment.IsDedicatedSingleClientInstance,
+            MaxActiveTenants = _deployment.MaxActiveTenants,
+            MaxIdentityUsers = _deployment.MaxIdentityUsers,
+            MaxUsersPerTenant = _deployment.MaxUsersPerTenant,
+        };
+        return Ok(new ApiResponse<InstanceQuotaFileModel>(true, "OK", dto));
+    }
+
+    /// <summary>
+    /// Guarda cuotas en <c>App_Data/instance-quota.json</c> (sobrescribe configuración para esos campos).
+    /// En modo dedicado a un cliente, <c>maxActiveTenants</c> debe ser &gt; 0 (no se permiten empresas/RUC ilimitadas).
+    /// </summary>
+    [HttpPut("instance-quota")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public IActionResult PutInstanceQuota([FromBody] InstanceQuotaFileModel body)
+    {
+        if (body.DedicatedSingleClientInstance == true &&
+            (!body.MaxActiveTenants.HasValue || body.MaxActiveTenants <= 0))
+        {
+            return BadRequest(new ApiResponse<object>(
+                false,
+                "En instancia dedicada debe indicar maxActiveTenants (máximo de empresas/RUC) mayor que cero.",
+                new { }));
+        }
+
+        _instanceQuotaFile.Write(body);
+        return Ok(new ApiResponse<object>(true, "Guardado", new { }));
     }
 
     /// <summary>Catálogo de planes comerciales y features incluidas (solo lectura).</summary>

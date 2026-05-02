@@ -12,6 +12,7 @@ public interface IAccessRepository
     Task<IdentityUser?> GetUserByIdAsync(Guid userId, CancellationToken ct = default);
     Task<IdentityUser?> GetUserByEmailAsync(string email, CancellationToken ct = default);
     Task<bool> AnyUserWithEmailAsync(string email, CancellationToken ct = default);
+    Task<int> CountIdentityUsersAsync(CancellationToken ct = default);
     Task AddUserAsync(IdentityUser user, CancellationToken ct = default);
 
     // ── Memberships (acceso por tenant) ────────────────────────────
@@ -20,6 +21,9 @@ public interface IAccessRepository
     Task AddMembershipAsync(Membership membership, CancellationToken ct = default);
 
     Task<IReadOnlyList<Membership>> GetMembershipsByTenantAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default);
+
+    /// <summary>Cantidad de membresías activas en el tenant (un usuario Identity cuenta una vez por empresa).</summary>
+    Task<int> CountActiveMembershipsByTenantAsync(Guid tenantId, CancellationToken ct = default);
 
     // ── Perfiles (tenant) ───────────────────────────────────────────
     Task<IReadOnlyList<AccessProfile>> GetProfilesByTenantAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default);

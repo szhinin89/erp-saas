@@ -52,12 +52,18 @@ public class TenantUpsertMembershipHandler
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentUser _currentUser;
+    private readonly IDeploymentFeatureFlags _deployment;
 
-    public TenantUpsertMembershipHandler(IAccessRepository repo, ICurrentTenant tenant, ICurrentUser currentUser)
+    public TenantUpsertMembershipHandler(
+        IAccessRepository repo,
+        ICurrentTenant tenant,
+        ICurrentUser currentUser,
+        IDeploymentFeatureFlags deployment)
     {
         _repo = repo;
         _tenant = tenant;
         _currentUser = currentUser;
+        _deployment = deployment;
     }
 
     public async Task<Result<object>> HandleAsync(TenantUpsertMembershipCommand cmd, CancellationToken ct = default)
@@ -65,6 +71,12 @@ public class TenantUpsertMembershipHandler
         var tenantId = _tenant.TenantId;
         if (tenantId == Guid.Empty)
             return Result<object>.Failure("Tenant inválido.");
+
+        if (string.Equals(cmd.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+        {
+            return Result<object>.Failure(
+                "Solo puede existir un SuperAdmin por servidor (tabla users). No se asigna por membresía IAM.");
+        }
 
         var email = cmd.Email.Trim().ToLowerInvariant();
         var user = await _repo.GetUserByEmailAsync(email, ct);
@@ -78,6 +90,10 @@ public class TenantUpsertMembershipHandler
                 return Result<object>.Failure("Para crear un usuario nuevo se requiere nombre, apellido y contraseña.");
             }
 
+            var userCap = await DeploymentQuota.GetBlockingReasonIfAtIdentityUserCapAsync(_deployment, _repo, ct);
+            if (userCap is not null)
+                return Result<object>.Failure(userCap);
+
             var hash = BCrypt.Net.BCrypt.HashPassword(cmd.Password);
             user = IdentityUser.Create(cmd.FirstName!, cmd.LastName!, email, hash, _currentUser.UserId);
             await _repo.AddUserAsync(user, ct);
@@ -86,11 +102,22 @@ public class TenantUpsertMembershipHandler
         var membership = await _repo.GetMembershipAsync(tenantId, user.Id, ct);
         if (membership is null)
         {
+            var cap = await DeploymentQuota.GetBlockingReasonIfAtTenantMembershipUserCapAsync(_deployment, _repo, tenantId, ct);
+            if (cap is not null)
+                return Result<object>.Failure(cap);
+
             membership = Membership.Create(tenantId, user.Id, cmd.Role, cmd.ProfileId, _currentUser.UserId);
             await _repo.AddMembershipAsync(membership, ct);
         }
         else
         {
+            if (!membership.IsActive)
+            {
+                var capRe = await DeploymentQuota.GetBlockingReasonIfAtTenantMembershipUserCapAsync(_deployment, _repo, tenantId, ct);
+                if (capRe is not null)
+                    return Result<object>.Failure(capRe);
+            }
+
             membership.Activate(cmd.Role, cmd.ProfileId, _currentUser.UserId);
         }
 

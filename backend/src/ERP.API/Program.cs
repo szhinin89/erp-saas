@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Asegura que los user-secrets del API ganen a appsettings (p. ej. InitialSuperAdminSetupToken vacío en JSON).
+builder.Configuration.AddUserSecrets(typeof(Program).Assembly, optional: true);
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerWithJwt();
@@ -65,6 +68,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 
 app.UseAuthentication();
+app.UseMiddleware<SuperAdminPanelLockMiddleware>();
 app.UseAuthorization();
 app.MapControllers();
 

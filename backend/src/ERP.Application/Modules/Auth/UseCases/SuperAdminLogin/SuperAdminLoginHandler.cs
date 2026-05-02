@@ -1,41 +1,35 @@
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Domain.Auth.Interfaces;
-using ERP.Domain.Tenants.Interfaces;
 
 namespace ERP.Application.Auth.UseCases.SuperAdminLogin;
 
 public class SuperAdminLoginHandler
 {
-    private readonly ITenantRepository _tenantRepository;
     private readonly IUserRepository _userRepository;
     private readonly IJwtService _jwtService;
+    private readonly IDeploymentFeatureFlags _deployment;
 
-    public SuperAdminLoginHandler(ITenantRepository tenantRepository, IUserRepository userRepository, IJwtService jwtService)
+    public SuperAdminLoginHandler(
+        IUserRepository userRepository,
+        IJwtService jwtService,
+        IDeploymentFeatureFlags deployment)
     {
-        _tenantRepository = tenantRepository;
         _userRepository = userRepository;
         _jwtService = jwtService;
+        _deployment = deployment;
     }
 
     public async Task<Result<AuthResponseDto>> HandleAsync(SuperAdminLoginCommand command, CancellationToken ct = default)
     {
+        if (!_deployment.IsSuperAdminPanelEnabled)
+            return Result<AuthResponseDto>.Failure(DeploymentAuthMessages.SuperAdminPanelDisabled);
+
         var email = command.Email.Trim();
         if (string.IsNullOrWhiteSpace(email))
             return Result<AuthResponseDto>.Failure("Email requerido.");
 
-        // Global login: find SuperAdmin user across all tenants.
-        var tenants = await _tenantRepository.GetAllAsync(ct);
-        if (tenants.Count == 0)
-            return Result<AuthResponseDto>.Failure("No existen empresas configuradas.");
-
-        Domain.Auth.Entities.User? user = null;
-        foreach (var tenant in tenants.Where(t => t.IsActive))
-        {
-            user = await _userRepository.GetByEmailSystemAsync(email, tenant.Id, ct);
-            if (user is not null) break;
-        }
-
+        var user = await _userRepository.GetSingleSuperAdminByEmailAsync(email, ct);
         if (user is null)
             return Result<AuthResponseDto>.Failure("Credenciales invalidas.");
 
@@ -49,7 +43,6 @@ public class SuperAdminLoginHandler
         if (!passwordValid)
             return Result<AuthResponseDto>.Failure("Credenciales invalidas.");
 
-        // Global token: tenant_id = Guid.Empty, must select a tenant next.
         var token = _jwtService.GenerateToken(user, Guid.Empty);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
@@ -63,4 +56,3 @@ public class SuperAdminLoginHandler
             EnabledModules: TenantSubscriptionCatalog.AllModuleKeys));
     }
 }
-

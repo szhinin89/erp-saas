@@ -12,10 +12,12 @@ import { useAccessStore } from '../store/accessStore';
 import { ZHFormHeader, ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions } from '../components/zh/ZHForm';
 import { ZHCenteredCard } from '../components/zh/ZHCenteredCard';
 import { loginSchema, type LoginFormValues } from '../schemas/auth/loginSchema';
+import { useDeployment } from '../deployment/DeploymentContext';
 import './LoginPage.css';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const { superAdminPanelEnabled } = useDeployment();
   const login = useAuthStore((s) => s.login);
   const setBootstrap = useAccessStore((s) => s.setBootstrap);
   const { t } = useI18n();
@@ -37,16 +39,18 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      try {
-        const { data } = await api.post<ApiResponse<AuthResponse>>('/api/auth/superadmin-login', {
-          email: form.email,
-          password: form.password,
-        });
-        login(data.responseObject);
-        navigate('/superadmin');
-        return;
-      } catch {
-        // noop
+      if (superAdminPanelEnabled) {
+        try {
+          const { data } = await api.post<ApiResponse<AuthResponse>>('/api/auth/superadmin-login', {
+            email: form.email,
+            password: form.password,
+          });
+          login(data.responseObject);
+          navigate('/superadmin');
+          return;
+        } catch {
+          // noop
+        }
       }
 
       const bootstrap = await accessService.bootstrapLogin(form);
@@ -76,12 +80,10 @@ export function LoginPage() {
       try {
         const { data } = await api.post<ApiResponse<AuthResponse>>('/api/auth/login', form);
         login(data.responseObject);
-        navigate(
+        const isGlobalSuperAdmin =
           data.responseObject.role === 'SuperAdmin' &&
-            data.responseObject.tenantId === '00000000-0000-0000-0000-000000000000'
-            ? '/superadmin'
-            : '/dashboard'
-        );
+          data.responseObject.tenantId === '00000000-0000-0000-0000-000000000000';
+        navigate(superAdminPanelEnabled && isGlobalSuperAdmin ? '/superadmin' : '/dashboard');
       } catch (err2: unknown) {
         const msg =
           (err2 as { response?: { data?: { message?: string } } })?.response?.data?.message ??

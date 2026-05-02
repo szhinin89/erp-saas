@@ -13,7 +13,9 @@ using ERP.Domain.Geography.Interfaces;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Customers.Interfaces;
 using ERP.Domain.Subscriptions.Interfaces;
+using ERP.Application.Navigation;
 using ERP.Application.Subscriptions;
+using ERP.Infrastructure.Deployment;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Services;
@@ -27,6 +29,8 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
+        services.AddSingleton<InstanceQuotaFileStore>();
+        services.AddSingleton<IDeploymentFeatureFlags, DeploymentFeatureFlags>();
 
         services.AddDbContext<ErpDbContext>(options =>
             options.UseNpgsql(
@@ -52,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<ISaasCatalogQuery, SaasCatalogQuery>();
+        services.AddScoped<INavigationMenuReader, NavigationMenuReader>();
 
         return services;
     }

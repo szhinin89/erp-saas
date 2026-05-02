@@ -6,6 +6,7 @@ using ERP.Application.Auth.UseCases.PasswordReset;
 using ERP.Application.Auth.UseCases.SuperAdminLogin;
 using ERP.Application.Auth.UseCases.SwitchTenant;
 using ERP.Application.Auth.DTOs;
+using ERP.Application.Common;
 
 namespace ERP.API.Controllers;
 
@@ -80,15 +81,10 @@ public class AuthController : ControllerBase
         CancellationToken ct)
     {
         var result = await _loginHandler.HandleAsync(command, ct);
-        return result.IsSuccess
-            ? Ok(new ApiResponse<AuthResponseDto?>(
-                Success: true,
-                Message: "OK",
-                ResponseObject: result.Value))
-            : Unauthorized(new ApiResponse<object>(
-                Success: false,
-                Message: result.Error ?? "Unauthorized",
-                ResponseObject: new { }));
+        if (result.IsSuccess)
+            return Ok(new ApiResponse<AuthResponseDto?>(true, "OK", result.Value));
+
+        return MapAuthFailure(result.Error);
     }
 
     /// <summary>
@@ -121,9 +117,24 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> SuperAdminLogin([FromBody] SuperAdminLoginCommand command, CancellationToken ct)
     {
         var result = await _superAdminLoginHandler.HandleAsync(command, ct);
-        return result.IsSuccess
-            ? Ok(new ApiResponse<AuthResponseDto?>(true, "OK", result.Value))
-            : Unauthorized(new ApiResponse<object>(false, result.Error ?? "Unauthorized", new { }));
+        if (result.IsSuccess)
+            return Ok(new ApiResponse<AuthResponseDto?>(true, "OK", result.Value));
+
+        return MapAuthFailure(result.Error);
+    }
+
+    /// <summary>401 salvo error de panel SuperAdmin deshabilitado (403).</summary>
+    private IActionResult MapAuthFailure(string? error)
+    {
+        if (!string.IsNullOrEmpty(error) &&
+            error.StartsWith(DeploymentAuthMessages.ForbiddenPrefix, StringComparison.Ordinal))
+        {
+            var msg = error[DeploymentAuthMessages.ForbiddenPrefix.Length..].TrimStart();
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ApiResponse<object>(false, msg, new { }));
+        }
+
+        return Unauthorized(new ApiResponse<object>(false, error ?? "Unauthorized", new { }));
     }
 
     /// <summary>

@@ -1,3 +1,5 @@
+import type { SessionMenuGroupDto } from '../types/access';
+
 export type NavItem = {
   to: string;
   label: string;
@@ -22,6 +24,31 @@ export type NavGroup = {
 
 export type TranslateFn = (key: string) => string;
 
+/** Convierte la respuesta del API en el mismo shape que `buildNavGroups` (incl. filtro panel superadmin). */
+export function mapSessionMenuToNavGroups(
+  dto: SessionMenuGroupDto[],
+  t: TranslateFn,
+  options?: { superAdminPanelEnabled?: boolean },
+): NavGroup[] {
+  const superOn = options?.superAdminPanelEnabled ?? true;
+  return dto
+    .filter((g) => !g.requireSuperAdminPanel || superOn)
+    .map((g) => ({
+      id: g.code,
+      label: t(g.labelKey),
+      icon: g.icon,
+      moduleKey: g.moduleKey ?? undefined,
+      roles: g.roles ?? undefined,
+      items: g.items.map((it) => ({
+        to: it.routePath,
+        label: t(it.labelKey),
+        moduleKey: it.moduleKey ?? undefined,
+        permissionKey: it.permissionKey ?? undefined,
+        permissionKeysAny: it.permissionKeysAny?.length ? it.permissionKeysAny : undefined,
+      })),
+    }));
+}
+
 function collectNavTos(items: NavItem[]): string[] {
   const out: string[] = [];
   for (const it of items) {
@@ -31,7 +58,10 @@ function collectNavTos(items: NavItem[]): string[] {
   return out;
 }
 
-export function buildNavGroups(t: TranslateFn): NavGroup[] {
+export function buildNavGroups(
+  t: TranslateFn,
+  options?: { superAdminPanelEnabled?: boolean },
+): NavGroup[] {
   const groups: NavGroup[] = [
     {
       id: 'home',
@@ -99,6 +129,7 @@ export function buildNavGroups(t: TranslateFn): NavGroup[] {
       items: [
         { to: '/companies', label: t('app.nav.companies') },
         { to: '/superadmin', label: t('app.nav.superadmin') },
+        { to: '/superadmin/instance-quota', label: t('app.nav.superadmin.instanceQuota') },
         { to: '/superadmin/forms', label: t('app.nav.superadmin.forms') },
       ],
     },
@@ -113,6 +144,11 @@ export function buildNavGroups(t: TranslateFn): NavGroup[] {
       }
       seen.add(path);
     }
+  }
+
+  const superAdminOn = options?.superAdminPanelEnabled ?? true;
+  if (!superAdminOn) {
+    return groups.filter((g) => g.id !== 'security' && g.id !== 'saas');
   }
 
   return groups;

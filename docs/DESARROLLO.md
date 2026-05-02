@@ -25,6 +25,7 @@ Documento **unificado** de desarrollo y operación local para este monorepo.
 15. [Comandos útiles](#comandos-útiles)
 16. [Endpoints de referencia (lista parcial)](#endpoints-de-referencia-lista-parcial)
 17. [Solución de problemas frecuentes](#solución-de-problemas-frecuentes)
+18. [Instalación en servidor del cliente (candado SuperAdmin)](#instalación-en-servidor-del-cliente-candado-superadmin)
 
 ---
 
@@ -254,6 +255,35 @@ El token JWT se guarda en **`localStorage`** (p. ej. persistencia de Zustand con
 
 ---
 
+## Instalación en servidor del cliente (candado SuperAdmin)
+
+Cuando el ERP corre **en el servidor del cliente** (p. ej. varias empresas / tenants en la misma instancia), suele quererse que el rol **SuperAdmin** (operador de plataforma: tenants, planes, matriz de seguridad, etc.) solo exista en la **fase de puesta en marcha**. En operación diaria cada empresa se administra con usuarios **Admin** y el resto de roles, sin panel global de SuperAdmin.
+
+Configuración en **`appsettings.json`** (o variables de entorno con el prefijo estándar de .NET):
+
+| Clave | Valor típico | Efecto |
+|-------|----------------|--------|
+| `Deployment:SuperAdminPanelEnabled` | `true` (por defecto en desarrollo) | Login y API de SuperAdmin activos; rutas `/superadmin` en el frontend. |
+| `Deployment:SuperAdminPanelEnabled` | `false` en producción tras el corte | No se emite JWT de SuperAdmin; el middleware bloquea peticiones autenticadas como SuperAdmin; el login deja de intentar `superadmin-login`; el menú oculta grupos de plataforma. |
+| `Deployment:MaxActiveTenants` | Entero **> 0** (opcional) | Tope de **empresas activas** en la instancia. Si ya hay tantas activas como el tope, no se pueden crear más (registro público, `POST /api/access/superadmin/tenants` ni `POST /api/tenants`). |
+| `Deployment:MaxIdentityUsers` | Entero **> 0** (opcional) | Tope de **usuarios globales** (`identity_users`: cuentas del IAM moderno). Al crearse un usuario nuevo (registro, alta SuperAdmin, alta desde Admin en «Accesos») se comprueba el total. No cuenta al **vincular** un admin ya existente a otra empresa. |
+
+**Ilimitado (recomendado frente a “un número altísimo”):** no definas la clave, déjala vacía, pon el texto **`unlimited`**, o un valor **≤ 0** — todo eso se interpreta como **sin tope**. No hace falta poner `999999`; un entero muy alto es frágil (documentación, auditoría) y puede confundir.
+
+Variables de entorno equivalentes: **`Deployment__SuperAdminPanelEnabled`**, **`Deployment__MaxActiveTenants`**, **`Deployment__MaxIdentityUsers`**.
+
+El frontend consulta de forma anónima **`GET /api/public/deployment`** (DTO con `superAdminPanelEnabled`, `maxActiveTenants` y `maxIdentityUsers`) para alinear UI y rutas con el servidor.
+
+**Un mismo Admin en varias empresas (sin ser SuperAdmin):** el usuario global (`IdentityUser`) se relaciona con cada empresa mediante **membresías** (`Membership`). El login por **`bootstrap-login`** devuelve la lista de empresas a las que tiene acceso; **`switch-tenant`** emite el JWT de sesión para la empresa elegida. Flujo típico operado por SuperAdmin: crear la primera empresa con administrador nuevo; para las siguientes, en el formulario de empresas activar **«Mismo administrador en varias empresas»** (`linkExistingAdmin: true`) con el **mismo email**, o bien `POST /api/tenants` (solo SuperAdmin) y luego **`POST /api/access/memberships/grant`** con el `tenantId` nuevo y el email del admin.
+
+**Límites comerciales por empresa (p. ej. clientes / RUC):** el SuperAdmin ajusta **plan** y **módulos** del tenant (`PATCH /api/tenants/{id}/subscription`) y, en el catálogo SaaS, la feature medida **`CUSTOMERS`** con `limit_per_period` en `saas_plan_features` / overrides. Crear cliente incrementa consumo vía pipeline de suscripción (`CreateCustomerCommand` con `[ConsumeSubscriptionUnits]`).
+
+**Flujo recomendado:** dejar `SuperAdminPanelEnabled` en `true` mientras se crean los tenants (p. ej. las tres empresas), planes, usuarios Admin iniciales y ajustes globales. Tras validar, poner `false`, reiniciar la API (o recargar configuración si en el futuro se usa `IOptionsMonitor` sin caché estática) y usar solo cuentas **Admin** por tenant (cada una solo ve y opera las empresas donde tenga membresía).
+
+Para **volver a abrir** el panel SuperAdmin (mantenimiento o nuevas empresas), volver a `SuperAdminPanelEnabled: true` y reiniciar.
+
+---
+
 ## Módulos de referencia (tabla)
 
 Tabla **orientativa**; los paths reales pueden incluir más módulos (Sucursales, Clientes, SuperAdmin, etc.). Ver `docs/STATUS-2026-05-ERP.md` y `docs/developer-reference.html` para lista al día.
@@ -263,7 +293,7 @@ Tabla **orientativa**; los paths reales pueden incluir más módulos (Sucursales
 | Auth       | POST `/api/auth/register`, `/login`       | LoginPage               |
 | Products   | GET/POST `/api/products`                   | ProductsPage            |
 | Accounting | GET/POST `/api/accounts`, journal-entries  | AccountingPage          |
-| Tenants    | POST `/api/tenants`                        | —                       |
+| Tenants    | POST `/api/tenants` (solo SuperAdmin)      | —                       |
 
 ---
 

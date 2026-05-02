@@ -1,0 +1,48 @@
+namespace ERP.Domain.Navigation.Entities;
+
+/// <summary>
+/// Ítem de menú bajo un <see cref="UiNavGroup"/> (ruta React + reglas de visibilidad).
+/// </summary>
+public sealed class UiNavItem
+{
+    public Guid Id { get; private set; }
+    public Guid GroupId { get; private set; }
+    public string RoutePath { get; private set; } = null!;
+    public string LabelKey { get; private set; } = null!;
+    public int SortOrder { get; private set; }
+    public string? ModuleKey { get; private set; }
+    public string? PermissionKey { get; private set; }
+    /// <summary>JSON array de claves de permiso (OR); null si no aplica.</summary>
+    public string? PermissionKeysAnyJson { get; private set; }
+    public string? RolesCsv { get; private set; }
+    public bool IsActive { get; private set; }
+
+    private UiNavItem() { }
+
+    public static UiNavItem Create(
+        Guid id,
+        Guid groupId,
+        string routePath,
+        string labelKey,
+        int sortOrder,
+        string? moduleKey,
+        string? permissionKey,
+        string? permissionKeysAnyJson,
+        string? rolesCsv,
+        bool isActive = true)
+    {
+        return new UiNavItem
+        {
+            Id = id,
+            GroupId = groupId,
+            RoutePath = (routePath ?? string.Empty).Trim(),
+            LabelKey = (labelKey ?? string.Empty).Trim(),
+            SortOrder = sortOrder,
+            ModuleKey = string.IsNullOrWhiteSpace(moduleKey) ? null : moduleKey.Trim().ToLowerInvariant(),
+            PermissionKey = string.IsNullOrWhiteSpace(permissionKey) ? null : permissionKey.Trim(),
+            PermissionKeysAnyJson = string.IsNullOrWhiteSpace(permissionKeysAnyJson) ? null : permissionKeysAnyJson.Trim(),
+            RolesCsv = string.IsNullOrWhiteSpace(rolesCsv) ? null : rolesCsv.Trim(),
+            IsActive = isActive,
+        };
+    }
+}

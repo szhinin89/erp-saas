@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>f4c8b2e1-9a3d-4f1c-8e7b-2d6a4c9e5011</UserSecretsId>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <!-- Suprimir advertencias de miembros públicos sin comentario XML -->
     <NoWarn>$(NoWarn);1591</NoWarn>

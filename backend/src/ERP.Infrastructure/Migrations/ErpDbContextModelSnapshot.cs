@@ -830,6 +830,117 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("geo_provinces", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Navigation.Entities.UiNavGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("icon");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("LabelKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("label_key");
+
+                    b.Property<string>("ModuleKey")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("module_key");
+
+                    b.Property<bool>("RequireSuperAdminPanel")
+                        .HasColumnType("boolean")
+                        .HasColumnName("require_superadmin_panel");
+
+                    b.Property<string>("RolesCsv")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("roles_csv");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("ui_nav_groups", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Navigation.Entities.UiNavItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("group_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("LabelKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("label_key");
+
+                    b.Property<string>("ModuleKey")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("module_key");
+
+                    b.Property<string>("PermissionKey")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("permission_key");
+
+                    b.Property<string>("PermissionKeysAnyJson")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("permission_keys_any_json");
+
+                    b.Property<string>("RolesCsv")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("roles_csv");
+
+                    b.Property<string>("RoutePath")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("route_path");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId", "RoutePath");
+
+                    b.ToTable("ui_nav_items", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Products.Entities.Brand", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2031,6 +2142,15 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Geography.Entities.GeoCountry", null)
                         .WithMany()
                         .HasForeignKey("CountryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Navigation.Entities.UiNavItem", b =>
+                {
+                    b.HasOne("ERP.Domain.Navigation.Entities.UiNavGroup", null)
+                        .WithMany()
+                        .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

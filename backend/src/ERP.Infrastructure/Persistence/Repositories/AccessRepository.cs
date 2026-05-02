@@ -29,6 +29,9 @@ public class AccessRepository : IAccessRepository
         return _db.IdentityUsers.AnyAsync(u => u.Email == normalized, ct);
     }
 
+    public Task<int> CountIdentityUsersAsync(CancellationToken ct = default)
+        => _db.IdentityUsers.CountAsync(ct);
+
     public Task AddUserAsync(IdentityUser user, CancellationToken ct = default)
         => _db.IdentityUsers.AddAsync(user, ct).AsTask();
 
@@ -56,6 +59,10 @@ public class AccessRepository : IAccessRepository
         if (onlyActive) q = q.Where(m => m.IsActive);
         return await q.OrderBy(m => m.IdentityUserId).ToListAsync(ct);
     }
+
+    public Task<int> CountActiveMembershipsByTenantAsync(Guid tenantId, CancellationToken ct = default)
+        => _db.Memberships.IgnoreQueryFilters()
+            .CountAsync(m => m.TenantId == tenantId && m.IsActive, ct);
 
     public async Task<IReadOnlyList<AccessProfile>> GetProfilesByTenantAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default)
     {

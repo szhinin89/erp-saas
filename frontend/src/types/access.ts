@@ -40,3 +40,25 @@ export interface MyPermissionsResponse {
   enabledModules: string[];
 }
 
+/** Ítem de menú en `GET /api/access/me/menu` (definición en BD). */
+export interface SessionMenuItemDto {
+  routePath: string;
+  labelKey: string;
+  sortOrder: number;
+  moduleKey: string | null;
+  permissionKey: string | null;
+  permissionKeysAny: string[] | null;
+}
+
+/** Grupo de menú en `GET /api/access/me/menu`. */
+export interface SessionMenuGroupDto {
+  code: string;
+  icon: string;
+  labelKey: string;
+  sortOrder: number;
+  moduleKey: string | null;
+  roles: string[] | null;
+  requireSuperAdminPanel: boolean;
+  items: SessionMenuItemDto[];
+}
+

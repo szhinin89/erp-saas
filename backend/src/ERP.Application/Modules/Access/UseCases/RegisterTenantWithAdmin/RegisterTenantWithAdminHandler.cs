@@ -12,15 +12,18 @@ public class RegisterTenantWithAdminHandler
     private readonly ITenantRepository _tenantRepository;
     private readonly IAccessRepository _accessRepository;
     private readonly IAccessTokenService _tokenService;
+    private readonly IDeploymentFeatureFlags _deployment;
 
     public RegisterTenantWithAdminHandler(
         ITenantRepository tenantRepository,
         IAccessRepository accessRepository,
-        IAccessTokenService tokenService)
+        IAccessTokenService tokenService,
+        IDeploymentFeatureFlags deployment)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
         _tokenService = tokenService;
+        _deployment = deployment;
     }
 
     public async Task<Result<SessionResponseDto>> HandleAsync(RegisterTenantWithAdminCommand command, CancellationToken ct = default)
@@ -33,9 +36,17 @@ public class RegisterTenantWithAdminHandler
         if (existingTenant is not null)
             return Result<SessionResponseDto>.Failure("El slug ya está en uso.");
 
+        var tenantQuota = await DeploymentQuota.GetBlockingReasonIfAtActiveTenantCapAsync(_deployment, _tenantRepository, ct);
+        if (tenantQuota is not null)
+            return Result<SessionResponseDto>.Failure(tenantQuota);
+
         var email = command.AdminEmail.Trim().ToLowerInvariant();
         if (await _accessRepository.AnyUserWithEmailAsync(email, ct))
             return Result<SessionResponseDto>.Failure("El email ya está registrado en el sistema.");
+
+        var userQuota = await DeploymentQuota.GetBlockingReasonIfAtIdentityUserCapAsync(_deployment, _accessRepository, ct);
+        if (userQuota is not null)
+            return Result<SessionResponseDto>.Failure(userQuota);
 
         var tenant = Tenant.Create(
             command.TenantName,
@@ -59,6 +70,11 @@ public class RegisterTenantWithAdminHandler
             passwordHash: passwordHash,
             createdBy: Guid.Empty);
         await _accessRepository.AddUserAsync(identityUser, ct);
+
+        var membershipCap = await DeploymentQuota.GetBlockingReasonIfAtTenantMembershipUserCapAsync(
+            _deployment, _accessRepository, tenant.Id, ct);
+        if (membershipCap is not null)
+            return Result<SessionResponseDto>.Failure(membershipCap);
 
         var membership = Membership.Create(
             tenantId: tenant.Id,

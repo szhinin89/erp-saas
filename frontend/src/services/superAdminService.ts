@@ -31,6 +31,14 @@ export type SuperAdminPlan = {
   features: SuperAdminPlanFeature[];
 };
 
+/** Cuotas efectivas de instancia (GET) o cuerpo para guardar en App_Data/instance-quota.json (PUT). */
+export type InstanceQuota = {
+  dedicatedSingleClientInstance?: boolean | null;
+  maxActiveTenants?: number | null;
+  maxIdentityUsers?: number | null;
+  maxUsersPerTenant?: number | null;
+};
+
 export type SuperAdminMetrics = {
   totals: {
     totalTenants: number;
@@ -63,5 +71,11 @@ export const superAdminService = {
   switchTenant: (tenantId: string) =>
     api.post<ApiResponse<import('../types/auth').AuthResponse>>('/api/auth/switch-tenant', { tenantId })
       .then((r) => r.data.responseObject),
+
+  getInstanceQuota: () =>
+    api.get<ApiResponse<InstanceQuota>>('/api/superadmin/instance-quota').then((r) => r.data.responseObject),
+
+  saveInstanceQuota: (body: InstanceQuota) =>
+    api.put<ApiResponse<Record<string, unknown>>>('/api/superadmin/instance-quota', body).then((r) => r.data),
 };
 

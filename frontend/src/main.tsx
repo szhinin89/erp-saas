@@ -5,11 +5,14 @@ import './components/zh/ZHLayout.css'
 import './components/zh/ZHFormTabs.css'
 import App from './App.tsx'
 import { I18nProvider } from './i18n/i18n'
+import { DeploymentProvider } from './deployment/DeploymentContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <I18nProvider>
-      <App />
+      <DeploymentProvider>
+        <App />
+      </DeploymentProvider>
     </I18nProvider>
   </StrictMode>,
 )

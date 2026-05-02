@@ -1,0 +1,79 @@
+using System.Text.Json;
+using ERP.Application.Navigation;
+using ERP.Application.Navigation.DTOs;
+using ERP.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+
+namespace ERP.Infrastructure.Persistence.Repositories;
+
+public sealed class NavigationMenuReader : INavigationMenuReader
+{
+    private readonly ErpDbContext _db;
+
+    public NavigationMenuReader(ErpDbContext db) => _db = db;
+
+    public async Task<IReadOnlyList<SessionMenuGroupDto>> GetActiveMenuAsync(CancellationToken ct = default)
+    {
+        var groups = await _db.UiNavGroups.AsNoTracking()
+            .Where(g => g.IsActive)
+            .OrderBy(g => g.SortOrder)
+            .ThenBy(g => g.Code)
+            .ToListAsync(ct);
+
+        var items = await _db.UiNavItems.AsNoTracking()
+            .Where(i => i.IsActive)
+            .OrderBy(i => i.SortOrder)
+            .ThenBy(i => i.RoutePath)
+            .ToListAsync(ct);
+
+        var byGroup = items.GroupBy(i => i.GroupId).ToDictionary(g => g.Key, g => g.ToList());
+
+        var dtos = new List<SessionMenuGroupDto>();
+        foreach (var g in groups)
+        {
+            var list = byGroup.TryGetValue(g.Id, out var row) ? row : [];
+            var itemDtos = list
+                .Select(i => new SessionMenuItemDto(
+                    i.RoutePath,
+                    i.LabelKey,
+                    i.SortOrder,
+                    i.ModuleKey,
+                    i.PermissionKey,
+                    ParseKeysAny(i.PermissionKeysAnyJson)))
+                .ToList();
+
+            dtos.Add(new SessionMenuGroupDto(
+                g.Code,
+                g.Icon,
+                g.LabelKey,
+                g.SortOrder,
+                g.ModuleKey,
+                ParseRoles(g.RolesCsv),
+                g.RequireSuperAdminPanel,
+                itemDtos));
+        }
+
+        return dtos;
+    }
+
+    private static IReadOnlyList<string>? ParseRoles(string? csv)
+    {
+        if (string.IsNullOrWhiteSpace(csv)) return null;
+        var parts = csv.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return parts.Length == 0 ? null : parts.ToList();
+    }
+
+    private static IReadOnlyList<string>? ParseKeysAny(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return null;
+        try
+        {
+            var arr = JsonSerializer.Deserialize<List<string>>(json);
+            return arr is { Count: > 0 } ? arr : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+}

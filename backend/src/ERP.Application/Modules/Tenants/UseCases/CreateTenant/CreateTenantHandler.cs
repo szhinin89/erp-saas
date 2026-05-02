@@ -9,11 +9,16 @@ public class CreateTenantHandler
 {
     private readonly ITenantRepository _repository;
     private readonly ICurrentUser _currentUser;
+    private readonly IDeploymentFeatureFlags _deployment;
 
-    public CreateTenantHandler(ITenantRepository repository, ICurrentUser currentUser)
+    public CreateTenantHandler(
+        ITenantRepository repository,
+        ICurrentUser currentUser,
+        IDeploymentFeatureFlags deployment)
     {
-        _repository  = repository;
+        _repository = repository;
         _currentUser = currentUser;
+        _deployment = deployment;
     }
 
     public async Task<Result<TenantDto>> HandleAsync(
@@ -23,6 +28,10 @@ public class CreateTenantHandler
         var exists = await _repository.GetBySlugAsync(command.Slug, ct);
         if (exists is not null)
             return Result<TenantDto>.Failure($"Ya existe un tenant con el slug '{command.Slug}'.");
+
+        var quotaMsg = await DeploymentQuota.GetBlockingReasonIfAtActiveTenantCapAsync(_deployment, _repository, ct);
+        if (quotaMsg is not null)
+            return Result<TenantDto>.Failure(quotaMsg);
 
         if (command.EnabledModules is { Count: > 0 })
             TenantSubscriptionCatalog.ValidateModuleKeysOrThrow(command.EnabledModules);

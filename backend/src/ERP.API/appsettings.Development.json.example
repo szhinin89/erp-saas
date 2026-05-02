@@ -32,5 +32,11 @@
       "Default": "Information",
       "Microsoft.AspNetCore": "Warning"
     }
+  },
+  "Deployment": {
+    "SuperAdminPanelEnabled": true,
+    "InitialSuperAdminSetupToken": "",
+    "DedicatedSingleClientInstance": false,
+    "MaxUsersPerTenant": ""
   }
 }

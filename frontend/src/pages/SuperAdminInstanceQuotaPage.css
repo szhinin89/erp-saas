@@ -1,0 +1,10 @@
+.sa-quotaCheck {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.sa-quotaCheck input {
+  margin-top: 0.2rem;
+}

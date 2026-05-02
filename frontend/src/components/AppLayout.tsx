@@ -8,7 +8,9 @@ import { usePermissionsStore } from '../store/permissionsStore';
 import { accessService } from '../services/accessService';
 import { superAdminService } from '../services/superAdminService';
 import { ZHAppTenantHeader } from './zh/ZHAppTenantHeader';
-import { buildNavGroups, type NavGroup, type NavItem } from '../nav/navConfig';
+import { buildNavGroups, mapSessionMenuToNavGroups, type NavGroup, type NavItem } from '../nav/navConfig';
+import { useDeployment } from '../deployment/DeploymentContext';
+import type { SessionMenuGroupDto } from '../types/access';
 import './AppLayout.css';
 
 function getImpersonationTenantName(): string | null {
@@ -16,6 +18,7 @@ function getImpersonationTenantName(): string | null {
 }
 
 export function AppLayout() {
+  const { superAdminPanelEnabled } = useDeployment();
   const { user, logout, login } = useAuthStore();
   const { permissions, enabledModules, has: hasPerm, clearPermissions, hasHydrated: permsHydrated } =
     usePermissionsStore();
@@ -64,7 +67,33 @@ export function AppLayout() {
     };
   }, [permissions.length, user]);
 
-  const groups = useMemo(() => buildNavGroups(t), [t]);
+  const [sessionMenuDto, setSessionMenuDto] = useState<SessionMenuGroupDto[] | undefined>(undefined);
+
+  useEffect(() => {
+    if (!user) {
+      setSessionMenuDto(undefined);
+      return;
+    }
+    let cancelled = false;
+    void accessService
+      .getSessionMenu()
+      .then((rows) => {
+        if (!cancelled) setSessionMenuDto(rows.length > 0 ? rows : []);
+      })
+      .catch(() => {
+        if (!cancelled) setSessionMenuDto([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.tenantId, user?.userId]);
+
+  const groups = useMemo(() => {
+    if (sessionMenuDto !== undefined && sessionMenuDto.length > 0) {
+      return mapSessionMenuToNavGroups(sessionMenuDto, t, { superAdminPanelEnabled });
+    }
+    return buildNavGroups(t, { superAdminPanelEnabled });
+  }, [sessionMenuDto, t, superAdminPanelEnabled]);
   const [favorites, setFavorites] = useState<NavItem[]>(() => {
     try {
       const raw = localStorage.getItem('zh-favorites');

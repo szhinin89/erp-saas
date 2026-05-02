@@ -26,6 +26,8 @@ export type CreateCompanyWithAdminRequest = {
   adminLastName: string;
   adminEmail: string;
   adminPassword: string;
+  /** Si true, el email debe ser de un usuario ya registrado; se le asigna Admin en la nueva empresa. */
+  linkExistingAdmin?: boolean;
   passwordResetMode?: number;
 };
 

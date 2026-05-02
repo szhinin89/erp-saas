@@ -8,6 +8,7 @@ import { companyService, type CompanyItem } from '../services/companyService';
 import { TenantSubscriptionEditor } from '../components/saas/TenantSubscriptionEditor';
 import { CompanyModuleChips } from '../components/saas/CompanyModuleChips';
 import { createCompanyWithAdminSchema, type CreateCompanyFormValues } from '../schemas/saas/companySchema';
+import { useDeployment } from '../deployment/DeploymentContext';
 import { PageShell, TableCard, EmptyState, LoadingState, NoAccessPage } from '../components/PageShell';
 import { EntityAuditPanel } from '../components/EntityAuditPanel';
 import ZHSearchBar from '../components/shared/ZHSearchBar';
@@ -19,6 +20,7 @@ type CompanyTab = 'data' | 'list' | 'subscription' | 'audit';
 
 function CompaniesPage() {
   const { t } = useI18n();
+  const { maxActiveTenants, maxIdentityUsers } = useDeployment();
   const [searchParams, setSearchParams] = useSearchParams();
   const user = useAuthStore((s) => s.user);
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
@@ -48,6 +50,7 @@ function CompaniesPage() {
     adminLastName: '',
     adminEmail: '',
     adminPassword: '',
+    linkExistingAdmin: false,
     passwordResetMode: 1,
   });
 
@@ -55,11 +58,14 @@ function CompaniesPage() {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<CreateCompanyFormValues>({
     resolver: zodResolver(createCompanyWithAdminSchema),
     defaultValues: emptyCompanyForm(),
   });
+
+  const linkExistingAdmin = watch('linkExistingAdmin');
 
   const filtered = useMemo(() => {
     const query = listQuery.trim().toLowerCase();
@@ -136,12 +142,20 @@ function CompaniesPage() {
     setCreating(true);
     try {
       const session = await companyService.create({
-        ...form,
+        tenantName: form.tenantName,
+        tenantSlug: form.tenantSlug,
         ruc: form.ruc?.trim() || null,
         shortName: form.shortName?.trim() || null,
         tradeName: form.tradeName?.trim() || null,
         dinardap: form.dinardap?.trim() || null,
         logoUrl: form.logoUrl?.trim() || null,
+        displayOrder: form.displayOrder,
+        priority: form.priority,
+        adminFirstName: form.linkExistingAdmin ? '' : form.adminFirstName,
+        adminLastName: form.linkExistingAdmin ? '' : form.adminLastName,
+        adminEmail: form.adminEmail,
+        adminPassword: form.linkExistingAdmin ? '' : form.adminPassword,
+        linkExistingAdmin: form.linkExistingAdmin,
         passwordResetMode: 1,
       });
       if (session?.tenantId) {
@@ -196,6 +210,16 @@ function CompaniesPage() {
             <input type="hidden" name="tenantId" value={tenantId} />
 
             <ZHFormSection title={t('companies.form.create')}>
+              {maxActiveTenants != null ? (
+                <p className="companies-quota-hint" role="note">
+                  {t('companies.deployment.maxTenantsHint')} <strong>{maxActiveTenants}</strong>
+                </p>
+              ) : null}
+              {maxIdentityUsers != null ? (
+                <p className="companies-quota-hint" role="note">
+                  {t('companies.deployment.maxUsersHint')} <strong>{maxIdentityUsers}</strong>
+                </p>
+              ) : null}
               <ZHGrid cols={2}>
                 <ZHField label={t('companies.form.tenantName')} required fieldError={errors.tenantName?.message}>
                   <input disabled={creating} {...register('tenantName')} />
@@ -224,18 +248,34 @@ function CompaniesPage() {
                 <ZHField label={t('companies.form.priority')} fieldError={errors.priority?.message}>
                   <input type="number" disabled={creating} {...register('priority', { valueAsNumber: true })} />
                 </ZHField>
-                <ZHField label={t('companies.form.adminFirstName')} required fieldError={errors.adminFirstName?.message}>
-                  <input disabled={creating} {...register('adminFirstName')} />
+                <ZHField
+                  label={t('companies.form.adminFirstName')}
+                  required={!linkExistingAdmin}
+                  fieldError={errors.adminFirstName?.message}
+                >
+                  <input disabled={creating || linkExistingAdmin} {...register('adminFirstName')} />
                 </ZHField>
-                <ZHField label={t('companies.form.adminLastName')} required fieldError={errors.adminLastName?.message}>
-                  <input disabled={creating} {...register('adminLastName')} />
+                <ZHField
+                  label={t('companies.form.adminLastName')}
+                  required={!linkExistingAdmin}
+                  fieldError={errors.adminLastName?.message}
+                >
+                  <input disabled={creating || linkExistingAdmin} {...register('adminLastName')} />
                 </ZHField>
                 <ZHField label={t('companies.form.adminEmail')} required fieldError={errors.adminEmail?.message}>
                   <input type="email" disabled={creating} {...register('adminEmail')} />
                 </ZHField>
-                <ZHField label={t('companies.form.adminPassword')} required fieldError={errors.adminPassword?.message}>
-                  <input type="password" disabled={creating} {...register('adminPassword')} />
+                <ZHField label={t('companies.form.linkExistingAdmin')}>
+                  <label className="companies-checkbox-label">
+                    <input type="checkbox" disabled={creating} {...register('linkExistingAdmin')} />
+                    <span>{t('companies.form.linkExistingAdminHint')}</span>
+                  </label>
                 </ZHField>
+                {!linkExistingAdmin ? (
+                  <ZHField label={t('companies.form.adminPassword')} required fieldError={errors.adminPassword?.message}>
+                    <input type="password" disabled={creating} autoComplete="new-password" {...register('adminPassword')} />
+                  </ZHField>
+                ) : null}
               </ZHGrid>
             </ZHFormSection>
           </ZHFormCard>

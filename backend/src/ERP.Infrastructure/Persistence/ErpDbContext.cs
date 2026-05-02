@@ -11,6 +11,7 @@ using ERP.Domain.Geography.Entities;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Customers.Entities;
 using ERP.Domain.Subscriptions.Entities;
+using ERP.Domain.Navigation.Entities;
 using ERP.Application.Common;
 using System.Linq.Expressions;
 
@@ -60,6 +61,9 @@ public class ErpDbContext : DbContext
     public DbSet<TenantSaasSubscription> TenantSaasSubscriptions => Set<TenantSaasSubscription>();
     public DbSet<TenantSubscriptionFeatureOverride> TenantSubscriptionFeatureOverrides => Set<TenantSubscriptionFeatureOverride>();
     public DbSet<TenantSubscriptionUsage> TenantSubscriptionUsages => Set<TenantSubscriptionUsage>();
+
+    public DbSet<UiNavGroup> UiNavGroups => Set<UiNavGroup>();
+    public DbSet<UiNavItem> UiNavItems => Set<UiNavItem>();
 
     /// <summary>
     /// Evaluada en cada query, no al compilar el modelo.

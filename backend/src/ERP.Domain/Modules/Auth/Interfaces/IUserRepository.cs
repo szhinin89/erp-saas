@@ -14,6 +14,10 @@ public interface IUserRepository
     Task<int> CountAllSystemAsync(CancellationToken ct = default);
     Task<int> CountActiveSystemAsync(CancellationToken ct = default);
     Task<bool> ExistsAsync(string email, Guid tenantId, CancellationToken ct = default);
+
+    /// <summary>Indica si ya existe un usuario legacy (<c>users</c>) con ese email en cualquier tenant (ignora filtro global).</summary>
+    Task<bool> ExistsByEmailGloballyAsync(string email, CancellationToken ct = default);
+
     Task AddAsync(User user, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }
