@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
 import { tenantAccessService, type TenantMembershipItem } from '../services/tenantAccessService';
@@ -9,6 +11,7 @@ import { ZHActionsRow } from '../components/zh/ZHLayout';
 import ZHSearchBar from '../components/shared/ZHSearchBar';
 import { ZHFormCard } from '../components/zh/ZHFormCard';
 import { ZHConfirmModal } from '../components/zh/ZHConfirmModal';
+import { tenantAccessUpsertSchema, type TenantAccessFormValues } from '../schemas/access/tenantAccessSchema';
 
 type AccessTab = 'data' | 'list';
 
@@ -26,13 +29,23 @@ export function TenantAccessPage() {
   const [tab, setTab] = useState<AccessTab>('data');
   const [listQuery, setListQuery] = useState('');
 
-  const [form, setForm] = useState({
+  const emptyAccessForm = (): TenantAccessFormValues => ({
     email: '',
     role: 'User',
     profileId: '',
     firstName: '',
     lastName: '',
     password: '',
+  });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<TenantAccessFormValues>({
+    resolver: zodResolver(tenantAccessUpsertSchema),
+    defaultValues: emptyAccessForm(),
   });
 
   const refresh = useCallback(async () => {
@@ -74,8 +87,7 @@ export function TenantAccessPage() {
     return <NoAccessPage title={t('tenantAccess.title')} />;
   }
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = handleSubmit(async (form) => {
     setError('');
     try {
       await tenantAccessService.upsertMembership({
@@ -86,7 +98,7 @@ export function TenantAccessPage() {
         lastName: form.lastName || null,
         password: form.password || null,
       });
-      setForm({ email: '', role: 'User', profileId: '', firstName: '', lastName: '', password: '' });
+      reset(emptyAccessForm());
       await refresh();
       setTab('list');
     } catch (err: unknown) {
@@ -95,7 +107,7 @@ export function TenantAccessPage() {
         t('tenantAccess.error.upsert');
       setError(msg);
     }
-  };
+  });
 
   const revoke = async (email: string) => {
     setError('');
@@ -149,17 +161,17 @@ export function TenantAccessPage() {
 
             <ZHFormSection title={t('tenantAccess.section.manage')}>
               <ZHGrid cols={2}>
-                <ZHField label={t('tenantAccess.form.email')} required>
-                  <input value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} required disabled={loading} />
+                <ZHField label={t('tenantAccess.form.email')} required fieldError={errors.email?.message}>
+                  <input type="email" disabled={loading} {...register('email')} />
                 </ZHField>
-                <ZHField label={t('tenantAccess.form.role.user')} required>
-                  <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))} disabled={loading}>
+                <ZHField label={t('tenantAccess.form.role.user')} required fieldError={errors.role?.message}>
+                  <select disabled={loading} {...register('role')}>
                     <option value="User">{t('tenantAccess.form.role.user')}</option>
                     <option value="Admin">{t('tenantAccess.form.role.admin')}</option>
                   </select>
                 </ZHField>
-                <ZHField label={t('tenantAccess.form.noProfile')}>
-                  <select value={form.profileId} onChange={(e) => setForm((f) => ({ ...f, profileId: e.target.value }))} disabled={loading}>
+                <ZHField label={t('tenantAccess.form.noProfile')} fieldError={errors.profileId?.message}>
+                  <select disabled={loading} {...register('profileId')}>
                     <option value="">{t('tenantAccess.form.noProfile')}</option>
                     {profiles.map((p) => (
                       <option key={p.id} value={p.id}>
@@ -168,14 +180,14 @@ export function TenantAccessPage() {
                     ))}
                   </select>
                 </ZHField>
-                <ZHField label={t('tenantAccess.form.firstName')}>
-                  <input value={form.firstName} onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))} disabled={loading} />
+                <ZHField label={t('tenantAccess.form.firstName')} fieldError={errors.firstName?.message}>
+                  <input disabled={loading} {...register('firstName')} />
                 </ZHField>
-                <ZHField label={t('tenantAccess.form.lastName')}>
-                  <input value={form.lastName} onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))} disabled={loading} />
+                <ZHField label={t('tenantAccess.form.lastName')} fieldError={errors.lastName?.message}>
+                  <input disabled={loading} {...register('lastName')} />
                 </ZHField>
-                <ZHField label={t('tenantAccess.form.password')}>
-                  <input type="password" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} disabled={loading} />
+                <ZHField label={t('tenantAccess.form.password')} fieldError={errors.password?.message}>
+                  <input type="password" disabled={loading} {...register('password')} />
                 </ZHField>
               </ZHGrid>
             </ZHFormSection>

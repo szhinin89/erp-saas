@@ -1,3 +1,5 @@
+using System.Linq;
+using System.Text.Json;
 using ERP.Domain.Common;
 
 namespace ERP.Domain.Tenants.Entities;
@@ -8,6 +10,12 @@ public class Tenant : AuditableEntity
     public string Slug { get; private set; } = null!;
     public bool IsActive { get; private set; }
     public PasswordResetMode PasswordResetMode { get; private set; } = PasswordResetMode.Disabled;
+
+    /// <summary>Código comercial del plan (p. ej. starter, professional). Opcional.</summary>
+    public string? PlanCode { get; private set; }
+
+    /// <summary>JSON array de claves de módulo (p. ej. <c>["catalog","accounting"]</c>). Null/vacío = todos los módulos.</summary>
+    public string? EnabledModulesJson { get; private set; }
 
     // ── Datos legales/comerciales (opcionales) ─────────────────────
     public string? Ruc { get; private set; }
@@ -33,7 +41,9 @@ public class Tenant : AuditableEntity
         string? dinardap = null,
         string? logoUrl = null,
         int displayOrder = 0,
-        int priority = 0)
+        int priority = 0,
+        string? planCode = null,
+        IReadOnlyList<string>? enabledModuleKeys = null)
     {
         var tenant = new Tenant
         {
@@ -51,8 +61,35 @@ public class Tenant : AuditableEntity
             DisplayOrder = displayOrder,
             Priority = priority,
         };
+        tenant.ApplySubscription(planCode, enabledModuleKeys);
         tenant.SetCreated(createdBy);
         return tenant;
+    }
+
+    /// <summary>Actualiza plan y módulos contratados (JSON interno).</summary>
+    public void SetSubscription(string? planCode, IReadOnlyList<string>? enabledModuleKeys, Guid updatedBy)
+    {
+        ApplySubscription(planCode, enabledModuleKeys);
+        SetUpdated(updatedBy);
+    }
+
+    private void ApplySubscription(string? planCode, IReadOnlyList<string>? enabledModuleKeys)
+    {
+        PlanCode = string.IsNullOrWhiteSpace(planCode) ? null : planCode.Trim();
+        if (enabledModuleKeys is null || enabledModuleKeys.Count == 0)
+        {
+            EnabledModulesJson = null;
+            return;
+        }
+
+        var normalized = enabledModuleKeys
+            .Select(k => (k ?? string.Empty).Trim().ToLowerInvariant())
+            .Where(k => k.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(k => k, StringComparer.Ordinal)
+            .ToList();
+
+        EnabledModulesJson = normalized.Count == 0 ? null : JsonSerializer.Serialize(normalized);
     }
 
     public void UpdateCompanyData(

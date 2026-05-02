@@ -1,14 +1,17 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api } from '../modules/lib/api';
 import { useAuthStore } from '../store/authStore';
-import type { AuthResponse, LoginRequest } from '../types/auth';
+import type { AuthResponse } from '../types/auth';
 import type { ApiResponse } from '../types/api';
 import { useI18n } from '../i18n/i18n';
 import { accessService } from '../services/accessService';
 import { useAccessStore } from '../store/accessStore';
 import { ZHFormHeader, ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions } from '../components/zh/ZHForm';
 import { ZHCenteredCard } from '../components/zh/ZHCenteredCard';
+import { loginSchema, type LoginFormValues } from '../schemas/auth/loginSchema';
 import './LoginPage.css';
 
 export function LoginPage() {
@@ -17,21 +20,23 @@ export function LoginPage() {
   const setBootstrap = useAccessStore((s) => s.setBootstrap);
   const { t } = useI18n();
 
-  const [form, setForm] = useState<LoginRequest>({
-    email: '',
-    password: '',
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
   });
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const onValid = async (form: LoginFormValues) => {
     setError('');
     setLoading(true);
 
     try {
-      // 0) SuperAdmin global login: entra directo al Panel Global.
-      // Si no es SuperAdmin, este endpoint responde 401 y seguimos con el flujo IAM normal.
       try {
         const { data } = await api.post<ApiResponse<AuthResponse>>('/api/auth/superadmin-login', {
           email: form.email,
@@ -44,7 +49,6 @@ export function LoginPage() {
         // noop
       }
 
-      // IAM flow: bootstrap login → tenant select → session token
       const bootstrap = await accessService.bootstrapLogin(form);
       setBootstrap(bootstrap);
 
@@ -60,6 +64,8 @@ export function LoginPage() {
           role: session.role,
           tenantId: session.tenantId,
           token: session.token,
+          planCode: session.planCode,
+          enabledModules: session.enabledModules ?? [],
         };
         login(auth);
         navigate('/dashboard');
@@ -67,7 +73,6 @@ export function LoginPage() {
         navigate('/select-tenant');
       }
     } catch {
-      // Fallback: legacy auth endpoint (mantiene SuperAdmin / compatibilidad mientras se migra).
       try {
         const { data } = await api.post<ApiResponse<AuthResponse>>('/api/auth/login', form);
         login(data.responseObject);
@@ -90,60 +95,53 @@ export function LoginPage() {
 
   return (
     <ZHCenteredCard bgClassName="login-bg" cardClassName="login-card">
-      <form className="login-form" onSubmit={handleSubmit}>
-          <ZHFormHeader
-            title={t('login.title')}
-            subtitle={t('login.subtitle')}
+      <form className="login-form" onSubmit={handleSubmit(onValid)} noValidate>
+        <ZHFormHeader title={t('login.title')} subtitle={t('login.subtitle')} />
+        <ZHFormBody>
+          {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
+
+          <ZHFormSection title={t('login.title')}>
+            <ZHGrid cols={1}>
+              <ZHField label={t('login.email.label')} required fieldError={errors.email?.message}>
+                <input
+                  id="email"
+                  type="email"
+                  placeholder={t('login.email.placeholder')}
+                  autoComplete="username"
+                  disabled={loading}
+                  {...register('email')}
+                />
+              </ZHField>
+
+              <ZHField label={t('login.password.label')} required fieldError={errors.password?.message}>
+                <input
+                  id="password"
+                  type="password"
+                  placeholder={t('login.password.placeholder')}
+                  autoComplete="current-password"
+                  disabled={loading}
+                  {...register('password')}
+                />
+              </ZHField>
+            </ZHGrid>
+          </ZHFormSection>
+
+          <ZHFormActions
+            onCancel={() => navigate('/password-reset')}
+            onDraft={undefined}
+            onSave={undefined}
+            hideDraft
+            disableDraft
+            disableSave={loading}
+            saveButtonType="submit"
+            labels={{
+              cancel: t('login.forgotPassword'),
+              draft: t('common.saveDraft') ?? 'Guardar borrador',
+              save: loading ? t('login.button.loading') : t('login.button.submit'),
+            }}
           />
-          <ZHFormBody>
-            {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
-
-            <ZHFormSection title={t('login.title')}>
-              <ZHGrid cols={1}>
-                <ZHField label={t('login.email.label')} required>
-                  <input
-                    id="email"
-                    type="email"
-                    placeholder={t('login.email.placeholder')}
-                    value={form.email}
-                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    required
-                    autoComplete="username"
-                    disabled={loading}
-                  />
-                </ZHField>
-
-                <ZHField label={t('login.password.label')} required>
-                  <input
-                    id="password"
-                    type="password"
-                    placeholder={t('login.password.placeholder')}
-                    value={form.password}
-                    onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-                    required
-                    autoComplete="current-password"
-                    disabled={loading}
-                  />
-                </ZHField>
-              </ZHGrid>
-            </ZHFormSection>
-
-            <ZHFormActions
-              onCancel={() => navigate('/password-reset')}
-              onDraft={undefined}
-              onSave={undefined}
-              hideDraft
-              disableDraft
-              disableSave={loading}
-              saveButtonType="submit"
-              labels={{
-                cancel: t('login.forgotPassword'),
-                draft: t('common.saveDraft') ?? 'Guardar borrador',
-                save: loading ? t('login.button.loading') : t('login.button.submit'),
-              }}
-            />
-          </ZHFormBody>
-        </form>
+        </ZHFormBody>
+      </form>
     </ZHCenteredCard>
   );
 }

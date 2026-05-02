@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { formatApiError } from '../lib/formatApiError';
+import { formatApiError } from '../modules/lib/formatApiError';
 
 interface AsyncState<T> {
   data: T | null;
@@ -16,9 +16,9 @@ interface AsyncState<T> {
  * Cancela la actualización de estado si el componente se desmonta antes de que
  * la promise resuelva, evitando el warning "Can't perform state update on unmounted component".
  */
-export function useAsync<T>(fn: () => Promise<T>): AsyncState<T> {
+export function useAsync<T>(fn: () => Promise<T>, enabled = true): AsyncState<T> {
   const [data, setData]       = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(enabled);
   const [error, setError]     = useState<string | null>(null);
   const [tick, setTick]       = useState(0);
 
@@ -26,7 +26,18 @@ export function useAsync<T>(fn: () => Promise<T>): AsyncState<T> {
 
   useEffect(() => {
     let cancelled = false;
-    // Avoid synchronous setState inside effect body (perf/lint rule).
+    if (!enabled) {
+      Promise.resolve().then(() => {
+        if (!cancelled) {
+          setLoading(false);
+          setError(null);
+        }
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+
     Promise.resolve().then(() => {
       if (cancelled) return;
       setLoading(true);
@@ -44,7 +55,7 @@ export function useAsync<T>(fn: () => Promise<T>): AsyncState<T> {
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tick]);
+  }, [tick, enabled]);
 
   return { data, loading, error, refetch };
 }

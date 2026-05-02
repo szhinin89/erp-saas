@@ -1,4 +1,4 @@
-import { api } from '../lib/api';
+import { api } from '../modules/lib/api';
 import type { Product } from '../types/product';
 import type { ApiResponse } from '../types/api';
 

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge } from '../components/PageShell';
-import { superAdminService, type SuperAdminTenant } from '../services/superAdminService';
+import { superAdminService, type SuperAdminPlan, type SuperAdminTenant } from '../services/superAdminService';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n/i18n';
 import { ZHBtn, ZHField } from '../components/zh/ZHForm';
@@ -24,6 +24,9 @@ export function SuperAdminPanelPage() {
   const [tenants, setTenants] = useState<SuperAdminTenant[]>([]);
   const [q, setQ] = useState('');
   const [switching, setSwitching] = useState<string | null>(null);
+  const [plans, setPlans] = useState<SuperAdminPlan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+  const [plansError, setPlansError] = useState('');
 
   const isSuperAdmin = user?.role === 'SuperAdmin';
   const hasSelectedTenant = !!user?.tenantId && user.tenantId !== '00000000-0000-0000-0000-000000000000';
@@ -46,6 +49,27 @@ export function SuperAdminPanelPage() {
         setError((e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t('common.errorGeneric'));
       } finally {
         if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [t]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setPlansLoading(true);
+        setPlansError('');
+        const list = await superAdminService.getPlansCatalog();
+        if (!cancelled) setPlans(list);
+      } catch (e) {
+        if (!cancelled) {
+          setPlansError(
+            (e as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t('common.errorGeneric'),
+          );
+        }
+      } finally {
+        if (!cancelled) setPlansLoading(false);
       }
     })();
     return () => { cancelled = true; };
@@ -162,17 +186,30 @@ export function SuperAdminPanelPage() {
                           {new Date(tenant.createdAt).toLocaleDateString()}
                         </span>
                       </div>
-                      <ZHInlineRowRight>
-                        <ZHBtn
-                          variant="primary"
-                          size="md"
-                          type="button"
-                          onClick={() => void handleSwitch(tenant)}
-                          disabled={switching !== null}
-                        >
-                          {switching === tenant.id ? t('superadmin.switching') : t('superadmin.enter')}
-                        </ZHBtn>
-                      </ZHInlineRowRight>
+                      <div className="sa-tenant-actions">
+                        <ZHInlineRowRight>
+                          <ZHBtn
+                            variant="secondary"
+                            size="md"
+                            type="button"
+                            disabled={switching !== null}
+                            onClick={() =>
+                              navigate(`/companies?subscription=${encodeURIComponent(tenant.id)}`)
+                            }
+                          >
+                            {t('superadmin.subscription')}
+                          </ZHBtn>
+                          <ZHBtn
+                            variant="primary"
+                            size="md"
+                            type="button"
+                            onClick={() => void handleSwitch(tenant)}
+                            disabled={switching !== null}
+                          >
+                            {switching === tenant.id ? t('superadmin.switching') : t('superadmin.enter')}
+                          </ZHBtn>
+                        </ZHInlineRowRight>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -180,6 +217,60 @@ export function SuperAdminPanelPage() {
             </ZHCardSection>
           </TableCard>
         </ZHPanelGrid>
+
+        <div className="sa-plansWrap">
+          <TableCard>
+            <ZHCardSection title={t('superadmin.plans.title')}>
+              <p className="subtle sa-plansIntro">{t('superadmin.plans.subtitle')}</p>
+              {plansError ? <ErrorState message={plansError} /> : null}
+              {plansLoading ? (
+                <LoadingState />
+              ) : plans.length === 0 ? (
+                <EmptyState message={t('superadmin.plans.empty')} />
+              ) : (
+                <div className="sa-plansGrid">
+                  {plans.map((plan) => (
+                    <article key={plan.id} className="sa-planCard">
+                      <header className="sa-planCard-head">
+                        <div>
+                          <div className="sa-planCard-name">{plan.name}</div>
+                          <div className="sa-planCard-code mono">{plan.code}</div>
+                        </div>
+                        <Badge
+                          label={plan.isActive ? t('common.active') : t('common.inactive')}
+                          variant={plan.isActive ? 'green' : 'gray'}
+                        />
+                      </header>
+                      <ul className="sa-planFeatureList">
+                        {plan.features.map((f) => (
+                          <li key={`${plan.id}-${f.featureCode}`} className="sa-planFeatureRow">
+                            <div className="sa-planFeatureMain">
+                              <span className="sa-planFeatureCode mono">{f.featureCode}</span>
+                              <span className="sa-planFeatureName">{f.featureName}</span>
+                            </div>
+                            <div className="sa-planFeatureMeta">
+                              {f.isMetered ? (
+                                <span className="sa-planPill">{t('superadmin.plans.metered')}</span>
+                              ) : (
+                                <span className="sa-planPill sa-planPill--soft">{t('superadmin.plans.module')}</span>
+                              )}
+                              <span className="subtle">
+                                {f.limitPerPeriod != null
+                                  ? `${t('superadmin.plans.limitLabel')}: ${f.limitPerPeriod}`
+                                  : t('superadmin.plans.limitUnlimited')}
+                              </span>
+                            </div>
+                            {f.description ? <div className="sa-planFeatureDesc subtle">{f.description}</div> : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </ZHCardSection>
+          </TableCard>
+        </div>
       </ZHDashboardScaffold>
     </PageShell>
   );

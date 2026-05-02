@@ -1,5 +1,24 @@
-export type NavItem = { to: string; label: string; icon?: string; permissionKey?: string; children?: NavItem[] };
-export type NavGroup = { id: string; label: string; icon: string; items: NavItem[]; roles?: string[] };
+export type NavItem = {
+  to: string;
+  label: string;
+  icon?: string;
+  /** Clave de módulo contratado (catalog, accounting, saas, access). Si falta, no se filtra por suscripción. */
+  moduleKey?: string;
+  /** Si está definido, el ítem solo se muestra si el usuario tiene este permiso. */
+  permissionKey?: string;
+  /** Si está definido, basta con tener uno de estos permisos (OR). Tiene prioridad sobre `permissionKey`. */
+  permissionKeysAny?: string[];
+  children?: NavItem[];
+};
+export type NavGroup = {
+  id: string;
+  label: string;
+  icon: string;
+  items: NavItem[];
+  roles?: string[];
+  /** Si está definido, el grupo solo se muestra si el tenant tiene ese módulo contratado. */
+  moduleKey?: string;
+};
 
 export type TranslateFn = (key: string) => string;
 
@@ -24,8 +43,10 @@ export function buildNavGroups(t: TranslateFn): NavGroup[] {
       id: 'catalog',
       label: t('app.nav.group.catalog'),
       icon: '📦',
+      moduleKey: 'catalog',
       items: [
         { to: '/products', label: t('app.nav.products'), permissionKey: 'catalog.products.view' },
+        { to: '/catalog/customers', label: t('app.nav.catalog.customers'), permissionKey: 'catalog.customers.view' },
         { to: '/catalog/brands', label: t('app.nav.catalog.brands'), permissionKey: 'catalog.brands.view' },
         { to: '/catalog/product-types', label: t('app.nav.catalog.productTypes'), permissionKey: 'catalog.productTypes.view' },
         { to: '/catalog/units', label: t('app.nav.catalog.units'), permissionKey: 'catalog.units.view' },
@@ -38,7 +59,14 @@ export function buildNavGroups(t: TranslateFn): NavGroup[] {
       id: 'accounting',
       label: t('app.nav.group.accounting'),
       icon: '📒',
-      items: [{ to: '/accounting', label: t('app.nav.accounting') }],
+      moduleKey: 'accounting',
+      items: [
+        {
+          to: '/accounting',
+          label: t('app.nav.accounting'),
+          permissionKeysAny: ['accounting.accounts.view', 'accounting.journal.view'],
+        },
+      ],
     },
     {
       id: 'access',
@@ -48,7 +76,12 @@ export function buildNavGroups(t: TranslateFn): NavGroup[] {
       items: [
         { to: '/access', label: t('app.nav.access') },
         { to: '/profiles', label: t('app.nav.profiles') },
-        { to: '/saas/branches', label: t('app.nav.branches'), permissionKey: 'saas.branches.view' },
+        {
+          to: '/saas/branches',
+          label: t('app.nav.branches'),
+          moduleKey: 'saas',
+          permissionKey: 'saas.branches.view',
+        },
       ],
     },
     {

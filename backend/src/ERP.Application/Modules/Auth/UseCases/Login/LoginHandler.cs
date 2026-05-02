@@ -1,5 +1,5 @@
-using ERP.Application.Common;
 using ERP.Application.Auth.DTOs;
+using ERP.Application.Common;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 
@@ -40,7 +40,9 @@ public class LoginHandler
                 superAdmin.Email.Value,
                 superAdmin.Role,
                 Guid.Empty,
-                globalToken));
+                globalToken,
+                PlanCode: null,
+                EnabledModules: TenantSubscriptionCatalog.AllModuleKeys));
         }
 
         // Non-superadmin: resolve tenant membership by email.
@@ -71,12 +73,18 @@ public class LoginHandler
 
         var token = _jwtService.GenerateToken(single);
 
+        var tenantEntity = await _tenantRepository.GetByIdAsync(single.TenantId, ct);
+
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             single.Id,
             single.FullName,
             single.Email.Value,
             single.Role,
             single.TenantId,
-            token));
+            token,
+            tenantEntity?.PlanCode,
+            tenantEntity is null
+                ? TenantSubscriptionCatalog.AllModuleKeys
+                : TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenantEntity)));
     }
 }

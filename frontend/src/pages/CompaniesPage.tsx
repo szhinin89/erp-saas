@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
-import { companyService, type CreateCompanyWithAdminRequest } from '../services/companyService';
+import { companyService, type CompanyItem } from '../services/companyService';
+import { TenantSubscriptionEditor } from '../components/saas/TenantSubscriptionEditor';
+import { CompanyModuleChips } from '../components/saas/CompanyModuleChips';
+import { createCompanyWithAdminSchema, type CreateCompanyFormValues } from '../schemas/saas/companySchema';
 import { PageShell, TableCard, EmptyState, LoadingState, NoAccessPage } from '../components/PageShell';
 import { EntityAuditPanel } from '../components/EntityAuditPanel';
 import ZHSearchBar from '../components/shared/ZHSearchBar';
@@ -9,14 +15,15 @@ import { ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHBtn } from '../component
 import { ZHFormCard } from '../components/zh/ZHFormCard';
 import './CompaniesPage.css';
 
-type CompanyTab = 'data' | 'list' | 'audit';
+type CompanyTab = 'data' | 'list' | 'subscription' | 'audit';
 
 function CompaniesPage() {
   const { t } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
   const user = useAuthStore((s) => s.user);
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
 
-  const [items, setItems] = useState<Array<{ id: string; name: string; slug: string }>>([]);
+  const [items, setItems] = useState<CompanyItem[]>([]);
   const [listQuery, setListQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,8 +31,10 @@ function CompaniesPage() {
   const formRef = useRef<HTMLFormElement>(null);
   const [tab, setTab] = useState<CompanyTab>('data');
   const [auditTenantId, setAuditTenantId] = useState<string | null>(null);
+  const [subscriptionTenant, setSubscriptionTenant] = useState<CompanyItem | null>(null);
   const [auditRefreshKey, setAuditRefreshKey] = useState(0);
-  const [form, setForm] = useState<CreateCompanyWithAdminRequest>({
+  const appliedSubscriptionFromUrl = useRef<string | null>(null);
+  const emptyCompanyForm = (): CreateCompanyFormValues => ({
     tenantName: '',
     tenantSlug: '',
     ruc: '',
@@ -40,6 +49,16 @@ function CompaniesPage() {
     adminEmail: '',
     adminPassword: '',
     passwordResetMode: 1,
+  });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<CreateCompanyFormValues>({
+    resolver: zodResolver(createCompanyWithAdminSchema),
+    defaultValues: emptyCompanyForm(),
   });
 
   const filtered = useMemo(() => {
@@ -65,36 +84,71 @@ function CompaniesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const clearSubscriptionQuery = () => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('subscription');
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  const setSubscriptionQuery = (tenantId: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('subscription', tenantId);
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
+  /** Deep link: `/companies?subscription={tenantId}` (p. ej. desde panel SuperAdmin). Una sola vez por valor de query. */
+  useEffect(() => {
+    const id = searchParams.get('subscription');
+    if (!id) {
+      appliedSubscriptionFromUrl.current = null;
+      return;
+    }
+    if (items.length === 0) return;
+    const row = items.find((i) => i.id.toLowerCase() === id.trim().toLowerCase());
+    if (!row) {
+      appliedSubscriptionFromUrl.current = null;
+      clearSubscriptionQuery();
+      return;
+    }
+    if (appliedSubscriptionFromUrl.current === id) return;
+    appliedSubscriptionFromUrl.current = id;
+    setSubscriptionTenant(row);
+    setTab('subscription');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, items]);
+
   if (user?.role !== 'SuperAdmin') {
     return <NoAccessPage title={t('companies.title')} />;
   }
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = handleSubmit(async (form) => {
     setError('');
     setCreating(true);
     try {
-      const session = await companyService.create(form);
+      const session = await companyService.create({
+        ...form,
+        ruc: form.ruc?.trim() || null,
+        shortName: form.shortName?.trim() || null,
+        tradeName: form.tradeName?.trim() || null,
+        dinardap: form.dinardap?.trim() || null,
+        logoUrl: form.logoUrl?.trim() || null,
+        passwordResetMode: 1,
+      });
       if (session?.tenantId) {
         setAuditTenantId(session.tenantId);
         setAuditRefreshKey((k) => k + 1);
       }
-      setForm({
-        tenantName: '',
-        tenantSlug: '',
-        ruc: '',
-        shortName: '',
-        tradeName: '',
-        dinardap: '',
-        logoUrl: '',
-        displayOrder: 0,
-        priority: 0,
-        adminFirstName: '',
-        adminLastName: '',
-        adminEmail: '',
-        adminPassword: '',
-        passwordResetMode: 1,
-      });
+      reset(emptyCompanyForm());
       await refresh();
       setTab(session?.tenantId ? 'audit' : 'list');
     } catch (err: unknown) {
@@ -105,7 +159,7 @@ function CompaniesPage() {
     } finally {
       setCreating(false);
     }
-  };
+  });
 
   return (
     <PageShell
@@ -129,6 +183,9 @@ function CompaniesPage() {
           <button type="button" className={tab === 'list' ? 'is-active' : ''} onClick={() => setTab('list')}>
             {t('companies.tabList')}
           </button>
+          <button type="button" className={tab === 'subscription' ? 'is-active' : ''} onClick={() => setTab('subscription')}>
+            {t('companies.tabSubscription')}
+          </button>
           <button type="button" className={tab === 'audit' ? 'is-active' : ''} onClick={() => setTab('audit')}>
             {t('common.formTab.audit')}
           </button>
@@ -140,44 +197,44 @@ function CompaniesPage() {
 
             <ZHFormSection title={t('companies.form.create')}>
               <ZHGrid cols={2}>
-                <ZHField label={t('companies.form.tenantName')} required>
-                  <input value={form.tenantName} onChange={(e) => setForm((f) => ({ ...f, tenantName: e.target.value }))} required disabled={creating} />
+                <ZHField label={t('companies.form.tenantName')} required fieldError={errors.tenantName?.message}>
+                  <input disabled={creating} {...register('tenantName')} />
                 </ZHField>
-                <ZHField label={t('companies.form.tenantSlug')} required>
-                  <input value={form.tenantSlug} onChange={(e) => setForm((f) => ({ ...f, tenantSlug: e.target.value }))} required disabled={creating} />
+                <ZHField label={t('companies.form.tenantSlug')} required fieldError={errors.tenantSlug?.message}>
+                  <input disabled={creating} {...register('tenantSlug')} />
                 </ZHField>
-                <ZHField label={t('companies.form.ruc')}>
-                  <input value={form.ruc ?? ''} onChange={(e) => setForm((f) => ({ ...f, ruc: e.target.value }))} disabled={creating} />
+                <ZHField label={t('companies.form.ruc')} fieldError={errors.ruc?.message}>
+                  <input disabled={creating} {...register('ruc')} />
                 </ZHField>
-                <ZHField label={t('companies.form.shortName')}>
-                  <input value={form.shortName ?? ''} onChange={(e) => setForm((f) => ({ ...f, shortName: e.target.value }))} disabled={creating} />
+                <ZHField label={t('companies.form.shortName')} fieldError={errors.shortName?.message}>
+                  <input disabled={creating} {...register('shortName')} />
                 </ZHField>
-                <ZHField label={t('companies.form.tradeName')}>
-                  <input value={form.tradeName ?? ''} onChange={(e) => setForm((f) => ({ ...f, tradeName: e.target.value }))} disabled={creating} />
+                <ZHField label={t('companies.form.tradeName')} fieldError={errors.tradeName?.message}>
+                  <input disabled={creating} {...register('tradeName')} />
                 </ZHField>
-                <ZHField label={t('companies.form.dinardap')}>
-                  <input value={form.dinardap ?? ''} onChange={(e) => setForm((f) => ({ ...f, dinardap: e.target.value }))} disabled={creating} />
+                <ZHField label={t('companies.form.dinardap')} fieldError={errors.dinardap?.message}>
+                  <input disabled={creating} {...register('dinardap')} />
                 </ZHField>
-                <ZHField label={t('companies.form.logoUrl')}>
-                  <input value={form.logoUrl ?? ''} onChange={(e) => setForm((f) => ({ ...f, logoUrl: e.target.value }))} disabled={creating} />
+                <ZHField label={t('companies.form.logoUrl')} fieldError={errors.logoUrl?.message}>
+                  <input disabled={creating} {...register('logoUrl')} />
                 </ZHField>
-                <ZHField label={t('companies.form.displayOrder')}>
-                  <input type="number" value={form.displayOrder ?? 0} onChange={(e) => setForm((f) => ({ ...f, displayOrder: Number(e.target.value) }))} disabled={creating} />
+                <ZHField label={t('companies.form.displayOrder')} fieldError={errors.displayOrder?.message}>
+                  <input type="number" disabled={creating} {...register('displayOrder', { valueAsNumber: true })} />
                 </ZHField>
-                <ZHField label={t('companies.form.priority')}>
-                  <input type="number" value={form.priority ?? 0} onChange={(e) => setForm((f) => ({ ...f, priority: Number(e.target.value) }))} disabled={creating} />
+                <ZHField label={t('companies.form.priority')} fieldError={errors.priority?.message}>
+                  <input type="number" disabled={creating} {...register('priority', { valueAsNumber: true })} />
                 </ZHField>
-                <ZHField label={t('companies.form.adminFirstName')} required>
-                  <input value={form.adminFirstName} onChange={(e) => setForm((f) => ({ ...f, adminFirstName: e.target.value }))} required disabled={creating} />
+                <ZHField label={t('companies.form.adminFirstName')} required fieldError={errors.adminFirstName?.message}>
+                  <input disabled={creating} {...register('adminFirstName')} />
                 </ZHField>
-                <ZHField label={t('companies.form.adminLastName')} required>
-                  <input value={form.adminLastName} onChange={(e) => setForm((f) => ({ ...f, adminLastName: e.target.value }))} required disabled={creating} />
+                <ZHField label={t('companies.form.adminLastName')} required fieldError={errors.adminLastName?.message}>
+                  <input disabled={creating} {...register('adminLastName')} />
                 </ZHField>
-                <ZHField label={t('companies.form.adminEmail')} required>
-                  <input value={form.adminEmail} onChange={(e) => setForm((f) => ({ ...f, adminEmail: e.target.value }))} required disabled={creating} />
+                <ZHField label={t('companies.form.adminEmail')} required fieldError={errors.adminEmail?.message}>
+                  <input type="email" disabled={creating} {...register('adminEmail')} />
                 </ZHField>
-                <ZHField label={t('companies.form.adminPassword')} required>
-                  <input type="password" value={form.adminPassword} onChange={(e) => setForm((f) => ({ ...f, adminPassword: e.target.value }))} required disabled={creating} />
+                <ZHField label={t('companies.form.adminPassword')} required fieldError={errors.adminPassword?.message}>
+                  <input type="password" disabled={creating} {...register('adminPassword')} />
                 </ZHField>
               </ZHGrid>
             </ZHFormSection>
@@ -215,7 +272,10 @@ function CompaniesPage() {
                   <tr>
                     <th>{t('companies.table.name')}</th>
                     <th>{t('companies.table.slug')}</th>
+                    <th>{t('companies.table.plan')}</th>
+                    <th>{t('companies.table.modules')}</th>
                     <th>{t('companies.table.id')}</th>
+                    <th>{t('companies.table.actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -231,7 +291,27 @@ function CompaniesPage() {
                     >
                       <td>{x.name}</td>
                       <td>{x.slug}</td>
+                      <td className="companies-plan-cell">
+                        {x.planCode?.trim() ? x.planCode : '—'}
+                      </td>
+                      <td className="companies-modules-cell">
+                        <CompanyModuleChips company={x} />
+                      </td>
                       <td className="mono companies-mono">{x.id}</td>
+                      <td className="companies-actions-cell" onClick={(e) => e.stopPropagation()}>
+                        <ZHBtn
+                          variant="secondary"
+                          size="sm"
+                          type="button"
+                          onClick={() => {
+                            setSubscriptionTenant(x);
+                            setTab('subscription');
+                            setSubscriptionQuery(x.id);
+                          }}
+                        >
+                          {t('companies.subscription.openEditor')}
+                        </ZHBtn>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -239,6 +319,31 @@ function CompaniesPage() {
             )}
           </>
         )}
+
+        {tab === 'subscription' ? (
+          subscriptionTenant ? (
+            <TenantSubscriptionEditor
+              key={subscriptionTenant.id}
+              tenant={subscriptionTenant}
+              onBack={() => {
+                appliedSubscriptionFromUrl.current = null;
+                setSubscriptionTenant(null);
+                setTab('list');
+                clearSubscriptionQuery();
+              }}
+              onSave={async (body) => {
+                await companyService.updateSubscription(subscriptionTenant.id, body);
+                await refresh();
+                appliedSubscriptionFromUrl.current = null;
+                setSubscriptionTenant(null);
+                setTab('list');
+                clearSubscriptionQuery();
+              }}
+            />
+          ) : (
+            <EmptyState message={t('companies.subscription.pickFromList')} />
+          )
+        ) : null}
 
         {tab === 'audit' ? (
           auditTenantId ? (

@@ -1,6 +1,11 @@
+using MediatR;
+using ERP.Application.Common;
+using ERP.Application.Modules.Branches.DTOs;
+
 namespace ERP.Application.Modules.Branches.UseCases.UpdateBranch;
 
-public record UpdateBranchCommand(
+[RequireFeature(SubscriptionFeatureCodes.Branches)]
+public sealed record UpdateBranchCommand(
     Guid Id,
     string Name,
     string Address,
@@ -14,4 +19,4 @@ public record UpdateBranchCommand(
     string? Longitude,
     string? RechargeOption,
     bool IsActive,
-    bool IsMainBranch);
+    bool IsMainBranch) : IRequest<Result<BranchDto>>;

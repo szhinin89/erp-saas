@@ -1,4 +1,4 @@
-import { api } from '../lib/api';
+import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
 
 export type BranchDto = {

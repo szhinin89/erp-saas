@@ -21,6 +21,8 @@ public record SessionResponseDto(
     string Email,
     Guid TenantId,
     string Role,
-    string Token
+    string Token,
+    string? PlanCode,
+    IReadOnlyList<string> EnabledModules
 );
 

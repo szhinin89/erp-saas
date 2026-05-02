@@ -1,4 +1,4 @@
-import { api } from '../lib/api';
+import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
 
 export type SuperAdminTenant = {
@@ -9,6 +9,26 @@ export type SuperAdminTenant = {
   createdAt: string;
   totalUsers: number;
   activeUsers: number;
+  planCode?: string | null;
+  enabledModules?: string[];
+  hasModuleRestrictions?: boolean;
+};
+
+export type SuperAdminPlanFeature = {
+  featureCode: string;
+  featureName: string;
+  description: string | null;
+  isMetered: boolean;
+  isIncluded: boolean;
+  limitPerPeriod: number | null;
+};
+
+export type SuperAdminPlan = {
+  id: string;
+  code: string;
+  name: string;
+  isActive: boolean;
+  features: SuperAdminPlanFeature[];
 };
 
 export type SuperAdminMetrics = {
@@ -35,6 +55,10 @@ export const superAdminService = {
   getMetrics: () =>
     api.get<ApiResponse<SuperAdminMetrics>>('/api/superadmin/metrics')
       .then((r) => r.data.responseObject),
+
+  getPlansCatalog: () =>
+    api.get<ApiResponse<{ plans: SuperAdminPlan[] }>>('/api/superadmin/plans')
+      .then((r) => r.data.responseObject.plans),
 
   switchTenant: (tenantId: string) =>
     api.post<ApiResponse<import('../types/auth').AuthResponse>>('/api/auth/switch-tenant', { tenantId })

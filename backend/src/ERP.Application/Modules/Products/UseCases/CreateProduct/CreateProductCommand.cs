@@ -1,6 +1,12 @@
+using MediatR;
+using ERP.Application.Common;
+using ERP.Application.Products.DTOs;
+
 namespace ERP.Application.Products.UseCases.CreateProduct;
 
-public record CreateProductCommand(
+/// <summary>Creación de producto; requiere feature de inventario/catálogo en el plan SaaS.</summary>
+[RequireFeature(SubscriptionFeatureCodes.Inventory)]
+public sealed record CreateProductCommand(
     string SaleCode,
     string ShortName,
     string Description,
@@ -49,7 +55,7 @@ public record CreateProductCommand(
     IReadOnlyList<SubstituteInput>? Substitutes = null,
     IReadOnlyList<CustomFieldInput>? CustomFields = null,
     bool IsForSale = true
-);
+) : IRequest<Result<ProductDto>>;
 
 public record BarcodeInput(string Code, int Type);
 public record SupplierCodeInput(Guid SupplierId, string Code, bool IsDefault = false);

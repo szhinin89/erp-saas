@@ -1,6 +1,11 @@
+using MediatR;
+using ERP.Application.Common;
+using ERP.Application.Modules.Branches.DTOs;
+
 namespace ERP.Application.Modules.Branches.UseCases.CreateBranch;
 
-public record CreateBranchCommand(
+[RequireFeature(SubscriptionFeatureCodes.Branches)]
+public sealed record CreateBranchCommand(
     string Name,
     string Address,
     string? Reference,
@@ -13,4 +18,4 @@ public record CreateBranchCommand(
     string? Longitude,
     string? RechargeOption,
     bool IsActive,
-    bool IsMainBranch);
+    bool IsMainBranch) : IRequest<Result<BranchDto>>;

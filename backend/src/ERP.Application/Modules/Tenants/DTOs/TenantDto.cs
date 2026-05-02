@@ -12,5 +12,7 @@ public record TenantDto(
     string? Dinardap,
     string? LogoUrl,
     int DisplayOrder,
-    int Priority
+    int Priority,
+    string? PlanCode,
+    IReadOnlyList<string> EnabledModules
 );

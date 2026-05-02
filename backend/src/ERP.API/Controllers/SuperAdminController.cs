@@ -1,4 +1,6 @@
 using ERP.API.Contracts;
+using ERP.Application.Common;
+using ERP.Application.Subscriptions;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -11,18 +13,34 @@ namespace ERP.API.Controllers;
 /// Estos endpoints ignoran el contexto del tenant porque el SuperAdmin opera a nivel sistema.
 /// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/superadmin")]
 [Authorize(Roles = "SuperAdmin")]
 [Produces("application/json")]
 public class SuperAdminController : ControllerBase
 {
     private readonly ITenantRepository _tenantRepository;
     private readonly IUserRepository _userRepository;
+    private readonly ISaasCatalogQuery _saasCatalogQuery;
 
-    public SuperAdminController(ITenantRepository tenantRepository, IUserRepository userRepository)
+    public SuperAdminController(
+        ITenantRepository tenantRepository,
+        IUserRepository userRepository,
+        ISaasCatalogQuery saasCatalogQuery)
     {
         _tenantRepository = tenantRepository;
         _userRepository = userRepository;
+        _saasCatalogQuery = saasCatalogQuery;
+    }
+
+    /// <summary>Catálogo de planes comerciales y features incluidas (solo lectura).</summary>
+    [HttpGet("plans")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetPlansCatalog(CancellationToken ct)
+    {
+        var plans = await _saasCatalogQuery.GetPlansWithFeaturesAsync(ct);
+        return Ok(new ApiResponse<object>(true, "OK", new { plans }));
     }
 
     /// <summary>Lista todas las empresas (tenants) activas.</summary>
@@ -58,7 +76,10 @@ public class SuperAdminController : ControllerBase
                 t.IsActive,
                 t.CreatedAt,
                 totalUsers,
-                activeUsers
+                activeUsers,
+                planCode = t.PlanCode,
+                enabledModules = TenantSubscriptionCatalog.GetEffectiveEnabledModules(t),
+                hasModuleRestrictions = !string.IsNullOrWhiteSpace(t.EnabledModulesJson),
             });
         }
 

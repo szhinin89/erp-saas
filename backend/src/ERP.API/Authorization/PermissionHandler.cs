@@ -1,5 +1,7 @@
 using ERP.Application.Common;
+using Microsoft.AspNetCore.Http;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Tenants.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -9,20 +11,42 @@ public sealed class PermissionHandler : AuthorizationHandler<PermissionRequireme
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _currentTenant;
+    private readonly ITenantRepository _tenantRepository;
 
-    public PermissionHandler(IAccessRepository repo, ICurrentTenant currentTenant)
+    public PermissionHandler(
+        IAccessRepository repo,
+        ICurrentTenant currentTenant,
+        ITenantRepository tenantRepository)
     {
         _repo = repo;
         _currentTenant = currentTenant;
+        _tenantRepository = tenantRepository;
     }
 
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirement requirement)
     {
-        // Permisos solo aplican a token de sesión (DefaultPolicy ya exige Session).
         if (!_currentTenant.IsAuthenticated)
             return;
 
+        var http = context.Resource as HttpContext;
+        var ct = http?.RequestAborted ?? CancellationToken.None;
+
         var role = context.User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
+        var tenantId = _currentTenant.TenantId;
+
+        if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase) && tenantId == Guid.Empty)
+        {
+            context.Succeed(requirement);
+            return;
+        }
+
+        var tenant = await _tenantRepository.GetByIdAsync(tenantId, ct);
+        if (tenant is null)
+            return;
+
+        if (!TenantSubscriptionCatalog.TenantAllowsPermission(tenant, requirement.PermissionKey))
+            return;
+
         if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
         {
@@ -34,7 +58,7 @@ public sealed class PermissionHandler : AuthorizationHandler<PermissionRequireme
         if (!Guid.TryParse(sub, out var userId) || userId == Guid.Empty)
             return;
 
-        var membership = await _repo.GetMembershipAsync(_currentTenant.TenantId, userId);
+        var membership = await _repo.GetMembershipAsync(_currentTenant.TenantId, userId, ct);
         if (membership is null || !membership.IsActive || membership.ProfileId is null)
             return;
 
@@ -43,4 +67,3 @@ public sealed class PermissionHandler : AuthorizationHandler<PermissionRequireme
             context.Succeed(requirement);
     }
 }
-

@@ -1,9 +1,11 @@
-import { useMemo, useRef, useState, type FormEvent } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { accountingService, type CreateAccountRequest } from '../services/accountingService';
 import { useAsync } from '../hooks/useAsync';
 import { documentStatusLabel, DocumentStatus } from '../types/accounting';
 import {
-  PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge,
+  PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage,
 } from '../components/PageShell';
 import { CreateJournalEntryModal } from '../components/CreateJournalEntryModal';
 import './AccountingPage.css';
@@ -12,10 +14,12 @@ import { ZHBtn, ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert } from '
 import { ZHColSpan } from '../components/zh/ZHLayout';
 import ZHSearchBar from '../components/shared/ZHSearchBar';
 import { useAuthStore } from '../store/authStore';
+import { usePermissionsStore } from '../store/permissionsStore';
+import { createAccountFormSchema, type CreateAccountFormValues } from '../schemas/accounting/accountSchema';
 
 type Tab = 'accounts' | 'journal';
 
-const EMPTY: CreateAccountRequest = { code: '', name: '', type: 0, nature: 0, parentId: null };
+const EMPTY: CreateAccountFormValues = { code: '', name: '', type: 0, nature: 0, parentId: '' };
 
 const statusVariant: Record<DocumentStatus, 'blue' | 'green' | 'red'> = {
   [DocumentStatus.Draft]:  'blue',
@@ -26,18 +30,47 @@ const statusVariant: Record<DocumentStatus, 'blue' | 'green' | 'red'> = {
 export function AccountingPage() {
   const { t } = useI18n();
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
-  const [tab, setTab]           = useState<Tab>('accounts');
+  const role = useAuthStore((s) => s.user?.role ?? '');
+  const isAdmin = role === 'Admin' || role === 'SuperAdmin';
+  const hasPerm = usePermissionsStore((s) => s.has);
+
+  const canViewAccounts = isAdmin || hasPerm('accounting.accounts.view');
+  const canCreateAccount = isAdmin || hasPerm('accounting.accounts.create');
+  const canViewJournal = isAdmin || hasPerm('accounting.journal.view');
+  const canCreateJournal = isAdmin || hasPerm('accounting.journal.create');
+
+  const [tab, setTab] = useState<Tab>('accounts');
   const [showJournal, setShowJournal] = useState(false);
 
-  const accounts       = useAsync(accountingService.getAccounts);
-  const journalEntries = useAsync(accountingService.getJournalEntries);
+  const accounts = useAsync(() => accountingService.getAccounts(), canViewAccounts);
+  const journalEntries = useAsync(() => accountingService.getJournalEntries(), canViewJournal);
 
   const formRef = useRef<HTMLFormElement>(null);
-  const [form, setForm]         = useState<CreateAccountRequest>(EMPTY);
-  const [formError, setFormError]   = useState('');
-  const [formLoading, setFormLoading] = useState(false);
-  const [accountSubTab, setAccountSubTab] = useState<'data' | 'list'>('data');
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting: formLoading },
+  } = useForm<CreateAccountFormValues>({
+    resolver: zodResolver(createAccountFormSchema),
+    defaultValues: EMPTY,
+  });
+  const [formError, setFormError] = useState('');
+  const [accountSubTab, setAccountSubTab] = useState<'data' | 'list'>('list');
   const [accountListQuery, setAccountListQuery] = useState('');
+
+  const canUseModule = canViewAccounts || canViewJournal;
+  const permsHydrated = usePermissionsStore((s) => s.hasHydrated);
+
+  /** Pestaña principal efectiva según permisos (sin sincronizar con efectos). */
+  const displayTab = useMemo<Tab>(() => {
+    if (!canViewAccounts && canViewJournal) return 'journal';
+    if (canViewAccounts && !canViewJournal) return 'accounts';
+    return tab;
+  }, [canViewAccounts, canViewJournal, tab]);
+
+  /** Si no puede crear cuentas, el formulario «datos» no aplica; se fuerza listado. */
+  const activeAccountSubTab = canCreateAccount ? accountSubTab : 'list';
 
   const filteredAccounts = useMemo(() => {
     const data = accounts.data ?? [];
@@ -45,9 +78,6 @@ export function AccountingPage() {
     if (!q) return data;
     return data.filter((a) => `${a.code} ${a.name} ${a.type} ${a.nature}`.toLowerCase().includes(q));
   }, [accounts.data, accountListQuery]);
-
-  const setField = (field: keyof CreateAccountRequest, value: unknown) =>
-    setForm((f) => ({ ...f, [field]: value }));
 
   const accountTypes = useMemo(
     () => [
@@ -68,34 +98,46 @@ export function AccountingPage() {
     [t]
   );
 
-  const submitAccount = async (e: FormEvent) => {
-    e.preventDefault();
+  const submitAccount = handleSubmit(async (form) => {
     setFormError('');
-    setFormLoading(true);
     try {
-      await accountingService.createAccount({
-        ...form,
-        parentId: form.parentId || null,
-      });
-      setForm(EMPTY);
+      const payload: CreateAccountRequest = {
+        code: form.code,
+        name: form.name,
+        type: form.type,
+        nature: form.nature,
+        parentId: form.parentId?.trim() ? form.parentId.trim() : null,
+      };
+      await accountingService.createAccount(payload);
+      reset(EMPTY);
       accounts.refetch();
       setAccountSubTab('list');
     } catch (err: unknown) {
       setFormError(
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-          ?? t('accounting.accounts.modal.create.error')
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+          t('accounting.accounts.modal.create.error')
       );
-    } finally {
-      setFormLoading(false);
     }
-  };
+  });
+
+  if (!permsHydrated && !isAdmin) {
+    return (
+      <PageShell kicker={t('app.nav.group.accounting')} title={t('app.nav.accounting')}>
+        <LoadingState />
+      </PageShell>
+    );
+  }
+
+  if (!canUseModule) {
+    return <NoAccessPage title={t('app.nav.accounting')} />;
+  }
 
   return (
     <PageShell
       kicker={t('app.nav.group.accounting')}
-      title={tab === 'accounts' ? t('accounting.tabs.accounts') : t('accounting.tabs.journal')}
+      title={displayTab === 'accounts' ? t('accounting.tabs.accounts') : t('accounting.tabs.journal')}
       action={
-        tab === 'accounts' && accountSubTab === 'data' ? (
+        displayTab === 'accounts' && activeAccountSubTab === 'data' && canCreateAccount ? (
           <ZHBtn
             variant="primary"
             size="md"
@@ -105,111 +147,111 @@ export function AccountingPage() {
           >
             {formLoading ? t('common.saving') : t('accounting.accounts.modal.create.submit')}
           </ZHBtn>
-        ) : tab === 'journal' ? (
+        ) : displayTab === 'journal' && canCreateJournal ? (
           <ZHBtn variant="primary" size="md" type="button" onClick={() => setShowJournal(true)}>
             {t('accounting.journal.primaryCreate')}
           </ZHBtn>
         ) : undefined
       }
     >
-      {showJournal && (
+      {showJournal && canCreateJournal && (
         <CreateJournalEntryModal
           accounts={accounts.data ?? []}
           onClose={() => setShowJournal(false)}
           onCreated={journalEntries.refetch}
         />
       )}
-      <div className="tabs">
-        <button
-          className={`tab${tab === 'accounts' ? ' tab--active' : ''}`}
-          onClick={() => setTab('accounts')}
-        >
-          {t('accounting.tabs.accounts')}
-        </button>
-        <button
-          className={`tab${tab === 'journal' ? ' tab--active' : ''}`}
-          onClick={() => setTab('journal')}
-        >
-          {t('accounting.tabs.journal')}
-        </button>
-      </div>
+      {(canViewAccounts && canViewJournal) ? (
+        <div className="tabs">
+          <button
+            type="button"
+            className={`tab${displayTab === 'accounts' ? ' tab--active' : ''}`}
+            onClick={() => setTab('accounts')}
+          >
+            {t('accounting.tabs.accounts')}
+          </button>
+          <button
+            type="button"
+            className={`tab${displayTab === 'journal' ? ' tab--active' : ''}`}
+            onClick={() => setTab('journal')}
+          >
+            {t('accounting.tabs.journal')}
+          </button>
+        </div>
+      ) : null}
 
-      {tab === 'accounts' && (
+      {displayTab === 'accounts' && canViewAccounts && (
         <>
           <TableCard>
             {formError ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={formError} /> : null}
             <div className="zh-form-tabs" role="tablist">
-              <button type="button" className={accountSubTab === 'data' ? 'is-active' : ''} onClick={() => setAccountSubTab('data')}>
-                {t('common.formTab.data')}
-              </button>
-              <button type="button" className={accountSubTab === 'list' ? 'is-active' : ''} onClick={() => setAccountSubTab('list')}>
+              {canCreateAccount ? (
+                <button type="button" className={activeAccountSubTab === 'data' ? 'is-active' : ''} onClick={() => setAccountSubTab('data')}>
+                  {t('common.formTab.data')}
+                </button>
+              ) : null}
+              <button type="button" className={activeAccountSubTab === 'list' ? 'is-active' : ''} onClick={() => setAccountSubTab('list')}>
                 {t('accounting.accounts.tabList')}
               </button>
             </div>
 
-            {accountSubTab === 'data' && (
-              <form ref={formRef} onSubmit={submitAccount}>
+            {activeAccountSubTab === 'data' && canCreateAccount && (
+              <form ref={formRef} onSubmit={submitAccount} noValidate>
                 <input type="hidden" name="tenantId" value={tenantId} />
                 <div className="zh-form">
                   <ZHFormBody>
                     <ZHFormSection title={t('accounting.accounts.modal.create.title')}>
                       <ZHGrid cols={2}>
-                        <ZHField label={t('accounting.accounts.form.code')} required>
+                        <ZHField label={t('accounting.accounts.form.code')} required fieldError={errors.code?.message}>
                           <input
                             id="code"
-                            value={form.code}
-                            onChange={(e) => setField('code', e.target.value)}
                             placeholder={t('accounting.accounts.form.code.placeholder')}
-                            required
                             disabled={formLoading}
+                            {...register('code')}
                           />
                         </ZHField>
 
-                        <ZHField label={t('accounting.accounts.form.name')} required>
+                        <ZHField label={t('accounting.accounts.form.name')} required fieldError={errors.name?.message}>
                           <input
                             id="name"
-                            value={form.name}
-                            onChange={(e) => setField('name', e.target.value)}
                             placeholder={t('accounting.accounts.form.name.placeholder')}
-                            required
                             disabled={formLoading}
+                            {...register('name')}
                           />
                         </ZHField>
 
-                        <ZHField label={t('accounting.accounts.form.type')} required>
-                          <select
-                            id="type"
-                            value={form.type}
-                            onChange={(e) => setField('type', Number(e.target.value))}
-                            disabled={formLoading}
-                          >
+                        <ZHField label={t('accounting.accounts.form.type')} required fieldError={errors.type?.message}>
+                          <select id="type" disabled={formLoading} {...register('type', { valueAsNumber: true })}>
                             {accountTypes.map((x) => (
-                              <option key={x.value} value={x.value}>{x.label}</option>
+                              <option key={x.value} value={x.value}>
+                                {x.label}
+                              </option>
                             ))}
                           </select>
                         </ZHField>
 
-                        <ZHField label={t('accounting.accounts.form.nature')} required>
-                          <select
-                            id="nature"
-                            value={form.nature}
-                            onChange={(e) => setField('nature', Number(e.target.value))}
-                            disabled={formLoading}
-                          >
+                        <ZHField label={t('accounting.accounts.form.nature')} required fieldError={errors.nature?.message}>
+                          <select id="nature" disabled={formLoading} {...register('nature', { valueAsNumber: true })}>
                             {accountNatures.map((x) => (
-                              <option key={x.value} value={x.value}>{x.label}</option>
+                              <option key={x.value} value={x.value}>
+                                {x.label}
+                              </option>
                             ))}
                           </select>
                         </ZHField>
 
                         <ZHColSpan span={2}>
-                          <ZHField label={t('accounting.accounts.form.parentId')} hint={t('common.guid.placeholder')} hintType="info">
+                          <ZHField
+                            label={t('accounting.accounts.form.parentId')}
+                            hint={t('common.guid.placeholder')}
+                            hintType="info"
+                            fieldError={errors.parentId?.message}
+                          >
                             <input
                               id="parentId"
-                              value={form.parentId ?? ''}
-                              onChange={(e) => setField('parentId', e.target.value || null)}
                               placeholder={t('common.guid.placeholder')}
                               disabled={formLoading}
+                              {...register('parentId')}
                             />
                           </ZHField>
                         </ZHColSpan>
@@ -220,7 +262,7 @@ export function AccountingPage() {
               </form>
             )}
 
-            {accountSubTab === 'list' && (
+            {activeAccountSubTab === 'list' && (
               <>
                 <div className="zh-mb-12">
                   <ZHSearchBar
@@ -233,7 +275,9 @@ export function AccountingPage() {
                     entityLabel={t('common.zhList.entityLabel')}
                     loading={accounts.loading}
                     actionLabel={t('accounting.accounts.listNewAction')}
-                    onAction={() => setAccountSubTab('data')}
+                    onAction={() => {
+                      if (canCreateAccount) setAccountSubTab('data');
+                    }}
                   />
                 </div>
                 {accounts.loading && <LoadingState />}
@@ -279,7 +323,7 @@ export function AccountingPage() {
         </>
       )}
 
-      {tab === 'journal' && (
+      {displayTab === 'journal' && canViewJournal && (
         <>
           {journalEntries.loading && <LoadingState />}
           {journalEntries.error   && <ErrorState message={journalEntries.error} />}

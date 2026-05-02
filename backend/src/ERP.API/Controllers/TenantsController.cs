@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.Application.Tenants.UseCases.CreateTenant;
 using ERP.Application.Tenants.UseCases.UpdatePasswordResetMode;
+using ERP.Application.Tenants.UseCases.UpdateTenantSubscription;
 using ERP.Application.Tenants.DTOs;
 using ERP.Domain.Tenants.Interfaces;
 
@@ -21,15 +22,18 @@ public class TenantsController : ControllerBase
 {
     private readonly CreateTenantHandler _createHandler;
     private readonly UpdateTenantPasswordResetModeHandler _updatePasswordResetModeHandler;
+    private readonly UpdateTenantSubscriptionHandler _updateTenantSubscriptionHandler;
     private readonly ITenantRepository _tenantRepository;
 
     public TenantsController(
         CreateTenantHandler createHandler,
         UpdateTenantPasswordResetModeHandler updatePasswordResetModeHandler,
+        UpdateTenantSubscriptionHandler updateTenantSubscriptionHandler,
         ITenantRepository tenantRepository)
     {
         _createHandler = createHandler;
         _updatePasswordResetModeHandler = updatePasswordResetModeHandler;
+        _updateTenantSubscriptionHandler = updateTenantSubscriptionHandler;
         _tenantRepository = tenantRepository;
     }
 
@@ -100,4 +104,33 @@ public class TenantsController : ControllerBase
             ? Ok(new ApiResponse<object>(true, "OK", new { }))
             : BadRequest(new ApiResponse<object>(false, result.Error ?? "Error", new { }));
     }
+
+    /// <summary>
+    /// Actualiza plan comercial y módulos contratados del tenant (JSON de módulos habilitados).
+    /// Solo SuperAdmin: define qué módulos puede usar la empresa frente a permisos y API.
+    /// </summary>
+    [HttpPatch("{id:guid}/subscription")]
+    [Authorize(Roles = "SuperAdmin")]
+    [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateSubscription(
+        [FromRoute] Guid id,
+        [FromBody] UpdateTenantSubscriptionBody body,
+        CancellationToken ct)
+    {
+        var command = new UpdateTenantSubscriptionCommand(id, body.PlanCode, body.EnabledModules);
+        var result = await _updateTenantSubscriptionHandler.HandleAsync(command, ct);
+        return result.IsSuccess
+            ? Ok(new ApiResponse<TenantDto?>(true, "OK", result.Value))
+            : BadRequest(new ApiResponse<object>(false, result.Error ?? "Error", new { }));
+    }
+}
+
+/// <summary>Cuerpo para <c>PATCH .../subscription</c> (plan + lista de claves de módulo).</summary>
+public sealed class UpdateTenantSubscriptionBody
+{
+    public string? PlanCode { get; set; }
+    public List<string>? EnabledModules { get; set; }
 }

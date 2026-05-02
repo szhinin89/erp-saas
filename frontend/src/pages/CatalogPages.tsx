@@ -2,6 +2,8 @@ import { CatalogSimplePage, type CatalogRow } from './CatalogSimplePage';
 import { catalogService, type ProductCategoryListItem, type ProductSubcategoryListItem } from '../services/catalogService';
 export { CatalogStructurePage } from './CatalogStructurePage';
 import { useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
@@ -9,6 +11,12 @@ import { useAuthStore } from '../store/authStore';
 import { ZHBtn, ZHField, ZHGrid } from '../components/zh/ZHForm';
 import { ZHGridRow, ZHSection } from '../components/zh/ZHLayout';
 import ZHSearchBar from '../components/shared/ZHSearchBar';
+import {
+  catalogCategoryFormSchema,
+  catalogSubcategoryFormSchema,
+  type CatalogCategoryFormValues,
+  type CatalogSubcategoryFormValues,
+} from '../schemas/catalog/catalogPagesFormsSchema';
 
 function mapBasic(items: { id: string; code: string; name: string; isActive: boolean }[]): CatalogRow[] {
   return (items ?? []).map((x) => ({ id: x.id, code: x.code, name: x.name, isActive: x.isActive }));
@@ -143,7 +151,17 @@ export function CategoriesCatalogPage() {
 
   const [filterLineId, setFilterLineId] = useState('');
   const [listQuery, setListQuery] = useState('');
-  const [form, setForm] = useState({ code: '', name: '', lineId: '' });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<CatalogCategoryFormValues>({
+    resolver: zodResolver(catalogCategoryFormSchema),
+    defaultValues: { code: '', name: '', lineId: '' },
+  });
+  const formWatch = watch();
   const [tab, setTab] = useState<'data' | 'list'>('data');
 
   const refresh = async () => {
@@ -185,7 +203,7 @@ export function CategoriesCatalogPage() {
     return <NoAccessPage title={t('catalog.categories.title')} />;
   }
 
-  const onCreate = async () => {
+  const onCreate = handleSubmit(async (form) => {
     setError('');
     setSaving(true);
     try {
@@ -194,7 +212,7 @@ export function CategoriesCatalogPage() {
         name: form.name.trim(),
         lineId: form.lineId,
       });
-      setForm({ code: '', name: '', lineId: '' });
+      reset({ code: '', name: '', lineId: '' });
       await refresh();
       setTab('list');
     } catch (err: unknown) {
@@ -203,7 +221,7 @@ export function CategoriesCatalogPage() {
     } finally {
       setSaving(false);
     }
-  };
+  });
 
   return (
     <PageShell
@@ -211,7 +229,13 @@ export function CategoriesCatalogPage() {
       title={t('catalog.categories.title')}
       action={
         canCreate && tab === 'data' ? (
-          <ZHBtn variant="primary" size="md" type="button" onClick={() => void onCreate()} disabled={saving || loading || !form.code.trim() || !form.name.trim() || !form.lineId}>
+          <ZHBtn
+            variant="primary"
+            size="md"
+            type="button"
+            onClick={() => void onCreate()}
+            disabled={saving || loading || !formWatch.code.trim() || !formWatch.name.trim() || !formWatch.lineId}
+          >
             {saving ? t('common.saving') : t('catalog.categories.primaryCreate')}
           </ZHBtn>
         ) : undefined
@@ -233,17 +257,19 @@ export function CategoriesCatalogPage() {
             {canCreate ? (
               <ZHSection top={10}>
                 <ZHGrid cols={3}>
-                  <ZHField label={t('common.code')}>
-                    <input value={form.code} onChange={(e) => setForm((s) => ({ ...s, code: e.target.value }))} disabled={saving || loading} placeholder={t('common.codePlaceholder')} />
+                  <ZHField label={t('common.code')} fieldError={errors.code?.message}>
+                    <input disabled={saving || loading} placeholder={t('common.codePlaceholder')} {...register('code')} />
                   </ZHField>
-                  <ZHField label={t('common.name')}>
-                    <input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} disabled={saving || loading} placeholder={t('common.namePlaceholder')} />
+                  <ZHField label={t('common.name')} fieldError={errors.name?.message}>
+                    <input disabled={saving || loading} placeholder={t('common.namePlaceholder')} {...register('name')} />
                   </ZHField>
-                  <ZHField label={t('catalog.categories.line')}>
-                    <select value={form.lineId} onChange={(e) => setForm((s) => ({ ...s, lineId: e.target.value }))} disabled={saving || loading}>
+                  <ZHField label={t('catalog.categories.line')} fieldError={errors.lineId?.message}>
+                    <select disabled={saving || loading} {...register('lineId')}>
                       <option value="">{t('common.select')}</option>
                       {lines.map((x) => (
-                        <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                        <option key={x.id} value={x.id}>
+                          {x.code} — {x.name}
+                        </option>
                       ))}
                     </select>
                   </ZHField>
@@ -337,7 +363,20 @@ export function SubcategoriesCatalogPage() {
   const [filterLineId, setFilterLineId] = useState('');
   const [filterCategoryId, setFilterCategoryId] = useState('');
   const [listQuery, setListQuery] = useState('');
-  const [form, setForm] = useState({ code: '', name: '', lineId: '', categoryId: '' });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<CatalogSubcategoryFormValues>({
+    resolver: zodResolver(catalogSubcategoryFormSchema),
+    defaultValues: { code: '', name: '', lineId: '', categoryId: '' },
+  });
+  const formLineId = watch('lineId');
+  const formWatchSub = watch();
+  const lineIdField = register('lineId');
   const [subTab, setSubTab] = useState<'data' | 'list'>('data');
 
   const onFilterLineChange = (lineId: string) => {
@@ -345,13 +384,9 @@ export function SubcategoriesCatalogPage() {
     setFilterCategoryId('');
   };
 
-  const onFormLineChange = (lineId: string) => {
-    setForm((s) => ({ ...s, lineId, categoryId: '' }));
-  };
-
   useEffect(() => {
     let cancelled = false;
-    if (!form.lineId) {
+    if (!formLineId) {
       const id = window.setTimeout(() => {
         if (!cancelled) setFormCategories([]);
       }, 0);
@@ -361,7 +396,7 @@ export function SubcategoriesCatalogPage() {
       };
     }
     void catalogService
-      .categories({ activeStatus: 'all', lineId: form.lineId })
+      .categories({ activeStatus: 'all', lineId: formLineId })
       .then((c) => {
         if (!cancelled) setFormCategories(c ?? []);
       })
@@ -371,7 +406,7 @@ export function SubcategoriesCatalogPage() {
     return () => {
       cancelled = true;
     };
-  }, [form.lineId]);
+  }, [formLineId]);
 
   const refresh = async () => {
     setError('');
@@ -414,7 +449,7 @@ export function SubcategoriesCatalogPage() {
     return <NoAccessPage title={t('catalog.subcategories.title')} />;
   }
 
-  const onCreate = async () => {
+  const onCreate = handleSubmit(async (form) => {
     setError('');
     setSaving(true);
     try {
@@ -430,16 +465,19 @@ export function SubcategoriesCatalogPage() {
         name: form.name.trim(),
         categoryId: form.categoryId,
       });
-      setForm({ code: '', name: '', lineId: '', categoryId: '' });
+      reset({ code: '', name: '', lineId: '', categoryId: '' });
       await refresh();
       setSubTab('list');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? (err as Error)?.message ?? t('common.errorGeneric');
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        (err as Error)?.message ??
+        t('common.errorGeneric');
       setError(msg);
     } finally {
       setSaving(false);
     }
-  };
+  });
 
   return (
     <PageShell
@@ -452,7 +490,14 @@ export function SubcategoriesCatalogPage() {
             size="md"
             type="button"
             onClick={() => void onCreate()}
-            disabled={saving || loading || !form.code.trim() || !form.name.trim() || !form.lineId || !form.categoryId}
+            disabled={
+              saving ||
+              loading ||
+              !formWatchSub.code.trim() ||
+              !formWatchSub.name.trim() ||
+              !formWatchSub.lineId ||
+              !formWatchSub.categoryId
+            }
           >
             {saving ? t('common.saving') : t('catalog.subcategories.primaryCreate')}
           </ZHBtn>
@@ -475,25 +520,38 @@ export function SubcategoriesCatalogPage() {
             {canCreate ? (
               <ZHSection top={10}>
                 <ZHGrid cols={3}>
-                  <ZHField label={t('common.code')}>
-                    <input value={form.code} onChange={(e) => setForm((s) => ({ ...s, code: e.target.value }))} disabled={saving || loading} placeholder={t('common.codePlaceholder')} />
+                  <ZHField label={t('common.code')} fieldError={errors.code?.message}>
+                    <input disabled={saving || loading} placeholder={t('common.codePlaceholder')} {...register('code')} />
                   </ZHField>
-                  <ZHField label={t('common.name')}>
-                    <input value={form.name} onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))} disabled={saving || loading} placeholder={t('common.namePlaceholder')} />
+                  <ZHField label={t('common.name')} fieldError={errors.name?.message}>
+                    <input disabled={saving || loading} placeholder={t('common.namePlaceholder')} {...register('name')} />
                   </ZHField>
-                  <ZHField label={t('catalog.categories.line')}>
-                    <select value={form.lineId} onChange={(e) => onFormLineChange(e.target.value)} disabled={saving || loading}>
+                  <ZHField label={t('catalog.categories.line')} fieldError={errors.lineId?.message}>
+                    <select
+                      disabled={saving || loading}
+                      name={lineIdField.name}
+                      onBlur={lineIdField.onBlur}
+                      ref={lineIdField.ref}
+                      onChange={(e) => {
+                        void lineIdField.onChange(e);
+                        setValue('categoryId', '', { shouldValidate: true, shouldDirty: true });
+                      }}
+                    >
                       <option value="">{t('common.select')}</option>
                       {lines.map((x) => (
-                        <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                        <option key={x.id} value={x.id}>
+                          {x.code} — {x.name}
+                        </option>
                       ))}
                     </select>
                   </ZHField>
-                  <ZHField label={t('catalog.subcategories.category')}>
-                    <select value={form.categoryId} onChange={(e) => setForm((s) => ({ ...s, categoryId: e.target.value }))} disabled={saving || loading || !form.lineId}>
+                  <ZHField label={t('catalog.subcategories.category')} fieldError={errors.categoryId?.message}>
+                    <select disabled={saving || loading || !formWatchSub.lineId} {...register('categoryId')}>
                       <option value="">{t('common.select')}</option>
                       {formCategories.map((x) => (
-                        <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                        <option key={x.id} value={x.id}>
+                          {x.code} — {x.name}
+                        </option>
                       ))}
                     </select>
                   </ZHField>

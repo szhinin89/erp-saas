@@ -58,7 +58,9 @@ public class SuperAdminLoginHandler
             user.Email.Value,
             user.Role,
             Guid.Empty,
-            token));
+            token,
+            PlanCode: null,
+            EnabledModules: TenantSubscriptionCatalog.AllModuleKeys));
     }
 }
 

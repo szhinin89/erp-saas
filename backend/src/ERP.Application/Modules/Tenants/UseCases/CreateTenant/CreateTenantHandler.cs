@@ -24,6 +24,9 @@ public class CreateTenantHandler
         if (exists is not null)
             return Result<TenantDto>.Failure($"Ya existe un tenant con el slug '{command.Slug}'.");
 
+        if (command.EnabledModules is { Count: > 0 })
+            TenantSubscriptionCatalog.ValidateModuleKeysOrThrow(command.EnabledModules);
+
         var tenant = Tenant.Create(
             command.Name,
             command.Slug,
@@ -35,7 +38,9 @@ public class CreateTenantHandler
             dinardap: command.Dinardap,
             logoUrl: command.LogoUrl,
             displayOrder: command.DisplayOrder,
-            priority: command.Priority);
+            priority: command.Priority,
+            planCode: command.PlanCode,
+            enabledModuleKeys: command.EnabledModules);
 
         await _repository.AddAsync(tenant, ct);
         await _repository.SaveChangesAsync(ct);
@@ -52,6 +57,8 @@ public class CreateTenantHandler
             tenant.Dinardap,
             tenant.LogoUrl,
             tenant.DisplayOrder,
-            tenant.Priority));
+            tenant.Priority,
+            tenant.PlanCode,
+            TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)));
     }
 }

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { activityService, type UserActivityDto } from '../services/activityService';
 import { useI18n } from '../i18n/i18n';
 import { Badge, EmptyState, ErrorState, LoadingState } from './PageShell';
-import { formatApiError } from '../lib/formatApiError';
+import { formatApiError } from '../modules/lib/formatApiError';
 
 function actionVerbI18nKey(action: string): string {
   const i = action.lastIndexOf('.');

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
 import { profileService, type Profile } from '../services/profileService';
@@ -7,6 +9,7 @@ import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHBtn } from '
 import { ZHCardSection, ZHInlineRowRight, ZHActionsRow } from '../components/zh/ZHLayout';
 import ZHSearchBar from '../components/shared/ZHSearchBar';
 import { ZHFormCard } from '../components/zh/ZHFormCard';
+import { profileCreateSchema, type ProfileCreateFormValues } from '../schemas/access/profileSchema';
 import './ProfilesPage.css';
 
 type ProfileTab = 'data' | 'perms' | 'list';
@@ -17,8 +20,15 @@ export function ProfilesPage() {
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
 
   const [items, setItems] = useState<Profile[]>([]);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ProfileCreateFormValues>({
+    resolver: zodResolver(profileCreateSchema),
+    defaultValues: { name: '', description: '' },
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState<ProfileTab>('data');
@@ -37,6 +47,10 @@ export function ProfilesPage() {
       { key: 'catalog.products.create', label: t('profiles.perms.catalog.products.create') },
       { key: 'catalog.products.update', label: t('profiles.perms.catalog.products.update') },
       { key: 'catalog.products.delete', label: t('profiles.perms.catalog.products.delete') },
+      { key: 'catalog.customers.view', label: t('profiles.perms.catalog.customers.view') },
+      { key: 'catalog.customers.create', label: t('profiles.perms.catalog.customers.create') },
+      { key: 'catalog.customers.update', label: t('profiles.perms.catalog.customers.update') },
+      { key: 'catalog.customers.delete', label: t('profiles.perms.catalog.customers.delete') },
       { key: 'catalog.brands.view', label: t('profiles.perms.catalog.brands.view') },
       { key: 'catalog.brands.create', label: t('profiles.perms.catalog.brands.create') },
       { key: 'catalog.brands.update', label: t('profiles.perms.catalog.brands.update') },
@@ -69,6 +83,10 @@ export function ProfilesPage() {
       { key: 'catalog.subcategories.create', label: t('profiles.perms.catalog.subcategories.create') },
       { key: 'catalog.subcategories.update', label: t('profiles.perms.catalog.subcategories.update') },
       { key: 'catalog.subcategories.delete', label: t('profiles.perms.catalog.subcategories.delete') },
+      { key: 'accounting.accounts.view', label: t('profiles.perms.accounting.accounts.view') },
+      { key: 'accounting.accounts.create', label: t('profiles.perms.accounting.accounts.create') },
+      { key: 'accounting.journal.view', label: t('profiles.perms.accounting.journal.view') },
+      { key: 'accounting.journal.create', label: t('profiles.perms.accounting.journal.create') },
       { key: 'saas.branches.view', label: t('profiles.perms.saas.branches.view') },
       { key: 'saas.branches.create', label: t('profiles.perms.saas.branches.create') },
       { key: 'saas.branches.update', label: t('profiles.perms.saas.branches.update') },
@@ -107,13 +125,11 @@ export function ProfilesPage() {
     );
   }, [items, listQuery]);
 
-  const create = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const create = handleSubmit(async (values) => {
     setError('');
     try {
-      await profileService.create(name, description);
-      setName('');
-      setDescription('');
+      await profileService.create(values.name, values.description || undefined);
+      reset({ name: '', description: '' });
       await refresh();
       setTab('list');
     } catch (err: unknown) {
@@ -122,7 +138,7 @@ export function ProfilesPage() {
         t('profiles.error.create');
       setError(msg);
     }
-  };
+  });
 
   const toggle = async (p: Profile) => {
     setError('');
@@ -222,11 +238,11 @@ export function ProfilesPage() {
 
             <ZHFormSection title={t('profiles.form.create')}>
               <ZHGrid cols={2}>
-                <ZHField label={t('profiles.form.name')} required>
-                  <input value={name} onChange={(e) => setName(e.target.value)} required disabled={loading} />
+                <ZHField label={t('profiles.form.name')} required fieldError={errors.name?.message}>
+                  <input disabled={loading} {...register('name')} />
                 </ZHField>
-                <ZHField label={t('profiles.form.description')}>
-                  <input value={description} onChange={(e) => setDescription(e.target.value)} disabled={loading} />
+                <ZHField label={t('profiles.form.description')} fieldError={errors.description?.message}>
+                  <input disabled={loading} {...register('description')} />
                 </ZHField>
               </ZHGrid>
             </ZHFormSection>

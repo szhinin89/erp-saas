@@ -1,6 +1,8 @@
-import { useMemo, useRef, useState, type FormEvent } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { productService, type ProductImageInput } from '../services/productService';
-import { formatApiError } from '../lib/formatApiError';
+import { formatApiError } from '../modules/lib/formatApiError';
 import type { Product } from '../types/product';
 import { useAsync } from '../hooks/useAsync';
 import {
@@ -16,6 +18,7 @@ import ZHSearchBar from '../components/shared/ZHSearchBar';
 import { ZHFormCard } from '../components/zh/ZHFormCard';
 import { ZHDirtyBar } from '../components/zh/ZHDirtyBar';
 import { EntityAuditPanel } from '../components/EntityAuditPanel';
+import { productCreateFormSchema, type ProductCreateFormValues } from '../schemas/catalog/productSchema';
 import './ProductsPage.css';
 
 const EMPTY_GUID = '00000000-0000-0000-0000-000000000000';
@@ -157,7 +160,7 @@ function ProductsRecentListBlock(props: {
   );
 }
 
-const emptyProductForm = () => ({
+const emptyProductForm = (): ProductCreateFormValues => ({
   saleCode: '',
   purchaseCode: '',
   shortName: '',
@@ -200,8 +203,22 @@ export function ProductsPage() {
   });
 
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
-  const [form, setForm] = useState(() => emptyProductForm());
-  const [savedForm, setSavedForm] = useState(() => emptyProductForm());
+  const savedProductSnapshot = useRef<ProductCreateFormValues>(emptyProductForm());
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors, isDirty: productFormDirty },
+  } = useForm<ProductCreateFormValues>({
+    resolver: zodResolver(productCreateFormSchema),
+    defaultValues: emptyProductForm(),
+  });
+  const lineIdWatch = watch('lineId');
+  const categoryIdWatch = watch('categoryId');
+  const productWatch = watch();
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const formRef = useRef<HTMLFormElement>(null);
@@ -239,12 +256,15 @@ export function ProductsPage() {
   };
 
   const filteredCategories = useMemo(
-    () => (catalogs?.categories ?? []).filter((c) => form.lineId !== EMPTY_GUID && c.lineId === form.lineId),
-    [catalogs?.categories, form.lineId]
+    () => (catalogs?.categories ?? []).filter((c) => lineIdWatch !== EMPTY_GUID && c.lineId === lineIdWatch),
+    [catalogs?.categories, lineIdWatch]
   );
   const filteredSubcategories = useMemo(
-    () => (catalogs?.subcategories ?? []).filter((s) => form.categoryId !== EMPTY_GUID && s.categoryId === form.categoryId),
-    [catalogs?.subcategories, form.categoryId]
+    () =>
+      (catalogs?.subcategories ?? []).filter(
+        (s) => categoryIdWatch !== EMPTY_GUID && s.categoryId === categoryIdWatch
+      ),
+    [catalogs?.subcategories, categoryIdWatch]
   );
 
   const recentProductsList = useMemo(() => {
@@ -261,36 +281,17 @@ export function ProductsPage() {
       .slice(0, LIST_LIMIT);
   }, [products, listQuery]);
 
-  const set = (field: keyof typeof form, value: unknown) => setForm((f) => ({ ...f, [field]: value }));
-
-  const isDirty = useMemo(
-    () =>
-      JSON.stringify(form) !== JSON.stringify(savedForm) ||
-      JSON.stringify(imageRows) !== JSON.stringify(savedImageRows),
-    [form, savedForm, imageRows, savedImageRows]
+  const imagesDirty = useMemo(
+    () => JSON.stringify(imageRows) !== JSON.stringify(savedImageRows),
+    [imageRows, savedImageRows]
   );
 
+  const isDirty = productFormDirty || imagesDirty;
+
   const discardChanges = () => {
-    setForm(savedForm);
+    reset({ ...savedProductSnapshot.current });
     setImageRows(savedImageRows.map((r) => ({ ...r })));
     setFormError('');
-  };
-
-  const onLineChange = (lineId: string) => {
-    setForm((f) => ({
-      ...f,
-      lineId,
-      categoryId: EMPTY_GUID,
-      subcategoryId: EMPTY_GUID,
-    }));
-  };
-
-  const onCategoryChange = (categoryId: string) => {
-    setForm((f) => ({
-      ...f,
-      categoryId,
-      subcategoryId: EMPTY_GUID,
-    }));
   };
 
   const patchImageRow = (rowId: string, patch: Partial<ImageRow>) => {
@@ -338,8 +339,7 @@ export function ProductsPage() {
     }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const submitProduct = handleSubmit(async (form) => {
     if (!canCreate) return;
     setFormError('');
 
@@ -369,8 +369,8 @@ export function ProductsPage() {
       });
       await refetch();
       const cleared = emptyProductForm();
-      setForm(cleared);
-      setSavedForm(cleared);
+      reset(cleared);
+      savedProductSnapshot.current = cleared;
       setImageRows([]);
       setSavedImageRows([]);
       setAuditProductId(created.id);
@@ -381,7 +381,7 @@ export function ProductsPage() {
     } finally {
       setSaving(false);
     }
-  };
+  });
 
   if (!canView) {
     return <NoAccessPage title={t('products.title')} />;
@@ -398,7 +398,12 @@ export function ProductsPage() {
             variant="primary"
             size="md"
             type="button"
-            disabled={saving || !form.saleCode.trim() || !form.shortName.trim() || !form.description.trim()}
+            disabled={
+              saving ||
+              !productWatch.saleCode.trim() ||
+              !productWatch.shortName.trim() ||
+              !productWatch.description.trim()
+            }
             onClick={() => formRef.current?.requestSubmit()}
           >
             {saving ? t('common.saving') : t('products.modal.create.submit')}
@@ -412,7 +417,7 @@ export function ProductsPage() {
           hideHeader
           title={t('products.modal.create.title')}
           subtitle={t('products.form.saleCode')}
-          onSubmit={handleSubmit}
+          onSubmit={submitProduct}
         >
           <input type="hidden" name="tenantId" value={tenantId} />
           {formError ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={formError} /> : null}
@@ -452,49 +457,27 @@ export function ProductsPage() {
             <>
           <ZHFormSection title={t('products.section.general')}>
             <ZHGrid cols={2}>
-              <ZHField label={t('products.form.saleCode')} required>
-                <input
-                  id="saleCode"
-                  value={form.saleCode}
-                  onChange={(e) => set('saleCode', e.target.value)}
-                  placeholder={t('products.form.saleCode.placeholder')}
-                  required
-                  disabled={saving}
-                />
+              <ZHField label={t('products.form.saleCode')} required fieldError={errors.saleCode?.message}>
+                <input id="saleCode" placeholder={t('products.form.saleCode.placeholder')} disabled={saving} {...register('saleCode')} />
               </ZHField>
-              <ZHField label={t('products.form.purchaseCode')}>
+              <ZHField label={t('products.form.purchaseCode')} fieldError={errors.purchaseCode?.message}>
                 <input
                   id="purchaseCode"
-                  value={form.purchaseCode ?? ''}
-                  onChange={(e) => set('purchaseCode', e.target.value)}
                   placeholder={t('products.form.purchaseCode.placeholder')}
                   disabled={saving}
+                  {...register('purchaseCode')}
                 />
               </ZHField>
 
               <ZHColSpan span={2}>
-                <ZHField label={t('products.form.shortName')} required>
-                  <input
-                    id="shortName"
-                    value={form.shortName}
-                    onChange={(e) => set('shortName', e.target.value)}
-                    placeholder={t('products.form.shortName.placeholder')}
-                    required
-                    disabled={saving}
-                  />
+                <ZHField label={t('products.form.shortName')} required fieldError={errors.shortName?.message}>
+                  <input id="shortName" placeholder={t('products.form.shortName.placeholder')} disabled={saving} {...register('shortName')} />
                 </ZHField>
               </ZHColSpan>
 
               <ZHColSpan span={2}>
-                <ZHField label={t('products.form.description')} required>
-                  <input
-                    id="description"
-                    value={form.description}
-                    onChange={(e) => set('description', e.target.value)}
-                    placeholder={t('products.form.description.placeholder')}
-                    required
-                    disabled={saving}
-                  />
+                <ZHField label={t('products.form.description')} required fieldError={errors.description?.message}>
+                  <input id="description" placeholder={t('products.form.description.placeholder')} disabled={saving} {...register('description')} />
                 </ZHField>
               </ZHColSpan>
             </ZHGrid>
@@ -502,61 +485,80 @@ export function ProductsPage() {
 
                 <ZHFormSection title={t('products.form.classification')}>
                   <ZHGrid cols={2}>
-                    <ZHField label={t('products.form.line')}>
-                      <select id="lineId" value={form.lineId} onChange={(e) => onLineChange(e.target.value)} disabled={saving}>
+                    <ZHField label={t('products.form.line')} fieldError={errors.lineId?.message}>
+                      <select
+                        id="lineId"
+                        disabled={saving}
+                        {...register('lineId', {
+                          onChange: () => {
+                            setValue('categoryId', EMPTY_GUID, { shouldDirty: true, shouldValidate: true });
+                            setValue('subcategoryId', EMPTY_GUID, { shouldDirty: true, shouldValidate: true });
+                          },
+                        })}
+                      >
                         <option value={EMPTY_GUID}>{t('common.select')}</option>
                         {(catalogs?.lines ?? []).map((x) => (
-                          <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                          <option key={x.id} value={x.id}>
+                            {x.code} — {x.name}
+                          </option>
                         ))}
                       </select>
                     </ZHField>
-                    <ZHField label={t('products.form.brand')}>
-                      <select id="brandId" value={form.brandId} onChange={(e) => set('brandId', e.target.value)} disabled={saving}>
+                    <ZHField label={t('products.form.brand')} fieldError={errors.brandId?.message}>
+                      <select id="brandId" disabled={saving} {...register('brandId')}>
                         <option value={EMPTY_GUID}>{t('common.select')}</option>
                         {(catalogs?.brands ?? []).map((x) => (
-                          <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                          <option key={x.id} value={x.id}>
+                            {x.code} — {x.name}
+                          </option>
                         ))}
                       </select>
                     </ZHField>
-                    <ZHField label={t('products.form.category')}>
+                    <ZHField label={t('products.form.category')} fieldError={errors.categoryId?.message}>
                       <select
                         id="categoryId"
-                        value={form.categoryId}
-                        onChange={(e) => onCategoryChange(e.target.value)}
-                        disabled={saving || form.lineId === EMPTY_GUID}
+                        disabled={saving || lineIdWatch === EMPTY_GUID}
+                        {...register('categoryId', {
+                          onChange: () => {
+                            setValue('subcategoryId', EMPTY_GUID, { shouldDirty: true, shouldValidate: true });
+                          },
+                        })}
                       >
                         <option value={EMPTY_GUID}>{t('common.select')}</option>
                         {filteredCategories.map((x) => (
-                          <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                          <option key={x.id} value={x.id}>
+                            {x.code} — {x.name}
+                          </option>
                         ))}
                       </select>
                     </ZHField>
-                    <ZHField label={t('products.form.subcategory')}>
-                      <select
-                        id="subcategoryId"
-                        value={form.subcategoryId}
-                        onChange={(e) => set('subcategoryId', e.target.value)}
-                        disabled={saving || form.categoryId === EMPTY_GUID}
-                      >
+                    <ZHField label={t('products.form.subcategory')} fieldError={errors.subcategoryId?.message}>
+                      <select id="subcategoryId" disabled={saving || categoryIdWatch === EMPTY_GUID} {...register('subcategoryId')}>
                         <option value={EMPTY_GUID}>{t('common.select')}</option>
                         {filteredSubcategories.map((x) => (
-                          <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                          <option key={x.id} value={x.id}>
+                            {x.code} — {x.name}
+                          </option>
                         ))}
                       </select>
                     </ZHField>
-                    <ZHField label={t('products.form.productType')}>
-                      <select id="productTypeId" value={form.productTypeId} onChange={(e) => set('productTypeId', e.target.value)} disabled={saving}>
+                    <ZHField label={t('products.form.productType')} fieldError={errors.productTypeId?.message}>
+                      <select id="productTypeId" disabled={saving} {...register('productTypeId')}>
                         <option value={EMPTY_GUID}>{t('common.select')}</option>
                         {(catalogs?.productTypes ?? []).map((x) => (
-                          <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                          <option key={x.id} value={x.id}>
+                            {x.code} — {x.name}
+                          </option>
                         ))}
                       </select>
                     </ZHField>
-                    <ZHField label={t('products.form.unit')}>
-                      <select id="unitOfMeasureId" value={form.unitOfMeasureId} onChange={(e) => set('unitOfMeasureId', e.target.value)} disabled={saving}>
+                    <ZHField label={t('products.form.unit')} fieldError={errors.unitOfMeasureId?.message}>
+                      <select id="unitOfMeasureId" disabled={saving} {...register('unitOfMeasureId')}>
                         <option value={EMPTY_GUID}>{t('common.select')}</option>
                         {(catalogs?.units ?? []).map((x) => (
-                          <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                          <option key={x.id} value={x.id}>
+                            {x.code} — {x.name}
+                          </option>
                         ))}
                       </select>
                     </ZHField>
@@ -565,28 +567,34 @@ export function ProductsPage() {
 
                 <ZHFormSection title={t('products.form.taxes')}>
                   <ZHGrid cols={2}>
-                    <ZHField label={t('products.form.saleTax')}>
-                      <select id="saleTaxId" value={form.saleTaxId} onChange={(e) => set('saleTaxId', e.target.value)} disabled={saving}>
+                    <ZHField label={t('products.form.saleTax')} fieldError={errors.saleTaxId?.message}>
+                      <select id="saleTaxId" disabled={saving} {...register('saleTaxId')}>
                         <option value={EMPTY_GUID}>{t('common.select')}</option>
                         {(catalogs?.taxRates ?? []).map((x) => (
-                          <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                          <option key={x.id} value={x.id}>
+                            {x.code} — {x.name}
+                          </option>
                         ))}
                       </select>
                     </ZHField>
-                    <ZHField label={t('products.form.purchaseTax')}>
-                      <select id="purchaseTaxId" value={form.purchaseTaxId} onChange={(e) => set('purchaseTaxId', e.target.value)} disabled={saving}>
+                    <ZHField label={t('products.form.purchaseTax')} fieldError={errors.purchaseTaxId?.message}>
+                      <select id="purchaseTaxId" disabled={saving} {...register('purchaseTaxId')}>
                         <option value={EMPTY_GUID}>{t('common.select')}</option>
                         {(catalogs?.taxRates ?? []).map((x) => (
-                          <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                          <option key={x.id} value={x.id}>
+                            {x.code} — {x.name}
+                          </option>
                         ))}
                       </select>
                     </ZHField>
                     <ZHColSpan span={2}>
-                      <ZHField label={t('products.form.tariff')}>
-                        <select id="tariffId" value={form.tariffId} onChange={(e) => set('tariffId', e.target.value)} disabled={saving}>
+                      <ZHField label={t('products.form.tariff')} fieldError={errors.tariffId?.message}>
+                        <select id="tariffId" disabled={saving} {...register('tariffId')}>
                           <option value={EMPTY_GUID}>{t('common.select')}</option>
                           {(catalogs?.tariffs ?? []).map((x) => (
-                            <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                            <option key={x.id} value={x.id}>
+                              {x.code} — {x.name}
+                            </option>
                           ))}
                         </select>
                       </ZHField>
@@ -596,33 +604,57 @@ export function ProductsPage() {
 
                 <ZHFormSection title={t('products.form.behavior')}>
                   <ZHGrid cols={1}>
-                    <ZHToggle
-                      label={t('products.form.isService')}
-                      description={t('products.form.isService')}
-                      value={form.isService}
-                      onChange={(v) => set('isService', v)}
-                      disabled={saving}
+                    <Controller
+                      name="isService"
+                      control={control}
+                      render={({ field }) => (
+                        <ZHToggle
+                          label={t('products.form.isService')}
+                          description={t('products.form.isService')}
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={saving}
+                        />
+                      )}
                     />
-                    <ZHToggle
-                      label={t('products.form.isForSale')}
-                      description={t('products.form.isForSale')}
-                      value={form.isForSale}
-                      onChange={(v) => set('isForSale', v)}
-                      disabled={saving}
+                    <Controller
+                      name="isForSale"
+                      control={control}
+                      render={({ field }) => (
+                        <ZHToggle
+                          label={t('products.form.isForSale')}
+                          description={t('products.form.isForSale')}
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={saving}
+                        />
+                      )}
                     />
-                    <ZHToggle
-                      label={t('products.form.availableOnWeb')}
-                      description={t('products.form.availableOnWeb')}
-                      value={form.availableOnWeb}
-                      onChange={(v) => set('availableOnWeb', v)}
-                      disabled={saving}
+                    <Controller
+                      name="availableOnWeb"
+                      control={control}
+                      render={({ field }) => (
+                        <ZHToggle
+                          label={t('products.form.availableOnWeb')}
+                          description={t('products.form.availableOnWeb')}
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={saving}
+                        />
+                      )}
                     />
-                    <ZHToggle
-                      label={t('products.form.availableOnMobile')}
-                      description={t('products.form.availableOnMobile')}
-                      value={form.availableOnMobile}
-                      onChange={(v) => set('availableOnMobile', v)}
-                      disabled={saving}
+                    <Controller
+                      name="availableOnMobile"
+                      control={control}
+                      render={({ field }) => (
+                        <ZHToggle
+                          label={t('products.form.availableOnMobile')}
+                          description={t('products.form.availableOnMobile')}
+                          value={field.value}
+                          onChange={field.onChange}
+                          disabled={saving}
+                        />
+                      )}
                     />
                   </ZHGrid>
                 </ZHFormSection>

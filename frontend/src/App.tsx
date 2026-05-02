@@ -14,6 +14,7 @@ import CompaniesPage from './pages/CompaniesPage';
 import { TenantAccessPage } from './pages/TenantAccessPage';
 import { ProfilesPage } from './pages/ProfilesPage';
 import { BranchesPage } from './pages/BranchesPage';
+import { CustomersPage } from './pages/CustomersPage';
 import {
   BrandsCatalogPage,
   ProductTypesCatalogPage,
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="/superadmin/forms" element={<SuperAdminFormsPage />} />
             <Route path="/dashboard"   element={<DashboardPage />} />
             <Route path="/products"    element={<ProductsPage />} />
+            <Route path="/catalog/customers" element={<CustomersPage />} />
             <Route path="/catalog/brands" element={<BrandsCatalogPage />} />
             <Route path="/catalog/product-types" element={<ProductTypesCatalogPage />} />
             <Route path="/catalog/units" element={<UnitsCatalogPage />} />

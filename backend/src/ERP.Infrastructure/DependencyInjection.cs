@@ -11,6 +11,9 @@ using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.Geography.Interfaces;
 using ERP.Domain.Audit.Interfaces;
+using ERP.Domain.Customers.Interfaces;
+using ERP.Domain.Subscriptions.Interfaces;
+using ERP.Application.Subscriptions;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Services;
@@ -46,6 +49,9 @@ public static class DependencyInjection
         services.AddScoped<IBranchRepository, BranchRepository>();
         services.AddScoped<IGeographyReadRepository, GeographyReadRepository>();
         services.AddScoped<IUserActivityRepository, UserActivityRepository>();
+        services.AddScoped<ICustomerRepository, CustomerRepository>();
+        services.AddScoped<ISubscriptionService, SubscriptionService>();
+        services.AddScoped<ISaasCatalogQuery, SaasCatalogQuery>();
 
         return services;
     }

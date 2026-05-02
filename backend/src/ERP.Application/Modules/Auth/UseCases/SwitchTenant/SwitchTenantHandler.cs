@@ -47,7 +47,9 @@ public class SwitchTenantHandler
                 user.Email.Value,
                 user.Role,
                 Guid.Empty,
-                globalToken));
+                globalToken,
+                PlanCode: null,
+                EnabledModules: TenantSubscriptionCatalog.AllModuleKeys));
         }
 
         var tenant = await _tenantRepository.GetByIdAsync(command.TenantId, ct);
@@ -62,7 +64,9 @@ public class SwitchTenantHandler
             user.Email.Value,
             user.Role,
             tenant.Id,
-            token));
+            token,
+            tenant.PlanCode,
+            TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)));
     }
 }
 

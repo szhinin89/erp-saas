@@ -9,7 +9,7 @@ import {
 } from '../components/PageShell';
 import { useAuthStore } from '../store/authStore';
 import { securityService, type SecurityAdminMatrix, type SecurityUser } from '../services/securityService';
-import { formatApiError } from '../lib/formatApiError';
+import { formatApiError } from '../modules/lib/formatApiError';
 import { useI18n } from '../i18n/i18n';
 import './SecuritySettingsPage.css';
 

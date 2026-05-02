@@ -1,3 +1,4 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -21,20 +22,20 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class ProductsController : ControllerBase
 {
-    private readonly CreateProductHandler  _createHandler;
+    private readonly IMediator _mediator;
     private readonly GetProductsHandler    _getListHandler;
     private readonly GetProductByIdHandler _getByIdHandler;
     private readonly GetProductFullReportHandler _getFullReportHandler;
     private readonly GetProductReportHandler _getReportHandler;
 
     public ProductsController(
-        CreateProductHandler createHandler,
+        IMediator mediator,
         GetProductsHandler getListHandler,
         GetProductByIdHandler getByIdHandler,
         GetProductFullReportHandler getFullReportHandler,
         GetProductReportHandler getReportHandler)
     {
-        _createHandler  = createHandler;
+        _mediator  = mediator;
         _getListHandler = getListHandler;
         _getByIdHandler = getByIdHandler;
         _getFullReportHandler = getFullReportHandler;
@@ -186,7 +187,7 @@ public class ProductsController : ControllerBase
         [FromBody] CreateProductCommand command,
         CancellationToken ct)
     {
-        var result = await _createHandler.HandleAsync(command, ct);
+        var result = await _mediator.Send(command, ct);
         return result.IsSuccess
             ? StatusCode(StatusCodes.Status201Created, new ApiResponse<ProductDto?>(
                 Success: true,

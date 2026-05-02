@@ -17,7 +17,8 @@ function getImpersonationTenantName(): string | null {
 
 export function AppLayout() {
   const { user, logout, login } = useAuthStore();
-  const { permissions, has: hasPerm, clearPermissions, hasHydrated: permsHydrated } = usePermissionsStore();
+  const { permissions, enabledModules, has: hasPerm, clearPermissions, hasHydrated: permsHydrated } =
+    usePermissionsStore();
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useI18n();
@@ -47,7 +48,12 @@ export function AppLayout() {
     void Promise.resolve().then(async () => {
       try {
         const res = await accessService.getMyPermissions();
-        if (!cancelled) usePermissionsStore.getState().setPermissions(res?.permissions ?? []);
+        if (!cancelled)
+          usePermissionsStore.getState().setPermissionSnapshot({
+            permissions: res?.permissions ?? [],
+            planCode: res?.planCode ?? null,
+            enabledModules: res?.enabledModules ?? [],
+          });
       } catch {
         // si falla, el menú seguirá ocultando items hasta re-login/switch tenant
       }
@@ -98,12 +104,30 @@ export function AppLayout() {
     // SuperAdmin: UI sin restricción (backend igual valida).
     if (user?.role === 'SuperAdmin') return byRole;
 
-    // Mientras hidrata/recupera permisos (después de refresh), no ocultar el menú por flicker.
-    if (!permsHydrated) return byRole;
+    const moduleEntitled = (key?: string) => {
+      if (!key) return true;
+      const mods =
+        enabledModules.length > 0 ? enabledModules : (user?.enabledModules ?? []);
+      if (mods.length === 0) return true;
+      return mods.some((m) => m.toLowerCase() === key.toLowerCase());
+    };
 
-    if (permissions.includes('*')) return byRole;
-    return byRole
-      .map((g) => ({ ...g, items: g.items.filter((it) => !it.permissionKey || hasPerm(it.permissionKey)) }))
+    const bySubscription = byRole.filter((g) => moduleEntitled(g.moduleKey));
+
+    // Mientras hidrata/recupera permisos (después de refresh), no ocultar el menú por flicker.
+    if (!permsHydrated) return bySubscription;
+
+    if (permissions.includes('*')) return bySubscription;
+
+    const itemVisible = (it: NavItem) => {
+      if (!moduleEntitled(it.moduleKey)) return false;
+      if (it.permissionKeysAny?.length) return it.permissionKeysAny.some((k) => hasPerm(k));
+      if (it.permissionKey) return hasPerm(it.permissionKey);
+      return true;
+    };
+
+    return bySubscription
+      .map((g) => ({ ...g, items: g.items.filter(itemVisible) }))
       .filter((g) => g.items.length > 0);
   })();
 

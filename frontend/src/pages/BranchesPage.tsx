@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
@@ -14,24 +16,9 @@ import { ZHBtn, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHToggle } from '..
 import { ZHColSpan } from '../components/zh/ZHLayout';
 import ZHSearchBar from '../components/shared/ZHSearchBar';
 import { EntityAuditPanel } from '../components/EntityAuditPanel';
+import { branchFormSchema, type BranchFormValues } from '../schemas/saas/branchSchema';
 
-type FormState = {
-  name: string;
-  address: string;
-  reference: string;
-  phones: string;
-  countryId: string;
-  provinceId: string;
-  cantonId: string;
-  parishId: string;
-  latitude: string;
-  longitude: string;
-  rechargeOption: string;
-  isActive: boolean;
-  isMainBranch: boolean;
-};
-
-const emptyForm = (): FormState => ({
+const emptyForm = (): BranchFormValues => ({
   name: '',
   address: '',
   reference: '',
@@ -47,7 +34,7 @@ const emptyForm = (): FormState => ({
   isMainBranch: false,
 });
 
-function fromDto(d: BranchDto | BranchDetailDto): FormState {
+function fromDto(d: BranchDto | BranchDetailDto): BranchFormValues {
   return {
     name: d.name,
     address: d.address,
@@ -85,7 +72,19 @@ export function BranchesPage() {
   const [branchListApplied, setBranchListApplied] = useState('');
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>(emptyForm);
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<BranchFormValues>({
+    resolver: zodResolver(branchFormSchema),
+    defaultValues: emptyForm(),
+  });
+  const formWatch = watch();
   const [audit, setAudit] = useState<Pick<
     BranchDetailDto,
     'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy'
@@ -200,26 +199,28 @@ export function BranchesPage() {
     }
   }, []);
 
+  const watchedCountryId = watch('countryId');
+
   useEffect(() => {
     if (branchDialogMode !== 'new') return;
-    if (form.countryId) return;
+    if (watchedCountryId) return;
     const ec = countries.find((c) => c.id === 'EC');
     if (!ec) return;
     let cancelled = false;
     void Promise.resolve().then(() => {
       if (cancelled) return;
-      setForm((s) => ({ ...s, countryId: ec.id }));
+      setValue('countryId', ec.id, { shouldDirty: true, shouldValidate: true });
       void loadProvinces(ec.id);
     });
     return () => {
       cancelled = true;
     };
-  }, [branchDialogMode, countries, form.countryId, loadProvinces]);
+  }, [branchDialogMode, countries, watchedCountryId, loadProvinces, setValue]);
 
   const beginNewBranchForm = useCallback(() => {
     setEditingId(null);
     const defaultCountry = countries.some((c) => c.id === 'EC') ? 'EC' : '';
-    setForm({ ...emptyForm(), countryId: defaultCountry });
+    reset({ ...emptyForm(), countryId: defaultCountry });
     setAudit(null);
     setCantons([]);
     setParishes([]);
@@ -228,7 +229,7 @@ export function BranchesPage() {
     if (defaultCountry) {
       void loadProvinces(defaultCountry);
     }
-  }, [countries, loadProvinces]);
+  }, [countries, loadProvinces, reset]);
 
   /** Listado → Datos: formulario de alta visible al entrar en Datos (crear/guardar solo en barra de Datos). */
   useEffect(() => {
@@ -243,7 +244,7 @@ export function BranchesPage() {
     try {
       const d = await branchService.getById(id);
       setEditingId(id);
-      setForm(fromDto(d));
+      reset(fromDto(d));
       setAudit({
         createdAt: d.createdAt,
         updatedAt: d.updatedAt,
@@ -261,13 +262,9 @@ export function BranchesPage() {
   };
 
   const onCountryChange = async (countryId: string) => {
-    setForm((s) => ({
-      ...s,
-      countryId,
-      provinceId: '',
-      cantonId: '',
-      parishId: '',
-    }));
+    setValue('provinceId', '', { shouldDirty: true, shouldValidate: true });
+    setValue('cantonId', '', { shouldDirty: true, shouldValidate: true });
+    setValue('parishId', '', { shouldDirty: true, shouldValidate: true });
     setCantons([]);
     setParishes([]);
     setProvinces([]);
@@ -275,13 +272,16 @@ export function BranchesPage() {
   };
 
   const onProvinceChange = async (provinceId: string) => {
-    setForm((s) => ({ ...s, provinceId, cantonId: '', parishId: '' }));
+    setValue('provinceId', provinceId, { shouldDirty: true, shouldValidate: true });
+    setValue('cantonId', '', { shouldDirty: true, shouldValidate: true });
+    setValue('parishId', '', { shouldDirty: true, shouldValidate: true });
     setParishes([]);
     await loadCantons(provinceId);
   };
 
   const onCantonChange = async (cantonId: string) => {
-    setForm((s) => ({ ...s, cantonId, parishId: '' }));
+    setValue('cantonId', cantonId, { shouldDirty: true, shouldValidate: true });
+    setValue('parishId', '', { shouldDirty: true, shouldValidate: true });
     await loadParishes(cantonId);
   };
 
@@ -305,42 +305,37 @@ export function BranchesPage() {
     }
   };
 
-  const payloadBody = useMemo(
-    () => ({
-      name: form.name.trim(),
-      address: form.address.trim(),
-      reference: form.reference.trim() || null,
-      phones: form.phones.trim() || null,
-      countryId: form.countryId.trim() || null,
-      provinceId: form.provinceId.trim() || null,
-      cantonId: form.cantonId.trim() || null,
-      parishId: form.parishId.trim() || null,
-      latitude: form.latitude.trim() || null,
-      longitude: form.longitude.trim() || null,
-      rechargeOption: form.rechargeOption.trim() || null,
-      isActive: form.isActive,
-      isMainBranch: form.isMainBranch,
-    }),
-    [form]
-  );
+  const toPayload = (form: BranchFormValues) => ({
+    name: form.name.trim(),
+    address: form.address.trim(),
+    reference: form.reference.trim() || null,
+    phones: form.phones.trim() || null,
+    countryId: form.countryId.trim() || null,
+    provinceId: form.provinceId.trim() || null,
+    cantonId: form.cantonId.trim() || null,
+    parishId: form.parishId.trim() || null,
+    latitude: form.latitude.trim() || null,
+    longitude: form.longitude.trim() || null,
+    rechargeOption: form.rechargeOption.trim() || null,
+    isActive: form.isActive,
+    isMainBranch: form.isMainBranch,
+  });
 
   const formDisabled = editingId ? !canUpdate : !canCreate;
 
-  const canSubmit = useMemo(
-    () =>
-      Boolean(form.name.trim() && form.address.trim()) && (editingId ? canUpdate : canCreate),
-    [form.name, form.address, editingId, canUpdate, canCreate]
-  );
+  const canSubmit =
+    Boolean(formWatch.name.trim() && formWatch.address.trim()) && (editingId ? canUpdate : canCreate);
 
-  const save = async () => {
+  const save = handleSubmit(async (form) => {
     setError('');
     setSaving(true);
     try {
+      const payload = toPayload(form);
       if (editingId) {
-        await branchService.update(editingId, { id: editingId, ...payloadBody });
+        await branchService.update(editingId, { id: editingId, ...payload });
         await fetchList();
         const d = await branchService.getById(editingId);
-        setForm(fromDto(d));
+        reset(fromDto(d));
         setAudit({
           createdAt: d.createdAt,
           updatedAt: d.updatedAt,
@@ -352,7 +347,7 @@ export function BranchesPage() {
         await loadParishes(d.cantonId ?? '');
         setAuditRefreshKey((k) => k + 1);
       } else {
-        await branchService.create(payloadBody);
+        await branchService.create(payload);
         await fetchList();
         beginNewBranchForm();
       }
@@ -364,7 +359,7 @@ export function BranchesPage() {
     } finally {
       setSaving(false);
     }
-  };
+  });
 
   const toggleDisable = async (row: BranchDto) => {
     setError('');
@@ -457,30 +452,20 @@ export function BranchesPage() {
                 <ZHFormSection title={t('branches.section.identity')}>
                       <ZHGrid cols={2}>
                         <ZHColSpan span={2}>
-                          <ZHField label={t('branches.form.name')} required>
-                            <input
-                              value={form.name}
-                              onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-                              disabled={formDisabled}
-                              autoComplete="organization"
-                            />
+                          <ZHField label={t('branches.form.name')} required fieldError={errors.name?.message}>
+                            <input disabled={formDisabled} autoComplete="organization" {...register('name')} />
                           </ZHField>
                         </ZHColSpan>
                         <ZHColSpan span={2}>
-                          <ZHField label={t('branches.form.address')} required>
-                            <input
-                              value={form.address}
-                              onChange={(e) => setForm((s) => ({ ...s, address: e.target.value }))}
-                              disabled={formDisabled}
-                              autoComplete="street-address"
-                            />
+                          <ZHField label={t('branches.form.address')} required fieldError={errors.address?.message}>
+                            <input disabled={formDisabled} autoComplete="street-address" {...register('address')} />
                           </ZHField>
                         </ZHColSpan>
-                        <ZHField label={t('branches.form.reference')}>
-                          <input value={form.reference} onChange={(e) => setForm((s) => ({ ...s, reference: e.target.value }))} disabled={formDisabled} />
+                        <ZHField label={t('branches.form.reference')} fieldError={errors.reference?.message}>
+                          <input disabled={formDisabled} {...register('reference')} />
                         </ZHField>
-                        <ZHField label={t('branches.form.phones')}>
-                          <input value={form.phones} onChange={(e) => setForm((s) => ({ ...s, phones: e.target.value }))} disabled={formDisabled} autoComplete="tel" />
+                        <ZHField label={t('branches.form.phones')} fieldError={errors.phones?.message}>
+                          <input disabled={formDisabled} autoComplete="tel" {...register('phones')} />
                         </ZHField>
                       </ZHGrid>
                     </ZHFormSection>
@@ -491,16 +476,20 @@ export function BranchesPage() {
                     label={t('branches.form.country')}
                     hint={countries.length === 0 ? t('branches.form.loadingCountries') : undefined}
                     hintType={countries.length === 0 ? 'info' : undefined}
+                    fieldError={errors.countryId?.message}
                   >
                     <select
-                      value={form.countryId}
-                      onChange={(e) => void onCountryChange(e.target.value)}
                       disabled={formDisabled || countries.length === 0}
                       aria-busy={countries.length === 0}
+                      {...register('countryId', {
+                        onChange: async (e) => {
+                          await onCountryChange(e.target.value);
+                        },
+                      })}
                     >
                       <option value="">{t('common.select')}</option>
-                      {form.countryId && !countries.some((c) => c.id === form.countryId) ? (
-                        <option value={form.countryId}>{form.countryId}</option>
+                      {formWatch.countryId && !countries.some((c) => c.id === formWatch.countryId) ? (
+                        <option value={formWatch.countryId}>{formWatch.countryId}</option>
                       ) : null}
                       {countries.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -514,11 +503,15 @@ export function BranchesPage() {
                     label={t('branches.form.province')}
                     hint={loadingProvinces ? t('branches.form.loading') : undefined}
                     hintType={loadingProvinces ? 'info' : undefined}
+                    fieldError={errors.provinceId?.message}
                   >
                     <select
-                      value={form.provinceId}
-                      onChange={(e) => void onProvinceChange(e.target.value)}
-                      disabled={!form.countryId || formDisabled}
+                      {...register('provinceId', {
+                        onChange: async (e) => {
+                          await onProvinceChange(e.target.value);
+                        },
+                      })}
+                      disabled={!formWatch.countryId || formDisabled}
                       aria-busy={loadingProvinces}
                     >
                       <option value="">{t('common.select')}</option>
@@ -534,11 +527,15 @@ export function BranchesPage() {
                     label={t('branches.form.canton')}
                     hint={loadingCantons ? t('branches.form.loading') : undefined}
                     hintType={loadingCantons ? 'info' : undefined}
+                    fieldError={errors.cantonId?.message}
                   >
                     <select
-                      value={form.cantonId}
-                      onChange={(e) => void onCantonChange(e.target.value)}
-                      disabled={!form.provinceId || formDisabled}
+                      {...register('cantonId', {
+                        onChange: async (e) => {
+                          await onCantonChange(e.target.value);
+                        },
+                      })}
+                      disabled={!formWatch.provinceId || formDisabled}
                       aria-busy={loadingCantons}
                     >
                       <option value="">{t('common.select')}</option>
@@ -554,13 +551,9 @@ export function BranchesPage() {
                     label={t('branches.form.parish')}
                     hint={loadingParishes ? t('branches.form.loading') : undefined}
                     hintType={loadingParishes ? 'info' : undefined}
+                    fieldError={errors.parishId?.message}
                   >
-                    <select
-                      value={form.parishId}
-                      onChange={(e) => setForm((s) => ({ ...s, parishId: e.target.value }))}
-                      disabled={!form.cantonId || formDisabled}
-                      aria-busy={loadingParishes}
-                    >
+                    <select {...register('parishId')} disabled={!formWatch.cantonId || formDisabled} aria-busy={loadingParishes}>
                       <option value="">{t('common.select')}</option>
                       {parishes.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -574,19 +567,15 @@ export function BranchesPage() {
 
                     <ZHFormSection title={t('branches.form.recharge')}>
                       <ZHGrid cols={2}>
-                        <ZHField label={t('branches.form.latitude')}>
-                          <input value={form.latitude} onChange={(e) => setForm((s) => ({ ...s, latitude: e.target.value }))} disabled={formDisabled} />
+                        <ZHField label={t('branches.form.latitude')} fieldError={errors.latitude?.message}>
+                          <input disabled={formDisabled} {...register('latitude')} />
                         </ZHField>
-                        <ZHField label={t('branches.form.longitude')}>
-                          <input value={form.longitude} onChange={(e) => setForm((s) => ({ ...s, longitude: e.target.value }))} disabled={formDisabled} />
+                        <ZHField label={t('branches.form.longitude')} fieldError={errors.longitude?.message}>
+                          <input disabled={formDisabled} {...register('longitude')} />
                         </ZHField>
                         <ZHColSpan span={2}>
-                          <ZHField label={t('branches.form.recharge')}>
-                            <input
-                              value={form.rechargeOption}
-                              onChange={(e) => setForm((s) => ({ ...s, rechargeOption: e.target.value }))}
-                              disabled={formDisabled}
-                            />
+                          <ZHField label={t('branches.form.recharge')} fieldError={errors.rechargeOption?.message}>
+                            <input disabled={formDisabled} {...register('rechargeOption')} />
                           </ZHField>
                         </ZHColSpan>
                       </ZHGrid>
@@ -594,19 +583,31 @@ export function BranchesPage() {
 
                     <ZHFormSection title={t('common.status')}>
                       <ZHGrid cols={1}>
-                        <ZHToggle
-                          label={t('branches.form.enabled')}
-                          description={t('branches.form.enabled')}
-                          value={form.isActive}
-                          onChange={(v) => setForm((s) => ({ ...s, isActive: v }))}
-                          disabled={formDisabled}
+                        <Controller
+                          name="isActive"
+                          control={control}
+                          render={({ field }) => (
+                            <ZHToggle
+                              label={t('branches.form.enabled')}
+                              description={t('branches.form.enabled')}
+                              value={field.value}
+                              onChange={field.onChange}
+                              disabled={formDisabled}
+                            />
+                          )}
                         />
-                        <ZHToggle
-                          label={t('branches.form.mainBranch')}
-                          description={t('branches.form.mainBranch')}
-                          value={form.isMainBranch}
-                          onChange={(v) => setForm((s) => ({ ...s, isMainBranch: v }))}
-                          disabled={formDisabled}
+                        <Controller
+                          name="isMainBranch"
+                          control={control}
+                          render={({ field }) => (
+                            <ZHToggle
+                              label={t('branches.form.mainBranch')}
+                              description={t('branches.form.mainBranch')}
+                              value={field.value}
+                              onChange={field.onChange}
+                              disabled={formDisabled}
+                            />
+                          )}
                         />
                       </ZHGrid>
                     </ZHFormSection>

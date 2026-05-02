@@ -1,0 +1,91 @@
+# CI alineado con GitHub-hosted ubuntu-latest:
+# - .NET: varios SDK preinstalados (p. ej. 8.0.419, 9.0.312, 10.0.105, 10.0.201); este repo fija el SDK en backend/src/global.json.
+# - Node: caché 22.x (ver https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md)
+
+name: CI
+
+permissions:
+  contents: read
+
+# Ramas: hoy el foco es main (base lista). Cuando existan development / release / hotfix, el CI ya las incluye.
+on:
+  push:
+    branches:
+      - main
+      - master
+      - development
+      - develop
+      - "release/**"
+      - "hotfix/**"
+  pull_request:
+    branches:
+      - main
+      - master
+      - development
+      - develop
+      - "release/**"
+      - "hotfix/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+
+jobs:
+  backend:
+    name: Backend (.NET)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET SDK (global.json)
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: backend/src/global.json
+          cache: true
+          cache-dependency-path: backend/src/**/*.csproj
+
+      - name: dotnet --info
+        run: dotnet --info
+
+      - name: Restore, build, test
+        run: dotnet test backend/src/ERP.slnx -c Release --verbosity minimal
+
+  frontend:
+    name: Frontend (Node)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: npm ci
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Typecheck + production build
+        run: npm run build
+
+      - name: Install Playwright (Chromium + system deps)
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E smoke (Playwright)
+        run: npm run test:e2e

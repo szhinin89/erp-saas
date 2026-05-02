@@ -3,7 +3,13 @@ import { persist } from 'zustand/middleware';
 
 interface PermissionsState {
   permissions: string[];
-  setPermissions: (permissions: string[]) => void;
+  planCode: string | null;
+  enabledModules: string[];
+  setPermissionSnapshot: (payload: {
+    permissions: string[];
+    planCode?: string | null;
+    enabledModules?: string[];
+  }) => void;
   clearPermissions: () => void;
   has: (permissionKey: string) => boolean;
   hasHydrated: boolean;
@@ -13,9 +19,16 @@ export const usePermissionsStore = create<PermissionsState>()(
   persist(
     (set, get) => ({
       permissions: [],
+      planCode: null,
+      enabledModules: [],
       hasHydrated: false,
-      setPermissions: (permissions) => set({ permissions: permissions ?? [] }),
-      clearPermissions: () => set({ permissions: [] }),
+      setPermissionSnapshot: ({ permissions, planCode = null, enabledModules = [] }) =>
+        set({
+          permissions: permissions ?? [],
+          planCode: planCode ?? null,
+          enabledModules: enabledModules ?? [],
+        }),
+      clearPermissions: () => set({ permissions: [], planCode: null, enabledModules: [] }),
       has: (permissionKey) => {
         const perms = get().permissions;
         if (perms.includes('*')) return true;

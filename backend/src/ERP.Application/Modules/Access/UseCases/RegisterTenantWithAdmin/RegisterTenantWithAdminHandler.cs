@@ -78,7 +78,9 @@ public class RegisterTenantWithAdminHandler
             Email: identityUser.Email.Value,
             TenantId: tenant.Id,
             Role: "Admin",
-            Token: sessionToken));
+            Token: sessionToken,
+            tenant.PlanCode,
+            TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)));
     }
 }
 

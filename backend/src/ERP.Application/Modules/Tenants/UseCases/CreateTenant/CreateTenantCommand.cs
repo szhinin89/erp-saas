@@ -10,5 +10,7 @@ public record CreateTenantCommand(
     string? Dinardap = null,
     string? LogoUrl = null,
     int DisplayOrder = 0,
-    int Priority = 0
+    int Priority = 0,
+    string? PlanCode = null,
+    IReadOnlyList<string>? EnabledModules = null
 );

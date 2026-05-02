@@ -19,5 +19,7 @@ public record AuthResponseDto(
     string Email,
     string Role,
     Guid TenantId,
-    string Token
+    string Token,
+    string? PlanCode,
+    IReadOnlyList<string> EnabledModules
 );

@@ -1,8 +1,9 @@
-import { api } from '../lib/api';
+import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
 import type {
   BootstrapLoginRequest,
   BootstrapLoginResponse,
+  MyPermissionsResponse,
   SessionResponse,
   SwitchTenantRequest,
 } from '../types/access';
@@ -21,7 +22,7 @@ export const accessService = {
   },
 
   async getMyPermissions() {
-    const { data } = await api.get<ApiResponse<{ permissions: string[] }>>('/api/access/me/permissions');
+    const { data } = await api.get<ApiResponse<MyPermissionsResponse>>('/api/access/me/permissions');
     return data.responseObject;
   },
 };

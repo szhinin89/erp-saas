@@ -19,7 +19,7 @@ export function TenantSelectPage() {
   const tenants = useAccessStore((s) => s.tenants);
   const clearBootstrap = useAccessStore((s) => s.clearBootstrap);
   const login = useAuthStore((s) => s.login);
-  const setPermissions = usePermissionsStore((s) => s.setPermissions);
+  const setPermissionSnapshot = usePermissionsStore((s) => s.setPermissionSnapshot);
 
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(false);
@@ -57,10 +57,16 @@ export function TenantSelectPage() {
         role: session.role,
         tenantId: session.tenantId,
         token: session.token,
+        planCode: session.planCode,
+        enabledModules: session.enabledModules ?? [],
       };
       login(auth);
       const perms = await accessService.getMyPermissions();
-      setPermissions(perms?.permissions ?? []);
+      setPermissionSnapshot({
+        permissions: perms?.permissions ?? [],
+        planCode: perms?.planCode ?? null,
+        enabledModules: perms?.enabledModules ?? [],
+      });
       clearBootstrap();
       navigate('/dashboard');
     } catch (err: unknown) {

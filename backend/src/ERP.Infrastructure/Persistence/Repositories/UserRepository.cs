@@ -52,8 +52,10 @@ public class UserRepository : IUserRepository
             .IgnoreQueryFilters()
             .AnyAsync(u => u.Role == "SuperAdmin", ct);
 
+    /// <summary>Usuarios del tenant indicado; ignora filtro global para operaciones cross-tenant (p. ej. SuperAdmin con JWT sin empresa).</summary>
     public async Task<IReadOnlyList<User>> GetAllByTenantAsync(Guid tenantId, CancellationToken ct = default)
         => await _context.Users
+            .IgnoreQueryFilters()
             .Where(u => u.TenantId == tenantId)
             .OrderBy(u => u.LastName)
             .ThenBy(u => u.FirstName)

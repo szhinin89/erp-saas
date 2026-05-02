@@ -171,13 +171,17 @@ export type ZHFieldHintType = 'success' | 'error' | 'warning' | 'muted' | 'info'
 export function ZHField(props: {
   label: string;
   required?: boolean;
+  /** Mensaje de validación (p. ej. Zod + react-hook-form); en español. Si hay `fieldError`, sustituye al `hint` visual de ayuda. */
+  fieldError?: string | null;
   hint?: string | null;
   hintType?: ZHFieldHintType;
   readOnly?: boolean;
   children: React.ReactNode;
 }) {
-  const { label, required, hint, hintType, readOnly, children } = props;
-  const variantClass = hintType ? `zh-field--${hintType}` : '';
+  const { label, required, fieldError, hint, hintType, readOnly, children } = props;
+  const effectiveHint = fieldError?.trim() ? fieldError : hint;
+  const effectiveHintType: ZHFieldHintType | undefined = fieldError?.trim() ? 'error' : hintType;
+  const variantClass = effectiveHintType ? `zh-field--${effectiveHintType}` : '';
   const roClass = readOnly ? 'zh-field--readonly' : '';
   const cls = ['zh-field', variantClass, roClass].filter(Boolean).join(' ');
 
@@ -188,7 +192,9 @@ export function ZHField(props: {
         {required ? <span className="zh-field-required">*</span> : null}
       </span>
       <div className="zh-field-control">{children}</div>
-      {hint ? <p className={`zh-field-hint${hintType ? ` zh-field-hint--${hintType}` : ''}`}>{hint}</p> : null}
+      {effectiveHint ? (
+        <p className={`zh-field-hint${effectiveHintType ? ` zh-field-hint--${effectiveHintType}` : ''}`}>{effectiveHint}</p>
+      ) : null}
     </label>
   );
 }

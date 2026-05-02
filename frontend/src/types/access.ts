@@ -29,5 +29,14 @@ export interface SessionResponse {
   tenantId: string;
   role: string;
   token: string;
+  planCode: string | null;
+  enabledModules: string[];
+}
+
+/** Respuesta de `GET /api/access/me/permissions`. */
+export interface MyPermissionsResponse {
+  permissions: string[];
+  planCode: string | null;
+  enabledModules: string[];
 }
 

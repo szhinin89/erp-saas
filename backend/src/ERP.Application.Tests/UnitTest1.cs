@@ -3,6 +3,8 @@ using Moq;
 using ERP.Application.Common;
 using ERP.Application.Products.UseCases.CreateProduct;
 using ERP.Domain.Products.Interfaces;
+using ERP.Domain.Audit.Interfaces;
+
 namespace ERP.Application.Tests;
 
 public class CreateProductHandlerTests
@@ -23,10 +25,16 @@ public class CreateProductHandlerTests
 
         var currentUser = new Mock<ICurrentUser>(MockBehavior.Strict);
         currentUser.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
+        currentUser.SetupGet(u => u.Email).Returns("u@test.local");
+        currentUser.SetupGet(u => u.FullName).Returns("Test User");
 
         var taxRates = new Mock<ITaxRateRepository>(MockBehavior.Strict);
 
-        var handler = new CreateProductHandler(repo.Object, taxRates.Object, currentTenant.Object, currentUser.Object);
+        var activity = new Mock<IUserActivityRepository>(MockBehavior.Strict);
+        activity.Setup(a => a.AddAsync(It.IsAny<ERP.Domain.Audit.Entities.UserActivity>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var handler = new CreateProductCommandHandler(repo.Object, taxRates.Object, activity.Object, currentTenant.Object, currentUser.Object);
 
         var cmd = new CreateProductCommand(
             SaleCode: "S-001",
@@ -46,7 +54,7 @@ public class CreateProductHandlerTests
             PurchaseTaxId: null,
             PurchaseVatAccountId: null);
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.Handle(cmd, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();

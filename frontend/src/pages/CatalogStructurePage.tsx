@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
@@ -13,7 +15,17 @@ import {
 import { activityService, type UserActivityDto } from '../services/activityService';
 import { ZHBtn, ZHField, ZHGrid } from '../components/zh/ZHForm';
 import { ZHActionsRow, ZHGridRow, ZHInlineRow, ZHInlineRowRight, ZHSection } from '../components/zh/ZHLayout';
-import { formatApiError } from '../lib/formatApiError';
+import { formatApiError } from '../modules/lib/formatApiError';
+import {
+  catalogLineCodeNameSchema,
+  type CatalogLineCodeNameValues,
+} from '../schemas/catalog/catalogStructureFormsSchema';
+import {
+  catalogCategoryFormSchema,
+  catalogSubcategoryFormSchema,
+  type CatalogCategoryFormValues,
+  type CatalogSubcategoryFormValues,
+} from '../schemas/catalog/catalogPagesFormsSchema';
 import './CatalogStructurePage.css';
 
 type Tab = 'line' | 'category' | 'subcategory';
@@ -90,9 +102,83 @@ export function CatalogStructurePage() {
   const [subcategories, setSubcategories] = useState<ProductSubcategoryListItem[]>([]);
   const [subsLoading, setSubsLoading] = useState(false);
 
-  const [lineForm, setLineForm] = useState({ code: '', name: '' });
-  const [catForm, setCatForm] = useState({ code: '', name: '', lineId: '' });
-  const [subForm, setSubForm] = useState({ code: '', name: '', lineId: '', categoryId: '' });
+  const lineCreate = useForm<CatalogLineCodeNameValues>({
+    resolver: zodResolver(catalogLineCodeNameSchema),
+    defaultValues: { code: '', name: '' },
+    mode: 'onChange',
+  });
+  const lineEdit = useForm<CatalogLineCodeNameValues>({
+    resolver: zodResolver(catalogLineCodeNameSchema),
+    defaultValues: { code: '', name: '' },
+    mode: 'onChange',
+  });
+  const catCreate = useForm<CatalogCategoryFormValues>({
+    resolver: zodResolver(catalogCategoryFormSchema),
+    defaultValues: { code: '', name: '', lineId: '' },
+    mode: 'onChange',
+  });
+  const catEdit = useForm<CatalogCategoryFormValues>({
+    resolver: zodResolver(catalogCategoryFormSchema),
+    defaultValues: { code: '', name: '', lineId: '' },
+    mode: 'onChange',
+  });
+  const subCreate = useForm<CatalogSubcategoryFormValues>({
+    resolver: zodResolver(catalogSubcategoryFormSchema),
+    defaultValues: { code: '', name: '', lineId: '', categoryId: '' },
+    mode: 'onChange',
+  });
+  const subEdit = useForm<CatalogSubcategoryFormValues>({
+    resolver: zodResolver(catalogSubcategoryFormSchema),
+    defaultValues: { code: '', name: '', lineId: '', categoryId: '' },
+    mode: 'onChange',
+  });
+
+  const {
+    register: regLineCreate,
+    handleSubmit: handleLineCreate,
+    reset: resetLineCreate,
+    watch: watchLineCreate,
+    formState: { errors: errLineCreate },
+  } = lineCreate;
+  const {
+    register: regLineEdit,
+    handleSubmit: handleLineEdit,
+    reset: resetLineEdit,
+    formState: { errors: errLineEdit },
+  } = lineEdit;
+  const {
+    register: regCatCreate,
+    handleSubmit: handleCatCreate,
+    reset: resetCatCreate,
+    watch: watchCatCreate,
+    formState: { errors: errCatCreate },
+  } = catCreate;
+  const {
+    register: regCatEdit,
+    handleSubmit: handleCatEdit,
+    reset: resetCatEdit,
+    formState: { errors: errCatEdit },
+  } = catEdit;
+  const {
+    register: regSubCreate,
+    handleSubmit: handleSubCreate,
+    reset: resetSubCreate,
+    watch: watchSubCreate,
+    formState: { errors: errSubCreate },
+  } = subCreate;
+  const {
+    register: regSubEdit,
+    handleSubmit: handleSubEdit,
+    reset: resetSubEdit,
+    watch: watchSubEdit,
+    formState: { errors: errSubEdit },
+  } = subEdit;
+
+  const subCreateLineId = watchSubCreate('lineId');
+  const subEditLineId = watchSubEdit('lineId');
+  const lineCreateWatch = watchLineCreate();
+  const catCreateWatch = watchCatCreate();
+  const subCreateWatch = watchSubCreate();
 
   const [activity, setActivity] = useState<UserActivityDto[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
@@ -232,7 +318,7 @@ export function CatalogStructurePage() {
 
   useEffect(() => {
     let cancelled = false;
-    if (!subForm.lineId) {
+    if (!subCreateLineId) {
       const tid = window.setTimeout(() => {
         if (!cancelled) setCatsForSubForm([]);
       }, 0);
@@ -242,7 +328,7 @@ export function CatalogStructurePage() {
       };
     }
     void catalogService
-      .categories({ activeStatus: 'all', lineId: subForm.lineId })
+      .categories({ activeStatus: 'all', lineId: subCreateLineId })
       .then((c) => {
         if (!cancelled) setCatsForSubForm(c ?? []);
       })
@@ -252,7 +338,7 @@ export function CatalogStructurePage() {
     return () => {
       cancelled = true;
     };
-  }, [subForm.lineId]);
+  }, [subCreateLineId]);
 
   const onSubFilterLineChange = (id: string) => {
     setSubFilterLineId(id);
@@ -260,16 +346,13 @@ export function CatalogStructurePage() {
   };
 
   const [editLine, setEditLine] = useState<CatalogItem | null>(null);
-  const [editLineForm, setEditLineForm] = useState({ code: '', name: '' });
   const [editCat, setEditCat] = useState<ProductCategoryListItem | null>(null);
-  const [editCatForm, setEditCatForm] = useState({ code: '', name: '', lineId: '' });
   const [editSub, setEditSub] = useState<ProductSubcategoryListItem | null>(null);
-  const [editSubForm, setEditSubForm] = useState({ code: '', name: '', lineId: '', categoryId: '' });
   const [editSubCats, setEditSubCats] = useState<ProductCategoryListItem[]>([]);
 
   useEffect(() => {
     let cancelled = false;
-    if (!editSub?.lineId) {
+    if (!editSub || !subEditLineId) {
       const tid = window.setTimeout(() => {
         if (!cancelled) setEditSubCats([]);
       }, 0);
@@ -279,7 +362,7 @@ export function CatalogStructurePage() {
       };
     }
     void catalogService
-      .categories({ activeStatus: 'all', lineId: editSub.lineId })
+      .categories({ activeStatus: 'all', lineId: subEditLineId })
       .then((c) => {
         if (!cancelled) setEditSubCats(c ?? []);
       })
@@ -289,21 +372,21 @@ export function CatalogStructurePage() {
     return () => {
       cancelled = true;
     };
-  }, [editSub?.lineId]);
+  }, [editSub, subEditLineId]);
 
   const startEditLine = (row: CatalogItem) => {
     setEditLine(row);
-    setEditLineForm({ code: row.code, name: row.name });
+    resetLineEdit({ code: row.code, name: row.name });
   };
 
   const startEditCat = (row: ProductCategoryListItem) => {
     setEditCat(row);
-    setEditCatForm({ code: row.code, name: row.name, lineId: row.lineId });
+    resetCatEdit({ code: row.code, name: row.name, lineId: row.lineId });
   };
 
   const startEditSub = (row: ProductSubcategoryListItem) => {
     setEditSub(row);
-    setEditSubForm({
+    resetSubEdit({
       code: row.code,
       name: row.name,
       lineId: row.lineId,
@@ -311,16 +394,17 @@ export function CatalogStructurePage() {
     });
   };
 
-  const saveLineEdit = async () => {
+  const submitLineEdit = handleLineEdit(async (v) => {
     if (!editLine) return;
     setSaving(true);
     setError('');
     try {
       await catalogService.updateProductLine(editLine.id, {
-        code: editLineForm.code.trim(),
-        name: editLineForm.name.trim(),
+        code: v.code.trim(),
+        name: v.name.trim(),
       });
       setEditLine(null);
+      resetLineEdit({ code: '', name: '' });
       await loadLines();
       await loadLinesPick();
     } catch (err: unknown) {
@@ -328,19 +412,20 @@ export function CatalogStructurePage() {
     } finally {
       setSaving(false);
     }
-  };
+  });
 
-  const saveCatEdit = async () => {
+  const submitCatEdit = handleCatEdit(async (v) => {
     if (!editCat) return;
     setSaving(true);
     setError('');
     try {
       await catalogService.updateCategory(editCat.id, {
-        code: editCatForm.code.trim(),
-        name: editCatForm.name.trim(),
-        lineId: editCatForm.lineId,
+        code: v.code.trim(),
+        name: v.name.trim(),
+        lineId: v.lineId,
       });
       setEditCat(null);
+      resetCatEdit({ code: '', name: '', lineId: '' });
       await loadCategories();
       await loadLinesPick();
     } catch (err: unknown) {
@@ -348,33 +433,34 @@ export function CatalogStructurePage() {
     } finally {
       setSaving(false);
     }
-  };
+  });
 
-  const saveSubEdit = async () => {
+  const submitSubEdit = handleSubEdit(async (v) => {
     if (!editSub) return;
     setSaving(true);
     setError('');
     try {
       await catalogService.updateSubcategory(editSub.id, {
-        code: editSubForm.code.trim(),
-        name: editSubForm.name.trim(),
-        categoryId: editSubForm.categoryId,
+        code: v.code.trim(),
+        name: v.name.trim(),
+        categoryId: v.categoryId,
       });
       setEditSub(null);
+      resetSubEdit({ code: '', name: '', lineId: '', categoryId: '' });
       await loadSubcategories();
     } catch (err: unknown) {
       setError(errMsg(err));
     } finally {
       setSaving(false);
     }
-  };
+  });
 
-  const createLine = async () => {
+  const submitLineCreate = handleLineCreate(async (v) => {
     setSaving(true);
     setError('');
     try {
-      await catalogService.createProductLine({ code: lineForm.code.trim(), name: lineForm.name.trim() });
-      setLineForm({ code: '', name: '' });
+      await catalogService.createProductLine({ code: v.code.trim(), name: v.name.trim() });
+      resetLineCreate({ code: '', name: '' });
       await loadLines();
       await loadLinesPick();
     } catch (err: unknown) {
@@ -382,45 +468,43 @@ export function CatalogStructurePage() {
     } finally {
       setSaving(false);
     }
-  };
+  });
 
-  const createCat = async () => {
-    if (!catForm.lineId) return;
+  const submitCatCreate = handleCatCreate(async (v) => {
     setSaving(true);
     setError('');
     try {
       await catalogService.createCategory({
-        code: catForm.code.trim(),
-        name: catForm.name.trim(),
-        lineId: catForm.lineId,
+        code: v.code.trim(),
+        name: v.name.trim(),
+        lineId: v.lineId,
       });
-      setCatForm({ code: '', name: '', lineId: '' });
+      resetCatCreate({ code: '', name: '', lineId: '' });
       await loadCategories();
     } catch (err: unknown) {
       setError(errMsg(err));
     } finally {
       setSaving(false);
     }
-  };
+  });
 
-  const createSub = async () => {
-    if (!subForm.categoryId) return;
+  const submitSubCreate = handleSubCreate(async (v) => {
     setSaving(true);
     setError('');
     try {
       await catalogService.createSubcategory({
-        code: subForm.code.trim(),
-        name: subForm.name.trim(),
-        categoryId: subForm.categoryId,
+        code: v.code.trim(),
+        name: v.name.trim(),
+        categoryId: v.categoryId,
       });
-      setSubForm({ code: '', name: '', lineId: '', categoryId: '' });
+      resetSubCreate({ code: '', name: '', lineId: '', categoryId: '' });
       await loadSubcategories();
     } catch (err: unknown) {
       setError(errMsg(err));
     } finally {
       setSaving(false);
     }
-  };
+  });
 
   const statusSelect = useMemo(
     () => (
@@ -493,19 +577,19 @@ export function CatalogStructurePage() {
             {canCreateLines && (
               <ZHSection bottom={14}>
                 <ZHGrid cols={3}>
-                  <ZHField label={t('common.code')}>
-                    <input value={lineForm.code} onChange={(e) => setLineForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
+                  <ZHField label={t('common.code')} fieldError={errLineCreate.code?.message}>
+                    <input {...regLineCreate('code')} disabled={saving} />
                   </ZHField>
-                  <ZHField label={t('common.name')}>
-                    <input value={lineForm.name} onChange={(e) => setLineForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
+                  <ZHField label={t('common.name')} fieldError={errLineCreate.name?.message}>
+                    <input {...regLineCreate('name')} disabled={saving} />
                   </ZHField>
                   <ZHActionsRow>
                     <ZHBtn
                       variant="primary"
                       size="md"
                       type="button"
-                      onClick={() => void createLine()}
-                      disabled={saving || !lineForm.code.trim() || !lineForm.name.trim()}
+                      onClick={() => void submitLineCreate()}
+                      disabled={saving || !lineCreateWatch.code?.trim() || !lineCreateWatch.name?.trim()}
                     >
                       {saving ? t('common.saving') : t('catalog.structure.primaryCreateLine')}
                     </ZHBtn>
@@ -518,17 +602,26 @@ export function CatalogStructurePage() {
               <div className="table-card zh-mb-14">
                 <div className="zh-card-section-title zh-mb-8">{t('catalog.structure.editLine')}</div>
                 <ZHGrid cols={3}>
-                  <ZHField label={t('common.code')}>
-                    <input value={editLineForm.code} onChange={(e) => setEditLineForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
+                  <ZHField label={t('common.code')} fieldError={errLineEdit.code?.message}>
+                    <input {...regLineEdit('code')} disabled={saving} />
                   </ZHField>
-                  <ZHField label={t('common.name')}>
-                    <input value={editLineForm.name} onChange={(e) => setEditLineForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
+                  <ZHField label={t('common.name')} fieldError={errLineEdit.name?.message}>
+                    <input {...regLineEdit('name')} disabled={saving} />
                   </ZHField>
                   <ZHActionsRow>
-                    <ZHBtn variant="ghost" size="md" type="button" onClick={() => setEditLine(null)} disabled={saving}>
+                    <ZHBtn
+                      variant="ghost"
+                      size="md"
+                      type="button"
+                      onClick={() => {
+                        setEditLine(null);
+                        resetLineEdit({ code: '', name: '' });
+                      }}
+                      disabled={saving}
+                    >
                       {t('catalog.structure.cancel')}
                     </ZHBtn>
-                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void saveLineEdit()} disabled={saving}>
+                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void submitLineEdit()} disabled={saving}>
                       {t('common.saveChanges')}
                     </ZHBtn>
                   </ZHActionsRow>
@@ -649,14 +742,14 @@ export function CatalogStructurePage() {
             {canCreateCategories && (
               <ZHSection bottom={14}>
                 <ZHGrid cols={3}>
-                  <ZHField label={t('common.code')}>
-                    <input value={catForm.code} onChange={(e) => setCatForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
+                  <ZHField label={t('common.code')} fieldError={errCatCreate.code?.message}>
+                    <input {...regCatCreate('code')} disabled={saving} />
                   </ZHField>
-                  <ZHField label={t('common.name')}>
-                    <input value={catForm.name} onChange={(e) => setCatForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
+                  <ZHField label={t('common.name')} fieldError={errCatCreate.name?.message}>
+                    <input {...regCatCreate('name')} disabled={saving} />
                   </ZHField>
-                  <ZHField label={t('catalog.categories.line')}>
-                    <select value={catForm.lineId} onChange={(e) => setCatForm((s) => ({ ...s, lineId: e.target.value }))} disabled={saving}>
+                  <ZHField label={t('catalog.categories.line')} fieldError={errCatCreate.lineId?.message}>
+                    <select {...regCatCreate('lineId')} disabled={saving}>
                       <option value="">{t('common.select')}</option>
                       {linesPick.map((l) => (
                         <option key={l.id} value={l.id}>
@@ -666,7 +759,18 @@ export function CatalogStructurePage() {
                     </select>
                   </ZHField>
                   <ZHActionsRow>
-                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void createCat()} disabled={saving || !catForm.code.trim() || !catForm.name.trim() || !catForm.lineId}>
+                    <ZHBtn
+                      variant="primary"
+                      size="md"
+                      type="button"
+                      onClick={() => void submitCatCreate()}
+                      disabled={
+                        saving ||
+                        !catCreateWatch.code?.trim() ||
+                        !catCreateWatch.name?.trim() ||
+                        !catCreateWatch.lineId
+                      }
+                    >
                       {saving ? t('common.saving') : t('catalog.structure.primaryCreateCategory')}
                     </ZHBtn>
                   </ZHActionsRow>
@@ -678,14 +782,14 @@ export function CatalogStructurePage() {
               <div className="table-card zh-mb-14">
                 <div className="zh-card-section-title zh-mb-8">{t('catalog.structure.editCategory')}</div>
                 <ZHGrid cols={3}>
-                  <ZHField label={t('common.code')}>
-                    <input value={editCatForm.code} onChange={(e) => setEditCatForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
+                  <ZHField label={t('common.code')} fieldError={errCatEdit.code?.message}>
+                    <input {...regCatEdit('code')} disabled={saving} />
                   </ZHField>
-                  <ZHField label={t('common.name')}>
-                    <input value={editCatForm.name} onChange={(e) => setEditCatForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
+                  <ZHField label={t('common.name')} fieldError={errCatEdit.name?.message}>
+                    <input {...regCatEdit('name')} disabled={saving} />
                   </ZHField>
-                  <ZHField label={t('catalog.categories.line')}>
-                    <select value={editCatForm.lineId} onChange={(e) => setEditCatForm((s) => ({ ...s, lineId: e.target.value }))} disabled={saving}>
+                  <ZHField label={t('catalog.categories.line')} fieldError={errCatEdit.lineId?.message}>
+                    <select {...regCatEdit('lineId')} disabled={saving}>
                       {linesPick.map((l) => (
                         <option key={l.id} value={l.id}>
                           {l.code} — {l.name}
@@ -694,10 +798,19 @@ export function CatalogStructurePage() {
                     </select>
                   </ZHField>
                   <ZHActionsRow>
-                    <ZHBtn variant="ghost" size="md" type="button" onClick={() => setEditCat(null)} disabled={saving}>
+                    <ZHBtn
+                      variant="ghost"
+                      size="md"
+                      type="button"
+                      onClick={() => {
+                        setEditCat(null);
+                        resetCatEdit({ code: '', name: '', lineId: '' });
+                      }}
+                      disabled={saving}
+                    >
                       {t('catalog.structure.cancel')}
                     </ZHBtn>
-                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void saveCatEdit()} disabled={saving || !editCatForm.lineId}>
+                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void submitCatEdit()} disabled={saving}>
                       {t('common.saveChanges')}
                     </ZHBtn>
                   </ZHActionsRow>
@@ -832,14 +945,21 @@ export function CatalogStructurePage() {
             {canCreateSubcategories && (
               <ZHSection bottom={14}>
                 <ZHGrid cols={3}>
-                  <ZHField label={t('common.code')}>
-                    <input value={subForm.code} onChange={(e) => setSubForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
+                  <ZHField label={t('common.code')} fieldError={errSubCreate.code?.message}>
+                    <input {...regSubCreate('code')} disabled={saving} />
                   </ZHField>
-                  <ZHField label={t('common.name')}>
-                    <input value={subForm.name} onChange={(e) => setSubForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
+                  <ZHField label={t('common.name')} fieldError={errSubCreate.name?.message}>
+                    <input {...regSubCreate('name')} disabled={saving} />
                   </ZHField>
-                  <ZHField label={t('catalog.categories.line')}>
-                    <select value={subForm.lineId} onChange={(e) => setSubForm((s) => ({ ...s, lineId: e.target.value, categoryId: '' }))} disabled={saving}>
+                  <ZHField label={t('catalog.categories.line')} fieldError={errSubCreate.lineId?.message}>
+                    <select
+                      {...regSubCreate('lineId', {
+                        onChange: () => {
+                          subCreate.setValue('categoryId', '', { shouldValidate: true });
+                        },
+                      })}
+                      disabled={saving}
+                    >
                       <option value="">{t('common.select')}</option>
                       {linesPick.map((l) => (
                         <option key={l.id} value={l.id}>
@@ -848,8 +968,8 @@ export function CatalogStructurePage() {
                       ))}
                     </select>
                   </ZHField>
-                  <ZHField label={t('catalog.subcategories.category')}>
-                    <select value={subForm.categoryId} onChange={(e) => setSubForm((s) => ({ ...s, categoryId: e.target.value }))} disabled={saving || !subForm.lineId}>
+                  <ZHField label={t('catalog.subcategories.category')} fieldError={errSubCreate.categoryId?.message}>
+                    <select {...regSubCreate('categoryId')} disabled={saving || !subCreateLineId}>
                       <option value="">{t('common.select')}</option>
                       {catsForSubForm.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -859,7 +979,19 @@ export function CatalogStructurePage() {
                     </select>
                   </ZHField>
                   <ZHActionsRow>
-                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void createSub()} disabled={saving || !subForm.code.trim() || !subForm.name.trim() || !subForm.lineId || !subForm.categoryId}>
+                    <ZHBtn
+                      variant="primary"
+                      size="md"
+                      type="button"
+                      onClick={() => void submitSubCreate()}
+                      disabled={
+                        saving ||
+                        !subCreateWatch.code?.trim() ||
+                        !subCreateWatch.name?.trim() ||
+                        !subCreateWatch.lineId ||
+                        !subCreateWatch.categoryId
+                      }
+                    >
                       {saving ? t('common.saving') : t('catalog.structure.primaryCreateSubcategory')}
                     </ZHBtn>
                   </ZHActionsRow>
@@ -871,14 +1003,21 @@ export function CatalogStructurePage() {
               <div className="table-card zh-mb-14">
                 <div className="zh-card-section-title zh-mb-8">{t('catalog.structure.editSubcategory')}</div>
                 <ZHGrid cols={3}>
-                  <ZHField label={t('common.code')}>
-                    <input value={editSubForm.code} onChange={(e) => setEditSubForm((s) => ({ ...s, code: e.target.value }))} disabled={saving} />
+                  <ZHField label={t('common.code')} fieldError={errSubEdit.code?.message}>
+                    <input {...regSubEdit('code')} disabled={saving} />
                   </ZHField>
-                  <ZHField label={t('common.name')}>
-                    <input value={editSubForm.name} onChange={(e) => setEditSubForm((s) => ({ ...s, name: e.target.value }))} disabled={saving} />
+                  <ZHField label={t('common.name')} fieldError={errSubEdit.name?.message}>
+                    <input {...regSubEdit('name')} disabled={saving} />
                   </ZHField>
-                  <ZHField label={t('catalog.categories.line')}>
-                    <select value={editSubForm.lineId} onChange={(e) => setEditSubForm((s) => ({ ...s, lineId: e.target.value, categoryId: '' }))} disabled={saving}>
+                  <ZHField label={t('catalog.categories.line')} fieldError={errSubEdit.lineId?.message}>
+                    <select
+                      {...regSubEdit('lineId', {
+                        onChange: () => {
+                          subEdit.setValue('categoryId', '', { shouldValidate: true });
+                        },
+                      })}
+                      disabled={saving}
+                    >
                       {linesPick.map((l) => (
                         <option key={l.id} value={l.id}>
                           {l.code} — {l.name}
@@ -886,8 +1025,8 @@ export function CatalogStructurePage() {
                       ))}
                     </select>
                   </ZHField>
-                  <ZHField label={t('catalog.subcategories.category')}>
-                    <select value={editSubForm.categoryId} onChange={(e) => setEditSubForm((s) => ({ ...s, categoryId: e.target.value }))} disabled={saving || !editSubForm.lineId}>
+                  <ZHField label={t('catalog.subcategories.category')} fieldError={errSubEdit.categoryId?.message}>
+                    <select {...regSubEdit('categoryId')} disabled={saving || !subEditLineId}>
                       {editSubCats.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.code} — {c.name}
@@ -896,10 +1035,19 @@ export function CatalogStructurePage() {
                     </select>
                   </ZHField>
                   <ZHActionsRow>
-                    <ZHBtn variant="ghost" size="md" type="button" onClick={() => setEditSub(null)} disabled={saving}>
+                    <ZHBtn
+                      variant="ghost"
+                      size="md"
+                      type="button"
+                      onClick={() => {
+                        setEditSub(null);
+                        resetSubEdit({ code: '', name: '', lineId: '', categoryId: '' });
+                      }}
+                      disabled={saving}
+                    >
                       {t('catalog.structure.cancel')}
                     </ZHBtn>
-                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void saveSubEdit()} disabled={saving || !editSubForm.categoryId}>
+                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void submitSubEdit()} disabled={saving}>
                       {t('common.saveChanges')}
                     </ZHBtn>
                   </ZHActionsRow>

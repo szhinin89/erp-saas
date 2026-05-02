@@ -4,6 +4,8 @@
 
 Monolito modular con Clean Architecture. El objetivo es que cada módulo funcional sea independiente para poder extraerlo como microservicio cuando madure, sin reescribir el dominio.
 
+**Decisiones formales:** ver [ADR en `docs/adr/`](adr/README.md) (p. ej. ADR 0001–0003).
+
 ## Capas y dependencias
 
 ```

@@ -1,5 +1,5 @@
-using ERP.Application.Common;
 using ERP.Application.Auth.DTOs;
+using ERP.Application.Common;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
@@ -60,12 +60,18 @@ public class RegisterHandler
 
         var token = _jwtService.GenerateToken(user);
 
+        var tenantEntity = await _tenantRepository.GetByIdAsync(user.TenantId, ct);
+
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id,
             user.FullName,
             user.Email.Value,
             user.Role,
             user.TenantId,
-            token));
+            token,
+            tenantEntity?.PlanCode,
+            tenantEntity is null
+                ? TenantSubscriptionCatalog.AllModuleKeys
+                : TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenantEntity)));
     }
 }

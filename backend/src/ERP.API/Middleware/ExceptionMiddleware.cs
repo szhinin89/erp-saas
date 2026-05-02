@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using ERP.Domain.Subscriptions.Exceptions;
 
 namespace ERP.API.Middleware;
 
@@ -34,12 +35,25 @@ public class ExceptionMiddleware
     {
         context.Response.ContentType = "application/json";
 
+        // Mensajes de ArgumentException / InvalidOperationException suelen ser textos de validación
+        // pensados para el usuario (dominio y aplicación). Mostrarlos mejora la claridad en la UI;
+        // el detalle técnico sigue solo en logs.
         var (statusCode, message) = exception switch
         {
-            ArgumentException           => (HttpStatusCode.BadRequest,            "Solicitud inválida."),
-            InvalidOperationException   => (HttpStatusCode.UnprocessableEntity,   "No se puede completar la operación."),
-            UnauthorizedAccessException => (HttpStatusCode.Unauthorized,           "No autorizado."),
-            _                          => (HttpStatusCode.InternalServerError,    "Error interno del servidor.")
+            ArgumentException arg =>
+                (HttpStatusCode.BadRequest,
+                 string.IsNullOrWhiteSpace(arg.Message) ? "Solicitud inválida." : arg.Message.Trim()),
+            InvalidOperationException inv =>
+                (HttpStatusCode.UnprocessableEntity,
+                 string.IsNullOrWhiteSpace(inv.Message) ? "No se puede completar la operación." : inv.Message.Trim()),
+            FeatureNotEntitledException feat =>
+                (HttpStatusCode.Forbidden,
+                 string.IsNullOrWhiteSpace(feat.Message) ? "Funcionalidad no incluida en el plan." : feat.Message.Trim()),
+            SubscriptionLimitExceededException lim =>
+                (HttpStatusCode.Conflict,
+                 string.IsNullOrWhiteSpace(lim.Message) ? "Límite de suscripción alcanzado." : lim.Message.Trim()),
+            UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "No autorizado."),
+            _ => (HttpStatusCode.InternalServerError, "Error interno del servidor."),
         };
 
         context.Response.StatusCode = (int)statusCode;

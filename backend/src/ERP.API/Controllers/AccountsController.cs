@@ -1,10 +1,10 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.Application.Accounting.UseCases.CreateAccount;
 using ERP.Application.Accounting.UseCases.GetAccounts;
 using ERP.Application.Accounting.UseCases.GetAccountById;
-using ERP.Application.Modules.Accounting.UseCases.CreateJournalEntry;
 using CreateJournalEntryCommand = ERP.Application.Accounting.UseCases.CreateJournalEntry.CreateJournalEntryCommand;
 using ERP.Application.Accounting.UseCases.GetJournalEntries;
 using ERP.Application.Accounting.UseCases.GetJournalEntryById;
@@ -22,25 +22,22 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class AccountsController : ControllerBase
 {
-    private readonly CreateAccountHandler       _createAccountHandler;
+    private readonly IMediator                  _mediator;
     private readonly GetAccountsHandler         _getAccountsHandler;
     private readonly GetAccountByIdHandler      _getAccountByIdHandler;
-    private readonly CreateJournalEntryHandler  _createJournalEntryHandler;
     private readonly GetJournalEntriesHandler   _getJournalEntriesHandler;
     private readonly GetJournalEntryByIdHandler _getJournalEntryByIdHandler;
 
     public AccountsController(
-        CreateAccountHandler createAccountHandler,
+        IMediator mediator,
         GetAccountsHandler getAccountsHandler,
         GetAccountByIdHandler getAccountByIdHandler,
-        CreateJournalEntryHandler createJournalEntryHandler,
         GetJournalEntriesHandler getJournalEntriesHandler,
         GetJournalEntryByIdHandler getJournalEntryByIdHandler)
     {
-        _createAccountHandler       = createAccountHandler;
+        _mediator                   = mediator;
         _getAccountsHandler         = getAccountsHandler;
         _getAccountByIdHandler      = getAccountByIdHandler;
-        _createJournalEntryHandler  = createJournalEntryHandler;
         _getJournalEntriesHandler   = getJournalEntriesHandler;
         _getJournalEntryByIdHandler = getJournalEntryByIdHandler;
     }
@@ -51,6 +48,7 @@ public class AccountsController : ControllerBase
     /// <response code="200">Lista de cuentas contables (puede ser vacía).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpGet]
+    [Authorize(Policy = "perm:accounting.accounts.view")]
     [ProducesResponseType(typeof(ApiResponse<PagedResponse<AccountDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
@@ -80,6 +78,7 @@ public class AccountsController : ControllerBase
     /// <response code="200">Cuenta encontrada.</response>
     /// <response code="404">La cuenta no existe o no pertenece al tenant.</response>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = "perm:accounting.accounts.view")]
     [ProducesResponseType(typeof(ApiResponse<AccountDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -109,6 +108,7 @@ public class AccountsController : ControllerBase
     /// <response code="201">Cuenta creada correctamente.</response>
     /// <response code="400">El código ya existe en el tenant.</response>
     [HttpPost]
+    [Authorize(Policy = "perm:accounting.accounts.create")]
     [ProducesResponseType(typeof(ApiResponse<AccountDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -116,7 +116,7 @@ public class AccountsController : ControllerBase
         [FromBody] CreateAccountCommand command,
         CancellationToken ct)
     {
-        var result = await _createAccountHandler.HandleAsync(command, ct);
+        var result = await _mediator.Send(command, ct);
         return result.IsSuccess
             ? StatusCode(StatusCodes.Status201Created, new ApiResponse<AccountDto?>(
                 Success: true,
@@ -134,6 +134,7 @@ public class AccountsController : ControllerBase
     /// <response code="200">Lista de asientos contables con sus líneas.</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpGet("journal-entries")]
+    [Authorize(Policy = "perm:accounting.journal.view")]
     [ProducesResponseType(typeof(ApiResponse<PagedResponse<JournalEntryDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetJournalEntries([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
@@ -163,6 +164,7 @@ public class AccountsController : ControllerBase
     /// <response code="200">Asiento encontrado con líneas de débito/crédito.</response>
     /// <response code="404">El asiento no existe o no pertenece al tenant.</response>
     [HttpGet("journal-entries/{id:guid}")]
+    [Authorize(Policy = "perm:accounting.journal.view")]
     [ProducesResponseType(typeof(ApiResponse<JournalEntryDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -191,6 +193,7 @@ public class AccountsController : ControllerBase
     /// <response code="201">Asiento creado en estado Borrador.</response>
     /// <response code="400">El asiento no está cuadrado u otro error de validación.</response>
     [HttpPost("journal-entries")]
+    [Authorize(Policy = "perm:accounting.journal.create")]
     [ProducesResponseType(typeof(ApiResponse<JournalEntryDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -198,7 +201,7 @@ public class AccountsController : ControllerBase
         [FromBody] CreateJournalEntryCommand command,
         CancellationToken ct)
     {
-        var result = await _createJournalEntryHandler.HandleAsync(command, ct);
+        var result = await _mediator.Send(command, ct);
         return result.IsSuccess
             ? StatusCode(StatusCodes.Status201Created, new ApiResponse<JournalEntryDto?>(
                 Success: true,

@@ -14,6 +14,61 @@
   background: white;
 }
 
+.companies-plan-cell {
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+.companies-badge-all {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border-radius: 4px;
+  background: var(--zh-color-surface-muted, #e8ecf1);
+  color: var(--zh-color-text-muted, #5a6570);
+}
+
+.companies-actions-cell {
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.companies-modules-cell {
+  vertical-align: middle;
+  max-width: 220px;
+}
+
+.companies-module-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.companies-module-chip {
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 6px;
+  background: rgba(0, 51, 102, 0.08);
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.companies-module-chip--all {
+  background: rgba(34, 197, 94, 0.15);
+  color: #14532d;
+}
+
+.companies-module-chip--muted {
+  opacity: 0.55;
+  font-weight: 500;
+}
+
 .companies-mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   font-size: 12px;

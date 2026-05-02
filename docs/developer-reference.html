@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ERP SaaS — Referencia para Desarrolladores · ZH Technologies</title>
+<style>
+  :root {
+    --zh-blue: #4F7BA6;
+    --zh-blue-dark: #2C4E72;
+    --zh-blue-light: #EBF2FA;
+    --zh-blue-mid: #D0E3F4;
+    --zh-accent: #3A6A94;
+    --zh-success: #1D9E75;
+    --zh-danger: #E24B4A;
+    --zh-warning: #BA7517;
+    --zh-bg: #f8fafc;
+    --zh-surface: #ffffff;
+    --zh-text: #1e293b;
+    --zh-text-muted: rgba(30,41,59,.6);
+    --zh-border: rgba(15,23,42,.10);
+    --zh-radius: 8px;
+    --zh-shadow: 0 1px 4px rgba(15,23,42,.10);
+    --font: system-ui,'Segoe UI',Roboto,sans-serif;
+    --font-mono: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--font); background: var(--zh-bg); color: var(--zh-text); font-size: 13px; line-height: 1.6; }
+
+  /* ── Layout ── */
+  .layout { display: flex; min-height: 100vh; }
+  nav.sidebar {
+    width: 220px; min-width: 220px; background: var(--zh-blue-dark);
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    padding: 0 0 24px; display: flex; flex-direction: column;
+  }
+  nav.sidebar .logo { padding: 20px 16px 16px; border-bottom: 1px solid rgba(255,255,255,.12); margin-bottom: 8px; }
+  nav.sidebar .logo h1 { color: #fff; font-size: 14px; font-weight: 700; letter-spacing: .4px; }
+  nav.sidebar .logo span { color: rgba(255,255,255,.55); font-size: 11px; }
+  nav.sidebar a {
+    display: block; padding: 7px 16px; color: rgba(255,255,255,.75);
+    text-decoration: none; font-size: 12px; border-left: 3px solid transparent; transition: all .15s;
+  }
+  nav.sidebar a:hover, nav.sidebar a.active { color: #fff; background: rgba(255,255,255,.08); border-left-color: #7fb3d8; }
+  nav.sidebar .nav-section { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: rgba(255,255,255,.35); padding: 12px 16px 4px; }
+  main { flex: 1; max-width: 1100px; padding: 32px 40px; }
+
+  /* ── Tipografía ── */
+  h2 { font-size: 20px; font-weight: 700; color: var(--zh-blue-dark); margin: 0 0 6px; }
+  h3 { font-size: 14px; font-weight: 700; color: var(--zh-blue-dark); margin: 20px 0 8px; }
+  h4 { font-size: 12px; font-weight: 700; color: var(--zh-accent); margin: 12px 0 6px; text-transform: uppercase; letter-spacing: .5px; }
+  p { margin: 6px 0 10px; color: var(--zh-text-muted); }
+
+  /* ── Section ── */
+  section { margin-bottom: 48px; }
+  .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid var(--zh-blue-mid); }
+  .section-icon { width: 32px; height: 32px; background: var(--zh-blue-light); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+
+  /* ── Cards ── */
+  .card { background: var(--zh-surface); border: 1px solid var(--zh-border); border-radius: var(--zh-radius); padding: 16px 20px; box-shadow: var(--zh-shadow); }
+  .card-grid { display: grid; gap: 14px; }
+  .card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .card h4 { margin-top: 0; }
+
+  /* ── Badges ── */
+  .badge { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; white-space: nowrap; }
+  .badge-get   { background: #dbeafe; color: #1d4ed8; }
+  .badge-post  { background: #dcfce7; color: #15803d; }
+  .badge-put   { background: #fef9c3; color: #854d0e; }
+  .badge-patch { background: #f3e8ff; color: #6b21a8; }
+  .badge-del   { background: #fee2e2; color: #991b1b; }
+  .badge-jwt   { background: var(--zh-blue-light); color: var(--zh-blue-dark); }
+  .badge-open  { background: #f1f5f9; color: #64748b; }
+  .badge-admin { background: #fff7ed; color: #c2410c; }
+  .badge-super { background: #fdf2f8; color: #9d174d; }
+  .badge-perm  { background: #ecfdf5; color: #065f46; font-family: var(--font-mono); }
+  .badge-blue  { background: var(--zh-blue-light); color: var(--zh-blue-dark); }
+
+  /* ── Code ── */
+  code { font-family: var(--font-mono); font-size: 11px; background: #f1f5f9; padding: 1px 5px; border-radius: 4px; color: #334155; }
+  pre {
+    font-family: var(--font-mono); font-size: 11.5px; background: #1e293b; color: #e2e8f0;
+    padding: 16px 18px; border-radius: var(--zh-radius); overflow-x: auto; line-height: 1.7; margin: 10px 0;
+  }
+  pre .comment { color: #64748b; font-style: italic; }
+  pre .kw  { color: #7dd3fc; }
+  pre .str { color: #86efac; }
+  pre .num { color: #f9a8d4; }
+  pre .fn  { color: #fde68a; }
+  pre .type { color: #c4b5fd; }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto; margin: 10px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: var(--zh-blue-light); color: var(--zh-blue-dark); font-weight: 700; text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--zh-blue-mid); white-space: nowrap; }
+  td { padding: 7px 12px; border-bottom: 1px solid var(--zh-border); vertical-align: top; }
+  tr:hover td { background: #f8fafc; }
+  td code { font-size: 11px; }
+
+  /* ── Architecture Diagram ── */
+  .arch-diagram { background: #1e293b; border-radius: 10px; padding: 24px; font-family: var(--font-mono); font-size: 11.5px; color: #e2e8f0; line-height: 1.8; overflow-x: auto; }
+  .arch-diagram .layer { border: 1px solid #334155; border-radius: 6px; padding: 10px 14px; margin: 6px 0; }
+  .arch-diagram .layer-fe  { border-color: #60a5fa; background: rgba(96,165,250,.06); }
+  .arch-diagram .layer-api { border-color: #f9a8d4; background: rgba(249,168,212,.05); }
+  .arch-diagram .layer-app { border-color: #86efac; background: rgba(134,239,172,.05); }
+  .arch-diagram .layer-inf { border-color: #fde68a; background: rgba(253,230,138,.05); }
+  .arch-diagram .layer-dom { border-color: #c4b5fd; background: rgba(196,181,253,.05); }
+  .arch-diagram .layer-db  { border-color: #94a3b8; background: rgba(148,163,184,.05); }
+  .arch-diagram .layer-title { font-weight: 700; margin-bottom: 4px; }
+  .arch-diagram .fe-title  { color: #60a5fa; }
+  .arch-diagram .api-title { color: #f9a8d4; }
+  .arch-diagram .app-title { color: #86efac; }
+  .arch-diagram .inf-title { color: #fde68a; }
+  .arch-diagram .dom-title { color: #c4b5fd; }
+  .arch-diagram .db-title  { color: #94a3b8; }
+  .arch-diagram .sub   { color: #94a3b8; font-size: 11px; }
+  .arch-diagram .arrow { text-align: center; color: #475569; padding: 2px 0; }
+
+  /* ── Flow ── */
+  .flow { display: flex; align-items: stretch; gap: 0; flex-wrap: wrap; margin: 12px 0; }
+  .flow-step { flex: 1; min-width: 120px; background: var(--zh-blue-light); border: 1px solid var(--zh-blue-mid); padding: 10px 12px; font-size: 11px; text-align: center; }
+  .flow-step:first-child { border-radius: 6px 0 0 6px; }
+  .flow-step:last-child  { border-radius: 0 6px 6px 0; }
+  .flow-step strong { display: block; color: var(--zh-blue-dark); font-size: 12px; margin-bottom: 2px; }
+  .flow-arrow { display: flex; align-items: center; color: var(--zh-blue); font-size: 16px; padding: 0 4px; }
+
+  /* ── Tabs ── */
+  .tabs { margin: 12px 0; }
+  .tab-bar { display: flex; gap: 2px; border-bottom: 2px solid var(--zh-blue-mid); }
+  .tab-btn {
+    padding: 8px 16px; font-size: 12px; font-weight: 600; border: none;
+    background: none; cursor: pointer; color: var(--zh-text-muted);
+    border-bottom: 2px solid transparent; margin-bottom: -2px;
+    border-radius: 6px 6px 0 0; transition: all .15s;
+  }
+  .tab-btn:hover  { color: var(--zh-blue); background: var(--zh-blue-light); }
+  .tab-btn.active { color: var(--zh-blue-dark); border-bottom-color: var(--zh-blue-dark); background: var(--zh-blue-light); }
+  .tab-panel { display: none; padding: 16px 0; }
+  .tab-panel.active { display: block; }
+
+  /* ── Tree ── */
+  .tree { font-family: var(--font-mono); font-size: 11.5px; background: #f8fafc; border: 1px solid var(--zh-border); border-radius: var(--zh-radius); padding: 14px 16px; line-height: 1.9; }
+  .tree .dir { color: var(--zh-blue-dark); font-weight: 700; }
+  .tree .comment { color: #94a3b8; }
+
+  /* ── Info / Tip / Warn boxes ── */
+  .info-box { background: var(--zh-blue-light); border-left: 4px solid var(--zh-blue); border-radius: 0 6px 6px 0; padding: 10px 14px; margin: 10px 0; font-size: 12px; }
+  .warn-box  { background: #fffbeb; border-left: 4px solid var(--zh-warning); border-radius: 0 6px 6px 0; padding: 10px 14px; margin: 10px 0; font-size: 12px; color: #78350f; }
+  .tip-box   { background: #f0fdf4; border-left: 4px solid var(--zh-success); border-radius: 0 6px 6px 0; padding: 10px 14px; margin: 10px 0; font-size: 12px; color: #14532d; }
+
+  /* ── Module grid ── */
+  .module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .module-card { background: var(--zh-surface); border: 1px solid var(--zh-border); border-radius: var(--zh-radius); padding: 14px 16px; box-shadow: var(--zh-shadow); }
+  .module-card .mod-name { font-weight: 700; font-size: 13px; color: var(--zh-blue-dark); margin-bottom: 4px; }
+  .module-card .mod-meta { font-size: 11px; color: var(--zh-text-muted); margin-bottom: 8px; }
+  .module-card ul { list-style: none; font-size: 11px; color: #475569; }
+  .module-card ul li::before { content: '· '; color: var(--zh-blue); }
+
+  /* ── Tag list ── */
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+
+  @media (max-width: 800px) {
+    nav.sidebar { display: none; }
+    main { padding: 20px 16px; }
+    .card-grid.cols-2, .card-grid.cols-3, .card-grid.cols-4 { grid-template-columns: 1fr; }
+  }
+  @media print { nav.sidebar { display: none; } main { max-width: none; padding: 20px; } }
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ════ SIDEBAR ════ -->
+<nav class="sidebar">
+  <div class="logo">
+    <h1>ERP SaaS</h1>
+    <span>ZH Technologies · Dev Reference</span>
+  </div>
+
+  <div class="nav-section">Inicio</div>
+  <a href="#overview">Visión general</a>
+  <a href="#quickstart">Inicio rápido</a>
+  <a href="#stack">Stack tecnológico</a>
+
+  <div class="nav-section">Arquitectura</div>
+  <a href="#layers">Capas del sistema</a>
+  <a href="#backend">Backend</a>
+  <a href="#frontend">Frontend</a>
+
+  <div class="nav-section">Módulos</div>
+  <a href="#modules">Resumen de módulos</a>
+  <a href="#product-model">Modelo de Producto</a>
+  <a href="#auth-flow">Flujo de Auth</a>
+  <a href="#multitenant">Multi-tenant</a>
+  <a href="#permissions">Permisos</a>
+
+  <div class="nav-section">API</div>
+  <a href="#endpoints">Endpoints REST</a>
+  <a href="#response-format">Formato de respuesta</a>
+
+  <div class="nav-section">Frontend</div>
+  <a href="#routes">Rutas / Páginas</a>
+  <a href="#services">Servicios</a>
+  <a href="#components">Componentes ZH</a>
+  <a href="#i18n">i18n (3 idiomas)</a>
+
+  <div class="nav-section">Convenciones</div>
+  <a href="#adding-usecase">Nuevo caso de uso</a>
+  <a href="#adding-page">Nueva página</a>
+  <a href="#patterns">Patrones clave</a>
+  <a href="#migrations">Migraciones</a>
+</nav>
+
+<!-- ════ MAIN ════ -->
+<main>
+
+  <!-- HEADER -->
+  <div style="margin-bottom:32px;padding:20px 24px;background:linear-gradient(135deg,#2C4E72,#4F7BA6);border-radius:12px;color:#fff;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+      <span style="font-size:28px;">🏗️</span>
+      <div>
+        <h2 style="color:#fff;font-size:22px;margin:0;">ERP SaaS — Referencia para Desarrolladores</h2>
+        <p style="color:rgba(255,255,255,.75);margin:2px 0 0;font-size:12px;">ZH Technologies · .NET 10 + React 19 · Multi-tenant SaaS</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+      <span class="badge badge-blue">.NET 10</span>
+      <span class="badge badge-blue">React 19</span>
+      <span class="badge badge-blue">TypeScript</span>
+      <span class="badge badge-blue">PostgreSQL 16</span>
+      <span class="badge badge-blue">EF Core 10</span>
+      <span class="badge badge-blue">Clean Architecture</span>
+      <span class="badge badge-blue">CQRS</span>
+      <span class="badge badge-blue">Multi-tenant</span>
+    </div>
+  </div>
+
+  <!-- ─── VISIÓN GENERAL ─── -->
+  <section id="overview">
+    <div class="section-header">
+      <div class="section-icon">🗺️</div>
+      <h2>Visión General</h2>
+    </div>
+
+    <div class="arch-diagram">
+      <div class="layer layer-fe">
+        <div class="layer-title fe-title">FRONTEND — React 19 + Vite · http://localhost:5173</div>
+        <div class="sub">17 Pages &nbsp;|&nbsp; Componentes ZH Library &nbsp;|&nbsp; Zustand (auth / access / permissions) &nbsp;|&nbsp; i18n: es / en / qu (Kichwa) &nbsp;|&nbsp; Zod schemas &nbsp;|&nbsp; Axios + Vite proxy</div>
+      </div>
+      <div class="arrow">↕ HTTP /api/* → Vite proxy en dev | sin CORS issues</div>
+      <div class="layer layer-api">
+        <div class="layer-title api-title">ERP.API — ASP.NET Core 10 · http://localhost:5003</div>
+        <div class="sub">19 Controllers &nbsp;|&nbsp; JWT Bearer &nbsp;|&nbsp; PermissionHandler &nbsp;|&nbsp; TokenTypeHandler &nbsp;|&nbsp; ApiResponse&lt;T&gt; / PagedResponse&lt;T&gt; &nbsp;|&nbsp; Swagger</div>
+      </div>
+      <div class="arrow">↕ Handlers registrados automáticamente por reflection (assembly scan)</div>
+      <div class="layer layer-app">
+        <div class="layer-title app-title">ERP.Application — Casos de uso (CQRS)</div>
+        <div class="sub">10 Módulos &nbsp;|&nbsp; Commands + Queries + Handlers &nbsp;|&nbsp; DTOs &nbsp;|&nbsp; Result&lt;T&gt; &nbsp;|&nbsp; ICurrentUser / ICurrentTenant</div>
+      </div>
+      <div class="arrow">↕ Implementaciones concretas inyectadas por DI</div>
+      <div class="layer layer-inf">
+        <div class="layer-title inf-title">ERP.Infrastructure — EF Core + Servicios externos</div>
+        <div class="sub">ErpDbContext (filtros global IMustHaveTenant) &nbsp;|&nbsp; 12 Repositories &nbsp;|&nbsp; 17 Configurations &nbsp;|&nbsp; JwtService &nbsp;|&nbsp; CurrentTenantService &nbsp;|&nbsp; 14 Migrations</div>
+      </div>
+      <div class="arrow">↕ Contratos (interfaces) definidos en Domain</div>
+      <div class="layer layer-dom">
+        <div class="layer-title dom-title">ERP.Domain — Núcleo del negocio (sin dependencias externas)</div>
+        <div class="sub">Entities + Aggregates + Value Objects &nbsp;|&nbsp; IMustHaveTenant &nbsp;|&nbsp; Domain Events &nbsp;|&nbsp; Repository Interfaces &nbsp;|&nbsp; Business Rules</div>
+      </div>
+      <div class="arrow">↕ EF Core + Npgsql driver</div>
+      <div class="layer layer-db">
+        <div class="layer-title db-title">PostgreSQL 16 — Docker: postgreszh · localhost:5435 / DB: dberpsaas</div>
+        <div class="sub">User: postgres &nbsp;|&nbsp; Pass: zhin@2024 &nbsp;|&nbsp; Esquema: public &nbsp;|&nbsp; Multi-tenant con columna TenantId en todas las tablas de negocio</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── INICIO RÁPIDO ─── -->
+  <section id="quickstart">
+    <div class="section-header">
+      <div class="section-icon">🚀</div>
+      <h2>Inicio Rápido</h2>
+    </div>
+
+    <div class="card-grid cols-3">
+      <div class="card">
+        <h4>1. Base de datos</h4>
+        <pre><span class="comment"># Crear contenedor</span>
+docker run -d \
+  --name postgreszh \
+  -e POSTGRES_PASSWORD=zhin@2024 \
+  -p 5435:5432 \
+  postgres:16
+
+<span class="comment"># Verificar</span>
+docker ps --filter "name=postgreszh"</pre>
+      </div>
+      <div class="card">
+        <h4>2. Backend</h4>
+        <pre><span class="comment"># Migraciones</span>
+cd backend/src
+dotnet ef database update \
+  --project ERP.Infrastructure \
+  --startup-project ERP.API
+
+<span class="comment"># Correr API</span>
+dotnet run \
+  --project ERP.API \
+  --launch-profile http</pre>
+        <p>API: <code>localhost:5003</code> &nbsp; Swagger: <code>/swagger</code></p>
+      </div>
+      <div class="card">
+        <h4>3. Frontend</h4>
+        <pre><span class="comment"># Solo primera vez</span>
+cd frontend
+npm install
+
+<span class="comment"># Dev con HMR</span>
+npm run dev</pre>
+        <p>App: <code>localhost:5173</code></p>
+        <div class="tip-box">El proxy Vite reenvía <code>/api/*</code> al puerto 5003. No hay CORS en dev.</div>
+      </div>
+    </div>
+
+    <h3>Primer usuario de prueba</h3>
+    <pre><span class="comment"># 1. Crear tenant</span>
+curl -X POST http://localhost:5003/api/tenants \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"name":"Mi Empresa","slug":"mi-empresa"}'</span>
+
+<span class="comment"># 2. Registrar admin (usar el id retornado)</span>
+curl -X POST http://localhost:5003/api/auth/register \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"firstName":"Admin","lastName":"ERP","email":"admin@test.com","password":"Admin1234!","tenantId":"&lt;id&gt;","role":"Admin"}'</span>
+
+<span class="comment"># 3. Abrir http://localhost:5173 e ingresar con el tenantId, email y password</span></pre>
+  </section>
+
+  <!-- ─── STACK ─── -->
+  <section id="stack">
+    <div class="section-header">
+      <div class="section-icon">🔧</div>
+      <h2>Stack Tecnológico</h2>
+    </div>
+    <div class="card-grid cols-2">
+      <div class="card">
+        <h4>Backend</h4>
+        <div class="table-wrap"><table>
+          <tr><th>Tecnología</th><th>Versión</th><th>Uso</th></tr>
+          <tr><td>.NET / C#</td><td>10</td><td>Runtime y lenguaje</td></tr>
+          <tr><td>ASP.NET Core</td><td>10</td><td>HTTP API, Middleware, DI</td></tr>
+          <tr><td>EF Core</td><td>10</td><td>ORM, Migrations, Query Filters</td></tr>
+          <tr><td>Npgsql</td><td>9.x</td><td>Driver PostgreSQL</td></tr>
+          <tr><td>Swashbuckle</td><td>6.9</td><td>Swagger / OpenAPI</td></tr>
+          <tr><td>System.IdentityModel.JWT</td><td>8.x</td><td>JWT tokens</td></tr>
+          <tr><td>xUnit</td><td>2.x</td><td>Tests unitarios</td></tr>
+        </table></div>
+      </div>
+      <div class="card">
+        <h4>Frontend</h4>
+        <div class="table-wrap"><table>
+          <tr><th>Tecnología</th><th>Versión</th><th>Uso</th></tr>
+          <tr><td>React</td><td>19</td><td>UI Framework</td></tr>
+          <tr><td>TypeScript</td><td>5.x</td><td>Tipado estático</td></tr>
+          <tr><td>Vite</td><td>6.x</td><td>Build tool, HMR, proxy</td></tr>
+          <tr><td>React Router</td><td>7</td><td>Routing SPA</td></tr>
+          <tr><td>Zustand</td><td>5.x</td><td>Estado global + persist</td></tr>
+          <tr><td>Axios</td><td>1.x</td><td>HTTP client + interceptores JWT</td></tr>
+          <tr><td>Zod</td><td>3.x</td><td>Validación de formularios</td></tr>
+          <tr><td>i18next</td><td>23.x</td><td>Internacionalización</td></tr>
+        </table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── CAPAS ─── -->
+  <section id="layers">
+    <div class="section-header">
+      <div class="section-icon">📐</div>
+      <h2>Capas del Sistema (Clean Architecture)</h2>
+    </div>
+
+    <div class="info-box">
+      <strong>Regla de oro:</strong> Domain ← Application ← Infrastructure ← API.<br>
+      El dominio <strong>no conoce</strong> EF Core ni ASP.NET. Application <strong>no conoce</strong> la base de datos.
+    </div>
+
+    <div class="card-grid cols-4">
+      <div class="card" style="border-top:3px solid #c4b5fd;">
+        <h4 style="color:#7c3aed;">ERP.Domain</h4>
+        <ul style="list-style:none;font-size:12px;line-height:2;">
+          <li>Entities / Aggregates</li>
+          <li>Value Objects</li>
+          <li>Domain Events</li>
+          <li>Repository Interfaces</li>
+          <li>IMustHaveTenant</li>
+          <li>Business Rules</li>
+        </ul>
+        <p style="font-size:11px;color:#94a3b8;margin-top:8px;">Sin dependencias externas</p>
+      </div>
+      <div class="card" style="border-top:3px solid #86efac;">
+        <h4 style="color:#15803d;">ERP.Application</h4>
+        <ul style="list-style:none;font-size:12px;line-height:2;">
+          <li>Commands / Queries</li>
+          <li>Handlers (CQRS)</li>
+          <li>DTOs</li>
+          <li>Result&lt;T&gt;</li>
+          <li>ICurrentUser</li>
+          <li>DI por reflection</li>
+        </ul>
+        <p style="font-size:11px;color:#94a3b8;margin-top:8px;">Solo depende de Domain</p>
+      </div>
+      <div class="card" style="border-top:3px solid #fde68a;">
+        <h4 style="color:#d97706;">ERP.Infrastructure</h4>
+        <ul style="list-style:none;font-size:12px;line-height:2;">
+          <li>ErpDbContext (EF Core)</li>
+          <li>Repositories concretos</li>
+          <li>JwtService</li>
+          <li>CurrentTenantService</li>
+          <li>Migrations (14)</li>
+          <li>DependencyInjection</li>
+        </ul>
+        <p style="font-size:11px;color:#94a3b8;margin-top:8px;">Domain + Application</p>
+      </div>
+      <div class="card" style="border-top:3px solid #f9a8d4;">
+        <h4 style="color:#be185d;">ERP.API</h4>
+        <ul style="list-style:none;font-size:12px;line-height:2;">
+          <li>19 Controllers</li>
+          <li>JWT Middleware</li>
+          <li>PermissionHandler</li>
+          <li>TokenTypeHandler</li>
+          <li>Program.cs</li>
+          <li>Swagger</li>
+        </ul>
+        <p style="font-size:11px;color:#94a3b8;margin-top:8px;">Punto de entrada HTTP</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── BACKEND ─── -->
+  <section id="backend">
+    <div class="section-header">
+      <div class="section-icon">⚙️</div>
+      <h2>Backend — Estructura de Carpetas</h2>
+    </div>
+
+    <div class="tabs">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab(event,'be-domain')">Domain</button>
+        <button class="tab-btn" onclick="switchTab(event,'be-app')">Application</button>
+        <button class="tab-btn" onclick="switchTab(event,'be-infra')">Infrastructure</button>
+        <button class="tab-btn" onclick="switchTab(event,'be-api')">API</button>
+      </div>
+
+      <div id="be-domain" class="tab-panel active">
+        <div class="tree">
+<span class="dir">ERP.Domain/</span>
+├── <span class="dir">Modules/</span>
+│   ├── <span class="dir">Common/</span>                 <span class="comment">← Clases base para todas las entidades</span>
+│   │   ├── BaseEntity.cs           <span class="comment">← Id (Guid)</span>
+│   │   ├── AggregateRoot.cs        <span class="comment">← Base para aggregates con eventos</span>
+│   │   ├── AuditableEntity.cs      <span class="comment">← CreatedAt, UpdatedAt, CreatedBy, UpdatedBy</span>
+│   │   ├── MasterEntity.cs         <span class="comment">← IsActive, Enable(), Disable()</span>
+│   │   ├── IMustHaveTenant.cs      <span class="comment">← Marca entidades multi-tenant (TenantId)</span>
+│   │   └── IDomainEvent.cs
+│   ├── <span class="dir">Products/</span>
+│   │   ├── <span class="dir">Entities/</span>             <span class="comment">← Product + 11 sub-entidades owned</span>
+│   │   ├── <span class="dir">Enums/</span>                <span class="comment">← CustomFieldType (Text/Number/Date/Bool/List)</span>
+│   │   └── <span class="dir">Interfaces/</span>           <span class="comment">← IProductRepository, ITaxRateRepository</span>
+│   ├── <span class="dir">Accounting/</span>
+│   │   ├── <span class="dir">Entities/</span>             <span class="comment">← Account, JournalEntry, JournalEntryLine</span>
+│   │   ├── <span class="dir">ValueObjects/</span>         <span class="comment">← AccountCode, Money</span>
+│   │   └── <span class="dir">Events/</span>               <span class="comment">← JournalEntryCreatedEvent</span>
+│   ├── <span class="dir">Auth/</span>                   <span class="comment">← User entity, Email VO, IJwtService</span>
+│   ├── <span class="dir">Access/</span>                 <span class="comment">← AccessProfile, Membership, IdentityUser</span>
+│   ├── <span class="dir">Tenants/</span>                <span class="comment">← Tenant entity</span>
+│   ├── <span class="dir">Security/</span>               <span class="comment">← SecurityAdminScopeAssignment</span>
+│   └── <span class="dir">Audit/</span>                  <span class="comment">← UserActivity (registro de auditoría)</span>
+├── <span class="dir">Branches/</span>                   <span class="comment">← Branch entity</span>
+├── <span class="dir">Customers/</span>                  <span class="comment">← Customer entity</span>
+└── <span class="dir">Geography/</span>                  <span class="comment">← GeoCountry, GeoProvince, GeoCanton, GeoParish</span>
+        </div>
+      </div>
+
+      <div id="be-app" class="tab-panel">
+        <div class="tree">
+<span class="dir">ERP.Application/</span>
+├── DependencyInjection.cs          <span class="comment">← AddApplication() registra todos los *Handler por reflection</span>
+└── <span class="dir">Modules/</span>
+    ├── <span class="dir">Products/</span>
+    │   ├── <span class="dir">DTOs/</span>               <span class="comment">← ProductDto, ProductDetailDto</span>
+    │   ├── <span class="dir">Catalogs/UseCases/</span>  <span class="comment">← CRUD marcas, tipos, unidades, etc.</span>
+    │   └── <span class="dir">UseCases/</span>
+    │       ├── <span class="dir">CreateProduct/</span>     <span class="comment">← CreateProductCommand + Handler</span>
+    │       ├── <span class="dir">UpdateProduct/</span>
+    │       ├── <span class="dir">GetProducts/</span>
+    │       ├── <span class="dir">GetProductById/</span>
+    │       └── <span class="dir">GetProductReport/</span>
+    ├── <span class="dir">Customers/</span>             <span class="comment">← Create, Get, Update, Enable/Disable</span>
+    ├── <span class="dir">Branches/</span>              <span class="comment">← CRUD + consultas geográficas</span>
+    ├── <span class="dir">Accounting/</span>            <span class="comment">← Accounts + JournalEntries</span>
+    ├── <span class="dir">Auth/</span>                  <span class="comment">← Login, Register, PasswordReset, SwitchTenant</span>
+    ├── <span class="dir">Access/</span>                <span class="comment">← Profiles, Memberships, Permissions, Bootstrap</span>
+    ├── <span class="dir">Tenants/</span>               <span class="comment">← CreateTenant, UpdatePasswordResetMode</span>
+    ├── <span class="dir">Security/</span>              <span class="comment">← Admin scope matrix</span>
+    ├── <span class="dir">Audit/</span>                 <span class="comment">← GetMyActivity, GetEntityActivity</span>
+    └── <span class="dir">Common/</span>                <span class="comment">← ICurrentUser, ICurrentTenant</span>
+        </div>
+      </div>
+
+      <div id="be-infra" class="tab-panel">
+        <div class="tree">
+<span class="dir">ERP.Infrastructure/</span>
+├── DependencyInjection.cs              <span class="comment">← Registra DbContext, repos y services</span>
+├── <span class="dir">Persistence/</span>
+│   ├── ErpDbContext.cs                 <span class="comment">← 20 DbSets + filtros global IMustHaveTenant</span>
+│   ├── <span class="dir">Configurations/</span>             <span class="comment">← 17 archivos Fluent API</span>
+│   │   ├── ProductConfiguration.cs     <span class="comment">← 11 OwnsMany para sub-entidades del producto</span>
+│   │   ├── CustomerConfiguration.cs
+│   │   ├── BranchAndGeographyConfiguration.cs
+│   │   └── ... (14 más)
+│   └── <span class="dir">Repositories/</span>               <span class="comment">← 12 implementaciones concretas</span>
+│       ├── ProductRepository.cs
+│       ├── CustomerRepository.cs
+│       ├── AccountingRepository.cs
+│       └── ... (9 más)
+├── <span class="dir">Services/</span>
+│   ├── JwtService.cs                   <span class="comment">← Genera tokens JWT con todos los claims</span>
+│   ├── CurrentTenantService.cs         <span class="comment">← Lee tenant_id del JWT → ICurrentTenant</span>
+│   ├── CurrentUserService.cs           <span class="comment">← Implementa ICurrentUser desde claims</span>
+│   └── AccessTokenService.cs           <span class="comment">← Token bootstrap para primer setup</span>
+├── <span class="dir">Migrations/</span>                     <span class="comment">← 14 migraciones EF Core</span>
+└── <span class="dir">Seeding/Scripts/</span>
+    └── inec_ecuador_geography.sql      <span class="comment">← 24 provincias · 221 cantones · 1023 parroquias</span>
+        </div>
+      </div>
+
+      <div id="be-api" class="tab-panel">
+        <div class="tree">
+<span class="dir">ERP.API/</span>
+├── Program.cs                          <span class="comment">← DI, JWT, CORS, Swagger, Authorization policies</span>
+├── <span class="dir">Controllers/</span>                    <span class="comment">← 19 controllers REST</span>
+│   ├── AuthController.cs
+│   ├── ProductsController.cs           <span class="comment">← perm:catalog.products.*</span>
+│   ├── CustomersController.cs          <span class="comment">← perm:catalog.customers.*</span>
+│   ├── BranchesController.cs           <span class="comment">← perm:saas.branches.*</span>
+│   ├── AccountsController.cs
+│   ├── AccessController.cs
+│   ├── SecurityController.cs           <span class="comment">← Solo SuperAdmin</span>
+│   ├── SuperAdminController.cs
+│   ├── GeographyController.cs          <span class="comment">← Consultas geo sin permiso especial</span>
+│   └── ... (Brands, Units, TaxRates, Tariffs, ProductLines…)
+├── <span class="dir">Authorization/</span>
+│   ├── PermissionHandler.cs            <span class="comment">← Valida claim "perm:modulo.entidad.accion"</span>
+│   ├── PermissionPolicyProvider.cs     <span class="comment">← Crea policies dinámicamente (sin registrar)</span>
+│   └── TokenTypeHandler.cs             <span class="comment">← Bloquea bootstrap tokens en endpoints normales</span>
+├── <span class="dir">Contracts/</span>
+│   ├── ApiResponse.cs                  <span class="comment">← { success, message, data }</span>
+│   └── PagedResponse.cs                <span class="comment">← { items, total, page, pageSize }</span>
+└── <span class="dir">Middleware/</span>                     <span class="comment">← Global error handler</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FRONTEND ─── -->
+  <section id="frontend">
+    <div class="section-header">
+      <div class="section-icon">🖥️</div>
+      <h2>Frontend — Estructura de Carpetas</h2>
+    </div>
+
+    <div class="tree">
+<span class="dir">frontend/src/</span>
+├── <span class="dir">lib/</span>
+│   ├── api.ts              <span class="comment">← Instancia Axios (VITE_API_URL='') + interceptor JWT + redirect 401</span>
+│   └── formatApiError.ts   <span class="comment">← Normaliza errores de la API para mostrar en UI</span>
+├── <span class="dir">store/</span>
+│   ├── authStore.ts        <span class="comment">← JWT + user info + hasHydrated (Zustand persist → localStorage)</span>
+│   ├── accessStore.ts      <span class="comment">← Perfil de acceso activo del usuario</span>
+│   └── permissionsStore.ts <span class="comment">← Lista de permisos del usuario actual</span>
+├── <span class="dir">services/</span>            <span class="comment">← 12 archivos, uno por módulo</span>
+│   ├── productService.ts
+│   ├── customerService.ts
+│   ├── accountingService.ts
+│   └── ... (9 más)
+├── <span class="dir">types/</span>               <span class="comment">← Interfaces TypeScript espejo de los DTOs del backend</span>
+│   ├── product.ts · auth.ts · accounting.ts · access.ts
+├── <span class="dir">schemas/</span>             <span class="comment">← Validación Zod por módulo</span>
+│   ├── catalog/productSchema.ts · customerSchema.ts
+│   └── saas/branchSchema.ts · ...
+├── <span class="dir">pages/</span>               <span class="comment">← 17 páginas (una por ruta)</span>
+├── <span class="dir">components/</span>
+│   ├── AppLayout.tsx       <span class="comment">← Shell: sidebar + nav dinámica por permisos</span>
+│   ├── ProtectedRoute.tsx  <span class="comment">← Redirige a /login si no hay JWT válido</span>
+│   ├── Modal.tsx           <span class="comment">← Modal genérico portal (size: sm / md / lg)</span>
+│   ├── PageShell.tsx       <span class="comment">← Header de página + toolbar estándar</span>
+│   ├── EntityAuditPanel.tsx<span class="comment">← Historial de cambios por entidad</span>
+│   ├── LanguageSwitcher.tsx<span class="comment">← Selector ES / EN / QU</span>
+│   └── <span class="dir">zh/</span>              <span class="comment">← Biblioteca de componentes ZH (14 componentes)</span>
+├── <span class="dir">hooks/</span>
+│   ├── useAsync.ts         <span class="comment">← Hook genérico: loading / error / data / refetch</span>
+│   └── useZHSearch.ts      <span class="comment">← Búsqueda con debounce integrado</span>
+├── <span class="dir">i18n/</span>
+│   ├── locales/es.json     <span class="comment">← Español (idioma base)</span>
+│   ├── locales/en.json     <span class="comment">← English</span>
+│   └── locales/qu.json     <span class="comment">← Kichwa Cañar</span>
+├── <span class="dir">nav/</span>
+│   └── navConfig.ts        <span class="comment">← buildNavGroups() — menú filtrado por rol y permisos</span>
+└── App.tsx                 <span class="comment">← Árbol de rutas con React Router 7</span>
+    </div>
+  </section>
+
+  <!-- ─── MÓDULOS ─── -->
+  <section id="modules">
+    <div class="section-header">
+      <div class="section-icon">📦</div>
+      <h2>Módulos del Sistema</h2>
+    </div>
+
+    <div class="module-grid">
+      <div class="module-card">
+        <div class="mod-name">🔐 Auth</div>
+        <div class="mod-meta">Público + JWT</div>
+        <ul><li>Login (session token)</li><li>Registro de usuario</li><li>Password reset</li><li>Switch tenant</li><li>Bootstrap login</li></ul>
+      </div>
+      <div class="module-card">
+        <div class="mod-name">🏢 Tenants / SaaS</div>
+        <div class="mod-meta">Solo SuperAdmin</div>
+        <ul><li>Crear empresa</li><li>Listar empresas</li><li>Config password reset mode</li><li>SuperAdmin panel</li></ul>
+      </div>
+      <div class="module-card">
+        <div class="mod-name">👥 Access / Perfiles</div>
+        <div class="mod-meta">Admin + SuperAdmin</div>
+        <ul><li>Gestionar membresías</li><li>Perfiles de acceso</li><li>Asignar permisos</li><li>Revocar membresías</li></ul>
+      </div>
+      <div class="module-card">
+        <div class="mod-name">🛡️ Security</div>
+        <div class="mod-meta">Solo SuperAdmin</div>
+        <ul><li>Scopes admin por tenant</li><li>Matriz de permisos</li></ul>
+      </div>
+      <div class="module-card">
+        <div class="mod-name">📦 Productos</div>
+        <div class="mod-meta">perm: catalog.products.*</div>
+        <ul><li>CRUD completo</li><li>11 sub-entidades</li><li>IVA / ICE / aranceles</li><li>Variantes color/talla</li><li>eCommerce</li><li>Campos personalizados</li></ul>
+      </div>
+      <div class="module-card">
+        <div class="mod-name">📋 Catálogo</div>
+        <div class="mod-meta">perm: catalog.*</div>
+        <ul><li>Marcas</li><li>Tipos de producto</li><li>Unidades de medida</li><li>Tasas de impuesto</li><li>Aranceles</li><li>Líneas / Cat. / Subcat.</li></ul>
+      </div>
+      <div class="module-card">
+        <div class="mod-name">👤 Clientes</div>
+        <div class="mod-meta">perm: catalog.customers.*</div>
+        <ul><li>Crear / editar cliente</li><li>Habilitar / deshabilitar</li><li>Búsqueda y filtros</li></ul>
+      </div>
+      <div class="module-card">
+        <div class="mod-name">🏪 Sucursales</div>
+        <div class="mod-meta">perm: saas.branches.*</div>
+        <ul><li>CRUD de sucursales</li><li>Geografía INEC Ecuador</li><li>24 prov / 221 cant / 1023 parr</li></ul>
+      </div>
+      <div class="module-card">
+        <div class="mod-name">📒 Contabilidad</div>
+        <div class="mod-meta">JWT</div>
+        <ul><li>Plan de cuentas</li><li>Asientos contables</li><li>Líneas de asiento</li></ul>
+      </div>
+      <div class="module-card">
+        <div class="mod-name">📊 Auditoría</div>
+        <div class="mod-meta">JWT</div>
+        <ul><li>Actividad por usuario</li><li>Historial por entidad</li><li>Panel en UI por tabla</li></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── MODELO PRODUCTO ─── -->
+  <section id="product-model">
+    <div class="section-header">
+      <div class="section-icon">🏭</div>
+      <h2>Modelo de Dominio — Producto (Aggregate Root)</h2>
+    </div>
+    <p>El producto es el aggregate más complejo. Contiene 11 colecciones propias configuradas como <code>OwnsMany</code> en EF Core.</p>
+
+    <pre><span class="type">Product</span> (Aggregate Root : MasterEntity → AuditableEntity → IMustHaveTenant)
+│
+├── <span class="comment">── Propiedades base ──────────────────────────────────────────────</span>
+│   SaleCode, PurchaseCode, ShortName, Description
+│   TracksStock, SaleWithDecimal, MaxItemDiscountPercent
+│   AppliesVatOnSale → SaleTaxId?        <span class="comment">← FK a TaxRate</span>
+│   AppliesVatOnPurchase → PurchaseTaxId?
+│   AppliesExciseTax → ExciseTaxId?
+│   HasMultipleColors, HasSizes
+│   HandlesTariff, IsEcommerceActive
+│   IsActive  (heredado de MasterEntity)
+│
+├── <span class="comment">── FK a catálogos ────────────────────────────────────────────────</span>
+│   ProductLineId, ProductCategoryId, ProductSubcategoryId
+│   UnitOfMeasureId, BrandId, ProductTypeId, TariffId
+│
+├── <span class="fn">ProductBarcode[]</span>         <span class="comment">BarcodeType (EAN/QR/Code128/UPC/EAN8), Value, IsActive</span>
+├── <span class="fn">ProductSupplierCode[]</span>    <span class="comment">SupplierId, Code, IsDefault, IsActive</span>
+├── <span class="fn">ProductUnitConversion[]</span>  <span class="comment">FromUnitId, ToUnitId, Factor(&gt;0), IsActive</span>
+├── <span class="fn">ProductImage[]</span>           <span class="comment">Url (jpg/png/webp), IsMain, IsEcommerce, SortOrder, IsActive</span>
+├── <span class="fn">ProductFeature[]</span>         <span class="comment">FeatureName, Value (para eCommerce), IsActive</span>
+├── <span class="fn">ProductTariffDetail[]</span>    <span class="comment">CountryId, HsCode, TariffRate%, Description, IsActive</span>
+├── <span class="fn">ProductSubstitute[]</span>      <span class="comment">SubstituteProductId ≠ ProductId (auto-referencial), IsActive</span>
+├── <span class="fn">ProductCustomField[]</span>     <span class="comment">FieldName, FieldType (Text/Number/Date/Bool/List), Value, IsActive</span>
+├── <span class="fn">ProductColor[]</span>           <span class="comment">Name, HexCode?, SortOrder, IsActive</span>
+├── <span class="fn">ProductSize[]</span>            <span class="comment">Name, SortOrder, IsActive</span>
+└── <span class="fn">ProductDimension[]</span>       <span class="comment">Name (Largo/Ancho/Alto), Value, Unit, IsActive</span></pre>
+  </section>
+
+  <!-- ─── AUTH FLOW ─── -->
+  <section id="auth-flow">
+    <div class="section-header">
+      <div class="section-icon">🔑</div>
+      <h2>Flujo de Autenticación</h2>
+    </div>
+
+    <div class="flow">
+      <div class="flow-step"><strong>POST /api/auth/login</strong>email + password + tenantId</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><strong>JwtService</strong>Genera JWT con claims</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><strong>Zustand authStore</strong>Guarda en localStorage</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><strong>Axios interceptor</strong>Authorization: Bearer &lt;token&gt;</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><strong>API verifica</strong>JWT + permisos + token_type</div>
+    </div>
+
+    <div class="card-grid cols-2" style="margin-top:16px;">
+      <div class="card">
+        <h4>Claims del JWT</h4>
+        <div class="table-wrap"><table>
+          <tr><th>Claim</th><th>Descripción</th></tr>
+          <tr><td><code>sub</code></td><td>User ID (Guid)</td></tr>
+          <tr><td><code>email</code></td><td>Email del usuario</td></tr>
+          <tr><td><code>tenant_id</code></td><td>ID del tenant activo</td></tr>
+          <tr><td><code>full_name</code></td><td>Nombre completo</td></tr>
+          <tr><td><code>role</code></td><td>Admin / SuperAdmin / User</td></tr>
+          <tr><td><code>token_type</code></td><td>session / bootstrap</td></tr>
+          <tr><td><code>perm</code></td><td>Lista de permisos (multi-value)</td></tr>
+        </table></div>
+      </div>
+      <div class="card">
+        <h4>Tipos de token</h4>
+        <p><strong>session</strong> — Token normal post-login. Acceso completo según permisos del perfil asignado.</p>
+        <p><strong>bootstrap</strong> — Token de setup inicial. Solo permite endpoints de configuración de primer uso. No puede acceder a endpoints de negocio.</p>
+        <div class="warn-box">El <code>TokenTypeHandler</code> rechaza tokens <code>bootstrap</code> en endpoints de operación normal con 403 Forbidden.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── MULTI-TENANT ─── -->
+  <section id="multitenant">
+    <div class="section-header">
+      <div class="section-icon">🏢</div>
+      <h2>Aislamiento Multi-Tenant</h2>
+    </div>
+
+    <div class="flow">
+      <div class="flow-step"><strong>JWT claim</strong><code>tenant_id</code></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><strong>CurrentTenantService</strong>propiedad TenantId</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><strong>ErpDbContext</strong>propiedad CurrentTenantId</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><strong>EF Core</strong>WHERE TenantId = @id en toda query</div>
+    </div>
+
+    <div class="card-grid cols-2" style="margin-top:16px;">
+      <div class="card">
+        <h4>Filtro automático por IMustHaveTenant</h4>
+        <p>Cualquier entidad que implemente <code>IMustHaveTenant</code> recibe el filtro en <code>OnModelCreating</code> automáticamente. No hay que registrarlo manualmente.</p>
+        <pre><span class="comment">// ErpDbContext.cs</span>
+<span class="kw">foreach</span> (var entityType <span class="kw">in</span>
+         modelBuilder.Model.GetEntityTypes())
+{
+  <span class="kw">if</span> (!<span class="kw">typeof</span>(<span class="type">IMustHaveTenant</span>)
+         .IsAssignableFrom(clrType)) <span class="kw">continue</span>;
+  <span class="comment">// aplica: e => e.TenantId == CurrentTenantId</span>
+  modelBuilder.Entity(clrType).HasQueryFilter(lambda);
+}</pre>
+      </div>
+      <div class="card">
+        <h4>Propiedad lazy — crítica</h4>
+        <p>Debe ser una <strong>property</strong> (no campo), para que EF Core la evalúe en cada query y no en tiempo de compilación del modelo.</p>
+        <pre><span class="comment">// ✅ Correcto: evalúa POR request</span>
+<span class="kw">private</span> Guid CurrentTenantId
+  => _currentTenant.TenantId;
+
+<span class="comment">// ❌ Bug clásico: captura valor una vez</span>
+<span class="kw">var</span> tenantId = _currentTenant.TenantId;
+<span class="comment">// → todos los queries usan Guid.Empty</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── PERMISOS ─── -->
+  <section id="permissions">
+    <div class="section-header">
+      <div class="section-icon">🛡️</div>
+      <h2>Sistema de Permisos</h2>
+    </div>
+
+    <div class="info-box">
+      Formato: <code>perm:modulo.entidad.accion</code> — incluidos como claims en el JWT y validados con <code>[Authorize(Policy = "perm:...")]</code> en cada endpoint.
+    </div>
+
+    <div class="table-wrap"><table>
+      <tr><th>Permiso</th><th>Módulo</th><th>Acción</th></tr>
+      <tr><td><span class="badge badge-perm">perm:catalog.products.view</span></td><td>Catálogo</td><td>Ver listado de productos</td></tr>
+      <tr><td><span class="badge badge-perm">perm:catalog.products.create</span></td><td>Catálogo</td><td>Crear producto</td></tr>
+      <tr><td><span class="badge badge-perm">perm:catalog.products.update</span></td><td>Catálogo</td><td>Editar producto</td></tr>
+      <tr><td><span class="badge badge-perm">perm:catalog.products.delete</span></td><td>Catálogo</td><td>Deshabilitar producto</td></tr>
+      <tr><td><span class="badge badge-perm">perm:catalog.customers.view</span></td><td>Clientes</td><td>Ver clientes</td></tr>
+      <tr><td><span class="badge badge-perm">perm:catalog.customers.create</span></td><td>Clientes</td><td>Crear cliente</td></tr>
+      <tr><td><span class="badge badge-perm">perm:catalog.customers.update</span></td><td>Clientes</td><td>Editar cliente</td></tr>
+      <tr><td><span class="badge badge-perm">perm:catalog.customers.delete</span></td><td>Clientes</td><td>Deshabilitar cliente</td></tr>
+      <tr><td><span class="badge badge-perm">perm:catalog.brands.view</span></td><td>Catálogo</td><td>Ver marcas</td></tr>
+      <tr><td><span class="badge badge-perm">perm:catalog.taxRates.view</span></td><td>Catálogo</td><td>Ver tasas de impuesto</td></tr>
+      <tr><td><span class="badge badge-perm">perm:catalog.tariffs.view</span></td><td>Catálogo</td><td>Ver aranceles</td></tr>
+      <tr><td><span class="badge badge-perm">perm:catalog.categories.view</span></td><td>Catálogo</td><td>Ver estructura de categorías</td></tr>
+      <tr><td><span class="badge badge-perm">perm:saas.branches.view</span></td><td>Sucursales</td><td>Ver sucursales</td></tr>
+      <tr><td><span class="badge badge-perm">perm:saas.branches.create</span></td><td>Sucursales</td><td>Crear sucursal</td></tr>
+      <tr><td><span class="badge badge-perm">perm:saas.branches.update</span></td><td>Sucursales</td><td>Editar sucursal</td></tr>
+      <tr><td><span class="badge badge-perm">perm:saas.branches.delete</span></td><td>Sucursales</td><td>Deshabilitar sucursal</td></tr>
+    </table></div>
+
+    <div class="card-grid cols-2" style="margin-top:16px;">
+      <div class="card">
+        <h4>Backend — agregar permiso nuevo</h4>
+        <pre>[<span class="type">Authorize</span>(Policy = <span class="str">"perm:ventas.facturas.create"</span>)]
+[<span class="type">HttpPost</span>]
+<span class="kw">public async</span> Task&lt;IActionResult&gt; Create(...)</pre>
+        <p>El <code>PermissionPolicyProvider</code> crea la policy dinámicamente — no hay que registrarla en Program.cs.</p>
+      </div>
+      <div class="card">
+        <h4>Frontend — ocultar ítem de menú</h4>
+        <pre><span class="comment">// navConfig.ts</span>
+{ to: <span class="str">'/ventas/facturas'</span>,
+  label: t(<span class="str">'nav.facturas'</span>),
+  permissionKey: <span class="str">'ventas.facturas.view'</span> }</pre>
+        <p>Si el usuario no tiene el permiso en <code>permissionsStore</code>, el ítem no se muestra en el menú.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── ENDPOINTS ─── -->
+  <section id="endpoints">
+    <div class="section-header">
+      <div class="section-icon">🌐</div>
+      <h2>Endpoints REST</h2>
+    </div>
+
+    <div class="tabs">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab(event,'ep-auth')">Auth</button>
+        <button class="tab-btn" onclick="switchTab(event,'ep-products')">Productos</button>
+        <button class="tab-btn" onclick="switchTab(event,'ep-customers')">Clientes</button>
+        <button class="tab-btn" onclick="switchTab(event,'ep-catalog')">Catálogos</button>
+        <button class="tab-btn" onclick="switchTab(event,'ep-branches')">Sucursales</button>
+        <button class="tab-btn" onclick="switchTab(event,'ep-access')">Access</button>
+        <button class="tab-btn" onclick="switchTab(event,'ep-accounting')">Contabilidad</button>
+      </div>
+
+      <div id="ep-auth" class="tab-panel active">
+        <div class="table-wrap"><table>
+          <tr><th>Método</th><th>Ruta</th><th>Auth</th><th>Descripción</th></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/auth/register</code></td><td><span class="badge badge-open">Público</span></td><td>Registrar usuario en tenant</td></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/auth/login</code></td><td><span class="badge badge-open">Público</span></td><td>Login → retorna session JWT</td></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/auth/password-reset/request</code></td><td><span class="badge badge-open">Público</span></td><td>Solicitar reset de contraseña</td></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/auth/password-reset/confirm</code></td><td><span class="badge badge-open">Público</span></td><td>Confirmar nuevo password con token</td></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/auth/switch-tenant</code></td><td><span class="badge badge-jwt">JWT</span></td><td>Cambiar de tenant activo</td></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/auth/superadmin/login</code></td><td><span class="badge badge-open">Público</span></td><td>Login SuperAdmin → bootstrap JWT</td></tr>
+        </table></div>
+      </div>
+
+      <div id="ep-products" class="tab-panel">
+        <div class="table-wrap"><table>
+          <tr><th>Método</th><th>Ruta</th><th>Permiso</th><th>Descripción</th></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/products</code></td><td><span class="badge badge-perm">products.view</span></td><td>Listar (paginado + búsqueda)</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/products/{id}</code></td><td><span class="badge badge-perm">products.view</span></td><td>Detalle completo + hijos</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/products/report</code></td><td><span class="badge badge-perm">products.view</span></td><td>Reporte con filtros</td></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/products</code></td><td><span class="badge badge-perm">products.create</span></td><td>Crear producto con todas las colecciones</td></tr>
+          <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/products/{id}</code></td><td><span class="badge badge-perm">products.update</span></td><td>Actualizar producto</td></tr>
+        </table></div>
+      </div>
+
+      <div id="ep-customers" class="tab-panel">
+        <div class="table-wrap"><table>
+          <tr><th>Método</th><th>Ruta</th><th>Permiso</th><th>Descripción</th></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/customers</code></td><td><span class="badge badge-perm">customers.view</span></td><td>Listar (filtros: search, active)</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/customers/{id}</code></td><td><span class="badge badge-perm">customers.view</span></td><td>Detalle de cliente</td></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/customers</code></td><td><span class="badge badge-perm">customers.create</span></td><td>Crear cliente</td></tr>
+          <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/customers/{id}</code></td><td><span class="badge badge-perm">customers.update</span></td><td>Actualizar cliente</td></tr>
+          <tr><td><span class="badge badge-patch">PATCH</span></td><td><code>/api/customers/{id}/disable</code></td><td><span class="badge badge-perm">customers.delete</span></td><td>Deshabilitar (soft delete)</td></tr>
+          <tr><td><span class="badge badge-patch">PATCH</span></td><td><code>/api/customers/{id}/enable</code></td><td><span class="badge badge-perm">customers.update</span></td><td>Rehabilitar cliente</td></tr>
+        </table></div>
+      </div>
+
+      <div id="ep-catalog" class="tab-panel">
+        <div class="table-wrap"><table>
+          <tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr>
+          <tr><td><span class="badge badge-get">GET</span> <span class="badge badge-post">POST</span></td><td><code>/api/brands</code></td><td>Marcas</td></tr>
+          <tr><td><span class="badge badge-get">GET</span> <span class="badge badge-post">POST</span></td><td><code>/api/product-types</code></td><td>Tipos de producto</td></tr>
+          <tr><td><span class="badge badge-get">GET</span> <span class="badge badge-post">POST</span></td><td><code>/api/units-of-measure</code></td><td>Unidades de medida</td></tr>
+          <tr><td><span class="badge badge-get">GET</span> <span class="badge badge-post">POST</span></td><td><code>/api/tax-rates</code></td><td>Tasas de impuesto (IVA, ICE…)</td></tr>
+          <tr><td><span class="badge badge-get">GET</span> <span class="badge badge-post">POST</span></td><td><code>/api/tariffs</code></td><td>Aranceles</td></tr>
+          <tr><td><span class="badge badge-get">GET</span> <span class="badge badge-post">POST</span></td><td><code>/api/product-lines</code></td><td>Líneas de producto</td></tr>
+          <tr><td><span class="badge badge-get">GET</span> <span class="badge badge-post">POST</span></td><td><code>/api/product-categories</code></td><td>Categorías de producto</td></tr>
+          <tr><td><span class="badge badge-get">GET</span> <span class="badge badge-post">POST</span></td><td><code>/api/product-subcategories</code></td><td>Subcategorías</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/geography/countries</code></td><td>Países</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/geography/provinces?countryId=</code></td><td>Provincias INEC Ecuador</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/geography/cantons?provinceId=</code></td><td>Cantones</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/geography/parishes?cantonId=</code></td><td>Parroquias</td></tr>
+        </table></div>
+      </div>
+
+      <div id="ep-branches" class="tab-panel">
+        <div class="table-wrap"><table>
+          <tr><th>Método</th><th>Ruta</th><th>Permiso</th><th>Descripción</th></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/branches</code></td><td><span class="badge badge-perm">branches.view</span></td><td>Listar sucursales del tenant</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/branches/{id}</code></td><td><span class="badge badge-perm">branches.view</span></td><td>Detalle de sucursal</td></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/branches</code></td><td><span class="badge badge-perm">branches.create</span></td><td>Crear sucursal</td></tr>
+          <tr><td><span class="badge badge-put">PUT</span></td><td><code>/api/branches/{id}</code></td><td><span class="badge badge-perm">branches.update</span></td><td>Actualizar sucursal</td></tr>
+          <tr><td><span class="badge badge-patch">PATCH</span></td><td><code>/api/branches/{id}/disable</code></td><td><span class="badge badge-perm">branches.delete</span></td><td>Deshabilitar</td></tr>
+          <tr><td><span class="badge badge-patch">PATCH</span></td><td><code>/api/branches/{id}/enable</code></td><td><span class="badge badge-perm">branches.update</span></td><td>Habilitar</td></tr>
+        </table></div>
+      </div>
+
+      <div id="ep-access" class="tab-panel">
+        <div class="table-wrap"><table>
+          <tr><th>Método</th><th>Ruta</th><th>Auth</th><th>Descripción</th></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/access/memberships</code></td><td><span class="badge badge-admin">Admin</span></td><td>Listar membresías del tenant</td></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/access/memberships</code></td><td><span class="badge badge-admin">Admin</span></td><td>Crear / actualizar membresía</td></tr>
+          <tr><td><span class="badge badge-del">DELETE</span></td><td><code>/api/access/memberships/{id}</code></td><td><span class="badge badge-admin">Admin</span></td><td>Revocar membresía</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/access/profiles</code></td><td><span class="badge badge-admin">Admin</span></td><td>Perfiles de acceso</td></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/access/profiles</code></td><td><span class="badge badge-admin">Admin</span></td><td>Crear perfil con permisos</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/access/my-permissions</code></td><td><span class="badge badge-jwt">JWT</span></td><td>Permisos del usuario actual</td></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/tenants</code></td><td><span class="badge badge-open">Público</span></td><td>Crear nueva empresa</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/superadmin/tenants</code></td><td><span class="badge badge-super">SuperAdmin</span></td><td>Listar todas las empresas</td></tr>
+        </table></div>
+      </div>
+
+      <div id="ep-accounting" class="tab-panel">
+        <div class="table-wrap"><table>
+          <tr><th>Método</th><th>Ruta</th><th>Auth</th><th>Descripción</th></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/accounts</code></td><td><span class="badge badge-jwt">JWT</span></td><td>Listar cuentas contables</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/accounts/{id}</code></td><td><span class="badge badge-jwt">JWT</span></td><td>Detalle de cuenta</td></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/accounts</code></td><td><span class="badge badge-jwt">JWT</span></td><td>Crear cuenta contable</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/accounts/journal-entries</code></td><td><span class="badge badge-jwt">JWT</span></td><td>Listar asientos contables</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/accounts/journal-entries/{id}</code></td><td><span class="badge badge-jwt">JWT</span></td><td>Detalle asiento con líneas</td></tr>
+          <tr><td><span class="badge badge-post">POST</span></td><td><code>/api/accounts/journal-entries</code></td><td><span class="badge badge-jwt">JWT</span></td><td>Crear asiento contable</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/activity/mine</code></td><td><span class="badge badge-jwt">JWT</span></td><td>Mi actividad reciente</td></tr>
+          <tr><td><span class="badge badge-get">GET</span></td><td><code>/api/activity/entity/{table}/{id}</code></td><td><span class="badge badge-jwt">JWT</span></td><td>Historial de cambios de una entidad</td></tr>
+        </table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FORMATO RESPUESTA ─── -->
+  <section id="response-format">
+    <div class="section-header">
+      <div class="section-icon">📄</div>
+      <h2>Formato de Respuesta de la API</h2>
+    </div>
+
+    <div class="card-grid cols-2">
+      <div class="card">
+        <h4>ApiResponse&lt;T&gt; — operaciones simples</h4>
+        <pre>{
+  <span class="str">"success"</span>: <span class="kw">true</span>,
+  <span class="str">"message"</span>: <span class="str">"OK"</span>,
+  <span class="str">"data"</span>: { <span class="comment">/* objeto */</span> }
+}
+
+<span class="comment">// En error:</span>
+{
+  <span class="str">"success"</span>: <span class="kw">false</span>,
+  <span class="str">"message"</span>: <span class="str">"El código ya existe."</span>,
+  <span class="str">"data"</span>: <span class="kw">null</span>
+}</pre>
+      </div>
+      <div class="card">
+        <h4>PagedResponse&lt;T&gt; — listados paginados</h4>
+        <pre>{
+  <span class="str">"success"</span>: <span class="kw">true</span>,
+  <span class="str">"message"</span>: <span class="str">"OK"</span>,
+  <span class="str">"data"</span>: {
+    <span class="str">"items"</span>: [ <span class="comment">/* array */</span> ],
+    <span class="str">"total"</span>: <span class="num">150</span>,
+    <span class="str">"page"</span>: <span class="num">1</span>,
+    <span class="str">"pageSize"</span>: <span class="num">20</span>
+  }
+}</pre>
+      </div>
+    </div>
+
+    <h3>Query params estándar</h3>
+    <div class="tag-list">
+      <code>?search=texto</code>
+      <code>?active=true</code>
+      <code>?active=false</code>
+      <code>?active=all</code>
+      <code>?page=1</code>
+      <code>?pageSize=20</code>
+    </div>
+  </section>
+
+  <!-- ─── RUTAS ─── -->
+  <section id="routes">
+    <div class="section-header">
+      <div class="section-icon">🗺️</div>
+      <h2>Rutas / Páginas del Frontend</h2>
+    </div>
+
+    <div class="table-wrap"><table>
+      <tr><th>Ruta</th><th>Página</th><th>Auth</th><th>Permiso requerido</th></tr>
+      <tr><td><code>/login</code></td><td>LoginPage</td><td><span class="badge badge-open">Público</span></td><td>—</td></tr>
+      <tr><td><code>/password-reset</code></td><td>PasswordResetPage</td><td><span class="badge badge-open">Público</span></td><td>—</td></tr>
+      <tr><td><code>/select-tenant</code></td><td>TenantSelectPage</td><td><span class="badge badge-open">Público</span></td><td>—</td></tr>
+      <tr><td><code>/dashboard</code></td><td>DashboardPage</td><td><span class="badge badge-jwt">JWT</span></td><td>—</td></tr>
+      <tr><td><code>/products</code></td><td>ProductsPage</td><td><span class="badge badge-jwt">JWT</span></td><td>catalog.products.view</td></tr>
+      <tr><td><code>/catalog/customers</code></td><td>CustomersPage</td><td><span class="badge badge-jwt">JWT</span></td><td>catalog.customers.view</td></tr>
+      <tr><td><code>/catalog/brands</code></td><td>BrandsCatalogPage</td><td><span class="badge badge-jwt">JWT</span></td><td>catalog.brands.view</td></tr>
+      <tr><td><code>/catalog/product-types</code></td><td>ProductTypesCatalogPage</td><td><span class="badge badge-jwt">JWT</span></td><td>catalog.productTypes.view</td></tr>
+      <tr><td><code>/catalog/units</code></td><td>UnitsCatalogPage</td><td><span class="badge badge-jwt">JWT</span></td><td>catalog.units.view</td></tr>
+      <tr><td><code>/catalog/tax-rates</code></td><td>TaxRatesCatalogPage</td><td><span class="badge badge-jwt">JWT</span></td><td>catalog.taxRates.view</td></tr>
+      <tr><td><code>/catalog/tariffs</code></td><td>TariffsCatalogPage</td><td><span class="badge badge-jwt">JWT</span></td><td>catalog.tariffs.view</td></tr>
+      <tr><td><code>/catalog/structure</code></td><td>CatalogStructurePage</td><td><span class="badge badge-jwt">JWT</span></td><td>catalog.categories.view</td></tr>
+      <tr><td><code>/accounting</code></td><td>AccountingPage</td><td><span class="badge badge-jwt">JWT</span></td><td>—</td></tr>
+      <tr><td><code>/saas/branches</code></td><td>BranchesPage</td><td><span class="badge badge-jwt">JWT</span></td><td>saas.branches.view</td></tr>
+      <tr><td><code>/access</code></td><td>TenantAccessPage</td><td><span class="badge badge-admin">Admin</span></td><td>—</td></tr>
+      <tr><td><code>/profiles</code></td><td>ProfilesPage</td><td><span class="badge badge-admin">Admin</span></td><td>—</td></tr>
+      <tr><td><code>/security</code></td><td>SecuritySettingsPage</td><td><span class="badge badge-super">SuperAdmin</span></td><td>—</td></tr>
+      <tr><td><code>/companies</code></td><td>CompaniesPage</td><td><span class="badge badge-super">SuperAdmin</span></td><td>—</td></tr>
+      <tr><td><code>/superadmin</code></td><td>SuperAdminPanelPage</td><td><span class="badge badge-super">SuperAdmin</span></td><td>—</td></tr>
+    </table></div>
+  </section>
+
+  <!-- ─── SERVICIOS ─── -->
+  <section id="services">
+    <div class="section-header">
+      <div class="section-icon">🔌</div>
+      <h2>Servicios del Frontend</h2>
+    </div>
+
+    <div class="card-grid cols-2">
+      <div class="card">
+        <h4>Instancia Axios — lib/api.ts</h4>
+        <pre><span class="kw">const</span> api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL
+  <span class="comment">// .env.development → VITE_API_URL=''</span>
+  <span class="comment">// → /api/* resuelto por Vite proxy a :5003</span>
+});
+
+<span class="comment">// Inyecta JWT en cada request</span>
+api.interceptors.request.use(config => {
+  <span class="kw">const</span> { token } = authStore.getState();
+  <span class="kw">if</span> (token)
+    config.headers.Authorization = <span class="str">`Bearer ${token}`</span>;
+  <span class="kw">return</span> config;
+});
+
+<span class="comment">// 401 → logout + redirect /login</span>
+api.interceptors.response.use(
+  res => res,
+  err => {
+    <span class="kw">if</span> (err.response?.status === <span class="num">401</span>) {
+      authStore.getState().logout();
+      window.location.href = <span class="str">'/login'</span>;
+    }
+    <span class="kw">return</span> Promise.reject(err);
+  }
+);</pre>
+      </div>
+      <div class="card">
+        <h4>Ejemplo — customerService.ts</h4>
+        <pre><span class="kw">import</span> api <span class="kw">from</span> <span class="str">'../lib/api'</span>;
+
+<span class="kw">export const</span> getCustomers = (params?) =>
+  api.get(<span class="str">'/api/customers'</span>, { params })
+     .then(r => r.data);
+
+<span class="kw">export const</span> createCustomer = (body) =>
+  api.post(<span class="str">'/api/customers'</span>, body)
+     .then(r => r.data);
+
+<span class="kw">export const</span> updateCustomer = (id, body) =>
+  api.put(<span class="str">`/api/customers/${id}`</span>, body)
+     .then(r => r.data);
+
+<span class="kw">export const</span> disableCustomer = (id) =>
+  api.patch(<span class="str">`/api/customers/${id}/disable`</span>)
+     .then(r => r.data);</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── COMPONENTES ZH ─── -->
+  <section id="components">
+    <div class="section-header">
+      <div class="section-icon">🎨</div>
+      <h2>Componentes ZH — Design System</h2>
+    </div>
+
+    <div class="info-box">
+      Todos los componentes usan variables CSS de <code>index.css</code> (<code>--zh-blue</code>, <code>--zh-blue-dark</code>, etc.). No usar colores hardcoded en el JSX.
+    </div>
+
+    <div class="table-wrap"><table>
+      <tr><th>Componente</th><th>Ubicación</th><th>Uso</th></tr>
+      <tr><td><code>ZHForm</code></td><td><code>components/zh/</code></td><td>Contenedor de formulario con layout estándar ZH</td></tr>
+      <tr><td><code>ZHFormField</code></td><td><code>components/zh/</code></td><td>Campo con label, input y mensaje de error Zod</td></tr>
+      <tr><td><code>ZHModalHeader</code></td><td><code>components/zh/</code></td><td>Cabecera de modal con título y botón cerrar</td></tr>
+      <tr><td><code>ZHLayout</code></td><td><code>components/zh/</code></td><td>Grid de 2 columnas para formularios</td></tr>
+      <tr><td><code>ZHSearchBar</code></td><td><code>components/shared/</code></td><td>Input de búsqueda con debounce integrado</td></tr>
+      <tr><td><code>Modal</code></td><td><code>components/Modal.tsx</code></td><td>Modal base con portal React (sm / md / lg)</td></tr>
+      <tr><td><code>PageShell</code></td><td><code>components/PageShell.tsx</code></td><td>Header de página + toolbar + área de contenido</td></tr>
+      <tr><td><code>EntityAuditPanel</code></td><td><code>components/EntityAuditPanel.tsx</code></td><td>Historial de cambios de una entidad</td></tr>
+      <tr><td><code>AppLayout</code></td><td><code>components/AppLayout.tsx</code></td><td>Sidebar + nav filtrada por permisos + outlet</td></tr>
+      <tr><td><code>LanguageSwitcher</code></td><td><code>components/LanguageSwitcher.tsx</code></td><td>Selector ES / EN / QU en la barra superior</td></tr>
+    </table></div>
+  </section>
+
+  <!-- ─── I18N ─── -->
+  <section id="i18n">
+    <div class="section-header">
+      <div class="section-icon">🌍</div>
+      <h2>Internacionalización — 3 idiomas</h2>
+    </div>
+
+    <div class="card-grid cols-3">
+      <div class="card" style="border-top:3px solid var(--zh-blue);">
+        <h4>🇪🇸 Español (es)</h4>
+        <p>Idioma base. Todas las claves deben existir aquí primero.</p>
+        <code>src/i18n/locales/es.json</code>
+      </div>
+      <div class="card" style="border-top:3px solid var(--zh-success);">
+        <h4>🇬🇧 English (en)</h4>
+        <p>Traducción completa al inglés de toda la interfaz.</p>
+        <code>src/i18n/locales/en.json</code>
+      </div>
+      <div class="card" style="border-top:3px solid var(--zh-warning);">
+        <h4>🪶 Kichwa Cañar (qu)</h4>
+        <p>Dialecto Kichwa de la zona Cañar, Ecuador. Inclusión lingüística local.</p>
+        <code>src/i18n/locales/qu.json</code>
+      </div>
+    </div>
+
+    <pre style="margin-top:16px;"><span class="kw">import</span> { useTranslation } <span class="kw">from</span> <span class="str">'react-i18next'</span>;
+
+<span class="kw">export function</span> <span class="fn">MyPage</span>() {
+  <span class="kw">const</span> { t } = useTranslation();
+  <span class="kw">return</span> &lt;h1&gt;{t(<span class="str">'app.nav.customers'</span>)}&lt;/h1&gt;;
+}</pre>
+  </section>
+
+  <!-- ─── NUEVO CASO DE USO ─── -->
+  <section id="adding-usecase">
+    <div class="section-header">
+      <div class="section-icon">📝</div>
+      <h2>Cómo agregar un nuevo caso de uso</h2>
+    </div>
+
+    <div class="tip-box">Los handlers se registran automáticamente — no hay que tocar Program.cs ni DependencyInjection.</div>
+
+    <div class="card-grid cols-2">
+      <div class="card">
+        <h4>1. Command (Application layer)</h4>
+        <pre><span class="comment">// ERP.Application/Modules/Ventas/
+//   UseCases/CreateFactura/</span>
+<span class="kw">public record</span> <span class="type">CreateFacturaCommand</span>(
+    <span class="type">Guid</span> ClienteId,
+    <span class="type">List</span>&lt;<span class="type">LineaInput</span>&gt; Lineas
+);</pre>
+      </div>
+      <div class="card">
+        <h4>2. Handler (Application layer)</h4>
+        <pre><span class="kw">public sealed class</span> <span class="type">CreateFacturaHandler</span>
+{
+  <span class="kw">public async</span> Task&lt;Result&lt;FacturaDto&gt;&gt;
+    HandleAsync(CreateFacturaCommand cmd, CancellationToken ct)
+  {
+    <span class="comment">// validar → crear → guardar → auditar</span>
+    <span class="kw">return</span> Result&lt;FacturaDto&gt;.Success(dto);
+  }
+}</pre>
+      </div>
+      <div class="card">
+        <h4>3. Endpoint (API layer)</h4>
+        <pre>[<span class="type">HttpPost</span>]
+[<span class="type">Authorize</span>(Policy = <span class="str">"perm:ventas.facturas.create"</span>)]
+<span class="kw">public async</span> Task&lt;IActionResult&gt; Create(
+  [<span class="type">FromBody</span>] CreateFacturaCommand cmd,
+  CancellationToken ct)
+{
+  <span class="kw">var</span> result = <span class="kw">await</span> _handler.HandleAsync(cmd, ct);
+  <span class="kw">return</span> result.IsSuccess
+    ? StatusCode(<span class="num">201</span>, <span class="kw">new</span> ApiResponse(result.Value))
+    : BadRequest(<span class="kw">new</span> ApiResponse(result.Error));
+}</pre>
+      </div>
+      <div class="card">
+        <h4>4. Checklist</h4>
+        <ul style="list-style:none;font-size:12px;line-height:2.2;">
+          <li>✅ Entidad en Domain si es nueva</li>
+          <li>✅ Repositorio en Infrastructure + registrar en DI</li>
+          <li>✅ <code>dotnet ef migrations add NombreMig</code></li>
+          <li>✅ Agregar permiso en perfil de acceso</li>
+          <li>✅ Registrar <code>UserActivity</code> en el handler</li>
+          <li>✅ Tipo TypeScript + servicio + página en frontend</li>
+          <li>✅ Ruta en App.tsx + ítem en navConfig.ts</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── NUEVA PÁGINA ─── -->
+  <section id="adding-page">
+    <div class="section-header">
+      <div class="section-icon">🖼️</div>
+      <h2>Cómo agregar una nueva página</h2>
+    </div>
+
+    <div class="card-grid cols-2">
+      <div class="card">
+        <h4>1. Tipo TypeScript</h4>
+        <pre><span class="comment">// src/types/ventas.ts</span>
+<span class="kw">export interface</span> FacturaDto {
+  id: string;
+  numero: string;
+  clienteNombre: string;
+  total: number;
+  isActive: boolean;
+}</pre>
+      </div>
+      <div class="card">
+        <h4>2. Servicio</h4>
+        <pre><span class="comment">// src/services/facturaService.ts</span>
+<span class="kw">import</span> api <span class="kw">from</span> <span class="str">'../lib/api'</span>;
+
+<span class="kw">export const</span> getFacturas = (params?) =>
+  api.get(<span class="str">'/api/facturas'</span>, { params })
+     .then(r => r.data);
+
+<span class="kw">export const</span> createFactura = (body) =>
+  api.post(<span class="str">'/api/facturas'</span>, body)
+     .then(r => r.data);</pre>
+      </div>
+      <div class="card">
+        <h4>3. Página</h4>
+        <pre><span class="comment">// src/pages/FacturasPage.tsx</span>
+<span class="kw">export function</span> FacturasPage() {
+  <span class="kw">const</span> { t } = useTranslation();
+  <span class="kw">const</span> { data, loading } = useAsync(getFacturas);
+  <span class="kw">return</span> (
+    &lt;PageShell title={t(<span class="str">'nav.facturas'</span>)}&gt;
+      {loading ? &lt;Spinner/&gt; : &lt;Table data={data}/&gt;}
+    &lt;/PageShell&gt;
+  );
+}</pre>
+      </div>
+      <div class="card">
+        <h4>4. Ruta + Nav</h4>
+        <pre><span class="comment">// App.tsx</span>
+&lt;Route path=<span class="str">"/ventas/facturas"</span>
+       element={&lt;FacturasPage/&gt;} /&gt;
+
+<span class="comment">// navConfig.ts</span>
+{
+  to: <span class="str">'/ventas/facturas'</span>,
+  label: t(<span class="str">'nav.facturas'</span>),
+  permissionKey: <span class="str">'ventas.facturas.view'</span>
+}</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── PATRONES CLAVE ─── -->
+  <section id="patterns">
+    <div class="section-header">
+      <div class="section-icon">⚡</div>
+      <h2>Patrones Clave</h2>
+    </div>
+
+    <div class="card-grid cols-2">
+      <div class="card">
+        <h4>Result&lt;T&gt; — Railway Oriented</h4>
+        <pre><span class="comment">// Handler: devuelve Result, no lanza excepciones</span>
+<span class="kw">if</span> (codigoExiste)
+  <span class="kw">return</span> Result&lt;ProductDto&gt;.Failure(
+    <span class="str">"El código ya existe."</span>);
+<span class="kw">return</span> Result&lt;ProductDto&gt;.Success(dto);
+
+<span class="comment">// Controller: mapea Result → HTTP</span>
+<span class="kw">return</span> result.IsSuccess
+  ? Ok(<span class="kw">new</span> ApiResponse(result.Value))
+  : BadRequest(<span class="kw">new</span> ApiResponse(result.Error));</pre>
+      </div>
+      <div class="card">
+        <h4>Auditoría por handler</h4>
+        <pre><span class="comment">// En cada handler de escritura</span>
+<span class="kw">var</span> activity = UserActivity.Create(
+  tenantId:   _currentTenant.TenantId,
+  userId:     _currentUser.UserId,
+  action:     <span class="str">"CREATE"</span>,
+  entityName: <span class="str">"Customer"</span>,
+  entityId:   customer.Id.ToString(),
+  details:    <span class="str">$"Cliente {customer.Name} creado"</span>
+);
+<span class="kw">await</span> _activityRepo.AddAsync(activity, ct);</pre>
+      </div>
+      <div class="card">
+        <h4>Soft delete (Enable / Disable)</h4>
+        <pre><span class="comment">// MasterEntity — jamás se borra físicamente</span>
+<span class="kw">public bool</span> IsActive { <span class="kw">get; private set</span>; }
+<span class="kw">public void</span> Enable()  => IsActive = <span class="kw">true</span>;
+<span class="kw">public void</span> Disable() => IsActive = <span class="kw">false</span>;
+
+<span class="comment">// Query params:</span>
+<span class="comment">// ?active=true  → solo activos</span>
+<span class="comment">// ?active=false → solo inactivos</span>
+<span class="comment">// ?active=all   → todos</span></pre>
+      </div>
+      <div class="card">
+        <h4>useAsync — hook de datos</h4>
+        <pre><span class="comment">// Evita loading/error boilerplate en cada página</span>
+<span class="kw">const</span> { data, loading, error, refetch }
+  = useAsync(() => getCustomers({ active: <span class="kw">true</span> }));
+
+<span class="kw">if</span> (loading) <span class="kw">return</span> &lt;Spinner /&gt;;
+<span class="kw">if</span> (error)   <span class="kw">return</span> &lt;ErrorMessage msg={error} /&gt;;
+<span class="kw">return</span> &lt;Table rows={data} /&gt;;</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── MIGRACIONES ─── -->
+  <section id="migrations">
+    <div class="section-header">
+      <div class="section-icon">💾</div>
+      <h2>Migraciones EF Core</h2>
+    </div>
+
+    <div class="card-grid cols-2" style="margin-bottom:16px;">
+      <div class="card">
+        <h4>Comandos</h4>
+        <pre><span class="comment"># Nueva migración</span>
+cd backend/src/ERP.Infrastructure
+dotnet ef migrations add NombreMig \
+  --startup-project ../ERP.API
+
+<span class="comment"># Aplicar</span>
+cd backend/src
+dotnet ef database update \
+  --project ERP.Infrastructure \
+  --startup-project ERP.API
+
+<span class="comment"># Revertir última</span>
+dotnet ef migrations remove \
+  --startup-project ../ERP.API</pre>
+      </div>
+      <div class="card">
+        <h4>Build y tests</h4>
+        <pre><span class="comment"># Build backend</span>
+cd backend/src
+dotnet build ERP.slnx
+
+<span class="comment"># Tests</span>
+dotnet test ERP.slnx
+
+<span class="comment"># TypeCheck frontend</span>
+cd frontend
+npx tsc --noEmit
+
+<span class="comment"># Build producción</span>
+npm run build
+
+<span class="comment"># Lint</span>
+npm run lint</pre>
+      </div>
+    </div>
+
+    <div class="table-wrap"><table>
+      <tr><th>#</th><th>Migración</th><th>Contenido</th></tr>
+      <tr><td>1</td><td>InitialCreate</td><td>Users, IdentityUsers, Tenants</td></tr>
+      <tr><td>2</td><td>ProductFullModule</td><td>Product expandido + 11 sub-entidades</td></tr>
+      <tr><td>3</td><td>ProductCatalogsAndTaxRates</td><td>Brands, ProductTypes, UOM, TaxRates, Tariffs, etc.</td></tr>
+      <tr><td>4</td><td>ProductChildIsActive</td><td>IsActive en todas las colecciones de producto</td></tr>
+      <tr><td>5</td><td>TenantPasswordResetMode</td><td>Campo PasswordResetMode en Tenant</td></tr>
+      <tr><td>6</td><td>SecurityAdminScopes</td><td>SecurityAdminScopeAssignment</td></tr>
+      <tr><td>7</td><td>AccessIdentityMemberships</td><td>IdentityUsers, Memberships</td></tr>
+      <tr><td>8</td><td>AccessProfiles</td><td>AccessProfiles</td></tr>
+      <tr><td>9</td><td>TenantExtraFields</td><td>Campos adicionales en Tenant</td></tr>
+      <tr><td>10</td><td>AccessProfilePermissions</td><td>AccessProfilePermissions</td></tr>
+      <tr><td>11</td><td>BranchesAndGeography</td><td>Branches, GeoCountry / Province / Canton / Parish</td></tr>
+      <tr><td>12</td><td>SeedInecEcuadorGeography</td><td>Seed: 24 provincias · 221 cantones · 1023 parroquias</td></tr>
+      <tr><td>13</td><td>UserActivityAudit</td><td>UserActivities (tabla de auditoría)</td></tr>
+      <tr><td>14</td><td>AddCustomersTable</td><td>Customers</td></tr>
+    </table></div>
+  </section>
+
+  <!-- FOOTER -->
+  <div style="margin-top:48px;padding:20px 24px;background:var(--zh-blue-light);border-radius:10px;border:1px solid var(--zh-blue-mid);text-align:center;">
+    <p style="color:var(--zh-blue-dark);font-weight:700;margin:0 0 4px;font-size:14px;">ERP SaaS · ZH Technologies</p>
+    <p style="color:var(--zh-text-muted);font-size:11px;margin:0;">Referencia para desarrolladores — generado 2026-05-02</p>
+    <p style="color:var(--zh-text-muted);font-size:11px;margin:4px 0 0;">
+      Backend: <code>localhost:5003</code> &nbsp;·&nbsp;
+      Swagger: <code>localhost:5003/swagger</code> &nbsp;·&nbsp;
+      Frontend: <code>localhost:5173</code>
+    </p>
+  </div>
+
+</main>
+</div>
+
+<script>
+function switchTab(event, panelId) {
+  const tabBar = event.target.closest('.tab-bar');
+  const tabs   = tabBar.closest('.tabs');
+  tabBar.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  tabs.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('nav.sidebar a');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const active = document.querySelector(`nav.sidebar a[href="#${entry.target.id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>

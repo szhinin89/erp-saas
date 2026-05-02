@@ -1,4 +1,4 @@
-import { api } from '../lib/api';
+import { api } from '../modules/lib/api';
 import type { Account, JournalEntry } from '../types/accounting';
 import type { ApiResponse, PagedResponse } from '../types/api';
 

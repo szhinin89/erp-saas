@@ -1,6 +1,8 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useRef, useState } from 'react';
+import { useFieldArray, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from './Modal';
-import { accountingService, type JournalEntryLineRequest, type CreateJournalEntryRequest } from '../services/accountingService';
+import { accountingService, type JournalEntryLineRequest } from '../services/accountingService';
 import type { Account } from '../types/accounting';
 import './CreateJournalEntryModal.css';
 import { useI18n } from '../i18n/i18n';
@@ -8,6 +10,7 @@ import { useAuthStore } from '../store/authStore';
 import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions, ZHBtn } from './zh/ZHForm';
 import { ZHColSpan } from './zh/ZHLayout';
 import { ZHModalHeader } from './zh/ZHModalHeader';
+import { journalEntryFormSchema, type JournalEntryFormValues } from '../schemas/accounting/journalEntrySchema';
 
 interface Props {
   accounts: Account[];
@@ -15,7 +18,7 @@ interface Props {
   onCreated: () => void;
 }
 
-const emptyLine = (): JournalEntryLineRequest => ({
+const emptyLine = (): JournalEntryFormValues['lines'][number] => ({
   accountId: '',
   debitAmount: 0,
   creditAmount: 0,
@@ -27,54 +30,53 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
   const today = new Date().toISOString().split('T')[0];
 
-  const [form, setForm] = useState<Omit<CreateJournalEntryRequest, 'lines'>>({
-    reference: '',
-    date: today,
-    description: '',
-  });
-  const [lines, setLines]   = useState<JournalEntryLineRequest[]>([emptyLine(), emptyLine()]);
-  const [error, setError]   = useState('');
-  const [loading, setLoading] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
+  const [apiError, setApiError] = useState('');
 
-  const setField = (field: keyof typeof form, value: string) =>
-    setForm((f) => ({ ...f, [field]: value }));
+  const {
+    control,
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<JournalEntryFormValues>({
+    resolver: zodResolver(journalEntryFormSchema),
+    defaultValues: {
+      reference: '',
+      date: today,
+      description: '',
+      lines: [emptyLine(), emptyLine()],
+    },
+  });
 
-  const setLine = (i: number, field: keyof JournalEntryLineRequest, value: string | number) =>
-    setLines((ls) => ls.map((l, idx) => idx === i ? { ...l, [field]: value } : l));
+  const { fields, append, remove } = useFieldArray({ control, name: 'lines' });
 
-  const addLine = () => setLines((ls) => [...ls, emptyLine()]);
-  const removeLine = (i: number) => setLines((ls) => ls.filter((_, idx) => idx !== i));
+  const linesWatch = watch('lines');
+  const totalDebit = linesWatch.reduce((s, l) => s + (Number(l.debitAmount) || 0), 0);
+  const totalCredit = linesWatch.reduce((s, l) => s + (Number(l.creditAmount) || 0), 0);
+  const balanced = Math.abs(totalDebit - totalCredit) < 0.001;
+  const anyMissingAccount = linesWatch.some((l) => !l.accountId);
 
-  const totalDebit  = lines.reduce((s, l) => s + (Number(l.debitAmount)  || 0), 0);
-  const totalCredit = lines.reduce((s, l) => s + (Number(l.creditAmount) || 0), 0);
-  const balanced    = Math.abs(totalDebit - totalCredit) < 0.001;
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!balanced) { setError(t('accounting.journal.modal.create.error.unbalanced')); return; }
-    if (lines.some((l) => !l.accountId)) { setError(t('accounting.journal.modal.create.error.missingAccount')); return; }
-
-    setError('');
-    setLoading(true);
+  const onValid = async (data: JournalEntryFormValues) => {
+    setApiError('');
     try {
       await accountingService.createJournalEntry({
-        ...form,
-        lines: lines.map((l) => ({
-          ...l,
-          debitAmount:  Number(l.debitAmount),
+        reference: data.reference,
+        date: data.date,
+        description: data.description,
+        lines: data.lines.map((l) => ({
+          ...(l as unknown as JournalEntryLineRequest),
+          debitAmount: Number(l.debitAmount),
           creditAmount: Number(l.creditAmount),
         })),
       });
       onCreated();
       onClose();
     } catch (err: unknown) {
-      setError(
-        (err as { response?: { data?: { error?: string } } })
-          ?.response?.data?.error ?? t('accounting.journal.modal.create.error.generic')
+      setApiError(
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+          t('accounting.journal.modal.create.error.generic')
       );
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -94,135 +96,120 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
               variant="primary"
               size="md"
               type="button"
-              disabled={loading || !balanced || lines.some((l) => !l.accountId)}
+              disabled={isSubmitting || !balanced || anyMissingAccount}
               onClick={() => formRef.current?.requestSubmit()}
             >
-              {loading ? t('common.saving') : t('accounting.journal.confirmEntry')}
+              {isSubmitting ? t('common.saving') : t('accounting.journal.confirmEntry')}
             </ZHBtn>
           }
         />
       }
     >
-      <form ref={formRef} onSubmit={handleSubmit}>
+      <form ref={formRef} onSubmit={handleSubmit(onValid)} noValidate>
         <input type="hidden" name="tenantId" value={tenantId} />
         <div className="zh-form">
           <ZHFormBody>
-            {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
+            {apiError ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={apiError} /> : null}
+            {errors.lines?.message ? (
+              <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={errors.lines.message} />
+            ) : null}
 
             <ZHFormSection title={t('accounting.journal.modal.create.title')}>
               <ZHGrid cols={2}>
-                <ZHField label={t('accounting.journal.form.reference')} required>
+                <ZHField label={t('accounting.journal.form.reference')} required fieldError={errors.reference?.message}>
                   <input
                     id="reference"
-                    value={form.reference}
-                    onChange={(e) => setField('reference', e.target.value)}
                     placeholder={t('accounting.journal.form.reference.placeholder')}
-                    required
-                    disabled={loading}
+                    disabled={isSubmitting}
+                    {...register('reference')}
                   />
                 </ZHField>
-                <ZHField label={t('accounting.journal.form.date')} required>
-                  <input
-                    id="date"
-                    type="date"
-                    value={form.date}
-                    onChange={(e) => setField('date', e.target.value)}
-                    required
-                    disabled={loading}
-                  />
+                <ZHField label={t('accounting.journal.form.date')} required fieldError={errors.date?.message}>
+                  <input id="date" type="date" disabled={isSubmitting} {...register('date')} />
                 </ZHField>
                 <ZHColSpan span={2}>
-                  <ZHField label={t('accounting.journal.form.description')} required>
+                  <ZHField label={t('accounting.journal.form.description')} required fieldError={errors.description?.message}>
                     <input
                       id="description"
-                      value={form.description}
-                      onChange={(e) => setField('description', e.target.value)}
                       placeholder={t('accounting.journal.form.description.placeholder')}
-                      required
-                      disabled={loading}
+                      disabled={isSubmitting}
+                      {...register('description')}
                     />
                   </ZHField>
                 </ZHColSpan>
               </ZHGrid>
             </ZHFormSection>
 
-        {/* Lines */}
-        <div className="je-lines">
-          <div className="je-lines-header">
-            <span>{t('accounting.journal.lines.account')}</span>
-            <span>{t('accounting.journal.lines.debit')}</span>
-            <span>{t('accounting.journal.lines.credit')}</span>
-            <span>{t('accounting.journal.lines.currency')}</span>
-            <span></span>
-          </div>
+            <div className="je-lines">
+              <div className="je-lines-header">
+                <span>{t('accounting.journal.lines.account')}</span>
+                <span>{t('accounting.journal.lines.debit')}</span>
+                <span>{t('accounting.journal.lines.credit')}</span>
+                <span>{t('accounting.journal.lines.currency')}</span>
+                <span></span>
+              </div>
 
-          {lines.map((line, i) => (
-            <div key={i} className="je-line">
-              <select
-                value={line.accountId}
-                onChange={(e) => setLine(i, 'accountId', e.target.value)}
-                required
-              >
-                <option value="">{t('accounting.journal.lines.selectAccount')}</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>{a.code} · {a.name}</option>
-                ))}
-              </select>
+              {fields.map((field, i) => (
+                <div key={field.id} className="je-line">
+                  <div className="je-line-account">
+                    <select disabled={isSubmitting} {...register(`lines.${i}.accountId` as const)}>
+                      <option value="">{t('accounting.journal.lines.selectAccount')}</option>
+                      {accounts.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.code} · {a.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.lines?.[i]?.accountId?.message ? (
+                      <p className="zh-field-hint zh-field-hint--error">{errors.lines[i]?.accountId?.message}</p>
+                    ) : null}
+                  </div>
 
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={line.debitAmount || ''}
-                onChange={(e) => setLine(i, 'debitAmount', e.target.value)}
-                placeholder={t('common.amount.placeholder')}
-              />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder={t('common.amount.placeholder')}
+                    disabled={isSubmitting}
+                    {...register(`lines.${i}.debitAmount` as const, { valueAsNumber: true })}
+                  />
 
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={line.creditAmount || ''}
-                onChange={(e) => setLine(i, 'creditAmount', e.target.value)}
-                placeholder={t('common.amount.placeholder')}
-              />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder={t('common.amount.placeholder')}
+                    disabled={isSubmitting}
+                    {...register(`lines.${i}.creditAmount` as const, { valueAsNumber: true })}
+                  />
 
-              <input
-                value={line.currency}
-                onChange={(e) => setLine(i, 'currency', e.target.value)}
-                placeholder={t('common.currency.placeholder')}
-                className="je-currency"
-              />
+                  <input
+                    placeholder={t('common.currency.placeholder')}
+                    className="je-currency"
+                    disabled={isSubmitting}
+                    {...register(`lines.${i}.currency` as const)}
+                  />
 
-              <button
-                type="button"
-                className="je-remove"
-                onClick={() => removeLine(i)}
-                disabled={lines.length <= 2}
-              >✕</button>
+                  <button type="button" className="je-remove" onClick={() => remove(i)} disabled={fields.length <= 2}>
+                    ✕
+                  </button>
+                </div>
+              ))}
+
+              <ZHBtn variant="secondary" size="md" type="button" className="je-add-line" onClick={() => append(emptyLine())}>
+                {t('accounting.journal.lines.addLine')}
+              </ZHBtn>
+
+              <div className={`je-totals ${!balanced ? 'je-totals--unbalanced' : ''}`}>
+                <span>{t('accounting.journal.lines.totals')}</span>
+                <span>{totalDebit.toFixed(2)}</span>
+                <span>{totalCredit.toFixed(2)}</span>
+                <span className="je-balance-label">
+                  {balanced ? t('accounting.journal.lines.balanced') : t('accounting.journal.lines.unbalanced')}
+                </span>
+              </div>
             </div>
-          ))}
-
-          <ZHBtn variant="secondary" size="md" type="button" className="je-add-line" onClick={addLine}>
-            {t('accounting.journal.lines.addLine')}
-          </ZHBtn>
-
-          <div className={`je-totals ${!balanced ? 'je-totals--unbalanced' : ''}`}>
-            <span>{t('accounting.journal.lines.totals')}</span>
-            <span>{totalDebit.toFixed(2)}</span>
-            <span>{totalCredit.toFixed(2)}</span>
-            <span className="je-balance-label">
-              {balanced ? t('accounting.journal.lines.balanced') : t('accounting.journal.lines.unbalanced')}
-            </span>
-          </div>
-        </div>
-            <ZHFormActions
-              buttonSize="md"
-              hideSave
-              hideDraft
-              onCancel={onClose}
-              labels={{ cancel: t('common.cancel') }}
-            />
+            <ZHFormActions buttonSize="md" hideSave hideDraft onCancel={onClose} labels={{ cancel: t('common.cancel') }} />
           </ZHFormBody>
         </div>
       </form>

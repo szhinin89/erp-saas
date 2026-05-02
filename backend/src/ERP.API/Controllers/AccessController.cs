@@ -9,6 +9,7 @@ using ERP.Application.Access.UseCases.Profiles;
 using ERP.Application.Access.UseCases.TenantAccess;
 using ERP.Application.Access.UseCases.SuperAdminTenants;
 using ERP.Application.Access.UseCases.Permissions;
+using ERP.Application.Common;
 using ERP.Domain.Tenants.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -185,7 +186,18 @@ public class AccessController : ControllerBase
     public async Task<IActionResult> SuperAdminTenants(CancellationToken ct)
     {
         var tenants = await _tenantRepository.GetAllAsync(ct);
-        var items = tenants.Where(t => t.IsActive).Select(t => new { t.Id, t.Name, t.Slug }).ToList();
+        var items = tenants
+            .Where(t => t.IsActive)
+            .Select(t => new
+            {
+                t.Id,
+                t.Name,
+                t.Slug,
+                planCode = t.PlanCode,
+                enabledModules = TenantSubscriptionCatalog.GetEffectiveEnabledModules(t),
+                hasModuleRestrictions = !string.IsNullOrWhiteSpace(t.EnabledModulesJson),
+            })
+            .ToList();
         return Ok(new ApiResponse<object>(true, "OK", new { tenants = items }));
     }
 

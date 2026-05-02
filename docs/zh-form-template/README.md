@@ -18,4 +18,4 @@
 
 ## Reglas del proyecto
 
-La regla Cursor **`10-zh-form-system.mdc`** apunta a esta ruta como fuente de verdad visual **dentro del monorepo** `erp-saas`.
+La regla Cursor **`.cursor/rules/erp-unified-rules.mdc`** (sección ZH Form System) apunta a esta ruta como fuente de verdad visual **dentro del monorepo** `erp-saas`.

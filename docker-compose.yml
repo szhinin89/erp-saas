@@ -1,0 +1,25 @@
+# PostgreSQL local — alineado con docs/DESARROLLO.md y appsettings.Development.json.example
+# Uso: desde la raíz del repo →  docker compose up -d
+# Apagar: docker compose down   (datos persisten en el volumen hasta que hagas down -v)
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: postgreszh
+    restart: unless-stopped
+    ports:
+      - "5435:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zhin@2024}
+      POSTGRES_DB: dberpsaas
+    volumes:
+      - erp_saas_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dberpsaas"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  erp_saas_pgdata:

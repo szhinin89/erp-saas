@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
@@ -6,6 +8,7 @@ import { useAuthStore } from '../store/authStore';
 import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHBtn } from '../components/zh/ZHForm';
 import ZHSearchBar from '../components/shared/ZHSearchBar';
 import { EntityAuditPanel } from '../components/EntityAuditPanel';
+import { buildCatalogSimpleRowSchema } from '../schemas/catalog/catalogSimpleSchema';
 
 export type CatalogRow = { id: string; code: string; name: string; isActive: boolean };
 
@@ -73,11 +76,34 @@ export function CatalogSimplePage({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const [form, setForm] = useState<Record<string, string>>(() => {
+  const catalogDefaults = useMemo(() => {
     const init: Record<string, string> = {};
     for (const f of actualFields) init[f.key] = '';
     return init;
+  }, [actualFields]);
+
+  const catalogRowSchema = useMemo(
+    () =>
+      buildCatalogSimpleRowSchema(
+        actualFields.map((f) => f.key),
+        actualFields.filter((f) => f.key === 'code' || f.key === 'name').map((f) => f.key)
+      ),
+    [actualFields]
+  );
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<Record<string, string>>({
+    resolver: zodResolver(catalogRowSchema),
+    defaultValues: catalogDefaults,
   });
+
+  useEffect(() => {
+    reset(catalogDefaults);
+  }, [catalogDefaults, reset]);
   const [tab, setTab] = useState<SimpleTab>('data');
   const [listQuery, setListQuery] = useState('');
   const [auditEntityId, setAuditEntityId] = useState<string | null>(null);
@@ -111,7 +137,7 @@ export function CatalogSimplePage({
     return <NoAccessPage title={t(titleKey)} />;
   }
 
-  const onCreate = async () => {
+  const onCreate = handleSubmit(async (form) => {
     setError('');
     setSaving(true);
     try {
@@ -122,11 +148,7 @@ export function CatalogSimplePage({
         else payload[f.key] = v;
       }
       const created = (await create(payload)) as CatalogRow | undefined;
-      setForm(() => {
-        const next: Record<string, string> = {};
-        for (const f of actualFields) next[f.key] = '';
-        return next;
-      });
+      reset(catalogDefaults);
       await refresh();
       if (auditEntityType && created?.id) {
         setAuditEntityId(created.id);
@@ -141,7 +163,7 @@ export function CatalogSimplePage({
     } finally {
       setSaving(false);
     }
-  };
+  });
 
   return (
     <PageShell
@@ -149,7 +171,7 @@ export function CatalogSimplePage({
       title={t(titleKey)}
       action={
         canCreate && tab === 'data' ? (
-          <ZHBtn variant="primary" size="md" type="button" onClick={onCreate} disabled={saving || loading}>
+          <ZHBtn variant="primary" size="md" type="button" onClick={() => void onCreate()} disabled={saving || loading}>
             {saving ? t('common.saving') : t(primaryCreateKey)}
           </ZHBtn>
         ) : undefined
@@ -183,13 +205,14 @@ export function CatalogSimplePage({
                 <ZHFormSection title={t(titleKey)}>
                   <ZHGrid cols={2}>
                     {actualFields.map((f) => (
-                      <ZHField key={f.key} label={t(f.labelKey)} required={f.key === 'code' || f.key === 'name'}>
+                      <ZHField
+                        key={f.key}
+                        label={t(f.labelKey)}
+                        required={f.key === 'code' || f.key === 'name'}
+                        fieldError={errors[f.key]?.message as string | undefined}
+                      >
                         {f.type === 'select' ? (
-                          <select
-                            value={form[f.key] ?? ''}
-                            onChange={(e) => setForm((s) => ({ ...s, [f.key]: e.target.value }))}
-                            disabled={!canCreate || saving || loading}
-                          >
+                          <select disabled={!canCreate || saving || loading} {...register(f.key)}>
                             <option value="">{t('common.select')}</option>
                             {(f.options ?? []).map((o) => (
                               <option key={o.value} value={o.value}>
@@ -199,12 +222,11 @@ export function CatalogSimplePage({
                           </select>
                         ) : (
                           <input
-                            value={form[f.key] ?? ''}
-                            onChange={(e) => setForm((s) => ({ ...s, [f.key]: e.target.value }))}
                             placeholder={t(f.placeholderKey)}
                             type={f.type === 'number' ? 'number' : 'text'}
                             step={f.type === 'number' ? '0.01' : undefined}
                             disabled={!canCreate || saving || loading}
+                            {...register(f.key)}
                           />
                         )}
                       </ZHField>
