@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup .NET SDK (global.json)
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           global-json-file: backend/src/global.json
           cache: true
