@@ -1,6 +1,7 @@
 using System.Text.Json;
 using ERP.Application.Navigation;
 using ERP.Application.Navigation.DTOs;
+using ERP.Domain.Navigation.Entities;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,15 +33,7 @@ public sealed class NavigationMenuReader : INavigationMenuReader
         foreach (var g in groups)
         {
             var list = byGroup.TryGetValue(g.Id, out var row) ? row : [];
-            var itemDtos = list
-                .Select(i => new SessionMenuItemDto(
-                    i.RoutePath,
-                    i.LabelKey,
-                    i.SortOrder,
-                    i.ModuleKey,
-                    i.PermissionKey,
-                    ParseKeysAny(i.PermissionKeysAnyJson)))
-                .ToList();
+            var itemDtos = BuildSessionItemTree(list, null);
 
             dtos.Add(new SessionMenuGroupDto(
                 g.Code,
@@ -54,6 +47,34 @@ public sealed class NavigationMenuReader : INavigationMenuReader
         }
 
         return dtos;
+    }
+
+    private static IReadOnlyList<SessionMenuItemDto> BuildSessionItemTree(
+        IReadOnlyList<UiNavItem> groupItems,
+        Guid? parentItemId)
+    {
+        var children = groupItems
+            .Where(i => i.ParentItemId == parentItemId)
+            .OrderBy(i => i.SortOrder)
+            .ThenBy(i => i.RoutePath, StringComparer.Ordinal)
+            .ToList();
+
+        var list = new List<SessionMenuItemDto>();
+        foreach (var i in children)
+        {
+            var nested = BuildSessionItemTree(groupItems, i.Id);
+            var keysAny = ParseKeysAny(i.PermissionKeysAnyJson);
+            list.Add(new SessionMenuItemDto(
+                i.RoutePath,
+                i.LabelKey,
+                i.SortOrder,
+                i.ModuleKey,
+                i.PermissionKey,
+                keysAny,
+                nested.Count > 0 ? nested : null));
+        }
+
+        return list;
     }
 
     private static IReadOnlyList<string>? ParseRoles(string? csv)

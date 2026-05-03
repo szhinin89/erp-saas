@@ -6,7 +6,8 @@ public sealed record SessionMenuItemDto(
     int SortOrder,
     string? ModuleKey,
     string? PermissionKey,
-    IReadOnlyList<string>? PermissionKeysAny);
+    IReadOnlyList<string>? PermissionKeysAny,
+    IReadOnlyList<SessionMenuItemDto>? Children = null);
 
 public sealed record SessionMenuGroupDto(
     string Code,

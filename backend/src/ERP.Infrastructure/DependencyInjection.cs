@@ -55,8 +55,12 @@ public static class DependencyInjection
         services.AddScoped<IUserActivityRepository, UserActivityRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
-        services.AddScoped<ISaasCatalogQuery, SaasCatalogQuery>();
+        services.AddScoped<SaasCatalogQuery>();
+        services.AddScoped<ISaasCatalogQuery>(sp => sp.GetRequiredService<SaasCatalogQuery>());
+        services.AddScoped<ISaasPublicPlansQuery>(sp => sp.GetRequiredService<SaasCatalogQuery>());
+        services.AddScoped<ISaasPlansAdminService, SaasPlansAdminService>();
         services.AddScoped<INavigationMenuReader, NavigationMenuReader>();
+        services.AddScoped<INavigationMenuAdminService, NavigationMenuAdminService>();
 
         return services;
     }

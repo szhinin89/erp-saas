@@ -19,7 +19,8 @@ alwaysApply: true
 8. [Formularios de entidad con pestañas (`zh-form-tabs`)](#sec-entity-tabs)
 9. [Copy UX — menú, drawer, pestañas, PageShell](#sec-copy-ux)
 10. [Menú estático: rutas únicas por pantalla](#sec-nav)
-11. [Idioma Kichwa de Cañar (locale `qu`)](#sec-kichwa)
+11. [SaaS: asignación a planes al crear módulo o formulario](#sec-saas-plan-assign)
+12. [Idioma Kichwa de Cañar (locale `qu`)](#sec-kichwa)
 
 ---
 
@@ -41,8 +42,9 @@ Orden lógico para **no** saltarse capas ni contradecir UI:
 | 7 | Textos, `PageShell`, drawer, botones por pestaña | [Copy UX](#sec-copy-ux) |
 | 8 | Añadir ruta al menú sin duplicar `to` | [Menú estático](#sec-nav) |
 | 9 | Cualquier clave i18n nueva | [Kichwa de Cañar](#sec-kichwa) |
+| 10 | Nuevo módulo o formulario comercializable | [SaaS: planes al crear módulo o formulario](#sec-saas-plan-assign) |
 
-**Regla práctica:** en frontend, **no** bajar a Copy UX (claves `*.tabList`, `PageShell`) sin haber alineado antes **ZH Form** + **orden de tabs**; en backend, **no** exponer endpoints sin **Validator** + reglas de dominio/EF acordes a [Validación en 4 capas](#sec-validation).
+**Regla práctica:** en frontend, **no** bajar a Copy UX (claves `*.tabList`, `PageShell`) sin haber alineado antes **ZH Form** + **orden de tabs**; en backend, **no** exponer endpoints sin **Validator** + reglas de dominio/EF acordes a [Validación en 4 capas](#sec-validation). Si el cambio es **módulo o pantalla con suscripción**, aplicar también [SaaS: planes](#sec-saas-plan-assign).
 
 ---
 
@@ -61,6 +63,7 @@ Orden lógico para **no** saltarse capas ni contradecir UI:
 - **Validación** → [Validación en 4 capas](#sec-validation).
 - **Formularios / pantallas** → [ZH Form](#sec-zh-form) → [Tabs entidad](#sec-entity-tabs) → [Copy UX](#sec-copy-ux).
 - **Menú** → [Rutas únicas](#sec-nav); copy del menú en [Copy UX](#sec-copy-ux).
+- **Suscripción / planes / módulo nuevo** → [SaaS: planes al crear módulo o formulario](#sec-saas-plan-assign).
 - **Tercer idioma** → [Kichwa de Cañar](#sec-kichwa).
 
 ---
@@ -276,6 +279,22 @@ Verbos de dominio en altas; **«Guardar cambios»** en edición (`common.saveCha
 - Al añadir ítem: mover o reutilizar `to`; no duplicar entre grupos.
 
 Tras editar `navConfig`, verificar `to` únicos por `id` de grupo. El copy de menú y tabs está en [Copy UX](#sec-copy-ux) y [Tabs entidad](#sec-entity-tabs).
+
+---
+
+<a id="sec-saas-plan-assign"></a>
+
+## SaaS: asignación a planes al crear módulo o formulario
+
+**Alcance:** cualquier trabajo que añada **módulo** (navegación, permiso raíz, pantalla nueva de producto) o **formulario/pantalla** (ruta, `navConfig`, permiso de vista, CRUD).
+
+### Regla obligatoria (agente y desarrolladores)
+
+1. **Antes de dar por cerrada** la implementación de un **módulo** nuevo: **preguntar explícitamente** en qué **planes SaaS** debe incluirse la feature comercial (`SaasFeatureDefinition` tipo **Module** + filas en `saas_plan_features` vía SuperAdmin **Planes SaaS** o API `PUT .../saas-plans/{id}/features`). No asumir “todos los planes” sin confirmación del usuario/product owner.
+2. **Si el módulo ya está mapeado a una feature/planes** y el cambio es solo un **formulario/pantalla** nueva (tipo **Form** u otro `ResourceRef` distinto): **preguntar en qué planes** debe habilitarse **ese formulario** (puede diferir del módulo padre: p. ej. solo Professional+).
+3. Flujo técnico mínimo: crear o localizar **`SaasFeatureDefinition`** (`kind` + `resourceRef` coherente con permiso/ruta) → **asignar a planes** elegidos → recién entonces enlazar menú/permisos en código.
+
+La pantalla **SuperAdmin → Planes SaaS** valida al alta de definición **Module**/**Form**: debe marcarse **al menos un plan**; el backend ya persiste en BD (sin hardcode de catálogo en código).
 
 ---
 

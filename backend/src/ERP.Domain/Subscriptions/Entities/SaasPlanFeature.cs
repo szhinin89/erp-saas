@@ -23,4 +23,10 @@ public sealed class SaasPlanFeature
             LimitPerPeriod = limitPerPeriod,
         };
     }
+
+    public void SetInclusion(bool isIncluded, long? limitPerPeriod)
+    {
+        IsIncluded = isIncluded;
+        LimitPerPeriod = limitPerPeriod;
+    }
 }

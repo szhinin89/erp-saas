@@ -251,7 +251,7 @@ export function CustomersPage() {
 
   return (
     <PageShell
-      kicker={t('app.nav.group.catalog')}
+      kicker={t('app.nav.group.sales')}
       title={t('customers.title')}
       action={
         uiTab === 'data' && dialogMode !== 'closed' ? (

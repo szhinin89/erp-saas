@@ -121,7 +121,7 @@ export function TenantAccessPage() {
 
   return (
     <PageShell
-      kicker={t('app.nav.group.access')}
+      kicker={t('app.nav.group.security')}
       title={t('tenantAccess.title')}
       subtitle={t('tenantAccess.subtitle')}
       action={

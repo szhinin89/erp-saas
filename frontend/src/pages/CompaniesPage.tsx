@@ -67,11 +67,17 @@ function CompaniesPage() {
 
   const linkExistingAdmin = watch('linkExistingAdmin');
 
+  const planFilter = (searchParams.get('plan') ?? '').trim().toLowerCase();
+
   const filtered = useMemo(() => {
+    let base = items;
+    if (planFilter) {
+      base = base.filter((x) => (x.planCode ?? '').trim().toLowerCase() === planFilter);
+    }
     const query = listQuery.trim().toLowerCase();
-    if (!query) return items;
-    return items.filter((x) => `${x.name} ${x.slug} ${x.id}`.toLowerCase().includes(query));
-  }, [listQuery, items]);
+    if (!query) return base;
+    return base.filter((x) => `${x.name} ${x.slug} ${x.id}`.toLowerCase().includes(query));
+  }, [listQuery, items, planFilter]);
 
   const refresh = async () => {
     setError('');
@@ -177,7 +183,7 @@ function CompaniesPage() {
 
   return (
     <PageShell
-      kicker={t('app.nav.group.saas')}
+      kicker={t('app.nav.group.home')}
       title={t('companies.title')}
       subtitle={t('companies.subtitle')}
       action={

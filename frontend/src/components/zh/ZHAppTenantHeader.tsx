@@ -152,14 +152,16 @@ export function ZHAppTenantHeader(props: {
         </div>
       </div>
 
-      <div className="zh-tenant-bottom">
-        <div className="zh-tenant-status" aria-label={t('app.header.bottomNav')}>
-          {props.bottomLeft ?? null}
+      {props.bottomLeft ? (
+        <div className="zh-tenant-bottom">
+          <div className="zh-tenant-status" aria-label={t('app.header.bottomNav')}>
+            {props.bottomLeft}
+          </div>
+          <div className="zh-tenant-credit" aria-label={t('app.header.vendorCredit')}>
+            <span className="zh-tenant-credit-text">{t('app.zh.brandName')}</span>
+          </div>
         </div>
-        <div className="zh-tenant-credit" aria-label={t('app.header.vendorCredit')}>
-          <span className="zh-tenant-credit-text">{t('app.zh.brandName')}</span>
-        </div>
-      </div>
+      ) : null}
     </div>
   );
 }

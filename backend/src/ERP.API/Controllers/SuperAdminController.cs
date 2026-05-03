@@ -1,5 +1,6 @@
 using ERP.API.Contracts;
 using ERP.Application.Common;
+using ERP.Application.Navigation;
 using ERP.Application.Subscriptions;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
@@ -24,19 +25,22 @@ public class SuperAdminController : ControllerBase
     private readonly ISaasCatalogQuery _saasCatalogQuery;
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly InstanceQuotaFileStore _instanceQuotaFile;
+    private readonly INavigationMenuAdminService _navigationMenuAdmin;
 
     public SuperAdminController(
         ITenantRepository tenantRepository,
         IUserRepository userRepository,
         ISaasCatalogQuery saasCatalogQuery,
         IDeploymentFeatureFlags deployment,
-        InstanceQuotaFileStore instanceQuotaFile)
+        InstanceQuotaFileStore instanceQuotaFile,
+        INavigationMenuAdminService navigationMenuAdmin)
     {
         _tenantRepository = tenantRepository;
         _userRepository = userRepository;
         _saasCatalogQuery = saasCatalogQuery;
         _deployment = deployment;
         _instanceQuotaFile = instanceQuotaFile;
+        _navigationMenuAdmin = navigationMenuAdmin;
     }
 
     /// <summary>Cuotas efectivas de la instancia (config + archivo <c>App_Data/instance-quota.json</c> si existe).</summary>
@@ -167,6 +171,51 @@ public class SuperAdminController : ControllerBase
             },
             recentTenants
         }));
+    }
+
+    /// <summary>Árbol del menú principal (grupos e ítems recursivos) para configuración.</summary>
+    [HttpGet("navigation-menu")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetNavigationMenu(CancellationToken ct)
+    {
+        var menu = await _navigationMenuAdmin.GetMenuTreeAsync(ct);
+        return Ok(new ApiResponse<object>(true, "OK", new { menu }));
+    }
+
+    /// <summary>Reordena grupos activos del menú principal (<c>ui_nav_groups.sort_order</c>).</summary>
+    [HttpPut("navigation-menu/groups/reorder")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ReorderNavigationGroups(
+        [FromBody] ReorderNavigationGroupsRequest body,
+        CancellationToken ct)
+    {
+        if (body.OrderedGroupIds is not { Count: > 0 })
+            return BadRequest(new ApiResponse<object>(false, "orderedGroupIds requerido.", new { }));
+
+        var (ok, err) = await _navigationMenuAdmin.ReorderGroupsAsync(body.OrderedGroupIds, ct);
+        if (!ok)
+            return BadRequest(new ApiResponse<object>(false, err ?? "Error", new { }));
+
+        return Ok(new ApiResponse<object>(true, "Guardado", new { }));
+    }
+
+    /// <summary>Reordena ítems por nivel (mismo grupo y mismo padre).</summary>
+    [HttpPut("navigation-menu/items/reorder-levels")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ReorderNavigationItemLevels(
+        [FromBody] ReorderNavigationItemLevelsRequest body,
+        CancellationToken ct)
+    {
+        if (body.Levels is not { Count: > 0 })
+            return BadRequest(new ApiResponse<object>(false, "levels requerido.", new { }));
+
+        var (ok, err) = await _navigationMenuAdmin.ReorderItemLevelsAsync(body.Levels, ct);
+        if (!ok)
+            return BadRequest(new ApiResponse<object>(false, err ?? "Error", new { }));
+
+        return Ok(new ApiResponse<object>(true, "Guardado", new { }));
     }
 }
 

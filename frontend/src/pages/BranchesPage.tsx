@@ -383,7 +383,7 @@ export function BranchesPage() {
 
   return (
     <PageShell
-      kicker={t('app.nav.group.saas')}
+      kicker={t('app.nav.group.security')}
       title={t('branches.title')}
       action={
         uiTab === 'data' && branchDialogMode !== 'closed' ? (

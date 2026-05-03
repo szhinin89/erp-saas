@@ -21,14 +21,27 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace />;
   }
 
-  // If SuperAdmin has a global token (tenantId empty), only allow /superadmin.
+  // SuperAdmin global: rutas de panel SaaS + empresas + seguridad (el menú principal enlaza fuera de /superadmin).
   if (
     superAdminPanelEnabled &&
     (user?.role ?? '') === 'SuperAdmin' &&
     (user?.tenantId ?? '') === '00000000-0000-0000-0000-000000000000'
   ) {
     const path = window.location.pathname;
-    return path.startsWith('/superadmin') ? <Outlet /> : <Navigate to="/superadmin" replace />;
+    const allowed =
+      path.startsWith('/superadmin') ||
+      path === '/companies' ||
+      path.startsWith('/companies/') ||
+      path === '/security' ||
+      path.startsWith('/security/') ||
+      path.startsWith('/access') ||
+      path.startsWith('/profiles') ||
+      path.startsWith('/saas/') ||
+      path === '/compras' ||
+      path.startsWith('/compras/') ||
+      path === '/rrhh' ||
+      path.startsWith('/rrhh/');
+    return allowed ? <Outlet /> : <Navigate to="/superadmin" replace />;
   }
 
   return isAuthenticated || token ? <Outlet /> : <Navigate to="/login" replace />;

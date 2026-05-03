@@ -14,11 +14,16 @@ export type SuperAdminTenant = {
   hasModuleRestrictions?: boolean;
 };
 
+/** Coincide con SaasFeatureKind en backend (0–3). */
+export type SaasFeatureKind = 0 | 1 | 2 | 3;
+
 export type SuperAdminPlanFeature = {
   featureCode: string;
   featureName: string;
   description: string | null;
   isMetered: boolean;
+  kind?: string;
+  resourceRef?: string | null;
   isIncluded: boolean;
   limitPerPeriod: number | null;
 };
@@ -27,8 +32,119 @@ export type SuperAdminPlan = {
   id: string;
   code: string;
   name: string;
+  shortLabel?: string | null;
   isActive: boolean;
+  priceAmount?: number;
+  currency?: string;
+  billingCycle?: string;
+  isPubliclyVisible?: boolean;
+  isRecommended?: boolean;
+  sortOrder?: number;
+  externalBillingRef?: string | null;
   features: SuperAdminPlanFeature[];
+};
+
+export type SaasPlanFeatureAdmin = {
+  featureId: string;
+  featureCode: string;
+  featureName: string;
+  isMetered: boolean;
+  kind: SaasFeatureKind;
+  resourceRef: string | null;
+  isIncluded: boolean;
+  limitPerPeriod: number | null;
+};
+
+export type SaasPlanAdmin = {
+  id: string;
+  code: string;
+  name: string;
+  shortLabel: string | null;
+  isActive: boolean;
+  priceAmount: number;
+  currency: string;
+  billingCycle: string;
+  isPubliclyVisible: boolean;
+  isRecommended: boolean;
+  sortOrder: number;
+  externalBillingRef: string | null;
+  features: SaasPlanFeatureAdmin[];
+};
+
+export type SaasFeatureDefinitionAdmin = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  isMetered: boolean;
+  kind: SaasFeatureKind;
+  resourceRef: string | null;
+};
+
+export type CreateSaasPlanBody = {
+  code: string;
+  name: string;
+  shortLabel: string | null;
+  isActive: boolean;
+  priceAmount: number;
+  currency: string;
+  billingCycle: string;
+  isPubliclyVisible: boolean;
+  isRecommended: boolean;
+  sortOrder: number;
+  externalBillingRef: string | null;
+};
+
+export type UpdateSaasPlanBody = {
+  name: string;
+  shortLabel: string | null;
+  isActive: boolean;
+  priceAmount: number;
+  currency: string;
+  billingCycle: string;
+  isPubliclyVisible: boolean;
+  externalBillingRef: string | null;
+};
+
+export type PlanFeatureAssignBody = { featureId: string; isIncluded: boolean; limitPerPeriod: number | null };
+
+export type CreateSaasFeatureDefinitionBody = {
+  code: string;
+  name: string;
+  description: string | null;
+  isMetered: boolean;
+  kind: SaasFeatureKind;
+  resourceRef: string | null;
+};
+
+export type UpdateSaasFeatureDefinitionBody = {
+  name: string;
+  description: string | null;
+  isMetered: boolean;
+  kind: SaasFeatureKind;
+  resourceRef: string | null;
+};
+
+export type SaasPublicPlan = {
+  id: string;
+  code: string;
+  name: string;
+  shortLabel: string | null;
+  priceAmount: number;
+  currency: string;
+  billingCycle: string;
+  isRecommended: boolean;
+  sortOrder: number;
+  features: Array<{
+    code: string;
+    name: string;
+    description: string | null;
+    isMetered: boolean;
+    kind: string;
+    resourceRef: string | null;
+    isIncluded: boolean;
+    limitPerPeriod: number | null;
+  }>;
 };
 
 /** Cuotas efectivas de instancia (GET) o cuerpo para guardar en App_Data/instance-quota.json (PUT). */
@@ -37,6 +153,42 @@ export type InstanceQuota = {
   maxActiveTenants?: number | null;
   maxIdentityUsers?: number | null;
   maxUsersPerTenant?: number | null;
+};
+
+export type AdminNavItemRow = {
+  id: string;
+  parentItemId: string | null;
+  routePath: string;
+  labelKey: string;
+  sortOrder: number;
+  moduleKey: string | null;
+  permissionKey: string | null;
+  permissionKeysAny: string[] | null;
+  isActive: boolean;
+  children?: AdminNavItemRow[] | null;
+};
+
+export type AdminNavGroupRow = {
+  id: string;
+  code: string;
+  icon: string;
+  labelKey: string;
+  sortOrder: number;
+  moduleKey: string | null;
+  roles: string[] | null;
+  requireSuperAdminPanel: boolean;
+  isActive: boolean;
+  rootItems: AdminNavItemRow[];
+};
+
+export type AdminNavigationMenu = {
+  groups: AdminNavGroupRow[];
+};
+
+export type NavItemSiblingOrderLevel = {
+  groupId: string;
+  parentItemId: string | null;
+  orderedItemIds: string[];
 };
 
 export type SuperAdminMetrics = {
@@ -68,6 +220,45 @@ export const superAdminService = {
     api.get<ApiResponse<{ plans: SuperAdminPlan[] }>>('/api/superadmin/plans')
       .then((r) => r.data.responseObject.plans),
 
+  /** Catálogo administrable (CRUD); mismo contenido enriquecido que el catálogo de lectura. */
+  listSaasPlansAdmin: () =>
+    api.get<ApiResponse<{ plans: SaasPlanAdmin[] }>>('/api/superadmin/saas-plans').then((r) => r.data.responseObject.plans),
+
+  listSaasFeatureDefinitions: () =>
+    api
+      .get<ApiResponse<{ features: SaasFeatureDefinitionAdmin[] }>>('/api/superadmin/saas-features')
+      .then((r) => r.data.responseObject.features),
+
+  createSaasPlan: (body: CreateSaasPlanBody) =>
+    api.post<ApiResponse<{ id: string }>>('/api/superadmin/saas-plans', body).then((r) => r.data.responseObject.id),
+
+  updateSaasPlan: (planId: string, body: UpdateSaasPlanBody) =>
+    api.put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-plans/${planId}`, body).then((r) => r.data),
+
+  deleteSaasPlan: (planId: string) =>
+    api.delete<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-plans/${planId}`).then((r) => r.data),
+
+  reorderSaasPlans: (orderedPlanIds: string[]) =>
+    api.put<ApiResponse<Record<string, unknown>>>('/api/superadmin/saas-plans/reorder', { orderedPlanIds }).then((r) => r.data),
+
+  setSaasPlanRecommended: (planId: string) =>
+    api.put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-plans/${planId}/recommended`).then((r) => r.data),
+
+  replaceSaasPlanFeatures: (planId: string, features: PlanFeatureAssignBody[]) =>
+    api
+      .put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-plans/${planId}/features`, { features })
+      .then((r) => r.data),
+
+  createSaasFeatureDefinition: (body: CreateSaasFeatureDefinitionBody) =>
+    api.post<ApiResponse<{ id: string }>>('/api/superadmin/saas-features', body).then((r) => r.data.responseObject.id),
+
+  updateSaasFeatureDefinition: (featureId: string, body: UpdateSaasFeatureDefinitionBody) =>
+    api.put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-features/${featureId}`, body).then((r) => r.data),
+
+  /** Endpoint público para landing (sin token). */
+  getPublicPlans: () =>
+    api.get<ApiResponse<{ plans: SaasPublicPlan[] }>>('/api/public/plans').then((r) => r.data.responseObject.plans),
+
   switchTenant: (tenantId: string) =>
     api.post<ApiResponse<import('../types/auth').AuthResponse>>('/api/auth/switch-tenant', { tenantId })
       .then((r) => r.data.responseObject),
@@ -77,5 +268,24 @@ export const superAdminService = {
 
   saveInstanceQuota: (body: InstanceQuota) =>
     api.put<ApiResponse<Record<string, unknown>>>('/api/superadmin/instance-quota', body).then((r) => r.data),
+
+  getNavigationMenu: () =>
+    api
+      .get<ApiResponse<{ menu: AdminNavigationMenu }>>('/api/superadmin/navigation-menu')
+      .then((r) => r.data.responseObject.menu),
+
+  reorderNavigationGroups: (orderedGroupIds: string[]) =>
+    api
+      .put<ApiResponse<Record<string, unknown>>>('/api/superadmin/navigation-menu/groups/reorder', {
+        orderedGroupIds,
+      })
+      .then((r) => r.data),
+
+  reorderNavigationItemLevels: (levels: NavItemSiblingOrderLevel[]) =>
+    api
+      .put<ApiResponse<Record<string, unknown>>>('/api/superadmin/navigation-menu/items/reorder-levels', {
+        levels,
+      })
+      .then((r) => r.data),
 };
 

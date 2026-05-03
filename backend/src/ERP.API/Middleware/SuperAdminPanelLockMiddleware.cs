@@ -21,7 +21,8 @@ public sealed class SuperAdminPanelLockMiddleware(RequestDelegate next)
         var path = context.Request.Path.Value ?? string.Empty;
 
         if (HttpMethods.IsGet(context.Request.Method) &&
-            path.Equals("/api/public/deployment", StringComparison.OrdinalIgnoreCase))
+            (path.Equals("/api/public/deployment", StringComparison.OrdinalIgnoreCase) ||
+             path.Equals("/api/public/plans", StringComparison.OrdinalIgnoreCase)))
         {
             await next(context);
             return;

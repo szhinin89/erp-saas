@@ -2,6 +2,8 @@
 **/bin/
 **/obj/
 **/out/
+# Salida local de compilación aislada (no versionar)
+backend/src/_buildcheck/
 
 # Visual Studio
 .vs/

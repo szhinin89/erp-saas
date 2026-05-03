@@ -29,7 +29,7 @@ export function SuperAdminFormsPage() {
 
   if (!isSuperAdmin) {
     return (
-      <PageShell kicker={t('app.nav.group.saas')} title={t('superadmin.forms.title')} subtitle={t('common.noAccess')}>
+      <PageShell kicker={t('app.nav.group.home')} title={t('superadmin.forms.title')} subtitle={t('common.noAccess')}>
         <TableCard>
           <EmptyState message={t('common.noAccess')} />
         </TableCard>
@@ -39,7 +39,7 @@ export function SuperAdminFormsPage() {
 
   return (
     <PageShell
-      kicker={t('app.nav.group.saas')}
+      kicker={t('app.nav.group.home')}
       title={t('superadmin.forms.title')}
       subtitle={t('superadmin.forms.subtitle')}
     >

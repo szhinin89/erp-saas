@@ -48,6 +48,8 @@ export interface SessionMenuItemDto {
   moduleKey: string | null;
   permissionKey: string | null;
   permissionKeysAny: string[] | null;
+  /** Submenú recursivo (misma definición en BD). */
+  children?: SessionMenuItemDto[] | null;
 }
 
 /** Grupo de menú en `GET /api/access/me/menu`. */

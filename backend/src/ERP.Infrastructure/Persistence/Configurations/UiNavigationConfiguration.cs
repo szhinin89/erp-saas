@@ -30,6 +30,8 @@ public sealed class UiNavItemConfiguration : IEntityTypeConfiguration<UiNavItem>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.GroupId).HasColumnName("group_id").IsRequired();
         builder.HasIndex(x => new { x.GroupId, x.RoutePath });
+        builder.Property(x => x.ParentItemId).HasColumnName("parent_item_id");
+        builder.HasIndex(x => new { x.GroupId, x.ParentItemId, x.SortOrder });
         builder.Property(x => x.RoutePath).HasColumnName("route_path").HasMaxLength(512).IsRequired();
         builder.Property(x => x.LabelKey).HasColumnName("label_key").HasMaxLength(200).IsRequired();
         builder.Property(x => x.SortOrder).HasColumnName("sort_order");
@@ -42,6 +44,11 @@ public sealed class UiNavItemConfiguration : IEntityTypeConfiguration<UiNavItem>
         builder.HasOne<UiNavGroup>()
             .WithMany()
             .HasForeignKey(x => x.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne<UiNavItem>()
+            .WithMany()
+            .HasForeignKey(x => x.ParentItemId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

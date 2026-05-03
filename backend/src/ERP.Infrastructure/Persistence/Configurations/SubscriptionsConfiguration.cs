@@ -15,6 +15,8 @@ public sealed class SaasFeatureDefinitionConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(SaasFeatureDefinition.NameMaxLen).IsRequired();
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(500);
         builder.Property(x => x.IsMetered).HasColumnName("is_metered").IsRequired();
+        builder.Property(x => x.Kind).HasColumnName("feature_kind").IsRequired();
+        builder.Property(x => x.ResourceRef).HasColumnName("resource_ref").HasMaxLength(SaasFeatureDefinition.ResourceRefMaxLen);
         builder.HasIndex(x => x.Code).IsUnique().HasDatabaseName("ux_saas_feature_definitions_code");
     }
 }
@@ -28,7 +30,15 @@ public sealed class SaasPlanConfiguration : IEntityTypeConfiguration<SaasPlan>
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(SaasPlan.CodeMaxLen).IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(SaasPlan.NameMaxLen).IsRequired();
+        builder.Property(x => x.ShortLabel).HasColumnName("short_label").HasMaxLength(SaasPlan.ShortLabelMaxLen);
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
+        builder.Property(x => x.PriceAmount).HasColumnName("price_amount").HasPrecision(18, 2).IsRequired();
+        builder.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(SaasPlan.CurrencyMaxLen).IsRequired();
+        builder.Property(x => x.BillingCycle).HasColumnName("billing_cycle").HasMaxLength(SaasPlan.BillingCycleMaxLen).IsRequired();
+        builder.Property(x => x.IsPubliclyVisible).HasColumnName("is_publicly_visible").IsRequired();
+        builder.Property(x => x.IsRecommended).HasColumnName("is_recommended").IsRequired();
+        builder.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
+        builder.Property(x => x.ExternalBillingRef).HasColumnName("external_billing_ref").HasMaxLength(SaasPlan.ExternalBillingRefMaxLen);
         builder.HasIndex(x => x.Code).IsUnique().HasDatabaseName("ux_saas_plans_code");
     }
 }

@@ -203,7 +203,7 @@ export function ProfilesPage() {
 
   return (
     <PageShell
-      kicker={t('app.nav.group.access')}
+      kicker={t('app.nav.group.security')}
       title={t('profiles.title')}
       subtitle={t('profiles.subtitle')}
       action={

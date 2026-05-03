@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useEffect, useMemo, useRef, useState, startTransition } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n/i18n';
@@ -8,10 +8,77 @@ import { usePermissionsStore } from '../store/permissionsStore';
 import { accessService } from '../services/accessService';
 import { superAdminService } from '../services/superAdminService';
 import { ZHAppTenantHeader } from './zh/ZHAppTenantHeader';
-import { buildNavGroups, mapSessionMenuToNavGroups, type NavGroup, type NavItem } from '../nav/navConfig';
+import {
+  buildNavGroups,
+  ensureSalesNextToInventory,
+  flattenAccessIntoSecurity,
+  flattenSaaSIntoHome,
+  mapSessionMenuToNavGroups,
+  mergeMissingStaticNavGroups,
+  mergeSuperAdminNavExtrasIntoHome,
+  type NavItem,
+} from '../nav/navConfig';
 import { useDeployment } from '../deployment/DeploymentContext';
 import type { SessionMenuGroupDto } from '../types/access';
 import './AppLayout.css';
+
+function MainMenuList({
+  items,
+  depth,
+  onClose,
+  isFavorite,
+  toggleFavorite,
+  t,
+}: {
+  items: NavItem[];
+  depth: number;
+  onClose: () => void;
+  isFavorite: (to: string) => boolean;
+  toggleFavorite: (item: NavItem) => void;
+  t: (key: string) => string;
+}) {
+  return (
+    <>
+      {items.map((it, idx) => (
+        <Fragment key={`${depth}-${it.to}-${idx}`}>
+          <div className={`app-mainmenu-row${depth > 0 ? ' is-nested' : ''}`}>
+            {it.children?.length ? (
+              <span className="app-mainmenu-link app-mainmenu-parent">{it.label}</span>
+            ) : (
+              <NavLink to={it.to} className="app-mainmenu-link" onClick={onClose}>
+                {it.label}
+              </NavLink>
+            )}
+            {!it.children?.length ? (
+              <button
+                type="button"
+                className={`app-mainmenu-fav${isFavorite(it.to) ? ' is-on' : ''}`}
+                aria-label={isFavorite(it.to) ? t('app.favorites.remove') : t('app.favorites.add')}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleFavorite(it);
+                }}
+              >
+                {isFavorite(it.to) ? '★' : '☆'}
+              </button>
+            ) : null}
+          </div>
+          {it.children?.length ? (
+            <MainMenuList
+              items={it.children}
+              depth={depth + 1}
+              onClose={onClose}
+              isFavorite={isFavorite}
+              toggleFavorite={toggleFavorite}
+              t={t}
+            />
+          ) : null}
+        </Fragment>
+      ))}
+    </>
+  );
+}
 
 function getImpersonationTenantName(): string | null {
   return localStorage.getItem('superadmin-impersonation-tenant-name');
@@ -27,15 +94,42 @@ export function AppLayout() {
   const { t } = useI18n();
   const [superadminBannerOpen, setSuperadminBannerOpen] = useState(false);
   const [superadminReturningGlobal, setSuperadminReturningGlobal] = useState(false);
-  const isSuperAdminArea = location.pathname === '/superadmin' || location.pathname.startsWith('/superadmin/');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sessionMenuDto, setSessionMenuDto] = useState<SessionMenuGroupDto[] | undefined>(undefined);
 
-  // Tras elegir una pantalla en el drawer (p. ej. SAAS → Formularios o un enlace desde el catálogo de formularios), volver a ocultar el menú para ganar espacio.
   useEffect(() => {
-    startTransition(() => {
-      setSidebarOpen(false);
-    });
-  }, [location.pathname]);
+    if (!user) {
+      startTransition(() => setSessionMenuDto(undefined));
+      return;
+    }
+    let cancelled = false;
+    void accessService
+      .getSessionMenu()
+      .then((rows) => {
+        if (!cancelled) setSessionMenuDto(rows.length > 0 ? rows : []);
+      })
+      .catch(() => {
+        if (!cancelled) setSessionMenuDto([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.tenantId, user?.userId]);
+
+  const groups = useMemo(() => {
+    const opts = { superAdminPanelEnabled };
+    const raw = mergeSuperAdminNavExtrasIntoHome(
+      sessionMenuDto !== undefined && sessionMenuDto.length > 0
+        ? mapSessionMenuToNavGroups(sessionMenuDto, t, opts)
+        : buildNavGroups(t, opts),
+      t,
+      opts,
+    );
+    return mergeMissingStaticNavGroups(
+      flattenAccessIntoSecurity(flattenSaaSIntoHome(ensureSalesNextToInventory(raw, t, opts))),
+      t,
+      opts,
+    );
+  }, [sessionMenuDto, t, superAdminPanelEnabled]);
 
   // Auto-recupera permisos después de refresh/hidratación.
   useEffect(() => {
@@ -67,33 +161,6 @@ export function AppLayout() {
     };
   }, [permissions.length, user]);
 
-  const [sessionMenuDto, setSessionMenuDto] = useState<SessionMenuGroupDto[] | undefined>(undefined);
-
-  useEffect(() => {
-    if (!user) {
-      setSessionMenuDto(undefined);
-      return;
-    }
-    let cancelled = false;
-    void accessService
-      .getSessionMenu()
-      .then((rows) => {
-        if (!cancelled) setSessionMenuDto(rows.length > 0 ? rows : []);
-      })
-      .catch(() => {
-        if (!cancelled) setSessionMenuDto([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.tenantId, user?.userId]);
-
-  const groups = useMemo(() => {
-    if (sessionMenuDto !== undefined && sessionMenuDto.length > 0) {
-      return mapSessionMenuToNavGroups(sessionMenuDto, t, { superAdminPanelEnabled });
-    }
-    return buildNavGroups(t, { superAdminPanelEnabled });
-  }, [sessionMenuDto, t, superAdminPanelEnabled]);
   const [favorites, setFavorites] = useState<NavItem[]>(() => {
     try {
       const raw = localStorage.getItem('zh-favorites');
@@ -130,7 +197,6 @@ export function AppLayout() {
 
   const visibleGroups = (() => {
     const byRole = groups.filter((g) => !g.roles || (user?.role ? g.roles.includes(user.role) : false));
-    // SuperAdmin: UI sin restricción (backend igual valida).
     if (user?.role === 'SuperAdmin') return byRole;
 
     const moduleEntitled = (key?: string) => {
@@ -143,12 +209,12 @@ export function AppLayout() {
 
     const bySubscription = byRole.filter((g) => moduleEntitled(g.moduleKey));
 
-    // Mientras hidrata/recupera permisos (después de refresh), no ocultar el menú por flicker.
     if (!permsHydrated) return bySubscription;
 
     if (permissions.includes('*')) return bySubscription;
 
     const itemVisible = (it: NavItem) => {
+      if (it.roles?.length && (!user?.role || !it.roles.includes(user.role))) return false;
       if (!moduleEntitled(it.moduleKey)) return false;
       if (it.permissionKeysAny?.length) return it.permissionKeysAny.some((k) => hasPerm(k));
       if (it.permissionKey) return hasPerm(it.permissionKey);
@@ -169,19 +235,16 @@ export function AppLayout() {
     return ids;
   }, [location.pathname, visibleGroups]);
 
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-  const isOpen = (id: string) => openGroups[id] ?? activeGroupIds.has(id);
-  const toggleGroup = (id: string) => setOpenGroups((s) => ({ ...s, [id]: !isOpen(id) }));
-
+  /** Menú superior: mismas agrupaciones que antes (SaaS solo en píldoras si eres SuperAdmin). */
   const mainMenuGroups = useMemo(() => {
-    const allowed = visibleGroups.filter((g) => g.id !== 'saas' && g.items.length > 0);
+    const allowed = visibleGroups.filter((g) => g.items.length > 0);
     return allowed.map((g) => ({
       id: g.id,
-      label: g.id === 'home' ? t('app.nav.dashboard') : g.label,
+      label: g.label,
       isActive: activeGroupIds.has(g.id),
       items: g.items,
     }));
-  }, [activeGroupIds, t, visibleGroups]);
+  }, [activeGroupIds, t, user?.role, visibleGroups]);
 
   const [mainMenuOpenId, setMainMenuOpenId] = useState<string | null>(null);
   const [mainMenuPos, setMainMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -200,9 +263,9 @@ export function AppLayout() {
       const target = e.target;
       if (!(target instanceof Node)) return;
       const anchor = mainMenuAnchorRef.current;
-      const pop = mainMenuPopoverRef.current;
+      const popEl = mainMenuPopoverRef.current;
       if (anchor && anchor.contains(target)) return;
-      if (pop && pop.contains(target)) return;
+      if (popEl && popEl.contains(target)) return;
       setMainMenuOpenId(null);
     };
     const onKey = (e: KeyboardEvent) => {
@@ -216,16 +279,11 @@ export function AppLayout() {
     };
   }, [mainMenuOpenId, mainMenuPos]);
 
-  const sidebarGroups: NavGroup[] = useMemo(() => {
-    const saas = visibleGroups.find((g) => g.id === 'saas');
-    const fav: NavGroup = {
-      id: 'favorites',
-      label: t('app.nav.group.favorites'),
-      icon: '★',
-      items: favorites,
-    };
-    return [fav, ...(saas ? [saas] : [])];
-  }, [favorites, t, visibleGroups]);
+  useEffect(() => {
+    startTransition(() => {
+      setMainMenuOpenId(null);
+    });
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -243,7 +301,6 @@ export function AppLayout() {
       clearPermissions();
       navigate('/superadmin');
     } catch {
-      // Si falla, al menos navega al panel; el backend debería impedir acciones no válidas.
       navigate('/superadmin');
     } finally {
       setSuperadminReturningGlobal(false);
@@ -252,99 +309,6 @@ export function AppLayout() {
 
   return (
     <div className="layout">
-      <aside className={`sidebar${sidebarOpen ? ' sidebar--open' : ''}`}>
-        <div className="sidebar-brand">
-          <span className="brand-logo">ZH</span>
-          <span className="brand-name">ERP</span>
-        </div>
-
-        <nav className="sidebar-nav">
-          {sidebarGroups.map((g) => (
-            <div key={g.id} className="nav-group">
-              <button
-                type="button"
-                className={`nav-group-btn${activeGroupIds.has(g.id) ? ' nav-group-btn--active' : ''}`}
-                onClick={() => toggleGroup(g.id)}
-                aria-expanded={isOpen(g.id)}
-              >
-                <span className="nav-icon">{g.icon}</span>
-                <span className="nav-group-label">{g.label}</span>
-                <span className={`nav-caret${isOpen(g.id) ? ' nav-caret--open' : ''}`}>▸</span>
-              </button>
-
-              {isOpen(g.id) && (
-                <div className="nav-submenu">
-                  {g.items.length === 0 ? (
-                    <div className="nav-empty">{t('app.favorites.empty')}</div>
-                  ) : (
-                    g.items.map((item) => (
-                      <div key={item.to} className="nav-itemRow">
-                        <NavLink
-                          to={item.to}
-                          className={({ isActive }) =>
-                            `nav-item nav-item--sub${isActive ? ' nav-item--active' : ''}`
-                          }
-                        >
-                          <span>{item.label}</span>
-                        </NavLink>
-                        {g.id !== 'favorites' ? (
-                          <button
-                            type="button"
-                            className={`nav-favBtn${isFavorite(item.to) ? ' is-on' : ''}`}
-                            aria-label={isFavorite(item.to) ? t('app.favorites.remove') : t('app.favorites.add')}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              toggleFavorite(item);
-                            }}
-                          >
-                            {isFavorite(item.to) ? '★' : '☆'}
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="nav-favBtn is-on"
-                            aria-label={t('app.favorites.remove')}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              toggleFavorite(item);
-                            }}
-                          >
-                            ✕
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="user-info">
-            <div className="user-avatar">
-              {user?.fullName?.[0]?.toUpperCase() ?? '?'}
-            </div>
-            <div className="user-details">
-              <span className="user-name">{user?.fullName}</span>
-              <span className="user-role">{user?.role}</span>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {sidebarOpen ? (
-        <button
-          type="button"
-          className="sidebar-overlay"
-          aria-label={t('common.close')}
-          onClick={() => setSidebarOpen(false)}
-        />
-      ) : null}
-
       <main className="content">
         {user?.role === 'SuperAdmin' && user.tenantId && user.tenantId !== '00000000-0000-0000-0000-000000000000' && (
           <div className={`superadmin-banner${superadminBannerOpen ? ' is-open' : ''}`}>
@@ -383,44 +347,35 @@ export function AppLayout() {
         <div className="app-tenantHeaderWrap">
           <ZHAppTenantHeader
             onLogout={handleLogout}
-            leftExtra={
-              <button
-                type="button"
-                className="zh-app-hamburger"
-                aria-label={t('app.layout.openMenu')}
-                aria-expanded={sidebarOpen}
-                onClick={() => setSidebarOpen((s) => !s)}
-              >
-                ☰
-              </button>
-            }
             rightExtra={<LanguageSwitcher />}
-            bottomLeft={!isSuperAdminArea ? (
-              <div className="app-mainmenu" role="navigation" aria-label={t('app.layout.mainNav')}>
-                {mainMenuGroups.map((g) => (
-                  <button
-                    key={g.id}
-                    type="button"
-                    className={`app-mainmenu-item${g.isActive ? ' is-active' : ''}`}
-                    aria-haspopup="menu"
-                    aria-expanded={mainMenuOpenId === g.id}
-                    onClick={(e) => {
-                      const willOpen = mainMenuOpenId !== g.id;
-                      setMainMenuOpenId(willOpen ? g.id : null);
-                      mainMenuAnchorRef.current = e.currentTarget;
-                      const r = e.currentTarget.getBoundingClientRect();
-                      setMainMenuPos({ top: Math.round(r.bottom + 10), left: Math.round(r.left) });
-                    }}
-                  >
-                    {g.label}
-                  </button>
-                ))}
-              </div>
-            ) : null}
+            bottomLeft={
+              mainMenuGroups.length > 0 ? (
+                <div className="app-mainmenu" role="navigation" aria-label={t('app.layout.mainNav')}>
+                  {mainMenuGroups.map((g) => (
+                    <button
+                      key={g.id}
+                      type="button"
+                      className={`app-mainmenu-item${g.isActive ? ' is-active' : ''}`}
+                      aria-haspopup="menu"
+                      aria-expanded={mainMenuOpenId === g.id}
+                      onClick={(e) => {
+                        const willOpen = mainMenuOpenId !== g.id;
+                        setMainMenuOpenId(willOpen ? g.id : null);
+                        mainMenuAnchorRef.current = e.currentTarget;
+                        const r = e.currentTarget.getBoundingClientRect();
+                        setMainMenuPos({ top: Math.round(r.bottom + 10), left: Math.round(r.left) });
+                      }}
+                    >
+                      {g.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null
+            }
           />
         </div>
 
-        {!isSuperAdminArea && mainMenuOpenId && mainMenuPos
+        {mainMenuOpenId && mainMenuPos
           ? createPortal(
               <div
                 className="app-mainmenu-popover"
@@ -431,29 +386,14 @@ export function AppLayout() {
                 data-top={mainMenuPos.top}
                 data-left={mainMenuPos.left}
               >
-                {(mainMenuGroups.find((g) => g.id === mainMenuOpenId)?.items ?? []).map((it) => (
-                  <div key={it.to} className="app-mainmenu-row">
-                    <NavLink
-                      to={it.to}
-                      className="app-mainmenu-link"
-                      onClick={() => setMainMenuOpenId(null)}
-                    >
-                      {it.label}
-                    </NavLink>
-                    <button
-                      type="button"
-                      className={`app-mainmenu-fav${isFavorite(it.to) ? ' is-on' : ''}`}
-                      aria-label={isFavorite(it.to) ? t('app.favorites.remove') : t('app.favorites.add')}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleFavorite(it);
-                      }}
-                    >
-                      {isFavorite(it.to) ? '★' : '☆'}
-                    </button>
-                  </div>
-                ))}
+                <MainMenuList
+                  items={mainMenuGroups.find((g) => g.id === mainMenuOpenId)?.items ?? []}
+                  depth={0}
+                  onClose={() => setMainMenuOpenId(null)}
+                  isFavorite={isFavorite}
+                  toggleFavorite={toggleFavorite}
+                  t={t}
+                />
               </div>,
               document.body
             )

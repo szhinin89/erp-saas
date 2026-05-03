@@ -7,6 +7,8 @@ public sealed class UiNavItem
 {
     public Guid Id { get; private set; }
     public Guid GroupId { get; private set; }
+    /// <summary>Ítem padre dentro del mismo grupo; null = raíz del grupo.</summary>
+    public Guid? ParentItemId { get; private set; }
     public string RoutePath { get; private set; } = null!;
     public string LabelKey { get; private set; } = null!;
     public int SortOrder { get; private set; }
@@ -29,12 +31,14 @@ public sealed class UiNavItem
         string? permissionKey,
         string? permissionKeysAnyJson,
         string? rolesCsv,
-        bool isActive = true)
+        bool isActive = true,
+        Guid? parentItemId = null)
     {
         return new UiNavItem
         {
             Id = id,
             GroupId = groupId,
+            ParentItemId = parentItemId,
             RoutePath = (routePath ?? string.Empty).Trim(),
             LabelKey = (labelKey ?? string.Empty).Trim(),
             SortOrder = sortOrder,

@@ -104,7 +104,7 @@ export function SuperAdminInstanceQuotaPage() {
 
   if (!isSuperAdmin) {
     return (
-      <PageShell kicker={t('app.nav.group.saas')} title={t('superadmin.instanceQuota.title')}>
+      <PageShell kicker={t('app.nav.group.home')} title={t('superadmin.instanceQuota.title')}>
         <TableCard>
           <div className="empty-state">{t('superadmin.noAccess')}</div>
         </TableCard>
@@ -115,7 +115,7 @@ export function SuperAdminInstanceQuotaPage() {
   if (hasSelectedTenant) {
     return (
       <PageShell
-        kicker={t('app.nav.group.saas')}
+        kicker={t('app.nav.group.home')}
         title={t('superadmin.instanceQuota.title')}
         action={
           <NavLink to="/superadmin">{t('superadmin.backToGlobal')}</NavLink>
@@ -130,7 +130,7 @@ export function SuperAdminInstanceQuotaPage() {
 
   return (
     <PageShell
-      kicker={t('app.nav.group.saas')}
+      kicker={t('app.nav.group.home')}
       title={t('superadmin.instanceQuota.title')}
       subtitle={t('superadmin.instanceQuota.subtitle')}
       action={

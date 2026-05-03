@@ -7,6 +7,8 @@ import { TenantSelectPage } from './pages/TenantSelectPage';
 import { SuperAdminPanelPage } from './pages/SuperAdminPanelPage';
 import { SuperAdminFormsPage } from './pages/SuperAdminFormsPage';
 import { SuperAdminInstanceQuotaPage } from './pages/SuperAdminInstanceQuotaPage';
+import { SuperAdminNavMenuPage } from './pages/SuperAdminNavMenuPage';
+import { SuperAdminPlansPage } from './pages/SuperAdminPlansPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { AccountingPage } from './pages/AccountingPage';
@@ -25,6 +27,7 @@ import {
   CatalogStructurePage,
 } from './modules/catalog/pages/CatalogPages';
 import { useDeployment } from './deployment/DeploymentContext';
+import { ModulePlaceholderPage } from './pages/ModulePlaceholderPage';
 
 function AppRoutes() {
   const { superAdminPanelEnabled } = useDeployment();
@@ -42,7 +45,9 @@ function AppRoutes() {
               <>
                 <Route path="/superadmin" element={<SuperAdminPanelPage />} />
                 <Route path="/superadmin/forms" element={<SuperAdminFormsPage />} />
+                <Route path="/superadmin/plans" element={<SuperAdminPlansPage />} />
                 <Route path="/superadmin/instance-quota" element={<SuperAdminInstanceQuotaPage />} />
+                <Route path="/superadmin/navigation-menu" element={<SuperAdminNavMenuPage />} />
               </>
             ) : null}
             <Route path="/dashboard" element={<DashboardPage />} />
@@ -55,6 +60,8 @@ function AppRoutes() {
             <Route path="/catalog/tariffs" element={<TariffsCatalogPage />} />
             <Route path="/catalog/structure" element={<CatalogStructurePage />} />
             <Route path="/accounting" element={<AccountingPage />} />
+            <Route path="/compras" element={<ModulePlaceholderPage variant="purchases" />} />
+            <Route path="/rrhh" element={<ModulePlaceholderPage variant="hr" />} />
             <Route path="/security" element={<SecuritySettingsPage />} />
             <Route path="/companies" element={<CompaniesPage />} />
             <Route path="/saas/branches" element={<BranchesPage />} />

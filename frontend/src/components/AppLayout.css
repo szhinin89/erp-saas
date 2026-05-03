@@ -254,14 +254,14 @@
 .app-mainmenu-item {
   display: inline-flex;
   align-items: center;
-  padding: 8px 14px;
+  padding: 9px 16px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.10);
   background: rgba(15, 23, 42, 0.55);
   color: rgba(255, 255, 255, 0.88);
-  font-weight: 900;
-  font-size: 12px;
-  letter-spacing: 0.02em;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.01em;
   cursor: pointer;
   transition: background 0.15s, box-shadow 0.15s, border-color 0.15s, color 0.15s;
 }
@@ -284,8 +284,17 @@
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 14px;
   padding: 10px;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
   z-index: 9999;
+}
+
+.app-mainmenu-row.is-nested {
+  padding-left: 0.75rem;
+}
+
+.app-mainmenu-parent {
+  cursor: default;
+  color: var(--zh-muted, #6b7280);
 }
 
 .app-mainmenu-row {
@@ -318,7 +327,7 @@
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.10);
   background: rgba(255, 255, 255, 0.06);
-  color: rgba(255,255,255,0.86);
+  color: rgba(255, 255, 255, 0.86);
   cursor: pointer;
   flex-shrink: 0;
   font-weight: 900;
@@ -334,7 +343,7 @@
   border-color: rgba(0, 229, 255, 0.20);
 }
 
-/* Sidebar */
+/* Sidebar (legacy drawer; nav eliminado del layout actual) */
 .sidebar {
   position: fixed;
   top: 0;

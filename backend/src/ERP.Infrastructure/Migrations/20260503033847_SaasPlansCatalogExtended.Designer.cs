@@ -3,6 +3,7 @@ using System;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    partial class ErpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260503033847_SaasPlansCatalogExtended")]
+    partial class SaasPlansCatalogExtended
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -909,10 +912,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(64)")
                         .HasColumnName("module_key");
 
-                    b.Property<Guid?>("ParentItemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("parent_item_id");
-
                     b.Property<string>("PermissionKey")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)")
@@ -940,11 +939,7 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ParentItemId");
-
                     b.HasIndex("GroupId", "RoutePath");
-
-                    b.HasIndex("GroupId", "ParentItemId", "SortOrder");
 
                     b.ToTable("ui_nav_items", (string)null);
                 });
@@ -2209,11 +2204,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("ERP.Domain.Navigation.Entities.UiNavItem", null)
-                        .WithMany()
-                        .HasForeignKey("ParentItemId")
-                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("ERP.Domain.Products.Entities.Product", b =>
