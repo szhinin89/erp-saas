@@ -391,7 +391,16 @@ export function SuperAdminPanelPage() {
                                 <span className="sap-pricing-usagePct">{usagePct}%</span>
                               </div>
                               <div className="sap-pricing-bar" aria-hidden>
-                                <div className="sap-pricing-barFill" style={{ width: `${usagePct}%` }} />
+                                <svg viewBox="0 0 100 6" preserveAspectRatio="none" className="sap-pricing-barSvg">
+                                  <rect
+                                    className="sap-pricing-barRect"
+                                    x="0"
+                                    y="0"
+                                    width={Math.max(0, Math.min(100, usagePct))}
+                                    height="6"
+                                    rx="3"
+                                  />
+                                </svg>
                               </div>
                             </div>
                             <ul className="sap-pricing-features">

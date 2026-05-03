@@ -415,6 +415,16 @@
   transition: width 0.35s ease;
 }
 
+.sap-pricing-barSvg {
+  display: block;
+  width: 100%;
+  height: 6px;
+}
+
+.sap-pricing-barRect {
+  fill: var(--sap-tier-accent, #0ea5e9);
+}
+
 .sap-pricing-features {
   list-style: none;
   margin: 16px 0 0;

@@ -267,7 +267,7 @@ function ItemTreeEditor({
     <ul className={`sa-navmenu-itemTree${depth > 0 ? ' is-nested' : ''}`}>
       {items.map((it, ii) => (
         <li key={it.id}>
-          <div className="sa-navmenu-itemRow" style={{ paddingLeft: depth * 14 }}>
+          <div className={`sa-navmenu-itemRow sa-navmenu-itemRow--d${Math.min(depth, 12)}`}>
             <span className="sa-navmenu-itemLabel">
               {t(it.labelKey)} <span className="mono subtle">{it.routePath}</span>
             </span>
