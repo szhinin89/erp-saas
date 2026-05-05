@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { PageShell, TableCard, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { useAuthStore } from '../store/authStore';
@@ -12,7 +13,7 @@ import {
   type GeographyItemDto,
 } from '../services/branchService';
 import './BranchesPage.css';
-import { ZHBtn, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHToggle } from '../components/zh/ZHForm';
+import { ZHBtn, ZHFormSection, ZHGrid, ZHField, ZHToggle } from '../components/zh/ZHForm';
 import { ZHColSpan } from '../components/zh/ZHLayout';
 import ZHSearchBar from '../components/shared/ZHSearchBar';
 import { EntityAuditPanel } from '../components/EntityAuditPanel';
@@ -405,7 +406,7 @@ export function BranchesPage() {
       }
     >
       <TableCard>
-        {error ? <ErrorState message={error} /> : null}
+        {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button
             type="button"
@@ -446,7 +447,7 @@ export function BranchesPage() {
               <div className="branches-data-panel">
                 <input type="hidden" name="tenantId" value={tenantId} />
                 {geoBootstrapError ? (
-                  <ZHFormAlert type="warning" message={t('branches.error.geography')} detail={geoBootstrapError || undefined} />
+                  <ZHPageNotice variant="warning" message={t('branches.error.geography')} detail={geoBootstrapError || undefined} />
                 ) : null}
 
                 <ZHFormSection title={t('branches.section.identity')}>

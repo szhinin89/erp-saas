@@ -1,10 +1,11 @@
 using ERP.Application.Common;
 using ERP.Application.Accounting.DTOs;
+using MediatR;
 using ERP.Domain.Accounting.Interfaces;
 
 namespace ERP.Application.Accounting.UseCases.GetJournalEntryById;
 
-public class GetJournalEntryByIdHandler
+public class GetJournalEntryByIdHandler : IRequestHandler<GetJournalEntryByIdQuery, Result<JournalEntryDto>>
 {
     private readonly IAccountingRepository _repository;
     private readonly ICurrentTenant _currentTenant;
@@ -15,10 +16,13 @@ public class GetJournalEntryByIdHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<JournalEntryDto>> HandleAsync(Guid id, CancellationToken ct = default)
+    public Task<Result<JournalEntryDto>> HandleAsync(Guid id, CancellationToken ct = default)
+        => Handle(new GetJournalEntryByIdQuery(id), ct);
+
+    public async Task<Result<JournalEntryDto>> Handle(GetJournalEntryByIdQuery request, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
-        var entry    = await _repository.GetJournalEntryByIdAsync(id, tenantId, ct);
+        var entry    = await _repository.GetJournalEntryByIdAsync(request.Id, tenantId, ct);
 
         if (entry is null)
             return Result<JournalEntryDto>.Failure("Asiento contable no encontrado.");

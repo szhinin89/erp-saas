@@ -8,7 +8,8 @@
 ```
 erp-saas/
 ├── docker-compose.yml                     ← PostgreSQL local (postgreszh, puerto 5435)
-├── .cursor/rules/erp-unified-rules.mdc   ← reglas de producto (arquitectura, validación 4 capas, ZH Form, nav, i18n Kichwa)
+├── .cursor/rules/erp-unified-rules.mdc     ← reglas de producto (arquitectura, validación 4 capas, ZH Form, nav, i18n Kichwa)
+├── .cursor/rules/saas-navigation-no-sensitive-url.mdc  ← tenant UUID y contexto sensible: sessionStorage, no query en URL
 ├── CONTEXT.md                             ← este índice
 ├── docs/
 │   ├── adr/                               ← decisiones de arquitectura (ADR); índice en README.md
@@ -30,7 +31,13 @@ erp-saas/
 
 ## Reglas de implementación (obligatorio)
 
-**`.cursor/rules/erp-unified-rules.mdc`** — incluye jerarquía de lectura, límites de capas, validación en cuatro capas, sistema de formularios ZH, copy de menú/pestañas, locale `qu` (Kichwa de Cañar).
+**`.cursor/rules/erp-unified-rules.mdc`** — incluye jerarquía de lectura, límites de capas, validación en cuatro capas, sistema de formularios ZH, copy de menú/pestañas, locale `qu` (Kichwa de Cañar), y enlace a navegación SaaS sin IDs en URL.
+
+**`docs/SAAS-PLAN-TENANT-FLOW.md`** — flujo comercial: empresa → plan comercial → features del plan (módulos, formularios) → restricción opcional por módulos de producto en el tenant; alineado con la pantalla **Empresas → Plan y módulos**.
+
+**`docs/COMPANIES-PLAN-MENU-ADMIN.md`** — pantalla **Empresas → Plan ↔ menú**: árbol del menú + acciones incluir/quitar para armar qué definiciones SaaS pertenecen a un plan comercial (y bloque de definiciones sin enlace al menú).
+
+**`.cursor/rules/saas-navigation-no-sensitive-url.mdc`** — obligatorio al pasar contexto de tenant entre rutas: `sessionStorage` (`erp.saas.*`), helpers en `frontend/src/navigation/companiesTenantDetailNav.ts`; no `?tenantId=` / `?data=` / `?subscription=` con UUID en código nuevo (migración si hay legacy).
 
 ## Arquitectura detallada
 
@@ -50,7 +57,11 @@ erp-saas/
 
 **`docs/FRONTEND-PANTALLAS.md`** — catálogo de rutas; al añadir pantalla actualizar `frontend/src/App.tsx` y `frontend/src/nav/navConfig.ts`.
 
+**Menú en BD vs SuperAdmin:** el menú por tenant (`ui_nav_*`) no debe incluir rutas de plataforma (`/superadmin/*`, `/companies`); esas van solo en **`navConfig.ts`** (`getSuperAdminPanelNavExtras`) para no mezclar módulos de cliente con el panel global. Migración **`UiNavRemovePlatformAdminFromMenu`** desactiva filas heredadas.
+
 ## Referencia visual y plantilla ZH
+
+Copia canónica **solo** dentro de `erp-saas` (no depender de plantillas en otras carpetas del disco).
 
 - **HTML plantilla:** `docs/zh-form-template/zh_erp_component_library.html`
 - **Notas de mantenimiento:** `docs/zh-form-template/README.md`

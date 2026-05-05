@@ -44,7 +44,7 @@ public class CreateProductLineHandler
             userId,
             _currentUser.Email,
             _currentUser.FullName,
-            module: "catalog",
+            module: "inventario",
             action: "productLine.create",
             entityType: "ProductLine",
             entityId: entity.Id,

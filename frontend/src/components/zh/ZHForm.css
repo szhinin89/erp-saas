@@ -407,12 +407,12 @@
 .zh-field-control select,
 .zh-field-control textarea {
   width: 100%;
-  height: 38px;
-  padding: 9px 12px;
+  height: 36px;
+  padding: 0 11px;
   border-radius: var(--zh-radius);
   border: 1px solid var(--color-border-tertiary);
-  background: var(--color-bg-secondary);
-  font-size: 14px;
+  background: var(--zh-color-surface);
+  font-size: 13px;
   font-weight: 400;
   color: var(--zh-color-text);
   outline: none;
@@ -420,9 +420,28 @@
   font-family: inherit;
 }
 
+.zh-field-control input::placeholder,
+.zh-field-control textarea::placeholder {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.zh-field-control select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 30px;
+  background-image: var(--zh-select-chevron);
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  cursor: pointer;
+}
+
 .zh-field-control textarea {
   height: auto;
-  min-height: 76px;
+  min-height: 72px;
+  padding: 9px 11px;
+  line-height: 1.5;
   resize: vertical;
 }
 
@@ -430,7 +449,15 @@
 .zh-field-control select:focus,
 .zh-field-control textarea:focus {
   border-color: var(--zh-blue);
-  box-shadow: 0 0 0 3px rgba(79, 123, 166, 0.15);
+  box-shadow: var(--zh-focus-ring);
+  position: relative;
+  z-index: 1;
+}
+
+.zh-field--error .zh-field-control input:focus,
+.zh-field--error .zh-field-control select:focus,
+.zh-field--error .zh-field-control textarea:focus {
+  box-shadow: var(--zh-focus-ring-danger);
 }
 
 .zh-field--readonly .zh-field-control input,
@@ -473,6 +500,60 @@
 .zh-field-hint--warning { color: var(--zh-warning); }
 .zh-field-hint--muted { color: var(--color-text-tertiary); }
 .zh-field-hint--info { color: var(--zh-blue-dark); }
+
+/* Grupo input + prefijo/sufijo (patrón ZH Components v2 — HTML o React con la misma envoltura) */
+.zh-input-group {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+
+.zh-input-addon {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 10px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-tertiary);
+}
+
+.zh-input-addon--left {
+  border-radius: var(--zh-radius) 0 0 var(--zh-radius);
+  border-right: none;
+}
+
+.zh-input-addon--right {
+  border-radius: 0 var(--zh-radius) var(--zh-radius) 0;
+  border-left: none;
+}
+
+.zh-input-group .zh-field-control {
+  flex: 1;
+  min-width: 0;
+}
+
+.zh-input-group--addon-left .zh-field-control input,
+.zh-input-group--addon-left .zh-field-control select {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-left: none;
+}
+
+.zh-input-group--addon-right .zh-field-control input,
+.zh-input-group--addon-right .zh-field-control select {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-right: none;
+}
+
+.zh-input-group:focus-within .zh-input-addon {
+  border-color: var(--zh-blue);
+}
 
 .zh-toggle {
   display: flex;
@@ -611,7 +692,11 @@
   font-weight: 500;
   letter-spacing: 0.02em;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s, opacity 0.15s;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s, opacity 0.15s, transform 0.08s;
+}
+
+.zh-btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .zh-btn--md { height: 36px; padding: 0 18px; font-size: 13px; letter-spacing: 0.01em; }

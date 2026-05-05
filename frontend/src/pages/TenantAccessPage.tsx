@@ -6,7 +6,8 @@ import { useAuthStore } from '../store/authStore';
 import { tenantAccessService, type TenantMembershipItem } from '../services/tenantAccessService';
 import { profileService, type Profile } from '../services/profileService';
 import { PageShell, TableCard, EmptyState, LoadingState, NoAccessPage } from '../components/PageShell';
-import { ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHBtn } from '../components/zh/ZHForm';
+import { ZHFormSection, ZHGrid, ZHField, ZHBtn } from '../components/zh/ZHForm';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { ZHActionsRow } from '../components/zh/ZHLayout';
 import ZHSearchBar from '../components/shared/ZHSearchBar';
 import { ZHFormCard } from '../components/zh/ZHFormCard';
@@ -121,7 +122,7 @@ export function TenantAccessPage() {
 
   return (
     <PageShell
-      kicker={t('app.nav.group.security')}
+      kicker={t('app.nav.group.configuracion')}
       title={t('tenantAccess.title')}
       subtitle={t('tenantAccess.subtitle')}
       action={
@@ -139,7 +140,7 @@ export function TenantAccessPage() {
       }
     >
       <TableCard>
-        {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
+        {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button type="button" className={tab === 'data' ? 'is-active' : ''} onClick={() => setTab('data')}>
             {t('common.formTab.data')}

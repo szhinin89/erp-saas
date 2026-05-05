@@ -41,6 +41,27 @@
   align-items: center;
 }
 
+.sa-tenantPlanModules {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sa-tenantPlanRow,
+.sa-tenantModulesRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.sa-tenantPlanKey,
+.sa-tenantModulesKey {
+  font-weight: 700;
+  color: #64748b;
+}
+
 .sa-tenant-actions {
   margin-top: 10px;
 }
@@ -49,36 +70,6 @@
   margin-top: 10px;
   color: #003366;
   font-weight: 800;
-}
-
-.sa-formRow {
-  display: block;
-  text-decoration: none;
-  border: 1px solid rgba(15, 23, 42, 0.10);
-  background: #fff;
-  border-radius: 12px;
-  padding: 12px 12px;
-  transition: box-shadow 140ms ease, border-color 120ms ease;
-  color: inherit;
-}
-
-.sa-formRow:hover {
-  border-color: rgba(0, 229, 255, 0.55);
-  box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.16);
-}
-
-.sa-formRow-title {
-  font-weight: 900;
-  color: #0f172a;
-}
-
-.sa-formRow-meta {
-  margin-top: 6px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  color: #475569;
-  align-items: center;
 }
 
 .sa-plansWrap {

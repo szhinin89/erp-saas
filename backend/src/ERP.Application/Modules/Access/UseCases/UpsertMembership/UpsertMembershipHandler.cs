@@ -1,10 +1,11 @@
 using ERP.Application.Common;
+using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 
 namespace ERP.Application.Access.UseCases.UpsertMembership;
 
-public class UpsertMembershipHandler
+public class UpsertMembershipHandler : IRequestHandler<UpsertMembershipCommand, Result<object>>
 {
     private readonly IAccessRepository _accessRepository;
     private readonly ICurrentUser _currentUser;
@@ -20,7 +21,10 @@ public class UpsertMembershipHandler
         _deployment = deployment;
     }
 
-    public async Task<Result<object>> HandleAsync(UpsertMembershipCommand command, CancellationToken ct = default)
+    public Task<Result<object>> HandleAsync(UpsertMembershipCommand command, CancellationToken ct = default)
+        => Handle(command, ct);
+
+    public async Task<Result<object>> Handle(UpsertMembershipCommand command, CancellationToken ct)
     {
         if (string.Equals(command.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
         {

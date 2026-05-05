@@ -6,9 +6,10 @@
   <title>ZH Technologies — ERP · Librería de formularios (referencia)</title>
   <style>
     /* ═══════════════════════════════════════════════════════════════════════════
-       SNAPSHOT: mantener alineado con
-       - frontend/src/index.css  (:root, alias --B/--BD/…)
+       CANÓNICO (solo en erp-saas/docs/zh-form-template/): mantener alineado con
+       - frontend/src/index.css  (:root, alias --B/--BD/…, --zh-select-chevron, anillos de foco)
        - frontend/src/components/zh/ZHForm.css  (clases .zh-*)
+       Bocetos fuera del repo solo informan cambios; la plantilla viva es este archivo + CSS arriba.
        ═══════════════════════════════════════════════════════════════════════════ */
     *, *::before, *::after { box-sizing: border-box; }
 
@@ -56,6 +57,9 @@
       --zh-primary-mid: var(--zh-blue-mid);
       --zh-font: var(--font-sans);
       --zh-font-mono: var(--font-mono);
+      --zh-focus-ring: 0 0 0 3px rgba(79, 123, 166, 0.15);
+      --zh-focus-ring-danger: 0 0 0 3px rgba(226, 75, 74, 0.15);
+      --zh-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 12 12'%3E%3Cpath fill='%234F7BA6' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
     }
 
     body.tpl-library {
@@ -193,14 +197,40 @@
     .zh-field { display: flex; flex-direction: column; gap: 6px; }
     .zh-field-label { font-size: 12px; font-weight: 500; letter-spacing: 0.03em; color: var(--color-text-secondary); }
     .zh-field-required { margin-left: 6px; color: var(--zh-danger); }
-    .zh-field-control input, .zh-field-control select {
-      width: 100%; height: 38px; padding: 9px 12px; border-radius: var(--zh-radius);
-      border: 1px solid var(--color-border-tertiary); background: var(--color-bg-secondary);
-      font-size: 14px; color: var(--zh-color-text); outline: none; font-family: inherit;
+    .zh-field-control input, .zh-field-control select, .zh-field-control textarea {
+      width: 100%; height: 36px; padding: 0 11px; border-radius: var(--zh-radius);
+      border: 1px solid var(--color-border-tertiary); background: var(--zh-color-surface);
+      font-size: 13px; color: var(--zh-color-text); outline: none; font-family: inherit;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .zh-field-control input:focus { border-color: var(--zh-blue); box-shadow: 0 0 0 3px rgba(79, 123, 166, 0.15); }
+    .zh-field-control input::placeholder, .zh-field-control textarea::placeholder {
+      color: var(--color-text-muted); font-size: 12px;
+    }
+    .zh-field-control select {
+      appearance: none; -webkit-appearance: none; padding-right: 30px; cursor: pointer;
+      background-image: var(--zh-select-chevron); background-repeat: no-repeat;
+      background-position: right 10px center;
+    }
+    .zh-field-control textarea { height: auto; min-height: 72px; padding: 9px 11px; line-height: 1.5; resize: vertical; }
+    .zh-field-control input:focus, .zh-field-control select:focus, .zh-field-control textarea:focus {
+      border-color: var(--zh-blue); box-shadow: var(--zh-focus-ring); position: relative; z-index: 1;
+    }
+    .zh-field--error .zh-field-control input:focus { box-shadow: var(--zh-focus-ring-danger); }
     .zh-field--readonly .zh-field-control input { border-style: dashed; cursor: default; }
     .zh-field-hint { font-size: 11px; margin: 0; color: var(--color-text-muted); }
+
+    .zh-input-group { display: flex; align-items: stretch; width: 100%; }
+    .zh-input-addon {
+      display: flex; align-items: center; height: 36px; padding: 0 10px; flex-shrink: 0;
+      font-size: 12px; font-weight: 500; color: var(--color-text-muted); white-space: nowrap;
+      background: var(--color-bg-secondary); border: 1px solid var(--color-border-tertiary);
+    }
+    .zh-input-addon--left { border-radius: var(--zh-radius) 0 0 var(--zh-radius); border-right: none; }
+    .zh-input-addon--right { border-radius: 0 var(--zh-radius) var(--zh-radius) 0; border-left: none; }
+    .zh-input-group .zh-field-control { flex: 1; min-width: 0; }
+    .zh-input-group--addon-left .zh-field-control input { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; }
+    .zh-input-group--addon-right .zh-field-control input { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: none; }
+    .zh-input-group:focus-within .zh-input-addon { border-color: var(--zh-blue); }
 
     .zh-toggle {
       display: flex; justify-content: space-between; gap: 14px; padding: 12px 14px; border-radius: var(--zh-radius);
@@ -223,8 +253,10 @@
 
     .zh-btn {
       height: 38px; padding: 0 14px; border-radius: var(--zh-radius); font-size: 13px; font-weight: 500;
-      letter-spacing: 0.02em; cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
+      letter-spacing: 0.02em; cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s, transform 0.08s;
     }
+    .zh-btn:active:not(:disabled) { transform: scale(0.98); }
     .zh-btn--md { height: 36px; padding: 0 18px; font-size: 13px; }
     .zh-btn--primary { background: var(--zh-blue); color: #fff; border: 1px solid var(--zh-blue); }
     .zh-btn--primary:hover { background: var(--zh-blue-dark); border-color: var(--zh-blue-dark); }
@@ -321,6 +353,23 @@
           <div class="zh-field zh-field--readonly">
             <label class="zh-field-label">Solo lectura</label>
             <div class="zh-field-control"><input readonly value="Generado por el sistema" /></div>
+          </div>
+          <div class="zh-field">
+            <label class="zh-field-label">Teléfono (addon)</label>
+            <div class="zh-input-group zh-input-group--addon-left">
+              <span class="zh-input-addon zh-input-addon--left">+593</span>
+              <div class="zh-field-control"><input type="tel" placeholder="99 000 0000" /></div>
+            </div>
+          </div>
+          <div class="zh-field">
+            <label class="zh-field-label">Rol</label>
+            <div class="zh-field-control">
+              <select aria-label="Rol">
+                <option value="">Seleccionar…</option>
+                <option>Administrador</option>
+                <option>Operador</option>
+              </select>
+            </div>
           </div>
         </div>
 

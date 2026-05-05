@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { PageShell, TableCard, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { useAuthStore } from '../store/authStore';
@@ -167,7 +168,7 @@ export function CatalogSimplePage({
 
   return (
     <PageShell
-      kicker={t('app.nav.group.catalog')}
+      kicker={t('app.nav.group.inventario')}
       title={t(titleKey)}
       action={
         canCreate && tab === 'data' ? (
@@ -178,7 +179,7 @@ export function CatalogSimplePage({
       }
     >
       <TableCard>
-        {error ? <ErrorState message={error} /> : null}
+        {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button type="button" className={tab === 'data' ? 'is-active' : ''} onClick={() => setTab('data')}>
             {t('common.formTab.data')}

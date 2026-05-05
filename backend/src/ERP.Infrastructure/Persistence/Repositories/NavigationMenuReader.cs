@@ -15,6 +15,8 @@ public sealed class NavigationMenuReader : INavigationMenuReader
 
     public async Task<IReadOnlyList<SessionMenuGroupDto>> GetActiveMenuAsync(CancellationToken ct = default)
     {
+        await NavigationMenuConfiguracionBootstrap.EnsureAsync(_db, ct);
+
         var groups = await _db.UiNavGroups.AsNoTracking()
             .Where(g => g.IsActive)
             .OrderBy(g => g.SortOrder)
@@ -67,10 +69,12 @@ public sealed class NavigationMenuReader : INavigationMenuReader
             list.Add(new SessionMenuItemDto(
                 i.RoutePath,
                 i.LabelKey,
+                i.DisplayLabel,
                 i.SortOrder,
                 i.ModuleKey,
                 i.PermissionKey,
                 keysAny,
+                ParseRoles(i.RolesCsv),
                 nested.Count > 0 ? nested : null));
         }
 

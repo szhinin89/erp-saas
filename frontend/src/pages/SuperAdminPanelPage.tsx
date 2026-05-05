@@ -1,43 +1,29 @@
-import { useEffect, useMemo, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge } from '../components/PageShell';
-import {
-  superAdminService,
-  type SaasFeatureDefinitionAdmin,
-  type SuperAdminPlan,
-  type SuperAdminTenant,
-} from '../services/superAdminService';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { TableCard, EmptyState, LoadingState, Badge } from '../components/PageShell';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
+import { SuperAdminPageTemplate } from '../components/superadmin/SuperAdminPageTemplate';
+import { useSuperAdminGate } from '../hooks/useSuperAdminGate';
+import { Modal } from '../components/Modal';
+import { ZHModalHeader } from '../components/zh/ZHModalHeader';
+import { superAdminService, type CreateTenantWithAdminBody, type SuperAdminPlan, type SuperAdminTenant } from '../services/superAdminService';
 import { useAuthStore } from '../store/authStore';
+import { usePermissionsStore } from '../store/permissionsStore';
+import { CompanyModuleChips } from '../components/saas/CompanyModuleChips';
 import { useI18n } from '../i18n/i18n';
 import { ZHBtn, ZHField } from '../components/zh/ZHForm';
 import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../components/zh/ZHLayout';
 import { ZHDashboardScaffold, ZHKpiPanel } from '../components/zh/ZHDashboard';
+import { SuperAdminGrowthSection } from '../components/superadmin/SuperAdminGrowthSection';
+import { SuperAdminFeaturesSection } from '../components/superadmin/SuperAdminFeaturesSection';
+import { SuperAdminPlansSection } from '../components/superadmin/SuperAdminPlansSection';
 import { formatApiRequestError } from '../modules/lib/apiError';
+import { goToCompaniesTenantDetail } from '../navigation/companiesTenantDetailNav';
+import type { SessionResponse } from '../types/access';
 import '../components/zh/ZHFormTabs.css';
-import './SuperAdminPlansPage.css';
 import './SuperAdminPanelPage.css';
 
-type SuperAdminHomeTab = 'overview' | 'companies' | 'plans';
-
-function formatPlanMoney(amount: number | undefined, currency: string | undefined) {
-  const a = amount ?? 0;
-  const c = (currency ?? 'USD').trim() || 'USD';
-  try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency: c, maximumFractionDigits: 2 }).format(a);
-  } catch {
-    return `${a} ${c}`;
-  }
-}
-
-/** Misma jerarquía visual que `/superadmin/plans`. */
-function planVisualTier(code: string): 'starter' | 'business' | 'professional' | 'enterprise' | 'default' {
-  const c = (code ?? '').trim().toLowerCase();
-  if (c === 'starter') return 'starter';
-  if (c === 'business') return 'business';
-  if (c === 'professional') return 'professional';
-  if (c === 'enterprise') return 'enterprise';
-  return 'default';
-}
+type SuperAdminHomeTab = 'overview' | 'companies' | 'features' | 'plans';
 
 function storeImpersonationTenantName(name: string) {
   localStorage.setItem('superadmin-impersonation-tenant-name', name);
@@ -45,8 +31,20 @@ function storeImpersonationTenantName(name: string) {
 
 export function SuperAdminPanelPage() {
   const navigate = useNavigate();
-  const { user, login } = useAuthStore();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { login } = useAuthStore();
+  const clearPermissions = usePermissionsStore((s) => s.clearPermissions);
+  const { isSuperAdmin, hasSelectedTenant } = useSuperAdminGate();
   const { t } = useI18n();
+
+  const tabParam = searchParams.get('tab');
+  const homeTab: SuperAdminHomeTab =
+    tabParam === 'companies' || tabParam === 'features' || tabParam === 'plans' ? tabParam : 'overview';
+
+  const selectHomeTab = (tab: SuperAdminHomeTab) => {
+    if (tab === 'overview') setSearchParams({}, { replace: true });
+    else setSearchParams({ tab }, { replace: true });
+  };
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -55,13 +53,37 @@ export function SuperAdminPanelPage() {
   const [q, setQ] = useState('');
   const [switching, setSwitching] = useState<string | null>(null);
   const [plans, setPlans] = useState<SuperAdminPlan[]>([]);
-  const [featureDefs, setFeatureDefs] = useState<SaasFeatureDefinitionAdmin[]>([]);
-  const [plansLoading, setPlansLoading] = useState(true);
-  const [plansError, setPlansError] = useState('');
-  const [homeTab, setHomeTab] = useState<SuperAdminHomeTab>('overview');
 
-  const isSuperAdmin = user?.role === 'SuperAdmin';
-  const hasSelectedTenant = !!user?.tenantId && user.tenantId !== '00000000-0000-0000-0000-000000000000';
+  const [createTenantOpen, setCreateTenantOpen] = useState(false);
+  const [createBusy, setCreateBusy] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [createForm, setCreateForm] = useState<CreateTenantWithAdminBody>({
+    tenantName: '',
+    tenantSlug: '',
+    adminFirstName: '',
+    adminLastName: '',
+    adminEmail: '',
+    adminPassword: '',
+    passwordResetMode: 0,
+    linkExistingAdmin: false,
+  });
+
+  const slugify = (name: string) =>
+    (name ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '')
+      .slice(0, 64);
+
+  const refreshTenantsAndMetrics = useCallback(async () => {
+    const [m, tns] = await Promise.all([
+      superAdminService.getMetrics(),
+      superAdminService.getTenants(),
+    ]);
+    setMetrics(m);
+    setTenants(tns);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -69,13 +91,8 @@ export function SuperAdminPanelPage() {
       try {
         setLoading(true);
         setError('');
-        const [m, tns] = await Promise.all([
-          superAdminService.getMetrics(),
-          superAdminService.getTenants(),
-        ]);
+        await refreshTenantsAndMetrics();
         if (cancelled) return;
-        setMetrics(m);
-        setTenants(tns);
       } catch (e) {
         if (cancelled) return;
         setError(formatApiRequestError(e, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
@@ -84,28 +101,16 @@ export function SuperAdminPanelPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [t]);
+  }, [refreshTenantsAndMetrics, t]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        setPlansLoading(true);
-        setPlansError('');
-        const [list, defs] = await Promise.all([
-          superAdminService.getPlansCatalog(),
-          superAdminService.listSaasFeatureDefinitions().catch(() => [] as SaasFeatureDefinitionAdmin[]),
-        ]);
-        if (!cancelled) {
-          setPlans(list);
-          setFeatureDefs(Array.isArray(defs) ? defs : []);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setPlansError(formatApiRequestError(e, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
-        }
-      } finally {
-        if (!cancelled) setPlansLoading(false);
+        const list = await superAdminService.getPlansCatalog();
+        if (!cancelled) setPlans(list);
+      } catch {
+        if (!cancelled) setPlans([]);
       }
     })();
     return () => { cancelled = true; };
@@ -119,34 +124,26 @@ export function SuperAdminPanelPage() {
     );
   }, [tenants, q]);
 
-  const sortedPlans = useMemo(
-    () => [...plans].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.code.localeCompare(b.code)),
-    [plans],
-  );
-
-  const sortedFeatureDefs = useMemo(
-    () => [...featureDefs].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
-    [featureDefs],
-  );
-
-  const planTenantStats = useMemo(() => {
-    const counts = new Map<string, number>();
-    for (const tn of tenants) {
-      const c = (tn.planCode ?? '').trim().toLowerCase();
-      if (!c) continue;
-      counts.set(c, (counts.get(c) ?? 0) + 1);
+  const planLabelForTenant = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const p of plans) {
+      map.set(p.code.trim().toLowerCase(), p.name.trim() ? `${p.name} (${p.code})` : p.code);
     }
-    let max = 0;
-    for (const v of counts.values()) max = Math.max(max, v);
-    return { counts, max };
-  }, [tenants]);
+    return (planCode: string | null | undefined) => {
+      const c = (planCode ?? '').trim();
+      if (!c) return '';
+      return map.get(c.toLowerCase()) ?? c;
+    };
+  }, [plans]);
 
   const handleSwitch = async (tenant: SuperAdminTenant) => {
+    if (!tenant.isActive) return;
     setSwitching(tenant.id);
     setError('');
     try {
       const auth = await superAdminService.switchTenant(tenant.id);
       storeImpersonationTenantName(tenant.name);
+      clearPermissions();
       login(auth);
       navigate('/dashboard');
     } catch (e) {
@@ -156,44 +153,58 @@ export function SuperAdminPanelPage() {
     }
   };
 
-  if (!isSuperAdmin) {
-    return (
-      <PageShell kicker={t('app.nav.group.home')} title={t('superadmin.title')}>
-        <TableCard>
-          <div className="empty-state">{t('superadmin.noAccess')}</div>
-        </TableCard>
-      </PageShell>
-    );
-  }
+  const openCreateTenant = () => {
+    setCreateError('');
+    setCreateForm({
+      tenantName: '',
+      tenantSlug: '',
+      adminFirstName: '',
+      adminLastName: '',
+      adminEmail: '',
+      adminPassword: '',
+      passwordResetMode: 0,
+      linkExistingAdmin: false,
+    });
+    setCreateTenantOpen(true);
+  };
 
-  if (hasSelectedTenant) {
-    return (
-      <PageShell
-        kicker={t('app.nav.group.home')}
-        title={t('superadmin.title')}
-        action={
-          <ZHBtn variant="primary" size="md" type="button" onClick={() => navigate('/dashboard')}>
-            {t('superadmin.goToTenant')}
-          </ZHBtn>
-        }
-      >
-        <TableCard>
-          <div className="empty-state">{t('superadmin.alreadyInTenant')}</div>
-        </TableCard>
-      </PageShell>
-    );
-  }
+  const saveCreateTenant = async () => {
+    setCreateBusy(true);
+    setCreateError('');
+    try {
+      const tenantName = createForm.tenantName.trim();
+      const tenantSlug = (createForm.tenantSlug.trim() || slugify(tenantName)).toLowerCase();
+      const adminEmail = createForm.adminEmail.trim().toLowerCase();
+
+      const session: SessionResponse = await superAdminService.createTenantWithAdmin({
+        ...createForm,
+        tenantName,
+        tenantSlug,
+        adminEmail,
+        adminPassword: createForm.linkExistingAdmin ? '' : createForm.adminPassword,
+      });
+
+      setError('');
+      setCreateTenantOpen(false);
+      goToCompaniesTenantDetail(navigate, session.tenantId);
+    } catch (e) {
+      setCreateError(formatApiRequestError(e, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
+    } finally {
+      setCreateBusy(false);
+    }
+  };
 
   return (
-    <PageShell
-      kicker={t('app.nav.group.home')}
+    <SuperAdminPageTemplate
       title={t('superadmin.title')}
-      subtitle={t('superadmin.subtitle')}
-      action={
-        <NavLink to="/superadmin/instance-quota">{t('app.nav.superadmin.instanceQuota')}</NavLink>
+      subtitle={isSuperAdmin && !hasSelectedTenant ? t('superadmin.subtitle') : undefined}
+      tenantGuardAction={
+        <ZHBtn variant="primary" size="md" type="button" onClick={() => navigate('/dashboard')}>
+          {t('superadmin.goToTenant')}
+        </ZHBtn>
       }
     >
-      {error ? <ErrorState message={error} /> : null}
+      {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
       <ZHDashboardScaffold>
         <div className="sa-panelTabsWrap">
@@ -203,7 +214,7 @@ export function SuperAdminPanelPage() {
               role="tab"
               aria-selected={homeTab === 'overview'}
               className={homeTab === 'overview' ? 'is-active' : ''}
-              onClick={() => setHomeTab('overview')}
+              onClick={() => selectHomeTab('overview')}
             >
               {t('superadmin.tabOverview')}
             </button>
@@ -212,16 +223,25 @@ export function SuperAdminPanelPage() {
               role="tab"
               aria-selected={homeTab === 'companies'}
               className={homeTab === 'companies' ? 'is-active' : ''}
-              onClick={() => setHomeTab('companies')}
+              onClick={() => selectHomeTab('companies')}
             >
               {t('superadmin.tabCompanies')}
             </button>
             <button
               type="button"
               role="tab"
+              aria-selected={homeTab === 'features'}
+              className={homeTab === 'features' ? 'is-active' : ''}
+              onClick={() => selectHomeTab('features')}
+            >
+              {t('superadmin.tabFeatures')}
+            </button>
+            <button
+              type="button"
+              role="tab"
               aria-selected={homeTab === 'plans'}
               className={homeTab === 'plans' ? 'is-active' : ''}
-              onClick={() => setHomeTab('plans')}
+              onClick={() => selectHomeTab('plans')}
             >
               {t('superadmin.tabPlans')}
             </button>
@@ -245,10 +265,16 @@ export function SuperAdminPanelPage() {
                 ]}
               />
             ) : null}
+            {isSuperAdmin ? <SuperAdminGrowthSection /> : null}
           </div>
         ) : homeTab === 'companies' ? (
           <TableCard>
             <ZHCardSection title={t('superadmin.tenantPicker')}>
+              <ZHInlineRowRight>
+                <ZHBtn variant="primary" size="md" type="button" onClick={openCreateTenant} disabled={loading || switching !== null}>
+                  {t('superadmin.createTenant')}
+                </ZHBtn>
+              </ZHInlineRowRight>
               <ZHGridRow cols={1}>
                 <ZHField label={t('superadmin.searchPlaceholder')}>
                   <input
@@ -262,7 +288,7 @@ export function SuperAdminPanelPage() {
 
               {loading ? (
                 <LoadingState />
-              ) : error ? (
+              ) : error && tenants.length === 0 ? (
                 <EmptyState message={t('superadmin.sectionLoadHint')} />
               ) : filtered.length === 0 ? (
                 <EmptyState message={t('common.noData')} />
@@ -286,23 +312,41 @@ export function SuperAdminPanelPage() {
                         </span>
                         <span className="subtle">{new Date(tenant.createdAt).toLocaleDateString()}</span>
                       </div>
+                      <div className="sa-tenantPlanModules">
+                        <div className="sa-tenantPlanRow subtle">
+                          <span className="sa-tenantPlanKey">{t('superadmin.tenantRow.plan')}:</span>{' '}
+                          <strong className="mono">
+                            {planLabelForTenant(tenant.planCode) || t('superadmin.tenantRow.planUnset')}
+                          </strong>
+                        </div>
+                        <div className="sa-tenantModulesRow">
+                          <span className="sa-tenantModulesKey subtle">{t('superadmin.tenantRow.modules')}:</span>{' '}
+                          <CompanyModuleChips
+                            company={{
+                              enabledModules: tenant.enabledModules,
+                              hasModuleRestrictions: tenant.hasModuleRestrictions,
+                            }}
+                          />
+                        </div>
+                      </div>
                       <div className="sa-tenant-actions">
                         <ZHInlineRowRight>
                           <ZHBtn
-                            variant="secondary"
+                            variant="ghost"
                             size="md"
                             type="button"
                             disabled={switching !== null}
-                            onClick={() => navigate(`/companies?subscription=${encodeURIComponent(tenant.id)}`)}
+                            onClick={() => goToCompaniesTenantDetail(navigate, tenant.id)}
                           >
-                            {t('superadmin.subscription')}
+                            {t('superadmin.tenantRow.companyData')}
                           </ZHBtn>
                           <ZHBtn
                             variant="primary"
                             size="md"
                             type="button"
                             onClick={() => void handleSwitch(tenant)}
-                            disabled={switching !== null}
+                            disabled={switching !== null || !tenant.isActive}
+                            title={!tenant.isActive ? t('superadmin.tenantRow.enterDisabledInactive') : undefined}
                           >
                             {switching === tenant.id ? t('superadmin.switching') : t('superadmin.enter')}
                           </ZHBtn>
@@ -314,153 +358,123 @@ export function SuperAdminPanelPage() {
               )}
             </ZHCardSection>
           </TableCard>
+        ) : homeTab === 'features' ? (
+          <>{isSuperAdmin ? <SuperAdminFeaturesSection /> : null}</>
         ) : (
-          <div className="sa-plansWrap">
-            <TableCard>
-              <ZHCardSection title={t('superadmin.plans.title')}>
-                <p className="subtle sa-plansIntro">{t('superadmin.plans.subtitle')}</p>
-                <div className="sa-plansAdminLink">
-                  <NavLink className="zh-btn zh-btn--primary zh-btn--md" to="/superadmin/plans">
-                    {t('superadmin.plans.manageLink')}
-                  </NavLink>
-                </div>
-                {plansLoading ? (
-                  <LoadingState />
-                ) : plansError ? (
-                  <ErrorState message={plansError} />
-                ) : plans.length === 0 ? (
-                  <EmptyState message={t('superadmin.plans.empty')} />
-                ) : (
-                  <div className="sap-pricing-grid">
-                    {sortedPlans.map((plan) => {
-                      const tier = planVisualTier(plan.code);
-                      const codeKey = plan.code.trim().toLowerCase();
-                      const taglineKey = `superadmin.plansCard.tagline.${codeKey}`;
-                      const taglineResolved = t(taglineKey);
-                      const taglineText =
-                        taglineResolved !== taglineKey ? taglineResolved : t('superadmin.plansCard.taglineFallback');
-                      const tenantCount = planTenantStats.counts.get(codeKey) ?? 0;
-                      const usagePct = planTenantStats.max > 0 ? Math.round((tenantCount / planTenantStats.max) * 100) : 0;
-                      const isDefIncluded = (def: SaasFeatureDefinitionAdmin) =>
-                        plan.features.some(
-                          (f) =>
-                            f.isIncluded &&
-                            (f.featureCode ?? '').trim().toLowerCase() === (def.code ?? '').trim().toLowerCase(),
-                        );
-                      return (
-                        <article
-                          key={plan.id}
-                          className={[
-                            'sap-pricing-card',
-                            `sap-pricing-card--tier-${tier}`,
-                            plan.isRecommended ? 'sap-pricing-card--popular' : '',
-                            plan.isActive ? '' : 'sap-pricing-card--inactive',
-                          ]
-                            .filter(Boolean)
-                            .join(' ')}
-                        >
-                          <div className="sap-pricing-card-inner">
-                            <div className="sap-pricing-topBadges">
-                              {plan.isRecommended ? (
-                                <span className="sap-pricing-ribbon">{t('superadmin.plansCard.mostPopular')}</span>
-                              ) : null}
-                              <span className="sap-pricing-planBadge mono">{plan.shortLabel ?? plan.code.toUpperCase()}</span>
-                            </div>
-                            <h3 className="sap-pricing-title">
-                              {plan.name}
-                              {plan.isRecommended ? <span className="sap-pricing-titleStar" aria-hidden> ★</span> : null}
-                            </h3>
-                            <p className="sap-pricing-subtitle">{taglineText}</p>
-                            <div className="sap-pricing-priceRow">
-                              <span className="sap-pricing-price">{formatPlanMoney(plan.priceAmount, plan.currency)}</span>
-                              <span className="sap-pricing-period">
-                                /
-                                {(() => {
-                                  const bc = (plan.billingCycle ?? 'monthly').toLowerCase();
-                                  const k = `superadmin.plansCard.billingSuffix.${bc}`;
-                                  const s = t(k);
-                                  return s !== k ? s : t('superadmin.plansCard.billingSuffix.monthly');
-                                })()}
-                              </span>
-                            </div>
-                            <div className="sap-pricing-usage">
-                              <div className="sap-pricing-usageLine">
-                                <span>
-                                  {tenantCount} {t('superadmin.plansCard.tenantsUnit')}
-                                </span>
-                                <span className="sap-pricing-usagePct">{usagePct}%</span>
-                              </div>
-                              <div className="sap-pricing-bar" aria-hidden>
-                                <svg viewBox="0 0 100 6" preserveAspectRatio="none" className="sap-pricing-barSvg">
-                                  <rect
-                                    className="sap-pricing-barRect"
-                                    x="0"
-                                    y="0"
-                                    width={Math.max(0, Math.min(100, usagePct))}
-                                    height="6"
-                                    rx="3"
-                                  />
-                                </svg>
-                              </div>
-                            </div>
-                            <ul className="sap-pricing-features">
-                              {sortedFeatureDefs.length > 0
-                                ? sortedFeatureDefs.map((def) => {
-                                    const on = isDefIncluded(def);
-                                    return (
-                                      <li key={def.id} className={on ? 'sap-pricing-ft--on' : 'sap-pricing-ft--off'}>
-                                        <span className="sap-pricing-ftIcon" aria-hidden>
-                                          {on ? '✓' : '—'}
-                                        </span>
-                                        <span className="sap-pricing-ftLabel">{def.name}</span>
-                                      </li>
-                                    );
-                                  })
-                                : plan.features
-                                    .filter((f) => f.isIncluded)
-                                    .map((f) => (
-                                      <li key={`${plan.id}-${f.featureCode}`} className="sap-pricing-ft--on">
-                                        <span className="sap-pricing-ftIcon" aria-hidden>
-                                          ✓
-                                        </span>
-                                        <span className="sap-pricing-ftLabel">{f.featureName}</span>
-                                      </li>
-                                    ))}
-                            </ul>
-                            <div className="sap-pricing-metaRow subtle">
-                              <Badge
-                                label={plan.isActive ? t('common.active') : t('common.inactive')}
-                                variant={plan.isActive ? 'green' : 'gray'}
-                              />
-                              {plan.isPubliclyVisible === false ? (
-                                <Badge label={t('superadmin.plansAdmin.hidden')} variant="gray" />
-                              ) : (
-                                <Badge label={t('superadmin.plansAdmin.public')} variant="green" />
-                              )}
-                              <span className="mono">{plan.code}</span>
-                            </div>
-                            <footer className="sap-pricing-footer">
-                              <div className="sap-pricing-footerMain">
-                                <NavLink
-                                  className="zh-btn zh-btn--ghost zh-btn--md sap-pricing-linkBtn"
-                                  to={`/companies?plan=${encodeURIComponent(plan.code)}`}
-                                >
-                                  {t('superadmin.plansCard.viewTenants')}
-                                </NavLink>
-                              </div>
-                            </footer>
-                          </div>
-                        </article>
-                      );
-                    })}
-                  </div>
-                )}
-              </ZHCardSection>
-            </TableCard>
-          </div>
+          <>{isSuperAdmin ? <SuperAdminPlansSection /> : null}</>
         )}
       </ZHDashboardScaffold>
-    </PageShell>
+
+      {createTenantOpen ? (
+        <Modal
+          onClose={() => (createBusy ? undefined : setCreateTenantOpen(false))}
+          size="lg"
+          header={
+            <ZHModalHeader
+              title={t('superadmin.createTenant')}
+              subtitle={t('superadmin.createTenantSubtitle')}
+              onClose={() => (createBusy ? undefined : setCreateTenantOpen(false))}
+            />
+          }
+        >
+          {createError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={createError} /> : null}
+          <ZHGridRow cols={2}>
+            <ZHField label={t('superadmin.createTenant.field.name')}>
+              <input
+                className="zh-input"
+                value={createForm.tenantName}
+                onChange={(e) =>
+                  setCreateForm((s) => {
+                    const name = e.target.value;
+                    const nextSlug = s.tenantSlug.trim() ? s.tenantSlug : slugify(name);
+                    return { ...s, tenantName: name, tenantSlug: nextSlug };
+                  })
+                }
+                disabled={createBusy}
+              />
+            </ZHField>
+            <ZHField label={t('superadmin.createTenant.field.slug')}>
+              <input
+                className="zh-input"
+                value={createForm.tenantSlug}
+                onChange={(e) => setCreateForm((s) => ({ ...s, tenantSlug: e.target.value }))}
+                disabled={createBusy}
+              />
+            </ZHField>
+          </ZHGridRow>
+          <ZHGridRow cols={2}>
+            <ZHField label={t('superadmin.createTenant.field.adminFirstName')}>
+              <input
+                className="zh-input"
+                value={createForm.adminFirstName}
+                onChange={(e) => setCreateForm((s) => ({ ...s, adminFirstName: e.target.value }))}
+                disabled={createBusy}
+              />
+            </ZHField>
+            <ZHField label={t('superadmin.createTenant.field.adminLastName')}>
+              <input
+                className="zh-input"
+                value={createForm.adminLastName}
+                onChange={(e) => setCreateForm((s) => ({ ...s, adminLastName: e.target.value }))}
+                disabled={createBusy}
+              />
+            </ZHField>
+          </ZHGridRow>
+          <ZHGridRow cols={2}>
+            <ZHField label={t('superadmin.createTenant.field.adminEmail')}>
+              <input
+                className="zh-input"
+                value={createForm.adminEmail}
+                onChange={(e) => setCreateForm((s) => ({ ...s, adminEmail: e.target.value }))}
+                disabled={createBusy}
+              />
+            </ZHField>
+            <ZHField label={t('superadmin.createTenant.field.passwordResetMode')}>
+              <select
+                className="zh-input"
+                value={String(createForm.passwordResetMode ?? 0)}
+                onChange={(e) =>
+                  setCreateForm((s) => ({ ...s, passwordResetMode: Number(e.target.value) }))
+                }
+                disabled={createBusy}
+              >
+                <option value={0}>{t('superadmin.createTenant.passwordResetMode.disabled')}</option>
+                <option value={2}>{t('superadmin.createTenant.passwordResetMode.email')}</option>
+                <option value={1}>{t('superadmin.createTenant.passwordResetMode.admin')}</option>
+              </select>
+            </ZHField>
+          </ZHGridRow>
+          <label className="sap-check">
+            <input
+              type="checkbox"
+              checked={!!createForm.linkExistingAdmin}
+              onChange={(e) => setCreateForm((s) => ({ ...s, linkExistingAdmin: e.target.checked }))}
+              disabled={createBusy}
+            />
+            {t('superadmin.createTenant.field.linkExistingAdmin')}
+          </label>
+          {!createForm.linkExistingAdmin ? (
+            <ZHField label={t('superadmin.createTenant.field.adminPassword')}>
+              <input
+                className="zh-input"
+                type="password"
+                value={createForm.adminPassword}
+                onChange={(e) => setCreateForm((s) => ({ ...s, adminPassword: e.target.value }))}
+                disabled={createBusy}
+              />
+            </ZHField>
+          ) : null}
+          <ZHInlineRowRight>
+            <ZHBtn variant="ghost" type="button" onClick={() => setCreateTenantOpen(false)} disabled={createBusy}>
+              {t('common.cancel')}
+            </ZHBtn>
+            <ZHBtn variant="primary" type="button" onClick={() => void saveCreateTenant()} disabled={createBusy}>
+              {t('common.save')}
+            </ZHBtn>
+          </ZHInlineRowRight>
+        </Modal>
+      ) : null}
+    </SuperAdminPageTemplate>
   );
 }
 

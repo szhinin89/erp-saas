@@ -1,11 +1,12 @@
 using ERP.Application.Common;
 using ERP.Application.Accounting.DTOs;
+using MediatR;
 using ERP.Domain.Accounting.Interfaces;
 using ERP.Domain.Common;
 
 namespace ERP.Application.Accounting.UseCases.GetJournalEntries;
 
-public class GetJournalEntriesHandler
+public class GetJournalEntriesHandler : IRequestHandler<GetJournalEntriesQuery, Result<PagedResult<JournalEntryDto>>>
 {
     private readonly IAccountingRepository _repository;
     private readonly ICurrentTenant _currentTenant;
@@ -16,10 +17,17 @@ public class GetJournalEntriesHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<PagedResult<JournalEntryDto>>> HandleAsync(int pageNumber, int pageSize, CancellationToken ct = default)
+    public Task<Result<PagedResult<JournalEntryDto>>> HandleAsync(int pageNumber, int pageSize, CancellationToken ct = default)
+        => Handle(new GetJournalEntriesQuery(pageNumber, pageSize), ct);
+
+    public async Task<Result<PagedResult<JournalEntryDto>>> Handle(GetJournalEntriesQuery request, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
-        var (entries, totalCount)  = await _repository.GetJournalEntriesPageAsync(tenantId, pageNumber, pageSize, ct);
+        var (entries, totalCount)  = await _repository.GetJournalEntriesPageAsync(
+            tenantId,
+            request.PageNumber,
+            request.PageSize,
+            ct);
 
         var dtos = entries.Select(e => new JournalEntryDto(
             e.Id, e.Reference, e.Date, e.Description, e.Status,
@@ -32,8 +40,8 @@ public class GetJournalEntriesHandler
 
         return Result<PagedResult<JournalEntryDto>>.Success(new PagedResult<JournalEntryDto>(
             Items: dtos,
-            PageNumber: pageNumber,
-            PageSize: pageSize,
+            PageNumber: request.PageNumber,
+            PageSize: request.PageSize,
             TotalCount: totalCount));
     }
 }

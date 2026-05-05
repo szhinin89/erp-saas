@@ -58,4 +58,18 @@ public class ApiSmokeTests
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
     }
+
+    [Fact]
+    public async Task Access_me_permissions_should_require_authentication()
+    {
+        await using var factory = new TestAppFactory();
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        var res = await client.GetAsync("/api/access/me/permissions");
+
+        res.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
 }

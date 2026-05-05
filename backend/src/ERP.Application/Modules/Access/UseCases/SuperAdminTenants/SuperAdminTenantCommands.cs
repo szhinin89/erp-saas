@@ -1,3 +1,6 @@
+using MediatR;
+using ERP.Application.Common;
+using ERP.Application.Access.DTOs;
 using ERP.Domain.Tenants.Entities;
 
 namespace ERP.Application.Access.UseCases.SuperAdminTenants;
@@ -18,5 +21,7 @@ public record SuperAdminCreateTenantWithAdminCommand(
     int DisplayOrder = 0,
     int Priority = 0,
     bool LinkExistingAdmin = false
-);
+) : IRequest<Result<SessionResponseDto>>;
+
+public record GetSuperAdminTenantsQuery : IRequest<Result<IReadOnlyList<SuperAdminTenantItemDto>>>;
 

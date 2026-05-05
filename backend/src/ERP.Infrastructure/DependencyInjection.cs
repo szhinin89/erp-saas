@@ -15,6 +15,7 @@ using ERP.Domain.Customers.Interfaces;
 using ERP.Domain.Subscriptions.Interfaces;
 using ERP.Application.Navigation;
 using ERP.Application.Subscriptions;
+using ERP.Application.Admin;
 using ERP.Infrastructure.Deployment;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
@@ -29,6 +30,7 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         services.AddHttpContextAccessor();
+        services.AddMemoryCache();
         services.AddSingleton<InstanceQuotaFileStore>();
         services.AddSingleton<IDeploymentFeatureFlags, DeploymentFeatureFlags>();
 
@@ -59,8 +61,10 @@ public static class DependencyInjection
         services.AddScoped<ISaasCatalogQuery>(sp => sp.GetRequiredService<SaasCatalogQuery>());
         services.AddScoped<ISaasPublicPlansQuery>(sp => sp.GetRequiredService<SaasCatalogQuery>());
         services.AddScoped<ISaasPlansAdminService, SaasPlansAdminService>();
+        services.AddScoped<IConfigService, ConfigService>();
         services.AddScoped<INavigationMenuReader, NavigationMenuReader>();
         services.AddScoped<INavigationMenuAdminService, NavigationMenuAdminService>();
+        services.AddScoped<IGrowthAnalyticsReader, GrowthAnalyticsReader>();
 
         return services;
     }

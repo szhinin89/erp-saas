@@ -47,7 +47,7 @@ public class DisableProductLineHandler
             userId,
             _currentUser.Email,
             _currentUser.FullName,
-            module: "catalog",
+            module: "inventario",
             action: "productLine.disable",
             entityType: "ProductLine",
             entityId: entity.Id,

@@ -28,23 +28,6 @@ public sealed class UpdateTenantSubscriptionHandler
         tenant.SetSubscription(command.PlanCode, command.EnabledModules, _currentUser.UserId);
         await _repository.SaveChangesAsync(ct);
 
-        return Result<TenantDto>.Success(ToDto(tenant));
+        return Result<TenantDto>.Success(TenantDto.FromTenant(tenant));
     }
-
-    private static TenantDto ToDto(Tenant tenant) =>
-        new(
-            tenant.Id,
-            tenant.Name,
-            tenant.Slug,
-            tenant.IsActive,
-            tenant.CreatedAt,
-            tenant.Ruc,
-            tenant.ShortName,
-            tenant.TradeName,
-            tenant.Dinardap,
-            tenant.LogoUrl,
-            tenant.DisplayOrder,
-            tenant.Priority,
-            tenant.PlanCode,
-            TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant));
 }

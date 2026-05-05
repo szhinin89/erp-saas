@@ -5,16 +5,17 @@ using ERP.Domain.Tenants.Entities;
 namespace ERP.Application.Common;
 
 /// <summary>
-/// Claves de módulo contratables por tenant. Deben coincidir con el primer segmento de <c>permissionKey</c> (p. ej. <c>catalog.brands.view</c> → <c>catalog</c>).
+/// Claves de módulo contratables por tenant. Deben coincidir con el primer segmento de <c>permissionKey</c> (p. ej. <c>inventario.brands.view</c> → <c>inventario</c>, <c>ventas.customers.view</c> → <c>ventas</c>).
 /// </summary>
 public static class TenantSubscriptionCatalog
 {
     public static readonly IReadOnlyList<string> AllModuleKeys = new[]
     {
-        "catalog",
-        "accounting",
-        "saas",
         "access",
+        "accounting",
+        "inventario",
+        "saas",
+        "ventas",
     };
 
     /// <summary>JSON <c>null</c> o vacío en el tenant = todos los módulos (compatibilidad).</summary>
@@ -37,7 +38,14 @@ public static class TenantSubscriptionCatalog
                     set.Add(t);
             }
 
-            return set.Count == 0 ? AllModuleKeys : set.OrderBy(x => x, StringComparer.Ordinal).ToList();
+            if (set.Count == 0)
+                return AllModuleKeys;
+
+            // Clientes (ventas) queda habilitado si el tenant tiene inventario, sin exigir otra fila en JSON (compatibilidad).
+            if (set.Contains("inventario", StringComparer.OrdinalIgnoreCase))
+                set.Add("ventas");
+
+            return set.OrderBy(x => x, StringComparer.Ordinal).ToList();
         }
         catch (JsonException)
         {

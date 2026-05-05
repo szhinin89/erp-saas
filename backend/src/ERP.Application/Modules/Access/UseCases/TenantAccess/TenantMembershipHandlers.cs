@@ -1,10 +1,11 @@
 using ERP.Application.Common;
+using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 
 namespace ERP.Application.Access.UseCases.TenantAccess;
 
-public class GetTenantMembershipsHandler
+public class GetTenantMembershipsHandler : IRequestHandler<GetTenantMembershipsQuery, Result<IReadOnlyList<TenantMembershipItemDto>>>
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _tenant;
@@ -15,10 +16,13 @@ public class GetTenantMembershipsHandler
         _tenant = tenant;
     }
 
-    public async Task<Result<IReadOnlyList<TenantMembershipItemDto>>> HandleAsync(bool onlyActive, CancellationToken ct = default)
+    public Task<Result<IReadOnlyList<TenantMembershipItemDto>>> HandleAsync(bool onlyActive, CancellationToken ct = default)
+        => Handle(new GetTenantMembershipsQuery(onlyActive), ct);
+
+    public async Task<Result<IReadOnlyList<TenantMembershipItemDto>>> Handle(GetTenantMembershipsQuery request, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
-        var memberships = await _repo.GetMembershipsByTenantAsync(tenantId, onlyActive, ct);
+        var memberships = await _repo.GetMembershipsByTenantAsync(tenantId, request.OnlyActive, ct);
 
         // En este MVP, solo retornamos memberships. Los detalles del usuario se leen por Id (sin joins complejos).
         // Para UX, hacemos lookup por email/nombre desde IdentityUsers.
@@ -47,7 +51,7 @@ public class GetTenantMembershipsHandler
     }
 }
 
-public class TenantUpsertMembershipHandler
+public class TenantUpsertMembershipHandler : IRequestHandler<TenantUpsertMembershipCommand, Result<object>>
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _tenant;
@@ -66,7 +70,10 @@ public class TenantUpsertMembershipHandler
         _deployment = deployment;
     }
 
-    public async Task<Result<object>> HandleAsync(TenantUpsertMembershipCommand cmd, CancellationToken ct = default)
+    public Task<Result<object>> HandleAsync(TenantUpsertMembershipCommand cmd, CancellationToken ct = default)
+        => Handle(cmd, ct);
+
+    public async Task<Result<object>> Handle(TenantUpsertMembershipCommand cmd, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         if (tenantId == Guid.Empty)
@@ -126,7 +133,7 @@ public class TenantUpsertMembershipHandler
     }
 }
 
-public class TenantRevokeMembershipHandler
+public class TenantRevokeMembershipHandler : IRequestHandler<TenantRevokeMembershipCommand, Result<object>>
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _tenant;
@@ -139,7 +146,10 @@ public class TenantRevokeMembershipHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<object>> HandleAsync(TenantRevokeMembershipCommand cmd, CancellationToken ct = default)
+    public Task<Result<object>> HandleAsync(TenantRevokeMembershipCommand cmd, CancellationToken ct = default)
+        => Handle(cmd, ct);
+
+    public async Task<Result<object>> Handle(TenantRevokeMembershipCommand cmd, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var email = cmd.Email.Trim().ToLowerInvariant();

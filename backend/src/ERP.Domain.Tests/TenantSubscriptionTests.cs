@@ -14,12 +14,12 @@ public sealed class TenantSubscriptionTests
             "demo",
             Guid.NewGuid(),
             planCode: "  enterprise  ",
-            enabledModuleKeys: new[] { "ACCESS", "Catalog", "access" });
+            enabledModuleKeys: new[] { "ACCESS", "Inventario", "access" });
 
         tenant.PlanCode.Should().Be("enterprise");
         tenant.EnabledModulesJson.Should().NotBeNull();
         JsonSerializer.Deserialize<List<string>>(tenant.EnabledModulesJson!)!
-            .Should().Equal("access", "catalog");
+            .Should().Equal("access", "inventario");
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class TenantSubscriptionTests
     [Fact]
     public void SetSubscription_replaces_modules()
     {
-        var tenant = Tenant.Create("Z", "z", Guid.NewGuid(), enabledModuleKeys: new[] { "catalog" });
+        var tenant = Tenant.Create("Z", "z", Guid.NewGuid(), enabledModuleKeys: new[] { "inventario" });
         tenant.SetSubscription("p", new[] { "accounting" }, Guid.NewGuid());
 
         tenant.PlanCode.Should().Be("p");

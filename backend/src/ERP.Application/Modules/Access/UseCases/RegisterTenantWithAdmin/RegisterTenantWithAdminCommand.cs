@@ -1,3 +1,6 @@
+using MediatR;
+using ERP.Application.Common;
+using ERP.Application.Access.DTOs;
 using ERP.Domain.Tenants.Entities;
 
 namespace ERP.Application.Access.UseCases.RegisterTenantWithAdmin;
@@ -17,5 +20,5 @@ public record RegisterTenantWithAdminCommand(
     string? LogoUrl = null,
     int DisplayOrder = 0,
     int Priority = 0
-);
+) : IRequest<Result<SessionResponseDto>>;
 

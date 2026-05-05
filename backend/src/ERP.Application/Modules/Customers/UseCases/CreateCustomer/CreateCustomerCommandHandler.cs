@@ -68,7 +68,7 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
             userId,
             _user.Email,
             _user.FullName,
-            module: "catalog",
+            module: "ventas",
             action: "customer.create",
             entityType: "Customer",
             entityId: entity.Id,

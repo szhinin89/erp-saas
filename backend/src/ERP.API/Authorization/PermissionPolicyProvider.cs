@@ -5,7 +5,7 @@ namespace ERP.API.Authorization;
 
 /// <summary>
 /// Policy dinámica: "perm:&lt;permissionKey&gt;".
-/// Permite decorar endpoints con [Authorize(Policy = "perm:catalog.brands.view")].
+/// Permite decorar endpoints con [Authorize(Policy = "perm:inventario.brands.view")].
 /// </summary>
 public sealed class PermissionPolicyProvider : DefaultAuthorizationPolicyProvider
 {

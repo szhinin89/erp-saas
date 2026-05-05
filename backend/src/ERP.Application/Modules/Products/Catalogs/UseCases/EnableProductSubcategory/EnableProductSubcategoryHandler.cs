@@ -51,7 +51,7 @@ public class EnableProductSubcategoryHandler
             userId,
             _currentUser.Email,
             _currentUser.FullName,
-            module: "catalog",
+            module: "inventario",
             action: "productSubcategory.enable",
             entityType: "ProductSubcategory",
             entityId: entity.Id,

@@ -14,7 +14,7 @@ public class Tenant : AuditableEntity
     /// <summary>Código comercial del plan (p. ej. starter, professional). Opcional.</summary>
     public string? PlanCode { get; private set; }
 
-    /// <summary>JSON array de claves de módulo (p. ej. <c>["catalog","accounting"]</c>). Null/vacío = todos los módulos.</summary>
+    /// <summary>JSON array de claves de módulo (p. ej. <c>["inventario","accounting"]</c>). Null/vacío = todos los módulos.</summary>
     public string? EnabledModulesJson { get; private set; }
 
     // ── Datos legales/comerciales (opcionales) ─────────────────────
@@ -27,6 +27,9 @@ public class Tenant : AuditableEntity
     // ── Orden / prioridad (para listados) ─────────────────────────
     public int DisplayOrder { get; private set; }
     public int Priority { get; private set; }
+
+    // ── Parámetros globales por empresa (dependen de plan comercial) ──
+    public bool ElectronicBillingTrialEnabled { get; private set; }
 
     private Tenant() { }
 
@@ -60,6 +63,7 @@ public class Tenant : AuditableEntity
             LogoUrl = string.IsNullOrWhiteSpace(logoUrl) ? null : logoUrl.Trim(),
             DisplayOrder = displayOrder,
             Priority = priority,
+            ElectronicBillingTrialEnabled = false,
         };
         tenant.ApplySubscription(planCode, enabledModuleKeys);
         tenant.SetCreated(createdBy);
@@ -113,6 +117,14 @@ public class Tenant : AuditableEntity
         LogoUrl = string.IsNullOrWhiteSpace(logoUrl) ? null : logoUrl.Trim();
         DisplayOrder = displayOrder;
         Priority = priority;
+        SetUpdated(updatedBy);
+    }
+
+    public void UpdateGlobalParameters(
+        bool electronicBillingTrialEnabled,
+        Guid updatedBy)
+    {
+        ElectronicBillingTrialEnabled = electronicBillingTrialEnabled;
         SetUpdated(updatedBy);
     }
 

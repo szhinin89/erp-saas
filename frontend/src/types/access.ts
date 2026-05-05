@@ -44,10 +44,14 @@ export interface MyPermissionsResponse {
 export interface SessionMenuItemDto {
   routePath: string;
   labelKey: string;
+  /** Si viene de BD, sustituye a la etiqueta i18n al mostrar en la barra. */
+  displayLabel?: string | null;
   sortOrder: number;
   moduleKey: string | null;
   permissionKey: string | null;
   permissionKeysAny: string[] | null;
+  /** Restringe el ítem por rol (p. ej. `SuperAdmin`); viene de `roles_csv` en BD. */
+  itemRoles?: string[] | null;
   /** Submenú recursivo (misma definición en BD). */
   children?: SessionMenuItemDto[] | null;
 }

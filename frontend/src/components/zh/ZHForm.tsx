@@ -6,11 +6,13 @@ export function ZHFormHeader(props: {
   title: string;
   subtitle: string;
   badge?: string | null;
-  zhLogoSrc?: string | null; // defaults to /zh-logo.png
+  zhLogoSrc?: string | null; // defaults to /zh-logo.svg (public)
+  /** Si es false, no se muestra la imagen de marca (p. ej. modales con cabezal compacto). */
+  showZhBrandLogo?: boolean;
   right?: React.ReactNode;
 }) {
   const { t } = useI18n();
-  const { title, subtitle, badge, zhLogoSrc, right } = props;
+  const { title, subtitle, badge, zhLogoSrc, right, showZhBrandLogo = true } = props;
   return (
     <div className="zh-form-header">
       <div className="zh-form-header-left">
@@ -40,7 +42,9 @@ export function ZHFormHeader(props: {
       <div className="zh-form-header-right">
         {right}
         {badge ? <span className="zh-form-badge">{badge}</span> : null}
-        <img className="zh-form-zh-logo" src={zhLogoSrc ?? '/zh-logo.png'} alt={t('app.zh.brandName')} />
+        {showZhBrandLogo ? (
+          <img className="zh-form-zh-logo" src={zhLogoSrc ?? '/zh-logo.svg'} alt={t('app.zh.brandName')} />
+        ) : null}
       </div>
     </div>
   );
@@ -58,7 +62,7 @@ export function ZHMultiTenantHeader(props: {
   fiscalYear?: string | number | null;
   modules?: ZHTenantHeaderModuleCrumb[];
   statusText?: string | null; // e.g. "Sistema operativo · Tenant #TEN-0014"
-  zhLogoSrc?: string | null; // defaults to /zh-logo.png
+  zhLogoSrc?: string | null; // defaults to /zh-logo.svg (public)
   right?: React.ReactNode;
 }) {
   const {
@@ -138,7 +142,7 @@ export function ZHMultiTenantHeader(props: {
           <span className="zh-tenant-status-text">{statusText ?? ''}</span>
         </div>
         <div className="zh-tenant-credit" title={t('app.zh.developedByTitle')}>
-          <img className="zh-tenant-credit-logo" src={zhLogoSrc ?? '/zh-logo.png'} alt={t('app.zh.brandName')} />
+          <img className="zh-tenant-credit-logo" src={zhLogoSrc ?? '/zh-logo.svg'} alt={t('app.zh.brandName')} />
         </div>
       </div>
     </div>

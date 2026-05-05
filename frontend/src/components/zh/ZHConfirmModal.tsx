@@ -1,11 +1,14 @@
+import type { ReactNode } from 'react';
 import { Modal } from '../Modal';
 import { useI18n } from '../../i18n/i18n';
 import { ZHBtn } from './ZHForm';
 import { ZHActionsRow } from './ZHLayout';
+import './ZHConfirmModal.css';
 
 export function ZHConfirmModal(props: {
   title: string;
-  message: string;
+  /** Texto o fragmento (p. ej. nombre del registro en negrita). */
+  message: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: 'destructive' | 'primary';
@@ -25,9 +28,20 @@ export function ZHConfirmModal(props: {
     onCancel,
   } = props;
 
+  const destructive = variant === 'destructive';
+
   return (
-    <Modal title={title} onClose={onCancel} size="sm">
-      <div className="zh-text-muted">{message}</div>
+    <Modal title={title} onClose={() => (loading ? undefined : onCancel())} size="sm">
+      <div className={destructive ? 'zh-confirm-modal zh-confirm-modal--destructive' : 'zh-confirm-modal'}>
+        {destructive ? (
+          <div className="zh-confirm-modal__icon" aria-hidden>
+            !
+          </div>
+        ) : null}
+        <div className="zh-confirm-modal__body">
+          <div className="zh-confirm-modal__message">{message}</div>
+        </div>
+      </div>
       <ZHActionsRow className="zh-mt-16">
         <ZHBtn variant="ghost" size="md" type="button" onClick={onCancel} disabled={loading}>
           {cancelLabel ?? t('common.cancel')}

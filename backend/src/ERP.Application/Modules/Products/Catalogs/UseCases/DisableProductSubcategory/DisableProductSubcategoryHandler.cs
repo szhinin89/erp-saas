@@ -43,7 +43,7 @@ public class DisableProductSubcategoryHandler
             userId,
             _currentUser.Email,
             _currentUser.FullName,
-            module: "catalog",
+            module: "inventario",
             action: "productSubcategory.disable",
             entityType: "ProductSubcategory",
             entityId: entity.Id,

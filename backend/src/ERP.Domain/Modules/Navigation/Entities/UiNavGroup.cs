@@ -10,7 +10,7 @@ public sealed class UiNavGroup
     /// <summary>Código estable (p. ej. home, catalog) usado por el front para lógica UI.</summary>
     public string Code { get; private set; } = null!;
     public string Icon { get; private set; } = null!;
-    /// <summary>Clave i18n (p. ej. app.nav.group.catalog).</summary>
+    /// <summary>Clave i18n (p. ej. app.nav.group.inventario).</summary>
     public string LabelKey { get; private set; } = null!;
     public int SortOrder { get; private set; }
     public string? ModuleKey { get; private set; }

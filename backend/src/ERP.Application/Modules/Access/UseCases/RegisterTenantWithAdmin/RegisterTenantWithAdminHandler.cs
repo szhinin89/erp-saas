@@ -1,5 +1,6 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
+using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Tenants.Entities;
@@ -7,7 +8,7 @@ using ERP.Domain.Tenants.Interfaces;
 
 namespace ERP.Application.Access.UseCases.RegisterTenantWithAdmin;
 
-public class RegisterTenantWithAdminHandler
+public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWithAdminCommand, Result<SessionResponseDto>>
 {
     private readonly ITenantRepository _tenantRepository;
     private readonly IAccessRepository _accessRepository;
@@ -26,7 +27,10 @@ public class RegisterTenantWithAdminHandler
         _deployment = deployment;
     }
 
-    public async Task<Result<SessionResponseDto>> HandleAsync(RegisterTenantWithAdminCommand command, CancellationToken ct = default)
+    public Task<Result<SessionResponseDto>> HandleAsync(RegisterTenantWithAdminCommand command, CancellationToken ct = default)
+        => Handle(command, ct);
+
+    public async Task<Result<SessionResponseDto>> Handle(RegisterTenantWithAdminCommand command, CancellationToken ct)
     {
         var slug = command.TenantSlug.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(slug))
@@ -84,7 +88,6 @@ public class RegisterTenantWithAdminHandler
             createdBy: Guid.Empty);
         await _accessRepository.AddMembershipAsync(membership, ct);
 
-        await _tenantRepository.SaveChangesAsync(ct);
         await _accessRepository.SaveChangesAsync(ct);
 
         var sessionToken = _tokenService.GenerateSessionToken(identityUser, tenant.Id, "Admin");

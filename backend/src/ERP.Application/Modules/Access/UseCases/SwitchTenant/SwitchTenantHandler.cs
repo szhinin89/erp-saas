@@ -1,30 +1,38 @@
 using ERP.Application.Access.DTOs;
+using ERP.Application.Admin;
 using ERP.Application.Common;
+using MediatR;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 
 namespace ERP.Application.Access.UseCases.SwitchTenant;
 
-public class SwitchTenantHandler
+public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<SessionResponseDto>>
 {
     private readonly IAccessRepository _accessRepository;
     private readonly IAccessTokenService _tokenService;
     private readonly ICurrentUser _currentUser;
     private readonly ITenantRepository _tenantRepository;
+    private readonly IConfigService _configService;
 
     public SwitchTenantHandler(
         IAccessRepository accessRepository,
         IAccessTokenService tokenService,
         ICurrentUser currentUser,
-        ITenantRepository tenantRepository)
+        ITenantRepository tenantRepository,
+        IConfigService configService)
     {
         _accessRepository = accessRepository;
         _tokenService = tokenService;
         _currentUser = currentUser;
         _tenantRepository = tenantRepository;
+        _configService = configService;
     }
 
-    public async Task<Result<SessionResponseDto>> HandleAsync(SwitchTenantCommand command, CancellationToken ct = default)
+    public Task<Result<SessionResponseDto>> HandleAsync(SwitchTenantCommand command, CancellationToken ct = default)
+        => Handle(command, ct);
+
+    public async Task<Result<SessionResponseDto>> Handle(SwitchTenantCommand command, CancellationToken ct)
     {
         if (!_currentUser.IsAuthenticated)
             return Result<SessionResponseDto>.Failure("Unauthorized");
@@ -64,6 +72,7 @@ public class SwitchTenantHandler
                 return Result<SessionResponseDto>.Failure("Unauthorized");
 
             var superSessionTenant = _tokenService.GenerateSessionToken(userId, email, fullName, command.TenantId, "SuperAdmin");
+            await _configService.WarmupTenantAsync(command.TenantId, ct);
             return Result<SessionResponseDto>.Success(new SessionResponseDto(
                 UserId: userId,
                 FullName: fullName,
@@ -87,6 +96,7 @@ public class SwitchTenantHandler
             return Result<SessionResponseDto>.Failure("No tienes acceso a esta empresa.");
 
         var membershipSessionToken = _tokenService.GenerateSessionToken(user, command.TenantId, membership.Role);
+        await _configService.WarmupTenantAsync(command.TenantId, ct);
 
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
             UserId: user.Id,

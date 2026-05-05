@@ -7,7 +7,8 @@ import type { Account } from '../types/accounting';
 import './CreateJournalEntryModal.css';
 import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
-import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions, ZHBtn } from './zh/ZHForm';
+import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormActions, ZHBtn } from './zh/ZHForm';
+import { ZHPageNotice } from './zh/ZHPageNotice';
 import { ZHColSpan } from './zh/ZHLayout';
 import { ZHModalHeader } from './zh/ZHModalHeader';
 import { journalEntryFormSchema, type JournalEntryFormValues } from '../schemas/accounting/journalEntrySchema';
@@ -109,9 +110,9 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
         <input type="hidden" name="tenantId" value={tenantId} />
         <div className="zh-form">
           <ZHFormBody>
-            {apiError ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={apiError} /> : null}
+            {apiError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={apiError} /> : null}
             {errors.lines?.message ? (
-              <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={errors.lines.message} />
+              <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={errors.lines.message} />
             ) : null}
 
             <ZHFormSection title={t('accounting.journal.modal.create.title')}>

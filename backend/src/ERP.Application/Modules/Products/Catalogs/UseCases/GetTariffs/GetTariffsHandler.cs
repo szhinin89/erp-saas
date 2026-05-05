@@ -1,10 +1,11 @@
 using ERP.Application.Common;
 using ERP.Application.Products.Catalogs.DTOs;
+using MediatR;
 using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Products.Catalogs.UseCases.GetTariffs;
 
-public class GetTariffsHandler
+public class GetTariffsHandler : IRequestHandler<GetTariffsQuery, Result<IReadOnlyList<TariffDto>>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly ICurrentTenant _currentTenant;
@@ -15,10 +16,13 @@ public class GetTariffsHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<IReadOnlyList<TariffDto>>> HandleAsync(bool onlyActive, CancellationToken ct = default)
+    public Task<Result<IReadOnlyList<TariffDto>>> HandleAsync(bool onlyActive, CancellationToken ct = default)
+        => Handle(new GetTariffsQuery(onlyActive), ct);
+
+    public async Task<Result<IReadOnlyList<TariffDto>>> Handle(GetTariffsQuery request, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
-        var items = await _repo.GetTariffsAsync(tenantId, onlyActive, ct);
+        var items = await _repo.GetTariffsAsync(tenantId, request.OnlyActive, ct);
         var dtos = items.Select(x => new TariffDto(x.Id, x.Code, x.Description, x.IsActive)).ToList();
         return Result<IReadOnlyList<TariffDto>>.Success(dtos);
     }

@@ -57,7 +57,7 @@ public class CreateProductSubcategoryHandler
             userId,
             _currentUser.Email,
             _currentUser.FullName,
-            module: "catalog",
+            module: "inventario",
             action: "productSubcategory.create",
             entityType: "ProductSubcategory",
             entityId: entity.Id,

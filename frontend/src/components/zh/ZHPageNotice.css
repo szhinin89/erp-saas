@@ -1,0 +1,15 @@
+/**
+ * Bloque de aviso de página (éxito / error / aviso / info).
+ * Reutiliza `.zh-form-alert`; el wrapper ajusta espaciado respecto al contenido siguiente.
+ */
+.zh-page-notice {
+  margin: 0 0 1rem;
+}
+
+.zh-page-notice:last-child {
+  margin-bottom: 0;
+}
+
+.zh-page-notice .zh-form-alert {
+  margin-bottom: 0;
+}

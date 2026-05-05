@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { GLOBAL_TENANT_ID } from '../constants/tenantIds';
 import { useDeployment } from '../deployment/DeploymentContext';
 
 export function ProtectedRoute() {
@@ -21,26 +22,10 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace />;
   }
 
-  // SuperAdmin global: rutas de panel SaaS + empresas + seguridad (el menú principal enlaza fuera de /superadmin).
-  if (
-    superAdminPanelEnabled &&
-    (user?.role ?? '') === 'SuperAdmin' &&
-    (user?.tenantId ?? '') === '00000000-0000-0000-0000-000000000000'
-  ) {
+  // SuperAdmin global: solo panel SuperAdmin y administración de empresas (sin rutas operativas de tenant).
+  if (superAdminPanelEnabled && (user?.role ?? '') === 'SuperAdmin' && (user?.tenantId ?? '') === GLOBAL_TENANT_ID) {
     const path = window.location.pathname;
-    const allowed =
-      path.startsWith('/superadmin') ||
-      path === '/companies' ||
-      path.startsWith('/companies/') ||
-      path === '/security' ||
-      path.startsWith('/security/') ||
-      path.startsWith('/access') ||
-      path.startsWith('/profiles') ||
-      path.startsWith('/saas/') ||
-      path === '/compras' ||
-      path.startsWith('/compras/') ||
-      path === '/rrhh' ||
-      path.startsWith('/rrhh/');
+    const allowed = path.startsWith('/superadmin') || path === '/companies' || path.startsWith('/companies/');
     return allowed ? <Outlet /> : <Navigate to="/superadmin" replace />;
   }
 

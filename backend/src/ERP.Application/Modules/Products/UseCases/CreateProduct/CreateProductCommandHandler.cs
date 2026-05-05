@@ -173,7 +173,7 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
             userId,
             _currentUser.Email,
             _currentUser.FullName,
-            module: "catalog",
+            module: "inventario",
             action: "product.create",
             entityType: "Product",
             entityId: product.Id,

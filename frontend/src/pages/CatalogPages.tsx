@@ -4,7 +4,8 @@ export { CatalogStructurePage } from './CatalogStructurePage';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { PageShell, TableCard, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { useAuthStore } from '../store/authStore';
@@ -28,8 +29,8 @@ export function BrandsCatalogPage() {
       titleKey="catalog.brands.title"
       listTabLabelKey="catalog.brands.tabList"
       primaryCreateKey="catalog.brands.primaryCreate"
-      viewPermissionKey="catalog.brands.view"
-      createPermissionKey="catalog.brands.create"
+      viewPermissionKey="inventario.brands.view"
+      createPermissionKey="inventario.brands.create"
       auditEntityType="Brand"
       load={async () => mapBasic(await catalogService.brands(false))}
       create={async (p) => catalogService.createBrand({ code: String(p.code ?? ''), name: String(p.name ?? '') })}
@@ -43,8 +44,8 @@ export function ProductTypesCatalogPage() {
       titleKey="catalog.productTypes.title"
       listTabLabelKey="catalog.productTypes.tabList"
       primaryCreateKey="catalog.productTypes.primaryCreate"
-      viewPermissionKey="catalog.productTypes.view"
-      createPermissionKey="catalog.productTypes.create"
+      viewPermissionKey="inventario.productTypes.view"
+      createPermissionKey="inventario.productTypes.create"
       load={async () => mapBasic(await catalogService.productTypes(false))}
       create={async (p) => catalogService.createProductType({ code: String(p.code ?? ''), name: String(p.name ?? '') })}
     />
@@ -57,8 +58,8 @@ export function UnitsCatalogPage() {
       titleKey="catalog.units.title"
       listTabLabelKey="catalog.units.tabList"
       primaryCreateKey="catalog.units.primaryCreate"
-      viewPermissionKey="catalog.units.view"
-      createPermissionKey="catalog.units.create"
+      viewPermissionKey="inventario.units.view"
+      createPermissionKey="inventario.units.create"
       load={async () => mapBasic(await catalogService.units(false))}
       create={async (p) => catalogService.createUnit({ code: String(p.code ?? ''), name: String(p.name ?? ''), symbol: undefined })}
     />
@@ -71,8 +72,8 @@ export function TariffsCatalogPage() {
       titleKey="catalog.tariffs.title"
       listTabLabelKey="catalog.tariffs.tabList"
       primaryCreateKey="catalog.tariffs.primaryCreate"
-      viewPermissionKey="catalog.tariffs.view"
-      createPermissionKey="catalog.tariffs.create"
+      viewPermissionKey="inventario.tariffs.view"
+      createPermissionKey="inventario.tariffs.create"
       load={async () => mapBasic(await catalogService.tariffs(false))}
       create={async (p) => catalogService.createTariff({ code: String(p.code ?? ''), name: String(p.name ?? '') })}
     />
@@ -85,8 +86,8 @@ export function ProductLinesCatalogPage() {
       titleKey="catalog.productLines.title"
       listTabLabelKey="catalog.productLines.tabList"
       primaryCreateKey="catalog.productLines.primaryCreate"
-      viewPermissionKey="catalog.productLines.view"
-      createPermissionKey="catalog.productLines.create"
+      viewPermissionKey="inventario.productLines.view"
+      createPermissionKey="inventario.productLines.create"
       load={async () => mapBasic(await catalogService.productLines({ activeStatus: 'all' }))}
       create={async (p) => catalogService.createProductLine({ code: String(p.code ?? ''), name: String(p.name ?? '') })}
     />
@@ -119,8 +120,8 @@ export function TaxRatesCatalogPage() {
       titleKey="catalog.taxRates.title"
       listTabLabelKey="catalog.taxRates.tabList"
       primaryCreateKey="catalog.taxRates.primaryCreate"
-      viewPermissionKey="catalog.taxRates.view"
-      createPermissionKey="catalog.taxRates.create"
+      viewPermissionKey="inventario.taxRates.view"
+      createPermissionKey="inventario.taxRates.create"
       fields={fields}
       load={async () => mapBasic(await catalogService.taxRates(false))}
       create={async (p) =>
@@ -140,8 +141,8 @@ export function CategoriesCatalogPage() {
   const role = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin = role === 'Admin' || role === 'SuperAdmin';
   const hasPerm = usePermissionsStore((s) => s.has);
-  const canView = isAdmin || hasPerm('catalog.categories.view');
-  const canCreate = isAdmin || hasPerm('catalog.categories.create');
+  const canView = isAdmin || hasPerm('inventario.categories.view');
+  const canCreate = isAdmin || hasPerm('inventario.categories.create');
 
   const [lines, setLines] = useState<{ id: string; code: string; name: string }[]>([]);
   const [items, setItems] = useState<ProductCategoryListItem[]>([]);
@@ -225,7 +226,7 @@ export function CategoriesCatalogPage() {
 
   return (
     <PageShell
-      kicker={t('app.nav.group.catalog')}
+      kicker={t('app.nav.group.inventario')}
       title={t('catalog.categories.title')}
       action={
         canCreate && tab === 'data' ? (
@@ -242,7 +243,7 @@ export function CategoriesCatalogPage() {
       }
     >
       <TableCard>
-        {error ? <ErrorState message={error} /> : null}
+        {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button type="button" className={tab === 'data' ? 'is-active' : ''} onClick={() => setTab('data')}>
             {t('common.formTab.data')}
@@ -349,8 +350,8 @@ export function SubcategoriesCatalogPage() {
   const role = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin = role === 'Admin' || role === 'SuperAdmin';
   const hasPerm = usePermissionsStore((s) => s.has);
-  const canView = isAdmin || hasPerm('catalog.subcategories.view');
-  const canCreate = isAdmin || hasPerm('catalog.subcategories.create');
+  const canView = isAdmin || hasPerm('inventario.subcategories.view');
+  const canCreate = isAdmin || hasPerm('inventario.subcategories.create');
 
   const [lines, setLines] = useState<{ id: string; code: string; name: string }[]>([]);
   const [categories, setCategories] = useState<ProductCategoryListItem[]>([]);
@@ -481,7 +482,7 @@ export function SubcategoriesCatalogPage() {
 
   return (
     <PageShell
-      kicker={t('app.nav.group.catalog')}
+      kicker={t('app.nav.group.inventario')}
       title={t('catalog.subcategories.title')}
       action={
         canCreate && subTab === 'data' ? (
@@ -505,7 +506,7 @@ export function SubcategoriesCatalogPage() {
       }
     >
       <TableCard>
-        {error ? <ErrorState message={error} /> : null}
+        {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button type="button" className={subTab === 'data' ? 'is-active' : ''} onClick={() => setSubTab('data')}>
             {t('common.formTab.data')}

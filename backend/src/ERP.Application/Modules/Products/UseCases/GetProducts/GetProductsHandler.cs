@@ -1,10 +1,11 @@
 using ERP.Application.Common;
 using ERP.Application.Products.DTOs;
+using MediatR;
 using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Products.UseCases.GetProducts;
 
-public class GetProductsHandler
+public class GetProductsHandler : IRequestHandler<GetProductsQuery, Result<IReadOnlyList<ProductDto>>>
 {
     private readonly IProductRepository _repository;
     private readonly ICurrentTenant _currentTenant;
@@ -15,7 +16,10 @@ public class GetProductsHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<IReadOnlyList<ProductDto>>> HandleAsync(CancellationToken ct = default)
+    public Task<Result<IReadOnlyList<ProductDto>>> HandleAsync(CancellationToken ct = default)
+        => Handle(new GetProductsQuery(), ct);
+
+    public async Task<Result<IReadOnlyList<ProductDto>>> Handle(GetProductsQuery request, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var products = await _repository.GetAllByTenantAsync(tenantId, ct);

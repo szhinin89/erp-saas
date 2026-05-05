@@ -46,7 +46,7 @@ public sealed class EnableCustomerCommandHandler : IRequestHandler<EnableCustome
             _user.UserId,
             _user.Email,
             _user.FullName,
-            module: "catalog",
+            module: "ventas",
             action: "customer.enable",
             entityType: "Customer",
             entityId: entity.Id,

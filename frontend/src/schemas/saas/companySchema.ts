@@ -45,3 +45,18 @@ export const createCompanyWithAdminSchema = z
   });
 
 export type CreateCompanyFormValues = z.infer<typeof createCompanyWithAdminSchema>;
+
+/** Edición de datos de empresa existente (SuperAdmin, sin admin). */
+export const updateTenantCompanySchema = z.object({
+  tenantName: z.string().min(1, 'El nombre del tenant es obligatorio'),
+  tenantSlug: z.string().min(1, 'El slug es obligatorio'),
+  ruc: z.string().optional(),
+  shortName: z.string().optional(),
+  tradeName: z.string().optional(),
+  dinardap: z.string().optional(),
+  logoUrl: z.string().optional(),
+  displayOrder: z.coerce.number().int('El orden de visualización debe ser un número entero'),
+  priority: z.coerce.number().int('La prioridad debe ser un número entero'),
+});
+
+export type UpdateTenantCompanyFormValues = z.infer<typeof updateTenantCompanySchema>;

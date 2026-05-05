@@ -1,10 +1,11 @@
 using ERP.Application.Common;
 using ERP.Application.Products.DTOs;
+using MediatR;
 using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Products.UseCases.GetProductById;
 
-public class GetProductByIdHandler
+public class GetProductByIdHandler : IRequestHandler<GetProductByIdQuery, Result<ProductDto>>
 {
     private readonly IProductRepository _repository;
     private readonly ICurrentTenant _currentTenant;
@@ -15,10 +16,13 @@ public class GetProductByIdHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<ProductDto>> HandleAsync(Guid id, CancellationToken ct = default)
+    public Task<Result<ProductDto>> HandleAsync(Guid id, CancellationToken ct = default)
+        => Handle(new GetProductByIdQuery(id), ct);
+
+    public async Task<Result<ProductDto>> Handle(GetProductByIdQuery request, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
-        var product  = await _repository.GetByIdAsync(id, tenantId, ct);
+        var product  = await _repository.GetByIdAsync(request.Id, tenantId, ct);
 
         if (product is null)
             return Result<ProductDto>.Failure("Producto no encontrado.");

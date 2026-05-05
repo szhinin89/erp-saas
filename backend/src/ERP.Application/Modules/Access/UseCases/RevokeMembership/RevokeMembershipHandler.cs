@@ -1,9 +1,10 @@
 using ERP.Application.Common;
+using MediatR;
 using ERP.Domain.Access.Interfaces;
 
 namespace ERP.Application.Access.UseCases.RevokeMembership;
 
-public class RevokeMembershipHandler
+public class RevokeMembershipHandler : IRequestHandler<RevokeMembershipCommand, Result<object>>
 {
     private readonly IAccessRepository _accessRepository;
     private readonly ICurrentUser _currentUser;
@@ -14,7 +15,10 @@ public class RevokeMembershipHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<object>> HandleAsync(RevokeMembershipCommand command, CancellationToken ct = default)
+    public Task<Result<object>> HandleAsync(RevokeMembershipCommand command, CancellationToken ct = default)
+        => Handle(command, ct);
+
+    public async Task<Result<object>> Handle(RevokeMembershipCommand command, CancellationToken ct)
     {
         var email = command.UserEmail.Trim().ToLowerInvariant();
         var user = await _accessRepository.GetUserByEmailAsync(email, ct);

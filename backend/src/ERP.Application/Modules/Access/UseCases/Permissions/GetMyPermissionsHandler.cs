@@ -1,11 +1,12 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
+using MediatR;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 
 namespace ERP.Application.Access.UseCases.Permissions;
 
-public class GetMyPermissionsHandler
+public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Result<MyPermissionsDto>>
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentUser _currentUser;
@@ -24,7 +25,10 @@ public class GetMyPermissionsHandler
         _tenantRepository = tenantRepository;
     }
 
-    public async Task<Result<MyPermissionsDto>> HandleAsync(CancellationToken ct = default)
+    public Task<Result<MyPermissionsDto>> HandleAsync(CancellationToken ct = default)
+        => Handle(new GetMyPermissionsQuery(), ct);
+
+    public async Task<Result<MyPermissionsDto>> Handle(GetMyPermissionsQuery request, CancellationToken ct)
     {
         if (!_currentUser.IsAuthenticated || !_currentTenant.IsAuthenticated)
             return Result<MyPermissionsDto>.Failure("No autenticado.");

@@ -12,6 +12,7 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Customers.Entities;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Domain.Navigation.Entities;
+using ERP.Domain.Configuration.Entities;
 using ERP.Application.Common;
 using System.Linq.Expressions;
 
@@ -64,6 +65,9 @@ public class ErpDbContext : DbContext
 
     public DbSet<UiNavGroup> UiNavGroups => Set<UiNavGroup>();
     public DbSet<UiNavItem> UiNavItems => Set<UiNavItem>();
+    public DbSet<ConfigGlobal> ConfigGlobals => Set<ConfigGlobal>();
+    public DbSet<ConfigModule> ConfigModules => Set<ConfigModule>();
+    public DbSet<ConfigFeature> ConfigFeatures => Set<ConfigFeature>();
 
     /// <summary>
     /// Evaluada en cada query, no al compilar el modelo.

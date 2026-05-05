@@ -1,5 +1,6 @@
 import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
+import type { SessionResponse } from '../types/access';
 
 export type SuperAdminTenant = {
   id: string;
@@ -125,6 +126,19 @@ export type UpdateSaasFeatureDefinitionBody = {
   resourceRef: string | null;
 };
 
+export type CreateTenantWithAdminBody = {
+  tenantName: string;
+  tenantSlug: string;
+  adminFirstName: string;
+  adminLastName: string;
+  adminEmail: string;
+  adminPassword: string;
+  /** Coincide con `PasswordResetMode` en backend: 0 Disabled, 1 Direct, 2 Email, 3 Phone. */
+  passwordResetMode?: number;
+  /** Si true, no crea usuario; vincula un Admin existente por email. */
+  linkExistingAdmin?: boolean;
+};
+
 export type SaasPublicPlan = {
   id: string;
   code: string;
@@ -147,24 +161,19 @@ export type SaasPublicPlan = {
   }>;
 };
 
-/** Cuotas efectivas de instancia (GET) o cuerpo para guardar en App_Data/instance-quota.json (PUT). */
-export type InstanceQuota = {
-  dedicatedSingleClientInstance?: boolean | null;
-  maxActiveTenants?: number | null;
-  maxIdentityUsers?: number | null;
-  maxUsersPerTenant?: number | null;
-};
-
 export type AdminNavItemRow = {
   id: string;
   parentItemId: string | null;
   routePath: string;
   labelKey: string;
+  displayLabel?: string | null;
   sortOrder: number;
   moduleKey: string | null;
   permissionKey: string | null;
   permissionKeysAny: string[] | null;
   isActive: boolean;
+  /** FK opcional en BD: ítem del menú ↔ definición SaaS (Plan ↔ menú). */
+  saasFeatureDefinitionId?: string | null;
   children?: AdminNavItemRow[] | null;
 };
 
@@ -191,6 +200,15 @@ export type NavItemSiblingOrderLevel = {
   orderedItemIds: string[];
 };
 
+export type CreateNavItemBody = {
+  groupId: string;
+  parentItemId: string | null;
+  routePath: string;
+  displayLabel: string;
+  moduleKey?: string | null;
+  permissionKey?: string | null;
+};
+
 export type SuperAdminMetrics = {
   totals: {
     totalTenants: number;
@@ -207,14 +225,70 @@ export type SuperAdminMetrics = {
   }>;
 };
 
+export type GrowthAnalyticsBucket = {
+  periodStart: string;
+  periodEnd: string;
+  periodLabel: string;
+  newTenants: number;
+  newIdentityUsers: number;
+  newMemberships: number;
+  cumulativeTenants: number;
+  cumulativeIdentityUsers: number;
+  cumulativeMemberships: number;
+};
+
+export type GrowthAnalyticsResponse = {
+  from: string;
+  to: string;
+  granularity: string;
+  series: GrowthAnalyticsBucket[];
+};
+
+export type GrowthMonetaryBucket = {
+  periodStart: string;
+  periodEnd: string;
+  periodLabel: string;
+  newMrrApprox: number;
+  cumulativeMrrApprox: number;
+};
+
+export type GrowthMonetaryResponse = {
+  from: string;
+  to: string;
+  granularity: string;
+  currencyHint: string;
+  series: GrowthMonetaryBucket[];
+};
+
 export const superAdminService = {
   getTenants: () =>
     api.get<ApiResponse<{ tenants: SuperAdminTenant[] }>>('/api/superadmin/tenants')
       .then((r) => r.data.responseObject.tenants),
 
+  createTenantWithAdmin: (body: CreateTenantWithAdminBody) =>
+    api
+      .post<ApiResponse<SessionResponse>>('/api/access/superadmin/tenants', body)
+      .then((r) => r.data.responseObject),
+
   getMetrics: () =>
     api.get<ApiResponse<SuperAdminMetrics>>('/api/superadmin/metrics')
       .then((r) => r.data.responseObject),
+
+  getGrowthAnalytics: (from: string, to: string, granularity?: string) => {
+    const params: Record<string, string> = { from, to };
+    if (granularity) params.granularity = granularity;
+    return api
+      .get<ApiResponse<GrowthAnalyticsResponse>>('/api/superadmin/growth-analytics', { params })
+      .then((r) => r.data.responseObject);
+  },
+
+  getGrowthMonetaryAnalytics: (from: string, to: string, granularity?: string) => {
+    const params: Record<string, string> = { from, to };
+    if (granularity) params.granularity = granularity;
+    return api
+      .get<ApiResponse<GrowthMonetaryResponse>>('/api/superadmin/growth-analytics-monetary', { params })
+      .then((r) => r.data.responseObject);
+  },
 
   getPlansCatalog: () =>
     api.get<ApiResponse<{ plans: SuperAdminPlan[] }>>('/api/superadmin/plans')
@@ -228,6 +302,15 @@ export const superAdminService = {
     api
       .get<ApiResponse<{ features: SaasFeatureDefinitionAdmin[] }>>('/api/superadmin/saas-features')
       .then((r) => r.data.responseObject.features),
+
+  createSaasFeatureDefinition: (body: CreateSaasFeatureDefinitionBody) =>
+    api.post<ApiResponse<{ id: string }>>('/api/superadmin/saas-features', body).then((r) => r.data.responseObject.id),
+
+  updateSaasFeatureDefinition: (featureId: string, body: UpdateSaasFeatureDefinitionBody) =>
+    api.put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-features/${featureId}`, body).then((r) => r.data),
+
+  deleteSaasFeatureDefinition: (featureId: string) =>
+    api.delete<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-features/${featureId}`).then((r) => r.data),
 
   createSaasPlan: (body: CreateSaasPlanBody) =>
     api.post<ApiResponse<{ id: string }>>('/api/superadmin/saas-plans', body).then((r) => r.data.responseObject.id),
@@ -249,12 +332,6 @@ export const superAdminService = {
       .put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-plans/${planId}/features`, { features })
       .then((r) => r.data),
 
-  createSaasFeatureDefinition: (body: CreateSaasFeatureDefinitionBody) =>
-    api.post<ApiResponse<{ id: string }>>('/api/superadmin/saas-features', body).then((r) => r.data.responseObject.id),
-
-  updateSaasFeatureDefinition: (featureId: string, body: UpdateSaasFeatureDefinitionBody) =>
-    api.put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-features/${featureId}`, body).then((r) => r.data),
-
   /** Endpoint público para landing (sin token). */
   getPublicPlans: () =>
     api.get<ApiResponse<{ plans: SaasPublicPlan[] }>>('/api/public/plans').then((r) => r.data.responseObject.plans),
@@ -262,12 +339,6 @@ export const superAdminService = {
   switchTenant: (tenantId: string) =>
     api.post<ApiResponse<import('../types/auth').AuthResponse>>('/api/auth/switch-tenant', { tenantId })
       .then((r) => r.data.responseObject),
-
-  getInstanceQuota: () =>
-    api.get<ApiResponse<InstanceQuota>>('/api/superadmin/instance-quota').then((r) => r.data.responseObject),
-
-  saveInstanceQuota: (body: InstanceQuota) =>
-    api.put<ApiResponse<Record<string, unknown>>>('/api/superadmin/instance-quota', body).then((r) => r.data),
 
   getNavigationMenu: () =>
     api
@@ -287,5 +358,17 @@ export const superAdminService = {
         levels,
       })
       .then((r) => r.data),
+
+  createNavigationMenuItem: (body: CreateNavItemBody) =>
+    api
+      .post<ApiResponse<{ id: string }>>('/api/superadmin/navigation-menu/items', {
+        groupId: body.groupId,
+        parentItemId: body.parentItemId,
+        routePath: body.routePath.trim(),
+        displayLabel: body.displayLabel.trim(),
+        moduleKey: body.moduleKey?.trim() || null,
+        permissionKey: body.permissionKey?.trim() || null,
+      })
+      .then((r) => r.data.responseObject.id),
 };
 

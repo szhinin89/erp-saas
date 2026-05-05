@@ -1,0 +1,43 @@
+/* Confirmación destructiva / primaria: cuerpo legible y acento visual */
+.zh-confirm-modal {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.zh-confirm-modal--destructive .zh-confirm-modal__icon {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+}
+
+.zh-confirm-modal__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.zh-confirm-modal__message {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--zh-color-text, #1e293b);
+}
+
+.zh-confirm-modal__message strong {
+  font-weight: 600;
+  color: var(--zh-color-text, #0f172a);
+}
+
+.zh-confirm-modal--destructive .zh-confirm-modal__message {
+  color: rgba(30, 41, 59, 0.92);
+}

@@ -1,10 +1,11 @@
 using ERP.Application.Common;
 using ERP.Application.Products.Catalogs.DTOs;
+using MediatR;
 using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Products.Catalogs.UseCases.GetUnitsOfMeasure;
 
-public class GetUnitsOfMeasureHandler
+public class GetUnitsOfMeasureHandler : IRequestHandler<GetUnitsOfMeasureQuery, Result<IReadOnlyList<UnitOfMeasureDto>>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly ICurrentTenant _currentTenant;
@@ -15,10 +16,13 @@ public class GetUnitsOfMeasureHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<IReadOnlyList<UnitOfMeasureDto>>> HandleAsync(bool onlyActive, CancellationToken ct = default)
+    public Task<Result<IReadOnlyList<UnitOfMeasureDto>>> HandleAsync(bool onlyActive, CancellationToken ct = default)
+        => Handle(new GetUnitsOfMeasureQuery(onlyActive), ct);
+
+    public async Task<Result<IReadOnlyList<UnitOfMeasureDto>>> Handle(GetUnitsOfMeasureQuery request, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
-        var items = await _repo.GetUnitsOfMeasureAsync(tenantId, onlyActive, ct);
+        var items = await _repo.GetUnitsOfMeasureAsync(tenantId, request.OnlyActive, ct);
         var dtos = items.Select(x => new UnitOfMeasureDto(x.Id, x.Code, x.Name, x.Symbol, x.IsActive)).ToList();
         return Result<IReadOnlyList<UnitOfMeasureDto>>.Success(dtos);
     }

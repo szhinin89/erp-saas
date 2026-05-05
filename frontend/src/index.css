@@ -58,9 +58,12 @@
   --zh-primary-light: var(--zh-blue-light);
   --zh-primary-mid: var(--zh-blue-mid);
 
+  /* Anillos de foco (alineados a librería ZH Components v2 — mismo patrón visual en HTML/React) */
   --zh-focus-ring: 0 0 0 3px rgba(79, 123, 166, 0.15);
   --zh-focus-ring-danger: 0 0 0 3px rgba(226, 75, 74, 0.15);
   --zh-focus-ring-success: 0 0 0 3px rgba(29, 158, 117, 0.15);
+  /* Chevron de <select> (.zh-field-control select) — color = --zh-blue (#4F7BA6 → %234F7BA6) */
+  --zh-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 12 12'%3E%3Cpath fill='%234F7BA6' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
 
   --zh-font: var(--font-sans);
   --zh-font-mono: var(--font-mono);

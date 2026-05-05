@@ -13,7 +13,7 @@ public sealed class UpdateTenantSubscriptionHandlerTests
     public async Task HandleAsync_updates_plan_and_modules_and_persists()
     {
         var editorId = Guid.NewGuid();
-        var tenant = Tenant.Create("Acme", "acme", Guid.NewGuid(), planCode: "starter", enabledModuleKeys: new[] { "catalog" });
+        var tenant = Tenant.Create("Acme", "acme", Guid.NewGuid(), planCode: "starter", enabledModuleKeys: new[] { "inventario" });
         var tenantId = tenant.Id;
 
         var repo = new Mock<ITenantRepository>(MockBehavior.Strict);
@@ -75,7 +75,7 @@ public sealed class UpdateTenantSubscriptionHandlerTests
 
         var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object);
         var result = await handler.HandleAsync(
-            new UpdateTenantSubscriptionCommand(Guid.NewGuid(), "x", new[] { "catalog" }));
+            new UpdateTenantSubscriptionCommand(Guid.NewGuid(), "x", new[] { "inventario" }));
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("no encontrada");

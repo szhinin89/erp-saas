@@ -6,13 +6,14 @@ import { formatApiError } from '../modules/lib/formatApiError';
 import type { Product } from '../types/product';
 import { useAsync } from '../hooks/useAsync';
 import {
-  PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage,
+  PageShell, TableCard, EmptyState, LoadingState, Badge, NoAccessPage,
 } from '../components/PageShell';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { catalogService } from '../services/catalogService';
 import { useAuthStore } from '../store/authStore';
-import { ZHBtn, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHToggle } from '../components/zh/ZHForm';
+import { ZHBtn, ZHFormSection, ZHGrid, ZHField, ZHToggle } from '../components/zh/ZHForm';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { ZHColSpan } from '../components/zh/ZHLayout';
 import ZHSearchBar from '../components/shared/ZHSearchBar';
 import { ZHFormCard } from '../components/zh/ZHFormCard';
@@ -79,7 +80,7 @@ function ProductsRecentListBlock(props: {
     onViewAudit,
   } = props;
 
-  if (error) return <ErrorState message={error} />;
+  if (error) return <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />;
 
   return (
     <>
@@ -185,8 +186,8 @@ export function ProductsPage() {
   const hasPerm = usePermissionsStore((s) => s.has);
   const role = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin = role === 'Admin' || role === 'SuperAdmin';
-  const canView = isAdmin || hasPerm('catalog.products.view');
-  const canCreate = isAdmin || hasPerm('catalog.products.create');
+  const canView = isAdmin || hasPerm('inventario.products.view');
+  const canCreate = isAdmin || hasPerm('inventario.products.create');
   const { data: products, loading, error, refetch } = useAsync(productService.getAll);
   const { data: catalogs } = useAsync(async () => {
     const [lines, categories, subcategories, brands, productTypes, units, taxRates, tariffs] = await Promise.all([
@@ -202,7 +203,6 @@ export function ProductsPage() {
     return { lines, categories, subcategories, brands, productTypes, units, taxRates, tariffs };
   });
 
-  const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
   const savedProductSnapshot = useRef<ProductCreateFormValues>(emptyProductForm());
   const {
     register,
@@ -389,7 +389,7 @@ export function ProductsPage() {
 
   return (
     <PageShell
-      kicker={`${t('app.nav.group.catalog')} · ${t('products.title')}`}
+      kicker={`${t('app.nav.group.inventario')} · ${t('products.title')}`}
       title={canCreate ? t('products.modal.create.title') : t('products.title')}
       subtitle={canCreate ? undefined : t('common.readOnly')}
       action={
@@ -419,8 +419,7 @@ export function ProductsPage() {
           subtitle={t('products.form.saleCode')}
           onSubmit={submitProduct}
         >
-          <input type="hidden" name="tenantId" value={tenantId} />
-          {formError ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={formError} /> : null}
+          {formError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={formError} /> : null}
 
           <div className="zh-form-tabs" role="tablist">
             <button
@@ -785,7 +784,7 @@ export function ProductsPage() {
         </ZHFormCard>
       )}
 
-      {canCreate && error ? <ErrorState message={error} /> : null}
+      {canCreate && error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
       {canCreate && loading && formTab !== 'list' && formTab !== 'audit' ? <LoadingState /> : null}
 
       {!canCreate && (

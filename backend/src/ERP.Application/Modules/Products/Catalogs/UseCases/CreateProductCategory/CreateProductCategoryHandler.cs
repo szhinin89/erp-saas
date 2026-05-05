@@ -53,7 +53,7 @@ public class CreateProductCategoryHandler
             userId,
             _currentUser.Email,
             _currentUser.FullName,
-            module: "catalog",
+            module: "inventario",
             action: "productCategory.create",
             entityType: "ProductCategory",
             entityId: entity.Id,

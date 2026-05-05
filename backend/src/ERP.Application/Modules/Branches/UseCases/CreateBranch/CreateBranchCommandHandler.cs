@@ -33,9 +33,6 @@ public sealed class CreateBranchCommandHandler : IRequestHandler<CreateBranchCom
 
     public async Task<Result<BranchDto>> Handle(CreateBranchCommand command, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(command.Name) || string.IsNullOrWhiteSpace(command.Address))
-            return Result<BranchDto>.Failure("Nombre y dirección son obligatorios.");
-
         var locErr = await BranchLocationValidation.ValidateAsync(
             _geo,
             command.CountryId,

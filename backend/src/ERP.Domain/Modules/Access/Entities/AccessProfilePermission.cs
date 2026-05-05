@@ -4,7 +4,7 @@ namespace ERP.Domain.Access.Entities;
 
 /// <summary>
 /// Permiso asignado a un perfil (por tenant).
-/// PermissionKey es una cadena estable (ej. "catalog.brands.view").
+/// PermissionKey es una cadena estable (ej. "inventario.brands.view").
 /// </summary>
 public class AccessProfilePermission : AuditableEntity
 {

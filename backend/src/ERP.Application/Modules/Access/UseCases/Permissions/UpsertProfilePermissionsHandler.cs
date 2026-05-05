@@ -1,10 +1,11 @@
 using ERP.Application.Common;
+using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 
 namespace ERP.Application.Access.UseCases.Permissions;
 
-public class UpsertProfilePermissionsHandler
+public class UpsertProfilePermissionsHandler : IRequestHandler<UpsertProfilePermissionsCommand, Result<object>>
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _currentTenant;
@@ -20,7 +21,10 @@ public class UpsertProfilePermissionsHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<object>> HandleAsync(UpsertProfilePermissionsCommand command, CancellationToken ct = default)
+    public Task<Result<object>> HandleAsync(UpsertProfilePermissionsCommand command, CancellationToken ct = default)
+        => Handle(command, ct);
+
+    public async Task<Result<object>> Handle(UpsertProfilePermissionsCommand command, CancellationToken ct)
     {
         if (!_currentTenant.IsAuthenticated || !_currentUser.IsAuthenticated)
             return Result<object>.Failure("No autenticado.");

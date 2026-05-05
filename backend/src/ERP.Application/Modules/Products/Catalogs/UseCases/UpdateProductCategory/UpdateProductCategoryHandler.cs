@@ -55,7 +55,7 @@ public class UpdateProductCategoryHandler
             userId,
             _currentUser.Email,
             _currentUser.FullName,
-            module: "catalog",
+            module: "inventario",
             action: "productCategory.update",
             entityType: "ProductCategory",
             entityId: entity.Id,

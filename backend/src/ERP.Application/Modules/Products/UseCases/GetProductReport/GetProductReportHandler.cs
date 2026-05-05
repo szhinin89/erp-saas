@@ -1,10 +1,11 @@
 using ERP.Application.Common;
 using ERP.Application.Products.DTOs;
+using MediatR;
 using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Products.UseCases.GetProductReport;
 
-public class GetProductReportHandler
+public class GetProductReportHandler : IRequestHandler<GetProductReportQuery, Result<PagedResult<ProductReportItemDto>>>
 {
     private readonly IProductRepository _repository;
     private readonly ICurrentTenant _currentTenant;
@@ -15,14 +16,24 @@ public class GetProductReportHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<PagedResult<ProductReportItemDto>>> HandleAsync(
+    public Task<Result<PagedResult<ProductReportItemDto>>> HandleAsync(
         ProductReportFilter filter,
         int pageNumber,
         int pageSize,
-        CancellationToken ct = default)
+        CancellationToken ct = default) =>
+        Handle(new GetProductReportQuery(filter, pageNumber, pageSize), ct);
+
+    public async Task<Result<PagedResult<ProductReportItemDto>>> Handle(
+        GetProductReportQuery request,
+        CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
-        var (products, totalCount) = await _repository.GetReportPageAsync(tenantId, filter, pageNumber, pageSize, ct);
+        var (products, totalCount) = await _repository.GetReportPageAsync(
+            tenantId,
+            request.Filter,
+            request.PageNumber,
+            request.PageSize,
+            ct);
 
         var dtos = products.Select(p => new ProductReportItemDto(
             p.Id,
@@ -44,8 +55,8 @@ public class GetProductReportHandler
 
         return Result<PagedResult<ProductReportItemDto>>.Success(new PagedResult<ProductReportItemDto>(
             Items: dtos,
-            PageNumber: pageNumber,
-            PageSize: pageSize,
+            PageNumber: request.PageNumber,
+            PageSize: request.PageSize,
             TotalCount: totalCount));
     }
 }

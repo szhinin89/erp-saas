@@ -6,7 +6,7 @@ export type NavItem = {
   icon?: string;
   /** Si está definido, el ítem solo se muestra si el rol del usuario está en la lista (p. ej. solo SuperAdmin). */
   roles?: string[];
-  /** Clave de módulo contratado (catalog, accounting, saas, access). Si falta, no se filtra por suscripción. */
+  /** Clave de módulo contratado (inventario, accounting, saas, access). Si falta, no se filtra por suscripción. */
   moduleKey?: string;
   /** Si está definido, el ítem solo se muestra si el usuario tiene este permiso. */
   permissionKey?: string;
@@ -28,12 +28,13 @@ export type NavGroup = {
 
 export type TranslateFn = (key: string) => string;
 
-/** Orden fijo de la barra principal: Inventario y Ventas siempre uno al lado del otro. */
-/** Orden barra: Inicio → Contabilidad → Inventario → Ventas → Compras → RRHH → Seguridad. */
+/** Orden fijo de la barra principal: Configuración junto a Inventario; Ventas detrás. */
+/** Orden barra: Inicio → Contabilidad → Inventario → Configuración → Ventas → Compras → RRHH → Seguridad. */
 const MAIN_NAV_GROUP_ORDER = [
   'home',
   'accounting',
-  'catalog',
+  'inventario',
+  'configuracion',
   'sales',
   'purchases',
   'hr',
@@ -60,17 +61,82 @@ export function sortNavGroupsForMainBar(groups: NavGroup[]): NavGroup[] {
   });
 }
 
-function mapSessionMenuItem(it: SessionMenuItemDto, t: TranslateFn): NavItem {
+/** Alias BD/legacy → rutas definidas en `App.tsx` (<Routes>). Sin coincidencia, `*` envía al dashboard. */
+const MENU_ROUTE_ALIASES: Record<string, string> = {
+  '/dashboard/products': '/products',
+  '/inventario/products': '/products',
+  '/catalog/products': '/products',
+  '/product': '/products',
+};
+
+/**
+ * Normaliza rutas del menú (BD): slash inicial, quita slash final, conserva ?query y #hash,
+ * y aplica alias conocidos. Sin "/" inicial, enlaces `<a>`/`NavLink` se resolvían relativos al
+ * pathname actual (p. ej. `products` en `/dashboard` → `/dashboard/products` → 404 → dashboard).
+ */
+export function normalizeMenuRoutePath(path: string): string {
+  const raw = path.trim();
+  if (!raw || raw === '#' || raw.toLowerCase().startsWith('javascript:')) return '';
+  if (/^[a-z][a-z0-9+.-]*:/i.test(raw)) return raw;
+
+  const internal = raw.startsWith('/') ? raw : `/${raw}`;
+  try {
+    const u = new URL(`http://dummy.local${internal}`);
+    let pathname = u.pathname;
+    if (pathname.length > 1 && pathname.endsWith('/')) pathname = pathname.slice(0, -1);
+    pathname = MENU_ROUTE_ALIASES[pathname] ?? pathname;
+    return `${pathname}${u.search}${u.hash}`;
+  } catch {
+    return internal.startsWith('/') ? internal : `/${internal}`;
+  }
+}
+
+function mapSessionMenuItem(it: SessionMenuItemDto, t: TranslateFn, inheritedRoute?: string): NavItem {
+  const normalized = normalizeMenuRoutePath(it.routePath?.trim() ?? '');
+  const fallback = inheritedRoute ? normalizeMenuRoutePath(inheritedRoute) : '';
+  const to = normalized || fallback;
+
+  const chainFallback = to || fallback;
   const children =
-    it.children && it.children.length > 0 ? it.children.map((c) => mapSessionMenuItem(c, t)) : undefined;
+    it.children && it.children.length > 0
+      ? it.children.map((c) => mapSessionMenuItem(c, t, chainFallback || inheritedRoute))
+      : undefined;
+
+  const dl = it.displayLabel?.trim();
   return {
-    to: it.routePath,
-    label: t(it.labelKey),
+    to,
+    label: dl && dl.length > 0 ? dl : t(it.labelKey),
     moduleKey: it.moduleKey ?? undefined,
     permissionKey: it.permissionKey ?? undefined,
     permissionKeysAny: it.permissionKeysAny?.length ? it.permissionKeysAny : undefined,
+    roles: it.itemRoles?.length ? [...it.itemRoles] : undefined,
     ...(children?.length ? { children } : {}),
   };
+}
+
+/** Rutas de administración de plataforma: no deben venir del menú en BD (solo enlaces estáticos para SuperAdmin). */
+function isPlatformAdminMenuRoute(routePath: string): boolean {
+  if (routePath === '/companies') return true;
+  return routePath.startsWith('/superadmin');
+}
+
+function filterPlatformAdminRoutesFromSessionItems(items: SessionMenuItemDto[]): SessionMenuItemDto[] {
+  const out: SessionMenuItemDto[] = [];
+  for (const it of items) {
+    if (isPlatformAdminMenuRoute(it.routePath)) continue;
+    const ch = it.children?.length ? filterPlatformAdminRoutesFromSessionItems(it.children) : undefined;
+    out.push({
+      ...it,
+      children: ch?.length ? ch : undefined,
+    });
+  }
+  return out;
+}
+
+function filterPlatformAdminRoutesFromSessionMenuDto(dto: SessionMenuGroupDto[]): SessionMenuGroupDto[] {
+  return dto
+    .map((g) => ({ ...g, items: filterPlatformAdminRoutesFromSessionItems(g.items) }))
+    .filter((g) => g.items.length > 0);
 }
 
 /** Convierte la respuesta del API en el mismo shape que `buildNavGroups` (incl. filtro panel superadmin). */
@@ -80,7 +146,8 @@ export function mapSessionMenuToNavGroups(
   options?: { superAdminPanelEnabled?: boolean },
 ): NavGroup[] {
   const superOn = options?.superAdminPanelEnabled ?? true;
-  const mapped = dto
+  const cleaned = filterPlatformAdminRoutesFromSessionMenuDto(dto);
+  const mapped = cleaned
     .filter((g) => !g.requireSuperAdminPanel || superOn)
     .map((g) => ({
       id: g.code,
@@ -103,21 +170,39 @@ function collectNavTos(items: NavItem[]): string[] {
   return out;
 }
 
-/** Enlaces del panel SuperAdmin que no vienen del API de sesión; se fusionan en el grupo Inicio. */
+/**
+ * Menú único para SuperAdmin en contexto global (sin tenant operativo).
+ * Solo rutas de plataforma; no incluye inventario, contabilidad, etc.
+ */
+export function buildGlobalSuperAdminNavGroups(
+  t: TranslateFn,
+  options?: { superAdminPanelEnabled?: boolean },
+): NavGroup[] {
+  const items = getSuperAdminPanelNavExtras(t, options);
+  if (!items.length) return [];
+  return sortNavGroupsForMainBar([
+    {
+      id: 'superadmin',
+      label: t('app.nav.group.superadmin'),
+      icon: '◆',
+      sortOrder: 0,
+      roles: ['SuperAdmin'],
+      items,
+    },
+  ]);
+}
+
+/**
+ * Enlaces del panel SuperAdmin: siempre estáticos (navConfig), no filas de <c>ui_nav_items</c>,
+ * para no mezclar la plataforma con el menú por-tenant/empresa en BD.
+ */
 export function getSuperAdminPanelNavExtras(
   t: TranslateFn,
   options?: { superAdminPanelEnabled?: boolean },
 ): NavItem[] {
   const superAdminOn = options?.superAdminPanelEnabled ?? true;
   if (!superAdminOn) return [];
-  return [
-    { to: '/superadmin', label: t('app.nav.superadmin'), roles: ['SuperAdmin'] },
-    { to: '/superadmin/plans', label: t('app.nav.superadmin.plans'), roles: ['SuperAdmin'] },
-    { to: '/companies', label: t('app.nav.companies'), roles: ['SuperAdmin'] },
-    { to: '/superadmin/forms', label: t('app.nav.superadmin.forms'), roles: ['SuperAdmin'] },
-    { to: '/superadmin/instance-quota', label: t('app.nav.superadmin.instanceQuota'), roles: ['SuperAdmin'] },
-    { to: '/superadmin/navigation-menu', label: t('app.nav.superadmin.navigationMenu'), roles: ['SuperAdmin'] },
-  ];
+  return [{ to: '/superadmin', label: t('app.nav.superadmin'), roles: ['SuperAdmin'] }];
 }
 
 /** Cuando el menú viene de BD, añade en Inicio los enlaces estáticos de SuperAdmin que falten (misma ruta = no duplicar). */
@@ -157,28 +242,28 @@ export function buildNavGroups(
       items: [{ to: '/dashboard', label: t('app.nav.dashboard') }, ...getSuperAdminPanelNavExtras(t, options)],
     },
     {
-      id: 'catalog',
-      label: t('app.nav.group.catalog'),
+      id: 'inventario',
+      label: t('app.nav.group.inventario'),
       icon: '📦',
-      moduleKey: 'catalog',
-      sortOrder: defaultBarRank('catalog') * 10,
+      moduleKey: 'inventario',
+      sortOrder: defaultBarRank('inventario') * 10,
       items: [
-        { to: '/products', label: t('app.nav.products'), permissionKey: 'catalog.products.view' },
-        { to: '/catalog/brands', label: t('app.nav.catalog.brands'), permissionKey: 'catalog.brands.view' },
-        { to: '/catalog/product-types', label: t('app.nav.catalog.productTypes'), permissionKey: 'catalog.productTypes.view' },
-        { to: '/catalog/units', label: t('app.nav.catalog.units'), permissionKey: 'catalog.units.view' },
-        { to: '/catalog/tax-rates', label: t('app.nav.catalog.taxRates'), permissionKey: 'catalog.taxRates.view' },
-        { to: '/catalog/tariffs', label: t('app.nav.catalog.tariffs'), permissionKey: 'catalog.tariffs.view' },
-        { to: '/catalog/structure', label: t('app.nav.catalog.structure'), permissionKey: 'catalog.categories.view' },
+        { to: '/products', label: t('app.nav.products'), permissionKey: 'inventario.products.view' },
+        { to: '/inventario/brands', label: t('app.nav.catalog.brands'), permissionKey: 'inventario.brands.view' },
+        { to: '/inventario/product-types', label: t('app.nav.catalog.productTypes'), permissionKey: 'inventario.productTypes.view' },
+        { to: '/inventario/units', label: t('app.nav.catalog.units'), permissionKey: 'inventario.units.view' },
+        { to: '/inventario/tax-rates', label: t('app.nav.catalog.taxRates'), permissionKey: 'inventario.taxRates.view' },
+        { to: '/inventario/tariffs', label: t('app.nav.catalog.tariffs'), permissionKey: 'inventario.tariffs.view' },
+        { to: '/inventario/structure', label: t('app.nav.catalog.structure'), permissionKey: 'inventario.categories.view' },
       ],
     },
     {
       id: 'sales',
       label: t('app.nav.group.sales'),
       icon: '🛒',
-      moduleKey: 'catalog',
+      moduleKey: 'ventas',
       sortOrder: defaultBarRank('sales') * 10,
-      items: [{ to: '/catalog/customers', label: t('app.nav.catalog.customers'), permissionKey: 'catalog.customers.view' }],
+      items: [{ to: '/ventas/customers', label: t('app.nav.catalog.customers'), permissionKey: 'ventas.customers.view' }],
     },
     {
       id: 'accounting',
@@ -209,10 +294,10 @@ export function buildNavGroups(
       items: [{ to: '/rrhh', label: t('app.nav.group.hr') }],
     },
     {
-      id: 'security',
-      label: t('app.nav.group.security'),
-      icon: '🛡️',
-      sortOrder: defaultBarRank('security') * 10,
+      id: 'configuracion',
+      label: t('app.nav.group.configuracion'),
+      icon: '⚙',
+      sortOrder: defaultBarRank('configuracion') * 10,
       items: [
         { to: '/access', label: t('app.nav.access'), roles: ['Admin', 'SuperAdmin'] },
         { to: '/profiles', label: t('app.nav.profiles'), roles: ['Admin', 'SuperAdmin'] },
@@ -223,8 +308,14 @@ export function buildNavGroups(
           permissionKey: 'saas.branches.view',
           roles: ['Admin', 'SuperAdmin'],
         },
-        { to: '/security', label: t('app.nav.security'), roles: ['SuperAdmin'] },
       ],
+    },
+    {
+      id: 'security',
+      label: t('app.nav.group.security'),
+      icon: '🛡️',
+      sortOrder: defaultBarRank('security') * 10,
+      items: [{ to: '/security', label: t('app.nav.security'), roles: ['SuperAdmin'] }],
     },
   ];
 
@@ -308,7 +399,7 @@ export function flattenSaaSIntoHome(groups: NavGroup[]): NavGroup[] {
 
 /**
  * Si el menú de sesión (BD) aún no tiene el grupo `sales`, lo añadimos junto a Inventario:
- * - Si "Clientes" sigue bajo `catalog`, lo movemos en memoria a un grupo Ventas.
+ * - Si "Clientes" sigue bajo `inventario`, lo movemos en memoria a un grupo Ventas.
  * - Si no hay clientes en catálogo, se reutiliza el ítem del menú estático.
  */
 export function ensureSalesNextToInventory(
@@ -320,26 +411,28 @@ export function ensureSalesNextToInventory(
     return sortNavGroupsForMainBar(groups);
   }
 
-  const catalog = groups.find((g) => g.id === 'catalog');
-  if (catalog) {
-    const custIdx = catalog.items.findIndex((it) => it.to === '/catalog/customers');
+  const inventory = groups.find((g) => g.id === 'inventario' || g.id === 'catalog');
+  if (inventory) {
+    const custIdx = inventory.items.findIndex(
+      (it) => it.to === '/ventas/customers' || it.to === '/inventario/customers' || it.to === '/catalog/customers',
+    );
     if (custIdx >= 0) {
-      const customerItem = catalog.items[custIdx]!;
-      const newCatalogItems = catalog.items.filter((_, i) => i !== custIdx);
-      const newCatalog: NavGroup = { ...catalog, items: newCatalogItems };
+      const customerItem = inventory.items[custIdx]!;
+      const newInventoryItems = inventory.items.filter((_, i) => i !== custIdx);
+      const newInventory: NavGroup = { ...inventory, items: newInventoryItems };
       const salesGroup: NavGroup = {
         id: 'sales',
         label: t('app.nav.group.sales'),
         icon: '🛒',
-        moduleKey: catalog.moduleKey ?? 'catalog',
+        moduleKey: 'ventas',
         sortOrder: defaultBarRank('sales') * 10,
-        items: [customerItem],
+        items: [{ ...customerItem, moduleKey: 'ventas' }],
       };
-      const withoutCatalog = groups.filter((g) => g.id !== 'catalog');
+      const withoutInventory = groups.filter((g) => g.id !== inventory.id);
       const next =
-        newCatalog.items.length > 0
-          ? [...withoutCatalog, newCatalog, salesGroup]
-          : [...withoutCatalog, salesGroup];
+        newInventory.items.length > 0
+          ? [...withoutInventory, newInventory, salesGroup]
+          : [...withoutInventory, salesGroup];
       return sortNavGroupsForMainBar(next);
     }
   }
@@ -353,7 +446,7 @@ export function ensureSalesNextToInventory(
 }
 
 /** Grupos solo en menú estático (p. ej. Compras / RRHH) que la API de sesión aún no define. */
-const GROUPS_FILL_FROM_STATIC: readonly string[] = ['purchases', 'hr'];
+const GROUPS_FILL_FROM_STATIC: readonly string[] = ['purchases', 'hr', 'configuracion'];
 
 export function mergeMissingStaticNavGroups(
   groups: NavGroup[],

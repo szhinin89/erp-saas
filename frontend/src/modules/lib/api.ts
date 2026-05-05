@@ -46,6 +46,7 @@ api.interceptors.response.use(
       const url = (err.config?.url as string | undefined) ?? '';
       const isPublicAuth =
         url.includes('/api/auth/login') ||
+        url.includes('/api/auth/superadmin-login') ||
         url.includes('/api/auth/register') ||
         url.includes('/api/auth/password-reset') ||
         url.includes('/api/access/bootstrap-login') ||

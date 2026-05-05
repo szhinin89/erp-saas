@@ -1,0 +1,67 @@
+.sa-growthSection {
+  margin-top: 1rem;
+}
+
+.sa-growthIntro {
+  margin: 0 0 1rem;
+  max-width: 720px;
+}
+
+.sag-hint {
+  margin: 0 0 12px;
+}
+
+.sag-disclaimer {
+  margin: 0 0 16px;
+  max-width: 720px;
+}
+
+.sag-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 16px 0 8px;
+}
+
+.sag-tab {
+  appearance: none;
+  border: 1px solid var(--zh-border, #e2e8f0);
+  background: var(--zh-surface, #fff);
+  color: inherit;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.sag-tab:hover:not(:disabled) {
+  border-color: #94a3b8;
+}
+
+.sag-tab:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sag-tab--active {
+  border-color: #0ea5e9;
+  background: rgba(14, 165, 233, 0.08);
+  color: #0369a1;
+}
+
+.sag-meta {
+  margin: 12px 0 0;
+}
+
+.sag-chart {
+  width: 100%;
+  height: 340px;
+  min-height: 280px;
+}
+
+@media (max-width: 640px) {
+  .sag-chart {
+    height: 300px;
+  }
+}

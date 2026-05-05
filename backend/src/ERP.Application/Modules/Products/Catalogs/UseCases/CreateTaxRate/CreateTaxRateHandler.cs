@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Products.Catalogs.DTOs;
+using MediatR;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Products.Entities;
@@ -7,7 +8,7 @@ using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Products.Catalogs.UseCases.CreateTaxRate;
 
-public class CreateTaxRateHandler
+public class CreateTaxRateHandler : IRequestHandler<CreateTaxRateCommand, Result<TaxRateDto>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
@@ -26,7 +27,10 @@ public class CreateTaxRateHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<TaxRateDto>> HandleAsync(CreateTaxRateCommand command, CancellationToken ct = default)
+    public Task<Result<TaxRateDto>> HandleAsync(CreateTaxRateCommand command, CancellationToken ct = default)
+        => Handle(command, ct);
+
+    public async Task<Result<TaxRateDto>> Handle(CreateTaxRateCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId = _currentUser.UserId;
@@ -38,7 +42,7 @@ public class CreateTaxRateHandler
             userId,
             _currentUser.Email,
             _currentUser.FullName,
-            module: "catalog",
+            module: "inventario",
             action: "taxRate.create",
             entityType: "TaxRate",
             entityId: entity.Id,

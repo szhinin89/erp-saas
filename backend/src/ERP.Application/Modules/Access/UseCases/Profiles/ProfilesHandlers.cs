@@ -1,10 +1,11 @@
 using ERP.Application.Common;
+using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 
 namespace ERP.Application.Access.UseCases.Profiles;
 
-public class GetProfilesHandler
+public class GetProfilesHandler : IRequestHandler<GetProfilesQuery, Result<IReadOnlyList<ProfileDto>>>
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _tenant;
@@ -15,17 +16,20 @@ public class GetProfilesHandler
         _tenant = tenant;
     }
 
-    public async Task<Result<IReadOnlyList<ProfileDto>>> HandleAsync(bool onlyActive, CancellationToken ct = default)
+    public Task<Result<IReadOnlyList<ProfileDto>>> HandleAsync(bool onlyActive, CancellationToken ct = default)
+        => Handle(new GetProfilesQuery(onlyActive), ct);
+
+    public async Task<Result<IReadOnlyList<ProfileDto>>> Handle(GetProfilesQuery request, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
-        var items = await _repo.GetProfilesByTenantAsync(tenantId, onlyActive, ct);
+        var items = await _repo.GetProfilesByTenantAsync(tenantId, request.OnlyActive, ct);
         return Result<IReadOnlyList<ProfileDto>>.Success(items
             .Select(p => new ProfileDto(p.Id, p.Name, p.Description, p.IsActive))
             .ToList());
     }
 }
 
-public class CreateProfileHandler
+public class CreateProfileHandler : IRequestHandler<CreateProfileCommand, Result<ProfileDto>>
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _tenant;
@@ -38,7 +42,10 @@ public class CreateProfileHandler
         _user = user;
     }
 
-    public async Task<Result<ProfileDto>> HandleAsync(CreateProfileCommand cmd, CancellationToken ct = default)
+    public Task<Result<ProfileDto>> HandleAsync(CreateProfileCommand cmd, CancellationToken ct = default)
+        => Handle(cmd, ct);
+
+    public async Task<Result<ProfileDto>> Handle(CreateProfileCommand cmd, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(cmd.Name))
             return Result<ProfileDto>.Failure("Nombre requerido.");
@@ -51,7 +58,7 @@ public class CreateProfileHandler
     }
 }
 
-public class UpdateProfileHandler
+public class UpdateProfileHandler : IRequestHandler<UpdateProfileCommand, Result<ProfileDto>>
 {
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _tenant;
@@ -64,7 +71,10 @@ public class UpdateProfileHandler
         _user = user;
     }
 
-    public async Task<Result<ProfileDto>> HandleAsync(UpdateProfileCommand cmd, CancellationToken ct = default)
+    public Task<Result<ProfileDto>> HandleAsync(UpdateProfileCommand cmd, CancellationToken ct = default)
+        => Handle(cmd, ct);
+
+    public async Task<Result<ProfileDto>> Handle(UpdateProfileCommand cmd, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var profile = await _repo.GetProfileByIdAsync(tenantId, cmd.ProfileId, ct);

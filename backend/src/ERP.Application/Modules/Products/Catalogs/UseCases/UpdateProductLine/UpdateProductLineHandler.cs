@@ -48,7 +48,7 @@ public class UpdateProductLineHandler
             userId,
             _currentUser.Email,
             _currentUser.FullName,
-            module: "catalog",
+            module: "inventario",
             action: "productLine.update",
             entityType: "ProductLine",
             entityId: entity.Id,

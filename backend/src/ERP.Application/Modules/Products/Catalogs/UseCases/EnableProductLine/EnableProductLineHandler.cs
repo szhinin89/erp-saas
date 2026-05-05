@@ -43,7 +43,7 @@ public class EnableProductLineHandler
             userId,
             _currentUser.Email,
             _currentUser.FullName,
-            module: "catalog",
+            module: "inventario",
             action: "productLine.enable",
             entityType: "ProductLine",
             entityId: entity.Id,

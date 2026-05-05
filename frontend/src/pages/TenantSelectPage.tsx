@@ -6,7 +6,8 @@ import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
 import type { AuthResponse } from '../types/auth';
 import { useI18n } from '../i18n/i18n';
-import { ZHBtn, ZHFormAlert } from '../components/zh/ZHForm';
+import { ZHBtn } from '../components/zh/ZHForm';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { ZHCenteredCard } from '../components/zh/ZHCenteredCard';
 import './TenantSelectPage.css';
 
@@ -109,7 +110,7 @@ export function TenantSelectPage() {
           disabled={loading}
         />
 
-        {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
+        {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
         <div className="tenant-list">
           {filtered.map((x) => (

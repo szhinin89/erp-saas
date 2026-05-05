@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Fragment, useEffect, useMemo, useRef, useState, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuthStore } from '../store/authStore';
@@ -9,6 +9,7 @@ import { accessService } from '../services/accessService';
 import { superAdminService } from '../services/superAdminService';
 import { ZHAppTenantHeader } from './zh/ZHAppTenantHeader';
 import {
+  buildGlobalSuperAdminNavGroups,
   buildNavGroups,
   ensureSalesNextToInventory,
   flattenAccessIntoSecurity,
@@ -18,9 +19,85 @@ import {
   mergeSuperAdminNavExtrasIntoHome,
   type NavItem,
 } from '../nav/navConfig';
+import { GLOBAL_TENANT_ID } from '../constants/tenantIds';
 import { useDeployment } from '../deployment/DeploymentContext';
 import type { SessionMenuGroupDto } from '../types/access';
 import './AppLayout.css';
+
+/** True si la ruta actual coincide con este ítem o con algún descendiente (menú anidado). */
+function navSubtreeMatchesPath(it: NavItem, pathname: string): boolean {
+  if (it.to) {
+    const ok = pathname === it.to || (it.to.length > 1 && pathname.startsWith(`${it.to}/`));
+    if (ok) return true;
+  }
+  return it.children?.some((c) => navSubtreeMatchesPath(c, pathname)) ?? false;
+}
+
+/** Ramas con hijos (p. ej. Administración de ítems): cerradas al abrir el menú; clic en la fila despliega Nuevo, Marca, … */
+function MainMenuBranchRow({
+  it,
+  depth,
+  onClose,
+  isFavorite,
+  toggleFavorite,
+  t,
+  showFavoriteStars,
+}: {
+  it: NavItem;
+  depth: number;
+  onClose: () => void;
+  isFavorite: (to: string) => boolean;
+  toggleFavorite: (item: NavItem) => void;
+  t: (key: string) => string;
+  showFavoriteStars: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="app-mainmenu-branchRoot">
+      <div className={`app-mainmenu-row${depth > 0 ? ' is-nested' : ''}`}>
+        <button
+          type="button"
+          className="app-mainmenu-link app-mainmenu-navBtn app-mainmenu-branchToggle"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((v) => !v)}
+        >
+          <span className="app-mainmenu-branchCaret" aria-hidden>
+            {expanded ? '▾' : '▸'}
+          </span>
+          <span className="app-mainmenu-branchLabel">{it.label}</span>
+        </button>
+        {it.to && showFavoriteStars ? (
+          <button
+            type="button"
+            className={`app-mainmenu-fav${isFavorite(it.to) ? ' is-on' : ''}`}
+            aria-label={isFavorite(it.to) ? t('app.favorites.remove') : t('app.favorites.add')}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleFavorite(it);
+            }}
+          >
+            {isFavorite(it.to) ? '★' : '☆'}
+          </button>
+        ) : null}
+      </div>
+      {expanded ? (
+        <div className="app-mainmenu-branchChildren">
+          <MainMenuList
+            items={it.children!}
+            depth={depth + 1}
+            onClose={onClose}
+            isFavorite={isFavorite}
+            toggleFavorite={toggleFavorite}
+            t={t}
+            showFavoriteStars={showFavoriteStars}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 function MainMenuList({
   items,
@@ -29,6 +106,7 @@ function MainMenuList({
   isFavorite,
   toggleFavorite,
   t,
+  showFavoriteStars,
 }: {
   items: NavItem[];
   depth: number;
@@ -36,46 +114,61 @@ function MainMenuList({
   isFavorite: (to: string) => boolean;
   toggleFavorite: (item: NavItem) => void;
   t: (key: string) => string;
+  showFavoriteStars: boolean;
 }) {
+  const navigate = useNavigate();
+
   return (
     <>
-      {items.map((it, idx) => (
-        <Fragment key={`${depth}-${it.to}-${idx}`}>
-          <div className={`app-mainmenu-row${depth > 0 ? ' is-nested' : ''}`}>
-            {it.children?.length ? (
-              <span className="app-mainmenu-link app-mainmenu-parent">{it.label}</span>
-            ) : (
-              <NavLink to={it.to} className="app-mainmenu-link" onClick={onClose}>
-                {it.label}
-              </NavLink>
-            )}
-            {!it.children?.length ? (
-              <button
-                type="button"
-                className={`app-mainmenu-fav${isFavorite(it.to) ? ' is-on' : ''}`}
-                aria-label={isFavorite(it.to) ? t('app.favorites.remove') : t('app.favorites.add')}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleFavorite(it);
-                }}
-              >
-                {isFavorite(it.to) ? '★' : '☆'}
-              </button>
-            ) : null}
-          </div>
-          {it.children?.length ? (
-            <MainMenuList
-              items={it.children}
-              depth={depth + 1}
-              onClose={onClose}
-              isFavorite={isFavorite}
-              toggleFavorite={toggleFavorite}
-              t={t}
-            />
-          ) : null}
-        </Fragment>
-      ))}
+      {items.map((it, idx) =>
+        it.children?.length ? (
+          <MainMenuBranchRow
+            key={`${depth}-b-${idx}-${it.label}`}
+            it={it}
+            depth={depth}
+            onClose={onClose}
+            isFavorite={isFavorite}
+            toggleFavorite={toggleFavorite}
+            t={t}
+            showFavoriteStars={showFavoriteStars}
+          />
+        ) : (
+          <Fragment key={`${depth}-${it.label}-${it.to}-${idx}`}>
+            <div className={`app-mainmenu-row${depth > 0 ? ' is-nested' : ''}`}>
+              {it.to ? (
+                <button
+                  type="button"
+                  className="app-mainmenu-link app-mainmenu-navBtn"
+                  onClick={() => {
+                    navigate(it.to);
+                    onClose();
+                  }}
+                >
+                  {it.label}
+                </button>
+              ) : (
+                <span className="app-mainmenu-link app-mainmenu-parent" title={t('app.layout.menuMissingRoute')}>
+                  {it.label}
+                </span>
+              )}
+              {it.to && showFavoriteStars ? (
+                <button
+                  type="button"
+                  className={`app-mainmenu-fav${isFavorite(it.to) ? ' is-on' : ''}`}
+                  aria-label={isFavorite(it.to) ? t('app.favorites.remove') : t('app.favorites.add')}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleFavorite(it);
+                  }}
+                >
+                  {isFavorite(it.to) ? '★' : '☆'}
+                </button>
+              ) : null}
+            </div>
+          </Fragment>
+        ),
+      )}
     </>
   );
 }
@@ -96,8 +189,17 @@ export function AppLayout() {
   const [superadminReturningGlobal, setSuperadminReturningGlobal] = useState(false);
   const [sessionMenuDto, setSessionMenuDto] = useState<SessionMenuGroupDto[] | undefined>(undefined);
 
+  const isGlobalSuperAdmin = useMemo(
+    () => (user?.role ?? '') === 'SuperAdmin' && (user?.tenantId ?? '') === GLOBAL_TENANT_ID,
+    [user?.role, user?.tenantId],
+  );
+
   useEffect(() => {
     if (!user) {
+      startTransition(() => setSessionMenuDto(undefined));
+      return;
+    }
+    if (isGlobalSuperAdmin) {
       startTransition(() => setSessionMenuDto(undefined));
       return;
     }
@@ -113,10 +215,14 @@ export function AppLayout() {
     return () => {
       cancelled = true;
     };
-  }, [user?.tenantId, user?.userId]);
+  }, [user, isGlobalSuperAdmin]);
 
   const groups = useMemo(() => {
     const opts = { superAdminPanelEnabled };
+    if (isGlobalSuperAdmin) {
+      if (!superAdminPanelEnabled) return [];
+      return buildGlobalSuperAdminNavGroups(t, opts);
+    }
     const raw = mergeSuperAdminNavExtrasIntoHome(
       sessionMenuDto !== undefined && sessionMenuDto.length > 0
         ? mapSessionMenuToNavGroups(sessionMenuDto, t, opts)
@@ -129,17 +235,15 @@ export function AppLayout() {
       t,
       opts,
     );
-  }, [sessionMenuDto, t, superAdminPanelEnabled]);
+  }, [sessionMenuDto, t, superAdminPanelEnabled, isGlobalSuperAdmin]);
 
   // Auto-recupera permisos después de refresh/hidratación.
   useEffect(() => {
     let cancelled = false;
     const tenantId = user?.tenantId ?? '';
-    const isGlobalSuperAdmin =
-      (user?.role ?? '') === 'SuperAdmin' &&
-      tenantId === '00000000-0000-0000-0000-000000000000';
+    const globalSa = (user?.role ?? '') === 'SuperAdmin' && tenantId === GLOBAL_TENANT_ID;
 
-    if (!user || isGlobalSuperAdmin) return;
+    if (!user || globalSa) return;
     if (permissions.length > 0) return;
 
     void Promise.resolve().then(async () => {
@@ -195,9 +299,12 @@ export function AppLayout() {
 
   const isFavorite = (to: string) => favorites.some((f) => f.to === to);
 
-  const visibleGroups = (() => {
+  const visibleGroups = useMemo(() => {
     const byRole = groups.filter((g) => !g.roles || (user?.role ? g.roles.includes(user.role) : false));
-    if (user?.role === 'SuperAdmin') return byRole;
+
+    if (isGlobalSuperAdmin) {
+      return byRole.filter((g) => g.items.length > 0);
+    }
 
     const moduleEntitled = (key?: string) => {
       if (!key) return true;
@@ -224,13 +331,13 @@ export function AppLayout() {
     return bySubscription
       .map((g) => ({ ...g, items: g.items.filter(itemVisible) }))
       .filter((g) => g.items.length > 0);
-  })();
+  }, [groups, user, isGlobalSuperAdmin, enabledModules, permissions, permsHydrated, hasPerm]);
 
   const activeGroupIds = useMemo(() => {
     const path = location.pathname;
     const ids = new Set<string>();
     for (const g of visibleGroups) {
-      if (g.items.some((it) => path === it.to || path.startsWith(it.to + '/'))) ids.add(g.id);
+      if (g.items.some((it) => navSubtreeMatchesPath(it, path))) ids.add(g.id);
     }
     return ids;
   }, [location.pathname, visibleGroups]);
@@ -248,7 +355,7 @@ export function AppLayout() {
 
   const [mainMenuOpenId, setMainMenuOpenId] = useState<string | null>(null);
   const [mainMenuPos, setMainMenuPos] = useState<{ top: number; left: number } | null>(null);
-  const mainMenuAnchorRef = useRef<HTMLButtonElement | null>(null);
+  const mainMenuBarRef = useRef<HTMLDivElement | null>(null);
   const mainMenuPopoverRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -262,10 +369,10 @@ export function AppLayout() {
     const onDown = (e: PointerEvent) => {
       const target = e.target;
       if (!(target instanceof Node)) return;
-      const anchor = mainMenuAnchorRef.current;
+      const bar = mainMenuBarRef.current;
       const popEl = mainMenuPopoverRef.current;
-      if (anchor && anchor.contains(target)) return;
-      if (popEl && popEl.contains(target)) return;
+      if (bar?.contains(target)) return;
+      if (popEl?.contains(target)) return;
       setMainMenuOpenId(null);
     };
     const onKey = (e: KeyboardEvent) => {
@@ -295,7 +402,7 @@ export function AppLayout() {
     if (superadminReturningGlobal) return;
     setSuperadminReturningGlobal(true);
     try {
-      const auth = await superAdminService.switchTenant('00000000-0000-0000-0000-000000000000');
+      const auth = await superAdminService.switchTenant(GLOBAL_TENANT_ID);
       localStorage.removeItem('superadmin-impersonation-tenant-name');
       login(auth);
       clearPermissions();
@@ -310,7 +417,7 @@ export function AppLayout() {
   return (
     <div className="layout">
       <main className="content">
-        {user?.role === 'SuperAdmin' && user.tenantId && user.tenantId !== '00000000-0000-0000-0000-000000000000' && (
+        {user?.role === 'SuperAdmin' && user.tenantId && user.tenantId !== GLOBAL_TENANT_ID && (
           <div className={`superadmin-banner${superadminBannerOpen ? ' is-open' : ''}`}>
             <button
               type="button"
@@ -350,7 +457,7 @@ export function AppLayout() {
             rightExtra={<LanguageSwitcher />}
             bottomLeft={
               mainMenuGroups.length > 0 ? (
-                <div className="app-mainmenu" role="navigation" aria-label={t('app.layout.mainNav')}>
+                <div ref={mainMenuBarRef} className="app-mainmenu" role="navigation" aria-label={t('app.layout.mainNav')}>
                   {mainMenuGroups.map((g) => (
                     <button
                       key={g.id}
@@ -361,9 +468,12 @@ export function AppLayout() {
                       onClick={(e) => {
                         const willOpen = mainMenuOpenId !== g.id;
                         setMainMenuOpenId(willOpen ? g.id : null);
-                        mainMenuAnchorRef.current = e.currentTarget;
-                        const r = e.currentTarget.getBoundingClientRect();
-                        setMainMenuPos({ top: Math.round(r.bottom + 10), left: Math.round(r.left) });
+                        if (willOpen) {
+                          const r = e.currentTarget.getBoundingClientRect();
+                          setMainMenuPos({ top: Math.round(r.bottom + 10), left: Math.round(r.left) });
+                        } else {
+                          setMainMenuPos(null);
+                        }
                       }}
                     >
                       {g.label}
@@ -378,11 +488,10 @@ export function AppLayout() {
         {mainMenuOpenId && mainMenuPos
           ? createPortal(
               <div
+                ref={mainMenuPopoverRef}
                 className="app-mainmenu-popover"
                 role="menu"
                 aria-label={t('app.layout.groupMenu')}
-                ref={mainMenuPopoverRef}
-                data-pos="fixed"
                 data-top={mainMenuPos.top}
                 data-left={mainMenuPos.left}
               >
@@ -393,9 +502,10 @@ export function AppLayout() {
                   isFavorite={isFavorite}
                   toggleFavorite={toggleFavorite}
                   t={t}
+                  showFavoriteStars={!isGlobalSuperAdmin}
                 />
               </div>,
-              document.body
+              document.body,
             )
           : null}
         <Outlet />

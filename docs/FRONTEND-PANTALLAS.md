@@ -55,9 +55,13 @@ Fuente de verdad actual:
 
 ## SaaS (SuperAdmin)
 - **Empresas**: `/companies` → `src/pages/CompaniesPage.tsx`  
-  - Rol: `SuperAdmin`
+  - Rol: `SuperAdmin`  
+  - Pestañas: **Datos** (empresa + admin), **Plan y módulos** (`TenantSubscriptionEditor`, catálogo por menú `TenantSubscriptionMenuCatalog`), **Plan ↔ menú** (`CompaniesPlanMenuAssignment`), **Auditoría**.  
+  - Contratos API y emparejamiento menú ↔ features: `docs/COMPANIES-PLAN-MENU-ADMIN.md`
 - **Panel Global**: `/superadmin` → `src/pages/SuperAdminPanelPage.tsx`  
   - Rol: `SuperAdmin`
+- **Menú de navegación (SuperAdmin)**: `/superadmin/navigation-menu` → `src/pages/SuperAdminNavMenuPage.tsx`  
+  - Rol: `SuperAdmin` (árbol alineado con el catálogo SaaS en empresas)
 - **Formularios (SuperAdmin)**: `/superadmin/forms` → `src/pages/SuperAdminFormsPage.tsx`  
   - Rol: `SuperAdmin`
 

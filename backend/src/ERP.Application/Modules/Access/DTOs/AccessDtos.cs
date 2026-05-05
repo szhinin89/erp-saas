@@ -26,3 +26,13 @@ public record SessionResponseDto(
     IReadOnlyList<string> EnabledModules
 );
 
+public record SuperAdminTenantItemDto(
+    Guid Id,
+    string Name,
+    string Slug,
+    bool IsActive,
+    string? PlanCode,
+    IReadOnlyList<string> EnabledModules,
+    bool HasModuleRestrictions
+);
+

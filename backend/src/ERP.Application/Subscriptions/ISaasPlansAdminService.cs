@@ -23,4 +23,7 @@ public interface ISaasPlansAdminService
     Task<Result<Guid>> CreateFeatureDefinitionAsync(CreateSaasFeatureDefinitionRequest request, CancellationToken ct = default);
 
     Task<Result<object?>> UpdateFeatureDefinitionAsync(Guid featureId, UpdateSaasFeatureDefinitionRequest request, CancellationToken ct = default);
+
+    /// <summary>Elimina una definición y filas dependientes (planes, overrides, uso, vínculo en menú).</summary>
+    Task<Result<object?>> DeleteFeatureDefinitionAsync(Guid featureId, CancellationToken ct = default);
 }

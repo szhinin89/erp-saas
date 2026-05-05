@@ -75,7 +75,7 @@ public sealed class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustome
             userId,
             _user.Email,
             _user.FullName,
-            module: "catalog",
+            module: "ventas",
             action: "customer.update",
             entityType: "Customer",
             entityId: entity.Id,

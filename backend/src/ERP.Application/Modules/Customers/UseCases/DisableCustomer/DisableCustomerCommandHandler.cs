@@ -46,7 +46,7 @@ public sealed class DisableCustomerCommandHandler : IRequestHandler<DisableCusto
             _user.UserId,
             _user.Email,
             _user.FullName,
-            module: "catalog",
+            module: "ventas",
             action: "customer.disable",
             entityType: "Customer",
             entityId: entity.Id,

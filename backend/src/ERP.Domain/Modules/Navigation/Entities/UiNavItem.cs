@@ -11,6 +11,8 @@ public sealed class UiNavItem
     public Guid? ParentItemId { get; private set; }
     public string RoutePath { get; private set; } = null!;
     public string LabelKey { get; private set; } = null!;
+    /// <summary>Texto mostrado si no se usa solo i18n (<c>LabelKey</c>). Opcional; p. ej. ítems creados desde SuperAdmin.</summary>
+    public string? DisplayLabel { get; private set; }
     public int SortOrder { get; private set; }
     public string? ModuleKey { get; private set; }
     public string? PermissionKey { get; private set; }
@@ -18,6 +20,8 @@ public sealed class UiNavItem
     public string? PermissionKeysAnyJson { get; private set; }
     public string? RolesCsv { get; private set; }
     public bool IsActive { get; private set; }
+    /// <summary>Vínculo opcional al catálogo SaaS (qué feature comercial representa este ítem en Plan ↔ menú).</summary>
+    public Guid? SaasFeatureDefinitionId { get; private set; }
 
     private UiNavItem() { }
 
@@ -32,7 +36,9 @@ public sealed class UiNavItem
         string? permissionKeysAnyJson,
         string? rolesCsv,
         bool isActive = true,
-        Guid? parentItemId = null)
+        Guid? parentItemId = null,
+        string? displayLabel = null,
+        Guid? saasFeatureDefinitionId = null)
     {
         return new UiNavItem
         {
@@ -41,12 +47,16 @@ public sealed class UiNavItem
             ParentItemId = parentItemId,
             RoutePath = (routePath ?? string.Empty).Trim(),
             LabelKey = (labelKey ?? string.Empty).Trim(),
+            DisplayLabel = string.IsNullOrWhiteSpace(displayLabel) ? null : displayLabel.Trim(),
             SortOrder = sortOrder,
             ModuleKey = string.IsNullOrWhiteSpace(moduleKey) ? null : moduleKey.Trim().ToLowerInvariant(),
             PermissionKey = string.IsNullOrWhiteSpace(permissionKey) ? null : permissionKey.Trim(),
             PermissionKeysAnyJson = string.IsNullOrWhiteSpace(permissionKeysAnyJson) ? null : permissionKeysAnyJson.Trim(),
             RolesCsv = string.IsNullOrWhiteSpace(rolesCsv) ? null : rolesCsv.Trim(),
             IsActive = isActive,
+            SaasFeatureDefinitionId = saasFeatureDefinitionId,
         };
     }
+
+    public void SetSaasFeatureDefinitionId(Guid? saasFeatureDefinitionId) => SaasFeatureDefinitionId = saasFeatureDefinitionId;
 }

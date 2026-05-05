@@ -5,12 +5,13 @@ import { accountingService, type CreateAccountRequest } from '../services/accoun
 import { useAsync } from '../hooks/useAsync';
 import { documentStatusLabel, DocumentStatus } from '../types/accounting';
 import {
-  PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage,
+  PageShell, TableCard, EmptyState, LoadingState, Badge, NoAccessPage,
 } from '../components/PageShell';
 import { CreateJournalEntryModal } from '../components/CreateJournalEntryModal';
 import './AccountingPage.css';
 import { useI18n } from '../i18n/i18n';
-import { ZHBtn, ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert } from '../components/zh/ZHForm';
+import { ZHBtn, ZHFormBody, ZHFormSection, ZHGrid, ZHField } from '../components/zh/ZHForm';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { ZHColSpan } from '../components/zh/ZHLayout';
 import ZHSearchBar from '../components/shared/ZHSearchBar';
 import { useAuthStore } from '../store/authStore';
@@ -183,7 +184,7 @@ export function AccountingPage() {
       {displayTab === 'accounts' && canViewAccounts && (
         <>
           <TableCard>
-            {formError ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={formError} /> : null}
+            {formError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={formError} /> : null}
             <div className="zh-form-tabs" role="tablist">
               {canCreateAccount ? (
                 <button type="button" className={activeAccountSubTab === 'data' ? 'is-active' : ''} onClick={() => setAccountSubTab('data')}>
@@ -281,7 +282,7 @@ export function AccountingPage() {
                   />
                 </div>
                 {accounts.loading && <LoadingState />}
-                {accounts.error && <ErrorState message={accounts.error} />}
+                {accounts.error && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={accounts.error} />}
                 {!accounts.loading && !accounts.error && accounts.data?.length === 0 && (
                   <EmptyState message={t('accounting.accounts.empty')} />
                 )}
@@ -326,7 +327,7 @@ export function AccountingPage() {
       {displayTab === 'journal' && canViewJournal && (
         <>
           {journalEntries.loading && <LoadingState />}
-          {journalEntries.error   && <ErrorState message={journalEntries.error} />}
+          {journalEntries.error && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={journalEntries.error} />}
           {!journalEntries.loading && !journalEntries.error && journalEntries.data?.length === 0 && (
             <EmptyState message={t('accounting.journal.empty')} />
           )}

@@ -10,6 +10,7 @@ public sealed class SaasFeatureDefinition
 {
     public const int CodeMaxLen = 64;
     public const int NameMaxLen = 200;
+    public const int DescriptionMaxLen = 2000;
     public const int ResourceRefMaxLen = 128;
 
     public Guid Id { get; private set; }
@@ -41,12 +42,16 @@ public sealed class SaasFeatureDefinition
         if (rr is { Length: > ResourceRefMaxLen })
             throw new ArgumentException("ResourceRef demasiado largo.", nameof(resourceRef));
 
+        var desc = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+        if (desc is { Length: > DescriptionMaxLen })
+            throw new ArgumentException("Descripción demasiado larga.", nameof(description));
+
         return new SaasFeatureDefinition
         {
             Id = Guid.NewGuid(),
             Code = c,
             Name = (name ?? string.Empty).Trim(),
-            Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
+            Description = desc,
             IsMetered = isMetered,
             Kind = kind,
             ResourceRef = rr,
@@ -60,7 +65,10 @@ public sealed class SaasFeatureDefinition
             throw new ArgumentException("ResourceRef demasiado largo.", nameof(resourceRef));
 
         Name = (name ?? string.Empty).Trim();
-        Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+        var desc = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+        if (desc is { Length: > DescriptionMaxLen })
+            throw new ArgumentException("Descripción demasiado larga.", nameof(description));
+        Description = desc;
         IsMetered = isMetered;
         Kind = kind;
         ResourceRef = rr;

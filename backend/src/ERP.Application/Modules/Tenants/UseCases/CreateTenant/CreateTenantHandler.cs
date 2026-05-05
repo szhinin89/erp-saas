@@ -54,20 +54,6 @@ public class CreateTenantHandler
         await _repository.AddAsync(tenant, ct);
         await _repository.SaveChangesAsync(ct);
 
-        return Result<TenantDto>.Success(new TenantDto(
-            tenant.Id,
-            tenant.Name,
-            tenant.Slug,
-            tenant.IsActive,
-            tenant.CreatedAt,
-            tenant.Ruc,
-            tenant.ShortName,
-            tenant.TradeName,
-            tenant.Dinardap,
-            tenant.LogoUrl,
-            tenant.DisplayOrder,
-            tenant.Priority,
-            tenant.PlanCode,
-            TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)));
+        return Result<TenantDto>.Success(TenantDto.FromTenant(tenant));
     }
 }

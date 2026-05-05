@@ -1,3 +1,6 @@
+using MediatR;
+using ERP.Application.Common;
+
 namespace ERP.Application.Access.UseCases.UpsertMembership;
 
 public record UpsertMembershipCommand(
@@ -5,5 +8,5 @@ public record UpsertMembershipCommand(
     string UserEmail,
     string Role,
     Guid? ProfileId = null
-);
+) : IRequest<Result<object>>;
 

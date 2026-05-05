@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { PageShell, TableCard, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { useAuthStore } from '../store/authStore';
@@ -65,20 +66,20 @@ export function CatalogStructurePage() {
   const isAdmin = role === 'Admin' || role === 'SuperAdmin';
   const hasPerm = usePermissionsStore((s) => s.has);
 
-  const canViewLines = isAdmin || hasPerm('catalog.productLines.view');
-  const canViewCategories = isAdmin || hasPerm('catalog.categories.view');
-  const canViewSubcategories = isAdmin || hasPerm('catalog.subcategories.view');
+  const canViewLines = isAdmin || hasPerm('inventario.productLines.view');
+  const canViewCategories = isAdmin || hasPerm('inventario.categories.view');
+  const canViewSubcategories = isAdmin || hasPerm('inventario.subcategories.view');
   const canView = canViewLines && canViewCategories && canViewSubcategories;
 
-  const canCreateLines = isAdmin || hasPerm('catalog.productLines.create');
-  const canCreateCategories = isAdmin || hasPerm('catalog.categories.create');
-  const canCreateSubcategories = isAdmin || hasPerm('catalog.subcategories.create');
-  const canUpdateLines = isAdmin || hasPerm('catalog.productLines.update');
-  const canDeleteLines = isAdmin || hasPerm('catalog.productLines.delete');
-  const canUpdateCategories = isAdmin || hasPerm('catalog.categories.update');
-  const canDeleteCategories = isAdmin || hasPerm('catalog.categories.delete');
-  const canUpdateSubcategories = isAdmin || hasPerm('catalog.subcategories.update');
-  const canDeleteSubcategories = isAdmin || hasPerm('catalog.subcategories.delete');
+  const canCreateLines = isAdmin || hasPerm('inventario.productLines.create');
+  const canCreateCategories = isAdmin || hasPerm('inventario.categories.create');
+  const canCreateSubcategories = isAdmin || hasPerm('inventario.subcategories.create');
+  const canUpdateLines = isAdmin || hasPerm('inventario.productLines.update');
+  const canDeleteLines = isAdmin || hasPerm('inventario.productLines.delete');
+  const canUpdateCategories = isAdmin || hasPerm('inventario.categories.update');
+  const canDeleteCategories = isAdmin || hasPerm('inventario.categories.delete');
+  const canUpdateSubcategories = isAdmin || hasPerm('inventario.subcategories.update');
+  const canDeleteSubcategories = isAdmin || hasPerm('inventario.subcategories.delete');
 
   const [tab, setTab] = useState<Tab>('line');
   const [error, setError] = useState('');
@@ -190,7 +191,7 @@ export function CatalogStructurePage() {
   const loadMyActivity = useCallback(async () => {
     setActivityLoading(true);
     try {
-      const data = await activityService.my({ module: 'catalog', page: 1, pageSize: 12 });
+      const data = await activityService.my({ module: 'inventario', page: 1, pageSize: 12 });
       setActivity(data ?? []);
     } catch {
       setActivity([]);
@@ -522,9 +523,9 @@ export function CatalogStructurePage() {
   }
 
   return (
-    <PageShell kicker={t('app.nav.group.catalog')} title={t('catalog.structure.title')}>
+    <PageShell kicker={t('app.nav.group.inventario')} title={t('catalog.structure.title')}>
       <TableCard>
-        {error && <ErrorState message={error} />}
+        {error && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />}
 
         <ZHInlineRow className="zh-mb-10">
           <div className="zh-card-section-title">{t('catalog.structure.activityHistoryTitle')}</div>

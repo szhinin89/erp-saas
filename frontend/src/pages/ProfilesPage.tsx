@@ -5,7 +5,8 @@ import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
 import { profileService, type Profile } from '../services/profileService';
 import { PageShell, TableCard, EmptyState, LoadingState, NoAccessPage } from '../components/PageShell';
-import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHBtn } from '../components/zh/ZHForm';
+import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHBtn } from '../components/zh/ZHForm';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { ZHCardSection, ZHInlineRowRight, ZHActionsRow } from '../components/zh/ZHLayout';
 import ZHSearchBar from '../components/shared/ZHSearchBar';
 import { ZHFormCard } from '../components/zh/ZHFormCard';
@@ -43,46 +44,46 @@ export function ProfilesPage() {
 
   const permissionCatalog = useMemo(
     () => [
-      { key: 'catalog.products.view', label: t('profiles.perms.catalog.products.view') },
-      { key: 'catalog.products.create', label: t('profiles.perms.catalog.products.create') },
-      { key: 'catalog.products.update', label: t('profiles.perms.catalog.products.update') },
-      { key: 'catalog.products.delete', label: t('profiles.perms.catalog.products.delete') },
-      { key: 'catalog.customers.view', label: t('profiles.perms.catalog.customers.view') },
-      { key: 'catalog.customers.create', label: t('profiles.perms.catalog.customers.create') },
-      { key: 'catalog.customers.update', label: t('profiles.perms.catalog.customers.update') },
-      { key: 'catalog.customers.delete', label: t('profiles.perms.catalog.customers.delete') },
-      { key: 'catalog.brands.view', label: t('profiles.perms.catalog.brands.view') },
-      { key: 'catalog.brands.create', label: t('profiles.perms.catalog.brands.create') },
-      { key: 'catalog.brands.update', label: t('profiles.perms.catalog.brands.update') },
-      { key: 'catalog.brands.delete', label: t('profiles.perms.catalog.brands.delete') },
-      { key: 'catalog.productTypes.view', label: t('profiles.perms.catalog.productTypes.view') },
-      { key: 'catalog.productTypes.create', label: t('profiles.perms.catalog.productTypes.create') },
-      { key: 'catalog.productTypes.update', label: t('profiles.perms.catalog.productTypes.update') },
-      { key: 'catalog.productTypes.delete', label: t('profiles.perms.catalog.productTypes.delete') },
-      { key: 'catalog.units.view', label: t('profiles.perms.catalog.units.view') },
-      { key: 'catalog.units.create', label: t('profiles.perms.catalog.units.create') },
-      { key: 'catalog.units.update', label: t('profiles.perms.catalog.units.update') },
-      { key: 'catalog.units.delete', label: t('profiles.perms.catalog.units.delete') },
-      { key: 'catalog.taxRates.view', label: t('profiles.perms.catalog.taxRates.view') },
-      { key: 'catalog.taxRates.create', label: t('profiles.perms.catalog.taxRates.create') },
-      { key: 'catalog.taxRates.update', label: t('profiles.perms.catalog.taxRates.update') },
-      { key: 'catalog.taxRates.delete', label: t('profiles.perms.catalog.taxRates.delete') },
-      { key: 'catalog.tariffs.view', label: t('profiles.perms.catalog.tariffs.view') },
-      { key: 'catalog.tariffs.create', label: t('profiles.perms.catalog.tariffs.create') },
-      { key: 'catalog.tariffs.update', label: t('profiles.perms.catalog.tariffs.update') },
-      { key: 'catalog.tariffs.delete', label: t('profiles.perms.catalog.tariffs.delete') },
-      { key: 'catalog.productLines.view', label: t('profiles.perms.catalog.productLines.view') },
-      { key: 'catalog.productLines.create', label: t('profiles.perms.catalog.productLines.create') },
-      { key: 'catalog.productLines.update', label: t('profiles.perms.catalog.productLines.update') },
-      { key: 'catalog.productLines.delete', label: t('profiles.perms.catalog.productLines.delete') },
-      { key: 'catalog.categories.view', label: t('profiles.perms.catalog.categories.view') },
-      { key: 'catalog.categories.create', label: t('profiles.perms.catalog.categories.create') },
-      { key: 'catalog.categories.update', label: t('profiles.perms.catalog.categories.update') },
-      { key: 'catalog.categories.delete', label: t('profiles.perms.catalog.categories.delete') },
-      { key: 'catalog.subcategories.view', label: t('profiles.perms.catalog.subcategories.view') },
-      { key: 'catalog.subcategories.create', label: t('profiles.perms.catalog.subcategories.create') },
-      { key: 'catalog.subcategories.update', label: t('profiles.perms.catalog.subcategories.update') },
-      { key: 'catalog.subcategories.delete', label: t('profiles.perms.catalog.subcategories.delete') },
+      { key: 'inventario.products.view', label: t('profiles.perms.inventario.products.view') },
+      { key: 'inventario.products.create', label: t('profiles.perms.inventario.products.create') },
+      { key: 'inventario.products.update', label: t('profiles.perms.inventario.products.update') },
+      { key: 'inventario.products.delete', label: t('profiles.perms.inventario.products.delete') },
+      { key: 'ventas.customers.view', label: t('profiles.perms.ventas.customers.view') },
+      { key: 'ventas.customers.create', label: t('profiles.perms.ventas.customers.create') },
+      { key: 'ventas.customers.update', label: t('profiles.perms.ventas.customers.update') },
+      { key: 'ventas.customers.delete', label: t('profiles.perms.ventas.customers.delete') },
+      { key: 'inventario.brands.view', label: t('profiles.perms.inventario.brands.view') },
+      { key: 'inventario.brands.create', label: t('profiles.perms.inventario.brands.create') },
+      { key: 'inventario.brands.update', label: t('profiles.perms.inventario.brands.update') },
+      { key: 'inventario.brands.delete', label: t('profiles.perms.inventario.brands.delete') },
+      { key: 'inventario.productTypes.view', label: t('profiles.perms.inventario.productTypes.view') },
+      { key: 'inventario.productTypes.create', label: t('profiles.perms.inventario.productTypes.create') },
+      { key: 'inventario.productTypes.update', label: t('profiles.perms.inventario.productTypes.update') },
+      { key: 'inventario.productTypes.delete', label: t('profiles.perms.inventario.productTypes.delete') },
+      { key: 'inventario.units.view', label: t('profiles.perms.inventario.units.view') },
+      { key: 'inventario.units.create', label: t('profiles.perms.inventario.units.create') },
+      { key: 'inventario.units.update', label: t('profiles.perms.inventario.units.update') },
+      { key: 'inventario.units.delete', label: t('profiles.perms.inventario.units.delete') },
+      { key: 'inventario.taxRates.view', label: t('profiles.perms.inventario.taxRates.view') },
+      { key: 'inventario.taxRates.create', label: t('profiles.perms.inventario.taxRates.create') },
+      { key: 'inventario.taxRates.update', label: t('profiles.perms.inventario.taxRates.update') },
+      { key: 'inventario.taxRates.delete', label: t('profiles.perms.inventario.taxRates.delete') },
+      { key: 'inventario.tariffs.view', label: t('profiles.perms.inventario.tariffs.view') },
+      { key: 'inventario.tariffs.create', label: t('profiles.perms.inventario.tariffs.create') },
+      { key: 'inventario.tariffs.update', label: t('profiles.perms.inventario.tariffs.update') },
+      { key: 'inventario.tariffs.delete', label: t('profiles.perms.inventario.tariffs.delete') },
+      { key: 'inventario.productLines.view', label: t('profiles.perms.inventario.productLines.view') },
+      { key: 'inventario.productLines.create', label: t('profiles.perms.inventario.productLines.create') },
+      { key: 'inventario.productLines.update', label: t('profiles.perms.inventario.productLines.update') },
+      { key: 'inventario.productLines.delete', label: t('profiles.perms.inventario.productLines.delete') },
+      { key: 'inventario.categories.view', label: t('profiles.perms.inventario.categories.view') },
+      { key: 'inventario.categories.create', label: t('profiles.perms.inventario.categories.create') },
+      { key: 'inventario.categories.update', label: t('profiles.perms.inventario.categories.update') },
+      { key: 'inventario.categories.delete', label: t('profiles.perms.inventario.categories.delete') },
+      { key: 'inventario.subcategories.view', label: t('profiles.perms.inventario.subcategories.view') },
+      { key: 'inventario.subcategories.create', label: t('profiles.perms.inventario.subcategories.create') },
+      { key: 'inventario.subcategories.update', label: t('profiles.perms.inventario.subcategories.update') },
+      { key: 'inventario.subcategories.delete', label: t('profiles.perms.inventario.subcategories.delete') },
       { key: 'accounting.accounts.view', label: t('profiles.perms.accounting.accounts.view') },
       { key: 'accounting.accounts.create', label: t('profiles.perms.accounting.accounts.create') },
       { key: 'accounting.journal.view', label: t('profiles.perms.accounting.journal.view') },
@@ -203,7 +204,7 @@ export function ProfilesPage() {
 
   return (
     <PageShell
-      kicker={t('app.nav.group.security')}
+      kicker={t('app.nav.group.configuracion')}
       title={t('profiles.title')}
       subtitle={t('profiles.subtitle')}
       action={
@@ -219,7 +220,7 @@ export function ProfilesPage() {
       }
     >
       <TableCard>
-        {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
+        {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button type="button" className={tab === 'data' ? 'is-active' : ''} onClick={() => setTab('data')}>
             {t('common.formTab.data')}
@@ -325,7 +326,7 @@ export function ProfilesPage() {
                   <div className="subtle">{t('profiles.perms.subtitle')}</div>
                 </ZHCardSection>
 
-                {permError ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={permError} /> : null}
+                {permError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={permError} /> : null}
                 {permLoading ? (
                   <LoadingState />
                 ) : (

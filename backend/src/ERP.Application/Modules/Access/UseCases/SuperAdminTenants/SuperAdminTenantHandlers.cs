@@ -1,5 +1,6 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
+using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Audit.Entities;
@@ -9,7 +10,8 @@ using ERP.Domain.Tenants.Entities;
 
 namespace ERP.Application.Access.UseCases.SuperAdminTenants;
 
-public class SuperAdminCreateTenantWithAdminHandler
+/// <summary>Alta de empresa + Admin en <c>identity_users</c>/<c>memberships</c>; el Admin debe poder iniciar sesión y operar solo en ese tenant.</summary>
+public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdminCreateTenantWithAdminCommand, Result<SessionResponseDto>>
 {
     private readonly ITenantRepository _tenantRepository;
     private readonly IAccessRepository _accessRepository;
@@ -34,7 +36,10 @@ public class SuperAdminCreateTenantWithAdminHandler
         _deployment = deployment;
     }
 
-    public async Task<Result<SessionResponseDto>> HandleAsync(SuperAdminCreateTenantWithAdminCommand command, CancellationToken ct = default)
+    public Task<Result<SessionResponseDto>> HandleAsync(SuperAdminCreateTenantWithAdminCommand command, CancellationToken ct = default)
+        => Handle(command, ct);
+
+    public async Task<Result<SessionResponseDto>> Handle(SuperAdminCreateTenantWithAdminCommand command, CancellationToken ct)
     {
         var slug = command.TenantSlug.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(slug))
@@ -102,7 +107,7 @@ public class SuperAdminCreateTenantWithAdminHandler
             entityId: tenant.Id,
             description: $"{tenant.Name} ({tenant.Slug})"), ct);
 
-        await _tenantRepository.SaveChangesAsync(ct);
+        // Un solo SaveChanges (mismo DbContext): evita confusión y persiste tenant + identity + membership en una transacción.
         await _accessRepository.SaveChangesAsync(ct);
 
         var sessionToken = _tokenService.GenerateSessionToken(adminUser, tenant.Id, "Admin");
@@ -169,7 +174,6 @@ public class SuperAdminCreateTenantWithAdminHandler
             entityId: tenant.Id,
             description: $"{tenant.Name} ({tenant.Slug}); admin vinculado {email}"), ct);
 
-        await _tenantRepository.SaveChangesAsync(ct);
         await _accessRepository.SaveChangesAsync(ct);
 
         var sessionToken = _tokenService.GenerateSessionToken(existingUser, tenant.Id, "Admin");
@@ -182,5 +186,32 @@ public class SuperAdminCreateTenantWithAdminHandler
             Token: sessionToken,
             tenant.PlanCode,
             TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)));
+    }
+}
+
+public class GetSuperAdminTenantsHandler : IRequestHandler<GetSuperAdminTenantsQuery, Result<IReadOnlyList<SuperAdminTenantItemDto>>>
+{
+    private readonly ITenantRepository _tenantRepository;
+
+    public GetSuperAdminTenantsHandler(ITenantRepository tenantRepository)
+    {
+        _tenantRepository = tenantRepository;
+    }
+
+    public async Task<Result<IReadOnlyList<SuperAdminTenantItemDto>>> Handle(GetSuperAdminTenantsQuery request, CancellationToken ct)
+    {
+        var tenants = (await _tenantRepository.GetAllAsync(ct))
+            .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(t => new SuperAdminTenantItemDto(
+                t.Id,
+                t.Name,
+                t.Slug,
+                t.IsActive,
+                t.PlanCode,
+                TenantSubscriptionCatalog.GetEffectiveEnabledModules(t),
+                !string.IsNullOrWhiteSpace(t.EnabledModulesJson)))
+            .ToList();
+
+        return Result<IReadOnlyList<SuperAdminTenantItemDto>>.Success(tenants);
     }
 }

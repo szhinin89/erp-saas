@@ -1,12 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  EmptyState,
-  ErrorState,
-  LoadingState,
-  PageShell,
-  NoAccessPage,
-  TableCard,
-} from '../components/PageShell';
+import { EmptyState, LoadingState, PageShell, NoAccessPage, TableCard } from '../components/PageShell';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { useAuthStore } from '../store/authStore';
 import { securityService, type SecurityAdminMatrix, type SecurityUser } from '../services/securityService';
 import { formatApiError } from '../modules/lib/formatApiError';
@@ -127,7 +121,7 @@ export function SecuritySettingsPage() {
 
   return (
     <PageShell kicker={t('app.nav.group.security')} title={t('security.title')} subtitle={t('security.subtitle')}>
-      {error ? <ErrorState message={error} /> : null}
+      {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
       <TableCard>
         {loading ? (

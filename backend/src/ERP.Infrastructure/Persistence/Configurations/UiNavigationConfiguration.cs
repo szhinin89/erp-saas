@@ -1,4 +1,5 @@
 using ERP.Domain.Navigation.Entities;
+using ERP.Domain.Subscriptions.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -34,12 +35,20 @@ public sealed class UiNavItemConfiguration : IEntityTypeConfiguration<UiNavItem>
         builder.HasIndex(x => new { x.GroupId, x.ParentItemId, x.SortOrder });
         builder.Property(x => x.RoutePath).HasColumnName("route_path").HasMaxLength(512).IsRequired();
         builder.Property(x => x.LabelKey).HasColumnName("label_key").HasMaxLength(200).IsRequired();
+        builder.Property(x => x.DisplayLabel).HasColumnName("display_label").HasMaxLength(200);
         builder.Property(x => x.SortOrder).HasColumnName("sort_order");
         builder.Property(x => x.ModuleKey).HasColumnName("module_key").HasMaxLength(64);
         builder.Property(x => x.PermissionKey).HasColumnName("permission_key").HasMaxLength(128);
         builder.Property(x => x.PermissionKeysAnyJson).HasColumnName("permission_keys_any_json").HasMaxLength(2000);
         builder.Property(x => x.RolesCsv).HasColumnName("roles_csv").HasMaxLength(200);
         builder.Property(x => x.IsActive).HasColumnName("is_active");
+        builder.Property(x => x.SaasFeatureDefinitionId).HasColumnName("saas_feature_definition_id");
+        builder.HasIndex(x => x.SaasFeatureDefinitionId);
+
+        builder.HasOne<SaasFeatureDefinition>()
+            .WithMany()
+            .HasForeignKey(x => x.SaasFeatureDefinitionId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasOne<UiNavGroup>()
             .WithMany()

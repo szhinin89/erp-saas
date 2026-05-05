@@ -23,6 +23,7 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         builder.Property(t => t.LogoUrl).HasColumnName("logo_url").HasMaxLength(500);
         builder.Property(t => t.DisplayOrder).HasColumnName("display_order").IsRequired();
         builder.Property(t => t.Priority).HasColumnName("priority").IsRequired();
+        builder.Property(t => t.ElectronicBillingTrialEnabled).HasColumnName("electronic_billing_trial_enabled").IsRequired().HasDefaultValue(false);
         builder.Property(t => t.PlanCode).HasColumnName("plan_code").HasMaxLength(64);
         builder.Property(t => t.EnabledModulesJson).HasColumnName("enabled_modules").HasColumnType("text");
         builder.Property(t => t.CreatedAt).HasColumnName("created_at");

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { activityService, type UserActivityDto } from '../services/activityService';
 import { useI18n } from '../i18n/i18n';
-import { Badge, EmptyState, ErrorState, LoadingState } from './PageShell';
+import { Badge, EmptyState, LoadingState } from './PageShell';
+import { ZHPageNotice } from './zh/ZHPageNotice';
 import { formatApiError } from '../modules/lib/formatApiError';
 
 function actionVerbI18nKey(action: string): string {
@@ -65,7 +66,7 @@ export function EntityAuditPanel({ entityType, entityId, take = 10, refreshKey =
   }, [entityType, entityId, take, refreshKey]);
 
   if (loading) return <LoadingState />;
-  if (error) return <ErrorState message={error} />;
+  if (error) return <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />;
   if (!rows || rows.length === 0) return <EmptyState message={t('audit.empty')} />;
 
   return (

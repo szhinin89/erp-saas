@@ -25,10 +25,10 @@ public sealed class TenantSubscriptionCatalogTests
             "Co",
             "co",
             Guid.NewGuid(),
-            enabledModuleKeys: new[] { "Saas", "catalog", "catalog" });
+            enabledModuleKeys: new[] { "Saas", "inventario", "inventario" });
 
         var effective = TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant);
-        effective.Should().Equal("catalog", "saas");
+        effective.Should().Equal("inventario", "saas", "ventas");
     }
 
     [Fact]
@@ -52,9 +52,20 @@ public sealed class TenantSubscriptionCatalogTests
     [Fact]
     public void TryGetModuleKeyForPermission_parses_known_prefix()
     {
-        TenantSubscriptionCatalog.TryGetModuleKeyForPermission("catalog.brands.view", out var key)
+        TenantSubscriptionCatalog.TryGetModuleKeyForPermission("inventario.brands.view", out var key)
             .Should().BeTrue();
-        key.Should().Be("catalog");
+        key.Should().Be("inventario");
+
+        TenantSubscriptionCatalog.TryGetModuleKeyForPermission("ventas.customers.view", out var vKey)
+            .Should().BeTrue();
+        vKey.Should().Be("ventas");
+    }
+
+    [Fact]
+    public void TenantAllowsPermission_ventas_customers_when_only_inventario_enabled()
+    {
+        var t = Tenant.Create("T", "t", Guid.NewGuid(), enabledModuleKeys: new[] { "inventario" });
+        TenantSubscriptionCatalog.TenantAllowsPermission(t, "ventas.customers.view").Should().BeTrue();
     }
 
     [Fact]
@@ -68,15 +79,15 @@ public sealed class TenantSubscriptionCatalogTests
     [Fact]
     public void TenantAllowsPermission_unknown_permission_prefix_always_true()
     {
-        var restricted = Tenant.Create("R", "r", Guid.NewGuid(), enabledModuleKeys: new[] { "catalog" });
+        var restricted = Tenant.Create("R", "r", Guid.NewGuid(), enabledModuleKeys: new[] { "inventario" });
         TenantSubscriptionCatalog.TenantAllowsPermission(restricted, "reports.view").Should().BeTrue();
     }
 
     [Fact]
     public void TenantAllowsPermission_respects_enabled_modules()
     {
-        var t = Tenant.Create("T", "t", Guid.NewGuid(), enabledModuleKeys: new[] { "catalog" });
-        TenantSubscriptionCatalog.TenantAllowsPermission(t, "catalog.products.view").Should().BeTrue();
+        var t = Tenant.Create("T", "t", Guid.NewGuid(), enabledModuleKeys: new[] { "inventario" });
+        TenantSubscriptionCatalog.TenantAllowsPermission(t, "inventario.products.view").Should().BeTrue();
         TenantSubscriptionCatalog.TenantAllowsPermission(t, "accounting.journal.view").Should().BeFalse();
     }
 
@@ -90,7 +101,7 @@ public sealed class TenantSubscriptionCatalogTests
     [Fact]
     public void ValidateModuleKeysOrThrow_rejects_empty_token()
     {
-        var act = () => TenantSubscriptionCatalog.ValidateModuleKeysOrThrow(new[] { "catalog", "  " });
+        var act = () => TenantSubscriptionCatalog.ValidateModuleKeysOrThrow(new[] { "inventario", "  " });
         act.Should().Throw<ArgumentException>().WithParameterName("keys");
     }
 

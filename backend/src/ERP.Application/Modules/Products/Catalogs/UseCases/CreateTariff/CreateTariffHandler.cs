@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Products.Catalogs.DTOs;
+using MediatR;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Products.Entities;
@@ -7,7 +8,7 @@ using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Products.Catalogs.UseCases.CreateTariff;
 
-public class CreateTariffHandler
+public class CreateTariffHandler : IRequestHandler<CreateTariffCommand, Result<TariffDto>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
@@ -26,7 +27,10 @@ public class CreateTariffHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<TariffDto>> HandleAsync(CreateTariffCommand command, CancellationToken ct = default)
+    public Task<Result<TariffDto>> HandleAsync(CreateTariffCommand command, CancellationToken ct = default)
+        => Handle(command, ct);
+
+    public async Task<Result<TariffDto>> Handle(CreateTariffCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId = _currentUser.UserId;
@@ -37,7 +41,7 @@ public class CreateTariffHandler
             userId,
             _currentUser.Email,
             _currentUser.FullName,
-            module: "catalog",
+            module: "inventario",
             action: "tariff.create",
             entityType: "Tariff",
             entityId: entity.Id,

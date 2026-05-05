@@ -890,6 +890,11 @@ namespace ERP.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("DisplayLabel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("display_label");
+
                     b.Property<Guid>("GroupId")
                         .HasColumnType("uuid")
                         .HasColumnName("group_id");
@@ -934,6 +939,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(512)")
                         .HasColumnName("route_path");
 
+                    b.Property<Guid?>("SaasFeatureDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("saas_feature_definition_id");
+
                     b.Property<int>("SortOrder")
                         .HasColumnType("integer")
                         .HasColumnName("sort_order");
@@ -941,6 +950,8 @@ namespace ERP.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ParentItemId");
+
+                    b.HasIndex("SaasFeatureDefinitionId");
 
                     b.HasIndex("GroupId", "RoutePath");
 
@@ -1703,8 +1714,8 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("code");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
                         .HasColumnName("description");
 
                     b.Property<bool>("IsMetered")
@@ -2016,6 +2027,12 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("display_order");
 
+                    b.Property<bool>("ElectronicBillingTrialEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("electronic_billing_trial_enabled");
+
                     b.Property<string>("EnabledModulesJson")
                         .HasColumnType("text")
                         .HasColumnName("enabled_modules");
@@ -2214,6 +2231,11 @@ namespace ERP.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("ParentItemId")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("ERP.Domain.Subscriptions.Entities.SaasFeatureDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("SaasFeatureDefinitionId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("ERP.Domain.Products.Entities.Product", b =>

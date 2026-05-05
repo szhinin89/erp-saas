@@ -13,7 +13,7 @@ public sealed class SaasFeatureDefinitionConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(SaasFeatureDefinition.CodeMaxLen).IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(SaasFeatureDefinition.NameMaxLen).IsRequired();
-        builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(500);
+        builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(2000);
         builder.Property(x => x.IsMetered).HasColumnName("is_metered").IsRequired();
         builder.Property(x => x.Kind).HasColumnName("feature_kind").IsRequired();
         builder.Property(x => x.ResourceRef).HasColumnName("resource_ref").HasMaxLength(SaasFeatureDefinition.ResourceRefMaxLen);

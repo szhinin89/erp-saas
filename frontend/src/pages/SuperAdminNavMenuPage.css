@@ -1,116 +1,509 @@
-.sa-navmenu-list {
+/**
+ * Editor menú SuperAdmin: misma estructura que la referencia (árbol, panel hijos),
+ * colores alineados con la plantilla ZH (tokens --zh-* / --zh-color-*).
+ */
+.sa-navmenu-page {
+  background: var(--zh-color-surface, #fff);
+  color: var(--zh-color-text, #1e293b);
+  border-radius: var(--zh-radius, 8px);
+  padding: 0.75rem 0.85rem 1rem;
+  margin: 0;
+}
+
+.nm-srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.nm-sectionTitle {
+  margin: 0 0 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, rgba(30, 41, 59, 0.55));
+}
+
+/* —— Editor unificado: grupos expandibles + ítems —— */
+.nm-barEditor {
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+}
+
+.nm-groupCardList {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.sa-navmenu-group {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.45rem 0;
-  border-bottom: 1px solid var(--zh-border, #e5e7eb);
+.nm-groupCard {
+  margin-bottom: 0.5rem;
+  background: var(--color-bg-secondary, #f3f6fa);
+  border: 1px solid var(--zh-color-border, rgba(15, 23, 42, 0.12));
+  border-radius: var(--zh-radius-md, 10px);
+  box-shadow: var(--zh-shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.06));
+  overflow: hidden;
 }
 
-.sa-navmenu-groupLabel {
-  flex: 1;
-  min-width: 0;
-}
-
-.sa-navmenu-actions {
-  display: flex;
-  gap: 0.25rem;
-  flex-shrink: 0;
-}
-
-.sa-navmenu-btn {
-  min-width: 2rem;
-  padding: 0.2rem 0.45rem;
-  font: inherit;
-  cursor: pointer;
-  border: 1px solid var(--zh-border, #d1d5db);
-  border-radius: 4px;
-  background: var(--zh-surface, #fff);
-}
-
-.sa-navmenu-btn:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.sa-navmenu-block {
-  margin-bottom: 1.25rem;
-}
-
-.sa-navmenu-blockTitle {
-  margin: 0 0 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.sa-navmenu-itemTree {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.sa-navmenu-itemTree.is-nested {
-  margin-left: 0.25rem;
-  border-left: 2px solid var(--zh-border, #e5e7eb);
-  padding-left: 0.35rem;
-}
-
-.sa-navmenu-itemRow {
+.nm-groupCardHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.35rem 0;
+  padding: 0.5rem 0.65rem;
+  background: var(--zh-color-surface, #fff);
 }
 
-.sa-navmenu-itemRow--d0 {
-  padding-left: 0;
-}
-.sa-navmenu-itemRow--d1 {
-  padding-left: 0.875rem;
-}
-.sa-navmenu-itemRow--d2 {
-  padding-left: 1.75rem;
-}
-.sa-navmenu-itemRow--d3 {
-  padding-left: 2.625rem;
-}
-.sa-navmenu-itemRow--d4 {
-  padding-left: 3.5rem;
-}
-.sa-navmenu-itemRow--d5 {
-  padding-left: 4.375rem;
-}
-.sa-navmenu-itemRow--d6 {
-  padding-left: 5.25rem;
-}
-.sa-navmenu-itemRow--d7 {
-  padding-left: 6.125rem;
-}
-.sa-navmenu-itemRow--d8 {
-  padding-left: 7rem;
-}
-.sa-navmenu-itemRow--d9 {
-  padding-left: 7.875rem;
-}
-.sa-navmenu-itemRow--d10 {
-  padding-left: 8.75rem;
-}
-.sa-navmenu-itemRow--d11 {
-  padding-left: 9.625rem;
-}
-.sa-navmenu-itemRow--d12 {
-  padding-left: 10.5rem;
+.nm-groupChevron {
+  flex-shrink: 0;
+  width: 1.85rem;
+  height: 1.85rem;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--zh-color-border, rgba(15, 23, 42, 0.12));
+  border-radius: var(--zh-radius, 8px);
+  background: var(--color-bg-secondary, #f3f6fa);
+  color: var(--color-text-muted, rgba(30, 41, 59, 0.55));
+  font-size: 0.55rem;
+  cursor: pointer;
 }
 
-.sa-navmenu-itemLabel {
+.nm-groupChevron:hover:not(:disabled) {
+  color: var(--zh-color-text, #1e293b);
+  background: var(--zh-blue-light, #ebf2fa);
+}
+
+.nm-groupChevron:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.nm-groupRowLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.nm-groupIcon {
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.nm-groupText {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--zh-color-text, #1e293b);
+}
+
+.nm-groupCode {
+  font-size: 0.7rem;
+  color: var(--color-text-muted, rgba(30, 41, 59, 0.55));
+  flex-shrink: 0;
+}
+
+.nm-groupCardBody {
+  border-top: 1px solid var(--zh-color-border, rgba(15, 23, 42, 0.12));
+  background: var(--zh-color-surface, #fff);
+  padding: 0 0 0.5rem;
+}
+
+.nm-groupItemsWrap {
+  padding: 0.35rem 0.5rem 0;
+}
+
+.nm-groupItemToolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  padding: 0.35rem 0.35rem 0.5rem;
+  font-size: 0.68rem;
+  border-bottom: 1px solid var(--zh-color-border, rgba(15, 23, 42, 0.08));
+  margin-bottom: 0.25rem;
+}
+
+.nm-groupItemsNav {
+  padding: 0.15rem 0;
+}
+
+.nm-dot {
+  color: var(--color-text-muted, rgba(30, 41, 59, 0.55));
+  user-select: none;
+}
+
+.nm-textLink {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--zh-blue, #4f7ba6);
+  font: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.nm-textLink:hover:not(:disabled) {
+  color: var(--zh-blue-dark, #2c4e72);
+}
+
+.nm-textLink:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.nm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nm-list--panel {
+  padding: 0.15rem 0 0.35rem;
+}
+
+.nm-emptyBranch {
+  margin: 0.5rem 1rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted, rgba(30, 41, 59, 0.55));
+}
+
+/* —— Filas —— */
+.nm-node {
+  margin: 0;
+  padding: 0;
+}
+
+.nm-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.15rem;
+  min-height: 2.35rem;
+  margin: 0 0.35rem;
+  padding: 0 0.25rem 0 0;
+  border-radius: var(--zh-radius, 8px);
+  border: 1px solid transparent;
+}
+
+.nm-row--root .nm-rowLabel {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.nm-row--inStack .nm-rowLabel {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+}
+
+.nm-row--leaf .nm-rowLabel {
+  color: var(--zh-blue-dark, #2c4e72);
+  font-weight: 600;
+}
+
+.nm-row--leaf:hover .nm-rowLabel,
+.nm-row--leaf:focus-within .nm-rowLabel {
+  color: var(--zh-blue, #4f7ba6);
+}
+
+.nm-row--parent .nm-rowLabel {
+  color: var(--zh-color-text, #1e293b);
+}
+
+/* “Ruta activa” simulada: acento plantilla (azul primario) */
+.nm-row--active {
+  background: var(--zh-blue-mid, #d0e3f4);
+  border-color: var(--zh-blue, #4f7ba6);
+}
+
+.nm-row--active.nm-row--leaf .nm-rowLabel {
+  color: var(--zh-blue-dark, #2c4e72);
+}
+
+.nm-row--active:hover {
+  background: var(--zh-blue-light, #ebf2fa);
+}
+
+.nm-chevron,
+.nm-chevronSpacer {
+  flex-shrink: 0;
+  width: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+}
+
+.nm-chevron {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted, rgba(30, 41, 59, 0.55));
+  font-size: 0.55rem;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.nm-chevron:hover:not(:disabled) {
+  color: var(--zh-color-text, #1e293b);
+  background: var(--zh-blue-light, #ebf2fa);
+}
+
+.nm-chevron:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.nm-rowMain {
   flex: 1;
   min-width: 0;
-  font-size: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.1rem;
+  padding: 0.35rem 0.25rem;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.nm-rowMain:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.nm-rowLabel {
+  text-transform: uppercase;
+  line-height: 1.25;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nm-rowRoute {
+  display: block;
+  font-size: 0.62rem;
+  color: var(--color-text-muted, rgba(30, 41, 59, 0.55));
+  opacity: 1;
+  text-transform: none;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.nm-editBtns {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+  opacity: 0.45;
+  transition: opacity 0.15s ease;
+}
+
+.nm-row:hover .nm-editBtns,
+.nm-row:focus-within .nm-editBtns {
+  opacity: 1;
+}
+
+.nm-rowTrailing {
+  flex: 1 1 10rem;
+  min-width: 6rem;
+  max-width: 28rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0 0.15rem 0.35rem;
+  margin-left: 0.1rem;
+  border-left: 1px solid var(--zh-color-border, rgba(15, 23, 42, 0.1));
+}
+
+.nm-miniBtn {
+  min-width: 1.5rem;
+  height: 1.65rem;
+  padding: 0 0.2rem;
+  font-size: 0.65rem;
+  line-height: 1;
+  border: 1px solid var(--zh-color-border, rgba(15, 23, 42, 0.12));
+  border-radius: 4px;
+  background: var(--zh-color-surface, #fff);
+  color: var(--zh-color-text, #1e293b);
+  cursor: pointer;
+}
+
+.nm-miniBtn:hover:not(:disabled) {
+  background: var(--zh-blue-light, #ebf2fa);
+  border-color: var(--zh-blue, #4f7ba6);
+}
+
+.nm-miniBtn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.nm-star,
+.nm-starSpacer {
+  flex-shrink: 0;
+  width: 1.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+}
+
+.nm-star {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted, rgba(30, 41, 59, 0.45));
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.nm-star.is-on {
+  color: var(--zh-blue, #4f7ba6);
+}
+
+.nm-star:hover:not(:disabled) {
+  color: var(--zh-blue-dark, #2c4e72);
+}
+
+.nm-star:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* Panel hijos: superficie suave + acento azul plantilla (equivalente estructural a la barra de la imagen) */
+.nm-childrenPanel {
+  margin: 0.2rem 0.35rem 0.45rem 1.85rem;
+  padding: 0.35rem 0 0.5rem;
+  background: var(--color-bg-secondary, #f3f6fa);
+  border-left: 4px solid var(--zh-blue, #4f7ba6);
+  border-radius: 0 var(--zh-radius, 8px) var(--zh-radius, 8px) 0;
+}
+
+.nm-childrenHead {
+  padding: 0.35rem 0.75rem 0.45rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, rgba(30, 41, 59, 0.75));
+  border-bottom: 1px solid var(--zh-color-border, rgba(15, 23, 42, 0.12));
+  margin-bottom: 0.15rem;
+}
+
+.nm-footerBar {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--zh-color-border, rgba(15, 23, 42, 0.12));
+}
+
+.nm-emptyGroupBody {
+  padding: 0.5rem 0.35rem 0.65rem;
+}
+
+.nm-emptyGroupBody .nm-emptyBranch {
+  margin: 0.35rem 0.35rem 0.5rem;
+}
+
+.nm-miniBtn--add {
+  font-weight: 700;
+  color: var(--zh-blue, #4f7ba6);
+}
+
+.nm-miniBtn--add:hover:not(:disabled) {
+  color: var(--zh-blue-dark, #2c4e72);
+}
+
+/* Modal alta de ítem de menú */
+.nm-createBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.nm-createDialog {
+  width: min(26rem, 100%);
+  max-height: min(90vh, 32rem);
+  overflow: auto;
+  margin: 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--zh-color-border, rgba(15, 23, 42, 0.12));
+  border-radius: var(--zh-radius-md, 10px);
+  background: var(--zh-color-surface, #fff);
+  color: var(--zh-color-text, #1e293b);
+  box-shadow: var(--zh-shadow-md, 0 8px 24px rgba(15, 23, 42, 0.12));
+}
+
+.nm-createDialog h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.nm-createHint {
+  margin: 0 0 0.85rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted, rgba(30, 41, 59, 0.6));
+}
+
+.nm-createField {
+  margin-bottom: 0.65rem;
+}
+
+.nm-createField label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-secondary, rgba(30, 41, 59, 0.75));
+}
+
+.nm-createField input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 0.5rem;
+  font: inherit;
+  font-size: 0.85rem;
+  border: 1px solid var(--zh-color-border, rgba(15, 23, 42, 0.12));
+  border-radius: var(--zh-radius, 8px);
+}
+
+.nm-createActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--zh-color-border, rgba(15, 23, 42, 0.08));
 }

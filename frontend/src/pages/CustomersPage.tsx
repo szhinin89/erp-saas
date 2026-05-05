@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PageShell, TableCard, EmptyState, ErrorState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { PageShell, TableCard, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { useAuthStore } from '../store/authStore';
@@ -11,40 +12,18 @@ import {
   type CustomerDto,
 } from '../services/customerService';
 import { formatApiError } from '../modules/lib/formatApiError';
-import { ZHBtn, ZHFormSection, ZHGrid, ZHField, ZHToggle } from '../components/zh/ZHForm';
+import { ZHBtn } from '../components/zh/ZHForm';
+import { ZHConfirmModal } from '../components/zh/ZHConfirmModal';
 import { customerFormSchema, type CustomerFormValues } from '../schemas/catalog/customerSchema';
-import { ZHColSpan } from '../components/zh/ZHLayout';
 import ZHSearchBar from '../components/shared/ZHSearchBar';
 import { EntityAuditPanel } from '../components/EntityAuditPanel';
+import { CustomerFormFields } from '../components/catalog/CustomerFormFields';
+import {
+  customerFormFromDto,
+  customerFormToApiBody,
+  emptyCustomerForm,
+} from '../modules/catalog/customers/customerFormModel';
 import './CustomersPage.css';
-
-const emptyForm = (): CustomerFormValues => ({
-  identificationType: 'RUC',
-  identificationNumber: '',
-  legalName: '',
-  tradeName: '',
-  addressLine: '',
-  phone: '',
-  email: '',
-  notes: '',
-  isActive: true,
-});
-
-function fromDto(d: CustomerDto | CustomerDetailDto): CustomerFormValues {
-  return {
-    identificationType: d.identificationType,
-    identificationNumber: d.identificationNumber,
-    legalName: d.legalName,
-    tradeName: d.tradeName ?? '',
-    addressLine: d.addressLine ?? '',
-    phone: d.phone ?? '',
-    email: d.email ?? '',
-    notes: d.notes ?? '',
-    isActive: d.isActive,
-  };
-}
-
-const idTypes = ['RUC', 'CI', 'PASSPORT', 'OTHER'] as const;
 
 export function CustomersPage() {
   const { t } = useI18n();
@@ -53,10 +32,10 @@ export function CustomersPage() {
   const isAdmin = role === 'Admin' || role === 'SuperAdmin';
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
 
-  const canView = isAdmin || hasPerm('catalog.customers.view');
-  const canCreate = isAdmin || hasPerm('catalog.customers.create');
-  const canUpdate = isAdmin || hasPerm('catalog.customers.update');
-  const canDelete = isAdmin || hasPerm('catalog.customers.delete');
+  const canView = isAdmin || hasPerm('ventas.customers.view');
+  const canCreate = isAdmin || hasPerm('ventas.customers.create');
+  const canUpdate = isAdmin || hasPerm('ventas.customers.update');
+  const canDelete = isAdmin || hasPerm('ventas.customers.delete');
 
   const [items, setItems] = useState<CustomerDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +43,8 @@ export function CustomersPage() {
   const [error, setError] = useState('');
   const [listQuery, setListQuery] = useState('');
   const [listApplied, setListApplied] = useState('');
+  const [disableConfirm, setDisableConfirm] = useState<CustomerDto | null>(null);
+  const [toggleBusy, setToggleBusy] = useState(false);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const {
@@ -75,7 +56,7 @@ export function CustomersPage() {
     formState: { errors },
   } = useForm<CustomerFormValues>({
     resolver: zodResolver(customerFormSchema),
-    defaultValues: emptyForm(),
+    defaultValues: emptyCustomerForm(),
   });
   const [audit, setAudit] = useState<Pick<
     CustomerDetailDto,
@@ -117,7 +98,7 @@ export function CustomersPage() {
 
   const beginNewForm = useCallback(() => {
     setEditingId(null);
-    reset(emptyForm());
+    reset(emptyCustomerForm());
     setAudit(null);
     setAuditEntityId(null);
     setDialogMode('new');
@@ -135,7 +116,7 @@ export function CustomersPage() {
     try {
       const d = await customerService.getById(id);
       setEditingId(id);
-      reset(fromDto(d));
+      reset(customerFormFromDto(d));
       setAudit({
         createdAt: d.createdAt,
         updatedAt: d.updatedAt,
@@ -170,18 +151,6 @@ export function CustomersPage() {
     }
   };
 
-  const payloadBody = (form: CustomerFormValues) => ({
-    identificationType: form.identificationType.trim(),
-    identificationNumber: form.identificationNumber.trim(),
-    legalName: form.legalName.trim(),
-    tradeName: form.tradeName.trim() || null,
-    addressLine: form.addressLine.trim() || null,
-    phone: form.phone.trim() || null,
-    email: form.email.trim() || null,
-    notes: form.notes.trim() || null,
-    isActive: form.isActive,
-  });
-
   const formDisabled = editingId ? !canUpdate : !canCreate;
 
   const formWatch = watch();
@@ -197,10 +166,10 @@ export function CustomersPage() {
     setSaving(true);
     try {
       if (editingId) {
-        await customerService.update(editingId, { id: editingId, ...payloadBody(form) });
+        await customerService.update(editingId, { id: editingId, ...customerFormToApiBody(form) });
         await fetchList();
         const d = await customerService.getById(editingId);
-        reset(fromDto(d));
+        reset(customerFormFromDto(d));
         setAudit({
           createdAt: d.createdAt,
           updatedAt: d.updatedAt,
@@ -210,10 +179,10 @@ export function CustomersPage() {
         setAuditEntityId(editingId);
         setAuditRefreshKey((k) => k + 1);
       } else {
-        const created = await customerService.create(payloadBody(form));
+        const created = await customerService.create(customerFormToApiBody(form));
         await fetchList();
         setEditingId(null);
-        reset(emptyForm());
+        reset(emptyCustomerForm());
         setAudit(null);
         setDialogMode('new');
         if (created?.id) {
@@ -229,8 +198,9 @@ export function CustomersPage() {
     }
   });
 
-  const toggleDisable = async (row: CustomerDto) => {
+  const runToggleActive = async (row: CustomerDto) => {
     setError('');
+    setToggleBusy(true);
     try {
       if (row.isActive) {
         if (!canDelete) return;
@@ -240,8 +210,11 @@ export function CustomersPage() {
         await customerService.enable(row.id);
       }
       await fetchList();
+      setDisableConfirm(null);
     } catch (err: unknown) {
       setError(formatApiError(err) || t('customers.error.toggle'));
+    } finally {
+      setToggleBusy(false);
     }
   };
 
@@ -273,7 +246,7 @@ export function CustomersPage() {
       }
     >
       <TableCard>
-        {error ? <ErrorState message={error} /> : null}
+        {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button
             type="button"
@@ -312,71 +285,7 @@ export function CustomersPage() {
               <div className="customers-data-panel">
                 <input type="hidden" name="tenantId" value={tenantId} />
 
-                <ZHFormSection title={t('customers.section.identity')}>
-                  <ZHGrid cols={2}>
-                    <ZHField label={t('customers.form.identificationType')} required fieldError={errors.identificationType?.message}>
-                      <select disabled={formDisabled} {...register('identificationType')}>
-                        {idTypes.map((x) => (
-                          <option key={x} value={x}>
-                            {t(`customers.idType.${x}`)}
-                          </option>
-                        ))}
-                      </select>
-                    </ZHField>
-                    <ZHField label={t('customers.form.identificationNumber')} required fieldError={errors.identificationNumber?.message}>
-                      <input disabled={formDisabled} autoComplete="off" {...register('identificationNumber')} />
-                    </ZHField>
-                    <ZHColSpan span={2}>
-                      <ZHField label={t('customers.form.legalName')} required fieldError={errors.legalName?.message}>
-                        <input disabled={formDisabled} autoComplete="organization" {...register('legalName')} />
-                      </ZHField>
-                    </ZHColSpan>
-                    <ZHColSpan span={2}>
-                      <ZHField label={t('customers.form.tradeName')} fieldError={errors.tradeName?.message}>
-                        <input disabled={formDisabled} {...register('tradeName')} />
-                      </ZHField>
-                    </ZHColSpan>
-                  </ZHGrid>
-                </ZHFormSection>
-
-                <ZHFormSection title={t('customers.section.contact')}>
-                  <ZHGrid cols={2}>
-                    <ZHColSpan span={2}>
-                      <ZHField label={t('customers.form.addressLine')} fieldError={errors.addressLine?.message}>
-                        <input disabled={formDisabled} autoComplete="street-address" {...register('addressLine')} />
-                      </ZHField>
-                    </ZHColSpan>
-                    <ZHField label={t('customers.form.phone')} fieldError={errors.phone?.message}>
-                      <input disabled={formDisabled} autoComplete="tel" {...register('phone')} />
-                    </ZHField>
-                    <ZHField label={t('customers.form.email')} fieldError={errors.email?.message}>
-                      <input disabled={formDisabled} autoComplete="email" {...register('email')} />
-                    </ZHField>
-                    <ZHColSpan span={2}>
-                      <ZHField label={t('customers.form.notes')} fieldError={errors.notes?.message}>
-                        <textarea disabled={formDisabled} rows={3} {...register('notes')} />
-                      </ZHField>
-                    </ZHColSpan>
-                  </ZHGrid>
-                </ZHFormSection>
-
-                <ZHFormSection title={t('common.status')}>
-                  <ZHGrid cols={1}>
-                    <Controller
-                      name="isActive"
-                      control={control}
-                      render={({ field }) => (
-                        <ZHToggle
-                          label={t('customers.form.enabled')}
-                          description={t('customers.form.enabled')}
-                          value={field.value}
-                          onChange={field.onChange}
-                          disabled={formDisabled}
-                        />
-                      )}
-                    />
-                  </ZHGrid>
-                </ZHFormSection>
+                <CustomerFormFields register={register} control={control} errors={errors} disabled={formDisabled} />
 
                 {audit ? (
                   <div className="customers-audit">
@@ -487,7 +396,15 @@ export function CustomersPage() {
                           {t('common.formTab.audit')}
                         </ZHBtn>
                         {(x.isActive ? canDelete : canUpdate) ? (
-                          <ZHBtn variant="ghost" size="xs" type="button" onClick={() => void toggleDisable(x)}>
+                          <ZHBtn
+                            variant="ghost"
+                            size="xs"
+                            type="button"
+                            onClick={() => {
+                              if (x.isActive) setDisableConfirm(x);
+                              else void runToggleActive(x);
+                            }}
+                          >
                             {x.isActive ? t('customers.disable') : t('customers.enable')}
                           </ZHBtn>
                         ) : null}
@@ -500,6 +417,24 @@ export function CustomersPage() {
           </>
         )}
       </TableCard>
+
+      {disableConfirm ? (
+        <ZHConfirmModal
+          title={t('customers.confirmDisable.title')}
+          message={
+            <>
+              {t('customers.confirmDisable.line1')}{' '}
+              <strong>{disableConfirm.legalName}</strong>. {t('customers.confirmDisable.line2')}
+            </>
+          }
+          confirmLabel={t('customers.confirmDisable.confirm')}
+          cancelLabel={t('common.no')}
+          variant="destructive"
+          loading={toggleBusy}
+          onCancel={() => setDisableConfirm(null)}
+          onConfirm={() => void runToggleActive(disableConfirm)}
+        />
+      ) : null}
     </PageShell>
   );
 }

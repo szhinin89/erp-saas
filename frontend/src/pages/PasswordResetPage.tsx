@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
 import { useI18n } from '../i18n/i18n';
-import { ZHFormHeader, ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions } from '../components/zh/ZHForm';
+import { ZHFormHeader, ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormActions } from '../components/zh/ZHForm';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { ZHCenteredCard } from '../components/zh/ZHCenteredCard';
 import { passwordResetFormSchema, type PasswordResetFormValues } from '../schemas/auth/passwordResetSchema';
 import './LoginPage.css';
@@ -119,8 +120,8 @@ export function PasswordResetPage() {
       <form className="login-form" onSubmit={handleSubmit(onValid)} noValidate>
         <ZHFormHeader title={t('reset.title')} subtitle={t('reset.subtitle')} />
         <ZHFormBody>
-          {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
-          {success ? <ZHFormAlert type="success" message={success} /> : null}
+          {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
+          {success ? <ZHPageNotice variant="success" message={success} /> : null}
 
           <ZHFormSection title={t('reset.title')}>
             <ZHGrid cols={1}>

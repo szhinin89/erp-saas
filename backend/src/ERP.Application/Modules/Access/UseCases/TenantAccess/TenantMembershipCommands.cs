@@ -1,3 +1,7 @@
+using MediatR;
+using ERP.Application.Common;
+using ERP.Application.Access.DTOs;
+
 namespace ERP.Application.Access.UseCases.TenantAccess;
 
 public record TenantUpsertMembershipCommand(
@@ -7,7 +11,9 @@ public record TenantUpsertMembershipCommand(
     string? FirstName,
     string? LastName,
     string? Password
-);
+): IRequest<Result<object>>;
 
-public record TenantRevokeMembershipCommand(string Email);
+public record TenantRevokeMembershipCommand(string Email) : IRequest<Result<object>>;
+
+public record GetTenantMembershipsQuery(bool OnlyActive) : IRequest<Result<IReadOnlyList<TenantMembershipItemDto>>>;
 

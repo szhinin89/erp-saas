@@ -1,0 +1,645 @@
+.sap-plansSection {
+  margin-top: 0.25rem;
+}
+
+.sap-toolbar {
+  margin-bottom: 16px;
+}
+
+/* —— Cabecera dashboard planes —— */
+.sap-dash-head {
+  margin-bottom: 20px;
+}
+
+.sap-dash-headRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sap-dash-headText {
+  flex: 1;
+  min-width: 200px;
+}
+
+.sap-dash-eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.sap-dash-lead {
+  margin: 0;
+  max-width: 52ch;
+  line-height: 1.45;
+}
+
+.sap-dash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.sap-dash-kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+@media (max-width: 1024px) {
+  .sap-dash-kpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .sap-dash-kpiGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sap-dash-kpiCard {
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #fff;
+  padding: 14px 16px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
+}
+
+.sap-dash-kpiValue {
+  font-size: 1.65rem;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.sap-dash-kpiSub {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+  min-height: 2.5em;
+  line-height: 1.35;
+}
+
+.sap-dash-kpiLabel {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94a3b8;
+  margin-top: 10px;
+}
+
+.sap-dash-kpiCard--info .sap-dash-kpiValue {
+  color: #0369a1;
+}
+
+.sap-dash-kpiCard--success .sap-dash-kpiValue {
+  color: #15803d;
+}
+
+.sap-dash-kpiCard--neutral .sap-dash-kpiValue {
+  color: #475569;
+}
+
+.sap-dash-kpiCard--warn .sap-dash-kpiValue {
+  color: #c2410c;
+}
+
+/* —— Tabla tenants —— */
+.sap-tenant-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+  align-items: center;
+}
+
+.sap-tenant-search {
+  flex: 1;
+  min-width: 180px;
+}
+
+.sap-tenant-select {
+  min-width: 160px;
+  max-width: 220px;
+}
+
+.sap-tenant-tableWrap {
+  overflow-x: auto;
+  margin: 0 -4px;
+}
+
+.sap-tenant-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.sap-tenant-table th,
+.sap-tenant-table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  vertical-align: middle;
+}
+
+.sap-tenant-table th {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.sap-tenant-company {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.sap-tenant-id {
+  font-size: 12px;
+}
+
+.sap-tenant-dates {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.sap-tenant-planBadge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.15);
+  color: #475569;
+}
+
+.sap-tenant-planBadge--tier-starter {
+  background: rgba(100, 116, 139, 0.18);
+  color: #475569;
+}
+
+.sap-tenant-planBadge--tier-business {
+  background: rgba(126, 34, 206, 0.15);
+  color: #6b21a8;
+}
+
+.sap-tenant-planBadge--tier-professional {
+  background: rgba(29, 78, 216, 0.14);
+  color: #1d4ed8;
+}
+
+.sap-tenant-planBadge--tier-enterprise {
+  background: rgba(21, 128, 61, 0.14);
+  color: #15803d;
+}
+
+.sap-tenant-planBadge--tier-default {
+  background: rgba(71, 85, 105, 0.16);
+  color: #334155;
+}
+
+.sap-tenant-status {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sap-tenant-status--active {
+  background: rgba(21, 128, 61, 0.14);
+  color: #15803d;
+}
+
+.sap-tenant-status--suspended {
+  background: rgba(185, 28, 28, 0.12);
+  color: #b91c1c;
+}
+
+.sap-publicHint {
+  margin: 10px 0 0;
+}
+
+/* —— Tarjetas tipo pricing (4 columnas en desktop) —— */
+.sap-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+  align-items: stretch;
+}
+
+@media (max-width: 1200px) {
+  .sap-pricing-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .sap-pricing-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sap-pricing-card {
+  --sap-tier-accent: #64748b;
+  --sap-tier-accent-soft: rgba(100, 116, 139, 0.2);
+  --sap-tier-pop: #0f172a;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.sap-pricing-card--inactive {
+  opacity: 0.72;
+}
+
+.sap-pricing-card--tier-starter {
+  --sap-tier-accent: #64748b;
+  --sap-tier-accent-soft: rgba(100, 116, 139, 0.22);
+}
+
+.sap-pricing-card--tier-business {
+  --sap-tier-accent: #7e22ce;
+  --sap-tier-accent-soft: rgba(126, 34, 206, 0.22);
+}
+
+.sap-pricing-card--tier-professional {
+  --sap-tier-accent: #1d4ed8;
+  --sap-tier-accent-soft: rgba(29, 78, 216, 0.22);
+}
+
+.sap-pricing-card--tier-enterprise {
+  --sap-tier-accent: #15803d;
+  --sap-tier-accent-soft: rgba(21, 128, 61, 0.2);
+}
+
+.sap-pricing-card--tier-default {
+  --sap-tier-accent: #475569;
+  --sap-tier-accent-soft: rgba(71, 85, 105, 0.2);
+}
+
+.sap-pricing-card--popular {
+  border-color: var(--sap-tier-accent);
+  box-shadow: 0 0 0 2px var(--sap-tier-accent-soft), 0 12px 36px rgba(15, 23, 42, 0.1);
+}
+
+.sap-pricing-card-inner {
+  padding: 18px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  text-align: left;
+}
+
+.sap-pricing-topBadges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-height: 28px;
+}
+
+.sap-pricing-ribbon {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #5b21b6, #7c3aed);
+  color: #fff;
+}
+
+.sap-pricing-planBadge {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--sap-tier-accent);
+  padding: 3px 10px;
+  border-radius: 8px;
+  background: var(--sap-tier-accent-soft);
+}
+
+.sap-pricing-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.sap-pricing-titleStar {
+  margin-left: 6px;
+  color: #eab308;
+  font-size: 1rem;
+  vertical-align: middle;
+}
+
+.sap-pricing-subtitle {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #64748b;
+  min-height: 2.8em;
+}
+
+.sap-pricing-priceRow {
+  margin-top: 16px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.sap-pricing-price {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+.sap-pricing-period {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.sap-pricing-usage {
+  margin-top: 14px;
+}
+
+.sap-pricing-usageLine {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.sap-pricing-usagePct {
+  font-variant-numeric: tabular-nums;
+  color: var(--sap-tier-accent);
+}
+
+.sap-pricing-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.sap-pricing-barFill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sap-tier-accent-soft), var(--sap-tier-accent));
+  min-width: 4px;
+  transition: width 0.35s ease;
+}
+
+.sap-pricing-barSvg {
+  display: block;
+  width: 100%;
+  height: 6px;
+}
+
+.sap-pricing-barRect {
+  fill: var(--sap-tier-accent, #0ea5e9);
+}
+
+.sap-pricing-features {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  flex: 1;
+  max-height: 280px;
+  overflow-y: auto;
+  border-top: 1px solid rgba(15, 23, 42, 0.06);
+  padding-top: 12px;
+}
+
+.sap-pricing-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 13px;
+  line-height: 1.35;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.04);
+}
+
+.sap-pricing-features li:last-child {
+  border-bottom: none;
+}
+
+.sap-pricing-ftIcon {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.sap-pricing-ft--on .sap-pricing-ftIcon {
+  background: rgba(22, 163, 74, 0.18);
+  color: #15803d;
+}
+
+.sap-pricing-ft--off .sap-pricing-ftIcon {
+  background: rgba(148, 163, 184, 0.25);
+  color: #94a3b8;
+}
+
+.sap-pricing-ft--off .sap-pricing-ftLabel {
+  color: #94a3b8;
+}
+
+.sap-pricing-ftLabel {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.sap-pricing-metaRow {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 11px;
+}
+
+.sap-pricing-footer {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.sap-pricing-footerMain {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sap-pricing-linkBtn {
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sap-pricing-footerExtra {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  align-items: center;
+}
+
+.sap-defList {
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sap-defRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.03);
+}
+
+.sap-defCode {
+  font-size: 11px;
+  font-weight: 800;
+  color: #0e7490;
+}
+
+.sap-defName {
+  font-weight: 700;
+  color: #1e293b;
+  font-size: 13px;
+}
+
+.sap-planPill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(14, 116, 144, 0.15);
+  color: #0e7490;
+}
+
+.sap-newFeature {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.sap-planPick {
+  margin: 14px 0;
+  padding: 12px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.04);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.sap-planPick-title {
+  margin: 0 0 6px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.sap-planPick-hint {
+  margin: 0 0 10px;
+  line-height: 1.45;
+}
+
+.sap-planPick-warn {
+  margin: 0;
+  color: #b45309;
+  font-weight: 700;
+}
+
+.sap-check--plan {
+  margin: 4px 0;
+}
+
+.sap-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  font-size: 14px;
+  color: #334155;
+}
+
+.sap-featureTable {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 16px;
+  max-height: 420px;
+  overflow: auto;
+}
+
+.sap-featureTable-head,
+.sap-featureTable-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 120px;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 6px;
+}
+
+.sap-featureTable-head {
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.1);
+  position: sticky;
+  top: 0;
+  background: #fff;
+}
+
+.sap-featureTable-row {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+}
+
+.sap-limitInput {
+  max-width: 110px;
+}

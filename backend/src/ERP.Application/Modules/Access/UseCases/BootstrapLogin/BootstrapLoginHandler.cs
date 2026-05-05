@@ -1,12 +1,13 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
+using MediatR;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 
 namespace ERP.Application.Access.UseCases.BootstrapLogin;
 
-public class BootstrapLoginHandler
+public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Result<BootstrapLoginResponseDto>>
 {
     private readonly IAccessRepository _accessRepository;
     private readonly ITenantRepository _tenantRepository;
@@ -25,13 +26,17 @@ public class BootstrapLoginHandler
         _legacyUserRepository = legacyUserRepository;
     }
 
-    public async Task<Result<BootstrapLoginResponseDto>> HandleAsync(BootstrapLoginCommand command, CancellationToken ct = default)
+    public Task<Result<BootstrapLoginResponseDto>> HandleAsync(BootstrapLoginCommand command, CancellationToken ct = default)
+        => Handle(command, ct);
+
+    public async Task<Result<BootstrapLoginResponseDto>> Handle(BootstrapLoginCommand command, CancellationToken ct)
     {
-        var user = await _accessRepository.GetUserByEmailAsync(command.Email, ct);
+        var email = command.Email.Trim();
+        var user = await _accessRepository.GetUserByEmailAsync(email, ct);
         if (user is null)
         {
             // Puente de compatibilidad: permitir SuperAdmin legacy usar bootstrap-flow.
-            var legacySuper = await _legacyUserRepository.GetSingleSuperAdminByEmailAsync(command.Email, ct);
+            var legacySuper = await _legacyUserRepository.GetSingleSuperAdminByEmailAsync(email, ct);
             if (legacySuper is null || !legacySuper.IsActive)
                 return Result<BootstrapLoginResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
 

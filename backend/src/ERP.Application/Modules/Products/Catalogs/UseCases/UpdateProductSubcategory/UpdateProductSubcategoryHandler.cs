@@ -59,7 +59,7 @@ public class UpdateProductSubcategoryHandler
             userId,
             _currentUser.Email,
             _currentUser.FullName,
-            module: "catalog",
+            module: "inventario",
             action: "productSubcategory.update",
             entityType: "ProductSubcategory",
             entityId: entity.Id,

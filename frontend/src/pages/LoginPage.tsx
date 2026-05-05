@@ -4,22 +4,33 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../modules/lib/api';
 import { useAuthStore } from '../store/authStore';
+import { usePermissionsStore } from '../store/permissionsStore';
 import type { AuthResponse } from '../types/auth';
 import type { ApiResponse } from '../types/api';
 import { useI18n } from '../i18n/i18n';
 import { accessService } from '../services/accessService';
 import { useAccessStore } from '../store/accessStore';
-import { ZHFormHeader, ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormAlert, ZHFormActions } from '../components/zh/ZHForm';
+import { ZHFormHeader, ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormActions } from '../components/zh/ZHForm';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { ZHCenteredCard } from '../components/zh/ZHCenteredCard';
 import { loginSchema, type LoginFormValues } from '../schemas/auth/loginSchema';
 import { useDeployment } from '../deployment/DeploymentContext';
+import { GLOBAL_TENANT_ID } from '../constants/tenantIds';
+import { formatApiRequestError } from '../modules/lib/apiError';
 import './LoginPage.css';
+
+function normalizeUuid(uuid: string): string {
+  return uuid.replace(/-/g, '').toLowerCase();
+}
 
 export function LoginPage() {
   const navigate = useNavigate();
   const { superAdminPanelEnabled } = useDeployment();
   const login = useAuthStore((s) => s.login);
+  const clearPermissions = usePermissionsStore((s) => s.clearPermissions);
+  const setPermissionSnapshot = usePermissionsStore((s) => s.setPermissionSnapshot);
   const setBootstrap = useAccessStore((s) => s.setBootstrap);
+  const clearBootstrap = useAccessStore((s) => s.clearBootstrap);
   const { t } = useI18n();
 
   const {
@@ -34,27 +45,61 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  /** Sesión con tenant operativo: permisos + dashboard de esa empresa (misma idea que TenantSelectPage). */
+  const enterTenantDashboard = async (auth: AuthResponse) => {
+    clearBootstrap();
+    clearPermissions();
+    login(auth);
+    try {
+      const perms = await accessService.getMyPermissions();
+      setPermissionSnapshot({
+        permissions: perms?.permissions ?? [],
+        planCode: perms?.planCode ?? null,
+        enabledModules: perms?.enabledModules ?? [],
+      });
+    } catch {
+      // AppLayout vuelve a pedir permisos si siguen vacíos.
+    }
+    navigate('/dashboard', { replace: true });
+  };
+
   const onValid = async (form: LoginFormValues) => {
     setError('');
     setLoading(true);
 
+    const credentials = { email: form.email.trim().toLowerCase(), password: form.password };
+
     try {
-      if (superAdminPanelEnabled) {
-        try {
-          const { data } = await api.post<ApiResponse<AuthResponse>>('/api/auth/superadmin-login', {
-            email: form.email,
-            password: form.password,
-          });
-          login(data.responseObject);
-          navigate('/superadmin');
+      // Un solo POST: el backend ya resuelve SuperAdmin → JWT global; luego identity/legacy tenant.
+      // Evitar un segundo POST superadmin-login: el 401 disparaba el interceptor global (logout + reload).
+      // Sesión directa: identity_users + 1 empresa (admin creado al alta) y usuarios legacy en `users`.
+      try {
+        const { data } = await api.post<ApiResponse<AuthResponse>>('/api/auth/login', credentials);
+        const payload = data.responseObject;
+        if (payload?.token) {
+          const isGlobalSuperAdmin =
+            payload.role === 'SuperAdmin' && normalizeUuid(payload.tenantId) === normalizeUuid(GLOBAL_TENANT_ID);
+          if (superAdminPanelEnabled && isGlobalSuperAdmin) {
+            clearBootstrap();
+            clearPermissions();
+            login(payload);
+            navigate('/superadmin', { replace: true });
+            return;
+          }
+          await enterTenantDashboard(payload);
           return;
-        } catch {
-          // noop
         }
+      } catch {
+        // Credenciales incorrectas, multi-tenant (login devuelve error), etc. → intentar bootstrap.
       }
 
-      const bootstrap = await accessService.bootstrapLogin(form);
+      const bootstrap = await accessService.bootstrapLogin(credentials);
       setBootstrap(bootstrap);
+
+      if (bootstrap.tenants.length === 0) {
+        setError(t('login.error.default'));
+        return;
+      }
 
       if (bootstrap.tenants.length === 1) {
         const session = await accessService.switchTenant(bootstrap.bootstrapToken, {
@@ -71,25 +116,18 @@ export function LoginPage() {
           planCode: session.planCode,
           enabledModules: session.enabledModules ?? [],
         };
-        login(auth);
-        navigate('/dashboard');
-      } else {
-        navigate('/select-tenant');
+        await enterTenantDashboard(auth);
+        return;
       }
-    } catch {
-      try {
-        const { data } = await api.post<ApiResponse<AuthResponse>>('/api/auth/login', form);
-        login(data.responseObject);
-        const isGlobalSuperAdmin =
-          data.responseObject.role === 'SuperAdmin' &&
-          data.responseObject.tenantId === '00000000-0000-0000-0000-000000000000';
-        navigate(superAdminPanelEnabled && isGlobalSuperAdmin ? '/superadmin' : '/dashboard');
-      } catch (err2: unknown) {
-        const msg =
-          (err2 as { response?: { data?: { message?: string } } })?.response?.data?.message ??
-          t('login.error.default');
-        setError(msg);
-      }
+
+      navigate('/select-tenant', { replace: true });
+    } catch (err: unknown) {
+      setError(
+        formatApiRequestError(err, {
+          offline: t('common.apiUnreachable'),
+          generic: t('login.error.default'),
+        }),
+      );
     } finally {
       setLoading(false);
     }
@@ -100,7 +138,7 @@ export function LoginPage() {
       <form className="login-form" onSubmit={handleSubmit(onValid)} noValidate>
         <ZHFormHeader title={t('login.title')} subtitle={t('login.subtitle')} />
         <ZHFormBody>
-          {error ? <ZHFormAlert type="error" message={t('common.errorPrefix')} detail={error} /> : null}
+          {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
           <ZHFormSection title={t('login.title')}>
             <ZHGrid cols={1}>

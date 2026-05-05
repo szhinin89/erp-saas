@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Products.Catalogs.DTOs;
+using MediatR;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Products.Entities;
@@ -7,7 +8,7 @@ using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Products.Catalogs.UseCases.CreateBrand;
 
-public class CreateBrandHandler
+public class CreateBrandHandler : IRequestHandler<CreateBrandCommand, Result<BrandDto>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
@@ -26,7 +27,10 @@ public class CreateBrandHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<BrandDto>> HandleAsync(CreateBrandCommand command, CancellationToken ct = default)
+    public Task<Result<BrandDto>> HandleAsync(CreateBrandCommand command, CancellationToken ct = default)
+        => Handle(command, ct);
+
+    public async Task<Result<BrandDto>> Handle(CreateBrandCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId = _currentUser.UserId;
@@ -37,7 +41,7 @@ public class CreateBrandHandler
             userId,
             _currentUser.Email,
             _currentUser.FullName,
-            module: "catalog",
+            module: "inventario",
             action: "brand.create",
             entityType: "Brand",
             entityId: entity.Id,

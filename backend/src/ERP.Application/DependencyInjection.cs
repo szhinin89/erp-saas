@@ -1,4 +1,5 @@
 using System.Reflection;
+using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.Application.Behaviors;
@@ -16,6 +17,8 @@ public static class DependencyInjection
         var assembly = Assembly.GetExecutingAssembly();
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
+        services.AddValidatorsFromAssembly(assembly);
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(SubscriptionGateBehavior<,>));
 
         var handlerTypes = assembly

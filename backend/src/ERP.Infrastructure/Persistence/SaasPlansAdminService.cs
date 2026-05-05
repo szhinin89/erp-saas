@@ -270,6 +270,40 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
         }
     }
 
+    public async Task<Result<object?>> DeleteFeatureDefinitionAsync(Guid featureId, CancellationToken ct = default)
+    {
+        var f = await _db.SaasFeatureDefinitions.FirstOrDefaultAsync(x => x.Id == featureId, ct);
+        if (f is null)
+            return Result<object?>.Failure("Feature no encontrada.");
+
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        try
+        {
+            await _db.SaasPlanFeatures.Where(pf => pf.FeatureId == featureId).ExecuteDeleteAsync(ct);
+            await _db.TenantSubscriptionFeatureOverrides
+                .IgnoreQueryFilters()
+                .Where(o => o.FeatureId == featureId)
+                .ExecuteDeleteAsync(ct);
+            await _db.TenantSubscriptionUsages
+                .IgnoreQueryFilters()
+                .Where(u => u.FeatureId == featureId)
+                .ExecuteDeleteAsync(ct);
+            await _db.UiNavItems
+                .Where(i => i.SaasFeatureDefinitionId == featureId)
+                .ExecuteUpdateAsync(s => s.SetProperty(i => i.SaasFeatureDefinitionId, (Guid?)null), ct);
+
+            _db.SaasFeatureDefinitions.Remove(f);
+            await _db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            return Result<object?>.Success(null);
+        }
+        catch (Exception ex)
+        {
+            await tx.RollbackAsync(ct);
+            return Result<object?>.Failure($"No se pudo eliminar la definición: {ex.Message}");
+        }
+    }
+
     private async Task ClearRecommendedExceptAsync(Guid? exceptPlanId, CancellationToken ct)
     {
         var recommended = await _db.SaasPlans.Where(p => p.IsRecommended && (exceptPlanId == null || p.Id != exceptPlanId)).ToListAsync(ct);
