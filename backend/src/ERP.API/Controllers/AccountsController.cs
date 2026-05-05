@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Accounting.UseCases.CreateAccount;
 using ERP.Application.Accounting.UseCases.GetAccounts;
 using ERP.Application.Accounting.UseCases.GetAccountById;
@@ -22,24 +23,11 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class AccountsController : ControllerBase
 {
-    private readonly IMediator                  _mediator;
-    private readonly GetAccountsHandler         _getAccountsHandler;
-    private readonly GetAccountByIdHandler      _getAccountByIdHandler;
-    private readonly GetJournalEntriesHandler   _getJournalEntriesHandler;
-    private readonly GetJournalEntryByIdHandler _getJournalEntryByIdHandler;
+    private readonly IMediator _mediator;
 
-    public AccountsController(
-        IMediator mediator,
-        GetAccountsHandler getAccountsHandler,
-        GetAccountByIdHandler getAccountByIdHandler,
-        GetJournalEntriesHandler getJournalEntriesHandler,
-        GetJournalEntryByIdHandler getJournalEntryByIdHandler)
+    public AccountsController(IMediator mediator)
     {
-        _mediator                   = mediator;
-        _getAccountsHandler         = getAccountsHandler;
-        _getAccountByIdHandler      = getAccountByIdHandler;
-        _getJournalEntriesHandler   = getJournalEntriesHandler;
-        _getJournalEntryByIdHandler = getJournalEntryByIdHandler;
+        _mediator = mediator;
     }
 
     // ── Plan de cuentas ────────────────────────────────────────────
@@ -53,23 +41,17 @@ public class AccountsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
     {
-        var result = await _getAccountsHandler.HandleAsync(pageNumber, pageSize, ct);
-        if (!result.IsSuccess || result.Value is null)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>(
-                Success: false,
-                Message: result.Error ?? "Error",
-                ResponseObject: new { }));
-        }
+        var result = await _mediator.Send(new GetAccountsQuery(pageNumber, pageSize), ct);
+        if (!result.IsSuccess)
+            return this.ApiBadRequest(result.Error ?? "Error");
+        if (result.Value is null)
+            return this.ApiUnprocessableEntity("Respuesta de paginación inválida.");
 
-        return Ok(new ApiResponse<PagedResponse<AccountDto>>(
-            Success: true,
-            Message: "OK",
-            ResponseObject: new PagedResponse<AccountDto>(
+        return this.ApiOk(new PagedResponse<AccountDto>(
                 Items: result.Value.Items,
                 PageNumber: result.Value.PageNumber,
                 PageSize: result.Value.PageSize,
-                TotalCount: result.Value.TotalCount)));
+                TotalCount: result.Value.TotalCount));
     }
 
     /// <summary>Retorna una cuenta contable por su ID.</summary>
@@ -84,19 +66,8 @@ public class AccountsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
     {
-        var result = await _getAccountByIdHandler.HandleAsync(id, ct);
-        if (!result.IsSuccess)
-        {
-            return NotFound(new ApiResponse<object>(
-                Success: false,
-                Message: result.Error ?? "No encontrado",
-                ResponseObject: new { }));
-        }
-
-        return Ok(new ApiResponse<AccountDto?>(
-            Success: true,
-            Message: "OK",
-            ResponseObject: result.Value));
+        var result = await _mediator.Send(new GetAccountByIdQuery(id), ct);
+        return this.ToOkOrNotFound(result);
     }
 
     /// <summary>Crea una nueva cuenta en el plan de cuentas del tenant.</summary>
@@ -112,20 +83,13 @@ public class AccountsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<AccountDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create(
         [FromBody] CreateAccountCommand command,
         CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
-        return result.IsSuccess
-            ? StatusCode(StatusCodes.Status201Created, new ApiResponse<AccountDto?>(
-                Success: true,
-                Message: "Creado",
-                ResponseObject: result.Value))
-            : BadRequest(new ApiResponse<object>(
-                Success: false,
-                Message: result.Error ?? "Error",
-                ResponseObject: new { }));
+        return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
     // ── Asientos contables ─────────────────────────────────────────
@@ -139,23 +103,17 @@ public class AccountsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetJournalEntries([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
     {
-        var result = await _getJournalEntriesHandler.HandleAsync(pageNumber, pageSize, ct);
-        if (!result.IsSuccess || result.Value is null)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, new ApiResponse<object>(
-                Success: false,
-                Message: result.Error ?? "Error",
-                ResponseObject: new { }));
-        }
+        var result = await _mediator.Send(new GetJournalEntriesQuery(pageNumber, pageSize), ct);
+        if (!result.IsSuccess)
+            return this.ApiBadRequest(result.Error ?? "Error");
+        if (result.Value is null)
+            return this.ApiUnprocessableEntity("Respuesta de paginación inválida.");
 
-        return Ok(new ApiResponse<PagedResponse<JournalEntryDto>>(
-            Success: true,
-            Message: "OK",
-            ResponseObject: new PagedResponse<JournalEntryDto>(
+        return this.ApiOk(new PagedResponse<JournalEntryDto>(
                 Items: result.Value.Items,
                 PageNumber: result.Value.PageNumber,
                 PageSize: result.Value.PageSize,
-                TotalCount: result.Value.TotalCount)));
+                TotalCount: result.Value.TotalCount));
     }
 
     /// <summary>Retorna un asiento contable con todas sus líneas.</summary>
@@ -170,19 +128,8 @@ public class AccountsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetJournalEntryById(Guid id, CancellationToken ct)
     {
-        var result = await _getJournalEntryByIdHandler.HandleAsync(id, ct);
-        if (!result.IsSuccess)
-        {
-            return NotFound(new ApiResponse<object>(
-                Success: false,
-                Message: result.Error ?? "No encontrado",
-                ResponseObject: new { }));
-        }
-
-        return Ok(new ApiResponse<JournalEntryDto?>(
-            Success: true,
-            Message: "OK",
-            ResponseObject: result.Value));
+        var result = await _mediator.Send(new GetJournalEntryByIdQuery(id), ct);
+        return this.ToOkOrNotFound(result);
     }
 
     /// <summary>Crea un nuevo asiento contable.</summary>
@@ -197,19 +144,12 @@ public class AccountsController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<JournalEntryDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CreateJournalEntry(
         [FromBody] CreateJournalEntryCommand command,
         CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
-        return result.IsSuccess
-            ? StatusCode(StatusCodes.Status201Created, new ApiResponse<JournalEntryDto?>(
-                Success: true,
-                Message: "Creado",
-                ResponseObject: result.Value))
-            : BadRequest(new ApiResponse<object>(
-                Success: false,
-                Message: result.Error ?? "Error",
-                ResponseObject: new { }));
+        return this.ToCreatedOrBadRequest(result, "Creado");
     }
 }

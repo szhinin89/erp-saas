@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MediatR;
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Products.Catalogs.DTOs;
 using ERP.Application.Products.Catalogs.UseCases.CreateTariff;
 using ERP.Application.Products.Catalogs.UseCases.GetTariffs;
@@ -16,13 +18,11 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class TariffsController : ControllerBase
 {
-    private readonly CreateTariffHandler _create;
-    private readonly GetTariffsHandler _get;
+    private readonly IMediator _mediator;
 
-    public TariffsController(CreateTariffHandler create, GetTariffsHandler get)
+    public TariffsController(IMediator mediator)
     {
-        _create = create;
-        _get = get;
+        _mediator = mediator;
     }
 
     /// <summary>Lista tarifas (aranceles) del tenant.</summary>
@@ -31,16 +31,13 @@ public class TariffsController : ControllerBase
     /// <response code="200">Lista de tarifas (puede ser vacía).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpGet]
-    [Authorize(Policy = "perm:catalog.tariffs.view")]
+    [Authorize(Policy = "perm:inventario.tariffs.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<TariffDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool onlyActive = true, CancellationToken ct = default)
     {
-        var result = await _get.HandleAsync(onlyActive, ct);
-        return Ok(new ApiResponse<IReadOnlyList<TariffDto>>(
-            Success: result.IsSuccess,
-            Message: result.IsSuccess ? "OK" : result.Error ?? "Error",
-            ResponseObject: result.Value ?? Array.Empty<TariffDto>()));
+        var result = await _mediator.Send(new GetTariffsQuery(onlyActive), ct);
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<TariffDto>());
     }
 
     /// <summary>Crea una nueva tarifa (arancel).</summary>
@@ -49,22 +46,15 @@ public class TariffsController : ControllerBase
     /// <response code="400">Error de validación (por ejemplo, duplicado).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpPost]
-    [Authorize(Policy = "perm:catalog.tariffs.create")]
+    [Authorize(Policy = "perm:inventario.tariffs.create")]
     [ProducesResponseType(typeof(ApiResponse<TariffDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateTariffCommand command, CancellationToken ct = default)
     {
-        var result = await _create.HandleAsync(command, ct);
-        return result.IsSuccess
-            ? StatusCode(StatusCodes.Status201Created, new ApiResponse<TariffDto?>(
-                Success: true,
-                Message: "Creado",
-                ResponseObject: result.Value))
-            : BadRequest(new ApiResponse<object>(
-                Success: false,
-                Message: result.Error ?? "Error",
-                ResponseObject: new { }));
+        var result = await _mediator.Send(command, ct);
+        return this.ToCreatedOrBadRequest(result, "Creado");
     }
 }
 

@@ -1,4 +1,5 @@
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,16 +23,14 @@ public sealed class PublicDeploymentController : ControllerBase
     [HttpGet("deployment")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<DeploymentInfoDto>), StatusCodes.Status200OK)]
-    public ActionResult<ApiResponse<DeploymentInfoDto>> GetDeployment() =>
-        Ok(new ApiResponse<DeploymentInfoDto>(
-            Success: true,
-            Message: "OK",
+    public IActionResult GetDeployment()
+        => this.ApiOk(
             new DeploymentInfoDto(
                 SuperAdminPanelEnabled: _deployment.IsSuperAdminPanelEnabled,
                 MaxActiveTenants: _deployment.MaxActiveTenants,
                 MaxIdentityUsers: _deployment.MaxIdentityUsers,
                 DedicatedSingleClientInstance: _deployment.IsDedicatedSingleClientInstance,
-                MaxUsersPerTenant: _deployment.MaxUsersPerTenant)));
+                MaxUsersPerTenant: _deployment.MaxUsersPerTenant));
 }
 
 public sealed record DeploymentInfoDto(

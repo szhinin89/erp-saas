@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MediatR;
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Products.Catalogs.DTOs;
 using ERP.Application.Products.Catalogs.UseCases.CreateUnitOfMeasure;
 using ERP.Application.Products.Catalogs.UseCases.GetUnitsOfMeasure;
@@ -16,13 +18,11 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class UnitsOfMeasureController : ControllerBase
 {
-    private readonly CreateUnitOfMeasureHandler _create;
-    private readonly GetUnitsOfMeasureHandler _get;
+    private readonly IMediator _mediator;
 
-    public UnitsOfMeasureController(CreateUnitOfMeasureHandler create, GetUnitsOfMeasureHandler get)
+    public UnitsOfMeasureController(IMediator mediator)
     {
-        _create = create;
-        _get = get;
+        _mediator = mediator;
     }
 
     /// <summary>Lista unidades de medida del tenant.</summary>
@@ -31,16 +31,13 @@ public class UnitsOfMeasureController : ControllerBase
     /// <response code="200">Lista de unidades (puede ser vacía).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpGet]
-    [Authorize(Policy = "perm:catalog.units.view")]
+    [Authorize(Policy = "perm:inventario.units.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<UnitOfMeasureDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool onlyActive = true, CancellationToken ct = default)
     {
-        var result = await _get.HandleAsync(onlyActive, ct);
-        return Ok(new ApiResponse<IReadOnlyList<UnitOfMeasureDto>>(
-            Success: result.IsSuccess,
-            Message: result.IsSuccess ? "OK" : result.Error ?? "Error",
-            ResponseObject: result.Value ?? Array.Empty<UnitOfMeasureDto>()));
+        var result = await _mediator.Send(new GetUnitsOfMeasureQuery(onlyActive), ct);
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<UnitOfMeasureDto>());
     }
 
     /// <summary>Crea una nueva unidad de medida.</summary>
@@ -49,22 +46,15 @@ public class UnitsOfMeasureController : ControllerBase
     /// <response code="400">Error de validación (por ejemplo, duplicado).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpPost]
-    [Authorize(Policy = "perm:catalog.units.create")]
+    [Authorize(Policy = "perm:inventario.units.create")]
     [ProducesResponseType(typeof(ApiResponse<UnitOfMeasureDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateUnitOfMeasureCommand command, CancellationToken ct = default)
     {
-        var result = await _create.HandleAsync(command, ct);
-        return result.IsSuccess
-            ? StatusCode(StatusCodes.Status201Created, new ApiResponse<UnitOfMeasureDto?>(
-                Success: true,
-                Message: "Creado",
-                ResponseObject: result.Value))
-            : BadRequest(new ApiResponse<object>(
-                Success: false,
-                Message: result.Error ?? "Error",
-                ResponseObject: new { }));
+        var result = await _mediator.Send(command, ct);
+        return this.ToCreatedOrBadRequest(result, "Creado");
     }
 }
 

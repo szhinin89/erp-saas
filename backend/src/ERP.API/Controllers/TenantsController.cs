@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Tenants.UseCases.CreateTenant;
+using ERP.Application.Tenants.UseCases.UpdateTenantGlobalParameters;
 using ERP.Application.Tenants.UseCases.UpdatePasswordResetMode;
+using ERP.Application.Tenants.UseCases.UpdateTenantCompany;
 using ERP.Application.Tenants.UseCases.UpdateTenantSubscription;
 using ERP.Application.Tenants.DTOs;
 using ERP.Domain.Tenants.Interfaces;
@@ -23,18 +26,84 @@ public class TenantsController : ControllerBase
     private readonly CreateTenantHandler _createHandler;
     private readonly UpdateTenantPasswordResetModeHandler _updatePasswordResetModeHandler;
     private readonly UpdateTenantSubscriptionHandler _updateTenantSubscriptionHandler;
+    private readonly UpdateTenantCompanyHandler _updateTenantCompanyHandler;
+    private readonly UpdateTenantGlobalParametersHandler _updateTenantGlobalParametersHandler;
     private readonly ITenantRepository _tenantRepository;
 
     public TenantsController(
         CreateTenantHandler createHandler,
         UpdateTenantPasswordResetModeHandler updatePasswordResetModeHandler,
         UpdateTenantSubscriptionHandler updateTenantSubscriptionHandler,
+        UpdateTenantCompanyHandler updateTenantCompanyHandler,
+        UpdateTenantGlobalParametersHandler updateTenantGlobalParametersHandler,
         ITenantRepository tenantRepository)
     {
         _createHandler = createHandler;
         _updatePasswordResetModeHandler = updatePasswordResetModeHandler;
         _updateTenantSubscriptionHandler = updateTenantSubscriptionHandler;
+        _updateTenantCompanyHandler = updateTenantCompanyHandler;
+        _updateTenantGlobalParametersHandler = updateTenantGlobalParametersHandler;
         _tenantRepository = tenantRepository;
+    }
+
+    /// <summary>Obtiene el detalle de un tenant (SuperAdmin). Incluye datos comerciales/legales y suscripción.</summary>
+    [HttpGet("{id:guid}")]
+    [Authorize(Roles = "SuperAdmin")]
+    [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct)
+    {
+        var tenant = await _tenantRepository.GetByIdAsync(id, ct);
+        if (tenant is null)
+            return this.ApiNotFound("Empresa no encontrada.");
+
+        return this.ApiOk(TenantDto.FromTenant(tenant));
+    }
+
+    /// <summary>Actualiza datos comerciales/legales de la empresa (SuperAdmin).</summary>
+    [HttpPatch("{id:guid}/company")]
+    [Authorize(Roles = "SuperAdmin")]
+    [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateCompany(
+        [FromRoute] Guid id,
+        [FromBody] UpdateTenantCompanyRequest body,
+        CancellationToken ct)
+    {
+        var command = new UpdateTenantCompanyCommand(
+            id,
+            body.Name,
+            body.Slug,
+            body.Ruc,
+            body.ShortName,
+            body.TradeName,
+            body.Dinardap,
+            body.LogoUrl,
+            body.DisplayOrder,
+            body.Priority);
+
+        var result = await _updateTenantCompanyHandler.HandleAsync(command, ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    /// <summary>Actualiza parámetros globales de la empresa (SuperAdmin), dependientes del plan comercial.</summary>
+    [HttpPatch("{id:guid}/global-parameters")]
+    [Authorize(Roles = "SuperAdmin")]
+    [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateGlobalParameters(
+        [FromRoute] Guid id,
+        [FromBody] UpdateTenantGlobalParametersBody body,
+        CancellationToken ct)
+    {
+        var command = new UpdateTenantGlobalParametersCommand(
+            id,
+            body.ElectronicBillingTrialEnabled);
+
+        var result = await _updateTenantGlobalParametersHandler.HandleAsync(command, ct);
+        return this.ToOkOrBadRequest(result);
     }
 
     /// <summary>Crea un nuevo tenant (empresa) en el sistema.</summary>
@@ -47,20 +116,13 @@ public class TenantsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create(
         [FromBody] CreateTenantCommand command,
         CancellationToken ct)
     {
         var result = await _createHandler.HandleAsync(command, ct);
-        return result.IsSuccess
-            ? StatusCode(StatusCodes.Status201Created, new ApiResponse<TenantDto?>(
-                Success: true,
-                Message: "Creado",
-                ResponseObject: result.Value))
-            : BadRequest(new ApiResponse<object>(
-                Success: false,
-                Message: result.Error ?? "Error",
-                ResponseObject: new { }));
+        return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
     /// <summary>
@@ -75,12 +137,9 @@ public class TenantsController : ControllerBase
     {
         var tenant = await _tenantRepository.GetByIdAsync(id, ct);
         if (tenant is null || !tenant.IsActive)
-            return NotFound(new ApiResponse<object>(false, "Empresa no encontrada.", new { }));
+            return this.ApiNotFound("Empresa no encontrada.");
 
-        return Ok(new ApiResponse<TenantPublicSettingsDto?>(
-            true,
-            "OK",
-            new TenantPublicSettingsDto(tenant.Id, (int)tenant.PasswordResetMode)));
+        return this.ApiOk(new TenantPublicSettingsDto(tenant.Id, (int)tenant.PasswordResetMode));
     }
 
     /// <summary>
@@ -93,30 +152,36 @@ public class TenantsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdatePasswordResetMode(
         [FromRoute] Guid id,
         [FromBody] UpdateTenantPasswordResetModeCommand command,
         CancellationToken ct)
     {
         if (id != command.TenantId)
-            return BadRequest(new ApiResponse<object>(false, "TenantId no coincide con la ruta.", new { }));
+            return this.ApiBadRequest("TenantId no coincide con la ruta.");
 
         var result = await _updatePasswordResetModeHandler.HandleAsync(command, ct);
         return result.IsSuccess
-            ? Ok(new ApiResponse<object>(true, "OK", new { }))
-            : BadRequest(new ApiResponse<object>(false, result.Error ?? "Error", new { }));
+            ? this.ApiOk(new { })
+            : this.ApiBadRequest(result.Error ?? "Error");
     }
 
     /// <summary>
-    /// Actualiza plan comercial y módulos contratados del tenant (JSON de módulos habilitados).
-    /// Solo SuperAdmin: define qué módulos puede usar la empresa frente a permisos y API.
+    /// Actualiza el código de plan del tenant y la lista de módulos habilitados (<c>enabledModules</c>).
+    /// Solo SuperAdmin: acota qué módulos puede usar la empresa frente a permisos y API.
     /// </summary>
+    /// <remarks>
+    /// La composición detallada del plan (features por ítem de menú) se administra con
+    /// <c>PUT /api/superadmin/saas-plans/{planId}/features</c>; ver <c>docs/COMPANIES-PLAN-MENU-ADMIN.md</c>.
+    /// </remarks>
     [HttpPatch("{id:guid}/subscription")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateSubscription(
         [FromRoute] Guid id,
         [FromBody] UpdateTenantSubscriptionBody body,
@@ -124,9 +189,7 @@ public class TenantsController : ControllerBase
     {
         var command = new UpdateTenantSubscriptionCommand(id, body.PlanCode, body.EnabledModules);
         var result = await _updateTenantSubscriptionHandler.HandleAsync(command, ct);
-        return result.IsSuccess
-            ? Ok(new ApiResponse<TenantDto?>(true, "OK", result.Value))
-            : BadRequest(new ApiResponse<object>(false, result.Error ?? "Error", new { }));
+        return this.ToOkOrBadRequest(result);
     }
 }
 
@@ -135,4 +198,24 @@ public sealed class UpdateTenantSubscriptionBody
 {
     public string? PlanCode { get; set; }
     public List<string>? EnabledModules { get; set; }
+}
+
+/// <summary>Cuerpo para <c>PATCH .../company</c> (datos de empresa sin admin ni suscripción).</summary>
+public sealed class UpdateTenantCompanyRequest
+{
+    public string Name { get; set; } = "";
+    public string Slug { get; set; } = "";
+    public string? Ruc { get; set; }
+    public string? ShortName { get; set; }
+    public string? TradeName { get; set; }
+    public string? Dinardap { get; set; }
+    public string? LogoUrl { get; set; }
+    public int DisplayOrder { get; set; }
+    public int Priority { get; set; }
+}
+
+/// <summary>Cuerpo para <c>PATCH .../global-parameters</c> (parámetros globales por empresa).</summary>
+public sealed class UpdateTenantGlobalParametersBody
+{
+    public bool ElectronicBillingTrialEnabled { get; set; }
 }

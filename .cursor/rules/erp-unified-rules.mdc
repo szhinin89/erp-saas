@@ -7,6 +7,18 @@ alwaysApply: true
 
 # Reglas del proyecto ERP (unificado)
 
+## Consolidación de reglas (leer primero)
+
+- Esta regla es transversal y de contexto general.
+- Para cambios especificos, aplicar tambien:
+  - `rules-consolidated-map.mdc` (precedencia y mapa)
+  - `backend-api-contracts.mdc` (controllers y status HTTP)
+  - `backend-clean-architecture-strict.mdc` (capas)
+  - `backend-cqrs-validation-result.mdc` (Application)
+  - `backend-multitenancy-jwt-source.mdc` (tenant)
+  - `frontend-modules-i18n-validation.mdc` (frontend)
+  - `saas-navigation-no-sensitive-url.mdc` (navegacion SaaS)
+
 ## Índice (orden de lectura recomendado)
 
 1. [Flujo jerarquico (implementar una feature)](#sec-flow)
@@ -19,8 +31,9 @@ alwaysApply: true
 8. [Formularios de entidad con pestañas (`zh-form-tabs`)](#sec-entity-tabs)
 9. [Copy UX — menú, drawer, pestañas, PageShell](#sec-copy-ux)
 10. [Menú estático: rutas únicas por pantalla](#sec-nav)
-11. [SaaS: asignación a planes al crear módulo o formulario](#sec-saas-plan-assign)
-12. [Idioma Kichwa de Cañar (locale `qu`)](#sec-kichwa)
+11. [SaaS: IDs de tenant fuera de la URL (sessionStorage)](#sec-saas-url-context)
+12. [SaaS: asignación a planes al crear módulo o formulario](#sec-saas-plan-assign)
+13. [Idioma Kichwa de Cañar (locale `qu`)](#sec-kichwa)
 
 ---
 
@@ -41,8 +54,9 @@ Orden lógico para **no** saltarse capas ni contradecir UI:
 | 6 | Layout pestañas Datos vs listado (estructura de página) | [Formularios de entidad (tabs)](#sec-entity-tabs) |
 | 7 | Textos, `PageShell`, drawer, botones por pestaña | [Copy UX](#sec-copy-ux) |
 | 8 | Añadir ruta al menú sin duplicar `to` | [Menú estático](#sec-nav) |
-| 9 | Cualquier clave i18n nueva | [Kichwa de Cañar](#sec-kichwa) |
-| 10 | Nuevo módulo o formulario comercializable | [SaaS: planes al crear módulo o formulario](#sec-saas-plan-assign) |
+| 9 | Enlace o pantalla que pase contexto de tenant entre rutas | [SaaS: IDs fuera de la URL](#sec-saas-url-context) + `.cursor/rules/saas-navigation-no-sensitive-url.mdc` |
+| 10 | Cualquier clave i18n nueva | [Kichwa de Cañar](#sec-kichwa) |
+| 11 | Nuevo módulo o formulario comercializable | [SaaS: planes al crear módulo o formulario](#sec-saas-plan-assign) |
 
 **Regla práctica:** en frontend, **no** bajar a Copy UX (claves `*.tabList`, `PageShell`) sin haber alineado antes **ZH Form** + **orden de tabs**; en backend, **no** exponer endpoints sin **Validator** + reglas de dominio/EF acordes a [Validación en 4 capas](#sec-validation). Si el cambio es **módulo o pantalla con suscripción**, aplicar también [SaaS: planes](#sec-saas-plan-assign).
 
@@ -63,6 +77,7 @@ Orden lógico para **no** saltarse capas ni contradecir UI:
 - **Validación** → [Validación en 4 capas](#sec-validation).
 - **Formularios / pantallas** → [ZH Form](#sec-zh-form) → [Tabs entidad](#sec-entity-tabs) → [Copy UX](#sec-copy-ux).
 - **Menú** → [Rutas únicas](#sec-nav); copy del menú en [Copy UX](#sec-copy-ux).
+- **Tenant en URL / deep links** → [SaaS: IDs fuera de la URL](#sec-saas-url-context).
 - **Suscripción / planes / módulo nuevo** → [SaaS: planes al crear módulo o formulario](#sec-saas-plan-assign).
 - **Tercer idioma** → [Kichwa de Cañar](#sec-kichwa).
 
@@ -77,7 +92,7 @@ Estructura **real** (prevalece sobre diagramas desactualizados en otros document
 - **Backend (.NET 10):** `backend/src/ERP.Domain`, `ERP.Application`, `ERP.Infrastructure`, `ERP.API`. Módulos de negocio bajo `ERP.Domain/Modules/<Nombre>`, `ERP.Application/Modules/<Nombre>`, etc. (p. ej. `Accounting`, `Customers`, `Branches`).
 - **Frontend:** `frontend/` — Vite + React; i18n en `frontend/src/i18n/locales/` (`es`, `en`, `qu`).
 - **Docs humanas:** `CONTEXT.md` (índice); `docs/DESARROLLO.md` (operación y desarrollo); `docs/ARCHITECTURE.md` (capas y tenant).
-- **Reglas Cursor:** este archivo en `erp-saas/.cursor/rules/erp-unified-rules.mdc`.
+- **Reglas Cursor:** `erp-saas/.cursor/rules/erp-unified-rules.mdc` (este archivo) y `saas-navigation-no-sensitive-url.mdc` (IDs de tenant y contexto entre rutas).
 
 ---
 
@@ -155,7 +170,17 @@ Si la feature es solo frontend o solo API, aplica igualmente las capas que toque
 - **Frontend:** mensajes en **español** junto al campo.
 - **Application:** `ValidationException` (campo + mensaje).
 - **Domain:** `DomainException` vía middleware.
-- **API:** `ProblemDetails` y cuerpo de error estructurado según el proyecto.
+- **API:** contrato `ApiResponse<T>` (éxito y error), sin `ProblemDetails` personalizado en controllers.
+- **Status de validación:** `ValidationException` => **422** (`UnprocessableEntity`) desde `ExceptionMiddleware`.
+- **Status de negocio/entrada inválida:** **400** (`BadRequest`) cuando falla un `Result<T>` o guard clause de request.
+
+### Contrato API (backend) — obligatorio
+
+- En controllers de `ERP.API`, usar `ApiResultExtensions` (`ToOkOrBadRequest`, `ToCreatedOrBadRequest`, `ToOkOrNotFound`, `ToOkOrUnauthorized` y helpers `Api*`).
+- No crear `new ApiResponse<...>` manual en controllers salvo caso excepcional documentado.
+- Para endpoints con `[Authorize]`, declarar explícitamente `[ProducesResponseType(StatusCodes.Status401Unauthorized)]`; si aplica rol/policy restringida, también `403`.
+- Para create/update/commands con validación de entrada, declarar `400` y `422` en `ProducesResponseType` (cuando aplique por contrato del endpoint).
+- Para búsquedas por id, declarar `404` cuando la entidad puede no existir.
 
 ---
 
@@ -163,7 +188,7 @@ Si la feature es solo frontend o solo API, aplica igualmente las capas que toque
 
 ## ZH Form System (frontend)
 
-**Fuente de verdad visual:** `docs/zh-form-template/zh_erp_component_library.html`. Tokens en `frontend/src/index.css` (`:root`); clases en `frontend/src/components/zh/ZHForm.css`. Cualquier cambio de paleta o pieza base: mantener alineados **tres** sitios: `index.css`, `ZHForm.css` y el `<style>` del HTML de plantilla (`docs/zh-form-template/README.md`).
+**Fuente de verdad visual (solo en el repo unificado `erp-saas`):** `docs/zh-form-template/zh_erp_component_library.html`. No mantener una plantilla ZH paralela fuera del monorepo como autoridad; portar mejoras **a** esta ruta y al CSS. Tokens en `frontend/src/index.css` (`:root`); clases en `frontend/src/components/zh/ZHForm.css`. Cualquier cambio de paleta o pieza base: mantener alineados **tres** sitios: `index.css`, `ZHForm.css` y el `<style>` del HTML de plantilla (`docs/zh-form-template/README.md`).
 
 ### Qué significa “basarse en la plantilla”
 
@@ -277,8 +302,21 @@ Verbos de dominio en altas; **«Guardar cambios»** en edición (`common.saveCha
 - Cada `to` **como máximo una vez** entre grupos estáticos.
 - **Excepción:** Favoritos en `localStorage` pueden repetir `to`.
 - Al añadir ítem: mover o reutilizar `to`; no duplicar entre grupos.
+- **SuperAdmin (plataforma):** rutas `/superadmin/*` y `/companies` **no** deben persistirse en `ui_nav_items`; enlaces solo en `getSuperAdminPanelNavExtras` / `buildGlobalSuperAdminNavGroups` (`navConfig.ts`). El menú en BD es por módulos de clientes/tenant; el API de sesión filtra esas rutas si aún existieran en datos antiguos.
 
 Tras editar `navConfig`, verificar `to` únicos por `id` de grupo. El copy de menú y tabs está en [Copy UX](#sec-copy-ux) y [Tabs entidad](#sec-entity-tabs).
+
+---
+
+<a id="sec-saas-url-context"></a>
+
+## SaaS: IDs de tenant fuera de la URL (`sessionStorage`)
+
+**Regla de producto:** no colocar **UUID de tenant** (ni tokens) en `search` de la barra de direcciones. Eso reduce fuga por historial, referrer y enlaces copiados.
+
+**Implementación de referencia:** `frontend/src/navigation/companiesTenantDetailNav.ts` — claves `erp.saas.companies.detailTenantId` y `erp.saas.companies.subscriptionTenantId`, funciones `goToCompaniesTenantDetail` / `goToCompaniesTenantSubscription`, lectura y migración desde queries legacy en `CompaniesPage`.
+
+**Al extender el producto:** nuevos deep links entre rutas con contexto de tenant deben seguir el mismo criterio (nueva clave con prefijo `erp.saas.` o store), no nuevos `?tenantId=`. Detalle operativo: **`.cursor/rules/saas-navigation-no-sensitive-url.mdc`** (`alwaysApply`).
 
 ---
 

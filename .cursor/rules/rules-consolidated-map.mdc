@@ -1,0 +1,26 @@
+---
+description: Mapa consolidado de reglas y precedencia del proyecto
+alwaysApply: true
+---
+
+# Rule Map (consolidado)
+
+Usar este orden de precedencia cuando varias reglas apliquen al mismo cambio:
+
+1. Regla de alcance mas especifico (por `globs`) gana sobre regla general.
+2. Si hay conflicto, aplicar la regla mas estricta de seguridad/tenant/contrato API.
+3. Mantener consistencia con `erp-unified-rules.mdc` como guia transversal.
+
+## Reglas por area
+
+- Backend API controllers: `backend-api-contracts.mdc`
+- Arquitectura backend: `backend-clean-architecture-strict.mdc`
+- CQRS/validacion en Application: `backend-cqrs-validation-result.mdc`
+- Multi-tenant y TenantId: `backend-multitenancy-jwt-source.mdc`
+- Frontend modular + i18n + validacion: `frontend-modules-i18n-validation.mdc`
+- Navegacion SaaS sin IDs en URL: `saas-navigation-no-sensitive-url.mdc`
+
+## Nota de mantenimiento
+
+- Evitar duplicar la misma regla en varios archivos.
+- Cuando una regla crezca demasiado, moverla a una regla especifica por area.

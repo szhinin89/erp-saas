@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Modules.Branches.DTOs;
 using ERP.Application.Modules.Branches.UseCases.CreateBranch;
 using ERP.Application.Modules.Branches.UseCases.DisableBranch;
@@ -33,10 +34,7 @@ public sealed class BranchesController : ControllerBase
         var activeFilter = CatalogQueryParameters.ParseActiveFilter(Request.Query);
         var search = CatalogQueryParameters.ParseSearch(Request.Query);
         var result = await _mediator.Send(new GetBranchesQuery(activeFilter, search), ct);
-        return Ok(new ApiResponse<IReadOnlyList<BranchDto>>(
-            result.IsSuccess,
-            result.IsSuccess ? "OK" : result.Error ?? "Error",
-            result.Value ?? Array.Empty<BranchDto>()));
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<BranchDto>());
     }
 
     [HttpGet("{id:guid}")]
@@ -46,35 +44,30 @@ public sealed class BranchesController : ControllerBase
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new GetBranchByIdQuery(id), ct);
-        if (!result.IsSuccess)
-            return NotFound(new ApiResponse<object?>(false, result.Error ?? "No encontrado", null));
-
-        return Ok(new ApiResponse<BranchDetailDto?>(true, "OK", result.Value));
+        return this.ToOkOrNotFound(result);
     }
 
     [HttpPost]
     [Authorize(Policy = "perm:saas.branches.create")]
     [ProducesResponseType(typeof(ApiResponse<BranchDto?>), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateBranchCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
-        return result.IsSuccess
-            ? StatusCode(StatusCodes.Status201Created, new ApiResponse<BranchDto?>(true, "Creado", result.Value))
-            : BadRequest(new ApiResponse<object?>(false, result.Error ?? "Error", null));
+        return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
     [HttpPut("{id:guid}")]
     [Authorize(Policy = "perm:saas.branches.update")]
     [ProducesResponseType(typeof(ApiResponse<BranchDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBranchCommand command, CancellationToken ct = default)
     {
         if (id != command.Id)
-            return BadRequest(new ApiResponse<object?>(false, "El id de ruta no coincide con el cuerpo.", null));
+            return this.ApiBadRequest("El id de ruta no coincide con el cuerpo.");
 
         var result = await _mediator.Send(command, ct);
-        return result.IsSuccess
-            ? Ok(new ApiResponse<BranchDto?>(true, "OK", result.Value))
-            : BadRequest(new ApiResponse<object?>(false, result.Error ?? "Error", null));
+        return this.ToOkOrBadRequest(result);
     }
 
     [HttpPatch("{id:guid}/disable")]
@@ -82,9 +75,7 @@ public sealed class BranchesController : ControllerBase
     public async Task<IActionResult> Disable(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new DisableBranchCommand(id), ct);
-        return result.IsSuccess
-            ? Ok(new ApiResponse<BranchDto?>(true, "Deshabilitado", result.Value))
-            : BadRequest(new ApiResponse<object?>(false, result.Error ?? "Error", null));
+        return this.ToOkOrBadRequest(result, "Deshabilitado");
     }
 
     [HttpPatch("{id:guid}/enable")]
@@ -92,8 +83,6 @@ public sealed class BranchesController : ControllerBase
     public async Task<IActionResult> Enable(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new EnableBranchCommand(id), ct);
-        return result.IsSuccess
-            ? Ok(new ApiResponse<BranchDto?>(true, "Habilitado", result.Value))
-            : BadRequest(new ApiResponse<object?>(false, result.Error ?? "Error", null));
+        return this.ToOkOrBadRequest(result, "Habilitado");
     }
 }

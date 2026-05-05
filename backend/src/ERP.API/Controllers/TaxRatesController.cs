@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MediatR;
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Products.Catalogs.DTOs;
 using ERP.Application.Products.Catalogs.UseCases.CreateTaxRate;
 using ERP.Application.Products.Catalogs.UseCases.GetTaxRates;
@@ -17,13 +19,11 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class TaxRatesController : ControllerBase
 {
-    private readonly CreateTaxRateHandler _create;
-    private readonly GetTaxRatesHandler _get;
+    private readonly IMediator _mediator;
 
-    public TaxRatesController(CreateTaxRateHandler create, GetTaxRatesHandler get)
+    public TaxRatesController(IMediator mediator)
     {
-        _create = create;
-        _get = get;
+        _mediator = mediator;
     }
 
     /// <summary>Lista tarifas de impuestos (IVA/ICE).</summary>
@@ -33,16 +33,13 @@ public class TaxRatesController : ControllerBase
     /// <response code="200">Lista de tarifas (puede ser vacía).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpGet]
-    [Authorize(Policy = "perm:catalog.taxRates.view")]
+    [Authorize(Policy = "perm:inventario.taxRates.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<TaxRateDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] TaxRateType? type, [FromQuery] bool onlyActive = true, CancellationToken ct = default)
     {
-        var result = await _get.HandleAsync(type, onlyActive, ct);
-        return Ok(new ApiResponse<IReadOnlyList<TaxRateDto>>(
-            Success: result.IsSuccess,
-            Message: result.IsSuccess ? "OK" : result.Error ?? "Error",
-            ResponseObject: result.Value ?? Array.Empty<TaxRateDto>()));
+        var result = await _mediator.Send(new GetTaxRatesQuery(type, onlyActive), ct);
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<TaxRateDto>());
     }
 
     /// <summary>Crea una nueva tarifa de impuesto (IVA/ICE).</summary>
@@ -51,22 +48,15 @@ public class TaxRatesController : ControllerBase
     /// <response code="400">Error de validación (por ejemplo, duplicado o porcentaje inválido).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpPost]
-    [Authorize(Policy = "perm:catalog.taxRates.create")]
+    [Authorize(Policy = "perm:inventario.taxRates.create")]
     [ProducesResponseType(typeof(ApiResponse<TaxRateDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateTaxRateCommand command, CancellationToken ct = default)
     {
-        var result = await _create.HandleAsync(command, ct);
-        return result.IsSuccess
-            ? StatusCode(StatusCodes.Status201Created, new ApiResponse<TaxRateDto?>(
-                Success: true,
-                Message: "Creado",
-                ResponseObject: result.Value))
-            : BadRequest(new ApiResponse<object>(
-                Success: false,
-                Message: result.Error ?? "Error",
-                ResponseObject: new { }));
+        var result = await _mediator.Send(command, ct);
+        return this.ToCreatedOrBadRequest(result, "Creado");
     }
 }
 

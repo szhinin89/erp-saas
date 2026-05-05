@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using FluentValidation;
 using ERP.Domain.Subscriptions.Exceptions;
 
 namespace ERP.API.Middleware;
@@ -21,6 +22,13 @@ public class ExceptionMiddleware
         {
             await _next(context);
         }
+        catch (Exception ex) when (IsClientDisconnectedCancellation(context, ex))
+        {
+            // Cliente cerró la pestaña, navegó fuera o Axios abortó la petición; no es fallo del servidor.
+            _logger.LogDebug(ex, "Petición cancelada (cliente desconectado): {Method} {Path}",
+                context.Request.Method, context.Request.Path);
+            throw;
+        }
         catch (Exception ex)
         {
             // Logueamos el detalle completo internamente; el cliente recibe solo un mensaje seguro.
@@ -31,6 +39,14 @@ public class ExceptionMiddleware
         }
     }
 
+    private static bool IsClientDisconnectedCancellation(HttpContext context, Exception ex)
+    {
+        if (!context.RequestAborted.IsCancellationRequested)
+            return false;
+
+        return ex is OperationCanceledException or TaskCanceledException;
+    }
+
     private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         context.Response.ContentType = "application/json";
@@ -38,8 +54,21 @@ public class ExceptionMiddleware
         // Mensajes de ArgumentException / InvalidOperationException suelen ser textos de validación
         // pensados para el usuario (dominio y aplicación). Mostrarlos mejora la claridad en la UI;
         // el detalle técnico sigue solo en logs.
+        var validationErrors = exception is ValidationException validationException
+            ? validationException.Errors
+                .Where(e => e is not null)
+                .Select(e => new
+                {
+                    field = string.IsNullOrWhiteSpace(e.PropertyName) ? null : e.PropertyName,
+                    message = e.ErrorMessage
+                })
+                .ToArray()
+            : Array.Empty<object>();
+
         var (statusCode, message) = exception switch
         {
+            ValidationException =>
+                (HttpStatusCode.UnprocessableEntity, "La solicitud contiene errores de validación."),
             ArgumentException arg =>
                 (HttpStatusCode.BadRequest,
                  string.IsNullOrWhiteSpace(arg.Message) ? "Solicitud inválida." : arg.Message.Trim()),
@@ -58,7 +87,9 @@ public class ExceptionMiddleware
 
         context.Response.StatusCode = (int)statusCode;
 
-        var response = new { status = context.Response.StatusCode, message };
+        object response = validationErrors.Length > 0
+            ? new { status = context.Response.StatusCode, message, errors = validationErrors }
+            : new { status = context.Response.StatusCode, message };
         await context.Response.WriteAsync(JsonSerializer.Serialize(response));
     }
 }

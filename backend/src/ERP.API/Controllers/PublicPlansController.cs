@@ -1,4 +1,5 @@
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Subscriptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,6 +22,6 @@ public sealed class PublicPlansController : ControllerBase
     public async Task<IActionResult> GetPlans(CancellationToken ct)
     {
         var plans = await _query.GetVisiblePlansAsync(ct);
-        return Ok(new ApiResponse<object>(true, "OK", new { plans }));
+        return this.ApiOk(new { plans });
     }
 }

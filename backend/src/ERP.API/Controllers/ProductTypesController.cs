@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MediatR;
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Products.Catalogs.DTOs;
 using ERP.Application.Products.Catalogs.UseCases.CreateProductType;
 using ERP.Application.Products.Catalogs.UseCases.GetProductTypes;
@@ -16,13 +18,11 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class ProductTypesController : ControllerBase
 {
-    private readonly CreateProductTypeHandler _create;
-    private readonly GetProductTypesHandler _get;
+    private readonly IMediator _mediator;
 
-    public ProductTypesController(CreateProductTypeHandler create, GetProductTypesHandler get)
+    public ProductTypesController(IMediator mediator)
     {
-        _create = create;
-        _get = get;
+        _mediator = mediator;
     }
 
     /// <summary>Lista tipos de producto del tenant.</summary>
@@ -31,16 +31,13 @@ public class ProductTypesController : ControllerBase
     /// <response code="200">Lista de tipos (puede ser vacía).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpGet]
-    [Authorize(Policy = "perm:catalog.productTypes.view")]
+    [Authorize(Policy = "perm:inventario.productTypes.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ProductTypeDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool onlyActive = true, CancellationToken ct = default)
     {
-        var result = await _get.HandleAsync(onlyActive, ct);
-        return Ok(new ApiResponse<IReadOnlyList<ProductTypeDto>>(
-            Success: result.IsSuccess,
-            Message: result.IsSuccess ? "OK" : result.Error ?? "Error",
-            ResponseObject: result.Value ?? Array.Empty<ProductTypeDto>()));
+        var result = await _mediator.Send(new GetProductTypesQuery(onlyActive), ct);
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<ProductTypeDto>());
     }
 
     /// <summary>Crea un nuevo tipo de producto.</summary>
@@ -49,22 +46,15 @@ public class ProductTypesController : ControllerBase
     /// <response code="400">Error de validación (por ejemplo, duplicado).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpPost]
-    [Authorize(Policy = "perm:catalog.productTypes.create")]
+    [Authorize(Policy = "perm:inventario.productTypes.create")]
     [ProducesResponseType(typeof(ApiResponse<ProductTypeDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateProductTypeCommand command, CancellationToken ct = default)
     {
-        var result = await _create.HandleAsync(command, ct);
-        return result.IsSuccess
-            ? StatusCode(StatusCodes.Status201Created, new ApiResponse<ProductTypeDto?>(
-                Success: true,
-                Message: "Creado",
-                ResponseObject: result.Value))
-            : BadRequest(new ApiResponse<object>(
-                Success: false,
-                Message: result.Error ?? "Error",
-                ResponseObject: new { }));
+        var result = await _mediator.Send(command, ct);
+        return this.ToCreatedOrBadRequest(result, "Creado");
     }
 }
 

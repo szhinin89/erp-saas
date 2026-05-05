@@ -1,4 +1,5 @@
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Security.UseCases.GetSecurityAdminMatrix;
 using ERP.Application.Security.UseCases.UpsertSecurityAdminScopes;
 using ERP.Application.Security.DTOs;
@@ -45,13 +46,14 @@ public class SecurityController : ControllerBase
     public async Task<IActionResult> GetAdminMatrix(CancellationToken ct)
     {
         var result = await _getAdminMatrixHandler.HandleAsync(ct);
-        return result.IsSuccess
-            ? Ok(new ApiResponse<object>(true, "OK", new
-            {
-                users = result.Value.Users,
-                assignments = result.Value.Assignments
-            }))
-            : BadRequest(new ApiResponse<object>(false, result.Error ?? "Error", new { }));
+        if (!result.IsSuccess)
+            return this.ApiBadRequest(result.Error ?? "Error");
+
+        return this.ApiOk(new
+        {
+            users = result.Value.Users,
+            assignments = result.Value.Assignments
+        });
     }
 
     /// <summary>
@@ -70,12 +72,11 @@ public class SecurityController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpsertAdminScopes([FromBody] UpsertSecurityAdminScopesCommand command, CancellationToken ct)
     {
         var result = await _upsertAdminScopesHandler.HandleAsync(command, ct);
-        return result.IsSuccess
-            ? Ok(new ApiResponse<object>(true, "OK", new { }))
-            : BadRequest(new ApiResponse<object>(false, result.Error ?? "Error", new { }));
+        return this.ToOkOrBadRequest(result);
     }
 }
 

@@ -1,4 +1,5 @@
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Auth.UseCases.ClaimInitialSuperAdmin;
 using ERP.Application.Common;
@@ -29,13 +30,12 @@ public sealed class SetupController : ControllerBase
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> ClaimInitialSuperAdmin(
         [FromBody] ClaimInitialSuperAdminCommand command,
         CancellationToken ct)
     {
         var result = await _claimInitialSuperAdminHandler.HandleAsync(command, ct);
-        return result.IsSuccess
-            ? Ok(new ApiResponse<AuthResponseDto?>(true, "OK", result.Value))
-            : BadRequest(new ApiResponse<object>(false, result.Error ?? "Error", new { }));
+        return this.ToOkOrBadRequest(result);
     }
 }

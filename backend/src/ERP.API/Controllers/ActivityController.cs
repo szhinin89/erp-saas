@@ -1,4 +1,5 @@
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Audit.DTOs;
 using ERP.Application.Audit.UseCases.GetEntityActivity;
 using ERP.Application.Audit.UseCases.GetMyActivity;
@@ -34,10 +35,7 @@ public class ActivityController : ControllerBase
         CancellationToken ct = default)
     {
         var result = await _getMy.HandleAsync(module, page, pageSize, ct);
-        return Ok(new ApiResponse<IReadOnlyList<UserActivityDto>>(
-            Success: result.IsSuccess,
-            Message: result.IsSuccess ? "OK" : result.Error ?? "Error",
-            ResponseObject: result.Value ?? Array.Empty<UserActivityDto>()));
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<UserActivityDto>());
     }
 
     /// <summary>
@@ -52,10 +50,7 @@ public class ActivityController : ControllerBase
         CancellationToken ct = default)
     {
         var result = await _getEntity.HandleAsync(entityType, entityId, take, ct);
-        return Ok(new ApiResponse<IReadOnlyList<UserActivityDto>>(
-            Success: result.IsSuccess,
-            Message: result.IsSuccess ? "OK" : result.Error ?? "Error",
-            ResponseObject: result.Value ?? Array.Empty<UserActivityDto>()));
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<UserActivityDto>());
     }
 }
 

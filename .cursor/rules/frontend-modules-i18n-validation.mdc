@@ -1,0 +1,22 @@
+---
+description: Frontend React estricto por módulos, i18n y validación de formularios
+globs: frontend/src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Frontend rules (React + TS)
+
+- Organizar por módulos (`src/modules/{feature}/...`) y `shared/` para reutilizables.
+- Evitar lógica de negocio en componentes; mover a hooks/servicios/casos de uso UI.
+- Validación de formularios con Zod/Yup (preferir schemas centralizados).
+
+## i18n obligatorio
+
+- No hardcodear textos de UI visibles al usuario.
+- Usar claves i18n y mantener paridad en `es/en/qu` cuando se agreguen textos.
+
+## API/UI contracts
+
+- No enviar `tenantId` desde formularios tenant-scoped.
+- Consumir API desde capa `api/services` del módulo, no inline en JSX complejo.
+- Mantener componentes presentacionales simples y testeables.

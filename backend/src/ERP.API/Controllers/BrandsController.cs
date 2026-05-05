@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MediatR;
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Products.Catalogs.DTOs;
 using ERP.Application.Products.Catalogs.UseCases.CreateBrand;
 using ERP.Application.Products.Catalogs.UseCases.GetBrands;
@@ -16,13 +18,11 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class BrandsController : ControllerBase
 {
-    private readonly CreateBrandHandler _create;
-    private readonly GetBrandsHandler _get;
+    private readonly IMediator _mediator;
 
-    public BrandsController(CreateBrandHandler create, GetBrandsHandler get)
+    public BrandsController(IMediator mediator)
     {
-        _create = create;
-        _get = get;
+        _mediator = mediator;
     }
 
     /// <summary>Lista marcas del tenant.</summary>
@@ -31,16 +31,13 @@ public class BrandsController : ControllerBase
     /// <response code="200">Lista de marcas (puede ser vacía).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpGet]
-    [Authorize(Policy = "perm:catalog.brands.view")]
+    [Authorize(Policy = "perm:inventario.brands.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BrandDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool onlyActive = true, CancellationToken ct = default)
     {
-        var result = await _get.HandleAsync(onlyActive, ct);
-        return Ok(new ApiResponse<IReadOnlyList<BrandDto>>(
-            Success: result.IsSuccess,
-            Message: result.IsSuccess ? "OK" : result.Error ?? "Error",
-            ResponseObject: result.Value ?? Array.Empty<BrandDto>()));
+        var result = await _mediator.Send(new GetBrandsQuery(onlyActive), ct);
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<BrandDto>());
     }
 
     /// <summary>Crea una nueva marca.</summary>
@@ -49,22 +46,15 @@ public class BrandsController : ControllerBase
     /// <response code="400">Error de validación (por ejemplo, duplicado).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpPost]
-    [Authorize(Policy = "perm:catalog.brands.create")]
+    [Authorize(Policy = "perm:inventario.brands.create")]
     [ProducesResponseType(typeof(ApiResponse<BrandDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateBrandCommand command, CancellationToken ct = default)
     {
-        var result = await _create.HandleAsync(command, ct);
-        return result.IsSuccess
-            ? StatusCode(StatusCodes.Status201Created, new ApiResponse<BrandDto?>(
-                Success: true,
-                Message: "Creado",
-                ResponseObject: result.Value))
-            : BadRequest(new ApiResponse<object>(
-                Success: false,
-                Message: result.Error ?? "Error",
-                ResponseObject: new { }));
+        var result = await _mediator.Send(command, ct);
+        return this.ToCreatedOrBadRequest(result, "Creado");
     }
 }
 

@@ -1,6 +1,10 @@
+using System.Globalization;
 using ERP.API.Contracts;
+using ERP.API.Extensions;
+using ERP.Application.Admin;
 using ERP.Application.Common;
 using ERP.Application.Navigation;
+using ERP.Application.Navigation.DTOs;
 using ERP.Application.Subscriptions;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
@@ -26,6 +30,7 @@ public class SuperAdminController : ControllerBase
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly InstanceQuotaFileStore _instanceQuotaFile;
     private readonly INavigationMenuAdminService _navigationMenuAdmin;
+    private readonly IGrowthAnalyticsReader _growthAnalytics;
 
     public SuperAdminController(
         ITenantRepository tenantRepository,
@@ -33,7 +38,8 @@ public class SuperAdminController : ControllerBase
         ISaasCatalogQuery saasCatalogQuery,
         IDeploymentFeatureFlags deployment,
         InstanceQuotaFileStore instanceQuotaFile,
-        INavigationMenuAdminService navigationMenuAdmin)
+        INavigationMenuAdminService navigationMenuAdmin,
+        IGrowthAnalyticsReader growthAnalytics)
     {
         _tenantRepository = tenantRepository;
         _userRepository = userRepository;
@@ -41,12 +47,13 @@ public class SuperAdminController : ControllerBase
         _deployment = deployment;
         _instanceQuotaFile = instanceQuotaFile;
         _navigationMenuAdmin = navigationMenuAdmin;
+        _growthAnalytics = growthAnalytics;
     }
 
     /// <summary>Cuotas efectivas de la instancia (config + archivo <c>App_Data/instance-quota.json</c> si existe).</summary>
     [HttpGet("instance-quota")]
     [ProducesResponseType(typeof(ApiResponse<InstanceQuotaFileModel>), StatusCodes.Status200OK)]
-    public ActionResult<ApiResponse<InstanceQuotaFileModel>> GetInstanceQuota()
+    public IActionResult GetInstanceQuota()
     {
         var dto = new InstanceQuotaFileModel
         {
@@ -55,7 +62,7 @@ public class SuperAdminController : ControllerBase
             MaxIdentityUsers = _deployment.MaxIdentityUsers,
             MaxUsersPerTenant = _deployment.MaxUsersPerTenant,
         };
-        return Ok(new ApiResponse<InstanceQuotaFileModel>(true, "OK", dto));
+        return this.ApiOk(dto);
     }
 
     /// <summary>
@@ -65,19 +72,17 @@ public class SuperAdminController : ControllerBase
     [HttpPut("instance-quota")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public IActionResult PutInstanceQuota([FromBody] InstanceQuotaFileModel body)
     {
         if (body.DedicatedSingleClientInstance == true &&
             (!body.MaxActiveTenants.HasValue || body.MaxActiveTenants <= 0))
         {
-            return BadRequest(new ApiResponse<object>(
-                false,
-                "En instancia dedicada debe indicar maxActiveTenants (máximo de empresas/RUC) mayor que cero.",
-                new { }));
+            return this.ApiBadRequest("En instancia dedicada debe indicar maxActiveTenants (máximo de empresas/RUC) mayor que cero.");
         }
 
         _instanceQuotaFile.Write(body);
-        return Ok(new ApiResponse<object>(true, "Guardado", new { }));
+        return this.ApiOk(new { }, "Guardado");
     }
 
     /// <summary>Catálogo de planes comerciales y features incluidas (solo lectura).</summary>
@@ -88,14 +93,14 @@ public class SuperAdminController : ControllerBase
     public async Task<IActionResult> GetPlansCatalog(CancellationToken ct)
     {
         var plans = await _saasCatalogQuery.GetPlansWithFeaturesAsync(ct);
-        return Ok(new ApiResponse<object>(true, "OK", new { plans }));
+        return this.ApiOk(new { plans });
     }
 
-    /// <summary>Lista todas las empresas (tenants) activas.</summary>
+    /// <summary>Lista todas las empresas (tenants), activas e inactivas.</summary>
     /// <remarks>
     /// Útil para el "Tenant Picker" del Panel Global de SuperAdmin.
     /// </remarks>
-    /// <response code="200">Lista de empresas activas (id, name, slug).</response>
+    /// <response code="200">Lista de empresas (id, name, slug, isActive, plan, módulos).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     /// <response code="403">El usuario no tiene rol SuperAdmin.</response>
     [HttpGet("tenants")]
@@ -104,14 +109,15 @@ public class SuperAdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetTenants(CancellationToken ct)
     {
-        var tenants = await _tenantRepository.GetAllAsync(ct);
-        var active = tenants.Where(t => t.IsActive).ToList();
+        var tenants = (await _tenantRepository.GetAllAsync(ct))
+            .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
         // Métricas por empresa (globales del tenant): usuarios total/activos.
         // Nota: usamos ejecución SECUENCIAL para evitar concurrencia sobre el mismo DbContext scoped.
         // Si este endpoint crece en carga, se optimiza con queries agregadas (COUNT/GROUP BY) a nivel DB.
-        var items = new List<object>(active.Count);
-        foreach (var t in active)
+        var items = new List<object>(tenants.Count);
+        foreach (var t in tenants)
         {
             var users = await _userRepository.GetAllByTenantAsync(t.Id, ct);
             var totalUsers = users.Count;
@@ -131,7 +137,7 @@ public class SuperAdminController : ControllerBase
             });
         }
 
-        return Ok(new ApiResponse<object>(true, "OK", new { tenants = items }));
+        return this.ApiOk(new { tenants = items });
     }
 
     /// <summary>Métricas globales del sistema (todas las empresas).</summary>
@@ -160,7 +166,7 @@ public class SuperAdminController : ControllerBase
             .Select(t => new { t.Id, t.Name, t.Slug, t.IsActive, t.CreatedAt })
             .ToList();
 
-        return Ok(new ApiResponse<object>(true, "OK", new
+        return this.ApiOk(new
         {
             totals = new
             {
@@ -170,52 +176,148 @@ public class SuperAdminController : ControllerBase
                 activeUsers
             },
             recentTenants
-        }));
+        });
+    }
+
+    /// <summary>
+    /// Serie de crecimiento de empresas, usuarios (identidad) y membresías por periodo (día/semana/mes), con acumulados.
+    /// Por defecto últimos 3 meses y granularidad mensual.
+    /// </summary>
+    [HttpGet("growth-analytics")]
+    [ProducesResponseType(typeof(ApiResponse<GrowthAnalyticsResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetGrowthAnalytics(
+        [FromQuery] string? from,
+        [FromQuery] string? to,
+        [FromQuery] string? granularity,
+        CancellationToken ct)
+    {
+        var toUtc = ParseDateOrDefault(to, DateTime.UtcNow.Date);
+        var fromUtc = ParseDateOrDefault(from, toUtc.AddMonths(-3));
+        if ((toUtc - fromUtc).TotalDays > 800)
+        {
+            return this.ApiBadRequest("El rango máximo permitido es aproximadamente 24 meses.");
+        }
+
+        var g = (granularity ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(g))
+        {
+            var spanDays = (toUtc - fromUtc).TotalDays;
+            g = spanDays > 120 ? "month" : spanDays > 35 ? "week" : "day";
+        }
+
+        var dto = await _growthAnalytics.GetSeriesAsync(fromUtc, toUtc, g, ct);
+        return this.ApiOk(dto);
+    }
+
+    /// <summary>
+    /// Mismo rango y agrupación que growth-analytics; serie en MRR mensual equivalente (plan actual, tenants activos).
+    /// </summary>
+    [HttpGet("growth-analytics-monetary")]
+    [ProducesResponseType(typeof(ApiResponse<GrowthMonetaryResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetGrowthMonetary(
+        [FromQuery] string? from,
+        [FromQuery] string? to,
+        [FromQuery] string? granularity,
+        CancellationToken ct)
+    {
+        var toUtc = ParseDateOrDefault(to, DateTime.UtcNow.Date);
+        var fromUtc = ParseDateOrDefault(from, toUtc.AddMonths(-3));
+        if ((toUtc - fromUtc).TotalDays > 800)
+        {
+            return this.ApiBadRequest("El rango máximo permitido es aproximadamente 24 meses.");
+        }
+
+        var g = (granularity ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrEmpty(g))
+        {
+            var spanDays = (toUtc - fromUtc).TotalDays;
+            g = spanDays > 120 ? "month" : spanDays > 35 ? "week" : "day";
+        }
+
+        var dto = await _growthAnalytics.GetMonetarySeriesAsync(fromUtc, toUtc, g, ct);
+        return this.ApiOk(dto);
+    }
+
+    private static DateTime ParseDateOrDefault(string? isoDate, DateTime fallbackUtcDate)
+    {
+        if (!string.IsNullOrWhiteSpace(isoDate) &&
+            DateTime.TryParse(isoDate, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))
+        {
+            return DateTime.SpecifyKind(parsed.Date, DateTimeKind.Utc);
+        }
+
+        return DateTime.SpecifyKind(fallbackUtcDate.Date, DateTimeKind.Utc);
     }
 
     /// <summary>Árbol del menú principal (grupos e ítems recursivos) para configuración.</summary>
     [HttpGet("navigation-menu")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetNavigationMenu(CancellationToken ct)
     {
         var menu = await _navigationMenuAdmin.GetMenuTreeAsync(ct);
-        return Ok(new ApiResponse<object>(true, "OK", new { menu }));
+        return this.ApiOk(new { menu });
     }
 
     /// <summary>Reordena grupos activos del menú principal (<c>ui_nav_groups.sort_order</c>).</summary>
     [HttpPut("navigation-menu/groups/reorder")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> ReorderNavigationGroups(
         [FromBody] ReorderNavigationGroupsRequest body,
         CancellationToken ct)
     {
         if (body.OrderedGroupIds is not { Count: > 0 })
-            return BadRequest(new ApiResponse<object>(false, "orderedGroupIds requerido.", new { }));
+            return this.ApiBadRequest("orderedGroupIds requerido.");
 
         var (ok, err) = await _navigationMenuAdmin.ReorderGroupsAsync(body.OrderedGroupIds, ct);
         if (!ok)
-            return BadRequest(new ApiResponse<object>(false, err ?? "Error", new { }));
+            return this.ApiBadRequest(err ?? "Error");
 
-        return Ok(new ApiResponse<object>(true, "Guardado", new { }));
+        return this.ApiOk(new { }, "Guardado");
     }
 
-    /// <summary>Reordena ítems por nivel (mismo grupo y mismo padre).</summary>
+    /// <summary>Aplica árbol de ítems: jerarquía (<c>parent_item_id</c>) y orden entre hermanos.</summary>
     [HttpPut("navigation-menu/items/reorder-levels")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> ReorderNavigationItemLevels(
         [FromBody] ReorderNavigationItemLevelsRequest body,
         CancellationToken ct)
     {
         if (body.Levels is not { Count: > 0 })
-            return BadRequest(new ApiResponse<object>(false, "levels requerido.", new { }));
+            return this.ApiBadRequest("levels requerido.");
 
         var (ok, err) = await _navigationMenuAdmin.ReorderItemLevelsAsync(body.Levels, ct);
         if (!ok)
-            return BadRequest(new ApiResponse<object>(false, err ?? "Error", new { }));
+            return this.ApiBadRequest(err ?? "Error");
 
-        return Ok(new ApiResponse<object>(true, "Guardado", new { }));
+        return this.ApiOk(new { }, "Guardado");
+    }
+
+    /// <summary>Crea un ítem de menú (submenú o hoja) bajo un grupo, en la raíz o bajo un padre.</summary>
+    [HttpPost("navigation-menu/items")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> CreateNavigationMenuItem([FromBody] CreateNavItemRequest body, CancellationToken ct)
+    {
+        var (ok, newId, err) = await _navigationMenuAdmin.CreateNavItemAsync(body, ct);
+        if (!ok || newId is null)
+            return this.ApiBadRequest(err ?? "Error");
+
+        return this.ApiOk(new { id = newId }, "Creado");
     }
 }
 

@@ -1,0 +1,22 @@
+---
+description: Multi-tenant estricto: TenantId siempre desde JWT/contexto
+globs: backend/src/**/*.cs
+alwaysApply: false
+---
+
+# Multi-tenancy backend (obligatorio)
+
+- `TenantId` se obtiene desde JWT/contexto (`CurrentTenantService` / `ICurrentTenant`).
+- No aceptar `TenantId` desde body/query para operaciones tenant-scoped.
+- Evitar rutas con `tenantId` para operaciones del tenant autenticado.
+
+## Persistencia y filtros
+
+- Entidades multi-tenant deben incluir `TenantId` y contrato de tenant (`IMustHaveTenant`/equivalente).
+- Mantener filtro global por tenant en `DbContext` para lecturas.
+- Índices únicos deben considerar `TenantId` cuando la unicidad es por empresa.
+
+## API y seguridad
+
+- Endpoints tenant-scoped deben depender de claims del token, no del payload.
+- Sólo flujos de plataforma/superadmin pueden operar cross-tenant y deben estar autorizados.

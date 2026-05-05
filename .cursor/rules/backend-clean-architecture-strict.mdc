@@ -1,0 +1,25 @@
+---
+description: Arquitectura limpia estricta para backend ERP (.NET)
+globs: backend/src/**/*.cs
+alwaysApply: false
+---
+
+# Backend Clean Architecture (estricto)
+
+- Respetar capas: `ERP.API -> ERP.Application -> ERP.Domain <- ERP.Infrastructure`.
+- `ERP.Domain` no debe depender de librerías externas de aplicación/infra/API.
+- `ERP.API` no referencia entidades de dominio en contratos HTTP; usar DTOs.
+- `ERP.Application` concentra casos de uso, orquestación y validación, sin acceso HTTP/UI.
+- `ERP.Infrastructure` implementa persistencia/servicios técnicos; no reglas de negocio.
+
+## Estructura por módulo (esperada)
+
+- Domain: `Modules/{Modulo}/Entities|ValueObjects|Exceptions|Shared`.
+- Application: `Modules/{Modulo}/Commands|Queries|DTOs|Validators`.
+- Mantener verticalidad por módulo; no mezclar features entre módulos sin contrato explícito.
+
+## Reglas prácticas
+
+- Controller delgado: recibe request, delega, devuelve contrato HTTP.
+- Evitar lógica de negocio en controllers, repositorios y mapeos de infraestructura.
+- Preferir cambios incrementales sobre refactors masivos fuera de alcance.

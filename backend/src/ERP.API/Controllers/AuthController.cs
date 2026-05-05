@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Auth.UseCases.Register;
 using ERP.Application.Auth.UseCases.Login;
 using ERP.Application.Auth.UseCases.PasswordReset;
@@ -46,20 +47,13 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Register(
         [FromBody] RegisterCommand command,
         CancellationToken ct)
     {
         var result = await _registerHandler.HandleAsync(command, ct);
-        return result.IsSuccess
-            ? Ok(new ApiResponse<AuthResponseDto?>(
-                Success: true,
-                Message: "OK",
-                ResponseObject: result.Value))
-            : BadRequest(new ApiResponse<object>(
-                Success: false,
-                Message: result.Error ?? "Error",
-                ResponseObject: new { }));
+        return this.ToOkOrBadRequest(result);
     }
 
     /// <summary>Inicia sesión y retorna un JWT Bearer.</summary>
@@ -76,13 +70,14 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Login(
         [FromBody] LoginCommand command,
         CancellationToken ct)
     {
         var result = await _loginHandler.HandleAsync(command, ct);
         if (result.IsSuccess)
-            return Ok(new ApiResponse<AuthResponseDto?>(true, "OK", result.Value));
+            return this.ApiOk(result.Value);
 
         return MapAuthFailure(result.Error);
     }
@@ -97,14 +92,13 @@ public class AuthController : ControllerBase
     [HttpPost("password-reset")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> PasswordReset(
         [FromBody] PasswordResetCommand command,
         CancellationToken ct)
     {
         var result = await _passwordResetHandler.HandleAsync(command, ct);
-        return result.IsSuccess
-            ? Ok(new ApiResponse<object>(true, "OK", new { }))
-            : BadRequest(new ApiResponse<object>(false, result.Error ?? "Error", new { }));
+        return this.ToOkOrBadRequest(result);
     }
 
     /// <summary>
@@ -114,11 +108,12 @@ public class AuthController : ControllerBase
     [HttpPost("superadmin-login")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> SuperAdminLogin([FromBody] SuperAdminLoginCommand command, CancellationToken ct)
     {
         var result = await _superAdminLoginHandler.HandleAsync(command, ct);
         if (result.IsSuccess)
-            return Ok(new ApiResponse<AuthResponseDto?>(true, "OK", result.Value));
+            return this.ApiOk(result.Value);
 
         return MapAuthFailure(result.Error);
     }
@@ -130,11 +125,10 @@ public class AuthController : ControllerBase
             error.StartsWith(DeploymentAuthMessages.ForbiddenPrefix, StringComparison.Ordinal))
         {
             var msg = error[DeploymentAuthMessages.ForbiddenPrefix.Length..].TrimStart();
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ApiResponse<object>(false, msg, new { }));
+            return this.ApiForbidden(msg);
         }
 
-        return Unauthorized(new ApiResponse<object>(false, error ?? "Unauthorized", new { }));
+        return this.ApiUnauthorized(error ?? "Unauthorized");
     }
 
     /// <summary>
@@ -144,11 +138,10 @@ public class AuthController : ControllerBase
     [Microsoft.AspNetCore.Authorization.Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> SwitchTenant([FromBody] SwitchTenantCommand command, CancellationToken ct)
     {
         var result = await _switchTenantHandler.HandleAsync(command, ct);
-        return result.IsSuccess
-            ? Ok(new ApiResponse<AuthResponseDto?>(true, "OK", result.Value))
-            : BadRequest(new ApiResponse<object>(false, result.Error ?? "Error", new { }));
+        return this.ToOkOrBadRequest(result);
     }
 }

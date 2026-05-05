@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
+using ERP.API.Extensions;
 using ERP.Application.Modules.Branches.DTOs;
 using ERP.Application.Modules.Branches.UseCases.GetGeoCantons;
 using ERP.Application.Modules.Branches.UseCases.GetGeoCountries;
@@ -38,10 +39,7 @@ public sealed class GeographyController : ControllerBase
     public async Task<IActionResult> Countries(CancellationToken ct = default)
     {
         var result = await _countries.HandleAsync(ct);
-        return Ok(new ApiResponse<IReadOnlyList<GeographyItemDto>>(
-            result.IsSuccess,
-            result.IsSuccess ? "OK" : result.Error ?? "Error",
-            result.Value ?? Array.Empty<GeographyItemDto>()));
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<GeographyItemDto>());
     }
 
     [HttpGet("provinces")]
@@ -49,10 +47,7 @@ public sealed class GeographyController : ControllerBase
     public async Task<IActionResult> Provinces([FromQuery] string countryId, CancellationToken ct = default)
     {
         var result = await _provinces.HandleAsync(countryId, ct);
-        return Ok(new ApiResponse<IReadOnlyList<GeographyItemDto>>(
-            result.IsSuccess,
-            result.IsSuccess ? "OK" : result.Error ?? "Error",
-            result.Value ?? Array.Empty<GeographyItemDto>()));
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<GeographyItemDto>());
     }
 
     [HttpGet("cantons")]
@@ -60,10 +55,7 @@ public sealed class GeographyController : ControllerBase
     public async Task<IActionResult> Cantons([FromQuery] string provinceId, CancellationToken ct = default)
     {
         var result = await _cantons.HandleAsync(provinceId, ct);
-        return Ok(new ApiResponse<IReadOnlyList<GeographyItemDto>>(
-            result.IsSuccess,
-            result.IsSuccess ? "OK" : result.Error ?? "Error",
-            result.Value ?? Array.Empty<GeographyItemDto>()));
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<GeographyItemDto>());
     }
 
     [HttpGet("parishes")]
@@ -71,9 +63,6 @@ public sealed class GeographyController : ControllerBase
     public async Task<IActionResult> Parishes([FromQuery] string cantonId, CancellationToken ct = default)
     {
         var result = await _parishes.HandleAsync(cantonId, ct);
-        return Ok(new ApiResponse<IReadOnlyList<GeographyItemDto>>(
-            result.IsSuccess,
-            result.IsSuccess ? "OK" : result.Error ?? "Error",
-            result.Value ?? Array.Empty<GeographyItemDto>()));
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<GeographyItemDto>());
     }
 }
