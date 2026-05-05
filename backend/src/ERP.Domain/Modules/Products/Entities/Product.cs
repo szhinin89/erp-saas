@@ -1,5 +1,6 @@
 using ERP.Domain.Common;
 using ERP.Domain.Products.Enums;
+using ERP.Domain.Products.ValueObjects;
 
 namespace ERP.Domain.Products.Entities;
 
@@ -9,7 +10,7 @@ namespace ERP.Domain.Products.Entities;
 /// impuestos por catálogo, flags de canal y comportamiento.
 /// REGLA: Nunca se elimina. Solo se deshabilita con Disable().
 /// </summary>
-public class Product : MasterEntity
+public class Product : MasterEntity, ITenantEntity
 {
     private readonly List<ProductBarcode> _barcodes = new();
     private readonly List<ProductSupplierCode> _supplierCodes = new();
@@ -138,6 +139,8 @@ public class Product : MasterEntity
         bool handlesTariff = false,
         bool isForSale = true)
     {
+        var identity = ProductIdentity.Create(saleCode, shortName, description);
+
         if (maxItemDiscountPercent < 0 || maxItemDiscountPercent > 100)
             throw new ArgumentException("El descuento máximo por ítem debe estar entre 0 y 100.", nameof(maxItemDiscountPercent));
 
@@ -154,10 +157,10 @@ public class Product : MasterEntity
         {
             Id                = Guid.NewGuid(),
             TenantId          = tenantId,
-            SaleCode          = saleCode,
+            SaleCode          = identity.SaleCode,
             PurchaseCode      = purchaseCode,
-            ShortName         = shortName,
-            Description       = description,
+            ShortName         = identity.ShortName,
+            Description       = identity.Description,
             LineId            = lineId,
             CategoryId        = categoryId,
             SubcategoryId     = subcategoryId,
@@ -234,6 +237,8 @@ public class Product : MasterEntity
         bool handlesTariff,
         Guid updatedBy)
     {
+        var identity = ProductIdentity.Create(SaleCode, shortName, description);
+
         if (maxItemDiscountPercent < 0 || maxItemDiscountPercent > 100)
             throw new ArgumentException("El descuento máximo por ítem debe estar entre 0 y 100.", nameof(maxItemDiscountPercent));
 
@@ -246,8 +251,8 @@ public class Product : MasterEntity
         if (appliesExciseTax && exciseTaxId is null)
             throw new ArgumentException("Debe seleccionar una tarifa de ICE.", nameof(exciseTaxId));
 
-        ShortName       = shortName;
-        Description     = description;
+        ShortName       = identity.ShortName;
+        Description     = identity.Description;
         Observations    = observations;
         LineId          = lineId;
         CategoryId      = categoryId;

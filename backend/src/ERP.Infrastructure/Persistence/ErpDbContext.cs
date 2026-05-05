@@ -88,7 +88,7 @@ public class ErpDbContext : DbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ErpDbContext).Assembly);
 
         // Filtro global multi-tenant automático:
-        // - Aplica a toda entidad NO-OWNED que implemente IMustHaveTenant.
+        // - Aplica a toda entidad NO-OWNED que implemente ITenantEntity.
         // - Evita que al agregar una nueva entidad se nos olvide registrar el filtro.
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -98,11 +98,11 @@ public class ErpDbContext : DbContext
             var clrType = entityType.ClrType;
             if (clrType == typeof(Tenant))
                 continue;
-            if (!typeof(IMustHaveTenant).IsAssignableFrom(clrType))
+            if (!typeof(ITenantEntity).IsAssignableFrom(clrType))
                 continue;
 
             var parameter = Expression.Parameter(clrType, "e");
-            var tenantProperty = Expression.Property(parameter, nameof(IMustHaveTenant.TenantId));
+            var tenantProperty = Expression.Property(parameter, nameof(ITenantEntity.TenantId));
             var currentTenant = Expression.Property(Expression.Constant(this), nameof(CurrentTenantId));
             var body = Expression.Equal(tenantProperty, currentTenant);
             var lambda = Expression.Lambda(body, parameter);

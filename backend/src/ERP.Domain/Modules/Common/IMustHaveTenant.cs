@@ -1,7 +1,6 @@
 namespace ERP.Domain.Common;
 
-public interface IMustHaveTenant
+public interface IMustHaveTenant : ITenantEntity
 {
-    Guid TenantId { get; }
 }
 
