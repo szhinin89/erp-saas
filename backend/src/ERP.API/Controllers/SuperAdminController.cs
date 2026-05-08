@@ -20,7 +20,7 @@ namespace ERP.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/superadmin")]
-[Authorize(Roles = "SuperAdmin")]
+[Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]
 public class SuperAdminController : ControllerBase
 {

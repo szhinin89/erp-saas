@@ -20,8 +20,8 @@ public sealed record ProductIdentity
     public static ProductIdentity Create(string saleCode, string shortName, string description)
     {
         var normalizedSaleCode = NormalizeRequired(saleCode, nameof(saleCode), 50);
-        var normalizedShortName = NormalizeRequired(shortName, nameof(shortName), 200);
-        var normalizedDescription = NormalizeRequired(description, nameof(description), 500);
+        var normalizedShortName = NormalizeRequired(shortName, nameof(shortName), 50);
+        var normalizedDescription = NormalizeRequired(description, nameof(description), 254);
 
         return new ProductIdentity(normalizedSaleCode, normalizedShortName, normalizedDescription);
     }

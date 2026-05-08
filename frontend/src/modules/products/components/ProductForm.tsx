@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import type { CatalogItem } from '../../../services/catalogService';
 import { defaultProductValues, productSchema, type ProductFormValues } from '../schemas/productSchema';
@@ -27,6 +28,7 @@ export function ProductForm({ t, catalogs, loading, onSubmit }: Props) {
   const {
     register,
     handleSubmit,
+    setValue,
     watch,
     formState: { errors },
   } = useForm<ProductFormValues>({
@@ -36,6 +38,15 @@ export function ProductForm({ t, catalogs, loading, onSubmit }: Props) {
 
   const selectedLineId = watch('lineId');
   const selectedCategoryId = watch('categoryId');
+
+  useEffect(() => {
+    setValue('categoryId', EMPTY_GUID, { shouldDirty: true, shouldValidate: true });
+    setValue('subcategoryId', EMPTY_GUID, { shouldDirty: true, shouldValidate: true });
+  }, [selectedLineId, setValue]);
+
+  useEffect(() => {
+    setValue('subcategoryId', EMPTY_GUID, { shouldDirty: true, shouldValidate: true });
+  }, [selectedCategoryId, setValue]);
 
   const filteredCategories = (catalogs?.categories ?? []).filter((item) => {
     if (selectedLineId === EMPTY_GUID) return false;
