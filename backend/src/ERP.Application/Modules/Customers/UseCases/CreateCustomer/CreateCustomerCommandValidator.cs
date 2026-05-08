@@ -8,11 +8,16 @@ public sealed class CreateCustomerCommandValidator : AbstractValidator<CreateCus
     {
         RuleFor(x => x.IdentificationType)
             .NotEmpty().WithMessage("El tipo de identificación es obligatorio.")
-            .MaximumLength(20).WithMessage("El tipo de identificación no puede exceder 20 caracteres.");
+            .Must(type => type is not null && (
+                string.Equals(type.Trim(), "RUC", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(type.Trim(), "CI", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(type.Trim(), "CEDULA", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(type.Trim(), "CÉDULA", StringComparison.OrdinalIgnoreCase)))
+            .WithMessage("El tipo de identificación debe ser RUC o CI.");
 
         RuleFor(x => x.IdentificationNumber)
             .NotEmpty().WithMessage("El número de identificación es obligatorio.")
-            .MaximumLength(30).WithMessage("El número de identificación no puede exceder 30 caracteres.");
+            .MaximumLength(32).WithMessage("El número de identificación no puede exceder 32 caracteres.");
 
         RuleFor(x => x.LegalName)
             .NotEmpty().WithMessage("La razón social es obligatoria.")

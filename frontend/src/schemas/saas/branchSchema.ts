@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const branchFormSchema = z.object({
-  name: z.string().min(1, 'El nombre de la sucursal es obligatorio'),
-  address: z.string().min(1, 'La dirección es obligatoria'),
+  name: z.string().min(1, 'Ingresa el nombre de la sucursal.'),
+  address: z.string().min(1, 'Ingresa la dirección.'),
   reference: z.string(),
   phones: z.string(),
   countryId: z.string(),

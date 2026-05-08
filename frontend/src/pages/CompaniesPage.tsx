@@ -138,9 +138,11 @@ function CompaniesPage() {
     setError('');
     setLoading(true);
     try {
-      setItems(await companyService.list());
+      const nextItems = await companyService.list();
+      setItems(Array.isArray(nextItems) ? nextItems : []);
     } catch {
       setError(t('companies.error.load'));
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -291,7 +293,7 @@ function CompaniesPage() {
           setElectronicBillingTrialEnabled(tenantDetail.electronicBillingTrialEnabled);
           setGlobalParamScopeResolved('');
         }
-        setGlobalConfigCount(globals.length);
+        setGlobalConfigCount(Array.isArray(globals) ? globals.length : 0);
       } catch {
         if (!cancelled) {
           setElectronicBillingTrialEnabled(tenantDetail.electronicBillingTrialEnabled);
@@ -400,7 +402,7 @@ function CompaniesPage() {
       });
       setGlobalParamScopeResolved('global');
       const globals = await companyService.listTenantGlobalConfig(detailTenantId);
-      setGlobalConfigCount(globals.length);
+      setGlobalConfigCount(Array.isArray(globals) ? globals.length : 0);
       await refresh();
       setGlobalParamOk(true);
       window.setTimeout(() => setGlobalParamOk(false), 5000);

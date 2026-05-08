@@ -9,7 +9,7 @@ export function buildCatalogSimpleRowSchema(
   const shape: Record<string, z.ZodTypeAny> = {};
   for (const key of keys) {
     shape[key] = req.has(key)
-      ? z.string().min(1, 'Este campo es obligatorio')
+      ? z.string().min(1, 'Este campo es obligatorio.')
       : z.string().optional();
   }
   return z.object(shape);

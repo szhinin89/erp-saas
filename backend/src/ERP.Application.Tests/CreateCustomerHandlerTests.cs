@@ -30,11 +30,13 @@ public sealed class CreateCustomerHandlerTests
 
         var tenant = new Mock<ICurrentTenant>(MockBehavior.Strict);
         tenant.SetupGet(t => t.TenantId).Returns(tenantId);
+        tenant.SetupGet(t => t.IsAuthenticated).Returns(true);
 
         var user = new Mock<ICurrentUser>(MockBehavior.Strict);
         user.SetupGet(u => u.UserId).Returns(userId);
         user.SetupGet(u => u.Email).Returns("u@test.local");
         user.SetupGet(u => u.FullName).Returns("Test User");
+        user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var handler = new CreateCustomerCommandHandler(repo.Object, activity.Object, tenant.Object, user.Object);
 
@@ -73,8 +75,10 @@ public sealed class CreateCustomerHandlerTests
         var activity = new Mock<IUserActivityRepository>(MockBehavior.Strict);
         var tenant = new Mock<ICurrentTenant>(MockBehavior.Strict);
         tenant.SetupGet(t => t.TenantId).Returns(tenantId);
+        tenant.SetupGet(t => t.IsAuthenticated).Returns(true);
         var user = new Mock<ICurrentUser>(MockBehavior.Strict);
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
+        user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var handler = new CreateCustomerCommandHandler(repo.Object, activity.Object, tenant.Object, user.Object);
 
@@ -93,8 +97,10 @@ public sealed class CreateCustomerHandlerTests
         var activity = new Mock<IUserActivityRepository>(MockBehavior.Strict);
         var tenant = new Mock<ICurrentTenant>(MockBehavior.Strict);
         tenant.SetupGet(t => t.TenantId).Returns(Guid.NewGuid());
+        tenant.SetupGet(t => t.IsAuthenticated).Returns(true);
         var user = new Mock<ICurrentUser>(MockBehavior.Strict);
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
+        user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
         var handler = new CreateCustomerCommandHandler(repo.Object, activity.Object, tenant.Object, user.Object);
 

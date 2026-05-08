@@ -19,6 +19,9 @@ public sealed class GetCustomersQueryHandler
 
     public async Task<Result<IReadOnlyList<CustomerDto>>> Handle(GetCustomersQuery request, CancellationToken ct)
     {
+        if (!_tenant.IsAuthenticated || _tenant.TenantId == Guid.Empty)
+            return Result<IReadOnlyList<CustomerDto>>.Failure("Tenant no autenticado.");
+
         var items = await _repo.GetAsync(_tenant.TenantId, request.ActiveFilter, request.Search, ct);
         var dtos = items.Select(x => new CustomerDto(
             x.Id,

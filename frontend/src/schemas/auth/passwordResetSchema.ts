@@ -6,14 +6,14 @@ export const passwordResetFormSchema = z
   .object({
     tenantId: z
       .string()
-      .min(1, 'El identificador del tenant es obligatorio')
-      .regex(guidRegex, 'Debe ser un GUID de tenant válido'),
-    email: z.string().min(1, 'El correo es obligatorio').email('Introduce un correo electrónico válido'),
-    newPassword: z.string().min(8, 'La nueva contraseña debe tener al menos 8 caracteres'),
-    confirmPassword: z.string().min(1, 'Confirma la nueva contraseña'),
+      .min(1, 'Ingresa el identificador de la empresa.')
+      .regex(guidRegex, 'Ingresa un identificador de empresa válido.'),
+    email: z.string().min(1, 'Ingresa el correo electrónico.').email('Ingresa un correo electrónico válido.'),
+    newPassword: z.string().min(8, 'La nueva contraseña debe tener al menos 8 caracteres.'),
+    confirmPassword: z.string().min(1, 'Confirma la nueva contraseña.'),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {
-    message: 'Las contraseñas no coinciden',
+    message: 'Las contraseñas no coinciden.',
     path: ['confirmPassword'],
   });
 

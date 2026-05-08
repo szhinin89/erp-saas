@@ -1,9 +1,10 @@
 using ERP.Domain.Common;
+using ERP.Domain.Customers.ValueObjects;
 
 namespace ERP.Domain.Customers.Entities;
 
 /// <summary>Cliente maestro del tenant (persona natural o jurídica). Soft delete vía <see cref="MasterEntity"/>.</summary>
-public sealed class Customer : MasterEntity
+public sealed class Customer : MasterEntity, ITenantEntity
 {
     public const int IdentificationTypeMaxLen = 20;
     public const int IdentificationNumberMaxLen = 32;
@@ -38,23 +39,23 @@ public sealed class Customer : MasterEntity
         string? notes,
         Guid createdBy)
     {
-        var type = NormalizeIdentificationType(identificationType);
-        var number = NormalizeIdentificationNumber(identificationNumber);
+        var identification = CustomerIdentification.Create(identificationType, identificationNumber);
         var name = legalName.Trim();
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("La razón social o nombre es obligatoria.", nameof(legalName));
+        var validEmail = CustomerEmail.CreateOptional(email);
 
         var c = new Customer
         {
             Id = Guid.NewGuid(),
             TenantId = tenantId,
-            IdentificationType = type,
-            IdentificationNumber = number,
+            IdentificationType = identification.Type,
+            IdentificationNumber = identification.Number,
             LegalName = name,
             TradeName = NullIfWhiteSpace(tradeName),
             AddressLine = NullIfWhiteSpace(addressLine),
             Phone = NullIfWhiteSpace(phone),
-            Email = NullIfWhiteSpace(email),
+            Email = validEmail?.Value,
             Notes = NullIfWhiteSpace(notes),
         };
         c.SetCreated(createdBy);
@@ -72,39 +73,28 @@ public sealed class Customer : MasterEntity
         string? notes,
         Guid updatedBy)
     {
-        IdentificationType = NormalizeIdentificationType(identificationType);
-        IdentificationNumber = NormalizeIdentificationNumber(identificationNumber);
+        var identification = CustomerIdentification.Create(identificationType, identificationNumber);
+        IdentificationType = identification.Type;
+        IdentificationNumber = identification.Number;
         LegalName = legalName.Trim();
         if (string.IsNullOrWhiteSpace(LegalName))
             throw new ArgumentException("La razón social o nombre es obligatoria.", nameof(legalName));
         TradeName = NullIfWhiteSpace(tradeName);
         AddressLine = NullIfWhiteSpace(addressLine);
         Phone = NullIfWhiteSpace(phone);
-        Email = NullIfWhiteSpace(email);
+        Email = CustomerEmail.CreateOptional(email)?.Value;
         Notes = NullIfWhiteSpace(notes);
         SetUpdated(updatedBy);
     }
 
     public static string NormalizeIdentificationType(string identificationType)
     {
-        var t = (identificationType ?? string.Empty).Trim().ToUpperInvariant();
-        return t switch
-        {
-            "RUC" or "CI" or "PASSPORT" or "OTHER" => t,
-            "CEDULA" or "CÉDULA" => "CI",
-            "PASAPORTE" => "PASSPORT",
-            _ => throw new ArgumentException("Tipo de identificación no válido (use RUC, CI, PASSPORT u OTHER).", nameof(identificationType)),
-        };
+        return CustomerIdentification.NormalizeType(identificationType);
     }
 
     public static string NormalizeIdentificationNumber(string identificationNumber)
     {
-        var n = (identificationNumber ?? string.Empty).Trim();
-        if (string.IsNullOrWhiteSpace(n))
-            throw new ArgumentException("El número de identificación es obligatorio.", nameof(identificationNumber));
-        if (n.Length > IdentificationNumberMaxLen)
-            throw new ArgumentException($"El documento no puede superar {IdentificationNumberMaxLen} caracteres.", nameof(identificationNumber));
-        return n;
+        return CustomerIdentification.NormalizeNumber(identificationNumber);
     }
 
     private static string? NullIfWhiteSpace(string? s)

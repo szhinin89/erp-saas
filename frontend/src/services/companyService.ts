@@ -100,8 +100,17 @@ export type TenantDetailDto = {
 
 export const companyService = {
   list: () =>
-    api.get<ApiResponse<{ tenants: CompanyItem[] }>>('/api/access/superadmin/tenants')
-      .then((r) => r.data.responseObject.tenants),
+    api.get<ApiResponse<{ tenants?: CompanyItem[] } | CompanyItem[]>>('/api/access/superadmin/tenants')
+      .then((r) => {
+        const responseObject = r.data.responseObject;
+        if (Array.isArray(responseObject)) {
+          return responseObject;
+        }
+        if (responseObject && Array.isArray(responseObject.tenants)) {
+          return responseObject.tenants;
+        }
+        return [];
+      }),
 
   getTenant: (tenantId: string) =>
     api

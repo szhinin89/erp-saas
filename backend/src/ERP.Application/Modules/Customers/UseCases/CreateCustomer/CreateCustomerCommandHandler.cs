@@ -29,9 +29,11 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
 
     public async Task<Result<CustomerDto>> Handle(CreateCustomerCommand command, CancellationToken ct)
     {
-        var emailErr = CustomerInputValidation.ValidateOptionalEmail(command.Email);
-        if (emailErr is not null)
-            return Result<CustomerDto>.Failure(emailErr);
+        if (!_tenant.IsAuthenticated || _tenant.TenantId == Guid.Empty)
+            return Result<CustomerDto>.Failure("Tenant no autenticado.");
+
+        if (!_user.IsAuthenticated || _user.UserId == Guid.Empty)
+            return Result<CustomerDto>.Failure("Usuario no autenticado.");
 
         var tenantId = _tenant.TenantId;
         var userId = _user.UserId;

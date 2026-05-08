@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const tenantAccessUpsertSchema = z.object({
-  email: z.string().min(1, 'El correo es obligatorio').email('Introduce un correo electrónico válido'),
+  email: z.string().min(1, 'Ingresa el correo electrónico.').email('Ingresa un correo electrónico válido.'),
   role: z.enum(['User', 'Admin']),
   profileId: z.string(),
   firstName: z.string(),

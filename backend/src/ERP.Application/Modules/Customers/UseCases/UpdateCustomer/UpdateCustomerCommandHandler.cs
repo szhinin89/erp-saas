@@ -28,6 +28,12 @@ public sealed class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustome
 
     public async Task<Result<CustomerDto>> Handle(UpdateCustomerCommand command, CancellationToken ct)
     {
+        if (!_tenant.IsAuthenticated || _tenant.TenantId == Guid.Empty)
+            return Result<CustomerDto>.Failure("Tenant no autenticado.");
+
+        if (!_user.IsAuthenticated || _user.UserId == Guid.Empty)
+            return Result<CustomerDto>.Failure("Usuario no autenticado.");
+
         var emailErr = CustomerInputValidation.ValidateOptionalEmail(command.Email);
         if (emailErr is not null)
             return Result<CustomerDto>.Failure(emailErr);

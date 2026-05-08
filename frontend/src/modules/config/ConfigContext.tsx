@@ -179,7 +179,12 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
   const inFlightRef = useRef<Promise<void> | null>(null);
 
   const tenantId = (user?.tenantId ?? '').trim();
-  const shouldLoad = tenantId.length > 0 && tenantId !== '00000000-0000-0000-0000-000000000000';
+  const role = (user?.role ?? '').trim().toLowerCase();
+  const canReadConfig = role === 'superadmin';
+  const shouldLoad =
+    canReadConfig &&
+    tenantId.length > 0 &&
+    tenantId !== '00000000-0000-0000-0000-000000000000';
 
   const loadTenantConfig = useCallback(async () => {
     if (!shouldLoad) {
