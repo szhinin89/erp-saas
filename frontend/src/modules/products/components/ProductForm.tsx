@@ -40,12 +40,12 @@ export function ProductForm({ t, catalogs, loading, onSubmit }: Props) {
   const selectedCategoryId = watch('categoryId');
 
   useEffect(() => {
-    setValue('categoryId', EMPTY_GUID);
-    setValue('subcategoryId', EMPTY_GUID);
+    setValue('categoryId', EMPTY_GUID, { shouldDirty: true, shouldValidate: true });
+    setValue('subcategoryId', EMPTY_GUID, { shouldDirty: true, shouldValidate: true });
   }, [selectedLineId, setValue]);
 
   useEffect(() => {
-    setValue('subcategoryId', EMPTY_GUID);
+    setValue('subcategoryId', EMPTY_GUID, { shouldDirty: true, shouldValidate: true });
   }, [selectedCategoryId, setValue]);
 
   const filteredCategories = (catalogs?.categories ?? []).filter((item) => {
