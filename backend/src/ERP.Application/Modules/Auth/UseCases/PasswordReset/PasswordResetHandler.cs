@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Tenants.Interfaces;
@@ -9,11 +10,16 @@ public class PasswordResetHandler
 {
     private readonly ITenantRepository _tenantRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IPasswordHasher _passwordHasher;
 
-    public PasswordResetHandler(ITenantRepository tenantRepository, IUserRepository userRepository)
+    public PasswordResetHandler(
+        ITenantRepository tenantRepository,
+        IUserRepository userRepository,
+        IPasswordHasher passwordHasher)
     {
         _tenantRepository = tenantRepository;
         _userRepository = userRepository;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<Result<bool>> HandleAsync(PasswordResetCommand command, CancellationToken ct = default)
@@ -33,7 +39,7 @@ public class PasswordResetHandler
         if (user is null)
             return Result<bool>.Failure("Usuario no encontrado.");
 
-        var newHash = BCrypt.Net.BCrypt.HashPassword(command.NewPassword);
+        var newHash = _passwordHasher.HashPassword(command.NewPassword);
         user.SetPasswordHash(newHash, updatedBy: user.Id);
 
         await _userRepository.SaveChangesAsync(ct);

@@ -1,5 +1,6 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
@@ -14,17 +15,20 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
     private readonly IAccessRepository _accessRepository;
     private readonly IAccessTokenService _tokenService;
     private readonly IDeploymentFeatureFlags _deployment;
+    private readonly IPasswordHasher _passwordHasher;
 
     public RegisterTenantWithAdminHandler(
         ITenantRepository tenantRepository,
         IAccessRepository accessRepository,
         IAccessTokenService tokenService,
-        IDeploymentFeatureFlags deployment)
+        IDeploymentFeatureFlags deployment,
+        IPasswordHasher passwordHasher)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
         _tokenService = tokenService;
         _deployment = deployment;
+        _passwordHasher = passwordHasher;
     }
 
     public Task<Result<SessionResponseDto>> HandleAsync(RegisterTenantWithAdminCommand command, CancellationToken ct = default)
@@ -66,7 +70,7 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
             priority: command.Priority);
         await _tenantRepository.AddAsync(tenant, ct);
 
-        var passwordHash = BCrypt.Net.BCrypt.HashPassword(command.AdminPassword);
+        var passwordHash = _passwordHasher.HashPassword(command.AdminPassword);
         var identityUser = IdentityUser.Create(
             firstName: command.AdminFirstName,
             lastName: command.AdminLastName,

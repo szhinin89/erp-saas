@@ -1,5 +1,6 @@
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
 
@@ -12,15 +13,18 @@ public sealed class ClaimInitialSuperAdminHandler
     private readonly IUserRepository _userRepository;
     private readonly IJwtService _jwtService;
     private readonly IDeploymentFeatureFlags _deployment;
+    private readonly IPasswordHasher _passwordHasher;
 
     public ClaimInitialSuperAdminHandler(
         IUserRepository userRepository,
         IJwtService jwtService,
-        IDeploymentFeatureFlags deployment)
+        IDeploymentFeatureFlags deployment,
+        IPasswordHasher passwordHasher)
     {
         _userRepository = userRepository;
         _jwtService = jwtService;
         _deployment = deployment;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<Result<AuthResponseDto>> HandleAsync(
@@ -57,7 +61,7 @@ public sealed class ClaimInitialSuperAdminHandler
         User user;
         try
         {
-            var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+            var passwordHash = _passwordHasher.HashPassword(password);
             var newId = Guid.NewGuid();
             user = User.Create(
                 Guid.Empty,

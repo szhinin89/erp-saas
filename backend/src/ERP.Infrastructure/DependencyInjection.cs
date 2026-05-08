@@ -19,7 +19,10 @@ using ERP.Application.Admin;
 using ERP.Infrastructure.Deployment;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
+using ERP.Infrastructure.Persistence.Saas;
+using ERP.Infrastructure.Security;
 using ERP.Infrastructure.Services;
+using ERP.Application.Common.Interfaces;
 
 namespace ERP.Infrastructure;
 
@@ -39,6 +42,7 @@ public static class DependencyInjection
                 configuration.GetConnectionString("DefaultConnection"),
                 b => b.MigrationsAssembly(typeof(ErpDbContext).Assembly.FullName)));
 
+        services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<ICurrentTenant, CurrentTenantService>();
         services.AddScoped<ICurrentUser, CurrentUserService>();

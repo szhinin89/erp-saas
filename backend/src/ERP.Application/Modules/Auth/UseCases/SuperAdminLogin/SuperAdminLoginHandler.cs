@@ -1,5 +1,6 @@
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Interfaces;
 
 namespace ERP.Application.Auth.UseCases.SuperAdminLogin;
@@ -9,15 +10,18 @@ public class SuperAdminLoginHandler
     private readonly IUserRepository _userRepository;
     private readonly IJwtService _jwtService;
     private readonly IDeploymentFeatureFlags _deployment;
+    private readonly IPasswordHasher _passwordHasher;
 
     public SuperAdminLoginHandler(
         IUserRepository userRepository,
         IJwtService jwtService,
-        IDeploymentFeatureFlags deployment)
+        IDeploymentFeatureFlags deployment,
+        IPasswordHasher passwordHasher)
     {
         _userRepository = userRepository;
         _jwtService = jwtService;
         _deployment = deployment;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<Result<AuthResponseDto>> HandleAsync(SuperAdminLoginCommand command, CancellationToken ct = default)
@@ -39,7 +43,7 @@ public class SuperAdminLoginHandler
         if (!string.Equals(user.Role, "SuperAdmin", StringComparison.Ordinal))
             return Result<AuthResponseDto>.Failure("No autorizado.");
 
-        var passwordValid = BCrypt.Net.BCrypt.Verify(command.Password, user.PasswordHash);
+        var passwordValid = _passwordHasher.VerifyPassword(command.Password, user.PasswordHash);
         if (!passwordValid)
             return Result<AuthResponseDto>.Failure("Credenciales invalidas.");
 

@@ -3,6 +3,7 @@ using ERP.Application.Navigation;
 using ERP.Application.Navigation.DTOs;
 using ERP.Domain.Navigation.Entities;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Persistence.Navigation;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories;

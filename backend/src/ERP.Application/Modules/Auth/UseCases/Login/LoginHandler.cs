@@ -1,5 +1,6 @@
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
@@ -14,6 +15,7 @@ public class LoginHandler
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly IAccessRepository _accessRepository;
     private readonly IAccessTokenService _accessTokenService;
+    private readonly IPasswordHasher _passwordHasher;
 
     public LoginHandler(
         IUserRepository userRepository,
@@ -21,7 +23,8 @@ public class LoginHandler
         IJwtService jwtService,
         IDeploymentFeatureFlags deployment,
         IAccessRepository accessRepository,
-        IAccessTokenService accessTokenService)
+        IAccessTokenService accessTokenService,
+        IPasswordHasher passwordHasher)
     {
         _userRepository = userRepository;
         _tenantRepository = tenantRepository;
@@ -29,6 +32,7 @@ public class LoginHandler
         _deployment = deployment;
         _accessRepository = accessRepository;
         _accessTokenService = accessTokenService;
+        _passwordHasher = passwordHasher;
     }
 
     public async Task<Result<AuthResponseDto>> HandleAsync(
@@ -47,7 +51,7 @@ public class LoginHandler
             if (!superAdmin.IsActive)
                 return Result<AuthResponseDto>.Failure("Usuario inactivo.");
 
-            var superPasswordValid = BCrypt.Net.BCrypt.Verify(command.Password, superAdmin.PasswordHash);
+            var superPasswordValid = _passwordHasher.VerifyPassword(command.Password, superAdmin.PasswordHash);
             if (!superPasswordValid)
                 return Result<AuthResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
 
@@ -71,7 +75,7 @@ public class LoginHandler
             if (!identityUser.IsActive)
                 return Result<AuthResponseDto>.Failure("Usuario inactivo.");
 
-            var identityPasswordOk = BCrypt.Net.BCrypt.Verify(command.Password, identityUser.PasswordHash);
+            var identityPasswordOk = _passwordHasher.VerifyPassword(command.Password, identityUser.PasswordHash);
             if (!identityPasswordOk)
                 return Result<AuthResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
 
@@ -122,7 +126,7 @@ public class LoginHandler
         if (!single.IsActive)
             return Result<AuthResponseDto>.Failure("Usuario inactivo.");
 
-        var passwordValid = BCrypt.Net.BCrypt.Verify(command.Password, single.PasswordHash);
+        var passwordValid = _passwordHasher.VerifyPassword(command.Password, single.PasswordHash);
         if (!passwordValid)
             return Result<AuthResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
 

@@ -1,5 +1,6 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
@@ -19,6 +20,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentUser _currentUser;
     private readonly IDeploymentFeatureFlags _deployment;
+    private readonly IPasswordHasher _passwordHasher;
 
     public SuperAdminCreateTenantWithAdminHandler(
         ITenantRepository tenantRepository,
@@ -26,7 +28,8 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         IAccessTokenService tokenService,
         IUserActivityRepository activity,
         ICurrentUser currentUser,
-        IDeploymentFeatureFlags deployment)
+        IDeploymentFeatureFlags deployment,
+        IPasswordHasher passwordHasher)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
@@ -34,6 +37,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         _activity = activity;
         _currentUser = currentUser;
         _deployment = deployment;
+        _passwordHasher = passwordHasher;
     }
 
     public Task<Result<SessionResponseDto>> HandleAsync(SuperAdminCreateTenantWithAdminCommand command, CancellationToken ct = default)
@@ -84,7 +88,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
             priority: command.Priority);
         await _tenantRepository.AddAsync(tenant, ct);
 
-        var hash = BCrypt.Net.BCrypt.HashPassword(command.AdminPassword);
+        var hash = _passwordHasher.HashPassword(command.AdminPassword);
         var adminUser = IdentityUser.Create(command.AdminFirstName, command.AdminLastName, email, hash, _currentUser.UserId);
         await _accessRepository.AddUserAsync(adminUser, ct);
 

@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
@@ -57,17 +58,20 @@ public class TenantUpsertMembershipHandler : IRequestHandler<TenantUpsertMembers
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentUser _currentUser;
     private readonly IDeploymentFeatureFlags _deployment;
+    private readonly IPasswordHasher _passwordHasher;
 
     public TenantUpsertMembershipHandler(
         IAccessRepository repo,
         ICurrentTenant tenant,
         ICurrentUser currentUser,
-        IDeploymentFeatureFlags deployment)
+        IDeploymentFeatureFlags deployment,
+        IPasswordHasher passwordHasher)
     {
         _repo = repo;
         _tenant = tenant;
         _currentUser = currentUser;
         _deployment = deployment;
+        _passwordHasher = passwordHasher;
     }
 
     public Task<Result<object>> HandleAsync(TenantUpsertMembershipCommand cmd, CancellationToken ct = default)
@@ -101,7 +105,7 @@ public class TenantUpsertMembershipHandler : IRequestHandler<TenantUpsertMembers
             if (userCap is not null)
                 return Result<object>.Failure(userCap);
 
-            var hash = BCrypt.Net.BCrypt.HashPassword(cmd.Password);
+            var hash = _passwordHasher.HashPassword(cmd.Password);
             user = IdentityUser.Create(cmd.FirstName!, cmd.LastName!, email, hash, _currentUser.UserId);
             await _repo.AddUserAsync(user, ct);
         }

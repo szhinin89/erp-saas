@@ -1,5 +1,6 @@
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
@@ -11,15 +12,18 @@ public class RegisterHandler
     private readonly IUserRepository _userRepository;
     private readonly ITenantRepository _tenantRepository;
     private readonly IJwtService _jwtService;
+    private readonly IPasswordHasher _passwordHasher;
 
     public RegisterHandler(
         IUserRepository userRepository,
         ITenantRepository tenantRepository,
-        IJwtService jwtService)
+        IJwtService jwtService,
+        IPasswordHasher passwordHasher)
     {
         _userRepository   = userRepository;
         _tenantRepository = tenantRepository;
         _jwtService       = jwtService;
+        _passwordHasher   = passwordHasher;
     }
 
     public async Task<Result<AuthResponseDto>> HandleAsync(
@@ -41,7 +45,7 @@ public class RegisterHandler
         if (emailExists)
             return Result<AuthResponseDto>.Failure("Ya existe un usuario con ese email.");
 
-        var passwordHash = BCrypt.Net.BCrypt.HashPassword(command.Password);
+        var passwordHash = _passwordHasher.HashPassword(command.Password);
 
         // En auto-registro el usuario es su propio creador: se pre-genera el ID
         // para usarlo como createdBy antes de persistir.
