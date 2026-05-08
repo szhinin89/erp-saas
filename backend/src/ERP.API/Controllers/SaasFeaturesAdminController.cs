@@ -9,7 +9,7 @@ namespace ERP.API.Controllers;
 /// <summary>CRUD de definiciones de features SaaS (<c>saas_feature_definitions</c>, solo SuperAdmin).</summary>
 [ApiController]
 [Route("api/superadmin/saas-features")]
-[Authorize(Roles = "SuperAdmin")]
+[Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]
 public sealed class SaasFeaturesAdminController : ControllerBase
 {

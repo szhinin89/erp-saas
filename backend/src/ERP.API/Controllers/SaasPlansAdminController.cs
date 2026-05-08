@@ -10,7 +10,7 @@ namespace ERP.API.Controllers;
 /// <summary>CRUD de planes SaaS y catálogo de features (solo SuperAdmin).</summary>
 [ApiController]
 [Route("api/superadmin/saas-plans")]
-[Authorize(Roles = "SuperAdmin")]
+[Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]
 public sealed class SaasPlansAdminController : ControllerBase
 {

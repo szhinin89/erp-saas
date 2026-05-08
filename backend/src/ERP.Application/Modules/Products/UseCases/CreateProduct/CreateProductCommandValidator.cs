@@ -12,11 +12,11 @@ public sealed class CreateProductCommandValidator : AbstractValidator<CreateProd
 
         RuleFor(x => x.ShortName)
             .NotEmpty().WithMessage("El nombre corto es obligatorio.")
-            .MaximumLength(200).WithMessage("El nombre corto no puede exceder 200 caracteres.");
+            .MaximumLength(50).WithMessage("El nombre corto no puede exceder 50 caracteres.");
 
         RuleFor(x => x.Description)
             .NotEmpty().WithMessage("La descripción es obligatoria.")
-            .MaximumLength(500).WithMessage("La descripción no puede exceder 500 caracteres.");
+            .MaximumLength(254).WithMessage("La descripción no puede exceder 254 caracteres.");
 
         RuleFor(x => x.LineId)
             .NotEmpty().WithMessage("La línea es obligatoria.");

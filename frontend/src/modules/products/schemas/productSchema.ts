@@ -11,8 +11,8 @@ const requiredGuidSchema = z
 
 export const productSchema = z.object({
   saleCode: z.string().trim().min(1, 'products.validation.saleCodeRequired').max(50, 'products.validation.saleCodeMax'),
-  shortName: z.string().trim().min(1, 'products.validation.shortNameRequired').max(200, 'products.validation.shortNameMax'),
-  description: z.string().trim().min(1, 'products.validation.descriptionRequired').max(500, 'products.validation.descriptionMax'),
+  shortName: z.string().trim().min(1, 'products.validation.shortNameRequired').max(50, 'products.validation.shortNameMax'),
+  description: z.string().trim().min(1, 'products.validation.descriptionRequired').max(254, 'products.validation.descriptionMax'),
   lineId: requiredGuidSchema,
   categoryId: requiredGuidSchema,
   subcategoryId: requiredGuidSchema,

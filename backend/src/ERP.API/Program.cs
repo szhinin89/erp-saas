@@ -36,6 +36,7 @@ builder.Services.AddApplication();
 // Authorization: por defecto SOLO permite tokens de sesión (no bootstrap).
 builder.Services.AddSingleton<IAuthorizationHandler, TokenTypeHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, GlobalSuperAdminHandler>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddAuthorization(options =>
 {
@@ -46,6 +47,11 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Bootstrap", policy =>
         policy.RequireAuthenticatedUser()
               .AddRequirements(new TokenTypeRequirement("bootstrap")));
+
+    options.AddPolicy("GlobalSuperAdmin", policy =>
+        policy.RequireAuthenticatedUser()
+              .AddRequirements(new TokenTypeRequirement("session"))
+              .AddRequirements(new GlobalSuperAdminRequirement()));
 
     // Si el endpoint tiene [Authorize] sin policy, exigimos token de sesión.
     // IMPORTANTE: NO usar FallbackPolicy, porque eso protegería endpoints que

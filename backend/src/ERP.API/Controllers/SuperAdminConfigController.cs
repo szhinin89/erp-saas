@@ -9,7 +9,7 @@ namespace ERP.API.Controllers;
 
 [ApiController]
 [Route("api/superadmin/config")]
-[Authorize(Roles = "SuperAdmin")]
+[Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]
 public sealed class SuperAdminConfigController : ControllerBase
 {

@@ -53,6 +53,7 @@ desktop.ini
 .claude/
 
 # Artefactos
+backend/artifacts/
 backend/src/ERP.Domain/*.zip
 
 # Scripts de setup (ya no se necesitan en el repo)
