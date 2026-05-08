@@ -1,5 +1,6 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using MediatR;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Auth.Interfaces;
@@ -13,17 +14,20 @@ public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Resu
     private readonly ITenantRepository _tenantRepository;
     private readonly IAccessTokenService _tokenService;
     private readonly IUserRepository _legacyUserRepository;
+    private readonly IPasswordHasher _passwordHasher;
 
     public BootstrapLoginHandler(
         IAccessRepository accessRepository,
         ITenantRepository tenantRepository,
         IAccessTokenService tokenService,
-        IUserRepository legacyUserRepository)
+        IUserRepository legacyUserRepository,
+        IPasswordHasher passwordHasher)
     {
         _accessRepository = accessRepository;
         _tenantRepository = tenantRepository;
         _tokenService = tokenService;
         _legacyUserRepository = legacyUserRepository;
+        _passwordHasher = passwordHasher;
     }
 
     public Task<Result<BootstrapLoginResponseDto>> HandleAsync(BootstrapLoginCommand command, CancellationToken ct = default)
@@ -40,7 +44,7 @@ public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Resu
             if (legacySuper is null || !legacySuper.IsActive)
                 return Result<BootstrapLoginResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
 
-            var superValid = BCrypt.Net.BCrypt.Verify(command.Password, legacySuper.PasswordHash);
+            var superValid = _passwordHasher.VerifyPassword(command.Password, legacySuper.PasswordHash);
             if (!superValid)
                 return Result<BootstrapLoginResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
 
@@ -71,7 +75,7 @@ public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Resu
         if (!user.IsActive)
             return Result<BootstrapLoginResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
 
-        var valid = BCrypt.Net.BCrypt.Verify(command.Password, user.PasswordHash);
+        var valid = _passwordHasher.VerifyPassword(command.Password, user.PasswordHash);
         if (!valid)
             return Result<BootstrapLoginResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
 

@@ -18,6 +18,41 @@ using System.Linq.Expressions;
 
 namespace ERP.Infrastructure.Persistence;
 
+/// <summary>
+/// DbContext centralizado para todas las entidades (31 DbSets).
+/// 
+/// ⚠️ RIESGO ARQUITECTÓNICO: Este contexto está concentrando demasiados módulos.
+/// 
+/// ESTADO ACTUAL (Permitido para monolito modular):
+/// - Contabilidad: Account, JournalEntry, JournalEntryLine
+/// - Productos: Product, ProductLine, ProductCategory, ProductSubcategory, Brand, ProductType, TaxRate, UnitOfMeasure, Tariff
+/// - Autenticación: User, IdentityUser, Membership
+/// - Tenants: Tenant
+/// - Seguridad: AccessProfile, AccessProfilePermission, SecurityAdminScopeAssignment
+/// - Geografía: GeoCountry, GeoProvince, GeoCanton, GeoParish
+/// - Auditoría: UserActivity
+/// - Ventas: Customer
+/// - SaaS: SaasFeatureDefinition, SaasPlan, SaasPlanFeature, TenantSaasSubscription, TenantSubscriptionFeatureOverride, TenantSubscriptionUsage
+/// - UI/Config: UiNavGroup, UiNavItem, ConfigGlobal, ConfigModule, ConfigFeature
+/// - Sucursales: Branch
+/// 
+/// PRÓXIMOS PASOS RECOMENDADOS:
+/// 1. Separar configuraciones de EF Core por módulo (ver Configurations/ folder)
+///    - Usar IEntityTypeConfiguration<T> en carpetas específicas
+///    - Mantener ApplyConfigurationsFromAssembly() automatizado
+/// 2. Evaluar separación a múltiples DbContext por módulo mayor
+///    - No necesariamente crear DbContext separados HOY
+///    - Pero sí preparar el código para una futura separación
+/// 3. Usar convenciones estrictas en repositorios
+///    - Cada módulo: IXyzRepository interfaz + XyzRepository implementación
+///    - Todos los repositorios inyectan solo ErpDbContext
+/// 4. Considerar Command/Query segregation (CQRS) para reportes
+/// 
+/// MULTI-TENANCY:
+/// - Filtro automático por tenant en QueryFilter para todas las ITenantEntity
+/// - CurrentTenantId retorna Guid.Empty si no autenticado (seguro por defecto)
+/// - Todas las queries se filtran automáticamente, no se olvidan excepciones
+/// </summary>
 public class ErpDbContext : DbContext
 {
     private readonly ICurrentTenant _currentTenant;
