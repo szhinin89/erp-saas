@@ -19,5 +19,6 @@ export interface Product {
   availableOnWeb: boolean;
   availableOnMobile: boolean;
   isForSale: boolean;
+  barcodes?: Array<{ id: string; code: string; type: number }>;
   createdAt: string;
 }

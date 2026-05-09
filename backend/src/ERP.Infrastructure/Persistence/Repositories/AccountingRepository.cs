@@ -56,6 +56,12 @@ public class AccountingRepository : IAccountingRepository
     public async Task AddAsync(Account account, CancellationToken ct = default)
         => await _context.Accounts.AddAsync(account, ct);
 
+    public Task UpdateAsync(Account account, CancellationToken ct = default)
+    {
+        _context.Accounts.Update(account);
+        return Task.CompletedTask;
+    }
+
     public async Task AddJournalEntryAsync(JournalEntry entry, CancellationToken ct = default)
         => await _context.JournalEntries.AddAsync(entry, ct);
 

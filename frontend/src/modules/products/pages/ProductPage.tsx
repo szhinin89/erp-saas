@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { EmptyState, LoadingState, NoAccessPage, PageShell, TableCard } from '../../../components/PageShell';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import ZHSearchBar from '../../../components/shared/ZHSearchBar';
+import { ZHBtn } from '../../../components/zh/ZHForm';
 import { usePermissionsStore } from '../../../store/permissionsStore';
 import { useAuthStore } from '../../../store/authStore';
 import { useI18n } from '../../../i18n/i18n';
@@ -17,6 +18,7 @@ export function ProductPage() {
   const isAdmin = role === 'Admin' || role === 'SuperAdmin';
   const canView = isAdmin || hasPerm('inventario.products.view');
   const canCreate = isAdmin || hasPerm('inventario.products.create');
+  const canEdit = isAdmin || hasPerm('inventario.products.edit');
   const {
     recentProducts,
     productsLoading,
@@ -27,8 +29,26 @@ export function ProductPage() {
     createError,
     creating,
     createProduct,
+    updateError,
+    updating,
+    updateProduct,
+    toggleError,
+    toggling,
+    toggleProductStatus,
   } = useProducts();
   const [listQuery, setListQuery] = useState('');
+  const [editMode, setEditMode] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+
+  const handleEdit = (product: any) => {
+    setEditingProduct(product);
+    setEditMode(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProduct(null);
+    setEditMode(false);
+  };
 
   const filteredProducts = useMemo(() => {
     const query = listQuery.trim().toLowerCase();
@@ -41,24 +61,95 @@ export function ProductPage() {
   }, [listQuery, recentProducts]);
 
   const handleSubmit = async (values: ProductFormValues) => {
-    await createProduct({
-      saleCode: values.saleCode,
-      shortName: values.shortName,
-      description: values.description,
-      lineId: values.lineId,
-      categoryId: values.categoryId,
-      subcategoryId: values.subcategoryId,
-      unitOfMeasureId: values.unitOfMeasureId,
-      brandId: values.brandId,
-      productTypeId: values.productTypeId,
-      tariffId: values.tariffId,
-      appliesVatOnSale: values.saleTaxId !== '00000000-0000-0000-0000-000000000000',
-      saleTaxId: toOptionalGuid(values.saleTaxId),
-      saleVatAccountId: null,
-      appliesVatOnPurchase: values.purchaseTaxId !== '00000000-0000-0000-0000-000000000000',
-      purchaseTaxId: toOptionalGuid(values.purchaseTaxId),
-      purchaseVatAccountId: null,
-    });
+    if (editMode && editingProduct) {
+      // Update existing product
+      await updateProduct({
+        id: editingProduct.id,
+        saleCode: values.saleCode,
+        purchaseCode: values.purchaseCode || undefined,
+        shortName: values.shortName,
+        description: values.description,
+        observations: values.observations || undefined,
+        lineId: values.lineId,
+        categoryId: values.categoryId,
+        subcategoryId: values.subcategoryId,
+        unitOfMeasureId: values.unitOfMeasureId,
+        brandId: values.brandId,
+        productTypeId: values.productTypeId,
+        tariffId: values.tariffId,
+        appliesVatOnSale: values.appliesVatOnSale,
+        appliesVatOnPurchase: values.appliesVatOnPurchase,
+        appliesExciseTax: values.appliesExciseTax,
+        saleTaxId: toOptionalGuid(values.saleTaxId),
+        purchaseTaxId: toOptionalGuid(values.purchaseTaxId),
+        exciseTaxId: toOptionalGuid(values.exciseTaxId),
+        saleVatAccountId: null,
+        purchaseVatAccountId: null,
+        exciseAccountId: null,
+        isService: values.isService,
+        tracksStock: values.tracksStock,
+        tracksLot: values.tracksLot,
+        tracksSeries: values.tracksSeries,
+        hasRecipe: values.hasRecipe,
+        stockWithDecimal: values.stockWithDecimal,
+        saleWithDecimal: values.saleWithDecimal,
+        maxItemDiscountPercent: values.maxItemDiscountPercent,
+        availableOnWeb: values.availableOnWeb,
+        availableOnMobile: values.availableOnMobile,
+        isEcommerceActive: values.isEcommerceActive,
+        isFavorite: values.isFavorite,
+        isForSale: values.isForSale,
+        baseColor: values.baseColor || undefined,
+        hasMultipleColors: values.hasMultipleColors,
+        hasSizes: values.hasSizes,
+        handlesTariff: values.handlesTariff,
+        barcodes: values.barcodes?.map((barcode) => ({ code: barcode.code, type: barcode.type })) ?? [],
+      });
+      handleCancelEdit();
+    } else {
+      // Create new product
+      await createProduct({
+        saleCode: values.saleCode,
+        purchaseCode: values.purchaseCode || undefined,
+        shortName: values.shortName,
+        description: values.description,
+        observations: values.observations || undefined,
+        lineId: values.lineId,
+        categoryId: values.categoryId,
+        subcategoryId: values.subcategoryId,
+        unitOfMeasureId: values.unitOfMeasureId,
+        brandId: values.brandId,
+        productTypeId: values.productTypeId,
+        tariffId: values.tariffId,
+        appliesVatOnSale: values.appliesVatOnSale,
+        appliesVatOnPurchase: values.appliesVatOnPurchase,
+        appliesExciseTax: values.appliesExciseTax,
+        saleTaxId: toOptionalGuid(values.saleTaxId),
+        purchaseTaxId: toOptionalGuid(values.purchaseTaxId),
+        exciseTaxId: toOptionalGuid(values.exciseTaxId),
+        saleVatAccountId: null,
+        purchaseVatAccountId: null,
+        exciseAccountId: null,
+        isService: values.isService,
+        tracksStock: values.tracksStock,
+        tracksLot: values.tracksLot,
+        tracksSeries: values.tracksSeries,
+        hasRecipe: values.hasRecipe,
+        stockWithDecimal: values.stockWithDecimal,
+        saleWithDecimal: values.saleWithDecimal,
+        maxItemDiscountPercent: values.maxItemDiscountPercent,
+        availableOnWeb: values.availableOnWeb,
+        availableOnMobile: values.availableOnMobile,
+        isEcommerceActive: values.isEcommerceActive,
+        isFavorite: values.isFavorite,
+        isForSale: values.isForSale,
+        baseColor: values.baseColor || undefined,
+        hasMultipleColors: values.hasMultipleColors,
+        hasSizes: values.hasSizes,
+        handlesTariff: values.handlesTariff,
+        barcodes: values.barcodes?.map((barcode) => ({ code: barcode.code, type: barcode.type })) ?? [],
+      });
+    }
   };
 
   if (!canView) {
@@ -74,10 +165,20 @@ export function ProductPage() {
       {productsError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={productsError} /> : null}
       {catalogsError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={catalogsError} /> : null}
       {createError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={createError} /> : null}
+      {updateError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={updateError} /> : null}
+      {toggleError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={toggleError} /> : null}
 
       {canCreate ? (
         <TableCard>
-          <ProductForm t={t} catalogs={catalogs} loading={creating || catalogsLoading} onSubmit={handleSubmit} />
+          <ProductForm
+            t={t}
+            catalogs={catalogs}
+            loading={creating || updating || catalogsLoading}
+            onSubmit={handleSubmit}
+            editMode={editMode}
+            existingProduct={editingProduct}
+            onCancelEdit={handleCancelEdit}
+          />
         </TableCard>
       ) : null}
 
@@ -105,7 +206,10 @@ export function ProductPage() {
                 <th>{t('products.table.code')}</th>
                 <th>{t('products.table.name')}</th>
                 <th>{t('products.table.description')}</th>
+                <th>{t('products.table.barcodes')}</th>
+                <th>{t('products.table.status')}</th>
                 <th>{t('products.table.createdAt')}</th>
+                {canEdit ? <th>{t('common.actions')}</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -116,7 +220,52 @@ export function ProductPage() {
                   </td>
                   <td>{product.shortName}</td>
                   <td className="subtle">{product.description}</td>
+                  <td>
+                    {product.barcodes && product.barcodes.length > 0 ? (
+                      <div className="zh-flex zh-flex-wrap zh-gap-1">
+                        {product.barcodes.slice(0, 2).map((barcode, index) => (
+                          <span key={index} className="mono zh-text-xs zh-bg-gray-100 zh-px-2 zh-py-1 zh-rounded">
+                            {barcode.code}
+                          </span>
+                        ))}
+                        {product.barcodes.length > 2 && (
+                          <span className="zh-text-xs zh-text-gray-500">
+                            +{product.barcodes.length - 2} {t('products.table.moreBarcodes', 'más')}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="subtle zh-text-xs">{t('products.table.noBarcodes')}</span>
+                    )}
+                  </td>
+                  <td>
+                    <span className={product.isActive ? 'badge badge-success' : 'badge badge-neutral'}>
+                      {product.isActive ? t('common.active') : t('common.inactive')}
+                    </span>
+                  </td>
                   <td>{new Date(product.createdAt).toLocaleString()}</td>
+                  {canEdit ? (
+                    <td className="zh-flex zh-gap-1">
+                      <ZHBtn
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(product)}
+                        disabled={editMode || toggling || !product.isActive}
+                      >
+                        {t('common.edit')}
+                      </ZHBtn>
+                      <ZHBtn
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleProductStatus(product.id, !product.isActive)}
+                        disabled={toggling || editMode}
+                      >
+                        {product.isActive ? t('common.disable') : t('common.enable')}
+                      </ZHBtn>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>

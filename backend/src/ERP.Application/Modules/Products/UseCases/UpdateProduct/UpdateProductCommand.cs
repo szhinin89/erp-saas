@@ -1,3 +1,6 @@
+using MediatR;
+using ERP.Application.Common;
+using ERP.Application.Products.DTOs;
 using ERP.Application.Products.UseCases.CreateProduct;
 
 namespace ERP.Application.Products.UseCases.UpdateProduct;
@@ -56,5 +59,5 @@ public record UpdateProductCommand(
     IReadOnlyList<TariffDetailInput>? TariffDetails = null,
     IReadOnlyList<SubstituteInput>? Substitutes = null,
     IReadOnlyList<CustomFieldInput>? CustomFields = null
-);
+) : IRequest<Result<ProductDto>>;
 

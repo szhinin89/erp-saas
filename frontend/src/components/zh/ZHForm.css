@@ -599,6 +599,40 @@
   background: var(--zh-blue);
 }
 
+.zh-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--zh-color-text);
+  cursor: pointer;
+}
+
+.zh-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid var(--color-border-tertiary);
+  background: var(--color-bg-primary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.zh-checkbox input[type="checkbox"]:checked {
+  background: var(--zh-blue);
+  border-color: var(--zh-blue);
+}
+
+.zh-checkbox input[type="checkbox"]:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(79, 123, 166, 0.2);
+}
+
+.zh-checkbox input[type="checkbox"]:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .zh-toggle-thumb {
   position: absolute;
   top: 50%;

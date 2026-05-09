@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { catalogService, type CatalogItem } from '../../../services/catalogService';
 import { useAsync } from '../../../hooks/useAsync';
 import { formatApiError } from '../../lib/formatApiError';
-import { productService, type CreateProductRequest } from '../api/productService';
+import { productService, type CreateProductRequest, type UpdateProductRequest } from '../api/productService';
 import type { Product } from '../../../types/product';
 
 export type ProductCatalogs = {
@@ -36,6 +36,29 @@ export function useProducts() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
+  const [updateError, setUpdateError] = useState<string | null>(null);
+  const [updating, setUpdating] = useState(false);
+
+  const [toggleError, setToggleError] = useState<string | null>(null);
+  const [toggling, setToggling] = useState(false);
+
+  const toggleProductStatus = async (id: string, enable: boolean): Promise<Product | null> => {
+    setToggleError(null);
+    setToggling(true);
+    try {
+      const updated = enable
+        ? await productService.enable(id)
+        : await productService.disable(id);
+      productsState.refetch();
+      return updated;
+    } catch (error) {
+      setToggleError(formatApiError(error));
+      return null;
+    } finally {
+      setToggling(false);
+    }
+  };
+
   const createProduct = async (payload: CreateProductRequest): Promise<Product | null> => {
     setCreateError(null);
     setCreating(true);
@@ -48,6 +71,21 @@ export function useProducts() {
       return null;
     } finally {
       setCreating(false);
+    }
+  };
+
+  const updateProduct = async (payload: UpdateProductRequest): Promise<Product | null> => {
+    setUpdateError(null);
+    setUpdating(true);
+    try {
+      const updated = await productService.update(payload);
+      productsState.refetch();
+      return updated;
+    } catch (error) {
+      setUpdateError(formatApiError(error));
+      return null;
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -67,5 +105,11 @@ export function useProducts() {
     creating,
     createError,
     createProduct,
+    updating,
+    updateError,
+    updateProduct,
+    toggling,
+    toggleError,
+    toggleProductStatus,
   };
 }

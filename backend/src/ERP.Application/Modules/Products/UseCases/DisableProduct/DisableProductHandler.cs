@@ -1,0 +1,83 @@
+using ERP.Application.Common;
+using ERP.Application.Products.DTOs;
+using ERP.Domain.Audit.Entities;
+using ERP.Domain.Audit.Interfaces;
+using ERP.Domain.Products.Interfaces;
+
+namespace ERP.Application.Products.UseCases.DisableProduct;
+
+public class DisableProductHandler
+{
+    private readonly IProductRepository _repository;
+    private readonly IUserActivityRepository _activity;
+    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentUser _currentUser;
+
+    public DisableProductHandler(
+        IProductRepository repository,
+        IUserActivityRepository activity,
+        ICurrentTenant currentTenant,
+        ICurrentUser currentUser)
+    {
+        _repository    = repository;
+        _activity      = activity;
+        _currentTenant = currentTenant;
+        _currentUser   = currentUser;
+    }
+
+    public async Task<Result<ProductDto>> HandleAsync(Guid id, CancellationToken ct = default)
+    {
+        var tenantId = _currentTenant.TenantId;
+        var userId   = _currentUser.UserId;
+
+        var product = await _repository.GetByIdAsync(id, tenantId, ct);
+        if (product is null)
+            return Result<ProductDto>.Failure("Producto no encontrado.");
+
+        if (!product.IsActive)
+            return Result<ProductDto>.Failure("El producto ya está deshabilitado.");
+
+        product.Disable(userId);
+
+        await _activity.AddAsync(UserActivity.Create(
+            tenantId,
+            userId,
+            _currentUser.Email,
+            _currentUser.FullName,
+            module: "inventario",
+            action: "product.disable",
+            entityType: "Product",
+            entityId: product.Id,
+            description: $"{product.SaleCode} — {product.ShortName}"), ct);
+
+        await _repository.SaveChangesAsync(ct);
+
+        return Result<ProductDto>.Success(new ProductDto(
+            product.Id,
+            product.SaleCode,
+            product.PurchaseCode,
+            product.ShortName,
+            product.Description,
+            product.LineId,
+            product.CategoryId,
+            product.SubcategoryId,
+            product.UnitOfMeasureId,
+            product.BrandId,
+            product.ProductTypeId,
+            product.TariffId,
+            product.AppliesVatOnSale,
+            product.SaleTaxId,
+            product.AppliesVatOnPurchase,
+            product.PurchaseTaxId,
+            product.AppliesExciseTax,
+            product.ExciseTaxId,
+            product.IsService,
+            product.TracksStock,
+            product.IsActive,
+            product.AvailableOnWeb,
+            product.AvailableOnMobile,
+            product.IsEcommerceActive,
+            product.IsForSale,
+            product.CreatedAt));
+    }
+}

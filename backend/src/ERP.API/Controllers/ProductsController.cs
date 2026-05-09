@@ -3,11 +3,15 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
+using ERP.Application.Common;
 using ERP.Application.Products.UseCases.CreateProduct;
+using ERP.Application.Products.UseCases.DisableProduct;
+using ERP.Application.Products.UseCases.EnableProduct;
 using ERP.Application.Products.UseCases.GetProductReport;
 using ERP.Application.Products.UseCases.GetProducts;
 using ERP.Application.Products.UseCases.GetProductById;
 using ERP.Application.Products.UseCases.GetProductFullReport;
+using ERP.Application.Products.UseCases.UpdateProduct;
 using ERP.Application.Products.DTOs;
 using ERP.Domain.Products.Interfaces;
 
@@ -24,10 +28,17 @@ namespace ERP.API.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly DisableProductHandler _disable;
+    private readonly EnableProductHandler _enable;
 
-    public ProductsController(IMediator mediator)
+    public ProductsController(
+        IMediator mediator,
+        DisableProductHandler disable,
+        EnableProductHandler enable)
     {
-        _mediator  = mediator;
+        _mediator = mediator;
+        _disable  = disable;
+        _enable   = enable;
     }
 
     /// <summary>Retorna todos los productos activos del tenant.</summary>
@@ -147,5 +158,62 @@ public class ProductsController : ControllerBase
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
+    }
+
+    /// <summary>Actualiza un producto existente.</summary>
+    /// <param name="id">ID del producto a actualizar.</param>
+    /// <param name="command">Datos actualizados del producto.</param>
+    /// <param name="ct">Token de cancelación.</param>
+    /// <response code="200">Producto actualizado correctamente.</response>
+    /// <response code="404">Producto no encontrado.</response>
+    /// <response code="422">Datos inválidos.</response>
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = "perm:inventario.products.edit")]
+    [ProducesResponseType(typeof(ApiResponse<ProductDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Update(
+        Guid id,
+        [FromBody] UpdateProductCommand command,
+        CancellationToken ct)
+    {
+        if (id != command.Id)
+            return this.ApiBadRequest("El ID de la ruta no coincide con el ID del comando.");
+
+        var result = (Result<ProductDto>)await _mediator.Send(command, ct);
+        return result.IsSuccess
+            ? this.ApiOk(result.Value)
+            : this.ApiBadRequest(result.Error ?? "Error al actualizar el producto");
+    }
+
+    /// <summary>Deshabilita un producto (no lo elimina).</summary>
+    /// <param name="id">ID del producto.</param>
+    /// <response code="200">Producto deshabilitado.</response>
+    /// <response code="400">El producto ya está deshabilitado o no existe.</response>
+    [HttpPatch("{id:guid}/disable")]
+    [Authorize(Policy = "perm:inventario.products.edit")]
+    [ProducesResponseType(typeof(ApiResponse<ProductDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Disable(Guid id, CancellationToken ct)
+    {
+        var result = await _disable.HandleAsync(id, ct);
+        return this.ToOkOrBadRequest(result, "Deshabilitado");
+    }
+
+    /// <summary>Habilita un producto previamente deshabilitado.</summary>
+    /// <param name="id">ID del producto.</param>
+    /// <response code="200">Producto habilitado.</response>
+    /// <response code="400">El producto ya está activo o no existe.</response>
+    [HttpPatch("{id:guid}/enable")]
+    [Authorize(Policy = "perm:inventario.products.edit")]
+    [ProducesResponseType(typeof(ApiResponse<ProductDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Enable(Guid id, CancellationToken ct)
+    {
+        var result = await _enable.HandleAsync(id, ct);
+        return this.ToOkOrBadRequest(result, "Habilitado");
     }
 }

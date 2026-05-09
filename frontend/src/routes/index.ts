@@ -1,4 +1,3 @@
-import { Route } from 'react-router-dom';
 import { publicRoutes } from './publicRoutes';
 import { adminRoutes } from './adminRoutes';
 import { catalogRoutes } from './catalogRoutes';

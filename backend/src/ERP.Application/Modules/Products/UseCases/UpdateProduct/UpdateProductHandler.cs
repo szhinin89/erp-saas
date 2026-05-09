@@ -1,3 +1,4 @@
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Products.DTOs;
 using ERP.Domain.Products.Entities;
@@ -6,7 +7,7 @@ using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Products.UseCases.UpdateProduct;
 
-public class UpdateProductHandler
+public class UpdateProductHandler : IRequestHandler<UpdateProductCommand, Result<ProductDto>>
 {
     private readonly IProductRepository _repository;
     private readonly ITaxRateRepository _taxRates;
@@ -25,7 +26,7 @@ public class UpdateProductHandler
         _currentUser   = currentUser;
     }
 
-    public async Task<Result<ProductDto>> HandleAsync(UpdateProductCommand command, CancellationToken ct = default)
+    public async Task<Result<ProductDto>> Handle(UpdateProductCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;

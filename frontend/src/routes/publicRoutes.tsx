@@ -1,4 +1,4 @@
-import { Route, Navigate } from 'react-router-dom';
+import { Route } from 'react-router-dom';
 import { LoginPage } from '../pages/LoginPage';
 import { PasswordResetPage } from '../pages/PasswordResetPage';
 import { TenantSelectPage } from '../pages/TenantSelectPage';

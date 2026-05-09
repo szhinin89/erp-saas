@@ -4,8 +4,12 @@ using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Accounting.UseCases.CreateAccount;
+using ERP.Application.Accounting.UseCases.DisableAccount;
+using ERP.Application.Accounting.UseCases.EnableAccount;
 using ERP.Application.Accounting.UseCases.GetAccounts;
 using ERP.Application.Accounting.UseCases.GetAccountById;
+using ERP.Application.Accounting.UseCases.UpdateAccount;
+using ERP.Application.Accounting.UseCases.VoidJournalEntry;
 using CreateJournalEntryCommand = ERP.Application.Accounting.UseCases.CreateJournalEntry.CreateJournalEntryCommand;
 using ERP.Application.Accounting.UseCases.GetJournalEntries;
 using ERP.Application.Accounting.UseCases.GetJournalEntryById;
@@ -24,10 +28,17 @@ namespace ERP.API.Controllers;
 public class AccountsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly DisableAccountHandler _disable;
+    private readonly EnableAccountHandler _enable;
 
-    public AccountsController(IMediator mediator)
+    public AccountsController(
+        IMediator mediator,
+        DisableAccountHandler disable,
+        EnableAccountHandler enable)
     {
         _mediator = mediator;
+        _disable  = disable;
+        _enable   = enable;
     }
 
     // ── Plan de cuentas ────────────────────────────────────────────
@@ -68,6 +79,53 @@ public class AccountsController : ControllerBase
     {
         var result = await _mediator.Send(new GetAccountByIdQuery(id), ct);
         return this.ToOkOrNotFound(result);
+    }
+
+    /// <summary>Actualiza una cuenta contable existente.</summary>
+    /// <param name="id">ID de la cuenta (GUID).</param>
+    /// <response code="200">Cuenta actualizada correctamente.</response>
+    /// <response code="400">Datos inválidos o cuenta no encontrada.</response>
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = "perm:accounting.accounts.edit")]
+    [ProducesResponseType(typeof(ApiResponse<AccountDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateAccountCommand command, CancellationToken ct)
+    {
+        if (id != command.Id)
+            return this.ApiBadRequest("El ID de la ruta no coincide con el ID del comando.");
+
+        var result = await _mediator.Send(command, ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    /// <summary>Deshabilita una cuenta contable (no la elimina).</summary>
+    /// <response code="200">Cuenta deshabilitada.</response>
+    /// <response code="400">La cuenta ya está deshabilitada o no existe.</response>
+    [HttpPatch("{id:guid}/disable")]
+    [Authorize(Policy = "perm:accounting.accounts.edit")]
+    [ProducesResponseType(typeof(ApiResponse<AccountDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> DisableAccount(Guid id, CancellationToken ct)
+    {
+        var result = await _disable.HandleAsync(id, ct);
+        return this.ToOkOrBadRequest(result, "Deshabilitada");
+    }
+
+    /// <summary>Habilita una cuenta contable previamente deshabilitada.</summary>
+    /// <response code="200">Cuenta habilitada.</response>
+    /// <response code="400">La cuenta ya está activa o no existe.</response>
+    [HttpPatch("{id:guid}/enable")]
+    [Authorize(Policy = "perm:accounting.accounts.edit")]
+    [ProducesResponseType(typeof(ApiResponse<AccountDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> EnableAccount(Guid id, CancellationToken ct)
+    {
+        var result = await _enable.HandleAsync(id, ct);
+        return this.ToOkOrBadRequest(result, "Habilitada");
     }
 
     /// <summary>Crea una nueva cuenta en el plan de cuentas del tenant.</summary>
@@ -130,6 +188,25 @@ public class AccountsController : ControllerBase
     {
         var result = await _mediator.Send(new GetJournalEntryByIdQuery(id), ct);
         return this.ToOkOrNotFound(result);
+    }
+
+    /// <summary>Anula un asiento contable (Draft o Posted). No se puede revertir.</summary>
+    /// <param name="id">ID del asiento (GUID).</param>
+    /// <response code="200">Asiento anulado correctamente.</response>
+    /// <response code="400">El asiento ya está anulado, no existe, o motivo vacío.</response>
+    [HttpPatch("journal-entries/{id:guid}/void")]
+    [Authorize(Policy = "perm:accounting.journal.edit")]
+    [ProducesResponseType(typeof(ApiResponse<JournalEntryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> VoidJournalEntry(Guid id, [FromBody] VoidJournalEntryCommand command, CancellationToken ct)
+    {
+        if (id != command.Id)
+            return this.ApiBadRequest("El ID de la ruta no coincide con el ID del comando.");
+
+        var result = await _mediator.Send(command, ct);
+        return this.ToOkOrBadRequest(result, "Anulado");
     }
 
     /// <summary>Crea un nuevo asiento contable.</summary>
