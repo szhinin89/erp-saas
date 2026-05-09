@@ -64,6 +64,8 @@ public static class DependencyInjection
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IBodegaRepository, BodegaRepository>();
         services.AddScoped<IProveedorRepository, ProveedorRepository>();
+        services.AddScoped<IXmlFacturaParser, SriFacturaParser>();
+        services.AddScoped<IFileStorage, LocalFileStorage>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<SaasCatalogQuery>();
         services.AddScoped<ISaasCatalogQuery>(sp => sp.GetRequiredService<SaasCatalogQuery>());
