@@ -743,7 +743,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<Guid>("ProductoId")
+                    b.Property<Guid?>("ProductoId")
                         .HasColumnType("uuid")
                         .HasColumnName("producto_id");
 
@@ -1263,11 +1263,28 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("Categoria")
+                    b.Property<DateTime?>("AprobadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("aprobado_en");
+
+                    b.Property<Guid?>("AprobadoPor")
+                        .HasColumnType("uuid")
+                        .HasColumnName("aprobado_por");
+
+                    b.Property<Guid?>("AsientoContableId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("asiento_contable_id");
+
+                    b.Property<string>("CategoriaGasto")
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("character varying(80)")
-                        .HasColumnName("categoria");
+                        .HasColumnName("categoria_gasto");
+
+                    b.Property<string>("ClaveAcceso")
+                        .HasMaxLength(49)
+                        .HasColumnType("character varying(49)")
+                        .HasColumnName("clave_acceso");
 
                     b.Property<string>("Concepto")
                         .IsRequired()
@@ -1283,23 +1300,29 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<DateTime>("FechaFactura")
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("estado");
+
+                    b.Property<DateTime>("FechaEmision")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("fecha_factura");
+                        .HasColumnName("fecha_emision");
+
+                    b.Property<decimal>("Impuesto")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("impuesto");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
 
-                    b.Property<decimal>("Iva")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("iva");
-
-                    b.Property<decimal>("Monto")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("monto");
+                    b.Property<string>("MotivoRechazo")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("motivo_rechazo");
 
                     b.Property<string>("NumeroFactura")
                         .HasMaxLength(50)
@@ -1314,6 +1337,19 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid?>("ProveedorId")
                         .HasColumnType("uuid")
                         .HasColumnName("proveedor_id");
+
+                    b.Property<DateTime?>("RechazadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("rechazado_en");
+
+                    b.Property<Guid?>("RechazadoPor")
+                        .HasColumnType("uuid")
+                        .HasColumnName("rechazado_por");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("subtotal");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
@@ -1332,12 +1368,33 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
 
+                    b.Property<DateTime?>("ValidadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("validado_en");
+
+                    b.Property<Guid?>("ValidadoPor")
+                        .HasColumnType("uuid")
+                        .HasColumnName("validado_por");
+
+                    b.Property<string>("XmlPath")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("xml_path");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Categoria")
+                    b.HasIndex("TenantId", "CategoriaGasto")
                         .HasDatabaseName("ix_gasto_facturas_tenant_categoria");
 
-                    b.HasIndex("TenantId", "FechaFactura")
+                    b.HasIndex("TenantId", "ClaveAcceso")
+                        .IsUnique()
+                        .HasDatabaseName("ix_gasto_facturas_tenant_clave_acceso")
+                        .HasFilter("clave_acceso IS NOT NULL");
+
+                    b.HasIndex("TenantId", "Estado")
+                        .HasDatabaseName("ix_gasto_facturas_tenant_estado");
+
+                    b.HasIndex("TenantId", "FechaEmision")
                         .HasDatabaseName("ix_gasto_facturas_tenant_fecha");
 
                     b.ToTable("gasto_facturas", (string)null);

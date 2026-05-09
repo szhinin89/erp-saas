@@ -116,7 +116,8 @@ public sealed class ComprasController : ControllerBase
             XmlNombreArchivo: xmlFile.FileName,
             ProveedorId: null, NumeroFactura: null, FechaFactura: null,
             FechaVencimiento: null, CondicionPago: null,
-            Observaciones: null, Detalles: null);
+            Observaciones: null, Detalles: null,
+            AsignacionesBodega: null);
 
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");

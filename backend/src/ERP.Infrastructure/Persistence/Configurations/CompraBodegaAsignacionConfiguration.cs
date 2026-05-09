@@ -30,8 +30,7 @@ public class CompraBodegaAsignacionConfiguration : IEntityTypeConfiguration<Comp
             .IsRequired();
 
         builder.Property(a => a.ProductoId)
-            .HasColumnName("producto_id")
-            .IsRequired();
+            .HasColumnName("producto_id");
 
         builder.Property(a => a.Cantidad)
             .HasColumnName("cantidad")

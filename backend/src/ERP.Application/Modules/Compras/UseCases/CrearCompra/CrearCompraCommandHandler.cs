@@ -1,9 +1,12 @@
 using MediatR;
+using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Modules.Compras;
 using ERP.Application.Modules.Compras.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
+using ERP.Domain.Bodegas.Interfaces;
 using ERP.Domain.Compras.Entities;
 using ERP.Domain.Compras.Interfaces;
 using ERP.Domain.Proveedores.Entities;
@@ -16,28 +19,34 @@ public sealed class CrearCompraCommandHandler
 {
     private readonly ICompraRepository       _compraRepo;
     private readonly IProveedorRepository    _proveedorRepo;
+    private readonly IBodegaRepository        _bodegaRepo;
     private readonly IXmlFacturaParser       _parser;
     private readonly IFileStorage            _storage;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
+    private readonly ILogger<CrearCompraCommandHandler> _logger;
 
     public CrearCompraCommandHandler(
         ICompraRepository repo,
         IProveedorRepository proveedorRepo,
+        IBodegaRepository bodegaRepo,
         IXmlFacturaParser parser,
         IFileStorage storage,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
-        ICurrentUser user)
+        ICurrentUser user,
+        ILogger<CrearCompraCommandHandler> logger)
     {
         _compraRepo    = repo;
         _proveedorRepo = proveedorRepo;
+        _bodegaRepo    = bodegaRepo;
         _parser        = parser;
         _storage       = storage;
         _activity      = activity;
         _tenant        = tenant;
         _user          = user;
+        _logger        = logger;
     }
 
     public async Task<Result<CompraFacturaDto>> Handle(
@@ -65,6 +74,10 @@ public sealed class CrearCompraCommandHandler
         }
         catch (Exception ex)
         {
+            _logger.LogWarning(
+                ex,
+                "Fallo al parsear XML de compra (tenant {TenantId}, usuario {UserId}).",
+                tenantId, userId);
             return Result<CompraFacturaDto>.Failure($"Error al leer el XML: {ex.Message}");
         }
 
@@ -102,8 +115,30 @@ public sealed class CrearCompraCommandHandler
                 userId);
         }
 
+        if (command.AsignacionesBodega is { Count: > 0 })
+        {
+            var detalleList = compra.Detalles.ToList();
+            var errXml = await CompraAsignacionBodegasRules.ValidateAgainstDetallesAsync(
+                detalleList, command.AsignacionesBodega, tenantId, _bodegaRepo, ct);
+            if (errXml is not null)
+                return Result<CompraFacturaDto>.Failure(errXml);
+        }
+
         // Ajustar IVA total al valor del XML (totales oficiales)
         await _compraRepo.AddAsync(compra, ct);
+
+        if (command.AsignacionesBodega is { Count: > 0 })
+        {
+            var detalleList = compra.Detalles.ToList();
+            foreach (var a in command.AsignacionesBodega)
+            {
+                var det = detalleList[a.ItemIndex];
+                var productoAsignado = a.ProductoId ?? det.ProductoId;
+                var row = CompraBodegaAsignacion.Create(
+                    tenantId, compra.Id, det.Id, a.BodegaId, productoAsignado, a.Cantidad, userId);
+                await _compraRepo.AddBodegaAsignacionAsync(row, ct);
+            }
+        }
 
         await _activity.AddAsync(UserActivity.Create(
             tenantId, userId, _user.Email, _user.FullName,
@@ -112,6 +147,10 @@ public sealed class CrearCompraCommandHandler
             description: $"{parsed.NumeroFactura} — {proveedor.RazonSocial}"), ct);
 
         await _compraRepo.SaveChangesAsync(ct);
+
+        _logger.LogInformation(
+            "Compra creada desde XML: id {CompraId}, tenant {TenantId}, clave {ClaveAcceso}, número {Numero}.",
+            compra.Id, tenantId, parsed.ClaveAcceso, parsed.NumeroFactura);
 
         return Result<CompraFacturaDto>.Success(ToDto(compra));
     }
@@ -144,7 +183,28 @@ public sealed class CrearCompraCommandHandler
                 d.DescuentoPorcentaje, d.IvaPorcentaje, userId);
         }
 
+        if (command.AsignacionesBodega is { Count: > 0 })
+        {
+            var err = await CompraAsignacionBodegasRules.ValidateAsync(
+                command.Detalles!, command.AsignacionesBodega, tenantId, _bodegaRepo, ct);
+            if (err is not null)
+                return Result<CompraFacturaDto>.Failure(err);
+        }
+
         await _compraRepo.AddAsync(compra, ct);
+
+        if (command.AsignacionesBodega is { Count: > 0 })
+        {
+            var detalleList = compra.Detalles.ToList();
+            foreach (var a in command.AsignacionesBodega)
+            {
+                var det = detalleList[a.ItemIndex];
+                var productoAsignado = a.ProductoId ?? det.ProductoId;
+                var row = CompraBodegaAsignacion.Create(
+                    tenantId, compra.Id, det.Id, a.BodegaId, productoAsignado, a.Cantidad, userId);
+                await _compraRepo.AddBodegaAsignacionAsync(row, ct);
+            }
+        }
 
         await _activity.AddAsync(UserActivity.Create(
             tenantId, userId, _user.Email, _user.FullName,
@@ -153,6 +213,10 @@ public sealed class CrearCompraCommandHandler
             description: $"{compra.NumeroFactura} — {proveedor.RazonSocial}"), ct);
 
         await _compraRepo.SaveChangesAsync(ct);
+
+        _logger.LogInformation(
+            "Compra creada manual: id {CompraId}, tenant {TenantId}, número {Numero}.",
+            compra.Id, tenantId, compra.NumeroFactura);
 
         return Result<CompraFacturaDto>.Success(ToDto(compra));
     }

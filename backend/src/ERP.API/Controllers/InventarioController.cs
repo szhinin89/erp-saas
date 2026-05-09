@@ -1,0 +1,35 @@
+using MediatR;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using ERP.API.Contracts;
+using ERP.API.Extensions;
+using ERP.Application.Modules.Inventario.DTOs;
+using ERP.Application.Modules.Inventario.UseCases.GetStockActualPorBodega;
+
+namespace ERP.API.Controllers;
+
+/// <summary>Consultas de inventario (stock por bodega).</summary>
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+[Produces("application/json")]
+public sealed class InventarioController : ControllerBase
+{
+    private readonly IMediator _mediator;
+
+    public InventarioController(IMediator mediator) => _mediator = mediator;
+
+    /// <summary>Saldo de stock en una bodega; filtro opcional por producto.</summary>
+    [HttpGet("stock-actual")]
+    [Authorize(Policy = "perm:inventario.bodegas.view")]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<StockActualListItemDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetStockActual(
+        [FromQuery] Guid bodegaId,
+        [FromQuery] Guid? productoId = null,
+        CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new GetStockActualPorBodegaQuery(bodegaId, productoId), ct);
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<StockActualListItemDto>());
+    }
+}

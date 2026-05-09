@@ -23,4 +23,19 @@ public interface IAccountingService
         decimal  total,
         string   descripcion,
         CancellationToken ct);
+
+    /// <summary>
+    /// Asiento de gasto aprobado: débito a cuenta de gasto (según categoría si existe coincidencia por nombre),
+    /// crédito a caja/banco (primer activo de tipo Activo, naturaleza Deudor).
+    /// </summary>
+    Task<Result<Guid>> CrearAsientoGastoAsync(
+        Guid     gastoId,
+        string   categoriaGasto,
+        string   referencia,
+        DateTime fecha,
+        decimal  subtotal,
+        decimal  impuesto,
+        decimal  total,
+        string   descripcion,
+        CancellationToken ct);
 }

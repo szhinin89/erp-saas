@@ -17,5 +17,13 @@ public interface ICompraRepository
         DateTime?    hasta,
         string?      search,
         CancellationToken ct = default);
+
+    Task<IReadOnlyList<CompraBodegaAsignacion>> GetBodegaAsignacionesByCompraFacturaIdAsync(
+        Guid tenantId,
+        Guid compraFacturaId,
+        CancellationToken ct = default);
+
+    Task AddBodegaAsignacionAsync(CompraBodegaAsignacion asignacion, CancellationToken ct = default);
+
     Task SaveChangesAsync(CancellationToken ct = default);
 }

@@ -24,6 +24,11 @@ public static class SwaggerExtensions
 
                     **Multi-tenant:** el tenant se identifica mediante el claim `tenant_id` dentro del JWT.
                     Cada request filtra automáticamente los datos del tenant autenticado.
+
+                    **Base de datos (producción):** aplicar migraciones de EF Core solo en ventana controlada,
+                    con backup previo: `dotnet ef database update --project src/ERP.Infrastructure/ERP.Infrastructure.csproj
+                    --startup-project src/ERP.API/ERP.API.csproj --connection "<cadena de producción>"`.
+                    No ejecutar contra producción desde entornos no auditados.
                     """
             });
 

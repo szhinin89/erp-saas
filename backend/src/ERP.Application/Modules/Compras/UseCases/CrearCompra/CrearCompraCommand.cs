@@ -16,6 +16,13 @@ public sealed record DetalleCompraInput(
     decimal DescuentoPorcentaje,
     decimal IvaPorcentaje);
 
+/// <summary>
+/// Distribución de la cantidad de un detalle (<see cref="ItemIndex"/>) hacia una bodega.
+/// <see cref="ProductoId"/> opcional: si viene, enlaza inventario aunque la línea (p. ej. XML) no tenga producto.
+/// </summary>
+public sealed record AsignacionBodegaRequest(int ItemIndex, Guid BodegaId, decimal Cantidad, Guid? ProductoId = null);
+
+/// <summary>Crea una factura de compra. <c>AsignacionesBodega</c> es opcional; si viene, la suma por ítem debe igualar la cantidad de cada detalle.</summary>
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
 public sealed record CrearCompraCommand(
     ModoCreacionCompra Modo,
@@ -31,5 +38,6 @@ public sealed record CrearCompraCommand(
     DateTime? FechaVencimiento,
     string?   CondicionPago,
     string?   Observaciones,
-    IReadOnlyList<DetalleCompraInput>? Detalles
+    IReadOnlyList<DetalleCompraInput>? Detalles,
+    IReadOnlyList<AsignacionBodegaRequest>? AsignacionesBodega
 ) : IRequest<Result<CompraFacturaDto>>;

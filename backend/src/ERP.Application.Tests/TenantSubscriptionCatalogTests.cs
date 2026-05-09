@@ -28,7 +28,7 @@ public sealed class TenantSubscriptionCatalogTests
             enabledModuleKeys: new[] { "Saas", "inventario", "inventario" });
 
         var effective = TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant);
-        effective.Should().Equal("inventario", "saas", "ventas");
+        effective.Should().Equal("compras", "gastos", "inventario", "saas", "ventas");
     }
 
     [Fact]
@@ -59,6 +59,10 @@ public sealed class TenantSubscriptionCatalogTests
         TenantSubscriptionCatalog.TryGetModuleKeyForPermission("ventas.customers.view", out var vKey)
             .Should().BeTrue();
         vKey.Should().Be("ventas");
+
+        TenantSubscriptionCatalog.TryGetModuleKeyForPermission("compras.facturas.view", out var cKey)
+            .Should().BeTrue();
+        cKey.Should().Be("compras");
     }
 
     [Fact]
@@ -66,6 +70,14 @@ public sealed class TenantSubscriptionCatalogTests
     {
         var t = Tenant.Create("T", "t", Guid.NewGuid(), enabledModuleKeys: new[] { "inventario" });
         TenantSubscriptionCatalog.TenantAllowsPermission(t, "ventas.customers.view").Should().BeTrue();
+    }
+
+    [Fact]
+    public void TenantAllowsPermission_compras_gastos_when_only_inventario_enabled()
+    {
+        var t = Tenant.Create("T", "t", Guid.NewGuid(), enabledModuleKeys: new[] { "inventario" });
+        TenantSubscriptionCatalog.TenantAllowsPermission(t, "compras.facturas.view").Should().BeTrue();
+        TenantSubscriptionCatalog.TenantAllowsPermission(t, "gastos.facturas.create").Should().BeTrue();
     }
 
     [Fact]

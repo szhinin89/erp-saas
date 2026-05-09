@@ -1,92 +1,180 @@
 using ERP.Domain.Common;
+using ERP.Domain.Gastos.Enums;
 
 namespace ERP.Domain.Gastos.Entities;
 
-/// <summary>
-/// Gasto o factura de egreso del tenant.
-/// Soft delete vía <see cref="MasterEntity"/>.
-/// </summary>
+/// <summary>Factura / comprobante de gasto (incluye soporte XML SRI).</summary>
 public sealed class GastoFactura : MasterEntity, ITenantEntity
 {
-    public const int NumeroFacturaMaxLen = 50;
-    public const int ConceptoMaxLen      = 200;
-    public const int CategoriaMaxLen     = 80;
-    public const int ObservacionesMaxLen = 1000;
+    public const int ClaveAccesoLen       = 49;
+    public const int XmlPathMaxLen        = 500;
+    public const int NumeroFacturaMaxLen  = 50;
+    public const int ConceptoMaxLen       = 200;
+    public const int CategoriaGastoMaxLen = 80;
+    public const int ObservacionesMaxLen  = 1000;
+    public const int MotivoRechazoMaxLen  = 500;
 
-    public Guid?    ProveedorId     { get; private set; }
-    public string?  NumeroFactura   { get; private set; }
-    public DateTime FechaFactura    { get; private set; }
-    public string   Concepto        { get; private set; } = null!;
-    public string   Categoria       { get; private set; } = null!;
-    public decimal  Monto           { get; private set; }
-    public decimal  Iva             { get; private set; }
-    public decimal  Total           { get; private set; }
-    public string?  Observaciones   { get; private set; }
+    /// <summary>A partir de este total (USD), el alta manual exige comprobante XML.</summary>
+    public const decimal TotalRequiereXml = 100m;
+
+    public const decimal ToleranciaTotal = 0.01m;
+
+    public string?      ClaveAcceso       { get; private set; }
+    public DateTime     FechaEmision      { get; private set; }
+    public Guid?        ProveedorId       { get; private set; }
+    public string?     NumeroFactura    { get; private set; }
+    public string       Concepto        { get; private set; } = null!;
+    public string       CategoriaGasto    { get; private set; } = null!;
+    public decimal      Subtotal          { get; private set; }
+    public decimal      Impuesto          { get; private set; }
+    public decimal      Total             { get; private set; }
+    public EstadoGasto  Estado            { get; private set; } = EstadoGasto.Borrador;
+    public string?     XmlPath          { get; private set; }
+    public string?     Observaciones    { get; private set; }
+
+    public Guid?      ValidadoPor      { get; private set; }
+    public DateTime?  ValidadoEn       { get; private set; }
+    public Guid?      AprobadoPor      { get; private set; }
+    public DateTime?  AprobadoEn       { get; private set; }
+    public Guid?      RechazadoPor     { get; private set; }
+    public DateTime?  RechazadoEn      { get; private set; }
+    public string?    MotivoRechazo    { get; private set; }
+    public Guid?      AsientoContableId { get; private set; }
 
     private GastoFactura() { }
 
-    public static GastoFactura Create(
+    public static GastoFactura CreateManual(
         Guid     tenantId,
         Guid?    proveedorId,
-        string?  numeroFactura,
-        DateTime fechaFactura,
+        DateTime fechaEmision,
         string   concepto,
-        string   categoria,
-        decimal  monto,
-        decimal  ivaPorcentaje,
+        string   categoriaGasto,
+        decimal  subtotal,
+        decimal  impuesto,
+        decimal  total,
         string?  observaciones,
         Guid     createdBy)
     {
-        if (monto < 0)
-            throw new ArgumentException("El monto no puede ser negativo.", nameof(monto));
-
-        var iva   = monto * ivaPorcentaje / 100m;
-        var total = monto + iva;
+        ValidarMontos(subtotal, impuesto, total);
+        if (total > TotalRequiereXml)
+            throw new InvalidOperationException(
+                $"Los gastos con total mayor a {TotalRequiereXml} deben registrarse con comprobante XML.");
 
         var g = new GastoFactura
         {
             Id             = Guid.NewGuid(),
             TenantId       = tenantId,
             ProveedorId    = proveedorId,
-            NumeroFactura  = Trim(numeroFactura),
-            FechaFactura   = fechaFactura,
+            FechaEmision   = fechaEmision,
             Concepto       = concepto.Trim(),
-            Categoria      = categoria.Trim(),
-            Monto          = monto,
-            Iva            = iva,
+            CategoriaGasto = categoriaGasto.Trim(),
+            Subtotal       = subtotal,
+            Impuesto       = impuesto,
             Total          = total,
+            Estado         = EstadoGasto.Borrador,
             Observaciones  = Trim(observaciones),
         };
         g.SetCreated(createdBy);
         return g;
     }
 
-    public void Update(
-        Guid?    proveedorId,
+    /// <summary>Alta desde XML ya parseado y ruta de archivo guardada.</summary>
+    public static GastoFactura CreateFromXml(
+        Guid     tenantId,
+        Guid     proveedorId,
+        string   claveAcceso,
         string?  numeroFactura,
-        DateTime fechaFactura,
+        DateTime fechaEmision,
         string   concepto,
-        string   categoria,
-        decimal  monto,
-        decimal  ivaPorcentaje,
+        string   categoriaGasto,
+        decimal  subtotal,
+        decimal  impuesto,
+        decimal  total,
+        string   xmlPath,
         string?  observaciones,
-        Guid     updatedBy)
+        Guid     createdBy)
     {
-        if (monto < 0)
-            throw new ArgumentException("El monto no puede ser negativo.", nameof(monto));
+        ValidarClaveAcceso(claveAcceso);
+        ValidarMontos(subtotal, impuesto, total);
 
-        var iva   = monto * ivaPorcentaje / 100m;
+        var g = new GastoFactura
+        {
+            Id             = Guid.NewGuid(),
+            TenantId       = tenantId,
+            ProveedorId    = proveedorId,
+            ClaveAcceso    = claveAcceso.Trim(),
+            NumeroFactura  = Trim(numeroFactura),
+            FechaEmision   = fechaEmision,
+            Concepto       = concepto.Trim(),
+            CategoriaGasto = categoriaGasto.Trim(),
+            Subtotal       = subtotal,
+            Impuesto       = impuesto,
+            Total          = total,
+            XmlPath        = xmlPath.Trim(),
+            Estado         = EstadoGasto.Borrador,
+            Observaciones  = Trim(observaciones),
+        };
+        g.SetCreated(createdBy);
+        return g;
+    }
 
-        ProveedorId   = proveedorId;
-        NumeroFactura = Trim(numeroFactura);
-        FechaFactura  = fechaFactura;
-        Concepto      = concepto.Trim();
-        Categoria     = categoria.Trim();
-        Monto         = monto;
-        Iva           = iva;
-        Total         = monto + iva;
-        Observaciones = Trim(observaciones);
-        SetUpdated(updatedBy);
+    public void Validar(Guid userId)
+    {
+        if (Estado != EstadoGasto.Borrador)
+            throw new InvalidOperationException("Solo se puede validar un gasto en borrador.");
+
+        Estado       = EstadoGasto.Validado;
+        ValidadoPor  = userId;
+        ValidadoEn   = DateTime.UtcNow;
+        SetUpdated(userId);
+    }
+
+    public void Aprobar(Guid userId, Guid asientoContableId)
+    {
+        if (Estado != EstadoGasto.Validado)
+            throw new InvalidOperationException("Solo se puede aprobar un gasto validado.");
+
+        Estado            = EstadoGasto.Aprobado;
+        AprobadoPor       = userId;
+        AprobadoEn        = DateTime.UtcNow;
+        AsientoContableId = asientoContableId;
+        SetUpdated(userId);
+    }
+
+    public void Rechazar(Guid userId, string motivo)
+    {
+        if (Estado == EstadoGasto.Aprobado)
+            throw new InvalidOperationException("No se puede rechazar un gasto ya aprobado.");
+        if (Estado == EstadoGasto.Rechazado)
+            throw new InvalidOperationException("El gasto ya está rechazado.");
+        if (string.IsNullOrWhiteSpace(motivo))
+            throw new ArgumentException("El motivo de rechazo es obligatorio.", nameof(motivo));
+
+        Estado        = EstadoGasto.Rechazado;
+        RechazadoPor  = userId;
+        RechazadoEn   = DateTime.UtcNow;
+        MotivoRechazo = motivo.Trim();
+        SetUpdated(userId);
+    }
+
+    private static void ValidarMontos(decimal subtotal, decimal impuesto, decimal total)
+    {
+        if (subtotal < 0 || impuesto < 0 || total < 0)
+            throw new ArgumentException("Los importes no pueden ser negativos.");
+
+        var calculado = subtotal + impuesto;
+        if (Math.Abs(calculado - total) > ToleranciaTotal)
+            throw new ArgumentException(
+                $"Subtotal + impuesto ({calculado:F2}) no coincide con Total ({total:F2}).");
+    }
+
+    private static void ValidarClaveAcceso(string claveAcceso)
+    {
+        if (string.IsNullOrWhiteSpace(claveAcceso))
+            throw new ArgumentException("La clave de acceso es obligatoria para gastos con XML.", nameof(claveAcceso));
+        var c = claveAcceso.Trim();
+        if (c.Length != ClaveAccesoLen || !c.All(char.IsDigit))
+            throw new ArgumentException("La clave de acceso debe tener 49 dígitos numéricos.");
     }
 
     private static string? Trim(string? s) =>

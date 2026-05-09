@@ -54,6 +54,19 @@ public sealed class CompraRepository : ICompraRepository
         return await q.OrderByDescending(c => c.FechaFactura).ToListAsync(ct);
     }
 
+    public async Task<IReadOnlyList<CompraBodegaAsignacion>> GetBodegaAsignacionesByCompraFacturaIdAsync(
+        Guid tenantId,
+        Guid compraFacturaId,
+        CancellationToken ct = default)
+        => await _context.CompraBodegaAsignaciones
+            .Where(a => a.TenantId == tenantId && a.CompraFacturaId == compraFacturaId)
+            .OrderBy(a => a.CompraDetalleId)
+            .ThenBy(a => a.BodegaId)
+            .ToListAsync(ct);
+
+    public Task AddBodegaAsignacionAsync(CompraBodegaAsignacion asignacion, CancellationToken ct = default)
+        => _context.CompraBodegaAsignaciones.AddAsync(asignacion, ct).AsTask();
+
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);
 }
