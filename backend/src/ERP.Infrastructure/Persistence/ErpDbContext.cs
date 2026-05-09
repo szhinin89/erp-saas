@@ -13,6 +13,11 @@ using ERP.Domain.Customers.Entities;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Domain.Navigation.Entities;
 using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Bodegas.Entities;
+using ERP.Domain.Proveedores.Entities;
+using ERP.Domain.Compras.Entities;
+using ERP.Domain.Gastos.Entities;
+using ERP.Domain.Inventario.Entities;
 using ERP.Application.Common;
 using System.Linq.Expressions;
 
@@ -90,6 +95,24 @@ public class ErpDbContext : DbContext
     public DbSet<Branch> Branches => Set<Branch>();
     public DbSet<UserActivity> UserActivities => Set<UserActivity>();
     public DbSet<Customer> Customers => Set<Customer>();
+
+    // ── Logística / Bodegas ───────────────────────────────────────────────
+    public DbSet<Bodega> Bodegas => Set<Bodega>();
+
+    // ── Proveedores ───────────────────────────────────────────────────────
+    public DbSet<Proveedor> Proveedores => Set<Proveedor>();
+
+    // ── Compras ───────────────────────────────────────────────────────────
+    public DbSet<CompraFactura>          CompraFacturas          => Set<CompraFactura>();
+    public DbSet<CompraDetalle>          CompraDetalles          => Set<CompraDetalle>();
+    public DbSet<CompraBodegaAsignacion> CompraBodegaAsignaciones => Set<CompraBodegaAsignacion>();
+
+    // ── Gastos ────────────────────────────────────────────────────────────
+    public DbSet<GastoFactura> GastoFacturas => Set<GastoFactura>();
+
+    // ── Inventario ────────────────────────────────────────────────────────
+    public DbSet<StockActual>          StockActual            => Set<StockActual>();
+    public DbSet<InventarioMovimiento> InventarioMovimientos  => Set<InventarioMovimiento>();
 
     public DbSet<SaasFeatureDefinition> SaasFeatureDefinitions => Set<SaasFeatureDefinition>();
     public DbSet<SaasPlan> SaasPlans => Set<SaasPlan>();
