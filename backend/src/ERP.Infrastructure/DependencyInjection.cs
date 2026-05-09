@@ -13,6 +13,7 @@ using ERP.Domain.Geography.Interfaces;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Customers.Interfaces;
 using ERP.Domain.Bodegas.Interfaces;
+using ERP.Domain.Proveedores.Interfaces;
 using ERP.Domain.Subscriptions.Interfaces;
 using ERP.Application.Navigation;
 using ERP.Application.Subscriptions;
@@ -62,6 +63,7 @@ public static class DependencyInjection
         services.AddScoped<IUserActivityRepository, UserActivityRepository>();
         services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IBodegaRepository, BodegaRepository>();
+        services.AddScoped<IProveedorRepository, ProveedorRepository>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<SaasCatalogQuery>();
         services.AddScoped<ISaasCatalogQuery>(sp => sp.GetRequiredService<SaasCatalogQuery>());
