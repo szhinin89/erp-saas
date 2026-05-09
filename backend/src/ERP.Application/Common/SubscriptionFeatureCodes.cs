@@ -10,5 +10,8 @@ public static class SubscriptionFeatureCodes
     public const string Payroll = "PAYROLL";
     public const string ApiAccess = "API_ACCESS";
     public const string Customers = "CUSTOMERS";
-    public const string Branches = "BRANCHES";
+    public const string Branches  = "BRANCHES";
+    public const string Bodegas   = "BODEGAS";
+    public const string Compras   = "COMPRAS";
+    public const string Gastos    = "GASTOS";
 }
