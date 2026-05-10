@@ -22,12 +22,12 @@ public sealed class TransferenciaRepository : ITransferenciaRepository
 
     public async Task<int> GetNextSecuencialAsync(Guid tenantId, CancellationToken ct = default)
     {
+        // MaxAsync on empty sequence throws; use nullable Max then coalesce.
+        // Also compatible with EF InMemory (DefaultIfEmpty+MaxAsync not translatable there).
         var max = await _context.Transferencias
             .Where(t => t.TenantId == tenantId)
-            .Select(t => t.Secuencial)
-            .DefaultIfEmpty(0)
-            .MaxAsync(ct);
-        return max + 1;
+            .MaxAsync(t => (int?)t.Secuencial, ct);
+        return (max ?? 0) + 1;
     }
 
     public async Task<(IReadOnlyList<Transferencia> Items, int TotalCount)> GetPagedAsync(

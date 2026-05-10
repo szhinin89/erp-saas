@@ -96,16 +96,13 @@ public sealed class CrearTransferenciaCommandHandler
         // 3. Generar número de transferencia
         var secuencial = await _transferenciaRepo.GetNextSecuencialAsync(tenantId, ct);
 
-        // 4. Crear la transferencia en Borrador
+        // 4. Crear la transferencia en Borrador + sus detalles
+        // El Id es client-generated (Guid.NewGuid()), no requiere flush previo.
         var transferencia = Transferencia.Create(
             tenantId, secuencial,
             command.BodegaOrigenId, command.BodegaDestinoId,
             command.Motivo, command.Observaciones, userId);
 
-        await _transferenciaRepo.AddAsync(transferencia, ct);
-        await _transferenciaRepo.SaveChangesAsync(ct); // flush para obtener el Id
-
-        // 5. Agregar detalles
         foreach (var item in command.Items)
         {
             var producto = productos[item.ProductoId];
@@ -115,6 +112,7 @@ public sealed class CrearTransferenciaCommandHandler
             transferencia.AgregarDetalle(detalle);
         }
 
+        await _transferenciaRepo.AddAsync(transferencia, ct);
         await _transferenciaRepo.SaveChangesAsync(ct);
 
         await _activity.AddAsync(UserActivity.Create(
