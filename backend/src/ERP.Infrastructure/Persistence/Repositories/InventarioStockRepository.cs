@@ -137,6 +137,27 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
         return cantidadAnterior;
     }
 
+    public async Task<IReadOnlyList<InventarioMovimiento>> GetMovimientosAsync(
+        Guid      tenantId,
+        Guid      productoId,
+        Guid      bodegaId,
+        DateTime? desdeUtc,
+        DateTime? hastaUtc,
+        CancellationToken ct = default)
+    {
+        var q = _context.InventarioMovimientos
+            .Where(m => m.TenantId == tenantId
+                     && m.ProductoId == productoId
+                     && m.BodegaId  == bodegaId);
+
+        if (desdeUtc.HasValue)
+            q = q.Where(m => m.CreatedAt >= desdeUtc.Value);
+        if (hastaUtc.HasValue)
+            q = q.Where(m => m.CreatedAt <= hastaUtc.Value);
+
+        return await q.OrderBy(m => m.CreatedAt).ThenBy(m => m.Id).ToListAsync(ct);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     // EF InMemory no soporta SQL raw; detectamos el proveedor por nombre.

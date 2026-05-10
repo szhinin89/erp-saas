@@ -117,6 +117,11 @@ public sealed class AprobarCompraCommandHandler
                 var cantidadAnterior = stock.Cantidad;
                 stock.AplicarMovimiento(asig.Cantidad, userId);
 
+                // Costo unitario neto del ítem de la factura (precio menos descuento).
+                var costoUnitario = detalle is not null && detalle.Cantidad > 0
+                    ? detalle.PrecioUnitario * (1 - detalle.DescuentoPorcentaje / 100m)
+                    : (decimal?)null;
+
                 var movimiento = InventarioMovimiento.Create(
                     tenantId,
                     productoId,
@@ -127,7 +132,8 @@ public sealed class AprobarCompraCommandHandler
                     referencia:         compra.NumeroFactura,
                     documentoOrigenId:  compra.Id,
                     documentoOrigenTipo: "CompraFactura",
-                    createdBy:          userId);
+                    createdBy:          userId,
+                    costoUnitario:      costoUnitario);
 
                 await _inventario.AddMovimientoAsync(movimiento, ct);
             }

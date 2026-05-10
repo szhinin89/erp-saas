@@ -38,4 +38,16 @@ public interface IInventarioStockRepository
     Task<decimal> IncrementarStockAtomicoAsync(
         Guid tenantId, Guid bodegaId, Guid productoId,
         decimal delta, Guid createdBy, CancellationToken ct = default);
+
+    /// <summary>
+    /// Retorna movimientos de un producto en una bodega, ordenados por fecha de creación.
+    /// Ambos extremos de fecha son inclusivos. Si son null no se aplica ese filtro.
+    /// </summary>
+    Task<IReadOnlyList<InventarioMovimiento>> GetMovimientosAsync(
+        Guid      tenantId,
+        Guid      productoId,
+        Guid      bodegaId,
+        DateTime? desdeUtc,
+        DateTime? hastaUtc,
+        CancellationToken ct = default);
 }

@@ -61,6 +61,14 @@ public class InventarioMovimientoConfiguration : IEntityTypeConfiguration<Invent
             .HasColumnName("referencia_tipo")
             .HasMaxLength(InventarioMovimiento.ReferenciaTipoMaxLen);
 
+        builder.Property(m => m.CostoUnitario)
+            .HasColumnName("costo_unitario")
+            .HasPrecision(18, 6);
+
+        builder.Property(m => m.CostoTotal)
+            .HasColumnName("costo_total")
+            .HasPrecision(18, 6);
+
         builder.Property(m => m.CreatedAt).HasColumnName("created_at");
         builder.Property(m => m.UpdatedAt).HasColumnName("updated_at");
         builder.Property(m => m.CreatedBy).HasColumnName("created_by");
