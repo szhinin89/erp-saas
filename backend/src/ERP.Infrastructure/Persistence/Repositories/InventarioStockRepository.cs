@@ -45,17 +45,22 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
     /// <inheritdoc/>
     public async Task<decimal?> DecrementarStockAtomicoAsync(
         Guid tenantId, Guid bodegaId, Guid productoId,
-        decimal delta, Guid updatedBy, CancellationToken ct = default)
+        decimal delta, Guid updatedBy,
+        CancellationToken ct = default,
+        decimal costoUnitario = 0m)
     {
         if (IsInMemoryProvider())
-            return await DecrementarInMemoryAsync(tenantId, bodegaId, productoId, delta, updatedBy, ct);
+            return await DecrementarInMemoryAsync(tenantId, bodegaId, productoId, delta, updatedBy, ct, costoUnitario);
+
+        var valorSalida = delta * costoUnitario;
 
         // PostgreSQL: una sola sentencia que verifica disponibilidad y descuenta.
-        // Si afecta 0 filas → stock insuficiente (posiblemente modificado concurrentemente).
+        // También actualiza valor_total_stock para mantener el promedio ponderado.
         var rows = await _context.Database.ExecuteSqlAsync(
             $"""
             UPDATE stock_actual
             SET    cantidad             = cantidad - {delta},
+                   valor_total_stock    = GREATEST(0, valor_total_stock - {valorSalida}),
                    ultima_actualizacion = NOW(),
                    updated_at           = NOW(),
                    updated_by           = {updatedBy}
@@ -68,8 +73,6 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
         if (rows == 0)
             return null; // stock insuficiente
 
-        // La cantidad anterior fue (cantidad_actual_en_db + delta).
-        // La recuperamos del change tracker si la entidad fue pre-cargada.
         var tracked = _context.ChangeTracker.Entries<StockActual>()
             .FirstOrDefault(e =>
                 e.Entity.TenantId   == tenantId  &&
@@ -79,15 +82,11 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
         decimal cantidadAnterior;
         if (tracked is not null)
         {
-            // El valor en memoria es el que había antes del UPDATE SQL.
             cantidadAnterior = tracked.Entity.Cantidad;
-            // Desenganchamos la entidad para que EF no intente sobreescribir el UPDATE atómico.
             tracked.State = EntityState.Detached;
         }
         else
         {
-            // No estaba en el tracker (lectura sin tracking previa).
-            // Aproximación: no conocemos el anterior exacto, registramos 0.
             cantidadAnterior = 0;
         }
 
@@ -97,12 +96,13 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
     /// <inheritdoc/>
     public async Task<decimal> IncrementarStockAtomicoAsync(
         Guid tenantId, Guid bodegaId, Guid productoId,
-        decimal delta, Guid createdBy, CancellationToken ct = default)
+        decimal delta, Guid createdBy,
+        CancellationToken ct = default,
+        decimal costoUnitario = 0m)
     {
         if (IsInMemoryProvider())
-            return await IncrementarInMemoryAsync(tenantId, bodegaId, productoId, delta, createdBy, ct);
+            return await IncrementarInMemoryAsync(tenantId, bodegaId, productoId, delta, createdBy, ct, costoUnitario);
 
-        // Capturar cantidadAnterior desde el tracker antes del UPSERT
         var tracked = _context.ChangeTracker.Entries<StockActual>()
             .FirstOrDefault(e =>
                 e.Entity.TenantId   == tenantId  &&
@@ -113,22 +113,24 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
         if (tracked is not null)
             tracked.State = EntityState.Detached;
 
-        // PostgreSQL: UPSERT sobre el índice único (tenant_id, producto_id, bodega_id).
-        // Si no existe el registro lo crea; si existe, suma el delta.
+        var valorEntrada = delta * costoUnitario;
         var newId = Guid.NewGuid();
+
+        // UPSERT: crea el registro si no existe, suma cantidad y valor_total_stock si ya existe.
         await _context.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO stock_actual
                 (id, tenant_id, producto_id, bodega_id,
-                 cantidad, cantidad_reservada, ultima_actualizacion,
+                 cantidad, cantidad_reservada, valor_total_stock, ultima_actualizacion,
                  created_at, created_by, updated_at, updated_by)
             VALUES
                 ({newId}, {tenantId}, {productoId}, {bodegaId},
-                 {delta}, 0, NOW(),
+                 {delta}, 0, {valorEntrada}, NOW(),
                  NOW(), {createdBy}, NOW(), {createdBy})
             ON CONFLICT (tenant_id, producto_id, bodega_id)
             DO UPDATE SET
                 cantidad             = stock_actual.cantidad + EXCLUDED.cantidad,
+                valor_total_stock    = stock_actual.valor_total_stock + EXCLUDED.valor_total_stock,
                 ultima_actualizacion = NOW(),
                 updated_at           = NOW(),
                 updated_by           = EXCLUDED.updated_by
@@ -168,7 +170,7 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
 
     private async Task<decimal?> DecrementarInMemoryAsync(
         Guid tenantId, Guid bodegaId, Guid productoId,
-        decimal delta, Guid updatedBy, CancellationToken ct)
+        decimal delta, Guid updatedBy, CancellationToken ct, decimal costoUnitario = 0m)
     {
         var stock = await _context.StockActual.FirstOrDefaultAsync(
             s => s.TenantId == tenantId && s.BodegaId == bodegaId && s.ProductoId == productoId, ct);
@@ -177,13 +179,13 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
             return null;
 
         var anterior = stock.Cantidad;
-        stock.AplicarMovimiento(-delta, updatedBy);
+        stock.AplicarMovimiento(-delta, updatedBy, costoUnitario);
         return anterior;
     }
 
     private async Task<decimal> IncrementarInMemoryAsync(
         Guid tenantId, Guid bodegaId, Guid productoId,
-        decimal delta, Guid createdBy, CancellationToken ct)
+        decimal delta, Guid createdBy, CancellationToken ct, decimal costoUnitario = 0m)
     {
         var stock = await _context.StockActual.FirstOrDefaultAsync(
             s => s.TenantId == tenantId && s.BodegaId == bodegaId && s.ProductoId == productoId, ct);
@@ -192,12 +194,12 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
         {
             stock = StockActual.Create(tenantId, productoId, bodegaId, createdBy);
             await _context.StockActual.AddAsync(stock, ct);
-            stock.AplicarMovimiento(delta, createdBy);
+            stock.AplicarMovimiento(delta, createdBy, costoUnitario);
             return 0;
         }
 
         var anterior = stock.Cantidad;
-        stock.AplicarMovimiento(delta, createdBy);
+        stock.AplicarMovimiento(delta, createdBy, costoUnitario);
         return anterior;
     }
 }

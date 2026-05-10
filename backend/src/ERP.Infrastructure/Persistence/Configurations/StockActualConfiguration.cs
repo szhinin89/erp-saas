@@ -35,8 +35,14 @@ public class StockActualConfiguration : IEntityTypeConfiguration<StockActual>
             .HasPrecision(18, 6)
             .IsRequired();
 
-        // Propiedad calculada en C# — no persiste en BD
+        // Propiedades calculadas en C# — no persisten en BD
         builder.Ignore(s => s.CantidadDisponible);
+        builder.Ignore(s => s.CostoPromedioActual);
+
+        builder.Property(s => s.ValorTotalStock)
+            .HasColumnName("valor_total_stock")
+            .HasPrecision(18, 6)
+            .IsRequired();
 
         builder.Property(s => s.UltimaActualizacion)
             .HasColumnName("ultima_actualizacion")

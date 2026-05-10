@@ -199,7 +199,9 @@ public sealed class EmitirFacturaElectronicaCommandHandler
                 }
 
                 var cantidadAnterior = stock.Cantidad;
-                stock.AplicarMovimiento(-detalle.Cantidad, userId);
+                // Costo promedio ANTES de aplicar el movimiento (para valorizar la salida).
+                var costoPromedioVenta = stock.CostoPromedioActual;
+                stock.AplicarMovimiento(-detalle.Cantidad, userId, costoPromedioVenta);
 
                 var movimiento = InventarioMovimiento.Create(
                     tenantId,
@@ -211,7 +213,8 @@ public sealed class EmitirFacturaElectronicaCommandHandler
                     referencia:          numeroFactura,
                     documentoOrigenId:   factura.Id,
                     documentoOrigenTipo: "VentasFactura",
-                    createdBy:           userId);
+                    createdBy:           userId,
+                    costoUnitario:       costoPromedioVenta);
 
                 await _inventario.AddMovimientoAsync(movimiento, ct);
             }

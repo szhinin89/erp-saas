@@ -1,0 +1,20 @@
+namespace ERP.Application.Common.Interfaces;
+
+/// <summary>
+/// Proporciona el costo promedio ponderado actual de un producto en una bodega.
+/// Se usa en movimientos de salida (ventas, transferencias, ajustes negativos)
+/// para valorizar el movimiento al costo correcto.
+/// </summary>
+public interface ICostoPromedioService
+{
+    /// <summary>
+    /// Retorna el costo unitario promedio actual del producto en la bodega.
+    /// Lee directamente ValorTotalStock / Cantidad desde StockActual.
+    /// Retorna 0 si no hay stock registrado o la cantidad es cero.
+    /// </summary>
+    Task<decimal> ObtenerCostoPromedioAsync(
+        Guid tenantId,
+        Guid productoId,
+        Guid bodegaId,
+        CancellationToken ct = default);
+}

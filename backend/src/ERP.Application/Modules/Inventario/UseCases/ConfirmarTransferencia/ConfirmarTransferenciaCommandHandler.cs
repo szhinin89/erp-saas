@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventario.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
@@ -16,6 +17,7 @@ public sealed class ConfirmarTransferenciaCommandHandler
 {
     private readonly ITransferenciaRepository   _transferenciaRepo;
     private readonly IInventarioStockRepository _inventario;
+    private readonly ICostoPromedioService      _costoServicio;
     private readonly IProductRepository         _productRepo;
     private readonly IUserActivityRepository    _activity;
     private readonly IUnitOfWork                _unitOfWork;
@@ -26,6 +28,7 @@ public sealed class ConfirmarTransferenciaCommandHandler
     public ConfirmarTransferenciaCommandHandler(
         ITransferenciaRepository transferenciaRepo,
         IInventarioStockRepository inventario,
+        ICostoPromedioService costoServicio,
         IProductRepository productRepo,
         IUserActivityRepository activity,
         IUnitOfWork unitOfWork,
@@ -35,6 +38,7 @@ public sealed class ConfirmarTransferenciaCommandHandler
     {
         _transferenciaRepo = transferenciaRepo;
         _inventario        = inventario;
+        _costoServicio     = costoServicio;
         _productRepo       = productRepo;
         _activity          = activity;
         _unitOfWork        = unitOfWork;
@@ -73,12 +77,15 @@ public sealed class ConfirmarTransferenciaCommandHandler
                 if (producto is not null && (producto.IsService || !producto.TracksStock))
                     continue;
 
+                // Obtener el costo promedio actual de la bodega ORIGEN antes del decremento.
+                // Se usa para valorizar la salida y la entrada en destino con el mismo costo.
+                var costoPromedio = await _costoServicio.ObtenerCostoPromedioAsync(
+                    tenantId, detalle.ProductoId, transferencia.BodegaOrigenId, ct);
+
                 // ── Decremento atómico en bodega ORIGEN ───────────────────────
-                // UPDATE WHERE (cantidad - cantidad_reservada) >= delta
-                // Si devuelve null → stock insuficiente (posible carrera concurrente)
                 var cantAnteriorOrigen = await _inventario.DecrementarStockAtomicoAsync(
                     tenantId, transferencia.BodegaOrigenId, detalle.ProductoId,
-                    detalle.Cantidad, userId, ct);
+                    detalle.Cantidad, userId, ct, costoPromedio);
 
                 if (cantAnteriorOrigen is null)
                 {
@@ -100,14 +107,14 @@ public sealed class ConfirmarTransferenciaCommandHandler
                         referencia:          transferencia.NumeroTransferencia,
                         documentoOrigenId:   transferencia.Id,
                         documentoOrigenTipo: "Transferencia",
-                        createdBy:           userId),
+                        createdBy:           userId,
+                        costoUnitario:       costoPromedio),
                     ct);
 
                 // ── Incremento atómico en bodega DESTINO ──────────────────────
-                // UPSERT: crea el registro si no existe, suma si ya existe
                 var cantAnteriorDestino = await _inventario.IncrementarStockAtomicoAsync(
                     tenantId, transferencia.BodegaDestinoId, detalle.ProductoId,
-                    detalle.Cantidad, userId, ct);
+                    detalle.Cantidad, userId, ct, costoPromedio);
 
                 await _inventario.AddMovimientoAsync(
                     InventarioMovimiento.Create(
@@ -118,7 +125,8 @@ public sealed class ConfirmarTransferenciaCommandHandler
                         referencia:          transferencia.NumeroTransferencia,
                         documentoOrigenId:   transferencia.Id,
                         documentoOrigenTipo: "Transferencia",
-                        createdBy:           userId),
+                        createdBy:           userId,
+                        costoUnitario:       costoPromedio),
                     ct);
             }
 

@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventario.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
@@ -15,6 +16,7 @@ public sealed class EjecutarAjusteCommandHandler
 {
     private readonly IAjusteInventarioRepository _ajusteRepo;
     private readonly IInventarioStockRepository  _inventario;
+    private readonly ICostoPromedioService       _costoServicio;
     private readonly IUserActivityRepository     _activity;
     private readonly IUnitOfWork                 _unitOfWork;
     private readonly ICurrentTenant              _currentTenant;
@@ -24,6 +26,7 @@ public sealed class EjecutarAjusteCommandHandler
     public EjecutarAjusteCommandHandler(
         IAjusteInventarioRepository ajusteRepo,
         IInventarioStockRepository inventario,
+        ICostoPromedioService costoServicio,
         IUserActivityRepository activity,
         IUnitOfWork unitOfWork,
         ICurrentTenant currentTenant,
@@ -32,6 +35,7 @@ public sealed class EjecutarAjusteCommandHandler
     {
         _ajusteRepo    = ajusteRepo;
         _inventario    = inventario;
+        _costoServicio = costoServicio;
         _activity      = activity;
         _unitOfWork    = unitOfWork;
         _currentTenant = currentTenant;
@@ -62,21 +66,27 @@ public sealed class EjecutarAjusteCommandHandler
         {
             decimal cantidadAnterior;
             TipoMovimientoInventario tipoMovimiento;
+            decimal? costoUnitarioMovimiento;
 
             if (ajuste.CantidadAjuste > 0)
             {
-                // Incremento: UPSERT atómico — siempre tiene éxito
+                // Incremento: UPSERT atómico — siempre tiene éxito.
+                // Los ajustes de entrada no tienen costo de compra conocido.
                 cantidadAnterior = await _inventario.IncrementarStockAtomicoAsync(
                     tenantId, ajuste.BodegaId, ajuste.ProductoId,
-                    ajuste.CantidadAjuste, userId, ct);
-                tipoMovimiento = TipoMovimientoInventario.AjustePositivo;
+                    ajuste.CantidadAjuste, userId, ct, costoUnitario: 0m);
+                tipoMovimiento       = TipoMovimientoInventario.AjustePositivo;
+                costoUnitarioMovimiento = null; // sin valorización para entrada manual
             }
             else
             {
-                // Disminución: UPDATE WHERE disponible >= |delta| — puede fallar por stock
+                // Disminución: obtener costo promedio actual ANTES de decrementar.
+                var costoPromedio = await _costoServicio.ObtenerCostoPromedioAsync(
+                    tenantId, ajuste.ProductoId, ajuste.BodegaId, ct);
+
                 var cantAnteriorNullable = await _inventario.DecrementarStockAtomicoAsync(
                     tenantId, ajuste.BodegaId, ajuste.ProductoId,
-                    Math.Abs(ajuste.CantidadAjuste), userId, ct);
+                    Math.Abs(ajuste.CantidadAjuste), userId, ct, costoPromedio);
 
                 if (cantAnteriorNullable is null)
                 {
@@ -89,8 +99,9 @@ public sealed class EjecutarAjusteCommandHandler
                         $"{Math.Abs(ajuste.CantidadAjuste)} unidades de '{ajuste.ProductoNombre}'.");
                 }
 
-                cantidadAnterior = cantAnteriorNullable.Value;
-                tipoMovimiento   = TipoMovimientoInventario.AjusteNegativo;
+                cantidadAnterior        = cantAnteriorNullable.Value;
+                tipoMovimiento          = TipoMovimientoInventario.AjusteNegativo;
+                costoUnitarioMovimiento = costoPromedio;
             }
 
             await _inventario.AddMovimientoAsync(
@@ -102,7 +113,8 @@ public sealed class EjecutarAjusteCommandHandler
                     referencia:          ajuste.NumeroAjuste,
                     documentoOrigenId:   ajuste.Id,
                     documentoOrigenTipo: "AjusteInventario",
-                    createdBy:           userId),
+                    createdBy:           userId,
+                    costoUnitario:       costoUnitarioMovimiento),
                 ct);
 
             ajuste.Ejecutar(userId);

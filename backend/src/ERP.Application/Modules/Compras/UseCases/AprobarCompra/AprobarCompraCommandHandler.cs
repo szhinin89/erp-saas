@@ -114,13 +114,13 @@ public sealed class AprobarCompraCommandHandler
                     await _inventario.AddStockActualAsync(stock, ct);
                 }
 
-                var cantidadAnterior = stock.Cantidad;
-                stock.AplicarMovimiento(asig.Cantidad, userId);
-
                 // Costo unitario neto del ítem de la factura (precio menos descuento).
                 var costoUnitario = detalle is not null && detalle.Cantidad > 0
                     ? detalle.PrecioUnitario * (1 - detalle.DescuentoPorcentaje / 100m)
                     : (decimal?)null;
+
+                var cantidadAnterior = stock.Cantidad;
+                stock.AplicarMovimiento(asig.Cantidad, userId, costoUnitario ?? 0m);
 
                 var movimiento = InventarioMovimiento.Create(
                     tenantId,
