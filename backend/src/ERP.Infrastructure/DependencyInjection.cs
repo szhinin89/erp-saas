@@ -17,6 +17,7 @@ using ERP.Domain.Proveedores.Interfaces;
 using ERP.Domain.Compras.Interfaces;
 using ERP.Domain.Ventas.Interfaces;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.Inventario.Interfaces;
 using ERP.Domain.Gastos.Interfaces;
 using ERP.Domain.Inventario.Interfaces;
 using ERP.Domain.Subscriptions.Interfaces;
@@ -76,6 +77,7 @@ public static class DependencyInjection
         services.AddScoped<IInventarioStockRepository, InventarioStockRepository>();
         services.AddScoped<IVentasRepository, VentasRepository>();
         services.AddScoped<IConfiguracionSRIRepository, ConfiguracionSRIRepository>();
+        services.AddScoped<ITransferenciaRepository, TransferenciaRepository>();
         services.AddScoped<IAccountingService, AccountingService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<SaasCatalogQuery>();
