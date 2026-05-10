@@ -7,8 +7,16 @@ import {
   TariffsCatalogPage,
   CatalogStructurePage,
 } from '../modules/catalog/pages/CatalogPages';
+import { TransferenciasListPage }  from '../modules/inventario/transferencias/pages/TransferenciasListPage';
+import { CrearTransferenciaPage }  from '../modules/inventario/transferencias/pages/CrearTransferenciaPage';
+import { TransferenciaDetailPage } from '../modules/inventario/transferencias/pages/TransferenciaDetailPage';
 
 export const catalogRoutes = [
+  // ── Transferencias ─────────────────────────────────────────────────────────
+  <Route key="transferencias"        path="/inventario/transferencias"        element={<TransferenciasListPage />} />,
+  <Route key="transferencias-nueva"  path="/inventario/transferencias/nueva"  element={<CrearTransferenciaPage />} />,
+  <Route key="transferencias-detail" path="/inventario/transferencias/:id"    element={<TransferenciaDetailPage />} />,
+
   <Route key="brands" path="/inventario/brands" element={<BrandsCatalogPage />} />,
   <Route key="product-types" path="/inventario/product-types" element={<ProductTypesCatalogPage />} />,
   <Route key="units" path="/inventario/units" element={<UnitsCatalogPage />} />,
