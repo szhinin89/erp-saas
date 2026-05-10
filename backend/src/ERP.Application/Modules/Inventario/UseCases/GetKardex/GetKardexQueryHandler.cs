@@ -1,5 +1,6 @@
 using MediatR;
 using ERP.Application.Common;
+using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventario.DTOs;
 using ERP.Domain.Bodegas.Interfaces;
@@ -18,19 +19,22 @@ public sealed class GetKardexQueryHandler
     private readonly IProductRepository         _productos;
     private readonly IBodegaRepository          _bodegas;
     private readonly ICurrentTenant             _tenant;
+    private readonly KardexOptions              _opts;
 
     public GetKardexQueryHandler(
         IInventarioStockRepository inventario,
         IKardexSnapshotRepository  snapshots,
         IProductRepository         productos,
         IBodegaRepository          bodegas,
-        ICurrentTenant             tenant)
+        ICurrentTenant             tenant,
+        KardexOptions?             options = null)
     {
         _inventario = inventario;
         _snapshots  = snapshots;
         _productos  = productos;
         _bodegas    = bodegas;
         _tenant     = tenant;
+        _opts       = options ?? new KardexOptions();
     }
 
     public async Task<Result<KardexResponse>> Handle(
@@ -55,21 +59,22 @@ public sealed class GetKardexQueryHandler
             : null;
 
         // ── SALDO INICIAL ─────────────────────────────────────────────────────
-        // Estrategia: si hay filtro de fecha, intenta usar un snapshot como punto de partida.
-        // El snapshot evita recorrer todo el historial anterior al período (O(1) vs O(n)).
-        // Si no existe snapshot → fallback al cálculo completo (comportamiento original).
+        // UseScalableMode = true  → intenta usar snapshot para O(período)
+        // UseScalableMode = false → recorre todo el historial (modo original)
 
         decimal saldoCantidad = 0m;
         decimal saldoValor    = 0m;
         decimal costoPromedio = 0m;
-        DateTime? movimientosDesde = null; // null = desde el origen del tiempo
+        DateTime? movimientosDesde = null;
 
         if (desdeUtc.HasValue)
         {
             var anteriorAlPeriodo = desdeUtc.Value.AddTicks(-1);
 
-            var snapshot = await _snapshots.GetLatestBeforeAsync(
-                tenantId, query.ProductoId, query.BodegaId, anteriorAlPeriodo, ct);
+            var snapshot = _opts.UseScalableMode
+                ? await _snapshots.GetLatestBeforeAsync(
+                    tenantId, query.ProductoId, query.BodegaId, anteriorAlPeriodo, ct)
+                : null;
 
             if (snapshot is not null)
             {

@@ -80,8 +80,13 @@ public static class DependencyInjection
         services.AddScoped<IGastoFacturaRepository, GastoFacturaRepository>();
         services.AddScoped<IInventarioStockRepository, InventarioStockRepository>();
         services.AddScoped<IKardexSnapshotRepository, KardexSnapshotRepository>();
+        services.AddScoped<IKardexReporteRepository, KardexReporteRepository>();
         services.AddScoped<ICostoPromedioService, CostoPromedioService>();
+        services.AddScoped<KardexSnapshotService>();
+        services.AddScoped<IKardexSnapshotCalculator>(sp => sp.GetRequiredService<KardexSnapshotService>());
+        services.AddSingleton<KardexReporteQueue>();
         services.AddHostedService<KardexSnapshotWorker>();
+        services.AddHostedService<KardexReporteProcessor>();
         services.AddScoped<IVentasRepository, VentasRepository>();
         services.AddScoped<IConfiguracionSRIRepository, ConfiguracionSRIRepository>();
         services.AddScoped<ITransferenciaRepository, TransferenciaRepository>();

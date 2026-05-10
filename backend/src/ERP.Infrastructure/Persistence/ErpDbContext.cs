@@ -120,6 +120,7 @@ public class ErpDbContext : DbContext
     public DbSet<StockActual>          StockActual            => Set<StockActual>();
     public DbSet<InventarioMovimiento> InventarioMovimientos  => Set<InventarioMovimiento>();
     public DbSet<KardexSnapshot>       KardexSnapshots        => Set<KardexSnapshot>();
+    public DbSet<KardexReporte>        KardexReportes         => Set<KardexReporte>();
     public DbSet<Transferencia>        Transferencias         => Set<Transferencia>();
     public DbSet<TransferenciaDetalle> TransferenciaDetalles  => Set<TransferenciaDetalle>();
     public DbSet<AjusteInventario>     AjustesInventario      => Set<AjusteInventario>();

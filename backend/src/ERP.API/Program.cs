@@ -40,6 +40,15 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 
+// Opciones del Kardex: registrar tanto como IOptions<> (convención .NET)
+// como plain class (inyectable directamente en Application handlers).
+var kardexSection = builder.Configuration.GetSection(
+    ERP.Application.Common.Config.KardexOptions.Section);
+builder.Services.Configure<ERP.Application.Common.Config.KardexOptions>(kardexSection);
+builder.Services.AddSingleton(sp =>
+    kardexSection.Get<ERP.Application.Common.Config.KardexOptions>()
+    ?? new ERP.Application.Common.Config.KardexOptions());
+
 // Registro condicional del servicio SRI
 if (builder.Environment.IsDevelopment())
     builder.Services.AddScoped<ISriFacturaElectronicaService, SriFacturaElectronicaSimuladoService>();
