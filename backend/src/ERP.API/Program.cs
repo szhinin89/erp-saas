@@ -6,6 +6,11 @@ using ERP.API.Authorization;
 using ERP.Application.Common.Interfaces;
 using ERP.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
+using QuestPDF.Infrastructure;
+
+// Licencia Community: libre para proyectos con ingresos anuales < 1 M USD.
+// Cambiar a LicenseType.Professional si aplica.
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
