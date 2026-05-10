@@ -3,20 +3,20 @@
 > **Documento de referencia rápida.** Leer este archivo al inicio de cada sesión para saber
 > exactamente en qué punto está el proyecto, qué está hecho y qué sigue.
 >
-> Última actualización: **09 de mayo de 2026** | Commit: `d20a14d`
+> Última actualización: **09 de mayo de 2026** | Commit: `911b4eb`
 
 ---
 
 ## ¿Dónde estamos? (leer en 30 segundos)
 
-El ERP SaaS tiene **backend completo** para los módulos de **Compras, Gastos e Inventario**,
-y acaba de terminar el módulo de **Ventas con facturación electrónica SRI Ecuador** (simulada).
-Hay **131 tests automáticos pasando** y la API corre en producción-local.
+El ERP SaaS tiene **backend completo** para los módulos de **Compras, Gastos, Inventario,
+Transferencias entre Bodegas** y **Ventas con facturación electrónica SRI Ecuador** (simulada).
+Hay **141 tests automáticos pasando** y la API corre en producción-local.
 
 **Lo que falta para el MVP comercial:**
 1. Implementar el WSDL real del SRI (firma P12 + envío + polling)
 2. Frontend del módulo Ventas (pantallas)
-3. Frontend de módulos Compras/Gastos (pantallas listado/detalle)
+3. Frontend de módulos Compras/Gastos/Transferencias (pantallas)
 4. Notas de crédito (anulación de facturas autorizadas)
 
 ---
@@ -41,9 +41,13 @@ dotnet run                    # Puerto 5003, Swagger en /swagger
 cd ../../../../frontend
 npm run dev                   # Puerto 5173, proxy /api → localhost:5003
 
-# 5. Correr todos los tests
-cd ../backend/src
-dotnet test                   # 131 tests, todos deben pasar
+# 5. Correr todos los tests (no hay .sln — ejecutar por proyecto)
+cd ../../../../backend
+dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj                     # 75 tests
+dotnet test src/ERP.Application.Tests/ERP.Application.Tests.csproj     # 40 tests
+dotnet test src/ERP.Domain.Tests/ERP.Domain.Tests.csproj               # 23 tests
+dotnet test src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj #  3 tests
+# Total: 141 tests, todos deben pasar
 ```
 
 > **Credenciales de dev:** ver `backend/src/ERP.API/appsettings.Development.json`
@@ -120,7 +124,29 @@ dotnet test                   # 131 tests, todos deben pasar
 > Al aprobar una compra: se incrementa el stock (EntradaCompra) y se crea un asiento contable.
 > Todo en una única transacción con rollback automático.
 
-### Ventas — completado el 09/05/2026 (commit `d20a14d`)
+### Transferencias entre Bodegas — completado el 09/05/2026 (commit `911b4eb`)
+| Funcionalidad | Estado | Archivos clave |
+|--------------|--------|---------------|
+| Crear transferencia (Borrador, valida stock origen) | ✅ | `UseCases/CrearTransferencia/` |
+| Confirmar (mueve stock origen → destino, atómico) | ✅ | `UseCases/ConfirmarTransferencia/` |
+| Cancelar (solo en Borrador, sin efecto en stock) | ✅ | `UseCases/CancelarTransferencia/` |
+| Listar paginado con filtros | ✅ | `UseCases/GetTransferenciasList/` |
+| Obtener detalle con ítems | ✅ | `UseCases/GetTransferenciaById/` |
+| InventarioMovimiento: TransferenciaSalida + TransferenciaEntrada | ✅ | `ConfirmarTransferenciaCommandHandler.cs` |
+| Permisos: view / create / confirm / cancel | ✅ | Migración `AddTransferenciasInventario` |
+
+**Flujo de estados Transferencia:**
+```
+Borrador ──confirmar──► Confirmado  (stock movido: origen −X, destino +X)
+         ──cancelar──►  Cancelado   (sin efecto en stock)
+```
+
+**Reglas clave:**
+- El stock solo se valida y mueve al **Confirmar** (operación atómica con IUnitOfWork)
+- Si hay stock insuficiente en cualquier ítem → rollback completo, ningún stock se mueve
+- El número de transferencia es `TR-{secuencial:D4}` (ej. `TR-0001`), único por tenant
+
+### Ventas — completado el 09/05/2026
 | Funcionalidad | Estado | Archivos clave |
 |--------------|--------|---------------|
 | Crear factura (validar stock) | ✅ | `UseCases/CrearVenta/` |
@@ -150,28 +176,30 @@ Autorizado → NO se puede anular directamente (requiere Nota de Crédito)
 
 ---
 
-## Tests actuales — 131 tests, 0 fallos
+## Tests actuales — 141 tests, 0 fallos
 
 ```
-ERP.Domain.Tests        →  23 tests   (entidades, Value Objects, RUC ecuatoriano)
-ERP.Application.Tests   →  40 tests   (handlers, behaviors, DTOs)
-ERP.Infrastructure.Tests →   3 tests  (repositorios, parser XML SRI)
-ERP.API.Tests           →  65 tests   (integración E2E, HTTP, dominio, algoritmos)
-─────────────────────────────────────────
-TOTAL                   → 131 tests   ✅ 0 fallos
+ERP.Domain.Tests         →  23 tests   (entidades, Value Objects, RUC ecuatoriano)
+ERP.Application.Tests    →  40 tests   (handlers, behaviors, DTOs)
+ERP.Infrastructure.Tests →   3 tests   (repositorios, parser XML SRI)
+ERP.API.Tests            →  75 tests   (integración E2E, HTTP, dominio, algoritmos)
+──────────────────────────────────────────
+TOTAL                    → 141 tests   ✅ 0 fallos
 ```
 
-Desglose `ERP.API.Tests`:
+Desglose `ERP.API.Tests` (75):
 ```
-Unit/VentasDomainTests.cs           → 12  (máquina de estados, totales)
-Unit/ClaveAccesoHelperTests.cs      →  7  (algoritmo módulo-11, Theory)
-Unit/StockValidationHandlerTests.cs →  5  (stock suficiente/insuficiente)
-Integration/VentasEndToEndTests.cs  →  4  (flujo completo E2E)
-Integration/VentasHttpTests.cs      → 10  (HTTP + JWT simulado)
-Controller/VentasControllerContractTests.cs → 9 (StubMediator, status codes)
-Integration/CompraGastoEndToEndTests.cs →  2 (E2E compras + gastos)
-Integration/AuthenticatedApiTests.cs →   2 (HTTP con token)
-Otros (middleware, contratos)       → 14
+Unit/VentasDomainTests.cs                     → 12  (máquina de estados, totales)
+Unit/ClaveAccesoHelperTests.cs                →  7  (algoritmo módulo-11, Theory)
+Unit/StockValidationHandlerTests.cs           →  5  (stock Ventas: suficiente/insuficiente)
+Unit/TransferenciasStockTests.cs              →  5  (stock Transferencias: 5 escenarios)
+Integration/VentasEndToEndTests.cs            →  4  (flujo completo E2E)
+Integration/VentasHttpTests.cs                → 10  (HTTP + JWT simulado)
+Integration/TransferenciasEndToEndTests.cs    →  5  (crear→confirmar stock; cancelar; estados inválidos)
+Integration/CompraGastoEndToEndTests.cs       →  2  (E2E compras + gastos)
+Integration/AuthenticatedApiTests.cs          →  2  (HTTP con token)
+Controller/VentasControllerContractTests.cs   →  9  (StubMediator, status codes)
+Otros (middleware, contratos)                 → 14
 ```
 
 ---
@@ -191,16 +219,18 @@ Otros (middleware, contratos)       → 14
 | Proveedores | `/api/proveedores` | 6 |
 | Compras | `/api/compras` | 7 |
 | Gastos | `/api/gastos` | 7 |
-| Inventario | `/api/inventario` | 2 |
+| Inventario (stock) | `/api/inventario` | 2 |
+| **Transferencias** | **`/api/inventario/transferencias`** | **5** |
 | **Ventas** | **`/api/ventas`** | **8** |
 | **Config SRI** | **`/api/configuracion-sri`** | **2** |
 | SuperAdmin | `/api/superadmin`, `/api/setup` | 10+ |
 
 ---
 
-## Migraciones — 47 aplicadas, 1 pendiente
+## Migraciones — 47 aplicadas, 2 pendientes
 
 ```bash
+cd backend
 dotnet ef migrations list --project src/ERP.Infrastructure --startup-project src/ERP.API
 ```
 
@@ -213,7 +243,10 @@ dotnet ef migrations list --project src/ERP.Infrastructure --startup-project src
 | ✅ | `AddComprasFullSchema` | Esquema completo Compras |
 | ✅ | `SeedLogisticaAccessProfilePermissions` | Permisos logística |
 | ✅ | `AddFacturacionElectronicaVentas` | Tablas ventas_facturas, ventas_detalles, configuracion_sri |
-| **🔄 PENDING** | **`Paso3_VentasFacturaAsientoAndPermissions`** | **asiento_contable_id + permisos ventas.*** |
+| **🔄 PENDIENTE** | **`Paso3_VentasFacturaAsientoAndPermissions`** | **asiento_contable_id + permisos ventas.*** |
+| **🔄 PENDIENTE** | **`AddTransferenciasInventario`** | **tablas transferencias + transferencia_detalles + permisos inventario.transferencias.*** |
+
+> Ambas migraciones se aplican con un solo comando: `dotnet ef database update`
 
 ---
 
@@ -253,47 +286,54 @@ else
 
 ---
 
-### Prioridad 2 — Frontend Ventas
+### Prioridad 2 — Frontend (Ventas + Transferencias + Compras/Gastos)
 
-**Pantallas a crear** (seguir la estructura de `frontend/src/modules/billing/`):
+Todo el backend está listo. Solo falta la capa visual. Seguir la estructura de `frontend/src/modules/`.
 
+#### Ventas
 ```
-frontend/src/modules/billing/
-├── ventas/
-│   ├── pages/
-│   │   ├── VentasListPage.tsx          ← tabla paginada con filtros
-│   │   ├── VentaDetailPage.tsx         ← detalle con detalles + estado + acciones
-│   │   └── CrearVentaPage.tsx          ← formulario de creación
-│   ├── components/
-│   │   ├── VentaEstadoBadge.tsx        ← chip de color por estado
-│   │   ├── VentaItemsTable.tsx         ← tabla de líneas de la factura
-│   │   └── EmitirFacturaButton.tsx     ← botón con confirmación
-│   ├── hooks/
-│   │   └── useVentas.ts               ← llamadas a /api/ventas
-│   └── schemas/
-│       └── crearVentaSchema.ts         ← Zod validación
+frontend/src/modules/billing/ventas/
+├── pages/
+│   ├── VentasListPage.tsx          ← tabla paginada con filtros
+│   ├── VentaDetailPage.tsx         ← detalle con líneas + estado + acciones
+│   └── CrearVentaPage.tsx          ← formulario de creación
+├── components/
+│   ├── VentaEstadoBadge.tsx        ← chip de color por estado
+│   ├── VentaItemsTable.tsx         ← tabla de líneas de la factura
+│   └── EmitirFacturaButton.tsx     ← botón con confirmación
+├── hooks/useVentas.ts              ← llamadas a /api/ventas
+└── schemas/crearVentaSchema.ts     ← Zod validación
 ```
 
-**APIs disponibles** (ya funcionan, solo conectar):
+APIs Ventas (ya operativas):
 - `GET  /api/ventas?pageNumber=1&pageSize=20&estado=Borrador&clienteId=...`
-- `POST /api/ventas` (crear factura)
-- `PATCH /api/ventas/{id}/validar`
-- `PATCH /api/ventas/{id}/emitir`
-- `PATCH /api/ventas/{id}/reintentar`
-- `PATCH /api/ventas/{id}/anular`
-- `GET  /api/ventas/{id}` (detalle con líneas)
-- `GET  /api/ventas/stock?productoId=...&bodegaId=...`
-- `GET  /api/configuracion-sri`
-- `PUT  /api/configuracion-sri`
+- `POST /api/ventas` · `PATCH /api/ventas/{id}/validar` · `/emitir` · `/reintentar` · `/anular`
+- `GET  /api/ventas/{id}` · `GET /api/ventas/stock?productoId=...&bodegaId=...`
+- `GET/PUT /api/configuracion-sri`
 
-**Permisos requeridos** (para el token de usuario):
-- `ventas.facturas.view` — listar/ver
-- `ventas.facturas.create` — crear
-- `ventas.facturas.validate` — validar
-- `ventas.facturas.emit` — emitir/reintentar
-- `ventas.facturas.cancel` — anular
-- `ventas.stock.view` — consultar stock
-- `ventas.configuracion.view` / `ventas.configuracion.edit` — config SRI
+#### Transferencias entre Bodegas
+```
+frontend/src/modules/inventario/transferencias/
+├── pages/
+│   ├── TransferenciasListPage.tsx  ← tabla paginada con filtros de bodega y estado
+│   ├── TransferenciaDetailPage.tsx ← detalle con ítems + botones Confirmar/Cancelar
+│   └── CrearTransferenciaPage.tsx  ← formulario: bodega origen, destino, ítems
+├── components/
+│   ├── TransferenciaEstadoBadge.tsx
+│   └── ItemsTransferenciaTable.tsx
+└── hooks/useTransferencias.ts      ← llamadas a /api/inventario/transferencias
+```
+
+APIs Transferencias (ya operativas):
+- `GET  /api/inventario/transferencias?bodegaOrigenId=...&estado=Borrador`
+- `POST /api/inventario/transferencias`
+- `GET  /api/inventario/transferencias/{id}`
+- `PATCH /api/inventario/transferencias/{id}/confirmar`
+- `PATCH /api/inventario/transferencias/{id}/cancelar`
+
+#### Compras / Gastos
+- `frontend/src/modules/billing/compras/` → listar, crear desde XML/manual, aprobar
+- `frontend/src/modules/billing/gastos/` → listar, crear, aprobar
 
 ---
 
@@ -309,15 +349,7 @@ Anulación de facturas ya **Autorizadas** por el SRI. Requiere:
 
 ---
 
-### Prioridad 4 — Frontend Compras / Gastos
-
-Las pantallas de backend están completas. Falta conectar el frontend:
-- `frontend/src/modules/billing/compras/` → listar, crear desde XML/manual, aprobar
-- `frontend/src/modules/billing/gastos/` → listar, crear, aprobar
-
----
-
-### Prioridad 5 — Mejoras técnicas menores
+### Prioridad 4 — Mejoras técnicas menores
 
 | Tarea | Archivo | Dificultad |
 |-------|---------|-----------|
@@ -330,9 +362,28 @@ Las pantallas de backend están completas. Falta conectar el frontend:
 
 ---
 
-## Permisos del módulo Ventas
+## Permisos por módulo
 
-Sembrados automáticamente por la migración `Paso3_VentasFacturaAsientoAndPermissions`:
+### Transferencias (migración `AddTransferenciasInventario`)
+
+| Clave de permiso | Qué habilita |
+|-----------------|-------------|
+| `inventario.transferencias.view` | Ver listado y detalle de transferencias |
+| `inventario.transferencias.create` | Crear transferencia en Borrador |
+| `inventario.transferencias.confirm` | Confirmar (mueve el stock) |
+| `inventario.transferencias.cancel` | Cancelar (solo en Borrador) |
+
+Lógica de seed automático:
+- Perfiles con `inventario.*.view` → obtienen `view`
+- Perfiles con `inventario.bodegas.*` o `compras.facturas.create` → obtienen `create` + `cancel`
+- Perfiles con `compras.facturas.approve`, `ventas.facturas.emit` o `accounting.journal.edit` → obtienen `confirm`
+- Tenant de desarrollo (`d0aabb1f-...`) → obtiene todos los permisos
+
+---
+
+### Ventas (migración `Paso3_VentasFacturaAsientoAndPermissions`)
+
+Sembrados automáticamente:
 
 | Clave de permiso | Qué habilita |
 |-----------------|-------------|
@@ -365,41 +416,50 @@ El seed asigna permisos automáticamente según permisos existentes del perfil:
 | Servicios externos (SRI, contabilidad) | `backend/src/ERP.Infrastructure/Services/` |
 | Tests integración E2E | `backend/src/ERP.API.Tests/Integration/` |
 | Tests unitarios | `backend/src/ERP.API.Tests/Unit/` |
+| Módulo Ventas — dominio | `ERP.Domain/Ventas/` |
+| Módulo Ventas — aplicación | `ERP.Application/Modules/Ventas/` |
+| Módulo Transferencias — dominio | `ERP.Domain/Inventario/Entities/Transferencia*.cs` |
+| Módulo Transferencias — aplicación | `ERP.Application/Modules/Inventario/UseCases/*Transferencia*/` |
+| Módulo Transferencias — repositorio | `ERP.Infrastructure/Persistence/Repositories/TransferenciaRepository.cs` |
 | Configuración SRI (algoritmo clave acceso) | `ERP.Application/Modules/Ventas/Helpers/ClaveAccesoHelper.cs` |
 | Servicio SRI simulado | `ERP.Infrastructure/Services/SriFacturaElectronicaSimuladoService.cs` |
 | Servicio SRI real (esqueleto) | `ERP.Infrastructure/Services/SriFacturaElectronicaRealService.cs` |
-| Permisos (reglas de seed) | `ERP.Infrastructure/Migrations/20260509235417_Paso3_VentasFacturaAsientoAndPermissions.cs` |
-| Módulo Ventas — dominio | `ERP.Domain/Ventas/` |
-| Módulo Ventas — aplicación | `ERP.Application/Modules/Ventas/` |
+| Seed permisos Ventas | `ERP.Infrastructure/Migrations/20260509235417_Paso3_VentasFacturaAsientoAndPermissions.cs` |
+| Seed permisos Transferencias | `ERP.Infrastructure/Migrations/20260510005830_AddTransferenciasInventario.cs` |
 
 ---
 
 ## Comandos frecuentes
 
 ```bash
-# Compilar todo
-dotnet build backend/src/ERP.slnx
+# Compilar el backend (desde raíz del repo)
+cd backend && dotnet build src/ERP.API/ERP.API.csproj
 
-# Correr todos los tests
-dotnet test backend/src/ERP.slnx
+# Correr todos los tests (no hay .sln — ejecutar por proyecto)
+cd backend
+dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj
+dotnet test src/ERP.Application.Tests/ERP.Application.Tests.csproj
+dotnet test src/ERP.Domain.Tests/ERP.Domain.Tests.csproj
+dotnet test src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj
 
-# Solo tests de la API (incluyen E2E)
-dotnet test backend/src/ERP.API.Tests
+# Filtrar tests de un módulo específico
+dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj --filter "FullyQualifiedName~Transferencias"
+dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj --filter "FullyQualifiedName~Ventas"
 
-# Agregar migración
+# Agregar migración (desde backend/)
 dotnet ef migrations add NombreMigracion \
-  --project backend/src/ERP.Infrastructure \
-  --startup-project backend/src/ERP.API
+  --project src/ERP.Infrastructure \
+  --startup-project src/ERP.API
 
-# Aplicar migraciones
+# Aplicar migraciones pendientes
 dotnet ef database update \
-  --project backend/src/ERP.Infrastructure \
-  --startup-project backend/src/ERP.API
+  --project src/ERP.Infrastructure \
+  --startup-project src/ERP.API
 
 # Ver estado de migraciones
 dotnet ef migrations list \
-  --project backend/src/ERP.Infrastructure \
-  --startup-project backend/src/ERP.API
+  --project src/ERP.Infrastructure \
+  --startup-project src/ERP.API
 
 # Linting frontend
 cd frontend && npm run lint
@@ -414,8 +474,12 @@ cd frontend && npm run build
 
 1. **Leer este archivo primero.** Si hay diferencias con el código real, confiar en el código.
 
-2. **La migración `Paso3_VentasFacturaAsientoAndPermissions` está PENDIENTE.**
-   Aplicarla antes de usar el módulo Ventas en un entorno real.
+2. **Hay 2 migraciones PENDIENTES** — aplicar ambas antes de usar la API en un entorno real:
+   - `Paso3_VentasFacturaAsientoAndPermissions` — añade `asiento_contable_id` a `ventas_facturas` y siembra permisos del módulo Ventas
+   - `AddTransferenciasInventario` — crea las tablas `transferencias` + `transferencia_detalles` y siembra permisos del módulo Transferencias
+   ```bash
+   cd backend && dotnet ef database update --project src/ERP.Infrastructure --startup-project src/ERP.API
+   ```
 
 3. **El servicio SRI Simulado es funcional en Development** — genera XML, simula autorización
    con un número aleatorio. Suficiente para probar toda la lógica de negocio.
@@ -437,4 +501,4 @@ cd frontend && npm run build
 
 ---
 
-*Próxima actualización de este documento: cuando se complete la implementación SRI real o el frontend de Ventas.*
+*Próxima actualización de este documento: cuando se complete el frontend de Ventas/Transferencias o la implementación SRI real.*
