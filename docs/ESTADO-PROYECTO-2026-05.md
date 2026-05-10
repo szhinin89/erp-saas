@@ -3,21 +3,21 @@
 > **Documento de referencia rápida.** Leer este archivo al inicio de cada sesión para saber
 > exactamente en qué punto está el proyecto, qué está hecho y qué sigue.
 >
-> Última actualización: **10 de mayo de 2026** | Commit: `0c490e8`
+> Última actualización: **10 de mayo de 2026** | Commit: ver git log
 
 ---
 
 ## ¿Dónde estamos? (leer en 30 segundos)
 
-El ERP SaaS tiene **backend completo** para los módulos de **Compras, Gastos, Inventario,
+El ERP SaaS tiene **backend completo** para los módulos de **Compras (facturas + órdenes de compra), Gastos, Inventario,
 Transferencias entre Bodegas, Ajustes de Inventario** y **Ventas con facturación electrónica SRI Ecuador** (simulada).
-El frontend de Transferencias y Ajustes también está implementado.
-Hay **171 tests automáticos pasando** y la API corre en producción-local.
+El frontend de Transferencias, Ajustes y **Órdenes de Compra** también está implementado.
+Hay **184 tests automáticos pasando** y la API corre en producción-local.
 
 **Lo que falta para el MVP comercial:**
 1. Implementar el WSDL real del SRI (firma P12 + envío + polling)
 2. Frontend del módulo Ventas (pantallas)
-3. Frontend de módulos Compras/Gastos (pantallas)
+3. Frontend de módulos Compras/Gastos facturas (pantallas)
 4. Notas de crédito (anulación de facturas autorizadas)
 
 ---
@@ -125,6 +125,41 @@ dotnet test src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj #  3 te
 > Al aprobar una compra: se incrementa el stock (EntradaCompra) y se crea un asiento contable.
 > Todo en una única transacción con rollback automático.
 
+### Órdenes de Compra — completado el 10/05/2026
+
+| Funcionalidad | Estado | Archivos clave |
+|--------------|--------|---------------|
+| Crear OC en Borrador (proveedor, fecha requerida, líneas con precio e IVA) | ✅ | `UseCases/CrearOrdenCompra/` |
+| Enviar OC al proveedor (Borrador → Enviada) | ✅ | `UseCases/EnviarOrdenCompra/` |
+| Aprobar OC (Borrador/Enviada → Aprobada) | ✅ | `UseCases/AprobarOrdenCompra/` |
+| Cancelar OC (cualquier estado activo → Cancelada) | ✅ | `UseCases/CancelarOrdenCompra/` |
+| Vincular factura electrónica aprobada → OC | ✅ | `UseCases/VincularFacturaAOrdenCompra/` |
+| Cobertura total → OC cierra; cobertura parcial → RecibidaParcial | ✅ | `VincularFacturaAOrdenCompraCommandHandler.cs` |
+| Listar paginado con filtros (estado, proveedor, fechas) | ✅ | `UseCases/GetOrdenesCompraList/` |
+| Detalle con líneas y facturas vinculadas | ✅ | `UseCases/GetOrdenCompraById/` |
+| Lista de OC pendientes por facturar | ✅ | `UseCases/GetOrdenesPendientesPorFacturar/` |
+| Permisos: view / create / send / approve / cancel / link-invoice | ✅ | Migración `AddOrdenesCompra` (sentinel `77777777-...`) |
+| Tests Moq (8): vinculación exitosa/parcial, OC/factura no encontrada, etc. | ✅ | `Compras/VincularFacturaAOrdenCompraCommandHandlerTests.cs` |
+| Tests E2E (5): crear, enviar/aprobar, cancelar, vincular total, vincular parcial | ✅ | `Integration/OrdenesCompraEndToEndTests.cs` |
+| Frontend: listado, crear, detalle con acciones | ✅ | `frontend/src/modules/compras/ordenes/` |
+
+**Flujo de estados OrdenCompra:**
+```
+Borrador ──enviar──► Enviada ──aprobar──► Aprobada ──[facturas]──► RecibidaParcial ──[completo]──► Cerrada
+Borrador ──aprobar──────────────────────► Aprobada   (atajo: aprobación directa)
+Cualquier estado activo ──cancelar──► Cancelada
+```
+
+**Reglas clave:**
+- Número: `OC-{secuencial:D4}` (ej. `OC-0001`), único por tenant
+- Solo OC en `Aprobada` o `RecibidaParcial` puede recibir facturas vinculadas
+- La factura vinculada DEBE estar en estado `Aprobado`
+- Matching por `ProductoId`; líneas sin producto (servicios/fletes de XML) se omiten
+- Si toda la cantidad pedida queda cubierta → estado `Cerrada` automáticamente
+- `SubscriptionFeatureCodes.Purchases = "COMPRAS"` (mismo feature gate que facturas de compra)
+
+---
+
 ### Ajustes de Inventario — completado el 10/05/2026 (commit `0c490e8`)
 | Funcionalidad | Estado | Archivos clave |
 |--------------|--------|---------------|
@@ -209,27 +244,28 @@ Autorizado → NO se puede anular directamente (requiere Nota de Crédito)
 
 ---
 
-## Tests actuales — 171 tests, 0 fallos
+## Tests actuales — 184 tests, 0 fallos
 
 ```
 ERP.Domain.Tests         →  23 tests   (entidades, Value Objects, RUC ecuatoriano)
-ERP.Application.Tests    →  63 tests   (handlers Moq, behaviors, DTOs)
+ERP.Application.Tests    →  71 tests   (handlers Moq, behaviors, DTOs)
 ERP.Infrastructure.Tests →   3 tests   (repositorios, parser XML SRI)
-ERP.API.Tests            →  82 tests   (integración E2E, HTTP, dominio, algoritmos)
+ERP.API.Tests            →  87 tests   (integración E2E, HTTP, dominio, algoritmos)
 ──────────────────────────────────────────
-TOTAL                    → 171 tests   ✅ 0 fallos
+TOTAL                    → 184 tests   ✅ 0 fallos
 ```
 
-Desglose `ERP.Application.Tests` (63):
+Desglose `ERP.Application.Tests` (71):
 ```
-Compras/AprobarCompraCommandHandlerStockTests.cs  →  2  (stock + rollback contabilidad)
-Inventario/CrearTransferenciaCommandHandlerTests.cs →  7  (Moq: stock, bodegas, productos)
-Inventario/ConfirmarTransferenciaCommandHandlerTests.cs → 6  (Moq: atómico, concurrencia)
-Inventario/EjecutarAjusteCommandHandlerTests.cs   →  8  (Moq: incremento/disminución/fallo)
-Otros (customers, products, login, gastos, etc.)  → 40
+Compras/AprobarCompraCommandHandlerStockTests.cs        →  2  (stock + rollback contabilidad)
+Compras/VincularFacturaAOrdenCompraCommandHandlerTests.cs →  8  (Moq: éxito total/parcial, OC no encontrada, etc.)
+Inventario/CrearTransferenciaCommandHandlerTests.cs     →  7  (Moq: stock, bodegas, productos)
+Inventario/ConfirmarTransferenciaCommandHandlerTests.cs →  6  (Moq: atómico, concurrencia)
+Inventario/EjecutarAjusteCommandHandlerTests.cs         →  8  (Moq: incremento/disminución/fallo)
+Otros (customers, products, login, gastos, etc.)        → 40
 ```
 
-Desglose `ERP.API.Tests` (82):
+Desglose `ERP.API.Tests` (87):
 ```
 Unit/VentasDomainTests.cs                     → 12  (máquina de estados, totales)
 Unit/ClaveAccesoHelperTests.cs                →  7  (algoritmo módulo-11, Theory)
@@ -239,6 +275,7 @@ Integration/VentasEndToEndTests.cs            →  4  (flujo completo E2E)
 Integration/VentasHttpTests.cs                → 10  (HTTP + JWT simulado)
 Integration/TransferenciasEndToEndTests.cs    →  5  (crear→confirmar stock; cancelar; estados)
 Integration/AjustesInventarioEndToEndTests.cs →  7  (incremento/disminución/fallo/validación)
+Integration/OrdenesCompraEndToEndTests.cs     →  5  (crear, enviar/aprobar, cancelar, vincular total/parcial)
 Integration/CompraGastoEndToEndTests.cs       →  2  (E2E compras + gastos)
 Integration/AuthenticatedApiTests.cs          →  2  (HTTP con token)
 Controller/VentasControllerContractTests.cs   →  9  (StubMediator, status codes)
@@ -265,6 +302,7 @@ Otros (middleware, contratos)                 → 14
 | Inventario (stock) | `/api/inventario` | 2 |
 | **Transferencias** | **`/api/inventario/transferencias`** | **5** |
 | **Ajustes inventario** | **`/api/inventario/ajustes`** | **5** |
+| **Órdenes de Compra** | **`/api/compras/ordenes`** | **8** |
 | **Ventas** | **`/api/ventas`** | **8** |
 | **Config SRI** | **`/api/configuracion-sri`** | **2** |
 | SuperAdmin | `/api/superadmin`, `/api/setup` | 10+ |
@@ -290,8 +328,9 @@ dotnet ef migrations list --project src/ERP.Infrastructure --startup-project src
 | **🔄 PENDIENTE** | **`Paso3_VentasFacturaAsientoAndPermissions`** | **asiento_contable_id + permisos ventas.*** |
 | **🔄 PENDIENTE** | **`AddTransferenciasInventario`** | **tablas transferencias + transferencia_detalles + permisos inventario.transferencias.*** |
 | **🔄 PENDIENTE** | **`AddAjustesInventario`** | **tabla ajustes_inventario + permisos inventario.ajustes.*** |
+| **🔄 PENDIENTE** | **`AddOrdenesCompra`** | **tablas ordenes_compra + detalles + facturas + permisos compras.ordenes.*** |
 
-> Las 3 migraciones se aplican con un solo comando: `dotnet ef database update`
+> Las 4 migraciones se aplican con un solo comando: `dotnet ef database update`
 
 ---
 
@@ -331,11 +370,12 @@ else
 
 ---
 
-### Prioridad 2 — Frontend Ventas + Compras/Gastos (Transferencias y Ajustes ya listos)
+### Prioridad 2 — Frontend Ventas + Compras/Gastos (Transferencias, Ajustes y Órdenes de Compra ya listos)
 
 #### ✅ Ya implementados
 - **Transferencias** — `frontend/src/modules/inventario/transferencias/` (listado, crear, detalle con Confirmar/Cancelar, stock en tiempo real)
 - **Ajustes de Inventario** — `frontend/src/modules/inventario/ajustes/` (listado, crear con selector de motivo predefinido y stock disponible, detalle con Ejecutar/Cancelar)
+- **Órdenes de Compra** — `frontend/src/modules/compras/ordenes/` (listado, crear con líneas dinámicas, detalle con Enviar/Aprobar/Cancelar/Vincular factura)
 
 #### Pendiente — Ventas
 ```
@@ -354,9 +394,10 @@ frontend/src/modules/billing/ventas/
 
 APIs Ventas disponibles: `GET/POST /api/ventas` · `PATCH /{id}/validar|emitir|reintentar|anular` · `GET /api/configuracion-sri`
 
-#### Pendiente — Compras / Gastos
-- `frontend/src/modules/billing/compras/` → listar, crear desde XML/manual, aprobar
+#### Pendiente — Compras / Gastos (facturas)
+- `frontend/src/modules/billing/compras/` → listar facturas de compra, crear desde XML/manual, aprobar
 - `frontend/src/modules/billing/gastos/` → listar, crear, aprobar
+> Las Órdenes de Compra ya tienen frontend; lo pendiente son las **facturas de compra** (CompraFactura)
 
 ---
 
@@ -403,6 +444,25 @@ Lógica de seed automático:
 - Perfiles con `inventario.*.view` → obtienen `view`
 - Perfiles con `inventario.bodegas.*` o `compras.facturas.create` → obtienen `create` + `cancel`
 - Perfiles con `compras.facturas.approve`, `ventas.facturas.emit` o `accounting.journal.edit` → obtienen `confirm`
+- Tenant de desarrollo (`d0aabb1f-...`) → obtiene todos los permisos
+
+---
+
+### Órdenes de Compra (migración `AddOrdenesCompra`)
+
+| Clave de permiso | Qué habilita |
+|-----------------|-------------|
+| `compras.ordenes.view` | Ver listado y detalle de órdenes de compra |
+| `compras.ordenes.create` | Crear OC en Borrador |
+| `compras.ordenes.send` | Enviar OC al proveedor (→ Enviada) |
+| `compras.ordenes.approve` | Aprobar OC (→ Aprobada) |
+| `compras.ordenes.cancel` | Cancelar OC |
+| `compras.ordenes.link-invoice` | Vincular factura de compra aprobada a la OC |
+
+Lógica de seed automático:
+- Perfiles con `compras.facturas.view` → obtienen `view`
+- Perfiles con `compras.facturas.create` → obtienen `create` + `cancel`
+- Perfiles con `compras.facturas.approve` → obtienen `send` + `approve` + `link-invoice`
 - Tenant de desarrollo (`d0aabb1f-...`) → obtiene todos los permisos
 
 ---
@@ -476,6 +536,11 @@ El seed asigna permisos automáticamente según permisos existentes del perfil:
 | Módulo Ajustes — repositorio | `ERP.Infrastructure/Persistence/Repositories/AjusteInventarioRepository.cs` |
 | Módulo Ajustes — frontend | `frontend/src/modules/inventario/ajustes/` |
 | Seed permisos Ajustes | `ERP.Infrastructure/Migrations/20260510123203_AddAjustesInventario.cs` |
+| Módulo OrdeneCompra — dominio | `ERP.Domain/Compras/Entities/OrdenCompra*.cs` + `IOrdenCompraRepository.cs` |
+| Módulo OrdeneCompra — aplicación | `ERP.Application/Modules/Compras/UseCases/*OrdenCompra*/` + `VincularFactura*/` |
+| Módulo OrdeneCompra — repositorio | `ERP.Infrastructure/Persistence/Repositories/OrdenCompraRepository.cs` |
+| Módulo OrdeneCompra — frontend | `frontend/src/modules/compras/ordenes/` |
+| Seed permisos OrdeneCompra | `ERP.Infrastructure/Migrations/20260510131553_AddOrdenesCompra.cs` |
 
 ---
 
@@ -525,10 +590,11 @@ cd frontend && npm run build
 
 1. **Leer este archivo primero.** Si hay diferencias con el código real, confiar en el código.
 
-2. **Hay 3 migraciones PENDIENTES** — aplicar todas antes de usar la API en un entorno real:
+2. **Hay 4 migraciones PENDIENTES** — aplicar todas antes de usar la API en un entorno real:
    - `Paso3_VentasFacturaAsientoAndPermissions` — añade `asiento_contable_id` a `ventas_facturas` y siembra permisos del módulo Ventas
    - `AddTransferenciasInventario` — crea las tablas `transferencias` + `transferencia_detalles` y siembra permisos del módulo Transferencias
    - `AddAjustesInventario` — crea la tabla `ajustes_inventario` y siembra permisos del módulo Ajustes
+   - `AddOrdenesCompra` — crea las tablas `ordenes_compra` + `detalles` + `facturas` y siembra permisos del módulo OrdeneCompra
    ```bash
    cd backend && dotnet ef database update --project src/ERP.Infrastructure --startup-project src/ERP.API
    ```
@@ -553,4 +619,4 @@ cd frontend && npm run build
 
 ---
 
-*Próxima actualización de este documento: cuando se complete el frontend de Ventas/Compras/Gastos o la implementación SRI real.*
+*Próxima actualización de este documento: cuando se complete el frontend de Ventas/Compras-Gastos facturas o la implementación SRI real.*

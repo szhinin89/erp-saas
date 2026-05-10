@@ -13,8 +13,17 @@ import { TransferenciaDetailPage } from '../modules/inventario/transferencias/pa
 import { AjustesListPage }   from '../modules/inventario/ajustes/pages/AjustesListPage';
 import { CrearAjustePage }   from '../modules/inventario/ajustes/pages/CrearAjustePage';
 import { AjusteDetailPage }  from '../modules/inventario/ajustes/pages/AjusteDetailPage';
+import { OrdenesCompraListPage }  from '../modules/compras/ordenes/pages/OrdenesCompraListPage';
+import { CrearOrdenCompraPage }   from '../modules/compras/ordenes/pages/CrearOrdenCompraPage';
+import { OrdenCompraDetailPage }  from '../modules/compras/ordenes/pages/OrdenCompraDetailPage';
 
 export const catalogRoutes = [
+  // ── Órdenes de Compra ──────────────────────────────────────────────────────
+  <Route key="ordenes-compra"        path="/compras/ordenes"        element={<OrdenesCompraListPage />} />,
+  <Route key="ordenes-compra-nueva"  path="/compras/ordenes/nueva"  element={<CrearOrdenCompraPage />} />,
+  <Route key="ordenes-compra-detail" path="/compras/ordenes/:id"    element={<OrdenCompraDetailPage />} />,
+
+
   // ── Ajustes de Inventario ──────────────────────────────────────────────────
   <Route key="ajustes"        path="/inventario/ajustes"        element={<AjustesListPage />} />,
   <Route key="ajustes-nuevo"  path="/inventario/ajustes/nuevo"  element={<CrearAjustePage />} />,

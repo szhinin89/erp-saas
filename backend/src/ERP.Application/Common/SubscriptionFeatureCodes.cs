@@ -13,6 +13,7 @@ public static class SubscriptionFeatureCodes
     public const string Branches  = "BRANCHES";
     public const string Bodegas   = "BODEGAS";
     public const string Compras   = "COMPRAS";
+    public const string Purchases = "COMPRAS";
     public const string Gastos    = "GASTOS";
     public const string Sales     = "SALES";
 }

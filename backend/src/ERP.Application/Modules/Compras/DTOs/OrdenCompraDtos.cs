@@ -1,0 +1,74 @@
+namespace ERP.Application.Modules.Compras.DTOs;
+
+public record OrdenCompraDetalleDto(
+    Guid    Id,
+    Guid    ProductoId,
+    string  Descripcion,
+    decimal CantidadPedida,
+    decimal CantidadFacturada,
+    decimal PendienteFacturar,
+    decimal PrecioUnitario,
+    decimal Subtotal,
+    decimal Impuesto,
+    decimal Total);
+
+public record OrdenCompraFacturaVinculadaDto(
+    Guid     CompraFacturaId,
+    string   NumeroFactura,
+    DateTime FechaVinculacion);
+
+public record OrdenCompraDto(
+    Guid      Id,
+    string    NumeroOrden,
+    Guid      ProveedorId,
+    string    ProveedorNombre,
+    DateTime  FechaEmision,
+    DateTime  FechaRequerida,
+    string    Estado,
+    string    Moneda,
+    decimal   Subtotal,
+    decimal   Impuesto,
+    decimal   Total,
+    string?   Observaciones,
+    string?   DireccionEntrega,
+    Guid?     BodegaDestinoId,
+    DateTime? FechaEnvio,
+    DateTime? FechaAprobacion,
+    Guid?     AprobadoPor,
+    DateTime? FechaCierre,
+    DateTime  CreatedAt);
+
+public record OrdenCompraDetailDto(
+    Guid      Id,
+    string    NumeroOrden,
+    Guid      ProveedorId,
+    string    ProveedorNombre,
+    DateTime  FechaEmision,
+    DateTime  FechaRequerida,
+    string    Estado,
+    string    Moneda,
+    decimal   Subtotal,
+    decimal   Impuesto,
+    decimal   Total,
+    string?   Observaciones,
+    string?   DireccionEntrega,
+    Guid?     BodegaDestinoId,
+    DateTime? FechaEnvio,
+    DateTime? FechaAprobacion,
+    Guid?     AprobadoPor,
+    DateTime? FechaCierre,
+    DateTime  CreatedAt,
+    IReadOnlyList<OrdenCompraDetalleDto>          Detalles,
+    IReadOnlyList<OrdenCompraFacturaVinculadaDto>  FacturasVinculadas);
+
+public record OrdenesCompraPagedResult(
+    IReadOnlyList<OrdenCompraDto> Items,
+    int TotalCount,
+    int PageNumber,
+    int PageSize);
+
+public record ItemOrdenCompraRequest(
+    Guid    ProductoId,
+    decimal Cantidad,
+    decimal PrecioUnitario,
+    decimal IvaPorcentaje = 15m);
