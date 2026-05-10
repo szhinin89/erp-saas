@@ -8,18 +8,21 @@ namespace ERP.Application.Auth.UseCases.PasswordReset;
 
 public class PasswordResetHandler
 {
-    private readonly ITenantRepository _tenantRepository;
-    private readonly IUserRepository _userRepository;
-    private readonly IPasswordHasher _passwordHasher;
+    private readonly ITenantRepository    _tenantRepository;
+    private readonly IUserRepository      _userRepository;
+    private readonly IPasswordHasher      _passwordHasher;
+    private readonly IRefreshTokenService _refreshTokenService;
 
     public PasswordResetHandler(
         ITenantRepository tenantRepository,
         IUserRepository userRepository,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        IRefreshTokenService refreshTokenService)
     {
-        _tenantRepository = tenantRepository;
-        _userRepository = userRepository;
-        _passwordHasher = passwordHasher;
+        _tenantRepository    = tenantRepository;
+        _userRepository      = userRepository;
+        _passwordHasher      = passwordHasher;
+        _refreshTokenService = refreshTokenService;
     }
 
     public async Task<Result<bool>> HandleAsync(PasswordResetCommand command, CancellationToken ct = default)
@@ -43,6 +46,10 @@ public class PasswordResetHandler
         user.SetPasswordHash(newHash, updatedBy: user.Id);
 
         await _userRepository.SaveChangesAsync(ct);
+
+        // Revocar todas las sesiones activas: cambio de contraseña invalida todas las sesiones previas
+        await _refreshTokenService.RevokeAllForUserAsync(user.Id, command.TenantId, "Cambio de contraseña", ct);
+
         return Result<bool>.Success(true);
     }
 }

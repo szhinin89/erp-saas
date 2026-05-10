@@ -6,6 +6,7 @@ using ERP.Application.Common;
 using ERP.Application.Navigation;
 using ERP.Application.Navigation.DTOs;
 using ERP.Application.Subscriptions;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 using ERP.Infrastructure.Deployment;
@@ -24,13 +25,14 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class SuperAdminController : ControllerBase
 {
-    private readonly ITenantRepository _tenantRepository;
-    private readonly IUserRepository _userRepository;
-    private readonly ISaasCatalogQuery _saasCatalogQuery;
+    private readonly ITenantRepository       _tenantRepository;
+    private readonly IUserRepository         _userRepository;
+    private readonly ISaasCatalogQuery       _saasCatalogQuery;
     private readonly IDeploymentFeatureFlags _deployment;
-    private readonly InstanceQuotaFileStore _instanceQuotaFile;
+    private readonly InstanceQuotaFileStore  _instanceQuotaFile;
     private readonly INavigationMenuAdminService _navigationMenuAdmin;
-    private readonly IGrowthAnalyticsReader _growthAnalytics;
+    private readonly IGrowthAnalyticsReader  _growthAnalytics;
+    private readonly IRefreshTokenService    _refreshTokenService;
 
     public SuperAdminController(
         ITenantRepository tenantRepository,
@@ -39,15 +41,17 @@ public class SuperAdminController : ControllerBase
         IDeploymentFeatureFlags deployment,
         InstanceQuotaFileStore instanceQuotaFile,
         INavigationMenuAdminService navigationMenuAdmin,
-        IGrowthAnalyticsReader growthAnalytics)
+        IGrowthAnalyticsReader growthAnalytics,
+        IRefreshTokenService refreshTokenService)
     {
-        _tenantRepository = tenantRepository;
-        _userRepository = userRepository;
-        _saasCatalogQuery = saasCatalogQuery;
-        _deployment = deployment;
-        _instanceQuotaFile = instanceQuotaFile;
+        _tenantRepository    = tenantRepository;
+        _userRepository      = userRepository;
+        _saasCatalogQuery    = saasCatalogQuery;
+        _deployment          = deployment;
+        _instanceQuotaFile   = instanceQuotaFile;
         _navigationMenuAdmin = navigationMenuAdmin;
-        _growthAnalytics = growthAnalytics;
+        _growthAnalytics     = growthAnalytics;
+        _refreshTokenService = refreshTokenService;
     }
 
     /// <summary>Cuotas efectivas de la instancia (config + archivo <c>App_Data/instance-quota.json</c> si existe).</summary>
@@ -318,6 +322,28 @@ public class SuperAdminController : ControllerBase
             return this.ApiBadRequest(err ?? "Error");
 
         return this.ApiOk(new { id = newId }, "Creado");
+    }
+
+    // ── Gestión de sesiones (refresh tokens) ─────────────────────────────
+
+    /// <summary>
+    /// Revoca todos los refresh tokens activos de un usuario.
+    /// Usar cuando se desactiva un usuario, se detecta compromiso o se cambia de rol.
+    /// </summary>
+    /// <param name="userId">ID del usuario cuyos tokens serán revocados.</param>
+    /// <param name="tenantId">Tenant del usuario.</param>
+    [HttpDelete("users/{userId:guid}/sessions")]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RevokeUserSessions(
+        Guid userId, [FromQuery] Guid tenantId, CancellationToken ct)
+    {
+        var user = await _userRepository.GetByIdSystemAsync(userId, ct);
+        if (user is null)
+            return this.ApiBadRequest("Usuario no encontrado.");
+
+        await _refreshTokenService.RevokeAllForUserAsync(userId, tenantId, "Revocación administrativa", ct);
+        return this.ApiOk($"Sesiones del usuario {userId} revocadas.", "OK");
     }
 }
 

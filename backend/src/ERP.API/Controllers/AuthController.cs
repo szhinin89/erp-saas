@@ -23,6 +23,44 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class AuthController : ControllerBase
 {
+    // ── Cookie helper ─────────────────────────────────────────────────────
+
+    private const string RefreshCookieName = "erp_refresh_token";
+
+    /// <summary>
+    /// Establece el refresh token como cookie httpOnly (no accesible desde JS → mitiga XSS).
+    /// Secure=true en producción, SameSite=Strict previene CSRF.
+    /// </summary>
+    private void SetRefreshCookie(string rawToken, DateTime expiry)
+    {
+        Response.Cookies.Append(RefreshCookieName, rawToken, new CookieOptions
+        {
+            HttpOnly  = true,
+            Secure    = !HttpContext.Request.IsHttps ? false : true, // Secure en HTTPS
+            SameSite  = SameSiteMode.Strict,
+            Expires   = expiry,
+            Path      = "/api/auth", // solo endpoints de auth pueden leer la cookie
+        });
+    }
+
+    /// <summary>Elimina la cookie del refresh token.</summary>
+    private void ClearRefreshCookie()
+    {
+        Response.Cookies.Delete(RefreshCookieName, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure   = !HttpContext.Request.IsHttps ? false : true,
+            SameSite = SameSiteMode.Strict,
+            Path     = "/api/auth",
+        });
+    }
+
+    /// <summary>Intenta leer el refresh token de la cookie httpOnly; si no hay, usa el body.</summary>
+    private string? ResolveRefreshToken(string? fromBody)
+        => string.IsNullOrWhiteSpace(fromBody)
+            ? Request.Cookies[RefreshCookieName]
+            : fromBody;
+
     private readonly RegisterHandler        _registerHandler;
     private readonly LoginHandler           _loginHandler;
     private readonly RefreshTokenHandler    _refreshTokenHandler;
@@ -86,7 +124,13 @@ public class AuthController : ControllerBase
     {
         var result = await _loginHandler.HandleAsync(command, ct);
         if (result.IsSuccess)
+        {
+            // Establecer refresh token en cookie httpOnly + incluirlo en body para clientes no-browser
+            if (result.Value?.RefreshToken is not null && result.Value.RefreshTokenExpiry is not null)
+                SetRefreshCookie(result.Value.RefreshToken, result.Value.RefreshTokenExpiry.Value);
+
             return this.ApiOk(result.Value);
+        }
 
         return MapAuthFailure(result.Error);
     }
@@ -139,14 +183,24 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh(
-        [FromBody] RefreshRequest request,
+        [FromBody] RefreshRequest? request,
         CancellationToken ct)
     {
-        var result = await _refreshTokenHandler.HandleAsync(request.RefreshToken, ct);
-        if (result.IsSuccess)
-            return this.ApiOk(result.Value);
+        // Cookie httpOnly tiene prioridad; si no hay, usa el body
+        var rawToken = ResolveRefreshToken(request?.RefreshToken);
+        if (string.IsNullOrWhiteSpace(rawToken))
+            return this.ApiUnauthorized("Se requiere refresh token.");
 
-        return this.ApiUnauthorized(result.Error ?? "Refresh token inválido.");
+        var result = await _refreshTokenHandler.HandleAsync(rawToken, ct);
+        if (result.IsSuccess)
+        {
+            if (result.Value?.RefreshToken is not null && result.Value.RefreshTokenExpiry is not null)
+                SetRefreshCookie(result.Value.RefreshToken, result.Value.RefreshTokenExpiry.Value);
+
+            return this.ApiOk(result.Value);
+        }
+
+        return this.ApiUnauthorized("Refresh token inválido.");  // mensaje genérico — no exponer detalles
     }
 
     /// <summary>
@@ -164,13 +218,16 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Logout(
-        [FromBody] LogoutRequest request,
+        [FromBody] LogoutRequest? request,
         CancellationToken ct)
     {
-        var result = await _logoutHandler.HandleAsync(
-            request.RefreshToken ?? string.Empty,
-            request.AllDevices,
+        var rawToken = ResolveRefreshToken(request?.RefreshToken);
+        var result   = await _logoutHandler.HandleAsync(
+            rawToken ?? string.Empty,
+            request?.AllDevices ?? false,
             ct);
+
+        ClearRefreshCookie(); // siempre limpiar la cookie aunque el token ya no fuera válido
         return this.ToOkOrBadRequest(result);
     }
 
