@@ -1608,6 +1608,118 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("geo_provinces", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Inventario.Entities.AjusteInventario", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BodegaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("bodega_id");
+
+                    b.Property<string>("BodegaNombre")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("bodega_nombre");
+
+                    b.Property<decimal>("CantidadAjuste")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("cantidad_ajuste");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid?>("EjecutadoPor")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ejecutado_por");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("estado");
+
+                    b.Property<DateTime>("FechaAjuste")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_ajuste");
+
+                    b.Property<DateTime?>("FechaEjecucion")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_ejecucion");
+
+                    b.Property<string>("Motivo")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("motivo");
+
+                    b.Property<string>("NumeroAjuste")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("numero_ajuste");
+
+                    b.Property<string>("Observaciones")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("observaciones");
+
+                    b.Property<Guid>("ProductoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("producto_id");
+
+                    b.Property<string>("ProductoNombre")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("producto_nombre");
+
+                    b.Property<int>("Secuencial")
+                        .HasColumnType("integer")
+                        .HasColumnName("secuencial");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("TipoAjuste")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("tipo_ajuste");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "BodegaId")
+                        .HasDatabaseName("ix_ajustes_inventario_tenant_bodega");
+
+                    b.HasIndex("TenantId", "Estado")
+                        .HasDatabaseName("ix_ajustes_inventario_tenant_estado");
+
+                    b.HasIndex("TenantId", "NumeroAjuste")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ajustes_inventario_tenant_numero");
+
+                    b.ToTable("ajustes_inventario", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Inventario.Entities.InventarioMovimiento", b =>
                 {
                     b.Property<Guid>("Id")
