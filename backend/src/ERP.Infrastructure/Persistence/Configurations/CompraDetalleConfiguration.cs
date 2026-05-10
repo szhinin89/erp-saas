@@ -16,6 +16,7 @@ public class CompraDetalleConfiguration : IEntityTypeConfiguration<CompraDetalle
         builder.Property(d => d.TenantId).HasColumnName("tenant_id").IsRequired();
         builder.Property(d => d.CompraFacturaId).HasColumnName("compra_factura_id").IsRequired();
         builder.Property(d => d.ProductoId).HasColumnName("producto_id");   // nullable
+        builder.Property(d => d.OrdenCompraDetalleId).HasColumnName("orden_compra_detalle_id"); // nullable
 
         builder.Property(d => d.Descripcion)
             .HasColumnName("descripcion")

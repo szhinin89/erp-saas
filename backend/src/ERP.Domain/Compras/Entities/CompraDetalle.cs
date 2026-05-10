@@ -14,6 +14,7 @@ public sealed class CompraDetalle : AuditableEntity, ITenantEntity
 
     public Guid    CompraFacturaId            { get; private set; }
     public Guid?   ProductoId                 { get; private set; }   // nullable: puede no existir
+    public Guid?   OrdenCompraDetalleId       { get; private set; }   // nullable: la línea puede no estar vinculada a OC
     public string  Descripcion               { get; private set; } = null!;
     public string? CodigoPrincipalProveedor  { get; private set; }   // código del emisor (XML)
     public decimal Cantidad                  { get; private set; }
@@ -25,6 +26,13 @@ public sealed class CompraDetalle : AuditableEntity, ITenantEntity
     public decimal Total                     { get; private set; }
 
     private CompraDetalle() { }
+
+    /// <summary>Vincula esta línea a la línea de una OC para trazabilidad.</summary>
+    public void SetOrdenCompraDetalleId(Guid ordenCompraDetalleId, Guid updatedBy)
+    {
+        OrdenCompraDetalleId = ordenCompraDetalleId;
+        SetUpdated(updatedBy);
+    }
 
     internal static CompraDetalle Create(
         Guid    tenantId,

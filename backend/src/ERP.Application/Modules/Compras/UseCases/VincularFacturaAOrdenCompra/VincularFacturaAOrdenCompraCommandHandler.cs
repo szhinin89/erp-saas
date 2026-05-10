@@ -92,6 +92,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandler
                     $"Pendiente por facturar: {detalleOrden.PendienteFacturar:F3}.");
 
             detalleOrden.AgregarCantidadFacturada(detalleFactura.Cantidad, userId);
+            detalleFactura.SetOrdenCompraDetalleId(detalleOrden.Id, userId);
         }
 
         // 5. Crear la vinculación
