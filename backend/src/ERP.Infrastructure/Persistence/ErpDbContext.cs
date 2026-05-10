@@ -18,6 +18,7 @@ using ERP.Domain.Proveedores.Entities;
 using ERP.Domain.Compras.Entities;
 using ERP.Domain.Gastos.Entities;
 using ERP.Domain.Inventario.Entities;
+using ERP.Domain.Ventas.Entities;
 using ERP.Application.Common;
 using System.Linq.Expressions;
 
@@ -113,6 +114,11 @@ public class ErpDbContext : DbContext
     // ── Inventario ────────────────────────────────────────────────────────
     public DbSet<StockActual>          StockActual            => Set<StockActual>();
     public DbSet<InventarioMovimiento> InventarioMovimientos  => Set<InventarioMovimiento>();
+
+    // ── Facturación / Ventas ───────────────────────────────────────────────
+    public DbSet<ConfiguracionSRI> ConfiguracionSRIs => Set<ConfiguracionSRI>();
+    public DbSet<VentasFactura> VentasFacturas => Set<VentasFactura>();
+    public DbSet<VentasDetalle> VentasDetalles => Set<VentasDetalle>();
 
     public DbSet<SaasFeatureDefinition> SaasFeatureDefinitions => Set<SaasFeatureDefinition>();
     public DbSet<SaasPlan> SaasPlans => Set<SaasPlan>();

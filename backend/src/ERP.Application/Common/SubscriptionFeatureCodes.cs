@@ -14,4 +14,5 @@ public static class SubscriptionFeatureCodes
     public const string Bodegas   = "BODEGAS";
     public const string Compras   = "COMPRAS";
     public const string Gastos    = "GASTOS";
+    public const string Sales     = "SALES";
 }

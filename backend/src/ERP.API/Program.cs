@@ -3,6 +3,8 @@ using ERP.API.Middleware;
 using ERP.Infrastructure;
 using ERP.Application;
 using ERP.API.Authorization;
+using ERP.Application.Common.Interfaces;
+using ERP.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,6 +34,12 @@ builder.Services.AddCors(options =>
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+
+// Registro condicional del servicio SRI
+if (builder.Environment.IsDevelopment())
+    builder.Services.AddScoped<ISriFacturaElectronicaService, SriFacturaElectronicaSimuladoService>();
+else
+    builder.Services.AddScoped<ISriFacturaElectronicaService, SriFacturaElectronicaRealService>();
 
 // Authorization: por defecto SOLO permite tokens de sesión (no bootstrap).
 builder.Services.AddSingleton<IAuthorizationHandler, TokenTypeHandler>();

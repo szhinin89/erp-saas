@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text.Json;
 using FluentValidation;
+using ERP.Application.Common.Exceptions;
 using ERP.Domain.Subscriptions.Exceptions;
 
 namespace ERP.API.Middleware;
@@ -75,6 +76,11 @@ public class ExceptionMiddleware
             InvalidOperationException inv =>
                 (HttpStatusCode.UnprocessableEntity,
                  string.IsNullOrWhiteSpace(inv.Message) ? "No se puede completar la operación." : inv.Message.Trim()),
+            SriCommunicationException sri =>
+                (HttpStatusCode.BadGateway,
+                 string.IsNullOrWhiteSpace(sri.Message)
+                     ? "Error de comunicación con el SRI. La factura quedó en estado ErrorEnvio para reintentar."
+                     : $"Error SRI: {sri.Message.Trim()}"),
             FeatureNotEntitledException feat =>
                 (HttpStatusCode.Forbidden,
                  string.IsNullOrWhiteSpace(feat.Message) ? "Funcionalidad no incluida en el plan." : feat.Message.Trim()),

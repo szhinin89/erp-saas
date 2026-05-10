@@ -25,6 +25,21 @@ public interface IAccountingService
         CancellationToken ct);
 
     /// <summary>
+    /// Crea un asiento contable para una factura de venta autorizada.
+    /// Debit → primera cuenta de tipo Activo (Cuentas por Cobrar / Caja) activa del tenant.
+    /// Credit → primera cuenta de tipo Ingreso (Ventas) activa del tenant.
+    /// </summary>
+    Task<Result<Guid>> CrearAsientoVentaAsync(
+        Guid     ventaId,
+        string   referencia,
+        DateTime fecha,
+        decimal  subtotal,
+        decimal  iva,
+        decimal  total,
+        string   descripcion,
+        CancellationToken ct);
+
+    /// <summary>
     /// Asiento de gasto aprobado: débito a cuenta de gasto (según categoría si existe coincidencia por nombre),
     /// crédito a caja/banco (primer activo de tipo Activo, naturaleza Deudor).
     /// </summary>
