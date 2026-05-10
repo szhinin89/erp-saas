@@ -3,34 +3,54 @@ import { persist } from 'zustand/middleware';
 import type { AuthResponse } from '../types/auth';
 
 interface AuthState {
-  user: Omit<AuthResponse, 'token'> | null;
+  user: Omit<AuthResponse, 'token' | 'refreshToken' | 'refreshTokenExpiry'> | null;
   token: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
   hasHydrated: boolean;
-  /** Guarda el usuario y el token tras un login o register exitoso. */
+  /** Guarda el usuario y los tokens tras login o register exitoso. */
   login: (response: AuthResponse) => void;
-  /** Limpia el estado; el interceptor de Axios redirige al login ante 401. */
+  /**
+   * Actualiza solo los tokens (sin cambiar el perfil de usuario).
+   * Llamado por el interceptor de Axios tras un refresh exitoso.
+   */
+  updateTokens: (accessToken: string, refreshToken: string | null) => void;
+  /** Limpia todo el estado de sesión. */
   logout: () => void;
 }
 
 /**
  * Estado global de autenticación.
  *
- * Persiste en localStorage bajo la clave "auth-storage" para sobrevivir
- * recargas de página. El interceptor de `api.ts` lee el token directamente
- * desde localStorage para no depender de la hidratación del store de Zustand.
+ * Persiste en localStorage bajo "auth-storage".
+ * El interceptor de api.ts lee el token directamente desde localStorage
+ * para no depender de la hidratación de Zustand.
+ *
+ * Refresh token también se persiste en localStorage como fallback cuando
+ * el backend no puede establecer la cookie httpOnly (ej. Postman, apps nativas).
+ * Si el backend establece la cookie, el refresh se hace automáticamente sin leer
+ * localStorage — la cookie tiene precedencia en el servidor.
  */
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user: null,
-      token: null,
+      user:            null,
+      token:           null,
+      refreshToken:    null,
       isAuthenticated: false,
-      hasHydrated: false,
-      login: ({ token, ...user }) =>
-        set({ user, token, isAuthenticated: true }),
+      hasHydrated:     false,
+
+      login: ({ token, refreshToken, refreshTokenExpiry, ...user }) =>
+        set({ user, token, refreshToken: refreshToken ?? null, isAuthenticated: true }),
+
+      updateTokens: (accessToken, newRefreshToken) =>
+        set((state) => ({
+          token:        accessToken,
+          refreshToken: newRefreshToken ?? state.refreshToken,
+        })),
+
       logout: () =>
-        set({ user: null, token: null, isAuthenticated: false }),
+        set({ user: null, token: null, refreshToken: null, isAuthenticated: false }),
     }),
     {
       name: 'auth-storage',

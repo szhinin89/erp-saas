@@ -1,63 +1,169 @@
-import axios from 'axios';
+import axios, { type AxiosRequestConfig } from 'axios';
 
 /**
- * Instancia de Axios preconfigurada para llamar al backend.
+ * Cliente HTTP centralizado.
  *
- * - La baseURL es VITE_API_URL si está definida (no vacía).
- *   En desarrollo, si está vacía o no existe: baseURL '' → las rutas /api/*
- *   van al mismo host que Vite y el proxy (vite.config) reenvía a la API (sin CORS).
+ * Estrategia de tokens:
+ * - Access token (corto plazo, 60 min): en Authorization: Bearer, persistido en localStorage.
+ * - Refresh token (largo plazo, 30 días): preferentemente en httpOnly cookie (el backend la
+ *   establece automáticamente). Como fallback, también se persiste en localStorage para
+ *   entornos no-browser (Postman, apps nativas) o cuando las cookies están bloqueadas.
  *
- * - Interceptor de request: inyecta el Bearer token desde el store
- *   persistido en localStorage, sin necesidad de pasarlo manualmente.
- *
- * - Interceptor de response: ante un 401, limpia el estado de auth
- *   y redirige al login. Esto cubre tokens vencidos o revocados.
+ * Flujo ante 401:
+ * 1. El interceptor intercepta el 401.
+ * 2. Si NO es un endpoint público de auth, intenta refrescar vía POST /api/auth/refresh.
+ *    - La cookie httpOnly se envía automáticamente (withCredentials: true).
+ *    - Si no hay cookie, el body incluye el refreshToken desde localStorage.
+ * 3. Si el refresh tiene éxito: actualiza los tokens y reintenta la petición original.
+ * 4. Si el refresh falla: limpia la sesión y redirige al login.
+ * 5. Peticiones concurrentes que reciben 401 simultáneamente: se encolan y se resuelven
+ *    con el nuevo token una vez que el refresh termina (no se hacen múltiples refreshes).
  */
+
 const viteApiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? '';
-/**
- * Vacío = rutas relativas /api/* al mismo host (Vite dev o preview con proxy en vite.config).
- * Solo usar URL absoluta si VITE_API_URL está definida (otro dominio/puerto sin proxy).
- */
-const resolvedBaseUrl = viteApiBase.length > 0 ? viteApiBase : '';
 
 export const api = axios.create({
-  baseURL: resolvedBaseUrl,
-  headers: { 'Content-Type': 'application/json' },
+  baseURL:         viteApiBase.length > 0 ? viteApiBase : '',
+  headers:         { 'Content-Type': 'application/json' },
+  withCredentials: true, // necesario para que el navegador envíe/reciba la cookie httpOnly
 });
 
+// ── Cola de reintentos (previene múltiples refreshes simultáneos) ─────────
+
+type QueueItem = { resolve: (token: string) => void; reject: (err: unknown) => void };
+
+let isRefreshing   = false;
+let pendingQueue: QueueItem[] = [];
+
+function processQueue(error: unknown, newToken: string | null = null) {
+  pendingQueue.forEach((item) =>
+    error ? item.reject(error) : item.resolve(newToken!)
+  );
+  pendingQueue = [];
+}
+
+// ── Helpers para leer el store sin importar el hook (evita dependencias cíclicas) ──
+
+function getStoredToken(): string | null {
+  try {
+    const raw = localStorage.getItem('auth-storage');
+    return raw ? (JSON.parse(raw)?.state?.token ?? null) : null;
+  } catch {
+    return null;
+  }
+}
+
+function getStoredRefreshToken(): string | null {
+  try {
+    const raw = localStorage.getItem('auth-storage');
+    return raw ? (JSON.parse(raw)?.state?.refreshToken ?? null) : null;
+  } catch {
+    return null;
+  }
+}
+
+function updateStoredTokens(accessToken: string, refreshToken: string | null) {
+  try {
+    const raw = localStorage.getItem('auth-storage');
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    parsed.state.token        = accessToken;
+    parsed.state.refreshToken = refreshToken ?? parsed.state.refreshToken;
+    localStorage.setItem('auth-storage', JSON.stringify(parsed));
+  } catch {
+    // no-op
+  }
+}
+
+function clearSession() {
+  localStorage.removeItem('auth-storage');
+}
+
+// ── Interceptor de REQUEST: inyecta Bearer token ──────────────────────────
+
 api.interceptors.request.use((config) => {
-  const raw = localStorage.getItem('auth-storage');
-  if (raw) {
-    const { state } = JSON.parse(raw);
-    if (state?.token) {
-      config.headers.Authorization = `Bearer ${state.token}`;
-    }
+  const token = getStoredToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
+// ── Interceptor de RESPONSE: maneja 401 con refresh automático ───────────
+
+const PUBLIC_AUTH_PATHS = [
+  '/api/auth/login',
+  '/api/auth/superadmin-login',
+  '/api/auth/register',
+  '/api/auth/password-reset',
+  '/api/auth/refresh',          // evitar loop infinito
+  '/api/access/bootstrap-login',
+  '/api/access/switch-tenant',
+  '/api/access/register-tenant',
+];
+
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      // No forzar redirect en endpoints públicos de autenticación,
-      // porque un 401 ahí es parte normal del flujo (credenciales inválidas)
-      // y debe manejarse en la UI (sin recargar la página).
-      const url = (err.config?.url as string | undefined) ?? '';
-      const isPublicAuth =
-        url.includes('/api/auth/login') ||
-        url.includes('/api/auth/superadmin-login') ||
-        url.includes('/api/auth/register') ||
-        url.includes('/api/auth/password-reset') ||
-        url.includes('/api/access/bootstrap-login') ||
-        url.includes('/api/access/switch-tenant') ||
-        url.includes('/api/access/register-tenant');
+  async (error) => {
+    const originalRequest = error.config as AxiosRequestConfig & { _retry?: boolean };
+    const status          = error.response?.status as number | undefined;
+    const url             = (originalRequest?.url ?? '') as string;
 
-      if (!isPublicAuth) {
-        localStorage.removeItem('auth-storage');
-        window.location.href = '/login';
-      }
+    // Solo intentar refresh para 401 en endpoints protegidos (y solo una vez)
+    const isPublicAuth = PUBLIC_AUTH_PATHS.some((p) => url.includes(p));
+    if (status !== 401 || isPublicAuth || originalRequest._retry) {
+      return Promise.reject(error);
     }
-    return Promise.reject(err);
+
+    // Si ya hay un refresh en curso, encolar esta petición
+    if (isRefreshing) {
+      return new Promise<string>((resolve, reject) => {
+        pendingQueue.push({ resolve, reject });
+      })
+        .then((newToken) => {
+          originalRequest.headers = {
+            ...originalRequest.headers,
+            Authorization: `Bearer ${newToken}`,
+          };
+          return api(originalRequest);
+        })
+        .catch((e) => Promise.reject(e));
+    }
+
+    originalRequest._retry = true;
+    isRefreshing            = true;
+
+    try {
+      // Intentar refresh: la cookie httpOnly se envía automáticamente.
+      // Si no hay cookie, el fallback es el refreshToken de localStorage.
+      const storedRefreshToken = getStoredRefreshToken();
+
+      const refreshRes = await axios.post<{
+        responseObject: { token: string; refreshToken?: string | null };
+      }>(
+        `${viteApiBase}/api/auth/refresh`,
+        storedRefreshToken ? { refreshToken: storedRefreshToken } : {},
+        { withCredentials: true }
+      );
+
+      const newAccessToken   = refreshRes.data.responseObject.token;
+      const newRefreshToken  = refreshRes.data.responseObject.refreshToken ?? null;
+
+      updateStoredTokens(newAccessToken, newRefreshToken);
+      processQueue(null, newAccessToken);
+
+      originalRequest.headers = {
+        ...originalRequest.headers,
+        Authorization: `Bearer ${newAccessToken}`,
+      };
+      return api(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError, null);
+      clearSession();
+      window.location.href = '/login';
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
   }
 );
