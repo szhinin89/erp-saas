@@ -30,8 +30,6 @@ public class AuthController : ControllerBase
     private readonly PasswordResetHandler   _passwordResetHandler;
     private readonly SuperAdminLoginHandler _superAdminLoginHandler;
     private readonly SwitchTenantHandler    _switchTenantHandler;
-    private readonly ICurrentTenant         _currentTenant;
-    private readonly ICurrentUser           _currentUser;
 
     public AuthController(
         RegisterHandler registerHandler,
@@ -40,9 +38,7 @@ public class AuthController : ControllerBase
         LogoutHandler logoutHandler,
         PasswordResetHandler passwordResetHandler,
         SuperAdminLoginHandler superAdminLoginHandler,
-        SwitchTenantHandler switchTenantHandler,
-        ICurrentTenant currentTenant,
-        ICurrentUser currentUser)
+        SwitchTenantHandler switchTenantHandler)
     {
         _registerHandler        = registerHandler;
         _loginHandler           = loginHandler;
@@ -51,8 +47,6 @@ public class AuthController : ControllerBase
         _passwordResetHandler   = passwordResetHandler;
         _superAdminLoginHandler = superAdminLoginHandler;
         _switchTenantHandler    = switchTenantHandler;
-        _currentTenant          = currentTenant;
-        _currentUser            = currentUser;
     }
 
     /// <summary>Registra un nuevo usuario en un tenant existente.</summary>
@@ -157,18 +151,26 @@ public class AuthController : ControllerBase
 
     /// <summary>
     /// Cierra la sesión revocando el refresh token.
-    /// Si se proporciona <c>refreshToken</c>, revoca solo ese dispositivo; si no, revoca todos.
+    /// No requiere access token vigente — el refresh token es la credencial de logout.
     /// </summary>
+    /// <remarks>
+    /// - <c>allDevices: false</c> (por defecto): revoca solo el refresh token del body.
+    /// - <c>allDevices: true</c>: valida el refresh token para obtener el usuario y revoca todos sus tokens.
+    /// </remarks>
+    /// <response code="200">Sesión cerrada correctamente.</response>
+    /// <response code="400">Refresh token no proporcionado o inválido.</response>
     [HttpPost("logout")]
-    [Authorize]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Logout(
-        [FromBody] LogoutRequest? request,
+        [FromBody] LogoutRequest request,
         CancellationToken ct)
     {
-        var userId   = _currentUser.UserId;
-        var tenantId = _currentTenant.TenantId;
-        var result   = await _logoutHandler.HandleAsync(userId, tenantId, request?.RefreshToken, ct);
+        var result = await _logoutHandler.HandleAsync(
+            request.RefreshToken ?? string.Empty,
+            request.AllDevices,
+            ct);
         return this.ToOkOrBadRequest(result);
     }
 

@@ -3,7 +3,10 @@ namespace ERP.Application.Auth.DTOs;
 // ── Request DTOs (endpoints /auth/refresh y /auth/logout) ─────────────────
 
 public record RefreshRequest(string RefreshToken);
-public record LogoutRequest(string? RefreshToken);
+
+/// <param name="RefreshToken">Token opaco a revocar. Obligatorio.</param>
+/// <param name="AllDevices">Si true, revoca todos los tokens del usuario (logout global).</param>
+public record LogoutRequest(string? RefreshToken, bool AllDevices = false);
 
 public record RegisterDto(
     string FirstName,
