@@ -3,7 +3,7 @@
 > **Documento de referencia rápida.** Leer este archivo al inicio de cada sesión para saber
 > exactamente en qué punto está el proyecto, qué está hecho y qué sigue.
 >
-> Última actualización: **10 de mayo de 2026** | Commit: ver git log
+> Última actualización: **10 de mayo de 2026** | Commit: `3076aa7`
 
 ---
 
@@ -12,7 +12,7 @@
 El ERP SaaS tiene **backend completo** para los módulos de **Compras (facturas + órdenes de compra), Gastos, Inventario,
 Transferencias entre Bodegas, Ajustes de Inventario** y **Ventas con facturación electrónica SRI Ecuador** (simulada).
 El frontend de Transferencias, Ajustes y **Órdenes de Compra** también está implementado.
-Hay **184 tests automáticos pasando** y la API corre en producción-local.
+Hay **204 tests automáticos pasando** y la API corre en producción-local.
 
 **Lo que falta para el MVP comercial:**
 1. Implementar el WSDL real del SRI (firma P12 + envío + polling)
@@ -44,11 +44,11 @@ npm run dev                   # Puerto 5173, proxy /api → localhost:5003
 
 # 5. Correr todos los tests (no hay .sln — ejecutar por proyecto)
 cd ../../../../backend
-dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj                     # 82 tests
-dotnet test src/ERP.Application.Tests/ERP.Application.Tests.csproj     # 63 tests
+dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj                     # 92 tests
+dotnet test src/ERP.Application.Tests/ERP.Application.Tests.csproj     # 86 tests
 dotnet test src/ERP.Domain.Tests/ERP.Domain.Tests.csproj               # 23 tests
 dotnet test src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj #  3 tests
-# Total: 171 tests, todos deben pasar
+# Total: 204 tests, todos deben pasar
 ```
 
 > **Credenciales de dev:** ver `backend/src/ERP.API/appsettings.Development.json`
@@ -125,7 +125,7 @@ dotnet test src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj #  3 te
 > Al aprobar una compra: se incrementa el stock (EntradaCompra) y se crea un asiento contable.
 > Todo en una única transacción con rollback automático.
 
-### Órdenes de Compra — completado el 10/05/2026
+### Órdenes de Compra — completado el 10/05/2026 (commit `3076aa7`)
 
 | Funcionalidad | Estado | Archivos clave |
 |--------------|--------|---------------|
@@ -135,13 +135,18 @@ dotnet test src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj #  3 te
 | Cancelar OC (cualquier estado activo → Cancelada) | ✅ | `UseCases/CancelarOrdenCompra/` |
 | Vincular factura electrónica aprobada → OC | ✅ | `UseCases/VincularFacturaAOrdenCompra/` |
 | Cobertura total → OC cierra; cobertura parcial → RecibidaParcial | ✅ | `VincularFacturaAOrdenCompraCommandHandler.cs` |
+| Validación de precio OC vs Factura (tolerancia 1%, advertencias no bloqueantes) | ✅ | `VincularFacturaAOrdenCompraCommandHandler.cs` + `OrdenCompraDto.Advertencias` |
+| `CompraDetalle.OrdenCompraDetalleId` (nullable) — trazabilidad línea factura → línea OC | ✅ | `CompraDetalle.cs` + migración `AddOrdenCompraDetalleIdToCompraDetalle` |
 | Listar paginado con filtros (estado, proveedor, fechas) | ✅ | `UseCases/GetOrdenesCompraList/` |
 | Detalle con líneas y facturas vinculadas | ✅ | `UseCases/GetOrdenCompraById/` |
 | Lista de OC pendientes por facturar | ✅ | `UseCases/GetOrdenesPendientesPorFacturar/` |
 | Permisos: view / create / send / approve / cancel / link-invoice | ✅ | Migración `AddOrdenesCompra` (sentinel `77777777-...`) |
-| Tests Moq (8): vinculación exitosa/parcial, OC/factura no encontrada, etc. | ✅ | `Compras/VincularFacturaAOrdenCompraCommandHandlerTests.cs` |
-| Tests E2E (5): crear, enviar/aprobar, cancelar, vincular total, vincular parcial | ✅ | `Integration/OrdenesCompraEndToEndTests.cs` |
-| Frontend: listado, crear, detalle con acciones | ✅ | `frontend/src/modules/compras/ordenes/` |
+| Tests Moq (11): vinculación, estados, precio discrepante/coincidente/umbral | ✅ | `Compras/VincularFacturaAOrdenCompraCommandHandlerTests.cs` |
+| Tests validador unit (12): cada regla de `CrearOrdenCompraCommandValidator` | ✅ | `Compras/CrearOrdenCompraCommandValidatorTests.cs` |
+| Tests pipeline (4): ValidationException via MediatR behavior | ✅ | `Integration/OrdenCompraValidatorPipelineTests.cs` |
+| Test E2E flujo completo (1): 2 productos, vincular parcial→Cerrada, rechazo exceso | ✅ | `Integration/OrdenCompraFlujoCompletoTests.cs` |
+| Tests E2E básicos (5): crear, enviar/aprobar, cancelar, vincular total, parcial | ✅ | `Integration/OrdenesCompraEndToEndTests.cs` |
+| Frontend: listado, crear con líneas dinámicas, detalle con acciones | ✅ | `frontend/src/modules/compras/ordenes/` |
 
 **Flujo de estados OrdenCompra:**
 ```
@@ -157,6 +162,14 @@ Cualquier estado activo ──cancelar──► Cancelada
 - Matching por `ProductoId`; líneas sin producto (servicios/fletes de XML) se omiten
 - Si toda la cantidad pedida queda cubierta → estado `Cerrada` automáticamente
 - `SubscriptionFeatureCodes.Purchases = "COMPRAS"` (mismo feature gate que facturas de compra)
+- Stock: la OC **no mueve** inventario; el stock se actualiza al aprobar la `CompraFactura`
+- Precio: si la factura difiere >1% del precio acordado → `OrdenCompraDto.Advertencias[]` (no bloquea)
+- Trazabilidad: `CompraDetalle.OrdenCompraDetalleId` (nullable) se establece al vincular
+
+**Extras diferidos (documentados en memoria del proyecto):**
+- Recepción física sin factura: `RecibirOrdenCompraParcial` (actualiza stock sin factura; cuadre al llegar la factura)
+- Tolerancia de precio configurable (actualmente hardcodeada al 1% en handler)
+- Frontend: mostrar banner amarillo cuando respuesta de vincular incluye `advertencias != null`
 
 ---
 
@@ -244,42 +257,45 @@ Autorizado → NO se puede anular directamente (requiere Nota de Crédito)
 
 ---
 
-## Tests actuales — 184 tests, 0 fallos
+## Tests actuales — 204 tests, 0 fallos
 
 ```
 ERP.Domain.Tests         →  23 tests   (entidades, Value Objects, RUC ecuatoriano)
-ERP.Application.Tests    →  71 tests   (handlers Moq, behaviors, DTOs)
+ERP.Application.Tests    →  86 tests   (handlers Moq, validators, behaviors, DTOs)
 ERP.Infrastructure.Tests →   3 tests   (repositorios, parser XML SRI)
-ERP.API.Tests            →  87 tests   (integración E2E, HTTP, dominio, algoritmos)
+ERP.API.Tests            →  92 tests   (integración E2E, HTTP, dominio, algoritmos)
 ──────────────────────────────────────────
-TOTAL                    → 184 tests   ✅ 0 fallos
+TOTAL                    → 204 tests   ✅ 0 fallos
 ```
 
-Desglose `ERP.Application.Tests` (71):
+Desglose `ERP.Application.Tests` (86):
 ```
-Compras/AprobarCompraCommandHandlerStockTests.cs        →  2  (stock + rollback contabilidad)
-Compras/VincularFacturaAOrdenCompraCommandHandlerTests.cs →  8  (Moq: éxito total/parcial, OC no encontrada, etc.)
-Inventario/CrearTransferenciaCommandHandlerTests.cs     →  7  (Moq: stock, bodegas, productos)
-Inventario/ConfirmarTransferenciaCommandHandlerTests.cs →  6  (Moq: atómico, concurrencia)
-Inventario/EjecutarAjusteCommandHandlerTests.cs         →  8  (Moq: incremento/disminución/fallo)
-Otros (customers, products, login, gastos, etc.)        → 40
+Compras/AprobarCompraCommandHandlerStockTests.cs         →  2  (stock + rollback contabilidad)
+Compras/VincularFacturaAOrdenCompraCommandHandlerTests.cs → 11  (Moq: éxito, estados, precio discrepante/coincidente/umbral)
+Compras/CrearOrdenCompraCommandValidatorTests.cs         → 12  (cada regla del validator, precio 0 válido, etc.)
+Inventario/CrearTransferenciaCommandHandlerTests.cs      →  7  (Moq: stock, bodegas, productos)
+Inventario/ConfirmarTransferenciaCommandHandlerTests.cs  →  6  (Moq: atómico, concurrencia)
+Inventario/EjecutarAjusteCommandHandlerTests.cs          →  8  (Moq: incremento/disminución/fallo)
+Otros (customers, products, login, gastos, etc.)         → 40
 ```
 
-Desglose `ERP.API.Tests` (87):
+Desglose `ERP.API.Tests` (92):
 ```
-Unit/VentasDomainTests.cs                     → 12  (máquina de estados, totales)
-Unit/ClaveAccesoHelperTests.cs                →  7  (algoritmo módulo-11, Theory)
-Unit/StockValidationHandlerTests.cs           →  5  (stock Ventas: suficiente/insuficiente)
-Unit/TransferenciasStockTests.cs              →  5  (stock Transferencias: 5 escenarios)
-Integration/VentasEndToEndTests.cs            →  4  (flujo completo E2E)
-Integration/VentasHttpTests.cs                → 10  (HTTP + JWT simulado)
-Integration/TransferenciasEndToEndTests.cs    →  5  (crear→confirmar stock; cancelar; estados)
-Integration/AjustesInventarioEndToEndTests.cs →  7  (incremento/disminución/fallo/validación)
-Integration/OrdenesCompraEndToEndTests.cs     →  5  (crear, enviar/aprobar, cancelar, vincular total/parcial)
-Integration/CompraGastoEndToEndTests.cs       →  2  (E2E compras + gastos)
-Integration/AuthenticatedApiTests.cs          →  2  (HTTP con token)
-Controller/VentasControllerContractTests.cs   →  9  (StubMediator, status codes)
-Otros (middleware, contratos)                 → 14
+Unit/VentasDomainTests.cs                          → 12  (máquina de estados, totales)
+Unit/ClaveAccesoHelperTests.cs                     →  7  (algoritmo módulo-11, Theory)
+Unit/StockValidationHandlerTests.cs                →  5  (stock Ventas: suficiente/insuficiente)
+Unit/TransferenciasStockTests.cs                   →  5  (stock Transferencias: 5 escenarios)
+Integration/VentasEndToEndTests.cs                 →  4  (flujo completo E2E)
+Integration/VentasHttpTests.cs                     → 10  (HTTP + JWT simulado)
+Integration/TransferenciasEndToEndTests.cs         →  5  (crear→confirmar stock; cancelar; estados)
+Integration/AjustesInventarioEndToEndTests.cs      →  7  (incremento/disminución/fallo/validación)
+Integration/OrdenesCompraEndToEndTests.cs          →  5  (crear, enviar/aprobar, cancelar, vincular total/parcial)
+Integration/OrdenCompraFlujoCompletoTests.cs       →  1  (2 productos, parcial→RecibidaParcial→Cerrada, rechazo exceso)
+Integration/OrdenCompraValidatorPipelineTests.cs   →  4  (ValidationException via MediatR: items vacío, cantidad 0, precio negativo, proveedor vacío)
+Integration/CompraGastoEndToEndTests.cs            →  2  (E2E compras + gastos)
+Integration/AuthenticatedApiTests.cs               →  2  (HTTP con token)
+Controller/VentasControllerContractTests.cs        →  9  (StubMediator, status codes)
+Otros (middleware, contratos)                      → 14
 ```
 
 ---
@@ -309,7 +325,7 @@ Otros (middleware, contratos)                 → 14
 
 ---
 
-## Migraciones — 47 aplicadas, 3 pendientes
+## Migraciones — 47 aplicadas, 5 pendientes
 
 ```bash
 cd backend
@@ -329,8 +345,9 @@ dotnet ef migrations list --project src/ERP.Infrastructure --startup-project src
 | **🔄 PENDIENTE** | **`AddTransferenciasInventario`** | **tablas transferencias + transferencia_detalles + permisos inventario.transferencias.*** |
 | **🔄 PENDIENTE** | **`AddAjustesInventario`** | **tabla ajustes_inventario + permisos inventario.ajustes.*** |
 | **🔄 PENDIENTE** | **`AddOrdenesCompra`** | **tablas ordenes_compra + detalles + facturas + permisos compras.ordenes.*** |
+| **🔄 PENDIENTE** | **`AddOrdenCompraDetalleIdToCompraDetalle`** | **columna nullable `orden_compra_detalle_id` en `compra_detalles`** |
 
-> Las 4 migraciones se aplican con un solo comando: `dotnet ef database update`
+> Las 5 migraciones se aplican con un solo comando: `dotnet ef database update`
 
 ---
 
@@ -426,6 +443,9 @@ Anulación de facturas ya **Autorizadas** por el SRI. Requiere:
 | **Ajustes — aprobación supervisora** (diferido): estado `PendienteAprobacion` + permiso `inventario.ajustes.approve` | `AjusteInventario.cs` + commands | Media |
 | **Ajustes — reversar** (diferido): `ReversarAjusteCommand` crea ajuste espejo y lo ejecuta | nuevo command | Baja |
 | **Transferencias — aprobación** (diferido): estado `PendienteAprobacion` antes de Confirmar | `Transferencia.cs` + commands | Media |
+| **OC — tolerancia precio configurable**: mover el 1% a `ConfigModule` o `appsettings` | `VincularFacturaAOrdenCompraCommandHandler.cs` | Muy baja |
+| **OC — recepción sin factura** (diferido): `RecibirOrdenCompraParcial` actualiza stock antes de tener factura | nuevo command + `CantidadRecibida` en `OrdenCompraDetalle` | Alta |
+| **OC — advertencia en frontend**: mostrar banner cuando `OrdenCompraDto.Advertencias != null` | `OrdenCompraDetailPage.tsx` | Baja |
 
 ---
 
@@ -590,11 +610,12 @@ cd frontend && npm run build
 
 1. **Leer este archivo primero.** Si hay diferencias con el código real, confiar en el código.
 
-2. **Hay 4 migraciones PENDIENTES** — aplicar todas antes de usar la API en un entorno real:
+2. **Hay 5 migraciones PENDIENTES** — aplicar todas antes de usar la API en un entorno real:
    - `Paso3_VentasFacturaAsientoAndPermissions` — añade `asiento_contable_id` a `ventas_facturas` y siembra permisos del módulo Ventas
    - `AddTransferenciasInventario` — crea las tablas `transferencias` + `transferencia_detalles` y siembra permisos del módulo Transferencias
    - `AddAjustesInventario` — crea la tabla `ajustes_inventario` y siembra permisos del módulo Ajustes
    - `AddOrdenesCompra` — crea las tablas `ordenes_compra` + `detalles` + `facturas` y siembra permisos del módulo OrdeneCompra
+   - `AddOrdenCompraDetalleIdToCompraDetalle` — añade columna nullable `orden_compra_detalle_id` a `compra_detalles` para trazabilidad
    ```bash
    cd backend && dotnet ef database update --project src/ERP.Infrastructure --startup-project src/ERP.API
    ```
@@ -620,3 +641,17 @@ cd frontend && npm run build
 ---
 
 *Próxima actualización de este documento: cuando se complete el frontend de Ventas/Compras-Gastos facturas o la implementación SRI real.*
+
+---
+
+## Historial de cambios recientes
+
+| Fecha | Commit | Qué se hizo |
+|-------|--------|-------------|
+| 10/05/2026 | `3076aa7` | Validación precio OC vs Factura (tolerancia 1%, `Advertencias[]` en DTO) — 3 tests nuevos |
+| 10/05/2026 | `307f0f9` | `CompraDetalle.OrdenCompraDetalleId` nullable para trazabilidad factura↔OC |
+| 10/05/2026 | `907ba1d` | Tests: flujo completo 2 productos (E2E), validator unit (12), pipeline (4) |
+| 10/05/2026 | `edfc711` | Módulo Órdenes de Compra completo (domain, application, infrastructure, API, frontend) |
+| 10/05/2026 | `0c490e8` | Módulo Ajustes de Inventario completo |
+| 09/05/2026 | `911b4eb` | Módulo Transferencias entre bodegas + tests FASE 4 |
+| 09/05/2026 | `d20a14d` | Módulo Ventas con facturación electrónica SRI (simulada) |
