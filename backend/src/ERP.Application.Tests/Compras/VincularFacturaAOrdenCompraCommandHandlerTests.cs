@@ -134,6 +134,49 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         result.Error.Should().Contain("excede la cantidad pedida");
     }
 
+    // ── Discrepancia de precio ────────────────────────────────────────────
+
+    [Fact]
+    public async Task Vincular_con_precio_factura_distinto_genera_advertencia()
+    {
+        // OC a $10, factura cobra $12 → diferencia 20% > 1% → advertencia
+        var ctx = new TestContext(precioOC: 10m, precioFactura: 12m);
+
+        var result = await ctx.Handle();
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Advertencias.Should().NotBeNullOrEmpty(
+            "debe haber advertencia cuando el precio facturado difiere >1% del precio de OC");
+        result.Value.Advertencias!.Should().ContainSingle();
+        result.Value.Advertencias[0].Should().Contain("Discrepancia de precio");
+        result.Value.Advertencias[0].Should().Contain("Producto Test");
+    }
+
+    [Fact]
+    public async Task Vincular_con_precio_igual_no_genera_advertencias()
+    {
+        var ctx = new TestContext(precioOC: 10m, precioFactura: 10m);
+
+        var result = await ctx.Handle();
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Advertencias.Should().BeNull(
+            "no debe haber advertencias cuando los precios coinciden");
+    }
+
+    [Fact]
+    public async Task Vincular_con_diferencia_de_precio_menor_al_umbral_no_genera_advertencia()
+    {
+        // OC a $10, factura $10.05 → diferencia 0.5% < 1% → sin advertencia
+        var ctx = new TestContext(precioOC: 10m, precioFactura: 10.05m);
+
+        var result = await ctx.Handle();
+
+        result.IsSuccess.Should().BeTrue(result.Error);
+        result.Value!.Advertencias.Should().BeNull(
+            "diferencia de 0.5% está dentro de la tolerancia del 1%");
+    }
+
     // ── Contexto de test ──────────────────────────────────────────────────
 
     private sealed class TestContext
@@ -145,6 +188,8 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
 
         private readonly decimal _cantidadPedida;
         private readonly decimal _cantidadFactura;
+        private readonly decimal _precioOC;
+        private readonly decimal _precioFactura;
 
         public Mock<IOrdenCompraRepository> OrdenRepo  { get; } = new();
         public Mock<ICompraRepository>      CompraRepo { get; } = new();
@@ -157,10 +202,16 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         private readonly Guid _ordenId   = Guid.NewGuid();
         private readonly Guid _facturaId = Guid.NewGuid();
 
-        public TestContext(decimal cantidadPedida = 5m, decimal cantidadFactura = 5m)
+        public TestContext(
+            decimal cantidadPedida = 5m,
+            decimal cantidadFactura = 5m,
+            decimal precioOC = 10m,
+            decimal precioFactura = 10m)
         {
             _cantidadPedida  = cantidadPedida;
             _cantidadFactura = cantidadFactura;
+            _precioOC        = precioOC;
+            _precioFactura   = precioFactura;
 
             _tenant.SetupGet(x => x.TenantId).Returns(TenantId);
             _user.SetupGet(x => x.UserId).Returns(UserId);
@@ -205,7 +256,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
 
             var detalle = OrdenCompraDetalle.Create(
                 TenantId, oc.Id, ProductoId, "Producto Test",
-                _cantidadPedida, precioUnitario: 10m, ivaPorcentaje: 15m, UserId);
+                _cantidadPedida, precioUnitario: _precioOC, ivaPorcentaje: 15m, UserId);
             oc.AgregarDetalle(detalle);
 
             if (aprobar) oc.Aprobar(UserId);
@@ -222,7 +273,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
 
             f.AgregarDetalle(
                 "Producto Test", null, ProductoId,
-                _cantidadFactura, precioUnitario: 10m,
+                _cantidadFactura, precioUnitario: _precioFactura,
                 descuentoPorcentaje: 0m, ivaPorcentaje: 15m, UserId);
 
             if (aprobar)

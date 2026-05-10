@@ -95,7 +95,9 @@ public sealed class CrearOrdenCompraCommandHandler
         return Result<OrdenCompraDto>.Success(ToDto(orden, proveedor.RazonSocial));
     }
 
-    internal static OrdenCompraDto ToDto(OrdenCompra o, string proveedorNombre) => new(
+    internal static OrdenCompraDto ToDto(
+        OrdenCompra o, string proveedorNombre,
+        IReadOnlyList<string>? advertencias = null) => new(
         o.Id, o.NumeroOrden,
         o.ProveedorId, proveedorNombre,
         o.FechaEmision, o.FechaRequerida,
@@ -104,5 +106,8 @@ public sealed class CrearOrdenCompraCommandHandler
         o.Observaciones, o.DireccionEntrega,
         o.BodegaDestinoId,
         o.FechaEnvio, o.FechaAprobacion, o.AprobadoPor, o.FechaCierre,
-        o.CreatedAt);
+        o.CreatedAt)
+    {
+        Advertencias = advertencias is { Count: > 0 } ? advertencias : null,
+    };
 }

@@ -71,7 +71,10 @@ public sealed class VincularFacturaAOrdenCompraCommandHandler
         if (yaVinculada)
             return Result<OrdenCompraDto>.Failure("Esta factura ya está vinculada a la orden de compra.");
 
-        // 4. Matching por ProductoId y actualización de CantidadFacturada
+        // 4. Matching por ProductoId, validación de cantidades y detección de discrepancias de precio
+        const decimal ToleranciaPrecioPct = 0.01m; // 1 % — diferencias menores se ignoran
+        var advertencias = new List<string>();
+
         foreach (var detalleFactura in factura.Detalles)
         {
             // Saltear líneas sin producto en catálogo (servicios, fletes, etc.)
@@ -91,6 +94,23 @@ public sealed class VincularFacturaAOrdenCompraCommandHandler
                     $"({detalleOrden.CantidadPedida:F3}) para '{detalleFactura.Descripcion}'. " +
                     $"Pendiente por facturar: {detalleOrden.PendienteFacturar:F3}.");
 
+            // Validación de precio: advertencia si la diferencia supera la tolerancia
+            if (detalleOrden.PrecioUnitario > 0)
+            {
+                var diferenciaPct = Math.Abs(detalleFactura.PrecioUnitario - detalleOrden.PrecioUnitario)
+                                    / detalleOrden.PrecioUnitario;
+                if (diferenciaPct > ToleranciaPrecioPct)
+                {
+                    var aviso = $"Discrepancia de precio en '{detalleFactura.Descripcion}': " +
+                                $"OC ${detalleOrden.PrecioUnitario:F4} vs " +
+                                $"Factura ${detalleFactura.PrecioUnitario:F4} " +
+                                $"({diferenciaPct:P1} diferencia).";
+                    advertencias.Add(aviso);
+                    _logger.LogWarning(
+                        "OC {OC} – {Aviso}", orden.NumeroOrden, aviso);
+                }
+            }
+
             detalleOrden.AgregarCantidadFacturada(detalleFactura.Cantidad, userId);
             detalleFactura.SetOrdenCompraDetalleId(detalleOrden.Id, userId);
         }
@@ -106,20 +126,27 @@ public sealed class VincularFacturaAOrdenCompraCommandHandler
         else if (orden.Estado == "Aprobada")
             orden.MarcarRecibidaParcial(userId);
 
+        var actividadDesc = advertencias.Count > 0
+            ? $"{orden.NumeroOrden} ← {factura.NumeroFactura} | ⚠ {advertencias.Count} advertencia(s) de precio"
+            : $"{orden.NumeroOrden} ← {factura.NumeroFactura}";
+
         await _activity.AddAsync(UserActivity.Create(
             tenantId, userId, _currentUser.Email, _currentUser.FullName,
             module: "compras", action: "orden-compra.vincular-factura",
             entityType: "OrdenCompra", entityId: orden.Id,
-            description: $"{orden.NumeroOrden} ← {factura.NumeroFactura}"), ct);
+            description: actividadDesc), ct);
 
         await _ordenRepo.SaveChangesAsync(ct);
 
         _logger.LogInformation(
-            "Factura {Factura} vinculada a OC {OC}. Estado: {Estado}",
-            factura.NumeroFactura, orden.NumeroOrden, orden.Estado);
+            "Factura {Factura} vinculada a OC {OC}. Estado: {Estado}. Advertencias: {N}",
+            factura.NumeroFactura, orden.NumeroOrden, orden.Estado, advertencias.Count);
 
         var proveedor = await _proveedorRepo.GetByIdAsync(tenantId, orden.ProveedorId, ct);
         return Result<OrdenCompraDto>.Success(
-            CrearOrdenCompraCommandHandler.ToDto(orden, proveedor?.RazonSocial ?? orden.ProveedorId.ToString()));
+            CrearOrdenCompraCommandHandler.ToDto(
+                orden,
+                proveedor?.RazonSocial ?? orden.ProveedorId.ToString(),
+                advertencias));
     }
 }

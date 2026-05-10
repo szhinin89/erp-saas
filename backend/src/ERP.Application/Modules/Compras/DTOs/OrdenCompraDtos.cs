@@ -36,7 +36,14 @@ public record OrdenCompraDto(
     DateTime? FechaAprobacion,
     Guid?     AprobadoPor,
     DateTime? FechaCierre,
-    DateTime  CreatedAt);
+    DateTime  CreatedAt)
+{
+    /// <summary>
+    /// Advertencias generadas al vincular facturas (ej. discrepancias de precio vs OC).
+    /// Null si no hay advertencias o la operación no genera advertencias.
+    /// </summary>
+    public IReadOnlyList<string>? Advertencias { get; init; }
+};
 
 public record OrdenCompraDetailDto(
     Guid      Id,
