@@ -71,62 +71,55 @@ public sealed class ConfirmarTransferenciaCommandHandler
             {
                 var producto = await _productRepo.GetByIdAsync(detalle.ProductoId, tenantId, ct);
                 if (producto is not null && (producto.IsService || !producto.TracksStock))
-                    continue; // los servicios no manejan stock físico
+                    continue;
 
-                // ── Stock en bodega ORIGEN ────────────────────────────────
-                var stockOrigen = await _inventario.GetStockByTenantBodegaProductAsync(
-                    tenantId, transferencia.BodegaOrigenId, detalle.ProductoId, ct);
+                // ── Decremento atómico en bodega ORIGEN ───────────────────────
+                // UPDATE WHERE (cantidad - cantidad_reservada) >= delta
+                // Si devuelve null → stock insuficiente (posible carrera concurrente)
+                var cantAnteriorOrigen = await _inventario.DecrementarStockAtomicoAsync(
+                    tenantId, transferencia.BodegaOrigenId, detalle.ProductoId,
+                    detalle.Cantidad, userId, ct);
 
-                if (stockOrigen is null || stockOrigen.CantidadDisponible < detalle.Cantidad)
+                if (cantAnteriorOrigen is null)
                 {
                     await _unitOfWork.RollbackAsync(ct);
-                    var disponible = stockOrigen?.CantidadDisponible ?? 0;
                     _logger.LogWarning(
-                        "Stock insuficiente al confirmar: producto={ProductoId}, disponible={D}, solicitado={S}",
-                        detalle.ProductoId, disponible, detalle.Cantidad);
+                        "Stock insuficiente (posiblemente por concurrencia): producto={Pid}, solicitado={S}",
+                        detalle.ProductoId, detalle.Cantidad);
                     return Result<TransferenciaDto>.Failure(
-                        $"Stock insuficiente para el producto '{detalle.Descripcion}' en la bodega origen. " +
-                        $"Disponible: {disponible}, Requerido: {detalle.Cantidad}");
+                        $"Stock insuficiente para '{detalle.Descripcion}' en la bodega origen. " +
+                        $"El saldo pudo haber sido modificado por otra operación concurrente.");
                 }
 
-                var cantAnteriorOrigen = stockOrigen.Cantidad;
-                stockOrigen.AplicarMovimiento(-detalle.Cantidad, userId);
+                await _inventario.AddMovimientoAsync(
+                    InventarioMovimiento.Create(
+                        tenantId, detalle.ProductoId, transferencia.BodegaOrigenId,
+                        TipoMovimientoInventario.TransferenciaSalida,
+                        cantidad:            -detalle.Cantidad,
+                        cantidadAnterior:    cantAnteriorOrigen.Value,
+                        referencia:          transferencia.NumeroTransferencia,
+                        documentoOrigenId:   transferencia.Id,
+                        documentoOrigenTipo: "Transferencia",
+                        createdBy:           userId),
+                    ct);
 
-                var movSalida = InventarioMovimiento.Create(
-                    tenantId, detalle.ProductoId, transferencia.BodegaOrigenId,
-                    TipoMovimientoInventario.TransferenciaSalida,
-                    cantidad:            -detalle.Cantidad,
-                    cantidadAnterior:    cantAnteriorOrigen,
-                    referencia:          transferencia.NumeroTransferencia,
-                    documentoOrigenId:   transferencia.Id,
-                    documentoOrigenTipo: "Transferencia",
-                    createdBy:           userId);
-                await _inventario.AddMovimientoAsync(movSalida, ct);
+                // ── Incremento atómico en bodega DESTINO ──────────────────────
+                // UPSERT: crea el registro si no existe, suma si ya existe
+                var cantAnteriorDestino = await _inventario.IncrementarStockAtomicoAsync(
+                    tenantId, transferencia.BodegaDestinoId, detalle.ProductoId,
+                    detalle.Cantidad, userId, ct);
 
-                // ── Stock en bodega DESTINO ───────────────────────────────
-                var stockDestino = await _inventario.GetStockByTenantBodegaProductAsync(
-                    tenantId, transferencia.BodegaDestinoId, detalle.ProductoId, ct);
-
-                if (stockDestino is null)
-                {
-                    stockDestino = StockActual.Create(
-                        tenantId, detalle.ProductoId, transferencia.BodegaDestinoId, userId);
-                    await _inventario.AddStockActualAsync(stockDestino, ct);
-                }
-
-                var cantAnteriorDestino = stockDestino.Cantidad;
-                stockDestino.AplicarMovimiento(+detalle.Cantidad, userId);
-
-                var movEntrada = InventarioMovimiento.Create(
-                    tenantId, detalle.ProductoId, transferencia.BodegaDestinoId,
-                    TipoMovimientoInventario.TransferenciaEntrada,
-                    cantidad:            +detalle.Cantidad,
-                    cantidadAnterior:    cantAnteriorDestino,
-                    referencia:          transferencia.NumeroTransferencia,
-                    documentoOrigenId:   transferencia.Id,
-                    documentoOrigenTipo: "Transferencia",
-                    createdBy:           userId);
-                await _inventario.AddMovimientoAsync(movEntrada, ct);
+                await _inventario.AddMovimientoAsync(
+                    InventarioMovimiento.Create(
+                        tenantId, detalle.ProductoId, transferencia.BodegaDestinoId,
+                        TipoMovimientoInventario.TransferenciaEntrada,
+                        cantidad:            +detalle.Cantidad,
+                        cantidadAnterior:    cantAnteriorDestino,
+                        referencia:          transferencia.NumeroTransferencia,
+                        documentoOrigenId:   transferencia.Id,
+                        documentoOrigenTipo: "Transferencia",
+                        createdBy:           userId),
+                    ct);
             }
 
             transferencia.Confirmar(userId);
