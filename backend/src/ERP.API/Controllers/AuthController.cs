@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Auth.UseCases.Register;
 using ERP.Application.Auth.UseCases.Login;
+using ERP.Application.Auth.UseCases.Logout;
 using ERP.Application.Auth.UseCases.PasswordReset;
+using ERP.Application.Auth.UseCases.RefreshToken;
 using ERP.Application.Auth.UseCases.SuperAdminLogin;
 using ERP.Application.Auth.UseCases.SwitchTenant;
 using ERP.Application.Auth.DTOs;
@@ -20,24 +23,36 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class AuthController : ControllerBase
 {
-    private readonly RegisterHandler _registerHandler;
-    private readonly LoginHandler    _loginHandler;
-    private readonly PasswordResetHandler _passwordResetHandler;
+    private readonly RegisterHandler        _registerHandler;
+    private readonly LoginHandler           _loginHandler;
+    private readonly RefreshTokenHandler    _refreshTokenHandler;
+    private readonly LogoutHandler          _logoutHandler;
+    private readonly PasswordResetHandler   _passwordResetHandler;
     private readonly SuperAdminLoginHandler _superAdminLoginHandler;
-    private readonly SwitchTenantHandler _switchTenantHandler;
+    private readonly SwitchTenantHandler    _switchTenantHandler;
+    private readonly ICurrentTenant         _currentTenant;
+    private readonly ICurrentUser           _currentUser;
 
     public AuthController(
         RegisterHandler registerHandler,
         LoginHandler loginHandler,
+        RefreshTokenHandler refreshTokenHandler,
+        LogoutHandler logoutHandler,
         PasswordResetHandler passwordResetHandler,
         SuperAdminLoginHandler superAdminLoginHandler,
-        SwitchTenantHandler switchTenantHandler)
+        SwitchTenantHandler switchTenantHandler,
+        ICurrentTenant currentTenant,
+        ICurrentUser currentUser)
     {
-        _registerHandler = registerHandler;
-        _loginHandler    = loginHandler;
-        _passwordResetHandler = passwordResetHandler;
+        _registerHandler        = registerHandler;
+        _loginHandler           = loginHandler;
+        _refreshTokenHandler    = refreshTokenHandler;
+        _logoutHandler          = logoutHandler;
+        _passwordResetHandler   = passwordResetHandler;
         _superAdminLoginHandler = superAdminLoginHandler;
-        _switchTenantHandler = switchTenantHandler;
+        _switchTenantHandler    = switchTenantHandler;
+        _currentTenant          = currentTenant;
+        _currentUser            = currentUser;
     }
 
     /// <summary>Registra un nuevo usuario en un tenant existente.</summary>
@@ -116,6 +131,45 @@ public class AuthController : ControllerBase
             return this.ApiOk(result.Value);
 
         return MapAuthFailure(result.Error);
+    }
+
+    /// <summary>
+    /// Renueva el access token usando un refresh token válido.
+    /// El refresh token anterior queda revocado y se emite uno nuevo (rotación).
+    /// </summary>
+    /// <remarks>No requiere access token activo — llamar cuando el access token haya expirado.</remarks>
+    /// <response code="200">Nuevo access token + refresh token emitidos.</response>
+    /// <response code="401">Refresh token inválido, expirado o revocado.</response>
+    [HttpPost("refresh")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Refresh(
+        [FromBody] RefreshRequest request,
+        CancellationToken ct)
+    {
+        var result = await _refreshTokenHandler.HandleAsync(request.RefreshToken, ct);
+        if (result.IsSuccess)
+            return this.ApiOk(result.Value);
+
+        return this.ApiUnauthorized(result.Error ?? "Refresh token inválido.");
+    }
+
+    /// <summary>
+    /// Cierra la sesión revocando el refresh token.
+    /// Si se proporciona <c>refreshToken</c>, revoca solo ese dispositivo; si no, revoca todos.
+    /// </summary>
+    [HttpPost("logout")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> Logout(
+        [FromBody] LogoutRequest? request,
+        CancellationToken ct)
+    {
+        var userId   = _currentUser.UserId;
+        var tenantId = _currentTenant.TenantId;
+        var result   = await _logoutHandler.HandleAsync(userId, tenantId, request?.RefreshToken, ct);
+        return this.ToOkOrBadRequest(result);
     }
 
     /// <summary>401 salvo error de panel SuperAdmin deshabilitado (403).</summary>

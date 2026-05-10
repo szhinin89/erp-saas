@@ -43,6 +43,11 @@ public class LoginHandlerTests
         tenantRepo.Setup(r => r.GetByIdAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
         accessTokenService.Setup(s => s.GenerateSessionToken(identityUser, tenantId, role)).Returns("session-token");
 
+        var refreshTokenService = new Mock<IRefreshTokenService>();
+        refreshTokenService
+            .Setup(s => s.CreateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(("fake-refresh-token", DateTime.UtcNow.AddDays(30)));
+
         var handler = new LoginHandler(
             userRepo.Object,
             tenantRepo.Object,
@@ -50,7 +55,8 @@ public class LoginHandlerTests
             deployment.Object,
             accessRepo.Object,
             accessTokenService.Object,
-            passwordHasher.Object);
+            passwordHasher.Object,
+            refreshTokenService.Object);
 
         var result = await handler.HandleAsync(new LoginCommand(email, password));
 

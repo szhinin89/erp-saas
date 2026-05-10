@@ -5,6 +5,7 @@ using ERP.Application.Common;
 using ERP.Domain.Accounting.Interfaces;
 using ERP.Domain.Products.Interfaces;
 using ERP.Domain.Auth.Interfaces;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 using ERP.Domain.Security.Interfaces;
 using ERP.Domain.Access.Interfaces;
@@ -51,6 +52,8 @@ public static class DependencyInjection
                 b => b.MigrationsAssembly(typeof(ErpDbContext).Assembly.FullName)));
 
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<ICurrentTenant, CurrentTenantService>();
         services.AddScoped<ICurrentUser, CurrentUserService>();

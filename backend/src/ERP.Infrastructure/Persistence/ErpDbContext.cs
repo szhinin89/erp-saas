@@ -3,6 +3,7 @@ using ERP.Domain.Accounting.Entities;
 using ERP.Domain.Common;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Auth.Entities;
+using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Security.Entities;
 using ERP.Domain.Access.Entities;
@@ -82,7 +83,8 @@ public class ErpDbContext : DbContext
     public DbSet<ProductType> ProductTypes => Set<ProductType>();
     public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
     public DbSet<Tariff> Tariffs => Set<Tariff>();
-    public DbSet<User> Users => Set<User>();
+    public DbSet<User>         Users         => Set<User>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<IdentityUser> IdentityUsers => Set<IdentityUser>();
     public DbSet<Membership> Memberships => Set<Membership>();
     public DbSet<AccessProfile> AccessProfiles => Set<AccessProfile>();

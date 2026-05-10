@@ -2,6 +2,7 @@ using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Interfaces;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 
@@ -9,13 +10,14 @@ namespace ERP.Application.Auth.UseCases.Login;
 
 public class LoginHandler
 {
-    private readonly IUserRepository _userRepository;
-    private readonly ITenantRepository _tenantRepository;
-    private readonly IJwtService _jwtService;
+    private readonly IUserRepository     _userRepository;
+    private readonly ITenantRepository   _tenantRepository;
+    private readonly IJwtService         _jwtService;
     private readonly IDeploymentFeatureFlags _deployment;
-    private readonly IAccessRepository _accessRepository;
+    private readonly IAccessRepository   _accessRepository;
     private readonly IAccessTokenService _accessTokenService;
-    private readonly IPasswordHasher _passwordHasher;
+    private readonly IPasswordHasher     _passwordHasher;
+    private readonly IRefreshTokenService _refreshTokenService;
 
     public LoginHandler(
         IUserRepository userRepository,
@@ -24,15 +26,17 @@ public class LoginHandler
         IDeploymentFeatureFlags deployment,
         IAccessRepository accessRepository,
         IAccessTokenService accessTokenService,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        IRefreshTokenService refreshTokenService)
     {
-        _userRepository = userRepository;
-        _tenantRepository = tenantRepository;
-        _jwtService = jwtService;
-        _deployment = deployment;
-        _accessRepository = accessRepository;
-        _accessTokenService = accessTokenService;
-        _passwordHasher = passwordHasher;
+        _userRepository      = userRepository;
+        _tenantRepository    = tenantRepository;
+        _jwtService          = jwtService;
+        _deployment          = deployment;
+        _accessRepository    = accessRepository;
+        _accessTokenService  = accessTokenService;
+        _passwordHasher      = passwordHasher;
+        _refreshTokenService = refreshTokenService;
     }
 
     public async Task<Result<AuthResponseDto>> HandleAsync(
@@ -56,6 +60,7 @@ public class LoginHandler
                 return Result<AuthResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
 
             var globalToken = _jwtService.GenerateToken(superAdmin, Guid.Empty);
+            // SuperAdmin no emite refresh token (sesión corta, control global)
             return Result<AuthResponseDto>.Success(new AuthResponseDto(
                 superAdmin.Id,
                 superAdmin.FullName,
@@ -92,6 +97,8 @@ public class LoginHandler
                 return Result<AuthResponseDto>.Failure("No estás registrado a una empresa. Comunícate con el administrador.");
 
             var identityToken = _accessTokenService.GenerateSessionToken(identityUser, membership.TenantId, membership.Role);
+            var (identityRefresh, identityRefreshExpiry) = await _refreshTokenService.CreateAsync(
+                identityUser.Id, membership.TenantId, RefreshUserType.Identity, ct);
 
             return Result<AuthResponseDto>.Success(new AuthResponseDto(
                 identityUser.Id,
@@ -101,7 +108,11 @@ public class LoginHandler
                 membership.TenantId,
                 identityToken,
                 identityTenant.PlanCode,
-                TenantSubscriptionCatalog.GetEffectiveEnabledModules(identityTenant)));
+                TenantSubscriptionCatalog.GetEffectiveEnabledModules(identityTenant))
+            {
+                RefreshToken       = identityRefresh,
+                RefreshTokenExpiry = identityRefreshExpiry,
+            });
         }
 
         // Non-superadmin legacy (tabla users por tenant).
@@ -130,9 +141,10 @@ public class LoginHandler
         if (!passwordValid)
             return Result<AuthResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
 
-        var token = _jwtService.GenerateToken(single);
-
+        var token       = _jwtService.GenerateToken(single);
         var tenantEntity = await _tenantRepository.GetByIdAsync(single.TenantId, ct);
+        var (legacyRefresh, legacyRefreshExpiry) = await _refreshTokenService.CreateAsync(
+            single.Id, single.TenantId, RefreshUserType.Legacy, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             single.Id,
@@ -144,6 +156,10 @@ public class LoginHandler
             tenantEntity?.PlanCode,
             tenantEntity is null
                 ? TenantSubscriptionCatalog.AllModuleKeys
-                : TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenantEntity)));
+                : TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenantEntity))
+        {
+            RefreshToken       = legacyRefresh,
+            RefreshTokenExpiry = legacyRefreshExpiry,
+        });
     }
 }
