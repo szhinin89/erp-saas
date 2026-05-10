@@ -6,6 +6,7 @@ using ERP.Domain.Bodegas.Interfaces;
 using ERP.Domain.Inventario.Entities;
 using ERP.Domain.Inventario.Interfaces;
 using ERP.Domain.Products.Interfaces;
+using ERP.Application.Inventario;
 
 namespace ERP.Application.Inventario.UseCases.GetKardex;
 
@@ -13,17 +14,20 @@ public sealed class GetKardexQueryHandler
     : IRequestHandler<GetKardexQuery, Result<KardexResponse>>
 {
     private readonly IInventarioStockRepository _inventario;
+    private readonly IKardexSnapshotRepository  _snapshots;
     private readonly IProductRepository         _productos;
     private readonly IBodegaRepository          _bodegas;
     private readonly ICurrentTenant             _tenant;
 
     public GetKardexQueryHandler(
         IInventarioStockRepository inventario,
+        IKardexSnapshotRepository  snapshots,
         IProductRepository         productos,
         IBodegaRepository          bodegas,
         ICurrentTenant             tenant)
     {
         _inventario = inventario;
+        _snapshots  = snapshots;
         _productos  = productos;
         _bodegas    = bodegas;
         _tenant     = tenant;
@@ -42,7 +46,7 @@ public sealed class GetKardexQueryHandler
         if (bodega is null)
             return Result<KardexResponse>.Failure("Bodega no encontrada.");
 
-        // Normalizar fechas a UTC. FechaFin incluye todo el día.
+        // Normalizar fechas a UTC
         DateTime? desdeUtc = query.FechaInicio.HasValue
             ? DateTime.SpecifyKind(query.FechaInicio.Value.Date, DateTimeKind.Utc)
             : null;
@@ -50,27 +54,62 @@ public sealed class GetKardexQueryHandler
             ? DateTime.SpecifyKind(query.FechaFin.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc)
             : null;
 
-        // Saldo inicial: promedio ponderado acumulado de todos los movimientos
-        // anteriores al primer día del período.
+        // ── SALDO INICIAL ─────────────────────────────────────────────────────
+        // Estrategia: si hay filtro de fecha, intenta usar un snapshot como punto de partida.
+        // El snapshot evita recorrer todo el historial anterior al período (O(1) vs O(n)).
+        // Si no existe snapshot → fallback al cálculo completo (comportamiento original).
+
         decimal saldoCantidad = 0m;
         decimal saldoValor    = 0m;
         decimal costoPromedio = 0m;
+        DateTime? movimientosDesde = null; // null = desde el origen del tiempo
 
         if (desdeUtc.HasValue)
         {
-            // Hasta 1 tick antes de la medianoche de FechaInicio
-            var antesDeInicio = desdeUtc.Value.AddTicks(-1);
-            var previos = await _inventario.GetMovimientosAsync(
-                tenantId, query.ProductoId, query.BodegaId, null, antesDeInicio, ct);
+            var anteriorAlPeriodo = desdeUtc.Value.AddTicks(-1);
 
-            foreach (var m in previos)
-                AplicarMovimiento(m, ref saldoCantidad, ref saldoValor, ref costoPromedio);
+            var snapshot = await _snapshots.GetLatestBeforeAsync(
+                tenantId, query.ProductoId, query.BodegaId, anteriorAlPeriodo, ct);
+
+            if (snapshot is not null)
+            {
+                // Usar snapshot como base; solo hay que calcular el "gap" entre el snapshot
+                // y el inicio del período (en caso de que el snapshot sea de días anteriores).
+                saldoCantidad = snapshot.CantidadSaldo;
+                saldoValor    = snapshot.ValorSaldo;
+                costoPromedio = snapshot.CostoPromedio;
+
+                var gapDesde = snapshot.FechaSnapshot.AddDays(1);
+                if (gapDesde < desdeUtc.Value)
+                {
+                    // Hay movimientos entre el snapshot y el inicio del período que no están cubiertos
+                    var movGap = await _inventario.GetMovimientosAsync(
+                        tenantId, query.ProductoId, query.BodegaId,
+                        gapDesde, anteriorAlPeriodo, ct);
+
+                    foreach (var m in movGap)
+                        KardexCalculator.AplicarMovimiento(m, ref saldoCantidad, ref saldoValor, ref costoPromedio);
+                }
+                // No hay gap: el snapshot ya cubre hasta el día previo → saldos listos
+
+                movimientosDesde = null; // movimientos del período se leen con desdeUtc (abajo)
+            }
+            else
+            {
+                // Fallback: sin snapshot, recorrer todo el historial previo al período
+                var previos = await _inventario.GetMovimientosAsync(
+                    tenantId, query.ProductoId, query.BodegaId,
+                    null, anteriorAlPeriodo, ct);
+
+                foreach (var m in previos)
+                    KardexCalculator.AplicarMovimiento(m, ref saldoCantidad, ref saldoValor, ref costoPromedio);
+            }
         }
 
         var inventarioInicialCantidad = saldoCantidad;
         var inventarioInicialValor    = saldoValor;
 
-        // Movimientos del período
+        // ── MOVIMIENTOS DEL PERÍODO ───────────────────────────────────────────
         var movimientos = await _inventario.GetMovimientosAsync(
             tenantId, query.ProductoId, query.BodegaId, desdeUtc, hastaUtc, ct);
 
@@ -98,7 +137,7 @@ public sealed class GetKardexQueryHandler
 
                 saldoCantidad -= salidaCant;
                 saldoValor    -= salidaValor;
-                if (saldoValor < 0m) saldoValor = 0m; // guardia contra redondeo
+                if (saldoValor < 0m) saldoValor = 0m;
             }
 
             rows.Add(new MovimientoKardexDto(
@@ -130,29 +169,6 @@ public sealed class GetKardexQueryHandler
             new KardexBodegaDto(bodega.Id, bodega.Nombre),
             rows,
             resumen));
-    }
-
-    // Calcula el saldo acumulado (sin emitir filas) para los movimientos previos al período.
-    private static void AplicarMovimiento(
-        InventarioMovimiento m,
-        ref decimal          saldoCantidad,
-        ref decimal          saldoValor,
-        ref decimal          costoPromedio)
-    {
-        if (m.Cantidad > 0)
-        {
-            var costoEntrada = m.CostoUnitario ?? 0m;
-            saldoValor    += m.Cantidad * costoEntrada;
-            saldoCantidad += m.Cantidad;
-            costoPromedio  = saldoCantidad > 0m ? saldoValor / saldoCantidad : 0m;
-        }
-        else
-        {
-            var salida = -m.Cantidad;
-            saldoValor    -= salida * costoPromedio;
-            saldoCantidad -= salida;
-            if (saldoValor < 0m) saldoValor = 0m;
-        }
     }
 
     private static string DescripcionTipo(string tipo) => tipo switch

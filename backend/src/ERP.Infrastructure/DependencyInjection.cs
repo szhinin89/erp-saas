@@ -25,6 +25,7 @@ using ERP.Domain.Subscriptions.Interfaces;
 using ERP.Application.Navigation;
 using ERP.Application.Subscriptions;
 using ERP.Application.Admin;
+using ERP.Infrastructure.BackgroundServices;
 using ERP.Infrastructure.Deployment;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
@@ -78,7 +79,9 @@ public static class DependencyInjection
         services.AddScoped<ICompraRepository, CompraRepository>();
         services.AddScoped<IGastoFacturaRepository, GastoFacturaRepository>();
         services.AddScoped<IInventarioStockRepository, InventarioStockRepository>();
+        services.AddScoped<IKardexSnapshotRepository, KardexSnapshotRepository>();
         services.AddScoped<ICostoPromedioService, CostoPromedioService>();
+        services.AddHostedService<KardexSnapshotWorker>();
         services.AddScoped<IVentasRepository, VentasRepository>();
         services.AddScoped<IConfiguracionSRIRepository, ConfiguracionSRIRepository>();
         services.AddScoped<ITransferenciaRepository, TransferenciaRepository>();
