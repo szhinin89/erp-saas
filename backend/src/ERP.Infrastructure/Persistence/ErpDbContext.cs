@@ -116,6 +116,7 @@ public class ErpDbContext : DbContext
     public DbSet<InventarioMovimiento> InventarioMovimientos  => Set<InventarioMovimiento>();
     public DbSet<Transferencia>        Transferencias         => Set<Transferencia>();
     public DbSet<TransferenciaDetalle> TransferenciaDetalles  => Set<TransferenciaDetalle>();
+    public DbSet<AjusteInventario>     AjustesInventario      => Set<AjusteInventario>();
 
     // ── Facturación / Ventas ───────────────────────────────────────────────
     public DbSet<ConfiguracionSRI> ConfiguracionSRIs => Set<ConfiguracionSRI>();

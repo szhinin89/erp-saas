@@ -10,8 +10,16 @@ import {
 import { TransferenciasListPage }  from '../modules/inventario/transferencias/pages/TransferenciasListPage';
 import { CrearTransferenciaPage }  from '../modules/inventario/transferencias/pages/CrearTransferenciaPage';
 import { TransferenciaDetailPage } from '../modules/inventario/transferencias/pages/TransferenciaDetailPage';
+import { AjustesListPage }   from '../modules/inventario/ajustes/pages/AjustesListPage';
+import { CrearAjustePage }   from '../modules/inventario/ajustes/pages/CrearAjustePage';
+import { AjusteDetailPage }  from '../modules/inventario/ajustes/pages/AjusteDetailPage';
 
 export const catalogRoutes = [
+  // ── Ajustes de Inventario ──────────────────────────────────────────────────
+  <Route key="ajustes"        path="/inventario/ajustes"        element={<AjustesListPage />} />,
+  <Route key="ajustes-nuevo"  path="/inventario/ajustes/nuevo"  element={<CrearAjustePage />} />,
+  <Route key="ajustes-detail" path="/inventario/ajustes/:id"    element={<AjusteDetailPage />} />,
+
   // ── Transferencias ─────────────────────────────────────────────────────────
   <Route key="transferencias"        path="/inventario/transferencias"        element={<TransferenciasListPage />} />,
   <Route key="transferencias-nueva"  path="/inventario/transferencias/nueva"  element={<CrearTransferenciaPage />} />,

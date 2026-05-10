@@ -78,6 +78,7 @@ public static class DependencyInjection
         services.AddScoped<IVentasRepository, VentasRepository>();
         services.AddScoped<IConfiguracionSRIRepository, ConfiguracionSRIRepository>();
         services.AddScoped<ITransferenciaRepository, TransferenciaRepository>();
+        services.AddScoped<IAjusteInventarioRepository, AjusteInventarioRepository>();
         services.AddScoped<IAccountingService, AccountingService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<SaasCatalogQuery>();

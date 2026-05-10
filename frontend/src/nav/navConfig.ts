@@ -249,6 +249,7 @@ export function buildNavGroups(
       sortOrder: defaultBarRank('inventario') * 10,
       items: [
         { to: '/products', label: t('app.nav.products'), permissionKey: 'inventario.products.view' },
+        { to: '/inventario/ajustes',         label: t('app.nav.catalog.ajustes'),        permissionKey: 'inventario.ajustes.view' },
         { to: '/inventario/transferencias', label: t('app.nav.catalog.transferencias'), permissionKey: 'inventario.transferencias.view' },
         { to: '/inventario/brands', label: t('app.nav.catalog.brands'), permissionKey: 'inventario.brands.view' },
         { to: '/inventario/product-types', label: t('app.nav.catalog.productTypes'), permissionKey: 'inventario.productTypes.view' },
