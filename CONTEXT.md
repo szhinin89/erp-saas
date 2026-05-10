@@ -1,7 +1,10 @@
 # CONTEXT.md — ZH Technologies ERP
 
-> **Índice maestro para agentes y desarrolladores.** Revisión del índice: **2026-05-02**.  
+> **Índice maestro para agentes y desarrolladores.** Revisión del índice: **2026-05-09**.  
 > Lee este archivo primero; luego abre solo los enlaces que correspondan a tu tarea.
+>
+> **Estado actual del proyecto → [`docs/ESTADO-PROYECTO-2026-05.md`](docs/ESTADO-PROYECTO-2026-05.md)**
+> (qué está hecho, qué falta, cómo retomar, comandos frecuentes)
 
 ## Árbol real del monorepo `erp-saas`
 
@@ -17,7 +20,9 @@ erp-saas/
 │   ├── ARCHITECTURE.md                    ← capas, multi-tenant, carpetas por módulo, migraciones
 │   ├── developer-reference.html           ← referencia larga (abrir en navegador)
 │   ├── FRONTEND-PANTALLAS.md              ← inventario de rutas y pantallas
-│   └── STATUS-2026-05-ERP.md              ← estado y checklist reciente (mayo 2026)
+│   ├── STATUS-2026-05-ERP.md              ← estado base (mayo 2026, antes del módulo Ventas)
+│   ├── ESTADO-PROYECTO-2026-05.md         ← ★ ESTADO ACTUAL (09/05/2026) — leer primero
+│   └── REGISTRO-PROYECTO.md               ← log de trabajo, pendientes, decisiones
 ├── backend/src/
 │   ├── global.json            ← versión mínima del SDK .NET (CI + equipo)
 │   ├── ERP.slnx

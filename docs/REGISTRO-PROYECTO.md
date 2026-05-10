@@ -1,99 +1,133 @@
-# Registro del proyecto (ir agregando)
+# Registro del Proyecto — ERP SaaS ZH Technologies
 
-**Uso:** notas sueltas, pendientes, decisiones rápidas, enlaces a PRs, deuda técnica y recordatorios.  
-**Convención sugerida:** una entrada por tema; fecha opcional al inicio de la línea o en subtítulo.
-
-**Otros documentos relacionados:** `POLITICA-FORMULARIOS-Y-ACCESO.md`, `DESARROLLO.md`, `FRONTEND-PANTALLAS.md`, `STATUS-2026-05-ERP.md`.
+> **Uso:** entradas cronológicas de trabajo realizado, decisiones, deuda técnica y pendientes.
+> Leer junto con `ESTADO-PROYECTO-2026-05.md` para contexto completo.
 
 ---
 
-## Pendientes / backlog
+## Entradas de trabajo
 
-| Fecha | Tema | Nota | Enlace / PR |
-|-------|------|------|-------------|
-|       |      |      |             |
+### 09 de mayo de 2026 — Módulo Ventas completo (commit `d20a14d`)
 
-*(Agregar filas arriba o abajo; mantener la tabla o pasar a lista con viñetas si preferís.)*
+**Alcance:** Implementación completa del módulo de Ventas con Facturación Electrónica SRI Ecuador.
+
+**Completado en esta sesión:**
+- Dominio: `VentasFactura`, `VentasDetalle`, `ConfiguracionSRI` (entidades + máquina de estados)
+- 10 casos de uso CQRS: Crear, Validar, Emitir, Reintentar, Anular, GetList, GetById, GetStock, GetConfigSRI, UpsertConfigSRI
+- 8 validators FluentValidation (uno por command/query con input de usuario)
+- `ClaveAccesoHelper` — algoritmo módulo-11 SRI extraído y testeable
+- `SriFacturaElectronicaSimuladoService` — XML completo SRI v1.1.0, firma simulada, autorización simulada
+- `SriFacturaElectronicaRealService` — esqueleto con logging y `SriCommunicationException`
+- `SriCommunicationException` — excepción semántica para errores SRI → 502 Bad Gateway
+- `CrearAsientoVentaAsync` en `AccountingService` (DR Activo / CR Revenue)
+- `VentasController` — 8 endpoints con permisos `perm:ventas.*`
+- `ConfiguracionSRIController` — GET + PUT upsert
+- Migración `AddFacturacionElectronicaVentas` — tablas ventas_facturas, ventas_detalles, configuracion_sri
+- Migración `Paso3_VentasFacturaAsientoAndPermissions` — columna asiento_contable_id + seed permisos ventas.*
+- **65 tests en ERP.API.Tests** (dominio puro, algoritmos, stock, E2E, HTTP, contrato)
+- Total suite: **131 tests, 0 fallos**
+- `ILogger<T>` agregado a todos los handlers del módulo Ventas
+
+**Decisiones tomadas:**
+- `ReintentarEnvioCommand` delega vía MediatR a `EmitirFacturaElectronicaCommand` (sin duplicar lógica)
+- Stock se descuenta al **emitir** (no al crear), dentro de la misma transacción que el asiento
+- `GetVentaByIdQuery` retorna `Success(null)` para no-encontrado (consistente con patrón Compras)
+- Servicio SRI se registra condicionalmente: simulado en Development, real en Production (`Program.cs`)
+
+**Pendiente de esta sesión (deuda técnica menor):**
+- `GetVentaByIdQuery`: considerar cambiar `Success(null)` → `Failure` + 404 en futura sesión
+- Migración `Paso3` está **PENDIENTE** de aplicar (`dotnet ef database update`)
 
 ---
 
-## Decisiones y acuerdos (breve)
+### 09 de mayo de 2026 — Módulo Compras + Parser SRI + Bodegas + Proveedores (commit `a49c318`)
 
-- 
+**Alcance:** Logística completa — infraestructura de compras desde XML SRI.
+
+**Completado:**
+- `SriFacturaParser` — parseo XML SRI Ecuador (facturas de compra recibidas)
+- Bodegas: CRUD + disable/enable por tenant
+- Proveedores: CRUD + validación RUC ecuatoriano (algoritmo módulo-11)
+- Compras: flujo Borrador → Validado → Aprobado/Rechazado
+- Asignación por bodega al aprobar (distribución de cantidades por producto)
+- Stock actualizado al aprobar compra (`StockActual` + `InventarioMovimiento.EntradaCompra`)
+- Asiento contable al aprobar (DR Gasto / CR Cuentas por Pagar)
+- Auto-creación de proveedor desde RUC en XML si no existe
+- Gastos: flujo equivalente a Compras (sin asignación de bodega)
+- Tests E2E: compra XML con asignación bodega, gasto manual
+
+**Migraciones aplicadas:**
+- `AddLogisticaProveedoresComprasGastos`
+- `SeedBodegasProveedor`
+- `AddComprasFullSchema`
+- `CompraBodegaAsignacionProductoNullable`
+- `GastoFacturaModuloElectronico`
+- `SeedLogisticaAccessProfilePermissions`
+
+---
+
+### Antes del 09 de mayo de 2026 — Base del proyecto
+
+**Fase 0 — Infraestructura core (múltiples commits):**
+- SuperAdmin único, cuotas de instancia, bootstrap token
+- Auth JWT (sesión + reset contraseña)
+- IAM: perfiles de acceso, permisos granulares `perm:*`, membresías
+- SaaS: planes, features, asignación plan ↔ tenant
+- Menú dinámico por tenant (tablas `ui_nav_*`)
+- Configuración jerárquica (global / módulo / feature)
+- Productos: CRUD completo con 10+ entidades de catálogo (marcas, UoM, etc.)
+- Tarifas de impuestos (IVA, ICE)
+- Plan de cuentas + Asientos contables (partida doble)
+- Clientes maestro por tenant
+- Sucursales + Geografía INEC Ecuador (seed DPA completo)
+- Frontend: autenticación, productos, clientes, sucursales, catálogos, SuperAdmin
+
+---
+
+## Pendientes y backlog
+
+| Prioridad | Tarea | Módulo | Dificultad | Notas |
+|-----------|-------|--------|-----------|-------|
+| 🔴 Alta | Implementar WSDL real SRI | Ventas | Alta | Ver `SriFacturaElectronicaRealService.cs` |
+| 🔴 Alta | Frontend módulo Ventas | Frontend | Media | APIs ya completas, solo conectar |
+| 🟡 Media | Notas de crédito SRI | Ventas | Alta | Requiere dominio + contabilidad inversa |
+| 🟡 Media | Frontend Compras (pantallas) | Frontend | Media | Backend 100% completo |
+| 🟡 Media | Frontend Gastos (pantallas) | Frontend | Media | Backend 100% completo |
+| 🟡 Media | Paginación en Compras y Gastos | Backend | Baja | Hoy devuelve lista completa |
+| 🟢 Baja | `GetVentaByIdQuery` → 404 real | Backend | Muy baja | Actualmente `Success(null)` |
+| 🟢 Baja | Reporte PDF factura autorizada | Backend | Media | QR con clave de acceso |
+| 🟢 Baja | Módulo Retenciones SRI | Backend + Frontend | Alta | Módulo nuevo independiente |
+| 🟢 Baja | Frontend configuración SRI | Frontend | Baja | APIs ya completas |
+
+---
+
+## Decisiones arquitectónicas vigentes
+
+| Decisión | Motivo |
+|----------|--------|
+| Result pattern en todos los handlers | Nunca lanzar excepciones al controlador; errores de negocio controlados |
+| Multi-tenancy con Global Query Filter | Aislamiento garantizado a nivel ORM; no depende de WHERE manual |
+| CQRS con MediatR | Separación clara entre lecturas y escrituras; pipeline behaviors |
+| Permisos dinámicos `perm:*` | Sin registro en startup; nuevos módulos no requieren cambiar `Program.cs` |
+| Simulado/Real por entorno | SRI simulado en dev, real en prod; switch en `Program.cs` |
+| Stock se descuenta al emitir | El stock no se reserva al crear; se valida al crear y se descuenta al autorizar |
+| `SriCommunicationException` → 502 | Errores SRI tipados y mapeados a HTTP semánticamente correcto |
+| Seed de permisos por migración SQL | Sin hardcoding en código; rollback limpio con UUID centinela |
+
+---
+
+## Deuda técnica conocida
+
+- `GetVentaByIdQuery` retorna `Success(null)` para no-encontrado (consistente con Compras pero semánticamente podría ser `Failure` para 404)
+- `VentasRepository.GetFacturasAsync` (sin paginar) existe en la interfaz pero no se usa; el endpoint usa `GetFacturasPagedAsync`
+- El generador XML simulado usa IDs de producto como código principal (debería usar el código de venta)
+- `ClaveAccesoHelper.GenerarCodigoNumerico()` usa `Random.Shared` — suficiente para dev; en producción evaluar generador criptográfico
 
 ---
 
 ## Ideas / investigación
 
-- 
-
----
-
-## Deuda técnica
-
-- 
-
----
-
-## Instalación / operación
-
-### Orden recomendado (primera instalación)
-
-Aplica a **desarrollo local**, **servidor del cliente** o **nube**: los pasos son los mismos; cambian **cadena de conexión**, **secretos** (variables del proveedor) y **URL** de la API.
-
-| # | Paso | Qué hacer | Notas |
-|---|------|-----------|--------|
-| 1 | **Requisitos** | .NET SDK **10** (ver `backend/src/global.json`), **Node 22** (o 20+ para front), PostgreSQL accesible. | En local suele usarse Docker: `docker compose up -d` desde la raíz del monorepo — ver `README.md` / `DESARROLLO.md`. |
-| 2 | **Código y configuración API** | Clonar/copiar el repo. Crear `backend/src/ERP.API/appsettings.Development.json` desde **`appsettings.Development.json.example`** (o configurar `appsettings.json` / variables de entorno en el host). | Ajustar **`ConnectionStrings:DefaultConnection`**, **`Jwt:SecretKey`** (y demás JWT). En nube: secret manager del servicio (App Service, Container Apps, etc.). |
-| 3 | **Token instalación SuperAdmin** | Definir un valor fuerte para **`Deployment:InitialSuperAdminSetupToken`** (JSON) o **`Deployment__InitialSuperAdminSetupToken`** (env). | Solo para **crear el primer SuperAdmin**; no versionar el valor real en git. |
-| 4 | **Base de datos** | Aplicar migraciones EF: desde `backend/src/ERP.Infrastructure` → `dotnet ef database update --startup-project ../ERP.API/ERP.API.csproj`. | La DB debe existir y el usuario tener permisos DDL. |
-| 5 | **Arrancar la API** | `cd backend/src` → `dotnet run --project ERP.API --launch-profile http` (o el perfil/publicación del entorno). | Comprobar Swagger en el puerto configurado (p. ej. **5003**). |
-| 6 | **Crear SuperAdmin inicial** | Opción A: `pwsh ./scripts/create-superadmin.ps1 -SetupToken "…"` (o `-ApiBase https://tu-api` en nube). Opción B: `.\scripts\create-superadmin-interactive.ps1`. Opción C: `POST /api/setup/superadmin` con el cuerpo que define el backend. | Detalle en comentarios de `scripts/create-superadmin.ps1` y `SetupController`. Solo funciona si **aún no** existe SuperAdmin y el token coincide. |
-| 7 | **Frontend** | `cd frontend` → `npm ci` (o `npm install`) → `npm run dev` (dev) o `npm run build` + hosting estático/preview (prod). | En dev, `VITE_API_URL` vacío suele usar **proxy** hacia la API (`vite.config.ts`). En prod, definir URL de API si no hay proxy. CORS: `Cors:AllowedOrigins` en la API. |
-| 8 | **Post-instalación (operación)** | Crear tenants/usuarios según flujo de negocio; revisar **`Deployment:SuperAdminPanelEnabled`** para cerrar panel global en producción diaria si aplica — ver tabla en `DESARROLLO.md` § “Instalación en servidor del cliente”. | Opcional: `MaxActiveTenants`, `MaxIdentityUsers`. |
-
-### Comandos rápidos (copiar y adaptar)
-
-```powershell
-# Raíz del monorepo erp-saas
-docker compose up -d
-
-cd backend/src/ERP.Infrastructure
-dotnet ef database update --startup-project ../ERP.API/ERP.API.csproj
-
-cd ../..
-$env:Deployment__InitialSuperAdminSetupToken = "TOKEN_SEGURO_SOLO_INSTALACION"
-pwsh ./scripts/create-superadmin.ps1 -ApiBase "http://localhost:5003"
-
-cd frontend
-npm ci
-npm run dev
-```
-
-*(En Linux/macOS: equivalente con `export Deployment__InitialSuperAdminSetupToken=...` y `bash` si no usás PowerShell.)*
-
-### Documentación detallada
-
-- **`docs/DESARROLLO.md`** — Docker, migraciones, arranque, CORS, troubleshooting, candado SuperAdmin.  
-- **`README.md`** — visión general y enlace al orden de docs.
-
----
-
-## Changelog informal (por fecha)
-
-### YYYY-MM-DD
-
-- 
-
----
-
-## Enlaces útiles
-
-| Recurso | URL / ruta |
-|---------|------------|
-| Swagger API | *(p. ej. `https://…/swagger` en el entorno que corresponda)* |
-| CI | `.github/workflows/ci.yml` |
-
----
-
-*Documento vivo: editar directamente en el repo.*
+- **Módulo Retenciones:** el SRI Ecuador requiere retenciones (formulario 103 para IVA, 104 para renta). Módulo independiente con su propio XML SRI tipo `07`.
+- **Factura electrónica de exportación:** tipo `01` con información adicional de exportación.
+- **Facturación por lotes:** emitir múltiples facturas en una operación para cierre de mes.
+- **WebSockets para estado de autorización SRI:** cuando el polling de autorización SRI tarda (hasta 5 minutos), notificar al frontend en tiempo real.
