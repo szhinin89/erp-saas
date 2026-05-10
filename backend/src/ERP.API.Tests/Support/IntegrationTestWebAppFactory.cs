@@ -17,6 +17,7 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
 {
     public MutableCurrentTenant MutableTenant { get; } = new();
     public MutableCurrentUser   MutableUser   { get; } = new();
+    public bool UseScalableMode { get; set; } = false;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -37,6 +38,7 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
                 ["Jwt:Issuer"]                         = "ZHTechnologies",
                 ["Jwt:Audience"]                       = "ERPUsers",
                 ["Jwt:ExpirationMinutes"]              = "60",
+                ["Kardex:UseScalableMode"]             = UseScalableMode.ToString(),
             });
         });
 
