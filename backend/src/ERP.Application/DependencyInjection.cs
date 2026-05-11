@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ERP.Application.Behaviors;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Inventario.Services;
+using ERP.Application.Modules.Caja.Services;
 
 namespace ERP.Application;
 
@@ -20,6 +21,7 @@ public static class DependencyInjection
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
         services.AddScoped<IKardexService, KardexService>();
+        services.AddScoped<IConciliacionService, ConciliacionService>();
         services.AddValidatorsFromAssembly(assembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(SubscriptionGateBehavior<,>));

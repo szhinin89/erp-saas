@@ -25,5 +25,9 @@ public interface ICompraRepository
 
     Task AddBodegaAsignacionAsync(CompraBodegaAsignacion asignacion, CancellationToken ct = default);
 
+    Task AddRetencionEmitidaAsync(CompraRetencionEmitida retencion, CancellationToken ct = default);
+    Task<CompraRetencionEmitida?> GetRetencionEmitidaByIdWithDetailsAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+    Task<IReadOnlyList<CompraRetencionEmitida>> GetRetencionesEmitidasAsync(Guid tenantId, Guid? proveedorId, CancellationToken ct = default);
+
     Task SaveChangesAsync(CancellationToken ct = default);
 }

@@ -112,6 +112,8 @@ export function ProfilesPage() {
       { key: 'accounting.journal.view', label: t('profiles.perms.accounting.journal.view') },
       { key: 'accounting.journal.create', label: t('profiles.perms.accounting.journal.create') },
       { key: 'accounting.journal.edit', label: t('profiles.perms.accounting.journal.edit') },
+      { key: 'accounting.config.view', label: t('profiles.perms.accounting.config.view') },
+      { key: 'accounting.config.edit', label: t('profiles.perms.accounting.config.edit') },
       { key: 'saas.branches.view', label: t('profiles.perms.saas.branches.view') },
       { key: 'saas.branches.create', label: t('profiles.perms.saas.branches.create') },
       { key: 'saas.branches.update', label: t('profiles.perms.saas.branches.update') },

@@ -30,7 +30,7 @@ public sealed class UpdateAccountCommandHandler : IRequestHandler<UpdateAccountC
         if (account is null)
             return Result<AccountDto>.Failure("Cuenta no encontrada.");
 
-        account.Update(command.Name, command.Type, command.Nature, userId, command.ParentId);
+        account.Update(command.Name, command.Type, command.Nature, userId, command.ParentId, command.AllowsMovements);
 
         await _repository.UpdateAsync(account, ct);
         await _repository.SaveChangesAsync(ct);
@@ -42,6 +42,7 @@ public sealed class UpdateAccountCommandHandler : IRequestHandler<UpdateAccountC
             account.Type.ToString(),
             account.Nature.ToString(),
             account.IsActive,
+            account.AllowsMovements,
             account.ParentId,
             account.CreatedAt));
     }

@@ -59,6 +59,7 @@ public class DisableAccountHandler
             account.Type.ToString(),
             account.Nature.ToString(),
             account.IsActive,
+            account.AllowsMovements,
             account.ParentId,
             account.CreatedAt));
     }

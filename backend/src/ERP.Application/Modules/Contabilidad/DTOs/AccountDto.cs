@@ -7,6 +7,7 @@ public record AccountDto(
     string Type,
     string Nature,
     bool IsActive,
+    bool AllowsMovements,
     Guid? ParentId,
     DateTime CreatedAt
 );

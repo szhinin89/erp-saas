@@ -30,6 +30,6 @@ public class GetAccountByIdHandler : IRequestHandler<GetAccountByIdQuery, Result
         return Result<AccountDto>.Success(new AccountDto(
             account.Id, account.Code.Value, account.Name,
             account.Type.ToString(), account.Nature.ToString(),
-            account.IsActive, account.ParentId, account.CreatedAt));
+            account.IsActive, account.AllowsMovements, account.ParentId, account.CreatedAt));
     }
 }

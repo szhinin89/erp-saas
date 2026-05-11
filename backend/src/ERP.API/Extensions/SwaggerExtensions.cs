@@ -1,4 +1,5 @@
 using System.Reflection;
+using Microsoft.AspNetCore.Http;
 using Microsoft.OpenApi.Models;
 
 namespace ERP.API.Extensions;
@@ -11,6 +12,12 @@ public static class SwaggerExtensions
         {
             // Evita colisiones cuando existen tipos con el mismo nombre en distintos namespaces.
             options.CustomSchemaIds(t => t.FullName);
+
+            options.MapType<IFormFile>(() => new OpenApiSchema
+            {
+                Type   = "string",
+                Format = "binary",
+            });
 
             options.SwaggerDoc("v1", new OpenApiInfo
             {

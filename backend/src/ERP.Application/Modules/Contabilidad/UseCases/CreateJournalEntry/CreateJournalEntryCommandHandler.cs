@@ -41,6 +41,18 @@ public sealed class CreateJournalEntryCommandHandler : IRequestHandler<CreateJou
             command.Description,
             userId);
 
+        foreach (var accountId in command.Lines.Select(l => l.AccountId).Distinct())
+        {
+            var acc = await _repository.GetByIdAsync(accountId, tenantId, ct);
+            if (acc is null)
+                return Result<JournalEntryDto>.Failure($"La cuenta {accountId} no existe o no pertenece al tenant.");
+            if (!acc.IsActive)
+                return Result<JournalEntryDto>.Failure($"La cuenta {acc.Code.Value} está deshabilitada.");
+            if (!acc.AllowsMovements)
+                return Result<JournalEntryDto>.Failure(
+                    $"La cuenta {acc.Code.Value} es de agrupación y no admite movimientos en asientos.");
+        }
+
         foreach (var line in command.Lines)
         {
             entry.AddLine(

@@ -11,5 +11,6 @@ public sealed record CreateAccountCommand(
     string Name,
     AccountType Type,
     AccountNature Nature,
-    Guid? ParentId
+    Guid? ParentId,
+    bool AllowsMovements = true
 ) : IRequest<Result<AccountDto>>;

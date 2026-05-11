@@ -20,6 +20,7 @@ using ERP.Domain.Modules.Ventas.Interfaces;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Inventario.Interfaces;
 using ERP.Domain.Modules.Gastos.Interfaces;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Subscriptions.Interfaces;
 using ERP.Application.Navigation;
 using ERP.Application.Subscriptions;
@@ -31,6 +32,8 @@ using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Persistence.Saas;
 using ERP.Infrastructure.Security;
 using ERP.Infrastructure.Services;
+using ERP.Infrastructure.Services.Caja;
+using ERP.Domain.Modules.Caja;
 
 namespace ERP.Infrastructure;
 
@@ -57,6 +60,8 @@ public static class DependencyInjection
         services.AddScoped<ICurrentTenant, CurrentTenantService>();
         services.AddScoped<ICurrentUser, CurrentUserService>();
         services.AddScoped<IAccountingRepository, AccountingRepository>();
+        services.AddScoped<IConfiguracionContableRepository, ConfiguracionContableRepository>();
+        services.AddScoped<ICuentaContableService, CuentaContableService>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ITaxRateRepository, TaxRateRepository>();
         services.AddScoped<IProductCatalogRepository, ProductCatalogRepository>();
@@ -75,6 +80,7 @@ public static class DependencyInjection
         services.AddScoped<IXmlFacturaParser, SriFacturaParser>();
         services.AddScoped<IFileStorage, LocalFileStorage>();
         services.AddScoped<ISriFacturaElectronicaService, SriFacturaElectronicaSimuladoService>();
+        services.AddScoped<ISriComprobanteRetencionService, SriComprobanteRetencionSimuladoService>();
         services.AddScoped<ICompraRepository, CompraRepository>();
         services.AddScoped<IGastoFacturaRepository, GastoFacturaRepository>();
         services.AddScoped<IInventarioStockRepository, InventarioStockRepository>();
@@ -103,8 +109,11 @@ public static class DependencyInjection
         services.AddScoped<IGrowthAnalyticsReader, GrowthAnalyticsReader>();
         services.AddScoped<IConfiguracionFacturacionRepository, ConfiguracionFacturacionRepository>();
         services.AddScoped<IConfiguracionSRIRepository, ConfiguracionSRIRepository>();
+        services.AddScoped<IConfiguracionRetencionRepository, ConfiguracionRetencionRepository>();
         services.AddScoped<IVentasRepository, VentasRepository>();
         services.AddScoped<ITirillaFacturaService, TirillaFacturaService>();
+        services.AddScoped<ICajaRepository, CajaRepository>();
+        services.AddScoped<IExtractoParser, ExtractoBancarioCsvParser>();
 
         return services;
     }

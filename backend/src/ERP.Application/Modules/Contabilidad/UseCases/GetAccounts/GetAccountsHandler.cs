@@ -31,7 +31,7 @@ public class GetAccountsHandler : IRequestHandler<GetAccountsQuery, Result<Paged
         var dtos = accounts.Select(a => new AccountDto(
             a.Id, a.Code.Value, a.Name,
             a.Type.ToString(), a.Nature.ToString(),
-            a.IsActive, a.ParentId, a.CreatedAt))
+            a.IsActive, a.AllowsMovements, a.ParentId, a.CreatedAt))
             .ToList();
 
         return Result<PagedResult<AccountDto>>.Success(new PagedResult<AccountDto>(

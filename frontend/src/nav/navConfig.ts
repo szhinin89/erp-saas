@@ -280,7 +280,7 @@ export function buildNavGroups(
         {
           to: '/accounting',
           label: t('app.nav.accounting'),
-          permissionKeysAny: ['accounting.accounts.view', 'accounting.journal.view'],
+          permissionKeysAny: ['accounting.accounts.view', 'accounting.journal.view', 'accounting.config.view'],
         },
       ],
     },

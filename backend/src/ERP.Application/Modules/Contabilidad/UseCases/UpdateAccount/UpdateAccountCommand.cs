@@ -11,5 +11,6 @@ public sealed record UpdateAccountCommand(
     string Name,
     AccountType Type,
     AccountNature Nature,
-    Guid? ParentId
+    Guid? ParentId,
+    bool? AllowsMovements = null
 ) : IRequest<Result<AccountDto>>;

@@ -67,6 +67,28 @@ public sealed class CompraRepository : ICompraRepository
     public Task AddBodegaAsignacionAsync(CompraBodegaAsignacion asignacion, CancellationToken ct = default)
         => _context.CompraBodegaAsignaciones.AddAsync(asignacion, ct).AsTask();
 
+    public Task AddRetencionEmitidaAsync(CompraRetencionEmitida retencion, CancellationToken ct = default)
+        => _context.CompraRetencionesEmitidas.AddAsync(retencion, ct).AsTask();
+
+    public Task<CompraRetencionEmitida?> GetRetencionEmitidaByIdWithDetailsAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+        => _context.CompraRetencionesEmitidas
+            .Include(r => r.Proveedor)
+            .Include(r => r.Detalles)
+            .FirstOrDefaultAsync(r => r.TenantId == tenantId && r.Id == id, ct);
+
+    public async Task<IReadOnlyList<CompraRetencionEmitida>> GetRetencionesEmitidasAsync(
+        Guid tenantId,
+        Guid? proveedorId,
+        CancellationToken ct = default)
+    {
+        var q = _context.CompraRetencionesEmitidas
+            .Include(r => r.Proveedor)
+            .Where(r => r.TenantId == tenantId);
+        if (proveedorId.HasValue)
+            q = q.Where(r => r.ProveedorId == proveedorId.Value);
+        return await q.OrderByDescending(r => r.FechaEmision).ToListAsync(ct);
+    }
+
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);
 }

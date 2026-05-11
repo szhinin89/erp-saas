@@ -48,6 +48,10 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
             .HasColumnName("is_active")
             .IsRequired();
 
+        builder.Property(a => a.AllowsMovements)
+            .HasColumnName("allows_movements")
+            .IsRequired();
+
         builder.Property(a => a.ParentId)
             .HasColumnName("parent_id");
 

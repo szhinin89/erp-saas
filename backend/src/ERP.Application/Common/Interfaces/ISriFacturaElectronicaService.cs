@@ -6,6 +6,13 @@ namespace ERP.Application.Common.Interfaces;
 public interface ISriFacturaElectronicaService
 {
     Task<string> GenerarXmlFacturaAsync(VentasFactura factura, List<VentasDetalle> detalles, ConfiguracionSRI config);
+
+    Task<string> GenerarXmlNotaCreditoDebitoAsync(
+        VentasFactura facturaOriginal,
+        VentasNotaCreditoDebito nota,
+        List<VentasNotaDetalle> detalles,
+        ConfiguracionSRI config);
+
     Task<byte[]> FirmarXmlAsync(string xmlContent, string p12Path, string password);
     Task<SriAutorizacionResponse> EnviarAlSriAsync(byte[] xmlFirmado, string urlWsdl);
 }

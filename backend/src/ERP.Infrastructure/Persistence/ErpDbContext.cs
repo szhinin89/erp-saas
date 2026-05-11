@@ -21,6 +21,7 @@ using ERP.Domain.Modules.Inventario.Entities;
 using ERP.Domain.Modules.Compras.Entities;
 using ERP.Domain.Modules.Compras.Entities;
 using ERP.Domain.Modules.Gastos.Entities;
+using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Inventario.Entities;
 using ERP.Application.Common;
 using System.Linq.Expressions;
@@ -110,6 +111,8 @@ public class ErpDbContext : DbContext
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
     public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
+    public DbSet<ConfiguracionContableEmpresa> ConfiguracionContableEmpresas => Set<ConfiguracionContableEmpresa>();
+    public DbSet<ConfiguracionGastoCategoria> ConfiguracionGastoCategorias => Set<ConfiguracionGastoCategoria>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<TaxRate> TaxRates => Set<TaxRate>();
     public DbSet<ProductLine> ProductLines => Set<ProductLine>();
@@ -135,7 +138,10 @@ public class ErpDbContext : DbContext
     public DbSet<UserActivity> UserActivities => Set<UserActivity>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<VentasFactura> VentasFacturas => Set<VentasFactura>();
+    public DbSet<VentasNotaCreditoDebito> VentasNotasCreditoDebito => Set<VentasNotaCreditoDebito>();
+    public DbSet<VentasRetencionRecibida> VentasRetencionesRecibidas => Set<VentasRetencionRecibida>();
     public DbSet<ConfiguracionSRI> ConfiguracionSRIs => Set<ConfiguracionSRI>();
+    public DbSet<ConfiguracionRetencion> ConfiguracionRetenciones => Set<ConfiguracionRetencion>();
 
     // ── Logística / Bodegas ───────────────────────────────────────────────
     public DbSet<Bodega> Bodegas => Set<Bodega>();
@@ -145,6 +151,7 @@ public class ErpDbContext : DbContext
 
     // ── Compras ───────────────────────────────────────────────────────────
     public DbSet<CompraFactura>          CompraFacturas          => Set<CompraFactura>();
+    public DbSet<CompraRetencionEmitida> CompraRetencionesEmitidas => Set<CompraRetencionEmitida>();
     public DbSet<CompraDetalle>          CompraDetalles          => Set<CompraDetalle>();
     public DbSet<CompraBodegaAsignacion> CompraBodegaAsignaciones => Set<CompraBodegaAsignacion>();
     public DbSet<OrdenCompra>            OrdenesCompra           => Set<OrdenCompra>();
@@ -153,6 +160,14 @@ public class ErpDbContext : DbContext
 
     // ── Gastos ────────────────────────────────────────────────────────────
     public DbSet<GastoFactura> GastoFacturas => Set<GastoFactura>();
+
+    // ── Caja / Bancos ─────────────────────────────────────────────────────
+    public DbSet<CuentaBancaria> CuentasBancarias => Set<CuentaBancaria>();
+    public DbSet<ExtractoBancario> ExtractosBancarios => Set<ExtractoBancario>();
+    public DbSet<MovimientoBancario> MovimientosBancarios => Set<MovimientoBancario>();
+    public DbSet<CajaChica> CajasChicas => Set<CajaChica>();
+    public DbSet<ArqueoCaja> ArqueosCaja => Set<ArqueoCaja>();
+    public DbSet<GastoCajaChica> GastosCajaChica => Set<GastoCajaChica>();
 
     // ── Inventario ────────────────────────────────────────────────────────
     public DbSet<StockActual>          StockActual            => Set<StockActual>();

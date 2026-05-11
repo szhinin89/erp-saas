@@ -12,6 +12,9 @@ public class Account : MasterEntity
     public AccountNature Nature { get; private set; }
     public Guid? ParentId { get; private set; }
 
+    /// <summary>Si es false, la cuenta es de agrupación y no debe usarse en partidas de asientos.</summary>
+    public bool AllowsMovements { get; private set; } = true;
+
     private Account() { }
 
     public static Account Create(
@@ -21,20 +24,22 @@ public class Account : MasterEntity
         AccountType type,
         AccountNature nature,
         Guid createdBy,
-        Guid? parentId = null)
+        Guid? parentId = null,
+        bool allowsMovements = true)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("El nombre de la cuenta no puede estar vacío.");
 
         var account = new Account
         {
-            Id        = Guid.NewGuid(),
-            TenantId  = tenantId,
-            Code      = new AccountCode(code),
-            Name      = name,
-            Type      = type,
-            Nature    = nature,
-            ParentId  = parentId,
+            Id                = Guid.NewGuid(),
+            TenantId          = tenantId,
+            Code              = new AccountCode(code),
+            Name              = name,
+            Type              = type,
+            Nature            = nature,
+            ParentId          = parentId,
+            AllowsMovements   = allowsMovements,
         };
 
         account.SetCreated(createdBy);
@@ -46,12 +51,15 @@ public class Account : MasterEntity
         AccountType type,
         AccountNature nature,
         Guid updatedBy,
-        Guid? parentId = null)
+        Guid? parentId = null,
+        bool? allowsMovements = null)
     {
         Name     = name;
         Type     = type;
         Nature   = nature;
         ParentId = parentId;
+        if (allowsMovements.HasValue)
+            AllowsMovements = allowsMovements.Value;
         SetUpdated(updatedBy);
     }
 }

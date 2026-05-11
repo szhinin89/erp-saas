@@ -19,6 +19,8 @@ export interface Account {
   type: string;
   nature: string;
   isActive: boolean;
+  /** Si false, cuenta de agrupación (no usar en asientos). Ausente en APIs antiguas. */
+  allowsMovements?: boolean;
   parentId?: string;
   createdAt: string;
 }

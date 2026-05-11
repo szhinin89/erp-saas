@@ -1,3 +1,4 @@
+using ERP.Domain.Common;
 using ERP.Domain.Modules.Contabilidad.Entities;
 
 namespace ERP.Domain.Modules.Contabilidad.Interfaces;
@@ -16,4 +17,20 @@ public interface IAccountingRepository
     Task<IReadOnlyList<JournalEntry>> GetAllJournalEntriesAsync(Guid tenantId, CancellationToken ct = default);
     Task<(IReadOnlyList<JournalEntry> Items, int TotalCount)> GetJournalEntriesPageAsync(Guid tenantId, int pageNumber, int pageSize, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
+
+    /// <summary>Asientos contabilizados que tienen al menos una línea en la cuenta indicada (rango de fechas del asiento).</summary>
+    Task<IReadOnlyList<JournalEntry>> GetPostedJournalEntriesWithAccountAsync(
+        Guid tenantId,
+        Guid accountId,
+        DateTime desde,
+        DateTime hasta,
+        CancellationToken ct = default);
+
+    /// <summary>Líneas de asientos contabilizados para cuentas de efectivo/banco, agrupables por día.</summary>
+    Task<IReadOnlyList<(DateTime EntryDate, Guid AccountId, decimal Debit, decimal Credit)>> GetPostedLineAmountsByAccountsAsync(
+        Guid tenantId,
+        IReadOnlyList<Guid> accountIds,
+        DateTime desde,
+        DateTime hasta,
+        CancellationToken ct = default);
 }

@@ -40,7 +40,8 @@ public sealed class CreateAccountCommandHandler : IRequestHandler<CreateAccountC
             command.Type,
             command.Nature,
             userId,
-            command.ParentId);
+            command.ParentId,
+            command.AllowsMovements);
 
         await _repository.AddAsync(account, ct);
         await _repository.SaveChangesAsync(ct);
@@ -52,6 +53,7 @@ public sealed class CreateAccountCommandHandler : IRequestHandler<CreateAccountC
             account.Type.ToString(),
             account.Nature.ToString(),
             account.IsActive,
+            account.AllowsMovements,
             account.ParentId,
             account.CreatedAt));
     }
