@@ -19,6 +19,22 @@
 
 ## Entradas de trabajo
 
+### 11 de mayo de 2026 — Notas crédito/débito, retenciones, caja y contabilidad por empresa (commit `2bf300b`)
+
+**Alcance:** Extensión SRI Ecuador (simulado), inventario y contabilidad para notas y retenciones; configuración de cuentas por tenant; módulo caja/bancos.
+
+**Completado:**
+- Dominio y EF: notas ventas (`VentasNotaCreditoDebito`, detalles), retención emitida compras, retención recibida ventas, `ConfiguracionRetencion`, `ConfiguracionContableEmpresa`, entidades Caja (caja chica, cuenta bancaria, extracto, movimientos, arqueo).
+- Aplicación: comandos crear/listar/enviar notas; generar/enviar/listar retención compra; registrar/listar retención recibida; `NotaCreditoAutorizadaEventHandler`; `CompraRetencionCalculo`; `CuentaContableService`; handlers Caja (conciliación, extractos, etc.).
+- Infra: `SriFacturaElectronicaSimuladoService.GenerarXmlNotaCreditoDebitoAsync`, `SriComprobanteRetencionSimuladoService`; repositorios; migraciones `AddConfiguracionContablePorEmpresa`, `AddCajaBancosModule`, `AddNotasCreditoDebitoRetenciones` (incluye SQL de permisos).
+- API: `VentasNotasController`, `VentasRetencionesRecibidasController`, `ComprasRetencionesController`, `ConfiguracionContableController`, `CajaController`.
+- Frontend parcial: i18n, `accountingConfigService`, componentes contables (`AccountTreeSelect`), ajustes en `AccountingPage` / `ProfilesPage` / nav.
+- Tests: `NotasYRetencionesEndToEndTests`, unitarios totales nota y cálculo retención; suite **266** tests en verde.
+
+**Pendiente / deuda:** SRI **real** para notas y retención; UI dedicada ventas/compras para notas y retenciones; documentar en runbook cuentas mínimas si no hay config. contable (heurística `AccountingService`).
+
+---
+
 ### 09 de mayo de 2026 — Módulo Ventas completo (commit `d20a14d`)
 
 **Alcance:** Implementación completa del módulo de Ventas con Facturación Electrónica SRI Ecuador.

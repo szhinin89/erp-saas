@@ -6,22 +6,21 @@
 > **Enlaces legacy:** `docs/STATUS-2026-05-ERP.md` redirige aquí (un solo lugar para el estado).  
 > **Backlog de refactor** y **refactor modular por sprints** (antes `docs/REFACTOR-*.md`) están en las secciones más abajo en este mismo archivo.
 >
-> Última actualización: **9 de mayo de 2026** (sincronizado: totales de tests, rutas de dominio Ventas, guía de migraciones) | Commit: `3076aa7` *(actualizar commit al retomar si aplica)*
+> Última actualización: **11 de mayo de 2026** (notas crédito/débito, retenciones, caja, configuración contable por empresa, tests) | Commit: `2bf300b`
 
 ---
 
 ## ¿Dónde estamos? (leer en 30 segundos)
 
-El ERP SaaS tiene **backend completo** para los módulos de **Compras (facturas + órdenes de compra), Gastos, Inventario,
-Transferencias entre Bodegas, Ajustes de Inventario** y **Ventas con facturación electrónica SRI Ecuador** (simulada).
-El frontend de Transferencias, Ajustes y **Órdenes de Compra** también está implementado.
-Hay **248 tests automáticos pasando** (cuatro proyectos de test; ver sección *Tests*) y la API corre en local con la configuración de desarrollo.
+El ERP SaaS tiene **backend completo** para los módulos de **Compras (facturas + órdenes de compra + retención en la fuente emitida), Gastos, Inventario,
+Transferencias entre Bodegas, Ajustes de Inventario**, **Ventas con facturación electrónica SRI Ecuador (simulada)** y **notas de crédito/débito** asociadas a facturas autorizadas, más **registro de retenciones recibidas** desde XML, **configuración contable por empresa** (mapeo de cuentas para asientos) y **Caja / bancos** (caja chica, cuentas bancarias, extractos, conciliación).
+El frontend de Transferencias, Ajustes y **Órdenes de Compra** está implementado; hay **pantallas parciales** de contabilidad (config de cuentas por empresa, árbol de cuentas) e i18n para nuevas rutas.
+Hay **266 tests automáticos pasando** (cuatro proyectos de test; ver sección *Tests*) y la API corre en local con la configuración de desarrollo.
 
 **Lo que falta para el MVP comercial:**
-1. Implementar el WSDL real del SRI (firma P12 + envío + polling)
-2. Frontend del módulo Ventas (pantallas)
-3. Frontend de módulos Compras/Gastos facturas (pantallas)
-4. Notas de crédito (anulación de facturas autorizadas)
+1. Implementar el WSDL real del SRI (firma P12 + envío + polling) — facturas, notas y comprobantes de retención en servicio real (`SriFacturaElectronicaRealService`, `SriComprobanteRetencionService` solo simulado hoy)
+2. Frontend del módulo Ventas (pantallas de facturación; notas y retenciones recibidas pueden engancharse a la misma área)
+3. Frontend de módulos Compras/Gastos facturas (pantallas) y de **retenciones emitidas** (listado / generar / enviar)
 
 ---
 
@@ -46,11 +45,11 @@ npm run dev                   # Puerto 5173, proxy /api → localhost:5003
 
 # 5. Correr todos los tests (no hay .sln — ejecutar por proyecto)
 cd ../../../../backend
-dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj                     # 135 tests
+dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj                     # 153 tests
 dotnet test src/ERP.Application.Tests/ERP.Application.Tests.csproj     #  87 tests
 dotnet test src/ERP.Domain.Tests/ERP.Domain.Tests.csproj               #  23 tests
 dotnet test src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj #   3 tests
-# Total: 248 tests (verificar con los comandos; cifras al 2026-05-09)
+# Total: 266 tests (verificar con los comandos; cifras al 2026-05-11)
 ```
 
 > **Credenciales de dev:** ver `backend/src/ERP.API/appsettings.Development.json`
@@ -112,7 +111,7 @@ dotnet test src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj #   3 t
 | Categorías, Marcas, UoM, Aranceles, Impuestos | `ERP.Application/Modules/Products/Catalogs/` |
 | Clientes (maestro por tenant) | `ERP.Application/Modules/Customers/` |
 | Sucursales + Geografía INEC Ecuador | `ERP.Application/Modules/Branches/` |
-| Plan de cuentas + Asientos contables | `ERP.Application/Modules/Accounting/` |
+| Plan de cuentas + Asientos + **config. contable por empresa** | `ERP.Application/Modules/Contabilidad/` (`ConfiguracionContableController`, `CuentaContableService`) |
 
 ### Logística — completado el 09/05/2026
 | Módulo | Flujo | Archivos clave |
@@ -259,7 +258,31 @@ Autorizado → NO se puede anular directamente (requiere Nota de Crédito)
 
 ---
 
-## Tests actuales — 248 tests (fuente: `dotnet test`)
+### Notas de crédito/débito, retenciones y contabilidad ampliada — completado el 11/05/2026 (commit `2bf300b`)
+
+| Área | Estado | Archivos / notas clave |
+|------|--------|-------------------------|
+| **Notas ventas (dominio + EF)** | ✅ | `VentasNotaCreditoDebito`, `VentasNotaDetalle`; tablas `ventas_notas_credito_debito`, `ventas_nota_detalles` |
+| **Crear / listar / enviar nota** | ✅ | `CrearVentasNotaCreditoDebitoCommand`, `GetVentasNotasListQuery`, `EnviarVentasNotaSriCommand` + handlers; `VentasNotasController` |
+| **XML nota + SRI simulado** | ✅ | `ISriFacturaElectronicaService.GenerarXmlNotaCreditoDebitoAsync` en `SriFacturaElectronicaSimuladoService` (real: sin implementar) |
+| **Asiento NC / ND** | ✅ | `AccountingService.CrearAsientoNotaCreditoVentaAsync`, `CrearAsientoNotaDebitoVentaAsync` (usa `ICuentaContableService` o heurística) |
+| **Inventario NC** | ✅ | `NotaCreditoAutorizadaEvent` + `NotaCreditoAutorizadaEventHandler` → `DevolucionVenta`, reingreso de stock |
+| **Retención emitida (compras)** | ✅ | `CompraRetencionEmitida`, detalle, `GenerarCompraRetencionEmitida`, `EnviarCompraRetencionEmitida`; `ISriComprobanteRetencionService` + `SriComprobanteRetencionSimuladoService`; `ComprasRetencionesController` |
+| **Cálculo retención** | ✅ | `ConfiguracionRetencion` + `CompraRetencionCalculo` (IVA sobre `IvaTotal` de compra, RENTA sobre `Subtotal`) |
+| **Retención recibida (ventas)** | ✅ | `VentasRetencionRecibida`, `RegistrarVentasRetencionRecibidaCommand`, `RetencionRecibidaXmlParser`; `VentasRetencionesRecibidasController` |
+| **Asientos retención** | ✅ | `CrearAsientoRetencionEmitidaAsync`, `CrearAsientoRetencionRecibidaAsync` (requieren cuentas pasivo/activo acordes o heurística por nombre) |
+| **Configuración contable por empresa** | ✅ | `ConfiguracionContableEmpresa`, `ConfiguracionGastoCategoria`, `CuentaContableService`, `ConfiguracionContableController`; migración `AddConfiguracionContablePorEmpresa` |
+| **Módulo Caja / bancos** | ✅ | Dominio `ERP.Domain/Modules/Caja/`, handlers en `ERP.Application/Modules/Caja/`, `CajaController`, `CajaRepository`, migración `AddCajaBancosModule` |
+| **Permisos nuevos** | ✅ | Migración `AddNotasCreditoDebitoRetenciones`: `ventas.notas.*`, `compras.retenciones.*`, `ventas.retenciones-recibidas.*` |
+| **Tests** | ✅ | `NotasYRetencionesEndToEndTests`, `VentasNotaTotalsTests`, `CompraRetencionCalculoTests`; HTTP caja y config contable |
+
+**Flujo resumido nota de crédito:** factura `Autorizado` → crear nota (ítems) → enviar SRI (simulado) → asiento + `Autorizado` + evento de stock en productos con inventario.
+
+**Flujo retención compra:** compra `Aprobado` → tasas en `configuracion_retenciones` → generar borrador → enviar (XML simulado + asiento).
+
+---
+
+## Tests actuales — 266 tests (fuente: `dotnet test`)
 
 > **Mantenimiento:** no copiar desgloses por archivo aquí (se desactualizan en cada PR). Tras cambios relevantes, volver a ejecutar los cuatro proyectos y actualizar solo la tabla de totales.
 
@@ -267,9 +290,9 @@ Autorizado → NO se puede anular directamente (requiere Nota de Crédito)
 ERP.Domain.Tests         →  23 tests   (entidades, value objects, RUC ecuatoriano)
 ERP.Application.Tests    →  87 tests   (handlers Moq, validators, behaviors, DTOs)
 ERP.Infrastructure.Tests →   3 tests   (repositorios, parser XML SRI)
-ERP.API.Tests            → 135 tests   (integración E2E, HTTP, dominio, algoritmos, contratos)
+ERP.API.Tests            → 153 tests   (integración E2E, HTTP, notas/retenciones, caja/config contable, dominio, algoritmos)
 ──────────────────────────────────────────
-TOTAL                    → 248 tests   ✅ 0 fallos (Release, 2026-05-09)
+TOTAL                    → 266 tests   ✅ 0 fallos (Release, 2026-05-11)
 ```
 
 CI ejecuta el conjunto vía `dotnet test backend/src/ERP.slnx` (ver ADR 0003 y `.github/workflows/ci.yml`).
@@ -284,7 +307,7 @@ CI ejecuta el conjunto vía `dotnet test backend/src/ERP.slnx` (ver ADR 0003 y `
 | IAM (acceso, perfiles, permisos) | `/api/access` | 12+ |
 | Tenants / SaaS Admin | `/api/tenants`, `/api/saas-plans-admin` | 15+ |
 | Productos + catálogos | `/api/products`, `/api/brands`… | 30+ |
-| Contabilidad | `/api/accounts`, `/api/journal-entries` | 8 |
+| Contabilidad | `/api/accounts`, `/api/journal-entries`, `/api/configuracion-contable` | 8+ |
 | Clientes | `/api/customers` | 6 |
 | Sucursales + Geografía | `/api/branches`, `/api/geography` | 8 |
 | Bodegas | `/api/bodegas` | 6 |
@@ -296,6 +319,10 @@ CI ejecuta el conjunto vía `dotnet test backend/src/ERP.slnx` (ver ADR 0003 y `
 | **Ajustes inventario** | **`/api/inventario/ajustes`** | **5** |
 | **Órdenes de Compra** | **`/api/compras/ordenes`** | **8** |
 | **Ventas** | **`/api/ventas`** | **8** |
+| **Ventas — notas crédito/débito** | **`/api/ventas/notas`** | **3** |
+| **Ventas — retenciones recibidas** | **`/api/ventas/retenciones-recibidas`** | **2** |
+| **Compras — retenciones emitidas** | **`/api/compras/retenciones`** | **3** |
+| **Caja** | **`/api/caja`** | **varios** |
 | **Config SRI** | **`/api/configuracion-sri`** | **2** |
 | SuperAdmin | `/api/superadmin`, `/api/setup` | 10+ |
 
@@ -311,7 +338,7 @@ dotnet ef migrations list --project src/ERP.Infrastructure --startup-project src
 dotnet ef database update --project src/ERP.Infrastructure --startup-project src/ERP.API
 ```
 
-**Ejemplos de migraciones recientes en el código** (lista no exhaustiva): `Paso3_VentasFacturaAsientoAndPermissions`, `AddTransferenciasInventario`, `AddAjustesInventario`, `AddOrdenesCompra`, `AddOrdenCompraDetalleIdToCompraDetalle`, `AddRefreshTokens`, `AddConfiguracionFacturacionTable`, `DbPerfKardexMvAndIndexes`, y el bloque previo de SaaS/menú/logística/compras/gastos/ventas.
+**Ejemplos de migraciones recientes en el código** (lista no exhaustiva): `Paso3_VentasFacturaAsientoAndPermissions`, `AddTransferenciasInventario`, `AddAjustesInventario`, `AddOrdenesCompra`, `AddOrdenCompraDetalleIdToCompraDetalle`, `AddConfiguracionContablePorEmpresa`, `AddCajaBancosModule`, `AddNotasCreditoDebitoRetenciones`, `AddRefreshTokens`, `AddConfiguracionFacturacionTable`, `DbPerfKardexMvAndIndexes`, y el bloque previo de SaaS/menú/logística/compras/gastos/ventas.
 
 > **No** fijar en este archivo un contador “N aplicadas / M pendientes”: eso solo tiene sentido comparando `migrations list` con el estado real de la base.
 
@@ -384,15 +411,9 @@ APIs Ventas disponibles: `GET/POST /api/ventas` · `PATCH /{id}/validar|emitir|r
 
 ---
 
-### Prioridad 3 — Notas de Crédito
+### Prioridad 3 — Notas de crédito/débito y retenciones — **backend listo (2026-05-11)**
 
-Anulación de facturas ya **Autorizadas** por el SRI. Requiere:
-
-1. **Dominio:** nueva entidad `NotaCredito` (referencia a `VentasFactura` autorizada)
-2. **SRI:** tipo de documento `04` (nota de crédito electrónica)
-3. **Inventario:** `InventarioMovimiento.DevolucionVenta` → incrementa stock
-4. **Contabilidad:** asiento inverso al de la venta original
-5. **Flujo:** Borrador → Validado → Autorizado (igual que factura)
+Implementado en dominio, aplicación, infraestructura, API y migración `AddNotasCreditoDebitoRetenciones`. Pendiente principal: **pantallas SPA** para crear/listar/enviar notas, registrar retenciones recibidas y flujo de retenciones en compras; **SRI real** para notas (`GenerarXmlNotaCreditoDebitoAsync` en servicio real) y retención.
 
 ---
 
@@ -405,7 +426,7 @@ Anulación de facturas ya **Autorizadas** por el SRI. Requiere:
 | Agregar `GetFacturaByIdWithDetailsAsync` en `IVentasRepository` (actualmente solo `GetFacturaByIdAsync`) | `IVentasRepository.cs` | Baja |
 | Seed de `ConfiguracionSRI` de prueba en entorno dev | nueva migración o script | Baja |
 | Reporte PDF de factura autorizada (QR con clave de acceso) | servicio nuevo | Media |
-| Retención en la fuente (módulo RETENCIONES SRI) | módulo nuevo | Alta |
+| Retención en la fuente (SRI real + UI) | backend simulado listo; WSDL real y pantallas | Media–Alta |
 | **Ajustes — aprobación supervisora** (diferido): estado `PendienteAprobacion` + permiso `inventario.ajustes.approve` | `AjusteInventario.cs` + commands | Media |
 | **Ajustes — reversar** (diferido): `ReversarAjusteCommand` crea ajuste espejo y lo ejecuta | nuevo command | Baja |
 | **Transferencias — aprobación** (diferido): estado `PendienteAprobacion` antes de Confirmar | `Transferencia.cs` + commands | Media |
@@ -492,6 +513,23 @@ El seed asigna permisos automáticamente según permisos existentes del perfil:
 - Perfiles con `inventario.*.create` → obtienen `create` + `validate`
 - Perfiles con `compras.facturas.approve` → obtienen `emit` + `cancel`
 - Tenant de desarrollo (`d0aabb1f-...`) → obtiene todos los permisos
+
+---
+
+### Notas de venta y retenciones (migración `AddNotasCreditoDebitoRetenciones`)
+
+| Clave de permiso | Qué habilita |
+|-----------------|-------------|
+| `ventas.notas.create` | Crear nota de crédito/débito en borrador |
+| `ventas.notas.send` | Validar (si aplica) y enviar nota al SRI |
+| `ventas.notas.list` | Listar notas (filtro por factura y estado) |
+| `compras.retenciones.create` | Generar comprobante de retención emitida desde compra aprobada |
+| `compras.retenciones.send` | Enviar retención al SRI (simulado) |
+| `compras.retenciones.list` | Listar retenciones emitidas |
+| `ventas.retenciones-recibidas.create` | Registrar retención recibida (XML + factura venta) |
+| `ventas.retenciones-recibidas.list` | Listar retenciones recibidas |
+
+Seed en la migración: perfiles **Administrador / Contador / Vendedor** (y nombres en inglés) reciben permisos de notas y retenciones recibidas; **Comprador** además retenciones compras.
 
 ---
 
@@ -759,6 +797,13 @@ Actualizar este checklist con `[x]` al cerrar cada sprint.
 | Módulo OrdeneCompra — repositorio | `ERP.Infrastructure/Persistence/Repositories/OrdenCompraRepository.cs` |
 | Módulo OrdeneCompra — frontend | `frontend/src/modules/compras/ordenes/` |
 | Seed permisos OrdeneCompra | `ERP.Infrastructure/Migrations/20260510131553_AddOrdenesCompra.cs` |
+| Notas crédito/débito + retenciones (dominio ventas/compras) | `VentasNotaCreditoDebito.cs`, `CompraRetencionEmitida.cs`, `VentasRetencionRecibida.cs`, `ConfiguracionRetencion.cs` |
+| Notas — aplicación | `ERP.Application/Ventas/UseCases/Notas/`, `RetencionesRecibidas/` |
+| Retenciones compras — aplicación | `ERP.Application/Modules/Compras/UseCases/Retenciones/` |
+| XML nota / retención simulados | `SriFacturaElectronicaSimuladoService.cs`, `SriComprobanteRetencionSimuladoService.cs` |
+| Tests notas y retenciones | `ERP.API.Tests/Integration/NotasYRetencionesEndToEndTests.cs`, `Unit/VentasNotaTotalsTests.cs`, `Unit/CompraRetencionCalculoTests.cs` |
+| Migración notas + retenciones + permisos | `20260511202304_AddNotasCreditoDebitoRetenciones.cs` |
+| Config contable empresa + caja | Migraciones `20260511182157_AddConfiguracionContablePorEmpresa`, `20260511195443_AddCajaBancosModule` |
 
 ---
 
@@ -779,6 +824,7 @@ dotnet test src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj
 dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj --filter "FullyQualifiedName~Transferencias"
 dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj --filter "FullyQualifiedName~Ajustes"
 dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj --filter "FullyQualifiedName~Ventas"
+dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj --filter "FullyQualifiedName~NotasYRetenciones"
 
 # Agregar migración (desde backend/)
 dotnet ef migrations add NombreMigracion \
@@ -830,7 +876,7 @@ cd frontend && npm run build
 
 ---
 
-*Próxima actualización de este documento: cuando se complete el frontend de Ventas/Compras-Gastos facturas o la implementación SRI real.*
+*Próxima actualización de este documento: cuando avance el frontend de Ventas (facturas + notas/retenciones), Compras-Gastos facturas o la implementación SRI real.*
 
 ---
 
@@ -838,6 +884,7 @@ cd frontend && npm run build
 
 | Fecha | Commit | Qué se hizo |
 |-------|--------|-------------|
+| 11/05/2026 | `2bf300b` | Notas crédito/débito ventas, retenciones emitidas/recibidas, config. contable por empresa, caja/bancos, permisos y tests (266 totales) |
 | 09/05/2026 | — | Documentación alineada con el repo: totales de tests (248), ruta dominio Ventas, migraciones sin contador fijo “pendientes”, `docker compose` |
 | 12/05/2026 | — | Documentación: `REFACTOR-BACKLOG.md` y `REFACTOR-MODULES-SPRINTS.md` fusionados en este archivo; enlaces y comentarios en código actualizados |
 | 10/05/2026 | `3076aa7` | Validación precio OC vs Factura (tolerancia 1%, `Advertencias[]` en DTO) — 3 tests nuevos |

@@ -125,12 +125,17 @@ La política `"Frontend"` permite los orígenes configurados en `appsettings.jso
 
 ## Módulos actuales
 
-| Módulo     | Dominio                        | Endpoints                              |
+| Módulo     | Dominio (resumen)              | Endpoints (resumen)                    |
 |------------|--------------------------------|----------------------------------------|
 | Auth       | User, Email (VO)               | POST /register, /login                 |
 | Tenants    | Tenant                         | POST /tenants                          |
 | Products   | Product, ProductBarcode        | GET /products, GET /products/{id}, POST |
-| Accounting | Account, JournalEntry, Money   | GET/POST /accounts, /journal-entries   |
+| Accounting | Account, JournalEntry, Money, Configuración contable por empresa | `/accounts`, `/journal-entries`, `/configuracion-contable` |
+| Ventas     | Factura, notas crédito/débito, retención recibida | `/ventas`, `/ventas/notas`, `/ventas/retenciones-recibidas` |
+| Compras    | Factura compra, OC, retención emitida | `/compras`, `/compras/ordenes`, `/compras/retenciones` |
+| Caja       | Caja chica, banco, extractos    | `/caja`                                |
+
+> Lista detallada de flujos, permisos y migraciones: [`docs/ESTADO-PROYECTO.md`](ESTADO-PROYECTO.md).
 
 ## Migraciones EF Core
 
