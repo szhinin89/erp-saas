@@ -1,4 +1,4 @@
-# Histórico — correcciones de riesgos arquitectónicos (ZH ERP SaaS)
+﻿# Histórico — correcciones de riesgos arquitectónicos (ZH ERP SaaS)
 
 Este archivo **unifica** el material que antes vivía en la raíz del repositorio:
 
@@ -8,6 +8,8 @@ Este archivo **unifica** el material que antes vivía en la raíz del repositori
 | `RIESGOS-ANTES-DESPUES.md` | Detalle extendido antes/después (código de ejemplo) |
 
 **Mantenimiento:** para decisiones vigentes del producto usar `docs/ARCHITECTURE.md` y `docs/adr/`. Este histórico no sustituye ADR.
+
+**Backlog de calidad y plan de sprints modulares:** vive en [`docs/ESTADO-PROYECTO.md`](ESTADO-PROYECTO.md) (secciones *Backlog de refactor* y *Refactor modular por sprints*). Los archivos `REFACTOR-BACKLOG.md` y `REFACTOR-MODULES-SPRINTS.md` se unificaron allí para reducir duplicación.
 
 ---
 # Arreglo de Riesgos Arquitectónicos - Resumen de Cambios

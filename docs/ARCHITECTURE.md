@@ -14,7 +14,7 @@ Esa frase es el criterio guía del repositorio: el código y la organización de
 
 **Decisiones formales:** ver [ADR en `docs/adr/`](adr/README.md) (p. ej. ADR 0001–0003).
 
-**Convergencia de carpetas y namespaces:** plan por sprints en [REFACTOR-MODULES-SPRINTS.md](REFACTOR-MODULES-SPRINTS.md) (`Domain.Modules.*` / `Application.Modules.*`).
+**Convergencia de carpetas y namespaces:** plan por sprints en [`docs/ESTADO-PROYECTO.md`](ESTADO-PROYECTO.md#refactor-modular-por-sprints) (sección *Refactor modular por sprints*; `Domain.Modules.*` / `Application.Modules.*`).
 
 ## Capas y dependencias
 

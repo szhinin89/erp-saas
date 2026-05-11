@@ -1,6 +1,6 @@
 # CONTEXT.md — ZH Technologies ERP
 
-> **Índice maestro para agentes y desarrolladores.** Revisión del índice: **2026-05-11**.  
+> **Índice maestro para agentes y desarrolladores.** Revisión del índice: **2026-05-09**.  
 > Lee este archivo primero; luego abre solo los enlaces que correspondan a tu tarea.
 >
 > **Estado actual del proyecto → [`docs/ESTADO-PROYECTO.md`](docs/ESTADO-PROYECTO.md)**  
@@ -11,9 +11,9 @@
 | Tema | Documento que manda | Qué cubre |
 |------|----------------------|-----------|
 | Índice y enlaces | **`CONTEXT.md`** (este archivo) | Dónde buscar según la tarea |
-| Estado, backlog, retomar | **`docs/ESTADO-PROYECTO.md`** | Hecho / pendiente / comandos |
+| Estado, backlog, retomar | **`docs/ESTADO-PROYECTO.md`** | Hecho / pendiente / comandos, **backlog de refactor** y **plan de sprints** modular |
 | Diario de sesiones y decisiones | **`docs/REGISTRO-PROYECTO.md`** | Entradas por fecha; notas de continuación |
-| Arranque, Docker, EF, curl, CI | **`docs/DESARROLLO.md`** | Operación local y troubleshooting |
+| Arranque, Docker, EF, curl, CI, checklist API (histórico) | **`docs/DESARROLLO.md`** | Operación local, troubleshooting y homologación de contratos HTTP |
 | Capas, multi-tenant, módulos | **`docs/ARCHITECTURE.md`** | Arquitectura de producto |
 | Decisiones estables | **`docs/adr/README.md`** | ADR |
 | Rutas UI | **`docs/FRONTEND-PANTALLAS.md`** | Inventario de pantallas |

@@ -3,9 +3,10 @@
 > **Documento de referencia rápida.** Leer este archivo al inicio de cada sesión para saber
 > exactamente en qué punto está el proyecto, qué está hecho y qué sigue.
 >
-> **Enlaces legacy:** `docs/STATUS-2026-05-ERP.md` redirige aquí (un solo lugar para el estado).
+> **Enlaces legacy:** `docs/STATUS-2026-05-ERP.md` redirige aquí (un solo lugar para el estado).  
+> **Backlog de refactor** y **refactor modular por sprints** (antes `docs/REFACTOR-*.md`) están en las secciones más abajo en este mismo archivo.
 >
-> Última actualización: **10 de mayo de 2026** | Commit: `3076aa7`
+> Última actualización: **9 de mayo de 2026** (sincronizado: totales de tests, rutas de dominio Ventas, guía de migraciones) | Commit: `3076aa7` *(actualizar commit al retomar si aplica)*
 
 ---
 
@@ -14,7 +15,7 @@
 El ERP SaaS tiene **backend completo** para los módulos de **Compras (facturas + órdenes de compra), Gastos, Inventario,
 Transferencias entre Bodegas, Ajustes de Inventario** y **Ventas con facturación electrónica SRI Ecuador** (simulada).
 El frontend de Transferencias, Ajustes y **Órdenes de Compra** también está implementado.
-Hay **204 tests automáticos pasando** y la API corre en producción-local.
+Hay **248 tests automáticos pasando** (cuatro proyectos de test; ver sección *Tests*) y la API corre en local con la configuración de desarrollo.
 
 **Lo que falta para el MVP comercial:**
 1. Implementar el WSDL real del SRI (firma P12 + envío + polling)
@@ -29,12 +30,11 @@ Hay **204 tests automáticos pasando** y la API corre en producción-local.
 ```bash
 # 1. Levantar base de datos
 cd erp-saas
-docker-compose up -d          # PostgreSQL en puerto 5435
+docker compose up -d          # PostgreSQL (5435) + Redis (6379); ver docker-compose.yml
 
-# 2. Aplicar migración pendiente (IMPORTANTE — aún no aplicada)
+# 2. Alinear la base con el modelo EF (tras pull o nueva migración)
 cd backend/src
 dotnet ef database update --project ERP.Infrastructure --startup-project ERP.API
-# Añade: columna asiento_contable_id en ventas_facturas + permisos ventas.*
 
 # 3. Levantar API
 cd ERP.API
@@ -46,11 +46,11 @@ npm run dev                   # Puerto 5173, proxy /api → localhost:5003
 
 # 5. Correr todos los tests (no hay .sln — ejecutar por proyecto)
 cd ../../../../backend
-dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj                     # 92 tests
-dotnet test src/ERP.Application.Tests/ERP.Application.Tests.csproj     # 86 tests
-dotnet test src/ERP.Domain.Tests/ERP.Domain.Tests.csproj               # 23 tests
-dotnet test src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj #  3 tests
-# Total: 204 tests, todos deben pasar
+dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj                     # 135 tests
+dotnet test src/ERP.Application.Tests/ERP.Application.Tests.csproj     #  87 tests
+dotnet test src/ERP.Domain.Tests/ERP.Domain.Tests.csproj               #  23 tests
+dotnet test src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj #   3 tests
+# Total: 248 tests (verificar con los comandos; cifras al 2026-05-09)
 ```
 
 > **Credenciales de dev:** ver `backend/src/ERP.API/appsettings.Development.json`
@@ -259,46 +259,20 @@ Autorizado → NO se puede anular directamente (requiere Nota de Crédito)
 
 ---
 
-## Tests actuales — 204 tests, 0 fallos
+## Tests actuales — 248 tests (fuente: `dotnet test`)
+
+> **Mantenimiento:** no copiar desgloses por archivo aquí (se desactualizan en cada PR). Tras cambios relevantes, volver a ejecutar los cuatro proyectos y actualizar solo la tabla de totales.
 
 ```
-ERP.Domain.Tests         →  23 tests   (entidades, Value Objects, RUC ecuatoriano)
-ERP.Application.Tests    →  86 tests   (handlers Moq, validators, behaviors, DTOs)
+ERP.Domain.Tests         →  23 tests   (entidades, value objects, RUC ecuatoriano)
+ERP.Application.Tests    →  87 tests   (handlers Moq, validators, behaviors, DTOs)
 ERP.Infrastructure.Tests →   3 tests   (repositorios, parser XML SRI)
-ERP.API.Tests            →  92 tests   (integración E2E, HTTP, dominio, algoritmos)
+ERP.API.Tests            → 135 tests   (integración E2E, HTTP, dominio, algoritmos, contratos)
 ──────────────────────────────────────────
-TOTAL                    → 204 tests   ✅ 0 fallos
+TOTAL                    → 248 tests   ✅ 0 fallos (Release, 2026-05-09)
 ```
 
-Desglose `ERP.Application.Tests` (86):
-```
-Compras/AprobarCompraCommandHandlerStockTests.cs         →  2  (stock + rollback contabilidad)
-Compras/VincularFacturaAOrdenCompraCommandHandlerTests.cs → 11  (Moq: éxito, estados, precio discrepante/coincidente/umbral)
-Compras/CrearOrdenCompraCommandValidatorTests.cs         → 12  (cada regla del validator, precio 0 válido, etc.)
-Inventario/CrearTransferenciaCommandHandlerTests.cs      →  7  (Moq: stock, bodegas, productos)
-Inventario/ConfirmarTransferenciaCommandHandlerTests.cs  →  6  (Moq: atómico, concurrencia)
-Inventario/EjecutarAjusteCommandHandlerTests.cs          →  8  (Moq: incremento/disminución/fallo)
-Otros (customers, products, login, gastos, etc.)         → 40
-```
-
-Desglose `ERP.API.Tests` (92):
-```
-Unit/VentasDomainTests.cs                          → 12  (máquina de estados, totales)
-Unit/ClaveAccesoHelperTests.cs                     →  7  (algoritmo módulo-11, Theory)
-Unit/StockValidationHandlerTests.cs                →  5  (stock Ventas: suficiente/insuficiente)
-Unit/TransferenciasStockTests.cs                   →  5  (stock Transferencias: 5 escenarios)
-Integration/VentasEndToEndTests.cs                 →  4  (flujo completo E2E)
-Integration/VentasHttpTests.cs                     → 10  (HTTP + JWT simulado)
-Integration/TransferenciasEndToEndTests.cs         →  5  (crear→confirmar stock; cancelar; estados)
-Integration/AjustesInventarioEndToEndTests.cs      →  7  (incremento/disminución/fallo/validación)
-Integration/OrdenesCompraEndToEndTests.cs          →  5  (crear, enviar/aprobar, cancelar, vincular total/parcial)
-Integration/OrdenCompraFlujoCompletoTests.cs       →  1  (2 productos, parcial→RecibidaParcial→Cerrada, rechazo exceso)
-Integration/OrdenCompraValidatorPipelineTests.cs   →  4  (ValidationException via MediatR: items vacío, cantidad 0, precio negativo, proveedor vacío)
-Integration/CompraGastoEndToEndTests.cs            →  2  (E2E compras + gastos)
-Integration/AuthenticatedApiTests.cs               →  2  (HTTP con token)
-Controller/VentasControllerContractTests.cs        →  9  (StubMediator, status codes)
-Otros (middleware, contratos)                      → 14
-```
+CI ejecuta el conjunto vía `dotnet test backend/src/ERP.slnx` (ver ADR 0003 y `.github/workflows/ci.yml`).
 
 ---
 
@@ -327,29 +301,19 @@ Otros (middleware, contratos)                      → 14
 
 ---
 
-## Migraciones — 47 aplicadas, 5 pendientes
+## Migraciones EF Core
+
+Las migraciones están en `backend/src/ERP.Infrastructure/Migrations/`. **Qué está aplicado en tu Postgres** depende de cuándo corriste `dotnet ef database update`; el código del repo puede incluir migraciones más nuevas que tu base local.
 
 ```bash
 cd backend
 dotnet ef migrations list --project src/ERP.Infrastructure --startup-project src/ERP.API
+dotnet ef database update --project src/ERP.Infrastructure --startup-project src/ERP.API
 ```
 
-| Estado | Migración | Descripción |
-|--------|-----------|-------------|
-| ✅ | `InitialCreate` … `AddCustomersTable` | Auth, IAM, Productos, Clientes |
-| ✅ | `TenantPlanAndModules` … `SeedSaasFeaturesPlanMenuLinking` | SaaS/Planes/Menú |
-| ✅ | `AddHierarchicalConfigTables` | Config jerárquica |
-| ✅ | `AddLogisticaProveedoresComprasGastos` | Bodegas, Proveedores, Compras, Gastos |
-| ✅ | `AddComprasFullSchema` | Esquema completo Compras |
-| ✅ | `SeedLogisticaAccessProfilePermissions` | Permisos logística |
-| ✅ | `AddFacturacionElectronicaVentas` | Tablas ventas_facturas, ventas_detalles, configuracion_sri |
-| **🔄 PENDIENTE** | **`Paso3_VentasFacturaAsientoAndPermissions`** | **asiento_contable_id + permisos ventas.*** |
-| **🔄 PENDIENTE** | **`AddTransferenciasInventario`** | **tablas transferencias + transferencia_detalles + permisos inventario.transferencias.*** |
-| **🔄 PENDIENTE** | **`AddAjustesInventario`** | **tabla ajustes_inventario + permisos inventario.ajustes.*** |
-| **🔄 PENDIENTE** | **`AddOrdenesCompra`** | **tablas ordenes_compra + detalles + facturas + permisos compras.ordenes.*** |
-| **🔄 PENDIENTE** | **`AddOrdenCompraDetalleIdToCompraDetalle`** | **columna nullable `orden_compra_detalle_id` en `compra_detalles`** |
+**Ejemplos de migraciones recientes en el código** (lista no exhaustiva): `Paso3_VentasFacturaAsientoAndPermissions`, `AddTransferenciasInventario`, `AddAjustesInventario`, `AddOrdenesCompra`, `AddOrdenCompraDetalleIdToCompraDetalle`, `AddRefreshTokens`, `AddConfiguracionFacturacionTable`, `DbPerfKardexMvAndIndexes`, y el bloque previo de SaaS/menú/logística/compras/gastos/ventas.
 
-> Las 5 migraciones se aplican con un solo comando: `dotnet ef database update`
+> **No** fijar en este archivo un contador “N aplicadas / M pendientes”: eso solo tiene sentido comparando `migrations list` con el estado real de la base.
 
 ---
 
@@ -531,6 +495,238 @@ El seed asigna permisos automáticamente según permisos existentes del perfil:
 
 ---
 
+## Backlog de refactor (calidad y arquitectura)
+
+Checklist para ir cerrando en PRs. Marca con `[x]` lo completado. Última revisión de lista: generada desde el estado del repo (commands sin validador, transacciones, CQRS, tenant, auditoría).
+
+### P0 — Multi-tenant y seguridad (revisión) — **cerrado**
+
+- [x] Inventario de usos de `IgnoreQueryFilters()` y comprobación explícita de `TenantId` donde aplique  
+  - [x] `ERP.Infrastructure/Persistence/Repositories/UserRepository.cs` — `GetById`/`GetByEmail`/`Exists` con IQF + `TenantId` en predicado (registro/login sin tenant ambiente); IQF documentado en el resto de métodos.  
+  - [x] `ERP.Infrastructure/Persistence/Repositories/AccessRepository.cs` — IQF solo donde el predicado fija `TenantId` o `IdentityUserId` (bootstrap / cupos); comentarios de clase.  
+  - [x] `ERP.Infrastructure/Services/ConfigService.cs` — IQF + `TenantId` en todas las consultas; comentario de clase.  
+  - [x] `ERP.Infrastructure/Persistence/SaasPlansAdminService.cs` — IQF en borrado global por `FeatureId` (todos los tenants); comentario inline.  
+  - [x] `ERP.Infrastructure/Persistence/GrowthAnalyticsReader.cs` — IQF en memberships para agregados de plataforma; comentario.  
+  - [x] `ERP.Infrastructure/BackgroundServices/KardexReporteProcessor.cs` — IQF por job sin HTTP; tenant aplicado vía `ManualCurrentTenant` tras cargar fila; comentario.  
+  - [x] Otros hallazgos por `rg IgnoreQueryFilters` — sin usos adicionales fuera de la lista anterior.
+- [x] Auditar controllers: `[Authorize]` vs política `perm:...` — **criterio unificado (aplicado / documentado)**  
+  - **DefaultPolicy = `Session`** (`Program.cs`): JWT de sesión con `tenant_id` real; cualquier `[Authorize]` sin `Policy` hereda esto (no usar `FallbackPolicy` para no romper endpoints públicos).  
+  - **`perm:recurso.acción`**: pantallas de negocio ERP; `PermissionHandler` valida plan + perfil; **Admin** y **SuperAdmin** (en tenant) pasan sin comprobar filas de perfil; SuperAdmin con `tenant_id = Guid.Empty` en claim pasa cualquier `perm:` (operador de plataforma).  
+  - **`GlobalSuperAdmin`**: panel SaaS / planes / config global (`SuperAdminController`, `Saas*Admin`, `SuperAdminConfig`).  
+  - **`Bootstrap`**: solo `switch-tenant` tras login IAM (token corto).  
+  - **`[Authorize(Roles = "...")]`**: IAM donde aún no hay claves `perm:` (membresías globales, perfiles en `AccessController`, parte de `TenantsController`, `SecurityController`). No es inconsistencia: es capa identidad vs. capa menú/ERP.  
+  - **Solo `Session` sin `perm:`** (explícito `Policy = "Session"` o `[Authorize]` en clase): catálogos de bajo riesgo o “datos propios” — `GeographyController`, `ActivityController`, `GET access/me/menu`, `GET access/me/permissions`.  
+  - **Públicos**: `[AllowAnonymous]` en `AuthController`, `SetupController`, planes/deployment públicos, `TenantsController` `public-settings`, etc.  
+  - **Regla para código nuevo**: si el endpoint expone datos de negocio del tenant y no es “solo menú / solo yo”, añadir `perm:...` alineado al menú y a `PermissionHandler`; si es operación solo Admin/SuperAdmin de plataforma, `Roles` o `GlobalSuperAdmin` según aplique.
+
+### P1 — FluentValidation: comandos sin `*CommandValidator.cs` en su carpeta
+
+#### Compras / órdenes
+
+- [x] `ValidarCompraCommand`
+- [x] `RechazarCompraCommand`
+- [x] `AprobarCompraCommand` (validador además de la transacción existente)
+- [x] `EnviarOrdenCompraCommand`
+- [x] `AprobarOrdenCompraCommand`
+- [x] `CancelarOrdenCompraCommand`
+- [x] `VincularFacturaAOrdenCompraCommand`
+
+#### Gastos
+
+- [x] `ValidarGastoCommand`
+- [x] `RechazarGastoCommand`
+- [x] `AprobarGastoCommand`
+
+#### Inventario
+
+- [x] `EjecutarAjusteCommand`
+- [x] `CancelarAjusteCommand`
+- [x] `CancelarTransferenciaCommand`
+- [x] `RecalcularSnapshotsCommand`
+
+#### Clientes
+
+- [x] `UpdateCustomerCommand`
+- [x] `DisableCustomerCommand`
+- [x] `EnableCustomerCommand`
+
+#### Bodegas / proveedores
+
+- [x] `EnableBodegaCommand`
+- [x] `DisableBodegaCommand`
+- [x] `EnableProveedorCommand`
+- [x] `DisableProveedorCommand`
+
+#### Sucursales
+
+- [x] `UpdateBranchCommand`
+- [x] `DisableBranchCommand`
+- [x] `EnableBranchCommand`
+
+#### Catálogo productos (catalogs)
+
+- [x] `CreateBrandCommand`
+- [x] `CreateProductCategoryCommand`
+- [x] `CreateProductLineCommand`
+- [x] `CreateProductSubcategoryCommand`
+- [x] `CreateProductTypeCommand`
+- [x] `CreateTariffCommand`
+- [x] `CreateTaxRateCommand`
+- [x] `CreateUnitOfMeasureCommand`
+- [x] `UpdateProductCategoryCommand`
+- [x] `UpdateProductLineCommand`
+- [x] `UpdateProductSubcategoryCommand`
+
+#### Acceso / auth / tenants / security
+
+- [x] `BootstrapLoginCommand`
+- [x] `RegisterTenantWithAdminCommand`
+- [x] `SwitchTenantCommand` (módulo Access)
+- [x] `UpsertMembershipCommand`
+- [x] `RevokeMembershipCommand`
+- [x] `UpsertProfilePermissionsCommand`
+- [x] `LoginCommand`
+- [x] `RegisterCommand`
+- [x] `PasswordResetCommand`
+- [x] `SuperAdminLoginCommand`
+- [x] `ClaimInitialSuperAdminCommand`
+- [x] `SwitchTenantCommand` (módulo Auth, si aplica mismo criterio)
+- [x] `CreateTenantCommand`
+- [x] `UpdateTenantCompanyCommand`
+- [x] `UpdateTenantGlobalParametersCommand`
+- [x] `UpdateTenantSubscriptionCommand`
+- [x] `UpdateTenantPasswordResetModeCommand`
+- [x] `UpsertSecurityAdminScopesCommand`
+
+### P2 — Transacciones explícitas (`IUnitOfWork.BeginTransactionAsync`)
+
+**Ya cubiertos (referencia):** `AprobarCompra`, `EjecutarAjuste`, `ConfirmarTransferencia`, `EmitirFacturaElectronica`, `AprobarGasto`.
+
+#### Candidatos a auditar / envolver en transacción
+
+- [x] `CrearCompraCommandHandler`
+- [x] `CrearVentaCommandHandler` (secuencial SRI + factura + actividad en una transacción; validación de stock sigue antes del `Begin`)
+- [x] `ValidarVentaCommandHandler`
+- [x] `CrearGastoCommandHandler`
+- [x] `ValidarGastoCommandHandler`
+- [x] `RechazarGastoCommandHandler`
+- [x] `ValidarCompraCommandHandler`
+- [x] `RechazarCompraCommandHandler`
+- [x] `VincularFacturaAOrdenCompraCommandHandler`
+- [x] `CrearTransferenciaCommandHandler`
+- [x] `CancelarTransferenciaCommandHandler`
+- [x] `CrearAjusteCommandHandler`
+- [x] `CancelarAjusteCommandHandler`
+- [x] `CreateJournalEntryCommandHandler`
+- [ ] Otros comandos multi-agregado detectados en revisión
+
+### P3 — CQRS estricto (comandos que devuelven `Result<*Dto>`) — **cerrado (decisión documentada)**
+
+**Decisión:** **CQRS pragmático** para este monolito API + cliente SPA. Los comandos MediatR **pueden** devolver `Result<TDto>` (o DTOs de sesión / config) cuando el caso de uso ya tiene el agregado materializado y el contrato de respuesta es estable para la pantalla que dispara la acción. **No** se impone migrar masivamente a `Guid` / `Unit` + `GET` subsiguiente.
+
+**Rationale breve:** menos ida-vuelta HTTP, menos desincronización entre “id devuelto” y vista, y coherencia con controladores que ya serializan el DTO del comando. Un CQRS “puro” (solo escritura + proyecciones en capa lectura) queda reservado para cuando exista read model explícito, proyección pesada o necesidad de caché HTTP (`ETag` / `304`) en un recurso GET dedicado.
+
+**Cuándo valorar `Guid`/`Unit` + GET en comandos nuevos o refactors puntuales:** payload muy grande; composición de varias fuentes de lectura; mismo recurso consumido por clientes que solo leen y se benefician de GET cacheable; o testabilidad del handler de escritura aislando proyección.
+
+**Ámbito al que aplica la convención (firmas actuales válidas; sin refactor forzado):**
+
+- [x] Compras: `CrearCompra`, `ValidarCompra`, `RechazarCompra`, `AprobarCompra`, órdenes (`OrdenCompraDto`, etc.)
+- [x] Gastos: `CrearGasto`, `ValidarGasto`, `RechazarGasto`, `AprobarGasto`
+- [x] Config: `UpsertConfiguracionSRI`, `UpsertConfiguracionFacturacion` (y similares)
+- [x] Inventario: ajustes / transferencias (DTOs de respuesta en comandos)
+- [x] Maestros: productos, marcas, proveedores, bodegas, clientes, sucursales, contabilidad
+- [x] Access: `RegisterTenantWithAdmin`, `BootstrapLogin`, `SwitchTenant` → `SessionResponseDto` (respuestas de flujo de identidad / sesión)
+
+### P4 — Auditoría de dominio — **cerrado (política documentada)**
+
+#### Jerarquía habitual (`AuditableEntity` y derivados)
+
+- **`AuditableEntity`**: `CreatedAt` / `UpdatedAt` / `CreatedBy` / `UpdatedBy` — pensado para **mutaciones iniciadas por un usuario** (HTTP / comando con `ICurrentUser`).
+- **`MasterEntity`**: hereda auditoría + `IsActive` + `Disable`/`Enable` — **catálogos y maestros** que no se borran físicamente.
+- **`DocumentEntity`**: hereda auditoría + ciclo de vida **Borrador → Contabilizado → Anulado** — documentos transaccionales.
+- **`ITenantEntity`**: solo exige `TenantId` — puede combinarse con las bases anteriores **o** usarse **sola** cuando aplique la excepción siguiente.
+
+#### Excepción: `ITenantEntity` sin `AuditableEntity` (filas técnicas / materializadas)
+
+**Regla:** una entidad puede implementar **solo** `ITenantEntity` (sin heredar `AuditableEntity`) cuando:
+
+1. El ciclo de vida lo gobierna **código de infraestructura** (hosted services, colas, jobs) y no un flujo CRUD de pantalla con actor humano estable en cada paso, **y**
+2. La trazabilidad relevante ya está modelada con **campos propios del dominio** (timestamps de job, estado, mensaje de error, JSON de resultado, etc.).
+
+**Casos concretos en el repo:**
+
+- [x] **`KardexReporte`**: cola de informes asíncronos; estados `Pendiente` → `Procesando` → `Completado`/`Error`; `SolicitadoEn` / `CompletadoEn` sustituyen el significado de auditoría genérica. No aplica `CreatedBy` único por transición de worker.
+- [x] **`KardexSnapshot`**: saldo valorizado **calculado** por worker nocturno; `ComputadoEn` es la huella temporal. Recomputar sobrescribe métricas: no es un “update por usuario” al estilo maestro.
+
+**No** se introduce `IAuditableEntity` en esta iteración: el tipado actual (`AuditableEntity` / `MasterEntity` / `DocumentEntity` / solo `ITenantEntity`) es suficiente si se respeta la regla anterior al añadir entidades nuevas.
+
+### P5 — Front / contratos (opcional)
+
+- [ ] Alinear manejo de errores de features nuevas con respuesta del `ExceptionMiddleware`
+- [ ] Paridad validación cliente (p. ej. Zod) donde falte
+
+### Cómo usar esta sección del backlog
+
+1. Cada PR puede marcar ítems concretos con `[x]`.  
+2. Si un ítem se divide en sub-tareas, enlazar el PR en una nota bajo el ítem.  
+3. Regenerar listas P1 si se añaden comandos nuevos (script: carpeta `*Command.cs` sin `*CommandValidator.cs` en el mismo directorio).
+
+---
+
+## Refactor modular por sprints
+
+Objetivo a largo plazo: **cada módulo funcional** vive bajo rutas y namespaces predecibles:
+
+| Capa | Ruta física (objetivo) | Namespace (objetivo) |
+|------|------------------------|----------------------|
+| Dominio | `ERP.Domain/Modules/{Modulo}/Entities`, `…/Interfaces`, … | `ERP.Domain.Modules.{Modulo}.Entities` |
+| Aplicación | `ERP.Application/Modules/{Modulo}/UseCases/…` | `ERP.Application.Modules.{Modulo}.…` |
+
+Gran parte del dominio ya está bajo `ERP.Domain/Modules/{Modulo}/` (Ventas, Compras, Inventario, Gastos, Contabilidad, etc.); puede quedar código o carpetas fuera de ese patrón hasta cerrar los sprints siguientes — la convergencia es **mover archivos + namespaces** sin cambiar reglas de negocio.
+
+**Reglas:** un sprint = un PR revisable; tras cada sprint `dotnet build` + tests afectados en verde. No mezclar dos módulos en el mismo PR.
+
+### Sprint 0 (hecho en el arranque del plan)
+
+- [x] Documentar visión y criterios en [`ARCHITECTURE.md`](ARCHITECTURE.md).
+- [x] **Ventas (dominio):** mover `VentasFactura`, `VentasDetalle`, `IVentasRepository` a `ERP.Domain/Modules/Ventas/` y namespaces `ERP.Domain.Modules.Ventas.*` (agregado pequeño y cohesivo).
+
+### Sprint 1 — Dominio modular (Inventario, Compras, Gastos, Ventas/Clientes, Contabilidad) — **hecho**
+
+- [x] `ERP.Domain/Inventario`, `Bodegas`, `Compras`, `Proveedores`, `Gastos`, `Customers` → `ERP.Domain/Modules/{Inventario,Compras,Gastos,Ventas}/…` con subcarpetas `Entities` / `Enums` / `Interfaces` / `ValueObjects` / `Events` (vacías donde aplica).
+- [x] `ERP.Domain/Modules/Accounting` → `Modules/Contabilidad`; namespaces `ERP.Domain.Modules.Contabilidad.*` (antes `ERP.Domain.Accounting.*`).
+- [x] **Application:** `Bodegas` y casos de bodega bajo `Modules/Inventario/UseCases` (carpetas en español: `CrearBodega`, …); `Proveedores` bajo `Modules/Compras`; clientes bajo `Modules/Ventas`; contabilidad en `Modules/Contabilidad` (`ERP.Application.Modules.Contabilidad.*`).
+- [x] **Infrastructure:** configuraciones EF agrupadas en `Persistence/Configurations/{Inventario,Compras,Ventas,Gastos,Contabilidad}/`.
+- [x] Migraciones / snapshot: cadenas CLR de tipos de dominio actualizadas a `ERP.Domain.Modules.*`.
+
+### Sprint 2 — (siguiente) Productos, Auth, Tenants bajo `Modules/*` o `SharedKernel`
+
+- [ ] Evaluar mover `ERP.Domain/Modules/Products` solo si se renombra namespace a criterio único del equipo.
+- [ ] `ERP.Domain/Common` vs `Modules/SharedKernel`: definir qué es kernel compartido (entidades base, `Result`, etc.).
+
+### Sprint 5 — Application: namespaces `Modules.{Modulo}` (resto)
+
+- [ ] Unificar namespaces que hoy omiten `Modules` (p. ej. `ERP.Application.Ventas.*` → `ERP.Application.Modules.Ventas.*`).
+- [ ] Mover `ERP.Application/Ventas/` (Models/Helpers) bajo `ERP.Application/Modules/Ventas/`.
+- [ ] Repetir por módulo (Inventario, Compras) en sprints siguientes si el diff es grande.
+
+### Sprint 6+ — Infra / tests / limpieza
+
+- [ ] Revisar `ERP.Infrastructure` por `using` obsoletos y comentarios XML.
+- [ ] Snapshot EF: los nombres CLR en migraciones históricas pueden quedar como referencia; el **modelo actual** debe usar los tipos nuevos (ya actualizado en el último snapshot al renombrar).
+- [ ] Opcional: script `dotnet format` o analizador de capas (Architecture tests) que falle si se introduce `ERP.Domain.Ventas` de nuevo.
+
+### Orden sugerido (cohesión → tamaño)
+
+1. Ventas facturación (sprint 0) — hecho  
+2. Inventario + Bodegas + Compras + Proveedores + Gastos + Customers + Contabilidad (sprint 1) — hecho  
+3. Products / Auth / Tenants / `Common` → `SharedKernel` (sprint 2)  
+4. Application: `Ventas` models bajo `Modules/Ventas`, limpieza de `using` duplicados  
+
+Actualizar este checklist con `[x]` al cerrar cada sprint.
+
+---
+
 ## Archivos de referencia rápida
 
 | Qué buscar | Dónde encontrarlo |
@@ -543,7 +739,7 @@ El seed asigna permisos automáticamente según permisos existentes del perfil:
 | Servicios externos (SRI, contabilidad) | `backend/src/ERP.Infrastructure/Services/` |
 | Tests integración E2E | `backend/src/ERP.API.Tests/Integration/` |
 | Tests unitarios | `backend/src/ERP.API.Tests/Unit/` |
-| Módulo Ventas — dominio | `ERP.Domain/Ventas/` |
+| Módulo Ventas — dominio | `ERP.Domain/Modules/Ventas/` (factura, detalle, cliente; namespaces `ERP.Domain.Modules.Ventas.*`) |
 | Módulo Ventas — aplicación | `ERP.Application/Modules/Ventas/` |
 | Módulo Transferencias — dominio | `ERP.Domain/Inventario/Entities/Transferencia*.cs` |
 | Módulo Transferencias — aplicación | `ERP.Application/Modules/Inventario/UseCases/*Transferencia*/` |
@@ -612,21 +808,13 @@ cd frontend && npm run build
 
 1. **Leer este archivo primero.** Si hay diferencias con el código real, confiar en el código.
 
-2. **Hay 5 migraciones PENDIENTES** — aplicar todas antes de usar la API en un entorno real:
-   - `Paso3_VentasFacturaAsientoAndPermissions` — añade `asiento_contable_id` a `ventas_facturas` y siembra permisos del módulo Ventas
-   - `AddTransferenciasInventario` — crea las tablas `transferencias` + `transferencia_detalles` y siembra permisos del módulo Transferencias
-   - `AddAjustesInventario` — crea la tabla `ajustes_inventario` y siembra permisos del módulo Ajustes
-   - `AddOrdenesCompra` — crea las tablas `ordenes_compra` + `detalles` + `facturas` y siembra permisos del módulo OrdeneCompra
-   - `AddOrdenCompraDetalleIdToCompraDetalle` — añade columna nullable `orden_compra_detalle_id` a `compra_detalles` para trazabilidad
-   ```bash
-   cd backend && dotnet ef database update --project src/ERP.Infrastructure --startup-project src/ERP.API
-   ```
+2. **Base de datos** — tras cada `git pull` que traiga migraciones nuevas, ejecutar `dotnet ef database update` (desde `backend/` con `--project src/ERP.Infrastructure --startup-project src/ERP.API`). Ver también la sección **Migraciones EF Core** más arriba.
 
 3. **El servicio SRI Simulado es funcional en Development** — genera XML, simula autorización
    con un número aleatorio. Suficiente para probar toda la lógica de negocio.
 
 4. **Para agregar un módulo nuevo**, seguir la misma estructura que Compras o Ventas:
-   - Dominio en `ERP.Domain/{Modulo}/`
+   - Dominio preferentemente en `ERP.Domain/Modules/{Modulo}/` (y namespaces `ERP.Domain.Modules.{Modulo}.*`), o el patrón que lleve el módulo de referencia
    - Aplicación en `ERP.Application/Modules/{Modulo}/`
    - Repositorio en `ERP.Infrastructure/Persistence/Repositories/`
    - Configuración EF en `ERP.Infrastructure/Persistence/Configurations/`
@@ -650,6 +838,8 @@ cd frontend && npm run build
 
 | Fecha | Commit | Qué se hizo |
 |-------|--------|-------------|
+| 09/05/2026 | — | Documentación alineada con el repo: totales de tests (248), ruta dominio Ventas, migraciones sin contador fijo “pendientes”, `docker compose` |
+| 12/05/2026 | — | Documentación: `REFACTOR-BACKLOG.md` y `REFACTOR-MODULES-SPRINTS.md` fusionados en este archivo; enlaces y comentarios en código actualizados |
 | 10/05/2026 | `3076aa7` | Validación precio OC vs Factura (tolerancia 1%, `Advertencias[]` en DTO) — 3 tests nuevos |
 | 10/05/2026 | `307f0f9` | `CompraDetalle.OrdenCompraDetalleId` nullable para trazabilidad factura↔OC |
 | 10/05/2026 | `907ba1d` | Tests: flujo completo 2 productos (E2E), validator unit (12), pipeline (4) |

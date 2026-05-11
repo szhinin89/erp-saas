@@ -1,4 +1,4 @@
-# Companies Module - Arquitectura Modular
+# Módulo Companies — arquitectura modular
 
 ## 📋 Estructura
 

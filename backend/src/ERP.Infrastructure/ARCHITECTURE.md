@@ -1,4 +1,4 @@
-# Infrastructure — layout y convenciones (esta carpeta)
+# Infraestructura — estructura y convenciones (esta carpeta)
 
 > **Normativa global del producto:** [`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md) (raíz del monorepo `erp-saas`).  
 > Este archivo describe **solo** la organización interna de `ERP.Infrastructure/` y convenciones de servicios/repositorios; no repite el modelo de capas completo.
@@ -9,7 +9,7 @@
 Infrastructure/
 ├── Authentication/
 │   ├── Services/
-│   │   ├── AccessTokenService.cs      → Bootstrap + Session tokens
+│   │   ├── AccessTokenService.cs      → arranque y tokens de sesión
 │   │   ├── CurrentUserService.cs      → Extrae claims del usuario
 │   │   └── JwtService.cs              → Validación y manejo de JWT
 │   └── Security/
@@ -29,8 +29,8 @@ Infrastructure/
 │   │   └── ErpDbContext.cs            → DbContext centralizado
 │   └── Repositories/
 │       └── Implementaciones de repositorios
-├── Deployment/                         → Lógica de deployment
-├── Seeding/                            → Data seeding
+├── Deployment/                         → lógica de despliegue
+├── Seeding/                            → datos iniciales (seed)
 └── DependencyInjection.cs              → Registro de servicios
 ```
 
@@ -42,13 +42,13 @@ Infrastructure/
 4. **Seguridad**: Contraseñas, JWT, criptografía en `Authentication/Security/`
 5. **Tenant-awareness**: Todos los servicios deben considerar multi-tenancy
 
-## 🔄 Multi-Tenancy Pattern
+## Multi-tenant (patrón)
 
 - `ICurrentTenant` inyectado en servicios que necesitan contexto de tenant
 - Filtros automáticos en `ErpDbContext.OnModelCreating()`
-- No hay excepciones: TODO se filtra por tenant
+- Sin excepciones por defecto: todo el acceso a datos por tenant debe respetar el aislamiento acordado
 
-## 📦 Próximos Pasos
+## Próximos pasos
 
 - Separar `ErpDbContext` por módulo (Products, Accounting, SaaS con convenciones)
 - Crear repositorios específicos por bounded context
