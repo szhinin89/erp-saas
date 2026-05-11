@@ -1,6 +1,9 @@
-# Infrastructure - Arquitectura Modular por Bounded Context
+# Infrastructure — layout y convenciones (esta carpeta)
 
-## 📋 Estructura
+> **Normativa global del producto:** [`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md) (raíz del monorepo `erp-saas`).  
+> Este archivo describe **solo** la organización interna de `ERP.Infrastructure/` y convenciones de servicios/repositorios; no repite el modelo de capas completo.
+
+## Estructura
 
 ```
 Infrastructure/

@@ -1,3 +1,5 @@
-Ver archivo completo en: **`.github/INSTRUCCIONES-COPILOT.md`**
+**Índice maestro del repo:** [`CONTEXT.md`](CONTEXT.md)
 
-(Este archivo es para detección automática. Las instrucciones completas están en `.github/INSTRUCCIONES-COPILOT.md`)
+Instrucciones completas en español: **`.github/INSTRUCCIONES-COPILOT.md`**
+
+(Este archivo existe para detección automática por herramientas; no duplicar contenido aquí.)

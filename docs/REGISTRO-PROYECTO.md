@@ -2,6 +2,18 @@
 
 > **Uso:** entradas cronológicas de trabajo realizado, decisiones, deuda técnica y pendientes.
 > Leer junto con `ESTADO-PROYECTO-2026-05.md` para contexto completo.
+>
+> **Notas de continuación de sesión** (antes en `docs/CONTINUAR-sesion.md`): usar este mismo archivo — añadir una entrada con fecha cuando se cierre un hilo.
+
+---
+
+## Referencia rápida — SuperAdmin y cuotas de instancia
+
+- **SuperAdmin único por servidor:** `POST /api/setup/superadmin` (token `Deployment:InitialSuperAdminSetupToken`), login `superadmin-login`, panel `/superadmin`.
+- **Cuotas:** `DedicatedSingleClientInstance`, `MaxActiveTenants`, `MaxIdentityUsers`, `MaxUsersPerTenant`; opcional `App_Data/instance-quota.json` (ignorado en git); API `GET/PUT /api/superadmin/instance-quota`.
+- **Código:** `SetupController`, `SuperAdminController` (instance-quota), `DeploymentFeatureFlags`, `SuperAdminInstanceQuotaPage.tsx`.
+- **Scripts:** `scripts/create-superadmin.ps1`, `scripts/create-superadmin-interactive.ps1`.
+- **Retomar en local:** PostgreSQL + migraciones → `backend/src/ERP.API` → `dotnet run` (puerto típico 5003) → `frontend` → `npm run dev`. Tras cambiar user-secrets o `Program.cs`, reiniciar la API.
 
 ---
 

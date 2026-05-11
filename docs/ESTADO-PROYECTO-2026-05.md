@@ -3,6 +3,8 @@
 > **Documento de referencia rápida.** Leer este archivo al inicio de cada sesión para saber
 > exactamente en qué punto está el proyecto, qué está hecho y qué sigue.
 >
+> **Enlaces legacy:** `docs/STATUS-2026-05-ERP.md` redirige aquí (un solo lugar para el estado).
+>
 > Última actualización: **10 de mayo de 2026** | Commit: `3076aa7`
 
 ---

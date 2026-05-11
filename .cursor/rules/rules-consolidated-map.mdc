@@ -24,3 +24,4 @@ Usar este orden de precedencia cuando varias reglas apliquen al mismo cambio:
 
 - Evitar duplicar la misma regla en varios archivos.
 - Cuando una regla crezca demasiado, moverla a una regla especifica por area.
+- Documentación Markdown del producto: mapa único en **`CONTEXT.md`** (raíz del repo); no abrir nuevos índices en paralelo.

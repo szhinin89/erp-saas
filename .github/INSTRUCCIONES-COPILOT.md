@@ -2,6 +2,9 @@
 
 **Fecha:** Mayo 2026 | **Estado:** Desarrollo activo | Arquitectura limpia modular, 4 capas, Multi-tenant
 
+> **Índice maestro y mapa de responsabilidad de cada `.md`:** [`CONTEXT.md`](../CONTEXT.md) en la raíz del repo.  
+> Evitar duplicar listas de enlaces en otros archivos; actualizar `CONTEXT.md` si aparece un documento nuevo relevante.
+
 ---
 
 ## 🛠️ HERRAMIENTAS Y TECNOLOGÍAS

@@ -2,7 +2,7 @@
 
 Documento **unificado** de desarrollo y operación local para este monorepo.
 
-**Ver también:** `docs/ARCHITECTURE.md` (capas y multi-tenant), [`docs/adr/README.md`](adr/README.md) (decisiones ADR), `docs/STATUS-2026-05-ERP.md` (estado reciente), `docs/FRONTEND-PANTALLAS.md` (rutas UI), `docs/developer-reference.html` (referencia amplia en navegador), `.cursor/rules/erp-unified-rules.mdc` (reglas de implementación).
+**Ver también:** `docs/ARCHITECTURE.md` (capas y multi-tenant), [`docs/adr/README.md`](adr/README.md) (decisiones ADR), `docs/ESTADO-PROYECTO-2026-05.md` (estado y backlog), `docs/FRONTEND-PANTALLAS.md` (rutas UI), `docs/developer-reference.html` (referencia amplia en navegador), `.cursor/rules/erp-unified-rules.mdc` (reglas de implementación).
 
 ---
 
@@ -304,7 +304,7 @@ Para **volver a abrir** el panel SuperAdmin (mantenimiento o nuevas empresas), v
 
 ## Módulos de referencia (tabla)
 
-Tabla **orientativa**; los paths reales pueden incluir más módulos (Sucursales, Clientes, SuperAdmin, etc.). Ver `docs/STATUS-2026-05-ERP.md` y `docs/developer-reference.html` para lista al día.
+Tabla **orientativa**; los paths reales pueden incluir más módulos (Sucursales, Clientes, SuperAdmin, etc.). Ver `docs/ESTADO-PROYECTO-2026-05.md` y `docs/developer-reference.html` para lista al día.
 
 | Módulo     | Backend (ejemplos)                         | Frontend (ejemplos)   |
 |------------|--------------------------------------------|-------------------------|
