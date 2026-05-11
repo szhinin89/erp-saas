@@ -6,16 +6,16 @@
 > **Enlaces legacy:** `docs/STATUS-2026-05-ERP.md` redirige aquí (un solo lugar para el estado).  
 > **Backlog de refactor** y **refactor modular por sprints** (antes `docs/REFACTOR-*.md`) están en las secciones más abajo en este mismo archivo.
 >
-> Última actualización: **11 de mayo de 2026** (notas crédito/débito, retenciones, caja, configuración contable por empresa, tests) | Commit: `2bf300b`
+> Última actualización: **11 de mayo de 2026** (notas proveedor compras/gastos, reset DB desde cero, migración baseline única, seeder dev, ajustes de verificación local) | Commit: `0aab504`
 
 ---
 
 ## ¿Dónde estamos? (leer en 30 segundos)
 
-El ERP SaaS tiene **backend completo** para los módulos de **Compras (facturas + órdenes de compra + retención en la fuente emitida), Gastos, Inventario,
+El ERP SaaS tiene **backend completo** para los módulos de **Compras (facturas + órdenes de compra + retención en la fuente emitida + notas proveedor crédito/débito), Gastos, Inventario,
 Transferencias entre Bodegas, Ajustes de Inventario**, **Ventas con facturación electrónica SRI Ecuador (simulada)** y **notas de crédito/débito** asociadas a facturas autorizadas, más **registro de retenciones recibidas** desde XML, **configuración contable por empresa** (mapeo de cuentas para asientos) y **Caja / bancos** (caja chica, cuentas bancarias, extractos, conciliación).
 El frontend de Transferencias, Ajustes y **Órdenes de Compra** está implementado; hay **pantallas parciales** de contabilidad (config de cuentas por empresa, árbol de cuentas) e i18n para nuevas rutas.
-Hay **266 tests automáticos pasando** (cuatro proyectos de test; ver sección *Tests*) y la API corre en local con la configuración de desarrollo.
+Hay **cobertura automática activa** (cuatro proyectos de test; ver sección *Tests*) y la API corre en local con la configuración de desarrollo (HTTP 5003 / HTTPS 5001).
 
 **Lo que falta para el MVP comercial:**
 1. Implementar el WSDL real del SRI (firma P12 + envío + polling) — facturas, notas y comprobantes de retención en servicio real (`SriFacturaElectronicaRealService`, `SriComprobanteRetencionService` solo simulado hoy)
@@ -37,7 +37,7 @@ dotnet ef database update --project ERP.Infrastructure --startup-project ERP.API
 
 # 3. Levantar API
 cd ERP.API
-dotnet run                    # Puerto 5003, Swagger en /swagger
+dotnet run                    # HTTP 5003 + HTTPS 5001, Swagger en https://localhost:5001/swagger
 
 # 4. Levantar Frontend
 cd ../../../../frontend
@@ -282,6 +282,23 @@ Autorizado → NO se puede anular directamente (requiere Nota de Crédito)
 
 ---
 
+### Notas proveedor (compras/gastos) + reset de base desde cero — completado el 11/05/2026 (commit `0aab504`)
+
+| Área | Estado | Archivos / notas clave |
+|------|--------|-------------------------|
+| **Notas proveedor (dominio + EF)** | ✅ | `CompraNotaProveedor`, `CompraNotaProveedorDetalle`; configuración EF en `Persistence/Configurations/Compras/*NotaProveedor*` |
+| **Importar XML nota proveedor** | ✅ | `ImportarCompraNotaProveedorCommand` + handler (`IXmlFacturaParser.ParseNotaProveedorAsync`) |
+| **Aprobar nota proveedor (evento)** | ✅ | `AprobarCompraNotaProveedorCommand` + `CompraNotaProveedorAprobadaEvent` |
+| **Inventario en notas proveedor (solo compras)** | ✅ | `CompraNotaProveedorAprobadaEventHandler` (`NotaCreditoProveedor` / `NotaDebitoProveedor`) |
+| **Contabilidad NC/ND proveedor** | ✅ | `AccountingService`: asientos para compra y gasto (crédito/débito) |
+| **API + permisos** | ✅ | `ComprasNotasProveedorController` (`view/create/approve`) |
+| **Pruebas integración** | ✅ | `NotasYRetencionesEndToEndTests` con escenarios NC compra, ND compra, NC gasto |
+| **Reset DB baseline único** | ✅ | eliminación de historial de migraciones + nueva `InitialCreate` |
+| **Seeder dev mínimo** | ✅ | `DevDatabaseSeeder` (tenant demo, admin, bodega principal, cuentas base, IVA 12/0) |
+| **Verificación local alineada** | ✅ | Swagger en `https://localhost:5001/swagger`; alias `GET /api/logistica/bodegas` |
+
+---
+
 ## Tests actuales — 266 tests (fuente: `dotnet test`)
 
 > **Mantenimiento:** no copiar desgloses por archivo aquí (se desactualizan en cada PR). Tras cambios relevantes, volver a ejecutar los cuatro proyectos y actualizar solo la tabla de totales.
@@ -311,6 +328,7 @@ CI ejecuta el conjunto vía `dotnet test backend/src/ERP.slnx` (ver ADR 0003 y `
 | Clientes | `/api/customers` | 6 |
 | Sucursales + Geografía | `/api/branches`, `/api/geography` | 8 |
 | Bodegas | `/api/bodegas` | 6 |
+| Bodegas (alias compatibilidad) | `/api/logistica/bodegas` | 6 |
 | Proveedores | `/api/proveedores` | 6 |
 | Compras | `/api/compras` | 7 |
 | Gastos | `/api/gastos` | 7 |
@@ -322,6 +340,7 @@ CI ejecuta el conjunto vía `dotnet test backend/src/ERP.slnx` (ver ADR 0003 y `
 | **Ventas — notas crédito/débito** | **`/api/ventas/notas`** | **3** |
 | **Ventas — retenciones recibidas** | **`/api/ventas/retenciones-recibidas`** | **2** |
 | **Compras — retenciones emitidas** | **`/api/compras/retenciones`** | **3** |
+| **Compras — notas proveedor** | **`/api/compras/notas-proveedor`** | **3** |
 | **Caja** | **`/api/caja`** | **varios** |
 | **Config SRI** | **`/api/configuracion-sri`** | **2** |
 | SuperAdmin | `/api/superadmin`, `/api/setup` | 10+ |
@@ -330,7 +349,8 @@ CI ejecuta el conjunto vía `dotnet test backend/src/ERP.slnx` (ver ADR 0003 y `
 
 ## Migraciones EF Core
 
-Las migraciones están en `backend/src/ERP.Infrastructure/Migrations/`. **Qué está aplicado en tu Postgres** depende de cuándo corriste `dotnet ef database update`; el código del repo puede incluir migraciones más nuevas que tu base local.
+Desde el **11/05/2026** se mantiene una **baseline única** en `backend/src/ERP.Infrastructure/Migrations/` (`InitialCreate`) generada desde el modelo actual.  
+Si necesitas reset completo local, usa el flujo de esquema limpio + `dotnet ef database update` (sin re-aplicar cadena histórica de migraciones viejas).
 
 ```bash
 cd backend
@@ -338,7 +358,7 @@ dotnet ef migrations list --project src/ERP.Infrastructure --startup-project src
 dotnet ef database update --project src/ERP.Infrastructure --startup-project src/ERP.API
 ```
 
-**Ejemplos de migraciones recientes en el código** (lista no exhaustiva): `Paso3_VentasFacturaAsientoAndPermissions`, `AddTransferenciasInventario`, `AddAjustesInventario`, `AddOrdenesCompra`, `AddOrdenCompraDetalleIdToCompraDetalle`, `AddConfiguracionContablePorEmpresa`, `AddCajaBancosModule`, `AddNotasCreditoDebitoRetenciones`, `AddRefreshTokens`, `AddConfiguracionFacturacionTable`, `DbPerfKardexMvAndIndexes`, y el bloque previo de SaaS/menú/logística/compras/gastos/ventas.
+**Referencia histórica:** la cadena antigua de migraciones fue consolidada en `InitialCreate`; para trazabilidad funcional usar el historial de commits y esta sección de estado.
 
 > **No** fijar en este archivo un contador “N aplicadas / M pendientes”: eso solo tiene sentido comparando `migrations list` con el estado real de la base.
 
@@ -884,6 +904,7 @@ cd frontend && npm run build
 
 | Fecha | Commit | Qué se hizo |
 |-------|--------|-------------|
+| 11/05/2026 | `0aab504` | Notas proveedor (compras/gastos), tests E2E de NC/ND proveedor, baseline DB `InitialCreate`, seeder dev mínimo, Swagger HTTPS 5001 y alias `/api/logistica/bodegas` |
 | 11/05/2026 | `2bf300b` | Notas crédito/débito ventas, retenciones emitidas/recibidas, config. contable por empresa, caja/bancos, permisos y tests (266 totales) |
 | 09/05/2026 | — | Documentación alineada con el repo: totales de tests (248), ruta dominio Ventas, migraciones sin contador fijo “pendientes”, `docker compose` |
 | 12/05/2026 | — | Documentación: `REFACTOR-BACKLOG.md` y `REFACTOR-MODULES-SPRINTS.md` fusionados en este archivo; enlaces y comentarios en código actualizados |
