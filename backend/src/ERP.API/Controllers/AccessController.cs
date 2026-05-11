@@ -3,7 +3,6 @@ using ERP.API.Extensions;
 using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.BootstrapLogin;
 using ERP.Application.Access.UseCases.SwitchTenant;
-using ERP.Application.Access.UseCases.RegisterTenantWithAdmin;
 using ERP.Application.Access.UseCases.UpsertMembership;
 using ERP.Application.Access.UseCases.RevokeMembership;
 using ERP.Application.Access.UseCases.Profiles;
@@ -78,7 +77,10 @@ public class AccessController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Registro de empresa + usuario administrador (onboarding).</summary>
+    /// <summary>
+    /// Alias legacy de alta de empresa.
+    /// Ruta oficial: <c>POST /api/access/superadmin/tenants</c>.
+    /// </summary>
     /// <remarks>
     /// Crea el tenant, crea el usuario global (email único en el sistema) y le asigna una membresía Admin
     /// solo en esa empresa.
@@ -86,11 +88,14 @@ public class AccessController : ControllerBase
     /// <response code="201">Tenant creado + session token del admin.</response>
     /// <response code="400">Slug duplicado o email ya registrado.</response>
     [HttpPost("register-tenant")]
-    [AllowAnonymous]
+    [Authorize(Roles = "SuperAdmin")]
+    [ApiExplorerSettings(IgnoreApi = true)]
     [ProducesResponseType(typeof(ApiResponse<SessionResponseDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> RegisterTenant([FromBody] RegisterTenantWithAdminCommand command, CancellationToken ct)
+    public async Task<IActionResult> RegisterTenant([FromBody] SuperAdminCreateTenantWithAdminCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
