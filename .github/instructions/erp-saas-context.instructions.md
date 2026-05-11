@@ -21,7 +21,7 @@ applyTo: ["backend/**", "frontend/**", "scripts/**"]
 - **Multi-tenant:** JWT + filtros EF; nunca filtrar datos sin `TenantId` coherente.
 - **Navegación:** sin UUID sensibles en query string; `sessionStorage` (`erp.saas.*`). Ver `saas-navigation-no-sensitive-url.mdc`.
 - **Validación:** DTO → negocio → autorización → query filters.
-- **Estado del proyecto:** `docs/ESTADO-PROYECTO-2026-05.md`; diario: `docs/REGISTRO-PROYECTO.md`.
+- **Estado del proyecto:** `docs/ESTADO-PROYECTO.md`; diario: `docs/REGISTRO-PROYECTO.md`.
 - **Histórico de riesgos resueltos:** `docs/HISTORIAL-ARQUITECTURA-RIESGOS.md` (solo referencia).
 
 **Última revisión de este stub:** 2026-05-11.

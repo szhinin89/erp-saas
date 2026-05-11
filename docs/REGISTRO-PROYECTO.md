@@ -1,7 +1,7 @@
 # Registro del Proyecto — ERP SaaS ZH Technologies
 
 > **Uso:** entradas cronológicas de trabajo realizado, decisiones, deuda técnica y pendientes.
-> Leer junto con `ESTADO-PROYECTO-2026-05.md` para contexto completo.
+> Leer junto con `ESTADO-PROYECTO.md` para contexto completo.
 >
 > **Notas de continuación de sesión** (antes en `docs/CONTINUAR-sesion.md`): usar este mismo archivo — añadir una entrada con fecha cuando se cierre un hilo.
 

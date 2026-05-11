@@ -3,7 +3,7 @@
 > **Índice maestro para agentes y desarrolladores.** Revisión del índice: **2026-05-11**.  
 > Lee este archivo primero; luego abre solo los enlaces que correspondan a tu tarea.
 >
-> **Estado actual del proyecto → [`docs/ESTADO-PROYECTO-2026-05.md`](docs/ESTADO-PROYECTO-2026-05.md)**  
+> **Estado actual del proyecto → [`docs/ESTADO-PROYECTO.md`](docs/ESTADO-PROYECTO.md)**  
 > (qué está hecho, qué falta, cómo retomar, comandos frecuentes)
 
 ## Mapa de documentación (una fuente por tema)
@@ -11,7 +11,7 @@
 | Tema | Documento que manda | Qué cubre |
 |------|----------------------|-----------|
 | Índice y enlaces | **`CONTEXT.md`** (este archivo) | Dónde buscar según la tarea |
-| Estado, backlog, retomar | **`docs/ESTADO-PROYECTO-2026-05.md`** | Hecho / pendiente / comandos |
+| Estado, backlog, retomar | **`docs/ESTADO-PROYECTO.md`** | Hecho / pendiente / comandos |
 | Diario de sesiones y decisiones | **`docs/REGISTRO-PROYECTO.md`** | Entradas por fecha; notas de continuación |
 | Arranque, Docker, EF, curl, CI | **`docs/DESARROLLO.md`** | Operación local y troubleshooting |
 | Capas, multi-tenant, módulos | **`docs/ARCHITECTURE.md`** | Arquitectura de producto |
@@ -36,7 +36,7 @@ erp-saas/
 │   ├── adr/                               ← decisiones de arquitectura (ADR); índice en README.md
 │   ├── DESARROLLO.md                      ← arranque local, Docker, migraciones, curl, troubleshooting
 │   ├── ARCHITECTURE.md                    ← capas, multi-tenant, carpetas por módulo, migraciones
-│   ├── ESTADO-PROYECTO-2026-05.md         ← ★ estado y backlog (actualizar aquí)
+│   ├── ESTADO-PROYECTO.md                 ← ★ estado y backlog (actualizar aquí)
 │   ├── REGISTRO-PROYECTO.md               ← log de trabajo por fecha
 │   ├── HISTORIAL-ARQUITECTURA-RIESGOS.md  ← histórico riesgos/correcciones (solo lectura)
 │   ├── developer-reference.html           ← referencia larga (abrir en navegador)

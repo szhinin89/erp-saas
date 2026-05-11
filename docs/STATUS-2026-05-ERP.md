@@ -3,7 +3,7 @@
 Este archivo se mantuvo por compatibilidad con enlaces antiguos.
 
 **Estado actual del proyecto, comandos y backlog:**  
-→ [`ESTADO-PROYECTO-2026-05.md`](ESTADO-PROYECTO-2026-05.md)
+→ [`ESTADO-PROYECTO.md`](ESTADO-PROYECTO.md)
 
 **Arranque local, migraciones y troubleshooting:**  
 → [`DESARROLLO.md`](DESARROLLO.md)
@@ -11,4 +11,4 @@ Este archivo se mantuvo por compatibilidad con enlaces antiguos.
 **Índice maestro del repo:**  
 → [`../CONTEXT.md`](../CONTEXT.md)
 
-> Actualizar el estado en `ESTADO-PROYECTO-2026-05.md` o entradas en `REGISTRO-PROYECTO.md`; no volver a duplicar informes largos aquí.
+> Actualizar el estado en `ESTADO-PROYECTO.md` o entradas en `REGISTRO-PROYECTO.md`; no volver a duplicar informes largos aquí.

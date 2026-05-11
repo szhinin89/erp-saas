@@ -25,7 +25,7 @@ Marcá lo que aplica a este PR.
 ### Datos / despliegue (si aplica)
 
 - [ ] Migración EF probada (`dotnet ef database update` desde entorno local).
-- [ ] Notas en [`docs/ESTADO-PROYECTO-2026-05.md`](docs/ESTADO-PROYECTO-2026-05.md) o [`docs/REGISTRO-PROYECTO.md`](docs/REGISTRO-PROYECTO.md) si cambia algo relevante para el equipo (migraciones, auth, puertos).
+- [ ] Notas en [`docs/ESTADO-PROYECTO.md`](docs/ESTADO-PROYECTO.md) o [`docs/REGISTRO-PROYECTO.md`](docs/REGISTRO-PROYECTO.md) si cambia algo relevante para el equipo (migraciones, auth, puertos).
 
 ## Cómo lo probé
 
