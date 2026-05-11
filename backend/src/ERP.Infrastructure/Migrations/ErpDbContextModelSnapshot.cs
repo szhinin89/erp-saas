@@ -3936,7 +3936,7 @@ namespace ERP.Infrastructure.Migrations
 
                             b1.HasKey("JournalEntryLineId");
 
-                            b1.ToTable("journal_entry_lines");
+                            b1.ToTable("journal_entry_lines", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("JournalEntryLineId");
@@ -3960,7 +3960,7 @@ namespace ERP.Infrastructure.Migrations
 
                             b1.HasKey("JournalEntryLineId");
 
-                            b1.ToTable("journal_entry_lines");
+                            b1.ToTable("journal_entry_lines", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("JournalEntryLineId");

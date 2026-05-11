@@ -5,6 +5,8 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
 using ERP.Application.Ventas.DTOs;
+using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Ventas.Entities;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;
@@ -222,5 +224,155 @@ public sealed class VentasHttpTests
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await res.Content.ReadAsStringAsync();
         body.Should().Contain("\"rucEmpresa\":\"9999999999999\"");
+    }
+
+    [Fact]
+    public async Task Ventas_Imprimir_factura_autorizada_responde_html_con_configuracion_facturacion()
+    {
+        var (factory, client, seed) = await CreateClientAsync();
+        await using var _ = factory;
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+
+        var clienteId = db.Customers.First(c => c.TenantId == seed.TenantId).Id;
+        var branchId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
+
+        var config = ConfiguracionFacturacion.Create(
+            tenantId: seed.TenantId,
+            razonSocial: "Razon Social Test",
+            nombreComercial: "Comercial Test",
+            ruc: "1790016910001",
+            direccionMatriz: "Av. Prueba 123",
+            telefono: "0999999999",
+            correo: "test@example.com",
+            obligadoContabilidad: true,
+            contribuyenteEspecial: "1234",
+            logoBase64: null,
+            leyendaAdicional: "Gracias por su compra",
+            anchoTirilla: 80,
+            createdBy: seed.UserId);
+
+        db.ConfiguracionFacturaciones.Add(config);
+
+        var factura = VentasFactura.Create(
+            seed.TenantId,
+            branchId,
+            clienteId,
+            seed.BodegaId,
+            tipoDocumento: "01",
+            establecimiento: "001",
+            puntoEmision: "001",
+            secuencial: "000000001",
+            claveAcceso: new string('1', 48),
+            fechaEmision: DateTime.UtcNow,
+            subtotal: 100m,
+            impuesto: 12m,
+            total: 112m,
+            xmlGeneradoPath: null,
+            xmlAutorizacionPath: null,
+            numeroAutorizacion: null,
+            fechaAutorizacion: null,
+            mensajeError: null,
+            createdBy: seed.UserId);
+
+        var detalle = VentasDetalle.Create(
+            seed.TenantId,
+            seed.ProductId,
+            cantidad: 1m,
+            precioUnitario: 100m,
+            impuesto: 12m,
+            descripcion: "Producto de prueba",
+            createdBy: seed.UserId);
+        detalle.AsignarFacturaId(factura.Id);
+        factura.AgregarDetalle(detalle);
+        factura.Validar(seed.UserId);
+        factura.Autorizar(
+            seed.UserId,
+            numeroAutorizacion: "AUTH-123",
+            fechaAutorizacion: DateTime.UtcNow,
+            xmlGeneradoPath: null,
+            xmlAutorizacionPath: null,
+            asientoId: Guid.NewGuid());
+
+        db.VentasFacturas.Add(factura);
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        var res = await client.GetAsync($"/api/ventas/{factura.Id}/imprimir");
+
+        res.StatusCode.Should().Be(HttpStatusCode.OK);
+        res.Content.Headers.ContentType!.MediaType.Should().Be("text/html");
+
+        var html = await res.Content.ReadAsStringAsync();
+        html.Should().Contain("<html");
+        html.Should().Contain("Razon Social Test");
+        html.Should().Contain("Comercial Test");
+        html.Should().Contain("Gracias por su compra");
+        html.Should().Contain("Producto de prueba");
+        html.Should().Contain("max-width: 80mm");
+    }
+
+    [Fact]
+    public async Task Ventas_Imprimir_factura_autorizada_sin_config_facturacion_usa_valores_default()
+    {
+        var (factory, client, seed) = await CreateClientAsync();
+        await using var _ = factory;
+
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+
+        var clienteId = db.Customers.First(c => c.TenantId == seed.TenantId).Id;
+        var branchId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
+
+        var factura = VentasFactura.Create(
+            seed.TenantId,
+            branchId,
+            clienteId,
+            seed.BodegaId,
+            tipoDocumento: "01",
+            establecimiento: "001",
+            puntoEmision: "001",
+            secuencial: "000000002",
+            claveAcceso: new string('1', 48),
+            fechaEmision: DateTime.UtcNow,
+            subtotal: 50m,
+            impuesto: 6m,
+            total: 56m,
+            xmlGeneradoPath: null,
+            xmlAutorizacionPath: null,
+            numeroAutorizacion: null,
+            fechaAutorizacion: null,
+            mensajeError: null,
+            createdBy: seed.UserId);
+
+        var detalle = VentasDetalle.Create(
+            seed.TenantId,
+            seed.ProductId,
+            cantidad: 1m,
+            precioUnitario: 50m,
+            impuesto: 6m,
+            descripcion: "Item default",
+            createdBy: seed.UserId);
+        detalle.AsignarFacturaId(factura.Id);
+        factura.AgregarDetalle(detalle);
+        factura.Validar(seed.UserId);
+        factura.Autorizar(
+            seed.UserId,
+            numeroAutorizacion: "AUTH-456",
+            fechaAutorizacion: DateTime.UtcNow,
+            xmlGeneradoPath: null,
+            xmlAutorizacionPath: null,
+            asientoId: Guid.NewGuid());
+
+        db.VentasFacturas.Add(factura);
+        await db.SaveChangesAsync(CancellationToken.None);
+
+        var res = await client.GetAsync($"/api/ventas/{factura.Id}/imprimir");
+
+        res.StatusCode.Should().Be(HttpStatusCode.OK);
+        var html = await res.Content.ReadAsStringAsync();
+        html.Should().Contain("<html");
+        html.Should().Contain("EMPRESA DEMO");
+        html.Should().Contain("Item default");
     }
 }

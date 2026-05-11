@@ -3,8 +3,6 @@ using ERP.API.Middleware;
 using ERP.Infrastructure;
 using ERP.Application;
 using ERP.API.Authorization;
-using ERP.Application.Common.Interfaces;
-using ERP.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using QuestPDF.Infrastructure;
 
@@ -48,12 +46,6 @@ builder.Services.Configure<ERP.Application.Common.Config.KardexOptions>(kardexSe
 builder.Services.AddSingleton(sp =>
     kardexSection.Get<ERP.Application.Common.Config.KardexOptions>()
     ?? new ERP.Application.Common.Config.KardexOptions());
-
-// Registro condicional del servicio SRI
-if (builder.Environment.IsDevelopment())
-    builder.Services.AddScoped<ISriFacturaElectronicaService, SriFacturaElectronicaSimuladoService>();
-else
-    builder.Services.AddScoped<ISriFacturaElectronicaService, SriFacturaElectronicaRealService>();
 
 // Authorization: por defecto SOLO permite tokens de sesión (no bootstrap).
 builder.Services.AddSingleton<IAuthorizationHandler, TokenTypeHandler>();

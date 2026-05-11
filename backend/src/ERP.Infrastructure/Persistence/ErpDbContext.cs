@@ -14,12 +14,12 @@ using ERP.Domain.Customers.Entities;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Domain.Navigation.Entities;
 using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Ventas.Entities;
 using ERP.Domain.Bodegas.Entities;
 using ERP.Domain.Proveedores.Entities;
 using ERP.Domain.Compras.Entities;
 using ERP.Domain.Gastos.Entities;
 using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Ventas.Entities;
 using ERP.Application.Common;
 using System.Linq.Expressions;
 
@@ -98,6 +98,8 @@ public class ErpDbContext : DbContext
     public DbSet<Branch> Branches => Set<Branch>();
     public DbSet<UserActivity> UserActivities => Set<UserActivity>();
     public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<VentasFactura> VentasFacturas => Set<VentasFactura>();
+    public DbSet<ConfiguracionSRI> ConfiguracionSRIs => Set<ConfiguracionSRI>();
 
     // ── Logística / Bodegas ───────────────────────────────────────────────
     public DbSet<Bodega> Bodegas => Set<Bodega>();
@@ -125,11 +127,6 @@ public class ErpDbContext : DbContext
     public DbSet<TransferenciaDetalle> TransferenciaDetalles  => Set<TransferenciaDetalle>();
     public DbSet<AjusteInventario>     AjustesInventario      => Set<AjusteInventario>();
 
-    // ── Facturación / Ventas ───────────────────────────────────────────────
-    public DbSet<ConfiguracionSRI> ConfiguracionSRIs => Set<ConfiguracionSRI>();
-    public DbSet<VentasFactura> VentasFacturas => Set<VentasFactura>();
-    public DbSet<VentasDetalle> VentasDetalles => Set<VentasDetalle>();
-
     public DbSet<SaasFeatureDefinition> SaasFeatureDefinitions => Set<SaasFeatureDefinition>();
     public DbSet<SaasPlan> SaasPlans => Set<SaasPlan>();
     public DbSet<SaasPlanFeature> SaasPlanFeatures => Set<SaasPlanFeature>();
@@ -142,6 +139,7 @@ public class ErpDbContext : DbContext
     public DbSet<ConfigGlobal> ConfigGlobals => Set<ConfigGlobal>();
     public DbSet<ConfigModule> ConfigModules => Set<ConfigModule>();
     public DbSet<ConfigFeature> ConfigFeatures => Set<ConfigFeature>();
+    public DbSet<ConfiguracionFacturacion> ConfiguracionFacturaciones => Set<ConfiguracionFacturacion>();
 
     /// <summary>
     /// Evaluada en cada query, no al compilar el modelo.

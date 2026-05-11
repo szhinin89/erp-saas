@@ -21,6 +21,12 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // ContentRoot = proyecto ERP.API para que exista Templates/ (RazorLight) al ejecutar tests desde ERP.API.Tests/bin.
+        var apiProjectRoot = Path.GetFullPath(
+            Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "ERP.API"));
+        if (Directory.Exists(Path.Combine(apiProjectRoot, "Templates")))
+            builder.UseContentRoot(apiProjectRoot);
+
         builder.UseEnvironment("Development");
 
         // Gana a user-secrets / appsettings para que el JWT de prueba coincida con la validación del host.

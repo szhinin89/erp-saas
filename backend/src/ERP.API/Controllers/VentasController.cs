@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Ventas.DTOs;
 using ERP.Application.Ventas.UseCases.AnularFactura;
 using ERP.Application.Ventas.UseCases.CrearVenta;
@@ -26,8 +27,15 @@ namespace ERP.API.Controllers;
 public sealed class VentasController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly ITirillaFacturaService _tirillaFacturaService;
 
-    public VentasController(IMediator mediator) => _mediator = mediator;
+    public VentasController(
+        IMediator mediator,
+        ITirillaFacturaService tirillaFacturaService)
+    {
+        _mediator = mediator;
+        _tirillaFacturaService = tirillaFacturaService;
+    }
 
     // ── Queries ───────────────────────────────────────────────────────────
 
@@ -160,5 +168,26 @@ public sealed class VentasController : ControllerBase
     {
         var result = await _mediator.Send(new AnularFacturaCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Anulado");
+    }
+
+    /// <summary>
+    /// Genera el HTML de impresión de la factura en formato de ticket térmico 80mm.
+    /// </summary>
+    [HttpGet("{id:guid}/imprimir")]
+    [Authorize(Policy = "perm:ventas.facturas.view")]
+    [Produces("text/html")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Imprimir(Guid id, CancellationToken ct = default)
+    {
+        try
+        {
+            var html = await _tirillaFacturaService.GenerarHtmlFacturaAsync(id, ct);
+            return Content(html, "text/html; charset=utf-8");
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
     }
 }

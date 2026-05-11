@@ -57,10 +57,6 @@ public class InventarioMovimientoConfiguration : IEntityTypeConfiguration<Invent
             .HasColumnName("documento_origen_tipo")
             .HasMaxLength(InventarioMovimiento.DocumentoOrigenTipoMaxLen);
 
-        builder.Property(m => m.ReferenciaTipo)
-            .HasColumnName("referencia_tipo")
-            .HasMaxLength(InventarioMovimiento.ReferenciaTipoMaxLen);
-
         builder.Property(m => m.CostoUnitario)
             .HasColumnName("costo_unitario")
             .HasPrecision(18, 6);

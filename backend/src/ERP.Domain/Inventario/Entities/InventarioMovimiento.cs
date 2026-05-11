@@ -8,9 +8,8 @@ namespace ERP.Domain.Inventario.Entities;
 /// </summary>
 public sealed class InventarioMovimiento : AuditableEntity, ITenantEntity
 {
-    public const int ReferenciaMaxLen          = 100;
+    public const int ReferenciaMaxLen         = 100;
     public const int DocumentoOrigenTipoMaxLen = 50;
-    public const int ReferenciaTipoMaxLen      = 50;
 
     public Guid                     ProductoId           { get; private set; }
     public Guid                     BodegaId             { get; private set; }
@@ -19,7 +18,6 @@ public sealed class InventarioMovimiento : AuditableEntity, ITenantEntity
     public decimal                  CantidadAnterior     { get; private set; }
     public decimal                  CantidadResultante   { get; private set; }
     public string?                  Referencia           { get; private set; }
-    public string?                  ReferenciaTipo       { get; private set; }
     public Guid?                    DocumentoOrigenId    { get; private set; }
     public string?                  DocumentoOrigenTipo  { get; private set; }
     /// <summary>
