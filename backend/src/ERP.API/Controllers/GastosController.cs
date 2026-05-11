@@ -11,7 +11,7 @@ using ERP.Application.Modules.Gastos.UseCases.GetGastoById;
 using ERP.Application.Modules.Gastos.UseCases.GetGastos;
 using ERP.Application.Modules.Gastos.UseCases.RechazarGasto;
 using ERP.Application.Modules.Gastos.UseCases.ValidarGasto;
-using ERP.Domain.Gastos.Enums;
+using ERP.Domain.Modules.Gastos.Enums;
 
 namespace ERP.API.Controllers;
 

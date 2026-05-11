@@ -5,11 +5,11 @@ using ERP.Application.Modules.Gastos.UseCases.AprobarGasto;
 using ERP.Application.Modules.Gastos.UseCases.CrearGasto;
 using ERP.Application.Modules.Gastos.UseCases.ValidarGasto;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Gastos.Entities;
-using ERP.Domain.Gastos.Enums;
-using ERP.Domain.Gastos.Interfaces;
-using ERP.Domain.Proveedores.Entities;
-using ERP.Domain.Proveedores.Interfaces;
+using ERP.Domain.Modules.Gastos.Entities;
+using ERP.Domain.Modules.Gastos.Enums;
+using ERP.Domain.Modules.Gastos.Interfaces;
+using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Compras.Interfaces;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 

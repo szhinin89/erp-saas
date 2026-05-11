@@ -4,10 +4,10 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Compras.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Compras.Entities;
-using ERP.Domain.Compras.Interfaces;
+using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Compras.Interfaces;
 using ERP.Domain.Products.Interfaces;
-using ERP.Domain.Proveedores.Interfaces;
+using ERP.Domain.Modules.Compras.Interfaces;
 
 namespace ERP.Application.Modules.Compras.UseCases.CrearOrdenCompra;
 

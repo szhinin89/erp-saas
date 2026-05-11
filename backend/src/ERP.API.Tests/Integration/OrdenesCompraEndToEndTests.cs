@@ -8,8 +8,8 @@ using ERP.Application.Modules.Compras.UseCases.CancelarOrdenCompra;
 using ERP.Application.Modules.Compras.UseCases.CrearOrdenCompra;
 using ERP.Application.Modules.Compras.UseCases.EnviarOrdenCompra;
 using ERP.Application.Modules.Compras.UseCases.VincularFacturaAOrdenCompra;
-using ERP.Domain.Compras.Entities;
-using ERP.Domain.Proveedores.Entities;
+using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Compras.Entities;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;

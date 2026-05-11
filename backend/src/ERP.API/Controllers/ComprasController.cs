@@ -10,7 +10,7 @@ using ERP.Application.Modules.Compras.UseCases.GetCompraById;
 using ERP.Application.Modules.Compras.UseCases.GetCompras;
 using ERP.Application.Modules.Compras.UseCases.RechazarCompra;
 using ERP.Application.Modules.Compras.UseCases.ValidarCompra;
-using ERP.Domain.Compras.Enums;
+using ERP.Domain.Modules.Compras.Enums;
 
 namespace ERP.API.Controllers;
 

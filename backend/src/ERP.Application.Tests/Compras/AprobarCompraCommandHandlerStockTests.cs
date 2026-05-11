@@ -2,11 +2,11 @@ using FluentAssertions;
 using ERP.Application.Common;
 using ERP.Application.Modules.Compras.UseCases.AprobarCompra;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Compras.Entities;
-using ERP.Domain.Compras.Enums;
-using ERP.Domain.Compras.Interfaces;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Compras.Enums;
+using ERP.Domain.Modules.Compras.Interfaces;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Interfaces;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 

@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Modules.Bodegas.DTOs;
-using ERP.Application.Modules.Bodegas.UseCases.CreateBodega;
-using ERP.Application.Modules.Bodegas.UseCases.DisableBodega;
-using ERP.Application.Modules.Bodegas.UseCases.EnableBodega;
-using ERP.Application.Modules.Bodegas.UseCases.GetBodegaById;
-using ERP.Application.Modules.Bodegas.UseCases.GetBodegas;
-using ERP.Application.Modules.Bodegas.UseCases.UpdateBodega;
+using ERP.Application.Modules.Inventario.DTOs;
+using ERP.Application.Modules.Inventario.UseCases.CrearBodega;
+using ERP.Application.Modules.Inventario.UseCases.DeshabilitarBodega;
+using ERP.Application.Modules.Inventario.UseCases.HabilitarBodega;
+using ERP.Application.Modules.Inventario.UseCases.ObtenerBodega;
+using ERP.Application.Modules.Inventario.UseCases.ListarBodegas;
+using ERP.Application.Modules.Inventario.UseCases.ActualizarBodega;
 
 namespace ERP.API.Controllers;
 

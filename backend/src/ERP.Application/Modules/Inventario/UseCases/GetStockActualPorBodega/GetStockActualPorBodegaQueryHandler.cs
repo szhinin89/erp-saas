@@ -1,8 +1,8 @@
 using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventario.DTOs;
-using ERP.Domain.Bodegas.Interfaces;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventario.Interfaces;
 
 namespace ERP.Application.Modules.Inventario.UseCases.GetStockActualPorBodega;
 

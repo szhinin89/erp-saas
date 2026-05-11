@@ -239,7 +239,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("memberships", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Accounting.Entities.Account", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Contabilidad.Entities.Account", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -305,7 +305,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("accounts", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Accounting.Entities.JournalEntry", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Contabilidad.Entities.JournalEntry", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -376,7 +376,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("journal_entries", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Accounting.Entities.JournalEntryLine", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Contabilidad.Entities.JournalEntryLine", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -608,7 +608,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("users", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Bodegas.Entities.Bodega", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Inventario.Entities.Bodega", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -779,7 +779,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("branches", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Compras.Entities.CompraBodegaAsignacion", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Compras.Entities.CompraBodegaAsignacion", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -838,7 +838,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("compra_bodega_asignaciones", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Compras.Entities.CompraDetalle", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Compras.Entities.CompraDetalle", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -934,7 +934,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("compra_detalles", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Compras.Entities.CompraFactura", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Compras.Entities.CompraFactura", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1071,7 +1071,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("compra_facturas", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Compras.Entities.OrdenCompra", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Compras.Entities.OrdenCompra", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1192,7 +1192,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("ordenes_compra", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Compras.Entities.OrdenCompraDetalle", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Compras.Entities.OrdenCompraDetalle", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1273,7 +1273,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("ordenes_compra_detalles", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Compras.Entities.OrdenCompraFactura", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Compras.Entities.OrdenCompraFactura", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1705,7 +1705,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("configuracion_sri", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Customers.Entities.Customer", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Ventas.Entities.Customer", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1788,7 +1788,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("customers", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Gastos.Entities.GastoFactura", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Gastos.Entities.GastoFactura", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -2031,7 +2031,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("geo_provinces", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Inventario.Entities.AjusteInventario", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Inventario.Entities.AjusteInventario", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -2143,7 +2143,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("ajustes_inventario", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Inventario.Entities.InventarioMovimiento", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Inventario.Entities.InventarioMovimiento", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -2237,7 +2237,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("inventario_movimientos", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Inventario.Entities.KardexReporte", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Inventario.Entities.KardexReporte", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -2298,7 +2298,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("kardex_reportes", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Inventario.Entities.KardexSnapshot", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Inventario.Entities.KardexSnapshot", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -2352,7 +2352,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("kardex_snapshots", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Inventario.Entities.StockActual", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Inventario.Entities.StockActual", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -2415,7 +2415,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("stock_actual", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Inventario.Entities.Transferencia", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Inventario.Entities.Transferencia", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -2504,7 +2504,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("transferencias", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Inventario.Entities.TransferenciaDetalle", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Inventario.Entities.TransferenciaDetalle", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -3374,7 +3374,7 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("units_of_measure", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Proveedores.Entities.Proveedor", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Compras.Entities.Proveedor", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -4129,15 +4129,15 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("ventas_facturas", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Accounting.Entities.JournalEntryLine", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Contabilidad.Entities.JournalEntryLine", b =>
                 {
-                    b.HasOne("ERP.Domain.Accounting.Entities.JournalEntry", null)
+                    b.HasOne("ERP.Domain.Modules.Contabilidad.Entities.JournalEntry", null)
                         .WithMany("Lines")
                         .HasForeignKey("JournalEntryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.OwnsOne("ERP.Domain.Accounting.ValueObjects.Money", "Credit", b1 =>
+                    b.OwnsOne("ERP.Domain.Modules.Contabilidad.ValueObjects.Money", "Credit", b1 =>
                         {
                             b1.Property<Guid>("JournalEntryLineId")
                                 .HasColumnType("uuid");
@@ -4161,7 +4161,7 @@ namespace ERP.Infrastructure.Migrations
                                 .HasForeignKey("JournalEntryLineId");
                         });
 
-                    b.OwnsOne("ERP.Domain.Accounting.ValueObjects.Money", "Debit", b1 =>
+                    b.OwnsOne("ERP.Domain.Modules.Contabilidad.ValueObjects.Money", "Debit", b1 =>
                         {
                             b1.Property<Guid>("JournalEntryLineId")
                                 .HasColumnType("uuid");
@@ -4215,18 +4215,18 @@ namespace ERP.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Compras.Entities.CompraDetalle", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Compras.Entities.CompraDetalle", b =>
                 {
-                    b.HasOne("ERP.Domain.Compras.Entities.CompraFactura", null)
+                    b.HasOne("ERP.Domain.Modules.Compras.Entities.CompraFactura", null)
                         .WithMany("Detalles")
                         .HasForeignKey("CompraFacturaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ERP.Domain.Compras.Entities.OrdenCompraDetalle", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Compras.Entities.OrdenCompraDetalle", b =>
                 {
-                    b.HasOne("ERP.Domain.Compras.Entities.OrdenCompra", null)
+                    b.HasOne("ERP.Domain.Modules.Compras.Entities.OrdenCompra", null)
                         .WithMany("Detalles")
                         .HasForeignKey("OrdenCompraId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -4260,15 +4260,15 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ERP.Domain.Inventario.Entities.Transferencia", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Inventario.Entities.Transferencia", b =>
                 {
-                    b.HasOne("ERP.Domain.Bodegas.Entities.Bodega", "BodegaDestino")
+                    b.HasOne("ERP.Domain.Modules.Inventario.Entities.Bodega", "BodegaDestino")
                         .WithMany()
                         .HasForeignKey("BodegaDestinoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERP.Domain.Bodegas.Entities.Bodega", "BodegaOrigen")
+                    b.HasOne("ERP.Domain.Modules.Inventario.Entities.Bodega", "BodegaOrigen")
                         .WithMany()
                         .HasForeignKey("BodegaOrigenId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -4279,9 +4279,9 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("BodegaOrigen");
                 });
 
-            modelBuilder.Entity("ERP.Domain.Inventario.Entities.TransferenciaDetalle", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Inventario.Entities.TransferenciaDetalle", b =>
                 {
-                    b.HasOne("ERP.Domain.Inventario.Entities.Transferencia", null)
+                    b.HasOne("ERP.Domain.Modules.Inventario.Entities.Transferencia", null)
                         .WithMany("Detalles")
                         .HasForeignKey("TransferenciaId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -4321,7 +4321,7 @@ namespace ERP.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERP.Domain.Accounting.Entities.Account", null)
+                    b.HasOne("ERP.Domain.Modules.Contabilidad.Entities.Account", null)
                         .WithMany()
                         .HasForeignKey("ExciseAccountId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -4348,7 +4348,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("PurchaseTaxId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("ERP.Domain.Accounting.Entities.Account", null)
+                    b.HasOne("ERP.Domain.Modules.Contabilidad.Entities.Account", null)
                         .WithMany()
                         .HasForeignKey("PurchaseVatAccountId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -4358,7 +4358,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("SaleTaxId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("ERP.Domain.Accounting.Entities.Account", null)
+                    b.HasOne("ERP.Domain.Modules.Contabilidad.Entities.Account", null)
                         .WithMany()
                         .HasForeignKey("SaleVatAccountId")
                         .OnDelete(DeleteBehavior.Restrict);
@@ -4933,13 +4933,13 @@ namespace ERP.Infrastructure.Migrations
 
             modelBuilder.Entity("ERP.Domain.Modules.Ventas.Entities.VentasFactura", b =>
                 {
-                    b.HasOne("ERP.Domain.Bodegas.Entities.Bodega", "Bodega")
+                    b.HasOne("ERP.Domain.Modules.Inventario.Entities.Bodega", "Bodega")
                         .WithMany()
                         .HasForeignKey("BodegaId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERP.Domain.Customers.Entities.Customer", "Cliente")
+                    b.HasOne("ERP.Domain.Modules.Ventas.Entities.Customer", "Cliente")
                         .WithMany()
                         .HasForeignKey("ClienteId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -4950,22 +4950,22 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Cliente");
                 });
 
-            modelBuilder.Entity("ERP.Domain.Accounting.Entities.JournalEntry", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Contabilidad.Entities.JournalEntry", b =>
                 {
                     b.Navigation("Lines");
                 });
 
-            modelBuilder.Entity("ERP.Domain.Compras.Entities.CompraFactura", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Compras.Entities.CompraFactura", b =>
                 {
                     b.Navigation("Detalles");
                 });
 
-            modelBuilder.Entity("ERP.Domain.Compras.Entities.OrdenCompra", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Compras.Entities.OrdenCompra", b =>
                 {
                     b.Navigation("Detalles");
                 });
 
-            modelBuilder.Entity("ERP.Domain.Inventario.Entities.Transferencia", b =>
+            modelBuilder.Entity("ERP.Domain.Modules.Inventario.Entities.Transferencia", b =>
                 {
                     b.Navigation("Detalles");
                 });

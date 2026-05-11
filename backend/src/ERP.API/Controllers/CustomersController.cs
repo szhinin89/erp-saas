@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Modules.Customers.DTOs;
-using ERP.Application.Modules.Customers.UseCases.CreateCustomer;
-using ERP.Application.Modules.Customers.UseCases.DisableCustomer;
-using ERP.Application.Modules.Customers.UseCases.EnableCustomer;
-using ERP.Application.Modules.Customers.UseCases.GetCustomerById;
-using ERP.Application.Modules.Customers.UseCases.GetCustomers;
-using ERP.Application.Modules.Customers.UseCases.UpdateCustomer;
+using ERP.Application.Modules.Ventas.DTOs;
+using ERP.Application.Modules.Ventas.UseCases.CrearCliente;
+using ERP.Application.Modules.Ventas.UseCases.DeshabilitarCliente;
+using ERP.Application.Modules.Ventas.UseCases.HabilitarCliente;
+using ERP.Application.Modules.Ventas.UseCases.ObtenerCliente;
+using ERP.Application.Modules.Ventas.UseCases.ListarClientes;
+using ERP.Application.Modules.Ventas.UseCases.ActualizarCliente;
 
 namespace ERP.API.Controllers;
 

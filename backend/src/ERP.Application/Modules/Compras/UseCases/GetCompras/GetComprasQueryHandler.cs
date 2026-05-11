@@ -1,7 +1,7 @@
 using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Compras.DTOs;
-using ERP.Domain.Compras.Interfaces;
+using ERP.Domain.Modules.Compras.Interfaces;
 
 namespace ERP.Application.Modules.Compras.UseCases.GetCompras;
 
@@ -28,7 +28,7 @@ public sealed class GetComprasQueryHandler
         return Result<IReadOnlyList<CompraFacturaDto>>.Success(dtos);
     }
 
-    private static CompraFacturaDto ToDto(Domain.Compras.Entities.CompraFactura c) => new(
+    private static CompraFacturaDto ToDto(ERP.Domain.Modules.Compras.Entities.CompraFactura c) => new(
         c.Id, c.ProveedorId, c.NumeroFactura, c.ClaveAcceso, c.XmlPath,
         c.FechaFactura, c.FechaVencimiento, c.Estado, c.CondicionPago,
         c.Subtotal, c.IvaTotal, c.Total, c.Observaciones, c.AsientoContableId, c.CreatedAt);

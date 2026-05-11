@@ -1,6 +1,6 @@
-using ERP.Domain.Bodegas.Entities;
+using ERP.Domain.Modules.Inventario.Entities;
 using ERP.Domain.Common;
-using ERP.Domain.Customers.Entities;
+using ERP.Domain.Modules.Ventas.Entities;
 
 namespace ERP.Domain.Modules.Ventas.Entities;
 

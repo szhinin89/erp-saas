@@ -1,4 +1,4 @@
-using ERP.Domain.Gastos.Enums;
+using ERP.Domain.Modules.Gastos.Enums;
 
 namespace ERP.Application.Modules.Gastos.DTOs;
 

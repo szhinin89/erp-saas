@@ -11,7 +11,7 @@ using ERP.Application.Modules.Gastos.UseCases.AprobarGasto;
 using ERP.Application.Modules.Gastos.UseCases.CrearGasto;
 using ERP.Application.Modules.Gastos.UseCases.ValidarGasto;
 using ERP.Application.Modules.Inventario.UseCases.GetStockActualPorBodega;
-using ERP.Domain.Gastos.Enums;
+using ERP.Domain.Modules.Gastos.Enums;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;

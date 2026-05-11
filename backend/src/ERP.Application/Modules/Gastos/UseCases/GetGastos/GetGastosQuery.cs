@@ -2,7 +2,7 @@ using MediatR;
 using ERP.Application.Common;
 
 using ERP.Application.Modules.Gastos.DTOs;
-using ERP.Domain.Gastos.Enums;
+using ERP.Domain.Modules.Gastos.Enums;
 
 namespace ERP.Application.Modules.Gastos.UseCases.GetGastos;
 

@@ -3,10 +3,10 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Compras.DTOs;
 using ERP.Application.Modules.Compras.UseCases.VincularFacturaAOrdenCompra;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Compras.Entities;
-using ERP.Domain.Compras.Enums;
-using ERP.Domain.Compras.Interfaces;
-using ERP.Domain.Proveedores.Interfaces;
+using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Compras.Enums;
+using ERP.Domain.Modules.Compras.Interfaces;
+using ERP.Domain.Modules.Compras.Interfaces;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
@@ -245,7 +245,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
                 .ReturnsAsync(factura);
 
             _proveedorRepo.Setup(x => x.GetByIdAsync(TenantId, ProveedorId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync((ERP.Domain.Proveedores.Entities.Proveedor?)null);
+                .ReturnsAsync((ERP.Domain.Modules.Compras.Entities.Proveedor?)null);
 
             _activity.Setup(x => x.AddAsync(
                     It.IsAny<ERP.Domain.Audit.Entities.UserActivity>(), It.IsAny<CancellationToken>()))

@@ -14,7 +14,7 @@ public sealed class CrearGastoCommandValidator : AbstractValidator<CrearGastoCom
 
             RuleFor(x => x.CategoriaGasto)
                 .NotEmpty().WithMessage("La categoría de gasto es obligatoria en modo XML.")
-                .MaximumLength(ERP.Domain.Gastos.Entities.GastoFactura.CategoriaGastoMaxLen);
+                .MaximumLength(ERP.Domain.Modules.Gastos.Entities.GastoFactura.CategoriaGastoMaxLen);
         });
 
         When(x => x.Modo == ModoCreacionGasto.Manual, () =>
@@ -24,11 +24,11 @@ public sealed class CrearGastoCommandValidator : AbstractValidator<CrearGastoCom
 
             RuleFor(x => x.Concepto)
                 .NotEmpty().WithMessage("El concepto es obligatorio en modo manual.")
-                .MaximumLength(ERP.Domain.Gastos.Entities.GastoFactura.ConceptoMaxLen);
+                .MaximumLength(ERP.Domain.Modules.Gastos.Entities.GastoFactura.ConceptoMaxLen);
 
             RuleFor(x => x.CategoriaGasto)
                 .NotEmpty().WithMessage("La categoría de gasto es obligatoria en modo manual.")
-                .MaximumLength(ERP.Domain.Gastos.Entities.GastoFactura.CategoriaGastoMaxLen);
+                .MaximumLength(ERP.Domain.Modules.Gastos.Entities.GastoFactura.CategoriaGastoMaxLen);
 
             RuleFor(x => x.Subtotal).NotNull().WithMessage("El subtotal es obligatorio en modo manual.");
             RuleFor(x => x.Impuesto).NotNull().WithMessage("El impuesto es obligatorio en modo manual.");

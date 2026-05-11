@@ -5,11 +5,11 @@ using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Compras.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Compras.Enums;
-using ERP.Domain.Compras.Interfaces;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Enums;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Compras.Enums;
+using ERP.Domain.Modules.Compras.Interfaces;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Enums;
+using ERP.Domain.Modules.Inventario.Interfaces;
 
 namespace ERP.Application.Modules.Compras.UseCases.AprobarCompra;
 
@@ -163,7 +163,7 @@ public sealed class AprobarCompraCommandHandler
         }
     }
 
-    private static CompraFacturaDto ToDto(Domain.Compras.Entities.CompraFactura c) => new(
+    private static CompraFacturaDto ToDto(ERP.Domain.Modules.Compras.Entities.CompraFactura c) => new(
         c.Id, c.ProveedorId, c.NumeroFactura, c.ClaveAcceso, c.XmlPath,
         c.FechaFactura, c.FechaVencimiento, c.Estado, c.CondicionPago,
         c.Subtotal, c.IvaTotal, c.Total, c.Observaciones, c.AsientoContableId, c.CreatedAt);

@@ -3,9 +3,9 @@ using ERP.Application.Common;
 using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventario.DTOs;
-using ERP.Domain.Bodegas.Interfaces;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Interfaces;
 using ERP.Domain.Products.Interfaces;
 using ERP.Application.Inventario;
 

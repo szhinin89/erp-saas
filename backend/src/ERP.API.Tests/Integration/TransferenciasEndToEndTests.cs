@@ -6,9 +6,9 @@ using ERP.Application.Inventario.UseCases.CancelarTransferencia;
 using ERP.Application.Inventario.UseCases.ConfirmarTransferencia;
 using ERP.Application.Inventario.UseCases.CrearTransferencia;
 using ERP.Application.Modules.Inventario.UseCases.GetStockActualPorBodega;
-using ERP.Domain.Bodegas.Entities;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Enums;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Enums;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 

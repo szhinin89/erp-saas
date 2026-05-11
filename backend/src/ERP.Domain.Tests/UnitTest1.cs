@@ -1,5 +1,5 @@
-﻿using FluentAssertions;
-using ERP.Domain.Accounting.ValueObjects;
+using FluentAssertions;
+using ERP.Domain.Modules.Contabilidad.ValueObjects;
 using ERP.Domain.Auth.ValueObjects;
 
 namespace ERP.Domain.Tests;

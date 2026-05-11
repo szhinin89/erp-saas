@@ -10,7 +10,7 @@ using ERP.Application.Modules.Compras.UseCases.ValidarCompra;
 using ERP.Application.Ventas.UseCases.CrearVenta;
 using ERP.Application.Ventas.UseCases.EmitirFacturaElectronica;
 using ERP.Application.Ventas.UseCases.ValidarVenta;
-using ERP.Domain.Proveedores.Entities;
+using ERP.Domain.Modules.Compras.Entities;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;

@@ -1,4 +1,4 @@
-using ERP.Domain.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Entities;
 
 namespace ERP.Application.Inventario;
 

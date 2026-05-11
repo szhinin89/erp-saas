@@ -5,10 +5,10 @@ using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Gastos.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Gastos.Entities;
-using ERP.Domain.Gastos.Interfaces;
-using ERP.Domain.Proveedores.Entities;
-using ERP.Domain.Proveedores.Interfaces;
+using ERP.Domain.Modules.Gastos.Entities;
+using ERP.Domain.Modules.Gastos.Interfaces;
+using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Compras.Interfaces;
 
 namespace ERP.Application.Modules.Gastos.UseCases.CrearGasto;
 

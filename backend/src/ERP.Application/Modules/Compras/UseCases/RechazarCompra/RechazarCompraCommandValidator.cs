@@ -1,5 +1,5 @@
 using FluentValidation;
-using ERP.Domain.Compras.Entities;
+using ERP.Domain.Modules.Compras.Entities;
 
 namespace ERP.Application.Modules.Compras.UseCases.RechazarCompra;
 

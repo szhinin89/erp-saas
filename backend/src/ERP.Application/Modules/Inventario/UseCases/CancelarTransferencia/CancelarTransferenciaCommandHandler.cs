@@ -4,7 +4,7 @@ using ERP.Application.Common;
 using ERP.Application.Inventario.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventario.Interfaces;
 
 namespace ERP.Application.Inventario.UseCases.CancelarTransferencia;
 

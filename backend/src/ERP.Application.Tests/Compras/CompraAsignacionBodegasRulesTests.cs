@@ -1,8 +1,8 @@
 using FluentAssertions;
 using ERP.Application.Modules.Compras;
 using ERP.Application.Modules.Compras.UseCases.CrearCompra;
-using ERP.Domain.Bodegas.Entities;
-using ERP.Domain.Bodegas.Interfaces;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Interfaces;
 using Moq;
 
 namespace ERP.Application.Tests.Compras;

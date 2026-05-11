@@ -3,17 +3,17 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Accounting.UseCases.CreateAccount;
-using ERP.Application.Accounting.UseCases.DisableAccount;
-using ERP.Application.Accounting.UseCases.EnableAccount;
-using ERP.Application.Accounting.UseCases.GetAccounts;
-using ERP.Application.Accounting.UseCases.GetAccountById;
-using ERP.Application.Accounting.UseCases.UpdateAccount;
-using ERP.Application.Accounting.UseCases.VoidJournalEntry;
-using CreateJournalEntryCommand = ERP.Application.Accounting.UseCases.CreateJournalEntry.CreateJournalEntryCommand;
-using ERP.Application.Accounting.UseCases.GetJournalEntries;
-using ERP.Application.Accounting.UseCases.GetJournalEntryById;
-using ERP.Application.Accounting.DTOs;
+using ERP.Application.Modules.Contabilidad.UseCases.CreateAccount;
+using ERP.Application.Modules.Contabilidad.UseCases.DisableAccount;
+using ERP.Application.Modules.Contabilidad.UseCases.EnableAccount;
+using ERP.Application.Modules.Contabilidad.UseCases.GetAccounts;
+using ERP.Application.Modules.Contabilidad.UseCases.GetAccountById;
+using ERP.Application.Modules.Contabilidad.UseCases.UpdateAccount;
+using ERP.Application.Modules.Contabilidad.UseCases.VoidJournalEntry;
+using CreateJournalEntryCommand = ERP.Application.Modules.Contabilidad.UseCases.CreateJournalEntry.CreateJournalEntryCommand;
+using ERP.Application.Modules.Contabilidad.UseCases.GetJournalEntries;
+using ERP.Application.Modules.Contabilidad.UseCases.GetJournalEntryById;
+using ERP.Application.Modules.Contabilidad.DTOs;
 
 namespace ERP.API.Controllers;
 

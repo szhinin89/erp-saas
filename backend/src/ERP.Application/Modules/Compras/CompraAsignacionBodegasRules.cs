@@ -1,5 +1,5 @@
 using ERP.Application.Modules.Compras.UseCases.CrearCompra;
-using ERP.Domain.Bodegas.Interfaces;
+using ERP.Domain.Modules.Inventario.Interfaces;
 
 namespace ERP.Application.Modules.Compras;
 
@@ -51,7 +51,7 @@ public static class CompraAsignacionBodegasRules
 
     /// <summary>Valida asignaciones contra líneas ya materializadas (mismo orden que al crear la compra).</summary>
     public static async Task<string?> ValidateAgainstDetallesAsync(
-        IReadOnlyList<ERP.Domain.Compras.Entities.CompraDetalle> detallesOrdenados,
+        IReadOnlyList<ERP.Domain.Modules.Compras.Entities.CompraDetalle> detallesOrdenados,
         IReadOnlyList<AsignacionBodegaRequest> asignaciones,
         Guid tenantId,
         IBodegaRepository bodegas,

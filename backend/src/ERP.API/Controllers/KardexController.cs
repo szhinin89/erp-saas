@@ -12,8 +12,8 @@ using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventario.DTOs;
 using ERP.Application.Inventario.UseCases.GetKardex;
 using ERP.Application.Inventario.UseCases.RecalcularSnapshots;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Interfaces;
 using ERP.Infrastructure.BackgroundServices;
 
 namespace ERP.API.Controllers;

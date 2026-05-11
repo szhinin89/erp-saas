@@ -4,9 +4,9 @@ using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
 using ERP.Application.Ventas.UseCases.CrearVenta;
 using ERP.Domain.Configuration.Entities;
-using ERP.Domain.Customers.Entities;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Ventas.Entities;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Interfaces;
 using ERP.Domain.Products.Entities;
 using ERP.Infrastructure.Persistence;
 
