@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common;
 using ERP.Domain.Products.Entities;
 using ERP.Infrastructure.Persistence;
+using MediatR;
 
 namespace ERP.Infrastructure.Tests;
 
@@ -12,6 +13,16 @@ public class ErpDbContextTenantFilterTests
     {
         public Guid TenantId { get; init; }
         public bool IsAuthenticated { get; init; } = true;
+    }
+
+    private sealed class FakePublisher : IPublisher
+    {
+        public Task Publish(object notification, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+
+        public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default)
+            where TNotification : INotification
+            => Task.CompletedTask;
     }
 
     [Fact]
@@ -24,7 +35,8 @@ public class ErpDbContextTenantFilterTests
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString("N"))
             .Options;
 
-        await using (var seed = new ErpDbContext(options, new FakeTenant { TenantId = tenantA }))
+        var publisher = new FakePublisher();
+        await using (var seed = new ErpDbContext(options, new FakeTenant { TenantId = tenantA }, publisher))
         {
             seed.Products.Add(Product.Create(
                 tenantA,
@@ -69,7 +81,7 @@ public class ErpDbContextTenantFilterTests
             await seed.SaveChangesAsync();
         }
 
-        await using var ctxA = new ErpDbContext(options, new FakeTenant { TenantId = tenantA });
+        await using var ctxA = new ErpDbContext(options, new FakeTenant { TenantId = tenantA }, publisher);
         var products = await ctxA.Products.ToListAsync();
 
         products.Should().HaveCount(1);

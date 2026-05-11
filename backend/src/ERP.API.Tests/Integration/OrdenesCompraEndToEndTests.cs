@@ -9,7 +9,7 @@ using ERP.Application.Modules.Compras.UseCases.CrearOrdenCompra;
 using ERP.Application.Modules.Compras.UseCases.EnviarOrdenCompra;
 using ERP.Application.Modules.Compras.UseCases.VincularFacturaAOrdenCompra;
 using ERP.Domain.Modules.Compras.Entities;
-using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Compras.Events;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;
@@ -190,7 +190,7 @@ public sealed class OrdenesCompraEndToEndTests
             descuentoPorcentaje: 0m, ivaPorcentaje: 15m, userId);
 
         f.Validar(userId);
-        f.Aprobar(userId, asientoContableId: null);
+        f.Aprobar(userId, asientoContableId: null, Array.Empty<CompraAprobadaStockLine>());
 
         db.CompraFacturas.Add(f);
         db.SaveChanges();

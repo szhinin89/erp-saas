@@ -53,6 +53,6 @@ public class JournalEntry : DocumentEntity
     {
         AccountingRules.ValidateBalance(_lines);
         base.Post(userId);
-        AddDomainEvent(new JournalEntryCreatedEvent(Id, TenantId));
+        RaiseDomainEvent(new JournalEntryCreatedEvent(Id, TenantId));
     }
 }

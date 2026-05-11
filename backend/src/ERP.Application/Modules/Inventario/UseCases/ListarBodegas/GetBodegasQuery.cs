@@ -8,4 +8,8 @@ public sealed record GetBodegasQuery(
     bool?  ActiveFilter,
     string? Search,
     Guid?  SucursalId
-) : IRequest<Result<IReadOnlyList<BodegaDto>>>;
+) : IRequest<Result<IReadOnlyList<BodegaDto>>>, ICacheable
+{
+    /// <inheritdoc />
+    public int CacheTTL => 300;
+}

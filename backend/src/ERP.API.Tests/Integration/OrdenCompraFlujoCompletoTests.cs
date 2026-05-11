@@ -10,8 +10,8 @@ using ERP.Application.Modules.Compras.UseCases.EnviarOrdenCompra;
 using ERP.Application.Modules.Compras.UseCases.GetOrdenCompraById;
 using ERP.Application.Modules.Compras.UseCases.VincularFacturaAOrdenCompra;
 using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Compras.Events;
 using ERP.Domain.Products.Entities;
-using ERP.Domain.Modules.Compras.Entities;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;
@@ -188,7 +188,7 @@ public sealed class OrdenCompraFlujoCompletoTests
             f.AgregarDetalle("Producto B", null, productoBId.Value, cantidadB, 10m, 0m, 15m, userId);
 
         f.Validar(userId);
-        f.Aprobar(userId, asientoContableId: null);
+        f.Aprobar(userId, asientoContableId: null, Array.Empty<CompraAprobadaStockLine>());
 
         db.CompraFacturas.Add(f);
         db.SaveChanges();

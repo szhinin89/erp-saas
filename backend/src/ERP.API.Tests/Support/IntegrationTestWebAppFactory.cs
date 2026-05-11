@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Subscriptions.Interfaces;
@@ -64,7 +65,10 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
                     .UseInMemoryDatabase(dbName)
                     .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
                     .Options;
-                return new ErpDbContext(opts, sp.GetRequiredService<ICurrentTenant>());
+                return new ErpDbContext(
+                    opts,
+                    sp.GetRequiredService<ICurrentTenant>(),
+                    sp.GetRequiredService<IPublisher>());
             });
 
             foreach (var d in services.Where(x => x.ServiceType == typeof(ICurrentTenant)).ToList())

@@ -1,6 +1,7 @@
 using ERP.Domain.Modules.Inventario.Entities;
 using ERP.Domain.Common;
 using ERP.Domain.Modules.Ventas.Entities;
+using ERP.Domain.Modules.Ventas.Events;
 
 namespace ERP.Domain.Modules.Ventas.Entities;
 
@@ -105,7 +106,8 @@ public sealed class VentasFactura : AuditableEntity, ITenantEntity
         DateTime fechaAutorizacion,
         string? xmlGeneradoPath,
         string? xmlAutorizacionPath,
-        Guid asientoId)
+        Guid asientoId,
+        IReadOnlyList<VentaAutorizadaStockLine>? stockImpactLines = null)
     {
         if (Estado != "Validado")
             throw new InvalidOperationException($"Solo se puede autorizar una factura Validada (estado actual: {Estado}).");
@@ -116,6 +118,14 @@ public sealed class VentasFactura : AuditableEntity, ITenantEntity
         XmlAutorizacionPath = string.IsNullOrWhiteSpace(xmlAutorizacionPath) ? null : xmlAutorizacionPath;
         AsientoContableId = asientoId;
         SetUpdated(userId);
+
+        var lines = stockImpactLines ?? Array.Empty<VentaAutorizadaStockLine>();
+        if (lines.Count > 0)
+        {
+            var numero = $"{Establecimiento}-{PuntoEmision}-{Secuencial}";
+            RaiseDomainEvent(new VentaAutorizadaEvent(
+                Id, TenantId, userId, BodegaId, numero, lines));
+        }
     }
 
     public void Rechazar(Guid userId, string mensajeError)

@@ -7,11 +7,9 @@ using ERP.Application.Common.Interfaces;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Configuration.Interfaces;
-using ERP.Domain.Modules.Inventario.Entities;
-using ERP.Domain.Modules.Inventario.Enums;
-using ERP.Domain.Modules.Inventario.Interfaces;
-using ERP.Domain.Products.Interfaces;
+using ERP.Domain.Modules.Ventas.Events;
 using ERP.Domain.Modules.Ventas.Interfaces;
+using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Ventas.UseCases.EmitirFacturaElectronica;
 
@@ -23,7 +21,6 @@ public sealed class EmitirFacturaElectronicaCommandHandler
     private readonly ISriFacturaElectronicaService   _sriService;
     private readonly IFileStorage                    _fileStorage;
     private readonly IAccountingService              _accounting;
-    private readonly IInventarioStockRepository      _inventario;
     private readonly IProductRepository              _productRepository;
     private readonly IUserActivityRepository         _activity;
     private readonly IUnitOfWork                     _unitOfWork;
@@ -37,7 +34,6 @@ public sealed class EmitirFacturaElectronicaCommandHandler
         ISriFacturaElectronicaService sriService,
         IFileStorage fileStorage,
         IAccountingService accounting,
-        IInventarioStockRepository inventario,
         IProductRepository productRepository,
         IUserActivityRepository activity,
         IUnitOfWork unitOfWork,
@@ -50,7 +46,6 @@ public sealed class EmitirFacturaElectronicaCommandHandler
         _sriService          = sriService;
         _fileStorage         = fileStorage;
         _accounting          = accounting;
-        _inventario          = inventario;
         _productRepository   = productRepository;
         _activity            = activity;
         _unitOfWork          = unitOfWork;
@@ -156,7 +151,7 @@ public sealed class EmitirFacturaElectronicaCommandHandler
             xmlAutorizacionPath = null;
         }
 
-        // 7. Transacción: asiento + inventario + cambio de estado
+        // 7. Transacción: asiento + cambio de estado (inventario vía VentaAutorizadaEvent)
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
@@ -181,52 +176,23 @@ public sealed class EmitirFacturaElectronicaCommandHandler
                 return Result<Guid>.Failure(asientoResult.Error ?? "Error al crear asiento contable.");
             }
 
-            // 8. Descontar inventario por cada detalle
+            var stockLines = new List<VentaAutorizadaStockLine>();
             foreach (var detalle in detalles)
             {
                 var producto = await _productRepository.GetByIdAsync(detalle.ProductoId, tenantId, ct);
-                if (producto is null || producto.IsService || !producto.TracksStock) continue;
-
-                var stock = await _inventario.GetStockByTenantBodegaProductAsync(
-                    tenantId, factura.BodegaId, detalle.ProductoId, ct);
-
-                if (stock is null)
-                {
-                    _logger.LogWarning(
-                        "Factura {FacturaId}: sin stock registrado para producto {ProductoId} en bodega {BodegaId}; se omite descuento.",
-                        factura.Id, detalle.ProductoId, factura.BodegaId);
+                if (producto is null || producto.IsService || !producto.TracksStock)
                     continue;
-                }
-
-                var cantidadAnterior = stock.Cantidad;
-                // Costo promedio ANTES de aplicar el movimiento (para valorizar la salida).
-                var costoPromedioVenta = stock.CostoPromedioActual;
-                stock.AplicarMovimiento(-detalle.Cantidad, userId, costoPromedioVenta);
-
-                var movimiento = InventarioMovimiento.Create(
-                    tenantId,
-                    detalle.ProductoId,
-                    factura.BodegaId,
-                    TipoMovimientoInventario.SalidaVenta,
-                    cantidad:            -detalle.Cantidad,
-                    cantidadAnterior:    cantidadAnterior,
-                    referencia:          numeroFactura,
-                    documentoOrigenId:   factura.Id,
-                    documentoOrigenTipo: "VentasFactura",
-                    createdBy:           userId,
-                    costoUnitario:       costoPromedioVenta);
-
-                await _inventario.AddMovimientoAsync(movimiento, ct);
+                stockLines.Add(new VentaAutorizadaStockLine(detalle.ProductoId, detalle.Cantidad));
             }
 
-            // 9. Actualizar estado de la factura
             factura.Autorizar(
                 userId,
                 response.NumeroAutorizacion,
                 response.FechaAutorizacion,
                 xmlGeneradoPath,
                 xmlAutorizacionPath,
-                asientoResult.Value);
+                asientoResult.Value,
+                stockLines);
 
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _currentUser.Email, _currentUser.FullName,

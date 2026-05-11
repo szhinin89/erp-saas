@@ -1,5 +1,6 @@
 using ERP.Domain.Common;
 using ERP.Domain.Modules.Compras.Enums;
+using ERP.Domain.Modules.Compras.Events;
 
 namespace ERP.Domain.Modules.Compras.Entities;
 
@@ -112,7 +113,10 @@ public sealed class CompraFactura : AuditableEntity, ITenantEntity
         SetUpdated(userId);
     }
 
-    public void Aprobar(Guid userId, Guid? asientoContableId)
+    public void Aprobar(
+        Guid userId,
+        Guid? asientoContableId,
+        IReadOnlyList<CompraAprobadaStockLine> stockLines)
     {
         if (Estado != EstadoCompra.Validado)
             throw new InvalidOperationException("Solo se puede aprobar una compra validada.");
@@ -122,6 +126,9 @@ public sealed class CompraFactura : AuditableEntity, ITenantEntity
         AprobadoEn        = DateTime.UtcNow;
         AsientoContableId = asientoContableId;
         SetUpdated(userId);
+
+        RaiseDomainEvent(new CompraAprobadaEvent(
+            Id, TenantId, NumeroFactura, userId, stockLines));
     }
 
     public void Rechazar(Guid userId, string motivo)

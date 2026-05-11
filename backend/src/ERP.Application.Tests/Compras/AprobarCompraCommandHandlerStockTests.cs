@@ -1,9 +1,11 @@
 using FluentAssertions;
 using ERP.Application.Common;
 using ERP.Application.Modules.Compras.UseCases.AprobarCompra;
+using ERP.Application.Modules.Inventario.EventHandlers;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Compras.Entities;
 using ERP.Domain.Modules.Compras.Enums;
+using ERP.Domain.Modules.Compras.Events;
 using ERP.Domain.Modules.Compras.Interfaces;
 using ERP.Domain.Modules.Inventario.Entities;
 using ERP.Domain.Modules.Inventario.Interfaces;
@@ -15,7 +17,50 @@ namespace ERP.Application.Tests.Compras;
 public sealed class AprobarCompraCommandHandlerStockTests
 {
     [Fact]
-    public async Task Aprobar_creates_stock_and_movements_for_each_assignment_with_producto()
+    public async Task CompraAprobadaEventHandler_crea_stock_y_movimientos()
+    {
+        var tenantId = Guid.NewGuid();
+        var userId   = Guid.NewGuid();
+        var provId   = Guid.NewGuid();
+        var p1       = Guid.NewGuid();
+        var p2       = Guid.NewGuid();
+        var b1       = Guid.NewGuid();
+        var b2       = Guid.NewGuid();
+
+        var lines = new[]
+        {
+            new CompraAprobadaStockLine(Guid.NewGuid(), p1, b1, 6m, 1m),
+            new CompraAprobadaStockLine(Guid.NewGuid(), p1, b2, 4m, 1m),
+            new CompraAprobadaStockLine(Guid.NewGuid(), p2, b2, 5m, 1m),
+        };
+
+        var movimientos = new List<InventarioMovimiento>();
+        var stocks      = new List<StockActual>();
+
+        var inv = new Mock<IInventarioStockRepository>();
+        inv.Setup(x => x.GetStockByTenantBodegaProductAsync(tenantId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((StockActual?)null);
+        inv.Setup(x => x.AddStockActualAsync(It.IsAny<StockActual>(), It.IsAny<CancellationToken>()))
+            .Callback<StockActual, CancellationToken>((s, _) => stocks.Add(s))
+            .Returns(Task.CompletedTask);
+        inv.Setup(x => x.AddMovimientoAsync(It.IsAny<InventarioMovimiento>(), It.IsAny<CancellationToken>()))
+            .Callback<InventarioMovimiento, CancellationToken>((m, _) => movimientos.Add(m))
+            .Returns(Task.CompletedTask);
+
+        var handler = new CompraAprobadaEventHandler(
+            inv.Object,
+            NullLogger<CompraAprobadaEventHandler>.Instance);
+
+        var ev = new CompraAprobadaEvent(Guid.NewGuid(), tenantId, "F-9001", userId, lines);
+        await handler.Handle(ev, CancellationToken.None);
+
+        movimientos.Should().HaveCount(3);
+        movimientos.Sum(m => m.Cantidad).Should().Be(15m);
+        stocks.Should().HaveCount(3);
+    }
+
+    [Fact]
+    public async Task AprobarCompra_agrega_CompraAprobadaEvent_y_no_llama_inventario_directamente()
     {
         var tenantId = Guid.NewGuid();
         var userId   = Guid.NewGuid();
@@ -56,19 +101,7 @@ public sealed class AprobarCompraCommandHandlerStockTests
                 It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<Guid>.Success(asientoId));
 
-        var movimientos = new List<InventarioMovimiento>();
-        var stocks      = new List<StockActual>();
-
         var inv = new Mock<IInventarioStockRepository>();
-        inv.Setup(x => x.GetStockByTenantBodegaProductAsync(tenantId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((StockActual?)null);
-        inv.Setup(x => x.AddStockActualAsync(It.IsAny<StockActual>(), It.IsAny<CancellationToken>()))
-            .Callback<StockActual, CancellationToken>((s, _) => stocks.Add(s))
-            .Returns(Task.CompletedTask);
-        inv.Setup(x => x.AddMovimientoAsync(It.IsAny<InventarioMovimiento>(), It.IsAny<CancellationToken>()))
-            .Callback<InventarioMovimiento, CancellationToken>((m, _) => movimientos.Add(m))
-            .Returns(Task.CompletedTask);
-
         var activity = new Mock<IUserActivityRepository>();
         activity.Setup(x => x.AddAsync(It.IsAny<ERP.Domain.Audit.Entities.UserActivity>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -89,7 +122,6 @@ public sealed class AprobarCompraCommandHandlerStockTests
         var handler = new AprobarCompraCommandHandler(
             repo.Object,
             accounting.Object,
-            inv.Object,
             activity.Object,
             tenant.Object,
             user.Object,
@@ -100,9 +132,12 @@ public sealed class AprobarCompraCommandHandlerStockTests
 
         result.IsSuccess.Should().BeTrue();
         compra.Estado.Should().Be(EstadoCompra.Aprobado);
-        movimientos.Should().HaveCount(3);
-        movimientos.Sum(m => m.Cantidad).Should().Be(15m);
-        stocks.Should().HaveCount(3);
+        inv.Verify(x => x.AddMovimientoAsync(It.IsAny<InventarioMovimiento>(), It.IsAny<CancellationToken>()), Times.Never);
+        inv.Verify(x => x.GetStockByTenantBodegaProductAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        compra.DomainEvents.Should().ContainSingle(e => e is CompraAprobadaEvent);
+        var ev = (CompraAprobadaEvent)compra.DomainEvents.Single(e => e is CompraAprobadaEvent);
+        ev.StockLines.Should().HaveCount(3);
 
         uow.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         uow.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -151,7 +186,6 @@ public sealed class AprobarCompraCommandHandlerStockTests
         var handler = new AprobarCompraCommandHandler(
             repo.Object,
             accounting.Object,
-            inv.Object,
             activity.Object,
             tenant.Object,
             user.Object,

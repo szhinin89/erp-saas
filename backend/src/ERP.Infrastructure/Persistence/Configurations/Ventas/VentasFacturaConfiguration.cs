@@ -115,5 +115,9 @@ public class VentasFacturaConfiguration : IEntityTypeConfiguration<VentasFactura
         builder.HasIndex(e => new { e.TenantId, e.Establecimiento, e.PuntoEmision, e.Secuencial })
             .IsUnique()
             .HasDatabaseName("ix_ventas_facturas_tenant_estab_punto_secuencial");
+
+        // Reportes y consultas por rango de fechas (multi-tenant).
+        builder.HasIndex(e => new { e.TenantId, e.FechaEmision })
+            .HasDatabaseName("ix_ventas_facturas_tenant_fecha_emision");
     }
 }

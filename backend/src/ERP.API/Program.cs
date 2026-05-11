@@ -1,8 +1,13 @@
+using Hangfire;
+using Hangfire.Dashboard;
+using Hangfire.PostgreSql;
+using ERP.API.Hangfire;
 using ERP.API.Extensions;
 using ERP.API.Middleware;
 using ERP.Infrastructure;
 using ERP.Application;
 using ERP.API.Authorization;
+using ERP.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using QuestPDF.Infrastructure;
 
@@ -36,15 +41,20 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
-// IDistributedCache: Redis en local (docker compose) si ConnectionStrings:Redis está definida;
+// IDistributedCache: Redis si Redis:ConnectionString o ConnectionStrings:Redis está definida;
 // en tests y producción sin Redis, memoria (no comparte entre instancias).
-var redisConnection = builder.Configuration.GetConnectionString("Redis");
+var redisConnection = builder.Configuration["Redis:ConnectionString"]
+                      ?? builder.Configuration.GetConnectionString("Redis");
+var redisInstanceName = builder.Configuration["Redis:InstanceName"];
+if (string.IsNullOrWhiteSpace(redisInstanceName))
+    redisInstanceName = "ERP_";
+
 if (!string.IsNullOrWhiteSpace(redisConnection))
 {
     builder.Services.AddStackExchangeRedisCache(options =>
     {
         options.Configuration = redisConnection;
-        options.InstanceName = "erp-saas:";
+        options.InstanceName = redisInstanceName;
     });
 }
 else
@@ -54,6 +64,21 @@ else
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+
+var hangfireEnabled = builder.Configuration.GetValue("Hangfire:Enabled", false);
+if (hangfireEnabled)
+{
+    var hangfireConn = builder.Configuration["Hangfire:ConnectionString"]
+                       ?? builder.Configuration.GetConnectionString("DefaultConnection");
+    if (string.IsNullOrWhiteSpace(hangfireConn))
+        throw new InvalidOperationException(
+            "Hangfire:Enabled es true pero no hay cadena de conexión (Hangfire:ConnectionString o DefaultConnection).");
+
+    builder.Services.AddHangfire(configuration =>
+        configuration.UsePostgreSqlStorage(options =>
+            options.UseNpgsqlConnection(hangfireConn)));
+    builder.Services.AddHangfireServer();
+}
 
 // Opciones del Kardex: registrar tanto como IOptions<> (convención .NET)
 // como plain class (inyectable directamente en Application handlers).
@@ -108,6 +133,25 @@ if (!app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseMiddleware<SuperAdminPanelLockMiddleware>();
 app.UseAuthorization();
+
+if (hangfireEnabled)
+{
+    var dashEnabled = app.Configuration.GetValue("Hangfire:Dashboard:Enabled", true);
+    if (dashEnabled)
+    {
+        var dashPath = app.Configuration["Hangfire:Dashboard:Path"] ?? "/hangfire";
+        app.UseHangfireDashboard(dashPath, new DashboardOptions
+        {
+            Authorization = [new HangfireDashboardAuthorizationFilter()],
+        });
+    }
+
+    RecurringJob.AddOrUpdate<IKardexDatabaseMaintenance>(
+        "refresh-mv-saldos-diarios",
+        x => x.RefreshDailyBalancesMaterializedViewAsync(CancellationToken.None),
+        Cron.Daily(hour: 1));
+}
+
 app.MapControllers();
 
 app.Run();

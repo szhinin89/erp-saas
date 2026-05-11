@@ -80,6 +80,10 @@ public class CompraFacturaConfiguration : IEntityTypeConfiguration<CompraFactura
         builder.HasIndex(c => new { c.TenantId, c.Estado })
             .HasDatabaseName("ix_compra_facturas_tenant_estado");
 
+        // Listados por proveedor y estado (reportes / bandejas).
+        builder.HasIndex(c => new { c.TenantId, c.ProveedorId, c.Estado })
+            .HasDatabaseName("ix_compra_facturas_tenant_proveedor_estado");
+
         builder.HasMany(c => c.Detalles)
             .WithOne()
             .HasForeignKey(d => d.CompraFacturaId)

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ERP.Application.Common;
 
 /// <summary>
@@ -18,6 +20,15 @@ public class Result<T>
 
     private Result(T value) { IsSuccess = true; Value = value; }
     private Result(string error) { IsSuccess = false; Error = error; }
+
+    /// <summary>Constructor para deserialización JSON (p. ej. caché distribuida).</summary>
+    [JsonConstructor]
+    private Result(bool isSuccess, T? value, string? error)
+    {
+        IsSuccess = isSuccess;
+        Value = value;
+        Error = error;
+    }
 
     public static Result<T> Success(T value) => new(value);
     public static Result<T> Failure(string error) => new(error);

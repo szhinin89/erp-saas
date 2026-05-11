@@ -1,3 +1,5 @@
+using System.Linq;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Contabilidad.Entities;
 using ERP.Domain.Common;
@@ -63,12 +65,46 @@ namespace ERP.Infrastructure.Persistence;
 public class ErpDbContext : DbContext
 {
     private readonly ICurrentTenant _currentTenant;
+    private readonly IPublisher _publisher;
 
     public ErpDbContext(
         DbContextOptions<ErpDbContext> options,
-        ICurrentTenant currentTenant) : base(options)
+        ICurrentTenant currentTenant,
+        IPublisher publisher) : base(options)
     {
         _currentTenant = currentTenant;
+        _publisher     = publisher;
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        => SaveChangesAsync(acceptAllChangesOnSuccess, CancellationToken.None)
+            .GetAwaiter().GetResult();
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        => SaveChangesAsync(true, cancellationToken);
+
+    public override async Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
+    {
+        var entitiesWithEvents = ChangeTracker.Entries<IHasDomainEvents>()
+            .Where(e => e.Entity.DomainEvents.Any())
+            .Select(e => e.Entity)
+            .ToList();
+
+        var domainEvents = entitiesWithEvents.SelectMany(e => e.DomainEvents).ToList();
+        foreach (var entity in entitiesWithEvents)
+            entity.ClearDomainEvents();
+
+        var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+        foreach (var @event in domainEvents)
+            await _publisher.Publish((INotification)@event, cancellationToken);
+
+        if (ChangeTracker.HasChanges())
+            result += await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+        return result;
     }
 
     public DbSet<Account> Accounts => Set<Account>();

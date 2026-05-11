@@ -4,6 +4,7 @@ using ERP.Application.Modules.Compras.DTOs;
 using ERP.Application.Modules.Compras.UseCases.VincularFacturaAOrdenCompra;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Compras.Events;
 using ERP.Domain.Modules.Compras.Enums;
 using ERP.Domain.Modules.Compras.Interfaces;
 using ERP.Domain.Modules.Compras.Interfaces;
@@ -285,7 +286,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
             if (aprobar)
             {
                 f.Validar(UserId);
-                f.Aprobar(UserId, asientoContableId: null);
+                f.Aprobar(UserId, asientoContableId: null, Array.Empty<CompraAprobadaStockLine>());
             }
             return f;
         }
