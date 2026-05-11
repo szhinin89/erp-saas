@@ -8,8 +8,13 @@ using ERP.Infrastructure;
 using ERP.Application;
 using ERP.API.Authorization;
 using ERP.Application.Common.Interfaces;
+using ERP.Infrastructure.Persistence;
+using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using QuestPDF.Infrastructure;
+using Serilog;
 
 // Licencia Community: libre para proyectos con ingresos anuales < 1 M USD.
 // Cambiar a LicenseType.Professional si aplica.
@@ -19,6 +24,23 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Asegura que los user-secrets del API ganen a appsettings (p. ej. InitialSuperAdminSetupToken vacío en JSON).
 builder.Configuration.AddUserSecrets(typeof(Program).Assembly, optional: true);
+
+// Alias opcional en hosting: DB_CONNECTION_STRING → ConnectionStrings:DefaultConnection
+var dbFromEnv = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+if (!string.IsNullOrWhiteSpace(dbFromEnv))
+{
+    builder.Configuration.AddInMemoryCollection([
+        new KeyValuePair<string, string?>("ConnectionStrings:DefaultConnection", dbFromEnv)
+    ]);
+}
+
+builder.Host.UseSerilog((context, _, configuration) =>
+{
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext()
+        .Enrich.WithProperty("Application", "ERP.SaaS");
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -64,6 +86,27 @@ else
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+
+// Health: live = proceso arriba; ready = BD, Redis (si hay), URL externa opcional (SRI)
+var healthChecks = builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live"])
+    .AddDbContextCheck<ErpDbContext>("database", tags: ["ready"]);
+
+if (!string.IsNullOrWhiteSpace(redisConnection))
+    healthChecks.AddRedis(redisConnection, name: "redis", tags: ["ready"]);
+
+var sriProbeUrl = builder.Configuration["HealthChecks:SriProbeUrl"];
+if (!string.IsNullOrWhiteSpace(sriProbeUrl)
+    && Uri.TryCreate(sriProbeUrl, UriKind.Absolute, out var sriUri))
+{
+    var probeTimeout = TimeSpan.FromSeconds(
+        builder.Configuration.GetValue("HealthChecks:SriProbeTimeoutSeconds", 5));
+    healthChecks.AddUrlGroup(
+        sriUri,
+        name: "sri-external",
+        configureClient: (_, client) => client.Timeout = probeTimeout,
+        tags: ["ready"]);
+}
 
 var hangfireEnabled = builder.Configuration.GetValue("Hangfire:Enabled", false);
 if (hangfireEnabled)
@@ -127,6 +170,18 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseCors("Frontend");
 
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("live"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("ready"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+
 if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 
@@ -152,8 +207,17 @@ if (hangfireEnabled)
         Cron.Daily(hour: 1));
 }
 
+app.UseSerilogRequestLogging();
+
 app.MapControllers();
 
-app.Run();
+try
+{
+    app.Run();
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 public partial class Program { }
