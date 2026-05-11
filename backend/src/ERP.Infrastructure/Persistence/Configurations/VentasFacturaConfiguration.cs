@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using ERP.Domain.Bodegas.Entities;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Customers.Entities;
-using ERP.Domain.Ventas.Entities;
+using ERP.Domain.Modules.Ventas.Entities;
 
 namespace ERP.Infrastructure.Persistence.Configurations;
 

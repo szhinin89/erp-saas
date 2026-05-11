@@ -1,8 +1,8 @@
 using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Ventas.DTOs;
-using ERP.Domain.Ventas.Entities;
-using ERP.Domain.Ventas.Interfaces;
+using ERP.Domain.Modules.Ventas.Entities;
+using ERP.Domain.Modules.Ventas.Interfaces;
 
 namespace ERP.Application.Ventas.UseCases.GetVentasList;
 

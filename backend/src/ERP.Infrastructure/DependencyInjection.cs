@@ -16,7 +16,7 @@ using ERP.Domain.Customers.Interfaces;
 using ERP.Domain.Bodegas.Interfaces;
 using ERP.Domain.Proveedores.Interfaces;
 using ERP.Domain.Compras.Interfaces;
-using ERP.Domain.Ventas.Interfaces;
+using ERP.Domain.Modules.Ventas.Interfaces;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Inventario.Interfaces;
 using ERP.Domain.Gastos.Interfaces;

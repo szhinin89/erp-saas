@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Ventas.Interfaces;
+using ERP.Domain.Modules.Ventas.Interfaces;
 
 namespace ERP.Application.Ventas.UseCases.AnularFactura;
 

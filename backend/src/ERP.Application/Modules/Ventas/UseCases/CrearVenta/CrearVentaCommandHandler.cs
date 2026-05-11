@@ -10,8 +10,8 @@ using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Customers.Interfaces;
 using ERP.Domain.Inventario.Interfaces;
 using ERP.Domain.Products.Interfaces;
-using ERP.Domain.Ventas.Entities;
-using ERP.Domain.Ventas.Interfaces;
+using ERP.Domain.Modules.Ventas.Entities;
+using ERP.Domain.Modules.Ventas.Interfaces;
 
 namespace ERP.Application.Ventas.UseCases.CrearVenta;
 

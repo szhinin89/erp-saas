@@ -1,5 +1,5 @@
 using ERP.Domain.Configuration.Entities;
-using ERP.Domain.Ventas.Entities;
+using ERP.Domain.Modules.Ventas.Entities;
 
 namespace ERP.Application.Ventas.Models;
 

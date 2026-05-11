@@ -14,7 +14,7 @@ using ERP.Domain.Customers.Entities;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Domain.Navigation.Entities;
 using ERP.Domain.Configuration.Entities;
-using ERP.Domain.Ventas.Entities;
+using ERP.Domain.Modules.Ventas.Entities;
 using ERP.Domain.Bodegas.Entities;
 using ERP.Domain.Proveedores.Entities;
 using ERP.Domain.Compras.Entities;

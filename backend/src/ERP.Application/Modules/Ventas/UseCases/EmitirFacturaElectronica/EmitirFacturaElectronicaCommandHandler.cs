@@ -11,7 +11,7 @@ using ERP.Domain.Inventario.Entities;
 using ERP.Domain.Inventario.Enums;
 using ERP.Domain.Inventario.Interfaces;
 using ERP.Domain.Products.Interfaces;
-using ERP.Domain.Ventas.Interfaces;
+using ERP.Domain.Modules.Ventas.Interfaces;
 
 namespace ERP.Application.Ventas.UseCases.EmitirFacturaElectronica;
 

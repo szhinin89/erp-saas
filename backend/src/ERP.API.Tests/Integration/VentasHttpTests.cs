@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
 using ERP.Application.Ventas.DTOs;
 using ERP.Domain.Configuration.Entities;
-using ERP.Domain.Ventas.Entities;
+using ERP.Domain.Modules.Ventas.Entities;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;

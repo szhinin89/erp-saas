@@ -2,7 +2,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Ventas.UseCases.EmitirFacturaElectronica;
-using ERP.Domain.Ventas.Interfaces;
+using ERP.Domain.Modules.Ventas.Interfaces;
 
 namespace ERP.Application.Ventas.UseCases.ReintentarEnvio;
 

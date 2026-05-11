@@ -2,9 +2,19 @@
 
 ## Visión general
 
-Monolito modular con Clean Architecture. El objetivo es que cada módulo funcional sea independiente para poder extraerlo como microservicio cuando madure, sin reescribir el dominio.
+> **Monolito modular con Clean Architecture.** El objetivo es que **cada módulo funcional sea independiente** para poder **extraerlo como microservicio** cuando madure, **sin reescribir el dominio**.
+
+Esa frase es el criterio guía del repositorio: el código y la organización de carpetas deben favorecer **límites claros por dominio de negocio** (agregados, repositorios y casos de uso acotados), de modo que un futuro servicio pueda llevarse **principalmente `ERP.Domain` + el slice correspondiente de `ERP.Application`**, con adaptadores nuevos para transporte y persistencia.
+
+**Qué implica en la práctica**
+
+- **Dominio primero:** reglas y entidades viven en `ERP.Domain`; no dependen de API, EF ni MediatR.
+- **Casos de uso por vertical slice** en `ERP.Application` (comandos, consultas, DTOs del módulo), invocando solo abstracciones del dominio del mismo contexto acotado.
+- **Infraestructura sustituible:** `ERP.Infrastructure` implementa repositorios y detalles técnicos; al extraer un microservicio se reimplementan o comparten según el acoplamiento aceptado.
 
 **Decisiones formales:** ver [ADR en `docs/adr/`](adr/README.md) (p. ej. ADR 0001–0003).
+
+**Convergencia de carpetas y namespaces:** plan por sprints en [REFACTOR-MODULES-SPRINTS.md](REFACTOR-MODULES-SPRINTS.md) (`Domain.Modules.*` / `Application.Modules.*`).
 
 ## Capas y dependencias
 
@@ -22,7 +32,47 @@ Monolito modular con Clean Architecture. El objetivo es que cada módulo funcion
 
 **Regla estricta:** cada capa solo puede depender de la capa inferior. El dominio no referencia EF Core, ASP.NET ni ningún framework externo.
 
-## Estructura de archivos por módulo
+## Criterios para cumplir el objetivo (módulo extraíble)
+
+La arquitectura **debe** sostener que, al madurar un módulo, se pueda **levantar un microservicio** llevándose sobre todo **el dominio y los casos de uso de ese contexto**, sin reescribir reglas de negocio. Criterios **obligatorios** para código nuevo y refactors; los desvíos existentes se corrigen de forma incremental.
+
+### 1. Límite del módulo (bounded context)
+
+Un **módulo funcional** es un conjunto coherente de:
+
+- **Dominio:** entidades, VOs, enums, reglas e **interfaces de repositorio y servicios de dominio** que pertenecen al mismo proceso de negocio (p. ej. ventas, compras, inventario).
+- **Aplicación:** comandos, consultas, validadores y DTOs bajo el mismo prefijo de carpetas / namespace del módulo.
+- **API:** controladores (o grupos de endpoints) que solo delegan en casos de uso de ese módulo y traducen HTTP ↔ comandos/consultas.
+
+### 2. Dependencias entre módulos
+
+| Permitido | Evitar / prohibido |
+|-----------|---------------------|
+| Usar **interfaces del dominio** de otro módulo solo si el contrato es estable y mínimo (ej. catálogo leído por ID), o tipos **realmente compartidos** en un núcleo acotado (`ERP.Application.Common`, VOs compartidos acordados). | Handlers o DTOs de un módulo **importando namespaces de `UseCases` de otro** (acoplamiento de aplicación cruzado). |
+| **Integración explícita:** eventos de dominio, colas, o fachada de aplicación dedicada a “orquestación” documentada. | Lógica de negocio de módulo A **copiada** en módulo B. |
+| **Infraestructura** implementando repos definidos en el dominio de cada módulo. | Un repositorio en Infra que **mezcle persistencia** de dos contextos sin dejar claro el límite. |
+
+Objetivo: el grafo de dependencias del **slice** `Domain + Application` de un módulo sea **casi un subárbol**; lo que salga hacia fuera son pocos puntos explícitos.
+
+### 3. Convención física y de namespaces (objetivo de convergencia)
+
+- **Dominio:** puede vivir en `ERP.Domain/{Modulo}/` o `ERP.Domain/Modules/{Modulo}/`; lo importante es que **todo lo del mismo bounded context** quede agrupado y con interfaces de persistencia **en ese árbol**, no dispersas.
+- **Aplicación:** preferir carpeta y namespace alineados, p. ej. `ERP.Application/Modules/{Modulo}/…` y `ERP.Application.Modules.{Modulo}.…`, para que un extract sea un **copy-paste de carpeta + ajuste de referencias**. Corregir gradualmente namespaces que hoy omiten `Modules` en el nombre lógico.
+
+### 4. Infraestructura y datos hoy
+
+Un único `ErpDbContext` y una base compartida **no invalidan** el objetivo: el límite modular es **lógico y de código**. La extracción posterior puede implicar **BD propia**, **vista** o **sincronización** según el módulo; el dominio reutilizable reduce el coste.
+
+### 5. Checklist antes de dar por “cerrado” un feature de módulo
+
+- [ ] Reglas y estados nuevos viven en **entidades o servicios de dominio** del módulo, no en el controller.
+- [ ] El handler solo usa **repos/interfaces del dominio** del módulo (o contratos compartidos explícitos).
+- [ ] No se añaden **dependencias de código** entre casos de uso de dos módulos (imports cruzados de handlers/DTOs ajenos) salvo `ERP.Application.Common` u otros contratos compartidos explícitos.
+- [ ] Pruebas del caso de uso (unitarias o integración) pueden **ubicarse** junto al módulo conceptualmente (p. ej. `ERP.Application.Tests/{Modulo}`).
+
+---
+
+## Estructura de archivos por módulo (objetivo)
 
 ```
 ERP.Domain/Modules/{Modulo}/
@@ -37,7 +87,7 @@ ERP.Application/Modules/{Modulo}/
 ├── DTOs/            ← Records de salida (response)
 └── UseCases/{Nombre}/
     ├── {Nombre}Command.cs   ← Datos de entrada (record inmutable)
-    └── {Nombre}Handler.cs   ← Lógica del caso de uso
+    └── {Nombre}CommandHandler.cs / {Nombre}QueryHandler.cs   ← MediatR IRequestHandler
 
 ERP.Infrastructure/Persistence/
 ├── Configurations/  ← IEntityTypeConfiguration<T> por entidad
@@ -57,7 +107,7 @@ Cuando se agregue una nueva entidad con `TenantId`, registrar su filtro en `ErpD
 
 ## Registro de handlers (Application)
 
-`ERP.Application/DependencyInjection.cs` escanea el assembly en startup y registra como `Scoped` todas las clases que terminan en `Handler`. No es necesario registrar manualmente los nuevos handlers en `Program.cs`.
+MediatR (`AddMediatR`) registra los `IRequestHandler<,>` (p. ej. `*CommandHandler`, `*QueryHandler`). `DependencyInjection.cs` además registra **FluentValidation** y un escaneo complementario de clases `*Handler` bajo `UseCases` que **no** implementan `IRequestHandler` (evitar duplicar el registro MediatR).
 
 ## Patrón Result<T>
 
@@ -101,7 +151,7 @@ dotnet ef database update --startup-project ../ERP.API
 
 ## Próximos pasos para producción
 
-- Agregar FluentValidation en los Commands
+- ~~Agregar FluentValidation en los Commands~~ (**hecho:** validadores por comando + `ValidationBehavior`)
 - Implementar Serilog para logging estructurado
 - Configurar secrets reales (no hardcodear en appsettings.json)
 - Agregar health checks (`/health`)

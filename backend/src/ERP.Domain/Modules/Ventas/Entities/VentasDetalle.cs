@@ -1,6 +1,6 @@
 using ERP.Domain.Common;
 
-namespace ERP.Domain.Ventas.Entities;
+namespace ERP.Domain.Modules.Ventas.Entities;
 
 public sealed class VentasDetalle : AuditableEntity, ITenantEntity
 {

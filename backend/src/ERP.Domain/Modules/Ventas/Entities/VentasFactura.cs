@@ -2,7 +2,7 @@ using ERP.Domain.Bodegas.Entities;
 using ERP.Domain.Common;
 using ERP.Domain.Customers.Entities;
 
-namespace ERP.Domain.Ventas.Entities;
+namespace ERP.Domain.Modules.Ventas.Entities;
 
 public sealed class VentasFactura : AuditableEntity, ITenantEntity
 {

@@ -37,7 +37,7 @@ public sealed class TirillaFacturaService : ITirillaFacturaService
 
     public async Task<string> GenerarHtmlFacturaAsync(Guid ventaId, CancellationToken ct = default)
     {
-        var venta = await _dbContext.Set<ERP.Domain.Ventas.Entities.VentasFactura>()
+        var venta = await _dbContext.Set<ERP.Domain.Modules.Ventas.Entities.VentasFactura>()
             .Include(v => v.Cliente)
             .Include(v => v.Detalles)
             .FirstOrDefaultAsync(v => v.Id == ventaId && v.Estado == "Autorizado", ct);
