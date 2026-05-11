@@ -47,6 +47,11 @@ public class CompraFacturaConfiguration : IEntityTypeConfiguration<CompraFactura
         builder.Property(c => c.IvaTotal).HasColumnName("iva_total").HasPrecision(18, 4).IsRequired();
         builder.Property(c => c.Total).HasColumnName("total").HasPrecision(18, 4).IsRequired();
 
+        builder.Property(c => c.TotalNotasProveedorAplicado)
+            .HasColumnName("total_notas_proveedor_aplicado")
+            .HasPrecision(18, 4)
+            .IsRequired();
+
         builder.Property(c => c.Observaciones)
             .HasColumnName("observaciones")
             .HasMaxLength(CompraFactura.ObservacionesMaxLen);

@@ -151,6 +151,8 @@ public class ErpDbContext : DbContext
 
     // ── Compras ───────────────────────────────────────────────────────────
     public DbSet<CompraFactura>          CompraFacturas          => Set<CompraFactura>();
+    public DbSet<CompraNotaProveedor>    CompraNotasProveedor    => Set<CompraNotaProveedor>();
+    public DbSet<CompraNotaProveedorDetalle> CompraNotaProveedorDetalles => Set<CompraNotaProveedorDetalle>();
     public DbSet<CompraRetencionEmitida> CompraRetencionesEmitidas => Set<CompraRetencionEmitida>();
     public DbSet<CompraDetalle>          CompraDetalles          => Set<CompraDetalle>();
     public DbSet<CompraBodegaAsignacion> CompraBodegaAsignaciones => Set<CompraBodegaAsignacion>();

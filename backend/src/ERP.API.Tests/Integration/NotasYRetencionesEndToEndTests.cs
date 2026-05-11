@@ -7,8 +7,12 @@ using ERP.API.Tests.Support;
 using ERP.Application.Modules.Compras.Services;
 using ERP.Application.Modules.Compras.UseCases.AprobarCompra;
 using ERP.Application.Modules.Compras.UseCases.CrearCompra;
+using ERP.Application.Modules.Compras.UseCases.NotasProveedor;
 using ERP.Application.Modules.Compras.UseCases.Retenciones;
 using ERP.Application.Modules.Compras.UseCases.ValidarCompra;
+using ERP.Application.Modules.Gastos.UseCases.AprobarGasto;
+using ERP.Application.Modules.Gastos.UseCases.CrearGasto;
+using ERP.Application.Modules.Gastos.UseCases.ValidarGasto;
 using ERP.Application.Ventas.UseCases.CrearVenta;
 using ERP.Application.Ventas.UseCases.EmitirFacturaElectronica;
 using ERP.Application.Ventas.UseCases.Notas;
@@ -41,6 +45,65 @@ public sealed class NotasYRetencionesEndToEndTests
                 <impuesto><valorRetenido>{v}</valorRetenido></impuesto>
               </impuestos>
             </comprobanteRetencion>
+            """;
+    }
+
+    private static string BuildNotaProveedorXml(
+        string tipoNota,
+        string clave49,
+        string rucProveedor,
+        string secuencial,
+        decimal cantidad,
+        decimal precioUnitario,
+        decimal subtotal,
+        decimal impuesto,
+        string codigoPrincipal = "P-INT",
+        string motivo = "Ajuste proveedor")
+    {
+        var tipo = tipoNota.Trim().ToUpperInvariant();
+        var root = tipo == "DEBITO" ? "notaDebito" : "notaCredito";
+        var info = tipo == "DEBITO" ? "infoNotaDebito" : "infoNotaCredito";
+        var total = subtotal + impuesto;
+
+        return $"""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <{root} id="comprobante" version="1.0.0">
+              <infoTributaria>
+                <razonSocial>PROVEEDOR INTEGRACION S.A.</razonSocial>
+                <ruc>{rucProveedor}</ruc>
+                <claveAcceso>{clave49}</claveAcceso>
+                <estab>001</estab>
+                <ptoEmi>001</ptoEmi>
+                <secuencial>{secuencial}</secuencial>
+              </infoTributaria>
+              <{info}>
+                <fechaEmision>11/05/2026</fechaEmision>
+                <motivo>{motivo}</motivo>
+                <totalSinImpuestos>{subtotal.ToString(CultureInfo.InvariantCulture)}</totalSinImpuestos>
+                <totalConImpuestos>
+                  <totalImpuesto>
+                    <valor>{impuesto.ToString(CultureInfo.InvariantCulture)}</valor>
+                  </totalImpuesto>
+                </totalConImpuestos>
+                <importeTotal>{total.ToString(CultureInfo.InvariantCulture)}</importeTotal>
+                <valorModificacion>{total.ToString(CultureInfo.InvariantCulture)}</valorModificacion>
+              </{info}>
+              <detalles>
+                <detalle>
+                  <codigoPrincipal>{codigoPrincipal}</codigoPrincipal>
+                  <descripcion>Item integración</descripcion>
+                  <cantidad>{cantidad.ToString(CultureInfo.InvariantCulture)}</cantidad>
+                  <precioUnitario>{precioUnitario.ToString(CultureInfo.InvariantCulture)}</precioUnitario>
+                  <descuento>0</descuento>
+                  <precioTotalSinImpuesto>{subtotal.ToString(CultureInfo.InvariantCulture)}</precioTotalSinImpuesto>
+                  <impuestos>
+                    <impuesto>
+                      <valor>{impuesto.ToString(CultureInfo.InvariantCulture)}</valor>
+                    </impuesto>
+                  </impuestos>
+                </detalle>
+              </detalles>
+            </{root}>
             """;
     }
 
@@ -141,6 +204,255 @@ public sealed class NotasYRetencionesEndToEndTests
             l.AccountId == cuentaVentas.Id
             && l.Credit.Amount == nota.Total
             && l.Debit.Amount == 0m);
+    }
+
+    [Fact]
+    public async Task Nota_credito_proveedor_en_compra_aprobada_reingresa_stock_y_crea_asiento_inverso()
+    {
+        await using var factory = new IntegrationTestWebAppFactory();
+        using var scope = factory.Services.CreateScope();
+        var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        var cuentaPasivo = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "2.1.99");
+
+        var xmlCompra = IntegrationSeedData.BuildFacturaXml(seed.ClaveAcceso49, seed.ProveedorRuc);
+        var compraRes = await mediator.Send(
+            new CrearCompraCommand(
+                ModoCreacionCompra.Xml,
+                XmlContent: Encoding.UTF8.GetBytes(xmlCompra),
+                XmlNombreArchivo: "factura.xml",
+                ProveedorId: null,
+                NumeroFactura: null,
+                FechaFactura: null,
+                FechaVencimiento: null,
+                CondicionPago: null,
+                Observaciones: null,
+                Detalles: null,
+                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.BodegaId, 2m, seed.ProductId) }),
+            CancellationToken.None);
+        compraRes.IsSuccess.Should().BeTrue(compraRes.Error);
+        await mediator.Send(new ValidarCompraCommand(compraRes.Value!.Id), CancellationToken.None);
+        await mediator.Send(new AprobarCompraCommand(compraRes.Value.Id), CancellationToken.None);
+
+        var compra = db.CompraFacturas.First(c => c.Id == compraRes.Value.Id);
+        var lineasCompra = db.JournalEntryLines.Where(l => l.JournalEntryId == compra.AsientoContableId).ToList();
+        lineasCompra.Should().Contain(l => l.AccountId == cuentaPasivo.Id && l.Credit.Amount == compra.Total);
+
+        var claveNota = ClaveAcceso49TestFactory.FromPrefix48(new string('1', 48));
+        var xmlNota = BuildNotaProveedorXml(
+            "CREDITO",
+            claveNota,
+            seed.ProveedorRuc,
+            secuencial: "000000101",
+            cantidad: 1m,
+            precioUnitario: 25m,
+            subtotal: 25m,
+            impuesto: 3m);
+
+        var importar = await mediator.Send(
+            new ImportarCompraNotaProveedorCommand(
+                Encoding.UTF8.GetBytes(xmlNota),
+                "nota-credito-proveedor.xml",
+                compraRes.Value.Id,
+                GastoFacturaId: null),
+            CancellationToken.None);
+        importar.IsSuccess.Should().BeTrue(importar.Error);
+
+        var aprobar = await mediator.Send(
+            new AprobarCompraNotaProveedorCommand(importar.Value!.Id, "AUTH-NC-PROV", DateTime.UtcNow),
+            CancellationToken.None);
+        aprobar.IsSuccess.Should().BeTrue(aprobar.Error);
+
+        var nota = db.CompraNotasProveedor.First(n => n.Id == importar.Value.Id);
+        nota.Estado.Should().Be("Aprobado");
+        nota.AsientoContableId.Should().NotBeNull();
+
+        db.StockActual.First(s =>
+                s.TenantId == seed.TenantId && s.ProductoId == seed.ProductId && s.BodegaId == seed.BodegaId)
+            .Cantidad.Should().Be(3m);
+
+        db.InventarioMovimientos.Count(m =>
+                m.TenantId == seed.TenantId
+                && m.TipoMovimiento == TipoMovimientoInventario.NotaCreditoProveedor
+                && m.DocumentoOrigenId == nota.Id)
+            .Should().Be(1);
+
+        var lineasNota = db.JournalEntryLines.Where(l => l.JournalEntryId == nota.AsientoContableId).ToList();
+        lineasNota.Should().Contain(l => l.AccountId == cuentaPasivo.Id && l.Debit.Amount == nota.Total && l.Credit.Amount == 0m);
+    }
+
+    [Fact]
+    public async Task Nota_debito_proveedor_en_compra_disminuye_stock_y_aumenta_deuda()
+    {
+        await using var factory = new IntegrationTestWebAppFactory();
+        using var scope = factory.Services.CreateScope();
+        var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        var cuentaPasivo = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "2.1.99");
+
+        var xmlCompra = IntegrationSeedData.BuildFacturaXml(seed.ClaveAcceso49, seed.ProveedorRuc);
+        var compraRes = await mediator.Send(
+            new CrearCompraCommand(
+                ModoCreacionCompra.Xml,
+                XmlContent: Encoding.UTF8.GetBytes(xmlCompra),
+                XmlNombreArchivo: "factura.xml",
+                ProveedorId: null,
+                NumeroFactura: null,
+                FechaFactura: null,
+                FechaVencimiento: null,
+                CondicionPago: null,
+                Observaciones: null,
+                Detalles: null,
+                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.BodegaId, 2m, seed.ProductId) }),
+            CancellationToken.None);
+        compraRes.IsSuccess.Should().BeTrue(compraRes.Error);
+        await mediator.Send(new ValidarCompraCommand(compraRes.Value!.Id), CancellationToken.None);
+        await mediator.Send(new AprobarCompraCommand(compraRes.Value.Id), CancellationToken.None);
+
+        var claveNota = ClaveAcceso49TestFactory.FromPrefix48(new string('2', 48));
+        var xmlNota = BuildNotaProveedorXml(
+            "DEBITO",
+            claveNota,
+            seed.ProveedorRuc,
+            secuencial: "000000102",
+            cantidad: 1m,
+            precioUnitario: 25m,
+            subtotal: 25m,
+            impuesto: 3m);
+
+        var importar = await mediator.Send(
+            new ImportarCompraNotaProveedorCommand(
+                Encoding.UTF8.GetBytes(xmlNota),
+                "nota-debito-proveedor.xml",
+                compraRes.Value.Id,
+                GastoFacturaId: null),
+            CancellationToken.None);
+        importar.IsSuccess.Should().BeTrue(importar.Error);
+
+        var aprobar = await mediator.Send(
+            new AprobarCompraNotaProveedorCommand(importar.Value!.Id, "AUTH-ND-PROV", DateTime.UtcNow),
+            CancellationToken.None);
+        aprobar.IsSuccess.Should().BeTrue(aprobar.Error);
+
+        var nota = db.CompraNotasProveedor.First(n => n.Id == importar.Value.Id);
+        nota.Estado.Should().Be("Aprobado");
+        nota.AsientoContableId.Should().NotBeNull();
+
+        db.StockActual.First(s =>
+                s.TenantId == seed.TenantId && s.ProductoId == seed.ProductId && s.BodegaId == seed.BodegaId)
+            .Cantidad.Should().Be(1m);
+
+        db.InventarioMovimientos.Count(m =>
+                m.TenantId == seed.TenantId
+                && m.TipoMovimiento == TipoMovimientoInventario.NotaDebitoProveedor
+                && m.DocumentoOrigenId == nota.Id)
+            .Should().Be(1);
+
+        var compraActualizada = db.CompraFacturas.First(c => c.Id == compraRes.Value.Id);
+        compraActualizada.TotalNotasProveedorAplicado.Should().Be(0m);
+
+        var lineasNota = db.JournalEntryLines.Where(l => l.JournalEntryId == nota.AsientoContableId).ToList();
+        lineasNota.Should().Contain(l => l.AccountId == cuentaPasivo.Id && l.Credit.Amount == nota.Total && l.Debit.Amount == 0m);
+    }
+
+    [Fact]
+    public async Task Nota_credito_en_gasto_ajusta_gasto_sin_afectar_inventario()
+    {
+        await using var factory = new IntegrationTestWebAppFactory();
+        using var scope = factory.Services.CreateScope();
+        var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+
+        var xmlCompra = IntegrationSeedData.BuildFacturaXml(seed.ClaveAcceso49, seed.ProveedorRuc);
+        var compraRes = await mediator.Send(
+            new CrearCompraCommand(
+                ModoCreacionCompra.Xml,
+                XmlContent: Encoding.UTF8.GetBytes(xmlCompra),
+                XmlNombreArchivo: "factura.xml",
+                ProveedorId: null,
+                NumeroFactura: null,
+                FechaFactura: null,
+                FechaVencimiento: null,
+                CondicionPago: null,
+                Observaciones: null,
+                Detalles: null,
+                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.BodegaId, 2m, seed.ProductId) }),
+            CancellationToken.None);
+        compraRes.IsSuccess.Should().BeTrue(compraRes.Error);
+        await mediator.Send(new ValidarCompraCommand(compraRes.Value!.Id), CancellationToken.None);
+        await mediator.Send(new AprobarCompraCommand(compraRes.Value.Id), CancellationToken.None);
+
+        var proveedorId = db.CompraFacturas.First(c => c.Id == compraRes.Value.Id).ProveedorId;
+        var cuentaPasivo = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "2.1.99");
+
+        var gastoRes = await mediator.Send(
+            new CrearGastoCommand(
+                ModoCreacionGasto.Manual,
+                XmlContent: null,
+                XmlNombreArchivo: null,
+                ProveedorId: proveedorId,
+                FechaEmision: DateTime.UtcNow.Date,
+                Concepto: "Servicio de soporte",
+                CategoriaGasto: "Viajes",
+                Subtotal: 20m,
+                Impuesto: 2m,
+                Total: 22m,
+                Observaciones: null),
+            CancellationToken.None);
+        gastoRes.IsSuccess.Should().BeTrue(gastoRes.Error);
+        await mediator.Send(new ValidarGastoCommand(gastoRes.Value!.Id), CancellationToken.None);
+        await mediator.Send(new AprobarGastoCommand(gastoRes.Value.Id), CancellationToken.None);
+
+        var stockAntes = db.StockActual.First(s =>
+            s.TenantId == seed.TenantId && s.ProductoId == seed.ProductId && s.BodegaId == seed.BodegaId).Cantidad;
+
+        var claveNota = ClaveAcceso49TestFactory.FromPrefix48(new string('3', 48));
+        var xmlNota = BuildNotaProveedorXml(
+            "CREDITO",
+            claveNota,
+            seed.ProveedorRuc,
+            secuencial: "000000103",
+            cantidad: 1m,
+            precioUnitario: 10m,
+            subtotal: 10m,
+            impuesto: 1m);
+
+        var importar = await mediator.Send(
+            new ImportarCompraNotaProveedorCommand(
+                Encoding.UTF8.GetBytes(xmlNota),
+                "nota-credito-gasto.xml",
+                CompraFacturaId: null,
+                gastoRes.Value.Id),
+            CancellationToken.None);
+        importar.IsSuccess.Should().BeTrue(importar.Error);
+
+        var aprobar = await mediator.Send(
+            new AprobarCompraNotaProveedorCommand(importar.Value!.Id, "AUTH-NC-GASTO", DateTime.UtcNow),
+            CancellationToken.None);
+        aprobar.IsSuccess.Should().BeTrue(aprobar.Error);
+
+        var nota = db.CompraNotasProveedor.First(n => n.Id == importar.Value.Id);
+        var gasto = db.GastoFacturas.First(g => g.Id == gastoRes.Value.Id);
+
+        gasto.TotalNotasProveedorAplicado.Should().Be(nota.Total);
+        db.StockActual.First(s =>
+                s.TenantId == seed.TenantId && s.ProductoId == seed.ProductId && s.BodegaId == seed.BodegaId)
+            .Cantidad.Should().Be(stockAntes);
+
+        db.InventarioMovimientos.Count(m =>
+                m.TenantId == seed.TenantId
+                && m.DocumentoOrigenTipo == "CompraNotaProveedor"
+                && m.DocumentoOrigenId == nota.Id)
+            .Should().Be(0);
+
+        var lineasNota = db.JournalEntryLines.Where(l => l.JournalEntryId == nota.AsientoContableId).ToList();
+        lineasNota.Should().Contain(l => l.AccountId == cuentaPasivo.Id && l.Debit.Amount == nota.Total && l.Credit.Amount == 0m);
     }
 
     [Fact]

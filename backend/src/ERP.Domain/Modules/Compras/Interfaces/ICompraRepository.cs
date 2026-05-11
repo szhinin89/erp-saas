@@ -29,5 +29,16 @@ public interface ICompraRepository
     Task<CompraRetencionEmitida?> GetRetencionEmitidaByIdWithDetailsAsync(Guid tenantId, Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<CompraRetencionEmitida>> GetRetencionesEmitidasAsync(Guid tenantId, Guid? proveedorId, CancellationToken ct = default);
 
+    Task AddNotaProveedorAsync(CompraNotaProveedor nota, CancellationToken ct = default);
+    Task<CompraNotaProveedor?> GetNotaProveedorByIdWithDetailsAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+    Task<bool> ExistsNotaProveedorClaveAccesoAsync(Guid tenantId, string claveAcceso, CancellationToken ct = default);
+    Task<IReadOnlyList<CompraNotaProveedor>> GetNotasProveedorAsync(
+        Guid tenantId,
+        Guid? proveedorId,
+        Guid? compraFacturaId,
+        Guid? gastoFacturaId,
+        string? estado,
+        CancellationToken ct = default);
+
     Task SaveChangesAsync(CancellationToken ct = default);
 }

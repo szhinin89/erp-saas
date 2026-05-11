@@ -95,4 +95,46 @@ public interface IAccountingService
         decimal  totalRetenido,
         string   descripcion,
         CancellationToken ct);
+
+    /// <summary>Nota de crédito proveedor sobre compra: reduce CxP e inventario/IVA (inverso del asiento de compra).</summary>
+    Task<Result<Guid>> CrearAsientoNotaCreditoCompraProveedorAsync(
+        Guid     notaId,
+        string   referencia,
+        DateTime fecha,
+        decimal  subtotal,
+        decimal  impuesto,
+        decimal  total,
+        string   descripcion,
+        CancellationToken ct);
+
+    /// <summary>Nota de débito proveedor sobre compra: aumenta inventario/IVA y CxP.</summary>
+    Task<Result<Guid>> CrearAsientoNotaDebitoCompraProveedorAsync(
+        Guid     notaId,
+        string   referencia,
+        DateTime fecha,
+        decimal  subtotal,
+        decimal  impuesto,
+        decimal  total,
+        string   descripcion,
+        CancellationToken ct);
+
+    /// <summary>Nota de crédito proveedor sobre gasto: reduce CxP y gasto.</summary>
+    Task<Result<Guid>> CrearAsientoNotaCreditoGastoProveedorAsync(
+        Guid     notaId,
+        string   referencia,
+        DateTime fecha,
+        decimal  total,
+        string   categoriaGasto,
+        string   descripcion,
+        CancellationToken ct);
+
+    /// <summary>Nota de débito proveedor sobre gasto: aumenta gasto y CxP.</summary>
+    Task<Result<Guid>> CrearAsientoNotaDebitoGastoProveedorAsync(
+        Guid     notaId,
+        string   referencia,
+        DateTime fecha,
+        decimal  total,
+        string   categoriaGasto,
+        string   descripcion,
+        CancellationToken ct);
 }

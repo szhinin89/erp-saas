@@ -62,6 +62,11 @@ public class GastoFacturaConfiguration : IEntityTypeConfiguration<GastoFactura>
             .HasPrecision(18, 4)
             .IsRequired();
 
+        builder.Property(g => g.TotalNotasProveedorAplicado)
+            .HasColumnName("total_notas_proveedor_aplicado")
+            .HasPrecision(18, 4)
+            .IsRequired();
+
         builder.Property(g => g.Estado)
             .HasColumnName("estado")
             .HasConversion<string>()

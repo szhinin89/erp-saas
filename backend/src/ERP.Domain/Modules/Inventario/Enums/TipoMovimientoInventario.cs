@@ -10,4 +10,6 @@ public enum TipoMovimientoInventario
     TransferenciaSalida  = 6,
     DevolucionCompra     = 7,
     DevolucionVenta      = 8,
+    NotaCreditoProveedor = 9,
+    NotaDebitoProveedor  = 10,
 }

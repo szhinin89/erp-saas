@@ -10,6 +10,9 @@ public interface IXmlFacturaParser
     /// </summary>
     /// <exception cref="XmlParseException">Si falta algún nodo crítico o el XML es inválido.</exception>
     Task<FacturaParseResult> ParseAsync(Stream xmlStream, CancellationToken ct = default);
+
+    /// <summary>Parsea nota de crédito o débito recibida del proveedor (raíz notaCredito / notaDebito).</summary>
+    Task<NotaProveedorParseResult> ParseNotaProveedorAsync(Stream xmlStream, CancellationToken ct = default);
 }
 
 // ── Resultado del parseo ──────────────────────────────────────────────────────
@@ -52,4 +55,34 @@ public sealed record ItemFactura(
     decimal PrecioUnitario,
     decimal Descuento,
     decimal Subtotal
+);
+
+/// <summary>Resultado del parseo de nota de crédito/débito del SRI (proveedor emisor).</summary>
+public sealed record NotaProveedorParseResult(
+    string                    TipoNota,
+    string                    Motivo,
+    string                    ClaveAcceso,
+    string                    Establecimiento,
+    string                    PuntoEmision,
+    string                    Secuencial,
+    string                    NumeroNota,
+    DateTime                  FechaEmision,
+    string                    RucProveedor,
+    string                    RazonSocialProveedor,
+    decimal                   Subtotal,
+    decimal                   Impuesto,
+    decimal                   Total,
+    IReadOnlyList<ItemNotaProveedor> Items
+);
+
+/// <summary>Detalle de nota con importes de impuesto por línea (SRI).</summary>
+public sealed record ItemNotaProveedor(
+    string  CodigoPrincipal,
+    string  Descripcion,
+    decimal Cantidad,
+    decimal PrecioUnitario,
+    decimal Descuento,
+    decimal Subtotal,
+    decimal Impuesto,
+    decimal Total
 );

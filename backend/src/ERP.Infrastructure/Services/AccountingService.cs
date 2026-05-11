@@ -419,4 +419,226 @@ public sealed class AccountingService : IAccountingService
             ? Result<Guid>.Success(result.Value!.Id)
             : Result<Guid>.Failure(result.Error ?? "Error al crear asiento de retención recibida.");
     }
+
+    public async Task<Result<Guid>> CrearAsientoNotaCreditoCompraProveedorAsync(
+        Guid     notaId,
+        string   referencia,
+        DateTime fecha,
+        decimal  subtotal,
+        decimal  impuesto,
+        decimal  total,
+        string   descripcion,
+        CancellationToken ct)
+    {
+        var tenantId = _tenant.TenantId;
+        var mapping  = await _cuentaContable.ObtenerCuentasParaCompraAsync(tenantId, subtotal, impuesto, ct);
+        if (!mapping.IsSuccess)
+            return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas de compra.");
+
+        JournalEntryLineCommand[] lines;
+        if (mapping.Value is not null)
+        {
+            var m = mapping.Value;
+            var list = new List<JournalEntryLineCommand>
+            {
+                new(m.CuentaCreditoPrincipal, total, 0m, "USD"),
+                new(m.CuentaDebitoPrincipal, 0m, subtotal, "USD"),
+            };
+            if (impuesto > 0.01m && m.CuentaIvaDebito.HasValue)
+                list.Add(new JournalEntryLineCommand(m.CuentaIvaDebito.Value, 0m, impuesto, "USD"));
+            lines = list.ToArray();
+        }
+        else
+        {
+            var cuentas = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+            var cuentaGasto = cuentas.FirstOrDefault(c =>
+                c.IsActive && c.AllowsMovements && c.Type == AccountType.Expense && c.Nature == AccountNature.Debit);
+            var cuentaPagar = cuentas.FirstOrDefault(c =>
+                c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit);
+            if (cuentaGasto is null || cuentaPagar is null)
+                return Result<Guid>.Failure(
+                    "No se encontraron cuentas contables para la nota de crédito de compra (gasto y pasivo).");
+
+            lines =
+            [
+                new JournalEntryLineCommand(cuentaPagar.Id, total, 0m, "USD"),
+                new JournalEntryLineCommand(cuentaGasto.Id, 0m, total, "USD"),
+            ];
+        }
+
+        var result = await _mediator.Send(
+            new CreateJournalEntryCommand(referencia, fecha, descripcion, lines), ct);
+        return result.IsSuccess
+            ? Result<Guid>.Success(result.Value!.Id)
+            : Result<Guid>.Failure(result.Error ?? "Error al crear asiento de nota de crédito de compra.");
+    }
+
+    public async Task<Result<Guid>> CrearAsientoNotaDebitoCompraProveedorAsync(
+        Guid     notaId,
+        string   referencia,
+        DateTime fecha,
+        decimal  subtotal,
+        decimal  impuesto,
+        decimal  total,
+        string   descripcion,
+        CancellationToken ct)
+    {
+        var tenantId = _tenant.TenantId;
+        var mapping  = await _cuentaContable.ObtenerCuentasParaCompraAsync(tenantId, subtotal, impuesto, ct);
+        if (!mapping.IsSuccess)
+            return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas de compra.");
+
+        JournalEntryLineCommand[] lines;
+        if (mapping.Value is not null)
+        {
+            var m = mapping.Value;
+            var list = new List<JournalEntryLineCommand>
+            {
+                new(m.CuentaDebitoPrincipal, subtotal, 0m, "USD"),
+            };
+            if (impuesto > 0.01m && m.CuentaIvaDebito.HasValue)
+                list.Add(new JournalEntryLineCommand(m.CuentaIvaDebito.Value, impuesto, 0m, "USD"));
+            list.Add(new JournalEntryLineCommand(m.CuentaCreditoPrincipal, 0m, total, "USD"));
+            lines = list.ToArray();
+        }
+        else
+        {
+            var cuentas = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+            var cuentaGasto = cuentas.FirstOrDefault(c =>
+                c.IsActive && c.AllowsMovements && c.Type == AccountType.Expense && c.Nature == AccountNature.Debit);
+            var cuentaPagar = cuentas.FirstOrDefault(c =>
+                c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit);
+            if (cuentaGasto is null || cuentaPagar is null)
+                return Result<Guid>.Failure(
+                    "No se encontraron cuentas contables para la nota de débito de compra.");
+
+            lines =
+            [
+                new JournalEntryLineCommand(cuentaGasto.Id, total, 0m, "USD"),
+                new JournalEntryLineCommand(cuentaPagar.Id, 0m, total, "USD"),
+            ];
+        }
+
+        var result = await _mediator.Send(
+            new CreateJournalEntryCommand(referencia, fecha, descripcion, lines), ct);
+        return result.IsSuccess
+            ? Result<Guid>.Success(result.Value!.Id)
+            : Result<Guid>.Failure(result.Error ?? "Error al crear asiento de nota de débito de compra.");
+    }
+
+    public async Task<Result<Guid>> CrearAsientoNotaCreditoGastoProveedorAsync(
+        Guid     notaId,
+        string   referencia,
+        DateTime fecha,
+        decimal  total,
+        string   categoriaGasto,
+        string   descripcion,
+        CancellationToken ct)
+    {
+        var tenantId = _tenant.TenantId;
+        var cuentas  = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+
+        var pasivos = cuentas.Where(c =>
+                c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit)
+            .ToList();
+        var cuentaProveedor = pasivos.FirstOrDefault(c =>
+            c.Name.Contains("PROVEED", StringComparison.OrdinalIgnoreCase))
+            ?? pasivos.FirstOrDefault();
+        if (cuentaProveedor is null)
+            return Result<Guid>.Failure("No se encontró cuenta de proveedores (pasivo) para la nota de crédito de gasto.");
+
+        var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(tenantId, categoriaGasto, ct);
+        if (!debitoGasto.IsSuccess)
+            return Result<Guid>.Failure(debitoGasto.Error ?? "Error al resolver cuenta de gasto.");
+
+        Guid cuentaGastoId;
+        if (debitoGasto.Value.HasValue)
+            cuentaGastoId = debitoGasto.Value.Value;
+        else
+        {
+            var cat = (categoriaGasto ?? string.Empty).Trim();
+            var cuentaGasto = cuentas.FirstOrDefault(c =>
+                c.IsActive
+                && c.AllowsMovements
+                && c.Type == AccountType.Expense
+                && c.Nature == AccountNature.Debit
+                && !string.IsNullOrEmpty(cat)
+                && c.Name.Contains(cat, StringComparison.OrdinalIgnoreCase));
+            cuentaGasto ??= cuentas.FirstOrDefault(c =>
+                c.IsActive && c.AllowsMovements && c.Type == AccountType.Expense && c.Nature == AccountNature.Debit);
+            if (cuentaGasto is null)
+                return Result<Guid>.Failure("No se encontró cuenta de gasto para la nota de crédito.");
+            cuentaGastoId = cuentaGasto.Id;
+        }
+
+        var lines = new[]
+        {
+            new JournalEntryLineCommand(cuentaProveedor.Id, total, 0m, "USD"),
+            new JournalEntryLineCommand(cuentaGastoId, 0m, total, "USD"),
+        };
+
+        var result = await _mediator.Send(
+            new CreateJournalEntryCommand(referencia, fecha, descripcion, lines), ct);
+        return result.IsSuccess
+            ? Result<Guid>.Success(result.Value!.Id)
+            : Result<Guid>.Failure(result.Error ?? "Error al crear asiento de nota de crédito de gasto.");
+    }
+
+    public async Task<Result<Guid>> CrearAsientoNotaDebitoGastoProveedorAsync(
+        Guid     notaId,
+        string   referencia,
+        DateTime fecha,
+        decimal  total,
+        string   categoriaGasto,
+        string   descripcion,
+        CancellationToken ct)
+    {
+        var tenantId = _tenant.TenantId;
+        var cuentas  = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+
+        var pasivos = cuentas.Where(c =>
+                c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit)
+            .ToList();
+        var cuentaProveedor = pasivos.FirstOrDefault(c =>
+            c.Name.Contains("PROVEED", StringComparison.OrdinalIgnoreCase))
+            ?? pasivos.FirstOrDefault();
+        if (cuentaProveedor is null)
+            return Result<Guid>.Failure("No se encontró cuenta de proveedores (pasivo) para la nota de débito de gasto.");
+
+        var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(tenantId, categoriaGasto, ct);
+        if (!debitoGasto.IsSuccess)
+            return Result<Guid>.Failure(debitoGasto.Error ?? "Error al resolver cuenta de gasto.");
+
+        Guid cuentaGastoId;
+        if (debitoGasto.Value.HasValue)
+            cuentaGastoId = debitoGasto.Value.Value;
+        else
+        {
+            var cat = (categoriaGasto ?? string.Empty).Trim();
+            var cuentaGasto = cuentas.FirstOrDefault(c =>
+                c.IsActive
+                && c.AllowsMovements
+                && c.Type == AccountType.Expense
+                && c.Nature == AccountNature.Debit
+                && !string.IsNullOrEmpty(cat)
+                && c.Name.Contains(cat, StringComparison.OrdinalIgnoreCase));
+            cuentaGasto ??= cuentas.FirstOrDefault(c =>
+                c.IsActive && c.AllowsMovements && c.Type == AccountType.Expense && c.Nature == AccountNature.Debit);
+            if (cuentaGasto is null)
+                return Result<Guid>.Failure("No se encontró cuenta de gasto para la nota de débito.");
+            cuentaGastoId = cuentaGasto.Id;
+        }
+
+        var lines = new[]
+        {
+            new JournalEntryLineCommand(cuentaGastoId, total, 0m, "USD"),
+            new JournalEntryLineCommand(cuentaProveedor.Id, 0m, total, "USD"),
+        };
+
+        var result = await _mediator.Send(
+            new CreateJournalEntryCommand(referencia, fecha, descripcion, lines), ct);
+        return result.IsSuccess
+            ? Result<Guid>.Success(result.Value!.Id)
+            : Result<Guid>.Failure(result.Error ?? "Error al crear asiento de nota de débito de gasto.");
+    }
 }

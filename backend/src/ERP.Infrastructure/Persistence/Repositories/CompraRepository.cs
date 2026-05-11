@@ -89,6 +89,45 @@ public sealed class CompraRepository : ICompraRepository
         return await q.OrderByDescending(r => r.FechaEmision).ToListAsync(ct);
     }
 
+    public Task AddNotaProveedorAsync(CompraNotaProveedor nota, CancellationToken ct = default)
+        => _context.CompraNotasProveedor.AddAsync(nota, ct).AsTask();
+
+    public Task<CompraNotaProveedor?> GetNotaProveedorByIdWithDetailsAsync(
+        Guid tenantId,
+        Guid id,
+        CancellationToken ct = default)
+        => _context.CompraNotasProveedor
+            .Include(n => n.Detalles)
+            .FirstOrDefaultAsync(n => n.TenantId == tenantId && n.Id == id, ct);
+
+    public Task<bool> ExistsNotaProveedorClaveAccesoAsync(
+        Guid tenantId,
+        string claveAcceso,
+        CancellationToken ct = default)
+        => _context.CompraNotasProveedor.AnyAsync(
+            n => n.TenantId == tenantId && n.ClaveAcceso == claveAcceso, ct);
+
+    public async Task<IReadOnlyList<CompraNotaProveedor>> GetNotasProveedorAsync(
+        Guid tenantId,
+        Guid? proveedorId,
+        Guid? compraFacturaId,
+        Guid? gastoFacturaId,
+        string? estado,
+        CancellationToken ct = default)
+    {
+        var q = _context.CompraNotasProveedor.Where(n => n.TenantId == tenantId);
+        if (proveedorId.HasValue) q = q.Where(n => n.ProveedorId == proveedorId.Value);
+        if (compraFacturaId.HasValue) q = q.Where(n => n.CompraFacturaId == compraFacturaId.Value);
+        if (gastoFacturaId.HasValue) q = q.Where(n => n.GastoFacturaId == gastoFacturaId.Value);
+        if (!string.IsNullOrWhiteSpace(estado))
+        {
+            var e = estado.Trim();
+            q = q.Where(n => n.Estado == e);
+        }
+
+        return await q.OrderByDescending(n => n.FechaEmision).ToListAsync(ct);
+    }
+
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);
 }

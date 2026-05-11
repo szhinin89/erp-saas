@@ -19,6 +19,7 @@ namespace ERP.API.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Route("api/logistica/bodegas")]
 [Authorize]
 [Produces("application/json")]
 public sealed class BodegasController : ControllerBase

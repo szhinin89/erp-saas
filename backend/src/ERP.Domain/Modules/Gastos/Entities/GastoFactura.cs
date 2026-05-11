@@ -41,6 +41,9 @@ public sealed class GastoFactura : MasterEntity, ITenantEntity
     public string?    MotivoRechazo    { get; private set; }
     public Guid?      AsientoContableId { get; private set; }
 
+    /// <summary>Suma de totales de notas de crédito de proveedor aplicadas a este gasto.</summary>
+    public decimal TotalNotasProveedorAplicado { get; private set; }
+
     private GastoFactura() { }
 
     public static GastoFactura CreateManual(
@@ -138,6 +141,30 @@ public sealed class GastoFactura : MasterEntity, ITenantEntity
         AprobadoPor       = userId;
         AprobadoEn        = DateTime.UtcNow;
         AsientoContableId = asientoContableId;
+        SetUpdated(userId);
+    }
+
+    /// <param name="tipoNota"><c>CREDITO</c> acumula y valida tope; <c>DEBITO</c> no modifica el acumulado de créditos.</param>
+    public void RegistrarNotaProveedorAplicada(string tipoNota, decimal montoTotalNota, Guid userId)
+    {
+        if (montoTotalNota <= 0)
+            throw new ArgumentException("El monto de la nota debe ser mayor a cero.", nameof(montoTotalNota));
+        if (Estado != EstadoGasto.Aprobado)
+            throw new InvalidOperationException("Solo se pueden aplicar notas de proveedor a un gasto Aprobado.");
+
+        var tn = (tipoNota ?? string.Empty).Trim().ToUpperInvariant();
+        if (tn == "CREDITO")
+        {
+            var suma = TotalNotasProveedorAplicado + montoTotalNota;
+            if (suma > Total + ToleranciaTotal)
+                throw new InvalidOperationException(
+                    $"La suma de notas de crédito aplicadas ({suma:F2}) supera el total del gasto ({Total:F2}).");
+
+            TotalNotasProveedorAplicado = suma;
+        }
+        else if (tn != "DEBITO")
+            throw new ArgumentException("TipoNota debe ser CREDITO o DEBITO.", nameof(tipoNota));
+
         SetUpdated(userId);
     }
 
