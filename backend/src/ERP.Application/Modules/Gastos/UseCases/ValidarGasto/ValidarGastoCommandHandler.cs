@@ -18,19 +18,22 @@ public sealed class ValidarGastoCommandHandler
     private readonly IUserActivityRepository   _activity;
     private readonly ICurrentTenant            _tenant;
     private readonly ICurrentUser              _user;
+    private readonly IUnitOfWork               _unitOfWork;
 
     public ValidarGastoCommandHandler(
         IGastoFacturaRepository repo,
         IProveedorRepository proveedorRepo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
-        ICurrentUser user)
+        ICurrentUser user,
+        IUnitOfWork unitOfWork)
     {
         _repo          = repo;
         _proveedorRepo = proveedorRepo;
         _activity      = activity;
         _tenant        = tenant;
         _user          = user;
+        _unitOfWork    = unitOfWork;
     }
 
     public async Task<Result<GastoFacturaDto>> Handle(ValidarGastoCommand command, CancellationToken ct)
@@ -76,15 +79,25 @@ public sealed class ValidarGastoCommandHandler
             return Result<GastoFacturaDto>.Failure(ex.Message);
         }
 
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _user.Email, _user.FullName,
-            module: "gastos", action: "gasto.validar",
-            entityType: "GastoFactura", entityId: gasto.Id,
-            description: gasto.Concepto), ct);
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            await _activity.AddAsync(UserActivity.Create(
+                tenantId, userId, _user.Email, _user.FullName,
+                module: "gastos", action: "gasto.validar",
+                entityType: "GastoFactura", entityId: gasto.Id,
+                description: gasto.Concepto), ct);
 
-        await _repo.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
 
-        return Result<GastoFacturaDto>.Success(ToDto(gasto));
+            return Result<GastoFacturaDto>.Success(ToDto(gasto));
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            return Result<GastoFacturaDto>.Failure($"No se pudo validar el gasto: {ex.Message}");
+        }
     }
 
     private static GastoFacturaDto ToDto(GastoFactura g) => new(

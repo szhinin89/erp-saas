@@ -27,7 +27,8 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         result.Value!.Estado.Should().Be("Cerrada");
         ctx.OrdenRepo.Verify(x => x.AddOrdenCompraFacturaAsync(
             It.IsAny<OrdenCompraFactura>(), It.IsAny<CancellationToken>()), Times.Once);
-        ctx.OrdenRepo.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        ctx.UnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        ctx.UnitOfWork.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -193,6 +194,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
 
         public Mock<IOrdenCompraRepository> OrdenRepo  { get; } = new();
         public Mock<ICompraRepository>      CompraRepo { get; } = new();
+        public Mock<IUnitOfWork>           UnitOfWork  { get; } = new();
 
         private readonly Mock<IProveedorRepository>    _proveedorRepo = new();
         private readonly Mock<IUserActivityRepository> _activity      = new();
@@ -218,6 +220,12 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
             _user.SetupGet(x => x.Email).Returns("test@erp.dev");
             _user.SetupGet(x => x.FullName).Returns("Test User");
 
+            UnitOfWork.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+            UnitOfWork.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+            UnitOfWork.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            UnitOfWork.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+
             var orden   = BuildOrdenCompra(aprobar: true);
             var factura = BuildFactura(aprobar: true);
 
@@ -231,8 +239,6 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
                 .ReturnsAsync(false);
             OrdenRepo.Setup(x => x.AddOrdenCompraFacturaAsync(
                     It.IsAny<OrdenCompraFactura>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-            OrdenRepo.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
             CompraRepo.Setup(x => x.GetByIdWithDetailsAsync(TenantId, factura.Id, It.IsAny<CancellationToken>()))
@@ -293,6 +299,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
                 _activity.Object,
                 _tenant.Object,
                 _user.Object,
+                UnitOfWork.Object,
                 NullLogger<VincularFacturaAOrdenCompraCommandHandler>.Instance);
 
             return handler.Handle(

@@ -8,6 +8,10 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace ERP.Infrastructure.Services;
 
+/// <summary>
+/// Config por tenant: todas las consultas a <c>Config*</c> usan <c>IgnoreQueryFilters</c> y filtran por
+/// <c>tenantId</c> en el predicado para ser correctas con JWT SuperAdmin (<c>tenant_id</c> ambiente vacío).
+/// </summary>
 public sealed class ConfigService : IConfigService
 {
     private readonly ErpDbContext _db;

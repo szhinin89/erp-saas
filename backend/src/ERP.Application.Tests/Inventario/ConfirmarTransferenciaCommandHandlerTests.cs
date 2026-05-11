@@ -1,5 +1,6 @@
 using FluentAssertions;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventario.DTOs;
 using ERP.Application.Inventario.UseCases.ConfirmarTransferencia;
 using ERP.Domain.Audit.Interfaces;
@@ -160,12 +161,17 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
         public List<InventarioMovimiento> Movimientos { get; } = [];
 
         private readonly Mock<IProductRepository>      _productRepo = new();
+        private readonly Mock<ICostoPromedioService>   _costo       = new();
         private readonly Mock<IUserActivityRepository> _activity    = new();
         private readonly Mock<ICurrentTenant>          _tenant      = new();
         private readonly Mock<ICurrentUser>            _user        = new();
 
         public TestContext()
         {
+            _costo.Setup(x => x.ObtenerCostoPromedioAsync(
+                    TenantId, ProductoId, BodegaOrigenId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(0m);
+
             _tenant.SetupGet(x => x.TenantId).Returns(TenantId);
             _user.SetupGet(x => x.UserId).Returns(UserId);
             _user.SetupGet(x => x.Email).Returns("test@erp.dev");
@@ -229,6 +235,7 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
             var handler = new ConfirmarTransferenciaCommandHandler(
                 TransferenciaRepo.Object,
                 StockRepo.Object,
+                _costo.Object,
                 _productRepo.Object,
                 _activity.Object,
                 Uow.Object,

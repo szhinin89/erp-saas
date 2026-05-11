@@ -15,17 +15,20 @@ public sealed class RechazarCompraCommandHandler
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
+    private readonly IUnitOfWork             _unitOfWork;
 
     public RechazarCompraCommandHandler(
         ICompraRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
-        ICurrentUser user)
+        ICurrentUser user,
+        IUnitOfWork unitOfWork)
     {
-        _repo     = repo;
-        _activity = activity;
-        _tenant   = tenant;
-        _user     = user;
+        _repo       = repo;
+        _activity   = activity;
+        _tenant     = tenant;
+        _user       = user;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<CompraFacturaDto>> Handle(
@@ -33,9 +36,6 @@ public sealed class RechazarCompraCommandHandler
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
-
-        if (string.IsNullOrWhiteSpace(command.Motivo))
-            return Result<CompraFacturaDto>.Failure("El motivo de rechazo es obligatorio.");
 
         var compra = await _repo.GetByIdAsync(tenantId, command.CompraFacturaId, ct);
         if (compra is null)
@@ -53,15 +53,25 @@ public sealed class RechazarCompraCommandHandler
             return Result<CompraFacturaDto>.Failure(ex.Message);
         }
 
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _user.Email, _user.FullName,
-            module: "compras", action: "compra.rechazar",
-            entityType: "CompraFactura", entityId: compra.Id,
-            description: $"{compra.NumeroFactura} — motivo: {command.Motivo}"), ct);
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            await _activity.AddAsync(UserActivity.Create(
+                tenantId, userId, _user.Email, _user.FullName,
+                module: "compras", action: "compra.rechazar",
+                entityType: "CompraFactura", entityId: compra.Id,
+                description: $"{compra.NumeroFactura} — motivo: {command.Motivo}"), ct);
 
-        await _repo.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
 
-        return Result<CompraFacturaDto>.Success(ToDto(compra));
+            return Result<CompraFacturaDto>.Success(ToDto(compra));
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            return Result<CompraFacturaDto>.Failure($"No se pudo rechazar la compra: {ex.Message}");
+        }
     }
 
     private static CompraFacturaDto ToDto(Domain.Compras.Entities.CompraFactura c) => new(

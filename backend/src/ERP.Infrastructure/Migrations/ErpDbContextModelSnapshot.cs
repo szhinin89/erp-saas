@@ -1502,6 +1502,100 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("config_module", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Configuration.Entities.ConfiguracionFacturacion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AnchoTirilla")
+                        .HasColumnType("integer")
+                        .HasColumnName("ancho_tirilla");
+
+                    b.Property<string>("ContribuyenteEspecial")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("contribuyente_especial");
+
+                    b.Property<string>("Correo")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("correo");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("DireccionMatriz")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("direccion_matriz");
+
+                    b.Property<string>("LeyendaAdicional")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("leyenda_adicional");
+
+                    b.Property<string>("LogoBase64")
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)")
+                        .HasColumnName("logo_base64");
+
+                    b.Property<string>("NombreComercial")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nombre_comercial");
+
+                    b.Property<bool>("ObligadoContabilidad")
+                        .HasColumnType("boolean")
+                        .HasColumnName("obligado_contabilidad");
+
+                    b.Property<string>("RazonSocial")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("razon_social");
+
+                    b.Property<string>("Ruc")
+                        .IsRequired()
+                        .HasMaxLength(13)
+                        .HasColumnType("character varying(13)")
+                        .HasColumnName("ruc");
+
+                    b.Property<string>("Telefono")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("telefono");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_configuracion_facturacion_tenant");
+
+                    b.ToTable("configuracion_facturacion", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Configuration.Entities.ConfiguracionSRI", b =>
                 {
                     b.Property<Guid>("TenantId")
@@ -2075,6 +2169,16 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,6)")
                         .HasColumnName("cantidad_resultante");
 
+                    b.Property<decimal?>("CostoTotal")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("costo_total");
+
+                    b.Property<decimal?>("CostoUnitario")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("costo_unitario");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -2100,11 +2204,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("referencia");
-
-                    b.Property<string>("ReferenciaTipo")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("referencia_tipo");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid")
@@ -2136,6 +2235,121 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_inventario_movimientos_tenant_producto_bodega");
 
                     b.ToTable("inventario_movimientos", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Inventario.Entities.KardexReporte", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BodegaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("bodega_id");
+
+                    b.Property<DateTime?>("CompletadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completado_en");
+
+                    b.Property<string>("ErrorMensaje")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("error_mensaje");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("estado");
+
+                    b.Property<DateTime?>("FechaFin")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_fin");
+
+                    b.Property<DateTime?>("FechaInicio")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_inicio");
+
+                    b.Property<Guid>("ProductoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("producto_id");
+
+                    b.Property<string>("ResultadoJson")
+                        .HasColumnType("text")
+                        .HasColumnName("resultado_json");
+
+                    b.Property<DateTime>("SolicitadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("solicitado_en");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SolicitadoEn")
+                        .HasDatabaseName("ix_kardex_reportes_solicitado_en");
+
+                    b.HasIndex("TenantId", "Estado")
+                        .HasDatabaseName("ix_kardex_reportes_tenant_estado");
+
+                    b.ToTable("kardex_reportes", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Inventario.Entities.KardexSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BodegaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("bodega_id");
+
+                    b.Property<decimal>("CantidadSaldo")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("cantidad_saldo");
+
+                    b.Property<DateTime>("ComputadoEn")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("computado_en");
+
+                    b.Property<decimal>("CostoPromedio")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("costo_promedio");
+
+                    b.Property<DateTime>("FechaSnapshot")
+                        .HasColumnType("date")
+                        .HasColumnName("fecha_snapshot");
+
+                    b.Property<Guid>("ProductoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("producto_id");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<decimal>("ValorSaldo")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("valor_saldo");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId", "FechaSnapshot")
+                        .HasDatabaseName("ix_kardex_snapshots_tenant_fecha");
+
+                    b.HasIndex("TenantId", "ProductoId", "BodegaId", "FechaSnapshot")
+                        .IsUnique()
+                        .HasDatabaseName("ix_kardex_snapshots_lookup");
+
+                    b.ToTable("kardex_snapshots", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Inventario.Entities.StockActual", b =>
@@ -2186,6 +2400,11 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid?>("UpdatedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
+
+                    b.Property<decimal>("ValorTotalStock")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("valor_total_stock");
 
                     b.HasKey("Id");
 
@@ -3936,7 +4155,7 @@ namespace ERP.Infrastructure.Migrations
 
                             b1.HasKey("JournalEntryLineId");
 
-                            b1.ToTable("journal_entry_lines", (string)null);
+                            b1.ToTable("journal_entry_lines");
 
                             b1.WithOwner()
                                 .HasForeignKey("JournalEntryLineId");
@@ -3960,7 +4179,7 @@ namespace ERP.Infrastructure.Migrations
 
                             b1.HasKey("JournalEntryLineId");
 
-                            b1.ToTable("journal_entry_lines", (string)null);
+                            b1.ToTable("journal_entry_lines");
 
                             b1.WithOwner()
                                 .HasForeignKey("JournalEntryLineId");

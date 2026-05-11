@@ -27,6 +27,7 @@ public sealed class CrearVentaCommandHandler : IRequestHandler<CrearVentaCommand
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _currentTenant;
     private readonly ICurrentUser            _currentUser;
+    private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<CrearVentaCommandHandler> _logger;
 
     public CrearVentaCommandHandler(
@@ -40,6 +41,7 @@ public sealed class CrearVentaCommandHandler : IRequestHandler<CrearVentaCommand
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
+        IUnitOfWork unitOfWork,
         ILogger<CrearVentaCommandHandler> logger)
     {
         _ventasRepository    = ventasRepository;
@@ -52,6 +54,7 @@ public sealed class CrearVentaCommandHandler : IRequestHandler<CrearVentaCommand
         _activity            = activity;
         _currentTenant       = currentTenant;
         _currentUser         = currentUser;
+        _unitOfWork          = unitOfWork;
         _logger              = logger;
     }
 
@@ -113,109 +116,118 @@ public sealed class CrearVentaCommandHandler : IRequestHandler<CrearVentaCommand
         if (configSri is null)
             return Result<Guid>.Failure("La configuración SRI no está configurada para este tenant.");
 
-        // 6. Generar secuencial (capturar el actual, luego incrementar para el próximo)
-        var fechaEmision = DateTime.UtcNow;
-        var secuencial = await GenerarSecuencialAtomicoAsync(configSri, ct);
-        var claveAcceso = ClaveAccesoHelper.Generar(
-            configSri.RucEmpresa, configSri.Ambiente, configSri.Establecimiento,
-            configSri.PuntoEmision, configSri.TipoEmision, secuencial, fechaEmision);
-
-        // 7. Calcular totales y construir detalles
-        decimal subtotal = 0;
-        decimal totalImpuesto = 0;
-        var detalles = new List<VentasDetalle>();
-
-        foreach (var item in command.Items)
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
         {
-            var producto = productos[item.ProductoId];
-            var subtotalItem = item.Cantidad * item.PrecioUnitario;
+            // 6. Secuencial SRI (incremento + factura + actividad en una misma transacción)
+            var secuencial = CapturarSecuencialComoString(configSri);
+            await _configSriRepository.UpdateAsync(configSri, ct);
 
-            decimal impuestoItem = 0;
-            if (producto.AppliesVatOnSale && producto.SaleTaxId.HasValue)
+            var fechaEmision = DateTime.UtcNow;
+            var claveAcceso = ClaveAccesoHelper.Generar(
+                configSri.RucEmpresa, configSri.Ambiente, configSri.Establecimiento,
+                configSri.PuntoEmision, configSri.TipoEmision, secuencial, fechaEmision);
+
+            // 7. Calcular totales y construir detalles
+            decimal subtotal = 0;
+            decimal totalImpuesto = 0;
+            var detalles = new List<VentasDetalle>();
+
+            foreach (var item in command.Items)
             {
-                var taxRate = await _taxRateRepository.GetByIdAsync(producto.SaleTaxId.Value, tenantId, ct);
-                if (taxRate is not null)
-                    impuestoItem = subtotalItem * taxRate.Percentage / 100;
+                var producto = productos[item.ProductoId];
+                var subtotalItem = item.Cantidad * item.PrecioUnitario;
+
+                decimal impuestoItem = 0;
+                if (producto.AppliesVatOnSale && producto.SaleTaxId.HasValue)
+                {
+                    var taxRate = await _taxRateRepository.GetByIdAsync(producto.SaleTaxId.Value, tenantId, ct);
+                    if (taxRate is not null)
+                        impuestoItem = subtotalItem * taxRate.Percentage / 100;
+                }
+
+                subtotal += subtotalItem;
+                totalImpuesto += impuestoItem;
+
+                var detalle = VentasDetalle.Create(
+                    tenantId: tenantId,
+                    productoId: item.ProductoId,
+                    cantidad: item.Cantidad,
+                    precioUnitario: item.PrecioUnitario,
+                    impuesto: impuestoItem,
+                    descripcion: producto.Description,
+                    createdBy: userId
+                );
+                detalles.Add(detalle);
             }
 
-            subtotal += subtotalItem;
-            totalImpuesto += impuestoItem;
+            var total = subtotal + totalImpuesto;
 
-            var detalle = VentasDetalle.Create(
+            // 8. Crear factura en estado Borrador
+            var factura = VentasFactura.Create(
                 tenantId: tenantId,
-                productoId: item.ProductoId,
-                cantidad: item.Cantidad,
-                precioUnitario: item.PrecioUnitario,
-                impuesto: impuestoItem,
-                descripcion: producto.Description,
+                sucursalId: command.SucursalId,
+                clienteId: command.ClienteId,
+                bodegaId: command.BodegaId,
+                tipoDocumento: "01",
+                establecimiento: configSri.Establecimiento,
+                puntoEmision: configSri.PuntoEmision,
+                secuencial: secuencial,
+                claveAcceso: claveAcceso,
+                fechaEmision: fechaEmision,
+                subtotal: subtotal,
+                impuesto: totalImpuesto,
+                total: total,
+                xmlGeneradoPath: null,
+                xmlAutorizacionPath: null,
+                numeroAutorizacion: null,
+                fechaAutorizacion: null,
+                mensajeError: null,
                 createdBy: userId
             );
-            detalles.Add(detalle);
+
+            foreach (var detalle in detalles)
+            {
+                detalle.AsignarFacturaId(factura.Id);
+                factura.AgregarDetalle(detalle);
+            }
+
+            await _ventasRepository.AddFacturaAsync(factura, ct);
+
+            var numeroFactura = $"{factura.Establecimiento}-{factura.PuntoEmision}-{factura.Secuencial}";
+            await _activity.AddAsync(UserActivity.Create(
+                tenantId: tenantId,
+                userId: userId,
+                userEmail: _currentUser.Email,
+                userFullName: _currentUser.FullName,
+                module: "Ventas",
+                action: "CrearVenta",
+                entityType: "VentasFactura",
+                entityId: factura.Id,
+                description: $"Factura creada: {numeroFactura}"
+            ), ct);
+
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
+
+            _logger.LogInformation(
+                "Venta creada: factura={FacturaId}, secuencial={Secuencial}, total={Total}, tenant={TenantId}",
+                factura.Id, factura.Secuencial, factura.Total, tenantId);
+
+            return Result<Guid>.Success(factura.Id);
         }
-
-        var total = subtotal + totalImpuesto;
-
-        // 8. Crear factura en estado Borrador
-        var factura = VentasFactura.Create(
-            tenantId: tenantId,
-            sucursalId: command.SucursalId,
-            clienteId: command.ClienteId,
-            bodegaId: command.BodegaId,
-            tipoDocumento: "01",
-            establecimiento: configSri.Establecimiento,
-            puntoEmision: configSri.PuntoEmision,
-            secuencial: secuencial,
-            claveAcceso: claveAcceso,
-            fechaEmision: fechaEmision,
-            subtotal: subtotal,
-            impuesto: totalImpuesto,
-            total: total,
-            xmlGeneradoPath: null,
-            xmlAutorizacionPath: null,
-            numeroAutorizacion: null,
-            fechaAutorizacion: null,
-            mensajeError: null,
-            createdBy: userId
-        );
-
-        foreach (var detalle in detalles)
+        catch (Exception ex)
         {
-            detalle.AsignarFacturaId(factura.Id);
-            factura.AgregarDetalle(detalle);
+            await _unitOfWork.RollbackAsync(ct);
+            _logger.LogError(ex, "Error al crear venta tenant={TenantId}", tenantId);
+            return Result<Guid>.Failure($"No se pudo crear la venta: {ex.Message}");
         }
-
-        // 9. Guardar en BD
-        await _ventasRepository.AddFacturaAsync(factura, ct);
-        await _ventasRepository.SaveChangesAsync(ct);
-
-        // 10. Registrar actividad
-        var numeroFactura = $"{factura.Establecimiento}-{factura.PuntoEmision}-{factura.Secuencial}";
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId: tenantId,
-            userId: userId,
-            userEmail: _currentUser.Email,
-            userFullName: _currentUser.FullName,
-            module: "Ventas",
-            action: "CrearVenta",
-            entityType: "VentasFactura",
-            entityId: factura.Id,
-            description: $"Factura creada: {numeroFactura}"
-        ), ct);
-
-        _logger.LogInformation(
-            "Venta creada: factura={FacturaId}, secuencial={Secuencial}, total={Total}, tenant={TenantId}",
-            factura.Id, factura.Secuencial, factura.Total, tenantId);
-
-        return Result<Guid>.Success(factura.Id);
     }
 
-    private async Task<string> GenerarSecuencialAtomicoAsync(ConfiguracionSRI config, CancellationToken ct)
+    private static string CapturarSecuencialComoString(ConfiguracionSRI config)
     {
-        // Capturar el secuencial actual ANTES de incrementar para asignarlo a esta factura
         var secuencial = config.SecuencialActual.ToString("D9");
         config.IncrementarSecuencial();
-        await _configSriRepository.UpdateAsync(config, ct);
-        await _configSriRepository.SaveChangesAsync(ct);
         return secuencial;
     }
 

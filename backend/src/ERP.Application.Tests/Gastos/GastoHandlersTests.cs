@@ -30,7 +30,12 @@ public sealed class GastoHandlersTests
         gastos.Setup(x => x.AddAsync(It.IsAny<GastoFactura>(), It.IsAny<CancellationToken>()))
             .Callback<GastoFactura, CancellationToken>((g, _) => guardado = g)
             .Returns(Task.CompletedTask);
-        gastos.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+
+        var uow = new Mock<IUnitOfWork>();
+        uow.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        uow.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        uow.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        uow.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var prov = new Mock<IProveedorRepository>();
         var parser = new Mock<IXmlFacturaParser>();
@@ -46,6 +51,7 @@ public sealed class GastoHandlersTests
 
         var handler = new CrearGastoCommandHandler(
             gastos.Object, prov.Object, parser.Object, storage.Object, activity.Object, tenant.Object, user.Object,
+            uow.Object,
             NullLogger<CrearGastoCommandHandler>.Instance);
 
         var cmd = new CrearGastoCommand(
@@ -85,8 +91,15 @@ public sealed class GastoHandlersTests
         var user = new Mock<ICurrentUser>();
         user.SetupGet(x => x.UserId).Returns(userId);
 
+        var uow = new Mock<IUnitOfWork>();
+        uow.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        uow.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        uow.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        uow.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+
         var handler = new CrearGastoCommandHandler(
             gastos.Object, prov.Object, parser.Object, storage.Object, activity.Object, tenant.Object, user.Object,
+            uow.Object,
             NullLogger<CrearGastoCommandHandler>.Instance);
 
         var cmd = new CrearGastoCommand(
@@ -132,7 +145,12 @@ public sealed class GastoHandlersTests
         gastos.Setup(x => x.AddAsync(It.IsAny<GastoFactura>(), It.IsAny<CancellationToken>()))
             .Callback<GastoFactura, CancellationToken>((g, _) => guardado = g)
             .Returns(Task.CompletedTask);
-        gastos.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+
+        var uow = new Mock<IUnitOfWork>();
+        uow.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        uow.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        uow.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        uow.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var prov = new Mock<IProveedorRepository>();
         prov.Setup(x => x.GetAsync(tenantId, null, ruc, null, It.IsAny<CancellationToken>()))
@@ -161,6 +179,7 @@ public sealed class GastoHandlersTests
 
         var handler = new CrearGastoCommandHandler(
             gastos.Object, prov.Object, parser.Object, storage.Object, activity.Object, tenant.Object, user.Object,
+            uow.Object,
             NullLogger<CrearGastoCommandHandler>.Instance);
 
         var xmlBytes = new byte[] { 60, 63, 120, 109, 108 }; // minimal bytes; parser is mocked
@@ -197,7 +216,12 @@ public sealed class GastoHandlersTests
         var gastos = new Mock<IGastoFacturaRepository>();
         gastos.Setup(x => x.GetByIdAsync(tenantId, gasto.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(gasto);
-        gastos.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+
+        var uowValidar = new Mock<IUnitOfWork>();
+        uowValidar.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        uowValidar.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+        uowValidar.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        uowValidar.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var provRepo = new Mock<IProveedorRepository>();
 
@@ -212,7 +236,8 @@ public sealed class GastoHandlersTests
         user.SetupGet(x => x.Email).Returns("u@test");
         user.SetupGet(x => x.FullName).Returns("User");
 
-        var validar = new ValidarGastoCommandHandler(gastos.Object, provRepo.Object, activity.Object, tenant.Object, user.Object);
+        var validar = new ValidarGastoCommandHandler(
+            gastos.Object, provRepo.Object, activity.Object, tenant.Object, user.Object, uowValidar.Object);
         var valRes = await validar.Handle(new ValidarGastoCommand(gasto.Id), CancellationToken.None);
         valRes.IsSuccess.Should().BeTrue();
         gasto.Estado.Should().Be(EstadoGasto.Validado);

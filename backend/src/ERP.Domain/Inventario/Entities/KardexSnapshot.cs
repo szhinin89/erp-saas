@@ -7,6 +7,10 @@ namespace ERP.Domain.Inventario.Entities;
 /// Generado por el worker nocturno y usado como punto de partida del período en el Kardex,
 /// eliminando la necesidad de recorrer todo el historial de movimientos anteriores.
 /// </summary>
+/// <remarks>
+/// Implementa solo <see cref="ITenantEntity"/> (no <see cref="AuditableEntity"/>):
+/// fila materializada / recalculada por infraestructura; la huella temporal es <see cref="ComputadoEn"/>.
+/// </remarks>
 public sealed class KardexSnapshot : ITenantEntity
 {
     public Guid     Id            { get; private set; }

@@ -5,6 +5,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
+/// <summary>
+/// Memberships implementan <c>ITenantEntity</c>; los métodos que cruzan empresas o fijan <c>TenantId</c>
+/// en el predicado usan <c>IgnoreQueryFilters()</c> (EF Core) a propósito.
+/// </summary>
 public class AccessRepository : IAccessRepository
 {
     private readonly ErpDbContext _db;
@@ -35,6 +39,7 @@ public class AccessRepository : IAccessRepository
     public Task AddUserAsync(IdentityUser user, CancellationToken ct = default)
         => _db.IdentityUsers.AddAsync(user, ct).AsTask();
 
+    /// <summary>Bootstrap IAM: todas las membresías activas del usuario (IQF + <c>IdentityUserId</c>).</summary>
     public async Task<IReadOnlyList<Membership>> GetActiveMembershipsForUserSystemAsync(Guid identityUserId, CancellationToken ct = default)
     {
         // Necesario para listar todas las empresas del usuario (cross-tenant).
@@ -44,6 +49,7 @@ public class AccessRepository : IAccessRepository
             .ToListAsync(ct);
     }
 
+    /// <summary>Par empresa + usuario; <c>TenantId</c> explícito en el predicado.</summary>
     public Task<Membership?> GetMembershipAsync(Guid tenantId, Guid identityUserId, CancellationToken ct = default)
         => _db.Memberships
             .IgnoreQueryFilters()
@@ -60,6 +66,7 @@ public class AccessRepository : IAccessRepository
         return await q.OrderBy(m => m.IdentityUserId).ToListAsync(ct);
     }
 
+    /// <summary>Cupo por empresa: IQF + <c>TenantId</c> explícito (no depender solo del filtro global).</summary>
     public Task<int> CountActiveMembershipsByTenantAsync(Guid tenantId, CancellationToken ct = default)
         => _db.Memberships.IgnoreQueryFilters()
             .CountAsync(m => m.TenantId == tenantId && m.IsActive, ct);

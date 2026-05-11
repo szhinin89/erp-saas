@@ -38,7 +38,7 @@ export function CrearOrdenCompraPage() {
 
   const [proveedorId,      setProveedorId]      = useState('');
   const [fechaRequerida,   setFechaRequerida]   = useState('');
-  const [bodegaDestinoId,  setBodegaDestinoId]  = useState('');
+  const [bodegaDestinoId] = useState('');
   const [direccionEntrega, setDireccionEntrega] = useState('');
   const [observaciones,    setObservaciones]    = useState('');
   const [items,            setItems]            = useState<ItemRow[]>([emptyItem()]);

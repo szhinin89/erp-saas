@@ -11,9 +11,13 @@ using ERP.Application.Modules.Branches.UseCases.GetGeoProvinces;
 namespace ERP.API.Controllers;
 
 /// <summary>Catálogo de ubicación (solo lectura) para combos en cascada.</summary>
+/// <remarks>
+/// Autorización: política por defecto <c>Session</c> (ver <c>Program.cs</c>). Sin <c>perm:*</c>:
+/// catálogo global de bajo riesgo; cualquier usuario con sesión ERP puede consultarlo.
+/// </remarks>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Policy = "Session")]
 [Produces("application/json")]
 public sealed class GeographyController : ControllerBase
 {

@@ -20,6 +20,7 @@ public sealed class CrearAjusteCommandHandler
     private readonly IUserActivityRepository     _activity;
     private readonly ICurrentTenant              _currentTenant;
     private readonly ICurrentUser                _currentUser;
+    private readonly IUnitOfWork                 _unitOfWork;
     private readonly ILogger<CrearAjusteCommandHandler> _logger;
 
     public CrearAjusteCommandHandler(
@@ -29,6 +30,7 @@ public sealed class CrearAjusteCommandHandler
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
+        IUnitOfWork unitOfWork,
         ILogger<CrearAjusteCommandHandler> logger)
     {
         _ajusteRepo    = ajusteRepo;
@@ -37,6 +39,7 @@ public sealed class CrearAjusteCommandHandler
         _activity      = activity;
         _currentTenant = currentTenant;
         _currentUser   = currentUser;
+        _unitOfWork    = unitOfWork;
         _logger        = logger;
     }
 
@@ -58,27 +61,39 @@ public sealed class CrearAjusteCommandHandler
             return Result<AjusteInventarioDto>.Failure(
                 "El producto es un servicio o no maneja stock físico y no puede tener ajustes de inventario.");
 
-        var secuencial = await _ajusteRepo.GetNextSecuencialAsync(tenantId, ct);
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            var secuencial = await _ajusteRepo.GetNextSecuencialAsync(tenantId, ct);
 
-        var ajuste = AjusteInventario.Create(
-            tenantId, secuencial,
-            command.BodegaId,   bodega.Nombre,
-            command.ProductoId, producto.ShortName,
-            command.CantidadAjuste, command.Motivo, command.Observaciones,
-            userId);
+            var ajuste = AjusteInventario.Create(
+                tenantId, secuencial,
+                command.BodegaId,   bodega.Nombre,
+                command.ProductoId, producto.ShortName,
+                command.CantidadAjuste, command.Motivo, command.Observaciones,
+                userId);
 
-        await _ajusteRepo.AddAsync(ajuste, ct);
-        await _ajusteRepo.SaveChangesAsync(ct);
+            await _ajusteRepo.AddAsync(ajuste, ct);
 
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _currentUser.Email, _currentUser.FullName,
-            module: "inventario", action: "ajuste.crear",
-            entityType: "AjusteInventario", entityId: ajuste.Id,
-            description: ajuste.NumeroAjuste), ct);
+            await _activity.AddAsync(UserActivity.Create(
+                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                module: "inventario", action: "ajuste.crear",
+                entityType: "AjusteInventario", entityId: ajuste.Id,
+                description: ajuste.NumeroAjuste), ct);
 
-        _logger.LogInformation("Ajuste creado: {Numero} ({Id})", ajuste.NumeroAjuste, ajuste.Id);
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
 
-        return Result<AjusteInventarioDto>.Success(ToDto(ajuste));
+            _logger.LogInformation("Ajuste creado: {Numero} ({Id})", ajuste.NumeroAjuste, ajuste.Id);
+
+            return Result<AjusteInventarioDto>.Success(ToDto(ajuste));
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            _logger.LogError(ex, "Error al crear ajuste (tenant {TenantId})", tenantId);
+            return Result<AjusteInventarioDto>.Failure($"No se pudo crear el ajuste: {ex.Message}");
+        }
     }
 
     private static AjusteInventarioDto ToDto(AjusteInventario a) => new(

@@ -12,8 +12,12 @@ namespace ERP.API.Controllers;
 /// Configuración de seguridad (matrices de delegación y permisos).
 /// Acceso restringido: solo SuperAdmin.
 /// </summary>
+/// <remarks>
+/// Exige token de sesión (<c>Session</c>) y rol <c>SuperAdmin</c> (no basta con bootstrap).
+/// </remarks>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Policy = "Session")]
 [Authorize(Roles = "SuperAdmin")]
 [Produces("application/json")]
 public class SecurityController : ControllerBase

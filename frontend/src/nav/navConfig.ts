@@ -265,7 +265,10 @@ export function buildNavGroups(
       icon: '🛒',
       moduleKey: 'ventas',
       sortOrder: defaultBarRank('sales') * 10,
-      items: [{ to: '/ventas/customers', label: t('app.nav.catalog.customers'), permissionKey: 'ventas.customers.view' }],
+      items: [
+        { to: '/ventas/customers', label: t('app.nav.catalog.customers'), permissionKey: 'ventas.customers.view' },
+        { to: '/ventas/facturas', label: t('app.nav.sales.invoices'), permissionKey: 'ventas.facturas.view' },
+      ],
     },
     {
       id: 'accounting',
@@ -428,7 +431,10 @@ export function ensureSalesNextToInventory(
         icon: '🛒',
         moduleKey: 'ventas',
         sortOrder: defaultBarRank('sales') * 10,
-        items: [{ ...customerItem, moduleKey: 'ventas' }],
+        items: [
+          { ...customerItem, moduleKey: 'ventas' },
+          { to: '/ventas/facturas', label: t('app.nav.sales.invoices'), permissionKey: 'ventas.facturas.view' },
+        ],
       };
       const withoutInventory = groups.filter((g) => g.id !== inventory.id);
       const next =

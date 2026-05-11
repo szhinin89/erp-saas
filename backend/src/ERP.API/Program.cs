@@ -70,6 +70,7 @@ builder.Services.AddAuthorization(options =>
     // Si el endpoint tiene [Authorize] sin policy, exigimos token de sesión.
     // IMPORTANTE: NO usar FallbackPolicy, porque eso protegería endpoints que
     // deben ser públicos (login/bootstrap-login/reset, etc.).
+    // Criterio perm vs Session vs Roles: docs/REFACTOR-BACKLOG.md sección P0.
     options.DefaultPolicy = options.GetPolicy("Session")!;
 });
 

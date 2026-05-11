@@ -18,19 +18,22 @@ public sealed class ValidarCompraCommandHandler
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
+    private readonly IUnitOfWork             _unitOfWork;
 
     public ValidarCompraCommandHandler(
         ICompraRepository repo,
         IProveedorRepository proveedorRepo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
-        ICurrentUser user)
+        ICurrentUser user,
+        IUnitOfWork unitOfWork)
     {
         _repo          = repo;
         _proveedorRepo = proveedorRepo;
         _activity      = activity;
         _tenant        = tenant;
         _user          = user;
+        _unitOfWork    = unitOfWork;
     }
 
     public async Task<Result<CompraFacturaDto>> Handle(
@@ -72,17 +75,27 @@ public sealed class ValidarCompraCommandHandler
                     "La clave de acceso debe tener exactamente 49 dígitos numéricos.");
         }
 
-        compra.Validar(userId);
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            compra.Validar(userId);
 
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _user.Email, _user.FullName,
-            module: "compras", action: "compra.validar",
-            entityType: "CompraFactura", entityId: compra.Id,
-            description: compra.NumeroFactura), ct);
+            await _activity.AddAsync(UserActivity.Create(
+                tenantId, userId, _user.Email, _user.FullName,
+                module: "compras", action: "compra.validar",
+                entityType: "CompraFactura", entityId: compra.Id,
+                description: compra.NumeroFactura), ct);
 
-        await _repo.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
 
-        return Result<CompraFacturaDto>.Success(ToDto(compra));
+            return Result<CompraFacturaDto>.Success(ToDto(compra));
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            return Result<CompraFacturaDto>.Failure($"No se pudo validar la compra: {ex.Message}");
+        }
     }
 
     private static CompraFacturaDto ToDto(Domain.Compras.Entities.CompraFactura c) => new(

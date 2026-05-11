@@ -118,11 +118,11 @@ public sealed class CrearTransferenciaCommandHandlerTests
         result.Value.BodegaDestinoId.Should().Be(ctx.BodegaDestinoId);
         result.Value.Estado.Should().Be("Borrador");
 
-        // Verificar que se guardó en repositorio
+        // Verificar que se guardó en repositorio y se confirmó la transacción
         ctx.TransferenciaRepo.Verify(x => x.AddAsync(
             It.IsAny<Transferencia>(), It.IsAny<CancellationToken>()), Times.Once);
-        ctx.TransferenciaRepo.Verify(x => x.SaveChangesAsync(
-            It.IsAny<CancellationToken>()), Times.Once);
+        ctx.UnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        ctx.UnitOfWork.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -158,6 +158,7 @@ public sealed class CrearTransferenciaCommandHandlerTests
         public Mock<IBodegaRepository>           BodegaOrigenRepo  { get; } = new();
         public Mock<IProductRepository>          ProductRepo       { get; } = new();
         public Mock<IInventarioStockRepository>  StockRepo         { get; } = new();
+        public Mock<IUnitOfWork>                 UnitOfWork        { get; } = new();
 
         private readonly Mock<IUserActivityRepository> _activity  = new();
         private readonly Mock<ICurrentTenant>          _tenant    = new();
@@ -165,6 +166,12 @@ public sealed class CrearTransferenciaCommandHandlerTests
 
         public TestContext()
         {
+            UnitOfWork.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+            UnitOfWork.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
+            UnitOfWork.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+            UnitOfWork.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+
             _tenant.SetupGet(x => x.TenantId).Returns(TenantId);
             _user.SetupGet(x => x.UserId).Returns(UserId);
             _user.SetupGet(x => x.Email).Returns("test@erp.dev");
@@ -185,8 +192,6 @@ public sealed class CrearTransferenciaCommandHandlerTests
             TransferenciaRepo.Setup(x => x.GetNextSecuencialAsync(TenantId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(1);
             TransferenciaRepo.Setup(x => x.AddAsync(It.IsAny<Transferencia>(), It.IsAny<CancellationToken>()))
-                .Returns(Task.CompletedTask);
-            TransferenciaRepo.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
             _activity.Setup(x => x.AddAsync(
@@ -233,6 +238,7 @@ public sealed class CrearTransferenciaCommandHandlerTests
                 _activity.Object,
                 _tenant.Object,
                 _user.Object,
+                UnitOfWork.Object,
                 NullLogger<CrearTransferenciaCommandHandler>.Instance);
 
             return handler.Handle(

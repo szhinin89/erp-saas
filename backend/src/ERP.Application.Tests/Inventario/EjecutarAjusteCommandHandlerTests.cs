@@ -1,5 +1,6 @@
 using FluentAssertions;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventario.DTOs;
 using ERP.Application.Inventario.UseCases.EjecutarAjuste;
 using ERP.Domain.Audit.Interfaces;
@@ -160,11 +161,16 @@ public sealed class EjecutarAjusteCommandHandlerTests
         public List<InventarioMovimiento> Movimientos { get; } = [];
 
         private readonly Mock<IUserActivityRepository> _activity = new();
+        private readonly Mock<ICostoPromedioService>   _costo    = new();
         private readonly Mock<ICurrentTenant>          _tenant   = new();
         private readonly Mock<ICurrentUser>            _user     = new();
 
         public TestContext(decimal cantidadAjuste)
         {
+            _costo.Setup(x => x.ObtenerCostoPromedioAsync(
+                    TenantId, ProductoId, BodegaId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(0m);
+
             _tenant.SetupGet(x => x.TenantId).Returns(TenantId);
             _user.SetupGet(x => x.UserId).Returns(UserId);
             _user.SetupGet(x => x.Email).Returns("test@erp.dev");
@@ -216,6 +222,7 @@ public sealed class EjecutarAjusteCommandHandlerTests
             var handler = new EjecutarAjusteCommandHandler(
                 AjusteRepo.Object,
                 StockRepo.Object,
+                _costo.Object,
                 _activity.Object,
                 Uow.Object,
                 _tenant.Object,

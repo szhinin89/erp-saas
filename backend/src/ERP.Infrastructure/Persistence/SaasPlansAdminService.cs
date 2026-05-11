@@ -280,6 +280,7 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
         try
         {
             await _db.SaasPlanFeatures.Where(pf => pf.FeatureId == featureId).ExecuteDeleteAsync(ct);
+            // IQF: borrar overrides/usos de la feature en todos los tenants (operación global SuperAdmin).
             await _db.TenantSubscriptionFeatureOverrides
                 .IgnoreQueryFilters()
                 .Where(o => o.FeatureId == featureId)

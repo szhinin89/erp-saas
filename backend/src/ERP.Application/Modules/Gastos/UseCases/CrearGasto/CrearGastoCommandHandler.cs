@@ -22,6 +22,7 @@ public sealed class CrearGastoCommandHandler
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
+    private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<CrearGastoCommandHandler> _logger;
 
     public CrearGastoCommandHandler(
@@ -32,6 +33,7 @@ public sealed class CrearGastoCommandHandler
         IUserActivityRepository activity,
         ICurrentTenant tenant,
         ICurrentUser user,
+        IUnitOfWork unitOfWork,
         ILogger<CrearGastoCommandHandler> logger)
     {
         _gastos        = gastos;
@@ -41,6 +43,7 @@ public sealed class CrearGastoCommandHandler
         _activity      = activity;
         _tenant        = tenant;
         _user          = user;
+        _unitOfWork    = unitOfWork;
         _logger        = logger;
     }
 
@@ -73,59 +76,71 @@ public sealed class CrearGastoCommandHandler
             return Result<GastoFacturaDto>.Failure(
                 $"Ya existe un gasto registrado con la clave de acceso '{parsed.ClaveAcceso}'.");
 
-        var proveedor = await ObtenerOCrearProveedor(
-            tenantId, parsed.RucProveedor, parsed.RazonSocialProveedor, userId, ct);
-
-        var xmlPath = $"facturas/gastos/{parsed.ClaveAcceso}.xml";
-        using var xmlStream = new MemoryStream(command.XmlContent!);
-        await _storage.SaveAsync(xmlPath, xmlStream, ct);
-
-        var concepto = parsed.Items.Count > 0
-            ? parsed.Items[0].Descripcion.Trim()
-            : $"Gasto {parsed.NumeroFactura}";
-
-        GastoFactura gasto;
+        await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            gasto = GastoFactura.CreateFromXml(
-                tenantId,
-                proveedor.Id,
-                parsed.ClaveAcceso,
-                parsed.NumeroFactura,
-                parsed.FechaEmision,
-                concepto,
-                command.CategoriaGasto!.Trim(),
-                parsed.Subtotal,
-                parsed.Impuesto,
-                parsed.Total,
-                xmlPath,
-                command.Observaciones,
-                userId);
+            var proveedor = await ObtenerOCrearProveedor(
+                tenantId, parsed.RucProveedor, parsed.RazonSocialProveedor, userId, ct);
+
+            var xmlPath = $"facturas/gastos/{parsed.ClaveAcceso}.xml";
+            using (var xmlStream = new MemoryStream(command.XmlContent!))
+                await _storage.SaveAsync(xmlPath, xmlStream, ct);
+
+            var concepto = parsed.Items.Count > 0
+                ? parsed.Items[0].Descripcion.Trim()
+                : $"Gasto {parsed.NumeroFactura}";
+
+            GastoFactura gasto;
+            try
+            {
+                gasto = GastoFactura.CreateFromXml(
+                    tenantId,
+                    proveedor.Id,
+                    parsed.ClaveAcceso,
+                    parsed.NumeroFactura,
+                    parsed.FechaEmision,
+                    concepto,
+                    command.CategoriaGasto!.Trim(),
+                    parsed.Subtotal,
+                    parsed.Impuesto,
+                    parsed.Total,
+                    xmlPath,
+                    command.Observaciones,
+                    userId);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackAsync(ct);
+                _logger.LogWarning(
+                    ex,
+                    "Fallo al construir gasto desde XML parseado (tenant {TenantId}, clave {Clave}).",
+                    tenantId, parsed.ClaveAcceso);
+                return Result<GastoFacturaDto>.Failure(ex.Message);
+            }
+
+            await _gastos.AddAsync(gasto, ct);
+
+            await _activity.AddAsync(UserActivity.Create(
+                tenantId, userId, _user.Email, _user.FullName,
+                module: "gastos", action: "gasto.crear.xml",
+                entityType: "GastoFactura", entityId: gasto.Id,
+                description: $"{parsed.NumeroFactura} — {proveedor.RazonSocial}"), ct);
+
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
+
+            _logger.LogInformation(
+                "Gasto creado desde XML: id {GastoId}, tenant {TenantId}, clave {ClaveAcceso}.",
+                gasto.Id, tenantId, parsed.ClaveAcceso);
+
+            return Result<GastoFacturaDto>.Success(ToDto(gasto));
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(
-                ex,
-                "Fallo al construir gasto desde XML parseado (tenant {TenantId}, clave {Clave}).",
-                tenantId, parsed.ClaveAcceso);
-            return Result<GastoFacturaDto>.Failure(ex.Message);
+            await _unitOfWork.RollbackAsync(ct);
+            _logger.LogError(ex, "Error al crear gasto desde XML (tenant {TenantId})", tenantId);
+            return Result<GastoFacturaDto>.Failure($"No se pudo registrar el gasto: {ex.Message}");
         }
-
-        await _gastos.AddAsync(gasto, ct);
-
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _user.Email, _user.FullName,
-            module: "gastos", action: "gasto.crear.xml",
-            entityType: "GastoFactura", entityId: gasto.Id,
-            description: $"{parsed.NumeroFactura} — {proveedor.RazonSocial}"), ct);
-
-        await _gastos.SaveChangesAsync(ct);
-
-        _logger.LogInformation(
-            "Gasto creado desde XML: id {GastoId}, tenant {TenantId}, clave {ClaveAcceso}.",
-            gasto.Id, tenantId, parsed.ClaveAcceso);
-
-        return Result<GastoFacturaDto>.Success(ToDto(gasto));
     }
 
     private async Task<Result<GastoFacturaDto>> HandleManual(CrearGastoCommand command, CancellationToken ct)
@@ -167,21 +182,32 @@ public sealed class CrearGastoCommandHandler
             return Result<GastoFacturaDto>.Failure(ex.Message);
         }
 
-        await _gastos.AddAsync(gasto, ct);
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            await _gastos.AddAsync(gasto, ct);
 
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _user.Email, _user.FullName,
-            module: "gastos", action: "gasto.crear.manual",
-            entityType: "GastoFactura", entityId: gasto.Id,
-            description: gasto.Concepto), ct);
+            await _activity.AddAsync(UserActivity.Create(
+                tenantId, userId, _user.Email, _user.FullName,
+                module: "gastos", action: "gasto.crear.manual",
+                entityType: "GastoFactura", entityId: gasto.Id,
+                description: gasto.Concepto), ct);
 
-        await _gastos.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
 
-        _logger.LogInformation(
-            "Gasto creado manual: id {GastoId}, tenant {TenantId}, concepto {Concepto}.",
-            gasto.Id, tenantId, gasto.Concepto);
+            _logger.LogInformation(
+                "Gasto creado manual: id {GastoId}, tenant {TenantId}, concepto {Concepto}.",
+                gasto.Id, tenantId, gasto.Concepto);
 
-        return Result<GastoFacturaDto>.Success(ToDto(gasto));
+            return Result<GastoFacturaDto>.Success(ToDto(gasto));
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            _logger.LogError(ex, "Error al crear gasto manual (tenant {TenantId})", tenantId);
+            return Result<GastoFacturaDto>.Failure($"No se pudo registrar el gasto: {ex.Message}");
+        }
     }
 
     private async Task<Proveedor> ObtenerOCrearProveedor(

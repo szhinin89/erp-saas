@@ -8,9 +8,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 
+/// <summary>Auditoría de actividad (ámbito del usuario o de una entidad en el tenant actual).</summary>
+/// <remarks>
+/// Autorización: <c>Session</c> únicamente; sin <c>perm:*</c> porque los handlers acotan por tenant y usuario.
+/// </remarks>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Policy = "Session")]
 [Produces("application/json")]
 public class ActivityController : ControllerBase
 {

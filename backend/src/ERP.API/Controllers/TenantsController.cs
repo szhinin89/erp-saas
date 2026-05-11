@@ -17,9 +17,13 @@ namespace ERP.API.Controllers;
 /// Restringido: solo accesible por administradores del sistema.
 /// En producción considerar un rol dedicado como "SystemAdmin".
 /// </summary>
+/// <remarks>
+/// Autorización por <b>rol</b> en acciones (<c>SuperAdmin</c>, <c>Admin</c>) — sin claves <c>perm:</c> en este controlador.
+/// Clase con <c>[Authorize(Policy = "Session")]</c> para dejar explícito el token de sesión además de los roles por método.
+/// </remarks>
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Policy = "Session")]
 [Produces("application/json")]
 public class TenantsController : ControllerBase
 {

@@ -21,6 +21,7 @@ public sealed class CrearTransferenciaCommandHandler
     private readonly IUserActivityRepository     _activity;
     private readonly ICurrentTenant              _currentTenant;
     private readonly ICurrentUser                _currentUser;
+    private readonly IUnitOfWork                 _unitOfWork;
     private readonly ILogger<CrearTransferenciaCommandHandler> _logger;
 
     public CrearTransferenciaCommandHandler(
@@ -31,6 +32,7 @@ public sealed class CrearTransferenciaCommandHandler
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
+        IUnitOfWork unitOfWork,
         ILogger<CrearTransferenciaCommandHandler> logger)
     {
         _transferenciaRepo = transferenciaRepo;
@@ -40,6 +42,7 @@ public sealed class CrearTransferenciaCommandHandler
         _activity          = activity;
         _currentTenant     = currentTenant;
         _currentUser       = currentUser;
+        _unitOfWork        = unitOfWork;
         _logger            = logger;
     }
 
@@ -93,38 +96,50 @@ public sealed class CrearTransferenciaCommandHandler
             }
         }
 
-        // 3. Generar número de transferencia
-        var secuencial = await _transferenciaRepo.GetNextSecuencialAsync(tenantId, ct);
-
-        // 4. Crear la transferencia en Borrador + sus detalles
-        // El Id es client-generated (Guid.NewGuid()), no requiere flush previo.
-        var transferencia = Transferencia.Create(
-            tenantId, secuencial,
-            command.BodegaOrigenId, command.BodegaDestinoId,
-            command.Motivo, command.Observaciones, userId);
-
-        foreach (var item in command.Items)
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
         {
-            var producto = productos[item.ProductoId];
-            var detalle  = TransferenciaDetalle.Create(
-                tenantId, transferencia.Id, item.ProductoId,
-                item.Cantidad, producto.Description, userId);
-            transferencia.AgregarDetalle(detalle);
+            // 3. Generar número de transferencia (dentro de la transacción)
+            var secuencial = await _transferenciaRepo.GetNextSecuencialAsync(tenantId, ct);
+
+            // 4. Crear la transferencia en Borrador + sus detalles
+            // El Id es client-generated (Guid.NewGuid()), no requiere flush previo.
+            var transferencia = Transferencia.Create(
+                tenantId, secuencial,
+                command.BodegaOrigenId, command.BodegaDestinoId,
+                command.Motivo, command.Observaciones, userId);
+
+            foreach (var item in command.Items)
+            {
+                var producto = productos[item.ProductoId];
+                var detalle  = TransferenciaDetalle.Create(
+                    tenantId, transferencia.Id, item.ProductoId,
+                    item.Cantidad, producto.Description, userId);
+                transferencia.AgregarDetalle(detalle);
+            }
+
+            await _transferenciaRepo.AddAsync(transferencia, ct);
+
+            await _activity.AddAsync(UserActivity.Create(
+                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                module: "inventario", action: "transferencia.crear",
+                entityType: "Transferencia", entityId: transferencia.Id,
+                description: transferencia.NumeroTransferencia), ct);
+
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
+
+            _logger.LogInformation("Transferencia creada: {Numero} ({Id})",
+                transferencia.NumeroTransferencia, transferencia.Id);
+
+            return Result<TransferenciaDto>.Success(ToDto(transferencia, origen.Nombre, destino.Nombre));
         }
-
-        await _transferenciaRepo.AddAsync(transferencia, ct);
-        await _transferenciaRepo.SaveChangesAsync(ct);
-
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _currentUser.Email, _currentUser.FullName,
-            module: "inventario", action: "transferencia.crear",
-            entityType: "Transferencia", entityId: transferencia.Id,
-            description: transferencia.NumeroTransferencia), ct);
-
-        _logger.LogInformation("Transferencia creada: {Numero} ({Id})",
-            transferencia.NumeroTransferencia, transferencia.Id);
-
-        return Result<TransferenciaDto>.Success(ToDto(transferencia, origen.Nombre, destino.Nombre));
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            _logger.LogError(ex, "Error al crear transferencia (tenant {TenantId})", tenantId);
+            return Result<TransferenciaDto>.Failure($"No se pudo crear la transferencia: {ex.Message}");
+        }
     }
 
     private static TransferenciaDto ToDto(Transferencia t, string nombreOrigen, string nombreDestino) => new(

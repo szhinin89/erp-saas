@@ -3,6 +3,7 @@ import { DashboardPage } from '../pages/DashboardPage';
 import { ProductsPage } from '../pages/ProductsPage';
 import { AccountingPage } from '../pages/AccountingPage';
 import { CustomersPage } from '../pages/CustomersPage';
+import { VentasFacturasPage } from '../pages/VentasFacturasPage';
 import { BranchesPage } from '../pages/BranchesPage';
 import { ModulePlaceholderPage } from '../pages/ModulePlaceholderPage';
 
@@ -30,6 +31,7 @@ export const mainRoutes = [
   
   // Ventas
   <Route key="customers" path="/ventas/customers" element={<CustomersPage />} />,
+  <Route key="ventas-facturas" path="/ventas/facturas" element={<VentasFacturasPage />} />,
   <Route key="catalog-customers" path="/catalog/customers" element={<Navigate to="/ventas/customers" replace />} />,
   <Route key="inventario-customers" path="/inventario/customers" element={<Navigate to="/ventas/customers" replace />} />,
   

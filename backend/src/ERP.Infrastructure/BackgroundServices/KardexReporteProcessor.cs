@@ -56,7 +56,8 @@ public sealed class KardexReporteProcessor : BackgroundService
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
-        // Leer el reporte sin filtro de tenant (es un job de sistema)
+        // IQF: el DbContext del worker no tiene tenant HTTP; el aislamiento viene de la fila (Id único global)
+        // y luego se impone ManualCurrentTenant(reporte.TenantId) antes de tocar inventario.
         var reporte = await db.KardexReportes
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(r => r.Id == reporteId, ct);

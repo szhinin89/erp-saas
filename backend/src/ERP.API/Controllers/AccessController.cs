@@ -23,6 +23,11 @@ namespace ERP.API.Controllers;
 /// Identity &amp; Access Management (IAM).
 /// Implementa autenticación en 2 pasos: Bootstrap (sin acceso a negocio) → Session (con tenant).
 /// </summary>
+/// <remarks>
+/// Políticas mezcladas a propósito: <c>AllowAnonymous</c> (bootstrap / registro empresa),
+/// <c>Bootstrap</c> (<c>switch-tenant</c>), <c>Session</c> (<c>me/menu</c>, <c>me/permissions</c>),
+/// <c>Roles</c> (membresías globales, perfiles, permisos de perfil). Ver criterio P0 en <c>docs/REFACTOR-BACKLOG.md</c>.
+/// </remarks>
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
@@ -234,7 +239,7 @@ public class AccessController : ControllerBase
 
     /// <summary>Definición del menú lateral (grupos e ítems) desde base de datos; el front aplica i18n y filtros por rol/módulo/permiso.</summary>
     [HttpGet("me/menu")]
-    [Authorize]
+    [Authorize(Policy = "Session")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<SessionMenuGroupDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSessionMenu(CancellationToken ct)
     {
@@ -244,7 +249,7 @@ public class AccessController : ControllerBase
 
     /// <summary>Retorna los permisos efectivos del usuario en el tenant actual.</summary>
     [HttpGet("me/permissions")]
-    [Authorize] // DefaultPolicy = Session
+    [Authorize(Policy = "Session")]
     [ProducesResponseType(typeof(ApiResponse<MyPermissionsDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMyPermissions(CancellationToken ct)
     {

@@ -6,6 +6,11 @@ namespace ERP.Domain.Inventario.Entities;
 /// Registro de un trabajo de Kardex solicitado de forma asíncrona.
 /// Estados: Pendiente → Procesando → Completado | Error.
 /// </summary>
+/// <remarks>
+/// Implementa solo <see cref="ITenantEntity"/> (no <see cref="AuditableEntity"/>):
+/// la trazabilidad es el propio ciclo de estados y <see cref="SolicitadoEn"/> / <see cref="CompletadoEn"/>,
+/// actualizado por API + background processor, no por un patrón maestro “quién editó”.
+/// </remarks>
 public sealed class KardexReporte : ITenantEntity
 {
     public const string EstadoPendiente   = "Pendiente";

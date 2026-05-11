@@ -40,6 +40,7 @@ public sealed class GrowthAnalyticsReader : IGrowthAnalyticsReader
             .Select(u => u.CreatedAt)
             .ToListAsync(cancellationToken);
 
+        // IQF: métricas de crecimiento son agregados de plataforma (todas las empresas), no del tenant HTTP.
         var membershipDates = await _db.Memberships.IgnoreQueryFilters().AsNoTracking()
             .Where(m => m.CreatedAt < toExclusive)
             .Select(m => m.CreatedAt)

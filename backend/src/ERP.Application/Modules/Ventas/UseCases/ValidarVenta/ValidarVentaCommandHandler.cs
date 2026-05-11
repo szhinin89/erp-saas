@@ -13,6 +13,7 @@ public sealed class ValidarVentaCommandHandler : IRequestHandler<ValidarVentaCom
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _currentTenant;
     private readonly ICurrentUser            _currentUser;
+    private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<ValidarVentaCommandHandler> _logger;
 
     public ValidarVentaCommandHandler(
@@ -20,12 +21,14 @@ public sealed class ValidarVentaCommandHandler : IRequestHandler<ValidarVentaCom
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
+        IUnitOfWork unitOfWork,
         ILogger<ValidarVentaCommandHandler> logger)
     {
         _ventasRepository = ventasRepository;
         _activity         = activity;
         _currentTenant    = currentTenant;
         _currentUser      = currentUser;
+        _unitOfWork       = unitOfWork;
         _logger           = logger;
     }
 
@@ -54,19 +57,31 @@ public sealed class ValidarVentaCommandHandler : IRequestHandler<ValidarVentaCom
                 $"Los totales no cuadran: Subtotal({factura.Subtotal:F2}) + IVA({factura.Impuesto:F2}) = " +
                 $"{totalCalculado:F2}, pero Total es {factura.Total:F2}.");
 
-        _logger.LogInformation(
-            "Factura {FacturaId} validada: secuencial={Secuencial}, total={Total}",
-            factura.Id, factura.Secuencial, factura.Total);
-        factura.Validar(userId);
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            factura.Validar(userId);
 
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _currentUser.Email, _currentUser.FullName,
-            module: "ventas", action: "venta.validar",
-            entityType: "VentasFactura", entityId: factura.Id,
-            description: $"{factura.Establecimiento}-{factura.PuntoEmision}-{factura.Secuencial}"), ct);
+            _logger.LogInformation(
+                "Factura {FacturaId} validada: secuencial={Secuencial}, total={Total}",
+                factura.Id, factura.Secuencial, factura.Total);
 
-        await _ventasRepository.SaveChangesAsync(ct);
+            await _activity.AddAsync(UserActivity.Create(
+                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                module: "ventas", action: "venta.validar",
+                entityType: "VentasFactura", entityId: factura.Id,
+                description: $"{factura.Establecimiento}-{factura.PuntoEmision}-{factura.Secuencial}"), ct);
 
-        return Result<Guid>.Success(factura.Id);
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
+
+            return Result<Guid>.Success(factura.Id);
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            _logger.LogError(ex, "Error al validar factura {FacturaId}", command.VentaId);
+            return Result<Guid>.Failure($"No se pudo validar la factura: {ex.Message}");
+        }
     }
 }

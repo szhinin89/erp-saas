@@ -16,6 +16,7 @@ public sealed class CancelarAjusteCommandHandler
     private readonly IUserActivityRepository     _activity;
     private readonly ICurrentTenant              _currentTenant;
     private readonly ICurrentUser                _currentUser;
+    private readonly IUnitOfWork                 _unitOfWork;
     private readonly ILogger<CancelarAjusteCommandHandler> _logger;
 
     public CancelarAjusteCommandHandler(
@@ -23,12 +24,14 @@ public sealed class CancelarAjusteCommandHandler
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
+        IUnitOfWork unitOfWork,
         ILogger<CancelarAjusteCommandHandler> logger)
     {
         _ajusteRepo    = ajusteRepo;
         _activity      = activity;
         _currentTenant = currentTenant;
         _currentUser   = currentUser;
+        _unitOfWork    = unitOfWork;
         _logger        = logger;
     }
 
@@ -48,17 +51,21 @@ public sealed class CancelarAjusteCommandHandler
 
         ajuste.Cancelar(userId);
 
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _currentUser.Email, _currentUser.FullName,
-            module: "inventario", action: "ajuste.cancelar",
-            entityType: "AjusteInventario", entityId: ajuste.Id,
-            description: ajuste.NumeroAjuste), ct);
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            await _activity.AddAsync(UserActivity.Create(
+                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                module: "inventario", action: "ajuste.cancelar",
+                entityType: "AjusteInventario", entityId: ajuste.Id,
+                description: ajuste.NumeroAjuste), ct);
 
-        await _ajusteRepo.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
 
-        _logger.LogInformation("Ajuste cancelado: {Numero}", ajuste.NumeroAjuste);
+            _logger.LogInformation("Ajuste cancelado: {Numero}", ajuste.NumeroAjuste);
 
-        return Result<AjusteInventarioDto>.Success(new(
+            return Result<AjusteInventarioDto>.Success(new(
             ajuste.Id, ajuste.NumeroAjuste,
             ajuste.BodegaId,   ajuste.BodegaNombre,
             ajuste.ProductoId, ajuste.ProductoNombre,
@@ -67,5 +74,12 @@ public sealed class CancelarAjusteCommandHandler
             ajuste.FechaAjuste, ajuste.Estado,
             ajuste.FechaEjecucion, ajuste.EjecutadoPor,
             ajuste.CreatedAt));
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            _logger.LogError(ex, "Error al cancelar ajuste {Id}", command.AjusteId);
+            return Result<AjusteInventarioDto>.Failure($"No se pudo cancelar el ajuste: {ex.Message}");
+        }
     }
 }

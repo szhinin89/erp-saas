@@ -16,17 +16,20 @@ public sealed class RechazarGastoCommandHandler
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
+    private readonly IUnitOfWork             _unitOfWork;
 
     public RechazarGastoCommandHandler(
         IGastoFacturaRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
-        ICurrentUser user)
+        ICurrentUser user,
+        IUnitOfWork unitOfWork)
     {
-        _repo     = repo;
-        _activity = activity;
-        _tenant   = tenant;
-        _user     = user;
+        _repo       = repo;
+        _activity   = activity;
+        _tenant     = tenant;
+        _user       = user;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<GastoFacturaDto>> Handle(RechazarGastoCommand command, CancellationToken ct)
@@ -50,15 +53,26 @@ public sealed class RechazarGastoCommandHandler
             return Result<GastoFacturaDto>.Failure(ex.Message);
         }
 
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _user.Email, _user.FullName,
-            module: "gastos", action: "gasto.rechazar",
-            entityType: "GastoFactura", entityId: gasto.Id,
-            description: command.Motivo), ct);
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
+        {
+            await _activity.AddAsync(UserActivity.Create(
+                tenantId, userId, _user.Email, _user.FullName,
+                module: "gastos", action: "gasto.rechazar",
+                entityType: "GastoFactura", entityId: gasto.Id,
+                description: command.Motivo), ct);
 
-        await _repo.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
 
-        return Result<GastoFacturaDto>.Success(ToDto(gasto));
+            return Result<GastoFacturaDto>.Success(ToDto(gasto));
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            return Result<GastoFacturaDto>.Failure(
+                $"No se pudo rechazar el gasto: {ex.Message}");
+        }
     }
 
     private static GastoFacturaDto ToDto(GastoFactura g) => new(

@@ -25,6 +25,7 @@ public sealed class CrearCompraCommandHandler
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
+    private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<CrearCompraCommandHandler> _logger;
 
     public CrearCompraCommandHandler(
@@ -36,6 +37,7 @@ public sealed class CrearCompraCommandHandler
         IUserActivityRepository activity,
         ICurrentTenant tenant,
         ICurrentUser user,
+        IUnitOfWork unitOfWork,
         ILogger<CrearCompraCommandHandler> logger)
     {
         _compraRepo    = repo;
@@ -46,6 +48,7 @@ public sealed class CrearCompraCommandHandler
         _activity      = activity;
         _tenant        = tenant;
         _user          = user;
+        _unitOfWork    = unitOfWork;
         _logger        = logger;
     }
 
@@ -86,73 +89,86 @@ public sealed class CrearCompraCommandHandler
             return Result<CompraFacturaDto>.Failure(
                 $"Ya existe una compra registrada con la clave de acceso '{parsed.ClaveAcceso}'.");
 
-        // 3. Buscar o crear proveedor por RUC
-        var proveedor = await ObtenerOCrearProveedor(
-            tenantId, parsed.RucProveedor, parsed.RazonSocialProveedor, userId, ct);
-
-        // 4. Guardar archivo XML
-        var xmlPath = $"facturas/compras/{parsed.ClaveAcceso}.xml";
-        using var xmlStream = new MemoryStream(command.XmlContent!);
-        await _storage.SaveAsync(xmlPath, xmlStream, ct);
-
-        // 5. Crear CompraFactura
-        var compra = CompraFactura.Create(
-            tenantId, proveedor.Id,
-            parsed.NumeroFactura, parsed.ClaveAcceso, xmlPath,
-            parsed.FechaEmision, null,
-            "Contado", null, userId);
-
-        foreach (var item in parsed.Items)
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
         {
-            compra.AgregarDetalle(
-                item.Descripcion, item.CodigoPrincipal,
-                productoId: null,
-                item.Cantidad, item.PrecioUnitario,
-                item.Descuento > 0
-                    ? Math.Round(item.Descuento / (item.Cantidad * item.PrecioUnitario) * 100, 4)
-                    : 0m,
-                ivaPorcentaje: 0m,   // se recalcula en validación desde XML totales
-                userId);
-        }
+            // 3. Buscar o crear proveedor por RUC
+            var proveedor = await ObtenerOCrearProveedor(
+                tenantId, parsed.RucProveedor, parsed.RazonSocialProveedor, userId, ct);
 
-        if (command.AsignacionesBodega is { Count: > 0 })
-        {
-            var detalleList = compra.Detalles.ToList();
-            var errXml = await CompraAsignacionBodegasRules.ValidateAgainstDetallesAsync(
-                detalleList, command.AsignacionesBodega, tenantId, _bodegaRepo, ct);
-            if (errXml is not null)
-                return Result<CompraFacturaDto>.Failure(errXml);
-        }
+            // 4. Guardar archivo XML (fuera de SQL; si falla el commit, puede quedar huérfano en almacén)
+            var xmlPath = $"facturas/compras/{parsed.ClaveAcceso}.xml";
+            using (var xmlStream = new MemoryStream(command.XmlContent!))
+                await _storage.SaveAsync(xmlPath, xmlStream, ct);
 
-        // Ajustar IVA total al valor del XML (totales oficiales)
-        await _compraRepo.AddAsync(compra, ct);
+            // 5. Crear CompraFactura
+            var compra = CompraFactura.Create(
+                tenantId, proveedor.Id,
+                parsed.NumeroFactura, parsed.ClaveAcceso, xmlPath,
+                parsed.FechaEmision, null,
+                "Contado", null, userId);
 
-        if (command.AsignacionesBodega is { Count: > 0 })
-        {
-            var detalleList = compra.Detalles.ToList();
-            foreach (var a in command.AsignacionesBodega)
+            foreach (var item in parsed.Items)
             {
-                var det = detalleList[a.ItemIndex];
-                var productoAsignado = a.ProductoId ?? det.ProductoId;
-                var row = CompraBodegaAsignacion.Create(
-                    tenantId, compra.Id, det.Id, a.BodegaId, productoAsignado, a.Cantidad, userId);
-                await _compraRepo.AddBodegaAsignacionAsync(row, ct);
+                compra.AgregarDetalle(
+                    item.Descripcion, item.CodigoPrincipal,
+                    productoId: null,
+                    item.Cantidad, item.PrecioUnitario,
+                    item.Descuento > 0
+                        ? Math.Round(item.Descuento / (item.Cantidad * item.PrecioUnitario) * 100, 4)
+                        : 0m,
+                    ivaPorcentaje: 0m,   // se recalcula en validación desde XML totales
+                    userId);
             }
+
+            if (command.AsignacionesBodega is { Count: > 0 })
+            {
+                var detalleList = compra.Detalles.ToList();
+                var errXml = await CompraAsignacionBodegasRules.ValidateAgainstDetallesAsync(
+                    detalleList, command.AsignacionesBodega, tenantId, _bodegaRepo, ct);
+                if (errXml is not null)
+                {
+                    await _unitOfWork.RollbackAsync(ct);
+                    return Result<CompraFacturaDto>.Failure(errXml);
+                }
+            }
+
+            await _compraRepo.AddAsync(compra, ct);
+
+            if (command.AsignacionesBodega is { Count: > 0 })
+            {
+                var detalleList = compra.Detalles.ToList();
+                foreach (var a in command.AsignacionesBodega)
+                {
+                    var det = detalleList[a.ItemIndex];
+                    var productoAsignado = a.ProductoId ?? det.ProductoId;
+                    var row = CompraBodegaAsignacion.Create(
+                        tenantId, compra.Id, det.Id, a.BodegaId, productoAsignado, a.Cantidad, userId);
+                    await _compraRepo.AddBodegaAsignacionAsync(row, ct);
+                }
+            }
+
+            await _activity.AddAsync(UserActivity.Create(
+                tenantId, userId, _user.Email, _user.FullName,
+                module: "compras", action: "compra.crear.xml",
+                entityType: "CompraFactura", entityId: compra.Id,
+                description: $"{parsed.NumeroFactura} — {proveedor.RazonSocial}"), ct);
+
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
+
+            _logger.LogInformation(
+                "Compra creada desde XML: id {CompraId}, tenant {TenantId}, clave {ClaveAcceso}, número {Numero}.",
+                compra.Id, tenantId, parsed.ClaveAcceso, parsed.NumeroFactura);
+
+            return Result<CompraFacturaDto>.Success(ToDto(compra));
         }
-
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _user.Email, _user.FullName,
-            module: "compras", action: "compra.crear.xml",
-            entityType: "CompraFactura", entityId: compra.Id,
-            description: $"{parsed.NumeroFactura} — {proveedor.RazonSocial}"), ct);
-
-        await _compraRepo.SaveChangesAsync(ct);
-
-        _logger.LogInformation(
-            "Compra creada desde XML: id {CompraId}, tenant {TenantId}, clave {ClaveAcceso}, número {Numero}.",
-            compra.Id, tenantId, parsed.ClaveAcceso, parsed.NumeroFactura);
-
-        return Result<CompraFacturaDto>.Success(ToDto(compra));
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            _logger.LogError(ex, "Error al crear compra desde XML (tenant {TenantId})", tenantId);
+            return Result<CompraFacturaDto>.Failure($"No se pudo registrar la compra: {ex.Message}");
+        }
     }
 
     // ── Modo Manual ───────────────────────────────────────────────────────
@@ -191,34 +207,45 @@ public sealed class CrearCompraCommandHandler
                 return Result<CompraFacturaDto>.Failure(err);
         }
 
-        await _compraRepo.AddAsync(compra, ct);
-
-        if (command.AsignacionesBodega is { Count: > 0 })
+        await _unitOfWork.BeginTransactionAsync(ct);
+        try
         {
-            var detalleList = compra.Detalles.ToList();
-            foreach (var a in command.AsignacionesBodega)
+            await _compraRepo.AddAsync(compra, ct);
+
+            if (command.AsignacionesBodega is { Count: > 0 })
             {
-                var det = detalleList[a.ItemIndex];
-                var productoAsignado = a.ProductoId ?? det.ProductoId;
-                var row = CompraBodegaAsignacion.Create(
-                    tenantId, compra.Id, det.Id, a.BodegaId, productoAsignado, a.Cantidad, userId);
-                await _compraRepo.AddBodegaAsignacionAsync(row, ct);
+                var detalleList = compra.Detalles.ToList();
+                foreach (var a in command.AsignacionesBodega)
+                {
+                    var det = detalleList[a.ItemIndex];
+                    var productoAsignado = a.ProductoId ?? det.ProductoId;
+                    var row = CompraBodegaAsignacion.Create(
+                        tenantId, compra.Id, det.Id, a.BodegaId, productoAsignado, a.Cantidad, userId);
+                    await _compraRepo.AddBodegaAsignacionAsync(row, ct);
+                }
             }
+
+            await _activity.AddAsync(UserActivity.Create(
+                tenantId, userId, _user.Email, _user.FullName,
+                module: "compras", action: "compra.crear.manual",
+                entityType: "CompraFactura", entityId: compra.Id,
+                description: $"{compra.NumeroFactura} — {proveedor.RazonSocial}"), ct);
+
+            await _unitOfWork.SaveChangesAsync(ct);
+            await _unitOfWork.CommitAsync(ct);
+
+            _logger.LogInformation(
+                "Compra creada manual: id {CompraId}, tenant {TenantId}, número {Numero}.",
+                compra.Id, tenantId, compra.NumeroFactura);
+
+            return Result<CompraFacturaDto>.Success(ToDto(compra));
         }
-
-        await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _user.Email, _user.FullName,
-            module: "compras", action: "compra.crear.manual",
-            entityType: "CompraFactura", entityId: compra.Id,
-            description: $"{compra.NumeroFactura} — {proveedor.RazonSocial}"), ct);
-
-        await _compraRepo.SaveChangesAsync(ct);
-
-        _logger.LogInformation(
-            "Compra creada manual: id {CompraId}, tenant {TenantId}, número {Numero}.",
-            compra.Id, tenantId, compra.NumeroFactura);
-
-        return Result<CompraFacturaDto>.Success(ToDto(compra));
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackAsync(ct);
+            _logger.LogError(ex, "Error al crear compra manual (tenant {TenantId})", tenantId);
+            return Result<CompraFacturaDto>.Failure($"No se pudo registrar la compra: {ex.Message}");
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
