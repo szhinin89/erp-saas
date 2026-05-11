@@ -35,6 +35,23 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
+
+// IDistributedCache: Redis en local (docker compose) si ConnectionStrings:Redis está definida;
+// en tests y producción sin Redis, memoria (no comparte entre instancias).
+var redisConnection = builder.Configuration.GetConnectionString("Redis");
+if (!string.IsNullOrWhiteSpace(redisConnection))
+{
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = redisConnection;
+        options.InstanceName = "erp-saas:";
+    });
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+}
+
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 

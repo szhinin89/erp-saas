@@ -40,6 +40,7 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ConnectionStrings:DefaultConnection"] = "Host=unused",
+                ["ConnectionStrings:Redis"] = "",
                 ["Jwt:SecretKey"]                      = IntegrationTestConstants.JwtSecretKey,
                 ["Jwt:Issuer"]                         = "ZHTechnologies",
                 ["Jwt:Audience"]                       = "ERPUsers",

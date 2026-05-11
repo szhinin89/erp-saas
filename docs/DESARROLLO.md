@@ -10,7 +10,7 @@ Documento **unificado** de desarrollo y operación local para este monorepo.
 
 1. [Qué es este proyecto](#qué-es-este-proyecto)
 2. [Prerrequisitos](#prerrequisitos)
-3. [Base de datos (Docker)](#base-de-datos-docker)
+3. [PostgreSQL y Redis (Docker)](#postgresql-y-redis-docker)
 4. [Migraciones EF Core](#migraciones-ef-core)
 5. [Arrancar backend y frontend](#arrancar-backend-y-frontend)
 6. [Primer uso (curl)](#primer-uso-curl)
@@ -39,7 +39,7 @@ ERP multi-tenant en SaaS. Backend en **.NET 10 (Clean Architecture)**, frontend 
 
 | Herramienta    | Versión mínima | Uso                          |
 |----------------|----------------|------------------------------|
-| Docker Desktop | cualquiera     | PostgreSQL en contenedor     |
+| Docker Desktop | cualquiera     | PostgreSQL y Redis en contenedor |
 | .NET SDK       | **10.0.201+** (ver `backend/src/global.json`; `rollForward: latestPatch`) | Backend; misma línea base que CI en GitHub |
 | Node.js        | **22** (recomendado; CI usa 22) o 20+ | Frontend                     |
 
@@ -47,9 +47,27 @@ Además: acceso a PowerShell o bash para los comandos de este documento.
 
 ---
 
-## Base de datos (Docker)
+## PostgreSQL y Redis (Docker)
 
-El contenedor de desarrollo se espera con nombre **`postgreszh`**, puerto **`5435`** y base **`dberpsaas`**.
+El mismo `docker compose` levanta **PostgreSQL** y **Redis** para desarrollo local y pruebas manuales.
+
+### PostgreSQL
+
+Contenedor **`postgreszh`**, puerto host **`5435`** → contenedor `5432`, base **`dberpsaas`**.
+
+### Redis
+
+Contenedor **`erp-saas-redis`**, imagen `redis:7-alpine`, puerto **`6379`** (host = contenedor). Persistencia opcional en volumen `erp_saas_redisdata` (AOF).
+
+Comprobar que responde:
+
+```powershell
+docker exec erp-saas-redis redis-cli ping
+```
+
+Debe imprimir `PONG`.
+
+El backend usa **`ConnectionStrings:Redis`** (p. ej. `localhost:6379` en `appsettings.Development.json`) para registrar **`IDistributedCache`** vía StackExchange.Redis. Si la cadena está **vacía**, se usa **`DistributedMemoryCache`** (adecuado para tests de integración y entornos sin Redis).
 
 ### Opción recomendada: Compose (repo)
 
@@ -62,9 +80,9 @@ docker compose ps
 
 O en PowerShell desde cualquier carpeta del repo: **`pwsh ./scripts/dev-up.ps1`** (sube el compose desde la raíz).
 
-Archivo: **`docker-compose.yml`** (volumen persistente `erp_saas_pgdata`, healthcheck). Contraseña por defecto igual que en la doc de abajo; para otra, exportá **`POSTGRES_PASSWORD`** antes del `up` y usá la misma en `appsettings.Development.json`.
+Archivo: **`docker-compose.yml`** (volúmenes `erp_saas_pgdata` y `erp_saas_redisdata`, healthchecks). Contraseña de Postgres por defecto igual que en la doc de abajo; para otra, exportá **`POSTGRES_PASSWORD`** antes del `up` y usá la misma en `appsettings.Development.json`.
 
-Apagar sin borrar datos: `docker compose down`. Borrar volumen y datos: `docker compose down -v`.
+Apagar sin borrar datos: `docker compose down`. Borrar volúmenes y datos: `docker compose down -v`.
 
 ### Alternativa: `docker run` manual
 

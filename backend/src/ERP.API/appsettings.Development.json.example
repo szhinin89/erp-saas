@@ -1,6 +1,7 @@
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5435;Database=dberpsaas;Username=postgres;Password=CHANGE_ME"
+    "DefaultConnection": "Host=localhost;Port=5435;Database=dberpsaas;Username=postgres;Password=CHANGE_ME",
+    "Redis": "localhost:6379"
   },
   "Jwt": {
     "SecretKey": "CHANGE_ME_USE_A_LONG_RANDOM_SECRET_FOR_DEV_ONLY"
