@@ -18,6 +18,7 @@ alwaysApply: true
   - `backend-multitenancy-jwt-source.mdc` (tenant)
   - `frontend-modules-i18n-validation.mdc` (frontend)
   - `saas-navigation-no-sensitive-url.mdc` (navegacion SaaS)
+  - `stack-tools-source-of-truth.mdc` (stack permitido)
 
 ## Índice (orden de lectura recomendado)
 

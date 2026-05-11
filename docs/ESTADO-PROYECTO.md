@@ -6,7 +6,8 @@
 > **Enlaces legacy:** `docs/STATUS-2026-05-ERP.md` redirige aquí (un solo lugar para el estado).  
 > **Backlog de refactor** y **refactor modular por sprints** (antes `docs/REFACTOR-*.md`) están en las secciones más abajo en este mismo archivo.
 >
-> Última actualización: **11 de mayo de 2026** (notas proveedor compras/gastos, reset DB desde cero, migración baseline única, seeder dev, ajustes de verificación local) | Commit: `0aab504`
+> Última actualización: **11 de mayo de 2026** (notas proveedor compras/gastos, reset DB desde cero, migración baseline única, seeder dev, ajustes de verificación local) | Commit: `0aab504`  
+> Inventario oficial de herramientas en uso: [`docs/HERRAMIENTAS-ERP-SAAS.md`](HERRAMIENTAS-ERP-SAAS.md)
 
 ---
 

@@ -14,6 +14,8 @@ Esa frase es el criterio guía del repositorio: el código y la organización de
 
 **Decisiones formales:** ver [ADR en `docs/adr/`](adr/README.md) (p. ej. ADR 0001–0003).
 
+**Inventario de stack/herramientas en uso:** ver [`docs/HERRAMIENTAS-ERP-SAAS.md`](HERRAMIENTAS-ERP-SAAS.md).
+
 **Convergencia de carpetas y namespaces:** plan por sprints en [`docs/ESTADO-PROYECTO.md`](ESTADO-PROYECTO.md#refactor-modular-por-sprints) (sección *Refactor modular por sprints*; `Domain.Modules.*` / `Application.Modules.*`).
 
 ## Capas y dependencias
