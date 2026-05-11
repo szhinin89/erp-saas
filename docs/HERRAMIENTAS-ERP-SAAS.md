@@ -64,7 +64,49 @@ Este documento enumera **solo** las herramientas y tecnologías que el proyecto 
 
 ---
 
-## 5) Operación local (dev)
+## 5) Dependencias de soporte permitidas (uso directo)
+
+Estas dependencias forman parte del stack aprobado cuando aparecen como referencia directa en el repo:
+
+- **Backend soporte .NET/EF/Identity/DI**
+  - `Microsoft.EntityFrameworkCore.Design`
+  - `Microsoft.EntityFrameworkCore.InMemory` (tests)
+  - `Microsoft.Extensions.Caching.StackExchangeRedis`
+  - `Microsoft.Extensions.Caching.Abstractions`
+  - `Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore`
+  - `Microsoft.Extensions.DependencyInjection.Abstractions`
+  - `Microsoft.Extensions.Hosting.Abstractions`
+  - `Microsoft.Extensions.Logging.Abstractions`
+  - `Microsoft.Extensions.Options`
+  - `Microsoft.AspNetCore.Http`, `Microsoft.AspNetCore.Http.Abstractions`
+  - `Microsoft.AspNetCore.Hosting.Abstractions`
+  - `Microsoft.IdentityModel.Tokens`
+  - `System.IdentityModel.Tokens.Jwt`
+  - `MediatR.Contracts`
+
+- **Health checks**
+  - `AspNetCore.HealthChecks.Redis`
+  - `AspNetCore.HealthChecks.UI.Client`
+  - `AspNetCore.HealthChecks.Uris`
+
+- **Frontend soporte de build/lint/tipos**
+  - `@hookform/resolvers`
+  - `@vitejs/plugin-react`
+  - `@eslint/js`
+  - `typescript-eslint`
+  - `eslint-plugin-react-hooks`
+  - `eslint-plugin-react-refresh`
+  - `globals`
+  - `@types/node`, `@types/react`, `@types/react-dom`
+
+- **GitHub Actions permitidas**
+  - `actions/checkout`, `actions/setup-dotnet`, `actions/setup-node`
+  - `actions/upload-artifact`, `actions/download-artifact`
+  - `azure/webapps-deploy` (solo workflow de deploy)
+
+---
+
+## 6) Operación local (dev)
 
 | Herramienta | Uso en el proyecto |
 |---|---|
@@ -75,7 +117,7 @@ Este documento enumera **solo** las herramientas y tecnologías que el proyecto 
 
 ---
 
-## 6) Alcance actual (qué sí / qué no)
+## 7) Alcance actual (qué sí / qué no)
 
 - **Sí se usa actualmente:** todo lo listado arriba.
 - **No está en uso activo como estándar del repo:** Kubernetes, Terraform, colas externas (Rabbit/Kafka), observabilidad SaaS externa (Datadog/Prometheus), mensajería cloud gestionada.
@@ -92,3 +134,9 @@ Para mantener este documento actualizado, validar contra:
 - `frontend/package.json`
 - `docker-compose.yml`
 - `.github/workflows/ci.yml`
+- `.github/workflows/build-and-deploy.yml`
+
+Además, cualquier cambio de dependencias debe actualizar también:
+
+- `scripts/stack-allowlist.json`
+- `scripts/verify-stack-allowlist.ps1` (si cambia la lógica de verificación)
