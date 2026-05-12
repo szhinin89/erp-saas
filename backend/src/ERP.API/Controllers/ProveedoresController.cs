@@ -10,6 +10,7 @@ using ERP.Application.Modules.Compras.UseCases.HabilitarProveedor;
 using ERP.Application.Modules.Compras.UseCases.ObtenerProveedor;
 using ERP.Application.Modules.Compras.UseCases.ListarProveedores;
 using ERP.Application.Modules.Compras.UseCases.ActualizarProveedor;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -17,6 +18,7 @@ namespace ERP.API.Controllers;
 /// Gestión del catálogo de proveedores del tenant autenticado.
 /// Incluye validación de RUC ecuatoriano (algoritmo SRI módulo 10/11).
 /// </summary>
+[Modulo("Proveedores", "perm:compras.proveedores.view", "🏭", "/compras/proveedores", null, 46)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

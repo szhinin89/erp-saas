@@ -14,6 +14,7 @@ using CreateJournalEntryCommand = ERP.Application.Modules.Contabilidad.UseCases.
 using ERP.Application.Modules.Contabilidad.UseCases.GetJournalEntries;
 using ERP.Application.Modules.Contabilidad.UseCases.GetJournalEntryById;
 using ERP.Application.Modules.Contabilidad.DTOs;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -21,6 +22,7 @@ namespace ERP.API.Controllers;
 /// Módulo de contabilidad: plan de cuentas y asientos contables del tenant autenticado.
 /// Todos los endpoints filtran automáticamente por el tenant del JWT.
 /// </summary>
+[Modulo("Contabilidad", "perm:accounting.accounts.view", "📒", "/contabilidad", null, 20)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

@@ -215,7 +215,7 @@ export function AppLayout() {
     return () => {
       cancelled = true;
     };
-  }, [user, isGlobalSuperAdmin]);
+  }, [user, isGlobalSuperAdmin, user?.tenantId]);
 
   const groups = useMemo(() => {
     const opts = { superAdminPanelEnabled };
@@ -328,8 +328,25 @@ export function AppLayout() {
       return true;
     };
 
+    const filterNavItemsDeep = (items: NavItem[]): NavItem[] => {
+      const out: NavItem[] = [];
+      for (const it of items) {
+        const rawKids = it.children;
+        const kidsFiltered = rawKids?.length ? filterNavItemsDeep(rawKids) : undefined;
+        if (kidsFiltered?.length) {
+          out.push({ ...it, children: kidsFiltered });
+          continue;
+        }
+        if (rawKids?.length && !kidsFiltered?.length) {
+          continue;
+        }
+        if (itemVisible(it)) out.push({ ...it, children: undefined });
+      }
+      return out;
+    };
+
     return bySubscription
-      .map((g) => ({ ...g, items: g.items.filter(itemVisible) }))
+      .map((g) => ({ ...g, items: filterNavItemsDeep(g.items) }))
       .filter((g) => g.items.length > 0);
   }, [groups, user, isGlobalSuperAdmin, enabledModules, permissions, permsHydrated, hasPerm]);
 

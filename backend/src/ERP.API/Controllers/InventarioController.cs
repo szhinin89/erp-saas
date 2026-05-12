@@ -5,10 +5,12 @@ using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Inventario.DTOs;
 using ERP.Application.Modules.Inventario.UseCases.GetStockActualPorBodega;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
 /// <summary>Consultas de inventario (stock por bodega).</summary>
+[Modulo("Stock por bodega", "perm:inventario.bodegas.view", "📦", "/inventario/stock", null, 41)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

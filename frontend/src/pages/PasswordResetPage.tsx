@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
 import { useI18n } from '../i18n/i18n';
@@ -118,8 +118,11 @@ export function PasswordResetPage() {
   return (
     <ZHCenteredCard bgClassName="login-bg" cardClassName="login-card">
       <form className="login-form" onSubmit={handleSubmit(onValid)} noValidate>
-        <ZHFormHeader title={t('reset.title')} subtitle={t('reset.subtitle')} />
+        <ZHFormHeader title={t('reset.title')} subtitle={t('reset.directSubtitle')} />
         <ZHFormBody>
+          <p className="login-form-hint" style={{ marginBottom: '0.75rem', fontSize: '0.875rem' }}>
+            <Link to="/forgot-password">{t('login.forgotPassword')}</Link>
+          </p>
           {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
           {success ? <ZHPageNotice variant="success" message={success} /> : null}
 

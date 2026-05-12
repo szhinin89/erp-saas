@@ -70,6 +70,7 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
 
     public async Task MarkFirstRunCompletedAsync(CancellationToken ct = default)
     {
+        // Tras crear el SuperAdmin: is_first_run=false, completed_at=UTC, hash y expiración del token en NULL.
         var state = await GetOrCreateStateAsync(ct);
         if (!state.IsFirstRun)
             return;

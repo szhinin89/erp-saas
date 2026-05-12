@@ -33,6 +33,6 @@ public record SuperAdminTenantItemDto(
     bool IsActive,
     string? PlanCode,
     IReadOnlyList<string> EnabledModules,
-    bool HasModuleRestrictions
-);
+    bool HasModuleRestrictions,
+    bool HasCustomMenu);
 

@@ -10,6 +10,7 @@ using ERP.Application.Modules.Inventario.UseCases.HabilitarBodega;
 using ERP.Application.Modules.Inventario.UseCases.ObtenerBodega;
 using ERP.Application.Modules.Inventario.UseCases.ListarBodegas;
 using ERP.Application.Modules.Inventario.UseCases.ActualizarBodega;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -17,6 +18,7 @@ namespace ERP.API.Controllers;
 /// Gestión de bodegas / almacenes del tenant autenticado.
 /// Todos los endpoints filtran automáticamente por el tenant del JWT.
 /// </summary>
+[Modulo("Bodegas", "perm:inventario.bodegas.view", "📦", "/logistica/bodegas", null, 40)]
 [ApiController]
 [Route("api/[controller]")]
 [Route("api/logistica/bodegas")]

@@ -8,12 +8,14 @@ using ERP.Application.Products.Catalogs.UseCases.DisableProductLine;
 using ERP.Application.Products.Catalogs.UseCases.EnableProductLine;
 using ERP.Application.Products.Catalogs.UseCases.GetProductLines;
 using ERP.Application.Products.Catalogs.UseCases.UpdateProductLine;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
 /// <summary>
 /// Catálogo maestro: Líneas de producto (Product Lines) del tenant autenticado.
 /// </summary>
+[Modulo("Líneas de producto", "perm:inventario.productLines.view", "🏷️", "/catalog/lines", null, 37)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

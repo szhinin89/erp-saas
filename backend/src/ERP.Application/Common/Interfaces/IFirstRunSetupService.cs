@@ -16,6 +16,10 @@ public interface IFirstRunSetupService
 {
     Task<FirstRunTokenIssueResult> EnsureTokenIssuedAsync(CancellationToken ct = default);
     Task<bool> ValidateSetupTokenAsync(string? submittedToken, CancellationToken ct = default);
+    /// <summary>
+    /// Marca first-run como completado: <c>is_first_run = false</c>, <c>completed_at = UtcNow</c>,
+    /// y limpia <c>setup_token_hash</c> / <c>setup_token_expiry_utc</c>. Llamar tras persistir el SuperAdmin.
+    /// </summary>
     Task MarkFirstRunCompletedAsync(CancellationToken ct = default);
     Task<FirstRunResetResult> ResetForDevelopmentAsync(CancellationToken ct = default);
 }

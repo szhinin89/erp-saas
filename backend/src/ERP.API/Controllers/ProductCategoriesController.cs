@@ -8,12 +8,14 @@ using ERP.Application.Products.Catalogs.UseCases.DisableProductCategory;
 using ERP.Application.Products.Catalogs.UseCases.EnableProductCategory;
 using ERP.Application.Products.Catalogs.UseCases.GetProductCategories;
 using ERP.Application.Products.Catalogs.UseCases.UpdateProductCategory;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
 /// <summary>
 /// Catálogo maestro: Categorías de producto (dependen de una línea).
 /// </summary>
+[Modulo("Categorías", "perm:inventario.categories.view", "📁", "/catalog/categories", null, 39)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

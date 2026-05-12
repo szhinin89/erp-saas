@@ -4,6 +4,7 @@ using Hangfire.PostgreSql;
 using ERP.API.Hangfire;
 using ERP.API.Extensions;
 using ERP.API.Middleware;
+using ERP.API.Services;
 using ERP.Infrastructure;
 using ERP.Application;
 using ERP.API.Authorization;
@@ -86,6 +87,7 @@ else
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+builder.Services.AddScoped<ModuloDiscoveryService>();
 
 // Health: live = proceso arriba; ready = BD, Redis (si hay), URL externa opcional (SRI)
 var healthChecks = builder.Services.AddHealthChecks()
@@ -128,6 +130,8 @@ if (hangfireEnabled)
 var kardexSection = builder.Configuration.GetSection(
     ERP.Application.Common.Config.KardexOptions.Section);
 builder.Services.Configure<ERP.Application.Common.Config.KardexOptions>(kardexSection);
+builder.Services.Configure<ERP.Application.Common.Config.PasswordResetOptions>(
+    builder.Configuration.GetSection(ERP.Application.Common.Config.PasswordResetOptions.SectionName));
 builder.Services.AddSingleton(sp =>
     kardexSection.Get<ERP.Application.Common.Config.KardexOptions>()
     ?? new ERP.Application.Common.Config.KardexOptions());
@@ -161,8 +165,19 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// Datos demo (tenant-demo + admin) solo si se activa explícitamente — ver appsettings.Development → Development:SeedDemoTenant.
+if (app.Environment.IsDevelopment() &&
+    app.Configuration.GetValue("Development:SeedDemoTenant", false))
+{
     await DevDatabaseSeeder.SeedMinimumAsync(app.Services);
+}
+
+if (app.Environment.IsDevelopment() &&
+    app.Configuration.GetValue("Development:SyncFuncionalidadesOnStartup", false))
+{
+    using var syncScope = app.Services.CreateScope();
+    await syncScope.ServiceProvider.GetRequiredService<ModuloDiscoveryService>().SincronizarModulosAsync();
+}
 
 // Bootstrap seguro de primera ejecución:
 // - Sin credenciales por defecto.

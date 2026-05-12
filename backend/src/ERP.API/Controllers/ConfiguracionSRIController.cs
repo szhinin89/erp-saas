@@ -6,6 +6,7 @@ using ERP.API.Extensions;
 using ERP.Application.Configuration.DTOs;
 using ERP.Application.Configuration.UseCases.GetConfiguracionSRI;
 using ERP.Application.Configuration.UseCases.UpsertConfiguracionSRI;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -14,6 +15,7 @@ namespace ERP.API.Controllers;
 /// Un único registro por tenant: PUT siempre crea o actualiza (upsert).
 /// El secuencial actual NO se resetea al actualizar.
 /// </summary>
+[Modulo("Configuración SRI", "perm:ventas.configuracion.view", "🧾", "/configuracion/sri", null, 35)]
 [ApiController]
 [Route("api/configuracion-sri")]
 [Authorize]

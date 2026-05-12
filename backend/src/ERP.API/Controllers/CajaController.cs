@@ -6,10 +6,12 @@ using ERP.API.Extensions;
 using ERP.Application.Modules.Caja.DTOs;
 using ERP.Application.Modules.Caja.UseCases;
 using ERP.Domain.Modules.Caja;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
 /// <summary>Conciliación bancaria, caja chica y flujo de efectivo (tenant).</summary>
+[Modulo("Caja y bancos", "perm:caja.extractos.view", "🏦", "/caja", null, 60)]
 [ApiController]
 [Route("api/caja")]
 [Authorize]

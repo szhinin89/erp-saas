@@ -44,6 +44,32 @@ public sealed class SaasPlansAdminController : ControllerBase
             : this.ApiBadRequest(r.Error ?? "Error");
     }
 
+    public sealed record SetPlanMenuBody(string? MenuConfigJson);
+
+    /// <summary>Obtiene el JSON de menú lateral asociado al plan (null si usa menú global).</summary>
+    [HttpGet("{planId:guid}/menu")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetPlanMenu(Guid planId, CancellationToken ct)
+    {
+        var r = await _admin.GetPlanMenuJsonAsync(planId, ct);
+        return r.IsSuccess
+            ? this.ApiOk(new { menuConfigJson = r.Value })
+            : this.ApiBadRequest(r.Error ?? "Error");
+    }
+
+    /// <summary>Guarda el menú lateral del plan (mismo shape que <c>SessionMenuGroupDto[]</c>). Cuerpo vacío o null limpia.</summary>
+    [HttpPut("{planId:guid}/menu")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SetPlanMenu(Guid planId, [FromBody] SetPlanMenuBody body, CancellationToken ct)
+    {
+        var r = await _admin.SetPlanMenuJsonAsync(planId, body.MenuConfigJson, ct);
+        return r.IsSuccess
+            ? this.ApiOk(new { }, "Guardado")
+            : this.ApiBadRequest(r.Error ?? "Error");
+    }
+
     /// <summary>Actualiza metadatos de un plan (nombre, precio, visibilidad, etc.).</summary>
     [HttpPut("{planId:guid}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]

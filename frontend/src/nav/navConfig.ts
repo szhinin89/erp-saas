@@ -92,9 +92,13 @@ export function normalizeMenuRoutePath(path: string): string {
 }
 
 function mapSessionMenuItem(it: SessionMenuItemDto, t: TranslateFn, inheritedRoute?: string): NavItem {
-  const normalized = normalizeMenuRoutePath(it.routePath?.trim() ?? '');
+  const routeRaw = (it.routePath ?? '').trim();
+  const permRaw = (it.permissionKey ?? '').trim();
+  const folder = !permRaw && !routeRaw && (it.children?.length ?? 0) > 0;
+
+  const normalized = normalizeMenuRoutePath(routeRaw);
   const fallback = inheritedRoute ? normalizeMenuRoutePath(inheritedRoute) : '';
-  const to = normalized || fallback;
+  const to = folder ? '' : normalized || fallback;
 
   const chainFallback = to || fallback;
   const children =
@@ -103,9 +107,12 @@ function mapSessionMenuItem(it: SessionMenuItemDto, t: TranslateFn, inheritedRou
       : undefined;
 
   const dl = it.displayLabel?.trim();
+  const icon = it.icon?.trim();
+
   return {
     to,
     label: dl && dl.length > 0 ? dl : t(it.labelKey),
+    ...(icon ? { icon } : {}),
     moduleKey: it.moduleKey ?? undefined,
     permissionKey: it.permissionKey ?? undefined,
     permissionKeysAny: it.permissionKeysAny?.length ? it.permissionKeysAny : undefined,
@@ -288,15 +295,17 @@ export function buildNavGroups(
       id: 'purchases',
       label: t('app.nav.group.purchases'),
       icon: '📥',
+      moduleKey: 'compras',
       sortOrder: defaultBarRank('purchases') * 10,
-      items: [{ to: '/compras', label: t('app.nav.group.purchases') }],
+      items: [{ to: '/compras', label: t('app.nav.group.purchases'), moduleKey: 'compras' }],
     },
     {
       id: 'hr',
       label: t('app.nav.group.hr'),
       icon: '👥',
+      moduleKey: 'rrhh',
       sortOrder: defaultBarRank('hr') * 10,
-      items: [{ to: '/rrhh', label: t('app.nav.group.hr') }],
+      items: [{ to: '/rrhh', label: t('app.nav.group.hr'), moduleKey: 'rrhh' }],
     },
     {
       id: 'configuracion',
@@ -304,8 +313,18 @@ export function buildNavGroups(
       icon: '⚙',
       sortOrder: defaultBarRank('configuracion') * 10,
       items: [
-        { to: '/access', label: t('app.nav.access'), roles: ['Admin', 'SuperAdmin'] },
-        { to: '/profiles', label: t('app.nav.profiles'), roles: ['Admin', 'SuperAdmin'] },
+        {
+          to: '/access',
+          label: t('app.nav.access'),
+          moduleKey: 'access',
+          roles: ['Admin', 'SuperAdmin'],
+        },
+        {
+          to: '/profiles',
+          label: t('app.nav.profiles'),
+          moduleKey: 'access',
+          roles: ['Admin', 'SuperAdmin'],
+        },
         {
           to: '/saas/branches',
           label: t('app.nav.branches'),

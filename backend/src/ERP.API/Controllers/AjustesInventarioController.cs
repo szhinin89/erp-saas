@@ -9,6 +9,7 @@ using ERP.Application.Inventario.UseCases.CrearAjuste;
 using ERP.Application.Inventario.UseCases.EjecutarAjuste;
 using ERP.Application.Inventario.UseCases.GetAjusteById;
 using ERP.Application.Inventario.UseCases.GetAjustesList;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -16,6 +17,7 @@ namespace ERP.API.Controllers;
 /// Ajustes manuales de stock (incremento o disminución) sobre un producto en una bodega.
 /// Flujo: Borrador → Ejecutado (stock afectado) | Cancelado (sin efecto).
 /// </summary>
+[Modulo("Ajustes de inventario", "perm:inventario.ajustes.view", "⚖️", "/inventario/ajustes", null, 43)]
 [ApiController]
 [Route("api/inventario/ajustes")]
 [Authorize]

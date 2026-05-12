@@ -5,9 +5,11 @@ using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Ventas.DTOs;
 using ERP.Application.Ventas.UseCases.Notas;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
+[Modulo("Notas ventas", "perm:ventas.notas.list", "📃", "/ventas/notas", null, 51)]
 [ApiController]
 [Route("api/ventas/notas")]
 [Authorize]

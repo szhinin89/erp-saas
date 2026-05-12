@@ -10,9 +10,11 @@ using ERP.Application.Modules.Ventas.UseCases.HabilitarCliente;
 using ERP.Application.Modules.Ventas.UseCases.ObtenerCliente;
 using ERP.Application.Modules.Ventas.UseCases.ListarClientes;
 using ERP.Application.Modules.Ventas.UseCases.ActualizarCliente;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
+[Modulo("Clientes", "perm:ventas.customers.view", "👤", "/ventas/clientes", null, 52)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

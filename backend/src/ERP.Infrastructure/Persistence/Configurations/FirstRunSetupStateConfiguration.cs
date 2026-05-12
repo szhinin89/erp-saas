@@ -15,6 +15,7 @@ public sealed class FirstRunSetupStateConfiguration : IEntityTypeConfiguration<F
         builder.Property(x => x.IsFirstRun).HasColumnName("is_first_run").IsRequired();
         builder.Property(x => x.SetupTokenHash).HasColumnName("setup_token_hash").HasMaxLength(256);
         builder.Property(x => x.SetupTokenExpiryUtc).HasColumnName("setup_token_expiry_utc");
+        builder.Property(x => x.CompletedAt).HasColumnName("completed_at");
 
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");

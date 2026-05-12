@@ -61,30 +61,36 @@ public class AuthController : ControllerBase
             ? Request.Cookies[RefreshCookieName]
             : fromBody;
 
-    private readonly RegisterHandler        _registerHandler;
-    private readonly LoginHandler           _loginHandler;
-    private readonly RefreshTokenHandler    _refreshTokenHandler;
-    private readonly LogoutHandler          _logoutHandler;
-    private readonly PasswordResetHandler   _passwordResetHandler;
+    private readonly RegisterHandler _registerHandler;
+    private readonly LoginHandler _loginHandler;
+    private readonly RefreshTokenHandler _refreshTokenHandler;
+    private readonly LogoutHandler _logoutHandler;
+    private readonly DirectPasswordResetHandler _directPasswordResetHandler;
+    private readonly ForgotPasswordHandler _forgotPasswordHandler;
+    private readonly ResetPasswordWithTokenHandler _resetPasswordWithTokenHandler;
     private readonly SuperAdminLoginHandler _superAdminLoginHandler;
-    private readonly SwitchTenantHandler    _switchTenantHandler;
+    private readonly SwitchTenantHandler _switchTenantHandler;
 
     public AuthController(
         RegisterHandler registerHandler,
         LoginHandler loginHandler,
         RefreshTokenHandler refreshTokenHandler,
         LogoutHandler logoutHandler,
-        PasswordResetHandler passwordResetHandler,
+        DirectPasswordResetHandler directPasswordResetHandler,
+        ForgotPasswordHandler forgotPasswordHandler,
+        ResetPasswordWithTokenHandler resetPasswordWithTokenHandler,
         SuperAdminLoginHandler superAdminLoginHandler,
         SwitchTenantHandler switchTenantHandler)
     {
-        _registerHandler        = registerHandler;
-        _loginHandler           = loginHandler;
-        _refreshTokenHandler    = refreshTokenHandler;
-        _logoutHandler          = logoutHandler;
-        _passwordResetHandler   = passwordResetHandler;
+        _registerHandler = registerHandler;
+        _loginHandler = loginHandler;
+        _refreshTokenHandler = refreshTokenHandler;
+        _logoutHandler = logoutHandler;
+        _directPasswordResetHandler = directPasswordResetHandler;
+        _forgotPasswordHandler = forgotPasswordHandler;
+        _resetPasswordWithTokenHandler = resetPasswordWithTokenHandler;
         _superAdminLoginHandler = superAdminLoginHandler;
-        _switchTenantHandler    = switchTenantHandler;
+        _switchTenantHandler = switchTenantHandler;
     }
 
     /// <summary>Registra un nuevo usuario en un tenant existente.</summary>
@@ -136,21 +142,43 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Recuperación de contraseña (modo Direct).
-    /// Preparado para futuro: Email/Phone según configuración por empresa.
+    /// Recuperación de contraseña (modo Direct del tenant). Compatibilidad: requiere <c>tenantId</c> + email + nueva contraseña.
+    /// El flujo público recomendado es <c>forgot-password</c> + <c>reset-password</c> con token por email.
     /// </summary>
-    /// <remarks>
-    /// Este endpoint es anónimo. Solo permite reset directo si el tenant tiene PasswordResetMode=Direct.
-    /// </remarks>
     [HttpPost("password-reset")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> PasswordReset(
-        [FromBody] PasswordResetCommand command,
+    public async Task<IActionResult> DirectPasswordReset(
+        [FromBody] DirectPasswordResetCommand command,
         CancellationToken ct)
     {
-        var result = await _passwordResetHandler.HandleAsync(command, ct);
+        var result = await _directPasswordResetHandler.HandleAsync(command, ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    /// <summary>Solicita enlace de restablecimiento; solo requiere email (sin <c>tenantId</c>).</summary>
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordCommand command, CancellationToken ct)
+    {
+        var result = await _forgotPasswordHandler.HandleAsync(command, ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    /// <summary>Completa el restablecimiento con el token recibido por email (y <c>tenantId</c> en URL para usuarios de empresa).</summary>
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> ResetPasswordWithToken([FromBody] ResetPasswordWithTokenCommand command, CancellationToken ct)
+    {
+        var result = await _resetPasswordWithTokenHandler.HandleAsync(command, ct);
         return this.ToOkOrBadRequest(result);
     }
 

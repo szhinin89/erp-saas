@@ -14,6 +14,7 @@ using ERP.Domain.Geography.Entities;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Modules.Ventas.Entities;
 using ERP.Domain.Subscriptions.Entities;
+using ERP.Domain.Modules.Menu.Entities;
 using ERP.Domain.Navigation.Entities;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Modules.Ventas.Entities;
@@ -125,6 +126,7 @@ public class ErpDbContext : DbContext
     public DbSet<User>         Users         => Set<User>();
     public DbSet<FirstRunSetupState> FirstRunSetupStates => Set<FirstRunSetupState>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<IdentityUser> IdentityUsers => Set<IdentityUser>();
     public DbSet<Membership> Memberships => Set<Membership>();
     public DbSet<AccessProfile> AccessProfiles => Set<AccessProfile>();
@@ -190,6 +192,8 @@ public class ErpDbContext : DbContext
 
     public DbSet<UiNavGroup> UiNavGroups => Set<UiNavGroup>();
     public DbSet<UiNavItem> UiNavItems => Set<UiNavItem>();
+    public DbSet<TenantCustomMenu> TenantCustomMenus => Set<TenantCustomMenu>();
+    public DbSet<Funcionalidad> Funcionalidades => Set<Funcionalidad>();
     public DbSet<ConfigGlobal> ConfigGlobals => Set<ConfigGlobal>();
     public DbSet<ConfigModule> ConfigModules => Set<ConfigModule>();
     public DbSet<ConfigFeature> ConfigFeatures => Set<ConfigFeature>();

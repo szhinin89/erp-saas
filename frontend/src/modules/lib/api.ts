@@ -96,6 +96,8 @@ const PUBLIC_AUTH_PATHS = [
   '/api/auth/superadmin-login',
   '/api/auth/register',
   '/api/auth/password-reset',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
   '/api/auth/refresh',          // evitar loop infinito
   '/api/access/bootstrap-login',
   '/api/access/switch-tenant',

@@ -2,9 +2,9 @@ using FluentValidation;
 
 namespace ERP.Application.Auth.UseCases.PasswordReset;
 
-public sealed class PasswordResetCommandValidator : AbstractValidator<PasswordResetCommand>
+public sealed class DirectPasswordResetCommandValidator : AbstractValidator<DirectPasswordResetCommand>
 {
-    public PasswordResetCommandValidator()
+    public DirectPasswordResetCommandValidator()
     {
         RuleFor(x => x.TenantId)
             .NotEmpty().WithMessage("El tenant es obligatorio.");

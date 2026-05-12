@@ -101,6 +101,16 @@ public class UserRepository : IUserRepository
             .AnyAsync(u => u.Email == normalized, ct);
     }
 
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<User>> GetNonSuperAdminLegacyUsersByEmailAsync(string email, CancellationToken ct = default)
+    {
+        var normalized = new Email(email);
+        return await _context.Users
+            .IgnoreQueryFilters()
+            .Where(u => u.Email == normalized && u.Role != "SuperAdmin" && u.IsActive)
+            .ToListAsync(ct);
+    }
+
     public async Task AddAsync(User user, CancellationToken ct = default)
         => await _context.Users.AddAsync(user, ct);
 

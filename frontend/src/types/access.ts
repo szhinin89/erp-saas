@@ -54,6 +54,8 @@ export interface SessionMenuItemDto {
   itemRoles?: string[] | null;
   /** Submenú recursivo (misma definición en BD). */
   children?: SessionMenuItemDto[] | null;
+  /** Icono (p. ej. clase FontAwesome) en menús de plan / JSON personalizado. */
+  icon?: string | null;
 }
 
 /** Grupo de menú en `GET /api/access/me/menu`. */

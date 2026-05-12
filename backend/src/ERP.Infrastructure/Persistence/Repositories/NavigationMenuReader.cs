@@ -76,7 +76,8 @@ public sealed class NavigationMenuReader : INavigationMenuReader
                 i.PermissionKey,
                 keysAny,
                 ParseRoles(i.RolesCsv),
-                nested.Count > 0 ? nested : null));
+                nested.Count > 0 ? nested : null,
+                null));
         }
 
         return list;

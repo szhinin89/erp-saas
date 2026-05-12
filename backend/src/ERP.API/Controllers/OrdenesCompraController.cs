@@ -12,6 +12,7 @@ using ERP.Application.Modules.Compras.UseCases.VincularFacturaAOrdenCompra;
 using ERP.Application.Modules.Compras.UseCases.GetOrdenesCompraList;
 using ERP.Application.Modules.Compras.UseCases.GetOrdenCompraById;
 using ERP.Application.Modules.Compras.UseCases.GetOrdenesPendientesPorFacturar;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -19,6 +20,7 @@ namespace ERP.API.Controllers;
 /// Órdenes de Compra — documento interno que autoriza la compra a un proveedor.
 /// Flujo: Borrador → Enviada → Aprobada ⇄ RecibidaParcial → Cerrada (+ Cancelada).
 /// </summary>
+[Modulo("Órdenes de compra", "perm:compras.ordenes.view", "📝", "/compras/ordenes", null, 44)]
 [ApiController]
 [Route("api/compras/ordenes")]
 [Authorize]

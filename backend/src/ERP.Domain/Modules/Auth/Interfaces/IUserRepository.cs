@@ -18,6 +18,12 @@ public interface IUserRepository
     /// <summary>Indica si ya existe un usuario legacy (<c>users</c>) con ese email en cualquier tenant (ignora filtro global).</summary>
     Task<bool> ExistsByEmailGloballyAsync(string email, CancellationToken ct = default);
 
+    /// <summary>
+    /// Usuarios legacy (no SuperAdmin) con el mismo email en cualquier empresa activa.
+    /// Usado para recuperación de contraseña sin <c>tenantId</c> en el formulario.
+    /// </summary>
+    Task<IReadOnlyList<User>> GetNonSuperAdminLegacyUsersByEmailAsync(string email, CancellationToken ct = default);
+
     Task AddAsync(User user, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

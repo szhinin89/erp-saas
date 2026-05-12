@@ -33,6 +33,7 @@ public class SuperAdminController : ControllerBase
     private readonly INavigationMenuAdminService _navigationMenuAdmin;
     private readonly IGrowthAnalyticsReader  _growthAnalytics;
     private readonly IRefreshTokenService    _refreshTokenService;
+    private readonly ITenantMenuAdminService   _tenantMenuAdmin;
 
     public SuperAdminController(
         ITenantRepository tenantRepository,
@@ -42,7 +43,8 @@ public class SuperAdminController : ControllerBase
         InstanceQuotaFileStore instanceQuotaFile,
         INavigationMenuAdminService navigationMenuAdmin,
         IGrowthAnalyticsReader growthAnalytics,
-        IRefreshTokenService refreshTokenService)
+        IRefreshTokenService refreshTokenService,
+        ITenantMenuAdminService tenantMenuAdmin)
     {
         _tenantRepository    = tenantRepository;
         _userRepository      = userRepository;
@@ -52,6 +54,7 @@ public class SuperAdminController : ControllerBase
         _navigationMenuAdmin = navigationMenuAdmin;
         _growthAnalytics     = growthAnalytics;
         _refreshTokenService = refreshTokenService;
+        _tenantMenuAdmin     = tenantMenuAdmin;
     }
 
     /// <summary>Cuotas efectivas de la instancia (config + archivo <c>App_Data/instance-quota.json</c> si existe).</summary>
@@ -117,6 +120,8 @@ public class SuperAdminController : ControllerBase
             .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
+        var withCustomMenu = await _tenantMenuAdmin.GetTenantIdsWithCustomMenuAsync(ct);
+
         // Métricas por empresa (globales del tenant): usuarios total/activos.
         // Nota: usamos ejecución SECUENCIAL para evitar concurrencia sobre el mismo DbContext scoped.
         // Si este endpoint crece en carga, se optimiza con queries agregadas (COUNT/GROUP BY) a nivel DB.
@@ -138,6 +143,7 @@ public class SuperAdminController : ControllerBase
                 planCode = t.PlanCode,
                 enabledModules = TenantSubscriptionCatalog.GetEffectiveEnabledModules(t),
                 hasModuleRestrictions = !string.IsNullOrWhiteSpace(t.EnabledModulesJson),
+                hasCustomMenu = withCustomMenu.Contains(t.Id),
             });
         }
 

@@ -11,6 +11,10 @@ using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Extensions;
 
+/// <summary>
+/// Seed opcional de desarrollo: tenant-demo + admin identity + datos mínimos contables.
+/// <b>No se ejecuta por defecto.</b> Actívalo con <c>Development:SeedDemoTenant = true</c> en appsettings.Development.json.
+/// </summary>
 internal static class DevDatabaseSeeder
 {
     private static readonly Guid SeederActorId = Guid.Parse("11111111-1111-1111-1111-111111111111");

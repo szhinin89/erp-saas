@@ -79,6 +79,7 @@ public sealed class ClaimInitialSuperAdminHandler
 
         await _userRepository.AddAsync(user, ct);
         await _userRepository.SaveChangesAsync(ct);
+        // Actualiza first_run_setup_state: is_first_run=false, completed_at UTC, sin hash ni expiración de token.
         await _firstRunSetupService.MarkFirstRunCompletedAsync(ct);
 
         var token = _jwtService.GenerateToken(user, Guid.Empty);

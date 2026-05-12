@@ -315,6 +315,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -347,6 +351,57 @@ namespace ERP.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("first_run_setup_state", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Auth.Entities.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid?>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("token_hash");
+
+                    b.Property<bool>("Used")
+                        .HasColumnType("boolean")
+                        .HasColumnName("used");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("UserKind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("user_kind");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_password_reset_tokens_hash");
+
+                    b.HasIndex("UserId", "UserKind", "TenantId")
+                        .HasDatabaseName("ix_password_reset_tokens_user");
+
+                    b.ToTable("password_reset_tokens", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Auth.Entities.RefreshToken", b =>
@@ -3640,6 +3695,71 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("transferencia_detalles", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Menu.Entities.Funcionalidad", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<bool>("EsSuperAdmin")
+                        .HasColumnType("boolean")
+                        .HasColumnName("es_super_admin");
+
+                    b.Property<string>("Icono")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("icono");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nombre");
+
+                    b.Property<int>("Orden")
+                        .HasColumnType("integer")
+                        .HasColumnName("orden");
+
+                    b.Property<Guid?>("PadreId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("padre_id");
+
+                    b.Property<string>("Permiso")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("permiso");
+
+                    b.Property<string>("Ruta")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("ruta");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<bool>("VisibleEnMenu")
+                        .HasColumnType("boolean")
+                        .HasColumnName("visible_en_menu");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PadreId")
+                        .HasDatabaseName("ix_funcionalidades_padre_id");
+
+                    b.HasIndex("Permiso")
+                        .IsUnique()
+                        .HasDatabaseName("ux_funcionalidades_permiso");
+
+                    b.ToTable("funcionalidades", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Ventas.Entities.Customer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4300,6 +4420,39 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_ventas_retenciones_recibidas_tenant_clave");
 
                     b.ToTable("ventas_retenciones_recibidas", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Navigation.Entities.TenantCustomMenu", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("MenuConfigJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("menu_config");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_tenant_custom_menus_tenant");
+
+                    b.ToTable("tenant_custom_menus", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Navigation.Entities.UiNavGroup", b =>
@@ -5260,6 +5413,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_recommended");
 
+                    b.Property<string>("MenuConfigJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("menu_config");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -5920,6 +6077,14 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Menu.Entities.Funcionalidad", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Menu.Entities.Funcionalidad", null)
+                        .WithMany()
+                        .HasForeignKey("PadreId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Ventas.Entities.VentasDetalle", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.Ventas.Entities.VentasFactura", null)
@@ -5991,6 +6156,15 @@ namespace ERP.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Cliente");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Navigation.Entities.TenantCustomMenu", b =>
+                {
+                    b.HasOne("ERP.Domain.Tenants.Entities.Tenant", null)
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ERP.Domain.Navigation.Entities.UiNavItem", b =>

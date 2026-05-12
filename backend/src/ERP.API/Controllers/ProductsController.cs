@@ -14,6 +14,7 @@ using ERP.Application.Products.UseCases.GetProductFullReport;
 using ERP.Application.Products.UseCases.UpdateProduct;
 using ERP.Application.Products.DTOs;
 using ERP.Domain.Products.Interfaces;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -21,6 +22,7 @@ namespace ERP.API.Controllers;
 /// Gestión del catálogo de productos del tenant autenticado.
 /// Todos los endpoints filtran automáticamente por el tenant del JWT.
 /// </summary>
+[Modulo("Productos", "perm:inventario.products.view", "📦", "/products", null, 38)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

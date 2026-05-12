@@ -26,4 +26,8 @@ public interface ISaasPlansAdminService
 
     /// <summary>Elimina una definición y filas dependientes (planes, overrides, uso, vínculo en menú).</summary>
     Task<Result<object?>> DeleteFeatureDefinitionAsync(Guid featureId, CancellationToken ct = default);
+
+    Task<Result<string?>> GetPlanMenuJsonAsync(Guid planId, CancellationToken ct = default);
+
+    Task<Result<object?>> SetPlanMenuJsonAsync(Guid planId, string? menuConfigJson, CancellationToken ct = default);
 }

@@ -5,9 +5,11 @@ using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Compras.DTOs;
 using ERP.Application.Modules.Compras.UseCases.Retenciones;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
+[Modulo("Retenciones compras", "perm:compras.retenciones.list", "📑", "/compras/retenciones", null, 48)]
 [ApiController]
 [Route("api/compras/retenciones")]
 [Authorize]

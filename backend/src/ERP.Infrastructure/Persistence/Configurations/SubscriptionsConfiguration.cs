@@ -39,6 +39,7 @@ public sealed class SaasPlanConfiguration : IEntityTypeConfiguration<SaasPlan>
         builder.Property(x => x.IsRecommended).HasColumnName("is_recommended").IsRequired();
         builder.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
         builder.Property(x => x.ExternalBillingRef).HasColumnName("external_billing_ref").HasMaxLength(SaasPlan.ExternalBillingRefMaxLen);
+        builder.Property(x => x.MenuConfigJson).HasColumnName("menu_config").HasColumnType("jsonb");
         builder.HasIndex(x => x.Code).IsUnique().HasDatabaseName("ux_saas_plans_code");
     }
 }

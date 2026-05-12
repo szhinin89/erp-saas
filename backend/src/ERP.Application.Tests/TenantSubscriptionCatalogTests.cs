@@ -28,7 +28,14 @@ public sealed class TenantSubscriptionCatalogTests
             enabledModuleKeys: new[] { "Saas", "inventario", "inventario" });
 
         var effective = TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant);
-        effective.Should().Equal("compras", "gastos", "inventario", "saas", "ventas");
+        effective.Should().Equal("inventario", "saas");
+    }
+
+    [Fact]
+    public void GetEffectiveEnabledModules_returns_only_inventario_when_sole_explicit_key()
+    {
+        var tenant = Tenant.Create("Co", "co", Guid.NewGuid(), enabledModuleKeys: new[] { "inventario" });
+        TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant).Should().Equal("inventario");
     }
 
     [Fact]
@@ -63,20 +70,30 @@ public sealed class TenantSubscriptionCatalogTests
         TenantSubscriptionCatalog.TryGetModuleKeyForPermission("compras.facturas.view", out var cKey)
             .Should().BeTrue();
         cKey.Should().Be("compras");
+
+        TenantSubscriptionCatalog.TryGetModuleKeyForPermission("rrhh.placeholder.view", out var rKey)
+            .Should().BeTrue();
+        rKey.Should().Be("rrhh");
     }
 
     [Fact]
-    public void TenantAllowsPermission_ventas_customers_when_only_inventario_enabled()
+    public void TenantAllowsPermission_ventas_customers_when_ventas_enabled()
     {
-        var t = Tenant.Create("T", "t", Guid.NewGuid(), enabledModuleKeys: new[] { "inventario" });
+        var t = Tenant.Create("T", "t", Guid.NewGuid(), enabledModuleKeys: new[] { "ventas" });
         TenantSubscriptionCatalog.TenantAllowsPermission(t, "ventas.customers.view").Should().BeTrue();
     }
 
     [Fact]
-    public void TenantAllowsPermission_compras_gastos_when_only_inventario_enabled()
+    public void TenantAllowsPermission_compras_when_compras_enabled()
     {
-        var t = Tenant.Create("T", "t", Guid.NewGuid(), enabledModuleKeys: new[] { "inventario" });
+        var t = Tenant.Create("T", "t", Guid.NewGuid(), enabledModuleKeys: new[] { "compras" });
         TenantSubscriptionCatalog.TenantAllowsPermission(t, "compras.facturas.view").Should().BeTrue();
+    }
+
+    [Fact]
+    public void TenantAllowsPermission_gastos_when_gastos_enabled()
+    {
+        var t = Tenant.Create("T", "t", Guid.NewGuid(), enabledModuleKeys: new[] { "gastos" });
         TenantSubscriptionCatalog.TenantAllowsPermission(t, "gastos.facturas.create").Should().BeTrue();
     }
 

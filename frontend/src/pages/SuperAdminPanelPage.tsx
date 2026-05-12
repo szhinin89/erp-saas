@@ -6,6 +6,7 @@ import { SuperAdminPageTemplate } from '../components/superadmin/SuperAdminPageT
 import { useSuperAdminGate } from '../hooks/useSuperAdminGate';
 import { Modal } from '../components/Modal';
 import { ZHModalHeader } from '../components/zh/ZHModalHeader';
+import { TENANT_MODULE_KEYS } from '../constants/subscriptionModules';
 import { superAdminService, type CreateTenantWithAdminBody, type SuperAdminPlan, type SuperAdminTenant } from '../services/superAdminService';
 import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
@@ -17,13 +18,32 @@ import { ZHDashboardScaffold, ZHKpiPanel } from '../components/zh/ZHDashboard';
 import { SuperAdminGrowthSection } from '../components/superadmin/SuperAdminGrowthSection';
 import { SuperAdminFeaturesSection } from '../components/superadmin/SuperAdminFeaturesSection';
 import { SuperAdminPlansSection } from '../components/superadmin/SuperAdminPlansSection';
+import { SuperAdminMenuBuilderSection } from '../components/superadmin/SuperAdminMenuBuilderSection';
 import { formatApiRequestError } from '../modules/lib/apiError';
 import { goToCompaniesTenantDetail } from '../navigation/companiesTenantDetailNav';
 import type { SessionResponse } from '../types/access';
 import '../components/zh/ZHFormTabs.css';
 import './SuperAdminPanelPage.css';
 
-type SuperAdminHomeTab = 'overview' | 'companies' | 'features' | 'plans';
+type SuperAdminHomeTab = 'overview' | 'companies' | 'features' | 'plans' | 'menus';
+
+function defaultModuleChecksAllOn(): Record<string, boolean> {
+  const o: Record<string, boolean> = {};
+  for (const k of TENANT_MODULE_KEYS) o[k] = true;
+  return o;
+}
+
+/** Si no restringe, o marca todos, equivale a sin JSON de módulos en backend. */
+function normalizeEnabledModulesForApi(
+  restrict: boolean,
+  checks: Record<string, boolean>,
+): string[] | undefined {
+  if (!restrict) return undefined;
+  const selected = TENANT_MODULE_KEYS.filter((k) => checks[k]);
+  if (selected.length === 0) return undefined;
+  if (selected.length === TENANT_MODULE_KEYS.length) return undefined;
+  return [...selected];
+}
 
 function storeImpersonationTenantName(name: string) {
   localStorage.setItem('superadmin-impersonation-tenant-name', name);
@@ -39,7 +59,9 @@ export function SuperAdminPanelPage() {
 
   const tabParam = searchParams.get('tab');
   const homeTab: SuperAdminHomeTab =
-    tabParam === 'companies' || tabParam === 'features' || tabParam === 'plans' ? tabParam : 'overview';
+    tabParam === 'companies' || tabParam === 'features' || tabParam === 'plans' || tabParam === 'menus'
+      ? tabParam
+      : 'overview';
 
   const selectHomeTab = (tab: SuperAdminHomeTab) => {
     if (tab === 'overview') setSearchParams({}, { replace: true });
@@ -67,6 +89,17 @@ export function SuperAdminPanelPage() {
     passwordResetMode: 0,
     linkExistingAdmin: false,
   });
+  const [createPlanCode, setCreatePlanCode] = useState('');
+  const [createRestrictModules, setCreateRestrictModules] = useState(false);
+  const [createModuleChecks, setCreateModuleChecks] = useState<Record<string, boolean>>(defaultModuleChecksAllOn);
+
+  const [subModalOpen, setSubModalOpen] = useState(false);
+  const [subModalTenant, setSubModalTenant] = useState<SuperAdminTenant | null>(null);
+  const [subPlanCode, setSubPlanCode] = useState('');
+  const [subRestrict, setSubRestrict] = useState(false);
+  const [subModuleChecks, setSubModuleChecks] = useState<Record<string, boolean>>(defaultModuleChecksAllOn);
+  const [subBusy, setSubBusy] = useState(false);
+  const [subError, setSubError] = useState('');
 
   const slugify = (name: string) =>
     (name ?? '')
@@ -136,6 +169,16 @@ export function SuperAdminPanelPage() {
     };
   }, [plans]);
 
+  const activePlans = useMemo(
+    () => [...plans].filter((p) => p.isActive).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+    [plans],
+  );
+
+  const moduleLabel = useCallback(
+    (key: string) => t(`companies.subscription.module.${key}`, key),
+    [t],
+  );
+
   const handleSwitch = async (tenant: SuperAdminTenant) => {
     if (!tenant.isActive) return;
     setSwitching(tenant.id);
@@ -155,6 +198,9 @@ export function SuperAdminPanelPage() {
 
   const openCreateTenant = () => {
     setCreateError('');
+    setCreatePlanCode('');
+    setCreateRestrictModules(false);
+    setCreateModuleChecks(defaultModuleChecksAllOn());
     setCreateForm({
       tenantName: '',
       tenantSlug: '',
@@ -168,6 +214,27 @@ export function SuperAdminPanelPage() {
     setCreateTenantOpen(true);
   };
 
+  const openSubscriptionModal = (tenant: SuperAdminTenant) => {
+    setSubModalTenant(tenant);
+    setSubPlanCode((tenant.planCode ?? '').trim());
+    const has =
+      !!tenant.hasModuleRestrictions &&
+      !!tenant.enabledModules &&
+      tenant.enabledModules.length > 0;
+    setSubRestrict(has);
+    const checks: Record<string, boolean> = {};
+    for (const k of TENANT_MODULE_KEYS) {
+      if (has && tenant.enabledModules?.length) {
+        checks[k] = tenant.enabledModules.some((em) => em.toLowerCase() === k.toLowerCase());
+      } else {
+        checks[k] = true;
+      }
+    }
+    setSubModuleChecks(checks);
+    setSubError('');
+    setSubModalOpen(true);
+  };
+
   const saveCreateTenant = async () => {
     setCreateBusy(true);
     setCreateError('');
@@ -176,12 +243,34 @@ export function SuperAdminPanelPage() {
       const tenantSlug = (createForm.tenantSlug.trim() || slugify(tenantName)).toLowerCase();
       const adminEmail = createForm.adminEmail.trim().toLowerCase();
 
+      if (activePlans.length === 0) {
+        setCreateError(t('superadmin.createTenant.error.noPlans'));
+        return;
+      }
+      if (!createPlanCode.trim()) {
+        setCreateError(t('superadmin.createTenant.error.planRequired'));
+        return;
+      }
+
+      if (createRestrictModules) {
+        const n = TENANT_MODULE_KEYS.filter((k) => createModuleChecks[k]).length;
+        if (n === 0) {
+          setCreateError(t('superadmin.createTenant.error.noModulesSelected'));
+          return;
+        }
+      }
+
+      const planCodeNorm = createPlanCode.trim();
+      const enabledModules = normalizeEnabledModulesForApi(createRestrictModules, createModuleChecks);
+
       const session: SessionResponse = await superAdminService.createTenantWithAdmin({
         ...createForm,
         tenantName,
         tenantSlug,
         adminEmail,
         adminPassword: createForm.linkExistingAdmin ? '' : createForm.adminPassword,
+        planCode: planCodeNorm,
+        enabledModules: enabledModules === undefined ? null : enabledModules,
       });
 
       setError('');
@@ -191,6 +280,35 @@ export function SuperAdminPanelPage() {
       setCreateError(formatApiRequestError(e, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
     } finally {
       setCreateBusy(false);
+    }
+  };
+
+  const saveSubscriptionModal = async () => {
+    if (!subModalTenant) return;
+    setSubBusy(true);
+    setSubError('');
+    try {
+      if (subRestrict) {
+        const n = TENANT_MODULE_KEYS.filter((k) => subModuleChecks[k]).length;
+        if (n === 0) {
+          setSubError(t('superadmin.changeSubscription.error.noModulesSelected'));
+          return;
+        }
+      }
+      const planCode = subPlanCode.trim() || null;
+      const enabledModulesNorm = normalizeEnabledModulesForApi(subRestrict, subModuleChecks);
+
+      await superAdminService.updateTenantSubscription(subModalTenant.id, {
+        planCode,
+        enabledModules: enabledModulesNorm === undefined ? null : enabledModulesNorm,
+      });
+      await refreshTenantsAndMetrics();
+      setSubModalOpen(false);
+      setSubModalTenant(null);
+    } catch (e) {
+      setSubError(formatApiRequestError(e, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
+    } finally {
+      setSubBusy(false);
     }
   };
 
@@ -245,11 +363,52 @@ export function SuperAdminPanelPage() {
             >
               {t('superadmin.tabPlans')}
             </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={homeTab === 'menus'}
+              className={homeTab === 'menus' ? 'is-active' : ''}
+              onClick={() => selectHomeTab('menus')}
+            >
+              {t('superadmin.tabMenus')}
+            </button>
           </div>
         </div>
 
         {homeTab === 'overview' ? (
           <div className="sa-overviewKpi">
+            {!loading && tenants.length === 0 && isSuperAdmin ? (
+              <TableCard>
+                <ZHCardSection title={t('superadmin.welcomeNoTenantsTitle')}>
+                  <p className="subtle" style={{ marginBottom: '1rem' }}>
+                    {t('superadmin.welcomeNoTenantsBody')}
+                  </p>
+                  <ZHInlineRowRight>
+                    <ZHBtn
+                      variant="ghost"
+                      size="md"
+                      type="button"
+                      onClick={() => selectHomeTab('plans')}
+                    >
+                      {t('superadmin.welcomeGoPlans')}
+                    </ZHBtn>
+                    <ZHBtn
+                      variant="primary"
+                      size="md"
+                      type="button"
+                      onClick={() => {
+                        selectHomeTab('companies');
+                        openCreateTenant();
+                      }}
+                      disabled={activePlans.length === 0}
+                      title={activePlans.length === 0 ? t('superadmin.createTenant.error.noPlans') : undefined}
+                    >
+                      {t('superadmin.welcomeCreateFirstCompany')}
+                    </ZHBtn>
+                  </ZHInlineRowRight>
+                </ZHCardSection>
+              </TableCard>
+            ) : null}
             {loading ? (
               <TableCard>
                 <LoadingState />
@@ -336,6 +495,15 @@ export function SuperAdminPanelPage() {
                             size="md"
                             type="button"
                             disabled={switching !== null}
+                            onClick={() => openSubscriptionModal(tenant)}
+                          >
+                            {t('superadmin.tenantRow.changeSubscription')}
+                          </ZHBtn>
+                          <ZHBtn
+                            variant="ghost"
+                            size="md"
+                            type="button"
+                            disabled={switching !== null}
                             onClick={() => goToCompaniesTenantDetail(navigate, tenant.id)}
                           >
                             {t('superadmin.tenantRow.companyData')}
@@ -360,8 +528,10 @@ export function SuperAdminPanelPage() {
           </TableCard>
         ) : homeTab === 'features' ? (
           <>{isSuperAdmin ? <SuperAdminFeaturesSection /> : null}</>
-        ) : (
+        ) : homeTab === 'plans' ? (
           <>{isSuperAdmin ? <SuperAdminPlansSection /> : null}</>
+        ) : (
+          <>{isSuperAdmin ? <SuperAdminMenuBuilderSection /> : null}</>
         )}
       </ZHDashboardScaffold>
 
@@ -402,6 +572,67 @@ export function SuperAdminPanelPage() {
               />
             </ZHField>
           </ZHGridRow>
+          <ZHGridRow cols={2}>
+            <ZHField label={t('superadmin.createTenant.field.planCode')}>
+              <select
+                className="zh-input"
+                value={createPlanCode}
+                onChange={(e) => setCreatePlanCode(e.target.value)}
+                disabled={createBusy || activePlans.length === 0}
+                required
+              >
+                <option value="">
+                  {activePlans.length === 0
+                    ? t('superadmin.createTenant.planSelectNoPlans')
+                    : t('superadmin.createTenant.planSelectPlaceholder')}
+                </option>
+                {activePlans.map((p) => (
+                  <option key={p.id} value={p.code}>
+                    {p.name.trim() ? `${p.name} (${p.code})` : p.code}
+                  </option>
+                ))}
+              </select>
+            </ZHField>
+            <div />
+          </ZHGridRow>
+          <label className="sap-check">
+            <input
+              type="checkbox"
+              checked={createRestrictModules}
+              onChange={(e) => {
+                const on = e.target.checked;
+                setCreateRestrictModules(on);
+                if (on) setCreateModuleChecks(defaultModuleChecksAllOn());
+              }}
+              disabled={createBusy}
+            />
+            {t('superadmin.createTenant.field.restrictModules')}
+          </label>
+          {createRestrictModules ? (
+            <p className="subtle" style={{ marginTop: 6 }}>
+              {t('superadmin.createTenant.modulesHint')}
+            </p>
+          ) : null}
+          {createRestrictModules ? (
+            <div className="sa-moduleChecks">
+              {TENANT_MODULE_KEYS.map((k) => (
+                <label key={k} className="sap-check sa-moduleCheck">
+                  <input
+                    type="checkbox"
+                    checked={!!createModuleChecks[k]}
+                    onChange={() =>
+                      setCreateModuleChecks((s) => ({
+                        ...s,
+                        [k]: !s[k],
+                      }))
+                    }
+                    disabled={createBusy}
+                  />
+                  {moduleLabel(k)}
+                </label>
+              ))}
+            </div>
+          ) : null}
           <ZHGridRow cols={2}>
             <ZHField label={t('superadmin.createTenant.field.adminFirstName')}>
               <input
@@ -469,6 +700,89 @@ export function SuperAdminPanelPage() {
               {t('common.cancel')}
             </ZHBtn>
             <ZHBtn variant="primary" type="button" onClick={() => void saveCreateTenant()} disabled={createBusy}>
+              {t('common.save')}
+            </ZHBtn>
+          </ZHInlineRowRight>
+        </Modal>
+      ) : null}
+
+      {subModalOpen && subModalTenant ? (
+        <Modal
+          onClose={() => (subBusy ? undefined : setSubModalOpen(false))}
+          size="lg"
+          header={
+            <ZHModalHeader
+              title={t('superadmin.changeSubscription.title')}
+              subtitle={t('superadmin.changeSubscription.subtitle').replace(
+                '{name}',
+                subModalTenant.name,
+              )}
+              onClose={() => (subBusy ? undefined : setSubModalOpen(false))}
+            />
+          }
+        >
+          {subError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={subError} /> : null}
+          <ZHGridRow cols={2}>
+            <ZHField label={t('superadmin.createTenant.field.planCode')}>
+              <select
+                className="zh-input"
+                value={subPlanCode}
+                onChange={(e) => setSubPlanCode(e.target.value)}
+                disabled={subBusy}
+              >
+                <option value="">{t('superadmin.createTenant.planOptional')}</option>
+                {activePlans.map((p) => (
+                  <option key={p.id} value={p.code}>
+                    {p.name.trim() ? `${p.name} (${p.code})` : p.code}
+                  </option>
+                ))}
+              </select>
+            </ZHField>
+            <div />
+          </ZHGridRow>
+          <label className="sap-check">
+            <input
+              type="checkbox"
+              checked={subRestrict}
+              onChange={(e) => {
+                const on = e.target.checked;
+                setSubRestrict(on);
+                if (on) setSubModuleChecks(defaultModuleChecksAllOn());
+              }}
+              disabled={subBusy}
+            />
+            {t('superadmin.createTenant.field.restrictModules')}
+          </label>
+          {subRestrict ? (
+            <p className="subtle" style={{ marginTop: 6 }}>
+              {t('superadmin.createTenant.modulesHint')}
+            </p>
+          ) : null}
+          {subRestrict ? (
+            <div className="sa-moduleChecks">
+              {TENANT_MODULE_KEYS.map((k) => (
+                <label key={k} className="sap-check sa-moduleCheck">
+                  <input
+                    type="checkbox"
+                    checked={!!subModuleChecks[k]}
+                    onChange={() =>
+                      setSubModuleChecks((s) => ({
+                        ...s,
+                        [k]: !s[k],
+                      }))
+                    }
+                    disabled={subBusy}
+                  />
+                  {moduleLabel(k)}
+                </label>
+              ))}
+            </div>
+          ) : null}
+          <ZHInlineRowRight>
+            <ZHBtn variant="ghost" type="button" onClick={() => setSubModalOpen(false)} disabled={subBusy}>
+              {t('common.cancel')}
+            </ZHBtn>
+            <ZHBtn variant="primary" type="button" onClick={() => void saveSubscriptionModal()} disabled={subBusy}>
               {t('common.save')}
             </ZHBtn>
           </ZHInlineRowRight>

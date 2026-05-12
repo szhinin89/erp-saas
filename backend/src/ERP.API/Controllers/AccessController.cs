@@ -9,6 +9,7 @@ using ERP.Application.Access.UseCases.Profiles;
 using ERP.Application.Access.UseCases.TenantAccess;
 using ERP.Application.Access.UseCases.SuperAdminTenants;
 using ERP.Application.Access.UseCases.Permissions;
+using ERP.Application.Navigation;
 using ERP.Application.Navigation.DTOs;
 using ERP.Application.Navigation.UseCases.GetSessionMenu;
 using ERP.Application.Common;
@@ -33,10 +34,12 @@ namespace ERP.API.Controllers;
 public class AccessController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly ITenantMenuAdminService _tenantMenuAdmin;
 
-    public AccessController(IMediator mediator)
+    public AccessController(IMediator mediator, ITenantMenuAdminService tenantMenuAdmin)
     {
         _mediator = mediator;
+        _tenantMenuAdmin = tenantMenuAdmin;
     }
 
     /// <summary>Login (paso 1): retorna bootstrap token + empresas accesibles.</summary>
@@ -166,6 +169,53 @@ public class AccessController : ControllerBase
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
+    }
+
+    public sealed record TenantMenuPutBody(string MenuConfigJson);
+
+    /// <summary>SuperAdmin: menú efectivo de la empresa (personalizado, del plan o global).</summary>
+    [HttpGet("superadmin/tenants/{tenantId:guid}/menu")]
+    [Authorize(Roles = "SuperAdmin")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SuperAdminGetTenantMenu(Guid tenantId, CancellationToken ct)
+    {
+        var r = await _tenantMenuAdmin.GetResolvedMenuForTenantAsync(tenantId, ct);
+        if (!r.IsSuccess)
+            return this.ApiBadRequest(r.Error ?? "Error");
+        var v = r.Value!;
+        return this.ApiOk(new
+        {
+            menu = v.Menu,
+            hasCustomMenu = v.HasCustomMenu,
+            usedPlanMenu = v.UsedPlanMenu,
+            usedGlobalFallback = v.UsedGlobalFallback,
+        });
+    }
+
+    /// <summary>SuperAdmin: guarda menú personalizado por empresa (JSON = <c>SessionMenuGroupDto[]</c>).</summary>
+    [HttpPut("superadmin/tenants/{tenantId:guid}/menu")]
+    [Authorize(Roles = "SuperAdmin")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SuperAdminPutTenantMenu(Guid tenantId, [FromBody] TenantMenuPutBody body, CancellationToken ct)
+    {
+        var r = await _tenantMenuAdmin.UpsertTenantCustomMenuAsync(tenantId, body.MenuConfigJson, ct);
+        return r.IsSuccess
+            ? this.ApiOk(new { }, "Guardado")
+            : this.ApiBadRequest(r.Error ?? "Error");
+    }
+
+    /// <summary>SuperAdmin: elimina menú personalizado; la empresa vuelve al menú del plan o global.</summary>
+    [HttpDelete("superadmin/tenants/{tenantId:guid}/menu")]
+    [Authorize(Roles = "SuperAdmin")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SuperAdminDeleteTenantMenu(Guid tenantId, CancellationToken ct)
+    {
+        var r = await _tenantMenuAdmin.DeleteTenantCustomMenuAsync(tenantId, ct);
+        return r.IsSuccess
+            ? this.ApiOk(new { }, "Restablecido")
+            : this.ApiBadRequest(r.Error ?? "Error");
     }
 
     // ── Admin del tenant: accesos ───────────────────────────────────

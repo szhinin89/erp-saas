@@ -5,10 +5,12 @@ using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Modules.Compras.DTOs;
 using ERP.Application.Modules.Compras.UseCases.NotasProveedor;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
 /// <summary>Notas de crédito/débito recibidas de proveedores (SRI), aplicables a compras o gastos.</summary>
+[Modulo("Notas proveedor", "perm:compras.notas-proveedor.view", "📄", "/compras/notas-proveedor", null, 47)]
 [ApiController]
 [Route("api/compras/notas-proveedor")]
 [Authorize]

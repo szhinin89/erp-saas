@@ -11,6 +11,7 @@ using ERP.Application.Modules.Compras.UseCases.GetCompras;
 using ERP.Application.Modules.Compras.UseCases.RechazarCompra;
 using ERP.Application.Modules.Compras.UseCases.ValidarCompra;
 using ERP.Domain.Modules.Compras.Enums;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -18,6 +19,7 @@ namespace ERP.API.Controllers;
 /// Gestión del submódulo de Compras.
 /// Flujo: Borrador → (Validado) → Aprobado | Rechazado.
 /// </summary>
+[Modulo("Compras", "perm:compras.facturas.view", "🛒", "/compras", null, 45)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
