@@ -12,18 +12,18 @@ public sealed class ClaimInitialSuperAdminHandler
 
     private readonly IUserRepository _userRepository;
     private readonly IJwtService _jwtService;
-    private readonly IDeploymentFeatureFlags _deployment;
+    private readonly IFirstRunSetupService _firstRunSetupService;
     private readonly IPasswordHasher _passwordHasher;
 
     public ClaimInitialSuperAdminHandler(
         IUserRepository userRepository,
         IJwtService jwtService,
-        IDeploymentFeatureFlags deployment,
+        IFirstRunSetupService firstRunSetupService,
         IPasswordHasher passwordHasher)
     {
         _userRepository = userRepository;
         _jwtService = jwtService;
-        _deployment = deployment;
+        _firstRunSetupService = firstRunSetupService;
         _passwordHasher = passwordHasher;
     }
 
@@ -31,7 +31,7 @@ public sealed class ClaimInitialSuperAdminHandler
         ClaimInitialSuperAdminCommand command,
         CancellationToken ct = default)
     {
-        if (!_deployment.AuthorizeInitialSuperAdminSetup(command.SetupToken))
+        if (!await _firstRunSetupService.ValidateSetupTokenAsync(command.SetupToken, ct))
             return Result<AuthResponseDto>.Failure("Token de instalación inválido o no configurado.");
 
         if (await _userRepository.AnySuperAdminAsync(ct))
@@ -79,6 +79,7 @@ public sealed class ClaimInitialSuperAdminHandler
 
         await _userRepository.AddAsync(user, ct);
         await _userRepository.SaveChangesAsync(ct);
+        await _firstRunSetupService.MarkFirstRunCompletedAsync(ct);
 
         var token = _jwtService.GenerateToken(user, Guid.Empty);
 

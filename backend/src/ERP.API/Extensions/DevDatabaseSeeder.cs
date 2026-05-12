@@ -23,37 +23,67 @@ internal static class DevDatabaseSeeder
 
         const string adminEmail = "admin@erp.com";
         const string adminPassword = "Admin123!";
+        const string tenantSlug = "tenant-demo";
 
-        var existingAdmin = await db.IdentityUsers
-            .AsNoTracking()
+        var existingAdmins = await db.IdentityUsers
+            .IgnoreQueryFilters()
             .ToListAsync(ct);
-        if (existingAdmin.Any(u => string.Equals(u.Email.Value, adminEmail, StringComparison.OrdinalIgnoreCase)))
+        var existingAdmin = existingAdmins
+            .FirstOrDefault(u => string.Equals(u.Email.Value, adminEmail, StringComparison.OrdinalIgnoreCase));
+
+        var tenant = await db.Tenants
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(t => t.Slug == tenantSlug, ct);
+
+        if (tenant is not null && existingAdmin is not null)
             return;
 
-        var tenant = Tenant.Create(
-            name: "Tenant Demo",
-            slug: "tenant-demo",
-            createdBy: SeederActorId,
-            passwordResetMode: PasswordResetMode.Direct);
+        var tenantJustCreated = false;
+        if (tenant is null)
+        {
+            tenant = Tenant.Create(
+                name: "Tenant Demo",
+                slug: tenantSlug,
+                createdBy: SeederActorId,
+                passwordResetMode: PasswordResetMode.Direct);
 
-        db.Tenants.Add(tenant);
-        await db.SaveChangesAsync(ct);
+            db.Tenants.Add(tenant);
+            await db.SaveChangesAsync(ct);
+            tenantJustCreated = true;
+        }
 
-        var admin = IdentityUser.Create(
-            firstName: "Admin",
-            lastName: "ERP",
-            email: adminEmail,
-            passwordHash: passwordHasher.HashPassword(adminPassword),
-            createdBy: SeederActorId);
-        db.IdentityUsers.Add(admin);
-        await db.SaveChangesAsync(ct);
+        var admin = existingAdmin;
+        if (admin is null)
+        {
+            admin = IdentityUser.Create(
+                firstName: "Admin",
+                lastName: "ERP",
+                email: adminEmail,
+                passwordHash: passwordHasher.HashPassword(adminPassword),
+                createdBy: SeederActorId);
+            db.IdentityUsers.Add(admin);
+            await db.SaveChangesAsync(ct);
+        }
 
-        db.Memberships.Add(Membership.Create(
-            tenantId: tenant.Id,
-            identityUserId: admin.Id,
-            role: "Admin",
-            profileId: null,
-            createdBy: SeederActorId));
+        var hasMembership = await db.Memberships
+            .IgnoreQueryFilters()
+            .AnyAsync(m => m.TenantId == tenant.Id && m.IdentityUserId == admin.Id && m.IsActive, ct);
+        if (!hasMembership)
+        {
+            db.Memberships.Add(Membership.Create(
+                tenantId: tenant.Id,
+                identityUserId: admin.Id,
+                role: "Admin",
+                profileId: null,
+                createdBy: SeederActorId));
+        }
+
+        // Si el tenant ya existía, solo completamos identidad/membresía faltante.
+        if (!tenantJustCreated)
+        {
+            await db.SaveChangesAsync(ct);
+            return;
+        }
 
         var branch = Branch.Create(
             tenantId: tenant.Id,

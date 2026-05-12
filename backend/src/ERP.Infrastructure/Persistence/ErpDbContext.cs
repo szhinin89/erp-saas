@@ -123,6 +123,7 @@ public class ErpDbContext : DbContext
     public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
     public DbSet<Tariff> Tariffs => Set<Tariff>();
     public DbSet<User>         Users         => Set<User>();
+    public DbSet<FirstRunSetupState> FirstRunSetupStates => Set<FirstRunSetupState>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<IdentityUser> IdentityUsers => Set<IdentityUser>();
     public DbSet<Membership> Memberships => Set<Membership>();

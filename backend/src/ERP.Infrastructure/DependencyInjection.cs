@@ -47,6 +47,7 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddSingleton<InstanceQuotaFileStore>();
         services.AddSingleton<IDeploymentFeatureFlags, DeploymentFeatureFlags>();
+        services.AddScoped<IFirstRunSetupService, FirstRunSetupService>();
 
         services.AddDbContext<ErpDbContext>(options =>
             options.UseNpgsql(

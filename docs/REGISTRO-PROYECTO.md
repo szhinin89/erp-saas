@@ -9,15 +9,23 @@
 
 ## Referencia rápida — SuperAdmin y cuotas de instancia
 
-- **SuperAdmin único por servidor:** `POST /api/setup/superadmin` (token `Deployment:InitialSuperAdminSetupToken`), login `superadmin-login`, panel `/superadmin`.
+- **SuperAdmin único por servidor:** `POST /api/setup/superadmin` (token efímero **first-run** impreso en consola al arrancar la API; ver [`docs/SUPERADMIN-Y-FIRST-RUN.md`](SUPERADMIN-Y-FIRST-RUN.md)), alias `POST /api/setup/claim-initial-superadmin`; login `superadmin-login`; panel `/superadmin`. La configuración `Deployment:InitialSuperAdminSetupToken` **no** participa en la validación del claim actual.
 - **Cuotas:** `DedicatedSingleClientInstance`, `MaxActiveTenants`, `MaxIdentityUsers`, `MaxUsersPerTenant`; opcional `App_Data/instance-quota.json` (ignorado en git); API `GET/PUT /api/superadmin/instance-quota`.
-- **Código:** `SetupController`, `SuperAdminController` (instance-quota), `DeploymentFeatureFlags`, `SuperAdminInstanceQuotaPage.tsx`.
-- **Scripts:** `scripts/create-superadmin.ps1`, `scripts/create-superadmin-interactive.ps1`.
+- **Código:** `SetupController`, `SuperAdminController` (instance-quota), `DeploymentFeatureFlags`, `FirstRunSetupService`, `SuperAdminInstanceQuotaPage.tsx`.
+- **Scripts:** `scripts/create-superadmin.ps1`, `scripts/create-superadmin-interactive.ps1` (token = salida consola API / dev reset).
 - **Retomar en local:** PostgreSQL + migraciones → `backend/src/ERP.API` → `dotnet run` (puerto típico 5003) → `frontend` → `npm run dev`. Tras cambiar user-secrets o `Program.cs`, reiniciar la API.
 
 ---
 
 ## Entradas de trabajo
+
+### 11 de mayo de 2026 — Documentación SuperAdmin / first-run y scripts
+
+**Alcance:** Alinear documentación y scripts con el comportamiento real del claim de SuperAdmin (token en BD vía `FirstRunSetupService`, no `Deployment:InitialSuperAdminSetupToken`); distinguir `POST /api/auth/switch-tenant` (SuperAdmin) de `POST /api/access/switch-tenant` (bootstrap IAM).
+
+**Completado:** nuevo `docs/SUPERADMIN-Y-FIRST-RUN.md`; actualizados `REGISTRO-PROYECTO.md`, `DESARROLLO.md`, `ARCHITECTURE.md`; comentarios XML en `SetupController`, `AuthController` (`switch-tenant`), `IDeploymentFeatureFlags`; mensaje en `Program.cs`; `create-superadmin*.ps1` y `test-superadmin-flow.ps1`.
+
+---
 
 ### 11 de mayo de 2026 — Notas crédito/débito, retenciones, caja y contabilidad por empresa (commit `2bf300b`)
 

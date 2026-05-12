@@ -245,8 +245,18 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// Cambia el tenant activo para SuperAdmin emitiendo un nuevo JWT con tenant_id seleccionado.
+    /// Cambia el <c>tenant_id</c> del JWT para el SuperAdmin (mismo usuario global, distinto contexto de empresa).
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Requiere JWT de sesión SuperAdmin (p. ej. tras <c>POST /api/auth/superadmin-login</c>).
+    /// No es el mismo endpoint que <c>POST /api/access/switch-tenant</c> (ese flujo usa token <em>Bootstrap</em> tras <c>bootstrap-login</c>).
+    /// </para>
+    /// <para>
+    /// Body: <c>{ "tenantId": "&lt;guid empresa&gt;" }</c>. Use <c>00000000-0000-0000-0000-000000000000</c> para volver al panel global (claim vacío).
+    /// No existe hoy auditoría dedicada de impersonación ni claim <c>is_impersonating</c>; la duración del token sigue <c>Jwt:ExpirationMinutes</c>.
+    /// </para>
+    /// </remarks>
     [HttpPost("switch-tenant")]
     [Microsoft.AspNetCore.Authorization.Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]

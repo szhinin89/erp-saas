@@ -276,6 +276,8 @@ El token JWT se guarda en **`localStorage`** (p. ej. persistencia de Zustand con
 
 ## Instalación en servidor del cliente (candado SuperAdmin)
 
+**Alta del primer SuperAdmin, token first-run, `switch-tenant` de plataforma vs bootstrap IAM:** guía al día en [`docs/SUPERADMIN-Y-FIRST-RUN.md`](SUPERADMIN-Y-FIRST-RUN.md).
+
 Cuando el ERP corre **en el servidor del cliente** (p. ej. varias empresas / tenants en la misma instancia), suele quererse que el rol **SuperAdmin** (operador de plataforma: tenants, planes, matriz de seguridad, etc.) solo exista en la **fase de puesta en marcha**. En operación diaria cada empresa se administra con usuarios **Admin** y el resto de roles, sin panel global de SuperAdmin.
 
 Configuración en **`appsettings.json`** (o variables de entorno con el prefijo estándar de .NET):
@@ -293,7 +295,7 @@ Variables de entorno equivalentes: **`Deployment__SuperAdminPanelEnabled`**, **`
 
 El frontend consulta de forma anónima **`GET /api/public/deployment`** (DTO con `superAdminPanelEnabled`, `maxActiveTenants` y `maxIdentityUsers`) para alinear UI y rutas con el servidor.
 
-**Un mismo Admin en varias empresas (sin ser SuperAdmin):** el usuario global (`IdentityUser`) se relaciona con cada empresa mediante **membresías** (`Membership`). El login por **`bootstrap-login`** devuelve la lista de empresas a las que tiene acceso; **`switch-tenant`** emite el JWT de sesión para la empresa elegida. Flujo típico operado por SuperAdmin: crear la primera empresa con administrador nuevo; para las siguientes, en el formulario de empresas activar **«Mismo administrador en varias empresas»** (`linkExistingAdmin: true`) con el **mismo email**, o bien `POST /api/tenants` (solo SuperAdmin) y luego **`POST /api/access/memberships/grant`** con el `tenantId` nuevo y el email del admin.
+**Un mismo Admin en varias empresas (sin ser SuperAdmin):** el usuario global (`IdentityUser`) se relaciona con cada empresa mediante **membresías** (`Membership`). El login por **`POST /api/access/bootstrap-login`** devuelve la lista de empresas a las que tiene acceso; **`POST /api/access/switch-tenant`** (política *Bootstrap*) emite el JWT de sesión para la empresa elegida. El SuperAdmin en cambio usa **`POST /api/auth/switch-tenant`** tras `superadmin-login` (mismo usuario, distinto endpoint; ver guía first-run). Flujo típico operado por SuperAdmin: crear la primera empresa con administrador nuevo; para las siguientes, en el formulario de empresas activar **«Mismo administrador en varias empresas»** (`linkExistingAdmin: true`) con el **mismo email**, o bien `POST /api/tenants` (solo SuperAdmin) y luego **`POST /api/access/memberships/grant`** con el `tenantId` nuevo y el email del admin.
 
 **Límites comerciales por empresa (p. ej. clientes / RUC):** el SuperAdmin ajusta **plan** y **módulos** del tenant (`PATCH /api/tenants/{id}/subscription`) y, en el catálogo SaaS, la feature medida **`CUSTOMERS`** con `limit_per_period` en `saas_plan_features` / overrides. Crear cliente incrementa consumo vía pipeline de suscripción (`CreateCustomerCommand` con `[ConsumeSubscriptionUnits]`).
 

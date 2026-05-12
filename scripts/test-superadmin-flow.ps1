@@ -6,7 +6,8 @@
 
   Requisitos:
   - API corriendo en localhost:5003 (o pasar -ApiBase).
-  - Token de setup configurado en user-secrets de ERP.API para crear el primer SuperAdmin.
+  - Si aún no hay SuperAdmin: pasar -SetupToken con el token first-run (consola al arrancar la API)
+    o el campo setupToken de POST /api/dev/reset-first-run en Development.
   - Si el SuperAdmin ya existe, el paso setup se omite automáticamente.
 #>
 [CmdletBinding()]
@@ -71,20 +72,7 @@ if (-not $SkipSetup) {
     Write-Host "STEP 1/8 Setup inicial SuperAdmin (idempotente)" -ForegroundColor Cyan
 
     if ([string]::IsNullOrWhiteSpace($SetupToken)) {
-        try {
-            $secretsRaw = & dotnet user-secrets list --project "backend/src/ERP.API/ERP.API.csproj" 2>$null
-            $line = $secretsRaw | Where-Object { $_ -match '^Deployment:InitialSuperAdminSetupToken\s*=' } | Select-Object -First 1
-            if ($line) {
-                $SetupToken = ($line -split '=', 2)[1].Trim()
-            }
-        }
-        catch {
-            # Se intenta sin token; si falla setup, continuamos si login funciona.
-        }
-    }
-
-    if ([string]::IsNullOrWhiteSpace($SetupToken)) {
-        Write-Host "  WARN: No hay SetupToken disponible; se omite setup y se intentará login." -ForegroundColor Yellow
+        Write-Host "  WARN: Sin -SetupToken; se omite setup y se intentará login (crear SuperAdmin antes con token de consola o reset first-run)." -ForegroundColor Yellow
     }
     else {
         try {

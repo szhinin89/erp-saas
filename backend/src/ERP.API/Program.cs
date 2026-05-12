@@ -164,6 +164,30 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
     await DevDatabaseSeeder.SeedMinimumAsync(app.Services);
 
+// Bootstrap seguro de primera ejecución:
+// - Sin credenciales por defecto.
+// - Emite token efímero de un solo uso (15 minutos) solo en consola del servidor.
+using (var setupScope = app.Services.CreateScope())
+{
+    var firstRunSetup = setupScope.ServiceProvider.GetRequiredService<IFirstRunSetupService>();
+    var setupResult = await firstRunSetup.EnsureTokenIssuedAsync();
+    if (setupResult.IsFirstRun && setupResult.TokenGenerated && !string.IsNullOrWhiteSpace(setupResult.PlainToken))
+    {
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("==================================================");
+        Console.WriteLine("FIRST-RUN DETECTADO: crear SUPER ADMIN inicial");
+        Console.WriteLine("Ejecuta desde la máquina del servidor (mismo body en /api/setup/claim-initial-superadmin):");
+        Console.WriteLine(
+            "curl -X POST https://localhost:5001/api/setup/superadmin " +
+            "-H \"Content-Type: application/json\" " +
+            "-d '{\"setupToken\":\"" + setupResult.PlainToken + "\",\"firstName\":\"Super\",\"lastName\":\"Admin\",\"email\":\"superadmin@erp.com\",\"password\":\"CAMBIAR-ESTA-CLAVE\"}'");
+        Console.WriteLine("Documentación: docs/SUPERADMIN-Y-FIRST-RUN.md | scripts: create-superadmin.ps1 -SetupToken \"<este token>\"");
+        Console.WriteLine("Token expira en: " + setupResult.ExpiresAtUtc?.ToString("u"));
+        Console.WriteLine("==================================================");
+        Console.ResetColor();
+    }
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
