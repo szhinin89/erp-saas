@@ -13,6 +13,7 @@ using ERP.Application.Ventas.UseCases.GetVentaById;
 using ERP.Application.Ventas.UseCases.GetVentasList;
 using ERP.Application.Ventas.UseCases.ReintentarEnvio;
 using ERP.Application.Ventas.UseCases.ValidarVenta;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -20,6 +21,7 @@ namespace ERP.API.Controllers;
 /// Gestión del módulo de Ventas — Facturación Electrónica SRI Ecuador.
 /// Flujo: Borrador → Validado → Autorizado | Rechazado | ErrorEnvio.
 /// </summary>
+[Modulo("Ventas", "perm:ventas.facturas.view", "🧾", "/ventas", null, 50)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

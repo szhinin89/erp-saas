@@ -1,9 +1,12 @@
 <#!
   Crea el único SuperAdmin de la instancia vía POST /api/setup/superadmin.
-  Requiere Deployment:InitialSuperAdminSetupToken configurado (user-secrets o env).
+
+  El -SetupToken debe ser el token efímero de **first-run** que imprime la consola
+  del proceso ERP.API al arrancar (o el devuelto por POST /api/dev/reset-first-run en Development).
+  No coincide con Deployment:InitialSuperAdminSetupToken (esa clave no valida el claim en el código actual).
 
   Desde la carpeta erp-saas (Windows PowerShell 5.1 — sin pwsh):
-    .\scripts\create-superadmin.ps1 -SetupToken "mi-token-secreto"
+    .\scripts\create-superadmin.ps1 -SetupToken "<pegar-desde-consola-API>"
 
   Si PowerShell bloquea scripts:
     powershell -ExecutionPolicy Bypass -File .\scripts\create-superadmin.ps1 -SetupToken "..."
@@ -11,8 +14,8 @@
   Con PowerShell 7+ instalado (pwsh en PATH):
     pwsh .\scripts\create-superadmin.ps1 -SetupToken "..."
 
-  Token por variable de entorno:
-    $env:Deployment__InitialSuperAdminSetupToken = "mi-token"; .\scripts\create-superadmin.ps1
+  Opcional: puede pasar el mismo token por variable de entorno (solo comodidad local):
+    $env:ERP_SUPERADMIN_SETUP_TOKEN = "..."; .\scripts\create-superadmin.ps1
 
   Asistente interactivo (solo preguntas en consola):
     .\scripts\create-superadmin-interactive.ps1
@@ -20,7 +23,7 @@
 [CmdletBinding()]
 param(
   [string] $ApiBase = "http://localhost:5003",
-  [string] $SetupToken = $env:Deployment__InitialSuperAdminSetupToken,
+  [string] $SetupToken = "",
   [string] $FirstName = "Super",
   [string] $LastName = "Admin",
   [string] $Email = "superadmin@test.local",
@@ -29,6 +32,13 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+if ([string]::IsNullOrWhiteSpace($SetupToken)) {
+  $SetupToken = $env:ERP_SUPERADMIN_SETUP_TOKEN
+}
+if ([string]::IsNullOrWhiteSpace($SetupToken)) {
+  $SetupToken = $env:Deployment__InitialSuperAdminSetupToken
+}
 
 function Read-HttpErrorBody {
   param([System.Management.Automation.ErrorRecord] $Err)
@@ -52,20 +62,18 @@ function Read-HttpErrorBody {
 
 if ([string]::IsNullOrWhiteSpace($SetupToken)) {
   Write-Error @"
-No hay token de instalación.
+No hay token de first-run.
 
-  Opción A — variable de entorno (sesión actual):
-    `$env:Deployment__InitialSuperAdminSetupToken = 'tu-token'
-    pwsh ./scripts/create-superadmin.ps1
+  1) Arranque ERP.API y copie el token del bloque verde FIRST-RUN en la consola del servidor.
+  2) O en Development: POST /api/dev/reset-first-run y copie setupToken del JSON.
 
-  Opción B — parámetro:
-    pwsh ./scripts/create-superadmin.ps1 -SetupToken 'tu-token'
+  Luego:
+    pwsh ./scripts/create-superadmin.ps1 -SetupToken 'PEGUE-AQUI'
 
-  Opción C — user-secrets (desde ERP.API):
-    cd backend/src/ERP.API
-    dotnet user-secrets set Deployment:InitialSuperAdminSetupToken "tu-token"
+  Opcional (sesión actual):
+    `$env:ERP_SUPERADMIN_SETUP_TOKEN = '...'; pwsh ./scripts/create-superadmin.ps1
 
-Luego vuelve a ejecutar este script. El mismo valor debe enviarse en -SetupToken (no el hash; el API compara de forma segura).
+  Documentación: docs/SUPERADMIN-Y-FIRST-RUN.md
 "@
 }
 

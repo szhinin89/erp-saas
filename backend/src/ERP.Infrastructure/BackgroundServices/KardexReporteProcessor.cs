@@ -3,12 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventario.UseCases.GetKardex;
-using ERP.Domain.Bodegas.Interfaces;
-using ERP.Domain.Inventario.Interfaces;
-using ERP.Domain.Products.Interfaces;
 using ERP.Infrastructure.Persistence;
-using ERP.Infrastructure.Services;
 
 namespace ERP.Infrastructure.BackgroundServices;
 
@@ -77,16 +74,11 @@ public sealed class KardexReporteProcessor : BackgroundService
 
         try
         {
-            // Instanciar el handler directamente con ManualCurrentTenant (sin MediatR + JWT)
-            var tenant   = new ManualCurrentTenant(reporte.TenantId);
-            var movRepo  = scope.ServiceProvider.GetRequiredService<IInventarioStockRepository>();
-            var snapRepo = scope.ServiceProvider.GetRequiredService<IKardexSnapshotRepository>();
-            var prodRepo = scope.ServiceProvider.GetRequiredService<IProductRepository>();
-            var bodRepo  = scope.ServiceProvider.GetRequiredService<IBodegaRepository>();
-
-            var handler = new GetKardexQueryHandler(movRepo, snapRepo, prodRepo, bodRepo, tenant);
-            var result  = await handler.Handle(
-                new GetKardexQuery(reporte.ProductoId, reporte.BodegaId, reporte.FechaInicio, reporte.FechaFin), ct);
+            var kardex = scope.ServiceProvider.GetRequiredService<IKardexService>();
+            var result = await kardex.GenerarKardexEscalableAsync(
+                reporte.TenantId,
+                new GetKardexQuery(reporte.ProductoId, reporte.BodegaId, reporte.FechaInicio, reporte.FechaFin),
+                ct);
 
             if (result.IsSuccess)
                 reporte.MarcarCompletado(JsonSerializer.Serialize(result.Value, JsonOpts));

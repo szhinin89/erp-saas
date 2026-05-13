@@ -83,6 +83,81 @@ public sealed class SriFacturaParser : IXmlFacturaParser
             Items:                items));
     }
 
+    public Task<NotaProveedorParseResult> ParseNotaProveedorAsync(Stream xmlStream, CancellationToken ct = default)
+    {
+        XDocument doc;
+        try
+        {
+            doc = XDocument.Load(xmlStream, LoadOptions.None);
+        }
+        catch (Exception ex)
+        {
+            throw new XmlParseException("El archivo no es un XML válido.", ex);
+        }
+
+        var root = ResolveRoot(doc);
+        var rootName = root.Name.LocalName;
+        string tipoNota;
+        if (string.Equals(rootName, "notaCredito", StringComparison.OrdinalIgnoreCase))
+            tipoNota = "CREDITO";
+        else if (string.Equals(rootName, "notaDebito", StringComparison.OrdinalIgnoreCase))
+            tipoNota = "DEBITO";
+        else
+            throw new XmlParseException(
+                $"Se esperaba <notaCredito> o <notaDebito> como comprobante; raíz: <{rootName}>.");
+
+        var infoNotaName = tipoNota == "CREDITO" ? "infoNotaCredito" : "infoNotaDebito";
+        var infoTrib   = RequireElement(root, "infoTributaria");
+        var infoNota   = RequireElement(root, infoNotaName);
+        var detallesEl = RequireElement(root, "detalles");
+
+        var claveAcceso = RequireText(infoTrib, "claveAcceso");
+        var ruc         = RequireText(infoTrib, "ruc");
+        var razonSocial = RequireText(infoTrib, "razonSocial");
+        var estab       = RequireText(infoTrib, "estab");
+        var ptoEmi      = RequireText(infoTrib, "ptoEmi");
+        var secuencial  = RequireText(infoTrib, "secuencial");
+        var numeroNota  = $"{estab}-{ptoEmi}-{secuencial}";
+        ValidarClaveAcceso(claveAcceso);
+
+        var fechaTexto   = RequireText(infoNota, "fechaEmision");
+        var fechaEmision = ParseFecha(fechaTexto);
+        var motivo       = infoNota.Element("motivo")?.Value.Trim() ?? string.Empty;
+
+        var subtotal = ParseDecimal(infoNota, "totalSinImpuestos");
+        var impuesto = infoNota
+            .Element("totalConImpuestos")
+            ?.Elements("totalImpuesto")
+            .Sum(t => ParseDecimalText(t.Element("valor")?.Value ?? "0")) ?? 0m;
+
+        var total =
+            TryParseDecimal(root.Element("importeTotal"))
+            ?? TryParseDecimal(infoNota.Element("importeTotal"))
+            ?? TryParseDecimal(infoNota.Element("valorModificacion"))
+            ?? throw new XmlParseException(
+                "No se encontró importeTotal ni valorModificacion en la nota.");
+
+        var items = detallesEl.Elements("detalle").Select(ParseDetalleNota).ToList();
+        if (items.Count == 0)
+            throw new XmlParseException("El comprobante no contiene ningún detalle (<detalle>).");
+
+        return Task.FromResult(new NotaProveedorParseResult(
+            TipoNota:             tipoNota,
+            Motivo:               motivo,
+            ClaveAcceso:          claveAcceso,
+            Establecimiento:      estab,
+            PuntoEmision:         ptoEmi,
+            Secuencial:           secuencial,
+            NumeroNota:           numeroNota,
+            FechaEmision:         fechaEmision,
+            RucProveedor:         ruc,
+            RazonSocialProveedor: razonSocial,
+            Subtotal:             subtotal,
+            Impuesto:             impuesto,
+            Total:                total,
+            Items:                items));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -201,5 +276,32 @@ public sealed class SriFacturaParser : IXmlFacturaParser
         var subtotal       = ParseDecimalText(RequireText(det, "precioTotalSinImpuesto"));
 
         return new ItemFactura(codigo, desc, cantidad, precioUnitario, descuento, subtotal);
+    }
+
+    private static decimal? TryParseDecimal(XElement? el)
+    {
+        if (el is null) return null;
+        var v = el.Value.Trim();
+        if (string.IsNullOrEmpty(v)) return null;
+        return ParseDecimalText(v);
+    }
+
+    private static ItemNotaProveedor ParseDetalleNota(XElement det)
+    {
+        var codigo = det.Element("codigoPrincipal")?.Value.Trim() ?? string.Empty;
+        var desc   = RequireText(det, "descripcion");
+
+        var cantidad       = ParseDecimalText(RequireText(det, "cantidad"));
+        var precioUnitario = ParseDecimalText(RequireText(det, "precioUnitario"));
+        var descuento      = ParseDecimalText(det.Element("descuento")?.Value.Trim() ?? "0");
+        var subtotal       = ParseDecimalText(RequireText(det, "precioTotalSinImpuesto"));
+
+        var impuesto = det.Element("impuestos")
+            ?.Elements("impuesto")
+            .Sum(i => ParseDecimalText(i.Element("valor")?.Value ?? "0")) ?? 0m;
+
+        var total = subtotal + impuesto;
+        return new ItemNotaProveedor(
+            codigo, desc, cantidad, precioUnitario, descuento, subtotal, impuesto, total);
     }
 }

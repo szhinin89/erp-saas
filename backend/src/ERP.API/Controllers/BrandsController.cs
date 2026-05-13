@@ -6,12 +6,14 @@ using ERP.API.Extensions;
 using ERP.Application.Products.Catalogs.DTOs;
 using ERP.Application.Products.Catalogs.UseCases.CreateBrand;
 using ERP.Application.Products.Catalogs.UseCases.GetBrands;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
 /// <summary>
 /// Catálogo maestro: Marcas (Brands) del tenant autenticado.
 /// </summary>
+[Modulo("Marcas", "perm:inventario.brands.view", "✨", "/catalog/brands", null, 37)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

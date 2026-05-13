@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
-using ERP.Domain.Accounting.Entities;
-using ERP.Domain.Accounting.Interfaces;
-using ERP.Domain.Accounting.ValueObjects;
+using ERP.Domain.Common;
+using ERP.Domain.Modules.Contabilidad.Entities;
+using ERP.Domain.Modules.Contabilidad.Interfaces;
+using ERP.Domain.Modules.Contabilidad.ValueObjects;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
@@ -103,4 +104,56 @@ public class AccountingRepository : IAccountingRepository
 
     public async Task SaveChangesAsync(CancellationToken ct = default)
         => await _context.SaveChangesAsync(ct);
+
+    public async Task<IReadOnlyList<JournalEntry>> GetPostedJournalEntriesWithAccountAsync(
+        Guid tenantId,
+        Guid accountId,
+        DateTime desde,
+        DateTime hasta,
+        CancellationToken ct = default)
+        => await _context.JournalEntries
+            .AsNoTracking()
+            .Include(e => e.Lines)
+            .Where(e =>
+                e.TenantId == tenantId
+                && e.Status == DocumentStatus.Posted
+                && e.Date >= desde
+                && e.Date <= hasta
+                && e.Lines.Any(l => l.AccountId == accountId))
+            .OrderBy(e => e.Date)
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<(DateTime EntryDate, Guid AccountId, decimal Debit, decimal Credit)>>
+        GetPostedLineAmountsByAccountsAsync(
+            Guid tenantId,
+            IReadOnlyList<Guid> accountIds,
+            DateTime desde,
+            DateTime hasta,
+            CancellationToken ct = default)
+    {
+        if (accountIds.Count == 0)
+            return Array.Empty<(DateTime, Guid, decimal, decimal)>();
+
+        var ids = accountIds.Distinct().ToList();
+
+        var q =
+            from line in _context.JournalEntryLines.AsNoTracking()
+            join e in _context.JournalEntries.AsNoTracking() on line.JournalEntryId equals e.Id
+            where e.TenantId == tenantId
+                  && line.TenantId == tenantId
+                  && e.Status == DocumentStatus.Posted
+                  && e.Date >= desde
+                  && e.Date <= hasta
+                  && ids.Contains(line.AccountId)
+            select new
+            {
+                e.Date,
+                line.AccountId,
+                Debit  = line.Debit.Amount,
+                Credit = line.Credit.Amount,
+            };
+
+        var rows = await q.ToListAsync(ct);
+        return rows.Select(r => (r.Date, r.AccountId, r.Debit, r.Credit)).ToList();
+    }
 }

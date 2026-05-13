@@ -1,5 +1,5 @@
 using FluentAssertions;
-using ERP.Domain.Customers.Entities;
+using ERP.Domain.Modules.Ventas.Entities;
 
 namespace ERP.Domain.Tests.Customers;
 

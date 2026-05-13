@@ -1,7 +1,7 @@
 using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Compras.DTOs;
-using ERP.Domain.Compras.Enums;
+using ERP.Domain.Modules.Compras.Enums;
 
 namespace ERP.Application.Modules.Compras.UseCases.GetCompras;
 

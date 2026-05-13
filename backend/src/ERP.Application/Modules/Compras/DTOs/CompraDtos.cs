@@ -1,4 +1,4 @@
-using ERP.Domain.Compras.Enums;
+using ERP.Domain.Modules.Compras.Enums;
 
 namespace ERP.Application.Modules.Compras.DTOs;
 
@@ -56,3 +56,23 @@ public record CompraFacturaDetailDto(
     Guid?         AsientoContableId,
     DateTime      CreatedAt,
     IReadOnlyList<CompraDetalleDto> Detalles);
+
+public record CompraNotaProveedorDto(
+    Guid      Id,
+    Guid      ProveedorId,
+    Guid?     CompraFacturaId,
+    Guid?     GastoFacturaId,
+    string    TipoNota,
+    string    Motivo,
+    string    ClaveAcceso,
+    DateTime  FechaEmision,
+    string    Establecimiento,
+    string    PuntoEmision,
+    string    Secuencial,
+    decimal   Subtotal,
+    decimal   Impuesto,
+    decimal   Total,
+    string    Estado,
+    string?   XmlPath,
+    Guid?     AsientoContableId,
+    DateTime  CreatedAt);

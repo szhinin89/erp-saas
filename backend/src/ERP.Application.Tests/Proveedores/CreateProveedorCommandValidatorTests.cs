@@ -1,9 +1,9 @@
 using FluentAssertions;
-using ERP.Application.Modules.Proveedores.UseCases.CreateProveedor;
+using ERP.Application.Modules.Compras.UseCases.CrearProveedor;
 using ERP.Application.Common;
 using ERP.Domain.Common.Validators;
-using ERP.Domain.Proveedores.Entities;
-using ERP.Domain.Proveedores.Interfaces;
+using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Compras.Interfaces;
 using Moq;
 
 namespace ERP.Application.Tests.Proveedores;

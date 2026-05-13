@@ -3,13 +3,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Modules.Proveedores.DTOs;
-using ERP.Application.Modules.Proveedores.UseCases.CreateProveedor;
-using ERP.Application.Modules.Proveedores.UseCases.DisableProveedor;
-using ERP.Application.Modules.Proveedores.UseCases.EnableProveedor;
-using ERP.Application.Modules.Proveedores.UseCases.GetProveedorById;
-using ERP.Application.Modules.Proveedores.UseCases.GetProveedores;
-using ERP.Application.Modules.Proveedores.UseCases.UpdateProveedor;
+using ERP.Application.Modules.Compras.DTOs;
+using ERP.Application.Modules.Compras.UseCases.CrearProveedor;
+using ERP.Application.Modules.Compras.UseCases.DeshabilitarProveedor;
+using ERP.Application.Modules.Compras.UseCases.HabilitarProveedor;
+using ERP.Application.Modules.Compras.UseCases.ObtenerProveedor;
+using ERP.Application.Modules.Compras.UseCases.ListarProveedores;
+using ERP.Application.Modules.Compras.UseCases.ActualizarProveedor;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -17,6 +18,7 @@ namespace ERP.API.Controllers;
 /// Gestión del catálogo de proveedores del tenant autenticado.
 /// Incluye validación de RUC ecuatoriano (algoritmo SRI módulo 10/11).
 /// </summary>
+[Modulo("Proveedores", "perm:compras.proveedores.view", "🏭", "/compras/proveedores", null, 46)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

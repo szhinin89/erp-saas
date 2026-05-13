@@ -5,11 +5,9 @@ using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Compras.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Compras.Enums;
-using ERP.Domain.Compras.Interfaces;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Enums;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Compras.Enums;
+using ERP.Domain.Modules.Compras.Events;
+using ERP.Domain.Modules.Compras.Interfaces;
 
 namespace ERP.Application.Modules.Compras.UseCases.AprobarCompra;
 
@@ -18,7 +16,6 @@ public sealed class AprobarCompraCommandHandler
 {
     private readonly ICompraRepository          _repo;
     private readonly IAccountingService         _accounting;
-    private readonly IInventarioStockRepository _inventario;
     private readonly IUserActivityRepository    _activity;
     private readonly ICurrentTenant             _tenant;
     private readonly ICurrentUser               _user;
@@ -28,21 +25,19 @@ public sealed class AprobarCompraCommandHandler
     public AprobarCompraCommandHandler(
         ICompraRepository repo,
         IAccountingService accounting,
-        IInventarioStockRepository inventario,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
         ILogger<AprobarCompraCommandHandler> logger)
     {
-        _repo        = repo;
-        _accounting  = accounting;
-        _inventario  = inventario;
-        _activity    = activity;
-        _tenant      = tenant;
-        _user        = user;
-        _unitOfWork  = unitOfWork;
-        _logger      = logger;
+        _repo       = repo;
+        _accounting = accounting;
+        _activity   = activity;
+        _tenant     = tenant;
+        _user       = user;
+        _unitOfWork = unitOfWork;
+        _logger     = logger;
     }
 
     public async Task<Result<CompraFacturaDto>> Handle(
@@ -62,6 +57,38 @@ public sealed class AprobarCompraCommandHandler
 
         var asignaciones =
             await _repo.GetBodegaAsignacionesByCompraFacturaIdAsync(tenantId, command.CompraFacturaId, ct);
+
+        var stockLines = new List<CompraAprobadaStockLine>();
+        foreach (var asig in asignaciones)
+        {
+            var detalle = compra.Detalles.FirstOrDefault(d => d.Id == asig.CompraDetalleId);
+            if (detalle is null)
+            {
+                _logger.LogWarning(
+                    "Compra {CompraId}: asignación huérfana (detalle {DetalleId} no encontrado en la factura).",
+                    compra.Id, asig.CompraDetalleId);
+                continue;
+            }
+
+            if (!asig.ProductoId.HasValue)
+            {
+                _logger.LogWarning(
+                    "Compra {CompraId}: línea sin producto enlazado; no se actualiza inventario físico (detalle {DetalleId}, bodega {BodegaId}, cantidad {Cantidad}).",
+                    compra.Id, asig.CompraDetalleId, asig.BodegaId, asig.Cantidad);
+                continue;
+            }
+
+            var costoUnitario = detalle.Cantidad > 0
+                ? detalle.PrecioUnitario * (1 - detalle.DescuentoPorcentaje / 100m)
+                : 0m;
+
+            stockLines.Add(new CompraAprobadaStockLine(
+                asig.CompraDetalleId,
+                asig.ProductoId,
+                asig.BodegaId,
+                asig.Cantidad,
+                costoUnitario));
+        }
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
@@ -85,60 +112,7 @@ public sealed class AprobarCompraCommandHandler
 
             var asientoId = asientoResult.Value;
 
-            foreach (var asig in asignaciones)
-            {
-                var detalle = compra.Detalles.FirstOrDefault(d => d.Id == asig.CompraDetalleId);
-                if (detalle is null)
-                {
-                    _logger.LogWarning(
-                        "Compra {CompraId}: asignación huérfana (detalle {DetalleId} no encontrado en la factura).",
-                        compra.Id, asig.CompraDetalleId);
-                    continue;
-                }
-
-                if (!asig.ProductoId.HasValue)
-                {
-                    _logger.LogWarning(
-                        "Compra {CompraId}: línea sin producto enlazado; no se actualiza inventario físico (detalle {DetalleId}, bodega {BodegaId}, cantidad {Cantidad}).",
-                        compra.Id, asig.CompraDetalleId, asig.BodegaId, asig.Cantidad);
-                    continue;
-                }
-
-                var productoId = asig.ProductoId.Value;
-
-                var stock = await _inventario.GetStockByTenantBodegaProductAsync(
-                    tenantId, asig.BodegaId, productoId, ct);
-                if (stock is null)
-                {
-                    stock = StockActual.Create(tenantId, productoId, asig.BodegaId, userId);
-                    await _inventario.AddStockActualAsync(stock, ct);
-                }
-
-                // Costo unitario neto del ítem de la factura (precio menos descuento).
-                var costoUnitario = detalle is not null && detalle.Cantidad > 0
-                    ? detalle.PrecioUnitario * (1 - detalle.DescuentoPorcentaje / 100m)
-                    : (decimal?)null;
-
-                var cantidadAnterior = stock.Cantidad;
-                stock.AplicarMovimiento(asig.Cantidad, userId, costoUnitario ?? 0m);
-
-                var movimiento = InventarioMovimiento.Create(
-                    tenantId,
-                    productoId,
-                    asig.BodegaId,
-                    TipoMovimientoInventario.EntradaCompra,
-                    cantidad:           asig.Cantidad,
-                    cantidadAnterior:   cantidadAnterior,
-                    referencia:         compra.NumeroFactura,
-                    documentoOrigenId:  compra.Id,
-                    documentoOrigenTipo: "CompraFactura",
-                    createdBy:          userId,
-                    costoUnitario:      costoUnitario);
-
-                await _inventario.AddMovimientoAsync(movimiento, ct);
-            }
-
-            compra.Aprobar(userId, asientoId);
+            compra.Aprobar(userId, asientoId, stockLines);
 
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _user.Email, _user.FullName,
@@ -163,7 +137,7 @@ public sealed class AprobarCompraCommandHandler
         }
     }
 
-    private static CompraFacturaDto ToDto(Domain.Compras.Entities.CompraFactura c) => new(
+    private static CompraFacturaDto ToDto(ERP.Domain.Modules.Compras.Entities.CompraFactura c) => new(
         c.Id, c.ProveedorId, c.NumeroFactura, c.ClaveAcceso, c.XmlPath,
         c.FechaFactura, c.FechaVencimiento, c.Estado, c.CondicionPago,
         c.Subtotal, c.IvaTotal, c.Total, c.Observaciones, c.AsientoContableId, c.CreatedAt);

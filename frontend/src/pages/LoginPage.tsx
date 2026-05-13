@@ -167,7 +167,7 @@ export function LoginPage() {
           </ZHFormSection>
 
           <ZHFormActions
-            onCancel={() => navigate('/password-reset')}
+            onCancel={() => navigate('/forgot-password')}
             onDraft={undefined}
             onSave={undefined}
             hideDraft

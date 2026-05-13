@@ -21,7 +21,7 @@ internal sealed class ErpDbContextFactory : IDesignTimeDbContextFactory<ErpDbCon
             .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
             .Options;
 
-        return new ErpDbContext(options, new DesignTimeTenant());
+        return new ErpDbContext(options, new DesignTimeTenant(), new NoOpPublisher());
     }
 
     /// <summary>Tenant vacío para satisfacer ICurrentTenant en diseño.</summary>

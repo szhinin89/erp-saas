@@ -1,6 +1,8 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Navigation;
+using ERP.Application.Subscriptions;
 using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
@@ -21,6 +23,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
     private readonly ICurrentUser _currentUser;
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ISaasCatalogQuery _saasCatalogQuery;
 
     public SuperAdminCreateTenantWithAdminHandler(
         ITenantRepository tenantRepository,
@@ -29,7 +32,8 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         IUserActivityRepository activity,
         ICurrentUser currentUser,
         IDeploymentFeatureFlags deployment,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        ISaasCatalogQuery saasCatalogQuery)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
@@ -38,6 +42,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         _currentUser = currentUser;
         _deployment = deployment;
         _passwordHasher = passwordHasher;
+        _saasCatalogQuery = saasCatalogQuery;
     }
 
     public Task<Result<SessionResponseDto>> HandleAsync(SuperAdminCreateTenantWithAdminCommand command, CancellationToken ct = default)
@@ -74,6 +79,12 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         if (userQuota is not null)
             return Result<SessionResponseDto>.Failure(userQuota);
 
+        var planErr = await ValidatePlanAndModulesAsync(command.PlanCode, command.EnabledModules, ct);
+        if (planErr is not null)
+            return Result<SessionResponseDto>.Failure(planErr);
+
+        var (planCode, moduleKeys) = NormalizeSubscription(command.PlanCode, command.EnabledModules);
+
         var tenant = Tenant.Create(
             command.TenantName,
             slug,
@@ -85,7 +96,9 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
             dinardap: command.Dinardap,
             logoUrl: command.LogoUrl,
             displayOrder: command.DisplayOrder,
-            priority: command.Priority);
+            priority: command.Priority,
+            planCode: planCode,
+            enabledModuleKeys: moduleKeys);
         await _tenantRepository.AddAsync(tenant, ct);
 
         var hash = _passwordHasher.HashPassword(command.AdminPassword);
@@ -137,6 +150,12 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
             return Result<SessionResponseDto>.Failure(
                 "No existe un usuario con ese email. Cree la primera empresa con administrador nuevo o use otro correo.");
 
+        var planErr = await ValidatePlanAndModulesAsync(command.PlanCode, command.EnabledModules, ct);
+        if (planErr is not null)
+            return Result<SessionResponseDto>.Failure(planErr);
+
+        var (planCode, moduleKeys) = NormalizeSubscription(command.PlanCode, command.EnabledModules);
+
         var tenant = Tenant.Create(
             command.TenantName,
             slug,
@@ -148,7 +167,9 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
             dinardap: command.Dinardap,
             logoUrl: command.LogoUrl,
             displayOrder: command.DisplayOrder,
-            priority: command.Priority);
+            priority: command.Priority,
+            planCode: planCode,
+            enabledModuleKeys: moduleKeys);
         await _tenantRepository.AddAsync(tenant, ct);
 
         var existingMembership = await _accessRepository.GetMembershipAsync(tenant.Id, existingUser.Id, ct);
@@ -191,19 +212,70 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
             tenant.PlanCode,
             TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)));
     }
+
+    /// <summary>Devuelve mensaje de error o null si OK. Exige al menos un plan en catálogo y un plan activo elegido.</summary>
+    private async Task<string?> ValidatePlanAndModulesAsync(string? planCode, List<string>? enabledModules, CancellationToken ct)
+    {
+        var plans = await _saasCatalogQuery.GetPlansWithFeaturesAsync(ct);
+        if (plans.Count == 0)
+            return "No hay planes comerciales definidos. Cree al menos un plan antes de crear una empresa.";
+
+        var pc = string.IsNullOrWhiteSpace(planCode) ? null : planCode.Trim();
+        if (pc is null)
+            return "Debe elegir un plan comercial.";
+
+        var match = plans.FirstOrDefault(p =>
+            string.Equals(p.Code, pc, StringComparison.OrdinalIgnoreCase));
+        if (match is null)
+            return $"El plan comercial '{pc}' no existe en el catálogo SaaS.";
+        if (!match.IsActive)
+            return $"El plan comercial '{pc}' está inactivo.";
+
+        if (enabledModules is null || enabledModules.Count == 0)
+            return null;
+
+        try
+        {
+            TenantSubscriptionCatalog.ValidateModuleKeysOrThrow(enabledModules);
+        }
+        catch (ArgumentException ex)
+        {
+            return ex.Message;
+        }
+
+        return null;
+    }
+
+    /// <summary>Plan normalizado; módulos null si la lista viene vacía (sin restricción JSON).</summary>
+    private static (string? PlanCode, IReadOnlyList<string>? ModuleKeys) NormalizeSubscription(string? planCode, List<string>? enabledModules)
+    {
+        var pc = string.IsNullOrWhiteSpace(planCode) ? null : planCode.Trim();
+        if (enabledModules is null || enabledModules.Count == 0)
+            return (pc, null);
+
+        var cleaned = enabledModules
+            .Select(x => (x ?? string.Empty).Trim().ToLowerInvariant())
+            .Where(x => x.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        return cleaned.Count == 0 ? (pc, null) : (pc, cleaned);
+    }
 }
 
 public class GetSuperAdminTenantsHandler : IRequestHandler<GetSuperAdminTenantsQuery, Result<IReadOnlyList<SuperAdminTenantItemDto>>>
 {
     private readonly ITenantRepository _tenantRepository;
+    private readonly ITenantMenuAdminService _tenantMenuAdmin;
 
-    public GetSuperAdminTenantsHandler(ITenantRepository tenantRepository)
+    public GetSuperAdminTenantsHandler(ITenantRepository tenantRepository, ITenantMenuAdminService tenantMenuAdmin)
     {
         _tenantRepository = tenantRepository;
+        _tenantMenuAdmin = tenantMenuAdmin;
     }
 
     public async Task<Result<IReadOnlyList<SuperAdminTenantItemDto>>> Handle(GetSuperAdminTenantsQuery request, CancellationToken ct)
     {
+        var withCustom = await _tenantMenuAdmin.GetTenantIdsWithCustomMenuAsync(ct);
         var tenants = (await _tenantRepository.GetAllAsync(ct))
             .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
             .Select(t => new SuperAdminTenantItemDto(
@@ -213,7 +285,8 @@ public class GetSuperAdminTenantsHandler : IRequestHandler<GetSuperAdminTenantsQ
                 t.IsActive,
                 t.PlanCode,
                 TenantSubscriptionCatalog.GetEffectiveEnabledModules(t),
-                !string.IsNullOrWhiteSpace(t.EnabledModulesJson)))
+                !string.IsNullOrWhiteSpace(t.EnabledModulesJson),
+                withCustom.Contains(t.Id)))
             .ToList();
 
         return Result<IReadOnlyList<SuperAdminTenantItemDto>>.Success(tenants);

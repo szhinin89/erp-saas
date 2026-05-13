@@ -5,10 +5,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
 using ERP.Application.Inventario.UseCases.GetKardex;
-using ERP.Domain.Bodegas.Entities;
+using ERP.Domain.Modules.Inventario.Entities;
 using ERP.Domain.Common;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Enums;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Enums;
 using ERP.Domain.Products.Entities;
 using ERP.Infrastructure.Persistence;
 

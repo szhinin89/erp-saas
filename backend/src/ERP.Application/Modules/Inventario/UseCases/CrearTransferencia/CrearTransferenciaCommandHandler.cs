@@ -4,9 +4,9 @@ using ERP.Application.Common;
 using ERP.Application.Inventario.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Bodegas.Interfaces;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Interfaces;
 using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Inventario.UseCases.CrearTransferencia;

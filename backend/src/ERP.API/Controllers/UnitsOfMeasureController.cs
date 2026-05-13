@@ -6,12 +6,14 @@ using ERP.API.Extensions;
 using ERP.Application.Products.Catalogs.DTOs;
 using ERP.Application.Products.Catalogs.UseCases.CreateUnitOfMeasure;
 using ERP.Application.Products.Catalogs.UseCases.GetUnitsOfMeasure;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
 /// <summary>
 /// Catálogo maestro: Unidades de medida (UoM) del tenant autenticado.
 /// </summary>
+[Modulo("Unidades de medida", "perm:inventario.units.view", "📏", "/catalog/units", null, 37)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

@@ -8,12 +8,14 @@ using ERP.Application.Products.Catalogs.UseCases.DisableProductSubcategory;
 using ERP.Application.Products.Catalogs.UseCases.EnableProductSubcategory;
 using ERP.Application.Products.Catalogs.UseCases.GetProductSubcategories;
 using ERP.Application.Products.Catalogs.UseCases.UpdateProductSubcategory;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
 /// <summary>
 /// Catálogo maestro: Subcategorías (dependen de una categoría).
 /// </summary>
+[Modulo("Subcategorías", "perm:inventario.subcategories.view", "📂", "/catalog/subcategories", null, 39)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

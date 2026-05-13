@@ -3,8 +3,26 @@
 > **Índice maestro para agentes y desarrolladores.** Revisión del índice: **2026-05-09**.  
 > Lee este archivo primero; luego abre solo los enlaces que correspondan a tu tarea.
 >
-> **Estado actual del proyecto → [`docs/ESTADO-PROYECTO-2026-05.md`](docs/ESTADO-PROYECTO-2026-05.md)**
+> **Estado actual del proyecto → [`docs/ESTADO-PROYECTO.md`](docs/ESTADO-PROYECTO.md)**  
 > (qué está hecho, qué falta, cómo retomar, comandos frecuentes)
+
+## Mapa de documentación (una fuente por tema)
+
+| Tema | Documento que manda | Qué cubre |
+|------|----------------------|-----------|
+| Índice y enlaces | **`CONTEXT.md`** (este archivo) | Dónde buscar según la tarea |
+| Estado, backlog, retomar | **`docs/ESTADO-PROYECTO.md`** | Hecho / pendiente / comandos, **backlog de refactor** y **plan de sprints** modular |
+| Diario de sesiones y decisiones | **`docs/REGISTRO-PROYECTO.md`** | Entradas por fecha; notas de continuación |
+| Arranque, Docker, EF, curl, CI, checklist API (histórico) | **`docs/DESARROLLO.md`** | Operación local, troubleshooting y homologación de contratos HTTP |
+| Capas, multi-tenant, módulos | **`docs/ARCHITECTURE.md`** | Arquitectura de producto |
+| Decisiones estables | **`docs/adr/README.md`** | ADR |
+| Rutas UI | **`docs/FRONTEND-PANTALLAS.md`** | Inventario de pantallas |
+| SaaS planes y menú | **`docs/SAAS-PLAN-TENANT-FLOW.md`**, **`docs/COMPANIES-PLAN-MENU-ADMIN.md`** | Flujo comercial y admin de menú |
+| Histórico de correcciones arquitectónicas | **`docs/HISTORIAL-ARQUITECTURA-RIESGOS.md`** | Informes antes en la raíz (riesgos) |
+| Reglas del agente (Cursor) | **`.cursor/rules/erp-unified-rules.mdc`** y mapa **`.cursor/rules/rules-consolidated-map.mdc`** | Implementación obligatoria |
+| Guía larga Copilot / resumen técnico | **`.github/INSTRUCCIONES-COPILOT.md`** | Detalle en español (evitar duplicar en otros `.md` de raíz) |
+
+**Redirecciones:** `docs/STATUS-2026-05-ERP.md` y `docs/CONTINUAR-sesion.md` solo enlazan al documento canónico correspondiente (no duplicar contenido).
 
 ## Árbol real del monorepo `erp-saas`
 
@@ -18,11 +36,11 @@ erp-saas/
 │   ├── adr/                               ← decisiones de arquitectura (ADR); índice en README.md
 │   ├── DESARROLLO.md                      ← arranque local, Docker, migraciones, curl, troubleshooting
 │   ├── ARCHITECTURE.md                    ← capas, multi-tenant, carpetas por módulo, migraciones
+│   ├── ESTADO-PROYECTO.md                 ← ★ estado y backlog (actualizar aquí)
+│   ├── REGISTRO-PROYECTO.md               ← log de trabajo por fecha
+│   ├── HISTORIAL-ARQUITECTURA-RIESGOS.md  ← histórico riesgos/correcciones (solo lectura)
 │   ├── developer-reference.html           ← referencia larga (abrir en navegador)
-│   ├── FRONTEND-PANTALLAS.md              ← inventario de rutas y pantallas
-│   ├── STATUS-2026-05-ERP.md              ← estado base (mayo 2026, antes del módulo Ventas)
-│   ├── ESTADO-PROYECTO-2026-05.md         ← ★ ESTADO ACTUAL (09/05/2026) — leer primero
-│   └── REGISTRO-PROYECTO.md               ← log de trabajo, pendientes, decisiones
+│   └── FRONTEND-PANTALLAS.md              ← inventario de rutas y pantallas
 ├── backend/src/
 │   ├── global.json            ← versión mínima del SDK .NET (CI + equipo)
 │   ├── ERP.slnx
@@ -53,10 +71,6 @@ erp-saas/
 ## Operación local, tests y primer uso
 
 **`docs/DESARROLLO.md`** — prerequisitos, PostgreSQL en Docker (`postgreszh`), `dotnet ef database update`, `dotnet run`, `npm run dev`, ejemplos `curl`, comandos frecuentes, CI en GitHub, **política de ramas** (`main` hoy; `development`, `release/*`, `hotfix/*` después), tabla de endpoints de referencia, solución de problemas (DLL bloqueada, CORS, 401).
-
-## Estado reciente del código
-
-**`docs/STATUS-2026-05-ERP.md`** — qué está verificado (tests, sucursales, clientes, proxy Vite), pendientes menores, scripts INEC.
 
 ## Frontend: pantallas y rutas
 

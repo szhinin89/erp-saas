@@ -1,8 +1,23 @@
-# PostgreSQL local — alineado con docs/DESARROLLO.md y appsettings.Development.json.example
+# PostgreSQL + Redis locales — alineado con docs/DESARROLLO.md y appsettings.Development.json.example
 # Uso: desde la raíz del repo →  docker compose up -d
-# Apagar: docker compose down   (datos persisten en el volumen hasta que hagas down -v)
+# Apagar: docker compose down   (datos de Postgres persisten en el volumen hasta que hagas down -v)
 
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: erp-saas-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - erp_saas_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   postgres:
     image: postgres:16
     container_name: postgreszh
@@ -23,3 +38,4 @@ services:
 
 volumes:
   erp_saas_pgdata:
+  erp_saas_redisdata:

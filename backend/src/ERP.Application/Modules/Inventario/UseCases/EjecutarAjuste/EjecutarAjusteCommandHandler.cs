@@ -5,9 +5,9 @@ using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventario.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Enums;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Enums;
+using ERP.Domain.Modules.Inventario.Interfaces;
 
 namespace ERP.Application.Inventario.UseCases.EjecutarAjuste;
 

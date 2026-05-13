@@ -1,8 +1,8 @@
 using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Gastos.DTOs;
-using ERP.Domain.Gastos.Entities;
-using ERP.Domain.Gastos.Interfaces;
+using ERP.Domain.Modules.Gastos.Entities;
+using ERP.Domain.Modules.Gastos.Interfaces;
 
 namespace ERP.Application.Modules.Gastos.UseCases.GetGastos;
 

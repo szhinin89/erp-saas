@@ -7,9 +7,9 @@ using ERP.Application.Inventario.UseCases.CancelarAjuste;
 using ERP.Application.Inventario.UseCases.CrearAjuste;
 using ERP.Application.Inventario.UseCases.EjecutarAjuste;
 using ERP.Application.Modules.Inventario.UseCases.GetStockActualPorBodega;
-using ERP.Domain.Bodegas.Entities;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Enums;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Enums;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;

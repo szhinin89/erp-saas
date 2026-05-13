@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 

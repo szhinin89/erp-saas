@@ -2,7 +2,7 @@
 
 Documento **unificado** de desarrollo y operación local para este monorepo.
 
-**Ver también:** `docs/ARCHITECTURE.md` (capas y multi-tenant), [`docs/adr/README.md`](adr/README.md) (decisiones ADR), `docs/STATUS-2026-05-ERP.md` (estado reciente), `docs/FRONTEND-PANTALLAS.md` (rutas UI), `docs/developer-reference.html` (referencia amplia en navegador), `.cursor/rules/erp-unified-rules.mdc` (reglas de implementación).
+**Ver también:** `docs/ARCHITECTURE.md` (capas y multi-tenant), [`docs/adr/README.md`](adr/README.md) (decisiones ADR), `docs/ESTADO-PROYECTO.md` (estado y backlog), `docs/FRONTEND-PANTALLAS.md` (rutas UI), `docs/developer-reference.html` (referencia amplia en navegador), `.cursor/rules/erp-unified-rules.mdc` (reglas de implementación). El **checklist histórico de homologación API** está al final de este documento.
 
 ---
 
@@ -10,7 +10,7 @@ Documento **unificado** de desarrollo y operación local para este monorepo.
 
 1. [Qué es este proyecto](#qué-es-este-proyecto)
 2. [Prerrequisitos](#prerrequisitos)
-3. [Base de datos (Docker)](#base-de-datos-docker)
+3. [PostgreSQL y Redis (Docker)](#postgresql-y-redis-docker)
 4. [Migraciones EF Core](#migraciones-ef-core)
 5. [Arrancar backend y frontend](#arrancar-backend-y-frontend)
 6. [Primer uso (curl)](#primer-uso-curl)
@@ -26,6 +26,7 @@ Documento **unificado** de desarrollo y operación local para este monorepo.
 16. [Endpoints de referencia (lista parcial)](#endpoints-de-referencia-lista-parcial)
 17. [Solución de problemas frecuentes](#solución-de-problemas-frecuentes)
 18. [Instalación en servidor del cliente (candado SuperAdmin)](#instalación-en-servidor-del-cliente-candado-superadmin)
+19. [Checklist de homologación API (histórico)](#checklist-de-homologación-api-histórico)
 
 ---
 
@@ -39,7 +40,7 @@ ERP multi-tenant en SaaS. Backend en **.NET 10 (Clean Architecture)**, frontend 
 
 | Herramienta    | Versión mínima | Uso                          |
 |----------------|----------------|------------------------------|
-| Docker Desktop | cualquiera     | PostgreSQL en contenedor     |
+| Docker Desktop | cualquiera     | PostgreSQL y Redis en contenedor |
 | .NET SDK       | **10.0.201+** (ver `backend/src/global.json`; `rollForward: latestPatch`) | Backend; misma línea base que CI en GitHub |
 | Node.js        | **22** (recomendado; CI usa 22) o 20+ | Frontend                     |
 
@@ -47,9 +48,27 @@ Además: acceso a PowerShell o bash para los comandos de este documento.
 
 ---
 
-## Base de datos (Docker)
+## PostgreSQL y Redis (Docker)
 
-El contenedor de desarrollo se espera con nombre **`postgreszh`**, puerto **`5435`** y base **`dberpsaas`**.
+El mismo `docker compose` levanta **PostgreSQL** y **Redis** para desarrollo local y pruebas manuales.
+
+### PostgreSQL
+
+Contenedor **`postgreszh`**, puerto host **`5435`** → contenedor `5432`, base **`dberpsaas`**.
+
+### Redis
+
+Contenedor **`erp-saas-redis`**, imagen `redis:7-alpine`, puerto **`6379`** (host = contenedor). Persistencia opcional en volumen `erp_saas_redisdata` (AOF).
+
+Comprobar que responde:
+
+```powershell
+docker exec erp-saas-redis redis-cli ping
+```
+
+Debe imprimir `PONG`.
+
+El backend usa **`ConnectionStrings:Redis`** (p. ej. `localhost:6379` en `appsettings.Development.json`) para registrar **`IDistributedCache`** vía StackExchange.Redis. Si la cadena está **vacía**, se usa **`DistributedMemoryCache`** (adecuado para tests de integración y entornos sin Redis).
 
 ### Opción recomendada: Compose (repo)
 
@@ -62,9 +81,9 @@ docker compose ps
 
 O en PowerShell desde cualquier carpeta del repo: **`pwsh ./scripts/dev-up.ps1`** (sube el compose desde la raíz).
 
-Archivo: **`docker-compose.yml`** (volumen persistente `erp_saas_pgdata`, healthcheck). Contraseña por defecto igual que en la doc de abajo; para otra, exportá **`POSTGRES_PASSWORD`** antes del `up` y usá la misma en `appsettings.Development.json`.
+Archivo: **`docker-compose.yml`** (volúmenes `erp_saas_pgdata` y `erp_saas_redisdata`, healthchecks). Contraseña de Postgres por defecto igual que en la doc de abajo; para otra, exportá **`POSTGRES_PASSWORD`** antes del `up` y usá la misma en `appsettings.Development.json`.
 
-Apagar sin borrar datos: `docker compose down`. Borrar volumen y datos: `docker compose down -v`.
+Apagar sin borrar datos: `docker compose down`. Borrar volúmenes y datos: `docker compose down -v`.
 
 ### Alternativa: `docker run` manual
 
@@ -257,6 +276,8 @@ El token JWT se guarda en **`localStorage`** (p. ej. persistencia de Zustand con
 
 ## Instalación en servidor del cliente (candado SuperAdmin)
 
+**Alta del primer SuperAdmin, token first-run, `switch-tenant` de plataforma vs bootstrap IAM:** guía al día en [`docs/SUPERADMIN-Y-FIRST-RUN.md`](SUPERADMIN-Y-FIRST-RUN.md).
+
 Cuando el ERP corre **en el servidor del cliente** (p. ej. varias empresas / tenants en la misma instancia), suele quererse que el rol **SuperAdmin** (operador de plataforma: tenants, planes, matriz de seguridad, etc.) solo exista en la **fase de puesta en marcha**. En operación diaria cada empresa se administra con usuarios **Admin** y el resto de roles, sin panel global de SuperAdmin.
 
 Configuración en **`appsettings.json`** (o variables de entorno con el prefijo estándar de .NET):
@@ -274,7 +295,7 @@ Variables de entorno equivalentes: **`Deployment__SuperAdminPanelEnabled`**, **`
 
 El frontend consulta de forma anónima **`GET /api/public/deployment`** (DTO con `superAdminPanelEnabled`, `maxActiveTenants` y `maxIdentityUsers`) para alinear UI y rutas con el servidor.
 
-**Un mismo Admin en varias empresas (sin ser SuperAdmin):** el usuario global (`IdentityUser`) se relaciona con cada empresa mediante **membresías** (`Membership`). El login por **`bootstrap-login`** devuelve la lista de empresas a las que tiene acceso; **`switch-tenant`** emite el JWT de sesión para la empresa elegida. Flujo típico operado por SuperAdmin: crear la primera empresa con administrador nuevo; para las siguientes, en el formulario de empresas activar **«Mismo administrador en varias empresas»** (`linkExistingAdmin: true`) con el **mismo email**, o bien `POST /api/tenants` (solo SuperAdmin) y luego **`POST /api/access/memberships/grant`** con el `tenantId` nuevo y el email del admin.
+**Un mismo Admin en varias empresas (sin ser SuperAdmin):** el usuario global (`IdentityUser`) se relaciona con cada empresa mediante **membresías** (`Membership`). El login por **`POST /api/access/bootstrap-login`** devuelve la lista de empresas a las que tiene acceso; **`POST /api/access/switch-tenant`** (política *Bootstrap*) emite el JWT de sesión para la empresa elegida. El SuperAdmin en cambio usa **`POST /api/auth/switch-tenant`** tras `superadmin-login` (mismo usuario, distinto endpoint; ver guía first-run). Flujo típico operado por SuperAdmin: crear la primera empresa con administrador nuevo; para las siguientes, en el formulario de empresas activar **«Mismo administrador en varias empresas»** (`linkExistingAdmin: true`) con el **mismo email**, o bien `POST /api/tenants` (solo SuperAdmin) y luego **`POST /api/access/memberships/grant`** con el `tenantId` nuevo y el email del admin.
 
 **Límites comerciales por empresa (p. ej. clientes / RUC):** el SuperAdmin ajusta **plan** y **módulos** del tenant (`PATCH /api/tenants/{id}/subscription`) y, en el catálogo SaaS, la feature medida **`CUSTOMERS`** con `limit_per_period` en `saas_plan_features` / overrides. Crear cliente incrementa consumo vía pipeline de suscripción (`CreateCustomerCommand` con `[ConsumeSubscriptionUnits]`).
 
@@ -286,7 +307,7 @@ Para **volver a abrir** el panel SuperAdmin (mantenimiento o nuevas empresas), v
 
 ## Módulos de referencia (tabla)
 
-Tabla **orientativa**; los paths reales pueden incluir más módulos (Sucursales, Clientes, SuperAdmin, etc.). Ver `docs/STATUS-2026-05-ERP.md` y `docs/developer-reference.html` para lista al día.
+Tabla **orientativa**; los paths reales pueden incluir más módulos (Sucursales, Clientes, SuperAdmin, etc.). Ver `docs/ESTADO-PROYECTO.md` y `docs/developer-reference.html` para lista al día.
 
 | Módulo     | Backend (ejemplos)                         | Frontend (ejemplos)   |
 |------------|--------------------------------------------|-------------------------|
@@ -395,4 +416,64 @@ Verificar `Cors:AllowedOrigins` en `appsettings.Development.json` (plantilla: `a
 ### Config local no versionada
 
 Copiar `backend/src/ERP.API/appsettings.Development.json.example` → `appsettings.Development.json` y ajustar secretos/cadena. Opcional: `frontend/.env.development.example` → `.env.development`.
+
+---
+
+## Checklist de homologación API (histórico)
+
+> Cierre registrado el **2026-05-05**. Antes vivía en `docs/API-CONTRACT-CHECKLIST.md`; se unificó aquí para tener una sola guía de desarrollo en español.
+
+### Contrato objetivo
+
+- `ApiResponse<T>` uniforme para respuestas exitosas y de error.
+- Status esperados por caso: `200/201/400/401/403/404/422`.
+- `ValidationException` manejada por middleware como `422`.
+
+### Checklist global
+
+- [x] Controllers usan `ApiResultExtensions` / helpers `Api*`.
+- [x] No quedan respuestas manuales `new ApiResponse<...>` en controllers.
+- [x] Middleware mapea `ValidationException` a `422`.
+- [x] Test de middleware actualizado a `422`.
+- [x] Todos los endpoints con body validable documentan `422` en `[ProducesResponseType]`.
+
+### Cobertura por controller (muestreo completo de ERP.API/Controllers)
+
+- [x] `AccessController` homologado (`200/201/400/401/403` según endpoint).
+- [x] `AuthController` homologado (`200/400/401/403`).
+- [x] `SetupController` homologado (`200/400`).
+- [x] `AccountsController` homologado (`200/201/400/401/404/422 runtime`).
+- [x] `ProductsController` homologado (`200/201/400/401/404/422 runtime`).
+- [x] `BranchesController` homologado (`200/201/400/404`).
+- [x] `CustomersController` homologado (`200/201/400/404`).
+- [x] `ProductLinesController` homologado (`200/201/400/401`).
+- [x] `ProductCategoriesController` homologado (`200/201/400/401`).
+- [x] `ProductSubcategoriesController` homologado (`200/201/400/401`).
+- [x] `BrandsController` homologado (`200/201/400/401`).
+- [x] `ProductTypesController` homologado (`200/201/400/401`).
+- [x] `TaxRatesController` homologado (`200/201/400/401`).
+- [x] `UnitsOfMeasureController` homologado (`200/201/400/401`).
+- [x] `TariffsController` homologado (`200/201/400/401`).
+- [x] `TenantsController` homologado (`200/201/400/401/403/404`).
+- [x] `SecurityController` homologado (`200/400/401/403`).
+- [x] `SaasPlansAdminController` homologado (`200/400/401/403`).
+- [x] `SaasFeaturesAdminController` homologado (`200/400/401/403`).
+- [x] `SuperAdminController` homologado (`200/400/401/403`).
+- [x] `SuperAdminConfigController` homologado (`200/400`).
+- [x] `PublicPlansController` homologado (`200`).
+- [x] `PublicDeploymentController` homologado (`200`).
+- [x] `ActivityController` homologado (`200/400`).
+- [x] `GeographyController` homologado (`200/400`).
+
+### Brecha detectada
+
+- Sin brechas abiertas para el contrato objetivo de este checklist.
+
+### Criterio de salida
+
+Se considera cierre al 100% cuando:
+
+1. Se mantenga `ApiResponse<T>` uniforme en todos los controllers.
+2. Se conserve `ValidationException => 422` en middleware y tests.
+3. Nuevos endpoints cumplan la regla en `.cursor/rules/backend-api-contracts.mdc`.
 

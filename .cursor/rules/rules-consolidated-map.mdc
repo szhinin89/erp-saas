@@ -19,8 +19,10 @@ Usar este orden de precedencia cuando varias reglas apliquen al mismo cambio:
 - Multi-tenant y TenantId: `backend-multitenancy-jwt-source.mdc`
 - Frontend modular + i18n + validacion: `frontend-modules-i18n-validation.mdc`
 - Navegacion SaaS sin IDs en URL: `saas-navigation-no-sensitive-url.mdc`
+- Stack permitido y fuente de verdad de herramientas: `stack-tools-source-of-truth.mdc`
 
 ## Nota de mantenimiento
 
 - Evitar duplicar la misma regla en varios archivos.
 - Cuando una regla crezca demasiado, moverla a una regla especifica por area.
+- Documentación Markdown del producto: mapa único en **`CONTEXT.md`** (raíz del repo); no abrir nuevos índices en paralelo.

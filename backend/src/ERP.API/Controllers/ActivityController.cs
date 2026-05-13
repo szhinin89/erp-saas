@@ -5,6 +5,7 @@ using ERP.Application.Audit.UseCases.GetEntityActivity;
 using ERP.Application.Audit.UseCases.GetMyActivity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -12,6 +13,7 @@ namespace ERP.API.Controllers;
 /// <remarks>
 /// Autorización: <c>Session</c> únicamente; sin <c>perm:*</c> porque los handlers acotan por tenant y usuario.
 /// </remarks>
+[Modulo("Actividad", "session:activity", "📜", "/actividad", null, 200)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Policy = "Session")]

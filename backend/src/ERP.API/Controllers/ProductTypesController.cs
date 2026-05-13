@@ -6,12 +6,14 @@ using ERP.API.Extensions;
 using ERP.Application.Products.Catalogs.DTOs;
 using ERP.Application.Products.Catalogs.UseCases.CreateProductType;
 using ERP.Application.Products.Catalogs.UseCases.GetProductTypes;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
 /// <summary>
 /// Catálogo maestro: Tipos de producto del tenant autenticado.
 /// </summary>
+[Modulo("Tipos de producto", "perm:inventario.productTypes.view", "🔖", "/catalog/types", null, 37)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

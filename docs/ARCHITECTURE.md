@@ -14,7 +14,11 @@ Esa frase es el criterio guía del repositorio: el código y la organización de
 
 **Decisiones formales:** ver [ADR en `docs/adr/`](adr/README.md) (p. ej. ADR 0001–0003).
 
-**Convergencia de carpetas y namespaces:** plan por sprints en [REFACTOR-MODULES-SPRINTS.md](REFACTOR-MODULES-SPRINTS.md) (`Domain.Modules.*` / `Application.Modules.*`).
+**Inventario de stack/herramientas en uso:** ver [`docs/HERRAMIENTAS-ERP-SAAS.md`](HERRAMIENTAS-ERP-SAAS.md).
+
+**SuperAdmin y primera ejecución (token first-run, cambio de contexto empresa):** ver [`docs/SUPERADMIN-Y-FIRST-RUN.md`](SUPERADMIN-Y-FIRST-RUN.md).
+
+**Convergencia de carpetas y namespaces:** plan por sprints en [`docs/ESTADO-PROYECTO.md`](ESTADO-PROYECTO.md#refactor-modular-por-sprints) (sección *Refactor modular por sprints*; `Domain.Modules.*` / `Application.Modules.*`).
 
 ## Capas y dependencias
 
@@ -125,12 +129,17 @@ La política `"Frontend"` permite los orígenes configurados en `appsettings.jso
 
 ## Módulos actuales
 
-| Módulo     | Dominio                        | Endpoints                              |
+| Módulo     | Dominio (resumen)              | Endpoints (resumen)                    |
 |------------|--------------------------------|----------------------------------------|
 | Auth       | User, Email (VO)               | POST /register, /login                 |
 | Tenants    | Tenant                         | POST /tenants                          |
 | Products   | Product, ProductBarcode        | GET /products, GET /products/{id}, POST |
-| Accounting | Account, JournalEntry, Money   | GET/POST /accounts, /journal-entries   |
+| Accounting | Account, JournalEntry, Money, Configuración contable por empresa | `/accounts`, `/journal-entries`, `/configuracion-contable` |
+| Ventas     | Factura, notas crédito/débito, retención recibida | `/ventas`, `/ventas/notas`, `/ventas/retenciones-recibidas` |
+| Compras    | Factura compra, OC, retención emitida | `/compras`, `/compras/ordenes`, `/compras/retenciones` |
+| Caja       | Caja chica, banco, extractos    | `/caja`                                |
+
+> Lista detallada de flujos, permisos y migraciones: [`docs/ESTADO-PROYECTO.md`](ESTADO-PROYECTO.md).
 
 ## Migraciones EF Core
 

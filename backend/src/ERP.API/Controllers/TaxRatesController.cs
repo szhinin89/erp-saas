@@ -7,12 +7,14 @@ using ERP.Application.Products.Catalogs.DTOs;
 using ERP.Application.Products.Catalogs.UseCases.CreateTaxRate;
 using ERP.Application.Products.Catalogs.UseCases.GetTaxRates;
 using ERP.Domain.Products.Entities;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
 /// <summary>
 /// Catálogo maestro: Tarifas de impuestos (IVA/ICE) del tenant autenticado.
 /// </summary>
+[Modulo("Impuestos (IVA/ICE)", "perm:inventario.taxRates.view", "📊", "/catalog/tax-rates", null, 37)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

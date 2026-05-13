@@ -10,9 +10,11 @@ using ERP.Application.Modules.Branches.UseCases.EnableBranch;
 using ERP.Application.Modules.Branches.UseCases.GetBranchById;
 using ERP.Application.Modules.Branches.UseCases.GetBranches;
 using ERP.Application.Modules.Branches.UseCases.UpdateBranch;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
+[Modulo("Sucursales", "perm:saas.branches.view", "🏢", "/configuracion/sucursales", null, 30)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

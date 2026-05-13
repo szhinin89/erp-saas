@@ -5,8 +5,9 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path $PSScriptRoot -Parent
 Set-Location $repoRoot
 
-Write-Host "==> docker compose up -d (desde $repoRoot)" -ForegroundColor Cyan
+Write-Host "==> docker compose up -d (Postgres + Redis desde $repoRoot)" -ForegroundColor Cyan
 docker compose up -d
 docker compose ps
 
-Write-Host "`nSiguiente: copiar ERP.API/appsettings.Development.json.example -> appsettings.Development.json y ejecutar dotnet ef database update (ver docs/DESARROLLO.md)." -ForegroundColor Green
+Write-Host "`nRedis: docker exec erp-saas-redis redis-cli ping  (esperado: PONG)" -ForegroundColor DarkGray
+Write-Host "Siguiente: copiar ERP.API/appsettings.Development.json.example -> appsettings.Development.json y ejecutar dotnet ef database update (ver docs/DESARROLLO.md)." -ForegroundColor Green

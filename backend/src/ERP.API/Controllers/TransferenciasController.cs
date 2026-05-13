@@ -9,6 +9,7 @@ using ERP.Application.Inventario.UseCases.ConfirmarTransferencia;
 using ERP.Application.Inventario.UseCases.CrearTransferencia;
 using ERP.Application.Inventario.UseCases.GetTransferenciaById;
 using ERP.Application.Inventario.UseCases.GetTransferenciasList;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -16,6 +17,7 @@ namespace ERP.API.Controllers;
 /// Transferencias de stock entre bodegas del mismo tenant.
 /// Flujo: Borrador → Confirmado (stock movido) | Cancelado (sin efecto en stock).
 /// </summary>
+[Modulo("Transferencias", "perm:inventario.transferencias.view", "↔️", "/inventario/transferencias", null, 44)]
 [ApiController]
 [Route("api/inventario/transferencias")]
 [Authorize]

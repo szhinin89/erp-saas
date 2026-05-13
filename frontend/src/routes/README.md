@@ -1,4 +1,4 @@
-# Routes - Sistema Modular de Rutas
+# Rutas — sistema modular
 
 ## 📋 Estructura
 

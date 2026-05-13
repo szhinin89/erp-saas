@@ -3,13 +3,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Modules.Bodegas.DTOs;
-using ERP.Application.Modules.Bodegas.UseCases.CreateBodega;
-using ERP.Application.Modules.Bodegas.UseCases.DisableBodega;
-using ERP.Application.Modules.Bodegas.UseCases.EnableBodega;
-using ERP.Application.Modules.Bodegas.UseCases.GetBodegaById;
-using ERP.Application.Modules.Bodegas.UseCases.GetBodegas;
-using ERP.Application.Modules.Bodegas.UseCases.UpdateBodega;
+using ERP.Application.Modules.Inventario.DTOs;
+using ERP.Application.Modules.Inventario.UseCases.CrearBodega;
+using ERP.Application.Modules.Inventario.UseCases.DeshabilitarBodega;
+using ERP.Application.Modules.Inventario.UseCases.HabilitarBodega;
+using ERP.Application.Modules.Inventario.UseCases.ObtenerBodega;
+using ERP.Application.Modules.Inventario.UseCases.ListarBodegas;
+using ERP.Application.Modules.Inventario.UseCases.ActualizarBodega;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -17,8 +18,10 @@ namespace ERP.API.Controllers;
 /// Gestión de bodegas / almacenes del tenant autenticado.
 /// Todos los endpoints filtran automáticamente por el tenant del JWT.
 /// </summary>
+[Modulo("Bodegas", "perm:inventario.bodegas.view", "📦", "/logistica/bodegas", null, 40)]
 [ApiController]
 [Route("api/[controller]")]
+[Route("api/logistica/bodegas")]
 [Authorize]
 [Produces("application/json")]
 public sealed class BodegasController : ControllerBase

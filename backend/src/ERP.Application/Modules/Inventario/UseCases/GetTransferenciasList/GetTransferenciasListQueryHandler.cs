@@ -1,8 +1,8 @@
 using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventario.DTOs;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Interfaces;
 
 namespace ERP.Application.Inventario.UseCases.GetTransferenciasList;
 

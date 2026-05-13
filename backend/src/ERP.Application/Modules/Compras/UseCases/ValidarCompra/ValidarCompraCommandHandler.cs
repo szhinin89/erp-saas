@@ -3,10 +3,10 @@ using ERP.Application.Common;
 using ERP.Application.Modules.Compras.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Compras.Entities;
-using ERP.Domain.Compras.Enums;
-using ERP.Domain.Compras.Interfaces;
-using ERP.Domain.Proveedores.Interfaces;
+using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Compras.Enums;
+using ERP.Domain.Modules.Compras.Interfaces;
+using ERP.Domain.Modules.Compras.Interfaces;
 
 namespace ERP.Application.Modules.Compras.UseCases.ValidarCompra;
 
@@ -98,7 +98,7 @@ public sealed class ValidarCompraCommandHandler
         }
     }
 
-    private static CompraFacturaDto ToDto(Domain.Compras.Entities.CompraFactura c) => new(
+    private static CompraFacturaDto ToDto(ERP.Domain.Modules.Compras.Entities.CompraFactura c) => new(
         c.Id, c.ProveedorId, c.NumeroFactura, c.ClaveAcceso, c.XmlPath,
         c.FechaFactura, c.FechaVencimiento, c.Estado, c.CondicionPago,
         c.Subtotal, c.IvaTotal, c.Total, c.Observaciones, c.AsientoContableId, c.CreatedAt);

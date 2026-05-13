@@ -34,6 +34,7 @@ public sealed record SaasPlanAdminDto(
     bool IsRecommended,
     int SortOrder,
     string? ExternalBillingRef,
+    bool HasMenuConfig,
     IReadOnlyList<SaasPlanFeatureAdminDto> Features);
 
 public sealed record CreateSaasPlanRequest(

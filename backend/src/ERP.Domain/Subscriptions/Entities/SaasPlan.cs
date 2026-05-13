@@ -27,6 +27,9 @@ public sealed class SaasPlan
     /// <summary>Referencia externa futura (Stripe Price, etc.).</summary>
     public string? ExternalBillingRef { get; private set; }
 
+    /// <summary>JSON del menú lateral (mismo shape que <c>SessionMenuGroupDto[]</c>). Null/vacío = usar menú global <c>ui_nav_*</c>.</summary>
+    public string? MenuConfigJson { get; private set; }
+
     private SaasPlan() { }
 
     public static SaasPlan Create(
@@ -82,7 +85,15 @@ public sealed class SaasPlan
             IsRecommended = isRecommended,
             SortOrder = sortOrder,
             ExternalBillingRef = ext,
+            MenuConfigJson = null,
         };
+    }
+
+    /// <summary>Asigna o limpia el menú comercial (JSON). <paramref name="menuConfigJson"/> null o blanco borra la personalización del plan.</summary>
+    public void SetMenuConfigJson(string? menuConfigJson)
+    {
+        var t = menuConfigJson?.Trim();
+        MenuConfigJson = string.IsNullOrEmpty(t) ? null : t;
     }
 
     public void UpdateCatalog(

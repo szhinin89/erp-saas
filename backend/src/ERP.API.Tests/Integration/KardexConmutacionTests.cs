@@ -4,14 +4,17 @@ using System.Reflection;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using ERP.API.Tests.Support;
 using ERP.Application.Common.Config;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventario.UseCases.GetKardex;
-using ERP.Domain.Bodegas.Interfaces;
+using ERP.Application.Modules.Inventario.Services;
+using ERP.Domain.Modules.Inventario.Interfaces;
 using ERP.Domain.Common;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Enums;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Enums;
+using ERP.Domain.Modules.Inventario.Interfaces;
 using ERP.Domain.Products.Interfaces;
 using ERP.Infrastructure.Services;
 using ERP.Infrastructure.Persistence;
@@ -61,13 +64,15 @@ public sealed class KardexConmutacionTests
     private static GetKardexQueryHandler BuildHandler(
         IServiceScope scope, Guid tenantId, KardexOptions opts)
     {
-        return new GetKardexQueryHandler(
+        var kardex = new KardexService(
             scope.ServiceProvider.GetRequiredService<IInventarioStockRepository>(),
             scope.ServiceProvider.GetRequiredService<IKardexSnapshotRepository>(),
             scope.ServiceProvider.GetRequiredService<IProductRepository>(),
             scope.ServiceProvider.GetRequiredService<IBodegaRepository>(),
             new ManualCurrentTenant(tenantId),
-            opts);
+            Options.Create(opts),
+            scope.ServiceProvider.GetRequiredService<IKardexMaterializedDailySummariesReader>());
+        return new GetKardexQueryHandler(kardex);
     }
 
     // ── Helper: seed base + ManualCurrentTenant en el scope ──────────────────
@@ -123,16 +128,8 @@ public sealed class KardexConmutacionTests
         // Handler en modo SIMPLE — no debe usar el snapshot falso
         var opts    = new KardexOptions { UseScalableMode = false };
         var handler = BuildHandler(scope, tid, opts);
-        var manual  = new ManualCurrentTenant(tid);
 
-        var handlerConManualTenant = new GetKardexQueryHandler(
-            scope.ServiceProvider.GetRequiredService<IInventarioStockRepository>(),
-            scope.ServiceProvider.GetRequiredService<IKardexSnapshotRepository>(),
-            scope.ServiceProvider.GetRequiredService<IProductRepository>(),
-            scope.ServiceProvider.GetRequiredService<IBodegaRepository>(),
-            manual, opts);
-
-        var result = await handlerConManualTenant.Handle(
+        var result = await handler.Handle(
             new GetKardexQuery(pid, bid, FechaInicio: DateTime.Today, FechaFin: null),
             CancellationToken.None);
 
@@ -182,13 +179,7 @@ public sealed class KardexConmutacionTests
 
         // Handler en modo ESCALABLE
         var opts    = new KardexOptions { UseScalableMode = true };
-        var manual  = new ManualCurrentTenant(tid);
-        var handler = new GetKardexQueryHandler(
-            scope.ServiceProvider.GetRequiredService<IInventarioStockRepository>(),
-            scope.ServiceProvider.GetRequiredService<IKardexSnapshotRepository>(),
-            scope.ServiceProvider.GetRequiredService<IProductRepository>(),
-            scope.ServiceProvider.GetRequiredService<IBodegaRepository>(),
-            manual, opts);
+        var handler = BuildHandler(scope, tid, opts);
 
         var result = await handler.Handle(
             new GetKardexQuery(pid, bid, FechaInicio: DateTime.Today, FechaFin: null),
@@ -289,27 +280,15 @@ public sealed class KardexConmutacionTests
         var haySnapshots = await db.KardexSnapshots.AnyAsync();
         haySnapshots.Should().BeFalse("la tabla de snapshots debe estar vacía para este escenario");
 
-        var manual = new ManualCurrentTenant(tid);
-
         // Ejecutar con modo SIMPLE
-        var handlerSimple = new GetKardexQueryHandler(
-            scope.ServiceProvider.GetRequiredService<IInventarioStockRepository>(),
-            scope.ServiceProvider.GetRequiredService<IKardexSnapshotRepository>(),
-            scope.ServiceProvider.GetRequiredService<IProductRepository>(),
-            scope.ServiceProvider.GetRequiredService<IBodegaRepository>(),
-            manual, new KardexOptions { UseScalableMode = false });
+        var handlerSimple = BuildHandler(scope, tid, new KardexOptions { UseScalableMode = false });
 
         var resultSimple = await handlerSimple.Handle(
             new GetKardexQuery(pid, bid, FechaInicio: DateTime.Today, FechaFin: null),
             CancellationToken.None);
 
         // Ejecutar con modo ESCALABLE (sin snapshots → fallback idéntico)
-        var handlerScalable = new GetKardexQueryHandler(
-            scope.ServiceProvider.GetRequiredService<IInventarioStockRepository>(),
-            scope.ServiceProvider.GetRequiredService<IKardexSnapshotRepository>(),
-            scope.ServiceProvider.GetRequiredService<IProductRepository>(),
-            scope.ServiceProvider.GetRequiredService<IBodegaRepository>(),
-            manual, new KardexOptions { UseScalableMode = true });
+        var handlerScalable = BuildHandler(scope, tid, new KardexOptions { UseScalableMode = true });
 
         var resultScalable = await handlerScalable.Handle(
             new GetKardexQuery(pid, bid, FechaInicio: DateTime.Today, FechaFin: null),

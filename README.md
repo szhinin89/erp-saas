@@ -8,11 +8,12 @@ Monorepo: **backend** (.NET 10, Clean Architecture, PostgreSQL) + **frontend** (
 
 | Documento | Contenido |
 |-----------|-------------|
-| [**CONTEXT.md**](./CONTEXT.md) | Índice maestro: árbol del repo y enlaces a todo lo demás |
+| [**CONTEXT.md**](./CONTEXT.md) | Índice maestro: mapa de documentación y enlaces |
 | [**docs/DESARROLLO.md**](./docs/DESARROLLO.md) | Arranque local, Docker, migraciones, API/Front, `curl`, troubleshooting |
 | [**docs/ARCHITECTURE.md**](./docs/ARCHITECTURE.md) | Capas, multi-tenant, estructura por módulo, migraciones, tests; notas para escalar a microservicios |
 | [**docs/adr/README.md**](./docs/adr/README.md) | ADR: decisiones de arquitectura (monolito modular, multi-tenant, CI) |
-| [**docs/STATUS-2026-05-ERP.md**](./docs/STATUS-2026-05-ERP.md) | Estado reciente del proyecto (mayo 2026) |
+| [**docs/ESTADO-PROYECTO.md**](./docs/ESTADO-PROYECTO.md) | Estado y backlog del proyecto (documento canónico) |
+| [**docs/REGISTRO-PROYECTO.md**](./docs/REGISTRO-PROYECTO.md) | Diario de trabajo por fecha |
 | [**docs/FRONTEND-PANTALLAS.md**](./docs/FRONTEND-PANTALLAS.md) | Inventario de rutas y pantallas |
 | [**docs/developer-reference.html**](./docs/developer-reference.html) | Referencia amplia (abrir en el navegador) |
 | [**`.cursor/rules/erp-unified-rules.mdc`**](.cursor/rules/erp-unified-rules.mdc) | Reglas para el agente (validación, UI ZH, i18n, nav) |

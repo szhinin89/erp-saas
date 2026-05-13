@@ -100,7 +100,17 @@ function Invoke-EfCommand {
     param(
         [Parameter(Mandatory = $true)][string[]] $Args
     )
-    $out = & dotnet @Args 2>&1
+    # En PowerShell 5, con $ErrorActionPreference='Stop', cualquier salida stderr
+    # de comandos nativos (incluyendo warnings) puede convertirse en excepción.
+    # Bajamos temporalmente la severidad para capturar stdout+stderr sin abortar.
+    $prevEap = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $out = & dotnet @Args 2>&1
+    }
+    finally {
+        $ErrorActionPreference = $prevEap
+    }
     $text = ($out | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
     return [PSCustomObject]@{
         ExitCode = $LASTEXITCODE

@@ -1,10 +1,21 @@
+using Hangfire;
+using Hangfire.Dashboard;
+using Hangfire.PostgreSql;
+using ERP.API.Hangfire;
 using ERP.API.Extensions;
 using ERP.API.Middleware;
+using ERP.API.Services;
 using ERP.Infrastructure;
 using ERP.Application;
 using ERP.API.Authorization;
+using ERP.Application.Common.Interfaces;
+using ERP.Infrastructure.Persistence;
+using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using QuestPDF.Infrastructure;
+using Serilog;
 
 // Licencia Community: libre para proyectos con ingresos anuales < 1 M USD.
 // Cambiar a LicenseType.Professional si aplica.
@@ -14,6 +25,23 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Asegura que los user-secrets del API ganen a appsettings (p. ej. InitialSuperAdminSetupToken vacío en JSON).
 builder.Configuration.AddUserSecrets(typeof(Program).Assembly, optional: true);
+
+// Alias opcional en hosting: DB_CONNECTION_STRING → ConnectionStrings:DefaultConnection
+var dbFromEnv = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
+if (!string.IsNullOrWhiteSpace(dbFromEnv))
+{
+    builder.Configuration.AddInMemoryCollection([
+        new KeyValuePair<string, string?>("ConnectionStrings:DefaultConnection", dbFromEnv)
+    ]);
+}
+
+builder.Host.UseSerilog((context, _, configuration) =>
+{
+    configuration
+        .ReadFrom.Configuration(context.Configuration)
+        .Enrich.FromLogContext()
+        .Enrich.WithProperty("Application", "ERP.SaaS");
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -35,14 +63,75 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
+
+// IDistributedCache: Redis si Redis:ConnectionString o ConnectionStrings:Redis está definida;
+// en tests y producción sin Redis, memoria (no comparte entre instancias).
+var redisConnection = builder.Configuration["Redis:ConnectionString"]
+                      ?? builder.Configuration.GetConnectionString("Redis");
+var redisInstanceName = builder.Configuration["Redis:InstanceName"];
+if (string.IsNullOrWhiteSpace(redisInstanceName))
+    redisInstanceName = "ERP_";
+
+if (!string.IsNullOrWhiteSpace(redisConnection))
+{
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = redisConnection;
+        options.InstanceName = redisInstanceName;
+    });
+}
+else
+{
+    builder.Services.AddDistributedMemoryCache();
+}
+
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+builder.Services.AddScoped<ModuloDiscoveryService>();
+
+// Health: live = proceso arriba; ready = BD, Redis (si hay), URL externa opcional (SRI)
+var healthChecks = builder.Services.AddHealthChecks()
+    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live"])
+    .AddDbContextCheck<ErpDbContext>("database", tags: ["ready"]);
+
+if (!string.IsNullOrWhiteSpace(redisConnection))
+    healthChecks.AddRedis(redisConnection, name: "redis", tags: ["ready"]);
+
+var sriProbeUrl = builder.Configuration["HealthChecks:SriProbeUrl"];
+if (!string.IsNullOrWhiteSpace(sriProbeUrl)
+    && Uri.TryCreate(sriProbeUrl, UriKind.Absolute, out var sriUri))
+{
+    var probeTimeout = TimeSpan.FromSeconds(
+        builder.Configuration.GetValue("HealthChecks:SriProbeTimeoutSeconds", 5));
+    healthChecks.AddUrlGroup(
+        sriUri,
+        name: "sri-external",
+        configureClient: (_, client) => client.Timeout = probeTimeout,
+        tags: ["ready"]);
+}
+
+var hangfireEnabled = builder.Configuration.GetValue("Hangfire:Enabled", false);
+if (hangfireEnabled)
+{
+    var hangfireConn = builder.Configuration["Hangfire:ConnectionString"]
+                       ?? builder.Configuration.GetConnectionString("DefaultConnection");
+    if (string.IsNullOrWhiteSpace(hangfireConn))
+        throw new InvalidOperationException(
+            "Hangfire:Enabled es true pero no hay cadena de conexión (Hangfire:ConnectionString o DefaultConnection).");
+
+    builder.Services.AddHangfire(configuration =>
+        configuration.UsePostgreSqlStorage(options =>
+            options.UseNpgsqlConnection(hangfireConn)));
+    builder.Services.AddHangfireServer();
+}
 
 // Opciones del Kardex: registrar tanto como IOptions<> (convención .NET)
 // como plain class (inyectable directamente en Application handlers).
 var kardexSection = builder.Configuration.GetSection(
     ERP.Application.Common.Config.KardexOptions.Section);
 builder.Services.Configure<ERP.Application.Common.Config.KardexOptions>(kardexSection);
+builder.Services.Configure<ERP.Application.Common.Config.PasswordResetOptions>(
+    builder.Configuration.GetSection(ERP.Application.Common.Config.PasswordResetOptions.SectionName));
 builder.Services.AddSingleton(sp =>
     kardexSection.Get<ERP.Application.Common.Config.KardexOptions>()
     ?? new ERP.Application.Common.Config.KardexOptions());
@@ -70,11 +159,49 @@ builder.Services.AddAuthorization(options =>
     // Si el endpoint tiene [Authorize] sin policy, exigimos token de sesión.
     // IMPORTANTE: NO usar FallbackPolicy, porque eso protegería endpoints que
     // deben ser públicos (login/bootstrap-login/reset, etc.).
-    // Criterio perm vs Session vs Roles: docs/REFACTOR-BACKLOG.md sección P0.
+    // Criterio perm vs Session vs Roles: docs/ESTADO-PROYECTO.md → sección «Backlog de refactor», P0.
     options.DefaultPolicy = options.GetPolicy("Session")!;
 });
 
 var app = builder.Build();
+
+// Datos demo (tenant-demo + admin) solo si se activa explícitamente — ver appsettings.Development → Development:SeedDemoTenant.
+if (app.Environment.IsDevelopment() &&
+    app.Configuration.GetValue("Development:SeedDemoTenant", false))
+{
+    await DevDatabaseSeeder.SeedMinimumAsync(app.Services);
+}
+
+if (app.Environment.IsDevelopment() &&
+    app.Configuration.GetValue("Development:SyncFuncionalidadesOnStartup", false))
+{
+    using var syncScope = app.Services.CreateScope();
+    await syncScope.ServiceProvider.GetRequiredService<ModuloDiscoveryService>().SincronizarModulosAsync();
+}
+
+// Bootstrap seguro de primera ejecución:
+// - Sin credenciales por defecto.
+// - Emite token efímero de un solo uso (15 minutos) solo en consola del servidor.
+using (var setupScope = app.Services.CreateScope())
+{
+    var firstRunSetup = setupScope.ServiceProvider.GetRequiredService<IFirstRunSetupService>();
+    var setupResult = await firstRunSetup.EnsureTokenIssuedAsync();
+    if (setupResult.IsFirstRun && setupResult.TokenGenerated && !string.IsNullOrWhiteSpace(setupResult.PlainToken))
+    {
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("==================================================");
+        Console.WriteLine("FIRST-RUN DETECTADO: crear SUPER ADMIN inicial");
+        Console.WriteLine("Ejecuta desde la máquina del servidor (mismo body en /api/setup/claim-initial-superadmin):");
+        Console.WriteLine(
+            "curl -X POST https://localhost:5001/api/setup/superadmin " +
+            "-H \"Content-Type: application/json\" " +
+            "-d '{\"setupToken\":\"" + setupResult.PlainToken + "\",\"firstName\":\"Super\",\"lastName\":\"Admin\",\"email\":\"superadmin@erp.com\",\"password\":\"CAMBIAR-ESTA-CLAVE\"}'");
+        Console.WriteLine("Documentación: docs/SUPERADMIN-Y-FIRST-RUN.md | scripts: create-superadmin.ps1 -SetupToken \"<este token>\"");
+        Console.WriteLine("Token expira en: " + setupResult.ExpiresAtUtc?.ToString("u"));
+        Console.WriteLine("==================================================");
+        Console.ResetColor();
+    }
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -85,14 +212,54 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseCors("Frontend");
 
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("live"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = r => r.Tags.Contains("ready"),
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+
 if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseMiddleware<SuperAdminPanelLockMiddleware>();
 app.UseAuthorization();
+
+if (hangfireEnabled)
+{
+    var dashEnabled = app.Configuration.GetValue("Hangfire:Dashboard:Enabled", true);
+    if (dashEnabled)
+    {
+        var dashPath = app.Configuration["Hangfire:Dashboard:Path"] ?? "/hangfire";
+        app.UseHangfireDashboard(dashPath, new DashboardOptions
+        {
+            Authorization = [new HangfireDashboardAuthorizationFilter()],
+        });
+    }
+
+    RecurringJob.AddOrUpdate<IKardexDatabaseMaintenance>(
+        "refresh-mv-saldos-diarios",
+        x => x.RefreshDailyBalancesMaterializedViewAsync(CancellationToken.None),
+        Cron.Daily(hour: 1));
+}
+
+app.UseSerilogRequestLogging();
+
 app.MapControllers();
 
-app.Run();
+try
+{
+    app.Run();
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 public partial class Program { }

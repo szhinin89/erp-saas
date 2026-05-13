@@ -11,7 +11,8 @@ using ERP.Application.Modules.Gastos.UseCases.GetGastoById;
 using ERP.Application.Modules.Gastos.UseCases.GetGastos;
 using ERP.Application.Modules.Gastos.UseCases.RechazarGasto;
 using ERP.Application.Modules.Gastos.UseCases.ValidarGasto;
-using ERP.Domain.Gastos.Enums;
+using ERP.Domain.Modules.Gastos.Enums;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -19,6 +20,7 @@ namespace ERP.API.Controllers;
 /// Facturas de gasto (registro manual o importación XML del SRI Ecuador).
 /// Flujo de estados: Borrador → Validado → Aprobado | Rechazado. Requiere permisos <c>gastos.facturas.*</c> en el perfil (los roles Admin/SuperAdmin los omiten).
 /// </summary>
+[Modulo("Gastos", "perm:gastos.facturas.view", "💸", "/gastos", null, 55)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

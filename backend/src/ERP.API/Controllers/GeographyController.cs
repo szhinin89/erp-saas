@@ -7,6 +7,7 @@ using ERP.Application.Modules.Branches.UseCases.GetGeoCantons;
 using ERP.Application.Modules.Branches.UseCases.GetGeoCountries;
 using ERP.Application.Modules.Branches.UseCases.GetGeoParishes;
 using ERP.Application.Modules.Branches.UseCases.GetGeoProvinces;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -15,6 +16,7 @@ namespace ERP.API.Controllers;
 /// Autorización: política por defecto <c>Session</c> (ver <c>Program.cs</c>). Sin <c>perm:*</c>:
 /// catálogo global de bajo riesgo; cualquier usuario con sesión ERP puede consultarlo.
 /// </remarks>
+[Modulo("Geografía", "session:geography", "🌎", "/configuracion/geografia", null, 210)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Policy = "Session")]

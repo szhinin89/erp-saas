@@ -1,4 +1,4 @@
-# Architecture Decision Records (ADR)
+# Registro de decisiones de arquitectura (ADR)
 
 Registro **breve** de decisiones de arquitectura y operación que cuestan revertir o que el equipo debe recordar al incorporar gente o módulos nuevos.
 

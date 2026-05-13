@@ -66,6 +66,22 @@
   margin-top: 10px;
 }
 
+.sa-moduleChecks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.sa-moduleCheck {
+  margin: 0;
+  min-width: 140px;
+}
+
 .sa-tenantAction {
   margin-top: 10px;
   color: #003366;

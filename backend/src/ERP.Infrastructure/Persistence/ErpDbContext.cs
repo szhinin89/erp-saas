@@ -1,5 +1,7 @@
+using System.Linq;
+using MediatR;
 using Microsoft.EntityFrameworkCore;
-using ERP.Domain.Accounting.Entities;
+using ERP.Domain.Modules.Contabilidad.Entities;
 using ERP.Domain.Common;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Auth.Entities;
@@ -10,16 +12,18 @@ using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Geography.Entities;
 using ERP.Domain.Audit.Entities;
-using ERP.Domain.Customers.Entities;
+using ERP.Domain.Modules.Ventas.Entities;
 using ERP.Domain.Subscriptions.Entities;
+using ERP.Domain.Modules.Menu.Entities;
 using ERP.Domain.Navigation.Entities;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Modules.Ventas.Entities;
-using ERP.Domain.Bodegas.Entities;
-using ERP.Domain.Proveedores.Entities;
-using ERP.Domain.Compras.Entities;
-using ERP.Domain.Gastos.Entities;
-using ERP.Domain.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Gastos.Entities;
+using ERP.Domain.Modules.Caja.Entities;
+using ERP.Domain.Modules.Inventario.Entities;
 using ERP.Application.Common;
 using System.Linq.Expressions;
 
@@ -63,17 +67,53 @@ namespace ERP.Infrastructure.Persistence;
 public class ErpDbContext : DbContext
 {
     private readonly ICurrentTenant _currentTenant;
+    private readonly IPublisher _publisher;
 
     public ErpDbContext(
         DbContextOptions<ErpDbContext> options,
-        ICurrentTenant currentTenant) : base(options)
+        ICurrentTenant currentTenant,
+        IPublisher publisher) : base(options)
     {
         _currentTenant = currentTenant;
+        _publisher     = publisher;
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        => SaveChangesAsync(acceptAllChangesOnSuccess, CancellationToken.None)
+            .GetAwaiter().GetResult();
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        => SaveChangesAsync(true, cancellationToken);
+
+    public override async Task<int> SaveChangesAsync(
+        bool acceptAllChangesOnSuccess,
+        CancellationToken cancellationToken = default)
+    {
+        var entitiesWithEvents = ChangeTracker.Entries<IHasDomainEvents>()
+            .Where(e => e.Entity.DomainEvents.Any())
+            .Select(e => e.Entity)
+            .ToList();
+
+        var domainEvents = entitiesWithEvents.SelectMany(e => e.DomainEvents).ToList();
+        foreach (var entity in entitiesWithEvents)
+            entity.ClearDomainEvents();
+
+        var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+        foreach (var @event in domainEvents)
+            await _publisher.Publish((INotification)@event, cancellationToken);
+
+        if (ChangeTracker.HasChanges())
+            result += await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+        return result;
     }
 
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
     public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
+    public DbSet<ConfiguracionContableEmpresa> ConfiguracionContableEmpresas => Set<ConfiguracionContableEmpresa>();
+    public DbSet<ConfiguracionGastoCategoria> ConfiguracionGastoCategorias => Set<ConfiguracionGastoCategoria>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<TaxRate> TaxRates => Set<TaxRate>();
     public DbSet<ProductLine> ProductLines => Set<ProductLine>();
@@ -84,7 +124,9 @@ public class ErpDbContext : DbContext
     public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
     public DbSet<Tariff> Tariffs => Set<Tariff>();
     public DbSet<User>         Users         => Set<User>();
+    public DbSet<FirstRunSetupState> FirstRunSetupStates => Set<FirstRunSetupState>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<IdentityUser> IdentityUsers => Set<IdentityUser>();
     public DbSet<Membership> Memberships => Set<Membership>();
     public DbSet<AccessProfile> AccessProfiles => Set<AccessProfile>();
@@ -99,7 +141,10 @@ public class ErpDbContext : DbContext
     public DbSet<UserActivity> UserActivities => Set<UserActivity>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<VentasFactura> VentasFacturas => Set<VentasFactura>();
+    public DbSet<VentasNotaCreditoDebito> VentasNotasCreditoDebito => Set<VentasNotaCreditoDebito>();
+    public DbSet<VentasRetencionRecibida> VentasRetencionesRecibidas => Set<VentasRetencionRecibida>();
     public DbSet<ConfiguracionSRI> ConfiguracionSRIs => Set<ConfiguracionSRI>();
+    public DbSet<ConfiguracionRetencion> ConfiguracionRetenciones => Set<ConfiguracionRetencion>();
 
     // ── Logística / Bodegas ───────────────────────────────────────────────
     public DbSet<Bodega> Bodegas => Set<Bodega>();
@@ -109,6 +154,9 @@ public class ErpDbContext : DbContext
 
     // ── Compras ───────────────────────────────────────────────────────────
     public DbSet<CompraFactura>          CompraFacturas          => Set<CompraFactura>();
+    public DbSet<CompraNotaProveedor>    CompraNotasProveedor    => Set<CompraNotaProveedor>();
+    public DbSet<CompraNotaProveedorDetalle> CompraNotaProveedorDetalles => Set<CompraNotaProveedorDetalle>();
+    public DbSet<CompraRetencionEmitida> CompraRetencionesEmitidas => Set<CompraRetencionEmitida>();
     public DbSet<CompraDetalle>          CompraDetalles          => Set<CompraDetalle>();
     public DbSet<CompraBodegaAsignacion> CompraBodegaAsignaciones => Set<CompraBodegaAsignacion>();
     public DbSet<OrdenCompra>            OrdenesCompra           => Set<OrdenCompra>();
@@ -117,6 +165,14 @@ public class ErpDbContext : DbContext
 
     // ── Gastos ────────────────────────────────────────────────────────────
     public DbSet<GastoFactura> GastoFacturas => Set<GastoFactura>();
+
+    // ── Caja / Bancos ─────────────────────────────────────────────────────
+    public DbSet<CuentaBancaria> CuentasBancarias => Set<CuentaBancaria>();
+    public DbSet<ExtractoBancario> ExtractosBancarios => Set<ExtractoBancario>();
+    public DbSet<MovimientoBancario> MovimientosBancarios => Set<MovimientoBancario>();
+    public DbSet<CajaChica> CajasChicas => Set<CajaChica>();
+    public DbSet<ArqueoCaja> ArqueosCaja => Set<ArqueoCaja>();
+    public DbSet<GastoCajaChica> GastosCajaChica => Set<GastoCajaChica>();
 
     // ── Inventario ────────────────────────────────────────────────────────
     public DbSet<StockActual>          StockActual            => Set<StockActual>();
@@ -136,6 +192,8 @@ public class ErpDbContext : DbContext
 
     public DbSet<UiNavGroup> UiNavGroups => Set<UiNavGroup>();
     public DbSet<UiNavItem> UiNavItems => Set<UiNavItem>();
+    public DbSet<TenantCustomMenu> TenantCustomMenus => Set<TenantCustomMenu>();
+    public DbSet<Funcionalidad> Funcionalidades => Set<Funcionalidad>();
     public DbSet<ConfigGlobal> ConfigGlobals => Set<ConfigGlobal>();
     public DbSet<ConfigModule> ConfigModules => Set<ConfigModule>();
     public DbSet<ConfigFeature> ConfigFeatures => Set<ConfigFeature>();

@@ -106,6 +106,89 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
         return xmlString; // Retornar contenido XML, no la ruta
     }
 
+    public async Task<string> GenerarXmlNotaCreditoDebitoAsync(
+        VentasFactura facturaOriginal,
+        VentasNotaCreditoDebito nota,
+        List<VentasNotaDetalle> detalles,
+        ConfiguracionSRI config)
+    {
+        var esCredito = string.Equals(nota.TipoNota, "CREDITO", StringComparison.OrdinalIgnoreCase);
+        var rootName  = esCredito ? "notaCredito" : "notaDebito";
+        var infoName  = esCredito ? "infoNotaCredito" : "infoNotaDebito";
+
+        var numDocSustento =
+            $"{facturaOriginal.Establecimiento}-{facturaOriginal.PuntoEmision}-{facturaOriginal.Secuencial}";
+
+        var infoTributaria = new XElement("infoTributaria",
+            new XElement("ambiente", config.Ambiente),
+            new XElement("tipoEmision", config.TipoEmision),
+            new XElement("razonSocial", config.RazonSocial),
+            new XElement("nombreComercial", config.NombreComercial ?? config.RazonSocial),
+            new XElement("ruc", config.RucEmpresa),
+            new XElement("claveAcceso", nota.ClaveAcceso),
+            new XElement("codDoc", nota.TipoDocumento),
+            new XElement("estab", nota.Establecimiento),
+            new XElement("ptoEmi", nota.PuntoEmision),
+            new XElement("secuencial", nota.Secuencial),
+            new XElement("dirMatriz", config.DireccionMatriz));
+
+        var infoPrincipal = new XElement(infoName,
+            new XElement("fechaEmision", nota.FechaEmision.ToString("dd/MM/yyyy")),
+            new XElement("dirEstablecimiento", config.DireccionMatriz),
+            new XElement("tipoIdentificacionComprador", "04"),
+            new XElement("razonSocialComprador", facturaOriginal.Cliente.LegalName),
+            new XElement("identificacionComprador", facturaOriginal.Cliente.IdentificationNumber),
+            new XElement("contribuyenteEspecial", ""),
+            new XElement("obligadoContabilidad", config.ObligadoContabilidad ? "SI" : "NO"),
+            new XElement("tipoEmision", config.TipoEmision),
+            new XElement("rise", ""),
+            new XElement("codDocModificado", facturaOriginal.TipoDocumento.Trim()),
+            new XElement("numDocModificado", numDocSustento),
+            new XElement("fechaEmisionDocSustento", facturaOriginal.FechaEmision.ToString("dd/MM/yyyy")),
+            new XElement("motivo", nota.Motivo),
+            new XElement("numAutDocSustento", facturaOriginal.NumeroAutorizacion ?? "0000000000"),
+            new XElement("totalSinImpuestos", nota.Subtotal.ToString("F2")),
+            new XElement("valorModificacion", nota.Total.ToString("F2")),
+            new XElement("totalConImpuestos",
+                new XElement("totalImpuesto",
+                    new XElement("codigo", "2"),
+                    new XElement("codigoPorcentaje", "2"),
+                    new XElement("baseImponible", nota.Subtotal.ToString("F2")),
+                    new XElement("valor", nota.Impuesto.ToString("F2")))),
+            new XElement("moneda", "DOLAR"));
+
+        var xmlDoc = new XDocument(
+            new XDeclaration("1.0", "UTF-8", null),
+            new XElement(rootName,
+                new XAttribute("id", "comprobante"),
+                new XAttribute("version", "1.0.0"),
+                infoTributaria,
+                infoPrincipal,
+                new XElement("detalles",
+                    detalles.Select(d => new XElement("detalle",
+                        new XElement("codigoInterno", d.ProductoId.ToString()),
+                        new XElement("descripcion", d.Descripcion),
+                        new XElement("cantidad", d.Cantidad.ToString("F4")),
+                        new XElement("precioUnitario", d.PrecioUnitario.ToString("F6")),
+                        new XElement("descuento", "0.00"),
+                        new XElement("precioTotalSinImpuesto", d.Subtotal.ToString("F2")),
+                        new XElement("impuestos",
+                            new XElement("impuesto",
+                                new XElement("codigo", "2"),
+                                new XElement("codigoPorcentaje", "2"),
+                                new XElement("tarifa", "12.00"),
+                                new XElement("baseImponible", d.Subtotal.ToString("F2")),
+                                new XElement("valor", d.Impuesto.ToString("F2")))))))
+            ));
+
+        var xmlString = xmlDoc.ToString();
+        _logger.LogDebug("[SRI-SIM] XML {Root} generado para nota {NotaId}", rootName, nota.Id);
+
+        var path = $"notas/ventas/{nota.ClaveAcceso}.xml";
+        await _fileStorage.SaveAsync(path, new MemoryStream(Encoding.UTF8.GetBytes(xmlString)));
+        return xmlString;
+    }
+
     public Task<byte[]> FirmarXmlAsync(string xmlContent, string p12Path, string password)
     {
         _logger.LogDebug("[SRI-SIM] Firma digital simulada (P12 no aplicado)");

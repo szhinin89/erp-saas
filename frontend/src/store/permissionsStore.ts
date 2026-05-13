@@ -30,6 +30,7 @@ export const usePermissionsStore = create<PermissionsState>()(
         }),
       clearPermissions: () => set({ permissions: [], planCode: null, enabledModules: [] }),
       has: (permissionKey) => {
+        if (permissionKey.startsWith('session:')) return true;
         const perms = get().permissions;
         if (perms.includes('*')) return true;
         return perms.some((p) => p.toLowerCase() === permissionKey.toLowerCase());

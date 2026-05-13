@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Navigation;
 using ERP.Application.Subscriptions;
 using ERP.Domain.Subscriptions;
 using ERP.Domain.Subscriptions.Entities;
@@ -78,6 +79,7 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
                 plan.IsRecommended,
                 plan.SortOrder,
                 plan.ExternalBillingRef,
+                !string.IsNullOrWhiteSpace(plan.MenuConfigJson),
                 feats));
         }
 
@@ -194,6 +196,45 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
 
         await ClearRecommendedExceptAsync(planId, ct);
         plan.SetRecommended(true);
+        await _db.SaveChangesAsync(ct);
+        return Result<object?>.Success(null);
+    }
+
+    public async Task<Result<string?>> GetPlanMenuJsonAsync(Guid planId, CancellationToken ct = default)
+    {
+        var plan = await _db.SaasPlans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == planId, ct);
+        if (plan is null)
+            return Result<string?>.Failure("Plan no encontrado.");
+        return Result<string?>.Success(plan.MenuConfigJson);
+    }
+
+    public async Task<Result<object?>> SetPlanMenuJsonAsync(Guid planId, string? menuConfigJson, CancellationToken ct = default)
+    {
+        var plan = await _db.SaasPlans.FirstOrDefaultAsync(p => p.Id == planId, ct);
+        if (plan is null)
+            return Result<object?>.Failure("Plan no encontrado.");
+
+        var raw = menuConfigJson?.Trim();
+        if (string.IsNullOrEmpty(raw))
+        {
+            plan.SetMenuConfigJson(null);
+            await _db.SaveChangesAsync(ct);
+            return Result<object?>.Success(null);
+        }
+
+        if (!SessionMenuJsonParser.TryDeserialize(raw, out var parsed) || parsed is null || parsed.Count == 0)
+            return Result<object?>.Failure("JSON de menú inválido o vacío.");
+
+        try
+        {
+            SessionMenuTreeValidator.Validate(parsed);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Result<object?>.Failure(ex.Message);
+        }
+
+        plan.SetMenuConfigJson(SessionMenuJsonParser.Serialize(parsed));
         await _db.SaveChangesAsync(ct);
         return Result<object?>.Success(null);
     }

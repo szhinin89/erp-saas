@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.Application.Common;
-using ERP.Domain.Accounting.Interfaces;
+using ERP.Domain.Modules.Contabilidad.Interfaces;
 using ERP.Domain.Products.Interfaces;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Application.Common.Interfaces;
@@ -12,14 +12,15 @@ using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Branches.Interfaces;
 using ERP.Domain.Geography.Interfaces;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Customers.Interfaces;
-using ERP.Domain.Bodegas.Interfaces;
-using ERP.Domain.Proveedores.Interfaces;
-using ERP.Domain.Compras.Interfaces;
+using ERP.Domain.Modules.Ventas.Interfaces;
+using ERP.Domain.Modules.Inventario.Interfaces;
+using ERP.Domain.Modules.Compras.Interfaces;
+using ERP.Domain.Modules.Compras.Interfaces;
 using ERP.Domain.Modules.Ventas.Interfaces;
 using ERP.Domain.Configuration.Interfaces;
-using ERP.Domain.Inventario.Interfaces;
-using ERP.Domain.Gastos.Interfaces;
+using ERP.Domain.Modules.Inventario.Interfaces;
+using ERP.Domain.Modules.Gastos.Interfaces;
+using ERP.Domain.Modules.Caja.Interfaces;
 using ERP.Domain.Subscriptions.Interfaces;
 using ERP.Application.Navigation;
 using ERP.Application.Subscriptions;
@@ -31,6 +32,8 @@ using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Persistence.Saas;
 using ERP.Infrastructure.Security;
 using ERP.Infrastructure.Services;
+using ERP.Infrastructure.Services.Caja;
+using ERP.Domain.Modules.Caja;
 
 namespace ERP.Infrastructure;
 
@@ -44,6 +47,7 @@ public static class DependencyInjection
         services.AddMemoryCache();
         services.AddSingleton<InstanceQuotaFileStore>();
         services.AddSingleton<IDeploymentFeatureFlags, DeploymentFeatureFlags>();
+        services.AddScoped<IFirstRunSetupService, FirstRunSetupService>();
 
         services.AddDbContext<ErpDbContext>(options =>
             options.UseNpgsql(
@@ -53,10 +57,14 @@ public static class DependencyInjection
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
+        services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+        services.AddScoped<IPasswordResetLinkSender, LoggingPasswordResetLinkSender>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<ICurrentTenant, CurrentTenantService>();
         services.AddScoped<ICurrentUser, CurrentUserService>();
         services.AddScoped<IAccountingRepository, AccountingRepository>();
+        services.AddScoped<IConfiguracionContableRepository, ConfiguracionContableRepository>();
+        services.AddScoped<ICuentaContableService, CuentaContableService>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ITaxRateRepository, TaxRateRepository>();
         services.AddScoped<IProductCatalogRepository, ProductCatalogRepository>();
@@ -75,11 +83,14 @@ public static class DependencyInjection
         services.AddScoped<IXmlFacturaParser, SriFacturaParser>();
         services.AddScoped<IFileStorage, LocalFileStorage>();
         services.AddScoped<ISriFacturaElectronicaService, SriFacturaElectronicaSimuladoService>();
+        services.AddScoped<ISriComprobanteRetencionService, SriComprobanteRetencionSimuladoService>();
         services.AddScoped<ICompraRepository, CompraRepository>();
         services.AddScoped<IGastoFacturaRepository, GastoFacturaRepository>();
         services.AddScoped<IInventarioStockRepository, InventarioStockRepository>();
         services.AddScoped<IKardexSnapshotRepository, KardexSnapshotRepository>();
         services.AddScoped<IKardexReporteRepository, KardexReporteRepository>();
+        services.AddScoped<IKardexDatabaseMaintenance, KardexDatabaseMaintenanceService>();
+        services.AddScoped<IKardexMaterializedDailySummariesReader, KardexMaterializedDailySummariesReader>();
         services.AddScoped<ICostoPromedioService, CostoPromedioService>();
         services.AddScoped<KardexSnapshotService>();
         services.AddScoped<IKardexSnapshotCalculator>(sp => sp.GetRequiredService<KardexSnapshotService>());
@@ -97,12 +108,18 @@ public static class DependencyInjection
         services.AddScoped<ISaasPlansAdminService, SaasPlansAdminService>();
         services.AddScoped<IConfigService, ConfigService>();
         services.AddScoped<INavigationMenuReader, NavigationMenuReader>();
+        services.AddScoped<TenantMenuService>();
+        services.AddScoped<ITenantSessionMenuResolver>(sp => sp.GetRequiredService<TenantMenuService>());
+        services.AddScoped<ITenantMenuAdminService>(sp => sp.GetRequiredService<TenantMenuService>());
         services.AddScoped<INavigationMenuAdminService, NavigationMenuAdminService>();
         services.AddScoped<IGrowthAnalyticsReader, GrowthAnalyticsReader>();
         services.AddScoped<IConfiguracionFacturacionRepository, ConfiguracionFacturacionRepository>();
         services.AddScoped<IConfiguracionSRIRepository, ConfiguracionSRIRepository>();
+        services.AddScoped<IConfiguracionRetencionRepository, ConfiguracionRetencionRepository>();
         services.AddScoped<IVentasRepository, VentasRepository>();
         services.AddScoped<ITirillaFacturaService, TirillaFacturaService>();
+        services.AddScoped<ICajaRepository, CajaRepository>();
+        services.AddScoped<IExtractoParser, ExtractoBancarioCsvParser>();
 
         return services;
     }

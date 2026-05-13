@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using ERP.Domain.Customers.Entities;
-using ERP.Domain.Customers.Interfaces;
+using ERP.Domain.Modules.Ventas.Entities;
+using ERP.Domain.Modules.Ventas.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 

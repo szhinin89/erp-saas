@@ -27,9 +27,9 @@ export const accessService = {
     return data.responseObject;
   },
 
-  /** Menú lateral / cabecera definido en `ui_nav_groups` / `ui_nav_items`. */
+  /** Menú lateral resuelto (tenant → plan → global). Alias de GET /api/access/me/menu. */
   async getSessionMenu() {
-    const { data } = await api.get<ApiResponse<SessionMenuGroupDto[]>>('/api/access/me/menu');
+    const { data } = await api.get<ApiResponse<SessionMenuGroupDto[]>>('/api/me/menu');
     return data.responseObject ?? [];
   },
 };

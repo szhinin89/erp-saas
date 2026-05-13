@@ -1,7 +1,7 @@
 using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Ventas.DTOs;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventario.Interfaces;
 
 namespace ERP.Application.Ventas.UseCases.GetStockDisponibleParaVenta;
 

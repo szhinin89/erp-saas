@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using ERP.Domain.Gastos.Entities;
-using ERP.Domain.Gastos.Enums;
-using ERP.Domain.Gastos.Interfaces;
+using ERP.Domain.Modules.Gastos.Entities;
+using ERP.Domain.Modules.Gastos.Enums;
+using ERP.Domain.Modules.Gastos.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 

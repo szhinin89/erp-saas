@@ -1,13 +1,14 @@
 namespace ERP.Domain.Common;
 
-public abstract class AggregateRoot : BaseEntity
+public abstract class AggregateRoot : BaseEntity, IHasDomainEvents
 {
     private readonly List<IDomainEvent> _domainEvents = new();
 
-    public IReadOnlyList<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
 
-    protected void AddDomainEvent(IDomainEvent domainEvent)
-        => _domainEvents.Add(domainEvent);
+    public void AddDomainEvent(IDomainEvent eventItem) => _domainEvents.Add(eventItem);
+
+    protected void RaiseDomainEvent(IDomainEvent domainEvent) => AddDomainEvent(domainEvent);
 
     public void ClearDomainEvents() => _domainEvents.Clear();
 }

@@ -1,0 +1,16 @@
+using ERP.Domain.Configuration.Entities;
+using ERP.Domain.Modules.Compras.Entities;
+
+namespace ERP.Application.Common.Interfaces;
+
+public interface ISriComprobanteRetencionService
+{
+    Task<string> GenerarXmlRetencionAsync(
+        CompraRetencionEmitida retencion,
+        List<CompraDetalleRetencionEmitida> detalles,
+        ConfiguracionSRI config);
+
+    Task<byte[]> FirmarXmlAsync(string xmlContent, string p12Path, string password);
+
+    Task<SriAutorizacionResponse> EnviarAsync(byte[] xmlFirmado, string urlWsdl);
+}

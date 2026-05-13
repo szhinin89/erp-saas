@@ -3,9 +3,9 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
 using ERP.Application.Inventario.UseCases.CrearTransferencia;
-using ERP.Domain.Bodegas.Entities;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Enums;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Enums;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Unit;

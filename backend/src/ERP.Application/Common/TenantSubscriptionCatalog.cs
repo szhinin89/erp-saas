@@ -16,6 +16,7 @@ public static class TenantSubscriptionCatalog
         "compras",
         "gastos",
         "inventario",
+        "rrhh",
         "saas",
         "ventas",
     };
@@ -42,14 +43,6 @@ public static class TenantSubscriptionCatalog
 
             if (set.Count == 0)
                 return AllModuleKeys;
-
-            // Clientes (ventas) y logística (compras / gastos) quedan habilitados si el tenant tiene inventario, sin exigir otra fila en JSON (compatibilidad).
-            if (set.Contains("inventario", StringComparer.OrdinalIgnoreCase))
-            {
-                set.Add("ventas");
-                set.Add("compras");
-                set.Add("gastos");
-            }
 
             return set.OrderBy(x => x, StringComparer.Ordinal).ToList();
         }

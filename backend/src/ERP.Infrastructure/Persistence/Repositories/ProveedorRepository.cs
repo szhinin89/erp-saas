@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using ERP.Domain.Proveedores.Entities;
-using ERP.Domain.Proveedores.Interfaces;
+using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Compras.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
@@ -15,6 +15,12 @@ public sealed class ProveedorRepository : IProveedorRepository
 
     public Task<Proveedor?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
         => _context.Proveedores.FirstOrDefaultAsync(p => p.TenantId == tenantId && p.Id == id, ct);
+
+    public Task<Proveedor?> GetByRucAsync(Guid tenantId, string ruc, CancellationToken ct = default)
+    {
+        var r = (ruc ?? string.Empty).Trim();
+        return _context.Proveedores.FirstOrDefaultAsync(p => p.TenantId == tenantId && p.Ruc == r, ct);
+    }
 
     public async Task<bool> ExistsRucAsync(
         Guid tenantId,

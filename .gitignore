@@ -4,6 +4,8 @@
 **/out/
 # Salida local de compilación aislada (no versionar)
 backend/src/_buildcheck/
+backend/_buildcheck/
+backend/_buildcheck2/
 
 # Visual Studio
 .vs/

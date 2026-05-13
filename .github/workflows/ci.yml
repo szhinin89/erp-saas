@@ -36,10 +36,23 @@ env:
   DOTNET_NOLOGO: 1
 
 jobs:
+  stack-audit:
+    name: Stack Audit (allowlist)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Verify allowed stack
+        shell: pwsh
+        run: ./scripts/verify-stack-allowlist.ps1
+
   backend:
     name: Backend (.NET)
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    needs: stack-audit
 
     steps:
       - uses: actions/checkout@v6
@@ -61,6 +74,7 @@ jobs:
     name: Frontend (Node)
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    needs: stack-audit
     defaults:
       run:
         working-directory: frontend

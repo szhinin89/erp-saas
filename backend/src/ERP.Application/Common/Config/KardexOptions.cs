@@ -35,4 +35,13 @@ public sealed class KardexOptions
     /// de forma síncrona (aunque el rango sea largo), simplemente puede tardar más.
     /// </summary>
     public bool EnableAsyncReport { get; set; } = true;
+
+    /// <summary>
+    /// Si <c>true</c> (junto con <see cref="UseScalableMode"/> y snapshot), el hueco entre el snapshot y el
+    /// inicio del período usa días UTC completos agregados en <c>mv_saldos_diarios</c>: por cada día se aplica
+    /// primero el total de entradas del día y luego el de salidas (aproximación frente al orden real intra-día
+    /// del promedio ponderado móvil). Los tramos parcial del primer y último día siguen siendo movimientos
+    /// detallados. Si la MV no está disponible, se vuelve a leer <c>inventario_movimientos</c>.
+    /// </summary>
+    public bool UseMaterializedDailySummaries { get; set; } = false;
 }

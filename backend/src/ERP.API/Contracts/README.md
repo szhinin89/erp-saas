@@ -1,4 +1,4 @@
-# API Contracts - Separación de Responsabilidades
+# Contratos de API — separación de responsabilidades
 
 ## 📋 Convención: Request DTO → Domain Filter
 
@@ -49,7 +49,7 @@ public async Task<IActionResult> GetReport(
 
 1. **Contrato de API claro**: Swagger documenta automáticamente `GetProductReportRequest`
 2. **Validaciones centralizadas**: Agregar `[Required]`, `[Range]`, etc. en el DTO
-3. **Separación**: API request ≠ Domain filter
+3. **Separación**: la petición HTTP ≠ el filtro de dominio
 4. **Versionabilidad**: Si el API cambia, el filter de negocio no se ve afectado
 5. **Reutilización**: `ToFilter()` puede ser usado por múltiples handlers
 
@@ -67,7 +67,7 @@ ERP.API/
     └── ...
 ```
 
-### Próximos Pasos
+### Próximos pasos
 
 1. Crear `GetProductReportRequest` con método `ToFilter()`
 2. Actualizar `ProductsController.GetReport()` para recibirlo

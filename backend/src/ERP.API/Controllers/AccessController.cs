@@ -3,13 +3,13 @@ using ERP.API.Extensions;
 using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.BootstrapLogin;
 using ERP.Application.Access.UseCases.SwitchTenant;
-using ERP.Application.Access.UseCases.RegisterTenantWithAdmin;
 using ERP.Application.Access.UseCases.UpsertMembership;
 using ERP.Application.Access.UseCases.RevokeMembership;
 using ERP.Application.Access.UseCases.Profiles;
 using ERP.Application.Access.UseCases.TenantAccess;
 using ERP.Application.Access.UseCases.SuperAdminTenants;
 using ERP.Application.Access.UseCases.Permissions;
+using ERP.Application.Navigation;
 using ERP.Application.Navigation.DTOs;
 using ERP.Application.Navigation.UseCases.GetSessionMenu;
 using ERP.Application.Common;
@@ -26,7 +26,7 @@ namespace ERP.API.Controllers;
 /// <remarks>
 /// Políticas mezcladas a propósito: <c>AllowAnonymous</c> (bootstrap / registro empresa),
 /// <c>Bootstrap</c> (<c>switch-tenant</c>), <c>Session</c> (<c>me/menu</c>, <c>me/permissions</c>),
-/// <c>Roles</c> (membresías globales, perfiles, permisos de perfil). Ver criterio P0 en <c>docs/REFACTOR-BACKLOG.md</c>.
+/// <c>Roles</c> (membresías globales, perfiles, permisos de perfil). Ver criterio P0 en <c>docs/ESTADO-PROYECTO.md</c> (sección backlog de refactor).
 /// </remarks>
 [ApiController]
 [Route("api/[controller]")]
@@ -34,10 +34,12 @@ namespace ERP.API.Controllers;
 public class AccessController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly ITenantMenuAdminService _tenantMenuAdmin;
 
-    public AccessController(IMediator mediator)
+    public AccessController(IMediator mediator, ITenantMenuAdminService tenantMenuAdmin)
     {
         _mediator = mediator;
+        _tenantMenuAdmin = tenantMenuAdmin;
     }
 
     /// <summary>Login (paso 1): retorna bootstrap token + empresas accesibles.</summary>
@@ -78,7 +80,10 @@ public class AccessController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Registro de empresa + usuario administrador (onboarding).</summary>
+    /// <summary>
+    /// Alias legacy de alta de empresa.
+    /// Ruta oficial: <c>POST /api/access/superadmin/tenants</c>.
+    /// </summary>
     /// <remarks>
     /// Crea el tenant, crea el usuario global (email único en el sistema) y le asigna una membresía Admin
     /// solo en esa empresa.
@@ -86,11 +91,14 @@ public class AccessController : ControllerBase
     /// <response code="201">Tenant creado + session token del admin.</response>
     /// <response code="400">Slug duplicado o email ya registrado.</response>
     [HttpPost("register-tenant")]
-    [AllowAnonymous]
+    [Authorize(Roles = "SuperAdmin")]
+    [ApiExplorerSettings(IgnoreApi = true)]
     [ProducesResponseType(typeof(ApiResponse<SessionResponseDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> RegisterTenant([FromBody] RegisterTenantWithAdminCommand command, CancellationToken ct)
+    public async Task<IActionResult> RegisterTenant([FromBody] SuperAdminCreateTenantWithAdminCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
@@ -161,6 +169,53 @@ public class AccessController : ControllerBase
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
+    }
+
+    public sealed record TenantMenuPutBody(string MenuConfigJson);
+
+    /// <summary>SuperAdmin: menú efectivo de la empresa (personalizado, del plan o global).</summary>
+    [HttpGet("superadmin/tenants/{tenantId:guid}/menu")]
+    [Authorize(Roles = "SuperAdmin")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SuperAdminGetTenantMenu(Guid tenantId, CancellationToken ct)
+    {
+        var r = await _tenantMenuAdmin.GetResolvedMenuForTenantAsync(tenantId, ct);
+        if (!r.IsSuccess)
+            return this.ApiBadRequest(r.Error ?? "Error");
+        var v = r.Value!;
+        return this.ApiOk(new
+        {
+            menu = v.Menu,
+            hasCustomMenu = v.HasCustomMenu,
+            usedPlanMenu = v.UsedPlanMenu,
+            usedGlobalFallback = v.UsedGlobalFallback,
+        });
+    }
+
+    /// <summary>SuperAdmin: guarda menú personalizado por empresa (JSON = <c>SessionMenuGroupDto[]</c>).</summary>
+    [HttpPut("superadmin/tenants/{tenantId:guid}/menu")]
+    [Authorize(Roles = "SuperAdmin")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SuperAdminPutTenantMenu(Guid tenantId, [FromBody] TenantMenuPutBody body, CancellationToken ct)
+    {
+        var r = await _tenantMenuAdmin.UpsertTenantCustomMenuAsync(tenantId, body.MenuConfigJson, ct);
+        return r.IsSuccess
+            ? this.ApiOk(new { }, "Guardado")
+            : this.ApiBadRequest(r.Error ?? "Error");
+    }
+
+    /// <summary>SuperAdmin: elimina menú personalizado; la empresa vuelve al menú del plan o global.</summary>
+    [HttpDelete("superadmin/tenants/{tenantId:guid}/menu")]
+    [Authorize(Roles = "SuperAdmin")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SuperAdminDeleteTenantMenu(Guid tenantId, CancellationToken ct)
+    {
+        var r = await _tenantMenuAdmin.DeleteTenantCustomMenuAsync(tenantId, ct);
+        return r.IsSuccess
+            ? this.ApiOk(new { }, "Restablecido")
+            : this.ApiBadRequest(r.Error ?? "Error");
     }
 
     // ── Admin del tenant: accesos ───────────────────────────────────

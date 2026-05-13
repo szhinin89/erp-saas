@@ -7,7 +7,7 @@ using ERP.Application.Ventas.UseCases.CrearVenta;
 using ERP.Application.Ventas.UseCases.EmitirFacturaElectronica;
 using ERP.Application.Ventas.UseCases.GetVentaById;
 using ERP.Application.Ventas.UseCases.ValidarVenta;
-using ERP.Domain.Inventario.Enums;
+using ERP.Domain.Modules.Inventario.Enums;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;

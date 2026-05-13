@@ -1,6 +1,6 @@
 import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
-import type { SessionResponse } from '../types/access';
+import type { SessionResponse, SessionMenuGroupDto } from '../types/access';
 
 export type SuperAdminTenant = {
   id: string;
@@ -13,6 +13,7 @@ export type SuperAdminTenant = {
   planCode?: string | null;
   enabledModules?: string[];
   hasModuleRestrictions?: boolean;
+  hasCustomMenu?: boolean;
 };
 
 /** Coincide con SaasFeatureKind en backend (0–3). */
@@ -69,6 +70,7 @@ export type SaasPlanAdmin = {
   isRecommended: boolean;
   sortOrder: number;
   externalBillingRef: string | null;
+  hasMenuConfig?: boolean;
   features: SaasPlanFeatureAdmin[];
 };
 
@@ -137,6 +139,15 @@ export type CreateTenantWithAdminBody = {
   passwordResetMode?: number;
   /** Si true, no crea usuario; vincula un Admin existente por email. */
   linkExistingAdmin?: boolean;
+  /** Código de plan SaaS (catálogo). Opcional. */
+  planCode?: string | null;
+  /** Si se envía lista no vacía, restringe módulos; si se omite o [], sin JSON de restricción (todos). */
+  enabledModules?: string[] | null;
+};
+
+export type UpdateTenantSubscriptionBody = {
+  planCode?: string | null;
+  enabledModules?: string[] | null;
 };
 
 export type SaasPublicPlan = {
@@ -192,6 +203,15 @@ export type AdminNavGroupRow = {
 
 export type AdminNavigationMenu = {
   groups: AdminNavGroupRow[];
+};
+
+export type FuncionalidadArbolDto = {
+  id: string;
+  nombre: string;
+  icono: string | null;
+  ruta: string | null;
+  permiso: string;
+  hijos: FuncionalidadArbolDto[];
 };
 
 export type NavItemSiblingOrderLevel = {
@@ -270,6 +290,11 @@ export const superAdminService = {
       .post<ApiResponse<SessionResponse>>('/api/access/superadmin/tenants', body)
       .then((r) => r.data.responseObject),
 
+  updateTenantSubscription: (tenantId: string, body: UpdateTenantSubscriptionBody) =>
+    api
+      .patch<ApiResponse<unknown>>(`/api/tenants/${encodeURIComponent(tenantId)}/subscription`, body)
+      .then((r) => r.data),
+
   getMetrics: () =>
     api.get<ApiResponse<SuperAdminMetrics>>('/api/superadmin/metrics')
       .then((r) => r.data.responseObject),
@@ -330,6 +355,56 @@ export const superAdminService = {
   replaceSaasPlanFeatures: (planId: string, features: PlanFeatureAssignBody[]) =>
     api
       .put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-plans/${planId}/features`, { features })
+      .then((r) => r.data),
+
+  getPlanMenuJson: (planId: string) =>
+    api
+      .get<ApiResponse<{ menuConfigJson: string | null }>>(
+        `/api/superadmin/planes/${encodeURIComponent(planId)}/menu`,
+      )
+      .then((r) => r.data.responseObject.menuConfigJson),
+
+  setPlanMenuJson: (planId: string, menuConfigJson: string | null) =>
+    api
+      .put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/planes/${encodeURIComponent(planId)}/menu`, {
+        menuConfigJson,
+      })
+      .then((r) => r.data),
+
+  getTenantResolvedMenu: (tenantId: string) =>
+    api
+      .get<
+        ApiResponse<{
+          menu: SessionMenuGroupDto[];
+          hasCustomMenu: boolean;
+          usedPlanMenu: boolean;
+          usedGlobalFallback: boolean;
+        }>
+      >(`/api/superadmin/empresas/${encodeURIComponent(tenantId)}/menu`)
+      .then((r) => r.data.responseObject),
+
+  putTenantCustomMenu: (tenantId: string, menuConfigJson: string) =>
+    api
+      .put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/empresas/${encodeURIComponent(tenantId)}/menu`, {
+        menuConfigJson,
+      })
+      .then((r) => r.data),
+
+  getFuncionalidadesArbol: () =>
+    api
+      .get<ApiResponse<FuncionalidadArbolDto[]>>('/api/superadmin/funcionalidades/arbol')
+      .then((r) => r.data.responseObject ?? []),
+
+  syncFuncionalidadesCatalogo: () =>
+    api
+      .post<ApiResponse<{ sincronizados: number }>>('/api/superadmin/funcionalidades/sincronizar')
+      .then((r) => r.data.responseObject),
+
+  deleteTenantCustomMenu: (tenantId: string) =>
+    api
+      .delete<ApiResponse<Record<string, unknown>>>(
+        `/api/superadmin/empresas/${encodeURIComponent(tenantId)}/menu`,
+      )
       .then((r) => r.data),
 
   /** Endpoint público para landing (sin token). */

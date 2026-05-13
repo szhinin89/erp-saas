@@ -1,6 +1,8 @@
 <#!
   Asistente interactivo: pide parametros y crea el SuperAdmin (POST /api/setup/superadmin).
-  Requiere que la API este en marcha y que el token coincida con user-secrets o variable de entorno en el servidor.
+
+  Requiere ERP.API en marcha. El token es el de **first-run** (bloque verde en consola al arrancar)
+  o el devuelto por POST /api/dev/reset-first-run en Development. Ver docs/SUPERADMIN-Y-FIRST-RUN.md.
 
   Uso (desde la carpeta erp-saas):
     .\scripts\create-superadmin-interactive.ps1
@@ -61,82 +63,51 @@ function Read-PromptSecret {
 }
 
 $scriptDir = $PSScriptRoot
-$repoRoot = Split-Path $scriptDir -Parent
-$apiCsproj = Join-Path $repoRoot "backend\src\ERP.API\ERP.API.csproj"
 
 Clear-Host
 Write-Host "=== Crear SuperAdmin (instalacion inicial) ===" -ForegroundColor Cyan
 Write-Host @"
 Solo puede existir un SuperAdmin por base de datos.
-El token debe coincidir con lo que lee la API (clave Deployment:InitialSuperAdminSetupToken).
+Copie el token del mensaje FIRST-RUN en la consola donde corre ERP.API (caduca en 15 min).
+En Development puede obtener uno nuevo con POST /api/dev/reset-first-run.
 "@ -ForegroundColor Gray
 Write-Host ""
 
-$setupToken = ""
-Write-Host "[1/8] Token en user-secrets (opcional)" -ForegroundColor Cyan
-Write-Host @"
-  s = Guarda el token en dotnet user-secrets del proyecto ERP.API (recomendado la primera vez).
-  n = No guardar aqui; luego deberá pegar el mismo token que ya configuró en la API.
-"@ -ForegroundColor DarkGray
-$saveSecret = Read-Prompt "Escriba s o n y pulse Enter" "n" -DefaultHint "n = no (solo pegara el token en el siguiente paso)"
-if ($saveSecret -match '^[sSyY]') {
-  if (-not (Test-Path -LiteralPath $apiCsproj)) {
-    Write-Host "No se encontro: $apiCsproj" -ForegroundColor Red
-    exit 1
-  }
-  $secretToStore = Read-PromptSecret "Token secreto de instalacion" -Help @"
-  Mismo texto que usara la API en user-secrets (Deployment:InitialSuperAdminSetupToken).
-  Si acaba de inventarlo, guardelo en un sitio seguro; lo necesitara en el siguiente paso si no guarda aqui.
-"@
-  if ([string]::IsNullOrWhiteSpace($secretToStore)) {
-    Write-Host "Token vacio; cancelado." -ForegroundColor Red
-    exit 1
-  }
-  & dotnet user-secrets set "Deployment:InitialSuperAdminSetupToken" $secretToStore --project $apiCsproj
-  if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-  $setupToken = $secretToStore
-  Write-Host "User-secrets actualizado. Reinicie la API (dotnet run) y pulse Enter aqui cuando este escuchando..." -ForegroundColor Yellow
-  [void](Read-Host)
-}
-
-Write-Host "`n[2/8] Direccion del API" -ForegroundColor Cyan
+Write-Host "`n[1/7] Direccion del API" -ForegroundColor Cyan
 $apiBase = Read-Prompt "URL base (sin barra final)" "http://localhost:5003" -Help @"
   Ejemplo: http://localhost:5003
   Es la raiz donde responde su ERP.API (mismo host y puerto que dotnet run).
 "@
 
-if ([string]::IsNullOrWhiteSpace($setupToken)) {
-  $setupFromEnv = $env:Deployment__InitialSuperAdminSetupToken
-  Write-Host "`n[3/8] Token de instalacion" -ForegroundColor Cyan
-  $tokenHint = ""
-  if (-not [string]::IsNullOrWhiteSpace($setupFromEnv)) {
-    $tokenHint = "(variable `$env:Deployment__InitialSuperAdminSetupToken en ESTA consola)"
-  }
-  $setupToken = Read-Prompt "Pegue el token o pulse Enter" $setupFromEnv -DefaultHint $tokenHint -Help @"
-  Debe ser exactamente el valor de Deployment:InitialSuperAdminSetupToken en el servidor (user-secrets o variable de entorno del proceso de la API).
+$setupFromEnv = $env:ERP_SUPERADMIN_SETUP_TOKEN
+if ([string]::IsNullOrWhiteSpace($setupFromEnv)) { $setupFromEnv = $env:Deployment__InitialSuperAdminSetupToken }
+
+Write-Host "`n[2/7] Token first-run (setupToken)" -ForegroundColor Cyan
+$tokenHint = ""
+if (-not [string]::IsNullOrWhiteSpace($setupFromEnv)) {
+  $tokenHint = "(variable de entorno en esta consola)"
+}
+$setupToken = Read-Prompt "Pegue el token completo" $setupFromEnv -DefaultHint $tokenHint -Help @"
+  Debe ser el token mostrado por la API al arrancar (no user-secrets Deployment:InitialSuperAdminSetupToken).
+  Opcional: exporte ERP_SUPERADMIN_SETUP_TOKEN antes de ejecutar este script.
 "@
-}
-else {
-  Write-Host "`n[3/8] Token de instalacion" -ForegroundColor Cyan
-  Write-Host "  Se usara el token que acaba de guardar en user-secrets." -ForegroundColor DarkGray
-}
 if ([string]::IsNullOrWhiteSpace($setupToken)) {
   Write-Host "Token obligatorio." -ForegroundColor Red
   exit 1
 }
 
-Write-Host "`n[4/8] Nombre del usuario SuperAdmin" -ForegroundColor Cyan
+Write-Host "`n[3/7] Nombre del usuario SuperAdmin" -ForegroundColor Cyan
 $firstName = Read-Prompt "Nombre de pila" "Super" -Help "  Nombre que verá el usuario en el sistema."
 
-Write-Host "`n[5/8] Apellido del usuario SuperAdmin" -ForegroundColor Cyan
+Write-Host "`n[4/7] Apellido del usuario SuperAdmin" -ForegroundColor Cyan
 $lastName = Read-Prompt "Apellido" "Admin" -Help "  Apellido que verá el usuario en el sistema."
 
-Write-Host "`n[6/8] Correo del SuperAdmin" -ForegroundColor Cyan
+Write-Host "`n[5/7] Correo del SuperAdmin" -ForegroundColor Cyan
 $email = Read-Prompt "Email (login)" "superadmin@test.local" -Help @"
   Será el correo para iniciar sesión (superadmin-login). Debe ser único en la base de datos.
 "@
 
-Write-Host "`n[7/8] Contraseña del SuperAdmin" -ForegroundColor Cyan
+Write-Host "`n[6/7] Contraseña del SuperAdmin" -ForegroundColor Cyan
 $passwordPlain = Read-PromptSecret "Contraseña" -Help @"
   Mínimo 10 caracteres. Es la contraseña de inicio de sesión del SuperAdmin (no la del token de instalación).
 "@
@@ -145,7 +116,7 @@ if ([string]::IsNullOrWhiteSpace($passwordPlain) -or $passwordPlain.Length -lt 1
   exit 1
 }
 
-Write-Host "`n[8/8] HTTPS (solo si usa certificado no confiable)" -ForegroundColor Cyan
+Write-Host "`n[7/7] HTTPS (solo si usa certificado no confiable)" -ForegroundColor Cyan
 $skipTls = Read-Prompt "Si el API usa HTTPS con certificado no confiable, escriba s" "n" -Help @"
   Solo marque s si Invoke-RestMethod falla por certificado (poco habitual en http://localhost).
 "@ -DefaultHint "n = no (recomendado en local HTTP)"

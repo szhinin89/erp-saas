@@ -1,11 +1,47 @@
 # Registro del Proyecto — ERP SaaS ZH Technologies
 
 > **Uso:** entradas cronológicas de trabajo realizado, decisiones, deuda técnica y pendientes.
-> Leer junto con `ESTADO-PROYECTO-2026-05.md` para contexto completo.
+> Leer junto con `ESTADO-PROYECTO.md` para contexto completo.
+>
+> **Notas de continuación de sesión** (antes en `docs/CONTINUAR-sesion.md`): usar este mismo archivo — añadir una entrada con fecha cuando se cierre un hilo.
+
+---
+
+## Referencia rápida — SuperAdmin y cuotas de instancia
+
+- **SuperAdmin único por servidor:** `POST /api/setup/superadmin` (token efímero **first-run** impreso en consola al arrancar la API; ver [`docs/SUPERADMIN-Y-FIRST-RUN.md`](SUPERADMIN-Y-FIRST-RUN.md)), alias `POST /api/setup/claim-initial-superadmin`; login `superadmin-login`; panel `/superadmin`. La configuración `Deployment:InitialSuperAdminSetupToken` **no** participa en la validación del claim actual.
+- **Cuotas:** `DedicatedSingleClientInstance`, `MaxActiveTenants`, `MaxIdentityUsers`, `MaxUsersPerTenant`; opcional `App_Data/instance-quota.json` (ignorado en git); API `GET/PUT /api/superadmin/instance-quota`.
+- **Código:** `SetupController`, `SuperAdminController` (instance-quota), `DeploymentFeatureFlags`, `FirstRunSetupService`, `SuperAdminInstanceQuotaPage.tsx`.
+- **Scripts:** `scripts/create-superadmin.ps1`, `scripts/create-superadmin-interactive.ps1` (token = salida consola API / dev reset).
+- **Retomar en local:** PostgreSQL + migraciones → `backend/src/ERP.API` → `dotnet run` (puerto típico 5003) → `frontend` → `npm run dev`. Tras cambiar user-secrets o `Program.cs`, reiniciar la API.
 
 ---
 
 ## Entradas de trabajo
+
+### 11 de mayo de 2026 — Documentación SuperAdmin / first-run y scripts
+
+**Alcance:** Alinear documentación y scripts con el comportamiento real del claim de SuperAdmin (token en BD vía `FirstRunSetupService`, no `Deployment:InitialSuperAdminSetupToken`); distinguir `POST /api/auth/switch-tenant` (SuperAdmin) de `POST /api/access/switch-tenant` (bootstrap IAM).
+
+**Completado:** nuevo `docs/SUPERADMIN-Y-FIRST-RUN.md`; actualizados `REGISTRO-PROYECTO.md`, `DESARROLLO.md`, `ARCHITECTURE.md`; comentarios XML en `SetupController`, `AuthController` (`switch-tenant`), `IDeploymentFeatureFlags`; mensaje en `Program.cs`; `create-superadmin*.ps1` y `test-superadmin-flow.ps1`.
+
+---
+
+### 11 de mayo de 2026 — Notas crédito/débito, retenciones, caja y contabilidad por empresa (commit `2bf300b`)
+
+**Alcance:** Extensión SRI Ecuador (simulado), inventario y contabilidad para notas y retenciones; configuración de cuentas por tenant; módulo caja/bancos.
+
+**Completado:**
+- Dominio y EF: notas ventas (`VentasNotaCreditoDebito`, detalles), retención emitida compras, retención recibida ventas, `ConfiguracionRetencion`, `ConfiguracionContableEmpresa`, entidades Caja (caja chica, cuenta bancaria, extracto, movimientos, arqueo).
+- Aplicación: comandos crear/listar/enviar notas; generar/enviar/listar retención compra; registrar/listar retención recibida; `NotaCreditoAutorizadaEventHandler`; `CompraRetencionCalculo`; `CuentaContableService`; handlers Caja (conciliación, extractos, etc.).
+- Infra: `SriFacturaElectronicaSimuladoService.GenerarXmlNotaCreditoDebitoAsync`, `SriComprobanteRetencionSimuladoService`; repositorios; migraciones `AddConfiguracionContablePorEmpresa`, `AddCajaBancosModule`, `AddNotasCreditoDebitoRetenciones` (incluye SQL de permisos).
+- API: `VentasNotasController`, `VentasRetencionesRecibidasController`, `ComprasRetencionesController`, `ConfiguracionContableController`, `CajaController`.
+- Frontend parcial: i18n, `accountingConfigService`, componentes contables (`AccountTreeSelect`), ajustes en `AccountingPage` / `ProfilesPage` / nav.
+- Tests: `NotasYRetencionesEndToEndTests`, unitarios totales nota y cálculo retención; suite **266** tests en verde.
+
+**Pendiente / deuda:** SRI **real** para notas y retención; UI dedicada ventas/compras para notas y retenciones; documentar en runbook cuentas mínimas si no hay config. contable (heurística `AccountingService`).
+
+---
 
 ### 09 de mayo de 2026 — Módulo Ventas completo (commit `d20a14d`)
 

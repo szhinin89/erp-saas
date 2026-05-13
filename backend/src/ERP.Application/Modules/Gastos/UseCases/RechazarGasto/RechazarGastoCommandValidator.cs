@@ -1,5 +1,5 @@
 using FluentValidation;
-using ERP.Domain.Gastos.Entities;
+using ERP.Domain.Modules.Gastos.Entities;
 
 namespace ERP.Application.Modules.Gastos.UseCases.RechazarGasto;
 

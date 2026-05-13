@@ -20,7 +20,11 @@ public record SuperAdminCreateTenantWithAdminCommand(
     string? LogoUrl = null,
     int DisplayOrder = 0,
     int Priority = 0,
-    bool LinkExistingAdmin = false
+    bool LinkExistingAdmin = false,
+    /// <summary>Código de plan SaaS (p. ej. starter). Null/vacío = sin plan explícito.</summary>
+    string? PlanCode = null,
+    /// <summary>Si null o vacío, el tenant no restringe módulos (todos los habilitados según catálogo).</summary>
+    List<string>? EnabledModules = null
 ) : IRequest<Result<SessionResponseDto>>;
 
 public record GetSuperAdminTenantsQuery : IRequest<Result<IReadOnlyList<SuperAdminTenantItemDto>>>;

@@ -79,6 +79,52 @@ public sealed class VentasRepository : IVentasRepository
         return (items, totalCount);
     }
 
+    public Task AddNotaCreditoDebitoAsync(VentasNotaCreditoDebito nota, CancellationToken ct = default)
+        => _context.VentasNotasCreditoDebito.AddAsync(nota, ct).AsTask();
+
+    public Task<VentasNotaCreditoDebito?> GetNotaByIdWithDetailsAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+        => _context.VentasNotasCreditoDebito
+            .Include(n => n.FacturaOriginal)
+                .ThenInclude(f => f.Cliente)
+            .Include(n => n.Detalles)
+            .FirstOrDefaultAsync(n => n.TenantId == tenantId && n.Id == id, ct);
+
+    public async Task<IReadOnlyList<VentasNotaCreditoDebito>> GetNotasAsync(
+        Guid tenantId,
+        Guid? facturaOriginalId,
+        string? estado,
+        CancellationToken ct = default)
+    {
+        var q = _context.VentasNotasCreditoDebito
+            .Include(n => n.FacturaOriginal)
+                .ThenInclude(f => f.Cliente)
+            .Where(n => n.TenantId == tenantId);
+
+        if (facturaOriginalId.HasValue)
+            q = q.Where(n => n.VentasFacturaOriginalId == facturaOriginalId.Value);
+        if (!string.IsNullOrWhiteSpace(estado))
+            q = q.Where(n => n.Estado == estado);
+
+        return await q.OrderByDescending(n => n.FechaEmision).ToListAsync(ct);
+    }
+
+    public Task AddRetencionRecibidaAsync(VentasRetencionRecibida retencion, CancellationToken ct = default)
+        => _context.VentasRetencionesRecibidas.AddAsync(retencion, ct).AsTask();
+
+    public async Task<IReadOnlyList<VentasRetencionRecibida>> GetRetencionesRecibidasAsync(
+        Guid tenantId,
+        CancellationToken ct = default)
+        => await _context.VentasRetencionesRecibidas
+            .Include(r => r.Cliente)
+            .Include(r => r.Detalles)
+            .Where(r => r.TenantId == tenantId)
+            .OrderByDescending(r => r.FechaEmision)
+            .ToListAsync(ct);
+
+    public Task<bool> ExistsRetencionRecibidaClaveAsync(Guid tenantId, string claveAcceso, CancellationToken ct = default)
+        => _context.VentasRetencionesRecibidas.AnyAsync(
+            r => r.TenantId == tenantId && r.ClaveAcceso == claveAcceso, ct);
+
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);
 }

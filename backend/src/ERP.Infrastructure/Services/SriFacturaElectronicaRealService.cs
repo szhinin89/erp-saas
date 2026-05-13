@@ -43,6 +43,18 @@ public sealed class SriFacturaElectronicaRealService : ISriFacturaElectronicaSer
             "Configure el ambiente de pruebas (Ambiente=1) para usar el servicio simulado.");
     }
 
+    public Task<string> GenerarXmlNotaCreditoDebitoAsync(
+        VentasFactura facturaOriginal,
+        VentasNotaCreditoDebito nota,
+        List<VentasNotaDetalle> detalles,
+        ConfiguracionSRI config)
+    {
+        _logger.LogWarning(
+            "GenerarXmlNotaCreditoDebitoAsync no implementado — nota {NotaId}", nota.Id);
+        throw new SriCommunicationException(
+            "La generación de XML de nota de crédito/débito para el SRI real aún no está implementada.");
+    }
+
     public Task<byte[]> FirmarXmlAsync(string xmlContent, string p12Path, string password)
     {
         _logger.LogWarning(

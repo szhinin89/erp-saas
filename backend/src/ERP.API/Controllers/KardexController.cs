@@ -12,9 +12,10 @@ using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventario.DTOs;
 using ERP.Application.Inventario.UseCases.GetKardex;
 using ERP.Application.Inventario.UseCases.RecalcularSnapshots;
-using ERP.Domain.Inventario.Entities;
-using ERP.Domain.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Inventario.Interfaces;
 using ERP.Infrastructure.BackgroundServices;
+using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -22,6 +23,7 @@ namespace ERP.API.Controllers;
 /// Kardex valorizado de inventario por producto y bodega (método: promedio ponderado móvil).
 /// Soporta modo síncrono (respuesta inmediata) y asíncrono (202 + jobId).
 /// </summary>
+[Modulo("Kardex", "perm:inventario.kardex.view", "📊", "/inventario/kardex", null, 42)]
 [ApiController]
 [Route("api/inventario/kardex")]
 [Authorize]

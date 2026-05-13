@@ -9,7 +9,8 @@ public sealed record SessionMenuItemDto(
     string? PermissionKey,
     IReadOnlyList<string>? PermissionKeysAny,
     IReadOnlyList<string>? ItemRoles = null,
-    IReadOnlyList<SessionMenuItemDto>? Children = null);
+    IReadOnlyList<SessionMenuItemDto>? Children = null,
+    string? Icon = null);
 
 public sealed record SessionMenuGroupDto(
     string Code,
