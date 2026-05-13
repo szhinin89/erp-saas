@@ -457,7 +457,6 @@ Copiar `backend/src/ERP.API/appsettings.Development.json.example` → `appsettin
 - [x] `TenantsController` homologado (`200/201/400/401/403/404`).
 - [x] `SecurityController` homologado (`200/400/401/403`).
 - [x] `SaasPlansAdminController` homologado (`200/400/401/403`).
-- [x] `SaasFeaturesAdminController` homologado (`200/400/401/403`).
 - [x] `SuperAdminController` homologado (`200/400/401/403`).
 - [x] `SuperAdminConfigController` homologado (`200/400`).
 - [x] `PublicPlansController` homologado (`200`).

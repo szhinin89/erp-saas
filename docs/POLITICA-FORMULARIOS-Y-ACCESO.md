@@ -9,7 +9,7 @@
 
 1. **Administrador de empresa (tenant)**  
    - Solo opera sobre datos **de su `tenant_id`** (aislamiento estricto en API y consultas).  
-   - La **visibilidad** de pantallas y acciones se gobierna con **permisos** (`catalog.*`, `saas.*`, etc.) y, donde aplique, con **features del plan** del tenant (ver §2).
+   - La **visibilidad** de pantallas y acciones se gobierna con **permisos** (`catalog.*`, `saas.*`, etc.) y, donde aplique, con **plan comercial + módulos habilitados** del tenant (ver §2).
 
 2. **SuperAdmin**  
    - Puede operar en contexto **global** (sin tenant o con políticas específicas de instancia).  
@@ -21,18 +21,14 @@
 
 ---
 
-## 2. Plan comercial y features (“herencia ascendente”)
+## 2. Plan comercial y módulos habilitados
 
-1. **Definición operativa:** la disponibilidad de una funcionalidad para un tenant es **la unión** de:  
-   - suscripción activa → `plan_id`;  
-   - filas en **matriz de plan–feature** (`saas_plan_features`, `is_included`);  
-   - **overrides** por tenant si existen.
+1. **Definición operativa:** la disponibilidad de una funcionalidad para un tenant se gobierna por:  
+   - suscripción activa → `planCode`;  
+   - módulos habilitados del tenant (`enabledModules`) cuando aplique;  
+   - permisos/roles del usuario en ese tenant.
 
-2. **Herencia ascendente (Starter → Business → …):**  
-   - Se cumple **en datos**: al definir o modificar planes en catálogo/SuperAdmin, quien administra planes **debe** incluir la feature en **todos los planes superiores** donde deba existir.  
-   - **No** se asume hoy una regla automática en código del tipo “si está en Starter, infiérese en Enterprise”; si se desea más adelante, será **decisión explícita** (ADR + implementación), no parte de esta política base.
-
-3. **Formularios nuevos:** cada comando/query sensible debe declarar **feature** o quedar **justificado** por escrito (p. ej. solo lectura global SuperAdmin) en el PR.
+2. **Formularios nuevos:** cada comando/query sensible debe declarar permiso/política y justificar si depende de plan/módulo.
 
 ---
 
@@ -55,7 +51,7 @@
 ## 4. Separación de responsabilidades (FE / BE)
 
 - **Frontend:** permisos de UI, validación inmediata, estados de carga, mensajes de usuario, llamadas API acotadas.  
-- **Backend:** autorización definitiva, validación de reglas de negocio, tenant, integridad y límites de plan.  
+- **Backend:** autorización definitiva, validación de reglas de negocio, tenant, integridad y límites por suscripción/módulos.  
 - Ningún tab ni botón debe confiar solo en el FE para seguridad.
 
 ---
@@ -86,8 +82,8 @@
 
 ## 7. SuperAdmin vs administrador de empresa (visibilidad de módulos)
 
-- **SuperAdmin:** configura qué **planes / features / módulos** tienen los clientes y la instancia; ve las pantallas de administración global acordadas.  
-- **Administrador de empresa:** ve solo los **módulos y pantallas** permitidos por **asignación (plan + permisos)** y gestiona usuarios/roles **dentro de su tenant**.  
+- **SuperAdmin:** configura qué **planes y módulos** tienen los clientes y la instancia; ve las pantallas de administración global acordadas.  
+- **Administrador de empresa:** ve solo los **módulos y pantallas** permitidos por **asignación (plan + módulos + permisos)** y gestiona usuarios/roles **dentro de su tenant**.  
 - Cualquier pantalla nueva de “solo SuperAdmin” debe quedar explícita en rutas y políticas de API.
 
 ---

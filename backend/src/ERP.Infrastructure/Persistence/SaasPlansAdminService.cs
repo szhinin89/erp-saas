@@ -13,21 +13,6 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
 
     public SaasPlansAdminService(ErpDbContext db) => _db = db;
 
-    public async Task<IReadOnlyList<SaasFeatureDefinitionAdminDto>> ListFeatureDefinitionsAsync(CancellationToken ct = default)
-    {
-        var rows = await _db.SaasFeatureDefinitions.AsNoTracking()
-            .OrderBy(f => f.Code)
-            .ToListAsync(ct);
-        return rows.Select(f => new SaasFeatureDefinitionAdminDto(
-            f.Id,
-            f.Code,
-            f.Name,
-            f.Description,
-            f.IsMetered,
-            f.Kind,
-            f.ResourceRef)).ToList();
-    }
-
     public async Task<IReadOnlyList<SaasPlanAdminDto>> ListPlansAdminAsync(CancellationToken ct = default)
     {
         var plans = await _db.SaasPlans.AsNoTracking()
@@ -80,6 +65,9 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
                 plan.SortOrder,
                 plan.ExternalBillingRef,
                 !string.IsNullOrWhiteSpace(plan.MenuConfigJson),
+                string.IsNullOrWhiteSpace(plan.MenuSidebarLayout)
+                    ? SaasPlan.MenuSidebarLayoutHorizontal
+                    : plan.MenuSidebarLayout,
                 feats));
         }
 
@@ -137,6 +125,19 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
                 request.IsPubliclyVisible,
                 request.IsActive,
                 request.ExternalBillingRef);
+
+            if (request.MenuSidebarLayout is not null)
+            {
+                try
+                {
+                    plan.SetMenuSidebarLayout(request.MenuSidebarLayout);
+                }
+                catch (ArgumentException ex)
+                {
+                    return Result<object?>.Failure(ex.Message);
+                }
+            }
+
             await _db.SaveChangesAsync(ct);
             return Result<object?>.Success(null);
         }
@@ -200,15 +201,22 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
         return Result<object?>.Success(null);
     }
 
-    public async Task<Result<string?>> GetPlanMenuJsonAsync(Guid planId, CancellationToken ct = default)
+    public async Task<Result<PlanMenuReadDto>> GetPlanMenuAsync(Guid planId, CancellationToken ct = default)
     {
         var plan = await _db.SaasPlans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == planId, ct);
         if (plan is null)
-            return Result<string?>.Failure("Plan no encontrado.");
-        return Result<string?>.Success(plan.MenuConfigJson);
+            return Result<PlanMenuReadDto>.Failure("Plan no encontrado.");
+        var layout = string.IsNullOrWhiteSpace(plan.MenuSidebarLayout)
+            ? SaasPlan.MenuSidebarLayoutHorizontal
+            : plan.MenuSidebarLayout;
+        return Result<PlanMenuReadDto>.Success(new PlanMenuReadDto(plan.MenuConfigJson, layout));
     }
 
-    public async Task<Result<object?>> SetPlanMenuJsonAsync(Guid planId, string? menuConfigJson, CancellationToken ct = default)
+    public async Task<Result<object?>> SetPlanMenuJsonAsync(
+        Guid planId,
+        string? menuConfigJson,
+        string? menuSidebarLayout = null,
+        CancellationToken ct = default)
     {
         var plan = await _db.SaasPlans.FirstOrDefaultAsync(p => p.Id == planId, ct);
         if (plan is null)
@@ -218,6 +226,18 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
         if (string.IsNullOrEmpty(raw))
         {
             plan.SetMenuConfigJson(null);
+            if (menuSidebarLayout is not null)
+            {
+                try
+                {
+                    plan.SetMenuSidebarLayout(menuSidebarLayout);
+                }
+                catch (ArgumentException ex)
+                {
+                    return Result<object?>.Failure(ex.Message);
+                }
+            }
+
             await _db.SaveChangesAsync(ct);
             return Result<object?>.Success(null);
         }
@@ -235,114 +255,66 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
         }
 
         plan.SetMenuConfigJson(SessionMenuJsonParser.Serialize(parsed));
-        await _db.SaveChangesAsync(ct);
-        return Result<object?>.Success(null);
-    }
-
-    public async Task<Result<object?>> ReplacePlanFeaturesAsync(
-        Guid planId,
-        IReadOnlyList<PlanFeatureAssignDto> rows,
-        CancellationToken ct = default)
-    {
-        var planExists = await _db.SaasPlans.AnyAsync(p => p.Id == planId, ct);
-        if (!planExists)
-            return Result<object?>.Failure("Plan no encontrado.");
-
-        var featureIds = rows.Select(r => r.FeatureId).Distinct().ToList();
-        var found = await _db.SaasFeatureDefinitions.CountAsync(f => featureIds.Contains(f.Id), ct);
-        if (found != featureIds.Count)
-            return Result<object?>.Failure("Una o más features no existen en el catálogo.");
-
-        var existing = await _db.SaasPlanFeatures.Where(pf => pf.PlanId == planId).ToListAsync(ct);
-        _db.SaasPlanFeatures.RemoveRange(existing);
-
-        foreach (var row in rows)
+        if (menuSidebarLayout is not null)
         {
-            _db.SaasPlanFeatures.Add(SaasPlanFeature.Create(planId, row.FeatureId, row.IsIncluded, row.LimitPerPeriod));
+            try
+            {
+                plan.SetMenuSidebarLayout(menuSidebarLayout);
+            }
+            catch (ArgumentException ex)
+            {
+                return Result<object?>.Failure(ex.Message);
+            }
         }
 
         await _db.SaveChangesAsync(ct);
         return Result<object?>.Success(null);
     }
 
-    public async Task<Result<Guid>> CreateFeatureDefinitionAsync(CreateSaasFeatureDefinitionRequest request, CancellationToken ct = default)
-    {
-        try
-        {
-            var code = request.Code.Trim().ToUpperInvariant();
-            if (await _db.SaasFeatureDefinitions.AnyAsync(f => f.Code == code, ct))
-                return Result<Guid>.Failure("Ya existe una feature con ese código.");
-
-            var f = SaasFeatureDefinition.Create(
-                request.Code,
-                request.Name,
-                request.Description,
-                request.IsMetered,
-                request.Kind,
-                request.ResourceRef);
-            _db.SaasFeatureDefinitions.Add(f);
-            await _db.SaveChangesAsync(ct);
-            return Result<Guid>.Success(f.Id);
-        }
-        catch (ArgumentException ex)
-        {
-            return Result<Guid>.Failure(ex.Message);
-        }
-    }
-
-    public async Task<Result<object?>> UpdateFeatureDefinitionAsync(
-        Guid featureId,
-        UpdateSaasFeatureDefinitionRequest request,
+    public async Task<Result<object?>> CopyPlanFromAsync(
+        Guid targetPlanId,
+        Guid sourcePlanId,
+        bool copyMenu,
         CancellationToken ct = default)
     {
-        var f = await _db.SaasFeatureDefinitions.FirstOrDefaultAsync(x => x.Id == featureId, ct);
-        if (f is null)
-            return Result<object?>.Failure("Feature no encontrada.");
+        if (targetPlanId == sourcePlanId)
+            return Result<object?>.Failure("El plan origen y destino no pueden ser el mismo.");
 
-        try
-        {
-            f.Update(request.Name, request.Description, request.IsMetered, request.Kind, request.ResourceRef);
-            await _db.SaveChangesAsync(ct);
-            return Result<object?>.Success(null);
-        }
-        catch (ArgumentException ex)
-        {
-            return Result<object?>.Failure(ex.Message);
-        }
-    }
+        if (!copyMenu)
+            return Result<object?>.Failure("Seleccione al menos copiar menú.");
 
-    public async Task<Result<object?>> DeleteFeatureDefinitionAsync(Guid featureId, CancellationToken ct = default)
-    {
-        var f = await _db.SaasFeatureDefinitions.FirstOrDefaultAsync(x => x.Id == featureId, ct);
-        if (f is null)
-            return Result<object?>.Failure("Feature no encontrada.");
+        var target = await _db.SaasPlans.FirstOrDefaultAsync(p => p.Id == targetPlanId, ct);
+        if (target is null)
+            return Result<object?>.Failure("Plan destino no encontrado.");
+
+        var source = await _db.SaasPlans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == sourcePlanId, ct);
+        if (source is null)
+            return Result<object?>.Failure("Plan origen no encontrado.");
 
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
         try
         {
-            await _db.SaasPlanFeatures.Where(pf => pf.FeatureId == featureId).ExecuteDeleteAsync(ct);
-            // IQF: borrar overrides/usos de la feature en todos los tenants (operación global SuperAdmin).
-            await _db.TenantSubscriptionFeatureOverrides
-                .IgnoreQueryFilters()
-                .Where(o => o.FeatureId == featureId)
-                .ExecuteDeleteAsync(ct);
-            await _db.TenantSubscriptionUsages
-                .IgnoreQueryFilters()
-                .Where(u => u.FeatureId == featureId)
-                .ExecuteDeleteAsync(ct);
-            await _db.UiNavItems
-                .Where(i => i.SaasFeatureDefinitionId == featureId)
-                .ExecuteUpdateAsync(s => s.SetProperty(i => i.SaasFeatureDefinitionId, (Guid?)null), ct);
+            if (copyMenu)
+            {
+                target.SetMenuConfigJson(source.MenuConfigJson);
+                try
+                {
+                    target.SetMenuSidebarLayout(source.MenuSidebarLayout);
+                }
+                catch (ArgumentException)
+                {
+                    target.SetMenuSidebarLayout(SaasPlan.MenuSidebarLayoutHorizontal);
+                }
+            }
 
-            _db.SaasFeatureDefinitions.Remove(f);
             await _db.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
             return Result<object?>.Success(null);
         }
-        catch (Exception ex)
+        catch
         {
             await tx.RollbackAsync(ct);
-            return Result<object?>.Failure($"No se pudo eliminar la definición: {ex.Message}");
+            throw;
         }
     }
 

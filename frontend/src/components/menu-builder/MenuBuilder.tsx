@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -16,11 +16,13 @@ import type { FuncionalidadArbolDto } from '../../services/superAdminService';
 import {
   buildFuncionalidadMaps,
   createFolderEditorItem,
+  createFormEditorItem,
   editorToMenuItems,
   flattenFuncionalidades,
   funcionalidadToEditorItem,
   isEditorFolder,
   type EditorMenuItem,
+  type MenuItem,
 } from './menuBuilderTypes';
 import { MenuPreview, type MenuPreviewLayout } from './MenuPreview';
 import { SortableTreeBranch } from './TreeNode';
@@ -34,6 +36,7 @@ import {
   libDragId,
   moveNodeBeforeSibling,
   moveNodeToGap,
+  moveSiblingByDelta,
   outdentNode,
   parseGapId,
   parseLibDragId,
@@ -56,9 +59,32 @@ type Props = {
   onPreviewLayoutChange: (layout: MenuPreviewLayout) => void;
   /** Mensajes de validación DnD (p. ej. soltar en hoja). */
   onBuilderMessage?: (message: string) => void;
+  /** Columnas: árbol | preview | biblioteca (vista configuración menú/plan). */
+  workspaceVariant?: 'default' | 'crm';
+  /** Oculta la barra de modos editor/preview (el padre fuerza split y radios de layout). */
+  hideWorkspaceToolbar?: boolean;
+  /** Títulos de paneles (vista CRM). */
+  panelTitles?: { library?: string; canvas?: string; preview?: string };
+  /** Controles extra encima del árbol (p. ej. deshacer/rehacer). */
+  crmToolbar?: ReactNode;
+  /** Bloque bajo el título del árbol (p. ej. pastillas de plan y búsqueda). */
+  crmMasterStack?: ReactNode;
+  /** Pie del panel árbol (acciones y ayuda). */
+  crmMasterFooter?: ReactNode;
+  /** Columna central: controles y tarjeta de plan bajo la vista previa. */
+  crmPreviewExtras?: ReactNode;
+  /** Sustituye el menú simulado en la vista previa (p. ej. menú efectivo de otra empresa). */
+  previewItemsOverride?: MenuItem[] | null;
+  /** Activaciones por plan para la vista CRM (checkbox por nodo). */
+  activeNodeIds?: Set<string>;
+  /** Cambio de activación por nodo (uid del editor). */
+  onToggleNodeActive?: (uid: string, checked: boolean) => void;
+  treeSearchQuery?: string;
 };
 
-function LibraryRow({ node }: { node: FuncionalidadArbolDto }) {
+const EXPANDED_STORAGE_KEY = 'crmTreeExpandedState';
+
+function LibraryRow({ node, dense, onPreview }: { node: FuncionalidadArbolDto; dense?: boolean; onPreview?: (node: FuncionalidadArbolDto) => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: libDragId(node.id),
   });
@@ -68,7 +94,7 @@ function LibraryRow({ node }: { node: FuncionalidadArbolDto }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`menu-builder-lib-row ${isDragging ? 'is-dragging' : ''}`}
+      className={`menu-builder-lib-row ${isDragging ? 'is-dragging' : ''}${dense ? ' menu-builder-lib-row--crm' : ''}`}
       {...listeners}
       {...attributes}
     >
@@ -78,9 +104,26 @@ function LibraryRow({ node }: { node: FuncionalidadArbolDto }) {
       <div className="menu-builder-lib-text">
         <div className="menu-builder-lib-name">{node.nombre}</div>
         <div className="menu-builder-lib-perm" title={node.permiso}>
+          {node.ruta?.trim() ? `${node.ruta} · ` : ''}
           {node.permiso}
         </div>
       </div>
+      {dense ? (
+        <div className="menu-builder-lib-previewRow">
+          <button
+            type="button"
+            className="zh-btn zh-btn--ghost zh-btn--xs"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPreview?.(node);
+            }}
+            aria-label="Previsualizar formulario del catálogo"
+          >
+            👁 Previsualizar
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -94,11 +137,122 @@ export function MenuBuilder({
   previewLayout,
   onPreviewLayoutChange,
   onBuilderMessage,
+  workspaceVariant = 'default',
+  hideWorkspaceToolbar = false,
+  panelTitles,
+  crmToolbar,
+  crmMasterStack,
+  crmMasterFooter,
+  crmPreviewExtras,
+  previewItemsOverride = null,
+  activeNodeIds,
+  onToggleNodeActive,
+  treeSearchQuery = '',
 }: Props) {
   const { t } = useI18n();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [previewForm, setPreviewForm] = useState<FuncionalidadArbolDto | null>(null);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set<string>();
+    try {
+      const raw = window.localStorage.getItem(EXPANDED_STORAGE_KEY);
+      if (!raw) return new Set<string>();
+      const parsed = JSON.parse(raw) as string[];
+      return new Set(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      return new Set<string>();
+    }
+  });
+  const crmUi = workspaceVariant === 'crm';
   const flatLib = useMemo(() => flattenFuncionalidades(catalogArbol), [catalogArbol]);
+  const availableLib = useMemo(() => {
+    if (!crmUi) return flatLib;
+    const existingLeaves = new Set<string>();
+    const walk = (nodes: EditorMenuItem[]) => {
+      for (const n of nodes) {
+        if (!isEditorFolder(n)) {
+          const perm = (n.permiso ?? '').trim();
+          const ruta = (n.ruta ?? '').trim();
+          if (perm) existingLeaves.add(`perm:${perm.toLowerCase()}`);
+          if (ruta) existingLeaves.add(`ruta:${ruta.toLowerCase()}`);
+        }
+        walk(n.children);
+      }
+    };
+    walk(tree);
+    return flatLib.filter((n) => {
+      const perm = (n.permiso ?? '').trim().toLowerCase();
+      const ruta = (n.ruta ?? '').trim().toLowerCase();
+      if (perm && existingLeaves.has(`perm:${perm}`)) return false;
+      if (ruta && existingLeaves.has(`ruta:${ruta}`)) return false;
+      return true;
+    });
+  }, [crmUi, flatLib, tree]);
   const { byId } = useMemo(() => buildFuncionalidadMaps(catalogArbol), [catalogArbol]);
+  const searchNeedle = treeSearchQuery.trim().toLowerCase();
+
+  const forceExpandedIds = useMemo(() => {
+    if (!searchNeedle) return new Set<string>();
+    const out = new Set<string>();
+    const walk = (nodes: EditorMenuItem[], ancestors: string[]) => {
+      for (const n of nodes) {
+        const hay =
+          n.nombre.toLowerCase().includes(searchNeedle) ||
+          (n.ruta ?? '').toLowerCase().includes(searchNeedle) ||
+          (n.permiso ?? '').toLowerCase().includes(searchNeedle);
+        const nextAncestors = [...ancestors, n.uid];
+        if (hay) ancestors.forEach((a) => out.add(a));
+        walk(n.children, nextAncestors);
+      }
+    };
+    walk(tree, []);
+    return out;
+  }, [searchNeedle, tree]);
+
+  const visibleIds = useMemo(() => {
+    if (!searchNeedle) return null;
+    const out = new Set<string>();
+    const walk = (nodes: EditorMenuItem[]): boolean => {
+      let any = false;
+      for (const n of nodes) {
+        const self =
+          n.nombre.toLowerCase().includes(searchNeedle) ||
+          (n.ruta ?? '').toLowerCase().includes(searchNeedle) ||
+          (n.permiso ?? '').toLowerCase().includes(searchNeedle);
+        const child = walk(n.children);
+        if (self || child) {
+          out.add(n.uid);
+          any = true;
+        }
+      }
+      return any;
+    };
+    walk(tree);
+    return out;
+  }, [searchNeedle, tree]);
+
+  const treeForRender = useMemo(() => {
+    if (!visibleIds) return tree;
+    const prune = (nodes: EditorMenuItem[]): EditorMenuItem[] =>
+      nodes
+        .filter((n) => visibleIds.has(n.uid))
+        .map((n) => ({ ...n, children: prune(n.children) }));
+    return prune(tree);
+  }, [tree, visibleIds]);
+
+  useEffect(() => {
+    if (!crmUi || typeof window === 'undefined') return;
+    window.localStorage.setItem(EXPANDED_STORAGE_KEY, JSON.stringify(Array.from(expandedIds)));
+  }, [crmUi, expandedIds]);
+
+  useEffect(() => {
+    if (!previewForm || typeof window === 'undefined') return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPreviewForm(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [previewForm]);
 
   const parentAcceptsLibraryDrop = useCallback(
     (parentUid: ParentRef) => {
@@ -111,7 +265,10 @@ export function MenuBuilder({
 
   const addChildFolder = useCallback(
     (parentUid: ParentRef) => {
-      const folder = createFolderEditorItem();
+      const defaultName = 'Nueva carpeta';
+      const name = crmUi ? window.prompt('Nombre de carpeta', defaultName)?.trim() : defaultName;
+      if (!name) return;
+      const folder = createFolderEditorItem(name);
       if (parentUid === ROOT_PARENT) {
         onTreeChange(insertChildAt(tree, ROOT_PARENT, tree.length, folder));
         return;
@@ -120,7 +277,24 @@ export function MenuBuilder({
       if (!p || !isEditorFolder(p)) return;
       onTreeChange(insertChildAt(tree, parentUid, p.children.length, folder));
     },
-    [onTreeChange, tree],
+    [crmUi, onTreeChange, tree],
+  );
+
+  const addChildForm = useCallback(
+    (parentUid: ParentRef) => {
+      const defaultName = 'Nuevo formulario';
+      const name = crmUi ? window.prompt('Nombre de formulario', defaultName)?.trim() : defaultName;
+      if (!name) return;
+      const form = createFormEditorItem(name);
+      if (parentUid === ROOT_PARENT) {
+        onTreeChange(insertChildAt(tree, ROOT_PARENT, tree.length, form));
+        return;
+      }
+      const p = findNodeByUid(tree, parentUid as string);
+      if (!p || !isEditorFolder(p)) return;
+      onTreeChange(insertChildAt(tree, parentUid, p.children.length, form));
+    },
+    [crmUi, onTreeChange, tree],
   );
 
   const sensors = useSensors(
@@ -217,9 +391,25 @@ export function MenuBuilder({
   const showPreview = viewMode === 'preview' || viewMode === 'split';
 
   const previewItems = useMemo(() => editorToMenuItems(tree), [tree]);
+  const previewData = useMemo(() => {
+    const base = previewItemsOverride ?? previewItems;
+    if (!activeNodeIds || activeNodeIds.size === 0) return [];
+    const filterTree = (nodes: MenuItem[]): MenuItem[] => {
+      const out: MenuItem[] = [];
+      for (const n of nodes) {
+        const children = filterTree(n.children ?? []);
+        const keep = activeNodeIds.has(n.id) || children.length > 0;
+        if (!keep) continue;
+        out.push({ ...n, children });
+      }
+      return out;
+    };
+    return filterTree(base);
+  }, [activeNodeIds, previewItems, previewItemsOverride]);
 
   const workspaceMod =
     viewMode === 'split' ? 'menu-builder-workspace--split' : viewMode === 'editor' ? 'menu-builder-workspace--editor' : 'menu-builder-workspace--preview';
+  const crmMod = workspaceVariant === 'crm' && viewMode === 'split' ? ' menu-builder-workspace--split-crm' : '';
 
   const treeEmpty = tree.length === 0;
 
@@ -232,6 +422,7 @@ export function MenuBuilder({
       onDragCancel={onDragCancel}
     >
       <div className="menu-builder-root">
+        {!hideWorkspaceToolbar ? (
         <div className="menu-builder-toolbar" role="toolbar" aria-label={t('superadmin.menuBuilder.visualMode')}>
           <span className="menu-builder-toolbar__label">{t('superadmin.menuBuilder.visualMode')}</span>
           <button
@@ -276,26 +467,38 @@ export function MenuBuilder({
             </>
           ) : null}
         </div>
+        ) : null}
 
-        <div className={`menu-builder-workspace ${workspaceMod}`}>
+        <div className={`menu-builder-workspace ${workspaceMod}${crmMod}`}>
           {showEditor ? (
             <>
               <aside className="menu-builder-panel menu-builder-panel--library">
                 <header className="menu-builder-panel__head">
-                  <h4 className="menu-builder-panel__title">{t('superadmin.menuBuilder.libraryTitle')}</h4>
+                  <h4 className="menu-builder-panel__title">{panelTitles?.library ?? t('superadmin.menuBuilder.libraryTitle')}</h4>
                   <p className="menu-builder-panel__hint" title={t('superadmin.menuBuilder.libraryHint')}>
-                    {t('superadmin.menuBuilder.libraryHintShort')}
+                    {crmUi ? 'Arrastra y suelta hacia el árbol maestro.' : t('superadmin.menuBuilder.libraryHintShort')}
                   </p>
                 </header>
                 <div className="menu-builder-panel__body">
-                  {flatLib.length === 0 ? (
+                  {availableLib.length === 0 ? (
                     <p className="menu-preview-empty" style={{ border: 'none', minHeight: '6rem' }}>
                       {t('common.noData')}
                     </p>
                   ) : (
-                    <div className="menu-builder-lib-stack">
-                      {flatLib.map((n) => (
-                        <LibraryRow key={n.id} node={n} />
+                    <div className={`menu-builder-lib-stack${crmUi ? ' menu-builder-lib-stack--crm' : ''}`}>
+                      {availableLib.map((n) => (
+                        <LibraryRow
+                          key={n.id}
+                          node={n}
+                          dense={crmUi}
+                          onPreview={
+                            crmUi
+                              ? (form) => {
+                                  setPreviewForm(form);
+                                }
+                              : undefined
+                          }
+                        />
                       ))}
                     </div>
                   )}
@@ -304,18 +507,41 @@ export function MenuBuilder({
 
               <section className="menu-builder-panel menu-builder-panel--canvas">
                 <header className="menu-builder-panel__head">
-                  <h4 className="menu-builder-panel__title">{t('superadmin.menuBuilder.canvasTitle')}</h4>
+                  {crmUi ? (
+                    <div className="menu-builder-panel__crmTitleRow">
+                      <h4 className="menu-builder-panel__title">{panelTitles?.canvas ?? t('superadmin.menuBuilder.canvasTitle')}</h4>
+                      {crmToolbar}
+                    </div>
+                  ) : (
+                    <h4 className="menu-builder-panel__title">{panelTitles?.canvas ?? t('superadmin.menuBuilder.canvasTitle')}</h4>
+                  )}
+                  {crmUi && crmMasterStack ? <div className="menu-builder-panel__crmStack">{crmMasterStack}</div> : null}
                   <div className="menu-builder-panel__headRow">
                     <p className="menu-builder-panel__hint" title={t('superadmin.menuBuilder.canvasHint')}>
-                      {t('superadmin.menuBuilder.canvasHintShort')}
+                      {crmUi
+                        ? 'Reordena arrastrando o con las flechas; deshacer/rehacer solo afecta esta sesión.'
+                        : t('superadmin.menuBuilder.canvasHintShort')}
                     </p>
-                    <button
-                      type="button"
-                      className="zh-btn zh-btn--ghost zh-btn--sm"
-                      onClick={() => addChildFolder(ROOT_PARENT)}
-                    >
-                      {t('superadmin.menuBuilder.addRootFolder')}
-                    </button>
+                    <div className="menu-builder-panel__headActions">
+                      <button
+                        type="button"
+                        className="zh-btn zh-btn--ghost zh-btn--sm"
+                        onClick={() => addChildFolder(ROOT_PARENT)}
+                        aria-label="Agregar carpeta en la raíz del árbol"
+                      >
+                        {crmUi ? '📁 Carpeta raíz' : t('superadmin.menuBuilder.addRootFolder')}
+                      </button>
+                      {crmUi ? (
+                        <button
+                          type="button"
+                          className="zh-btn zh-btn--ghost zh-btn--sm"
+                          onClick={() => addChildForm(ROOT_PARENT)}
+                          aria-label="Agregar formulario en la raíz del árbol"
+                        >
+                          📄 Formulario raíz
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 </header>
                 <div className="menu-builder-panel__body menu-builder-canvas-inner">
@@ -324,21 +550,39 @@ export function MenuBuilder({
                       <span className="menu-builder-canvas-empty__icon" aria-hidden>
                         ⎘
                       </span>
-                      {t('superadmin.menuBuilder.canvasEmpty')}
+                      {crmUi ? 'Arrastra formularios desde la columna derecha o añade carpeta/formulario raíz.' : t('superadmin.menuBuilder.canvasEmpty')}
                     </div>
                   ) : null}
                   <div className="menu-builder-canvas-branch-wrap">
                     <SortableTreeBranch
                       parentUid={ROOT_PARENT}
-                      nodes={tree}
+                      nodes={treeForRender}
                       depth={0}
+                      crmLayout={crmUi}
+                      activeIds={activeNodeIds}
+                      onToggleActive={onToggleNodeActive}
+                      expandedIds={expandedIds}
+                      onToggleExpand={(uid) => {
+                        setExpandedIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(uid)) next.delete(uid);
+                          else next.add(uid);
+                          return next;
+                        });
+                      }}
+                      forceExpandedIds={forceExpandedIds}
+                      searchNeedle={searchNeedle}
+                      onMoveUp={(uid) => onTreeChange(moveSiblingByDelta(tree, uid, -1))}
+                      onMoveDown={(uid) => onTreeChange(moveSiblingByDelta(tree, uid, 1))}
                       onPatch={(uid, patch) => onTreeChange(updateNodeFields(tree, uid, patch))}
                       onIndent={(uid) => onTreeChange(indentNode(tree, uid))}
                       onOutdent={(uid) => onTreeChange(outdentNode(tree, uid))}
                       onRemove={(uid) => onTreeChange(deleteNode(tree, uid))}
                       onAddChildFolder={(uid) => addChildFolder(uid)}
+                      onAddChildForm={crmUi ? (uid) => addChildForm(uid) : undefined}
                     />
                   </div>
+                  {crmUi && crmMasterFooter ? <div className="menu-builder-panel__crmFooter">{crmMasterFooter}</div> : null}
                 </div>
               </section>
             </>
@@ -347,15 +591,70 @@ export function MenuBuilder({
           {showPreview ? (
             <aside className="menu-builder-panel menu-builder-panel--preview">
               <header className="menu-builder-panel__head">
-                <h4 className="menu-builder-panel__title">{t('superadmin.menuBuilder.livePreview')}</h4>
-                <p className="menu-builder-panel__hint">{t('superadmin.menuBuilder.previewHintShort')}</p>
+                {crmUi ? (
+                  <div className="menu-builder-panel__crmTitleRow">
+                    <h4 className="menu-builder-panel__title">{panelTitles?.preview ?? t('superadmin.menuBuilder.livePreview')}</h4>
+                  </div>
+                ) : (
+                  <h4 className="menu-builder-panel__title">{panelTitles?.preview ?? t('superadmin.menuBuilder.livePreview')}</h4>
+                )}
+                <p className="menu-builder-panel__hint">{crmUi ? 'Vista aproximada del menú según el plan activo.' : t('superadmin.menuBuilder.previewHintShort')}</p>
               </header>
               <div className="menu-builder-panel__body">
-                <MenuPreview items={previewItems} layout={previewLayout} />
+                {crmUi && crmPreviewExtras ? <div className="menu-builder-panel__crmPreviewTop">{crmPreviewExtras}</div> : null}
+                <MenuPreview items={previewData} layout={previewLayout} />
               </div>
             </aside>
           ) : null}
         </div>
+
+        {previewForm ? (
+          <div
+            className="menu-builder-form-preview-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mockup de formulario"
+            onClick={() => setPreviewForm(null)}
+          >
+            <div className="menu-builder-form-preview-card" onClick={(e) => e.stopPropagation()}>
+              <div className="menu-builder-form-preview-head">
+                <h4>Mockup de formulario</h4>
+                <button type="button" className="zh-btn zh-btn--ghost zh-btn--xs" onClick={() => setPreviewForm(null)} aria-label="Cerrar mockup">
+                  ✕
+                </button>
+              </div>
+              <p className="menu-builder-form-preview-subtle">
+                Vista previa visual de <strong>{previewForm.nombre}</strong>
+              </p>
+              <div className="menu-builder-form-preview-meta">
+                <span>
+                  <strong>Ruta:</strong> {previewForm.ruta?.trim() || '—'}
+                </span>
+                <span>
+                  <strong>Permiso:</strong> {previewForm.permiso?.trim() || '—'}
+                </span>
+              </div>
+              <div className="menu-builder-form-preview-body">
+                <div className="menu-builder-form-preview-field">
+                  <label>Campo principal</label>
+                  <input className="zh-input" value="" readOnly placeholder="Ejemplo..." />
+                </div>
+                <div className="menu-builder-form-preview-field">
+                  <label>Descripción</label>
+                  <textarea className="zh-input" value="" readOnly placeholder="Contenido de ejemplo..." />
+                </div>
+                <div className="menu-builder-form-preview-actions">
+                  <button type="button" className="zh-btn zh-btn--primary zh-btn--sm" disabled>
+                    Guardar
+                  </button>
+                  <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm" disabled>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <DragOverlay dropAnimation={null}>

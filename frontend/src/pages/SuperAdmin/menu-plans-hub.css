@@ -1,0 +1,119 @@
+.menu-plans-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.menu-plans-hub__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0;
+  border-bottom: 1px solid var(--zh-border, rgba(30, 41, 59, 0.12));
+}
+
+.menu-plans-hub__tab {
+  padding: 0.62rem 1.2rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 10px 10px 0 0;
+  background: transparent;
+  color: var(--color-text-muted, rgba(30, 41, 59, 0.62));
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.menu-plans-hub__tab:hover:not(:disabled) {
+  background: var(--zh-surface-muted, #f8fafc);
+}
+
+.menu-plans-hub__tab.is-active {
+  background: var(--zh-color-surface, #fff);
+  color: var(--zh-blue-dark, #1e3a5f);
+  border-bottom-color: var(--zh-blue, #4f7ba6);
+  box-shadow: none;
+  font-weight: 700;
+}
+
+.menu-plans-hub__panel {
+  min-width: 0;
+}
+
+.menu-plans-hub__catalog {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--zh-border, #e5e7eb);
+}
+
+.menu-plans-hub__catalog h2 {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+}
+
+.menu-plans-hub__global-nav {
+  margin-top: 1.25rem;
+  border: 1px solid var(--zh-border, #e5e7eb);
+  border-radius: 10px;
+  padding: 0.35rem 0.75rem;
+  background: var(--zh-color-surface, #fff);
+}
+
+.menu-plans-hub__global-nav > summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.35rem 0;
+}
+
+.menu-plans-hub__global-nav-body {
+  padding: 0.5rem 0 0.75rem;
+  border-top: 1px solid var(--zh-border, rgba(30, 41, 59, 0.08));
+  margin-top: 0.35rem;
+}
+
+.menu-plans-hub__audit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.menu-plans-hub__audit h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.menu-plans-hub__auditPanel {
+  border: 1px solid var(--zh-border, rgba(30, 41, 59, 0.12));
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: var(--zh-color-surface, #fff);
+}
+
+.menu-plans-hub__placeholderCard {
+  border: 1px solid var(--zh-border, rgba(30, 41, 59, 0.12));
+  border-radius: 1rem;
+  padding: 1rem 1.1rem;
+  background: var(--zh-color-surface, #fff);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.menu-plans-hub__placeholderCard h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.02rem;
+}
+
+.menu-plans-hub__placeholderNote {
+  margin-top: 0.7rem;
+  font-size: 0.8rem;
+  border-radius: 0.8rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--zh-blue, #4f7ba6) 20%, transparent);
+  background: var(--zh-blue-light, #ebf2fa);
+  color: var(--zh-color-text, #1e293b);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}

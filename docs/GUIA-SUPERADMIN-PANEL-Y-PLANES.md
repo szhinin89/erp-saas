@@ -23,7 +23,7 @@ Documento de **mejora de flujo** anclado al repositorio actual. Corrige suposici
 | Listado tenants + conteos usuarios + `planCode` + módulos efectivos | `GET /api/superadmin/tenants` → `SuperAdminController`, `ITenantRepository.GetAllAsync` + `TenantSubscriptionCatalog.GetEffectiveEnabledModules` |
 | Métricas agregadas | `GET /api/superadmin/metrics`, `GET /api/superadmin/growth-analytics`, monetario |
 | Catálogo planes (lectura) | `GET /api/superadmin/plans` |
-| CRUD planes SaaS, features, orden | `SaasPlansAdminController`, `SaasFeaturesAdminController` (rutas bajo `/api/superadmin/saas-*`) |
+| CRUD planes SaaS y orden | `SaasPlansAdminController` (rutas bajo `/api/superadmin/saas-plans`) |
 | Menú global (árbol BD) | `GET /api/superadmin/navigation-menu` y PUT/POST de reordenado / ítems |
 | **Cambiar plan / módulos de una empresa** | **`PATCH /api/tenants/{id}/subscription`** (body `planCode`, `enabledModules`) — rol **SuperAdmin**; no está duplicado bajo `/api/superadmin/...` |
 | Alta empresa + admin | **`POST /api/access/superadmin/tenants`** (`SuperAdminCreateTenantWithAdminCommand`) — crea `Tenant` + `IdentityUser` + `Membership` Admin; body opcional **`planCode`**, **`enabledModules`** |
@@ -35,14 +35,14 @@ Documento de **mejora de flujo** anclado al repositorio actual. Corrige suposici
 
 ### Frontend
 
-- **`SuperAdminPanelPage`** (`/superadmin`): pestañas overview, companies, features, plans; métricas, lista tenants, modal **crear empresa** (plan + opción **restringir módulos** con checkboxes), botón por fila **Plan y módulos** (modal → `PATCH` de suscripción), planes SaaS, growth.
+- **`SuperAdminPanelPage`** (`/superadmin`): pestañas overview, companies y menú/planes; métricas, lista tenants, modal **crear empresa** (plan + opción **restringir módulos** con checkboxes), botón por fila **Plan y módulos** (modal → `PATCH` de suscripción), planes SaaS, growth.
 - **`superAdminService`**: `getTenants`, `getPlansCatalog`, `getMetrics`, **`createTenantWithAdmin`** → `POST /api/access/superadmin/tenants` (cuerpo con `planCode`, `enabledModules`); **`updateTenantSubscription`** → **`PATCH /api/tenants/{id}/subscription`**.
 - **`frontend/src/constants/subscriptionModules.ts`**: `TENANT_MODULE_KEYS` alineado con **`TenantSubscriptionCatalog.AllModuleKeys`** en backend.
 - Menú de sesión en app: **`GET /api/access/me/menu`** (`accessService.getSessionMenu`), filtrado con **`enabledModules`** y permisos en `AppLayout` / `permissionsStore`.
 
 ### Documentación relacionada
 
-- Plan ↔ menú ↔ features: [`docs/COMPANIES-PLAN-MENU-ADMIN.md`](COMPANIES-PLAN-MENU-ADMIN.md)
+- Plan ↔ menú y suscripción tenant: [`docs/COMPANIES-PLAN-MENU-ADMIN.md`](COMPANIES-PLAN-MENU-ADMIN.md)
 - Política de acceso SuperAdmin vs plan: [`docs/POLITICA-FORMULARIOS-Y-ACCESO.md`](POLITICA-FORMULARIOS-Y-ACCESO.md)
 - Pantallas: [`docs/FRONTEND-PANTALLAS.md`](FRONTEND-PANTALLAS.md)
 
@@ -134,7 +134,7 @@ Muchas plantillas de ERP SaaS asumen **FK `PlanId` → tabla `Planes`**, rutas *
 | **`PUT .../empresas/{id}/plan`** | **`PATCH /api/tenants/{id}/subscription`** (`planCode`, `enabledModules`), rol SuperAdmin. |
 | **`GET /api/superadmin/menu-config/{planId}`** | **No existe.** Menú de usuario: **`GET /api/access/me/menu`**. Árbol global editable: **`GET /api/superadmin/navigation-menu`**. |
 | Tras impersonar, menú según plan de la empresa | Tras **`POST /api/auth/switch-tenant`**, el JWT y el `user` del cliente cambian. En **`AppLayout`**, si el usuario **no** es SuperAdmin en contexto global, se vuelve a cargar **`getSessionMenu()`** al cambiar `user`; el lateral filtra por **`enabledModules`** y permisos. |
-| Tabs SuperAdmin: Empresas, Planes, Métricas | Pestañas actuales: **Resumen**, **Empresas**, **Features**, **Planes**; métricas en resumen y endpoints dedicados. No es el mismo nombre de tabs que el checklist genérico. |
+| Tabs SuperAdmin: Empresas, Planes, Métricas | Pestañas actuales: **Resumen**, **Empresas**, **Menú y planes**; métricas en resumen y endpoints dedicados. No es el mismo nombre de tabs que el checklist genérico. |
 | Formulario: **RUC único**, email válido | **Email** y **slug** sí se validan en el flujo de alta; **unicidad de RUC** no está implementada como regla dura en el handler SuperAdmin (índice único en BD hoy: **`slug`**). Si el producto lo exige, añadir validación + índice único condicional sobre `ruc`. |
 
 Para ejemplos **`curl`** concretos (login, crear plan SaaS, crear tenant, `switch-tenant`, `me/menu`), ver **§7**.
@@ -181,7 +181,7 @@ Respuesta: `responseObject` es **`AuthResponseDto`** (`token`, `tenantId` = `000
 
 ### 1. Crear un plan comercial (si no existe)
 
-**No** uses `POST /api/superadmin/planes`. Aquí el CRUD es **`POST /api/superadmin/saas-plans`** y el cuerpo es **`CreateSaasPlanRequest`** (metadatos del plan; **no** incluye un array `modulos` — los módulos del tenant van en `enabledModules` al crear la empresa, y la composición “plan ↔ features de catálogo” se gestiona con **`PUT /api/superadmin/saas-plans/{planId}/features`**).
+**No** uses `POST /api/superadmin/planes`. Aquí el CRUD es **`POST /api/superadmin/saas-plans`** y el cuerpo es **`CreateSaasPlanRequest`** (metadatos del plan; **no** incluye un array `modulos` — los módulos del tenant van en `enabledModules` al crear la empresa).
 
 Requiere política **`GlobalSuperAdmin`**: JWT **SuperAdmin** y contexto de tenant **global** (Guid vacío), típico del token del paso 0.
 

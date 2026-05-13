@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { TableCard } from '../PageShell';
 import { ZHBtn, ZHField } from '../zh/ZHForm';
 import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../zh/ZHLayout';
@@ -14,74 +14,213 @@ import {
   sessionGroupsToEditorTree,
   validateSessionMenuGroups,
   type EditorMenuItem,
+  type MenuItem,
 } from '../menu-builder/menuBuilderTypes';
+import { useEditorTreeHistory } from '../menu-builder/withHistory';
 import {
   superAdminService,
-  type AdminNavigationMenu,
-  type AdminNavItemRow,
   type FuncionalidadArbolDto,
   type SaasPlanAdmin,
   type SuperAdminTenant,
 } from '../../services/superAdminService';
-import type { SessionMenuGroupDto, SessionMenuItemDto } from '../../types/access';
+import type { SessionMenuGroupDto } from '../../types/access';
 import { formatApiRequestError } from '../../modules/lib/apiError';
+import { adminNavigationToSessionMenu } from '../../modules/superadmin/adminNavigationToSessionMenu';
+import {
+  buildPlanFromDraft,
+  parseImportedCrmWorkspace,
+  normalizeCrmPlans,
+  normalizePlanActiveById,
+  resolveInheritedActiveNodeIds,
+  type CrmPlanModel,
+  type CrmWorkspaceExportPayload,
+} from './crmPlanIntegrity';
 import '../menu-builder/menu-builder.css';
+import './menu-plan-composer.css';
+
+type CatalogSearchField = 'all' | 'name' | 'perm' | 'route';
+type CatalogNodeType = 'all' | 'folders' | 'forms';
+
+type CatalogFilterOptions = {
+  query: string;
+  field: CatalogSearchField;
+  nodeType: CatalogNodeType;
+  onlyWithRoute: boolean;
+};
+
+function filterFuncionalidadesArbol(rows: FuncionalidadArbolDto[], options: CatalogFilterOptions): FuncionalidadArbolDto[] {
+  const needle = options.query.trim().toLowerCase();
+  const shouldFilterText = needle.length > 0;
+  const shouldFilterRoute = options.onlyWithRoute;
+  const shouldFilterType = options.nodeType !== 'all';
+
+  if (!shouldFilterText && !shouldFilterRoute && !shouldFilterType) return rows;
+
+  const textMatches = (n: FuncionalidadArbolDto): boolean => {
+    if (!shouldFilterText) return true;
+    const name = (n.nombre ?? '').toLowerCase();
+    const perm = (n.permiso ?? '').toLowerCase();
+    const route = (n.ruta ?? '').toLowerCase();
+    switch (options.field) {
+      case 'name':
+        return name.includes(needle);
+      case 'perm':
+        return perm.includes(needle);
+      case 'route':
+        return route.includes(needle);
+      case 'all':
+      default:
+        return name.includes(needle) || perm.includes(needle) || route.includes(needle);
+    }
+  };
+
+  const typeMatches = (n: FuncionalidadArbolDto): boolean => {
+    if (!shouldFilterType) return true;
+    const isFolder = (n.hijos ?? []).length > 0;
+    return options.nodeType === 'folders' ? isFolder : !isFolder;
+  };
+
+  const routeMatches = (n: FuncionalidadArbolDto): boolean => {
+    if (!shouldFilterRoute) return true;
+    return Boolean((n.ruta ?? '').trim());
+  };
+
+  const walk = (nodes: FuncionalidadArbolDto[]): FuncionalidadArbolDto[] => {
+    const out: FuncionalidadArbolDto[] = [];
+    for (const n of nodes) {
+      const hijos = walk(n.hijos ?? []);
+      const hay = (textMatches(n) && typeMatches(n) && routeMatches(n)) || hijos.length > 0;
+      if (hay) out.push({ ...n, hijos });
+    }
+    return out;
+  };
+  return walk(rows);
+}
+
+function planEmoji(code: string): string {
+  const c = (code ?? '').toUpperCase();
+  if (c.includes('START')) return '⭐';
+  if (c.includes('BUS')) return '💼';
+  if (c.includes('PRO')) return '🚀';
+  if (c.includes('ENTER')) return '🏢';
+  return '📋';
+}
 
 type SubMode = 'plan' | 'tenant';
 
 type EditorMainTab = 'json' | 'visual';
 
-function isPlatformRoute(path: string): boolean {
-  const p = (path ?? '').trim();
-  return p === '/companies' || p.startsWith('/superadmin');
+const MENU_BUILDER_SCHEMA_VERSION = 171;
+const CRM_PLAN_ACTIVE_STORAGE_KEY = 'crmPlanActiveNodeIds';
+const CRM_TREE_STORAGE_KEY = 'crmMenuTree';
+const CRM_PLANS_STORAGE_KEY = 'crmPlans';
+const CRM_AUDIT_STORAGE_KEY = 'crmAuditLog';
+
+type CrmLocalPlan = CrmPlanModel & { layout: MenuPreviewLayout };
+
+const DEFAULT_CRM_PLANS: CrmLocalPlan[] = [
+  { id: 'starter', code: 'STARTER', name: 'STARTER', priceMonthly: 49, priceYearly: 470, description: 'Ideal para pequeñas empresas', layout: 'horizontal', highlight: false },
+  { id: 'business', code: 'BUSINESS', name: 'BUSINESS', priceMonthly: 99, priceYearly: 950, description: 'El paquete más popular', layout: 'horizontal', highlight: true },
+  { id: 'professional', code: 'PROFESSIONAL', name: 'PROFESSIONAL', priceMonthly: 179, priceYearly: 1718, description: 'Gestión financiera completa', layout: 'horizontal', highlight: false },
+  { id: 'enterprise', code: 'ENTERPRISE', name: 'ENTERPRISE', priceMonthly: 299, priceYearly: 2870, description: 'Máxima personalización', layout: 'horizontal', highlight: false },
+];
+
+const DEFAULT_CRM_TREE_SEED: EditorMenuItem[] = [
+  {
+    uid: 'seed-inventario',
+    nombre: 'Inventario',
+    icono: '📦',
+    ruta: '',
+    permiso: '',
+    children: [
+      { uid: 'seed-inventario-productos', nombre: 'Productos', icono: '📦', ruta: '/inventario/productos', permiso: 'inventory.products.view', children: [] },
+      { uid: 'seed-inventario-kardex', nombre: 'Kardex', icono: '📊', ruta: '/inventario/kardex', permiso: 'inventory.kardex.view', children: [] },
+    ],
+  },
+  {
+    uid: 'seed-ventas',
+    nombre: 'Ventas',
+    icono: '🧾',
+    ruta: '',
+    permiso: '',
+    children: [
+      { uid: 'seed-ventas-facturas', nombre: 'Facturas', icono: '🧾', ruta: '/ventas/facturas', permiso: 'sales.invoices.view', children: [] },
+      { uid: 'seed-ventas-clientes', nombre: 'Clientes', icono: '👥', ruta: '/ventas/clientes', permiso: 'sales.customers.view', children: [] },
+    ],
+  },
+  {
+    uid: 'seed-compras',
+    nombre: 'Compras',
+    icono: '🛒',
+    ruta: '',
+    permiso: '',
+    children: [
+      { uid: 'seed-compras-ordenes', nombre: 'Órdenes de compra', icono: '📑', ruta: '/compras/ordenes', permiso: 'purchases.orders.view', children: [] },
+      { uid: 'seed-compras-proveedores', nombre: 'Proveedores', icono: '🏬', ruta: '/compras/proveedores', permiso: 'purchases.suppliers.view', children: [] },
+    ],
+  },
+];
+
+function cloneDefaultCrmTreeSeed(): EditorMenuItem[] {
+  return JSON.parse(JSON.stringify(DEFAULT_CRM_TREE_SEED)) as EditorMenuItem[];
 }
 
-function mapAdminItems(items: AdminNavItemRow[] | null | undefined): SessionMenuItemDto[] {
-  if (!items?.length) return [];
-  const out: SessionMenuItemDto[] = [];
-  for (const i of items) {
-    if (!i.isActive) continue;
-    if (isPlatformRoute(i.routePath)) continue;
-    const children = mapAdminItems(i.children ?? undefined);
-    out.push({
-      routePath: i.routePath,
-      labelKey: i.labelKey,
-      displayLabel: i.displayLabel ?? null,
-      sortOrder: i.sortOrder,
-      moduleKey: i.moduleKey,
-      permissionKey: i.permissionKey,
-      permissionKeysAny: i.permissionKeysAny,
-      itemRoles: null,
-      icon: null,
-      children: children.length ? children : undefined,
-    });
+function formatMoney(amount: number, currency: string, locale: string): string {
+  try {
+    return new Intl.NumberFormat(locale, { style: 'currency', currency: currency || 'USD', maximumFractionDigits: 0 }).format(amount);
+  } catch {
+    return `${currency} ${amount.toFixed(0)}`;
   }
-  return out;
 }
 
-export function adminNavigationToSessionMenu(menu: AdminNavigationMenu): SessionMenuGroupDto[] {
-  return menu.groups
-    .filter((g) => g.isActive && !g.requireSuperAdminPanel)
-    .map((g) => ({
-      code: g.code,
-      icon: g.icon,
-      labelKey: g.labelKey,
-      sortOrder: g.sortOrder,
-      moduleKey: g.moduleKey,
-      roles: g.roles,
-      requireSuperAdminPanel: false,
-      items: mapAdminItems(g.rootItems),
-    }))
-    .filter((g) => g.items.length > 0);
+function makeExportFileName(prefix: string): string {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return `${prefix}-${stamp}.json`;
 }
 
-export function SuperAdminMenuBuilderSection() {
-  const { t } = useI18n();
+function downloadJsonFile(filename: string, payload: unknown): void {
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' });
+  const url = window.URL.createObjectURL(blob);
+  const a = window.document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  window.document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+export type SuperAdminMenuBuilderSectionProps = {
+  /** Vista única 3 columnas (árbol | empresa | formularios) para el hub menú/planes. */
+  crmWorkspace?: boolean;
+};
+
+export { adminNavigationToSessionMenu } from '../../modules/superadmin/adminNavigationToSessionMenu';
+
+export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdminMenuBuilderSectionProps = {}) {
+  const { t, locale } = useI18n();
   const [sub, setSub] = useState<SubMode>('plan');
   const [plans, setPlans] = useState<SaasPlanAdmin[]>([]);
   const [tenants, setTenants] = useState<SuperAdminTenant[]>([]);
   const [planId, setPlanId] = useState('');
   const [tenantId, setTenantId] = useState('');
+  const [catalogSearch, setCatalogSearch] = useState('');
+  const [catalogSearchField, setCatalogSearchField] = useState<CatalogSearchField>('all');
+  const [catalogNodeType, setCatalogNodeType] = useState<CatalogNodeType>('all');
+  const [catalogOnlyWithRoute, setCatalogOnlyWithRoute] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardStep, setWizardStep] = useState(0);
+  const [auditLines, setAuditLines] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const raw = window.localStorage.getItem(CRM_AUDIT_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as unknown;
+      return Array.isArray(parsed) ? parsed.filter((line): line is string => typeof line === 'string').slice(0, 100) : [];
+    } catch {
+      return [];
+    }
+  });
   const [json, setJson] = useState('[]');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
@@ -93,13 +232,91 @@ export function SuperAdminMenuBuilderSection() {
 
   const [arbol, setArbol] = useState<FuncionalidadArbolDto[]>([]);
   const { byPerm } = useMemo(() => buildFuncionalidadMaps(arbol), [arbol]);
+  const filteredArbol = useMemo(
+    () =>
+      filterFuncionalidadesArbol(arbol, {
+        query: catalogSearch,
+        field: catalogSearchField,
+        nodeType: catalogNodeType,
+        onlyWithRoute: catalogOnlyWithRoute,
+      }),
+    [arbol, catalogSearch, catalogSearchField, catalogNodeType, catalogOnlyWithRoute],
+  );
 
   const [editorMainTab, setEditorMainTab] = useState<EditorMainTab>('visual');
-  const [visualTree, setVisualTree] = useState<EditorMenuItem[]>([]);
+  const {
+    present: visualTree,
+    reset: resetEditorTree,
+    commit: commitEditorTree,
+    undo: undoEditorTree,
+    redo: redoEditorTree,
+    canUndo: canUndoEditorTree,
+    canRedo: canRedoEditorTree,
+  } = useEditorTreeHistory();
   const [menuViewMode, setMenuViewMode] = useState<MenuBuilderViewMode>('split');
   const [previewLayout, setPreviewLayout] = useState<MenuPreviewLayout>('vertical');
 
+  const [copySourcePlanId, setCopySourcePlanId] = useState('');
+  const [copyMenu, setCopyMenu] = useState(true);
+  const [savingAuto, setSavingAuto] = useState(false);
+  const [simTenantId, setSimTenantId] = useState('');
+  const [previewPlanId, setPreviewPlanId] = useState('');
+  const [simPreviewItems, setSimPreviewItems] = useState<MenuItem[] | null>(null);
+  const [showAnnual, setShowAnnual] = useState(false);
+  const [newPlanModalOpen, setNewPlanModalOpen] = useState(false);
+  const [newPlanName, setNewPlanName] = useState('');
+  const [newPlanMonthly, setNewPlanMonthly] = useState('199');
+  const [newPlanYearly, setNewPlanYearly] = useState('');
+  const [newPlanDescription, setNewPlanDescription] = useState('');
+  const [newPlanInheritOnCreate, setNewPlanInheritOnCreate] = useState(false);
+  const [newPlanInheritSourcePlanId, setNewPlanInheritSourcePlanId] = useState('');
+  const importWorkspaceInputRef = useRef<HTMLInputElement | null>(null);
+  const [crmPlans, setCrmPlans] = useState<CrmLocalPlan[]>(() => {
+    if (typeof window === 'undefined') return DEFAULT_CRM_PLANS;
+    try {
+      const raw = window.localStorage.getItem(CRM_PLANS_STORAGE_KEY);
+      if (!raw) return DEFAULT_CRM_PLANS;
+      const parsed = JSON.parse(raw) as unknown;
+      return normalizeCrmPlans(parsed, DEFAULT_CRM_PLANS);
+    } catch {
+      return DEFAULT_CRM_PLANS;
+    }
+  });
+  const [planActiveById, setPlanActiveById] = useState<Record<string, string[]>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem(CRM_PLAN_ACTIVE_STORAGE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw) as Record<string, string[]>;
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  });
+  const hydratingPlanRef = useRef(false);
+  const planSwitchClock = useRef(0);
+
   const visualLabelKey = t('superadmin.menuBuilder.visualGroupLabel');
+  const visualTreeIds = useMemo(() => {
+    const all: string[] = [];
+    const walk = (nodes: EditorMenuItem[]) => {
+      for (const n of nodes) {
+        all.push(n.uid);
+        walk(n.children);
+      }
+    };
+    walk(visualTree);
+    return all;
+  }, [visualTree]);
+  const visualTreeIdSet = useMemo(() => new Set(visualTreeIds), [visualTreeIds]);
+
+  useEffect(() => {
+    if (crmWorkspace) return;
+    if (!planId) return;
+    const p = plans.find((x) => x.id === planId);
+    const l = p?.menuSidebarLayout?.trim().toLowerCase();
+    if (l === 'horizontal' || l === 'vertical') setPreviewLayout(l);
+  }, [crmWorkspace, planId, plans]);
 
   const applyMenuJsonString = useCallback(
     (raw: string) => {
@@ -109,14 +326,179 @@ export function SuperAdminMenuBuilderSection() {
         setJson(JSON.stringify(groups, null, 2));
         const layout = readPlanCustomMenuBarLayout(groups);
         if (layout) setPreviewLayout(layout);
-        setVisualTree(sessionGroupsToEditorTree(groups, byPerm));
+        resetEditorTree(sessionGroupsToEditorTree(groups, byPerm));
       } catch {
         setJson(raw);
-        setVisualTree([]);
+        resetEditorTree([]);
       }
     },
-    [byPerm],
+    [byPerm, resetEditorTree],
   );
+
+  const appendAudit = useCallback(
+    (line: string) => {
+      if (!crmWorkspace) return;
+      const stamp = new Date().toLocaleTimeString();
+      setAuditLines((prev) => [`[${stamp}] ${line}`, ...prev].slice(0, 100));
+    },
+    [crmWorkspace],
+  );
+
+  useEffect(() => {
+    if (!crmWorkspace) return;
+    setSub('plan');
+    setEditorMainTab('visual');
+    setMenuViewMode('split');
+    setWizardOpen(false);
+    setWizardStep(0);
+  }, [crmWorkspace]);
+
+  useEffect(() => {
+    if (!crmWorkspace) return;
+    if (planId) return;
+    if (crmPlans[0]) {
+      setPlanId(crmPlans[0].id);
+      setPreviewLayout(crmPlans[0].layout);
+    }
+  }, [crmWorkspace, planId, crmPlans]);
+
+  useEffect(() => {
+    if (!crmWorkspace || !planId) return;
+    setCrmPlans((prev) => {
+      let changed = false;
+      const next = prev.map((p) => {
+        if (p.id !== planId) return p;
+        if (p.layout === previewLayout) return p;
+        changed = true;
+        return { ...p, layout: previewLayout };
+      });
+      return changed ? next : prev;
+    });
+  }, [crmWorkspace, planId, previewLayout]);
+
+  useEffect(() => {
+    if (!crmWorkspace || !planId) return;
+    if (typeof window === 'undefined') return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const raw = window.localStorage.getItem(CRM_TREE_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw) as EditorMenuItem[];
+          if (Array.isArray(parsed) && parsed.length) {
+            resetEditorTree(parsed);
+            return;
+          }
+        }
+      } catch {
+        // ignore malformed local data and fallback to global menu.
+      }
+
+      try {
+        const menu = await superAdminService.getNavigationMenu();
+        if (cancelled) return;
+        const sess = normalizeParsedMenuGroups(adminNavigationToSessionMenu(menu));
+        const layout = readPlanCustomMenuBarLayout(sess);
+        const tree = sessionGroupsToEditorTree(sess, byPerm);
+        if (tree.length > 0) {
+          setJson(JSON.stringify(sess, null, 2));
+          if (layout) setPreviewLayout(layout);
+          resetEditorTree(tree);
+          return;
+        }
+      } catch {
+        // fallback to local seed below.
+      }
+
+      const seed = cloneDefaultCrmTreeSeed();
+      setJson(serializeEditorTreeToMenuJson(seed, visualLabelKey, 'horizontal'));
+      setPreviewLayout('horizontal');
+      resetEditorTree(seed);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [byPerm, crmWorkspace, planId, resetEditorTree, visualLabelKey]);
+
+  useEffect(() => {
+    if (!crmWorkspace) return;
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(CRM_TREE_STORAGE_KEY, JSON.stringify(visualTree));
+  }, [crmWorkspace, visualTree]);
+
+  useEffect(() => {
+    if (!crmWorkspace) return;
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(CRM_PLANS_STORAGE_KEY, JSON.stringify(crmPlans));
+  }, [crmWorkspace, crmPlans]);
+
+  useEffect(() => {
+    if (!crmWorkspace) return;
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(CRM_AUDIT_STORAGE_KEY, JSON.stringify(auditLines));
+  }, [crmWorkspace, auditLines]);
+
+  useEffect(() => {
+    if (crmWorkspace || !planId) return;
+    let cancelled = false;
+    hydratingPlanRef.current = true;
+    planSwitchClock.current = Date.now();
+    void (async () => {
+      try {
+        const bundle = await superAdminService.getPlanMenu(planId);
+        if (cancelled) return;
+        const l = bundle.menuSidebarLayout?.trim().toLowerCase();
+        if (l === 'horizontal' || l === 'vertical') setPreviewLayout(l);
+        if (bundle.menuConfigJson?.trim()) {
+          applyMenuJsonString(JSON.stringify(JSON.parse(bundle.menuConfigJson), null, 2));
+        } else {
+          const menu = await superAdminService.getNavigationMenu();
+          const sess = adminNavigationToSessionMenu(menu);
+          applyMenuJsonString(JSON.stringify(sess, null, 2));
+        }
+      } catch {
+        if (!cancelled) setErr(t('common.errorGeneric'));
+      } finally {
+        if (!cancelled) {
+          queueMicrotask(() => {
+            hydratingPlanRef.current = false;
+          });
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+      hydratingPlanRef.current = false;
+    };
+  }, [crmWorkspace, planId, applyMenuJsonString, t]);
+
+  useEffect(() => {
+    if (!crmWorkspace) return;
+    if (!planId) return;
+    if (!visualTreeIds.length) return;
+    setPlanActiveById((prev) => {
+      const exists = prev[planId];
+      if (exists) return prev;
+      return { ...prev, [planId]: [...visualTreeIds] };
+    });
+  }, [crmWorkspace, planId, visualTreeIds]);
+
+  useEffect(() => {
+    if (!crmWorkspace) return;
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(CRM_PLAN_ACTIVE_STORAGE_KEY, JSON.stringify(planActiveById));
+  }, [crmWorkspace, planActiveById]);
+
+  useEffect(() => {
+    if (!crmWorkspace) return;
+    if (visualTreeIdSet.size === 0) return;
+    const validPlanIds = new Set(crmPlans.map((p) => p.id));
+    setPlanActiveById((prev) => {
+      const next = normalizePlanActiveById(prev, validPlanIds, visualTreeIdSet);
+      if (JSON.stringify(next) === JSON.stringify(prev)) return prev;
+      return next;
+    });
+  }, [crmWorkspace, crmPlans, visualTreeIdSet]);
 
   const reloadArbol = useCallback(async () => {
     try {
@@ -145,6 +527,7 @@ export function SuperAdminMenuBuilderSection() {
     try {
       await superAdminService.syncFuncionalidadesCatalogo();
       await reloadArbol();
+      if (crmWorkspace) appendAudit('Catálogo de funcionalidades sincronizado');
     } catch (e) {
       setErr(
         formatApiRequestError(e, {
@@ -159,11 +542,15 @@ export function SuperAdminMenuBuilderSection() {
 
   const handleVisualTreeChange = useCallback(
     (next: EditorMenuItem[]) => {
-      setVisualTree(next);
-      setJson(serializeEditorTreeToMenuJson(next, visualLabelKey, previewLayout));
+      commitEditorTree(next, crmWorkspace);
     },
-    [visualLabelKey, previewLayout],
+    [commitEditorTree, crmWorkspace],
   );
+
+  useEffect(() => {
+    if (!crmWorkspace && editorMainTab !== 'visual') return;
+    setJson(serializeEditorTreeToMenuJson(visualTree, visualLabelKey, previewLayout));
+  }, [visualTree, visualLabelKey, previewLayout, crmWorkspace, editorMainTab]);
 
   const layoutPatchSkipMount = useRef(true);
   useEffect(() => {
@@ -199,6 +586,7 @@ export function SuperAdminMenuBuilderSection() {
       const menu = await superAdminService.getNavigationMenu();
       const sess = adminNavigationToSessionMenu(menu);
       applyMenuJsonString(JSON.stringify(sess, null, 2));
+      if (crmWorkspace) appendAudit('Editor rellenado desde el catálogo global');
     } catch (e) {
       setErr(
         formatApiRequestError(e, {
@@ -213,12 +601,15 @@ export function SuperAdminMenuBuilderSection() {
     if (!planId) return;
     setErr('');
     try {
-      const raw = await superAdminService.getPlanMenuJson(planId);
-      if (raw?.trim()) {
-        applyMenuJsonString(JSON.stringify(JSON.parse(raw), null, 2));
+      const bundle = await superAdminService.getPlanMenu(planId);
+      const l = bundle.menuSidebarLayout?.trim().toLowerCase();
+      if (l === 'horizontal' || l === 'vertical') setPreviewLayout(l);
+      if (bundle.menuConfigJson?.trim()) {
+        applyMenuJsonString(JSON.stringify(JSON.parse(bundle.menuConfigJson), null, 2));
       } else {
         await fillFromGlobal();
       }
+      if (crmWorkspace) appendAudit('Menú recargado desde el plan');
     } catch {
       setErr(t('common.errorGeneric'));
     }
@@ -238,9 +629,14 @@ export function SuperAdminMenuBuilderSection() {
           return;
         }
       }
-      await superAdminService.setPlanMenuJson(planId, trimmed.length === 0 ? null : trimmed);
+      await superAdminService.setPlanMenuJson(
+        planId,
+        trimmed.length === 0 ? null : trimmed,
+        previewLayout,
+      );
       const next = await superAdminService.listSaasPlansAdmin();
       setPlans(next);
+      if (crmWorkspace) appendAudit('Menú guardado en el plan');
     } catch (e) {
       setErr(
         formatApiRequestError(e, {
@@ -258,10 +654,11 @@ export function SuperAdminMenuBuilderSection() {
     setBusy(true);
     setErr('');
     try {
-      await superAdminService.setPlanMenuJson(planId, null);
+      await superAdminService.setPlanMenuJson(planId, null, 'horizontal');
       applyMenuJsonString('[]');
       const next = await superAdminService.listSaasPlansAdmin();
       setPlans(next);
+      if (crmWorkspace) appendAudit('Menú del plan limpiado');
     } catch (e) {
       setErr(
         formatApiRequestError(e, {
@@ -342,6 +739,710 @@ export function SuperAdminMenuBuilderSection() {
     }
   };
 
+  const runCopyFromPlan = async () => {
+    if (!planId || !copySourcePlanId || copySourcePlanId === planId) {
+      setErr(t('superadmin.menuBuilder.copyPickPlans'));
+      return;
+    }
+    if (!copyMenu) {
+      setErr(t('superadmin.menuBuilder.copyPickOptions'));
+      return;
+    }
+    setBusy(true);
+    setErr('');
+    try {
+      await superAdminService.copyPlanFrom(planId, copySourcePlanId, {
+        copyMenu,
+      });
+      const next = await superAdminService.listSaasPlansAdmin();
+      setPlans(next);
+      await loadPlanSaved();
+      if (crmWorkspace) appendAudit('Configuración copiada desde otro plan');
+    } catch (e) {
+      setErr(
+        formatApiRequestError(e, {
+          offline: t('common.apiUnreachable'),
+          generic: t('common.errorGeneric'),
+        }),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const persistCrmPlan = useCallback(async () => {
+    if (crmWorkspace || !planId || hydratingPlanRef.current) return;
+    if (Date.now() - planSwitchClock.current < 900) return;
+    const trimmed = json.trim();
+    setErr('');
+    try {
+      if (trimmed.length > 0) {
+        const groups = JSON.parse(trimmed) as SessionMenuGroupDto[];
+        const v = validateSessionMenuGroups(groups);
+        if (v.length) {
+          setErr(v.join(' '));
+          return;
+        }
+      }
+      setSavingAuto(true);
+      await superAdminService.setPlanMenuJson(
+        planId,
+        trimmed.length === 0 ? null : trimmed,
+        previewLayout,
+      );
+      const next = await superAdminService.listSaasPlansAdmin();
+      setPlans(next);
+      appendAudit('Guardado automático');
+    } catch (e) {
+      setErr(
+        formatApiRequestError(e, {
+          offline: t('common.apiUnreachable'),
+          generic: t('common.errorGeneric'),
+        }),
+      );
+    } finally {
+      setSavingAuto(false);
+    }
+  }, [crmWorkspace, planId, json, previewLayout, appendAudit, t]);
+
+  useEffect(() => {
+    if (crmWorkspace || !planId) return;
+    if (hydratingPlanRef.current) return;
+    if (Date.now() - planSwitchClock.current < 900) return;
+    const tid = window.setTimeout(() => {
+      void persistCrmPlan();
+    }, 900);
+    return () => window.clearTimeout(tid);
+  }, [crmWorkspace, planId, json, previewLayout, persistCrmPlan]);
+
+  useEffect(() => {
+    setSimPreviewItems(null);
+    setSimTenantId('');
+    setPreviewPlanId('');
+  }, [planId]);
+
+  if (crmWorkspace) {
+    const activePlan = crmPlans.find((p) => p.id === planId);
+    const previewPlan = crmPlans.find((p) => p.id === (previewPlanId || planId)) ?? activePlan;
+    const wizardSteps = [
+      {
+        title: '1) Selecciona un plan',
+        body: 'Usa las pills superiores para elegir el plan comercial que quieres editar.',
+      },
+      {
+        title: '2) Construye el menú',
+        body: 'Arrastra formularios del catálogo y ordénalos en el árbol maestro.',
+      },
+      {
+        title: '3) Activa por plan',
+        body: 'Marca checkboxes para definir qué nodos quedan activos en el plan seleccionado.',
+      },
+      {
+        title: '4) Valida en vista empresa',
+        body: 'Revisa layout horizontal/vertical y usa la simulación para comprobar el resultado final.',
+      },
+    ] as const;
+    const wizardCurrentStep = wizardSteps[wizardStep] ?? wizardSteps[0];
+    const locTag = locale === 'en' ? 'en-US' : 'es-ES';
+    const priceLabel = activePlan ? formatMoney(showAnnual ? activePlan.priceYearly : activePlan.priceMonthly, 'USD', locTag) : '—';
+    const cycleLabel = showAnnual ? '/año' : '/mes';
+    const currentActiveSet = new Set(planActiveById[planId] ?? []);
+    const previewActiveSet = new Set(planActiveById[(previewPlan?.id ?? planId)] ?? []);
+    const planCardFeatures = visualTree
+      .filter((x) => currentActiveSet.has(x.uid))
+      .map((x) => x.nombre)
+      .slice(0, 14);
+    const onToggleNodeActive = (uid: string, checked: boolean) => {
+      const findByUid = (nodes: EditorMenuItem[]): EditorMenuItem | null => {
+        for (const n of nodes) {
+          if (n.uid === uid) return n;
+          const child = findByUid(n.children);
+          if (child) return child;
+        }
+        return null;
+      };
+      const node = findByUid(visualTree);
+      if (!node) return;
+      setPlanActiveById((prev) => {
+        const curr = new Set(prev[planId] ?? []);
+        if (checked) curr.add(node.uid);
+        else curr.delete(node.uid);
+        return { ...prev, [planId]: Array.from(curr) };
+      });
+      appendAudit(`${checked ? 'Activado' : 'Desactivado'}: ${node.nombre}`);
+    };
+    const createNewPlan = () => {
+      const inheritanceSourcePlanId = newPlanInheritSourcePlanId || planId;
+      const draft = buildPlanFromDraft(
+        {
+          name: newPlanName,
+          monthly: newPlanMonthly,
+          yearly: newPlanYearly,
+          description: newPlanDescription,
+        },
+        crmPlans,
+      );
+      if ('error' in draft) {
+        setErr(draft.error);
+        return;
+      }
+      const plan: CrmLocalPlan = draft.plan;
+      const inheritedNodeIds = newPlanInheritOnCreate
+        ? resolveInheritedActiveNodeIds(planActiveById, inheritanceSourcePlanId, visualTreeIdSet)
+        : [];
+      setCrmPlans((prev) => [...prev, plan]);
+      setPlanId(plan.id);
+      setPlanActiveById((prev) => ({ ...prev, [plan.id]: inheritedNodeIds }));
+      setNewPlanModalOpen(false);
+      setNewPlanName('');
+      setNewPlanMonthly('199');
+      setNewPlanYearly('');
+      setNewPlanDescription('');
+      setNewPlanInheritOnCreate(false);
+      setNewPlanInheritSourcePlanId('');
+      if (newPlanInheritOnCreate && inheritedNodeIds.length > 0) {
+        const sourceLabel = crmPlans.find((p) => p.id === inheritanceSourcePlanId)?.name ?? inheritanceSourcePlanId;
+        appendAudit(`Plan creado: ${plan.name} (heredó ${inheritedNodeIds.length} nodos desde ${sourceLabel})`);
+      } else {
+        appendAudit(`Plan creado: ${plan.name}`);
+      }
+    };
+    const copyFromLowerPlan = () => {
+      const order = crmPlans.map((p) => p.id);
+      const idx = order.indexOf(planId);
+      if (idx <= 0) {
+        appendAudit('No hay plan inferior para copiar');
+        return;
+      }
+      const lower = order[idx - 1]!;
+      setPlanActiveById((prev) => ({ ...prev, [planId]: [...(prev[lower] ?? [])] }));
+      appendAudit(`Plan ${activePlan?.name ?? planId} heredó activaciones de ${crmPlans.find((p) => p.id === lower)?.name ?? lower}`);
+    };
+    const resetPlanLocal = () => {
+      const ok = window.confirm('Resetear plan a vacío?');
+      if (!ok) return;
+      setPlanActiveById((prev) => ({ ...prev, [planId]: [] }));
+      appendAudit(`Plan ${activePlan?.name ?? planId} reseteado`);
+    };
+    const exportWorkspaceSnapshot = () => {
+      const payload: CrmWorkspaceExportPayload<EditorMenuItem> = {
+        version: MENU_BUILDER_SCHEMA_VERSION,
+        exportedAt: new Date().toISOString(),
+        plans: crmPlans,
+        planActiveById,
+        tree: visualTree,
+        auditLines,
+      };
+      downloadJsonFile(makeExportFileName('superadmin-crm-workspace'), payload);
+      appendAudit('Snapshot exportado (workspace completo)');
+    };
+    const exportAuditSnapshot = () => {
+      const payload = {
+        version: MENU_BUILDER_SCHEMA_VERSION,
+        exportedAt: new Date().toISOString(),
+        auditLines,
+      };
+      downloadJsonFile(makeExportFileName('superadmin-crm-audit'), payload);
+      appendAudit('Auditoría exportada');
+    };
+    const triggerImportWorkspace = () => {
+      importWorkspaceInputRef.current?.click();
+    };
+    const importWorkspaceSnapshot = async (file: File) => {
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text) as unknown;
+        const imported = parseImportedCrmWorkspace(parsed, DEFAULT_CRM_PLANS);
+        const importedPlans = imported.plans as CrmLocalPlan[];
+        const firstPlan = importedPlans[0];
+        setCrmPlans(importedPlans);
+        setPlanActiveById(imported.planActiveById);
+        resetEditorTree(Array.isArray(imported.tree) ? (imported.tree as EditorMenuItem[]) : []);
+        setAuditLines(imported.auditLines);
+        if (firstPlan) {
+          setPlanId(firstPlan.id);
+          setPreviewLayout(firstPlan.layout);
+        }
+        appendAudit(`Snapshot importado (v${imported.version})`);
+      } catch {
+        setErr('No se pudo importar el archivo JSON');
+      }
+    };
+
+    const crmToolbar: ReactNode = (
+      <>
+        <button
+          type="button"
+          className="menu-plan-composer__iconBtn"
+          onClick={() => undoEditorTree()}
+          disabled={!canUndoEditorTree}
+          aria-label="Deshacer último cambio del árbol"
+        >
+          ↺
+        </button>
+        <button
+          type="button"
+          className="menu-plan-composer__iconBtn"
+          onClick={() => redoEditorTree()}
+          disabled={!canRedoEditorTree}
+          aria-label="Rehacer cambio deshecho del árbol"
+        >
+          ↻
+        </button>
+        <span className="menu-plan-composer__ver" title="Versión del esquema de menú">
+          v{MENU_BUILDER_SCHEMA_VERSION}
+        </span>
+      </>
+    );
+
+    const crmMasterStack: ReactNode = (
+      <div className="menu-plan-composer__masterStack">
+        <div className="menu-plan-composer__planPills" role="tablist" aria-label="Planes comerciales">
+          {crmPlans.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              role="tab"
+              aria-selected={planId === p.id}
+              className={`menu-plan-composer__pill${planId === p.id ? ' is-active' : ''}`}
+              onClick={() => {
+                setErr('');
+                setPlanId(p.id);
+                setPreviewLayout(p.layout);
+              }}
+              disabled={busy || savingAuto}
+            >
+              <span className="menu-plan-composer__pillEmoji" aria-hidden>
+                {planEmoji(p.code)}
+              </span>
+              <span>{p.code}</span>
+            </button>
+          ))}
+          <button type="button" className="menu-plan-composer__pill menu-plan-composer__pill--add" onClick={() => setNewPlanModalOpen(true)}>
+            + Nuevo Plan
+          </button>
+        </div>
+        <div className="menu-plan-composer__searchRow">
+          <span className="menu-plan-composer__searchIcon" aria-hidden>
+            🔍
+          </span>
+          <input
+            className="zh-input menu-plan-composer__searchInput"
+            type="search"
+            autoComplete="off"
+            placeholder="Buscar nodo…"
+            value={catalogSearch}
+            onChange={(e) => setCatalogSearch(e.target.value)}
+            disabled={busy || savingAuto}
+            aria-label="Buscar en el catálogo de formularios"
+          />
+          <ZHBtn
+            variant="ghost"
+            size="md"
+            type="button"
+            onClick={() => {
+              setCatalogSearch('');
+              setCatalogSearchField('all');
+              setCatalogNodeType('all');
+              setCatalogOnlyWithRoute(false);
+            }}
+            disabled={
+              busy ||
+              savingAuto ||
+              (!catalogSearch.trim() && catalogSearchField === 'all' && catalogNodeType === 'all' && !catalogOnlyWithRoute)
+            }
+            aria-label="Limpiar búsqueda del catálogo"
+          >
+            Limpiar
+          </ZHBtn>
+          <ZHBtn variant="ghost" size="md" type="button" onClick={() => void syncCatalog()} disabled={busy || savingAuto} aria-label="Sincronizar catálogo desde controladores">
+            Sync API
+          </ZHBtn>
+          <ZHBtn variant="ghost" size="md" type="button" onClick={() => void reloadArbol()} disabled={busy || savingAuto} aria-label="Refrescar lista de formularios">
+            Refrescar
+          </ZHBtn>
+        </div>
+        <div className="menu-plan-composer__advancedFilters" aria-label="Filtros avanzados del catálogo">
+          <label className="menu-plan-composer__advancedFilterItem">
+            <span>Campo</span>
+            <select
+              className="zh-input"
+              value={catalogSearchField}
+              onChange={(e) => setCatalogSearchField(e.target.value as CatalogSearchField)}
+              disabled={busy || savingAuto}
+              title="Limita la búsqueda por nombre, permiso o ruta."
+            >
+              <option value="all">Todo</option>
+              <option value="name">Nombre</option>
+              <option value="perm">Permiso</option>
+              <option value="route">Ruta</option>
+            </select>
+          </label>
+          <label className="menu-plan-composer__advancedFilterItem">
+            <span>Tipo</span>
+            <select
+              className="zh-input"
+              value={catalogNodeType}
+              onChange={(e) => setCatalogNodeType(e.target.value as CatalogNodeType)}
+              disabled={busy || savingAuto}
+              title="Filtra por carpetas o formularios."
+            >
+              <option value="all">Todos</option>
+              <option value="folders">Solo carpetas</option>
+              <option value="forms">Solo formularios</option>
+            </select>
+          </label>
+          <label className="menu-plan-composer__advancedFilterCheck" title="Muestra solo nodos que tengan ruta configurada.">
+            <input
+              type="checkbox"
+              checked={catalogOnlyWithRoute}
+              onChange={(e) => setCatalogOnlyWithRoute(e.target.checked)}
+              disabled={busy || savingAuto}
+            />
+            <span>Solo con ruta</span>
+          </label>
+          <span className="menu-plan-composer__advancedFilterTip" title="Tip: combina búsqueda + tipo para encontrar nodos más rápido.">
+            💡 Filtro avanzado
+          </span>
+        </div>
+      </div>
+    );
+
+    const crmMasterFooter: ReactNode = (
+      <div className="menu-plan-composer__treeFoot">
+        <div className="menu-plan-composer__treeFootBtns">
+          <ZHBtn variant="ghost" size="md" type="button" onClick={copyFromLowerPlan} disabled={busy || savingAuto} aria-label="Copiar herencia desde plan inferior">
+            📄 Copiar herencia
+          </ZHBtn>
+          <ZHBtn variant="ghost" size="md" type="button" onClick={resetPlanLocal} disabled={busy || savingAuto || !planId} aria-label="Resetear plan actual">
+            🔄 Resetear plan
+          </ZHBtn>
+        </div>
+        <div className="menu-plan-composer__callout menu-plan-composer__callout--info" role="note">
+          Arrastra nodos para reordenar o cambiar de carpeta. Usa las flechas del bloque de acciones para subir, bajar o cambiar de nivel. Deshacer y rehacer solo afectan esta sesión; los
+          cambios válidos se guardan solos en el plan.
+        </div>
+      </div>
+    );
+
+    const crmPreviewExtras: ReactNode = (
+      <>
+        <div className="menu-plan-composer__previewHead">
+          <span className="menu-plan-composer__previewCode">{activePlan?.code ?? '—'}</span>
+        </div>
+        <div className="menu-plan-composer__layoutPick" role="radiogroup" aria-label="Orientación del menú en la vista previa">
+          <label className="menu-plan-composer__radioLbl">
+            <input
+              type="radio"
+              name="crm-menu-preview-layout"
+              checked={previewLayout === 'horizontal'}
+              onChange={() => setPreviewLayout('horizontal')}
+              disabled={busy || savingAuto}
+            />
+            Horizontal (por defecto)
+          </label>
+          <label className="menu-plan-composer__radioLbl">
+            <input
+              type="radio"
+              name="crm-menu-preview-layout"
+              checked={previewLayout === 'vertical'}
+              onChange={() => setPreviewLayout('vertical')}
+              disabled={busy || savingAuto}
+            />
+            Vertical
+          </label>
+        </div>
+        <div className="menu-plan-composer__mockTopBar" aria-label="Simulación de barra de menú superior">
+          Menú para {previewPlan?.code ?? activePlan?.code ?? '…'} (barra superior)
+        </div>
+        <div className="menu-plan-composer__callout menu-plan-composer__callout--soft" role="note">
+          <strong>🔎 Tooltips:</strong> al pasar el cursor sobre cada ítem verás la ruta y permiso asociados.
+        </div>
+        <div className="menu-plan-composer__callout menu-plan-composer__callout--soft" role="note">
+          <strong>💡 Layout:</strong> cada plan guarda su preferencia horizontal o vertical; se persiste con el menú.
+        </div>
+        <div className="menu-plan-composer__simRow">
+          <label className="menu-plan-composer__simLbl" htmlFor="crm-sim-tenant">
+            Simular otra empresa:
+          </label>
+          <select
+            id="crm-sim-tenant"
+            className="zh-input menu-plan-composer__simSelect"
+            value={simTenantId}
+            onChange={(e) => setSimTenantId(e.target.value)}
+            disabled={busy || savingAuto}
+            aria-label="Seleccionar empresa para simular su menú efectivo"
+          >
+            <option value="">— Menú del plan actual —</option>
+            {crmPlans.map((x) => (
+              <option key={x.id} value={x.id}>
+                {x.code}
+              </option>
+            ))}
+          </select>
+          <ZHBtn
+            variant="ghost"
+            size="md"
+            type="button"
+            onClick={() => {
+              setPreviewPlanId(simTenantId || planId);
+              appendAudit(`Simulando empresa con plan ${(crmPlans.find((p) => p.id === (simTenantId || planId))?.code ?? planId)}`);
+            }}
+            disabled={busy || savingAuto}
+            aria-label="Actualizar vista previa con el plan seleccionado"
+          >
+            🔄 Actualizar
+          </ZHBtn>
+          <label className="menu-plan-composer__toggleLbl">
+            <input type="checkbox" checked={showAnnual} onChange={(e) => setShowAnnual(e.target.checked)} disabled={busy || savingAuto} aria-label="Mostrar precio anual estimado" />
+            <span>$ Mostrar anual</span>
+          </label>
+        </div>
+        <div className="menu-plan-composer__planCard">
+          <div className="menu-plan-composer__planCardHead">
+            <span aria-hidden>{planEmoji(activePlan?.code ?? '')}</span>
+            <strong>{activePlan?.code ?? 'PLAN'}</strong>
+          </div>
+          <div className="menu-plan-composer__planCardPrice">
+            {priceLabel}
+            <span className="menu-plan-composer__planCardCycle">{cycleLabel}</span>
+          </div>
+          <p className="menu-plan-composer__planCardSub">{activePlan?.description || 'Ideal para equipos en crecimiento'}</p>
+          <ul className="menu-plan-composer__planCardList">
+            {planCardFeatures.length ? (
+              planCardFeatures.map((name, idx) => (
+                <li key={`${idx}-${name}`}>
+                  <span aria-hidden>✓</span> {name}
+                </li>
+              ))
+            ) : (
+              <li className="subtle">Añade carpetas o formularios al árbol para listarlos aquí.</li>
+            )}
+          </ul>
+          <button type="button" className="zh-btn zh-btn--primary zh-btn--md menu-plan-composer__planCardCta" disabled aria-label="Seleccionar plan (solo demostración visual)">
+            Seleccionar plan →
+          </button>
+        </div>
+      </>
+    );
+
+    return (
+      <div className="menu-plan-composer">
+        <header className="menu-plan-composer__hero">
+          <div className="menu-plan-composer__heroTop">
+            <h1 className="menu-plan-composer__h1">👑 Panel SuperAdmin</h1>
+            <div className="menu-plan-composer__heroMeta">
+              <ZHBtn
+                variant="ghost"
+                size="md"
+                type="button"
+                onClick={() => {
+                  setWizardStep(0);
+                  setWizardOpen(true);
+                }}
+                disabled={busy || savingAuto}
+                title="Abrir guía rápida del flujo de configuración"
+              >
+                🧭 Guía rápida
+              </ZHBtn>
+              {savingAuto ? (
+                <span className="menu-plan-composer__saving" aria-live="polite">
+                  Guardando…
+                </span>
+              ) : null}
+            </div>
+          </div>
+          <p className="menu-plan-composer__heroSub">
+            Gestión completa de menús, planes comerciales y configuración global
+          </p>
+        </header>
+
+        {err ? <ZHPageNotice variant="error" message="Error" detail={err} /> : null}
+
+        <div className="menu-plan-composer__workspace">
+          <MenuBuilder
+            workspaceVariant="crm"
+            hideWorkspaceToolbar
+            catalogArbol={filteredArbol}
+            tree={visualTree}
+            onTreeChange={handleVisualTreeChange}
+            viewMode={menuViewMode}
+            onViewModeChange={setMenuViewMode}
+            previewLayout={previewLayout}
+            onPreviewLayoutChange={setPreviewLayout}
+            onBuilderMessage={(msg) => setErr(msg)}
+            crmToolbar={crmToolbar}
+            crmMasterStack={crmMasterStack}
+            crmMasterFooter={crmMasterFooter}
+            crmPreviewExtras={crmPreviewExtras}
+            previewItemsOverride={simPreviewItems}
+            activeNodeIds={previewActiveSet}
+            onToggleNodeActive={onToggleNodeActive}
+            treeSearchQuery={catalogSearch}
+            panelTitles={{
+              canvas: '📁 Árbol maestro',
+              preview: '🖥 Vista empresa (previsualización)',
+              library: '📋 Formularios disponibles (arrastra al árbol)',
+            }}
+          />
+        </div>
+
+        <div className="menu-plan-composer__libHint menu-plan-composer__callout menu-plan-composer__callout--soft" role="note">
+          Arrastra cualquier formulario y suéltalo dentro de una carpeta o en la raíz del árbol.
+        </div>
+
+        <section className="menu-plan-composer__audit" aria-labelledby="menu-plan-audit-heading">
+          <div className="menu-plan-composer__auditHead">
+            <h3 id="menu-plan-audit-heading">🕐 Auditoría</h3>
+            <div className="menu-plan-composer__auditActions">
+              <ZHBtn variant="ghost" size="md" type="button" onClick={exportAuditSnapshot} disabled={!auditLines.length} aria-label="Exportar auditoría">
+                Exportar auditoría
+              </ZHBtn>
+              <ZHBtn variant="ghost" size="md" type="button" onClick={exportWorkspaceSnapshot} aria-label="Exportar workspace completo">
+                Exportar workspace
+              </ZHBtn>
+              <ZHBtn variant="ghost" size="md" type="button" onClick={triggerImportWorkspace} aria-label="Importar workspace completo">
+                Importar workspace
+              </ZHBtn>
+              <ZHBtn variant="ghost" size="md" type="button" onClick={() => setAuditLines([])} disabled={!auditLines.length} aria-label="Limpiar historial de auditoría">
+                Limpiar
+              </ZHBtn>
+            </div>
+          </div>
+          <input
+            ref={importWorkspaceInputRef}
+            type="file"
+            accept="application/json,.json"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void importWorkspaceSnapshot(file);
+              e.currentTarget.value = '';
+            }}
+          />
+          <ul className="menu-plan-composer__auditList">
+            {auditLines.length === 0 ? (
+              <li className="subtle">Las acciones (guardado automático, recargas, simulación…) aparecerán aquí.</li>
+            ) : (
+              auditLines.map((line, i) => (
+                <li key={`${i}-${line.slice(0, 24)}`}>{line}</li>
+              ))
+            )}
+          </ul>
+        </section>
+
+        {newPlanModalOpen ? (
+          <div className="menu-plan-composer__modalBackdrop" role="dialog" aria-modal="true" aria-label="Crear nuevo plan">
+            <div className="menu-plan-composer__modalCard">
+              <h3>Crear nuevo plan comercial</h3>
+              <ZHField label="Nombre del plan">
+                <input className="zh-input" value={newPlanName} onChange={(e) => setNewPlanName(e.target.value)} placeholder="Ej. Premium" />
+              </ZHField>
+              <ZHField label="Precio mensual (USD)">
+                <input
+                  className="zh-input"
+                  type="number"
+                  value={newPlanMonthly}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setNewPlanMonthly(v);
+                    if (!newPlanYearly.trim()) {
+                      const n = Number.parseFloat(v);
+                      if (Number.isFinite(n)) setNewPlanYearly(String(Math.round(n * 12 * 0.8)));
+                    }
+                  }}
+                />
+              </ZHField>
+              <ZHField label="Precio anual (USD)">
+                <input className="zh-input" type="number" value={newPlanYearly} onChange={(e) => setNewPlanYearly(e.target.value)} placeholder="Calculado automático" />
+              </ZHField>
+              <ZHField label="Descripción breve">
+                <textarea className="zh-input" rows={2} value={newPlanDescription} onChange={(e) => setNewPlanDescription(e.target.value)} placeholder="Características..." />
+              </ZHField>
+              <ZHField label="Herencia automática (opcional)">
+                <div className="menu-plan-composer__modalInheritWrap">
+                  <label className="zh-inline-check menu-plan-composer__modalInheritToggle">
+                    <input type="checkbox" checked={newPlanInheritOnCreate} onChange={(e) => setNewPlanInheritOnCreate(e.target.checked)} />
+                    <span>Heredar activaciones desde un plan existente</span>
+                  </label>
+                  <select
+                    className="zh-input"
+                    value={newPlanInheritSourcePlanId}
+                    onChange={(e) => setNewPlanInheritSourcePlanId(e.target.value)}
+                    disabled={!newPlanInheritOnCreate}
+                  >
+                    <option value="">{planId ? 'Plan actual seleccionado' : 'Selecciona un plan origen'}</option>
+                    {crmPlans.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.code}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </ZHField>
+              <div className="menu-plan-composer__modalActions">
+                <ZHBtn
+                  variant="ghost"
+                  size="md"
+                  type="button"
+                  onClick={() => {
+                    setNewPlanModalOpen(false);
+                    setNewPlanInheritOnCreate(false);
+                    setNewPlanInheritSourcePlanId('');
+                  }}
+                >
+                  Cancelar
+                </ZHBtn>
+                <ZHBtn variant="primary" size="md" type="button" onClick={createNewPlan}>
+                  Crear plan
+                </ZHBtn>
+              </div>
+            </div>
+          </div>
+        ) : null}
+        {wizardOpen ? (
+          <div className="menu-plan-composer__modalBackdrop" role="dialog" aria-modal="true" aria-label="Guía rápida de configuración">
+            <div className="menu-plan-composer__modalCard menu-plan-composer__wizardCard">
+              <h3>{wizardCurrentStep.title}</h3>
+              <p className="subtle">{wizardCurrentStep.body}</p>
+              <div className="menu-plan-composer__wizardProgress" role="status" aria-live="polite">
+                Paso {wizardStep + 1} de {wizardSteps.length}
+              </div>
+              <div className="menu-plan-composer__modalActions">
+                <ZHBtn
+                  variant="ghost"
+                  size="md"
+                  type="button"
+                  onClick={() => setWizardStep((s) => Math.max(0, s - 1))}
+                  disabled={wizardStep === 0}
+                >
+                  Anterior
+                </ZHBtn>
+                <ZHBtn
+                  variant="ghost"
+                  size="md"
+                  type="button"
+                  onClick={() => setWizardOpen(false)}
+                >
+                  Cerrar
+                </ZHBtn>
+                {wizardStep < wizardSteps.length - 1 ? (
+                  <ZHBtn variant="primary" size="md" type="button" onClick={() => setWizardStep((s) => Math.min(wizardSteps.length - 1, s + 1))}>
+                    Siguiente
+                  </ZHBtn>
+                ) : (
+                  <ZHBtn variant="primary" size="md" type="button" onClick={() => setWizardOpen(false)}>
+                    Finalizar
+                  </ZHBtn>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <TableCard>
       <ZHCardSection title={t('superadmin.menuBuilder.title')}>
@@ -370,9 +1471,9 @@ export function SuperAdminMenuBuilderSection() {
                 const groups = Array.isArray(parsed) ? normalizeParsedMenuGroups(parsed) : [];
                 const layout = readPlanCustomMenuBarLayout(groups);
                 if (layout) setPreviewLayout(layout);
-                setVisualTree(sessionGroupsToEditorTree(groups, byPerm));
+                commitEditorTree(sessionGroupsToEditorTree(groups, byPerm), false);
               } catch {
-                setVisualTree([]);
+                commitEditorTree([], false);
               }
               setEditorMainTab('visual');
             }}
@@ -416,18 +1517,64 @@ export function SuperAdminMenuBuilderSection() {
         {err ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={err} /> : null}
 
         {sub === 'plan' ? (
-          <ZHGridRow cols={1}>
-            <ZHField label={t('superadmin.menuBuilder.planSelect')}>
-              <select className="zh-input" value={planId} onChange={(e) => setPlanId(e.target.value)} disabled={busy}>
-                <option value="">{t('common.select')}</option>
-                {plans.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.code}){p.hasMenuConfig ? ' *' : ''}
-                  </option>
-                ))}
-              </select>
-            </ZHField>
-          </ZHGridRow>
+          <>
+            <ZHGridRow cols={1}>
+              <ZHField label={t('superadmin.menuBuilder.planSelect')}>
+                <select className="zh-input" value={planId} onChange={(e) => setPlanId(e.target.value)} disabled={busy}>
+                  <option value="">{t('common.select')}</option>
+                  {plans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.code}){p.hasMenuConfig ? ' *' : ''}
+                    </option>
+                  ))}
+                </select>
+              </ZHField>
+            </ZHGridRow>
+            <div className="subtle" style={{ marginTop: 8, marginBottom: 4 }}>
+              {t('superadmin.menuBuilder.copyFromTitle')}
+            </div>
+            <ZHGridRow cols={1}>
+              <ZHField label={t('superadmin.menuBuilder.copySourcePlan')}>
+                <select
+                  className="zh-input"
+                  value={copySourcePlanId}
+                  onChange={(e) => setCopySourcePlanId(e.target.value)}
+                  disabled={busy || !planId}
+                >
+                  <option value="">{t('common.select')}</option>
+                  {plans
+                    .filter((p) => p.id !== planId)
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.code})
+                      </option>
+                    ))}
+                </select>
+              </ZHField>
+            </ZHGridRow>
+            <ZHGridRow cols={1}>
+              <label className="zh-inline-check" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <input
+                  type="checkbox"
+                  checked={copyMenu}
+                  onChange={(e) => setCopyMenu(e.target.checked)}
+                  disabled={busy}
+                />
+                <span>{t('superadmin.menuBuilder.copyMenuCheck')}</span>
+              </label>
+            </ZHGridRow>
+            <ZHInlineRowRight>
+              <ZHBtn
+                variant="ghost"
+                size="md"
+                type="button"
+                onClick={() => void runCopyFromPlan()}
+                disabled={busy || !planId || !copySourcePlanId}
+              >
+                {t('superadmin.menuBuilder.copyExecute')}
+              </ZHBtn>
+            </ZHInlineRowRight>
+          </>
         ) : (
           <ZHGridRow cols={1}>
             <ZHField label={t('superadmin.menuBuilder.tenantSelect')}>

@@ -26,7 +26,7 @@ export function ProtectedRoute() {
   if (superAdminPanelEnabled && (user?.role ?? '') === 'SuperAdmin' && (user?.tenantId ?? '') === GLOBAL_TENANT_ID) {
     const path = window.location.pathname;
     const allowed = path.startsWith('/superadmin') || path === '/companies' || path.startsWith('/companies/');
-    return allowed ? <Outlet /> : <Navigate to="/superadmin" replace />;
+    return allowed ? <Outlet /> : <Navigate to="/superadmin/overview" replace />;
   }
 
   return isAuthenticated || token ? <Outlet /> : <Navigate to="/login" replace />;

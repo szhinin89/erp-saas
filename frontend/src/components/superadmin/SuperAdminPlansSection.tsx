@@ -9,8 +9,6 @@ import { ZHModalHeader } from '../zh/ZHModalHeader';
 import {
   superAdminService,
   type CreateSaasPlanBody,
-  type PlanFeatureAssignBody,
-  type SaasFeatureDefinitionAdmin,
   type SaasPlanAdmin,
   type SaasPublicPlan,
   type SuperAdminMetrics,
@@ -105,7 +103,6 @@ export function SuperAdminPlansSection() {
 
   const [plans, setPlans] = useState<SaasPlanAdmin[]>([]);
   const [publicPlans, setPublicPlans] = useState<SaasPublicPlan[]>([]);
-  const [features, setFeatures] = useState<SaasFeatureDefinitionAdmin[]>([]);
   const [tenants, setTenants] = useState<SuperAdminTenant[]>([]);
   const [metrics, setMetrics] = useState<SuperAdminMetrics | null>(null);
   const [tenantSearch, setTenantSearch] = useState('');
@@ -119,22 +116,17 @@ export function SuperAdminPlansSection() {
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [planForm, setPlanForm] = useState<PlanFormState>(emptyPlanForm);
 
-  const [featuresModalPlanId, setFeaturesModalPlanId] = useState<string | null>(null);
-  const [featureRows, setFeatureRows] = useState<Record<string, { included: boolean; limit: string }>>({});
-
   const [deletePlanId, setDeletePlanId] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
-    const [p, defs, pub, tns, met] = await Promise.all([
+    const [p, pub, tns, met] = await Promise.all([
       superAdminService.listSaasPlansAdmin(),
-      superAdminService.listSaasFeatureDefinitions(),
       superAdminService.getPublicPlans().catch(() => [] as SaasPublicPlan[]),
       superAdminService.getTenants().catch(() => [] as SuperAdminTenant[]),
       superAdminService.getMetrics().catch(() => null),
     ]);
     const sorted = [...p].sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code));
     setPlans(sorted);
-    setFeatures(defs);
     setPublicPlans(pub);
     setTenants(Array.isArray(tns) ? tns : []);
     setMetrics(met && typeof met === 'object' && 'totals' in met ? (met as SuperAdminMetrics) : null);
@@ -151,11 +143,6 @@ export function SuperAdminPlansSection() {
     for (const v of counts.values()) max = Math.max(max, v);
     return { counts, max };
   }, [tenants]);
-
-  const sortedFeatureDefs = useMemo(
-    () => [...features].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
-    [features],
-  );
 
   const planByCode = useMemo(() => {
     const m = new Map<string, SaasPlanAdmin>();
@@ -273,19 +260,6 @@ export function SuperAdminPlansSection() {
     setPlanModal('edit');
   };
 
-  const openFeaturesModal = (p: SaasPlanAdmin) => {
-    const map: Record<string, { included: boolean; limit: string }> = {};
-    for (const d of features) {
-      const row = p.features.find((f) => f.featureId === d.id);
-      map[d.id] = {
-        included: row?.isIncluded ?? false,
-        limit: row?.limitPerPeriod != null ? String(row.limitPerPeriod) : '',
-      };
-    }
-    setFeatureRows(map);
-    setFeaturesModalPlanId(p.id);
-  };
-
   const savePlan = async () => {
     if (!editingPlanId && planModal !== 'create') return;
     setBusy(true);
@@ -328,30 +302,6 @@ export function SuperAdminPlansSection() {
         }
       }
       setPlanModal('closed');
-      await loadAll();
-    } catch (e) {
-      setError(formatApiRequestError(e, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const saveFeatures = async () => {
-    if (!featuresModalPlanId) return;
-    setBusy(true);
-    setError('');
-    try {
-      const rows: PlanFeatureAssignBody[] = features.map((d) => {
-        const r = featureRows[d.id] ?? { included: false, limit: '' };
-        const lim = r.limit.trim() === '' ? null : Number.parseInt(r.limit, 10);
-        return {
-          featureId: d.id,
-          isIncluded: r.included,
-          limitPerPeriod: lim != null && Number.isFinite(lim) ? lim : null,
-        };
-      });
-      await superAdminService.replaceSaasPlanFeatures(featuresModalPlanId, rows);
-      setFeaturesModalPlanId(null);
       await loadAll();
     } catch (e) {
       setError(formatApiRequestError(e, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
@@ -502,8 +452,6 @@ export function SuperAdminPlansSection() {
             const taglineText = taglineResolved !== taglineKey ? taglineResolved : t('superadmin.plansCard.taglineFallback');
             const tenantCount = planTenantStats.counts.get(codeKey) ?? 0;
             const usagePct = planTenantStats.max > 0 ? Math.round((tenantCount / planTenantStats.max) * 100) : 0;
-            const isIncluded = (featureId: string) =>
-              plan.features.some((f) => String(f.featureId) === String(featureId) && f.isIncluded);
             return (
               <article
                 key={plan.id}
@@ -560,19 +508,6 @@ export function SuperAdminPlansSection() {
                       </svg>
                     </div>
                   </div>
-                  <ul className="sap-pricing-features">
-                    {sortedFeatureDefs.map((def) => {
-                      const on = isIncluded(def.id);
-                      return (
-                        <li key={def.id} className={on ? 'sap-pricing-ft--on' : 'sap-pricing-ft--off'}>
-                          <span className="sap-pricing-ftIcon" aria-hidden>
-                            {on ? '✓' : '—'}
-                          </span>
-                          <span className="sap-pricing-ftLabel">{def.name}</span>
-                        </li>
-                      );
-                    })}
-                  </ul>
                   <div className="sap-pricing-metaRow subtle">
                     <Badge label={plan.isActive ? t('common.active') : t('common.inactive')} variant={plan.isActive ? 'green' : 'gray'} />
                     {plan.isPubliclyVisible ? (
@@ -595,9 +530,6 @@ export function SuperAdminPlansSection() {
                       </NavLink>
                     </div>
                     <div className="sap-pricing-footerExtra">
-                      <ZHBtn variant="ghost" size="sm" type="button" onClick={() => openFeaturesModal(plan)} disabled={busy}>
-                        {t('superadmin.plansAdmin.features')}
-                      </ZHBtn>
                       <ZHBtn variant="ghost" size="sm" type="button" onClick={() => void movePlan(index, -1)} disabled={busy || index === 0}>
                         {t('superadmin.plansAdmin.up')}
                       </ZHBtn>
@@ -841,72 +773,6 @@ export function SuperAdminPlansSection() {
               {t('common.cancel')}
             </ZHBtn>
             <ZHBtn variant="primary" type="button" onClick={() => void savePlan()} disabled={busy}>
-              {t('common.save')}
-            </ZHBtn>
-          </ZHInlineRowRight>
-        </Modal>
-      ) : null}
-
-      {featuresModalPlanId ? (
-        <Modal
-          onClose={() => setFeaturesModalPlanId(null)}
-          size="lg"
-          header={
-            <ZHModalHeader
-              title={t('superadmin.plansAdmin.featuresModalTitle')}
-              subtitle={t('superadmin.plansAdmin.featuresModalSubtitle')}
-              onClose={() => setFeaturesModalPlanId(null)}
-            />
-          }
-        >
-          <div className="sap-featureTable">
-            <div className="sap-featureTable-head">
-              <span>{t('superadmin.plansAdmin.col.feature')}</span>
-              <span>{t('superadmin.plansAdmin.col.included')}</span>
-              <span>{t('superadmin.plansAdmin.col.limit')}</span>
-            </div>
-            {features.map((d) => {
-              const r = featureRows[d.id] ?? { included: false, limit: '' };
-              return (
-                <div key={d.id} className="sap-featureTable-row">
-                  <div>
-                    <div className="mono">{d.code}</div>
-                    <div className="subtle">{d.name}</div>
-                  </div>
-                  <div>
-                    <input
-                      type="checkbox"
-                      checked={r.included}
-                      onChange={(e) =>
-                        setFeatureRows((m) => ({
-                          ...m,
-                          [d.id]: { ...r, included: e.target.checked },
-                        }))
-                      }
-                    />
-                  </div>
-                  <div>
-                    <input
-                      className="zh-input sap-limitInput"
-                      value={r.limit}
-                      onChange={(e) =>
-                        setFeatureRows((m) => ({
-                          ...m,
-                          [d.id]: { ...r, limit: e.target.value },
-                        }))
-                      }
-                      disabled={!r.included}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <ZHInlineRowRight>
-            <ZHBtn variant="ghost" type="button" onClick={() => setFeaturesModalPlanId(null)}>
-              {t('common.cancel')}
-            </ZHBtn>
-            <ZHBtn variant="primary" type="button" onClick={() => void saveFeatures()} disabled={busy}>
               {t('common.save')}
             </ZHBtn>
           </ZHInlineRowRight>

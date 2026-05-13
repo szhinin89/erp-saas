@@ -126,6 +126,37 @@ export function moveNodeToGap(
   return insertChildAt(without, parentUid, idx, removed);
 }
 
+/** Mueve el nodo una posición entre hermanos (mismo padre). delta -1 = arriba, +1 = abajo. */
+export function moveSiblingByDelta(root: EditorMenuItem[], uid: string, delta: -1 | 1): EditorMenuItem[] {
+  const loc = findLocation(root, uid);
+  if (!loc) return root;
+  const { parent, index } = loc;
+  const newIndex = index + delta;
+  if (newIndex < 0) return root;
+  if (parent === ROOT_PARENT) {
+    if (newIndex >= root.length) return root;
+    return arrayMove(root, index, newIndex);
+  }
+  return moveSiblingByDeltaInSubtree(root, parent as string, index, newIndex);
+}
+
+function moveSiblingByDeltaInSubtree(
+  nodes: EditorMenuItem[],
+  parentUid: string,
+  from: number,
+  to: number,
+): EditorMenuItem[] {
+  return nodes.map((n) => {
+    if (n.uid === parentUid) {
+      const ch = n.children;
+      if (to < 0 || to >= ch.length) return n;
+      return { ...n, children: arrayMove(ch, from, to) };
+    }
+    if (n.children.length === 0) return n;
+    return { ...n, children: moveSiblingByDeltaInSubtree(n.children, parentUid, from, to) };
+  });
+}
+
 export function reorderSibling(
   nodes: EditorMenuItem[],
   parentUid: ParentRef,

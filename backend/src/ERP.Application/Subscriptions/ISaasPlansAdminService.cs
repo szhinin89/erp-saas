@@ -6,8 +6,6 @@ public interface ISaasPlansAdminService
 {
     Task<IReadOnlyList<SaasPlanAdminDto>> ListPlansAdminAsync(CancellationToken ct = default);
 
-    Task<IReadOnlyList<SaasFeatureDefinitionAdminDto>> ListFeatureDefinitionsAsync(CancellationToken ct = default);
-
     Task<Result<Guid>> CreatePlanAsync(CreateSaasPlanRequest request, CancellationToken ct = default);
 
     Task<Result<object?>> UpdatePlanAsync(Guid planId, UpdateSaasPlanRequest request, CancellationToken ct = default);
@@ -18,16 +16,17 @@ public interface ISaasPlansAdminService
 
     Task<Result<object?>> SetRecommendedPlanAsync(Guid planId, CancellationToken ct = default);
 
-    Task<Result<object?>> ReplacePlanFeaturesAsync(Guid planId, IReadOnlyList<PlanFeatureAssignDto> rows, CancellationToken ct = default);
+    Task<Result<PlanMenuReadDto>> GetPlanMenuAsync(Guid planId, CancellationToken ct = default);
 
-    Task<Result<Guid>> CreateFeatureDefinitionAsync(CreateSaasFeatureDefinitionRequest request, CancellationToken ct = default);
+    Task<Result<object?>> SetPlanMenuJsonAsync(
+        Guid planId,
+        string? menuConfigJson,
+        string? menuSidebarLayout = null,
+        CancellationToken ct = default);
 
-    Task<Result<object?>> UpdateFeatureDefinitionAsync(Guid featureId, UpdateSaasFeatureDefinitionRequest request, CancellationToken ct = default);
-
-    /// <summary>Elimina una definición y filas dependientes (planes, overrides, uso, vínculo en menú).</summary>
-    Task<Result<object?>> DeleteFeatureDefinitionAsync(Guid featureId, CancellationToken ct = default);
-
-    Task<Result<string?>> GetPlanMenuJsonAsync(Guid planId, CancellationToken ct = default);
-
-    Task<Result<object?>> SetPlanMenuJsonAsync(Guid planId, string? menuConfigJson, CancellationToken ct = default);
+    Task<Result<object?>> CopyPlanFromAsync(
+        Guid targetPlanId,
+        Guid sourcePlanId,
+        bool copyMenu,
+        CancellationToken ct = default);
 }

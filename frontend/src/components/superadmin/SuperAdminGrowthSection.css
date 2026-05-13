@@ -25,18 +25,20 @@
 
 .sag-tab {
   appearance: none;
-  border: 1px solid var(--zh-border, #e2e8f0);
-  background: var(--zh-surface, #fff);
-  color: inherit;
+  border: 1px solid var(--zh-color-border);
+  background: var(--zh-color-surface);
+  color: var(--zh-color-text);
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--zh-radius);
   font: inherit;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
 }
 
 .sag-tab:hover:not(:disabled) {
-  border-color: #94a3b8;
+  border-color: var(--zh-blue);
+  background: var(--zh-blue-light);
+  color: var(--zh-blue-dark);
 }
 
 .sag-tab:disabled {
@@ -45,9 +47,10 @@
 }
 
 .sag-tab--active {
-  border-color: #0ea5e9;
-  background: rgba(14, 165, 233, 0.08);
-  color: #0369a1;
+  border-color: var(--zh-blue);
+  background: var(--zh-blue-light);
+  color: var(--zh-blue-dark);
+  box-shadow: inset 0 -2px 0 0 var(--zh-blue);
 }
 
 .sag-meta {

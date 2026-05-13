@@ -18,4 +18,9 @@ public interface INavigationMenuAdminService
 
     /// <summary>Crea un ítem activo; <c>label_key</c> interno <c>nav.custom.*</c> y texto visible en <c>display_label</c>.</summary>
     Task<(bool Ok, Guid? NewId, string? Error)> CreateNavItemAsync(CreateNavItemRequest request, CancellationToken ct = default);
+
+    Task<(bool Ok, string? Error)> UpdateNavItemAsync(Guid itemId, UpdateNavItemRequest request, CancellationToken ct = default);
+
+    /// <summary>Desactiva el ítem y todo su subárbol (no borra filas).</summary>
+    Task<(bool Ok, string? Error)> DeleteNavItemAsync(Guid itemId, CancellationToken ct = default);
 }

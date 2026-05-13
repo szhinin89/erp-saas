@@ -71,17 +71,13 @@ export type SaasPlanAdmin = {
   sortOrder: number;
   externalBillingRef: string | null;
   hasMenuConfig?: boolean;
+  menuSidebarLayout?: string;
   features: SaasPlanFeatureAdmin[];
 };
 
-export type SaasFeatureDefinitionAdmin = {
-  id: string;
-  code: string;
-  name: string;
-  description: string | null;
-  isMetered: boolean;
-  kind: SaasFeatureKind;
-  resourceRef: string | null;
+export type PlanMenuRead = {
+  menuConfigJson: string | null;
+  menuSidebarLayout: string;
 };
 
 export type CreateSaasPlanBody = {
@@ -107,25 +103,7 @@ export type UpdateSaasPlanBody = {
   billingCycle: string;
   isPubliclyVisible: boolean;
   externalBillingRef: string | null;
-};
-
-export type PlanFeatureAssignBody = { featureId: string; isIncluded: boolean; limitPerPeriod: number | null };
-
-export type CreateSaasFeatureDefinitionBody = {
-  code: string;
-  name: string;
-  description: string | null;
-  isMetered: boolean;
-  kind: SaasFeatureKind;
-  resourceRef: string | null;
-};
-
-export type UpdateSaasFeatureDefinitionBody = {
-  name: string;
-  description: string | null;
-  isMetered: boolean;
-  kind: SaasFeatureKind;
-  resourceRef: string | null;
+  menuSidebarLayout?: string | null;
 };
 
 export type CreateTenantWithAdminBody = {
@@ -229,6 +207,15 @@ export type CreateNavItemBody = {
   permissionKey?: string | null;
 };
 
+export type UpdateNavItemBody = {
+  displayLabel: string;
+  routePath: string;
+  moduleKey?: string | null;
+  permissionKey?: string | null;
+  /** Vacío o null = quitar vínculo con feature SaaS */
+  saasFeatureDefinitionId?: string | null;
+};
+
 export type SuperAdminMetrics = {
   totals: {
     totalTenants: number;
@@ -323,20 +310,6 @@ export const superAdminService = {
   listSaasPlansAdmin: () =>
     api.get<ApiResponse<{ plans: SaasPlanAdmin[] }>>('/api/superadmin/saas-plans').then((r) => r.data.responseObject.plans),
 
-  listSaasFeatureDefinitions: () =>
-    api
-      .get<ApiResponse<{ features: SaasFeatureDefinitionAdmin[] }>>('/api/superadmin/saas-features')
-      .then((r) => r.data.responseObject.features),
-
-  createSaasFeatureDefinition: (body: CreateSaasFeatureDefinitionBody) =>
-    api.post<ApiResponse<{ id: string }>>('/api/superadmin/saas-features', body).then((r) => r.data.responseObject.id),
-
-  updateSaasFeatureDefinition: (featureId: string, body: UpdateSaasFeatureDefinitionBody) =>
-    api.put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-features/${featureId}`, body).then((r) => r.data),
-
-  deleteSaasFeatureDefinition: (featureId: string) =>
-    api.delete<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-features/${featureId}`).then((r) => r.data),
-
   createSaasPlan: (body: CreateSaasPlanBody) =>
     api.post<ApiResponse<{ id: string }>>('/api/superadmin/saas-plans', body).then((r) => r.data.responseObject.id),
 
@@ -352,23 +325,32 @@ export const superAdminService = {
   setSaasPlanRecommended: (planId: string) =>
     api.put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-plans/${planId}/recommended`).then((r) => r.data),
 
-  replaceSaasPlanFeatures: (planId: string, features: PlanFeatureAssignBody[]) =>
+  getPlanMenu: (planId: string) =>
     api
-      .put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-plans/${planId}/features`, { features })
-      .then((r) => r.data),
+      .get<ApiResponse<PlanMenuRead>>(`/api/superadmin/planes/${encodeURIComponent(planId)}/menu`)
+      .then((r) => r.data.responseObject),
 
-  getPlanMenuJson: (planId: string) =>
-    api
-      .get<ApiResponse<{ menuConfigJson: string | null }>>(
-        `/api/superadmin/planes/${encodeURIComponent(planId)}/menu`,
-      )
-      .then((r) => r.data.responseObject.menuConfigJson),
-
-  setPlanMenuJson: (planId: string, menuConfigJson: string | null) =>
+  setPlanMenuJson: (planId: string, menuConfigJson: string | null, menuSidebarLayout?: string | null) =>
     api
       .put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/planes/${encodeURIComponent(planId)}/menu`, {
         menuConfigJson,
+        ...(menuSidebarLayout != null ? { menuSidebarLayout } : {}),
       })
+      .then((r) => r.data),
+
+  copyPlanFrom: (
+    targetPlanId: string,
+    sourcePlanId: string,
+    opts?: { copyMenu?: boolean },
+  ) =>
+    api
+      .post<ApiResponse<Record<string, unknown>>>(
+        `/api/superadmin/saas-plans/${encodeURIComponent(targetPlanId)}/copy-from/${encodeURIComponent(sourcePlanId)}`,
+        {
+          copyMenu: opts?.copyMenu ?? true,
+          copyFeatures: false,
+        },
+      )
       .then((r) => r.data),
 
   getTenantResolvedMenu: (tenantId: string) =>
@@ -445,5 +427,26 @@ export const superAdminService = {
         permissionKey: body.permissionKey?.trim() || null,
       })
       .then((r) => r.data.responseObject.id),
+
+  updateNavigationMenuItem: (itemId: string, body: UpdateNavItemBody) =>
+    api
+      .put<ApiResponse<Record<string, unknown>>>(
+        `/api/superadmin/navigation-menu/items/${encodeURIComponent(itemId)}`,
+        {
+          displayLabel: body.displayLabel.trim(),
+          routePath: body.routePath.trim(),
+          moduleKey: body.moduleKey?.trim() || null,
+          permissionKey: body.permissionKey?.trim() || null,
+          saasFeatureDefinitionId: body.saasFeatureDefinitionId?.trim() || null,
+        },
+      )
+      .then(() => undefined),
+
+  deleteNavigationMenuItem: (itemId: string) =>
+    api
+      .delete<ApiResponse<Record<string, unknown>>>(
+        `/api/superadmin/navigation-menu/items/${encodeURIComponent(itemId)}`,
+      )
+      .then(() => undefined),
 };
 

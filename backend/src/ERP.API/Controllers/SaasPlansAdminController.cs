@@ -44,17 +44,17 @@ public sealed class SaasPlansAdminController : ControllerBase
             : this.ApiBadRequest(r.Error ?? "Error");
     }
 
-    public sealed record SetPlanMenuBody(string? MenuConfigJson);
+    public sealed record SetPlanMenuBody(string? MenuConfigJson, string? MenuSidebarLayout);
 
-    /// <summary>Obtiene el JSON de menú lateral asociado al plan (null si usa menú global).</summary>
+    /// <summary>Obtiene el JSON de menú lateral y la preferencia de layout del plan.</summary>
     [HttpGet("{planId:guid}/menu")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetPlanMenu(Guid planId, CancellationToken ct)
     {
-        var r = await _admin.GetPlanMenuJsonAsync(planId, ct);
+        var r = await _admin.GetPlanMenuAsync(planId, ct);
         return r.IsSuccess
-            ? this.ApiOk(new { menuConfigJson = r.Value })
+            ? this.ApiOk(new { menuConfigJson = r.Value.MenuConfigJson, menuSidebarLayout = r.Value.MenuSidebarLayout })
             : this.ApiBadRequest(r.Error ?? "Error");
     }
 
@@ -64,9 +64,26 @@ public sealed class SaasPlansAdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SetPlanMenu(Guid planId, [FromBody] SetPlanMenuBody body, CancellationToken ct)
     {
-        var r = await _admin.SetPlanMenuJsonAsync(planId, body.MenuConfigJson, ct);
+        var r = await _admin.SetPlanMenuJsonAsync(planId, body.MenuConfigJson, body.MenuSidebarLayout, ct);
         return r.IsSuccess
             ? this.ApiOk(new { }, "Guardado")
+            : this.ApiBadRequest(r.Error ?? "Error");
+    }
+
+    /// <summary>Copia menú JSON desde otro plan (transacción).</summary>
+    [HttpPost("{targetPlanId:guid}/copy-from/{sourcePlanId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CopyPlanFrom(
+        Guid targetPlanId,
+        Guid sourcePlanId,
+        [FromBody] CopyPlanFromRequest? body,
+        CancellationToken ct)
+    {
+        var b = body ?? new CopyPlanFromRequest();
+        var r = await _admin.CopyPlanFromAsync(targetPlanId, sourcePlanId, b.CopyMenu, ct);
+        return r.IsSuccess
+            ? this.ApiOk(new { }, "Copiado")
             : this.ApiBadRequest(r.Error ?? "Error");
     }
 
@@ -130,27 +147,4 @@ public sealed class SaasPlansAdminController : ControllerBase
             : this.ApiBadRequest(r.Error ?? "Error");
     }
 
-    /// <summary>
-    /// Cuerpo para reemplazar por completo las features de un plan.
-    /// Debe incluir todas las definiciones existentes en <c>saas_feature_definitions</c> (una fila por featureId).
-    /// </summary>
-    public sealed record ReplaceFeaturesBody(IReadOnlyList<PlanFeatureAssignDto> Features);
-
-    /// <summary>
-    /// Reemplaza el conjunto de features incluidas en un plan (borra vínculos previos e inserta los enviados).
-    /// Usado por la UI <c>Empresas → Plan ↔ menú</c> y el catálogo en <c>Plan y módulos</c>.
-    /// </summary>
-    [HttpPut("{planId:guid}/features")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> ReplaceFeatures(Guid planId, [FromBody] ReplaceFeaturesBody body, CancellationToken ct)
-    {
-        var r = await _admin.ReplacePlanFeaturesAsync(planId, body.Features, ct);
-        return r.IsSuccess
-            ? this.ApiOk(new { }, "Features actualizadas")
-            : this.ApiBadRequest(r.Error ?? "Error");
-    }
 }

@@ -47,3 +47,12 @@ public sealed record CreateNavItemRequest(
     string? ModuleKey,
     string? PermissionKey,
     Guid? SaasFeatureDefinitionId = null);
+
+/// <summary>Actualización de un ítem existente (texto, ruta, permisos y vínculo opcional a feature SaaS).</summary>
+public sealed record UpdateNavItemRequest(
+    string DisplayLabel,
+    string RoutePath,
+    string? ModuleKey,
+    string? PermissionKey,
+    /// <summary>Guid en texto; vacío o null = quitar vínculo a feature.</summary>
+    string? SaasFeatureDefinitionId);

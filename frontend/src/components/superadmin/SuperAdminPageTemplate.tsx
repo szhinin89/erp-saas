@@ -55,7 +55,7 @@ export function SuperAdminPageTemplate({
 
   if (requireGlobal && hasSelectedTenant) {
     const defaultAction = (
-      <NavLink to="/superadmin">{t('superadmin.backToGlobal')}</NavLink>
+      <NavLink to="/superadmin/overview">{t('superadmin.backToGlobal')}</NavLink>
     );
     return (
       <PageShell kicker={k} title={title} action={tenantGuardAction ?? defaultAction}>

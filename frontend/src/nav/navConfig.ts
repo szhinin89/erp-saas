@@ -274,7 +274,7 @@ export function getSuperAdminPanelNavExtras(
 ): NavItem[] {
   const superAdminOn = options?.superAdminPanelEnabled ?? true;
   if (!superAdminOn) return [];
-  return [{ to: '/superadmin', label: t('app.nav.superadmin'), roles: ['SuperAdmin'] }];
+  return [{ to: '/superadmin/overview', label: t('app.nav.superadmin'), roles: ['SuperAdmin'] }];
 }
 
 /** Cuando el menú viene de BD, añade en Inicio los enlaces estáticos de SuperAdmin que falten (misma ruta = no duplicar). */
@@ -487,14 +487,14 @@ export function flattenSaaSIntoHome(groups: NavGroup[]): NavGroup[] {
 }
 
 /**
- * Si el menú de sesión (BD) aún no tiene el grupo `sales`, lo añadimos junto a Inventario:
- * - Si "Clientes" sigue bajo `inventario`, lo movemos en memoria a un grupo Ventas.
- * - Si no hay clientes en catálogo, se reutiliza el ítem del menú estático.
+ * Si el menú de sesión (BD) aún no tiene el grupo `sales`, intenta derivarlo del catálogo:
+ * - Si "Clientes" está bajo `inventario`/`catalog`, lo mueve en memoria a un grupo Ventas.
+ * - Si no aplica, devuelve los grupos tal cual (sin inyectar menú estático).
  */
 export function ensureSalesNextToInventory(
   groups: NavGroup[],
   t: TranslateFn,
-  options?: { superAdminPanelEnabled?: boolean },
+  _options?: { superAdminPanelEnabled?: boolean },
 ): NavGroup[] {
   if (groups.some((g) => g.id === 'sales')) {
     return sortNavGroupsForMainBar(groups);
@@ -529,17 +529,13 @@ export function ensureSalesNextToInventory(
     }
   }
 
-  const staticFull = buildNavGroups(t, options);
-  const salesOnly = staticFull.find((g) => g.id === 'sales');
-  if (salesOnly) {
-    return sortNavGroupsForMainBar([...groups, salesOnly]);
-  }
   return sortNavGroupsForMainBar(groups);
 }
 
 /** Grupos solo en menú estático (p. ej. Compras / RRHH) que la API de sesión aún no define. */
 const GROUPS_FILL_FROM_STATIC: readonly string[] = ['purchases', 'hr', 'configuracion'];
 
+/** @deprecated Tenant sidebar uses only GET /api/me/menu; do not merge static groups into session nav. Kept for legacy callers until removed. */
 export function mergeMissingStaticNavGroups(
   groups: NavGroup[],
   t: TranslateFn,

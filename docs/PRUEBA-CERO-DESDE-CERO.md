@@ -82,7 +82,7 @@ Ejemplo:
 }
 ```
 
-Las **features por plan** (`PUT /api/superadmin/saas-plans/{id}/features`) operan sobre filas de `saas_feature_definitions`. En BD totalmente vacía **no hay definiciones**; para una primera prueba basta el plan con `code` **basico** y la **restricción de módulos en el tenant** (paso 6). Más adelante se pueden definir features y enlazarlas al plan desde la pestaña **Planes** / **Características**.
+La primera prueba operativa ya no requiere configurar features por plan. En BD vacía basta crear plan con `code` **basico** y usar la **restricción de módulos del tenant** (paso 6), más la configuración de menú cuando aplique.
 
 ## 6. Crear empresa + admin local (solo tenant + identity + membership)
 

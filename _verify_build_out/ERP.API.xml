@@ -1,0 +1,1323 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ERP.API</name>
+    </assembly>
+    <members>
+        <member name="T:ERP.API.Attributes.ModuloAttribute">
+            <summary>
+            Describe un módulo o subítem de menú asociado a un controlador o acción HTTP.
+            <see cref="T:ERP.API.Services.ModuloDiscoveryService"/> sincroniza estos metadatos con la tabla <c>funcionalidades</c>.
+            </summary>
+        </member>
+        <member name="P:ERP.API.Attributes.ModuloAttribute.PermisoBase">
+            <summary>Clave única (p. ej. <c>perm:ventas.view</c>). No usar prefijo <c>SuperAdmin</c> si debe excluirse del catálogo tenant.</summary>
+        </member>
+        <member name="P:ERP.API.Attributes.ModuloAttribute.Padre">
+            <summary>Permiso del padre en catálogo (mismo valor que <see cref="P:ERP.API.Attributes.ModuloAttribute.PermisoBase"/> del padre).</summary>
+        </member>
+        <member name="T:ERP.API.Authorization.PermissionPolicyProvider">
+            <summary>
+            Policy dinámica: "perm:&lt;permissionKey&gt;".
+            Permite decorar endpoints con [Authorize(Policy = "perm:inventario.brands.view")].
+            </summary>
+        </member>
+        <member name="M:ERP.API.CatalogQueryParameters.ParseActiveFilter(Microsoft.AspNetCore.Http.IQueryCollection)">
+            <summary>
+            activeStatus=all|active|inactive. Compatibilidad: onlyActive=true → activos; onlyActive=false → todos.
+            </summary>
+        </member>
+        <!-- Badly formed XML comment ignored for member "T:ERP.API.Contracts.GetProductReportRequest" -->
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.Search">
+            <summary>Búsqueda por código, nombre o descripción.</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.SaleCode">
+            <summary>Código de venta (SKU público).</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.PurchaseCode">
+            <summary>Código de compra (proveedor).</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.Barcode">
+            <summary>Código de barras.</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.IsFavorite">
+            <summary>Filtro: Solo productos marcados como favoritos.</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.IsForSale">
+            <summary>Filtro: Solo productos disponibles para venta.</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.IsActive">
+            <summary>Filtro: Solo productos activos.</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.IsEcommerceActive">
+            <summary>Filtro: Solo productos visibles en e-commerce.</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.IsService">
+            <summary>Filtro: Solo servicios (no productos físicos).</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.LineId">
+            <summary>Filtro por línea de producto (ID GUID).</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.CategoryId">
+            <summary>Filtro por categoría principal (ID GUID).</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.SubcategoryId">
+            <summary>Filtro por subcategoría (ID GUID).</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.BrandId">
+            <summary>Filtro por marca (ID GUID).</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.ProductTypeId">
+            <summary>Filtro por tipo de producto (ID GUID).</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.PageNumber">
+            <summary>Número de página (base 1). Default: 1.</summary>
+        </member>
+        <member name="P:ERP.API.Contracts.GetProductReportRequest.PageSize">
+            <summary>Tamaño de página. Default: 20, máximo: 100.</summary>
+        </member>
+        <member name="M:ERP.API.Contracts.GetProductReportRequest.ToFilter">
+            <summary>Convierte este request a un filter de dominio.</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.AccessController">
+            <summary>
+            Identity &amp; Access Management (IAM).
+            Implementa autenticación en 2 pasos: Bootstrap (sin acceso a negocio) → Session (con tenant).
+            </summary>
+            <remarks>
+            Políticas mezcladas a propósito: <c>AllowAnonymous</c> (bootstrap / registro empresa),
+            <c>Bootstrap</c> (<c>switch-tenant</c>), <c>Session</c> (<c>me/menu</c>, <c>me/permissions</c>),
+            <c>Roles</c> (membresías globales, perfiles, permisos de perfil). Ver criterio P0 en <c>docs/ESTADO-PROYECTO.md</c> (sección backlog de refactor).
+            </remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.BootstrapLogin(ERP.Application.Access.UseCases.BootstrapLogin.BootstrapLoginCommand,System.Threading.CancellationToken)">
+            <summary>Login (paso 1): retorna bootstrap token + empresas accesibles.</summary>
+            <remarks>
+            El bootstrap token es de corta duración y NO permite acceder a endpoints de negocio.
+            Solo se usa para ejecutar el paso 2 (`switch-tenant`).
+            </remarks>
+            <response code="200">Bootstrap token y lista de empresas.</response>
+            <response code="401">Credenciales inválidas o usuario inactivo.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.SwitchTenant(ERP.Application.Access.UseCases.SwitchTenant.SwitchTenantCommand,System.Threading.CancellationToken)">
+            <summary>Switch tenant (paso 2): emite session token para la empresa seleccionada.</summary>
+            <remarks>
+            Requiere bootstrap token (Authorization: Bearer).
+            Valida membresía activa y retorna un token de sesión con `tenant_id` y `role`.
+            </remarks>
+            <response code="200">Session token listo para usar en el ERP.</response>
+            <response code="400">No tiene acceso al tenant seleccionado.</response>
+            <response code="401">Bootstrap token ausente o inválido.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.RegisterTenant(ERP.Application.Access.UseCases.SuperAdminTenants.SuperAdminCreateTenantWithAdminCommand,System.Threading.CancellationToken)">
+            <summary>
+            Alias legacy de alta de empresa.
+            Ruta oficial: <c>POST /api/access/superadmin/tenants</c>.
+            </summary>
+            <remarks>
+            Crea el tenant, crea el usuario global (email único en el sistema) y le asigna una membresía Admin
+            solo en esa empresa.
+            </remarks>
+            <response code="201">Tenant creado + session token del admin.</response>
+            <response code="400">Slug duplicado o email ya registrado.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.GrantMembership(ERP.Application.Access.UseCases.UpsertMembership.UpsertMembershipCommand,System.Threading.CancellationToken)">
+            <summary>Otorga o actualiza acceso (membership) de un usuario a una empresa.</summary>
+            <remarks>Solo SuperAdmin puede gestionar membresías cruzadas.</remarks>
+            <response code="200">Membership creada/actualizada.</response>
+            <response code="400">Usuario no existe o payload inválido.</response>
+            <response code="401">Token ausente o inválido.</response>
+            <response code="403">No es SuperAdmin.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.RevokeMembership(ERP.Application.Access.UseCases.RevokeMembership.RevokeMembershipCommand,System.Threading.CancellationToken)">
+            <summary>Revoca acceso (desactiva membership) de un usuario a una empresa.</summary>
+            <remarks>Solo SuperAdmin puede revocar membresías cruzadas.</remarks>
+            <response code="200">Membership revocada (idempotente).</response>
+            <response code="400">Usuario no existe o payload inválido.</response>
+            <response code="401">Token ausente o inválido.</response>
+            <response code="403">No es SuperAdmin.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.SuperAdminTenants(System.Threading.CancellationToken)">
+            <summary>SuperAdmin: lista empresas activas para administración.</summary>
+            <remarks>Incluye <c>planCode</c>, <c>enabledModules</c> efectivos y <c>hasModuleRestrictions</c>.</remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.SuperAdminCreateTenant(ERP.Application.Access.UseCases.SuperAdminTenants.SuperAdminCreateTenantWithAdminCommand,System.Threading.CancellationToken)">
+            <summary>SuperAdmin: crea empresa + Admin inicial (solo para esa empresa).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.SuperAdminGetTenantMenu(System.Guid,System.Threading.CancellationToken)">
+            <summary>SuperAdmin: menú efectivo de la empresa (personalizado, del plan o global).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.SuperAdminPutTenantMenu(System.Guid,ERP.API.Controllers.AccessController.TenantMenuPutBody,System.Threading.CancellationToken)">
+            <summary>SuperAdmin: guarda menú personalizado por empresa (JSON = <c>SessionMenuGroupDto[]</c>).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.SuperAdminDeleteTenantMenu(System.Guid,System.Threading.CancellationToken)">
+            <summary>SuperAdmin: elimina menú personalizado; la empresa vuelve al menú del plan o global.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.GetTenantMemberships(System.Boolean,System.Threading.CancellationToken)">
+            <summary>Admin: lista accesos (memberships) del tenant actual.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.UpsertTenantMembership(ERP.Application.Access.UseCases.TenantAccess.TenantUpsertMembershipCommand,System.Threading.CancellationToken)">
+            <summary>Admin: crea/actualiza acceso de un usuario a este tenant.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.RevokeTenantMembership(ERP.Application.Access.UseCases.TenantAccess.TenantRevokeMembershipCommand,System.Threading.CancellationToken)">
+            <summary>Admin: revoca acceso (desactiva membership) de un usuario en este tenant.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.GetProfiles(System.Boolean,System.Threading.CancellationToken)">
+            <summary>Lista perfiles de acceso del tenant actual.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.CreateProfile(ERP.Application.Access.UseCases.Profiles.CreateProfileCommand,System.Threading.CancellationToken)">
+            <summary>Crea un perfil de acceso en el tenant actual.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.UpdateProfile(System.Guid,ERP.Application.Access.UseCases.Profiles.UpdateProfileCommand,System.Threading.CancellationToken)">
+            <summary>Actualiza un perfil de acceso.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.GetSessionMenu(System.Threading.CancellationToken)">
+            <summary>Definición del menú lateral (grupos e ítems) desde base de datos; el front aplica i18n y filtros por rol/módulo/permiso.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.GetMyPermissions(System.Threading.CancellationToken)">
+            <summary>Retorna los permisos efectivos del usuario en el tenant actual.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.UpsertProfilePermissions(System.Guid,ERP.Application.Access.UseCases.Permissions.UpsertProfilePermissionsCommand,System.Threading.CancellationToken)">
+            <summary>Admin: asigna/revoca permisos a un perfil del tenant.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AccessController.GetProfilePermissions(System.Guid,System.Threading.CancellationToken)">
+            <summary>Admin: lee permisos actuales de un perfil del tenant.</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.AccountsController">
+            <summary>
+            Módulo de contabilidad: plan de cuentas y asientos contables del tenant autenticado.
+            Todos los endpoints filtran automáticamente por el tenant del JWT.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AccountsController.GetAll(System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>Retorna el plan de cuentas completo del tenant, ordenado por código.</summary>
+            <response code="200">Lista de cuentas contables (puede ser vacía).</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AccountsController.GetById(System.Guid,System.Threading.CancellationToken)">
+            <summary>Retorna una cuenta contable por su ID.</summary>
+            <param name="id">ID de la cuenta (GUID).</param>
+            <param name="ct">Token de cancelación.</param>
+            <response code="200">Cuenta encontrada.</response>
+            <response code="404">La cuenta no existe o no pertenece al tenant.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AccountsController.Update(System.Guid,ERP.Application.Modules.Contabilidad.UseCases.UpdateAccount.UpdateAccountCommand,System.Threading.CancellationToken)">
+            <summary>Actualiza una cuenta contable existente.</summary>
+            <param name="id">ID de la cuenta (GUID).</param>
+            <response code="200">Cuenta actualizada correctamente.</response>
+            <response code="400">Datos inválidos o cuenta no encontrada.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AccountsController.DisableAccount(System.Guid,System.Threading.CancellationToken)">
+            <summary>Deshabilita una cuenta contable (no la elimina).</summary>
+            <response code="200">Cuenta deshabilitada.</response>
+            <response code="400">La cuenta ya está deshabilitada o no existe.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AccountsController.EnableAccount(System.Guid,System.Threading.CancellationToken)">
+            <summary>Habilita una cuenta contable previamente deshabilitada.</summary>
+            <response code="200">Cuenta habilitada.</response>
+            <response code="400">La cuenta ya está activa o no existe.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AccountsController.Create(ERP.Application.Modules.Contabilidad.UseCases.CreateAccount.CreateAccountCommand,System.Threading.CancellationToken)">
+            <summary>Crea una nueva cuenta en el plan de cuentas del tenant.</summary>
+            <remarks>
+            El código de cuenta debe ser único por tenant.
+            Los valores válidos para `type`: 0=Activo, 1=Pasivo, 2=Patrimonio, 3=Ingreso, 4=Gasto.
+            Los valores válidos para `nature`: 0=Débito, 1=Crédito.
+            </remarks>
+            <response code="201">Cuenta creada correctamente.</response>
+            <response code="400">El código ya existe en el tenant.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AccountsController.GetJournalEntries(System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>Retorna todos los asientos contables del tenant, ordenados por fecha descendente.</summary>
+            <response code="200">Lista de asientos contables con sus líneas.</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AccountsController.GetJournalEntryById(System.Guid,System.Threading.CancellationToken)">
+            <summary>Retorna un asiento contable con todas sus líneas.</summary>
+            <param name="id">ID del asiento (GUID).</param>
+            <param name="ct">Token de cancelación.</param>
+            <response code="200">Asiento encontrado con líneas de débito/crédito.</response>
+            <response code="404">El asiento no existe o no pertenece al tenant.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AccountsController.VoidJournalEntry(System.Guid,ERP.Application.Modules.Contabilidad.UseCases.VoidJournalEntry.VoidJournalEntryCommand,System.Threading.CancellationToken)">
+            <summary>Anula un asiento contable (Draft o Posted). No se puede revertir.</summary>
+            <param name="id">ID del asiento (GUID).</param>
+            <response code="200">Asiento anulado correctamente.</response>
+            <response code="400">El asiento ya está anulado, no existe, o motivo vacío.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AccountsController.CreateJournalEntry(ERP.Application.Modules.Contabilidad.UseCases.CreateJournalEntry.CreateJournalEntryCommand,System.Threading.CancellationToken)">
+            <summary>Crea un nuevo asiento contable.</summary>
+            <remarks>
+            El asiento debe estar cuadrado: la suma de débitos debe ser igual a la suma de créditos.
+            El estado inicial es siempre `Draft` (0). Para contabilizarlo se requerirá un endpoint adicional.
+            </remarks>
+            <response code="201">Asiento creado en estado Borrador.</response>
+            <response code="400">El asiento no está cuadrado u otro error de validación.</response>
+        </member>
+        <member name="T:ERP.API.Controllers.ActivityController">
+            <summary>Auditoría de actividad (ámbito del usuario o de una entidad en el tenant actual).</summary>
+            <remarks>
+            Autorización: <c>Session</c> únicamente; sin <c>perm:*</c> porque los handlers acotan por tenant y usuario.
+            </remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.ActivityController.GetMy(System.String,System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Historial del usuario autenticado (últimas acciones).
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.ActivityController.GetForEntity(System.String,System.Guid,System.Int32,System.Threading.CancellationToken)">
+            <summary>
+            Últimos movimientos de auditoría sobre una entidad (tenant actual), cualquier usuario que haya actuado.
+            </summary>
+        </member>
+        <member name="T:ERP.API.Controllers.AjustesInventarioController">
+            <summary>
+            Ajustes manuales de stock (incremento o disminución) sobre un producto en una bodega.
+            Flujo: Borrador → Ejecutado (stock afectado) | Cancelado (sin efecto).
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AjustesInventarioController.GetAll(System.Threading.CancellationToken)">
+            <summary>Lista paginada de ajustes con filtros opcionales.</summary>
+            <remarks>Query params: pageNumber, pageSize, bodegaId, productoId, estado, fechaDesde (YYYY-MM-DD), fechaHasta.</remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.AjustesInventarioController.GetById(System.Guid,System.Threading.CancellationToken)">
+            <summary>Retorna el detalle de un ajuste.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AjustesInventarioController.Crear(ERP.Application.Inventario.UseCases.CrearAjuste.CrearAjusteCommand,System.Threading.CancellationToken)">
+            <summary>
+            Crea un ajuste en estado Borrador. El stock NO se modifica hasta Ejecutar.
+            </summary>
+            <response code="201">Ajuste creado en estado Borrador.</response>
+            <response code="400">Bodega/producto inválidos, cantidad cero o motivo vacío.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AjustesInventarioController.Ejecutar(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Ejecuta el ajuste: actualiza el stock inmediatamente (atómico).
+            Para disminuciones, falla si el stock disponible es insuficiente.
+            </summary>
+            <response code="200">Stock actualizado y ajuste en estado Ejecutado.</response>
+            <response code="400">Stock insuficiente o estado no válido.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AjustesInventarioController.Cancelar(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Cancela el ajuste. Solo posible en estado Borrador.
+            No afecta el stock.
+            </summary>
+        </member>
+        <member name="T:ERP.API.Controllers.AuthController">
+            <summary>
+            Registro e inicio de sesión de usuarios.
+            No requiere autenticación previa.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AuthController.SetRefreshCookie(System.String,System.DateTime)">
+            <summary>
+            Establece el refresh token como cookie httpOnly (no accesible desde JS → mitiga XSS).
+            Secure=true en producción, SameSite=Strict previene CSRF.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AuthController.ClearRefreshCookie">
+            <summary>Elimina la cookie del refresh token.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AuthController.ResolveRefreshToken(System.String)">
+            <summary>Intenta leer el refresh token de la cookie httpOnly; si no hay, usa el body.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AuthController.Register(ERP.Application.Auth.UseCases.Register.RegisterCommand,System.Threading.CancellationToken)">
+            <summary>Registra un nuevo usuario en un tenant existente.</summary>
+            <remarks>El tenant debe existir previamente. El email debe ser único por tenant.</remarks>
+            <response code="200">Usuario creado. Retorna JWT listo para usar.</response>
+            <response code="400">El tenant no existe o el email ya está registrado.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AuthController.Login(ERP.Application.Auth.UseCases.Login.LoginCommand,System.Threading.CancellationToken)">
+             <summary>Inicia sesión y retorna un JWT Bearer.</summary>
+             <remarks>
+             El sistema solo requiere <b>email + password</b>.
+            
+             - Si el email corresponde al SuperAdmin (único) se emite un token global con <c>tenant_id = Guid.Empty</c>.
+             - Si NO es SuperAdmin, el sistema resuelve automáticamente la empresa (tenant) a la que pertenece el usuario.
+            
+             El token incluye los claims: sub, email, tenant_id, full_name, role.
+             </remarks>
+             <response code="200">Login exitoso. Usar el campo `token` como Bearer en requests protegidos.</response>
+             <response code="401">Credenciales incorrectas o usuario inactivo.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AuthController.DirectPasswordReset(ERP.Application.Auth.UseCases.PasswordReset.DirectPasswordResetCommand,System.Threading.CancellationToken)">
+            <summary>
+            Recuperación de contraseña (modo Direct del tenant). Compatibilidad: requiere <c>tenantId</c> + email + nueva contraseña.
+            El flujo público recomendado es <c>forgot-password</c> + <c>reset-password</c> con token por email.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AuthController.ForgotPassword(ERP.Application.Auth.UseCases.PasswordReset.ForgotPasswordCommand,System.Threading.CancellationToken)">
+            <summary>Solicita enlace de restablecimiento; solo requiere email (sin <c>tenantId</c>).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AuthController.ResetPasswordWithToken(ERP.Application.Auth.UseCases.PasswordReset.ResetPasswordWithTokenCommand,System.Threading.CancellationToken)">
+            <summary>Completa el restablecimiento con el token recibido por email (y <c>tenantId</c> en URL para usuarios de empresa).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AuthController.SuperAdminLogin(ERP.Application.Auth.UseCases.SuperAdminLogin.SuperAdminLoginCommand,System.Threading.CancellationToken)">
+            <summary>
+            Login global de SuperAdmin: email + password (sin TenantId).
+            Retorna un JWT con tenant_id = Guid.Empty; requiere selección de empresa posterior.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AuthController.Refresh(ERP.Application.Auth.DTOs.RefreshRequest,System.Threading.CancellationToken)">
+            <summary>
+            Renueva el access token usando un refresh token válido.
+            El refresh token anterior queda revocado y se emite uno nuevo (rotación).
+            </summary>
+            <remarks>No requiere access token activo — llamar cuando el access token haya expirado.</remarks>
+            <response code="200">Nuevo access token + refresh token emitidos.</response>
+            <response code="401">Refresh token inválido, expirado o revocado.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AuthController.Logout(ERP.Application.Auth.DTOs.LogoutRequest,System.Threading.CancellationToken)">
+            <summary>
+            Cierra la sesión revocando el refresh token.
+            No requiere access token vigente — el refresh token es la credencial de logout.
+            </summary>
+            <remarks>
+            - <c>allDevices: false</c> (por defecto): revoca solo el refresh token del body.
+            - <c>allDevices: true</c>: valida el refresh token para obtener el usuario y revoca todos sus tokens.
+            </remarks>
+            <response code="200">Sesión cerrada correctamente.</response>
+            <response code="400">Refresh token no proporcionado o inválido.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.AuthController.MapAuthFailure(System.String)">
+            <summary>401 salvo error de panel SuperAdmin deshabilitado (403).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.AuthController.SwitchTenant(ERP.Application.Auth.UseCases.SwitchTenant.SwitchTenantCommand,System.Threading.CancellationToken)">
+            <summary>
+            Cambia el <c>tenant_id</c> del JWT para el SuperAdmin (mismo usuario global, distinto contexto de empresa).
+            </summary>
+            <remarks>
+            <para>
+            Requiere JWT de sesión SuperAdmin (p. ej. tras <c>POST /api/auth/superadmin-login</c>).
+            No es el mismo endpoint que <c>POST /api/access/switch-tenant</c> (ese flujo usa token <em>Bootstrap</em> tras <c>bootstrap-login</c>).
+            </para>
+            <para>
+            Body: <c>{ "tenantId": "&lt;guid empresa&gt;" }</c>. Use <c>00000000-0000-0000-0000-000000000000</c> para volver al panel global (claim vacío).
+            No existe hoy auditoría dedicada de impersonación ni claim <c>is_impersonating</c>; la duración del token sigue <c>Jwt:ExpirationMinutes</c>.
+            </para>
+            </remarks>
+        </member>
+        <member name="T:ERP.API.Controllers.BodegasController">
+            <summary>
+            Gestión de bodegas / almacenes del tenant autenticado.
+            Todos los endpoints filtran automáticamente por el tenant del JWT.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.BodegasController.GetAll(System.Threading.CancellationToken)">
+            <summary>Lista bodegas con filtros opcionales.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.BodegasController.GetById(System.Guid,System.Threading.CancellationToken)">
+            <summary>Retorna una bodega por su ID.</summary>
+            <param name="id">ID de la bodega (GUID).</param>
+            <response code="200">Bodega encontrada.</response>
+            <response code="404">La bodega no existe o no pertenece al tenant.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.BodegasController.Create(ERP.Application.Modules.Inventario.UseCases.CrearBodega.CreateBodegaCommand,System.Threading.CancellationToken)">
+            <summary>Crea una nueva bodega en el tenant.</summary>
+            <response code="201">Bodega creada.</response>
+            <response code="400">Nombre duplicado en el tenant.</response>
+            <response code="422">Datos inválidos.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.BodegasController.Update(System.Guid,ERP.Application.Modules.Inventario.UseCases.ActualizarBodega.UpdateBodegaCommand,System.Threading.CancellationToken)">
+            <summary>Actualiza los datos de una bodega existente.</summary>
+            <param name="id">ID de la bodega.</param>
+            <response code="200">Bodega actualizada.</response>
+            <response code="400">Nombre duplicado u otro error de negocio.</response>
+            <response code="422">Datos inválidos.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.BodegasController.Disable(System.Guid,System.Threading.CancellationToken)">
+            <summary>Deshabilita una bodega (soft delete). No la elimina.</summary>
+            <response code="200">Bodega deshabilitada.</response>
+            <response code="400">La bodega ya está deshabilitada o no existe.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.BodegasController.Enable(System.Guid,System.Threading.CancellationToken)">
+            <summary>Reactiva una bodega previamente deshabilitada.</summary>
+            <response code="200">Bodega habilitada.</response>
+            <response code="400">La bodega ya está activa o no existe.</response>
+        </member>
+        <member name="T:ERP.API.Controllers.BrandsController">
+            <summary>
+            Catálogo maestro: Marcas (Brands) del tenant autenticado.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.BrandsController.GetAll(System.Boolean,System.Threading.CancellationToken)">
+            <summary>Lista marcas del tenant.</summary>
+            <param name="onlyActive">Si es true, retorna únicamente marcas habilitadas.</param>
+            <param name="ct">Token de cancelación.</param>
+            <response code="200">Lista de marcas (puede ser vacía).</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.BrandsController.Create(ERP.Application.Products.Catalogs.UseCases.CreateBrand.CreateBrandCommand,System.Threading.CancellationToken)">
+            <summary>Crea una nueva marca.</summary>
+            <remarks>El nombre debe ser único por tenant.</remarks>
+            <response code="201">Marca creada correctamente.</response>
+            <response code="400">Error de validación (por ejemplo, duplicado).</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+        </member>
+        <member name="T:ERP.API.Controllers.CajaController">
+            <summary>Conciliación bancaria, caja chica y flujo de efectivo (tenant).</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.ComprasController">
+            <summary>
+            Gestión del submódulo de Compras.
+            Flujo: Borrador → (Validado) → Aprobado | Rechazado.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.ComprasController.GetAll(System.Threading.CancellationToken)">
+            <summary>Lista facturas de compra con filtros opcionales.</summary>
+            <remarks>Query params: estado, proveedorId, desde (YYYY-MM-DD), hasta, search.</remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.ComprasController.GetById(System.Guid,System.Threading.CancellationToken)">
+            <summary>Retorna el detalle completo de una factura de compra (con líneas).</summary>
+            <response code="404">La compra no existe o no pertenece al tenant.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ComprasController.CrearManual(ERP.Application.Modules.Compras.UseCases.CrearCompra.CrearCompraCommand,System.Threading.CancellationToken)">
+            <summary>Crea una factura de compra en modo Manual.</summary>
+            <response code="201">Compra creada en estado Borrador.</response>
+            <response code="422">Datos inválidos.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ComprasController.CrearDesdeXml(Microsoft.AspNetCore.Http.IFormFile,System.Threading.CancellationToken)">
+            <summary>
+            Crea una factura de compra a partir de un XML del SRI Ecuador.
+            Sube el archivo como multipart/form-data con campo 'xmlFile'.
+            Si el proveedor (por RUC) no existe en el tenant, se crea automáticamente.
+            </summary>
+            <response code="201">Compra creada en estado Borrador.</response>
+            <response code="400">Clave de acceso duplicada o error en el XML.</response>
+            <response code="422">XML vacío o inválido.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ComprasController.Validar(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Valida una compra en Borrador: verifica proveedor activo, totales y clave de acceso.
+            Cambia estado a Validado.
+            </summary>
+            <response code="200">Compra validada.</response>
+            <response code="400">Error de validación de negocio.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ComprasController.Aprobar(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Aprueba una compra Validada. Genera el asiento contable si hay cuentas configuradas.
+            Requiere rol Revisor o Admin.
+            </summary>
+            <response code="200">Compra aprobada (con o sin asiento contable).</response>
+            <response code="400">La compra no está en estado Validado.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ComprasController.Rechazar(System.Guid,ERP.API.Controllers.RechazarCompraRequest,System.Threading.CancellationToken)">
+            <summary>Rechaza una compra (Borrador o Validada) con un motivo obligatorio.</summary>
+            <response code="200">Compra rechazada.</response>
+            <response code="400">La compra ya está Aprobada o Rechazada.</response>
+        </member>
+        <member name="T:ERP.API.Controllers.RechazarCompraRequest">
+            <summary>Cuerpo del request de rechazo.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.RechazarCompraRequest.#ctor(System.String)">
+            <summary>Cuerpo del request de rechazo.</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.ComprasNotasProveedorController">
+            <summary>Notas de crédito/débito recibidas de proveedores (SRI), aplicables a compras o gastos.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.ComprasNotasProveedorController.Importar(Microsoft.AspNetCore.Http.IFormFile,System.Nullable{System.Guid},System.Nullable{System.Guid},System.Threading.CancellationToken)">
+            <summary>Importa XML de nota (multipart campo <c>xmlFile</c>).</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.ConfiguracionContableController">
+            <summary>Configuración de cuentas por defecto por tenant (compras, ventas, IVA, caja, mapeo de gastos).</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.ConfiguracionSRIController">
+            <summary>
+            Gestión de la configuración SRI por tenant.
+            Un único registro por tenant: PUT siempre crea o actualiza (upsert).
+            El secuencial actual NO se resetea al actualizar.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.ConfiguracionSRIController.Get(System.Threading.CancellationToken)">
+            <summary>Retorna la configuración SRI del tenant autenticado, o null si no está configurada.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.ConfiguracionSRIController.Upsert(ERP.Application.Configuration.UseCases.UpsertConfiguracionSRI.UpsertConfiguracionSRICommand,System.Threading.CancellationToken)">
+            <summary>
+            Crea o actualiza la configuración SRI del tenant.
+            El SecuencialActual se preserva al actualizar para no romper la numeración en curso.
+            </summary>
+            <response code="200">Configuración guardada.</response>
+            <response code="400">Datos inválidos.</response>
+        </member>
+        <member name="T:ERP.API.Controllers.GastosController">
+            <summary>
+            Facturas de gasto (registro manual o importación XML del SRI Ecuador).
+            Flujo de estados: Borrador → Validado → Aprobado | Rechazado. Requiere permisos <c>gastos.facturas.*</c> en el perfil (los roles Admin/SuperAdmin los omiten).
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.GastosController.GetAll(System.Threading.CancellationToken)">
+            <summary>Lista gastos con filtros opcionales (estado, proveedor, fechas, texto).</summary>
+            <remarks>Query: <c>estado</c>, <c>proveedorId</c>, <c>desde</c>, <c>hasta</c>, <c>search</c>.</remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.GastosController.GetById(System.Guid,System.Threading.CancellationToken)">
+            <summary>Obtiene un gasto por id (tenant actual).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.GastosController.CrearManual(ERP.Application.Modules.Gastos.UseCases.CrearGasto.CrearGastoCommand,System.Threading.CancellationToken)">
+            <summary>Crea un gasto en modo manual (Borrador). Totales altos exigen XML.</summary>
+            <response code="201">Gasto creado.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.GastosController.CrearDesdeXml(Microsoft.AspNetCore.Http.IFormFile,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Importa un gasto desde XML SRI (multipart: archivo <c>xmlFile</c>, form <c>categoriaGasto</c> obligatorio).</summary>
+            <response code="201">Gasto creado en Borrador.</response>
+            <response code="400">XML inválido o clave duplicada.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.GastosController.Validar(System.Guid,System.Threading.CancellationToken)">
+            <summary>Valida un gasto en Borrador y pasa a estado Validado.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.GastosController.Aprobar(System.Guid,System.Threading.CancellationToken)">
+            <summary>Aprueba un gasto Validado y genera asiento contable si aplica.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.GastosController.Rechazar(System.Guid,ERP.API.Controllers.RechazarGastoRequest,System.Threading.CancellationToken)">
+            <summary>Rechaza un gasto con motivo obligatorio.</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.GeographyController">
+            <summary>Catálogo de ubicación (solo lectura) para combos en cascada.</summary>
+            <remarks>
+            Autorización: política por defecto <c>Session</c> (ver <c>Program.cs</c>). Sin <c>perm:*</c>:
+            catálogo global de bajo riesgo; cualquier usuario con sesión ERP puede consultarlo.
+            </remarks>
+        </member>
+        <member name="T:ERP.API.Controllers.InventarioController">
+            <summary>Consultas de inventario (stock por bodega).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.InventarioController.GetStockActual(System.Guid,System.Nullable{System.Guid},System.Threading.CancellationToken)">
+            <summary>Saldo de stock en una bodega; filtro opcional por producto.</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.KardexController">
+            <summary>
+            Kardex valorizado de inventario por producto y bodega (método: promedio ponderado móvil).
+            Soporta modo síncrono (respuesta inmediata) y asíncrono (202 + jobId).
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.KardexController.GetKardex(System.Threading.CancellationToken)">
+            <summary>
+            Retorna el kardex valorizado de un producto en una bodega.
+            Si el rango supera <c>MaxDaysForSync</c> y el modo asíncrono está activo,
+            retorna 202 Accepted con un <c>jobId</c> para consultar el resultado más tarde.
+            </summary>
+            <remarks>
+            Query params: productoId, bodegaId, fechaInicio (YYYY-MM-DD), fechaFin (YYYY-MM-DD).
+            </remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.KardexController.SolicitarKardex(System.Threading.CancellationToken)">
+            <summary>
+            Solicita el kardex en modo asíncrono.
+            Siempre retorna 202 Accepted con un <c>jobId</c>; el resultado se consulta en
+            <c>GET /api/inventario/kardex/resultado/{jobId}</c>.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.KardexController.ObtenerResultado(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Retorna el resultado de un reporte de Kardex generado de forma asíncrona.
+            </summary>
+            <param name="jobId">ID del reporte obtenido en la solicitud.</param>
+            <response code="200">Reporte completado.</response>
+            <response code="202">Reporte aún en proceso.</response>
+            <response code="404">Reporte no encontrado.</response>
+            <response code="400">El reporte terminó con error.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.KardexController.ExportarExcel(System.Threading.CancellationToken)">
+            <summary>Exporta el kardex a Excel (.xlsx) con tabla formateada y resumen.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.KardexController.ExportarPdf(System.Threading.CancellationToken)">
+            <summary>Exporta el kardex a PDF (A4 horizontal) con tabla y resumen.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.KardexController.RecalcularSnapshots(ERP.API.Controllers.RecalcularSnapshotsBody,System.Threading.CancellationToken)">
+            <summary>
+            Recalcula los snapshots diarios del kardex bajo demanda.
+            Útil para reconstruir el historial tras migración o correcciones manuales.
+            Requiere rol SuperAdmin o Administrador.
+            </summary>
+        </member>
+        <member name="T:ERP.API.Controllers.RecalcularSnapshotsBody">
+            <summary>Body del endpoint <c>POST /recalcular</c>.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.RecalcularSnapshotsBody.#ctor(System.Nullable{System.Guid},System.Nullable{System.Guid},System.Nullable{System.DateTime})">
+            <summary>Body del endpoint <c>POST /recalcular</c>.</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.MeController">
+            <summary>Alias de sesión para el usuario autenticado (<c>/api/me/*</c>).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.MeController.GetMenu(System.Threading.CancellationToken)">
+            <summary>Mismo contrato que <c>GET /api/access/me/menu</c> (menú lateral resuelto por tenant/plan).</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.OrdenesCompraController">
+            <summary>
+            Órdenes de Compra — documento interno que autoriza la compra a un proveedor.
+            Flujo: Borrador → Enviada → Aprobada ⇄ RecibidaParcial → Cerrada (+ Cancelada).
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.OrdenesCompraController.GetAll(System.Threading.CancellationToken)">
+            <summary>Lista paginada de órdenes de compra con filtros opcionales.</summary>
+            <remarks>Query params: pageNumber, pageSize, proveedorId, estado, fechaDesde (YYYY-MM-DD), fechaHasta.</remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.OrdenesCompraController.GetPendientesPorFacturar(System.Threading.CancellationToken)">
+            <summary>
+            Lista de OC aprobadas o con recepción parcial que tienen saldo pendiente por facturar.
+            Útil para el selector al vincular facturas electrónicas.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.OrdenesCompraController.GetById(System.Guid,System.Threading.CancellationToken)">
+            <summary>Retorna el detalle completo de una OC (con líneas y facturas vinculadas).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.OrdenesCompraController.Crear(ERP.Application.Modules.Compras.UseCases.CrearOrdenCompra.CrearOrdenCompraCommand,System.Threading.CancellationToken)">
+            <summary>
+            Crea una OC en estado Borrador.
+            </summary>
+            <response code="201">OC creada en estado Borrador.</response>
+            <response code="400">Datos inválidos o proveedor no encontrado.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.OrdenesCompraController.Enviar(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Envía la OC al proveedor (Borrador → Enviada).
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.OrdenesCompraController.Aprobar(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Aprueba la OC (Borrador/Enviada → Aprobada).
+            Solo una OC aprobada puede recibir facturas vinculadas.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.OrdenesCompraController.Cancelar(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Cancela la OC. No posible en Cerrada o ya Cancelada.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.OrdenesCompraController.VincularFactura(System.Guid,ERP.API.Controllers.VincularFacturaRequest,System.Threading.CancellationToken)">
+            <summary>
+            Vincula una factura electrónica aprobada a esta OC.
+            Actualiza las cantidades facturadas y cierra la OC si está completamente cubierta.
+            </summary>
+            <response code="200">Factura vinculada. OC actualizada (estado puede cambiar a RecibidaParcial o Cerrada).</response>
+            <response code="400">Factura no aprobada, ya vinculada, o cantidades excedidas.</response>
+        </member>
+        <member name="T:ERP.API.Controllers.VincularFacturaRequest">
+            <param name="CompraFacturaId">ID de la factura de compra aprobada a vincular.</param>
+        </member>
+        <member name="M:ERP.API.Controllers.VincularFacturaRequest.#ctor(System.Guid)">
+            <param name="CompraFacturaId">ID de la factura de compra aprobada a vincular.</param>
+        </member>
+        <member name="P:ERP.API.Controllers.VincularFacturaRequest.CompraFacturaId">
+            <summary>ID de la factura de compra aprobada a vincular.</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.ProductCategoriesController">
+            <summary>
+            Catálogo maestro: Categorías de producto (dependen de una línea).
+            </summary>
+        </member>
+        <member name="T:ERP.API.Controllers.ProductLinesController">
+            <summary>
+            Catálogo maestro: Líneas de producto (Product Lines) del tenant autenticado.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.ProductLinesController.GetAll(System.Threading.CancellationToken)">
+            <summary>Lista líneas de producto del tenant.</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.ProductsController">
+            <summary>
+            Gestión del catálogo de productos del tenant autenticado.
+            Todos los endpoints filtran automáticamente por el tenant del JWT.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.ProductsController.GetAll(System.Threading.CancellationToken)">
+            <summary>Retorna todos los productos activos del tenant.</summary>
+            <response code="200">Lista de productos (puede ser vacía).</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ProductsController.GetById(System.Guid,System.Threading.CancellationToken)">
+            <summary>Retorna un producto por su ID.</summary>
+            <param name="id">ID del producto (GUID).</param>
+            <param name="ct">Token de cancelación.</param>
+            <response code="200">Producto encontrado.</response>
+            <response code="404">El producto no existe o no pertenece al tenant.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ProductsController.GetFullReport(System.Guid,System.Threading.CancellationToken)">
+            <summary>Retorna el reporte completo (ficha técnica) de un producto.</summary>
+            <response code="200">Reporte completo del producto.</response>
+            <response code="404">El producto no existe o no pertenece al tenant.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ProductsController.GetReport(System.String,System.String,System.String,System.String,System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Boolean},System.Nullable{System.Guid},System.Nullable{System.Guid},System.Nullable{System.Guid},System.Nullable{System.Guid},System.Nullable{System.Guid},System.Int32,System.Int32,System.Threading.CancellationToken)">
+            <summary>Listado tipo reporte con filtros.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.ProductsController.Create(ERP.Application.Products.UseCases.CreateProduct.CreateProductCommand,System.Threading.CancellationToken)">
+            <summary>Crea un nuevo producto en el catálogo del tenant.</summary>
+            <remarks>
+            Los campos `lineId`, `categoryId`, `subcategoryId`, etc. referencian
+            IDs de catálogos maestros (aún no expuestos como endpoints propios).
+            </remarks>
+            <response code="201">Producto creado. La respuesta incluye el ID asignado.</response>
+            <response code="400">El código de venta ya existe en el tenant.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ProductsController.Update(System.Guid,ERP.Application.Products.UseCases.UpdateProduct.UpdateProductCommand,System.Threading.CancellationToken)">
+            <summary>Actualiza un producto existente.</summary>
+            <param name="id">ID del producto a actualizar.</param>
+            <param name="command">Datos actualizados del producto.</param>
+            <param name="ct">Token de cancelación.</param>
+            <response code="200">Producto actualizado correctamente.</response>
+            <response code="404">Producto no encontrado.</response>
+            <response code="422">Datos inválidos.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ProductsController.Disable(System.Guid,System.Threading.CancellationToken)">
+            <summary>Deshabilita un producto (no lo elimina).</summary>
+            <param name="id">ID del producto.</param>
+            <response code="200">Producto deshabilitado.</response>
+            <response code="400">El producto ya está deshabilitado o no existe.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ProductsController.Enable(System.Guid,System.Threading.CancellationToken)">
+            <summary>Habilita un producto previamente deshabilitado.</summary>
+            <param name="id">ID del producto.</param>
+            <response code="200">Producto habilitado.</response>
+            <response code="400">El producto ya está activo o no existe.</response>
+        </member>
+        <member name="T:ERP.API.Controllers.ProductSubcategoriesController">
+            <summary>
+            Catálogo maestro: Subcategorías (dependen de una categoría).
+            </summary>
+        </member>
+        <member name="T:ERP.API.Controllers.ProductTypesController">
+            <summary>
+            Catálogo maestro: Tipos de producto del tenant autenticado.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.ProductTypesController.GetAll(System.Boolean,System.Threading.CancellationToken)">
+            <summary>Lista tipos de producto del tenant.</summary>
+            <param name="onlyActive">Si es true, retorna únicamente tipos habilitados.</param>
+            <param name="ct">Token de cancelación.</param>
+            <response code="200">Lista de tipos (puede ser vacía).</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ProductTypesController.Create(ERP.Application.Products.Catalogs.UseCases.CreateProductType.CreateProductTypeCommand,System.Threading.CancellationToken)">
+            <summary>Crea un nuevo tipo de producto.</summary>
+            <remarks>El nombre debe ser único por tenant.</remarks>
+            <response code="201">Tipo creado correctamente.</response>
+            <response code="400">Error de validación (por ejemplo, duplicado).</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+        </member>
+        <member name="T:ERP.API.Controllers.ProveedoresController">
+            <summary>
+            Gestión del catálogo de proveedores del tenant autenticado.
+            Incluye validación de RUC ecuatoriano (algoritmo SRI módulo 10/11).
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.ProveedoresController.GetAll(System.Threading.CancellationToken)">
+            <summary>Lista proveedores con filtros opcionales.</summary>
+            <remarks>
+            Query params:
+            - <c>activeStatus</c>: active | inactive | all (default: active)
+            - <c>search</c>: busca en razón social, RUC, correo y teléfono
+            - <c>tipoPersona</c>: Natural | Juridica
+            </remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.ProveedoresController.GetById(System.Guid,System.Threading.CancellationToken)">
+            <summary>Retorna un proveedor por su ID.</summary>
+            <response code="200">Proveedor encontrado.</response>
+            <response code="404">No existe o no pertenece al tenant.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ProveedoresController.Create(ERP.Application.Modules.Compras.UseCases.CrearProveedor.CreateProveedorCommand,System.Threading.CancellationToken)">
+            <summary>Crea un nuevo proveedor.</summary>
+            <remarks>
+            El RUC se valida con el algoritmo del SRI (módulo 10 para personas naturales,
+            módulo 11 para sociedades privadas y entidades públicas).
+            </remarks>
+            <response code="201">Proveedor creado.</response>
+            <response code="400">RUC duplicado en el tenant.</response>
+            <response code="422">RUC inválido u otros datos incorrectos.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ProveedoresController.Update(System.Guid,ERP.Application.Modules.Compras.UseCases.ActualizarProveedor.UpdateProveedorCommand,System.Threading.CancellationToken)">
+            <summary>Actualiza los datos de un proveedor.</summary>
+            <response code="200">Proveedor actualizado.</response>
+            <response code="400">RUC duplicado u otro error de negocio.</response>
+            <response code="422">Datos inválidos.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ProveedoresController.Disable(System.Guid,System.Threading.CancellationToken)">
+            <summary>Deshabilita un proveedor (soft delete). No lo elimina.</summary>
+            <response code="200">Proveedor deshabilitado.</response>
+            <response code="400">Ya está deshabilitado o no existe.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.ProveedoresController.Enable(System.Guid,System.Threading.CancellationToken)">
+            <summary>Reactiva un proveedor previamente deshabilitado.</summary>
+            <response code="200">Proveedor habilitado.</response>
+            <response code="400">Ya está activo o no existe.</response>
+        </member>
+        <member name="T:ERP.API.Controllers.PublicDeploymentController">
+            <summary>
+            Configuración pública mínima del despliegue (sin secretos). Usada por el SPA antes del login.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.PublicDeploymentController.GetDeployment">
+            <summary>Indica si el panel global SuperAdmin está habilitado en esta instancia.</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.PublicPlansController">
+            <summary>Catálogo público de planes (landing / precios externos). Sin autenticación.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.PublicPlansController.GetPlans(System.Threading.CancellationToken)">
+            <summary>Planes activos y marcados como visibles públicamente, con features incluidas.</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.SaasFeaturesAdminController">
+            <summary>CRUD de definiciones de features SaaS (<c>saas_feature_definitions</c>, solo SuperAdmin).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasFeaturesAdminController.List(System.Threading.CancellationToken)">
+            <summary>Lista todas las definiciones de features (código, permisos, límites por defecto).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasFeaturesAdminController.Create(ERP.Application.Subscriptions.CreateSaasFeatureDefinitionRequest,System.Threading.CancellationToken)">
+            <summary>Crea una definición de feature.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasFeaturesAdminController.Update(System.Guid,ERP.Application.Subscriptions.UpdateSaasFeatureDefinitionRequest,System.Threading.CancellationToken)">
+            <summary>Actualiza una definición de feature por id.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasFeaturesAdminController.Delete(System.Guid,System.Threading.CancellationToken)">
+            <summary>Elimina una definición de feature y referencias en planes, overrides, uso y menú.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasFeaturesAdminController.DeletePost(System.Guid,System.Threading.CancellationToken)">
+            <summary>Misma eliminación vía POST (p. ej. proxies que bloquean DELETE con 405).</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.SaasPlansAdminController">
+            <summary>CRUD de planes SaaS y catálogo de features (solo SuperAdmin).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasPlansAdminController.ListPlans(System.Threading.CancellationToken)">
+            <summary>Lista planes administrables con sus <c>features</c> (incluidas/límites).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasPlansAdminController.CreatePlan(ERP.Application.Subscriptions.CreateSaasPlanRequest,System.Threading.CancellationToken)">
+            <summary>Crea un plan comercial.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasPlansAdminController.GetPlanMenu(System.Guid,System.Threading.CancellationToken)">
+            <summary>Obtiene el JSON de menú lateral y la preferencia de layout del plan.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasPlansAdminController.SetPlanMenu(System.Guid,ERP.API.Controllers.SaasPlansAdminController.SetPlanMenuBody,System.Threading.CancellationToken)">
+            <summary>Guarda el menú lateral del plan (mismo shape que <c>SessionMenuGroupDto[]</c>). Cuerpo vacío o null limpia.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasPlansAdminController.CopyPlanFrom(System.Guid,System.Guid,ERP.Application.Subscriptions.CopyPlanFromRequest,System.Threading.CancellationToken)">
+            <summary>Copia menú JSON y/o features desde otro plan (transacción).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasPlansAdminController.UpdatePlan(System.Guid,ERP.Application.Subscriptions.UpdateSaasPlanRequest,System.Threading.CancellationToken)">
+            <summary>Actualiza metadatos de un plan (nombre, precio, visibilidad, etc.).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasPlansAdminController.DeletePlan(System.Guid,System.Threading.CancellationToken)">
+            <summary>Elimina un plan y sus vínculos a features.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasPlansAdminController.ReorderPlans(ERP.API.Controllers.SaasPlansAdminController.ReorderPlansBody,System.Threading.CancellationToken)">
+            <summary>Reordena planes por lista de ids (orden final).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasPlansAdminController.SetRecommended(System.Guid,System.Threading.CancellationToken)">
+            <summary>Marca un plan como recomendado (desmarca otros).</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.SaasPlansAdminController.ReplaceFeaturesBody">
+            <summary>
+            Cuerpo para reemplazar por completo las features de un plan.
+            Debe incluir todas las definiciones existentes en <c>saas_feature_definitions</c> (una fila por featureId).
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasPlansAdminController.ReplaceFeaturesBody.#ctor(System.Collections.Generic.IReadOnlyList{ERP.Application.Subscriptions.PlanFeatureAssignDto})">
+            <summary>
+            Cuerpo para reemplazar por completo las features de un plan.
+            Debe incluir todas las definiciones existentes en <c>saas_feature_definitions</c> (una fila por featureId).
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SaasPlansAdminController.ReplaceFeatures(System.Guid,ERP.API.Controllers.SaasPlansAdminController.ReplaceFeaturesBody,System.Threading.CancellationToken)">
+            <summary>
+            Reemplaza el conjunto de features incluidas en un plan (borra vínculos previos e inserta los enviados).
+            Usado por la UI <c>Empresas → Plan ↔ menú</c> y el catálogo en <c>Plan y módulos</c>.
+            </summary>
+        </member>
+        <member name="T:ERP.API.Controllers.SecurityController">
+            <summary>
+            Configuración de seguridad (matrices de delegación y permisos).
+            Acceso restringido: solo SuperAdmin.
+            </summary>
+            <remarks>
+            Exige token de sesión (<c>Session</c>) y rol <c>SuperAdmin</c> (no basta con bootstrap).
+            </remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.SecurityController.GetAdminMatrix(System.Threading.CancellationToken)">
+            <summary>
+            Retorna usuarios del tenant + asignaciones actuales de scopes de administración.
+            </summary>
+            <remarks>
+            Esta matriz define "quién puede administrar" (delegación) y se usa para habilitar
+            funciones como: gestionar roles, módulos, pantallas y procesos (y a futuro, secciones/campos).
+            </remarks>
+            <response code="200">Usuarios del tenant y asignaciones por sujeto (User/Role).</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+            <response code="403">El usuario no tiene rol SuperAdmin.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.SecurityController.UpsertAdminScopes(ERP.Application.Security.UseCases.UpsertSecurityAdminScopes.UpsertSecurityAdminScopesCommand,System.Threading.CancellationToken)">
+            <summary>
+            Upsert de scopes de administración por sujeto (Role/User).
+            </summary>
+            <remarks>
+            Reemplaza el set de scopes para el sujeto enviado. Idempotente:
+            si envías el mismo payload, el resultado final no cambia.
+            </remarks>
+            <response code="200">Scopes guardados correctamente.</response>
+            <response code="400">Error de validación o sujeto inválido.</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+            <response code="403">El usuario no tiene rol SuperAdmin.</response>
+        </member>
+        <member name="T:ERP.API.Controllers.SetupController">
+            <summary>
+            Rutas de instalación puntuales (sin autenticación previa).
+            </summary>
+            <remarks>
+            El token de <c>setupToken</c> lo emite <see cref="T:ERP.Application.Common.Interfaces.IFirstRunSetupService"/> (hash en BD, texto plano solo en consola al arrancar la API o en respuesta de <c>/api/dev/reset-first-run</c> en Development).
+            No usar <c>Deployment:InitialSuperAdminSetupToken</c> para este flujo: no participa en la validación del claim.
+            Ver <c>docs/SUPERADMIN-Y-FIRST-RUN.md</c>.
+            </remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.SetupController.ClaimInitialSuperAdmin(ERP.Application.Auth.UseCases.ClaimInitialSuperAdmin.ClaimInitialSuperAdminCommand,System.Threading.CancellationToken)">
+            <summary>
+            Crea el primer (y único) SuperAdmin en la tabla <c>users</c> con <c>tenant_id</c> vacío (operador de plataforma),
+            usando un token efímero de first-run emitido en la consola del servidor.
+            No requiere empresas previas: el SuperAdmin crea tenants después (p. ej. panel <c>/superadmin</c> o <c>POST /api/tenants</c>).
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SetupController.ClaimInitialSuperAdminAlias(ERP.Application.Auth.UseCases.ClaimInitialSuperAdmin.ClaimInitialSuperAdminCommand,System.Threading.CancellationToken)">
+            <summary>
+            Alias de compatibilidad para scripts/automatizaciones previas.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SetupController.ResetFirstRunForDevelopment(System.Threading.CancellationToken)">
+            <summary>
+            SOLO DESARROLLO: reinicia first-run para pruebas automáticas y emite un token efímero nuevo.
+            </summary>
+        </member>
+        <member name="T:ERP.API.Controllers.SpaMenuCatalogController">
+            <summary>
+            Marcadores HTTP solo para que <see cref="T:ERP.API.Services.ModuloDiscoveryService"/> registre
+            pantallas SPA que no tienen un controlador CRUD dedicado (perfiles, acceso tenant, etc.).
+            Las rutas reales las sirve el frontend; aquí no hay lógica de negocio.
+            </summary>
+        </member>
+        <member name="T:ERP.API.Controllers.SuperAdminController">
+            <summary>
+            Endpoints globales para SuperAdmin (multi-empresa).
+            Estos endpoints ignoran el contexto del tenant porque el SuperAdmin opera a nivel sistema.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminController.GetInstanceQuota">
+            <summary>Cuotas efectivas de la instancia (config + archivo <c>App_Data/instance-quota.json</c> si existe).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminController.PutInstanceQuota(ERP.Application.Common.InstanceQuotaFileModel)">
+            <summary>
+            Guarda cuotas en <c>App_Data/instance-quota.json</c> (sobrescribe configuración para esos campos).
+            En modo dedicado a un cliente, <c>maxActiveTenants</c> debe ser &gt; 0 (no se permiten empresas/RUC ilimitadas).
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminController.GetPlansCatalog(System.Threading.CancellationToken)">
+            <summary>Catálogo de planes comerciales y features incluidas (solo lectura).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminController.GetTenants(System.Threading.CancellationToken)">
+            <summary>Lista todas las empresas (tenants), activas e inactivas.</summary>
+            <remarks>
+            Útil para el "Tenant Picker" del Panel Global de SuperAdmin.
+            </remarks>
+            <response code="200">Lista de empresas (id, name, slug, isActive, plan, módulos).</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+            <response code="403">El usuario no tiene rol SuperAdmin.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminController.GetMetrics(System.Threading.CancellationToken)">
+            <summary>Métricas globales del sistema (todas las empresas).</summary>
+            <remarks>
+            Retorna totales de empresas y usuarios para el Dashboard Global de SuperAdmin.
+            </remarks>
+            <response code="200">Totales y lista reciente de empresas.</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+            <response code="403">El usuario no tiene rol SuperAdmin.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminController.GetGrowthAnalytics(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Serie de crecimiento de empresas, usuarios (identidad) y membresías por periodo (día/semana/mes), con acumulados.
+            Por defecto últimos 3 meses y granularidad mensual.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminController.GetGrowthMonetary(System.String,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Mismo rango y agrupación que growth-analytics; serie en MRR mensual equivalente (plan actual, tenants activos).
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminController.GetNavigationMenu(System.Threading.CancellationToken)">
+            <summary>Árbol del menú principal (grupos e ítems recursivos) para configuración.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminController.ReorderNavigationGroups(ERP.API.Contracts.ReorderNavigationGroupsRequest,System.Threading.CancellationToken)">
+            <summary>Reordena grupos activos del menú principal (<c>ui_nav_groups.sort_order</c>).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminController.ReorderNavigationItemLevels(ERP.API.Contracts.ReorderNavigationItemLevelsRequest,System.Threading.CancellationToken)">
+            <summary>Aplica árbol de ítems: jerarquía (<c>parent_item_id</c>) y orden entre hermanos.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminController.CreateNavigationMenuItem(ERP.Application.Navigation.DTOs.CreateNavItemRequest,System.Threading.CancellationToken)">
+            <summary>Crea un ítem de menú (submenú o hoja) bajo un grupo, en la raíz o bajo un padre.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminController.UpdateNavigationMenuItem(System.Guid,ERP.Application.Navigation.DTOs.UpdateNavItemRequest,System.Threading.CancellationToken)">
+            <summary>Actualiza un ítem de menú (etiqueta visible, ruta, permisos, vínculo a feature SaaS).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminController.DeleteNavigationMenuItem(System.Guid,System.Threading.CancellationToken)">
+            <summary>Desactiva un ítem y todos sus descendientes (el menú deja de mostrarlos).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminController.RevokeUserSessions(System.Guid,System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Revoca todos los refresh tokens activos de un usuario.
+            Usar cuando se desactiva un usuario, se detecta compromiso o se cambia de rol.
+            </summary>
+            <param name="userId">ID del usuario cuyos tokens serán revocados.</param>
+            <param name="tenantId">Tenant del usuario.</param>
+        </member>
+        <member name="T:ERP.API.Controllers.SuperAdminEmpresasMenuController">
+            <summary>Rutas en español para menú por empresa (<c>/api/superadmin/empresas/…</c>).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminFuncionalidadesController.Sincronizar(System.Threading.CancellationToken)">
+            <summary>Sincroniza catálogo desde <c>[Modulo]</c> en controladores/acciones.</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.SuperAdminPlanesMenuController">
+            <summary>Rutas en español para menú de planes (<c>/api/superadmin/planes/…</c>).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.SuperAdminPlanesMenuController.CopyPlanFrom(System.Guid,System.Guid,ERP.Application.Subscriptions.CopyPlanFromRequest,System.Threading.CancellationToken)">
+            <summary>Misma semántica que <c>POST /api/superadmin/saas-plans/{target}/copy-from/{source}</c>.</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.TariffsController">
+            <summary>
+            Catálogo maestro: Tarifas / aranceles del tenant autenticado.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.TariffsController.GetAll(System.Boolean,System.Threading.CancellationToken)">
+            <summary>Lista tarifas (aranceles) del tenant.</summary>
+            <param name="onlyActive">Si es true, retorna únicamente tarifas habilitadas.</param>
+            <param name="ct">Token de cancelación.</param>
+            <response code="200">Lista de tarifas (puede ser vacía).</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.TariffsController.Create(ERP.Application.Products.Catalogs.UseCases.CreateTariff.CreateTariffCommand,System.Threading.CancellationToken)">
+            <summary>Crea una nueva tarifa (arancel).</summary>
+            <remarks>El nombre/código debe ser único por tenant.</remarks>
+            <response code="201">Tarifa creada correctamente.</response>
+            <response code="400">Error de validación (por ejemplo, duplicado).</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+        </member>
+        <member name="T:ERP.API.Controllers.TaxRatesController">
+            <summary>
+            Catálogo maestro: Tarifas de impuestos (IVA/ICE) del tenant autenticado.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.TaxRatesController.GetAll(System.Nullable{ERP.Domain.Products.Entities.TaxRateType},System.Boolean,System.Threading.CancellationToken)">
+            <summary>Lista tarifas de impuestos (IVA/ICE).</summary>
+            <param name="type">Filtra por tipo de tarifa (por ejemplo IVA o ICE). Si es null, retorna todas.</param>
+            <param name="onlyActive">Si es true, retorna únicamente tarifas habilitadas.</param>
+            <param name="ct">Token de cancelación.</param>
+            <response code="200">Lista de tarifas (puede ser vacía).</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.TaxRatesController.Create(ERP.Application.Products.Catalogs.UseCases.CreateTaxRate.CreateTaxRateCommand,System.Threading.CancellationToken)">
+            <summary>Crea una nueva tarifa de impuesto (IVA/ICE).</summary>
+            <remarks>El porcentaje y el tipo deben ser consistentes según la normativa del tenant.</remarks>
+            <response code="201">Tarifa creada correctamente.</response>
+            <response code="400">Error de validación (por ejemplo, duplicado o porcentaje inválido).</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+        </member>
+        <member name="T:ERP.API.Controllers.TenantsController">
+            <summary>
+            Gestión de tenants (empresas).
+            Restringido: solo accesible por administradores del sistema.
+            En producción considerar un rol dedicado como "SystemAdmin".
+            </summary>
+            <remarks>
+            Autorización por <b>rol</b> en acciones (<c>SuperAdmin</c>, <c>Admin</c>) — sin claves <c>perm:</c> en este controlador.
+            Clase con <c>[Authorize(Policy = "Session")]</c> para dejar explícito el token de sesión además de los roles por método.
+            </remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.TenantsController.GetById(System.Guid,System.Threading.CancellationToken)">
+            <summary>Obtiene el detalle de un tenant (SuperAdmin). Incluye datos comerciales/legales y suscripción.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.TenantsController.UpdateCompany(System.Guid,ERP.API.Controllers.UpdateTenantCompanyRequest,System.Threading.CancellationToken)">
+            <summary>Actualiza datos comerciales/legales de la empresa (SuperAdmin).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.TenantsController.UpdateGlobalParameters(System.Guid,ERP.API.Controllers.UpdateTenantGlobalParametersBody,System.Threading.CancellationToken)">
+            <summary>Actualiza parámetros globales de la empresa (SuperAdmin), dependientes del plan comercial.</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.TenantsController.Create(ERP.Application.Tenants.UseCases.CreateTenant.CreateTenantCommand,System.Threading.CancellationToken)">
+            <summary>Crea un nuevo tenant (empresa) en el sistema.</summary>
+            <remarks>El slug debe ser único y se usa como identificador amigable del tenant.</remarks>
+            <response code="201">Tenant creado correctamente.</response>
+            <response code="400">El slug ya está en uso.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.TenantsController.GetPublicSettings(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Retorna configuración pública mínima del tenant (sin datos sensibles).
+            Útil para flujos anónimos como recuperación de contraseña.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.TenantsController.UpdatePasswordResetMode(System.Guid,ERP.Application.Tenants.UseCases.UpdatePasswordResetMode.UpdateTenantPasswordResetModeCommand,System.Threading.CancellationToken)">
+            <summary>
+            Actualiza el modo de recuperación de contraseña del tenant.
+            Restringido a Admin.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.TenantsController.UpdateSubscription(System.Guid,ERP.API.Controllers.UpdateTenantSubscriptionBody,System.Threading.CancellationToken)">
+            <summary>
+            Actualiza el código de plan del tenant y la lista de módulos habilitados (<c>enabledModules</c>).
+            Solo SuperAdmin: acota qué módulos puede usar la empresa frente a permisos y API.
+            </summary>
+            <remarks>
+            La composición detallada del plan (features por ítem de menú) se administra con
+            <c>PUT /api/superadmin/saas-plans/{planId}/features</c>; ver <c>docs/COMPANIES-PLAN-MENU-ADMIN.md</c>.
+            </remarks>
+        </member>
+        <member name="T:ERP.API.Controllers.UpdateTenantSubscriptionBody">
+            <summary>Cuerpo para <c>PATCH .../subscription</c> (plan + lista de claves de módulo).</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.UpdateTenantCompanyRequest">
+            <summary>Cuerpo para <c>PATCH .../company</c> (datos de empresa sin admin ni suscripción).</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.UpdateTenantGlobalParametersBody">
+            <summary>Cuerpo para <c>PATCH .../global-parameters</c> (parámetros globales por empresa).</summary>
+        </member>
+        <member name="T:ERP.API.Controllers.TransferenciasController">
+            <summary>
+            Transferencias de stock entre bodegas del mismo tenant.
+            Flujo: Borrador → Confirmado (stock movido) | Cancelado (sin efecto en stock).
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.TransferenciasController.GetAll(System.Threading.CancellationToken)">
+            <summary>Lista paginada de transferencias con filtros opcionales.</summary>
+            <remarks>Query params: pageNumber, pageSize, bodegaOrigenId, bodegaDestinoId, estado, fechaDesde (YYYY-MM-DD), fechaHasta.</remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.TransferenciasController.GetById(System.Guid,System.Threading.CancellationToken)">
+            <summary>Retorna el detalle completo de una transferencia (con ítems).</summary>
+        </member>
+        <member name="M:ERP.API.Controllers.TransferenciasController.Crear(ERP.Application.Inventario.UseCases.CrearTransferencia.CrearTransferenciaCommand,System.Threading.CancellationToken)">
+            <summary>
+            Crea una transferencia en estado Borrador.
+            El stock NO se mueve hasta Confirmar.
+            </summary>
+            <response code="201">Transferencia creada en estado Borrador.</response>
+            <response code="400">Bodegas inválidas o stock insuficiente en la bodega origen.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.TransferenciasController.Confirmar(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Confirma la transferencia: mueve el stock de la bodega origen a la destino.
+            Operación atómica — si falta stock en algún ítem, se revierte todo.
+            </summary>
+            <response code="200">Stock movido y transferencia en estado Confirmado.</response>
+            <response code="400">Stock insuficiente o estado no válido.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.TransferenciasController.Cancelar(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Cancela la transferencia. Solo posible en estado Borrador.
+            No afecta el stock.
+            </summary>
+        </member>
+        <member name="T:ERP.API.Controllers.UnitsOfMeasureController">
+            <summary>
+            Catálogo maestro: Unidades de medida (UoM) del tenant autenticado.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.UnitsOfMeasureController.GetAll(System.Boolean,System.Threading.CancellationToken)">
+            <summary>Lista unidades de medida del tenant.</summary>
+            <param name="onlyActive">Si es true, retorna únicamente unidades habilitadas.</param>
+            <param name="ct">Token de cancelación.</param>
+            <response code="200">Lista de unidades (puede ser vacía).</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.UnitsOfMeasureController.Create(ERP.Application.Products.Catalogs.UseCases.CreateUnitOfMeasure.CreateUnitOfMeasureCommand,System.Threading.CancellationToken)">
+            <summary>Crea una nueva unidad de medida.</summary>
+            <remarks>El código/nombre debe ser único por tenant.</remarks>
+            <response code="201">Unidad creada correctamente.</response>
+            <response code="400">Error de validación (por ejemplo, duplicado).</response>
+            <response code="401">Token JWT ausente o inválido.</response>
+        </member>
+        <member name="T:ERP.API.Controllers.VentasController">
+            <summary>
+            Gestión del módulo de Ventas — Facturación Electrónica SRI Ecuador.
+            Flujo: Borrador → Validado → Autorizado | Rechazado | ErrorEnvio.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.VentasController.GetAll(System.Threading.CancellationToken)">
+            <summary>Lista facturas de venta paginadas con filtros opcionales.</summary>
+            <remarks>Query params: pageNumber, pageSize, clienteId, desde (YYYY-MM-DD), hasta, estado, search.</remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.VentasController.GetById(System.Guid,System.Threading.CancellationToken)">
+            <summary>Retorna el detalle completo de una factura de venta (con líneas).</summary>
+            <response code="404">La factura no existe o no pertenece al tenant.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.VentasController.GetStock(System.Threading.CancellationToken)">
+            <summary>Consulta el stock disponible de un producto en una bodega.</summary>
+            <remarks>Query params requeridos: productoId, bodegaId.</remarks>
+        </member>
+        <member name="M:ERP.API.Controllers.VentasController.Crear(ERP.Application.Ventas.UseCases.CrearVenta.CrearVentaCommand,System.Threading.CancellationToken)">
+            <summary>Crea una nueva factura de venta en estado Borrador.</summary>
+            <response code="201">Factura creada. Retorna el ID.</response>
+            <response code="400">Stock insuficiente, cliente o bodega inválida.</response>
+        </member>
+        <member name="M:ERP.API.Controllers.VentasController.Validar(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Valida una factura en Borrador: verifica totales y detalles.
+            Cambia estado a Validado.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.VentasController.Emitir(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Emite la factura al SRI Ecuador: genera XML, firma y envía.
+            Si es autorizada, descuenta inventario y crea asiento contable.
+            Estado resultante: Autorizado | Rechazado | ErrorEnvio.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.VentasController.Reintentar(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Reintenta el envío al SRI para facturas en ErrorEnvio o Rechazado.
+            Resetea el estado y ejecuta el flujo de emisión completo.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.VentasController.Anular(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Anula la factura. Solo posible en estados Borrador, Validado, Rechazado o ErrorEnvio.
+            Las facturas ya autorizadas por el SRI no pueden anularse directamente.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Controllers.VentasController.Imprimir(System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Genera el HTML de impresión de la factura en formato de ticket térmico 80mm.
+            </summary>
+        </member>
+        <member name="T:ERP.API.Export.KardexExcelExporter">
+            <summary>
+            Genera un libro Excel (.xlsx) con el Kardex valorizado.
+            Diseño: encabezado informativo → inventario inicial → tabla de movimientos → resumen.
+            </summary>
+        </member>
+        <member name="T:ERP.API.Export.KardexPdfExporter">
+            <summary>
+            Genera un PDF del Kardex valorizado usando QuestPDF.
+            Licencia Community (libre para proyectos con ingresos anuales &lt; 1 M USD).
+            </summary>
+        </member>
+        <member name="T:ERP.API.Extensions.DevDatabaseSeeder">
+            <summary>
+            Seed opcional de desarrollo: tenant-demo + admin identity + datos mínimos contables.
+            <b>No se ejecuta por defecto.</b> Actívalo con <c>Development:SeedDemoTenant = true</c> en appsettings.Development.json.
+            </summary>
+        </member>
+        <member name="T:ERP.API.Hangfire.HangfireDashboardAuthorizationFilter">
+            <summary>
+            Autorización del dashboard Hangfire: localhost, prefijos de IP y/o SuperAdmin global
+            (mismo criterio que <see cref="T:ERP.API.Authorization.GlobalSuperAdminHandler"/>).
+            </summary>
+        </member>
+        <member name="T:ERP.API.Middleware.SuperAdminPanelLockMiddleware">
+            <summary>
+            Cuando <c>Deployment:SuperAdminPanelEnabled</c> es false, bloquea cualquier uso autenticado con rol SuperAdmin
+            y el login dedicado, para que solo operen usuarios por empresa (Admin, etc.) tras la puesta en marcha.
+            </summary>
+        </member>
+        <member name="M:ERP.API.Middleware.SuperAdminPanelLockMiddleware.#ctor(Microsoft.AspNetCore.Http.RequestDelegate)">
+            <summary>
+            Cuando <c>Deployment:SuperAdminPanelEnabled</c> es false, bloquea cualquier uso autenticado con rol SuperAdmin
+            y el login dedicado, para que solo operen usuarios por empresa (Admin, etc.) tras la puesta en marcha.
+            </summary>
+        </member>
+        <member name="T:ERP.API.Services.ModuloDiscoveryService">
+            <summary>
+            Descubre <see cref="T:ERP.API.Attributes.ModuloAttribute"/> en controladores/acciones y sincroniza la tabla <c>funcionalidades</c>.
+            Omite filas cuyo <see cref="P:ERP.API.Attributes.ModuloAttribute.PermisoBase"/> comienza por <c>SuperAdmin</c> (insensible a mayúsculas).
+            </summary>
+        </member>
+    </members>
+</doc>

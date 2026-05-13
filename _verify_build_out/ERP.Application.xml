@@ -1,0 +1,889 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ERP.Application</name>
+    </assembly>
+    <members>
+        <member name="T:ERP.Application.Admin.GrowthMonetaryResponseDto">
+            <summary>
+            MRR aproximado por periodo (plan actual del tenant; solo tenants activos con plan de catálogo activo).
+            CurrencyHint: moneda predominante entre tenants con MRR &gt; 0, o MIXED si hay varias.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Admin.GrowthMonetaryResponseDto.#ctor(System.String,System.String,System.String,System.String,System.Collections.Generic.IReadOnlyList{ERP.Application.Admin.GrowthMonetaryBucketDto})">
+            <summary>
+            MRR aproximado por periodo (plan actual del tenant; solo tenants activos con plan de catálogo activo).
+            CurrencyHint: moneda predominante entre tenants con MRR &gt; 0, o MIXED si hay varias.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Admin.IConfigService">
+            <summary>
+            Servicio central de configuración jerárquica por tenant.
+            Prioridad: Feature -&gt; Module -&gt; Global (y opcionalmente Usuario en futuras iteraciones).
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Admin.IGrowthAnalyticsReader.GetSeriesAsync(System.DateTime,System.DateTime,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Serie temporal de altas (empresas, usuarios globales, membresías) y acumulados al cierre de cada periodo.
+            </summary>
+            <param name="fromUtc">Inicio inclusive (fecha UTC, normalmente 00:00).</param>
+            <param name="toUtc">Fin inclusive (se interpreta como fin del día UTC si viene sin hora).</param>
+            <param name="granularity">day, week o month.</param>
+        </member>
+        <member name="M:ERP.Application.Admin.IGrowthAnalyticsReader.GetMonetarySeriesAsync(System.DateTime,System.DateTime,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Mismo rango y buckets que <see cref="M:ERP.Application.Admin.IGrowthAnalyticsReader.GetSeriesAsync(System.DateTime,System.DateTime,System.String,System.Threading.CancellationToken)"/>; valores en moneda (MRR mensual equivalente por tenant).
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Behaviors.CachingBehavior`2">
+            <summary>
+            Intercepta <see cref="T:ERP.Application.Common.ICacheable"/> y devuelve respuesta desde Redis/memoria si existe.
+            Debe registrarse después de validación y límites de suscripción para no omitirlos en cache miss.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Behaviors.SubscriptionGateBehavior`2">
+            <summary>
+            Valida features y límites de suscripción antes del handler, e incrementa uso medido tras éxito (<see cref="P:ERP.Application.Common.Result`1.IsSuccess"/>).
+            No sustituye permisos de seguridad.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Behaviors.ValidationBehavior`2">
+            <summary>
+            Ejecuta validadores FluentValidation antes del handler.
+            Si hay errores, corta el pipeline con <see cref="T:FluentValidation.ValidationException"/>.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.Config.KardexOptions">
+            <summary>
+            Opciones de comportamiento del Kardex. Se configuran en appsettings.json
+            bajo la sección "Kardex".
+            </summary>
+        </member>
+        <member name="P:ERP.Application.Common.Config.KardexOptions.UseScalableMode">
+             <summary>
+             true  → usa KardexSnapshot como punto de partida (O(período) vs O(total)).
+             false → calcula siempre desde el origen (comportamiento original, sin dependencia de snapshots).
+            
+             Nota: el modo escalable no se activa por defecto. En producción se debe
+             habilitar manualmente cuando el volumen de datos lo requiera.
+             </summary>
+        </member>
+        <member name="P:ERP.Application.Common.Config.KardexOptions.MaxDaysForSync">
+            <summary>
+            Días máximos de rango para procesamiento síncrono (en modo escalable).
+            Si el rango supera este valor y <see cref="P:ERP.Application.Common.Config.KardexOptions.EnableAsyncReport"/> = true,
+            el endpoint retorna 202 Accepted con un jobId en lugar del resultado inmediato.
+            </summary>
+        </member>
+        <member name="P:ERP.Application.Common.Config.KardexOptions.MaxMovimientosSync">
+            <summary>
+            Umbral de movimientos para cálculo síncrono. Si el número estimado de movimientos
+            en el rango supera este valor se redirige a procesamiento asíncrono.
+            </summary>
+        </member>
+        <member name="P:ERP.Application.Common.Config.KardexOptions.EnableAsyncReport">
+            <summary>
+            Habilita el modo de reporte asíncrono. Si false, el endpoint siempre responde
+            de forma síncrona (aunque el rango sea largo), simplemente puede tardar más.
+            </summary>
+        </member>
+        <member name="P:ERP.Application.Common.Config.KardexOptions.UseMaterializedDailySummaries">
+            <summary>
+            Si <c>true</c> (junto con <see cref="P:ERP.Application.Common.Config.KardexOptions.UseScalableMode"/> y snapshot), el hueco entre el snapshot y el
+            inicio del período usa días UTC completos agregados en <c>mv_saldos_diarios</c>: por cada día se aplica
+            primero el total de entradas del día y luego el de salidas (aproximación frente al orden real intra-día
+            del promedio ponderado móvil). Los tramos parcial del primer y último día siguen siendo movimientos
+            detallados. Si la MV no está disponible, se vuelve a leer <c>inventario_movimientos</c>.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.Config.PasswordResetOptions">
+            <summary>Configuración para enlaces de recuperación de contraseña (sección <c>PasswordReset</c>).</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Config.PasswordResetOptions.PublicBaseUrl">
+            <summary>URL pública del frontend (sin barra final), p. ej. https://app.ejemplo.com o http://localhost:5173</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Config.PasswordResetOptions.TokenLifetimeMinutes">
+            <summary>Vigencia del token desde su creación (por defecto 60 minutos).</summary>
+        </member>
+        <member name="T:ERP.Application.Common.DeploymentAuthMessages">
+            <summary>
+            Prefijo en <see cref="P:ERP.Application.Common.Result`1.Error"/> para que la API traduzca a HTTP 403.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.DeploymentQuota">
+            <summary>
+            Cuotas de instancia on-prem / dedicada (<see cref="T:ERP.Application.Common.IDeploymentFeatureFlags"/>).
+            Ilimitado: omitir la clave, valor vacío, <c>unlimited</c>, o un entero ≤ 0.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.DeploymentQuota.GetBlockingReasonIfAtTenantMembershipUserCapAsync(ERP.Application.Common.IDeploymentFeatureFlags,ERP.Domain.Access.Interfaces.IAccessRepository,System.Guid,System.Threading.CancellationToken)">
+            <summary>Tope de usuarios Identity con membresía activa por empresa (tenant).</summary>
+        </member>
+        <member name="M:ERP.Application.Common.DeploymentQuota.GetBlockingReasonIfAtIdentityUserCapAsync(ERP.Application.Common.IDeploymentFeatureFlags,ERP.Domain.Access.Interfaces.IAccessRepository,System.Threading.CancellationToken)">
+            <summary>Antes de crear un <c>IdentityUser</c> nuevo (no aplica al vincular admin existente).</summary>
+        </member>
+        <member name="T:ERP.Application.Common.Exceptions.SriCommunicationException">
+            <summary>
+            Se lanza cuando hay un error en la comunicación con el SRI Ecuador
+            (generación de XML, firma digital, envío WSDL o respuesta inválida).
+            El handler de emisión debe capturarla y marcar la factura como "ErrorEnvio"
+            para permitir el reintento posterior sin pérdida de datos.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.Exceptions.XmlParseException">
+            <summary>
+            Excepción lanzada cuando el XML del comprobante SRI no puede parsearse
+            por estructura inválida o nodos críticos ausentes.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.ICacheable">
+            <summary>
+            Marca una petición MediatR cuyo resultado puede almacenarse en <see cref="T:Microsoft.Extensions.Caching.Distributed.IDistributedCache"/>.
+            La clave incluye el tenant actual (<see cref="T:ERP.Application.Common.ICurrentTenant"/>); invalidación explícita por comandos es opcional (TTL por defecto).
+            </summary>
+        </member>
+        <member name="P:ERP.Application.Common.ICacheable.CacheTTL">
+            <summary>Tiempo de vida absoluto en segundos.</summary>
+        </member>
+        <member name="T:ERP.Application.Common.IDeploymentFeatureFlags">
+            <summary>
+            Banderas de despliegue leídas de configuración (p. ej. instancia on-prem con panel SuperAdmin cerrado tras la puesta en marcha).
+            Los topes numéricos pueden sobrescribirse con <c>App_Data/instance-quota.json</c> (ver <see cref="T:ERP.Application.Common.InstanceQuotaFileModel"/>).
+            </summary>
+        </member>
+        <member name="P:ERP.Application.Common.IDeploymentFeatureFlags.IsSuperAdminPanelEnabled">
+            <summary>
+            Si es false, no se permite login global ni operaciones de panel SuperAdmin (config <c>Deployment:SuperAdminPanelEnabled</c>).
+            </summary>
+        </member>
+        <member name="P:ERP.Application.Common.IDeploymentFeatureFlags.MaxActiveTenants">
+            <summary>
+            Tope de empresas (tenants) activas en la instancia; null = sin límite explícito (ilimitado salvo <see cref="P:ERP.Application.Common.IDeploymentFeatureFlags.IsDedicatedSingleClientInstance"/>).
+            </summary>
+        </member>
+        <member name="P:ERP.Application.Common.IDeploymentFeatureFlags.MaxIdentityUsers">
+            <summary>
+            Tope de usuarios globales (<c>identity_users</c>); null = sin límite (<c>Deployment:MaxIdentityUsers</c>).
+            </summary>
+        </member>
+        <member name="P:ERP.Application.Common.IDeploymentFeatureFlags.IsDedicatedSingleClientInstance">
+            <summary>
+            Instancia dedicada a un solo cliente / servidor propio: no se permite un número ilimitado de empresas (RUC);
+            debe definirse <see cref="P:ERP.Application.Common.IDeploymentFeatureFlags.MaxActiveTenants"/> (archivo o configuración).
+            </summary>
+        </member>
+        <member name="P:ERP.Application.Common.IDeploymentFeatureFlags.MaxUsersPerTenant">
+            <summary>
+            Tope de usuarios Identity con membresía activa por empresa (tenant). null = sin límite.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.IDeploymentFeatureFlags.AuthorizeInitialSuperAdminSetup(System.String)">
+            <summary>
+            Validación alternativa por configuración (<c>Deployment:InitialSuperAdminSetupToken</c>).
+            <b>No</b> la usa hoy el flujo de alta en <c>POST /api/setup/superadmin</c> (ese flujo usa <c>IFirstRunSetupService</c> / token en BD).
+            Se mantiene por compatibilidad o futuros usos; ver <c>docs/SUPERADMIN-Y-FIRST-RUN.md</c>.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.InstanceQuotaFileModel">
+            <summary>
+            Cuotas editables por SuperAdmin; se persiste en <c>App_Data/instance-quota.json</c> (opcional).
+            Valores <see langword="null"/> en propiedades omitidas en el JSON = no sobrescriben la configuración por defecto (<c>appsettings</c> / variables de entorno).
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.IAccountingService">
+            <summary>
+            Servicio de alto nivel para operaciones contables que requieren lógica de negocio
+            específica del dominio de compras / gastos.
+            Si existe <see cref="T:ERP.Application.Common.Interfaces.ICuentaContableService"/> / configuración por tenant, se usan esas cuentas;
+            en caso contrario se aplica la heurística por tipo de cuenta del plan.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IAccountingService.CrearAsientoCompraAsync(System.Guid,System.String,System.DateTime,System.Decimal,System.Decimal,System.Decimal,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Crea un asiento contable para una factura de compra aprobada.
+            Con configuración explícita: débito inventario + IVA compras (si aplica), crédito proveedores por el total.
+            Sin configuración: débito primera cuenta de Gasto (débito), crédito primera Pasivo (crédito), ambas con movimientos permitidos.
+            </summary>
+            <returns>ID del asiento creado, o Failure si no se encuentran las cuentas configuradas.</returns>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IAccountingService.CrearAsientoVentaAsync(System.Guid,System.String,System.DateTime,System.Decimal,System.Decimal,System.Decimal,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Crea un asiento contable para una factura de venta autorizada.
+            Con configuración: débito clientes por total, crédito ventas por subtotal e IVA ventas por el impuesto (si aplica).
+            Sin configuración: débito / crédito en primera cuenta Activo (débito) e Ingreso (crédito) con movimientos permitidos.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IAccountingService.CrearAsientoGastoAsync(System.Guid,System.String,System.String,System.DateTime,System.Decimal,System.Decimal,System.Decimal,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Asiento de gasto aprobado: débito según mapeo por categoría o heurística por nombre;
+            crédito a cuenta de efectivo/banco configurada o primer activo deudor con movimientos permitidos.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IAccountingService.CrearAsientoNotaCreditoVentaAsync(System.Guid,System.String,System.DateTime,System.Decimal,System.Decimal,System.Decimal,System.String,System.Threading.CancellationToken)">
+            <summary>Reversión parcial de ventas por nota de crédito (débito ventas/IVA, crédito clientes).</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IAccountingService.CrearAsientoNotaDebitoVentaAsync(System.Guid,System.String,System.DateTime,System.Decimal,System.Decimal,System.Decimal,System.String,System.Threading.CancellationToken)">
+            <summary>Incremento de ventas por nota de débito (débito clientes, crédito ventas/IVA).</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IAccountingService.CrearAsientoRetencionEmitidaAsync(System.Guid,System.String,System.DateTime,System.Decimal,System.String,System.Threading.CancellationToken)">
+            <summary>Retención emitida a proveedor: reduce deuda con proveedor y registra pasivo por retener.</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IAccountingService.CrearAsientoRetencionRecibidaAsync(System.Guid,System.String,System.DateTime,System.Decimal,System.String,System.Threading.CancellationToken)">
+            <summary>Retención recibida de cliente: reduce impuesto por pagar y cuentas por cobrar.</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IAccountingService.CrearAsientoNotaCreditoCompraProveedorAsync(System.Guid,System.String,System.DateTime,System.Decimal,System.Decimal,System.Decimal,System.String,System.Threading.CancellationToken)">
+            <summary>Nota de crédito proveedor sobre compra: reduce CxP e inventario/IVA (inverso del asiento de compra).</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IAccountingService.CrearAsientoNotaDebitoCompraProveedorAsync(System.Guid,System.String,System.DateTime,System.Decimal,System.Decimal,System.Decimal,System.String,System.Threading.CancellationToken)">
+            <summary>Nota de débito proveedor sobre compra: aumenta inventario/IVA y CxP.</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IAccountingService.CrearAsientoNotaCreditoGastoProveedorAsync(System.Guid,System.String,System.DateTime,System.Decimal,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Nota de crédito proveedor sobre gasto: reduce CxP y gasto.</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IAccountingService.CrearAsientoNotaDebitoGastoProveedorAsync(System.Guid,System.String,System.DateTime,System.Decimal,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Nota de débito proveedor sobre gasto: aumenta gasto y CxP.</summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.ICostoPromedioService">
+            <summary>
+            Proporciona el costo promedio ponderado actual de un producto en una bodega.
+            Se usa en movimientos de salida (ventas, transferencias, ajustes negativos)
+            para valorizar el movimiento al costo correcto.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.ICostoPromedioService.ObtenerCostoPromedioAsync(System.Guid,System.Guid,System.Guid,System.Threading.CancellationToken)">
+            <summary>
+            Retorna el costo unitario promedio actual del producto en la bodega.
+            Lee directamente ValorTotalStock / Cantidad desde StockActual.
+            Retorna 0 si no hay stock registrado o la cantidad es cero.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.ICuentaContableService">
+            <summary>
+            Resuelve cuentas del plan según la configuración por tenant.
+            Cuando no hay fila de <c>ConfiguracionContableEmpresa</c>, los métodos de compra/venta devuelven éxito con valor null
+            (el llamador aplica la heurística por tipo de cuenta).
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.ICuentaContableService.ObtenerCuentasParaCompraAsync(System.Guid,System.Decimal,System.Decimal,System.Threading.CancellationToken)">
+            <param name="subtotalInventario">Base imponible de inventario (sin IVA).</param>
+            <param name="iva">Monto de IVA de la compra.</param>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.ICuentaContableService.ObtenerCuentasParaVentaAsync(System.Guid,System.Decimal,System.Decimal,System.Threading.CancellationToken)">
+            <param name="subtotalVentas">Base imponible de ventas (sin IVA).</param>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.ICuentaContableService.ObtenerCuentaParaGastoAsync(System.Guid,System.String,System.Threading.CancellationToken)">
+            <summary>Cuenta de gasto mapeada por categoría; null si no hay mapeo (usar heurística legacy).</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.ICuentaContableService.ObtenerCuentaCajaParaGastoAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Caja o banco preferido para el crédito del asiento de gasto; null si no está configurado.</summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.IFileStorage">
+            <summary>
+            Almacenamiento de archivos binarios (local o nube).
+            La ruta devuelta por <see cref="M:ERP.Application.Common.Interfaces.IFileStorage.SaveAsync(System.String,System.IO.Stream,System.Threading.CancellationToken)"/> es opaca — solo sirve para
+            pasarla de vuelta a <see cref="M:ERP.Application.Common.Interfaces.IFileStorage.GetAsync(System.String,System.Threading.CancellationToken)"/> y <see cref="M:ERP.Application.Common.Interfaces.IFileStorage.DeleteAsync(System.String,System.Threading.CancellationToken)"/>.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IFileStorage.SaveAsync(System.String,System.IO.Stream,System.Threading.CancellationToken)">
+            <summary>
+            Persiste el contenido y retorna la ruta relativa del archivo guardado.
+            </summary>
+            <param name="relativePath">Ruta relativa sugerida (p.ej. "compras/xml/2024/factura.xml").</param>
+            <param name="content">Stream con el contenido a guardar.</param>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IFileStorage.GetAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Abre el archivo almacenado. Retorna null si no existe.</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IFileStorage.DeleteAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Elimina el archivo. No lanza error si no existe.</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IFirstRunSetupService.MarkFirstRunCompletedAsync(System.Threading.CancellationToken)">
+            <summary>
+            Marca first-run como completado: <c>is_first_run = false</c>, <c>completed_at = UtcNow</c>,
+            y limpia <c>setup_token_hash</c> / <c>setup_token_expiry_utc</c>. Llamar tras persistir el SuperAdmin.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.IKardexDatabaseMaintenance">
+            <summary>
+            Mantenimiento de objetos de base de datos relacionados con kardex (p. ej. vista materializada de saldos diarios).
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IKardexDatabaseMaintenance.RefreshDailyBalancesMaterializedViewAsync(System.Threading.CancellationToken)">
+            <summary>
+            Refresca <c>mv_saldos_diarios</c> si existe. Pensado para job recurrente (Hangfire) fuera de horario pico.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.KardexMvDayAggregate">
+            <summary>
+            Filas agregadas por día desde <c>mv_saldos_diarios</c> (PostgreSQL).
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.KardexMvDayAggregate.#ctor(System.DateOnly,System.Decimal,System.Decimal,System.Decimal,System.Decimal)">
+            <summary>
+            Filas agregadas por día desde <c>mv_saldos_diarios</c> (PostgreSQL).
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.IKardexMaterializedDailySummariesReader">
+            <summary>
+            Lectura opcional de la vista materializada de saldos diarios.
+            Si la vista no existe o el motor no es compatible, los métodos devuelven <c>null</c>
+            y el kardex debe calcularse solo con <c>inventario_movimientos</c>.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IKardexMaterializedDailySummariesReader.TryGetDailyAggregatesAsync(System.Guid,System.Guid,System.Guid,System.DateOnly,System.DateOnly,System.Threading.CancellationToken)">
+            <summary>
+            Agregados por día en el rango inclusive. <c>null</c> = no usar MV (fallback a movimientos).
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.IKardexService">
+            <summary>
+            Generación del kardex valorizado (promedio ponderado móvil), incluyendo el modo escalable
+            (snapshots, rangos largos, opcionalmente agregados diarios desde <c>mv_saldos_diarios</c>).
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IKardexService.GenerarKardexEscalableAsync(ERP.Application.Inventario.UseCases.GetKardex.GetKardexQuery,System.Threading.CancellationToken)">
+            <summary>
+            Usa el <see cref="T:ERP.Application.Common.ICurrentTenant"/> del scope HTTP (o el registrado en DI).
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IKardexService.GenerarKardexEscalableAsync(System.Guid,ERP.Application.Inventario.UseCases.GetKardex.GetKardexQuery,System.Threading.CancellationToken)">
+            <summary>
+            Fija el tenant explícitamente (workers en segundo plano sin <c>HttpContext</c>).
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.IKardexSnapshotCalculator">
+            <summary>
+            Contrato para el recálculo de snapshots del kardex.
+            Implementado en Infrastructure por <c>KardexSnapshotService</c>.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IKardexSnapshotCalculator.RecalcularTenantAsync(System.Guid,System.Nullable{System.Guid},System.Nullable{System.Guid},System.DateTime,System.Threading.CancellationToken)">
+            <summary>Recalcula snapshots para un tenant, con filtros opcionales.</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IKardexSnapshotCalculator.RecalcularTodosAsync(System.DateTime,System.Threading.CancellationToken)">
+            <summary>Recalcula snapshots para todos los tenants hasta la fecha indicada.</summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.IPasswordHasher">
+            <summary>
+            Puerto de abstracción para hashing de contraseñas.
+            Implementación: Infrastructure.Security.BCryptPasswordHasher
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IPasswordHasher.HashPassword(System.String)">
+            <summary>
+            Hashea una contraseña en texto plano.
+            </summary>
+            <param name="plainPassword">Contraseña en texto plano.</param>
+            <returns>Hash de la contraseña.</returns>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IPasswordHasher.VerifyPassword(System.String,System.String)">
+            <summary>
+            Verifica si una contraseña coincide con su hash.
+            </summary>
+            <param name="plainPassword">Contraseña en texto plano.</param>
+            <param name="hash">Hash almacenado.</param>
+            <returns>true si la contraseña es válida; false en caso contrario.</returns>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.IPasswordResetLinkSender">
+            <summary>Envío del enlace de recuperación (implementación real = SMTP; desarrollo = log).</summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.RefreshUserType">
+            <summary>Constantes de tipo de usuario para refresh tokens. Evita dependencia circular con el namespace de handlers.</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IRefreshTokenService.CreateAsync(System.Guid,System.Guid,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Genera un token aleatorio (64 bytes, base64), lo hashea con SHA-256 y lo persiste en BD.
+            Devuelve el token en texto plano (para enviar al cliente) y su fecha de expiración.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IRefreshTokenService.ValidateAndRotateAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Valida el token recibido del cliente, lo rota (revoca el actual, emite uno nuevo)
+            y devuelve los datos del usuario para regenerar el access token.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IRefreshTokenService.RevokeAllForUserAsync(System.Guid,System.Guid,System.String,System.Threading.CancellationToken)">
+            <summary>Revoca todos los refresh tokens activos del usuario (logout).</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IRefreshTokenService.RevokeAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Revoca un token específico por su valor en texto plano (logout de dispositivo).</summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.IXmlFacturaParser">
+            <summary>
+            Parsea un comprobante electrónico SRI Ecuador (XML) y extrae los datos relevantes.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IXmlFacturaParser.ParseAsync(System.IO.Stream,System.Threading.CancellationToken)">
+            <summary>
+            Lee el stream XML y retorna los datos estructurados del comprobante.
+            </summary>
+            <exception cref="!:XmlParseException">Si falta algún nodo crítico o el XML es inválido.</exception>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.IXmlFacturaParser.ParseNotaProveedorAsync(System.IO.Stream,System.Threading.CancellationToken)">
+            <summary>Parsea nota de crédito o débito recibida del proveedor (raíz notaCredito / notaDebito).</summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.FacturaParseResult">
+            <summary>
+            Datos extraídos de una factura electrónica SRI.
+            </summary>
+            <param name="ClaveAcceso">49 dígitos que identifican unívocamente el comprobante.</param>
+            <param name="NumeroFactura">Formato estab-ptoEmi-secuencial (p.ej. 001-001-000000001).</param>
+            <param name="FechaEmision">Fecha de emisión del comprobante (DD/MM/YYYY → DateTime).</param>
+            <param name="RucProveedor">RUC de 13 dígitos del emisor.</param>
+            <param name="RazonSocialProveedor">Razón social del emisor.</param>
+            <param name="Subtotal">Total sin impuestos.</param>
+            <param name="Impuesto">Suma de todos los impuestos (IVA + ICE + otros).</param>
+            <param name="Total">Importe total del comprobante.</param>
+            <param name="Items">Líneas de detalle del comprobante.</param>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.FacturaParseResult.#ctor(System.String,System.String,System.DateTime,System.String,System.String,System.Decimal,System.Decimal,System.Decimal,System.Collections.Generic.IReadOnlyList{ERP.Application.Common.Interfaces.ItemFactura})">
+            <summary>
+            Datos extraídos de una factura electrónica SRI.
+            </summary>
+            <param name="ClaveAcceso">49 dígitos que identifican unívocamente el comprobante.</param>
+            <param name="NumeroFactura">Formato estab-ptoEmi-secuencial (p.ej. 001-001-000000001).</param>
+            <param name="FechaEmision">Fecha de emisión del comprobante (DD/MM/YYYY → DateTime).</param>
+            <param name="RucProveedor">RUC de 13 dígitos del emisor.</param>
+            <param name="RazonSocialProveedor">Razón social del emisor.</param>
+            <param name="Subtotal">Total sin impuestos.</param>
+            <param name="Impuesto">Suma de todos los impuestos (IVA + ICE + otros).</param>
+            <param name="Total">Importe total del comprobante.</param>
+            <param name="Items">Líneas de detalle del comprobante.</param>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.FacturaParseResult.ClaveAcceso">
+            <summary>49 dígitos que identifican unívocamente el comprobante.</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.FacturaParseResult.NumeroFactura">
+            <summary>Formato estab-ptoEmi-secuencial (p.ej. 001-001-000000001).</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.FacturaParseResult.FechaEmision">
+            <summary>Fecha de emisión del comprobante (DD/MM/YYYY → DateTime).</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.FacturaParseResult.RucProveedor">
+            <summary>RUC de 13 dígitos del emisor.</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.FacturaParseResult.RazonSocialProveedor">
+            <summary>Razón social del emisor.</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.FacturaParseResult.Subtotal">
+            <summary>Total sin impuestos.</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.FacturaParseResult.Impuesto">
+            <summary>Suma de todos los impuestos (IVA + ICE + otros).</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.FacturaParseResult.Total">
+            <summary>Importe total del comprobante.</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.FacturaParseResult.Items">
+            <summary>Líneas de detalle del comprobante.</summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.ItemFactura">
+            <summary>Línea de detalle de la factura.</summary>
+            <param name="CodigoPrincipal">Código interno del producto/servicio del emisor.</param>
+            <param name="Descripcion">Descripción del ítem.</param>
+            <param name="Cantidad">Cantidad (puede tener decimales).</param>
+            <param name="PrecioUnitario">Precio unitario sin impuestos.</param>
+            <param name="Descuento">Descuento en valor monetario.</param>
+            <param name="Subtotal">precioTotalSinImpuesto (cantidad × precio − descuento).</param>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.ItemFactura.#ctor(System.String,System.String,System.Decimal,System.Decimal,System.Decimal,System.Decimal)">
+            <summary>Línea de detalle de la factura.</summary>
+            <param name="CodigoPrincipal">Código interno del producto/servicio del emisor.</param>
+            <param name="Descripcion">Descripción del ítem.</param>
+            <param name="Cantidad">Cantidad (puede tener decimales).</param>
+            <param name="PrecioUnitario">Precio unitario sin impuestos.</param>
+            <param name="Descuento">Descuento en valor monetario.</param>
+            <param name="Subtotal">precioTotalSinImpuesto (cantidad × precio − descuento).</param>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.ItemFactura.CodigoPrincipal">
+            <summary>Código interno del producto/servicio del emisor.</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.ItemFactura.Descripcion">
+            <summary>Descripción del ítem.</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.ItemFactura.Cantidad">
+            <summary>Cantidad (puede tener decimales).</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.ItemFactura.PrecioUnitario">
+            <summary>Precio unitario sin impuestos.</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.ItemFactura.Descuento">
+            <summary>Descuento en valor monetario.</summary>
+        </member>
+        <member name="P:ERP.Application.Common.Interfaces.ItemFactura.Subtotal">
+            <summary>precioTotalSinImpuesto (cantidad × precio − descuento).</summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.NotaProveedorParseResult">
+            <summary>Resultado del parseo de nota de crédito/débito del SRI (proveedor emisor).</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.NotaProveedorParseResult.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.DateTime,System.String,System.String,System.Decimal,System.Decimal,System.Decimal,System.Collections.Generic.IReadOnlyList{ERP.Application.Common.Interfaces.ItemNotaProveedor})">
+            <summary>Resultado del parseo de nota de crédito/débito del SRI (proveedor emisor).</summary>
+        </member>
+        <member name="T:ERP.Application.Common.Interfaces.ItemNotaProveedor">
+            <summary>Detalle de nota con importes de impuesto por línea (SRI).</summary>
+        </member>
+        <member name="M:ERP.Application.Common.Interfaces.ItemNotaProveedor.#ctor(System.String,System.String,System.Decimal,System.Decimal,System.Decimal,System.Decimal,System.Decimal,System.Decimal)">
+            <summary>Detalle de nota con importes de impuesto por línea (SRI).</summary>
+        </member>
+        <member name="T:ERP.Application.Common.RequireFeatureAttribute">
+            <summary>Exige que el tenant tenga la feature comercial habilitada en su suscripción (MediatR pipeline).</summary>
+        </member>
+        <member name="T:ERP.Application.Common.ConsumeSubscriptionUnitsAttribute">
+            <summary>
+            Antes del handler: comprueba límite de uso para la feature medida.
+            Después del handler (si <see cref="T:ERP.Application.Common.Result`1"/> es éxito): incrementa consumo.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.SubscriptionFeatureCodes">
+            <summary>Códigos de features SaaS (catálogo). Al añadir módulos nuevos, definir aquí el código y el plan.</summary>
+        </member>
+        <member name="T:ERP.Application.Common.TenantSubscriptionCatalog">
+            <summary>
+            Claves de módulo contratables por tenant. Deben coincidir con el primer segmento de <c>permissionKey</c> (p. ej. <c>inventario.brands.view</c> → <c>inventario</c>, <c>ventas.customers.view</c> → <c>ventas</c>).
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Common.TenantSubscriptionCatalog.GetEffectiveEnabledModules(ERP.Domain.Tenants.Entities.Tenant)">
+            <summary>JSON <c>null</c> o vacío en el tenant = todos los módulos (compatibilidad).</summary>
+        </member>
+        <member name="M:ERP.Application.Common.TenantSubscriptionCatalog.TenantAllowsPermission(ERP.Domain.Tenants.Entities.Tenant,System.String)">
+            <summary>Si el permiso no pertenece a un módulo conocido, no se restringe por suscripción.</summary>
+        </member>
+        <member name="T:ERP.Application.Common.ICurrentTenant">
+             <summary>
+             Expone el contexto del tenant activo para el request en curso.
+             La implementación concreta (CurrentTenantService) resuelve el TenantId
+             desde el claim "tenant_id" del JWT en cada request.
+            
+             Se inyecta en handlers y repositorios para filtrar datos por tenant
+             sin que el caller deba pasar el TenantId explícitamente.
+             </summary>
+        </member>
+        <member name="P:ERP.Application.Common.ICurrentTenant.TenantId">
+            <summary>
+            Retorna Guid.Empty si el request no está autenticado o el claim no existe.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.ICurrentUser">
+            <summary>
+            Expone el usuario autenticado en el request en curso.
+            Retorna Guid.Empty si el request no está autenticado.
+            Se inyecta en handlers que necesitan registrar quién realizó la acción (auditoría).
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Common.Result`1">
+             <summary>
+             Encapsula el resultado de un caso de uso, discriminando entre éxito y fallo
+             sin lanzar excepciones para errores de negocio esperados.
+            
+             Uso en handlers:
+               return Result&lt;Dto&gt;.Failure("El código ya existe.");
+            
+             Uso en controllers:
+               return result.IsSuccess ? Ok(result.Value) : BadRequest(new { error = result.Error });
+             </summary>
+        </member>
+        <member name="M:ERP.Application.Common.Result`1.#ctor(System.Boolean,`0,System.String)">
+            <summary>Constructor para deserialización JSON (p. ej. caché distribuida).</summary>
+        </member>
+        <member name="M:ERP.Application.DependencyInjection.AddApplication(Microsoft.Extensions.DependencyInjection.IServiceCollection)">
+            <summary>
+            Registra MediatR, pipeline de suscripción SaaS y handlers clásicos (scan).
+            Los <see cref="T:MediatR.IRequestHandler`2"/> los registra MediatR; no duplicarlos en el scan.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Access.UseCases.SuperAdminTenants.SuperAdminCreateTenantWithAdminHandler">
+            <summary>Alta de empresa + Admin en <c>identity_users</c>/<c>memberships</c>; el Admin debe poder iniciar sesión y operar solo en ese tenant.</summary>
+        </member>
+        <member name="M:ERP.Application.Access.UseCases.SuperAdminTenants.SuperAdminCreateTenantWithAdminHandler.ValidatePlanAndModulesAsync(System.String,System.Collections.Generic.List{System.String},System.Threading.CancellationToken)">
+            <summary>Devuelve mensaje de error o null si OK. Exige al menos un plan en catálogo y un plan activo elegido.</summary>
+        </member>
+        <member name="M:ERP.Application.Access.UseCases.SuperAdminTenants.SuperAdminCreateTenantWithAdminHandler.NormalizeSubscription(System.String,System.Collections.Generic.List{System.String})">
+            <summary>Plan normalizado; módulos null si la lista viene vacía (sin restricción JSON).</summary>
+        </member>
+        <member name="T:ERP.Application.Auth.DTOs.LogoutRequest">
+            <param name="RefreshToken">Token opaco a revocar. Obligatorio.</param>
+            <param name="AllDevices">Si true, revoca todos los tokens del usuario (logout global).</param>
+        </member>
+        <member name="M:ERP.Application.Auth.DTOs.LogoutRequest.#ctor(System.String,System.Boolean)">
+            <param name="RefreshToken">Token opaco a revocar. Obligatorio.</param>
+            <param name="AllDevices">Si true, revoca todos los tokens del usuario (logout global).</param>
+        </member>
+        <member name="P:ERP.Application.Auth.DTOs.LogoutRequest.RefreshToken">
+            <summary>Token opaco a revocar. Obligatorio.</summary>
+        </member>
+        <member name="P:ERP.Application.Auth.DTOs.LogoutRequest.AllDevices">
+            <summary>Si true, revoca todos los tokens del usuario (logout global).</summary>
+        </member>
+        <member name="P:ERP.Application.Auth.DTOs.AuthResponseDto.RefreshToken">
+            <summary>Token opaco para renovar el access token sin re-autenticarse. Null para SuperAdmin.</summary>
+        </member>
+        <member name="T:ERP.Application.Auth.UseCases.ClaimInitialSuperAdmin.ClaimInitialSuperAdminCommand">
+            <summary>
+            Crea el único SuperAdmin en <c>users</c> con <c>tenant_id = Guid.Empty</c> (operador de plataforma, sin empresa previa).
+            Las empresas se crean después con el panel SuperAdmin autenticado.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Auth.UseCases.ClaimInitialSuperAdmin.ClaimInitialSuperAdminCommand.#ctor(System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Crea el único SuperAdmin en <c>users</c> con <c>tenant_id = Guid.Empty</c> (operador de plataforma, sin empresa previa).
+            Las empresas se crean después con el panel SuperAdmin autenticado.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Auth.UseCases.Logout.LogoutHandler.HandleAsync(System.String,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Revoca el refresh token proporcionado (logout del dispositivo actual).
+            Si <paramref name="allDevices"/> es true, primero valida el token para obtener el UserId
+            y luego revoca TODOS los tokens activos del usuario.
+            No requiere access token — el refresh token es la credencial de logout.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Auth.UseCases.PasswordReset.DirectPasswordResetCommand">
+            <summary>Reset inmediato (modo Direct del tenant). Mantener por compatibilidad; el flujo público usa token por email.</summary>
+        </member>
+        <member name="M:ERP.Application.Auth.UseCases.PasswordReset.DirectPasswordResetCommand.#ctor(System.Guid,System.String,System.String)">
+            <summary>Reset inmediato (modo Direct del tenant). Mantener por compatibilidad; el flujo público usa token por email.</summary>
+        </member>
+        <member name="T:ERP.Application.Auth.UseCases.RefreshToken.RefreshTokenHandler">
+            <summary>
+            Valida el refresh token, lo rota y emite un nuevo access token + refresh token.
+            No requiere access token (se puede llamar con el token expirado).
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Modules.Compras.CompraAsignacionBodegasRules">
+            <summary>Validación de distribución de cantidades de compra por bodega.</summary>
+        </member>
+        <member name="M:ERP.Application.Modules.Compras.CompraAsignacionBodegasRules.ValidateAsync(System.Collections.Generic.IReadOnlyList{ERP.Application.Modules.Compras.UseCases.CrearCompra.DetalleCompraInput},System.Collections.Generic.IReadOnlyList{ERP.Application.Modules.Compras.UseCases.CrearCompra.AsignacionBodegaRequest},System.Guid,ERP.Domain.Modules.Inventario.Interfaces.IBodegaRepository,System.Threading.CancellationToken)">
+            <returns>null si es válido; mensaje de error en caso contrario.</returns>
+        </member>
+        <member name="M:ERP.Application.Modules.Compras.CompraAsignacionBodegasRules.ValidateAgainstDetallesAsync(System.Collections.Generic.IReadOnlyList{ERP.Domain.Modules.Compras.Entities.CompraDetalle},System.Collections.Generic.IReadOnlyList{ERP.Application.Modules.Compras.UseCases.CrearCompra.AsignacionBodegaRequest},System.Guid,ERP.Domain.Modules.Inventario.Interfaces.IBodegaRepository,System.Threading.CancellationToken)">
+            <summary>Valida asignaciones contra líneas ya materializadas (mismo orden que al crear la compra).</summary>
+        </member>
+        <member name="P:ERP.Application.Modules.Compras.DTOs.OrdenCompraDto.Advertencias">
+            <summary>
+            Advertencias generadas al vincular facturas (ej. discrepancias de precio vs OC).
+            Null si no hay advertencias o la operación no genera advertencias.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Modules.Compras.Services.CompraRetencionCalculo">
+            <summary>Cálculo de valor retenido según base y porcentaje (retenciones en la fuente).</summary>
+        </member>
+        <member name="T:ERP.Application.Modules.Compras.UseCases.CrearCompra.DetalleCompraInput">
+            <summary>Datos de una línea de detalle en modo Manual.</summary>
+        </member>
+        <member name="M:ERP.Application.Modules.Compras.UseCases.CrearCompra.DetalleCompraInput.#ctor(System.String,System.String,System.Nullable{System.Guid},System.Decimal,System.Decimal,System.Decimal,System.Decimal)">
+            <summary>Datos de una línea de detalle en modo Manual.</summary>
+        </member>
+        <member name="T:ERP.Application.Modules.Compras.UseCases.CrearCompra.AsignacionBodegaRequest">
+            <summary>
+            Distribución de la cantidad de un detalle (<see cref="P:ERP.Application.Modules.Compras.UseCases.CrearCompra.AsignacionBodegaRequest.ItemIndex"/>) hacia una bodega.
+            <see cref="P:ERP.Application.Modules.Compras.UseCases.CrearCompra.AsignacionBodegaRequest.ProductoId"/> opcional: si viene, enlaza inventario aunque la línea (p. ej. XML) no tenga producto.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Modules.Compras.UseCases.CrearCompra.AsignacionBodegaRequest.#ctor(System.Int32,System.Guid,System.Decimal,System.Nullable{System.Guid})">
+            <summary>
+            Distribución de la cantidad de un detalle (<see cref="P:ERP.Application.Modules.Compras.UseCases.CrearCompra.AsignacionBodegaRequest.ItemIndex"/>) hacia una bodega.
+            <see cref="P:ERP.Application.Modules.Compras.UseCases.CrearCompra.AsignacionBodegaRequest.ProductoId"/> opcional: si viene, enlaza inventario aunque la línea (p. ej. XML) no tenga producto.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Modules.Compras.UseCases.CrearCompra.CrearCompraCommand">
+            <summary>Crea una factura de compra. <c>AsignacionesBodega</c> es opcional; si viene, la suma por ítem debe igualar la cantidad de cada detalle.</summary>
+        </member>
+        <member name="M:ERP.Application.Modules.Compras.UseCases.CrearCompra.CrearCompraCommand.#ctor(ERP.Application.Modules.Compras.UseCases.CrearCompra.ModoCreacionCompra,System.Byte[],System.String,System.Nullable{System.Guid},System.String,System.Nullable{System.DateTime},System.Nullable{System.DateTime},System.String,System.String,System.Collections.Generic.IReadOnlyList{ERP.Application.Modules.Compras.UseCases.CrearCompra.DetalleCompraInput},System.Collections.Generic.IReadOnlyList{ERP.Application.Modules.Compras.UseCases.CrearCompra.AsignacionBodegaRequest})">
+            <summary>Crea una factura de compra. <c>AsignacionesBodega</c> es opcional; si viene, la suma por ítem debe igualar la cantidad de cada detalle.</summary>
+        </member>
+        <member name="T:ERP.Application.Modules.Contabilidad.DTOs.CuentasParaAsiento">
+            <summary>Cuentas resueltas para armar un asiento (compra o venta).</summary>
+        </member>
+        <member name="M:ERP.Application.Modules.Contabilidad.DTOs.CuentasParaAsiento.#ctor(System.Guid,System.Guid,System.Nullable{System.Guid},System.Nullable{System.Guid})">
+            <summary>Cuentas resueltas para armar un asiento (compra o venta).</summary>
+        </member>
+        <member name="T:ERP.Application.Modules.Contabilidad.UseCases.CreateJournalEntry.CreateJournalEntryCommand">
+            <summary>Nuevo asiento; cuenta contra el cupo de documentos del periodo si está medido.</summary>
+        </member>
+        <member name="M:ERP.Application.Modules.Contabilidad.UseCases.CreateJournalEntry.CreateJournalEntryCommand.#ctor(System.String,System.DateTime,System.String,System.Collections.Generic.IReadOnlyList{ERP.Application.Modules.Contabilidad.UseCases.CreateJournalEntry.JournalEntryLineCommand})">
+            <summary>Nuevo asiento; cuenta contra el cupo de documentos del periodo si está medido.</summary>
+        </member>
+        <member name="T:ERP.Application.Modules.Inventario.Services.KardexService">
+            <summary>
+            Implementación del kardex valorizado; el nombre <see cref="M:ERP.Application.Modules.Inventario.Services.KardexService.GenerarKardexEscalableAsync(ERP.Application.Inventario.UseCases.GetKardex.GetKardexQuery,System.Threading.CancellationToken)"/> refleja
+            el uso de <see cref="P:ERP.Application.Common.Config.KardexOptions.UseScalableMode"/> y extensiones opcionales (MV diaria).
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Modules.Inventario.Services.KardexService.AplicarHuecoSnapshotAsync(System.Guid,System.Guid,System.Guid,System.DateTime,System.DateTime,System.Decimal,System.Decimal,System.Decimal,System.Threading.CancellationToken)">
+            <summary>
+            Aplica movimientos entre el día posterior al snapshot y el instante previo al inicio del período.
+            Con <see cref="P:ERP.Application.Common.Config.KardexOptions.UseMaterializedDailySummaries"/>, los días UTC completos intermedios
+            se resumen vía <c>mv_saldos_diarios</c> (entradas del día primero, salidas después: aproximación
+            frente al orden real intra-día).
+            </summary>
+        </member>
+        <member name="P:ERP.Application.Modules.Inventario.UseCases.ListarBodegas.GetBodegasQuery.CacheTTL">
+            <inheritdoc />
+        </member>
+        <member name="T:ERP.Application.Modules.Ventas.UseCases.CrearCliente.CreateCustomerCommand">
+            <summary>Creación de cliente (catálogo). Gobernado por suscripción SaaS vía atributos + MediatR pipeline.</summary>
+        </member>
+        <member name="M:ERP.Application.Modules.Ventas.UseCases.CrearCliente.CreateCustomerCommand.#ctor(System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>Creación de cliente (catálogo). Gobernado por suscripción SaaS vía atributos + MediatR pipeline.</summary>
+        </member>
+        <member name="T:ERP.Application.Inventario.KardexCalculator">
+            <summary>
+            Lógica de acumulación del Kardex con promedio ponderado móvil.
+            Compartido entre el query handler (respuesta HTTP) y el worker nocturno (snapshots).
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Inventario.KardexCalculator.AplicarMovimiento(ERP.Domain.Modules.Inventario.Entities.InventarioMovimiento,System.Decimal@,System.Decimal@,System.Decimal@)">
+            <summary>
+            Aplica un movimiento sobre el saldo acumulado (in-place vía ref).
+            Entradas (Cantidad &gt; 0): recalculan el costo promedio.
+            Salidas  (Cantidad &lt; 0): usan el promedio vigente; el promedio no cambia.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Inventario.UseCases.RecalcularSnapshots.RecalcularSnapshotsCommand">
+             <summary>
+             Recalcula los snapshots diarios del kardex para el tenant actual.
+             Se puede filtrar por producto y/o bodega.
+             Si no se proporciona <c>Hasta</c>, calcula hasta ayer.
+             Retorna el número de snapshots generados o actualizados.
+            
+             Nota operativa: este comando debe ejecutarse antes de activar
+             <c>UseScalableMode=true</c> en producción para preparar los saldos periódicos.
+             </summary>
+        </member>
+        <member name="M:ERP.Application.Inventario.UseCases.RecalcularSnapshots.RecalcularSnapshotsCommand.#ctor(System.Nullable{System.Guid},System.Nullable{System.Guid},System.Nullable{System.DateTime})">
+             <summary>
+             Recalcula los snapshots diarios del kardex para el tenant actual.
+             Se puede filtrar por producto y/o bodega.
+             Si no se proporciona <c>Hasta</c>, calcula hasta ayer.
+             Retorna el número de snapshots generados o actualizados.
+            
+             Nota operativa: este comando debe ejecutarse antes de activar
+             <c>UseScalableMode=true</c> en producción para preparar los saldos periódicos.
+             </summary>
+        </member>
+        <member name="T:ERP.Application.Navigation.DTOs.AdminNavigationMenuResponse">
+            <summary>Árbol de menú para edición SuperAdmin (incluye ids y jerarquía recursiva).</summary>
+        </member>
+        <member name="M:ERP.Application.Navigation.DTOs.AdminNavigationMenuResponse.#ctor(System.Collections.Generic.IReadOnlyList{ERP.Application.Navigation.DTOs.AdminNavGroupRowDto})">
+            <summary>Árbol de menú para edición SuperAdmin (incluye ids y jerarquía recursiva).</summary>
+        </member>
+        <member name="T:ERP.Application.Navigation.DTOs.NavItemSiblingOrderDto">
+            <summary>
+            Un nivel de hermanos: mismo grupo y mismo padre (null = raíz del grupo).
+            En conjunto, todos los niveles definen el árbol completo (padre + orden entre hermanos).
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Navigation.DTOs.NavItemSiblingOrderDto.#ctor(System.Guid,System.Nullable{System.Guid},System.Collections.Generic.IReadOnlyList{System.Guid})">
+            <summary>
+            Un nivel de hermanos: mismo grupo y mismo padre (null = raíz del grupo).
+            En conjunto, todos los niveles definen el árbol completo (padre + orden entre hermanos).
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Navigation.DTOs.CreateNavItemRequest">
+            <summary>Alta de ítem de menú bajo un grupo (raíz o bajo un padre del mismo grupo).</summary>
+        </member>
+        <member name="M:ERP.Application.Navigation.DTOs.CreateNavItemRequest.#ctor(System.Guid,System.Nullable{System.Guid},System.String,System.String,System.String,System.String,System.Nullable{System.Guid})">
+            <summary>Alta de ítem de menú bajo un grupo (raíz o bajo un padre del mismo grupo).</summary>
+        </member>
+        <member name="T:ERP.Application.Navigation.DTOs.UpdateNavItemRequest">
+            <summary>Actualización de un ítem existente (texto, ruta, permisos y vínculo opcional a feature SaaS).</summary>
+        </member>
+        <member name="M:ERP.Application.Navigation.DTOs.UpdateNavItemRequest.#ctor(System.String,System.String,System.String,System.String,System.String)">
+            <summary>Actualización de un ítem existente (texto, ruta, permisos y vínculo opcional a feature SaaS).</summary>
+        </member>
+        <member name="T:ERP.Application.Navigation.DTOs.SessionMenuGroupDto">
+            <param name="MenuBarLayout">Opcional: <c>horizontal</c> o <c>vertical</c> (constructor de menú por plan/empresa).</param>
+        </member>
+        <member name="M:ERP.Application.Navigation.DTOs.SessionMenuGroupDto.#ctor(System.String,System.String,System.String,System.Int32,System.String,System.Collections.Generic.IReadOnlyList{System.String},System.Boolean,System.Collections.Generic.IReadOnlyList{ERP.Application.Navigation.DTOs.SessionMenuItemDto},System.String)">
+            <param name="MenuBarLayout">Opcional: <c>horizontal</c> o <c>vertical</c> (constructor de menú por plan/empresa).</param>
+        </member>
+        <member name="P:ERP.Application.Navigation.DTOs.SessionMenuGroupDto.MenuBarLayout">
+            <summary>Opcional: <c>horizontal</c> o <c>vertical</c> (constructor de menú por plan/empresa).</summary>
+        </member>
+        <member name="T:ERP.Application.Navigation.INavigationMenuAdminService">
+            <summary>Lectura y reordenamiento del menú principal (tablas <c>ui_nav_*</c>) para SuperAdmin.</summary>
+        </member>
+        <member name="M:ERP.Application.Navigation.INavigationMenuAdminService.ReorderGroupsAsync(System.Collections.Generic.IReadOnlyList{System.Guid},System.Threading.CancellationToken)">
+            <summary>Actualiza <c>sort_order</c> de grupos activos según el orden del array (debe listar todos los grupos activos exactamente una vez).</summary>
+        </member>
+        <member name="M:ERP.Application.Navigation.INavigationMenuAdminService.ReorderItemLevelsAsync(System.Collections.Generic.IReadOnlyList{ERP.Application.Navigation.DTOs.NavItemSiblingOrderDto},System.Threading.CancellationToken)">
+            <summary>
+            Aplica la jerarquía y el orden: cada ítem activo de los grupos incluidos aparece exactamente en un nivel
+            (<c>group_id</c> + <c>parent_item_id</c>); actualiza <c>parent_item_id</c> y <c>sort_order</c>.
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Navigation.INavigationMenuAdminService.CreateNavItemAsync(ERP.Application.Navigation.DTOs.CreateNavItemRequest,System.Threading.CancellationToken)">
+            <summary>Crea un ítem activo; <c>label_key</c> interno <c>nav.custom.*</c> y texto visible en <c>display_label</c>.</summary>
+        </member>
+        <member name="M:ERP.Application.Navigation.INavigationMenuAdminService.DeleteNavItemAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Desactiva el ítem y todo su subárbol (no borra filas).</summary>
+        </member>
+        <member name="T:ERP.Application.Navigation.INavigationMenuReader">
+            <summary>Lee la definición activa del menú lateral desde almacenamiento (p. ej. tablas <c>ui_nav_*</c>).</summary>
+        </member>
+        <member name="T:ERP.Application.Navigation.ITenantMenuAdminService">
+            <summary>SuperAdmin: menú efectivo por empresa y CRUD de <c>tenant_custom_menus</c>.</summary>
+        </member>
+        <member name="T:ERP.Application.Navigation.ITenantSessionMenuResolver">
+            <summary>Resuelve el menú lateral: menú personalizado del tenant → menú del plan comercial → menú global <c>ui_nav_*</c>.</summary>
+        </member>
+        <member name="T:ERP.Application.Navigation.SessionMenuJsonParser">
+            <summary>Serializa / deserializa el menú de sesión (mismo shape que <see cref="T:ERP.Application.Navigation.DTOs.SessionMenuGroupDto"/>[]),
+            aceptando también nodos «constructor» con <c>nombre</c>, <c>icono</c>, <c>ruta</c>, <c>permiso</c>, <c>hijos</c>.</summary>
+        </member>
+        <member name="T:ERP.Application.Navigation.SessionMenuTreeValidator">
+            <summary>
+            Reglas: hoja = ruta y permiso no vacíos, sin hijos; carpeta = ambos vacíos, con al menos un hijo;
+            no se admite ruta sin permiso ni al revés.
+            </summary>
+        </member>
+        <member name="T:ERP.Application.Products.UseCases.CreateProduct.CreateProductCommand">
+            <summary>Creación de producto; requiere feature de inventario/catálogo en el plan SaaS.</summary>
+        </member>
+        <member name="M:ERP.Application.Products.UseCases.CreateProduct.CreateProductCommand.#ctor(System.String,System.String,System.String,System.Guid,System.Guid,System.Guid,System.Guid,System.Guid,System.Guid,System.Guid,System.Boolean,System.Nullable{System.Guid},System.Nullable{System.Guid},System.Boolean,System.Nullable{System.Guid},System.Nullable{System.Guid},System.Boolean,System.Nullable{System.Guid},System.Nullable{System.Guid},System.String,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Boolean,System.Nullable{System.Guid},System.Boolean,System.Boolean,System.Decimal,System.Boolean,System.Boolean,System.Boolean,System.String,System.Boolean,System.Boolean,System.Boolean,System.Collections.Generic.IReadOnlyList{ERP.Application.Products.UseCases.CreateProduct.BarcodeInput},System.Collections.Generic.IReadOnlyList{ERP.Application.Products.UseCases.CreateProduct.SupplierCodeInput},System.Collections.Generic.IReadOnlyList{ERP.Application.Products.UseCases.CreateProduct.UnitConversionInput},System.Collections.Generic.IReadOnlyList{ERP.Application.Products.UseCases.CreateProduct.ColorInput},System.Collections.Generic.IReadOnlyList{ERP.Application.Products.UseCases.CreateProduct.SizeInput},System.Collections.Generic.IReadOnlyList{ERP.Application.Products.UseCases.CreateProduct.DimensionInput},System.Collections.Generic.IReadOnlyList{ERP.Application.Products.UseCases.CreateProduct.ImageInput},System.Collections.Generic.IReadOnlyList{ERP.Application.Products.UseCases.CreateProduct.FeatureInput},System.Collections.Generic.IReadOnlyList{ERP.Application.Products.UseCases.CreateProduct.TariffDetailInput},System.Collections.Generic.IReadOnlyList{ERP.Application.Products.UseCases.CreateProduct.SubstituteInput},System.Collections.Generic.IReadOnlyList{ERP.Application.Products.UseCases.CreateProduct.CustomFieldInput},System.Boolean)">
+            <summary>Creación de producto; requiere feature de inventario/catálogo en el plan SaaS.</summary>
+        </member>
+        <member name="T:ERP.Application.Ventas.Helpers.ClaveAccesoHelper">
+            <summary>
+            Genera la clave de acceso de 49 dígitos exigida por el SRI Ecuador (XSD v1.1.0).
+            Formato: ddMMyyyy(8) + TipoDoc(2) + RUC(13) + Ambiente(1) + Estab(3) + PtoEmi(3) + Secuencial(9) + CodNum(8) + TipoEmision(1) + Verificador(1)
+            </summary>
+        </member>
+        <member name="M:ERP.Application.Ventas.Helpers.ClaveAccesoHelper.CalcularDigitoVerificador(System.String)">
+            <summary>Módulo 11 según ficha técnica SRI Ecuador.</summary>
+        </member>
+        <member name="T:ERP.Application.Ventas.UseCases.CrearVenta.CrearVentaCommand">
+            <summary>Creación de venta/factura electrónica; requiere feature de ventas en el plan SaaS.</summary>
+        </member>
+        <member name="M:ERP.Application.Ventas.UseCases.CrearVenta.CrearVentaCommand.#ctor(System.Guid,System.Guid,System.Guid,System.Collections.Generic.List{ERP.Application.Ventas.UseCases.CrearVenta.ItemVentaDto})">
+            <summary>Creación de venta/factura electrónica; requiere feature de ventas en el plan SaaS.</summary>
+        </member>
+        <member name="T:ERP.Application.Ventas.Services.RetencionRecibidaXmlParser">
+            <summary>Extracción mínima de datos desde XML de comprobante de retención (SRI / proveedor).</summary>
+        </member>
+        <member name="M:ERP.Application.Subscriptions.ISaasPlansAdminService.DeleteFeatureDefinitionAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Elimina una definición y filas dependientes (planes, overrides, uso, vínculo en menú).</summary>
+        </member>
+        <member name="T:ERP.Application.Subscriptions.SaasPlanFeatureCatalogItem">
+            <summary>Vista de solo lectura del catálogo de planes (panel SuperAdmin y consistencia interna).</summary>
+        </member>
+        <member name="M:ERP.Application.Subscriptions.SaasPlanFeatureCatalogItem.#ctor(System.String,System.String,System.String,System.Boolean,System.String,System.String,System.Boolean,System.Nullable{System.Int64})">
+            <summary>Vista de solo lectura del catálogo de planes (panel SuperAdmin y consistencia interna).</summary>
+        </member>
+        <member name="T:ERP.Application.Subscriptions.PlanMenuReadDto">
+            <summary>Lectura conjunta del menú JSON del plan y preferencia de layout.</summary>
+        </member>
+        <member name="M:ERP.Application.Subscriptions.PlanMenuReadDto.#ctor(System.String,System.String)">
+            <summary>Lectura conjunta del menú JSON del plan y preferencia de layout.</summary>
+        </member>
+        <member name="T:ERP.Application.Subscriptions.CopyPlanFromRequest">
+            <summary>Copiar configuración de un plan origen hacia otro (menú JSON y/o features).</summary>
+        </member>
+        <member name="T:ERP.Application.Subscriptions.SaasPublicPlanDto">
+            <summary>DTO público para landing / precios (solo planes visibles y activos).</summary>
+        </member>
+        <member name="M:ERP.Application.Subscriptions.SaasPublicPlanDto.#ctor(System.Guid,System.String,System.String,System.String,System.Decimal,System.String,System.String,System.Boolean,System.Int32,System.Collections.Generic.IReadOnlyList{ERP.Application.Subscriptions.SaasPublicPlanFeatureDto})">
+            <summary>DTO público para landing / precios (solo planes visibles y activos).</summary>
+        </member>
+    </members>
+</doc>

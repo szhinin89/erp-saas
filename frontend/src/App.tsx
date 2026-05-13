@@ -11,6 +11,7 @@ import {
   companiesRoutes,
   accessRoutes,
 } from './routes';
+import { superAdminShellRoutes } from './routes/superAdminShellRoutes';
 
 function AppRoutes() {
   const { superAdminPanelEnabled } = useDeployment();
@@ -21,6 +22,7 @@ function AppRoutes() {
         {publicRoutes}
 
         <Route element={<ProtectedRoute />}>
+          {superAdminPanelEnabled ? superAdminShellRoutes() : null}
           <Route element={<AppLayout />}>
             {adminRoutes(superAdminPanelEnabled)}
             {mainRoutes}

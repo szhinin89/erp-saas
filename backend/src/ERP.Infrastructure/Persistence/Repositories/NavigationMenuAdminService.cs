@@ -241,6 +241,112 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
         return (true, id, null);
     }
 
+    public async Task<(bool Ok, string? Error)> UpdateNavItemAsync(
+        Guid itemId,
+        UpdateNavItemRequest request,
+        CancellationToken ct = default)
+    {
+        var row = await _db.UiNavItems.AsNoTracking()
+            .Where(i => i.Id == itemId && i.IsActive)
+            .Select(i => new { i.GroupId })
+            .FirstOrDefaultAsync(ct);
+        if (row is null)
+            return (false, "Ítem no encontrado.");
+
+        var displayLabel = (request.DisplayLabel ?? string.Empty).Trim();
+        if (displayLabel.Length == 0 || displayLabel.Length > 200)
+            return (false, "El texto a mostrar es obligatorio (máx. 200 caracteres).");
+
+        var route = (request.RoutePath ?? string.Empty).Trim();
+        if (route.Length == 0 || !route.StartsWith('/'))
+            return (false, "La ruta debe empezar por /.");
+
+        var routeTaken = await _db.UiNavItems.AsNoTracking()
+            .AnyAsync(i => i.GroupId == row.GroupId && i.RoutePath == route && i.IsActive && i.Id != itemId, ct);
+        if (routeTaken)
+            return (false, "Ya existe un ítem activo con esa ruta en el grupo.");
+
+        var moduleKey = string.IsNullOrWhiteSpace(request.ModuleKey) ? null : request.ModuleKey.Trim().ToLowerInvariant();
+        var permissionKey = string.IsNullOrWhiteSpace(request.PermissionKey) ? null : request.PermissionKey.Trim();
+
+        Guid? sfid = null;
+        var rawSf = (request.SaasFeatureDefinitionId ?? string.Empty).Trim();
+        if (rawSf.Length > 0)
+        {
+            if (!Guid.TryParse(rawSf, out var parsed))
+                return (false, "saasFeatureDefinitionId no es un GUID válido.");
+
+            sfid = parsed;
+            var featOk = await _db.SaasFeatureDefinitions.AsNoTracking().AnyAsync(f => f.Id == sfid.Value, ct);
+            if (!featOk)
+                return (false, "Definición SaaS no encontrada.");
+        }
+
+        await _db.UiNavItems.Where(i => i.Id == itemId)
+            .ExecuteUpdateAsync(
+                s => s
+                    .SetProperty(x => x.DisplayLabel, displayLabel)
+                    .SetProperty(x => x.RoutePath, route)
+                    .SetProperty(x => x.ModuleKey, moduleKey)
+                    .SetProperty(x => x.PermissionKey, permissionKey)
+                    .SetProperty(x => x.SaasFeatureDefinitionId, sfid),
+                ct);
+
+        return (true, null);
+    }
+
+    public async Task<(bool Ok, string? Error)> DeleteNavItemAsync(Guid itemId, CancellationToken ct = default)
+    {
+        var row = await _db.UiNavItems.AsNoTracking()
+            .Where(i => i.Id == itemId && i.IsActive)
+            .Select(i => new { i.GroupId })
+            .FirstOrDefaultAsync(ct);
+        if (row is null)
+            return (false, "Ítem no encontrado o ya estaba inactivo.");
+
+        var all = await _db.UiNavItems.AsNoTracking()
+            .Where(i => i.GroupId == row.GroupId && i.IsActive)
+            .Select(i => new { i.Id, i.ParentItemId })
+            .ToListAsync(ct);
+
+        var childrenByParent = new Dictionary<Guid, List<Guid>>();
+        foreach (var x in all)
+        {
+            if (!x.ParentItemId.HasValue)
+                continue;
+            var pid = x.ParentItemId.Value;
+            if (!childrenByParent.TryGetValue(pid, out var list))
+            {
+                list = [];
+                childrenByParent[pid] = list;
+            }
+
+            list.Add(x.Id);
+        }
+
+        var toDeactivate = new List<Guid>();
+        var stack = new Stack<Guid>();
+        stack.Push(itemId);
+        while (stack.Count > 0)
+        {
+            var cur = stack.Pop();
+            toDeactivate.Add(cur);
+            if (childrenByParent.TryGetValue(cur, out var kids))
+            {
+                foreach (var k in kids)
+                    stack.Push(k);
+            }
+        }
+
+        foreach (var id in toDeactivate)
+        {
+            await _db.UiNavItems.Where(x => x.Id == id && x.IsActive)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.IsActive, false), ct);
+        }
+
+        return (true, null);
+    }
+
     private static IReadOnlyList<AdminNavItemRowDto> BuildAdminItemTree(
         IReadOnlyList<UiNavItem> groupItems,
         Guid? parentItemId)

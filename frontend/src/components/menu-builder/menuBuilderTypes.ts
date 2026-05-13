@@ -42,6 +42,18 @@ export function createFolderEditorItem(nombre = 'Nueva carpeta'): EditorMenuItem
   };
 }
 
+/** Hoja nueva (formulario) en el árbol; permiso y ruta editables. */
+export function createFormEditorItem(nombre = 'Nuevo formulario'): EditorMenuItem {
+  return {
+    uid: crypto.randomUUID(),
+    nombre,
+    icono: 'fa-file',
+    ruta: '/',
+    permiso: 'app.placeholder',
+    children: [],
+  };
+}
+
 export function funcionalidadToEditorItem(f: FuncionalidadArbolDto): EditorMenuItem {
   const ruta = (f.ruta ?? '').trim() || '/dashboard';
   const permiso = (f.permiso ?? '').trim();

@@ -330,6 +330,36 @@ public class SuperAdminController : ControllerBase
         return this.ApiOk(new { id = newId }, "Creado");
     }
 
+    /// <summary>Actualiza un ítem de menú (etiqueta visible, ruta, permisos, vínculo a feature SaaS).</summary>
+    [HttpPut("navigation-menu/items/{itemId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> UpdateNavigationMenuItem(Guid itemId, [FromBody] UpdateNavItemRequest body, CancellationToken ct)
+    {
+        var (ok, err) = await _navigationMenuAdmin.UpdateNavItemAsync(itemId, body, ct);
+        if (!ok)
+            return this.ApiBadRequest(err ?? "Error");
+
+        return this.ApiOk(new { }, "Guardado");
+    }
+
+    /// <summary>Desactiva un ítem y todos sus descendientes (el menú deja de mostrarlos).</summary>
+    [HttpDelete("navigation-menu/items/{itemId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> DeleteNavigationMenuItem(Guid itemId, CancellationToken ct)
+    {
+        var (ok, err) = await _navigationMenuAdmin.DeleteNavItemAsync(itemId, ct);
+        if (!ok)
+            return this.ApiBadRequest(err ?? "Error");
+
+        return this.ApiOk(new { }, "Eliminado");
+    }
+
     // ── Gestión de sesiones (refresh tokens) ─────────────────────────────
 
     /// <summary>

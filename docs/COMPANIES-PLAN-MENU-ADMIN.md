@@ -1,10 +1,14 @@
-# Empresas: Plan ↔ menú (SuperAdmin)
+# Empresas: plan comercial y menú (SuperAdmin)
 
-Este documento describe la configuración de **planes comerciales** usando el **árbol real del menú** y su relación con el catálogo SaaS.
+Este documento describe el flujo vigente de configuración mínima: **plan comercial + menú**, sin edición granular de features desde UI/API SuperAdmin.
 
 ## Objetivo
 
-Permitir que un SuperAdmin **arme qué módulos/submódulos (ítems del menú)** pertenecen a un **plan comercial** y pueda **incluir/quitar** esas definiciones del plan.
+Permitir que un SuperAdmin:
+
+- asigne el **plan comercial** de una empresa,
+- configure menú de plan/tenant con el árbol real de navegación,
+- mantenga el flujo operativo sin gestión manual de features por plan.
 
 ## Pantallas (frontend)
 
@@ -13,26 +17,22 @@ Permitir que un SuperAdmin **arme qué módulos/submódulos (ítems del menú)**
 - UI: `frontend/src/components/saas/CompaniesPlanMenuAssignment.tsx`
 - Carga:
   - `GET /api/superadmin/navigation-menu` (árbol de menú)
-  - `GET /api/superadmin/saas-plans` (planes + features)
-  - `GET /api/superadmin/saas-features` (definiciones SaaS)
+  - `GET /api/superadmin/saas-plans` (planes)
 - **Editor de menú** (mismo componente que `/superadmin/navigation-menu`): `NavigationBarMenuEditor` + estilos `SuperAdminNavMenuPage.css`; reordenar grupos/ítems, sangría, añadir ítem, expandir/contraer.
   - **Guardar estructura del menú** → `PUT /api/superadmin/navigation-menu/groups/reorder` + `PUT .../items/reorder-levels`; crear ítem → `POST .../navigation-menu/items`.
-- **Plan comercial** (columna a la derecha de cada fila del árbol vía `renderItemTrailing` en `NavigationMenuTree.tsx`):
-  - **Incluir en plan** / **Quitar del plan** (borrador)
-  - **Guardar plan** → `PUT /api/superadmin/saas-plans/{planId}/features`
-- Sección “**Definiciones sin enlace al menú**”: features sin match en el árbol.
+- El árbol se usa para **estructura de navegación**, no para activar/desactivar features de plan.
 
 ### `GET /companies` → pestaña **Plan y módulos** → sección “Catálogo módulos y formularios (SaaS)”
 
 - UI: `frontend/src/components/saas/TenantSubscriptionMenuCatalog.tsx`
-- Usa el **mismo árbol** del menú para visualizar ítems y permitir incluir/quitar features del plan seleccionado.
+- Usa el **mismo árbol** del menú para visualización de catálogo y consistencia de navegación.
 - Nota: además muestra badge verde “Empresa” cuando el `moduleKey` del ítem pertenece a los módulos efectivos del tenant (solo lectura).
 
-## Emparejamiento ítem de menú ↔ feature SaaS
+## Estado actual de emparejamiento menú ↔ feature
 
 Archivo: `frontend/src/modules/saas/navItemToFeatureIds.ts`
 
-Una `SaasFeatureDefinition` se enlaza a un `UiNavItem` cuando coincide alguno de estos criterios:
+El proyecto conserva lógica de emparejamiento `UiNavItem` ↔ `SaasFeatureDefinition` para compatibilidad de dominio y lectura, pero **ya no forma parte del flujo editable principal** de SuperAdmin.
 
 - **`resourceRef` exacto** con:
   - `permissionKey` del ítem, o
@@ -43,9 +43,9 @@ Una `SaasFeatureDefinition` se enlaza a un `UiNavItem` cuando coincide alguno de
   - se transforma `CODE_WITH_UNDERSCORES` → `code.with.underscores` y se trata como prefijo de permiso;
   - se intenta además matchear con el último segmento de la ruta.
 
-**SuperAdmin y permisos:** un SuperAdmin **puede abrir** cualquier pantalla del producto sin depender del plan; eso es **autorización**. La columna «Incluir en plan» / «Quitar del plan» es **comercialización**: solo aparece si hay al menos una fila en **`saas_feature_definitions`** que encaje con el ítem (por `resourceRef`, permiso o reglas de código arriba). Si no hay match, verá el texto *Sin feature enlazada…* — no es un fallo de permisos, falta **definición + enlace** al menú.
+**SuperAdmin y permisos:** un SuperAdmin **puede abrir** pantallas globales por rol. El control comercial operativo se concentra en `planCode` del tenant y configuración de menú.
 
-Para que el árbol muestre acciones en “Inventario / Productos / Marcas / …” deben existir definiciones SaaS como `PRODUCTS`, `BRANDS`, etc. con `resourceRef` alineado (p. ej. `inventario.products`, `inventario.brands`, …) o con `code` que permita el match (p. ej. `INVENTARIO_TARIFFS` → prefijo `inventario.tariffs` para `inventario.tariffs.view`). Para rutas sin `permissionKey` (p. ej. `/profiles`), use `resourceRef` igual a la ruta (`/profiles`). Migración de referencia: **`SeedSaasFeaturesPlanMenuLinking`** (aranceles, categorización, perfiles).
+La migración histórica `SeedSaasFeaturesPlanMenuLinking` se mantiene como referencia técnica; no es requisito para operar el flujo mínimo actual.
 
 ## Endpoints (backend) y Swagger
 
@@ -67,17 +67,8 @@ Controlador: `backend/src/ERP.API/Controllers/SuperAdminController.cs`
 - `DELETE /api/superadmin/saas-plans/{planId}`
 - `PUT /api/superadmin/saas-plans/reorder`
 - `PUT /api/superadmin/saas-plans/{planId}/recommended`
-- `PUT /api/superadmin/saas-plans/{planId}/features`
 
 Controlador: `backend/src/ERP.API/Controllers/SaasPlansAdminController.cs`
-
-### Definiciones SaaS (SuperAdmin)
-
-- `GET /api/superadmin/saas-features`
-- `POST /api/superadmin/saas-features`
-- `PUT /api/superadmin/saas-features/{featureId}`
-
-Controlador: `backend/src/ERP.API/Controllers/SaasFeaturesAdminController.cs`
 
 ### Empresas (lista + suscripción del tenant)
 
@@ -94,9 +85,9 @@ Controladores: `AccessController.cs` (prefijo `api/access`), `TenantsController.
 ## Verificación rápida en Swagger
 
 1. Levantar backend y abrir Swagger UI (ver `docs/DESARROLLO.md`).
-2. Buscar tags/rutas `superadmin/navigation-menu`, `superadmin/saas-plans`, `superadmin/saas-features`, `access` (`superadmin/tenants`), `tenants`.
+2. Buscar tags/rutas `superadmin/navigation-menu`, `superadmin/saas-plans`, `access` (`superadmin/tenants`), `tenants`.
 3. Verificar:
-   - Requests esperados (`ReplaceFeaturesBody` con `features[]`: `featureId`, `isIncluded`, `limitPerPeriod`)
+   - Requests esperados de planes, menú y suscripción de tenant
    - Respuestas `200` / `400` y, donde aplica, `401` / `403`
    - Seguridad (JWT + rol `SuperAdmin` en endpoints de planes/menú; `PATCH .../subscription` también `SuperAdmin`)
 

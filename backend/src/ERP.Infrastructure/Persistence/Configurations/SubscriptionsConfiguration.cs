@@ -40,6 +40,11 @@ public sealed class SaasPlanConfiguration : IEntityTypeConfiguration<SaasPlan>
         builder.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
         builder.Property(x => x.ExternalBillingRef).HasColumnName("external_billing_ref").HasMaxLength(SaasPlan.ExternalBillingRefMaxLen);
         builder.Property(x => x.MenuConfigJson).HasColumnName("menu_config").HasColumnType("jsonb");
+        builder.Property(x => x.MenuSidebarLayout)
+            .HasColumnName("menu_sidebar_layout")
+            .HasMaxLength(SaasPlan.MenuSidebarLayoutMaxLen)
+            .IsRequired()
+            .HasDefaultValue(SaasPlan.MenuSidebarLayoutHorizontal);
         builder.HasIndex(x => x.Code).IsUnique().HasDatabaseName("ux_saas_plans_code");
     }
 }

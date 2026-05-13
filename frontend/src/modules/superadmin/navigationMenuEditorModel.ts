@@ -1,4 +1,4 @@
-import type { AdminNavigationMenu, AdminNavItemRow } from '../../services/superAdminService';
+import type { AdminNavigationMenu, AdminNavGroupRow, AdminNavItemRow } from '../../services/superAdminService';
 import type { NavItemSiblingOrderLevel } from '../../services/superAdminService';
 
 export function cloneMenu(m: AdminNavigationMenu): AdminNavigationMenu {
@@ -69,4 +69,31 @@ export function findAncestorPathIncludingSelf(
     if (hit) return hit;
   }
   return null;
+}
+
+export function findNavItemInMenu(
+  menu: AdminNavigationMenu,
+  groupId: string,
+  itemId: string,
+): { group: AdminNavGroupRow; item: AdminNavItemRow } | null {
+  const group = menu.groups.find((g) => g.id === groupId);
+  if (!group) return null;
+  const walk = (items: AdminNavItemRow[]): AdminNavItemRow | null => {
+    for (const it of items) {
+      if (it.id === itemId) return it;
+      const ch = it.children ?? [];
+      const hit = walk(ch);
+      if (hit) return hit;
+    }
+    return null;
+  };
+  const item = walk(group.rootItems);
+  if (!item) return null;
+  return { group, item };
+}
+
+export function countNavSubtreeNodes(item: AdminNavItemRow): number {
+  let n = 1;
+  for (const c of item.children ?? []) n += countNavSubtreeNodes(c);
+  return n;
 }

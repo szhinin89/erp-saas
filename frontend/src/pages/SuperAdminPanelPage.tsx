@@ -16,7 +16,6 @@ import { ZHBtn, ZHField } from '../components/zh/ZHForm';
 import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../components/zh/ZHLayout';
 import { ZHDashboardScaffold, ZHKpiPanel } from '../components/zh/ZHDashboard';
 import { SuperAdminGrowthSection } from '../components/superadmin/SuperAdminGrowthSection';
-import { SuperAdminFeaturesSection } from '../components/superadmin/SuperAdminFeaturesSection';
 import { SuperAdminPlansSection } from '../components/superadmin/SuperAdminPlansSection';
 import { SuperAdminMenuBuilderSection } from '../components/superadmin/SuperAdminMenuBuilderSection';
 import { formatApiRequestError } from '../modules/lib/apiError';
@@ -25,7 +24,13 @@ import type { SessionResponse } from '../types/access';
 import '../components/zh/ZHFormTabs.css';
 import './SuperAdminPanelPage.css';
 
-type SuperAdminHomeTab = 'overview' | 'companies' | 'features' | 'plans' | 'menus';
+type SuperAdminHomeTab = 'overview' | 'companies' | 'plans' | 'menus';
+
+export type SuperAdminPanelPageProps = {
+  /** Cuando se usa dentro de <SuperAdminLayout>: oculta pestañas y fija la sección. */
+  embeddedTab?: SuperAdminHomeTab;
+  shellLayout?: boolean;
+};
 
 function defaultModuleChecksAllOn(): Record<string, boolean> {
   const o: Record<string, boolean> = {};
@@ -49,7 +54,7 @@ function storeImpersonationTenantName(name: string) {
   localStorage.setItem('superadmin-impersonation-tenant-name', name);
 }
 
-export function SuperAdminPanelPage() {
+export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPanelPageProps = {}) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { login } = useAuthStore();
@@ -58,12 +63,20 @@ export function SuperAdminPanelPage() {
   const { t } = useI18n();
 
   const tabParam = searchParams.get('tab');
-  const homeTab: SuperAdminHomeTab =
-    tabParam === 'companies' || tabParam === 'features' || tabParam === 'plans' || tabParam === 'menus'
+  const homeTab: SuperAdminHomeTab = embeddedTab
+    ? embeddedTab
+    : tabParam === 'companies' || tabParam === 'plans' || tabParam === 'menus'
       ? tabParam
       : 'overview';
 
   const selectHomeTab = (tab: SuperAdminHomeTab) => {
+    if (shellLayout) {
+      if (tab === 'overview') void navigate('/superadmin/overview');
+      else if (tab === 'companies') void navigate('/superadmin/companies');
+      else if (tab === 'plans') void navigate('/superadmin/menu-plans?tab=plans');
+      else if (tab === 'menus') void navigate('/superadmin/menu-plans?tab=menu');
+      return;
+    }
     if (tab === 'overview') setSearchParams({}, { replace: true });
     else setSearchParams({ tab }, { replace: true });
   };
@@ -325,55 +338,48 @@ export function SuperAdminPanelPage() {
       {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
       <ZHDashboardScaffold>
-        <div className="sa-panelTabsWrap">
-          <div className="zh-form-tabs sa-panelTabs" role="tablist" aria-label={t('superadmin.title')}>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={homeTab === 'overview'}
-              className={homeTab === 'overview' ? 'is-active' : ''}
-              onClick={() => selectHomeTab('overview')}
-            >
-              {t('superadmin.tabOverview')}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={homeTab === 'companies'}
-              className={homeTab === 'companies' ? 'is-active' : ''}
-              onClick={() => selectHomeTab('companies')}
-            >
-              {t('superadmin.tabCompanies')}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={homeTab === 'features'}
-              className={homeTab === 'features' ? 'is-active' : ''}
-              onClick={() => selectHomeTab('features')}
-            >
-              {t('superadmin.tabFeatures')}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={homeTab === 'plans'}
-              className={homeTab === 'plans' ? 'is-active' : ''}
-              onClick={() => selectHomeTab('plans')}
-            >
-              {t('superadmin.tabPlans')}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={homeTab === 'menus'}
-              className={homeTab === 'menus' ? 'is-active' : ''}
-              onClick={() => selectHomeTab('menus')}
-            >
-              {t('superadmin.tabMenus')}
-            </button>
+        {!shellLayout ? (
+          <div className="sa-panelTabsWrap">
+            <div className="zh-form-tabs sa-panelTabs" role="tablist" aria-label={t('superadmin.title')}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={homeTab === 'overview'}
+                className={homeTab === 'overview' ? 'is-active' : ''}
+                onClick={() => selectHomeTab('overview')}
+              >
+                {t('superadmin.tabOverview')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={homeTab === 'companies'}
+                className={homeTab === 'companies' ? 'is-active' : ''}
+                onClick={() => selectHomeTab('companies')}
+              >
+                {t('superadmin.tabCompanies')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={homeTab === 'plans'}
+                className={homeTab === 'plans' ? 'is-active' : ''}
+                onClick={() => selectHomeTab('plans')}
+              >
+                {t('superadmin.tabPlans')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={homeTab === 'menus'}
+                className={homeTab === 'menus' ? 'is-active' : ''}
+                onClick={() => selectHomeTab('menus')}
+              >
+                {t('superadmin.tabMenus')}
+              </button>
+            </div>
           </div>
-        </div>
+        ) : null}
 
         {homeTab === 'overview' ? (
           <div className="sa-overviewKpi">
@@ -425,6 +431,55 @@ export function SuperAdminPanelPage() {
               />
             ) : null}
             {isSuperAdmin ? <SuperAdminGrowthSection /> : null}
+            <TableCard>
+              <ZHCardSection title="Dashboard SuperAdmin">
+                <p className="subtle sa-overviewHubIntro">
+                  Acceso rápido a todos los módulos de administración global.
+                </p>
+                <div className="sa-overviewHubGrid" role="list" aria-label="Módulos de SuperAdmin">
+                  <article className="sa-overviewHubCard" role="listitem">
+                    <div className="sa-overviewHubCardTop">
+                      <div className="sa-overviewHubCardTitle">🏢 {t('superadmin.tabCompanies')}</div>
+                      {metrics ? <span className="sa-overviewHubBadge">{metrics.totals.totalTenants} tenants</span> : null}
+                    </div>
+                    <p className="subtle sa-overviewHubCardBody">Gestiona empresas, suscripciones y acceso a tenant.</p>
+                    <ZHBtn className="sa-overviewHubCardAction" variant="ghost" size="md" type="button" onClick={() => selectHomeTab('companies')}>
+                      Ir a empresas
+                    </ZHBtn>
+                  </article>
+                  <article className="sa-overviewHubCard" role="listitem">
+                    <div className="sa-overviewHubCardTop">
+                      <div className="sa-overviewHubCardTitle">💳 {t('superadmin.tabPlans')}</div>
+                      {activePlans.length > 0 ? <span className="sa-overviewHubBadge">{activePlans.length} activos</span> : null}
+                    </div>
+                    <p className="subtle sa-overviewHubCardBody">Configura planes, precios y asignaciones comerciales.</p>
+                    <ZHBtn className="sa-overviewHubCardAction" variant="ghost" size="md" type="button" onClick={() => selectHomeTab('plans')}>
+                      Ir a planes
+                    </ZHBtn>
+                  </article>
+                  <article className="sa-overviewHubCard" role="listitem">
+                    <div className="sa-overviewHubCardTop">
+                      <div className="sa-overviewHubCardTitle">🧰 Configuración mínima</div>
+                      <span className="sa-overviewHubBadge">Simplificado</span>
+                    </div>
+                    <p className="subtle sa-overviewHubCardBody">El sistema usa plan comercial sin configuración granular de features.</p>
+                    <ZHBtn className="sa-overviewHubCardAction" variant="ghost" size="md" type="button" onClick={() => selectHomeTab('menus')}>
+                      Ir a configuración
+                    </ZHBtn>
+                  </article>
+                  <article className="sa-overviewHubCard" role="listitem">
+                    <div className="sa-overviewHubCardTop">
+                      <div className="sa-overviewHubCardTitle">🧭 {t('superadmin.shell.menuAndPlans')}</div>
+                      {metrics ? <span className="sa-overviewHubBadge">{metrics.totals.activeUsers} usuarios activos</span> : null}
+                    </div>
+                    <p className="subtle sa-overviewHubCardBody">Define menú maestro, activaciones por plan y vista previa.</p>
+                    <ZHBtn className="sa-overviewHubCardAction" variant="primary" size="md" type="button" onClick={() => selectHomeTab('menus')}>
+                      Ir a menú y planes
+                    </ZHBtn>
+                  </article>
+                </div>
+              </ZHCardSection>
+            </TableCard>
           </div>
         ) : homeTab === 'companies' ? (
           <TableCard>
@@ -526,8 +581,6 @@ export function SuperAdminPanelPage() {
               )}
             </ZHCardSection>
           </TableCard>
-        ) : homeTab === 'features' ? (
-          <>{isSuperAdmin ? <SuperAdminFeaturesSection /> : null}</>
         ) : homeTab === 'plans' ? (
           <>{isSuperAdmin ? <SuperAdminPlansSection /> : null}</>
         ) : (

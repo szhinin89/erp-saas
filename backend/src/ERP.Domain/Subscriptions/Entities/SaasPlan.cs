@@ -11,6 +11,10 @@ public sealed class SaasPlan
     public const int CurrencyMaxLen = 8;
     public const int BillingCycleMaxLen = 32;
     public const int ExternalBillingRefMaxLen = 128;
+    public const int MenuSidebarLayoutMaxLen = 32;
+
+    public const string MenuSidebarLayoutHorizontal = "horizontal";
+    public const string MenuSidebarLayoutVertical = "vertical";
 
     public Guid Id { get; private set; }
     public string Code { get; private set; } = null!;
@@ -29,6 +33,9 @@ public sealed class SaasPlan
 
     /// <summary>JSON del menú lateral (mismo shape que <c>SessionMenuGroupDto[]</c>). Null/vacío = usar menú global <c>ui_nav_*</c>.</summary>
     public string? MenuConfigJson { get; private set; }
+
+    /// <summary>Preferencia de barra lateral para previsualización y SPA (<c>horizontal</c> | <c>vertical</c>).</summary>
+    public string MenuSidebarLayout { get; private set; } = MenuSidebarLayoutHorizontal;
 
     private SaasPlan() { }
 
@@ -86,6 +93,7 @@ public sealed class SaasPlan
             SortOrder = sortOrder,
             ExternalBillingRef = ext,
             MenuConfigJson = null,
+            MenuSidebarLayout = MenuSidebarLayoutHorizontal,
         };
     }
 
@@ -94,6 +102,19 @@ public sealed class SaasPlan
     {
         var t = menuConfigJson?.Trim();
         MenuConfigJson = string.IsNullOrEmpty(t) ? null : t;
+    }
+
+    /// <summary>Layout de barra lateral; solo <see cref="MenuSidebarLayoutHorizontal"/> o <see cref="MenuSidebarLayoutVertical"/>.</summary>
+    public void SetMenuSidebarLayout(string? layout)
+    {
+        var v = string.IsNullOrWhiteSpace(layout)
+            ? MenuSidebarLayoutHorizontal
+            : layout.Trim().ToLowerInvariant();
+        if (v.Length > MenuSidebarLayoutMaxLen)
+            throw new ArgumentException("Layout demasiado largo.", nameof(layout));
+        if (v != MenuSidebarLayoutHorizontal && v != MenuSidebarLayoutVertical)
+            throw new ArgumentException("Layout debe ser horizontal o vertical.", nameof(layout));
+        MenuSidebarLayout = v;
     }
 
     public void UpdateCatalog(

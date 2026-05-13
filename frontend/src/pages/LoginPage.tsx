@@ -83,7 +83,7 @@ export function LoginPage() {
             clearBootstrap();
             clearPermissions();
             login(payload);
-            navigate('/superadmin', { replace: true });
+            navigate('/superadmin/overview', { replace: true });
             return;
           }
           await enterTenantDashboard(payload);

@@ -6,12 +6,12 @@ Este documento fija el modelo mental que sigue el ERP para **planes comerciales*
 
 1. **Empresa (tenant)** contrata un **plan comercial** (`planCode` en suscripción). El plan es una fila del catálogo administrable (`saas_plans` / API `GET /api/superadmin/saas-plans`).
 
-2. Ese **plan comercial** incluye un conjunto de **definiciones SaaS** (`SaasFeatureDefinition`): cada ítem es una pieza comercializable del producto. En dominio se clasifican con `SaasFeatureKind`:
+2. Ese **plan comercial** puede estar relacionado internamente con **definiciones SaaS** (`SaasFeatureDefinition`), clasificadas en `SaasFeatureKind`:
    - **Module** — bloque funcional grande (equivalente a “módulo” de producto).
    - **Form** — pantalla o formulario concreto (submódulo / pantalla).
    - **Quota**, **Integration** — otros tipos de feature (límites, integraciones).
 
-   La relación plan ↔ definición se materializa en **plan features** (`SaasPlanFeature`: `featureId`, `isIncluded`, límites opcionales). Es decir: *el plan define qué módulos, formularios y demás features están contratados en ese plan*.
+   La relación plan ↔ definición se materializa en **plan features** (`SaasPlanFeature`: `featureId`, `isIncluded`, límites opcionales), pero esa matriz **no se administra ya en el flujo operativo de SuperAdmin**.
 
 3. **Restricción por módulos de producto (tenant)**  
    Además del plan, el tenant puede llevar datos de **módulos de producto** habilitados (`TenantSubscriptionCatalog`: claves `catalog`, `accounting`, `saas`, `access`). Si no hay restricción, se consideran habilitados todos los módulos de producto compatibles con permisos.  
@@ -21,16 +21,18 @@ Este documento fija el modelo mental que sigue el ERP para **planes comerciales*
 
 En **Empresas** del front (Super Admin):
 
-- **Plan ↔ menú**: pestaña que muestra el árbol del menú (`GET /api/superadmin/navigation-menu`) y acciones **Incluir en plan** / **Quitar del plan** por definición SaaS enlazada al ítem (y bloque aparte para definiciones sin enlace al menú). El emparejamiento usa `resourceRef`, prefijos de permiso, ruta y código de feature. Persistencia con `PUT .../saas-plans/{id}/features`.
+- **Plan ↔ menú**: pestaña que muestra el árbol del menú (`GET /api/superadmin/navigation-menu`) para editar estructura y asignar contexto de navegación.
 
 En **Plan y módulos** del front:
 
 - **Plan comercial** (desplegable + franja resumen): qué plan está asignado / se va a guardar.
-- **Catálogo módulos y formularios**: lista **de referencia** de definiciones SaaS (módulo y formulario), con insignias que cruzan:
-  - si la definición está **incluida en el plan** seleccionado arriba (azul);
-  - si el **módulo de producto** inferido está **habilitado para la empresa** según datos del servidor (verde; solo lectura en esta vista).
+- **Catálogo módulos y formularios**: lista **de referencia** para visibilidad funcional.
+- El control contractual efectivo para operación diaria está centrado en:
+  - `planCode` del tenant,
+  - `enabledModules` del tenant,
+  - menú de sesión filtrado por permisos.
 
-La jerarquía “módulo → submódulo / formulario” en producto se refleja en el catálogo como **features de tipo Module vs Form** y agrupación por módulo de producto inferido (`resourceRef` / código); no hay hoy un árbol padre-hijo explícito en BD más allá de esa clasificación y convenciones de `resourceRef`.
+La jerarquía “módulo → submódulo / formulario” en producto se refleja principalmente en navegación + permisos + módulos del tenant.
 
 ## Evolución futura
 

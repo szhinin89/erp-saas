@@ -57,7 +57,7 @@ Fuente de verdad actual:
 - **Empresas**: `/companies` → `src/pages/CompaniesPage.tsx`  
   - Rol: `SuperAdmin`  
   - Pestañas: **Datos** (empresa + admin), **Plan y módulos** (`TenantSubscriptionEditor`, catálogo por menú `TenantSubscriptionMenuCatalog`), **Plan ↔ menú** (`CompaniesPlanMenuAssignment`), **Auditoría**.  
-  - Contratos API y emparejamiento menú ↔ features: `docs/COMPANIES-PLAN-MENU-ADMIN.md`
+  - Contratos API y flujo vigente (plan comercial + menú): `docs/COMPANIES-PLAN-MENU-ADMIN.md`
 - **Panel Global**: `/superadmin` → `src/pages/SuperAdminPanelPage.tsx`  
   - Rol: `SuperAdmin`
 - **Menú de navegación (SuperAdmin)**: `/superadmin/navigation-menu` → `src/pages/SuperAdminNavMenuPage.tsx`  

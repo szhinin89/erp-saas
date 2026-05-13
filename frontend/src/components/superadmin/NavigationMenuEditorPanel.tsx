@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { LoadingState, TableCard } from '../PageShell';
 import { ZHPageNotice } from '../zh/ZHPageNotice';
 import { collectExpandableIds, expandKey, NavigationBarMenuEditor } from './NavigationMenuTree';
 import {
   cloneMenu,
   collectItemLevels,
+  countNavSubtreeNodes,
   findAncestorPathIncludingSelf,
   findItemLocation,
+  findNavItemInMenu,
   findSiblingArray,
   moveInPlace,
 } from '../../modules/superadmin/navigationMenuEditorModel';
@@ -18,15 +20,32 @@ import {
   type AdminNavigationMenu,
   type NavItemSiblingOrderLevel,
 } from '../../services/superAdminService';
+import { menuService } from '../../services/menuService';
 import { formatApiError } from '../../modules/lib/formatApiError';
-import { ZHBtn } from '../zh/ZHForm';
-import { ZHInlineRowRight } from '../zh/ZHLayout';
+import { ZHBtn, ZHField } from '../zh/ZHForm';
+import { ZHCardSection, ZHInlineRowRight } from '../zh/ZHLayout';
+import { ZHConfirmModal } from '../zh/ZHConfirmModal';
+import { MenuPreview, type MenuPreviewLayout } from '../menu-builder/MenuPreview';
+import { editorToMenuItems, sessionGroupsToEditorTree } from '../menu-builder/menuBuilderTypes';
+import { adminNavigationToSessionMenu } from '../../modules/superadmin/adminNavigationToSessionMenu';
 import '../../pages/SuperAdminNavMenuPage.css';
+
+function parseNavRowKey(key: string | null): { groupId: string; itemId: string } | null {
+  if (!key) return null;
+  const parts = key.split('::');
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  return { groupId: parts[0]!, itemId: parts[1]! };
+}
+
+export type NavigationMenuEditorPanelProps = {
+  /** Vista 2:1: árbol a la izquierda, propiedades + vista previa a la derecha. */
+  splitWorkspace?: boolean;
+};
 
 /**
  * Editor global del menú principal (grupos de barra + ítems). Misma API que la antigua página solo SuperAdmin.
  */
-export function NavigationMenuEditorPanel() {
+export function NavigationMenuEditorPanel({ splitWorkspace = false }: NavigationMenuEditorPanelProps) {
   const { t } = useI18n();
   const { isSuperAdmin, hasSelectedTenant } = useSuperAdminGate();
 
@@ -45,6 +64,16 @@ export function NavigationMenuEditorPanel() {
   const [createModuleKey, setCreateModuleKey] = useState('');
   const [createPermissionKey, setCreatePermissionKey] = useState('');
   const [creatingItem, setCreatingItem] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editDisplayLabel, setEditDisplayLabel] = useState('');
+  const [editRoutePath, setEditRoutePath] = useState('/');
+  const [editModuleKey, setEditModuleKey] = useState('');
+  const [editPermissionKey, setEditPermissionKey] = useState('');
+  const [editFeatureId, setEditFeatureId] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingItem, setDeletingItem] = useState(false);
+  const [previewLayout, setPreviewLayout] = useState<MenuPreviewLayout>('vertical');
   const menuRef = useRef<AdminNavigationMenu | null>(null);
   menuRef.current = menu;
 
@@ -232,6 +261,115 @@ export function NavigationMenuEditorPanel() {
     }
   };
 
+  const selection = useMemo(() => {
+    if (!menu || !selectedKey) return null;
+    const p = parseNavRowKey(selectedKey);
+    if (!p) return null;
+    return findNavItemInMenu(menu, p.groupId, p.itemId);
+  }, [menu, selectedKey]);
+
+  const previewMenuItems = useMemo(() => {
+    if (!menu) return [];
+    const groups = adminNavigationToSessionMenu(menu);
+    const tree = sessionGroupsToEditorTree(groups, new Map());
+    return editorToMenuItems(tree);
+  }, [menu]);
+
+  useEffect(() => {
+    if (!splitWorkspace) return;
+    if (!selection) {
+      setEditDisplayLabel('');
+      setEditRoutePath('/');
+      setEditModuleKey('');
+      setEditPermissionKey('');
+      setEditFeatureId('');
+      return;
+    }
+    const it = selection.item;
+    setEditDisplayLabel(it.displayLabel?.trim() || '');
+    setEditRoutePath(it.routePath?.trim() || '/');
+    setEditModuleKey(it.moduleKey?.trim() || '');
+    setEditPermissionKey(it.permissionKey?.trim() || '');
+    setEditFeatureId(it.saasFeatureDefinitionId?.trim() || '');
+  }, [splitWorkspace, selection]);
+
+  const cancelSplitEdit = () => {
+    if (!selection || savingEdit) return;
+    const it = selection.item;
+    setEditDisplayLabel(it.displayLabel?.trim() || '');
+    setEditRoutePath(it.routePath?.trim() || '/');
+    setEditModuleKey(it.moduleKey?.trim() || '');
+    setEditPermissionKey(it.permissionKey?.trim() || '');
+    setEditFeatureId(it.saasFeatureDefinitionId?.trim() || '');
+    setError('');
+  };
+
+  const openEditNavItem = () => {
+    if (!selection || splitWorkspace) return;
+    const it = selection.item;
+    setEditDisplayLabel(it.displayLabel?.trim() || '');
+    setEditRoutePath(it.routePath?.trim() || '/');
+    setEditModuleKey(it.moduleKey?.trim() || '');
+    setEditPermissionKey(it.permissionKey?.trim() || '');
+    setEditFeatureId(it.saasFeatureDefinitionId?.trim() || '');
+    setEditOpen(true);
+    setError('');
+  };
+
+  const closeEditNavItem = () => {
+    if (savingEdit) return;
+    setEditOpen(false);
+  };
+
+  const handleEditNavItemSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!selection) return;
+    const displayLabel = editDisplayLabel.trim();
+    const routePath = editRoutePath.trim();
+    if (!displayLabel) {
+      setError(t('superadmin.navigationMenu.createItemErrorDisplayRequired'));
+      return;
+    }
+    if (!routePath.startsWith('/')) {
+      setError(t('superadmin.navigationMenu.createItemErrorRoute'));
+      return;
+    }
+    setSavingEdit(true);
+    setError('');
+    try {
+      await menuService.updateMenuItem(selection.item.id, {
+        displayLabel,
+        routePath,
+        moduleKey: editModuleKey.trim() || null,
+        permissionKey: editPermissionKey.trim() || null,
+        saasFeatureDefinitionId: editFeatureId.trim() || null,
+      });
+      if (!splitWorkspace) setEditOpen(false);
+      setSelectedKey(null);
+      await load();
+    } catch (err) {
+      setError(formatApiError(err));
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleDeleteNavItem = async () => {
+    if (!selection) return;
+    setDeletingItem(true);
+    setError('');
+    try {
+      await menuService.deleteMenuItem(selection.item.id);
+      setDeleteOpen(false);
+      setSelectedKey(null);
+      await load();
+    } catch (err) {
+      setError(formatApiError(err));
+    } finally {
+      setDeletingItem(false);
+    }
+  };
+
   if (!isSuperAdmin || hasSelectedTenant) {
     return (
       <p className="zh-help-text subtle">{t('superadmin.sectionLoadHint')}</p>
@@ -247,10 +385,11 @@ export function NavigationMenuEditorPanel() {
         {loading ? (
           <LoadingState />
         ) : menu ? (
-          <div className="sa-navmenu-page">
-            <section className="nm-barEditor" aria-label={t('superadmin.navigationMenu.groups')}>
-              <h2 className="nm-sectionTitle">{t('superadmin.navigationMenu.groups')}</h2>
-              <NavigationBarMenuEditor
+          <div className={`sa-navmenu-page${splitWorkspace ? ' sa-navmenu-page--split' : ''}`}>
+            <div className="nm-splitMain">
+              <section className="nm-barEditor" aria-label={t('superadmin.navigationMenu.groups')}>
+                <h2 className="nm-sectionTitle">{t('superadmin.navigationMenu.groups')}</h2>
+                <NavigationBarMenuEditor
                 groups={menu.groups}
                 disabled={saving || creatingItem}
                 expandedGroups={expandedGroups}
@@ -270,7 +409,135 @@ export function NavigationMenuEditorPanel() {
                 onRequestAddNavItem={openCreateNavItem}
                 t={t}
               />
-            </section>
+              </section>
+
+              {!splitWorkspace && selection ? (
+                <div className="nm-selectionBar">
+                  <span className="nm-selectionBar__label">
+                    {selection.item.displayLabel?.trim() || t(selection.item.labelKey)}
+                  </span>
+                  <ZHInlineRowRight>
+                    <ZHBtn type="button" variant="secondary" disabled={saving || creatingItem} onClick={openEditNavItem}>
+                      {t('superadmin.navigationMenu.editItem')}
+                    </ZHBtn>
+                    <ZHBtn
+                      type="button"
+                      variant="destructive"
+                      disabled={saving || creatingItem}
+                      onClick={() => setDeleteOpen(true)}
+                    >
+                      {t('superadmin.navigationMenu.deleteItem')}
+                    </ZHBtn>
+                  </ZHInlineRowRight>
+                </div>
+              ) : null}
+            </div>
+
+            {splitWorkspace ? (
+              <aside className="nm-splitAside" aria-label={t('superadmin.navigationMenu.splitAsideLabel')}>
+                <ZHCardSection title={t('superadmin.navigationMenu.splitPropertiesHeading')}>
+                  {!selection ? (
+                    <p className="zh-help-text subtle">{t('superadmin.navigationMenu.selectNodeHint')}</p>
+                  ) : (
+                    <>
+                      <p className="nm-splitAside__nodeName">
+                        <strong>{t('superadmin.navigationMenu.splitSelectedLabel')}</strong>{' '}
+                        {selection.item.displayLabel?.trim() || t(selection.item.labelKey)}
+                      </p>
+                      <form onSubmit={(e) => void handleEditNavItemSubmit(e)}>
+                        <ZHField label={t('superadmin.navigationMenu.createItemDisplayLabel')}>
+                          <input
+                            className="zh-input"
+                            value={editDisplayLabel}
+                            onChange={(e) => setEditDisplayLabel(e.target.value)}
+                            disabled={savingEdit || saving || creatingItem}
+                            autoComplete="off"
+                            maxLength={200}
+                          />
+                        </ZHField>
+                        <ZHField label={t('superadmin.navigationMenu.createItemRoutePath')}>
+                          <input
+                            className="zh-input"
+                            value={editRoutePath}
+                            onChange={(e) => setEditRoutePath(e.target.value)}
+                            disabled={savingEdit || saving || creatingItem}
+                            autoComplete="off"
+                          />
+                        </ZHField>
+                        <ZHField label={t('superadmin.navigationMenu.createItemModuleKey')}>
+                          <input
+                            className="zh-input"
+                            value={editModuleKey}
+                            onChange={(e) => setEditModuleKey(e.target.value)}
+                            disabled={savingEdit || saving || creatingItem}
+                            autoComplete="off"
+                          />
+                        </ZHField>
+                        <ZHField label={t('superadmin.navigationMenu.createItemPermissionKey')}>
+                          <input
+                            className="zh-input"
+                            value={editPermissionKey}
+                            onChange={(e) => setEditPermissionKey(e.target.value)}
+                            disabled={savingEdit || saving || creatingItem}
+                            autoComplete="off"
+                          />
+                        </ZHField>
+                        <ZHField label={t('superadmin.navigationMenu.editFeatureId')}>
+                          <input
+                            className="zh-input"
+                            value={editFeatureId}
+                            onChange={(e) => setEditFeatureId(e.target.value)}
+                            disabled={savingEdit || saving || creatingItem}
+                            autoComplete="off"
+                            placeholder={t('superadmin.navigationMenu.editFeatureIdHint')}
+                          />
+                        </ZHField>
+                        <p className="zh-help-text subtle">{t('superadmin.navigationMenu.splitFolderHint')}</p>
+                        <ZHInlineRowRight>
+                          <ZHBtn type="button" variant="secondary" disabled={savingEdit} onClick={cancelSplitEdit}>
+                            {t('superadmin.navigationMenu.createItemCancel')}
+                          </ZHBtn>
+                          <ZHBtn type="submit" variant="primary" disabled={savingEdit || saving || creatingItem}>
+                            {savingEdit ? t('common.saving') : t('superadmin.navigationMenu.saveItem')}
+                          </ZHBtn>
+                          <ZHBtn
+                            type="button"
+                            variant="destructive"
+                            disabled={saving || creatingItem || savingEdit}
+                            onClick={() => setDeleteOpen(true)}
+                          >
+                            {t('superadmin.navigationMenu.deleteItem')}
+                          </ZHBtn>
+                        </ZHInlineRowRight>
+                      </form>
+                    </>
+                  )}
+                </ZHCardSection>
+                <ZHCardSection title={t('superadmin.navigationMenu.splitPreviewHeading')}>
+                  <div className="nm-splitPreviewLayout" role="radiogroup" aria-label={t('superadmin.menuBuilder.previewLayout')}>
+                    <label className="nm-splitPreviewLayout__opt">
+                      <input
+                        type="radio"
+                        name="nm-prev-layout"
+                        checked={previewLayout === 'horizontal'}
+                        onChange={() => setPreviewLayout('horizontal')}
+                      />{' '}
+                      {t('superadmin.menuBuilder.layoutHorizontal')}
+                    </label>
+                    <label className="nm-splitPreviewLayout__opt">
+                      <input
+                        type="radio"
+                        name="nm-prev-layout"
+                        checked={previewLayout === 'vertical'}
+                        onChange={() => setPreviewLayout('vertical')}
+                      />{' '}
+                      {t('superadmin.menuBuilder.layoutVertical')}
+                    </label>
+                  </div>
+                  <MenuPreview items={previewMenuItems} layout={previewLayout} />
+                </ZHCardSection>
+              </aside>
+            ) : null}
 
             <div className="nm-footerBar">
               <ZHInlineRowRight>
@@ -351,6 +618,98 @@ export function NavigationMenuEditorPanel() {
                   </form>
                 </dialog>
               </div>
+            ) : null}
+
+            {editOpen && selection && !splitWorkspace ? (
+              <div
+                className="nm-createBackdrop"
+                role="presentation"
+                onClick={(ev) => {
+                  if (ev.target === ev.currentTarget) closeEditNavItem();
+                }}
+              >
+                <dialog className="nm-createDialog" open aria-labelledby="nm-edit-title">
+                  <h3 id="nm-edit-title">{t('superadmin.navigationMenu.editItemTitle')}</h3>
+                  <form onSubmit={(e) => void handleEditNavItemSubmit(e)}>
+                    <div className="nm-createField">
+                      <label htmlFor="nm-edit-label">{t('superadmin.navigationMenu.createItemDisplayLabel')}</label>
+                      <input
+                        id="nm-edit-label"
+                        value={editDisplayLabel}
+                        onChange={(e) => setEditDisplayLabel(e.target.value)}
+                        disabled={savingEdit}
+                        autoComplete="off"
+                        maxLength={200}
+                      />
+                    </div>
+                    <div className="nm-createField">
+                      <label htmlFor="nm-edit-route">{t('superadmin.navigationMenu.createItemRoutePath')}</label>
+                      <input
+                        id="nm-edit-route"
+                        value={editRoutePath}
+                        onChange={(e) => setEditRoutePath(e.target.value)}
+                        disabled={savingEdit}
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div className="nm-createField">
+                      <label htmlFor="nm-edit-mod">{t('superadmin.navigationMenu.createItemModuleKey')}</label>
+                      <input
+                        id="nm-edit-mod"
+                        value={editModuleKey}
+                        onChange={(e) => setEditModuleKey(e.target.value)}
+                        disabled={savingEdit}
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div className="nm-createField">
+                      <label htmlFor="nm-edit-perm">{t('superadmin.navigationMenu.createItemPermissionKey')}</label>
+                      <input
+                        id="nm-edit-perm"
+                        value={editPermissionKey}
+                        onChange={(e) => setEditPermissionKey(e.target.value)}
+                        disabled={savingEdit}
+                        autoComplete="off"
+                      />
+                    </div>
+                    <div className="nm-createField">
+                      <label htmlFor="nm-edit-feat">{t('superadmin.navigationMenu.editFeatureId')}</label>
+                      <input
+                        id="nm-edit-feat"
+                        value={editFeatureId}
+                        onChange={(e) => setEditFeatureId(e.target.value)}
+                        disabled={savingEdit}
+                        autoComplete="off"
+                        placeholder={t('superadmin.navigationMenu.editFeatureIdHint')}
+                      />
+                    </div>
+                    <div className="nm-createActions">
+                      <ZHBtn type="button" variant="secondary" disabled={savingEdit} onClick={closeEditNavItem}>
+                        {t('superadmin.navigationMenu.createItemCancel')}
+                      </ZHBtn>
+                      <ZHBtn type="submit" variant="primary" disabled={savingEdit}>
+                        {savingEdit ? t('common.saving') : t('superadmin.navigationMenu.saveItem')}
+                      </ZHBtn>
+                    </div>
+                  </form>
+                </dialog>
+              </div>
+            ) : null}
+
+            {deleteOpen && selection ? (
+              <ZHConfirmModal
+                title={t('superadmin.navigationMenu.deleteItemTitle')}
+                message={
+                  <>
+                    {t('superadmin.navigationMenu.deleteItemConfirmPrefix')}{' '}
+                    <strong>{countNavSubtreeNodes(selection.item)}</strong>{' '}
+                    {t('superadmin.navigationMenu.deleteItemConfirmSuffix')}
+                  </>
+                }
+                loading={deletingItem}
+                onCancel={() => (deletingItem ? undefined : setDeleteOpen(false))}
+                onConfirm={() => void handleDeleteNavItem()}
+              />
             ) : null}
           </div>
         ) : (

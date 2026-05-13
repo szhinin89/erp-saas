@@ -5417,6 +5417,13 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("menu_config");
 
+                    b.Property<string>("MenuSidebarLayout")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("menu_sidebar_layout")
+                        .HasDefaultValue("horizontal");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)

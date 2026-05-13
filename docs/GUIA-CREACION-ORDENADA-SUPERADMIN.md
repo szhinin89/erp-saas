@@ -19,11 +19,9 @@ Tu especificación (`GET/POST/PUT/DELETE /api/superadmin/planes`, columna `MenuC
 | Tu idea | Implementación actual |
 |---------|------------------------|
 | Lista / crear / editar / borrar planes | **`SaasPlansAdminController`** ruta base **`/api/superadmin/saas-plans`** (no literal `/planes`). |
-| Características / módulos en JSON | **`saas_plan_features`** + catálogo **`saas_feature_definitions`**. Sustituye a una única columna `MenuConfig`: más normalizado y ya usado por suscripciones. |
-| Asignar módulos al plan | `PUT /api/superadmin/saas-plans/{planId}/features` con cuerpo `{ features: [ { featureId, isIncluded, limitPerPeriod } ] }`. La UI de administración está en **`SuperAdminPlansSection`** (pestaña **Planes** del panel). |
+| Características / módulos en JSON | La operación actual se centra en **plan comercial + menú**; no se edita matriz de features por plan desde SuperAdmin. |
+| Asignar módulos al plan | Se gestiona por **suscripción del tenant** (`planCode`, `enabledModules`) y menú. |
 | Borrar solo si no hay empresas | **`DeletePlanAsync`** bloquea si existe fila en **`tenant_saas_subscriptions`** con ese `planId`. Las empresas nuevas guardan hoy **`tenants.plan_code`** (string); si necesitas bloqueo también por `plan_code`, conviene unificar suscripción en fila `TenantSaasSubscription` al crear tenant (trabajo futuro). |
-
-**Features del sistema:** se administran en la pestaña **Características** (`SuperAdminFeaturesSection` + `SaasFeaturesAdminController`).
 
 ## 3. Creación de empresa sin datos extra
 
@@ -42,15 +40,15 @@ Tu especificación (`GET/POST/PUT/DELETE /api/superadmin/planes`, columna `MenuC
 
 | Tu idea | Estado |
 |---------|--------|
-| Tabs Empresas / Planes | Ya existían: **Resumen**, **Empresas**, **Características**, **Planes**. |
+| Tabs Empresas / Planes | Flujo vigente: **Resumen**, **Empresas**, **Menú y planes**. |
 | Sin empresas → bienvenida + “Crear primera empresa” | **Añadido** en pestaña **Resumen** cuando `tenants.length === 0`, con enlace a **Planes** si aún no hay catálogo. |
 | Crear empresa sin plan | **Bloqueado** en UI y API: mensaje si no hay planes activos o si no se selecciona plan. |
 
 ## 5. Orden operativo recomendado
 
 1. Arrancar API → completar **first run** → crear **SuperAdmin** (token único).
-2. (Opcional) Definir **features** en catálogo si el entorno está vacío.
-3. Crear **planes** en pestaña Planes y asignar **features** al plan.
+2. Crear **planes** y ordenarlos en catálogo.
+3. Configurar **menú y planes** en el hub de SuperAdmin.
 4. Crear **empresa** con plan obligatorio y admin identity.
 5. El admin entra al tenant y crea **bodegas, productos, cuentas**, etc., según permisos.
 

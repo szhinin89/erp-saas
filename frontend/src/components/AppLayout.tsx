@@ -7,16 +7,15 @@ import { LanguageSwitcher } from './LanguageSwitcher';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { accessService } from '../services/accessService';
 import { superAdminService } from '../services/superAdminService';
+import { LoadingState } from './PageShell';
 import { ZHAppTenantHeader } from './zh/ZHAppTenantHeader';
 import {
   buildGlobalSuperAdminNavGroups,
-  buildNavGroups,
   ensureSalesNextToInventory,
   flattenAccessIntoSecurity,
   flattenSaaSIntoHome,
   isPlanBuilderSessionMenu,
   mapSessionMenuToNavGroups,
-  mergeMissingStaticNavGroups,
   mergeSuperAdminNavExtrasIntoHome,
   expandPlanCustomRootsToBarGroups,
   sortNavGroupsForMainBar,
@@ -192,6 +191,7 @@ export function AppLayout() {
   const [superadminBannerOpen, setSuperadminBannerOpen] = useState(false);
   const [superadminReturningGlobal, setSuperadminReturningGlobal] = useState(false);
   const [sessionMenuDto, setSessionMenuDto] = useState<SessionMenuGroupDto[] | undefined>(undefined);
+  const [sessionMenuResolved, setSessionMenuResolved] = useState(false);
 
   const isGlobalSuperAdmin = useMemo(
     () => (user?.role ?? '') === 'SuperAdmin' && (user?.tenantId ?? '') === GLOBAL_TENANT_ID,
@@ -200,21 +200,34 @@ export function AppLayout() {
 
   useEffect(() => {
     if (!user) {
-      startTransition(() => setSessionMenuDto(undefined));
+      startTransition(() => {
+        setSessionMenuDto(undefined);
+        setSessionMenuResolved(false);
+      });
       return;
     }
     if (isGlobalSuperAdmin) {
-      startTransition(() => setSessionMenuDto(undefined));
+      startTransition(() => {
+        setSessionMenuDto(undefined);
+        setSessionMenuResolved(true);
+      });
       return;
     }
     let cancelled = false;
+    setSessionMenuResolved(false);
     void accessService
       .getSessionMenu()
       .then((rows) => {
-        if (!cancelled) setSessionMenuDto(rows.length > 0 ? rows : []);
+        if (!cancelled) {
+          setSessionMenuDto(rows.length > 0 ? rows : []);
+          setSessionMenuResolved(true);
+        }
       })
       .catch(() => {
-        if (!cancelled) setSessionMenuDto([]);
+        if (!cancelled) {
+          setSessionMenuDto([]);
+          setSessionMenuResolved(true);
+        }
       });
     return () => {
       cancelled = true;
@@ -237,13 +250,14 @@ export function AppLayout() {
       if (!superAdminPanelEnabled) return [];
       return buildGlobalSuperAdminNavGroups(t, opts);
     }
-    const raw = mergeSuperAdminNavExtrasIntoHome(
+    if (!sessionMenuResolved) {
+      return [];
+    }
+    const fromApi =
       sessionMenuDto !== undefined && sessionMenuDto.length > 0
         ? mapSessionMenuToNavGroups(sessionMenuDto, t, opts)
-        : buildNavGroups(t, opts),
-      t,
-      opts,
-    );
+        : [];
+    const raw = mergeSuperAdminNavExtrasIntoHome(fromApi, t, opts);
     if (restrictedPlanMenu) {
       let piped = sortNavGroupsForMainBar(flattenAccessIntoSecurity(flattenSaaSIntoHome(raw)));
       if (planMenuBarLayout === 'horizontal') {
@@ -251,12 +265,18 @@ export function AppLayout() {
       }
       return piped;
     }
-    return mergeMissingStaticNavGroups(
+    return sortNavGroupsForMainBar(
       flattenAccessIntoSecurity(flattenSaaSIntoHome(ensureSalesNextToInventory(raw, t, opts))),
-      t,
-      opts,
     );
-  }, [sessionMenuDto, t, superAdminPanelEnabled, isGlobalSuperAdmin, restrictedPlanMenu]);
+  }, [
+    sessionMenuDto,
+    sessionMenuResolved,
+    t,
+    superAdminPanelEnabled,
+    isGlobalSuperAdmin,
+    restrictedPlanMenu,
+    planMenuBarLayout,
+  ]);
 
   // Auto-recupera permisos después de refresh/hidratación.
   useEffect(() => {
@@ -447,9 +467,9 @@ export function AppLayout() {
       localStorage.removeItem('superadmin-impersonation-tenant-name');
       login(auth);
       clearPermissions();
-      navigate('/superadmin');
+      navigate('/superadmin/overview');
     } catch {
-      navigate('/superadmin');
+      navigate('/superadmin/overview');
     } finally {
       setSuperadminReturningGlobal(false);
     }
@@ -497,7 +517,11 @@ export function AppLayout() {
             onLogout={handleLogout}
             rightExtra={<LanguageSwitcher />}
             bottomLeft={
-              mainMenuGroups.length > 0 ? (
+              !isGlobalSuperAdmin && user && !sessionMenuResolved ? (
+                <div className="app-mainmenu app-mainmenu--loading" role="status" aria-live="polite" aria-busy="true">
+                  <LoadingState />
+                </div>
+              ) : mainMenuGroups.length > 0 ? (
                 showPlanVerticalNav ? (
                   <div
                     ref={mainMenuBarRef}

@@ -2,12 +2,77 @@
  * Editor menú SuperAdmin: misma estructura que la referencia (árbol, panel hijos),
  * colores alineados con la plantilla ZH (tokens --zh-* / --zh-color-*).
  */
+.nm-selectionBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.35rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--zh-border, rgba(30, 41, 59, 0.12));
+}
+
+.nm-selectionBar__label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
 .sa-navmenu-page {
   background: var(--zh-color-surface, #fff);
   color: var(--zh-color-text, #1e293b);
   border-radius: var(--zh-radius, 8px);
   padding: 0.75rem 0.85rem 1rem;
   margin: 0;
+}
+
+.sa-navmenu-page--split {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(240px, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .sa-navmenu-page--split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sa-navmenu-page--split .nm-footerBar {
+  grid-column: 1 / -1;
+}
+
+.nm-splitMain {
+  min-width: 0;
+}
+
+.nm-splitAside {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.nm-splitAside__nodeName {
+  margin: 0 0 0.75rem;
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+
+.nm-splitPreviewLayout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.25rem;
+  margin-bottom: 0.65rem;
+  font-size: 0.875rem;
+}
+
+.nm-splitPreviewLayout__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
 }
 
 .nm-srOnly {
