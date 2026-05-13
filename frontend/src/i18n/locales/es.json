@@ -37,6 +37,7 @@
   "app.nav.group.accounting": "Contabilidad",
   "app.nav.group.access": "Accesos",
   "app.nav.group.configuracion": "Configuración",
+  "app.nav.group.companyIam": "Usuarios y perfiles",
   "app.nav.group.security": "Seguridad",
   "app.nav.group.saas": "SaaS",
   "app.nav.group.superadmin": "SuperAdmin",
@@ -718,9 +719,14 @@
 
   "profiles.perms.title": "Permisos del perfil",
   "profiles.perms.subtitle": "Selecciona los permisos para este perfil (aplica a usuarios con este perfil).",
+  "profiles.perms.menuTreeTitle": "Permisos según el menú de la empresa",
+  "profiles.perms.extraPermissions": "Otros permisos (no listados en el menú actual)",
+  "profiles.perms.emptyCatalog": "No hay permisos asociados al menú. Revisa el menú del plan o sincroniza el catálogo de funcionalidades.",
+  "profiles.perms.access.memberships.view": "Acceso de usuarios a la empresa",
   "profiles.perms.error.load": "No se pudo cargar permisos del perfil.",
   "profiles.perms.error.save": "No se pudo guardar permisos del perfil.",
 
+  "profiles.perms.access.profiles.view": "Perfiles de acceso",
   "profiles.perms.inventario.products.view": "Ver Productos",
   "profiles.perms.inventario.products.create": "Crear Productos",
   "profiles.perms.inventario.products.update": "Editar Productos",

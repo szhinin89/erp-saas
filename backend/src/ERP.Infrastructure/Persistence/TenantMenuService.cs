@@ -20,14 +20,17 @@ public sealed class TenantMenuService : ITenantSessionMenuResolver, ITenantMenuA
     public async Task<IReadOnlyList<SessionMenuGroupDto>> ResolveForTenantAsync(Guid tenantId, CancellationToken ct = default)
     {
         if (tenantId == Guid.Empty)
-            return await _reader.GetActiveMenuAsync(ct);
+        {
+            var m = await _reader.GetActiveMenuAsync(ct);
+            return TenantIamMenuMerger.EnsureCompanyIamGroup(m);
+        }
 
         var custom = await _db.TenantCustomMenus.AsNoTracking()
             .FirstOrDefaultAsync(x => x.TenantId == tenantId, ct);
         if (custom is not null &&
             SessionMenuJsonParser.TryDeserialize(custom.MenuConfigJson, out var customMenu) &&
             customMenu is { Count: > 0 })
-            return customMenu;
+            return TenantIamMenuMerger.EnsureCompanyIamGroup(customMenu);
 
         var tenant = await _db.Tenants.AsNoTracking()
             .FirstOrDefaultAsync(t => t.Id == tenantId, ct);
@@ -38,10 +41,11 @@ public sealed class TenantMenuService : ITenantSessionMenuResolver, ITenantMenuA
             if (plan?.MenuConfigJson is { Length: > 0 } pj &&
                 SessionMenuJsonParser.TryDeserialize(pj, out var planMenu) &&
                 planMenu is { Count: > 0 })
-                return planMenu;
+                return TenantIamMenuMerger.EnsureCompanyIamGroup(planMenu);
         }
 
-        return await _reader.GetActiveMenuAsync(ct);
+        var global = await _reader.GetActiveMenuAsync(ct);
+        return TenantIamMenuMerger.EnsureCompanyIamGroup(global);
     }
 
     public async Task<Result<TenantMenuResolvedDto>> GetResolvedMenuForTenantAsync(Guid tenantId, CancellationToken ct = default)
@@ -60,7 +64,7 @@ public sealed class TenantMenuService : ITenantSessionMenuResolver, ITenantMenuA
             customMenu is { Count: > 0 })
         {
             return Result<TenantMenuResolvedDto>.Success(new TenantMenuResolvedDto(
-                customMenu, HasCustomMenu: true, UsedPlanMenu: false, UsedGlobalFallback: false));
+                TenantIamMenuMerger.EnsureCompanyIamGroup(customMenu), HasCustomMenu: true, UsedPlanMenu: false, UsedGlobalFallback: false));
         }
 
         var tenant = await _db.Tenants.AsNoTracking().FirstAsync(t => t.Id == tenantId, ct);
@@ -73,13 +77,13 @@ public sealed class TenantMenuService : ITenantSessionMenuResolver, ITenantMenuA
                 planMenu is { Count: > 0 })
             {
                 return Result<TenantMenuResolvedDto>.Success(new TenantMenuResolvedDto(
-                    planMenu, HasCustomMenu: false, UsedPlanMenu: true, UsedGlobalFallback: false));
+                    TenantIamMenuMerger.EnsureCompanyIamGroup(planMenu), HasCustomMenu: false, UsedPlanMenu: true, UsedGlobalFallback: false));
             }
         }
 
         var global = await _reader.GetActiveMenuAsync(ct);
         return Result<TenantMenuResolvedDto>.Success(new TenantMenuResolvedDto(
-            global, HasCustomMenu: false, UsedPlanMenu: false, UsedGlobalFallback: true));
+            TenantIamMenuMerger.EnsureCompanyIamGroup(global), HasCustomMenu: false, UsedPlanMenu: false, UsedGlobalFallback: true));
     }
 
     public async Task<Result<object?>> UpsertTenantCustomMenuAsync(Guid tenantId, string menuConfigJson, CancellationToken ct = default)

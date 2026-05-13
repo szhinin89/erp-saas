@@ -31,17 +31,24 @@ export const mainRoutes = [
   
   // Ventas
   <Route key="customers" path="/ventas/customers" element={<CustomersPage />} />,
+  <Route key="ventas-clientes-es" path="/ventas/clientes" element={<Navigate to="/ventas/customers" replace />} />,
   <Route key="ventas-facturas" path="/ventas/facturas" element={<VentasFacturasPage />} />,
   <Route key="catalog-customers" path="/catalog/customers" element={<Navigate to="/ventas/customers" replace />} />,
   <Route key="inventario-customers" path="/inventario/customers" element={<Navigate to="/ventas/customers" replace />} />,
   
   // Contabilidad
   <Route key="accounting" path="/accounting" element={<AccountingPage />} />,
-  
+  <Route key="contabilidad" path="/contabilidad" element={<Navigate to="/accounting" replace />} />,
+  <Route key="contabilidad-config" path="/contabilidad/configuracion" element={<Navigate to="/accounting" replace />} />,
+
+  // Ventas raíz (catálogo API usa /ventas)
+  <Route key="ventas-root" path="/ventas" element={<Navigate to="/ventas/facturas" replace />} />,
+
   // Módulos placeholder
   <Route key="compras" path="/compras" element={<ModulePlaceholderPage variant="purchases" />} />,
   <Route key="rrhh" path="/rrhh" element={<ModulePlaceholderPage variant="hr" />} />,
-  
+
   // SaaS
   <Route key="branches" path="/saas/branches" element={<BranchesPage />} />,
+  <Route key="config-sucursales" path="/configuracion/sucursales" element={<Navigate to="/saas/branches" replace />} />,
 ];

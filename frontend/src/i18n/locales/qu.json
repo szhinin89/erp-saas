@@ -142,6 +142,7 @@
   "app.nav.group.accounting": "Kunkay",
   "app.nav.group.access": "Yaykuykunata",
   "app.nav.group.configuracion": "Allichay",
+  "app.nav.group.companyIam": "Llamkaykunawan perfilkunawan",
   "app.nav.group.security": "Security",
   "app.nav.group.saas": "SaaS",
   "app.nav.group.superadmin": "SuperAdmin",
@@ -713,9 +714,14 @@
 
   "profiles.perms.title": "Permisos del perfil",
   "profiles.perms.subtitle": "Kay perfilpaq permisos akllay (kay perfilwan usuariokunaman ruran).",
+  "profiles.perms.menuTreeTitle": "Llamkay menú nisqawan permisos",
+  "profiles.perms.extraPermissions": "Huk permisokuna (kunam menúpi manam kanchu)",
+  "profiles.perms.emptyCatalog": "Menúmanta permisos manan tinki. Rantik menú icha ruraykunapa qillqata musuqyachiy.",
+  "profiles.perms.access.memberships.view": "Llamkaypaq yaykuy rimanakunawan",
   "profiles.perms.error.load": "Mana atiparichu perfil permisos apamuy.",
   "profiles.perms.error.save": "Mana atiparichu perfil permisos waqaychay.",
 
+  "profiles.perms.access.profiles.view": "Rimaykunapa perfilkuna",
   "profiles.perms.inventario.products.view": "Rurana rikuy",
   "profiles.perms.inventario.products.create": "Rurana ruray",
   "profiles.perms.inventario.products.update": "Rurana allichiy",

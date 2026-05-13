@@ -14,14 +14,18 @@ import {
   ensureSalesNextToInventory,
   flattenAccessIntoSecurity,
   flattenSaaSIntoHome,
+  isPlanBuilderSessionMenu,
   mapSessionMenuToNavGroups,
   mergeMissingStaticNavGroups,
   mergeSuperAdminNavExtrasIntoHome,
+  expandPlanCustomRootsToBarGroups,
+  sortNavGroupsForMainBar,
   type NavItem,
 } from '../nav/navConfig';
 import { GLOBAL_TENANT_ID } from '../constants/tenantIds';
 import { useDeployment } from '../deployment/DeploymentContext';
 import type { SessionMenuGroupDto } from '../types/access';
+import { readPlanCustomMenuBarLayout } from './menu-builder/menuBuilderTypes';
 import './AppLayout.css';
 
 /** True si la ruta actual coincide con este ítem o con algún descendiente (menú anidado). */
@@ -217,6 +221,16 @@ export function AppLayout() {
     };
   }, [user, isGlobalSuperAdmin, user?.tenantId]);
 
+  const restrictedPlanMenu = useMemo(
+    () => isPlanBuilderSessionMenu(sessionMenuDto),
+    [sessionMenuDto],
+  );
+
+  const planMenuBarLayout = useMemo((): 'horizontal' | 'vertical' => {
+    const m = sessionMenuDto?.length ? readPlanCustomMenuBarLayout(sessionMenuDto) : null;
+    return m ?? 'horizontal';
+  }, [sessionMenuDto]);
+
   const groups = useMemo(() => {
     const opts = { superAdminPanelEnabled };
     if (isGlobalSuperAdmin) {
@@ -230,12 +244,19 @@ export function AppLayout() {
       t,
       opts,
     );
+    if (restrictedPlanMenu) {
+      let piped = sortNavGroupsForMainBar(flattenAccessIntoSecurity(flattenSaaSIntoHome(raw)));
+      if (planMenuBarLayout === 'horizontal') {
+        piped = expandPlanCustomRootsToBarGroups(piped);
+      }
+      return piped;
+    }
     return mergeMissingStaticNavGroups(
       flattenAccessIntoSecurity(flattenSaaSIntoHome(ensureSalesNextToInventory(raw, t, opts))),
       t,
       opts,
     );
-  }, [sessionMenuDto, t, superAdminPanelEnabled, isGlobalSuperAdmin]);
+  }, [sessionMenuDto, t, superAdminPanelEnabled, isGlobalSuperAdmin, restrictedPlanMenu]);
 
   // Auto-recupera permisos después de refresh/hidratación.
   useEffect(() => {
@@ -368,7 +389,10 @@ export function AppLayout() {
       isActive: activeGroupIds.has(g.id),
       items: g.items,
     }));
-  }, [activeGroupIds, t, user?.role, visibleGroups]);
+  }, [activeGroupIds, visibleGroups]);
+
+  const showPlanVerticalNav =
+    restrictedPlanMenu && planMenuBarLayout === 'vertical' && mainMenuGroups.length > 0;
 
   const [mainMenuOpenId, setMainMenuOpenId] = useState<string | null>(null);
   const [mainMenuPos, setMainMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -474,35 +498,61 @@ export function AppLayout() {
             rightExtra={<LanguageSwitcher />}
             bottomLeft={
               mainMenuGroups.length > 0 ? (
-                <div ref={mainMenuBarRef} className="app-mainmenu" role="navigation" aria-label={t('app.layout.mainNav')}>
-                  {mainMenuGroups.map((g) => (
-                    <button
-                      key={g.id}
-                      type="button"
-                      className={`app-mainmenu-item${g.isActive ? ' is-active' : ''}`}
-                      aria-haspopup="menu"
-                      aria-expanded={mainMenuOpenId === g.id}
-                      onClick={(e) => {
-                        const willOpen = mainMenuOpenId !== g.id;
-                        setMainMenuOpenId(willOpen ? g.id : null);
-                        if (willOpen) {
-                          const r = e.currentTarget.getBoundingClientRect();
-                          setMainMenuPos({ top: Math.round(r.bottom + 10), left: Math.round(r.left) });
-                        } else {
-                          setMainMenuPos(null);
-                        }
-                      }}
-                    >
-                      {g.label}
-                    </button>
-                  ))}
-                </div>
+                showPlanVerticalNav ? (
+                  <div
+                    ref={mainMenuBarRef}
+                    className="app-mainmenu app-mainmenu--planVertical"
+                    role="navigation"
+                    aria-label={t('app.layout.mainNav')}
+                  >
+                    {mainMenuGroups.map((g) => (
+                      <div key={g.id} className="app-mainmenu-verticalSection">
+                        {mainMenuGroups.length > 1 ? (
+                          <div className="app-mainmenu-verticalSectionLabel">{g.label}</div>
+                        ) : null}
+                        <MainMenuList
+                          items={g.items}
+                          depth={0}
+                          onClose={() => {}}
+                          isFavorite={isFavorite}
+                          toggleFavorite={toggleFavorite}
+                          t={t}
+                          showFavoriteStars={!isGlobalSuperAdmin}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div ref={mainMenuBarRef} className="app-mainmenu" role="navigation" aria-label={t('app.layout.mainNav')}>
+                    {mainMenuGroups.map((g) => (
+                      <button
+                        key={g.id}
+                        type="button"
+                        className={`app-mainmenu-item${g.isActive ? ' is-active' : ''}`}
+                        aria-haspopup="menu"
+                        aria-expanded={mainMenuOpenId === g.id}
+                        onClick={(e) => {
+                          const willOpen = mainMenuOpenId !== g.id;
+                          setMainMenuOpenId(willOpen ? g.id : null);
+                          if (willOpen) {
+                            const r = e.currentTarget.getBoundingClientRect();
+                            setMainMenuPos({ top: Math.round(r.bottom + 10), left: Math.round(r.left) });
+                          } else {
+                            setMainMenuPos(null);
+                          }
+                        }}
+                      >
+                        {g.label}
+                      </button>
+                    ))}
+                  </div>
+                )
               ) : null
             }
           />
         </div>
 
-        {mainMenuOpenId && mainMenuPos
+        {mainMenuOpenId && mainMenuPos && !showPlanVerticalNav
           ? createPortal(
               <div
                 ref={mainMenuPopoverRef}

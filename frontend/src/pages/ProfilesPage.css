@@ -29,3 +29,42 @@
   opacity: 0.7;
 }
 
+.profiles-permEditor {
+  margin-top: 12px;
+}
+
+.profiles-permSectionTitle {
+  font-weight: 700;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.profiles-permSectionTitle--spaced {
+  margin-top: 20px;
+}
+
+.profiles-permTree {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profiles-permSectionHeading {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.85;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--color-border-tertiary);
+}
+
+.profiles-permLeaves {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.profiles-permItem--tree {
+  margin-left: 0;
+}
+

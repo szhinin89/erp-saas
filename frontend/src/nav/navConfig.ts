@@ -1,4 +1,5 @@
 import type { SessionMenuGroupDto, SessionMenuItemDto } from '../types/access';
+import { normalizePolicyPermissionKey } from '../store/permissionsStore';
 
 export type NavItem = {
   to: string;
@@ -27,6 +28,11 @@ export type NavGroup = {
 };
 
 export type TranslateFn = (key: string) => string;
+
+/** Menú del constructor por plan/empresa: no inyectar grupos estáticos ni Ventas por defecto. */
+export function isPlanBuilderSessionMenu(rows: SessionMenuGroupDto[] | undefined): boolean {
+  return !!rows?.some((g) => g.code === 'plan-custom');
+}
 
 /** Orden fijo de la barra principal: Configuración junto a Inventario; Ventas detrás. */
 /** Orden barra: Inicio → Contabilidad → Inventario → Configuración → Ventas → Compras → RRHH → Seguridad. */
@@ -67,6 +73,22 @@ const MENU_ROUTE_ALIASES: Record<string, string> = {
   '/inventario/products': '/products',
   '/catalog/products': '/products',
   '/product': '/products',
+  '/contabilidad': '/accounting',
+  '/contabilidad/configuracion': '/accounting',
+  '/configuracion/sucursales': '/saas/branches',
+  '/logistica/bodegas': '/inventario/transferencias',
+  '/inventario/stock': '/products',
+  '/ventas': '/ventas/facturas',
+  '/ventas/clientes': '/ventas/customers',
+  '/catalog/units': '/inventario/units',
+  '/catalog/types': '/inventario/product-types',
+  '/catalog/subcategories': '/inventario/structure',
+  '/catalog/lines': '/inventario/structure',
+  '/catalog/categories': '/inventario/structure',
+  '/catalog/brands': '/inventario/brands',
+  '/catalog/tax-rates': '/inventario/tax-rates',
+  '/catalog/tariffs': '/inventario/tariffs',
+  '/catalog/structure': '/inventario/structure',
 };
 
 /**
@@ -108,14 +130,18 @@ function mapSessionMenuItem(it: SessionMenuItemDto, t: TranslateFn, inheritedRou
 
   const dl = it.displayLabel?.trim();
   const icon = it.icon?.trim();
+  const pkNorm = permRaw ? normalizePolicyPermissionKey(permRaw) : '';
+  const keysAnyNorm = it.permissionKeysAny?.length
+    ? [...new Set(it.permissionKeysAny.map((k) => normalizePolicyPermissionKey(k)))]
+    : undefined;
 
   return {
     to,
     label: dl && dl.length > 0 ? dl : t(it.labelKey),
     ...(icon ? { icon } : {}),
     moduleKey: it.moduleKey ?? undefined,
-    permissionKey: it.permissionKey ?? undefined,
-    permissionKeysAny: it.permissionKeysAny?.length ? it.permissionKeysAny : undefined,
+    permissionKey: pkNorm || undefined,
+    permissionKeysAny: keysAnyNorm?.length ? keysAnyNorm : undefined,
     roles: it.itemRoles?.length ? [...it.itemRoles] : undefined,
     ...(children?.length ? { children } : {}),
   };
@@ -166,6 +192,45 @@ export function mapSessionMenuToNavGroups(
       items: g.items.map((it) => mapSessionMenuItem(it, t)),
     }));
   return sortNavGroupsForMainBar(mapped);
+}
+
+/**
+ * Menú plan `plan-custom` en barra horizontal: el preview coloca cada raíz del árbol como sección en fila;
+ * aquí se refleja creando una píldora por cada ítem raíz (carpeta con hijos o hoja), en lugar de una sola
+ * píldora con todo el árbol en un desplegable vertical.
+ */
+export function expandPlanCustomRootsToBarGroups(groups: NavGroup[]): NavGroup[] {
+  const idx = groups.findIndex((g) => g.id === 'plan-custom');
+  if (idx < 0) return groups;
+
+  const plan = groups[idx]!;
+  const roots = plan.items;
+  if (roots.length <= 1) return groups;
+
+  const rest = groups.filter((_, i) => i !== idx);
+  const baseOrder = plan.sortOrder ?? 0;
+  const slug = (label: string, i: number) => {
+    const s = label
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .slice(0, 24)
+      .toLowerCase();
+    return s || `r${i}`;
+  };
+
+  const expanded: NavGroup[] = roots.map((root, i) => ({
+    id: `plan-custom__${i}-${slug(root.label, i)}`,
+    label: root.label,
+    icon: root.icon ?? plan.icon ?? '•',
+    moduleKey: root.moduleKey ?? plan.moduleKey,
+    roles: plan.roles,
+    sortOrder: baseOrder * 100 + i,
+    items: [root],
+  }));
+
+  return sortNavGroupsForMainBar([...rest, ...expanded]);
 }
 
 function collectNavTos(items: NavItem[]): string[] {
@@ -317,13 +382,13 @@ export function buildNavGroups(
           to: '/access',
           label: t('app.nav.access'),
           moduleKey: 'access',
-          roles: ['Admin', 'SuperAdmin'],
+          permissionKey: 'access.memberships.view',
         },
         {
           to: '/profiles',
           label: t('app.nav.profiles'),
           moduleKey: 'access',
-          roles: ['Admin', 'SuperAdmin'],
+          permissionKey: 'access.profiles.view',
         },
         {
           to: '/saas/branches',

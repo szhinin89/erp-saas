@@ -12,6 +12,7 @@ public sealed record SessionMenuItemDto(
     IReadOnlyList<SessionMenuItemDto>? Children = null,
     string? Icon = null);
 
+/// <param name="MenuBarLayout">Opcional: <c>horizontal</c> o <c>vertical</c> (constructor de menú por plan/empresa).</param>
 public sealed record SessionMenuGroupDto(
     string Code,
     string Icon,
@@ -20,4 +21,5 @@ public sealed record SessionMenuGroupDto(
     string? ModuleKey,
     IReadOnlyList<string>? Roles,
     bool RequireSuperAdminPanel,
-    IReadOnlyList<SessionMenuItemDto> Items);
+    IReadOnlyList<SessionMenuItemDto> Items,
+    string? MenuBarLayout = null);

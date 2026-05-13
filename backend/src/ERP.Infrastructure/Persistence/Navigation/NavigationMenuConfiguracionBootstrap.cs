@@ -23,9 +23,14 @@ public static class NavigationMenuConfiguracionBootstrap
         SET group_id = (SELECT "Id" FROM ui_nav_groups WHERE code = 'configuracion' LIMIT 1),
             roles_csv = CASE
                 WHEN route_path = '/saas/branches' THEN 'Admin,SuperAdmin'
-                WHEN route_path = '/profiles' THEN 'Admin,SuperAdmin'
-                WHEN route_path = '/access' THEN 'Admin,SuperAdmin'
+                WHEN route_path = '/profiles' THEN NULL
+                WHEN route_path = '/access' THEN NULL
                 ELSE roles_csv
+            END,
+            permission_key = CASE
+                WHEN route_path = '/profiles' THEN 'access.profiles.view'
+                WHEN route_path = '/access' THEN 'access.memberships.view'
+                ELSE permission_key
             END
         WHERE route_path IN ('/saas/branches', '/profiles', '/access')
           AND EXISTS (SELECT 1 FROM ui_nav_groups WHERE code = 'configuracion')

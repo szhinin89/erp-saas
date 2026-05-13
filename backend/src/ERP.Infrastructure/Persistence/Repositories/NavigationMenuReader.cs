@@ -46,7 +46,8 @@ public sealed class NavigationMenuReader : INavigationMenuReader
                 g.ModuleKey,
                 ParseRoles(g.RolesCsv),
                 g.RequireSuperAdminPanel,
-                itemDtos));
+                itemDtos,
+                null));
         }
 
         return dtos;

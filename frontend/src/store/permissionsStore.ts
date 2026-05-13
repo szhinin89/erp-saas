@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+/** Alinea claves del menú/catálogo (`perm:…`) con las del perfil (`inventario.*.view`). */
+export function normalizePolicyPermissionKey(key: string): string {
+  const k = (key ?? '').trim().toLowerCase();
+  if (k.startsWith('perm:')) return k.slice(5);
+  return k;
+}
+
 interface PermissionsState {
   permissions: string[];
   planCode: string | null;
@@ -33,7 +40,8 @@ export const usePermissionsStore = create<PermissionsState>()(
         if (permissionKey.startsWith('session:')) return true;
         const perms = get().permissions;
         if (perms.includes('*')) return true;
-        return perms.some((p) => p.toLowerCase() === permissionKey.toLowerCase());
+        const want = normalizePolicyPermissionKey(permissionKey);
+        return perms.some((p) => normalizePolicyPermissionKey(p) === want);
       },
     }),
     {

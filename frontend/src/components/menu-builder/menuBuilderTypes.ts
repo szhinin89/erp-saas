@@ -1,5 +1,6 @@
 import type { FuncionalidadArbolDto } from '../../services/superAdminService';
 import type { SessionMenuGroupDto, SessionMenuItemDto } from '../../types/access';
+import { normalizePolicyPermissionKey } from '../../store/permissionsStore';
 
 /** Ítem de menú en el editor / vista previa (hoja: ruta+permiso; carpeta: ambos vacíos). */
 export interface MenuItem {
@@ -89,11 +90,24 @@ function parseFolderUidFromLabelKey(labelKey: string | undefined): string | null
   return m[1];
 }
 
+function findFuncionalidadByPerm(
+  byPerm: Map<string, FuncionalidadArbolDto>,
+  perm: string,
+): FuncionalidadArbolDto | undefined {
+  const direct = byPerm.get(perm);
+  if (direct) return direct;
+  const want = normalizePolicyPermissionKey(perm);
+  for (const [k, v] of byPerm) {
+    if (normalizePolicyPermissionKey(k) === want) return v;
+  }
+  return undefined;
+}
+
 function sessionItemToEditor(s: SessionMenuItemDto, byPerm: Map<string, FuncionalidadArbolDto>): EditorMenuItem {
   const perm = (s.permissionKey ?? '').trim();
   const route = (s.routePath ?? '').trim();
   const folder = !perm && !route;
-  const cat = perm ? byPerm.get(perm) : undefined;
+  const cat = perm ? findFuncionalidadByPerm(byPerm, perm) : undefined;
   const stableUid = folder ? parseFolderUidFromLabelKey(s.labelKey) ?? crypto.randomUUID() : crypto.randomUUID();
   const iconFromSession = s.icon?.trim();
 
@@ -163,7 +177,47 @@ function editorNodeToSessionItem(n: EditorMenuItem, sortOrder: number): SessionM
   };
 }
 
-export function editorTreeToSessionGroups(items: EditorMenuItem[], labelKey: string): SessionMenuGroupDto[] {
+export type PlanMenuBarLayout = 'horizontal' | 'vertical';
+
+/** Lee `menuBarLayout` del grupo `plan-custom` tolerando PascalCase en JSON (`MenuBarLayout`). */
+export function readPlanCustomMenuBarLayout(groups: SessionMenuGroupDto[]): PlanMenuBarLayout | null {
+  for (const g of groups) {
+    const o = g as unknown as Record<string, unknown>;
+    const code = String(o.code ?? o.Code ?? '')
+      .trim()
+      .toLowerCase();
+    if (code !== 'plan-custom') continue;
+    const raw = o.menuBarLayout ?? o.MenuBarLayout;
+    const m = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+    if (m === 'horizontal' || m === 'vertical') return m;
+  }
+  return null;
+}
+
+/** Unifica `code` / `menuBarLayout` en camelCase tras `JSON.parse` (API u otros clientes pueden usar PascalCase). */
+export function normalizeParsedMenuGroups(groups: SessionMenuGroupDto[]): SessionMenuGroupDto[] {
+  return groups.map((g) => {
+    const o = g as unknown as Record<string, unknown>;
+    const code =
+      (typeof o.code === 'string' ? o.code : typeof o.Code === 'string' ? (o.Code as string) : g.code) || '';
+    const menuBarLayout =
+      (typeof o.menuBarLayout === 'string' ? o.menuBarLayout : null) ??
+      (typeof o.MenuBarLayout === 'string' ? (o.MenuBarLayout as string) : null) ??
+      g.menuBarLayout ??
+      undefined;
+    return {
+      ...g,
+      code,
+      ...(menuBarLayout != null ? { menuBarLayout } : {}),
+    };
+  });
+}
+
+export function editorTreeToSessionGroups(
+  items: EditorMenuItem[],
+  labelKey: string,
+  menuBarLayout: PlanMenuBarLayout = 'horizontal',
+): SessionMenuGroupDto[] {
   return [
     {
       code: 'plan-custom',
@@ -174,12 +228,17 @@ export function editorTreeToSessionGroups(items: EditorMenuItem[], labelKey: str
       roles: null,
       requireSuperAdminPanel: false,
       items: items.map((n, i) => editorNodeToSessionItem(n, i)),
+      menuBarLayout,
     },
   ];
 }
 
-export function serializeEditorTreeToMenuJson(tree: EditorMenuItem[], labelKey: string): string {
-  return JSON.stringify(editorTreeToSessionGroups(tree, labelKey), null, 2);
+export function serializeEditorTreeToMenuJson(
+  tree: EditorMenuItem[],
+  labelKey: string,
+  menuBarLayout: PlanMenuBarLayout = 'horizontal',
+): string {
+  return JSON.stringify(editorTreeToSessionGroups(tree, labelKey, menuBarLayout), null, 2);
 }
 
 export function editorToMenuItems(nodes: EditorMenuItem[]): MenuItem[] {
@@ -223,6 +282,13 @@ export function validateEditorMenuTree(nodes: EditorMenuItem[], groupLabel = 'me
 export function validateSessionMenuGroups(groups: SessionMenuGroupDto[]): string[] {
   const errs: string[] = [];
   for (const g of groups) {
+    const o = g as unknown as Record<string, unknown>;
+    const layoutRaw = o.menuBarLayout ?? o.MenuBarLayout;
+    const layout = (typeof layoutRaw === 'string' ? layoutRaw : '').trim().toLowerCase();
+    if (layout && layout !== 'horizontal' && layout !== 'vertical') {
+      const code = String(o.code ?? o.Code ?? g.code ?? '?');
+      errs.push(`Grupo ${code}: menuBarLayout debe ser horizontal o vertical.`);
+    }
     const walk = (items: SessionMenuItemDto[]) => {
       items.forEach((item, idx) => {
         const name =

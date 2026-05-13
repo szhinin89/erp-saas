@@ -68,5 +68,7 @@ export interface SessionMenuGroupDto {
   roles: string[] | null;
   requireSuperAdminPanel: boolean;
   items: SessionMenuItemDto[];
+  /** `horizontal` | `vertical` desde el constructor de menú (plan/empresa). */
+  menuBarLayout?: string | null;
 }
 

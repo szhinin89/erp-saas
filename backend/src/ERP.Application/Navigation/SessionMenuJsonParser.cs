@@ -48,7 +48,8 @@ public static class SessionMenuJsonParser
                     string.IsNullOrWhiteSpace(g.ModuleKey) ? null : g.ModuleKey.Trim(),
                     g.Roles is { Count: > 0 } ? g.Roles : null,
                     g.RequireSuperAdminPanel,
-                    items));
+                    items,
+                    NormalizeMenuBarLayout(g.MenuBarLayout)));
             }
 
             groups = mapped;
@@ -58,6 +59,12 @@ public static class SessionMenuJsonParser
         {
             return false;
         }
+    }
+
+    private static string? NormalizeMenuBarLayout(string? raw)
+    {
+        var t = raw?.Trim().ToLowerInvariant();
+        return t is "horizontal" or "vertical" ? t : null;
     }
 
     private static IReadOnlyList<SessionMenuItemDto>? MapItems(List<MenuItemJson>? items)
@@ -207,6 +214,7 @@ public static class SessionMenuJsonParser
         public List<string>? Roles { get; set; }
         public bool RequireSuperAdminPanel { get; set; }
         public List<MenuItemJson>? Items { get; set; }
+        public string? MenuBarLayout { get; set; }
     }
 
     private sealed class MenuItemJson

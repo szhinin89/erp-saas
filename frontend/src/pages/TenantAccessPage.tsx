@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
+import { usePermissionsStore } from '../store/permissionsStore';
 import { tenantAccessService, type TenantMembershipItem } from '../services/tenantAccessService';
 import { profileService, type Profile } from '../services/profileService';
 import { PageShell, TableCard, EmptyState, LoadingState, NoAccessPage } from '../components/PageShell';
@@ -20,6 +21,7 @@ export function TenantAccessPage() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
+  const canManageMemberships = usePermissionsStore((s) => s.has('access.memberships.view'));
 
   const [items, setItems] = useState<TenantMembershipItem[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -84,9 +86,7 @@ export function TenantAccessPage() {
     );
   }, [items, listQuery]);
 
-  if (!user || (user.role !== 'Admin' && user.role !== 'SuperAdmin')) {
-    return <NoAccessPage title={t('tenantAccess.title')} />;
-  }
+  const isAdminOrSuper = user?.role === 'Admin' || user?.role === 'SuperAdmin';
 
   const submit = handleSubmit(async (form) => {
     setError('');
@@ -119,6 +119,10 @@ export function TenantAccessPage() {
       setError(t('tenantAccess.error.revoke'));
     }
   };
+
+  if (!user || (!isAdminOrSuper && !canManageMemberships)) {
+    return <NoAccessPage title={t('tenantAccess.title')} />;
+  }
 
   return (
     <PageShell

@@ -37,6 +37,7 @@
   "app.nav.group.accounting": "Accounting",
   "app.nav.group.access": "Access",
   "app.nav.group.configuracion": "Settings",
+  "app.nav.group.companyIam": "Users & profiles",
   "app.nav.group.security": "Security",
   "app.nav.group.saas": "SaaS",
   "app.nav.group.superadmin": "SuperAdmin",
@@ -693,9 +694,14 @@
 
   "profiles.perms.title": "Profile permissions",
   "profiles.perms.subtitle": "Select permissions for this profile (applies to users with this profile).",
+  "profiles.perms.menuTreeTitle": "Permissions aligned with the company menu",
+  "profiles.perms.extraPermissions": "Other permissions (not in the current menu)",
+  "profiles.perms.emptyCatalog": "No permissions are linked from the menu. Check the plan menu or sync the feature catalog.",
+  "profiles.perms.access.memberships.view": "Tenant user access",
   "profiles.perms.error.load": "Couldn't load profile permissions.",
   "profiles.perms.error.save": "Couldn't save profile permissions.",
 
+  "profiles.perms.access.profiles.view": "Access profiles",
   "profiles.perms.inventario.products.view": "View Products",
   "profiles.perms.inventario.products.create": "Create Products",
   "profiles.perms.inventario.products.update": "Edit Products",

@@ -1,3 +1,4 @@
+using ERP.API.Authorization;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Access.DTOs;
@@ -35,11 +36,16 @@ public class AccessController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly ITenantMenuAdminService _tenantMenuAdmin;
+    private readonly IAuthorizationService _authorization;
 
-    public AccessController(IMediator mediator, ITenantMenuAdminService tenantMenuAdmin)
+    public AccessController(
+        IMediator mediator,
+        ITenantMenuAdminService tenantMenuAdmin,
+        IAuthorizationService authorization)
     {
         _mediator = mediator;
         _tenantMenuAdmin = tenantMenuAdmin;
+        _authorization = authorization;
     }
 
     /// <summary>Login (paso 1): retorna bootstrap token + empresas accesibles.</summary>
@@ -222,7 +228,8 @@ public class AccessController : ControllerBase
 
     /// <summary>Admin: lista accesos (memberships) del tenant actual.</summary>
     [HttpGet("tenant/memberships")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = "Session")]
+    [Authorize(Policy = "perm:access.memberships.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<TenantMembershipItemDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetTenantMemberships([FromQuery] bool onlyActive = true, CancellationToken ct = default)
     {
@@ -232,7 +239,8 @@ public class AccessController : ControllerBase
 
     /// <summary>Admin: crea/actualiza acceso de un usuario a este tenant.</summary>
     [HttpPost("tenant/memberships")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = "Session")]
+    [Authorize(Policy = "perm:access.memberships.view")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
@@ -244,7 +252,8 @@ public class AccessController : ControllerBase
 
     /// <summary>Admin: revoca acceso (desactiva membership) de un usuario en este tenant.</summary>
     [HttpPost("tenant/memberships/revoke")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = "Session")]
+    [Authorize(Policy = "perm:access.memberships.view")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> RevokeTenantMembership([FromBody] TenantRevokeMembershipCommand command, CancellationToken ct)
@@ -257,17 +266,24 @@ public class AccessController : ControllerBase
 
     /// <summary>Lista perfiles de acceso del tenant actual.</summary>
     [HttpGet("profiles")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = "Session")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ProfileDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetProfiles([FromQuery] bool onlyActive = true, CancellationToken ct = default)
     {
+        var pfx = PermissionPolicyProvider.Prefix;
+        var canProfiles = await _authorization.AuthorizeAsync(User, resource: null, policyName: $"{pfx}access.profiles.view");
+        var canMembers = await _authorization.AuthorizeAsync(User, resource: null, policyName: $"{pfx}access.memberships.view");
+        if (!canProfiles.Succeeded && !canMembers.Succeeded)
+            return Forbid();
+
         var result = await _mediator.Send(new GetProfilesQuery(onlyActive), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<ProfileDto>());
     }
 
     /// <summary>Crea un perfil de acceso en el tenant actual.</summary>
     [HttpPost("profiles")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = "Session")]
+    [Authorize(Policy = "perm:access.profiles.view")]
     [ProducesResponseType(typeof(ApiResponse<ProfileDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CreateProfile([FromBody] CreateProfileCommand command, CancellationToken ct)
@@ -278,7 +294,8 @@ public class AccessController : ControllerBase
 
     /// <summary>Actualiza un perfil de acceso.</summary>
     [HttpPut("profiles/{profileId:guid}")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = "Session")]
+    [Authorize(Policy = "perm:access.profiles.view")]
     [ProducesResponseType(typeof(ApiResponse<ProfileDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateProfile([FromRoute] Guid profileId, [FromBody] UpdateProfileCommand command, CancellationToken ct)
@@ -314,7 +331,8 @@ public class AccessController : ControllerBase
 
     /// <summary>Admin: asigna/revoca permisos a un perfil del tenant.</summary>
     [HttpPut("profiles/{profileId:guid}/permissions")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = "Session")]
+    [Authorize(Policy = "perm:access.profiles.view")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
@@ -329,7 +347,8 @@ public class AccessController : ControllerBase
 
     /// <summary>Admin: lee permisos actuales de un perfil del tenant.</summary>
     [HttpGet("profiles/{profileId:guid}/permissions")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Policy = "Session")]
+    [Authorize(Policy = "perm:access.profiles.view")]
     [ProducesResponseType(typeof(ApiResponse<ProfilePermissionsDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetProfilePermissions([FromRoute] Guid profileId, CancellationToken ct)
     {

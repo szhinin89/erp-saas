@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TableCard } from '../PageShell';
 import { ZHBtn, ZHField } from '../zh/ZHForm';
 import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../zh/ZHLayout';
@@ -8,6 +8,8 @@ import { MenuBuilder, type MenuBuilderViewMode } from '../menu-builder/MenuBuild
 import type { MenuPreviewLayout } from '../menu-builder/MenuPreview';
 import {
   buildFuncionalidadMaps,
+  normalizeParsedMenuGroups,
+  readPlanCustomMenuBarLayout,
   serializeEditorTreeToMenuJson,
   sessionGroupsToEditorTree,
   validateSessionMenuGroups,
@@ -101,11 +103,15 @@ export function SuperAdminMenuBuilderSection() {
 
   const applyMenuJsonString = useCallback(
     (raw: string) => {
-      setJson(raw);
       try {
-        const groups = JSON.parse(raw.trim() || '[]') as SessionMenuGroupDto[];
+        const parsed = JSON.parse(raw.trim() || '[]') as SessionMenuGroupDto[];
+        const groups = Array.isArray(parsed) ? normalizeParsedMenuGroups(parsed) : [];
+        setJson(JSON.stringify(groups, null, 2));
+        const layout = readPlanCustomMenuBarLayout(groups);
+        if (layout) setPreviewLayout(layout);
         setVisualTree(sessionGroupsToEditorTree(groups, byPerm));
       } catch {
+        setJson(raw);
         setVisualTree([]);
       }
     },
@@ -154,10 +160,38 @@ export function SuperAdminMenuBuilderSection() {
   const handleVisualTreeChange = useCallback(
     (next: EditorMenuItem[]) => {
       setVisualTree(next);
-      setJson(serializeEditorTreeToMenuJson(next, visualLabelKey));
+      setJson(serializeEditorTreeToMenuJson(next, visualLabelKey, previewLayout));
     },
-    [visualLabelKey],
+    [visualLabelKey, previewLayout],
   );
+
+  const layoutPatchSkipMount = useRef(true);
+  useEffect(() => {
+    if (layoutPatchSkipMount.current) {
+      layoutPatchSkipMount.current = false;
+      return;
+    }
+    if (editorMainTab !== 'visual') return;
+    setJson((curr) => {
+      try {
+        const groups = JSON.parse(curr.trim() || '[]') as SessionMenuGroupDto[];
+        if (!groups.length) return curr;
+        return JSON.stringify(
+          groups.map((g) => {
+            const o = g as unknown as Record<string, unknown>;
+            const code = String(o.code ?? o.Code ?? '')
+              .trim()
+              .toLowerCase();
+            return code === 'plan-custom' ? { ...g, code: 'plan-custom', menuBarLayout: previewLayout } : g;
+          }),
+          null,
+          2,
+        );
+      } catch {
+        return curr;
+      }
+    });
+  }, [previewLayout, editorMainTab]);
 
   const fillFromGlobal = async () => {
     setErr('');
@@ -332,7 +366,10 @@ export function SuperAdminMenuBuilderSection() {
             className={editorMainTab === 'visual' ? 'is-active' : ''}
             onClick={() => {
               try {
-                const groups = JSON.parse(json.trim() || '[]') as SessionMenuGroupDto[];
+                const parsed = JSON.parse(json.trim() || '[]') as SessionMenuGroupDto[];
+                const groups = Array.isArray(parsed) ? normalizeParsedMenuGroups(parsed) : [];
+                const layout = readPlanCustomMenuBarLayout(groups);
+                if (layout) setPreviewLayout(layout);
                 setVisualTree(sessionGroupsToEditorTree(groups, byPerm));
               } catch {
                 setVisualTree([]);

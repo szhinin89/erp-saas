@@ -16,6 +16,7 @@ import { AjusteDetailPage }  from '../modules/inventario/ajustes/pages/AjusteDet
 import { OrdenesCompraListPage }  from '../modules/compras/ordenes/pages/OrdenesCompraListPage';
 import { CrearOrdenCompraPage }   from '../modules/compras/ordenes/pages/CrearOrdenCompraPage';
 import { OrdenCompraDetailPage }  from '../modules/compras/ordenes/pages/OrdenCompraDetailPage';
+import { TenantFeaturePlaceholderPage } from '../pages/TenantFeaturePlaceholderPage';
 
 export const catalogRoutes = [
   // ── Órdenes de Compra ──────────────────────────────────────────────────────
@@ -47,4 +48,17 @@ export const catalogRoutes = [
   <Route key="catalog-tax-rates" path="/catalog/tax-rates" element={<Navigate to="/inventario/tax-rates" replace />} />,
   <Route key="catalog-tariffs" path="/catalog/tariffs" element={<Navigate to="/inventario/tariffs" replace />} />,
   <Route key="catalog-structure" path="/catalog/structure" element={<Navigate to="/inventario/structure" replace />} />,
+
+  // Rutas referenciadas por el catálogo API sin pantalla dedicada aún (evitan caer en * → /dashboard).
+  <Route key="inv-kardex" path="/inventario/kardex" element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="ventas-notas" path="/ventas/notas" element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="ventas-ret-rec" path="/ventas/retenciones-recibidas" element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="compras-prov" path="/compras/proveedores" element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="compras-notas-prov" path="/compras/notas-proveedor" element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="compras-ret" path="/compras/retenciones" element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="gastos-root" path="/gastos" element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="caja-root" path="/caja" element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="actividad" path="/actividad" element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="geo" path="/configuracion/geografia" element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="sri" path="/configuracion/sri" element={<TenantFeaturePlaceholderPage />} />,
 ];

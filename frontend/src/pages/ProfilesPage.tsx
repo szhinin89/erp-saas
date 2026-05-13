@@ -3,7 +3,16 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
+import { usePermissionsStore } from '../store/permissionsStore';
+import { accessService } from '../services/accessService';
 import { profileService, type Profile } from '../services/profileService';
+import {
+  buildMenuPermissionSections,
+  leafTitle,
+  sectionTitle,
+  type MenuPermLeaf,
+} from '../modules/access/profileMenuPermissions';
+import type { SessionMenuGroupDto } from '../types/access';
 import { PageShell, TableCard, EmptyState, LoadingState, NoAccessPage } from '../components/PageShell';
 import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHBtn } from '../components/zh/ZHForm';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';
@@ -19,6 +28,7 @@ export function ProfilesPage() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
+  const canManageProfiles = usePermissionsStore((s) => s.has('access.profiles.view'));
 
   const [items, setItems] = useState<Profile[]>([]);
   const {
@@ -40,10 +50,30 @@ export function ProfilesPage() {
   const [permError, setPermError] = useState('');
   const [permSaving, setPermSaving] = useState(false);
   const [permState, setPermState] = useState<Record<string, boolean>>({});
+  const [menuForPerms, setMenuForPerms] = useState<SessionMenuGroupDto[]>([]);
   const createFormRef = useRef<HTMLFormElement>(null);
+
+  const menuPermSections = useMemo(() => buildMenuPermissionSections(menuForPerms), [menuForPerms]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void accessService
+      .getSessionMenu()
+      .then((m) => {
+        if (!cancelled) setMenuForPerms(m ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setMenuForPerms([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const permissionCatalog = useMemo(
     () => [
+      { key: 'access.profiles.view', label: t('profiles.perms.access.profiles.view') },
+      { key: 'access.memberships.view', label: t('profiles.perms.access.memberships.view') },
       { key: 'inventario.products.view', label: t('profiles.perms.inventario.products.view') },
       { key: 'inventario.products.create', label: t('profiles.perms.inventario.products.create') },
       { key: 'inventario.products.update', label: t('profiles.perms.inventario.products.update') },
@@ -191,6 +221,14 @@ export function ProfilesPage() {
         for (const def of permissionCatalog) {
           if (next[def.key] === undefined) next[def.key] = false;
         }
+        const sections = buildMenuPermissionSections(menuForPerms);
+        for (const sec of sections) {
+          for (const leaf of sec.leaves) {
+            for (const k of leaf.keys) {
+              if (next[k] === undefined) next[k] = false;
+            }
+          }
+        }
         setPermState(next);
       } catch (err: unknown) {
         const msg =
@@ -201,7 +239,7 @@ export function ProfilesPage() {
         setPermLoading(false);
       }
     },
-    [permissionCatalog, t]
+    [permissionCatalog, t, menuForPerms]
   );
 
   const selectProfile = async (p: Profile) => {
@@ -227,9 +265,39 @@ export function ProfilesPage() {
     }
   };
 
-  if (!user || (user.role !== 'Admin' && user.role !== 'SuperAdmin')) {
+  const isAdminOrSuper = user?.role === 'Admin' || user?.role === 'SuperAdmin';
+
+  const keysInMenuTree = useMemo(() => {
+    const s = new Set<string>();
+    for (const sec of menuPermSections) {
+      for (const leaf of sec.leaves) leaf.keys.forEach((k) => s.add(k));
+    }
+    return s;
+  }, [menuPermSections]);
+
+  const extraCatalog = useMemo(
+    () => permissionCatalog.filter((c) => !keysInMenuTree.has(c.key)),
+    [permissionCatalog, keysInMenuTree],
+  );
+
+  useEffect(() => {
+    if (!selected) return;
+    void loadPermissions(selected.id);
+  }, [menuForPerms, selected, loadPermissions]);
+
+  if (!user || (!isAdminOrSuper && !canManageProfiles)) {
     return <NoAccessPage title={t('profiles.title')} />;
   }
+
+  const leafAllOn = (leaf: MenuPermLeaf) => leaf.keys.every((k) => !!permState[k]);
+
+  const setLeafAll = (leaf: MenuPermLeaf, v: boolean) => {
+    setPermState((s) => {
+      const n = { ...s };
+      for (const k of leaf.keys) n[k] = v;
+      return n;
+    });
+  };
 
   return (
     <PageShell
@@ -359,20 +427,63 @@ export function ProfilesPage() {
                 {permLoading ? (
                   <LoadingState />
                 ) : (
-                  <div className="profiles-permsGrid">
-                    {permissionCatalog.map((def) => (
-                      <label key={def.key} className="profiles-permItem">
-                        <input
-                          type="checkbox"
-                          checked={!!permState[def.key]}
-                          onChange={(e) => setPermState((s) => ({ ...s, [def.key]: e.target.checked }))}
-                        />
-                        <div className="profiles-permText">
-                          <span className="profiles-permLabel">{def.label}</span>
-                          <span className="mono profiles-permKey">{def.key}</span>
+                  <div className="profiles-permEditor">
+                    {menuPermSections.length > 0 ? (
+                      <>
+                        <div className="profiles-permSectionTitle">{t('profiles.perms.menuTreeTitle')}</div>
+                        <div className="profiles-permTree">
+                          {menuPermSections.map((sec) => (
+                            <div key={sec.groupCode} className="profiles-permSection">
+                              <div className="profiles-permSectionHeading">{sectionTitle(t, sec)}</div>
+                              <div className="profiles-permLeaves">
+                                {sec.leaves.map((leaf) => (
+                                  <label key={leaf.id} className="profiles-permItem profiles-permItem--tree">
+                                    <input
+                                      type="checkbox"
+                                      checked={leafAllOn(leaf)}
+                                      onChange={(e) => setLeafAll(leaf, e.target.checked)}
+                                    />
+                                    <div className="profiles-permText">
+                                      <span className="profiles-permLabel">{leafTitle(t, leaf)}</span>
+                                      <span className="mono profiles-permKey">
+                                        {leaf.routePath} · {leaf.keys.join(' · ')}
+                                      </span>
+                                    </div>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </label>
-                    ))}
+                      </>
+                    ) : null}
+
+                    {extraCatalog.length > 0 ? (
+                      <>
+                        <div className="profiles-permSectionTitle profiles-permSectionTitle--spaced">
+                          {t('profiles.perms.extraPermissions')}
+                        </div>
+                        <div className="profiles-permsGrid">
+                          {extraCatalog.map((def) => (
+                            <label key={def.key} className="profiles-permItem">
+                              <input
+                                type="checkbox"
+                                checked={!!permState[def.key]}
+                                onChange={(e) => setPermState((s) => ({ ...s, [def.key]: e.target.checked }))}
+                              />
+                              <div className="profiles-permText">
+                                <span className="profiles-permLabel">{def.label}</span>
+                                <span className="mono profiles-permKey">{def.key}</span>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      </>
+                    ) : null}
+
+                    {menuPermSections.length === 0 && extraCatalog.length === 0 ? (
+                      <EmptyState message={t('profiles.perms.emptyCatalog')} />
+                    ) : null}
                   </div>
                 )}
               </ZHFormBody>
