@@ -39,5 +39,10 @@
     "InitialSuperAdminSetupToken": "",
     "DedicatedSingleClientInstance": false,
     "MaxUsersPerTenant": ""
+  },
+  "InstallData": {
+    "Enabled": true,
+    "AllowDestructive": false,
+    "ConfirmDestructive": ""
   }
 }

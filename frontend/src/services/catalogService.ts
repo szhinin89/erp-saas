@@ -2,6 +2,7 @@ import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
 
 export type CatalogItem = { id: string; code: string; name: string; isActive: boolean };
+type TariffApiItem = { id: string; code: string; description: string; isActive: boolean };
 
 export type CatalogActiveStatus = 'all' | 'active' | 'inactive';
 
@@ -56,7 +57,15 @@ export const catalogService = {
   productTypes: (onlyActive = true) => getList<CatalogItem[]>(`/api/producttypes?onlyActive=${onlyActive}`),
   units: (onlyActive = true) => getList<CatalogItem[]>(`/api/unitsofmeasure?onlyActive=${onlyActive}`),
   taxRates: (onlyActive = true) => getList<CatalogItem[]>(`/api/taxrates?onlyActive=${onlyActive}`),
-  tariffs: (onlyActive = true) => getList<CatalogItem[]>(`/api/tariffs?onlyActive=${onlyActive}`),
+  tariffs: async (onlyActive = true) => {
+    const data = await getList<TariffApiItem[]>(`/api/tariffs?onlyActive=${onlyActive}`);
+    return (data ?? []).map((x) => ({
+      id: x.id,
+      code: x.code,
+      name: x.description,
+      isActive: x.isActive,
+    }));
+  },
 
   productLines: (opts?: { activeStatus?: CatalogActiveStatus; search?: string }) =>
     getList<CatalogItem[]>(
@@ -95,7 +104,19 @@ export const catalogService = {
   createUnit: (body: { code: string; name: string; symbol?: string | null }) => post<CatalogItem>('/api/unitsofmeasure', body),
   createTaxRate: (body: { code: string; name: string; type: 'VAT' | 'Excise' | 'Other'; percentage: number }) =>
     post<CatalogItem>('/api/taxrates', body),
-  createTariff: (body: { code: string; name: string }) => post<CatalogItem>('/api/tariffs', body),
+  createTariff: async (body: { code: string; name: string }) => {
+    const created = await post<TariffApiItem>('/api/tariffs', {
+      code: body.code,
+      description: body.name,
+    });
+
+    return {
+      id: created.id,
+      code: created.code,
+      name: created.description,
+      isActive: created.isActive,
+    } satisfies CatalogItem;
+  },
   createProductLine: (body: { code: string; name: string }) => post<CatalogItem>('/api/productlines', body),
   createCategory: (body: { code: string; name: string; lineId: string }) => post<CatalogItem>('/api/productcategories', body),
   createSubcategory: (body: { code: string; name: string; categoryId: string }) => post<CatalogItem>('/api/productsubcategories', body),

@@ -33,6 +33,7 @@ using ERP.Infrastructure.Persistence.Saas;
 using ERP.Infrastructure.Security;
 using ERP.Infrastructure.Services;
 using ERP.Infrastructure.Services.Caja;
+using ERP.Infrastructure.Seeding.InstallData;
 using ERP.Domain.Modules.Caja;
 
 namespace ERP.Infrastructure;
@@ -48,6 +49,8 @@ public static class DependencyInjection
         services.AddSingleton<InstanceQuotaFileStore>();
         services.AddSingleton<IDeploymentFeatureFlags, DeploymentFeatureFlags>();
         services.AddScoped<IFirstRunSetupService, FirstRunSetupService>();
+        services.Configure<InstallDataOptions>(configuration.GetSection(InstallDataOptions.SectionName));
+        services.AddScoped<IInstallDataBootstrapService, InstallDataBootstrapService>();
 
         services.AddDbContext<ErpDbContext>(options =>
             options.UseNpgsql(

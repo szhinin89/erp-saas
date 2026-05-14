@@ -10,6 +10,7 @@ using ERP.Application;
 using ERP.API.Authorization;
 using ERP.Application.Common.Interfaces;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Seeding.InstallData;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -184,6 +185,13 @@ using (var plansScope = app.Services.CreateScope())
 {
     var db = plansScope.ServiceProvider.GetRequiredService<ErpDbContext>();
     await SaasPlansBootstrap.EnsureDefaultsAsync(db);
+}
+
+// InstallData: carga automática de datos base (idempotente por script/checksum).
+using (var installDataScope = app.Services.CreateScope())
+{
+    var installData = installDataScope.ServiceProvider.GetRequiredService<IInstallDataBootstrapService>();
+    await installData.ApplyPendingAsync();
 }
 
 // Bootstrap seguro de primera ejecución:
