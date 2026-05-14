@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ERP.Application.Common;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Domain.Subscriptions.Interfaces;
 using ERP.Infrastructure.Persistence;
@@ -17,12 +18,13 @@ public sealed class SubscriptionService : ISubscriptionService
         if (tenantId == Guid.Empty) return true;
 
         var code = NormalizeFeatureCode(featureCode);
+        var fallbackByModule = await IsFeatureAllowedByTenantModuleAsync(tenantId, code, ct);
         var feature = await _db.SaasFeatureDefinitions.AsNoTracking()
             .FirstOrDefaultAsync(f => f.Code == code, ct);
-        if (feature is null) return false;
+        if (feature is null) return fallbackByModule;
 
         var (planId, subscriptionId) = await ResolveEffectivePlanAndSubscriptionAsync(tenantId, ct);
-        if (planId is null) return false;
+        if (planId is null) return fallbackByModule;
 
         TenantSubscriptionFeatureOverride? overrideRow = null;
         if (subscriptionId is not null)
@@ -36,8 +38,12 @@ public sealed class SubscriptionService : ISubscriptionService
         var inPlan = await _db.SaasPlanFeatures.AsNoTracking()
             .AnyAsync(pf => pf.PlanId == planId.Value && pf.FeatureId == feature.Id && pf.IsIncluded, ct);
         if (inPlan) return true;
+        if (overrideRow is { IsEnabled: true }) return true;
 
-        return overrideRow is { IsEnabled: true };
+        // Compatibilidad con el modelo legado por módulos (tenant.enabledModules/planCode):
+        // si el feature no quedó vinculado en saas_plan_features pero el tenant sí tiene
+        // el módulo contratado, permitir acceso para no romper pantallas del plan.
+        return fallbackByModule;
     }
 
     public async Task<bool> CheckLimitAsync(Guid tenantId, string featureCode, long amount = 1, CancellationToken ct = default)
@@ -144,4 +150,39 @@ public sealed class SubscriptionService : ISubscriptionService
 
     private static string NormalizeFeatureCode(string featureCode) =>
         (featureCode ?? string.Empty).Trim().ToUpperInvariant();
+
+    private async Task<bool> IsFeatureAllowedByTenantModuleAsync(Guid tenantId, string featureCode, CancellationToken ct)
+    {
+        if (!TryMapFeatureToModule(featureCode, out var moduleKey))
+            return false;
+
+        var tenant = await _db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == tenantId, ct);
+        if (tenant is null)
+            return false;
+
+        var enabled = TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant);
+        return enabled.Contains(moduleKey, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static bool TryMapFeatureToModule(string featureCode, out string moduleKey)
+    {
+        moduleKey = featureCode switch
+        {
+            "SALES" => "ventas",
+            "CUSTOMERS" => "ventas",
+            "INVENTORY" => "inventario",
+            "BODEGAS" => "inventario",
+            "ACCOUNTING" => "accounting",
+            "COMPRAS" => "compras",
+            "PURCHASES" => "compras",
+            "GASTOS" => "gastos",
+            "BRANCHES" => "saas",
+            "USERS" => "access",
+            "API_ACCESS" => "access",
+            "PAYROLL" => "rrhh",
+            "DOCUMENTS" => "saas",
+            _ => string.Empty
+        };
+        return moduleKey.Length > 0;
+    }
 }

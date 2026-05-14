@@ -44,15 +44,15 @@ public sealed class PermissionHandler : AuthorizationHandler<PermissionRequireme
         if (tenant is null)
             return;
 
-        if (!TenantSubscriptionCatalog.TenantAllowsPermission(tenant, requirement.PermissionKey))
-            return;
-
         if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
         {
             context.Succeed(requirement);
             return;
         }
+
+        if (!TenantSubscriptionCatalog.TenantAllowsPermission(tenant, requirement.PermissionKey))
+            return;
 
         var sub = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? context.User.FindFirst("sub")?.Value;
         if (!Guid.TryParse(sub, out var userId) || userId == Guid.Empty)

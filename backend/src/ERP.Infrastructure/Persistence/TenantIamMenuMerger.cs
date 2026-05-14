@@ -16,62 +16,9 @@ public static class TenantIamMenuMerger
 
     public static IReadOnlyList<SessionMenuGroupDto> EnsureCompanyIamGroup(IReadOnlyList<SessionMenuGroupDto> source)
     {
-        if (source is null || source.Count == 0)
-            return source ?? Array.Empty<SessionMenuGroupDto>();
-
-        var needAccess = !ContainsRouteOrPermission(source, AccessRoute, MembershipsPerm);
-        var needProfiles = !ContainsRouteOrPermission(source, ProfilesRoute, ProfilesPerm);
-        if (!needAccess && !needProfiles)
-            return source;
-
-        var items = new List<SessionMenuItemDto>();
-        var order = 0;
-        if (needAccess)
-        {
-            items.Add(
-                new SessionMenuItemDto(
-                    AccessRoute,
-                    "app.nav.access",
-                    null,
-                    order++,
-                    "access",
-                    MembershipsPerm,
-                    null,
-                    null,
-                    null,
-                    null));
-        }
-
-        if (needProfiles)
-        {
-            items.Add(
-                new SessionMenuItemDto(
-                    ProfilesRoute,
-                    "app.nav.profiles",
-                    null,
-                    order++,
-                    "access",
-                    ProfilesPerm,
-                    null,
-                    null,
-                    null,
-                    null));
-        }
-
-        var injected = new SessionMenuGroupDto(
-            "tenant-company-iam",
-            "👤",
-            "app.nav.group.companyIam",
-            950,
-            "access",
-            null,
-            false,
-            items,
-            null);
-
-        var merged = source.ToList();
-        merged.Add(injected);
-        return merged;
+        // Regla actual: no inyectar entradas IAM de forma estática.
+        // El menú resuelto debe reflejar exactamente lo configurado en plan/empresa/global.
+        return source ?? Array.Empty<SessionMenuGroupDto>();
     }
 
     private static bool ContainsRouteOrPermission(

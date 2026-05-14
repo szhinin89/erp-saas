@@ -189,7 +189,9 @@ function editorNodeToSessionItem(n: EditorMenuItem, sortOrder: number): SessionM
     displayLabel: n.nombre,
     sortOrder,
     moduleKey: null,
-    permissionKey: perm.startsWith('session:') ? null : perm,
+    // Persist permission as-is (including session:* keys) so the
+    // backend validator sees route+permission as a consistent leaf.
+    permissionKey: perm,
     permissionKeysAny: null,
     itemRoles: null,
     children: undefined,
