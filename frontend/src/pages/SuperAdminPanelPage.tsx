@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { TableCard, EmptyState, LoadingState, Badge } from '../components/PageShell';
+import { EmptyState, LoadingState, Badge } from '../components/PageShell';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { SuperAdminPageTemplate } from '../components/superadmin/SuperAdminPageTemplate';
 import { useSuperAdminGate } from '../hooks/useSuperAdminGate';
@@ -12,12 +12,13 @@ import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { CompanyModuleChips } from '../components/saas/CompanyModuleChips';
 import { useI18n } from '../i18n/i18n';
-import { ZHBtn, ZHField } from '../components/zh/ZHForm';
-import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../components/zh/ZHLayout';
+import { ZHField } from '../components/zh/ZHForm';
+import { ZHGridRow, ZHInlineRowRight } from '../components/zh/ZHLayout';
 import { ZHDashboardScaffold, ZHKpiPanel } from '../components/zh/ZHDashboard';
 import { SuperAdminGrowthSection } from '../components/superadmin/SuperAdminGrowthSection';
 import { SuperAdminPlansSection } from '../components/superadmin/SuperAdminPlansSection';
 import { SuperAdminMenuBuilderSection } from '../components/superadmin/SuperAdminMenuBuilderSection';
+import { Button, Card, Input } from '../components/ui';
 import { formatApiRequestError } from '../modules/lib/apiError';
 import { goToCompaniesTenantDetail } from '../navigation/companiesTenantDetailNav';
 import type { SessionResponse } from '../types/access';
@@ -330,9 +331,9 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
       title={t('superadmin.title')}
       subtitle={isSuperAdmin && !hasSelectedTenant ? t('superadmin.subtitle') : undefined}
       tenantGuardAction={
-        <ZHBtn variant="primary" size="md" type="button" onClick={() => navigate('/dashboard')}>
+        <Button variant="primary" size="sm" onClick={() => navigate('/dashboard')}>
           {t('superadmin.goToTenant')}
-        </ZHBtn>
+        </Button>
       }
     >
       {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
@@ -384,24 +385,17 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
         {homeTab === 'overview' ? (
           <div className="sa-overviewKpi">
             {!loading && tenants.length === 0 && isSuperAdmin ? (
-              <TableCard>
-                <ZHCardSection title={t('superadmin.welcomeNoTenantsTitle')}>
-                  <p className="subtle" style={{ marginBottom: '1rem' }}>
+              <Card title={t('superadmin.welcomeNoTenantsTitle')}>
+                  <p className="subtle sa-welcome-note">
                     {t('superadmin.welcomeNoTenantsBody')}
                   </p>
                   <ZHInlineRowRight>
-                    <ZHBtn
-                      variant="ghost"
-                      size="md"
-                      type="button"
-                      onClick={() => selectHomeTab('plans')}
-                    >
+                    <Button variant="secondary" size="sm" onClick={() => selectHomeTab('plans')}>
                       {t('superadmin.welcomeGoPlans')}
-                    </ZHBtn>
-                    <ZHBtn
+                    </Button>
+                    <Button
                       variant="primary"
-                      size="md"
-                      type="button"
+                      size="sm"
                       onClick={() => {
                         selectHomeTab('companies');
                         openCreateTenant();
@@ -410,15 +404,14 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                       title={activePlans.length === 0 ? t('superadmin.createTenant.error.noPlans') : undefined}
                     >
                       {t('superadmin.welcomeCreateFirstCompany')}
-                    </ZHBtn>
+                    </Button>
                   </ZHInlineRowRight>
-                </ZHCardSection>
-              </TableCard>
+              </Card>
             ) : null}
             {loading ? (
-              <TableCard>
+              <Card>
                 <LoadingState />
-              </TableCard>
+              </Card>
             ) : metrics ? (
               <ZHKpiPanel
                 title={t('superadmin.metrics')}
@@ -431,8 +424,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
               />
             ) : null}
             {isSuperAdmin ? <SuperAdminGrowthSection /> : null}
-            <TableCard>
-              <ZHCardSection title="Dashboard SuperAdmin">
+            <Card title="Dashboard SuperAdmin">
                 <p className="subtle sa-overviewHubIntro">
                   Acceso rápido a todos los módulos de administración global.
                 </p>
@@ -443,9 +435,9 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                       {metrics ? <span className="sa-overviewHubBadge">{metrics.totals.totalTenants} tenants</span> : null}
                     </div>
                     <p className="subtle sa-overviewHubCardBody">Gestiona empresas, suscripciones y acceso a tenant.</p>
-                    <ZHBtn className="sa-overviewHubCardAction" variant="ghost" size="md" type="button" onClick={() => selectHomeTab('companies')}>
+                    <Button className="sa-overviewHubCardAction" variant="secondary" size="sm" onClick={() => selectHomeTab('companies')}>
                       Ir a empresas
-                    </ZHBtn>
+                    </Button>
                   </article>
                   <article className="sa-overviewHubCard" role="listitem">
                     <div className="sa-overviewHubCardTop">
@@ -453,9 +445,9 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                       {activePlans.length > 0 ? <span className="sa-overviewHubBadge">{activePlans.length} activos</span> : null}
                     </div>
                     <p className="subtle sa-overviewHubCardBody">Configura planes, precios y asignaciones comerciales.</p>
-                    <ZHBtn className="sa-overviewHubCardAction" variant="ghost" size="md" type="button" onClick={() => selectHomeTab('plans')}>
+                    <Button className="sa-overviewHubCardAction" variant="secondary" size="sm" onClick={() => selectHomeTab('plans')}>
                       Ir a planes
-                    </ZHBtn>
+                    </Button>
                   </article>
                   <article className="sa-overviewHubCard" role="listitem">
                     <div className="sa-overviewHubCardTop">
@@ -463,9 +455,9 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                       <span className="sa-overviewHubBadge">Simplificado</span>
                     </div>
                     <p className="subtle sa-overviewHubCardBody">El sistema usa plan comercial sin configuración granular de features.</p>
-                    <ZHBtn className="sa-overviewHubCardAction" variant="ghost" size="md" type="button" onClick={() => selectHomeTab('menus')}>
+                    <Button className="sa-overviewHubCardAction" variant="secondary" size="sm" onClick={() => selectHomeTab('menus')}>
                       Ir a configuración
-                    </ZHBtn>
+                    </Button>
                   </article>
                   <article className="sa-overviewHubCard" role="listitem">
                     <div className="sa-overviewHubCardTop">
@@ -473,32 +465,31 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                       {metrics ? <span className="sa-overviewHubBadge">{metrics.totals.activeUsers} usuarios activos</span> : null}
                     </div>
                     <p className="subtle sa-overviewHubCardBody">Define menú maestro, activaciones por plan y vista previa.</p>
-                    <ZHBtn className="sa-overviewHubCardAction" variant="primary" size="md" type="button" onClick={() => selectHomeTab('menus')}>
+                    <Button className="sa-overviewHubCardAction" variant="primary" size="sm" onClick={() => selectHomeTab('menus')}>
                       Ir a menú y planes
-                    </ZHBtn>
+                    </Button>
                   </article>
                 </div>
-              </ZHCardSection>
-            </TableCard>
+            </Card>
           </div>
         ) : homeTab === 'companies' ? (
-          <TableCard>
-            <ZHCardSection title={t('superadmin.tenantPicker')}>
-              <ZHInlineRowRight>
-                <ZHBtn variant="primary" size="md" type="button" onClick={openCreateTenant} disabled={loading || switching !== null}>
-                  {t('superadmin.createTenant')}
-                </ZHBtn>
-              </ZHInlineRowRight>
-              <ZHGridRow cols={1}>
-                <ZHField label={t('superadmin.searchPlaceholder')}>
-                  <input
-                    value={q}
-                    onChange={(e) => setQ(e.target.value)}
-                    placeholder={t('superadmin.searchPlaceholder')}
-                    disabled={loading || switching !== null}
-                  />
-                </ZHField>
-              </ZHGridRow>
+          <Card
+            title={t('superadmin.tenantPicker')}
+            actions={
+              <Button variant="primary" size="sm" onClick={openCreateTenant} disabled={loading || switching !== null}>
+                {t('superadmin.createTenant')}
+              </Button>
+            }
+          >
+              <div className="sa-search-row">
+                <Input
+                  label={t('superadmin.searchPlaceholder')}
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder={t('superadmin.searchPlaceholder')}
+                  disabled={loading || switching !== null}
+                />
+              </div>
 
               {loading ? (
                 <LoadingState />
@@ -545,42 +536,38 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                       </div>
                       <div className="sa-tenant-actions">
                         <ZHInlineRowRight>
-                          <ZHBtn
-                            variant="ghost"
-                            size="md"
-                            type="button"
+                          <Button
+                            variant="secondary"
+                            size="sm"
                             disabled={switching !== null}
                             onClick={() => openSubscriptionModal(tenant)}
                           >
                             {t('superadmin.tenantRow.changeSubscription')}
-                          </ZHBtn>
-                          <ZHBtn
-                            variant="ghost"
-                            size="md"
-                            type="button"
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
                             disabled={switching !== null}
                             onClick={() => goToCompaniesTenantDetail(navigate, tenant.id)}
                           >
                             {t('superadmin.tenantRow.companyData')}
-                          </ZHBtn>
-                          <ZHBtn
+                          </Button>
+                          <Button
                             variant="primary"
-                            size="md"
-                            type="button"
+                            size="sm"
                             onClick={() => void handleSwitch(tenant)}
                             disabled={switching !== null || !tenant.isActive}
                             title={!tenant.isActive ? t('superadmin.tenantRow.enterDisabledInactive') : undefined}
                           >
                             {switching === tenant.id ? t('superadmin.switching') : t('superadmin.enter')}
-                          </ZHBtn>
+                          </Button>
                         </ZHInlineRowRight>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
-            </ZHCardSection>
-          </TableCard>
+          </Card>
         ) : homeTab === 'plans' ? (
           <>{isSuperAdmin ? <SuperAdminPlansSection /> : null}</>
         ) : (
@@ -662,7 +649,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
             {t('superadmin.createTenant.field.restrictModules')}
           </label>
           {createRestrictModules ? (
-            <p className="subtle" style={{ marginTop: 6 }}>
+            <p className="subtle sa-modules-hint">
               {t('superadmin.createTenant.modulesHint')}
             </p>
           ) : null}
@@ -749,12 +736,12 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
             </ZHField>
           ) : null}
           <ZHInlineRowRight>
-            <ZHBtn variant="ghost" type="button" onClick={() => setCreateTenantOpen(false)} disabled={createBusy}>
+            <Button variant="secondary" size="sm" onClick={() => setCreateTenantOpen(false)} disabled={createBusy}>
               {t('common.cancel')}
-            </ZHBtn>
-            <ZHBtn variant="primary" type="button" onClick={() => void saveCreateTenant()} disabled={createBusy}>
+            </Button>
+            <Button variant="primary" size="sm" onClick={() => void saveCreateTenant()} disabled={createBusy}>
               {t('common.save')}
-            </ZHBtn>
+            </Button>
           </ZHInlineRowRight>
         </Modal>
       ) : null}
@@ -807,7 +794,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
             {t('superadmin.createTenant.field.restrictModules')}
           </label>
           {subRestrict ? (
-            <p className="subtle" style={{ marginTop: 6 }}>
+            <p className="subtle sa-modules-hint">
               {t('superadmin.createTenant.modulesHint')}
             </p>
           ) : null}
@@ -832,12 +819,12 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
             </div>
           ) : null}
           <ZHInlineRowRight>
-            <ZHBtn variant="ghost" type="button" onClick={() => setSubModalOpen(false)} disabled={subBusy}>
+            <Button variant="secondary" size="sm" onClick={() => setSubModalOpen(false)} disabled={subBusy}>
               {t('common.cancel')}
-            </ZHBtn>
-            <ZHBtn variant="primary" type="button" onClick={() => void saveSubscriptionModal()} disabled={subBusy}>
+            </Button>
+            <Button variant="primary" size="sm" onClick={() => void saveSubscriptionModal()} disabled={subBusy}>
               {t('common.save')}
-            </ZHBtn>
+            </Button>
           </ZHInlineRowRight>
         </Modal>
       ) : null}

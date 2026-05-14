@@ -245,7 +245,7 @@ export function ZHFormAlert(props: { type: ZHFormAlertType; message: string; det
   const { type, message, detail } = props;
   return (
     <div className={`zh-form-alert zh-form-alert--${type}`}>
-      <span className="zh-form-alert-icon" style={{ color: type === 'success' ? 'var(--zh-success)' : type === 'error' ? 'var(--zh-danger)' : type === 'warning' ? 'var(--zh-warning)' : 'var(--zh-blue)' }}>
+      <span className={`zh-form-alert-icon zh-form-alert-icon--${type}`}>
         {alertIcon(type)}
       </span>
       <div>
@@ -364,12 +364,11 @@ export function ZHToggle(props: {
       </div>
       <button
         type="button"
-        className="zh-toggle-switch"
+        className={`zh-toggle-switch${pressed ? ' is-pressed' : ''}`}
         role="switch"
         aria-checked={value}
         aria-disabled={disabled}
         onClick={toggle}
-        style={pressed ? { boxShadow: '0 0 0 3px rgba(79, 123, 166, 0.15)' } : undefined}
       >
         <span className="zh-toggle-thumb" />
       </button>

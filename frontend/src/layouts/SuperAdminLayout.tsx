@@ -63,7 +63,7 @@ export function SuperAdminLayout() {
         <header className="sa-shell-header">
           <h1>{title}</h1>
           <div className="sa-shell-header-actions">
-            {user?.email ? <span className="subtle" style={{ fontSize: 12 }}>{user.email}</span> : null}
+            {user?.email ? <span className="subtle sa-shell-header-email">{user.email}</span> : null}
             <button type="button" onClick={() => void handleLogout()}>
               {t('app.logout')}
             </button>

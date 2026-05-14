@@ -68,3 +68,74 @@
   margin-left: 0;
 }
 
+.profiles-search-row {
+  margin-bottom: 12px;
+}
+
+.profiles-actions-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+@media (max-width: 640px) {
+  .profiles-responsive-table thead {
+    display: none;
+  }
+
+  .profiles-responsive-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .profiles-responsive-table tr {
+    display: block;
+    border: 1px solid var(--zh-color-border);
+    border-radius: var(--zh-radius-md, 10px);
+    background: var(--zh-color-surface);
+    padding: 8px 12px;
+  }
+
+  .profiles-responsive-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    border: none;
+    padding: 0.4rem 0;
+    text-align: right;
+    font-size: 0.82rem;
+  }
+
+  .profiles-responsive-table td::before {
+    content: attr(data-label);
+    text-align: left;
+    color: var(--color-text-muted, #5b6e8c);
+    font-weight: 600;
+    flex: 0 0 42%;
+  }
+
+  .profiles-responsive-table td[data-label='Activo'],
+  .profiles-responsive-table td[data-label='Active'] {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .profiles-responsive-table td[data-label='Activo']::before,
+  .profiles-responsive-table td[data-label='Active']::before {
+    flex: none;
+  }
+
+  .profiles-responsive-table td[data-label='Activo'] .profiles-actions-cell,
+  .profiles-responsive-table td[data-label='Active'] .profiles-actions-cell {
+    width: 100%;
+  }
+
+  .profiles-responsive-table td[data-label='Activo'] .profiles-actions-cell .zh-btn,
+  .profiles-responsive-table td[data-label='Active'] .profiles-actions-cell .zh-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+

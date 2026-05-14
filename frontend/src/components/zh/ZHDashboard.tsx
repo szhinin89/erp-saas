@@ -1,4 +1,4 @@
-import { TableCard } from '../PageShell';
+import { Card } from '../ui';
 import { ZHGrid } from './ZHForm';
 import { ZHCardSection, ZHSection, ZHStack } from './ZHLayout';
 import './ZHDashboard.css';
@@ -45,7 +45,7 @@ export function ZHKpiPanel(props: {
   items: { label: string; value: string; tone?: ZHKpiTone }[];
 }) {
   return (
-    <TableCard>
+    <Card>
       <ZHCardSection title={props.title}>
         <div className="zh-dash-kpiGrid">
           {props.items.map((k) => (
@@ -56,7 +56,7 @@ export function ZHKpiPanel(props: {
           ))}
         </div>
       </ZHCardSection>
-    </TableCard>
+    </Card>
   );
 }
 
@@ -71,7 +71,7 @@ export function ZHChartPanel(props: {
 }) {
   const bars = props.bars ?? 5;
   return (
-    <TableCard>
+    <Card>
       <ZHCardSection
         title={props.title}
         right={props.yearLabel ? <div className="zh-dash-pill">{props.yearLabel}</div> : undefined}
@@ -90,7 +90,7 @@ export function ZHChartPanel(props: {
           </span>
         </div>
       </ZHCardSection>
-    </TableCard>
+    </Card>
   );
 }
 
@@ -99,7 +99,7 @@ export function ZHActivityPanel(props: {
   items: { title: string; meta: string }[];
 }) {
   return (
-    <TableCard>
+    <Card>
       <ZHCardSection title={props.title}>
         <ZHStack gap={10}>
           {props.items.map((a) => (
@@ -110,7 +110,7 @@ export function ZHActivityPanel(props: {
           ))}
         </ZHStack>
       </ZHCardSection>
-    </TableCard>
+    </Card>
   );
 }
 
@@ -120,7 +120,7 @@ export function ZHModulesPanel(props: {
   items: { label: string; value: string; pct: ZHProgressPct; tone?: ZHModuleTone }[];
 }) {
   return (
-    <TableCard>
+    <Card>
       <ZHCardSection
         title={props.title}
         right={props.rightLabel ? <div className="zh-dash-muted">{props.rightLabel}</div> : undefined}
@@ -146,7 +146,7 @@ export function ZHModulesPanel(props: {
           ))}
         </ZHGrid>
       </ZHCardSection>
-    </TableCard>
+    </Card>
   );
 }
 

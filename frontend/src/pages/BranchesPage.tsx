@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PageShell, TableCard, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { PageShell, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { Card } from '../components/ui/Card';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
@@ -15,7 +16,7 @@ import {
 import './BranchesPage.css';
 import { ZHBtn, ZHFormSection, ZHGrid, ZHField, ZHToggle } from '../components/zh/ZHForm';
 import { ZHColSpan } from '../components/zh/ZHLayout';
-import ZHSearchBar from '../components/shared/ZHSearchBar';
+import { SearchBar } from '../components/ui';
 import { EntityAuditPanel } from '../components/EntityAuditPanel';
 import { branchFormSchema, type BranchFormValues } from '../schemas/saas/branchSchema';
 
@@ -405,7 +406,7 @@ export function BranchesPage() {
         ) : undefined
       }
     >
-      <TableCard>
+      <Card>
         {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button
@@ -641,8 +642,8 @@ export function BranchesPage() {
 
         {uiTab === 'list' && (
           <>
-            <div className="zh-mb-12">
-              <ZHSearchBar
+            <div className="branches-search-row">
+              <SearchBar
                 searchQuery={branchListQuery}
                 onSearch={setBranchListQuery}
                 onClearAll={() => {
@@ -673,7 +674,7 @@ export function BranchesPage() {
                 message={branchListApplied.trim() ? t('common.listTab.noMatch') : t('common.noData')}
               />
             ) : (
-              <table className="table">
+              <table className="table branches-responsive-table">
                 <thead>
                   <tr>
                     <th>{t('branches.col.name')}</th>
@@ -686,31 +687,33 @@ export function BranchesPage() {
                 <tbody>
                   {items.map((x) => (
                     <tr key={x.id}>
-                      <td>{x.name}</td>
-                      <td>{x.address}</td>
-                      <td>
+                      <td data-label={t('branches.col.name')}>{x.name}</td>
+                      <td data-label={t('branches.col.address')}>{x.address}</td>
+                      <td data-label={t('branches.col.main')}>
                         <Badge
                           label={x.isMainBranch ? t('common.yes') : t('common.no')}
                           variant={x.isMainBranch ? 'blue' : 'gray'}
                         />
                       </td>
-                      <td>
+                      <td data-label={t('common.status')}>
                         <Badge
                           label={x.isActive ? t('common.active') : t('common.inactive')}
                           variant={x.isActive ? 'green' : 'gray'}
                         />
                       </td>
-                      <td>
-                        {canUpdate && (
-                          <ZHBtn variant="secondary" size="xs" type="button" onClick={() => void openEdit(x.id)}>
-                            {t('common.edit')}
-                          </ZHBtn>
-                        )}
-                        {(x.isActive ? canDelete : canUpdate) && (
-                          <ZHBtn variant="ghost" size="xs" type="button" onClick={() => void toggleDisable(x)}>
-                            {x.isActive ? t('branches.disable') : t('branches.enable')}
-                          </ZHBtn>
-                        )}
+                      <td data-label={t('branches.col.actions')}>
+                        <div className="branches-actions-cell">
+                          {canUpdate && (
+                            <ZHBtn variant="secondary" size="xs" type="button" onClick={() => void openEdit(x.id)}>
+                              {t('common.edit')}
+                            </ZHBtn>
+                          )}
+                          {(x.isActive ? canDelete : canUpdate) && (
+                            <ZHBtn variant="ghost" size="xs" type="button" onClick={() => void toggleDisable(x)}>
+                              {x.isActive ? t('branches.disable') : t('branches.enable')}
+                            </ZHBtn>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -719,7 +722,7 @@ export function BranchesPage() {
             )}
           </>
         )}
-      </TableCard>
+      </Card>
     </PageShell>
   );
 }

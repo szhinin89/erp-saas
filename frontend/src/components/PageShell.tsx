@@ -1,6 +1,7 @@
 import './PageShell.css';
 import { useI18n } from '../i18n/i18n';
 import { ZHScreenHeading } from './zh/ZHLayout';
+import { Card } from './ui';
 
 interface Props {
   title: string;
@@ -23,8 +24,13 @@ export function PageShell({ title, kicker, subtitle, action, children }: Props) 
   );
 }
 
-export function TableCard({ children }: { children: React.ReactNode }) {
-  return <div className="table-card">{children}</div>;
+export function TableCard({ children, className }: { children: React.ReactNode; className?: string }) {
+  const tableCardClassName = className ? `table-card ${className}` : 'table-card';
+  return (
+    <Card className={tableCardClassName} bodyClassName="table-card-body">
+      {children}
+    </Card>
+  );
 }
 
 export function EmptyState({ message }: { message: string }) {
@@ -45,9 +51,9 @@ export function NoAccessPage({ title }: { title: string }) {
   const { t } = useI18n();
   return (
     <PageShell title={title} subtitle={t('common.noAccess')}>
-      <TableCard>
+      <Card>
         <EmptyState message={t('common.noAccess')} />
-      </TableCard>
+      </Card>
     </PageShell>
   );
 }

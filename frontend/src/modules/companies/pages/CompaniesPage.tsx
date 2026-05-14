@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,12 +14,11 @@ import {
 } from '../../../schemas/saas/companySchema';
 import { formatApiRequestError } from '../../lib/apiError';
 import { useDeployment } from '../../../deployment/DeploymentContext';
-import { PageShell, TableCard, EmptyState, LoadingState, NoAccessPage, Badge } from '../../../components/PageShell';
+import { PageShell, EmptyState, LoadingState, NoAccessPage, Badge } from '../../../components/PageShell';
 import { EntityAuditPanel } from '../../../components/EntityAuditPanel';
-import ZHSearchBar from '../../../components/shared/ZHSearchBar';
-import { ZHFormSection, ZHFormBody, ZHGrid, ZHField, ZHBtn } from '../../../components/zh/ZHForm';
+import { ZHFormSection, ZHFormBody, ZHGrid, ZHField } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
-import { ZHFormCard } from '../../../components/zh/ZHFormCard';
+import { Button, Card, Input } from '../../../components/ui';
 import {
   clearCompaniesDetailTenantId,
   clearCompaniesSubscriptionTenantId,
@@ -48,8 +47,6 @@ function CompaniesPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [creating, setCreating] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
-  const generalCompanyFormRef = useRef<HTMLFormElement>(null);
   const [tab, setTab] = useState<CompanyTab>('data');
   const [auditTenantId, setAuditTenantId] = useState<string | null>(null);
   const [auditRefreshKey, setAuditRefreshKey] = useState(0);
@@ -420,7 +417,16 @@ function CompaniesPage() {
 
   return (
     <PageShell kicker={t('app.nav.group.home')} title={t('companies.title')} subtitle={t('companies.subtitle')}>
-      <TableCard>
+      <Card
+        title={t('companies.title')}
+        actions={
+          tab === 'data' ? (
+            <Button variant="secondary" size="sm" onClick={() => void refresh()} disabled={loading}>
+              {t('companies.refresh')}
+            </Button>
+          ) : null
+        }
+      >
         {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button type="button" className={tab === 'data' ? 'is-active' : ''} onClick={() => setTab('data')}>
@@ -460,15 +466,13 @@ function CompaniesPage() {
               />
             ) : (
               <div className="companies-inner-stack">
-                <ZHFormCard
-                  hideHeader
-                  title={t('companies.globalParams.title')}
-                  subtitle={`${tenantDetail.name} · ${tenantDetail.planCode}`}
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void saveGlobalParameters();
-                  }}
-                >
+                <Card title={t('companies.globalParams.title')}>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void saveGlobalParameters();
+                    }}
+                  >
                   {globalParamOk ? (
                     <ZHPageNotice variant="success" message={t('companies.globalParams.saveSuccess')} />
                   ) : null}
@@ -533,11 +537,12 @@ function CompaniesPage() {
                     </ZHGrid>
                   </ZHFormSection>
                   <div className="zh-form-actions-row zh-form-actions-row--end">
-                    <ZHBtn variant="primary" size="md" type="submit" disabled={globalParamSaving}>
+                    <Button variant="primary" size="sm" type="submit" disabled={globalParamSaving}>
                       {globalParamSaving ? t('companies.globalParams.saving') : t('companies.globalParams.save')}
-                    </ZHBtn>
+                    </Button>
                   </div>
-                </ZHFormCard>
+                  </form>
+                </Card>
                 <ConfigManagementPanel
                   tenantId={detailTenantId}
                   canManage={user?.role === 'SuperAdmin' || user?.role === 'Admin'}
@@ -552,31 +557,37 @@ function CompaniesPage() {
         {tab === 'data' && (
           <>
             <div className="companies-data-picker zh-mb-12">
-              <ZHSearchBar
-                searchQuery={listQuery}
-                onSearch={setListQuery}
-                onClearAll={() => setListQuery('')}
-                filterValues={{}}
-                placeholder={t('companies.search')}
-                resultCount={filtered.length}
-                entityLabel={t('companies.list.entityLabel')}
-                loading={loading}
-                extraActions={
-                  <ZHBtn variant="secondary" size="md" type="button" onClick={() => void refresh()} disabled={loading}>
-                    {t('companies.refresh')}
-                  </ZHBtn>
-                }
-                actionLabel={t('companies.list.newAction')}
-                onAction={() => {
-                  clearTenantDetailView();
-                }}
-              />
+              <div className="companies-picker-toolbar">
+                <Input
+                  label={t('companies.search')}
+                  placeholder={t('companies.search')}
+                  value={listQuery}
+                  onChange={(event) => setListQuery(event.target.value)}
+                  disabled={loading}
+                />
+                <div className="companies-picker-actions">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setListQuery('')}
+                    disabled={loading || !listQuery.trim()}
+                  >
+                    {t('common.clear')}
+                  </Button>
+                  <Button variant="primary" size="sm" onClick={clearTenantDetailView} disabled={loading}>
+                    {t('companies.list.newAction')}
+                  </Button>
+                </div>
+              </div>
+              <p className="subtle companies-picker-meta">
+                {filtered.length} {t('companies.list.entityLabel')}
+              </p>
               {loading ? (
                 <LoadingState />
               ) : filtered.length === 0 ? (
                 <EmptyState message={items.length === 0 ? t('common.noData') : t('common.listTab.noMatch')} />
               ) : (
-                <table className="companies-table companies-table--embedded">
+                <table className="companies-table companies-table--embedded companies-responsive-table">
                   <thead>
                     <tr>
                       <th>{t('companies.table.name')}</th>
@@ -600,13 +611,13 @@ function CompaniesPage() {
                           setTab('data');
                         }}
                       >
-                        <td>{x.name}</td>
-                        <td>{x.slug}</td>
-                        <td className="companies-plan-cell">{x.planCode?.trim() ? x.planCode : '—'}</td>
-                        <td className="companies-modules-cell">
+                        <td data-label={t('companies.table.name')}>{x.name}</td>
+                        <td data-label={t('companies.table.slug')}>{x.slug}</td>
+                        <td data-label={t('companies.table.plan')} className="companies-plan-cell">{x.planCode?.trim() ? x.planCode : '—'}</td>
+                        <td data-label={t('companies.table.modules')} className="companies-modules-cell">
                           <CompanyModuleChips company={x} />
                         </td>
-                        <td className="mono companies-mono">{x.id}</td>
+                        <td data-label={t('companies.table.id')} className="mono companies-mono">{x.id}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -616,84 +627,84 @@ function CompaniesPage() {
 
             {!detailTenantId ? (
               <div className="companies-inner-stack">
-                <ZHFormCard ref={formRef} hideHeader title={t('companies.title')} subtitle={t('companies.subtitle')} onSubmit={submit}>
+                <Card title={t('companies.form.create')}>
+                  <form onSubmit={submit}>
                   <input type="hidden" name="tenantId" value={tenantId} />
 
-                  <ZHFormSection title={t('companies.form.create')}>
-                    {maxActiveTenants != null ? (
-                      <p className="companies-quota-hint" role="note">
-                        {t('companies.deployment.maxTenantsHint')} <strong>{maxActiveTenants}</strong>
-                      </p>
+                  {maxActiveTenants != null ? (
+                    <p className="companies-quota-hint" role="note">
+                      {t('companies.deployment.maxTenantsHint')} <strong>{maxActiveTenants}</strong>
+                    </p>
+                  ) : null}
+                  {maxIdentityUsers != null ? (
+                    <p className="companies-quota-hint" role="note">
+                      {t('companies.deployment.maxUsersHint')} <strong>{maxIdentityUsers}</strong>
+                    </p>
+                  ) : null}
+                  <ZHGrid cols={2}>
+                    <ZHField label={t('companies.form.tenantName')} required fieldError={errors.tenantName?.message}>
+                      <input disabled={creating} {...register('tenantName')} />
+                    </ZHField>
+                    <ZHField label={t('companies.form.tenantSlug')} required fieldError={errors.tenantSlug?.message}>
+                      <input disabled={creating} {...register('tenantSlug')} />
+                    </ZHField>
+                    <ZHField label={t('companies.form.ruc')} fieldError={errors.ruc?.message}>
+                      <input disabled={creating} {...register('ruc')} />
+                    </ZHField>
+                    <ZHField label={t('companies.form.shortName')} fieldError={errors.shortName?.message}>
+                      <input disabled={creating} {...register('shortName')} />
+                    </ZHField>
+                    <ZHField label={t('companies.form.tradeName')} fieldError={errors.tradeName?.message}>
+                      <input disabled={creating} {...register('tradeName')} />
+                    </ZHField>
+                    <ZHField label={t('companies.form.dinardap')} fieldError={errors.dinardap?.message}>
+                      <input disabled={creating} {...register('dinardap')} />
+                    </ZHField>
+                    <ZHField label={t('companies.form.logoUrl')} fieldError={errors.logoUrl?.message}>
+                      <input disabled={creating} {...register('logoUrl')} />
+                    </ZHField>
+                    <ZHField label={t('companies.form.displayOrder')} fieldError={errors.displayOrder?.message}>
+                      <input type="number" disabled={creating} {...register('displayOrder', { valueAsNumber: true })} />
+                    </ZHField>
+                    <ZHField label={t('companies.form.priority')} fieldError={errors.priority?.message}>
+                      <input type="number" disabled={creating} {...register('priority', { valueAsNumber: true })} />
+                    </ZHField>
+                    <ZHField
+                      label={t('companies.form.adminFirstName')}
+                      required={!linkExistingAdmin}
+                      fieldError={errors.adminFirstName?.message}
+                    >
+                      <input disabled={creating || linkExistingAdmin} {...register('adminFirstName')} />
+                    </ZHField>
+                    <ZHField
+                      label={t('companies.form.adminLastName')}
+                      required={!linkExistingAdmin}
+                      fieldError={errors.adminLastName?.message}
+                    >
+                      <input disabled={creating || linkExistingAdmin} {...register('adminLastName')} />
+                    </ZHField>
+                    <ZHField label={t('companies.form.adminEmail')} required fieldError={errors.adminEmail?.message}>
+                      <input type="email" disabled={creating} {...register('adminEmail')} />
+                    </ZHField>
+                    <ZHField label={t('companies.form.linkExistingAdmin')}>
+                      <label className="companies-checkbox-label">
+                        <input type="checkbox" disabled={creating} {...register('linkExistingAdmin')} />
+                        <span>{t('companies.form.linkExistingAdminHint')}</span>
+                      </label>
+                    </ZHField>
+                    {!linkExistingAdmin ? (
+                      <ZHField label={t('companies.form.adminPassword')} required fieldError={errors.adminPassword?.message}>
+                        <input type="password" disabled={creating} autoComplete="new-password" {...register('adminPassword')} />
+                      </ZHField>
                     ) : null}
-                    {maxIdentityUsers != null ? (
-                      <p className="companies-quota-hint" role="note">
-                        {t('companies.deployment.maxUsersHint')} <strong>{maxIdentityUsers}</strong>
-                      </p>
-                    ) : null}
-                    <ZHGrid cols={2}>
-                      <ZHField label={t('companies.form.tenantName')} required fieldError={errors.tenantName?.message}>
-                        <input disabled={creating} {...register('tenantName')} />
-                      </ZHField>
-                      <ZHField label={t('companies.form.tenantSlug')} required fieldError={errors.tenantSlug?.message}>
-                        <input disabled={creating} {...register('tenantSlug')} />
-                      </ZHField>
-                      <ZHField label={t('companies.form.ruc')} fieldError={errors.ruc?.message}>
-                        <input disabled={creating} {...register('ruc')} />
-                      </ZHField>
-                      <ZHField label={t('companies.form.shortName')} fieldError={errors.shortName?.message}>
-                        <input disabled={creating} {...register('shortName')} />
-                      </ZHField>
-                      <ZHField label={t('companies.form.tradeName')} fieldError={errors.tradeName?.message}>
-                        <input disabled={creating} {...register('tradeName')} />
-                      </ZHField>
-                      <ZHField label={t('companies.form.dinardap')} fieldError={errors.dinardap?.message}>
-                        <input disabled={creating} {...register('dinardap')} />
-                      </ZHField>
-                      <ZHField label={t('companies.form.logoUrl')} fieldError={errors.logoUrl?.message}>
-                        <input disabled={creating} {...register('logoUrl')} />
-                      </ZHField>
-                      <ZHField label={t('companies.form.displayOrder')} fieldError={errors.displayOrder?.message}>
-                        <input type="number" disabled={creating} {...register('displayOrder', { valueAsNumber: true })} />
-                      </ZHField>
-                      <ZHField label={t('companies.form.priority')} fieldError={errors.priority?.message}>
-                        <input type="number" disabled={creating} {...register('priority', { valueAsNumber: true })} />
-                      </ZHField>
-                      <ZHField
-                        label={t('companies.form.adminFirstName')}
-                        required={!linkExistingAdmin}
-                        fieldError={errors.adminFirstName?.message}
-                      >
-                        <input disabled={creating || linkExistingAdmin} {...register('adminFirstName')} />
-                      </ZHField>
-                      <ZHField
-                        label={t('companies.form.adminLastName')}
-                        required={!linkExistingAdmin}
-                        fieldError={errors.adminLastName?.message}
-                      >
-                        <input disabled={creating || linkExistingAdmin} {...register('adminLastName')} />
-                      </ZHField>
-                      <ZHField label={t('companies.form.adminEmail')} required fieldError={errors.adminEmail?.message}>
-                        <input type="email" disabled={creating} {...register('adminEmail')} />
-                      </ZHField>
-                      <ZHField label={t('companies.form.linkExistingAdmin')}>
-                        <label className="companies-checkbox-label">
-                          <input type="checkbox" disabled={creating} {...register('linkExistingAdmin')} />
-                          <span>{t('companies.form.linkExistingAdminHint')}</span>
-                        </label>
-                      </ZHField>
-                      {!linkExistingAdmin ? (
-                        <ZHField label={t('companies.form.adminPassword')} required fieldError={errors.adminPassword?.message}>
-                          <input type="password" disabled={creating} autoComplete="new-password" {...register('adminPassword')} />
-                        </ZHField>
-                      ) : null}
-                    </ZHGrid>
-                  </ZHFormSection>
+                  </ZHGrid>
                   <div className="zh-form-actions-row zh-form-actions-row--end">
-                    <ZHBtn variant="primary" size="md" type="submit" disabled={creating}>
+                    <Button variant="primary" size="sm" type="submit" disabled={creating}>
                       {creating ? t('companies.form.creating') : t('companies.form.create')}
-                    </ZHBtn>
+                    </Button>
                   </div>
-                </ZHFormCard>
+                  </form>
+                </Card>
               </div>
             ) : detailLoading ? (
               <LoadingState />
@@ -701,48 +712,43 @@ function CompaniesPage() {
               <>
                 <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={detailError} />
                 <div className="zh-mt-12">
-                  <ZHBtn variant="secondary" size="md" type="button" onClick={clearTenantDetailView}>
+                  <Button variant="secondary" size="sm" type="button" onClick={clearTenantDetailView}>
                     {t('companies.data.newCompany')}
-                  </ZHBtn>
+                  </Button>
                 </div>
               </>
             ) : tenantDetail ? (
               <div className="companies-inner-stack">
-                <TableCard>
+                <Card title={t('companies.data.sectionMeta')}>
                   <ZHFormBody standalone>
-                    <ZHFormSection title={t('companies.data.sectionMeta')}>
-                      <ZHGrid cols={2}>
-                        <ZHField label={t('companies.table.id')}>
-                          <div className="companies-readonly-value mono">{tenantDetail.id}</div>
-                        </ZHField>
-                        <ZHField label={t('companies.data.createdAt')}>
-                          <div className="companies-readonly-value">
-                            {new Date(tenantDetail.createdAt).toLocaleString()}
-                          </div>
-                        </ZHField>
-                        <ZHField label={t('common.status')}>
-                          <div className="companies-readonly-value">
-                            <Badge
-                              label={tenantDetail.isActive ? t('common.active') : t('common.inactive')}
-                              variant={tenantDetail.isActive ? 'green' : 'gray'}
-                            />
-                          </div>
-                        </ZHField>
-                      </ZHGrid>
-                    </ZHFormSection>
+                    <ZHGrid cols={2}>
+                      <ZHField label={t('companies.table.id')}>
+                        <div className="companies-readonly-value mono">{tenantDetail.id}</div>
+                      </ZHField>
+                      <ZHField label={t('companies.data.createdAt')}>
+                        <div className="companies-readonly-value">
+                          {new Date(tenantDetail.createdAt).toLocaleString()}
+                        </div>
+                      </ZHField>
+                      <ZHField label={t('common.status')}>
+                        <div className="companies-readonly-value">
+                          <Badge
+                            label={tenantDetail.isActive ? t('common.active') : t('common.inactive')}
+                            variant={tenantDetail.isActive ? 'green' : 'gray'}
+                          />
+                        </div>
+                      </ZHField>
+                    </ZHGrid>
                   </ZHFormBody>
-                </TableCard>
+                </Card>
 
-                <ZHFormCard
-                  ref={generalCompanyFormRef}
-                  hideHeader
-                  title={t('companies.data.sectionCompany')}
-                  subtitle={tenantDetail.name}
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void saveTenantCompanyDetail();
-                  }}
-                >
+                <Card title={t('companies.data.sectionCompany')}>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void saveTenantCompanyDetail();
+                    }}
+                  >
                   {detailSaveOk ? (
                     <ZHPageNotice variant="success" message={t('companies.data.saveSuccess')} />
                   ) : null}
@@ -781,11 +787,12 @@ function CompaniesPage() {
                     </ZHGrid>
                   </ZHFormSection>
                   <div className="zh-form-actions-row zh-form-actions-row--end">
-                    <ZHBtn variant="primary" size="md" type="submit" disabled={detailSaving}>
+                    <Button variant="primary" size="sm" type="submit" disabled={detailSaving}>
                       {detailSaving ? t('companies.data.saving') : t('companies.data.updateGeneral')}
-                    </ZHBtn>
+                    </Button>
                   </div>
-                </ZHFormCard>
+                  </form>
+                </Card>
               </div>
             ) : null}
           </>
@@ -803,7 +810,7 @@ function CompaniesPage() {
             <EmptyState message={t('audit.pickRow')} />
           )
         ) : null}
-      </TableCard>
+      </Card>
     </PageShell>
   );
 }

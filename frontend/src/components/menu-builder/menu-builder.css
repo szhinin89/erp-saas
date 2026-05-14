@@ -468,6 +468,11 @@
   line-height: 1.45;
 }
 
+.menu-preview-empty--library {
+  border: none;
+  min-height: 6rem;
+}
+
 .menu-preview-empty__icon {
   font-size: 1.5rem;
   margin-bottom: 0.35rem;

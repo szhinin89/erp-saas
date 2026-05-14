@@ -18,6 +18,7 @@ export type CreateCustomerRequest = {
   email?: string | null;
   phone?: string | null;
   address?: string | null;
+  isActive?: boolean;
 };
 
 type LegacyCustomerApi = {
@@ -65,23 +66,48 @@ export const customerService = {
   },
 
   async create(payload: CreateCustomerRequest): Promise<Customer> {
-    const identification = payload.identification.trim();
-    const type: 'RUC' | 'CI' = identification.length > 10 ? 'RUC' : 'CI';
-
     const raw = await api
-      .post<ApiResponse<LegacyCustomerApi> | Record<string, unknown>>('/api/customers', {
-        identificationType: type,
-        identificationNumber: identification,
-        legalName: payload.fullName.trim(),
-        tradeName: null,
-        addressLine: payload.address?.trim() || null,
-        phone: payload.phone?.trim() || null,
-        email: payload.email?.trim() || null,
-        notes: null,
-        isActive: true,
+      .post<ApiResponse<LegacyCustomerApi> | Record<string, unknown>>('/api/customers', toApiPayload(payload, true))
+      .then((r) => readEnvelopePayload<LegacyCustomerApi>(r.data));
+
+    return toCustomer(raw);
+  },
+
+  async update(id: string, payload: CreateCustomerRequest): Promise<Customer> {
+    const raw = await api
+      .put<ApiResponse<LegacyCustomerApi> | Record<string, unknown>>(`/api/customers/${id}`, {
+        ...toApiPayload(payload, true),
+        id,
       })
       .then((r) => readEnvelopePayload<LegacyCustomerApi>(r.data));
 
     return toCustomer(raw);
   },
+
+  async setActive(id: string, isActive: boolean): Promise<Customer> {
+    const raw = await api
+      .patch<ApiResponse<LegacyCustomerApi> | Record<string, unknown>>(
+        `/api/customers/${id}/${isActive ? 'enable' : 'disable'}`,
+        {}
+      )
+      .then((r) => readEnvelopePayload<LegacyCustomerApi>(r.data));
+
+    return toCustomer(raw);
+  },
 };
+
+function toApiPayload(payload: CreateCustomerRequest, defaultActive: boolean) {
+  const identification = payload.identification.trim();
+  const identificationType: 'RUC' | 'CI' = identification.length > 10 ? 'RUC' : 'CI';
+  return {
+    identificationType,
+    identificationNumber: identification,
+    legalName: payload.fullName.trim(),
+    tradeName: null,
+    addressLine: payload.address?.trim() || null,
+    phone: payload.phone?.trim() || null,
+    email: payload.email?.trim() || null,
+    notes: null,
+    isActive: payload.isActive ?? defaultActive,
+  };
+}

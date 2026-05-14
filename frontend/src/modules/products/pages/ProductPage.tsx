@@ -1,8 +1,6 @@
-import { useMemo, useState } from 'react';
-import { EmptyState, LoadingState, NoAccessPage, PageShell, TableCard } from '../../../components/PageShell';
-import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
-import ZHSearchBar from '../../../components/shared/ZHSearchBar';
-import { ZHBtn } from '../../../components/zh/ZHForm';
+import { useMemo, useState, type ReactNode } from 'react';
+import { EmptyState, LoadingState, NoAccessPage, PageShell } from '../../../components/PageShell';
+import { Alert, Badge, Button, Card, Input, Tabs } from '../../../components/ui';
 import { usePermissionsStore } from '../../../store/permissionsStore';
 import { useAuthStore } from '../../../store/authStore';
 import { useI18n } from '../../../i18n/i18n';
@@ -156,20 +154,12 @@ export function ProductPage() {
     return <NoAccessPage title={t('products.title')} />;
   }
 
-  return (
-    <PageShell
-      kicker={`${t('app.nav.group.inventario')} · ${t('products.title')}`}
-      title={t('products.title')}
-      subtitle={t('products.list.subtitle')}
-    >
-      {productsError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={productsError} /> : null}
-      {catalogsError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={catalogsError} /> : null}
-      {createError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={createError} /> : null}
-      {updateError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={updateError} /> : null}
-      {toggleError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={toggleError} /> : null}
-
-      {canCreate ? (
-        <TableCard>
+  const tabs = [
+    {
+      id: 'formulario',
+      label: 'Formulario',
+      content: canCreate ? (
+        <div className="products-form-wrap">
           <ProductForm
             t={t}
             catalogs={catalogs}
@@ -179,99 +169,140 @@ export function ProductPage() {
             existingProduct={editingProduct}
             onCancelEdit={handleCancelEdit}
           />
-        </TableCard>
-      ) : null}
-
-      <TableCard>
-        <div className="zh-mb-12">
-          <ZHSearchBar
-            searchQuery={listQuery}
-            onSearch={setListQuery}
-            onClearAll={() => setListQuery('')}
-            filterValues={{}}
-            placeholder={t('products.list.searchPlaceholder')}
-            resultCount={filteredProducts.length}
-            entityLabel={t('products.list.entityLabel')}
-            loading={productsLoading}
-          />
         </div>
-        {productsLoading ? <LoadingState /> : null}
-        {!productsLoading && filteredProducts.length === 0 ? (
-          <EmptyState message={recentProducts.length === 0 ? t('products.empty') : t('common.listTab.noMatch')} />
-        ) : null}
-        {!productsLoading && filteredProducts.length > 0 ? (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>{t('products.table.code')}</th>
-                <th>{t('products.table.name')}</th>
-                <th>{t('products.table.description')}</th>
-                <th>{t('products.table.barcodes')}</th>
-                <th>{t('products.table.status')}</th>
-                <th>{t('products.table.createdAt')}</th>
-                {canEdit ? <th>{t('common.actions')}</th> : null}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.map((product) => (
-                <tr key={product.id}>
-                  <td>
-                    <span className="mono">{product.saleCode}</span>
-                  </td>
-                  <td>{product.shortName}</td>
-                  <td className="subtle">{product.description}</td>
-                  <td>
-                    {product.barcodes && product.barcodes.length > 0 ? (
-                      <div className="zh-flex zh-flex-wrap zh-gap-1">
-                        {product.barcodes.slice(0, 2).map((barcode, index) => (
-                          <span key={index} className="mono zh-text-xs zh-bg-gray-100 zh-px-2 zh-py-1 zh-rounded">
-                            {barcode.code}
-                          </span>
-                        ))}
-                        {product.barcodes.length > 2 && (
-                          <span className="zh-text-xs zh-text-gray-500">
-                            +{product.barcodes.length - 2} {t('products.table.moreBarcodes', 'más')}
-                          </span>
+      ) : (
+        <EmptyState message={t('common.noPermission')} />
+      ),
+    },
+    {
+      id: 'listado',
+      label: 'Listado',
+      content: (
+        <>
+          <div className="products-search-row">
+            <Input
+              label={t('products.list.searchLabel', 'Buscar producto')}
+              placeholder={t('products.list.searchPlaceholder')}
+              value={listQuery}
+              onChange={(event) => setListQuery(event.target.value)}
+            />
+          </div>
+          {productsLoading ? <LoadingState /> : null}
+          {!productsLoading && filteredProducts.length === 0 ? (
+            <EmptyState message={recentProducts.length === 0 ? t('products.empty') : t('common.listTab.noMatch')} />
+          ) : null}
+          {!productsLoading && filteredProducts.length > 0 ? (
+            <div className="table-wrapper">
+              <table className="products-responsive-table">
+                <thead>
+                  <tr>
+                    <th>{t('products.table.code')}</th>
+                    <th>{t('products.table.name')}</th>
+                    <th>{t('products.table.description')}</th>
+                    <th>{t('products.table.barcodes')}</th>
+                    <th>{t('products.table.status')}</th>
+                    <th>{t('products.table.createdAt')}</th>
+                    {canEdit ? <th>{t('common.actions')}</th> : null}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.map((product) => (
+                    <tr key={product.id}>
+                      <td data-label={t('products.table.code')}>
+                        <span className="mono">{product.saleCode}</span>
+                      </td>
+                      <td data-label={t('products.table.name')}>{product.shortName}</td>
+                      <td data-label={t('products.table.description')} className="subtle">
+                        {product.description}
+                      </td>
+                      <td data-label={t('products.table.barcodes')}>
+                        {product.barcodes && product.barcodes.length > 0 ? (
+                          <div className="products-barcodes-wrap">
+                            {product.barcodes.slice(0, 2).map((barcode, index) => (
+                              <span key={index} className="mono products-barcode-pill">
+                                {barcode.code}
+                              </span>
+                            ))}
+                            {product.barcodes.length > 2 && (
+                              <span className="products-barcodes-more">
+                                +{product.barcodes.length - 2} {t('products.table.moreBarcodes', 'más')}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="subtle products-no-barcodes">{t('products.table.noBarcodes')}</span>
                         )}
-                      </div>
-                    ) : (
-                      <span className="subtle zh-text-xs">{t('products.table.noBarcodes')}</span>
-                    )}
-                  </td>
-                  <td>
-                    <span className={product.isActive ? 'badge badge-success' : 'badge badge-neutral'}>
-                      {product.isActive ? t('common.active') : t('common.inactive')}
-                    </span>
-                  </td>
-                  <td>{new Date(product.createdAt).toLocaleString()}</td>
-                  {canEdit ? (
-                    <td className="zh-flex zh-gap-1">
-                      <ZHBtn
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEdit(product)}
-                        disabled={editMode || toggling || !product.isActive}
-                      >
-                        {t('common.edit')}
-                      </ZHBtn>
-                      <ZHBtn
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleProductStatus(product.id, !product.isActive)}
-                        disabled={toggling || editMode}
-                      >
-                        {product.isActive ? t('common.disable') : t('common.enable')}
-                      </ZHBtn>
-                    </td>
-                  ) : null}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : null}
-      </TableCard>
+                      </td>
+                      <td data-label={t('products.table.status')}>
+                        <Badge variant={product.isActive ? 'success' : 'danger'}>
+                          {product.isActive ? t('common.active') : t('common.inactive')}
+                        </Badge>
+                      </td>
+                      <td data-label={t('products.table.createdAt')}>{new Date(product.createdAt).toLocaleString()}</td>
+                      {canEdit ? (
+                        <td data-label={t('common.actions')}>
+                          <div className="products-actions-cell">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleEdit(product)}
+                              disabled={editMode || toggling || !product.isActive}
+                            >
+                              {t('common.edit')}
+                            </Button>
+                            <Button
+                              variant={product.isActive ? 'danger' : 'success'}
+                              size="sm"
+                              onClick={() => toggleProductStatus(product.id, !product.isActive)}
+                              disabled={toggling || editMode}
+                            >
+                              {product.isActive ? t('common.disable') : t('common.enable')}
+                            </Button>
+                          </div>
+                        </td>
+                      ) : null}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </>
+      ),
+    },
+  ] satisfies { id: string; label: string; content: ReactNode }[];
+
+  return (
+    <PageShell
+      kicker={`${t('app.nav.group.inventario')} · ${t('products.title')}`}
+      title={t('products.title')}
+      subtitle={t('products.list.subtitle')}
+    >
+      <div className="products-shell">
+        <Card
+          title={
+            <span className="products-title">
+              <span>📦</span>
+              <span>{t('products.title')}</span>
+            </span>
+          }
+          actions={
+            editMode ? (
+              <Button variant="secondary" size="sm" onClick={handleCancelEdit}>
+                {t('common.cancel')}
+              </Button>
+            ) : null
+          }
+        >
+          {productsError ? <Alert type="error" message={`${t('common.errorPrefix')}: ${productsError}`} /> : null}
+          {catalogsError ? <Alert type="error" message={`${t('common.errorPrefix')}: ${catalogsError}`} /> : null}
+          {createError ? <Alert type="error" message={`${t('common.errorPrefix')}: ${createError}`} /> : null}
+          {updateError ? <Alert type="error" message={`${t('common.errorPrefix')}: ${updateError}`} /> : null}
+          {toggleError ? <Alert type="error" message={`${t('common.errorPrefix')}: ${toggleError}`} /> : null}
+
+          <Tabs tabs={tabs} defaultActiveId="formulario" />
+        </Card>
+      </div>
     </PageShell>
   );
 }

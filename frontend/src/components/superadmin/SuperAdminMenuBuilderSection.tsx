@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { TableCard } from '../PageShell';
+import { Card } from '../ui';
 import { ZHBtn, ZHField } from '../zh/ZHForm';
 import { ZHConfirmModal } from '../zh/ZHConfirmModal';
 import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../zh/ZHLayout';
@@ -1538,7 +1538,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             ref={importWorkspaceInputRef}
             type="file"
             accept="application/json,.json"
-            style={{ display: 'none' }}
+            className="menu-plan-composer__hiddenFileInput"
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) void importWorkspaceSnapshot(file);
@@ -1713,7 +1713,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
   }
 
   return (
-    <TableCard>
+    <Card>
       <ZHCardSection title={t('superadmin.menuBuilder.title')}>
         <p className="subtle">{t('superadmin.menuBuilder.subtitle')}</p>
 
@@ -1729,7 +1729,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
           </div>
         </div>
 
-        <div className="zh-form-tabs" style={{ marginTop: 12 }} role="tablist">
+        <div className="zh-form-tabs menu-plan-composer__legacyTabs" role="tablist">
           <button
             type="button"
             role="tab"
@@ -1760,7 +1760,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
         </div>
 
         {editorMainTab === 'visual' ? (
-          <div style={{ marginTop: 16 }}>
+          <div className="menu-plan-composer__legacyBuilderWrap">
             <MenuBuilder
               catalogArbol={arbol}
               tree={visualTree}
@@ -1774,7 +1774,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
           </div>
         ) : null}
 
-        <div className="zh-form-tabs" style={{ marginTop: 12 }} role="tablist">
+        <div className="zh-form-tabs menu-plan-composer__legacyTabs" role="tablist">
           <button type="button" role="tab" className={sub === 'plan' ? 'is-active' : ''} onClick={() => setSub('plan')}>
             {t('superadmin.menuBuilder.byPlan')}
           </button>
@@ -1799,7 +1799,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
                 </select>
               </ZHField>
             </ZHGridRow>
-            <div className="subtle" style={{ marginTop: 8, marginBottom: 4 }}>
+            <div className="subtle menu-plan-composer__legacySubtleLabel">
               {t('superadmin.menuBuilder.copyFromTitle')}
             </div>
             <ZHGridRow cols={1}>
@@ -1822,7 +1822,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
               </ZHField>
             </ZHGridRow>
             <ZHGridRow cols={1}>
-              <label className="zh-inline-check" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <label className="zh-inline-check menu-plan-composer__legacyInlineCheck">
                 <input
                   type="checkbox"
                   checked={copyMenu}
@@ -1857,7 +1857,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
               </select>
             </ZHField>
             {tenantFlags ? (
-              <p className="subtle" style={{ marginTop: 4 }}>
+              <p className="subtle menu-plan-composer__legacySubtleHelp">
                 {t('superadmin.menuBuilder.hintFlags')}{' '}
                 <strong>
                   {tenantFlags.hasCustomMenu ? 'custom ' : ''}
@@ -1872,13 +1872,12 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
         {editorMainTab === 'json' ? (
           <ZHField label={t('superadmin.menuBuilder.jsonLabel')}>
             <textarea
-              className="zh-input"
+              className="zh-input menu-plan-composer__legacyJsonTextarea"
               rows={18}
               value={json}
               onChange={(e) => setJson(e.target.value)}
               spellCheck={false}
               disabled={busy}
-              style={{ fontFamily: 'ui-monospace, monospace', fontSize: 12 }}
             />
           </ZHField>
         ) : null}
@@ -1914,6 +1913,6 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
           )}
         </ZHInlineRowRight>
       </ZHCardSection>
-    </TableCard>
+    </Card>
   );
 }

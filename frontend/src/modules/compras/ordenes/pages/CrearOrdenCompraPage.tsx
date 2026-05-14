@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { NoAccessPage, PageShell, TableCard } from '../../../../components/PageShell';
+import { NoAccessPage, PageShell } from '../../../../components/PageShell';
+import { Card } from '../../../../components/ui/Card';
 import { ZHBtn, ZHField, ZHFormSection, ZHGrid } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
@@ -8,6 +9,7 @@ import { useOrdenCompraAcciones } from '../hooks/useOrdenesCompra';
 import { api } from '../../../lib/api';
 import type { ApiResponse } from '../../../../types/api';
 import type { ItemOrdenCompraRequest } from '../api/ordenCompraService';
+import './ordenes-compra-pages.css';
 
 interface ProveedorOpcion { id: string; razonSocial: string; }
 interface ProductoOpcion  { id: string; shortName: string; isActive: boolean; }
@@ -99,7 +101,7 @@ export function CrearOrdenCompraPage() {
   return (
     <PageShell kicker="Compras" title="Nueva orden de compra">
       <form onSubmit={handleSubmit}>
-        <TableCard>
+        <Card>
           {(localError || error) && (
             <ZHPageNotice variant="error" message="Error" detail={localError ?? error ?? ''} />
           )}
@@ -144,15 +146,15 @@ export function CrearOrdenCompraPage() {
           </ZHFormSection>
 
           <ZHFormSection title="Líneas de la orden">
-            <table className="table" style={{ marginBottom: '8px' }}>
+            <table className="table oc-create-lines-table">
               <thead>
                 <tr>
                   <th>Producto</th>
-                  <th style={{ width: '100px' }}>Cantidad</th>
-                  <th style={{ width: '120px' }}>Precio unit.</th>
-                  <th style={{ width: '80px' }}>IVA %</th>
-                  <th style={{ width: '120px' }}>Total línea</th>
-                  <th style={{ width: '40px' }}></th>
+                  <th className="oc-col-qty">Cantidad</th>
+                  <th className="oc-col-price">Precio unit.</th>
+                  <th className="oc-col-tax">IVA %</th>
+                  <th className="oc-col-total">Total línea</th>
+                  <th className="oc-col-actions"></th>
                 </tr>
               </thead>
               <tbody>
@@ -199,7 +201,7 @@ export function CrearOrdenCompraPage() {
                           <option value="15">15%</option>
                         </select>
                       </td>
-                      <td style={{ textAlign: 'right' }}>${tot.toFixed(2)}</td>
+                      <td className="oc-cell-right">${tot.toFixed(2)}</td>
                       <td>
                         {items.length > 1 && (
                           <ZHBtn variant="ghost" size="sm" onClick={() => removeItem(idx)}>✕</ZHBtn>
@@ -211,20 +213,20 @@ export function CrearOrdenCompraPage() {
               </tbody>
             </table>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="oc-lines-footer">
               <ZHBtn variant="secondary" size="sm" onClick={() => setItems((prev) => [...prev, emptyItem()])}>
                 + Agregar línea
               </ZHBtn>
-              <div style={{ textAlign: 'right', color: 'var(--zh-text-muted)', fontSize: '0.875rem' }}>
+              <div className="oc-lines-summary">
                 <div>Subtotal: ${subtotal.toFixed(2)}</div>
-                <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--zh-text)' }}>
+                <div className="oc-lines-total">
                   Total: ${total.toFixed(2)}
                 </div>
               </div>
             </div>
           </ZHFormSection>
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '16px' }}>
+          <div className="oc-form-actions">
             <ZHBtn variant="ghost" size="md" onClick={() => navigate('/compras/ordenes')}>
               Cancelar
             </ZHBtn>
@@ -232,7 +234,7 @@ export function CrearOrdenCompraPage() {
               {loading ? 'Guardando…' : 'Crear orden'}
             </ZHBtn>
           </div>
-        </TableCard>
+        </Card>
       </form>
     </PageShell>
   );

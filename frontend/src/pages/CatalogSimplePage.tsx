@@ -1,15 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PageShell, TableCard, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { PageShell, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { Card } from '../components/ui/Card';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { useAuthStore } from '../store/authStore';
 import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHBtn } from '../components/zh/ZHForm';
-import ZHSearchBar from '../components/shared/ZHSearchBar';
+import { SearchBar } from '../components/ui';
 import { EntityAuditPanel } from '../components/EntityAuditPanel';
 import { buildCatalogSimpleRowSchema } from '../schemas/catalog/catalogSimpleSchema';
+import './CatalogSimplePage.css';
 
 export type CatalogRow = { id: string; code: string; name: string; isActive: boolean };
 
@@ -178,7 +180,7 @@ export function CatalogSimplePage({
         ) : undefined
       }
     >
-      <TableCard>
+      <Card>
         {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button type="button" className={tab === 'data' ? 'is-active' : ''} onClick={() => setTab('data')}>
@@ -241,8 +243,8 @@ export function CatalogSimplePage({
 
         {tab === 'list' && (
           <>
-            <div className="zh-mb-12">
-              <ZHSearchBar
+            <div className="catalog-simple-search-row">
+              <SearchBar
                 searchQuery={listQuery}
                 onSearch={setListQuery}
                 onClearAll={() => setListQuery('')}
@@ -262,7 +264,7 @@ export function CatalogSimplePage({
             ) : listFiltered.length === 0 ? (
               <EmptyState message={t('common.listTab.noMatch')} />
             ) : (
-              <table className="table">
+              <table className="table catalog-simple-responsive-table">
                 <thead>
                   <tr>
                     <th>{t('common.code')}</th>
@@ -285,9 +287,9 @@ export function CatalogSimplePage({
                           : undefined
                       }
                     >
-                      <td>{x.code}</td>
-                      <td>{x.name}</td>
-                      <td>
+                      <td data-label={t('common.code')}>{x.code}</td>
+                      <td data-label={t('common.name')}>{x.name}</td>
+                      <td data-label={t('common.status')}>
                         <Badge label={x.isActive ? t('common.active') : t('common.inactive')} variant={x.isActive ? 'green' : 'gray'} />
                       </td>
                     </tr>
@@ -310,7 +312,7 @@ export function CatalogSimplePage({
             <EmptyState message={t('audit.pickRow')} />
           )
         ) : null}
-      </TableCard>
+      </Card>
     </PageShell>
   );
 }

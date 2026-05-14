@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { EmptyState, LoadingState, PageShell, NoAccessPage, TableCard } from '../components/PageShell';
+import { EmptyState, LoadingState, PageShell, NoAccessPage } from '../components/PageShell';
+import { Card } from '../components/ui/Card';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { useAuthStore } from '../store/authStore';
 import { securityService, type SecurityAdminMatrix, type SecurityUser } from '../services/securityService';
@@ -123,7 +124,7 @@ export function SecuritySettingsPage() {
     <PageShell kicker={t('app.nav.group.security')} title={t('security.title')} subtitle={t('security.subtitle')}>
       {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
-      <TableCard>
+      <Card>
         {loading ? (
           <LoadingState />
         ) : rows.length === 0 ? (
@@ -180,7 +181,7 @@ export function SecuritySettingsPage() {
             </table>
           </div>
         )}
-      </TableCard>
+      </Card>
     </PageShell>
   );
 }

@@ -1,0 +1,41 @@
+.catalog-simple-search-row {
+  margin-bottom: 12px;
+}
+
+@media (max-width: 640px) {
+  .catalog-simple-responsive-table thead {
+    display: none;
+  }
+
+  .catalog-simple-responsive-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .catalog-simple-responsive-table tr {
+    display: block;
+    border: 1px solid var(--zh-color-border);
+    border-radius: var(--zh-radius-md, 10px);
+    background: var(--zh-color-surface);
+    padding: 8px 12px;
+  }
+
+  .catalog-simple-responsive-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    border: none;
+    padding: 0.4rem 0;
+    text-align: right;
+    font-size: 0.82rem;
+  }
+
+  .catalog-simple-responsive-table td::before {
+    content: attr(data-label);
+    text-align: left;
+    color: var(--color-text-muted, #5b6e8c);
+    font-weight: 600;
+    flex: 0 0 42%;
+  }
+}

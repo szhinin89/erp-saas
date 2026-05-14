@@ -1,6 +1,6 @@
 import { forwardRef } from 'react';
-import { TableCard } from '../PageShell';
 import { ZHFormBody, ZHFormHeader } from './ZHForm';
+import { Card } from '../ui';
 
 export type ZHFormCardProps = {
   title: string;
@@ -16,12 +16,12 @@ export const ZHFormCard = forwardRef<HTMLFormElement, ZHFormCardProps>(function 
   ref
 ) {
   return (
-    <TableCard>
+    <Card title={hideHeader ? title : undefined}>
       <form ref={ref} onSubmit={onSubmit}>
         {!hideHeader ? <ZHFormHeader title={title} subtitle={subtitle} /> : null}
         <ZHFormBody standalone={!!hideHeader}>{children}</ZHFormBody>
       </form>
-    </TableCard>
+    </Card>
   );
 });
 

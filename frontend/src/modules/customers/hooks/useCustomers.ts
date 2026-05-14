@@ -23,6 +23,36 @@ export function useCustomers() {
     }
   };
 
+  const updateCustomer = async (id: string, payload: CreateCustomerRequest) => {
+    setCreateError(null);
+    setCreating(true);
+    try {
+      const updated = await customerService.update(id, payload);
+      listState.refetch();
+      return updated;
+    } catch (error) {
+      setCreateError(formatApiError(error));
+      return null;
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const toggleCustomerStatus = async (id: string, isActive: boolean) => {
+    setCreateError(null);
+    setCreating(true);
+    try {
+      const updated = await customerService.setActive(id, isActive);
+      listState.refetch();
+      return updated;
+    } catch (error) {
+      setCreateError(formatApiError(error));
+      return null;
+    } finally {
+      setCreating(false);
+    }
+  };
+
   return {
     customers: listState.data ?? [],
     loading: listState.loading,
@@ -30,5 +60,7 @@ export function useCustomers() {
     creating,
     createError,
     createCustomer,
+    updateCustomer,
+    toggleCustomerStatus,
   };
 }

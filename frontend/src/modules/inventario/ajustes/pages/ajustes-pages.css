@@ -1,0 +1,139 @@
+.aj-action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.aj-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.aj-detail-footer {
+  margin-top: 16px;
+}
+
+.aj-field-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #64748b);
+  margin-bottom: 2px;
+}
+
+.aj-list-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.aj-row-clickable {
+  cursor: pointer;
+}
+
+.aj-cell-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.aj-pagination {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+.aj-pagination-label {
+  line-height: 32px;
+  color: var(--color-text-muted, #64748b);
+}
+
+.aj-stock-note {
+  margin-top: 4px;
+  font-size: 0.85rem;
+}
+
+.aj-stock-note--normal {
+  color: var(--color-text-muted, #64748b);
+}
+
+.aj-stock-note--warning {
+  color: var(--zh-color-error, #dc2626);
+}
+
+.aj-create-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.aj-input-error {
+  border-color: var(--zh-color-error, #dc2626) !important;
+}
+
+@media (max-width: 768px) {
+  .aj-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .aj-create-actions,
+  .aj-pagination {
+    justify-content: stretch;
+  }
+}
+
+@media (max-width: 640px) {
+  .aj-responsive-table thead {
+    display: none;
+  }
+
+  .aj-responsive-table tbody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .aj-responsive-table tr {
+    display: block;
+    border: 1px solid var(--zh-color-border);
+    border-radius: var(--zh-radius-md, 10px);
+    background: var(--zh-color-surface);
+    padding: 8px 12px;
+  }
+
+  .aj-responsive-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    border: none;
+    padding: 0.4rem 0;
+    text-align: right;
+    font-size: 0.82rem;
+  }
+
+  .aj-responsive-table td::before {
+    content: attr(data-label);
+    text-align: left;
+    color: var(--color-text-muted, #5b6e8c);
+    font-weight: 600;
+    flex: 0 0 42%;
+  }
+
+  .aj-cell-actions {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .aj-cell-actions::before {
+    flex: none;
+  }
+
+  .aj-cell-actions .zh-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,31 +1,21 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { EmptyState, LoadingState, NoAccessPage, PageShell, TableCard } from '../../../../components/PageShell';
+import { EmptyState, LoadingState, NoAccessPage, PageShell } from '../../../../components/PageShell';
+import { Card } from '../../../../components/ui/Card';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { useOrdenesCompraList } from '../hooks/useOrdenesCompra';
 import type { EstadoOrdenCompra, OrdenesCompraFilter } from '../api/ordenCompraService';
+import './ordenes-compra-pages.css';
 
-const ESTADO_COLORS: Record<EstadoOrdenCompra, string> = {
-  Borrador:         'var(--zh-text-muted)',
-  Enviada:          '#2563eb',
-  Aprobada:         '#16a34a',
-  RecibidaParcial:  '#ca8a04',
-  Cerrada:          '#6d28d9',
-  Cancelada:        '#dc2626',
-};
+function estadoClass(estado: EstadoOrdenCompra) {
+  return `oc-status-badge--${estado.toLowerCase()}`;
+}
 
 function EstadoBadge({ estado }: { estado: EstadoOrdenCompra }) {
   return (
-    <span style={{
-      fontSize: '0.75rem',
-      fontWeight: 600,
-      padding: '2px 8px',
-      borderRadius: '99px',
-      background: ESTADO_COLORS[estado] + '20',
-      color: ESTADO_COLORS[estado],
-    }}>
+    <span className={`oc-status-badge oc-status-badge--sm ${estadoClass(estado)}`}>
       {estado}
     </span>
   );
@@ -57,11 +47,11 @@ export function OrdenesCompraListPage() {
         ) : undefined
       }
     >
-      <TableCard>
+      <Card>
         {error && <ZHPageNotice variant="error" message="Error" detail={error} />}
 
         {/* Filtros */}
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+        <div className="oc-list-filters">
           <select
             value={filter.estado ?? ''}
             onChange={(e) =>
@@ -97,7 +87,7 @@ export function OrdenesCompraListPage() {
           <EmptyState message="No hay órdenes de compra que coincidan con los filtros." />
         ) : (
           <>
-            <table className="table">
+            <table className="table oc-responsive-table">
               <thead>
                 <tr>
                   <th>Número</th>
@@ -111,18 +101,14 @@ export function OrdenesCompraListPage() {
               </thead>
               <tbody>
                 {items.map((oc) => (
-                  <tr
-                    key={oc.id}
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => navigate(`/compras/ordenes/${oc.id}`)}
-                  >
-                    <td><strong>{oc.numeroOrden}</strong></td>
-                    <td>{oc.proveedorNombre}</td>
-                    <td>{new Date(oc.fechaEmision).toLocaleDateString()}</td>
-                    <td>{new Date(oc.fechaRequerida).toLocaleDateString()}</td>
-                    <td>${oc.total.toFixed(2)}</td>
-                    <td><EstadoBadge estado={oc.estado} /></td>
-                    <td>
+                  <tr key={oc.id} className="oc-row-clickable" onClick={() => navigate(`/compras/ordenes/${oc.id}`)}>
+                    <td data-label="Número"><strong>{oc.numeroOrden}</strong></td>
+                    <td data-label="Proveedor">{oc.proveedorNombre}</td>
+                    <td data-label="Fecha emisión">{new Date(oc.fechaEmision).toLocaleDateString()}</td>
+                    <td data-label="Fecha requerida">{new Date(oc.fechaRequerida).toLocaleDateString()}</td>
+                    <td data-label="Total">${oc.total.toFixed(2)}</td>
+                    <td data-label="Estado"><EstadoBadge estado={oc.estado} /></td>
+                    <td data-label="Acciones" className="oc-cell-actions">
                       <ZHBtn variant="ghost" size="sm" onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/compras/ordenes/${oc.id}`);
@@ -134,12 +120,12 @@ export function OrdenesCompraListPage() {
             </table>
 
             {total > (filter.pageSize ?? 20) && (
-              <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
+              <div className="oc-pagination">
                 <ZHBtn variant="ghost" size="sm" disabled={(filter.pageNumber ?? 1) <= 1}
                   onClick={() => setFilter((f) => ({ ...f, pageNumber: (f.pageNumber ?? 1) - 1 }))}>
                   Anterior
                 </ZHBtn>
-                <span style={{ lineHeight: '32px', color: 'var(--zh-text-muted)' }}>
+                <span className="oc-pagination-label">
                   Pág. {filter.pageNumber ?? 1} · {total} registros
                 </span>
                 <ZHBtn variant="ghost" size="sm"
@@ -151,7 +137,7 @@ export function OrdenesCompraListPage() {
             )}
           </>
         )}
-      </TableCard>
+      </Card>
     </PageShell>
   );
 }

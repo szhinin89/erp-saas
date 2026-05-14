@@ -120,7 +120,7 @@ export function PasswordResetPage() {
       <form className="login-form" onSubmit={handleSubmit(onValid)} noValidate>
         <ZHFormHeader title={t('reset.title')} subtitle={t('reset.directSubtitle')} />
         <ZHFormBody>
-          <p className="login-form-hint" style={{ marginBottom: '0.75rem', fontSize: '0.875rem' }}>
+          <p className="login-form-hint">
             <Link to="/forgot-password">{t('login.forgotPassword')}</Link>
           </p>
           {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}

@@ -1,31 +1,21 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { EmptyState, LoadingState, NoAccessPage, PageShell, TableCard } from '../../../../components/PageShell';
+import { EmptyState, LoadingState, NoAccessPage, PageShell } from '../../../../components/PageShell';
+import { Card } from '../../../../components/ui/Card';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { useOrdenCompraDetalle, useOrdenCompraAcciones } from '../hooks/useOrdenesCompra';
 import type { EstadoOrdenCompra } from '../api/ordenCompraService';
+import './ordenes-compra-pages.css';
 
-const ESTADO_COLORS: Record<EstadoOrdenCompra, string> = {
-  Borrador:         'var(--zh-text-muted)',
-  Enviada:          '#2563eb',
-  Aprobada:         '#16a34a',
-  RecibidaParcial:  '#ca8a04',
-  Cerrada:          '#6d28d9',
-  Cancelada:        '#dc2626',
-};
+function estadoClass(estado: EstadoOrdenCompra) {
+  return `oc-status-badge--${estado.toLowerCase()}`;
+}
 
 function EstadoBadge({ estado }: { estado: EstadoOrdenCompra }) {
   return (
-    <span style={{
-      fontSize: '0.875rem',
-      fontWeight: 700,
-      padding: '4px 12px',
-      borderRadius: '99px',
-      background: ESTADO_COLORS[estado] + '20',
-      color: ESTADO_COLORS[estado],
-    }}>
+    <span className={`oc-status-badge oc-status-badge--md ${estadoClass(estado)}`}>
       {estado}
     </span>
   );
@@ -68,7 +58,7 @@ export function OrdenCompraDetailPage() {
       kicker="Compras"
       title={data.numeroOrden}
       action={
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <div className="oc-detail-actions">
           {canEnviar   && <ZHBtn variant="secondary"    size="md" disabled={acciones.loading} onClick={() => acciones.enviar(data.id)}>Enviar</ZHBtn>}
           {canAprobar  && <ZHBtn variant="primary"      size="md" disabled={acciones.loading} onClick={() => acciones.aprobar(data.id)}>Aprobar</ZHBtn>}
           {canVincular && <ZHBtn variant="secondary"    size="md" disabled={acciones.loading} onClick={() => setShowVincularModal(true)}>Vincular factura</ZHBtn>}
@@ -82,16 +72,10 @@ export function OrdenCompraDetailPage() {
 
       {/* Vincular factura modal inline */}
       {showVincularModal && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-        }}>
-          <div style={{
-            background: 'var(--zh-bg)', borderRadius: '12px', padding: '24px',
-            width: '440px', boxShadow: '0 8px 32px rgba(0,0,0,0.24)',
-          }}>
-            <h3 style={{ marginBottom: '16px' }}>Vincular factura de compra</h3>
-            <p style={{ color: 'var(--zh-text-muted)', marginBottom: '12px', fontSize: '0.875rem' }}>
+        <div className="oc-modal-overlay">
+          <div className="oc-modal-card">
+            <h3 className="oc-modal-title">Vincular factura de compra</h3>
+            <p className="oc-modal-help">
               Ingresa el ID de la factura de compra aprobada a vincular con esta orden.
             </p>
             <input
@@ -99,9 +83,9 @@ export function OrdenCompraDetailPage() {
               placeholder="ID de la factura (UUID)"
               value={vincularFacturaId}
               onChange={(e) => setVincularFacturaId(e.target.value)}
-              style={{ width: '100%', marginBottom: '16px' }}
+              className="oc-modal-input"
             />
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+            <div className="oc-modal-actions">
               <ZHBtn variant="ghost" size="md" onClick={() => { setShowVincularModal(false); setVincularFacturaId(''); }}>
                 Cancelar
               </ZHBtn>
@@ -113,40 +97,40 @@ export function OrdenCompraDetailPage() {
         </div>
       )}
 
-      <TableCard>
+      <Card>
         {/* Encabezado */}
-        <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap', marginBottom: '24px' }}>
+        <div className="oc-detail-header">
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--zh-text-muted)', marginBottom: '2px' }}>Estado</div>
+            <div className="oc-detail-label">Estado</div>
             <EstadoBadge estado={data.estado} />
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--zh-text-muted)', marginBottom: '2px' }}>Proveedor</div>
-            <div style={{ fontWeight: 600 }}>{data.proveedorNombre}</div>
+            <div className="oc-detail-label">Proveedor</div>
+            <div className="oc-detail-strong">{data.proveedorNombre}</div>
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--zh-text-muted)', marginBottom: '2px' }}>Fecha emisión</div>
+            <div className="oc-detail-label">Fecha emisión</div>
             <div>{new Date(data.fechaEmision).toLocaleDateString()}</div>
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--zh-text-muted)', marginBottom: '2px' }}>Fecha requerida</div>
+            <div className="oc-detail-label">Fecha requerida</div>
             <div>{new Date(data.fechaRequerida).toLocaleDateString()}</div>
           </div>
           <div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--zh-text-muted)', marginBottom: '2px' }}>Total</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>${data.total.toFixed(2)}</div>
+            <div className="oc-detail-label">Total</div>
+            <div className="oc-detail-total">${data.total.toFixed(2)}</div>
           </div>
         </div>
 
         {data.observaciones && (
-          <div style={{ marginBottom: '16px', color: 'var(--zh-text-muted)', fontSize: '0.875rem' }}>
+          <div className="oc-detail-observations">
             <strong>Observaciones:</strong> {data.observaciones}
           </div>
         )}
 
         {/* Líneas */}
-        <h4 style={{ marginBottom: '8px' }}>Líneas de la orden</h4>
-        <table className="table" style={{ marginBottom: '24px' }}>
+        <h4 className="oc-section-title">Líneas de la orden</h4>
+        <table className="table oc-section-table oc-responsive-table">
           <thead>
             <tr>
               <th>Descripción</th>
@@ -162,16 +146,16 @@ export function OrdenCompraDetailPage() {
           <tbody>
             {data.detalles.map((d) => (
               <tr key={d.id}>
-                <td>{d.descripcion}</td>
-                <td>{d.cantidadPedida}</td>
-                <td>{d.cantidadFacturada}</td>
-                <td style={{ color: d.pendienteFacturar > 0 ? '#ca8a04' : '#16a34a', fontWeight: 600 }}>
+                <td data-label="Descripción">{d.descripcion}</td>
+                <td data-label="Cant. pedida">{d.cantidadPedida}</td>
+                <td data-label="Cant. facturada">{d.cantidadFacturada}</td>
+                <td data-label="Pendiente" className={d.pendienteFacturar > 0 ? 'oc-pending--warning' : 'oc-pending--ok'}>
                   {d.pendienteFacturar}
                 </td>
-                <td>${d.precioUnitario.toFixed(4)}</td>
-                <td>${d.subtotal.toFixed(2)}</td>
-                <td>${d.impuesto.toFixed(2)}</td>
-                <td>${d.total.toFixed(2)}</td>
+                <td data-label="Precio unit.">${d.precioUnitario.toFixed(4)}</td>
+                <td data-label="Subtotal">${d.subtotal.toFixed(2)}</td>
+                <td data-label="IVA">${d.impuesto.toFixed(2)}</td>
+                <td data-label="Total">${d.total.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
@@ -180,8 +164,8 @@ export function OrdenCompraDetailPage() {
         {/* Facturas vinculadas */}
         {data.facturasVinculadas.length > 0 && (
           <>
-            <h4 style={{ marginBottom: '8px' }}>Facturas vinculadas</h4>
-            <table className="table">
+            <h4 className="oc-section-title">Facturas vinculadas</h4>
+            <table className="table oc-responsive-table">
               <thead>
                 <tr>
                   <th>Número de factura</th>
@@ -191,17 +175,17 @@ export function OrdenCompraDetailPage() {
               <tbody>
                 {data.facturasVinculadas.map((fv) => (
                   <tr key={fv.compraFacturaId}>
-                    <td><strong>{fv.numeroFactura}</strong></td>
-                    <td>{new Date(fv.fechaVinculacion).toLocaleDateString()}</td>
+                    <td data-label="Número de factura"><strong>{fv.numeroFactura}</strong></td>
+                    <td data-label="Fecha vinculación">{new Date(fv.fechaVinculacion).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </>
         )}
-      </TableCard>
+      </Card>
 
-      <div style={{ marginTop: '12px' }}>
+      <div className="oc-back-wrap">
         <ZHBtn variant="ghost" size="sm" onClick={() => navigate('/compras/ordenes')}>
           ← Volver a la lista
         </ZHBtn>

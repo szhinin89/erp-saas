@@ -2,8 +2,8 @@
 .sa-shell {
   display: block;
   min-height: 100vh;
-  background: #f5f8fd;
-  color: #0f172a;
+  background: var(--zh-color-bg);
+  color: var(--zh-color-text);
 }
 
 .sa-shell-sidebar {
@@ -65,15 +65,15 @@
 
 .sa-shell-header {
   margin: 10px 10px 0;
-  border-radius: 12px;
+  border-radius: var(--zh-radius-lg);
   padding: 12px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: linear-gradient(180deg, #3f5f88 0%, #355379 100%);
+  background: linear-gradient(180deg, var(--zh-blue) 0%, var(--zh-blue-dark) 100%);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2);
+  box-shadow: var(--zh-shadow-md);
 }
 
 .sa-shell-header h1 {
@@ -87,9 +87,9 @@
   flex: 1;
   min-height: 0;
   margin: 10px;
-  border-radius: 12px;
-  border: 1px solid #e4e8f0;
-  background: #ffffff;
+  border-radius: var(--zh-radius-lg);
+  border: 1px solid var(--zh-color-border);
+  background: var(--zh-color-surface);
   padding: 14px 16px 24px;
   overflow: auto;
 }
@@ -97,9 +97,9 @@
 .sa-shell-tabs {
   margin: 10px 10px 0;
   padding: 8px;
-  border-radius: 12px;
-  border: 1px solid #e4e8f0;
-  background: #ffffff;
+  border-radius: var(--zh-radius-lg);
+  border: 1px solid var(--zh-color-border);
+  background: var(--zh-color-surface);
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -117,14 +117,14 @@
 }
 
 .sa-shell-tabs a:hover {
-  background: #edf3fb;
-  color: #163d72;
+  background: var(--zh-blue-light);
+  color: var(--zh-blue-dark);
 }
 
 .sa-shell-tabs a.active {
-  background: #e7eef9;
-  color: #163d72;
-  border-color: #cbd8ea;
+  background: var(--zh-blue-light);
+  color: var(--zh-blue-dark);
+  border-color: rgba(79, 123, 166, 0.35);
 }
 
 .sa-shell-header-actions {
@@ -135,6 +135,9 @@
 
 .sa-shell-header-actions .subtle {
   color: #dbe8f9;
+}
+
+.sa-shell-header-email {
   font-size: 12px;
 }
 
@@ -162,5 +165,33 @@
 @media (max-width: 960px) {
   .sa-shell-main {
     min-height: 100vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .sa-shell-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .sa-shell-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .sa-shell-tabs {
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    scrollbar-width: thin;
+  }
+
+  .sa-shell-tabs a {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .sa-shell-outlet {
+    padding: 12px;
   }
 }

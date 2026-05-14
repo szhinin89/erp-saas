@@ -1,0 +1,36 @@
+.itg-col-producto {
+  width: 40%;
+}
+
+.itg-col-cantidad {
+  width: 20%;
+}
+
+.itg-col-stock {
+  width: 25%;
+}
+
+.itg-col-actions {
+  width: 15%;
+}
+
+.itg-empty {
+  text-align: center;
+  color: var(--color-text-muted, #64748b);
+}
+
+.itg-control {
+  width: 100%;
+}
+
+.itg-input-error {
+  border-color: var(--zh-color-error, #dc2626);
+}
+
+.itg-stock--ok {
+  color: var(--color-text-muted, #64748b);
+}
+
+.itg-stock--warning {
+  color: var(--zh-color-error, #dc2626);
+}

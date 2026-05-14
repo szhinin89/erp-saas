@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { EmptyState, LoadingState, NoAccessPage, PageShell, TableCard } from '../../../../components/PageShell';
+import { EmptyState, LoadingState, NoAccessPage, PageShell } from '../../../../components/PageShell';
+import { Card } from '../../../../components/ui/Card';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHConfirmModal } from '../../../../components/zh/ZHConfirmModal';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { TransferenciaEstadoBadge } from '../components/TransferenciaEstadoBadge';
 import { useTransferenciaDetalle, useTransferenciaAcciones } from '../hooks/useTransferencias';
+import './transferencias-pages.css';
 
 export function TransferenciaDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,7 +35,7 @@ export function TransferenciaDetailPage() {
       title={transferencia?.numeroTransferencia ?? 'Cargando…'}
       action={
         esBorrador ? (
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="trf-action-row">
             {canConfirm && (
               <ZHBtn
                 variant="primary" size="md"
@@ -58,7 +60,7 @@ export function TransferenciaDetailPage() {
         ) : undefined
       }
     >
-      <TableCard>
+      <Card>
         {(error ?? actError) && (
           <ZHPageNotice variant="error" message="Error" detail={error ?? actError ?? ''} />
         )}
@@ -70,7 +72,7 @@ export function TransferenciaDetailPage() {
         ) : (
           <>
             {/* Encabezado */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
+            <div className="trf-detail-grid">
               <Dato label="Número"  valor={transferencia.numeroTransferencia} />
               <Dato label="Estado"  valor={<TransferenciaEstadoBadge estado={transferencia.estado} />} />
               <Dato label="Fecha"   valor={new Date(transferencia.fechaTransferencia).toLocaleString()} />
@@ -87,32 +89,32 @@ export function TransferenciaDetailPage() {
             </div>
 
             {/* Ítems */}
-            <h3 style={{ marginBottom: '8px' }}>Ítems</h3>
-            <table className="table">
+            <h3 className="trf-detail-items-title">Ítems</h3>
+            <table className="table trf-responsive-table">
               <thead>
                 <tr>
                   <th>Producto</th>
-                  <th style={{ textAlign: 'right' }}>Cantidad</th>
+                  <th className="trf-text-right">Cantidad</th>
                 </tr>
               </thead>
               <tbody>
                 {transferencia.detalles.map((d) => (
                   <tr key={d.id}>
-                    <td>{d.descripcion}</td>
-                    <td style={{ textAlign: 'right' }}>{d.cantidad}</td>
+                    <td data-label="Producto">{d.descripcion}</td>
+                    <td data-label="Cantidad" className="trf-text-right">{d.cantidad}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
 
-            <div style={{ marginTop: '16px' }}>
+            <div className="trf-detail-footer">
               <ZHBtn variant="ghost" size="md" onClick={() => navigate('/inventario/transferencias')}>
                 ← Volver al listado
               </ZHBtn>
             </div>
           </>
         )}
-      </TableCard>
+      </Card>
       {cancelConfirmOpen ? (
         <ZHConfirmModal
           title="Cancelar transferencia"
@@ -136,7 +138,7 @@ export function TransferenciaDetailPage() {
 function Dato({ label, valor }: { label: string; valor: React.ReactNode }) {
   return (
     <div>
-      <div style={{ fontSize: '0.75rem', color: 'var(--zh-text-muted)', marginBottom: '2px' }}>{label}</div>
+      <div className="trf-field-label">{label}</div>
       <div>{valor}</div>
     </div>
   );

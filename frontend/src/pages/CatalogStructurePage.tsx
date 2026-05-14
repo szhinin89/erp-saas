@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PageShell, TableCard, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { PageShell, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { Card } from '../components/ui/Card';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
@@ -524,7 +525,7 @@ export function CatalogStructurePage() {
 
   return (
     <PageShell kicker={t('app.nav.group.inventario')} title={t('catalog.structure.title')}>
-      <TableCard>
+      <Card>
         {error && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />}
 
         <ZHInlineRow className="zh-mb-10">
@@ -635,7 +636,7 @@ export function CatalogStructurePage() {
             ) : lines.length === 0 ? (
               <EmptyState message={t('common.noData')} />
             ) : (
-              <table className="table">
+              <table className="table catalog-structure-responsive-table">
                 <thead>
                   <tr>
                     <th>{t('common.code')}</th>
@@ -647,12 +648,13 @@ export function CatalogStructurePage() {
                 <tbody>
                   {lines.map((x) => (
                     <tr key={x.id}>
-                      <td>{x.code}</td>
-                      <td>{x.name}</td>
-                      <td>
+                      <td data-label={t('common.code')}>{x.code}</td>
+                      <td data-label={t('common.name')}>{x.name}</td>
+                      <td data-label={t('common.status')}>
                         <Badge label={x.isActive ? t('common.active') : t('common.inactive')} variant={x.isActive ? 'green' : 'gray'} />
                       </td>
-                      <td className="catalog-structure-actions">
+                      <td data-label={t('catalog.structure.actions')}>
+                        <div className="catalog-structure-actions">
                         {canUpdateLines && (
                           <ZHBtn variant="secondary" size="xs" type="button" onClick={() => startEditLine(x)} disabled={saving}>
                             {t('catalog.structure.edit')}
@@ -708,6 +710,7 @@ export function CatalogStructurePage() {
                             {t('catalog.structure.enable')}
                           </ZHBtn>
                         )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -824,7 +827,7 @@ export function CatalogStructurePage() {
             ) : categories.length === 0 ? (
               <EmptyState message={t('common.noData')} />
             ) : (
-              <table className="table">
+              <table className="table catalog-structure-responsive-table">
                 <thead>
                   <tr>
                     <th>{t('common.code')}</th>
@@ -837,15 +840,16 @@ export function CatalogStructurePage() {
                 <tbody>
                   {categories.map((x) => (
                     <tr key={x.id}>
-                      <td>{x.code}</td>
-                      <td>{x.name}</td>
-                      <td>
+                      <td data-label={t('common.code')}>{x.code}</td>
+                      <td data-label={t('common.name')}>{x.name}</td>
+                      <td data-label={t('catalog.structure.lineColumn')}>
                         {x.lineCode} — {x.lineName}
                       </td>
-                      <td>
+                      <td data-label={t('common.status')}>
                         <Badge label={x.isActive ? t('common.active') : t('common.inactive')} variant={x.isActive ? 'green' : 'gray'} />
                       </td>
-                      <td className="catalog-structure-actions">
+                      <td data-label={t('catalog.structure.actions')}>
+                        <div className="catalog-structure-actions">
                         {canUpdateCategories && (
                           <ZHBtn variant="secondary" size="xs" type="button" onClick={() => startEditCat(x)} disabled={saving}>
                             {t('catalog.structure.edit')}
@@ -899,6 +903,7 @@ export function CatalogStructurePage() {
                             {t('catalog.structure.enable')}
                           </ZHBtn>
                         )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1061,7 +1066,7 @@ export function CatalogStructurePage() {
             ) : subcategories.length === 0 ? (
               <EmptyState message={t('common.noData')} />
             ) : (
-              <table className="table">
+              <table className="table catalog-structure-responsive-table">
                 <thead>
                   <tr>
                     <th>{t('common.code')}</th>
@@ -1074,15 +1079,16 @@ export function CatalogStructurePage() {
                 <tbody>
                   {subcategories.map((x) => (
                     <tr key={x.id}>
-                      <td>{x.code}</td>
-                      <td>{x.name}</td>
-                      <td>
+                      <td data-label={t('common.code')}>{x.code}</td>
+                      <td data-label={t('common.name')}>{x.name}</td>
+                      <td data-label={t('catalog.structure.hierarchyColumn')}>
                         {x.lineCode} — {x.lineName} → {x.categoryCode} — {x.categoryName}
                       </td>
-                      <td>
+                      <td data-label={t('common.status')}>
                         <Badge label={x.isActive ? t('common.active') : t('common.inactive')} variant={x.isActive ? 'green' : 'gray'} />
                       </td>
-                      <td className="catalog-structure-actions">
+                      <td data-label={t('catalog.structure.actions')}>
+                        <div className="catalog-structure-actions">
                         {canUpdateSubcategories && (
                           <ZHBtn variant="secondary" size="xs" type="button" onClick={() => startEditSub(x)} disabled={saving}>
                             {t('catalog.structure.edit')}
@@ -1136,6 +1142,7 @@ export function CatalogStructurePage() {
                             {t('catalog.structure.enable')}
                           </ZHBtn>
                         )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1144,7 +1151,7 @@ export function CatalogStructurePage() {
             )}
           </>
         )}
-      </TableCard>
+      </Card>
     </PageShell>
   );
 }

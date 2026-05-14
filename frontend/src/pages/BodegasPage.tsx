@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Badge, EmptyState, LoadingState, NoAccessPage, PageShell, TableCard } from '../components/PageShell';
+import { Badge, EmptyState, LoadingState, NoAccessPage, PageShell } from '../components/PageShell';
+import { Card } from '../components/ui/Card';
 import { ZHBtn, ZHField, ZHFormSection, ZHGrid } from '../components/zh/ZHForm';
-import ZHSearchBar from '../components/shared/ZHSearchBar';
+import { SearchBar } from '../components/ui';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { EntityAuditPanel } from '../components/EntityAuditPanel';
 import { useI18n } from '../i18n/i18n';
@@ -9,6 +10,7 @@ import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { branchService, type BranchDto } from '../services/branchService';
 import { bodegaService, type BodegaPayload, type BodegaDto } from '../services/bodegaService';
+import './BodegasPage.css';
 
 type FormState = {
   sucursalId: string;
@@ -170,7 +172,7 @@ export function BodegasPage() {
         </ZHBtn>
       }
     >
-      <TableCard>
+      <Card className="bodegas-card">
         {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
         <ZHFormSection title={editingId ? 'Editar bodega' : 'Nueva bodega'}>
@@ -211,15 +213,15 @@ export function BodegasPage() {
               />
             </ZHField>
           </ZHGrid>
-          <div className="zh-mt-12">
+          <div className="zh-form-actions-row">
             <ZHBtn variant="ghost" size="sm" type="button" onClick={resetDraft} disabled={saving}>
               {editingId ? 'Cancelar edición' : 'Limpiar'}
             </ZHBtn>
           </div>
         </ZHFormSection>
 
-        <div className="zh-mb-12">
-          <ZHSearchBar
+        <div className="bodegas-search-row">
+          <SearchBar
             searchQuery={searchQuery}
             onSearch={setSearchQuery}
             onClearAll={() => {
@@ -241,7 +243,7 @@ export function BodegasPage() {
         ) : items.length === 0 ? (
           <EmptyState message={t('common.noData')} />
         ) : (
-          <table className="table">
+          <table className="table bodegas-responsive-table">
             <thead>
               <tr>
                 <th>Nombre</th>
@@ -255,41 +257,43 @@ export function BodegasPage() {
             <tbody>
               {items.map((row) => (
                 <tr key={row.id}>
-                  <td>{row.nombre}</td>
-                  <td>{branchNameById.get(row.sucursalId) ?? row.sucursalId}</td>
-                  <td>{row.ubicacion ?? '—'}</td>
-                  <td>{row.encargado ?? '—'}</td>
-                  <td>
+                  <td data-label="Nombre">{row.nombre}</td>
+                  <td data-label="Sucursal">{branchNameById.get(row.sucursalId) ?? row.sucursalId}</td>
+                  <td data-label="Ubicación">{row.ubicacion ?? '—'}</td>
+                  <td data-label="Encargado">{row.encargado ?? '—'}</td>
+                  <td data-label={t('common.status')}>
                     <Badge label={row.isActive ? t('common.active') : t('common.inactive')} variant={row.isActive ? 'green' : 'gray'} />
                   </td>
-                  <td>
-                    {canUpdate ? (
-                      <ZHBtn variant="secondary" size="xs" type="button" onClick={() => void openEdit(row)}>
-                        {t('common.edit')}
-                      </ZHBtn>
-                    ) : null}
-                    {row.isActive ? (
-                      canDelete ? (
-                        <ZHBtn variant="ghost" size="xs" type="button" onClick={() => void toggleActive(row)}>
-                          Deshabilitar
+                  <td data-label="Acciones">
+                    <div className="bodegas-actions-cell">
+                      {canUpdate ? (
+                        <ZHBtn variant="secondary" size="xs" type="button" onClick={() => void openEdit(row)}>
+                          {t('common.edit')}
                         </ZHBtn>
-                      ) : null
-                    ) : canUpdate ? (
-                      <ZHBtn variant="ghost" size="xs" type="button" onClick={() => void toggleActive(row)}>
-                        Habilitar
+                      ) : null}
+                      {row.isActive ? (
+                        canDelete ? (
+                          <ZHBtn variant="ghost" size="xs" type="button" onClick={() => void toggleActive(row)}>
+                            Deshabilitar
+                          </ZHBtn>
+                        ) : null
+                      ) : canUpdate ? (
+                        <ZHBtn variant="ghost" size="xs" type="button" onClick={() => void toggleActive(row)}>
+                          Habilitar
+                        </ZHBtn>
+                      ) : null}
+                      <ZHBtn
+                        variant="ghost"
+                        size="xs"
+                        type="button"
+                        onClick={() => {
+                          setAuditEntityId(row.id);
+                          setAuditRefreshKey((k) => k + 1);
+                        }}
+                      >
+                        Auditoría
                       </ZHBtn>
-                    ) : null}
-                    <ZHBtn
-                      variant="ghost"
-                      size="xs"
-                      type="button"
-                      onClick={() => {
-                        setAuditEntityId(row.id);
-                        setAuditRefreshKey((k) => k + 1);
-                      }}
-                    >
-                      Auditoría
-                    </ZHBtn>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -304,7 +308,7 @@ export function BodegasPage() {
             <EmptyState message="Selecciona una bodega para ver su auditoría." />
           )}
         </ZHFormSection>
-      </TableCard>
+      </Card>
     </PageShell>
   );
 }

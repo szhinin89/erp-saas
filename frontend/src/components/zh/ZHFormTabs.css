@@ -1,30 +1,40 @@
 /* Pestañas de formulario por entidad (mismo patrón en productos, catálogo simple, accesos, etc.) */
 .zh-form-tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px;
   margin-bottom: 16px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  padding: 4px;
+  border: 1px solid var(--zh-color-border, #e2e8f0);
+  border-radius: var(--zh-radius-md, 10px);
+  background: var(--zh-color-surface, #fff);
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
 
 .zh-form-tabs button {
-  padding: 10px 14px;
+  padding: 8px 14px;
   border: none;
   background: transparent;
-  color: inherit;
+  color: var(--color-text-muted, #64748b);
   cursor: pointer;
-  border-radius: 8px 8px 0 0;
-  opacity: 0.75;
+  border-radius: 8px;
+  opacity: 1;
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .zh-form-tabs button:hover {
-  opacity: 1;
-  background: rgba(148, 163, 184, 0.12);
+  background: var(--zh-blue-light, #eff6ff);
+  color: var(--zh-color-text, #0f172a);
 }
 
 .zh-form-tabs button.is-active {
-  opacity: 1;
-  background: rgba(99, 102, 241, 0.15);
-  box-shadow: inset 0 -2px 0 0 #6366f1;
+  background: var(--zh-blue-light, #eff6ff);
+  color: var(--zh-color-primary, #1d4f91);
+  box-shadow: inset 0 -2px 0 0 var(--zh-color-primary, #1d4f91);
 }

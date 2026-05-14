@@ -10,7 +10,8 @@ import {
   Bar,
   Line,
 } from 'recharts';
-import { TableCard, EmptyState, LoadingState } from '../PageShell';
+import { EmptyState, LoadingState } from '../PageShell';
+import { Card } from '../ui';
 import { useI18n } from '../../i18n/i18n';
 import { ZHBtn, ZHField } from '../zh/ZHForm';
 import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../zh/ZHLayout';
@@ -104,7 +105,7 @@ export function SuperAdminGrowthSection() {
     <div className="sa-growthSection">
       {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
       <p className="subtle sa-growthIntro">{t('superadmin.growth.subtitle')}</p>
-      <TableCard>
+      <Card>
         <ZHCardSection title={`${t('superadmin.growth.from')} / ${t('superadmin.growth.to')}`}>
           <p className="subtle sag-hint">{t('superadmin.growth.defaultRangeHint')}</p>
           <ZHGridRow cols={2}>
@@ -151,7 +152,7 @@ export function SuperAdminGrowthSection() {
             </p>
           ) : null}
         </ZHCardSection>
-      </TableCard>
+      </Card>
 
       <div className="sag-tabs" role="tablist" aria-label={t('superadmin.growth.tabsAria')}>
         <button
@@ -181,16 +182,16 @@ export function SuperAdminGrowthSection() {
       ) : null}
 
       {loading ? (
-        <TableCard>
+        <Card>
           <LoadingState />
-        </TableCard>
+        </Card>
       ) : chartRows.length === 0 ? (
-        <TableCard>
+        <Card>
           <EmptyState message={t('superadmin.growth.empty')} />
-        </TableCard>
+        </Card>
       ) : tab === 'volumes' ? (
         <>
-          <TableCard>
+          <Card>
             <ZHCardSection title={t('superadmin.growth.chartNewTitle')}>
               <div className="sag-chart">
                 <ResponsiveContainer width="100%" height="100%">
@@ -207,8 +208,8 @@ export function SuperAdminGrowthSection() {
                 </ResponsiveContainer>
               </div>
             </ZHCardSection>
-          </TableCard>
-          <TableCard>
+          </Card>
+          <Card>
             <ZHCardSection title={t('superadmin.growth.chartCumulativeTitle')}>
               <div className="sag-chart">
                 <ResponsiveContainer width="100%" height="100%">
@@ -246,15 +247,15 @@ export function SuperAdminGrowthSection() {
                 </ResponsiveContainer>
               </div>
             </ZHCardSection>
-          </TableCard>
+          </Card>
         </>
       ) : moneyRows.length === 0 ? (
-        <TableCard>
+        <Card>
           <EmptyState message={t('superadmin.growth.empty')} />
-        </TableCard>
+        </Card>
       ) : (
         <>
-          <TableCard>
+          <Card>
             <ZHCardSection title={t('superadmin.growth.chartMoneyNewTitle')}>
               <div className="sag-chart">
                 <ResponsiveContainer width="100%" height="100%">
@@ -278,8 +279,8 @@ export function SuperAdminGrowthSection() {
                 </ResponsiveContainer>
               </div>
             </ZHCardSection>
-          </TableCard>
-          <TableCard>
+          </Card>
+          <Card>
             <ZHCardSection title={t('superadmin.growth.chartMoneyCumulativeTitle')}>
               <div className="sag-chart">
                 <ResponsiveContainer width="100%" height="100%">
@@ -305,7 +306,7 @@ export function SuperAdminGrowthSection() {
                 </ResponsiveContainer>
               </div>
             </ZHCardSection>
-          </TableCard>
+          </Card>
         </>
       )}
     </div>

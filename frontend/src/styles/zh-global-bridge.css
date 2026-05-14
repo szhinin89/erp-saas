@@ -1,0 +1,130 @@
+/* Global bridge: force legacy classes to new ZH look */
+
+:root {
+  --zh-bridge-card-radius: var(--radius-xl, 16px);
+  --zh-bridge-border: var(--zh-color-border, #dbe2ea);
+  --zh-bridge-surface: var(--zh-color-surface, #fff);
+  --zh-bridge-soft: var(--zh-color-surface-soft, #f8fafc);
+}
+
+/* Shared old containers */
+.table-card {
+  border-radius: var(--zh-bridge-card-radius);
+  border: 1px solid var(--zh-bridge-border);
+  background: var(--zh-bridge-surface);
+  box-shadow: var(--zh-shadow-sm, 0 10px 28px rgba(15, 23, 42, 0.08));
+}
+
+.zh-card-section {
+  padding: 18px;
+}
+
+.zh-card-section-title {
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--zh-color-text, #0f172a);
+}
+
+.subtle {
+  font-size: 14px;
+  color: var(--color-text-muted, #64748b);
+}
+
+/* Global heading style used by old pages */
+.zh-screen-heading {
+  margin: 0 0 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--zh-bridge-border);
+}
+
+.zh-screen-heading-kicker {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.zh-screen-heading-chip {
+  width: 4px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--zh-color-primary, #1d4f91);
+  box-shadow: none;
+}
+
+.zh-screen-heading-title {
+  font-size: 1.28rem;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.zh-screen-heading-sub {
+  font-size: 0.95rem;
+}
+
+/* SuperAdmin shell */
+.sa-shell-outlet {
+  border-radius: var(--zh-bridge-card-radius);
+  border: 1px solid var(--zh-bridge-border);
+  background: var(--zh-bridge-surface);
+}
+
+.sa-shell-tabs {
+  border: 1px solid var(--zh-bridge-border);
+  border-radius: var(--zh-bridge-card-radius);
+}
+
+.sa-shell-tabs a {
+  border-radius: 999px;
+  font-size: 0.92rem;
+}
+
+.sa-shell-tabs a.active {
+  background: var(--zh-blue-light, #eff6ff);
+  border-color: transparent;
+  color: var(--zh-color-primary, #1d4f91);
+}
+
+/* SuperAdmin companies/overview cards */
+.sa-tenantRow,
+.sa-overviewHubCard {
+  border: 1px solid var(--zh-bridge-border);
+  background: var(--zh-bridge-surface);
+  box-shadow: var(--zh-shadow-sm, 0 10px 28px rgba(15, 23, 42, 0.08));
+}
+
+.sa-tenantRow:hover,
+.sa-overviewHubCard:hover {
+  border-color: rgba(29, 79, 145, 0.4);
+  box-shadow: var(--zh-shadow-md, 0 16px 36px rgba(15, 23, 42, 0.1));
+}
+
+/* Legacy search bars */
+.zh-search-bar__input,
+.zh-search-bar__select {
+  border-radius: var(--zh-radius-md, 10px);
+  border: 1px solid var(--zh-bridge-border);
+  height: 38px;
+  font-size: 14px;
+}
+
+.zh-search-bar__btnPrimary {
+  height: 38px;
+  border-radius: 999px;
+  background: var(--zh-color-primary, #1d4f91);
+}
+
+.zh-search-bar__zone1,
+.zh-search-bar__zone2 {
+  background: transparent;
+}
+
+/* Companies tables (legacy classes) */
+.companies-table {
+  border: 1px solid var(--zh-bridge-border);
+  border-radius: var(--zh-radius-md, 10px);
+  background: var(--zh-bridge-surface);
+}
+
+.companies-readonly-value {
+  background: var(--zh-bridge-soft);
+  border-radius: var(--zh-radius-sm, 8px);
+}

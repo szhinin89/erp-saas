@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { EmptyState, LoadingState, NoAccessPage, PageShell, TableCard } from '../../../components/PageShell';
+import { EmptyState, LoadingState, NoAccessPage, PageShell } from '../../../components/PageShell';
+import { Card } from '../../../components/ui/Card';
 import { ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../i18n/i18n';
 import { usePermissionsStore } from '../../../store/permissionsStore';
 import { ventasFacturasService, type VentasFacturaDto } from '../api/ventasFacturasService';
 import { openVentasFacturaPrint } from '../utils/openVentasFacturaPrint';
+import './ventas-facturas-page.css';
 
 export function VentasFacturasPage() {
   const { t } = useI18n();
@@ -56,11 +58,11 @@ export function VentasFacturasPage() {
 
   return (
     <PageShell kicker={t('app.nav.group.sales')} title={t('ventas.facturas.title')}>
-      <TableCard>
+      <Card>
         {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         {printError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={printError} /> : null}
 
-        <div style={{ marginBottom: '12px' }}>
+        <div className="vf-refresh-wrap">
           <ZHBtn variant="secondary" size="md" type="button" disabled={loading} onClick={() => void load()}>
             {t('ventas.facturas.refresh')}
           </ZHBtn>
@@ -71,14 +73,14 @@ export function VentasFacturasPage() {
         ) : rows.length === 0 ? (
           <EmptyState message={t('common.noData')} />
         ) : (
-          <table className="table">
+          <table className="table vf-responsive-table">
             <thead>
               <tr>
                 <th>{t('ventas.facturas.col.number')}</th>
                 <th>{t('ventas.facturas.col.customer')}</th>
                 <th>{t('ventas.facturas.col.date')}</th>
                 <th>{t('ventas.facturas.col.status')}</th>
-                <th style={{ textAlign: 'right' }}>{t('ventas.facturas.col.total')}</th>
+                <th className="vf-col-right">{t('ventas.facturas.col.total')}</th>
                 <th>{t('ventas.facturas.col.actions')}</th>
               </tr>
             </thead>
@@ -88,12 +90,12 @@ export function VentasFacturasPage() {
                 const canPrint = row.estado === 'Autorizado';
                 return (
                   <tr key={row.id}>
-                    <td>{numero}</td>
-                    <td>{row.clienteNombre}</td>
-                    <td>{new Date(row.fechaEmision).toLocaleString()}</td>
-                    <td>{row.estado}</td>
-                    <td style={{ textAlign: 'right' }}>{row.total.toFixed(2)}</td>
-                    <td>
+                    <td data-label={t('ventas.facturas.col.number')}>{numero}</td>
+                    <td data-label={t('ventas.facturas.col.customer')}>{row.clienteNombre}</td>
+                    <td data-label={t('ventas.facturas.col.date')}>{new Date(row.fechaEmision).toLocaleString()}</td>
+                    <td data-label={t('ventas.facturas.col.status')}>{row.estado}</td>
+                    <td data-label={t('ventas.facturas.col.total')} className="vf-cell-right">{row.total.toFixed(2)}</td>
+                    <td data-label={t('ventas.facturas.col.actions')} className="vf-cell-actions">
                       <ZHBtn
                         variant="primary"
                         size="sm"
@@ -110,7 +112,7 @@ export function VentasFacturasPage() {
             </tbody>
           </table>
         )}
-      </TableCard>
+      </Card>
     </PageShell>
   );
 }

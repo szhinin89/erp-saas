@@ -30,7 +30,7 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #64748b;
+  color: var(--color-text-muted, #64748b);
 }
 
 .sap-dash-lead {
@@ -68,10 +68,10 @@
 
 .sap-dash-kpiCard {
   border-radius: 14px;
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  background: #fff;
+  border: 1px solid var(--zh-color-border, rgba(15, 23, 42, 0.1));
+  background: var(--zh-color-surface, #fff);
   padding: 14px 16px;
-  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
+  box-shadow: var(--zh-shadow-sm, 0 4px 18px rgba(15, 23, 42, 0.05));
 }
 
 .sap-dash-kpiValue {
@@ -158,8 +158,8 @@
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #64748b;
-  background: rgba(248, 250, 252, 0.9);
+  color: var(--color-text-muted, #64748b);
+  background: var(--zh-blue-light, rgba(248, 250, 252, 0.9));
 }
 
 .sap-tenant-company {
@@ -262,8 +262,8 @@
   --sap-tier-accent-soft: rgba(100, 116, 139, 0.2);
   --sap-tier-pop: #0f172a;
   border-radius: 16px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: #fff;
+  border: 1px solid var(--zh-color-border, rgba(15, 23, 42, 0.12));
+  background: var(--zh-color-surface, #fff);
   box-shadow: 0 8px 28px rgba(15, 23, 42, 0.06);
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
@@ -344,7 +344,7 @@
   margin: 0;
   font-size: 1.25rem;
   font-weight: 900;
-  color: #0f172a;
+  color: var(--zh-color-text, #0f172a);
   letter-spacing: -0.02em;
 }
 
@@ -382,7 +382,7 @@
 .sap-pricing-period {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #64748b;
+  color: var(--color-text-muted, #64748b);
 }
 
 .sap-pricing-usage {
@@ -629,11 +629,11 @@
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #64748b;
+  color: var(--color-text-muted, #64748b);
   border-bottom: 1px solid rgba(15, 23, 42, 0.1);
   position: sticky;
   top: 0;
-  background: #fff;
+  background: var(--zh-color-surface, #fff);
 }
 
 .sap-featureTable-row {

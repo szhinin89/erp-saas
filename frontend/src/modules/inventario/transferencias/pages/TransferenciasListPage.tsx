@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { EmptyState, LoadingState, NoAccessPage, PageShell, TableCard } from '../../../../components/PageShell';
+import { EmptyState, LoadingState, NoAccessPage, PageShell } from '../../../../components/PageShell';
+import { Card } from '../../../../components/ui/Card';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { TransferenciaEstadoBadge } from '../components/TransferenciaEstadoBadge';
 import { useBodegas, useTransferenciasList } from '../hooks/useTransferencias';
 import type { EstadoTransferencia, TransferenciasFilter } from '../api/transferenciaService';
+import './transferencias-pages.css';
 
 export function TransferenciasListPage() {
   const navigate  = useNavigate();
@@ -35,11 +37,11 @@ export function TransferenciasListPage() {
         ) : undefined
       }
     >
-      <TableCard>
+      <Card>
         {error && <ZHPageNotice variant="error" message="Error" detail={error} />}
 
         {/* Filtros */}
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+        <div className="trf-list-filters">
           <select
             value={filter.estado ?? ''}
             onChange={(e) =>
@@ -96,7 +98,7 @@ export function TransferenciasListPage() {
           <EmptyState message="No hay transferencias que coincidan con los filtros." />
         ) : (
           <>
-            <table className="table">
+            <table className="table trf-responsive-table">
               <thead>
                 <tr>
                   <th>Número</th>
@@ -109,13 +111,13 @@ export function TransferenciasListPage() {
               </thead>
               <tbody>
                 {items.map((t) => (
-                  <tr key={t.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/inventario/transferencias/${t.id}`)}>
-                    <td><strong>{t.numeroTransferencia}</strong></td>
-                    <td>{t.bodegaOrigenNombre}</td>
-                    <td>{t.bodegaDestinoNombre}</td>
-                    <td>{new Date(t.fechaTransferencia).toLocaleDateString()}</td>
-                    <td><TransferenciaEstadoBadge estado={t.estado} /></td>
-                    <td>
+                  <tr key={t.id} className="trf-row-clickable" onClick={() => navigate(`/inventario/transferencias/${t.id}`)}>
+                    <td data-label="Número"><strong>{t.numeroTransferencia}</strong></td>
+                    <td data-label="Origen">{t.bodegaOrigenNombre}</td>
+                    <td data-label="Destino">{t.bodegaDestinoNombre}</td>
+                    <td data-label="Fecha">{new Date(t.fechaTransferencia).toLocaleDateString()}</td>
+                    <td data-label="Estado"><TransferenciaEstadoBadge estado={t.estado} /></td>
+                    <td data-label="Acciones" className="trf-cell-actions">
                       <ZHBtn variant="ghost" size="sm" onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/inventario/transferencias/${t.id}`);
@@ -128,7 +130,7 @@ export function TransferenciasListPage() {
 
             {/* Paginación simple */}
             {total > (filter.pageSize ?? 20) && (
-              <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'flex-end' }}>
+              <div className="trf-pagination">
                 <ZHBtn
                   variant="ghost" size="sm"
                   disabled={(filter.pageNumber ?? 1) <= 1}
@@ -136,7 +138,7 @@ export function TransferenciasListPage() {
                 >
                   Anterior
                 </ZHBtn>
-                <span style={{ lineHeight: '32px', color: 'var(--zh-text-muted)' }}>
+                <span className="trf-pagination-label">
                   Pág. {filter.pageNumber ?? 1} · {total} registros
                 </span>
                 <ZHBtn
@@ -150,7 +152,7 @@ export function TransferenciasListPage() {
             )}
           </>
         )}
-      </TableCard>
+      </Card>
     </PageShell>
   );
 }

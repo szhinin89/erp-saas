@@ -18,7 +18,7 @@ import { useI18n } from '../i18n/i18n';
 import { ZHBtn, ZHFormBody, ZHFormSection, ZHGrid, ZHField } from '../components/zh/ZHForm';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { ZHColSpan } from '../components/zh/ZHLayout';
-import ZHSearchBar from '../components/shared/ZHSearchBar';
+import { SearchBar } from '../components/ui';
 import { AccountTreeSelect } from '../components/accounting/AccountTreeSelect';
 import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
@@ -284,7 +284,7 @@ export function AccountingPage() {
         />
       )}
       {(canViewAccounts && canViewJournal) || canViewConfig ? (
-        <div className="tabs">
+        <div className="tabs accounting-tabs">
           {canViewAccounts ? (
             <button
               type="button"
@@ -399,8 +399,8 @@ export function AccountingPage() {
 
             {activeAccountSubTab === 'list' && (
               <>
-                <div className="zh-mb-12">
-                  <ZHSearchBar
+                <div className="accounting-search-row">
+                  <SearchBar
                     searchQuery={accountListQuery}
                     onSearch={setAccountListQuery}
                     onClearAll={() => setAccountListQuery('')}
@@ -424,7 +424,7 @@ export function AccountingPage() {
                   <EmptyState message={t('common.listTab.noMatch')} />
                 )}
                 {!accounts.loading && !accounts.error && accounts.data && accounts.data.length > 0 && filteredAccounts.length > 0 && (
-                  <table>
+                  <table className="accounting-responsive-table">
                     <thead>
                       <tr>
                         <th>{t('accounting.accounts.table.code')}</th>
@@ -437,11 +437,11 @@ export function AccountingPage() {
                     <tbody>
                       {filteredAccounts.map((a) => (
                         <tr key={a.id}>
-                          <td><span className="mono">{a.code}</span></td>
-                          <td>{a.name}</td>
-                          <td>{a.type}</td>
-                          <td>{a.nature}</td>
-                          <td>
+                          <td data-label={t('accounting.accounts.table.code')}><span className="mono">{a.code}</span></td>
+                          <td data-label={t('accounting.accounts.table.name')}>{a.name}</td>
+                          <td data-label={t('accounting.accounts.table.type')}>{a.type}</td>
+                          <td data-label={t('accounting.accounts.table.nature')}>{a.nature}</td>
+                          <td data-label={t('accounting.accounts.table.status')}>
                             <Badge
                               label={a.isActive ? t('common.active') : t('common.inactive')}
                               variant={a.isActive ? 'green' : 'red'}
@@ -596,7 +596,7 @@ export function AccountingPage() {
                     )}
 
                     {!gastoMappings.loading && !gastoMappings.error && (gastoMappings.data ?? []).length > 0 && (
-                      <table>
+                      <table className="accounting-config-responsive-table">
                         <thead>
                           <tr>
                             <th>{t('accounting.config.expenses.table.category')}</th>
@@ -609,9 +609,11 @@ export function AccountingPage() {
                             const acc = (accounts.data ?? []).find((a) => a.id === row.cuentaGastoId);
                             return (
                               <tr key={row.id}>
-                                <td>{row.categoria}</td>
-                                <td>{acc ? `${acc.code} — ${acc.name}` : row.cuentaGastoId}</td>
-                                <td>
+                                <td data-label={t('accounting.config.expenses.table.category')}>{row.categoria}</td>
+                                <td data-label={t('accounting.config.expenses.table.account')}>
+                                  {acc ? `${acc.code} — ${acc.name}` : row.cuentaGastoId}
+                                </td>
+                                <td data-label={t('common.actions')}>
                                   <ZHBtn
                                     variant="destructive"
                                     size="sm"
@@ -645,7 +647,7 @@ export function AccountingPage() {
           )}
           {!journalEntries.loading && !journalEntries.error && journalEntries.data && journalEntries.data.length > 0 && (
             <TableCard>
-              <table>
+              <table className="accounting-journal-responsive-table">
                 <thead>
                   <tr>
                     <th>{t('accounting.journal.table.reference')}</th>
@@ -658,11 +660,11 @@ export function AccountingPage() {
                 <tbody>
                   {journalEntries.data.map((e) => (
                     <tr key={e.id}>
-                      <td><span className="mono">{e.reference}</span></td>
-                      <td>{new Date(e.date).toLocaleDateString('es-EC')}</td>
-                      <td className="subtle">{e.description}</td>
-                      <td className="zh-text-center">{e.lines.length}</td>
-                      <td>
+                      <td data-label={t('accounting.journal.table.reference')}><span className="mono">{e.reference}</span></td>
+                      <td data-label={t('accounting.journal.table.date')}>{new Date(e.date).toLocaleDateString('es-EC')}</td>
+                      <td data-label={t('accounting.journal.table.description')} className="subtle">{e.description}</td>
+                      <td data-label={t('accounting.journal.table.lines')} className="zh-text-center">{e.lines.length}</td>
+                      <td data-label={t('accounting.journal.table.status')}>
                         <Badge
                           label={documentStatusLabel[e.status]}
                           variant={statusVariant[e.status]}

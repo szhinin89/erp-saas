@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { LoadingState, TableCard } from '../PageShell';
+import { LoadingState } from '../PageShell';
+import { Card } from '../ui';
 import { ZHPageNotice } from '../zh/ZHPageNotice';
 import { collectExpandableIds, expandKey, NavigationBarMenuEditor } from './NavigationMenuTree';
 import {
@@ -381,7 +382,7 @@ export function NavigationMenuEditorPanel({ splitWorkspace = false }: Navigation
       {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
       {success ? <ZHPageNotice variant="success" message={t('superadmin.navigationMenu.saved')} /> : null}
 
-      <TableCard>
+      <Card>
         {loading ? (
           <LoadingState />
         ) : menu ? (
@@ -715,7 +716,7 @@ export function NavigationMenuEditorPanel({ splitWorkspace = false }: Navigation
         ) : (
           <div className="empty-state">{t('superadmin.sectionLoadHint')}</div>
         )}
-      </TableCard>
+      </Card>
     </>
   );
 }

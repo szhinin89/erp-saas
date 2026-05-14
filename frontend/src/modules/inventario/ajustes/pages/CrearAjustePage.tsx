@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { NoAccessPage, PageShell, TableCard } from '../../../../components/PageShell';
+import { NoAccessPage, PageShell } from '../../../../components/PageShell';
+import { Card } from '../../../../components/ui/Card';
 import { ZHBtn, ZHField, ZHFormSection, ZHGrid } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
@@ -10,6 +11,7 @@ import { ajusteService, MOTIVOS_PREDEFINIDOS } from '../api/ajusteService';
 import { useAsync } from '../../../../hooks/useAsync';
 import { api } from '../../../lib/api';
 import type { ApiResponse } from '../../../../types/api';
+import './ajustes-pages.css';
 
 interface ProductoOpcion {
   id: string;
@@ -82,14 +84,14 @@ export function CrearAjustePage() {
   if (!canCreate) return <NoAccessPage title="Nuevo Ajuste" />;
 
   const stockLabel = stock === null ? '—' : `${stock} disponibles`;
-  const stockColor = signo === '-' && stock !== null && cantidadNum > stock
-    ? 'var(--zh-color-error)'
-    : 'var(--zh-text-muted)';
+  const stockClassName = signo === '-' && stock !== null && cantidadNum > stock
+    ? 'aj-stock-note--warning'
+    : 'aj-stock-note--normal';
 
   return (
     <PageShell kicker="Inventario · Ajustes" title="Nuevo ajuste de inventario">
       <form onSubmit={(e) => void handleSubmit(e)}>
-        <TableCard>
+        <Card>
           {(error ?? localError) && (
             <ZHPageNotice variant="error" message="No se pudo crear el ajuste" detail={error ?? localError ?? ''} />
           )}
@@ -118,7 +120,7 @@ export function CrearAjustePage() {
             </ZHGrid>
 
             {(bodegaId && productoId) && (
-              <p style={{ marginTop: '4px', fontSize: '0.85rem', color: stockColor }}>
+              <p className={`aj-stock-note ${stockClassName}`}>
                 Stock actual en bodega seleccionada: <strong>{stockLabel}</strong>
               </p>
             )}
@@ -140,7 +142,7 @@ export function CrearAjustePage() {
                   value={cantidad} disabled={loading}
                   onChange={(e) => setCantidad(e.target.value)}
                   placeholder="0"
-                  style={{ borderColor: signo === '-' && stock !== null && cantidadNum > stock ? 'var(--zh-color-error)' : undefined }}
+                  className={signo === '-' && stock !== null && cantidadNum > stock ? 'aj-input-error' : undefined}
                 />
               </ZHField>
 
@@ -176,7 +178,7 @@ export function CrearAjustePage() {
             </ZHGrid>
           </ZHFormSection>
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
+          <div className="aj-create-actions">
             <ZHBtn variant="ghost" size="md" type="button" disabled={loading}
               onClick={() => navigate('/inventario/ajustes')}>
               Cancelar
@@ -185,7 +187,7 @@ export function CrearAjustePage() {
               {loading ? 'Guardando…' : 'Crear ajuste'}
             </ZHBtn>
           </div>
-        </TableCard>
+        </Card>
       </form>
     </PageShell>
   );

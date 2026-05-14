@@ -1,5 +1,6 @@
 import { transferenciaService } from '../api/transferenciaService';
 import type { ItemTransferenciaRequest } from '../api/transferenciaService';
+import './items-transferencia-grid.css';
 
 export interface ItemRow {
   productoId: string;
@@ -54,10 +55,10 @@ export function ItemsTransferenciaGrid({ bodegaOrigenId, items, onChange, disabl
       <table className="table table--compact">
         <thead>
           <tr>
-            <th style={{ width: '40%' }}>Producto</th>
-            <th style={{ width: '20%' }}>Cantidad</th>
-            <th style={{ width: '25%' }}>Stock disponible</th>
-            <th style={{ width: '15%' }}></th>
+            <th className="itg-col-producto">Producto</th>
+            <th className="itg-col-cantidad">Cantidad</th>
+            <th className="itg-col-stock">Stock disponible</th>
+            <th className="itg-col-actions"></th>
           </tr>
         </thead>
         <tbody>
@@ -74,7 +75,7 @@ export function ItemsTransferenciaGrid({ bodegaOrigenId, items, onChange, disabl
           ))}
           {items.length === 0 && (
             <tr>
-              <td colSpan={4} style={{ textAlign: 'center', color: 'var(--zh-text-muted)' }}>
+              <td colSpan={4} className="itg-empty">
                 Agrega al menos un ítem
               </td>
             </tr>
@@ -114,7 +115,7 @@ function ItemRowComponent({ row, idx, productos, disabled, onUpdate, onRemove }:
           value={row.productoId}
           disabled={disabled}
           onChange={(e) => void onUpdate(idx, 'productoId', e.target.value)}
-          style={{ width: '100%' }}
+          className="itg-control"
         >
           <option value="">— seleccionar —</option>
           {productos.map((p) => (
@@ -132,10 +133,10 @@ function ItemRowComponent({ row, idx, productos, disabled, onUpdate, onRemove }:
           value={row.cantidad}
           disabled={disabled}
           onChange={(e) => void onUpdate(idx, 'cantidad', parseFloat(e.target.value) || 0)}
-          style={{ width: '100%', borderColor: stockOk ? undefined : 'var(--zh-color-error)' }}
+          className={`itg-control ${stockOk ? '' : 'itg-input-error'}`.trim()}
         />
       </td>
-      <td style={{ color: stockOk ? 'var(--zh-text-muted)' : 'var(--zh-color-error)' }}>
+      <td className={stockOk ? 'itg-stock--ok' : 'itg-stock--warning'}>
         {row.stockDisponible === null
           ? '—'
           : `${row.stockDisponible} ${!stockOk ? '⚠ insuficiente' : ''}`}

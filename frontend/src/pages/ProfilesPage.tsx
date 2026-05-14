@@ -13,12 +13,11 @@ import {
   type MenuPermLeaf,
 } from '../modules/access/profileMenuPermissions';
 import type { SessionMenuGroupDto } from '../types/access';
-import { PageShell, TableCard, EmptyState, LoadingState, NoAccessPage } from '../components/PageShell';
+import { PageShell, EmptyState, LoadingState, NoAccessPage } from '../components/PageShell';
 import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHBtn } from '../components/zh/ZHForm';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { ZHCardSection, ZHInlineRowRight, ZHActionsRow } from '../components/zh/ZHLayout';
-import ZHSearchBar from '../components/shared/ZHSearchBar';
-import { ZHFormCard } from '../components/zh/ZHFormCard';
+import { Card, SearchBar } from '../components/ui';
 import { profileCreateSchema, type ProfileCreateFormValues } from '../schemas/access/profileSchema';
 import './ProfilesPage.css';
 
@@ -316,7 +315,7 @@ export function ProfilesPage() {
         ) : undefined
       }
     >
-      <TableCard>
+      <Card>
         {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button type="button" className={tab === 'data' ? 'is-active' : ''} onClick={() => setTab('data')}>
@@ -331,7 +330,8 @@ export function ProfilesPage() {
         </div>
 
         {tab === 'data' && (
-          <ZHFormCard ref={createFormRef} hideHeader title={t('profiles.title')} subtitle={t('profiles.subtitle')} onSubmit={create}>
+          <Card title={t('profiles.form.create')}>
+            <form ref={createFormRef} onSubmit={create}>
             <input type="hidden" name="tenantId" value={tenantId} />
 
             <ZHFormSection title={t('profiles.form.create')}>
@@ -344,13 +344,14 @@ export function ProfilesPage() {
                 </ZHField>
               </ZHGrid>
             </ZHFormSection>
-          </ZHFormCard>
+            </form>
+          </Card>
         )}
 
         {tab === 'list' && (
           <>
-            <div className="zh-mb-12">
-              <ZHSearchBar
+            <div className="profiles-search-row">
+              <SearchBar
                 searchQuery={listQuery}
                 onSearch={setListQuery}
                 onClearAll={() => setListQuery('')}
@@ -370,7 +371,7 @@ export function ProfilesPage() {
             ) : listFiltered.length === 0 ? (
               <EmptyState message={t('common.listTab.noMatch')} />
             ) : (
-              <table className="table">
+              <table className="table profiles-responsive-table">
                 <thead>
                   <tr>
                     <th>{t('profiles.table.name')}</th>
@@ -381,12 +382,12 @@ export function ProfilesPage() {
                 <tbody>
                   {listFiltered.map((p) => (
                     <tr key={p.id}>
-                      <td>
+                      <td data-label={t('profiles.table.name')}>
                         <div className="zh-card-section-title">{p.name}</div>
                         {p.description ? <div className="zh-text-muted zh-text-xs">{p.description}</div> : null}
                       </td>
-                      <td>
-                        <ZHActionsRow>
+                      <td data-label={t('profiles.table.active')}>
+                        <ZHActionsRow className="profiles-actions-cell">
                           <ZHBtn variant="secondary" onClick={() => toggle(p)} type="button">
                             {p.isActive ? t('profiles.actions.disable') : t('profiles.actions.enable')}
                           </ZHBtn>
@@ -395,7 +396,7 @@ export function ProfilesPage() {
                           </ZHBtn>
                         </ZHActionsRow>
                       </td>
-                      <td className="mono">{p.id}</td>
+                      <td data-label={t('profiles.table.id')} className="mono">{p.id}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -490,7 +491,7 @@ export function ProfilesPage() {
             )}
           </>
         )}
-      </TableCard>
+      </Card>
     </PageShell>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { NoAccessPage, PageShell, TableCard } from '../../../../components/PageShell';
+import { NoAccessPage, PageShell } from '../../../../components/PageShell';
+import { Card } from '../../../../components/ui/Card';
 import { ZHBtn, ZHField, ZHFormSection, ZHGrid } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
@@ -9,6 +10,7 @@ import { api } from '../../../lib/api';
 import { ItemsTransferenciaGrid, itemRowsToRequest, type ItemRow } from '../components/ItemsTransferenciaGrid';
 import { useBodegas, useTransferenciaAcciones } from '../hooks/useTransferencias';
 import type { ApiResponse } from '../../../../types/api';
+import './transferencias-pages.css';
 
 interface ProductoOpcion {
   id: string;
@@ -71,7 +73,7 @@ export function CrearTransferenciaPage() {
   return (
     <PageShell kicker="Inventario · Transferencias" title="Nueva Transferencia">
       <form onSubmit={(e) => void handleSubmit(e)}>
-        <TableCard>
+        <Card>
           {(error ?? localError) && (
             <ZHPageNotice variant="error" message="No se pudo crear la transferencia" detail={error ?? localError ?? ''} />
           )}
@@ -138,7 +140,7 @@ export function CrearTransferenciaPage() {
             />
           </ZHFormSection>
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px' }}>
+          <div className="trf-create-actions">
             <ZHBtn
               variant="ghost" size="md" type="button"
               disabled={loading}
@@ -150,7 +152,7 @@ export function CrearTransferenciaPage() {
               {loading ? 'Guardando…' : 'Crear en Borrador'}
             </ZHBtn>
           </div>
-        </TableCard>
+        </Card>
       </form>
     </PageShell>
   );

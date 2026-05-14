@@ -4,14 +4,15 @@ export { CatalogStructurePage } from './CatalogStructurePage';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PageShell, TableCard, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { PageShell, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
+import { Card } from '../components/ui/Card';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { useAuthStore } from '../store/authStore';
 import { ZHBtn, ZHField, ZHGrid } from '../components/zh/ZHForm';
 import { ZHGridRow, ZHSection } from '../components/zh/ZHLayout';
-import ZHSearchBar from '../components/shared/ZHSearchBar';
+import { SearchBar } from '../components/ui';
 import {
   catalogCategoryFormSchema,
   catalogSubcategoryFormSchema,
@@ -242,7 +243,7 @@ export function CategoriesCatalogPage() {
         ) : undefined
       }
     >
-      <TableCard>
+      <Card>
         {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button type="button" className={tab === 'data' ? 'is-active' : ''} onClick={() => setTab('data')}>
@@ -297,7 +298,7 @@ export function CategoriesCatalogPage() {
               </ZHField>
             </ZHGridRow>
             <div className="zh-mb-12">
-              <ZHSearchBar
+              <SearchBar
                 searchQuery={listQuery}
                 onSearch={setListQuery}
                 onClearAll={() => setListQuery('')}
@@ -340,7 +341,7 @@ export function CategoriesCatalogPage() {
             )}
           </>
         )}
-      </TableCard>
+      </Card>
     </PageShell>
   );
 }
@@ -505,7 +506,7 @@ export function SubcategoriesCatalogPage() {
         ) : undefined
       }
     >
-      <TableCard>
+      <Card>
         {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button type="button" className={subTab === 'data' ? 'is-active' : ''} onClick={() => setSubTab('data')}>
@@ -587,7 +588,7 @@ export function SubcategoriesCatalogPage() {
               </ZHField>
             </ZHGridRow>
             <div className="zh-mb-12">
-              <ZHSearchBar
+              <SearchBar
                 searchQuery={listQuery}
                 onSearch={setListQuery}
                 onClearAll={() => setListQuery('')}
@@ -632,7 +633,7 @@ export function SubcategoriesCatalogPage() {
             )}
           </>
         )}
-      </TableCard>
+      </Card>
     </PageShell>
   );
 }

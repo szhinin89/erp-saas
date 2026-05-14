@@ -78,7 +78,7 @@ export function ForgotPasswordPage() {
             </ZHGrid>
           </ZHFormSection>
 
-          <p className="login-form-hint" style={{ marginTop: '0.5rem', fontSize: '0.875rem' }}>
+          <p className="login-form-hint">
             <Link to="/password-reset">{t('forgot.linkDirectReset')}</Link>
           </p>
 

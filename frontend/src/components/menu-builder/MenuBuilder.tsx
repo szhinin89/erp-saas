@@ -536,7 +536,7 @@ export function MenuBuilder({
                 </header>
                 <div className="menu-builder-panel__body">
                   {availableLib.length === 0 ? (
-                    <p className="menu-preview-empty" style={{ border: 'none', minHeight: '6rem' }}>
+                    <p className="menu-preview-empty menu-preview-empty--library">
                       {t('common.noData')}
                     </p>
                   ) : (

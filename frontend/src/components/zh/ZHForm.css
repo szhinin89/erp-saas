@@ -1,5 +1,6 @@
 .zh-form {
-  max-width: 1100px;
+  width: 100%;
+  max-width: none;
 }
 
 .zh-form-header {
@@ -313,6 +314,11 @@
   margin-top: 1px;
 }
 
+.zh-form-alert-icon--success { color: var(--zh-success); }
+.zh-form-alert-icon--error { color: var(--zh-danger); }
+.zh-form-alert-icon--warning { color: var(--zh-warning); }
+.zh-form-alert-icon--info { color: var(--zh-blue); }
+
 .zh-form-alert-message {
   font-size: 13px;
   font-weight: 600;
@@ -344,7 +350,7 @@
 }
 
 .zh-form-section {
-  padding: 14px 0;
+  padding: 16px 0;
   border-bottom: 0.5px solid var(--color-border-tertiary);
 }
 
@@ -356,25 +362,25 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 0 0 12px 0;
-  font-size: 13px;
+  margin: 0 0 10px 0;
+  font-size: 14px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-text-secondary);
+  text-transform: none;
+  letter-spacing: 0.01em;
+  color: var(--zh-color-text, #0f172a);
 }
 
 .zh-form-section-title::before {
   content: "";
-  width: 4px;
+  width: 3px;
   height: 14px;
-  border-radius: 3px;
-  background: var(--zh-blue);
+  border-radius: 999px;
+  background: var(--zh-color-primary, #1d4f91);
 }
 
 .zh-grid {
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 
 .zh-grid--1 { grid-template-columns: 1fr; }
@@ -389,8 +395,8 @@
 
 .zh-field-label {
   font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.03em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   color: var(--color-text-secondary);
 }
 
@@ -407,10 +413,10 @@
 .zh-field-control select,
 .zh-field-control textarea {
   width: 100%;
-  height: 36px;
-  padding: 0 11px;
-  border-radius: var(--zh-radius);
-  border: 1px solid var(--color-border-tertiary);
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--zh-radius-md, 10px);
+  border: 1px solid var(--zh-color-border, #dbe2ea);
   background: var(--zh-color-surface);
   font-size: 13px;
   font-weight: 400;
@@ -439,8 +445,8 @@
 
 .zh-field-control textarea {
   height: auto;
-  min-height: 72px;
-  padding: 9px 11px;
+  min-height: 88px;
+  padding: 10px 12px;
   line-height: 1.5;
   resize: vertical;
 }
@@ -448,7 +454,7 @@
 .zh-field-control input:focus,
 .zh-field-control select:focus,
 .zh-field-control textarea:focus {
-  border-color: var(--zh-blue);
+  border-color: var(--zh-color-primary, #1d4f91);
   box-shadow: var(--zh-focus-ring);
   position: relative;
   z-index: 1;
@@ -606,6 +612,7 @@
   font-size: 13px;
   color: var(--zh-color-text);
   cursor: pointer;
+  min-height: 32px;
 }
 
 .zh-checkbox input[type="checkbox"] {
@@ -649,6 +656,10 @@
   left: 22px;
 }
 
+.zh-toggle-switch.is-pressed {
+  box-shadow: 0 0 0 3px rgba(79, 123, 166, 0.15);
+}
+
 .zh-toggle-switch[aria-disabled="true"] {
   opacity: 0.45;
   cursor: not-allowed;
@@ -658,9 +669,21 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 18px;
+  margin-top: 16px;
   padding-top: 14px;
   border-top: 0.5px solid var(--color-border-tertiary);
+}
+
+.zh-form-actions-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.zh-form-actions-row--end {
+  justify-content: flex-end;
 }
 
 /* ── Responsive rules (alineado a docs/zh-form-template/zh_erp_component_library.html) ── */
@@ -672,6 +695,16 @@
 }
 
 @media (max-width: 440px) {
+  .zh-form-actions-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .zh-form-actions-row .zh-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
   .zh-actions {
     flex-direction: column;
     align-items: stretch;

@@ -4,6 +4,7 @@ import { useI18n } from '../i18n/i18n';
 import { Badge, EmptyState, LoadingState } from './PageShell';
 import { ZHPageNotice } from './zh/ZHPageNotice';
 import { formatApiError } from '../modules/lib/formatApiError';
+import './EntityAuditPanel.css';
 
 function actionVerbI18nKey(action: string): string {
   const i = action.lastIndexOf('.');
@@ -72,7 +73,7 @@ export function EntityAuditPanel({ entityType, entityId, take = 10, refreshKey =
   return (
     <div className="entity-audit-panel">
       <p className="subtle zh-mb-12">{t('audit.hint')}</p>
-      <table className="table">
+      <table className="table entity-audit-responsive-table">
         <thead>
           <tr>
             <th>{t('audit.column.when')}</th>
@@ -90,12 +91,14 @@ export function EntityAuditPanel({ entityType, entityId, take = 10, refreshKey =
             const verbKey = actionVerbI18nKey(r.action);
             return (
               <tr key={r.id}>
-                <td>{new Date(r.createdAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}</td>
-                <td>{who}</td>
-                <td>
+                <td data-label={t('audit.column.when')}>
+                  {new Date(r.createdAt).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })}
+                </td>
+                <td data-label={t('audit.column.who')}>{who}</td>
+                <td data-label={t('audit.column.what')}>
                   <Badge label={t(verbKey, r.action)} variant="gray" />
                 </td>
-                <td className="subtle">{r.description ?? '—'}</td>
+                <td data-label={t('audit.column.detail')} className="subtle">{r.description ?? '—'}</td>
               </tr>
             );
           })}

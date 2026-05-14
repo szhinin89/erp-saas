@@ -8,21 +8,21 @@
 
 .sa-tenantRow {
   text-align: left;
-  border: 1px solid rgba(15, 23, 42, 0.10);
-  background: #fff;
-  border-radius: 12px;
+  border: 1px solid var(--zh-color-border, #dbe2ea);
+  background: var(--zh-color-surface, #fff);
+  border-radius: var(--zh-radius-md, 10px);
   padding: 12px 12px;
   transition: box-shadow 140ms ease, border-color 120ms ease;
 }
 
 .sa-tenantRow:hover {
-  border-color: rgba(0, 229, 255, 0.55);
-  box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.16);
+  border-color: rgba(29, 79, 145, 0.4);
+  box-shadow: var(--zh-shadow-sm, 0 10px 28px rgba(15, 23, 42, 0.08));
 }
 
 .sa-tenantName {
   font-weight: 900;
-  color: #0f172a;
+  color: var(--zh-color-text, #0f172a);
 }
 
 .sa-tenantMeta {
@@ -30,7 +30,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  color: #475569;
+  color: var(--color-text-muted, #64748b);
 }
 
 .sa-tenant-stats {
@@ -59,7 +59,7 @@
 .sa-tenantPlanKey,
 .sa-tenantModulesKey {
   font-weight: 700;
-  color: #64748b;
+  color: var(--color-text-muted, #64748b);
 }
 
 .sa-tenant-actions {
@@ -72,9 +72,9 @@
   gap: 10px 16px;
   margin: 10px 0 14px;
   padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  background: rgba(248, 250, 252, 0.9);
+  border-radius: var(--zh-radius-md, 10px);
+  border: 1px solid var(--zh-color-border, #dbe2ea);
+  background: var(--zh-color-surface-soft, #f8fafc);
 }
 
 .sa-moduleCheck {
@@ -99,6 +99,14 @@
 
 .sa-plansAdminLink {
   margin-bottom: 14px;
+}
+
+.sa-welcome-note {
+  margin-bottom: 1rem;
+}
+
+.sa-modules-hint {
+  margin-top: 6px;
 }
 
 @media (max-width: 900px) {
@@ -131,20 +139,20 @@
 }
 
 .sa-overviewHubCard {
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  border-radius: 14px;
+  border: 1px solid var(--zh-color-border, #dbe2ea);
+  border-radius: var(--radius-lg, 12px);
   padding: 0.95rem;
-  background: #fff;
+  background: var(--zh-color-surface, #fff);
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  box-shadow: var(--zh-shadow-sm, 0 10px 28px rgba(15, 23, 42, 0.08));
   transition: transform 120ms ease, box-shadow 140ms ease, border-color 120ms ease;
 }
 
 .sa-overviewHubCard:hover {
-  border-color: rgba(37, 99, 235, 0.34);
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  border-color: rgba(29, 79, 145, 0.4);
+  box-shadow: var(--zh-shadow-md, 0 16px 36px rgba(15, 23, 42, 0.1));
   transform: translateY(-1px);
 }
 
@@ -158,7 +166,7 @@
 .sa-overviewHubCardTitle {
   font-size: 0.98rem;
   font-weight: 800;
-  color: #1e3a5f;
+  color: var(--zh-color-text, #0f172a);
 }
 
 .sa-overviewHubBadge {
@@ -168,9 +176,13 @@
   font-weight: 700;
   border-radius: 999px;
   padding: 0.2rem 0.5rem;
-  background: rgba(37, 99, 235, 0.1);
-  color: #1d4ed8;
+  background: var(--zh-blue-light, #eff6ff);
+  color: var(--zh-color-primary, #1d4f91);
   white-space: nowrap;
+}
+
+.sa-search-row {
+  margin-bottom: 10px;
 }
 
 .sa-overviewHubCardBody {
@@ -187,6 +199,27 @@
 @media (max-width: 860px) {
   .sa-overviewHubGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .sa-tenantRow {
+    padding: 10px;
+  }
+
+  .sa-tenant-actions .zh-inline-row-right {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .sa-tenant-actions .zh-inline-row-right .zh-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .sa-moduleChecks {
+    gap: 8px 10px;
+    padding: 8px 10px;
   }
 }
 

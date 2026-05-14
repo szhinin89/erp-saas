@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
-import { EmptyState, PageShell, TableCard } from '../PageShell';
+import { EmptyState, PageShell } from '../PageShell';
+import { Card } from '../ui';
 import { useI18n } from '../../i18n/i18n';
 import { useSuperAdminGate } from '../../hooks/useSuperAdminGate';
 
@@ -46,9 +47,9 @@ export function SuperAdminPageTemplate({
     const deniedSubKey = accessDeniedSubtitleKey ?? accessDeniedKey;
     return (
       <PageShell kicker={k} title={title} subtitle={t(deniedSubKey)}>
-        <TableCard>
+        <Card>
           <EmptyState message={t(accessDeniedKey)} />
-        </TableCard>
+        </Card>
       </PageShell>
     );
   }
@@ -59,9 +60,9 @@ export function SuperAdminPageTemplate({
     );
     return (
       <PageShell kicker={k} title={title} action={tenantGuardAction ?? defaultAction}>
-        <TableCard>
+        <Card>
           <EmptyState message={t('superadmin.alreadyInTenant')} />
-        </TableCard>
+        </Card>
       </PageShell>
     );
   }

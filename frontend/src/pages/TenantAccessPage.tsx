@@ -6,14 +6,14 @@ import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { tenantAccessService, type TenantMembershipItem } from '../services/tenantAccessService';
 import { profileService, type Profile } from '../services/profileService';
-import { PageShell, TableCard, EmptyState, LoadingState, NoAccessPage } from '../components/PageShell';
+import { PageShell, EmptyState, LoadingState, NoAccessPage } from '../components/PageShell';
 import { ZHFormSection, ZHGrid, ZHField, ZHBtn } from '../components/zh/ZHForm';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import { ZHActionsRow } from '../components/zh/ZHLayout';
-import ZHSearchBar from '../components/shared/ZHSearchBar';
-import { ZHFormCard } from '../components/zh/ZHFormCard';
+import { Card, SearchBar } from '../components/ui';
 import { ZHConfirmModal } from '../components/zh/ZHConfirmModal';
 import { tenantAccessUpsertSchema, type TenantAccessFormValues } from '../schemas/access/tenantAccessSchema';
+import './TenantAccessPage.css';
 
 type AccessTab = 'data' | 'list';
 
@@ -143,7 +143,7 @@ export function TenantAccessPage() {
         ) : undefined
       }
     >
-      <TableCard>
+      <Card>
         {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button type="button" className={tab === 'data' ? 'is-active' : ''} onClick={() => setTab('data')}>
@@ -155,13 +155,8 @@ export function TenantAccessPage() {
         </div>
 
         {tab === 'data' && (
-          <ZHFormCard
-            ref={formRef}
-            hideHeader
-            title={t('tenantAccess.title')}
-            subtitle={t('tenantAccess.subtitle')}
-            onSubmit={submit}
-          >
+          <Card title={t('tenantAccess.title')}>
+            <form ref={formRef} onSubmit={submit}>
             <input type="hidden" name="tenantId" value={tenantId} />
 
             <ZHFormSection title={t('tenantAccess.section.manage')}>
@@ -196,13 +191,14 @@ export function TenantAccessPage() {
                 </ZHField>
               </ZHGrid>
             </ZHFormSection>
-          </ZHFormCard>
+            </form>
+          </Card>
         )}
 
         {tab === 'list' && (
           <>
-            <div className="zh-mb-12">
-              <ZHSearchBar
+            <div className="tenant-access-search-row">
+              <SearchBar
                 searchQuery={listQuery}
                 onSearch={setListQuery}
                 onClearAll={() => setListQuery('')}
@@ -222,7 +218,7 @@ export function TenantAccessPage() {
             ) : listFiltered.length === 0 ? (
               <EmptyState message={t('common.listTab.noMatch')} />
             ) : (
-              <table className="table">
+              <table className="table tenant-access-responsive-table">
                 <thead>
                   <tr>
                     <th>{t('tenantAccess.table.user')}</th>
@@ -234,14 +230,14 @@ export function TenantAccessPage() {
                 <tbody>
                   {listFiltered.map((m) => (
                     <tr key={`${m.identityUserId}-${m.email}`}>
-                      <td>
+                      <td data-label={t('tenantAccess.table.user')}>
                         <div className="zh-card-section-title">{m.fullName || m.email}</div>
                         <div className="mono">{m.email}</div>
                       </td>
-                      <td>{m.role}</td>
-                      <td className="mono">{m.profileId ?? '-'}</td>
-                      <td>
-                        <ZHActionsRow>
+                      <td data-label={t('tenantAccess.table.role')}>{m.role}</td>
+                      <td data-label={t('tenantAccess.table.profile')} className="mono">{m.profileId ?? '-'}</td>
+                      <td data-label={t('tenantAccess.table.actions')} className="tenant-access-cell-actions">
+                        <ZHActionsRow className="tenant-access-actions">
                           <ZHBtn variant="destructive" type="button" onClick={() => setRevokeConfirmEmail(m.email)}>
                             {t('tenantAccess.actions.revoke')}
                           </ZHBtn>
@@ -254,7 +250,7 @@ export function TenantAccessPage() {
             )}
           </>
         )}
-      </TableCard>
+      </Card>
 
       {revokeConfirmEmail ? (
         <ZHConfirmModal

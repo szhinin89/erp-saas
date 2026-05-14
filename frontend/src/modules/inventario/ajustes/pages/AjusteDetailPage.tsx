@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { EmptyState, LoadingState, NoAccessPage, PageShell, TableCard } from '../../../../components/PageShell';
+import { EmptyState, LoadingState, NoAccessPage, PageShell } from '../../../../components/PageShell';
+import { Card } from '../../../../components/ui/Card';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHConfirmModal } from '../../../../components/zh/ZHConfirmModal';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { AjusteEstadoBadge, AjusteTipoBadge } from '../components/AjusteEstadoBadge';
 import { useAjusteDetalle, useAjusteAcciones } from '../hooks/useAjustes';
+import './ajustes-pages.css';
 
 export function AjusteDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -31,7 +33,7 @@ export function AjusteDetailPage() {
       title={ajuste?.numeroAjuste ?? 'Cargando…'}
       action={
         esBorrador ? (
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className="aj-action-row">
             {canExecute && (
               <ZHBtn variant="primary" size="md" disabled={actLoading}
                 onClick={() => {
@@ -52,7 +54,7 @@ export function AjusteDetailPage() {
         ) : undefined
       }
     >
-      <TableCard>
+      <Card>
         {(error ?? actError) && (
           <ZHPageNotice variant="error" message="Error" detail={error ?? actError ?? ''} />
         )}
@@ -63,7 +65,7 @@ export function AjusteDetailPage() {
           <EmptyState message="Ajuste no encontrado." />
         ) : (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '24px' }}>
+            <div className="aj-detail-grid">
               <Dato label="Número"   valor={ajuste.numeroAjuste} />
               <Dato label="Estado"   valor={<AjusteEstadoBadge estado={ajuste.estado} />} />
               <Dato label="Tipo"     valor={
@@ -79,14 +81,14 @@ export function AjusteDetailPage() {
               )}
             </div>
 
-            <div style={{ marginTop: '16px' }}>
+            <div className="aj-detail-footer">
               <ZHBtn variant="ghost" size="md" onClick={() => navigate('/inventario/ajustes')}>
                 ← Volver al listado
               </ZHBtn>
             </div>
           </>
         )}
-      </TableCard>
+      </Card>
       {pendingAction ? (
         <ZHConfirmModal
           title={pendingAction === 'execute' ? 'Ejecutar ajuste' : 'Cancelar ajuste'}
@@ -118,7 +120,7 @@ export function AjusteDetailPage() {
 function Dato({ label, valor }: { label: string; valor: React.ReactNode }) {
   return (
     <div>
-      <div style={{ fontSize: '0.75rem', color: 'var(--zh-text-muted)', marginBottom: '2px' }}>{label}</div>
+      <div className="aj-field-label">{label}</div>
       <div>{valor}</div>
     </div>
   );

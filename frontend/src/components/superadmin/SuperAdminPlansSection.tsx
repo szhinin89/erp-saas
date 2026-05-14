@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { TableCard, EmptyState, LoadingState, Badge } from '../PageShell';
+import { EmptyState, LoadingState, Badge } from '../PageShell';
+import { Card } from '../ui';
 import { ZHPageNotice } from '../zh/ZHPageNotice';
 import { useSuperAdminGate } from '../../hooks/useSuperAdminGate';
 import { Modal } from '../Modal';
@@ -439,9 +440,9 @@ export function SuperAdminPlansSection() {
           </div>
 
           {plans.length === 0 ? (
-            <TableCard>
+            <Card>
               <EmptyState message={t('superadmin.plans.empty')} />
-            </TableCard>
+            </Card>
           ) : (
             <div className="sap-pricing-grid">
           {plans.map((plan, index) => {
@@ -551,7 +552,7 @@ export function SuperAdminPlansSection() {
         </div>
       )}
 
-      <TableCard>
+      <Card>
         <ZHCardSection title={t('superadmin.plansDashboard.tenantsSectionTitle')}>
           <div className="sap-tenant-toolbar">
             <input
@@ -650,7 +651,7 @@ export function SuperAdminPlansSection() {
             </div>
           )}
         </ZHCardSection>
-      </TableCard>
+      </Card>
         </>
       )}
 

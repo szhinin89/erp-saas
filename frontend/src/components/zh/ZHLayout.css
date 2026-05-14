@@ -11,7 +11,9 @@
 }
 
 .zh-card-section-title {
-  font-weight: 900;
+  font-weight: 800;
+  font-size: 1.03rem;
+  color: var(--zh-color-text, #0f172a);
 }
 
 .zh-card-section-right {
@@ -105,7 +107,7 @@
 
 .subtle {
   color: var(--color-text-secondary);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .zh-gap-8 { gap: 8px; }
@@ -147,15 +149,15 @@
 
 /* Compact screen title — junto al menú global, sin barra azul duplicada */
 .zh-screen-heading {
-  margin: 0 0 14px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--zh-color-border, #e8eef4);
+  margin: 0 0 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--zh-color-border, #dbe2ea);
 }
 
 .zh-screen-heading-kicker {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--zh-text-muted, #64748b);
   margin-bottom: 8px;
@@ -187,13 +189,13 @@
 }
 
 .zh-screen-heading-chip {
-  width: 5px;
-  height: 26px;
+  width: 4px;
+  height: 30px;
   flex-shrink: 0;
   margin-top: 2px;
-  border-radius: 4px;
-  background: linear-gradient(180deg, var(--zh-blue, #1e5eff), var(--zh-accent-cyan, #00e5ff));
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.28);
+  border-radius: 999px;
+  background: var(--zh-color-primary, #1d4f91);
+  box-shadow: none;
 }
 
 .zh-screen-heading-copy {
@@ -202,17 +204,17 @@
 
 .zh-screen-heading-title {
   margin: 0;
-  font-size: 14px;
+  font-size: 1.28rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  text-transform: none;
   color: var(--zh-text-primary, #0f172a);
   line-height: 1.25;
 }
 
 .zh-screen-heading-sub {
   margin: 6px 0 0;
-  font-size: 12px;
+  font-size: 0.95rem;
   font-weight: 500;
   color: var(--zh-text-muted, #64748b);
   line-height: 1.35;

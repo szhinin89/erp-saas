@@ -684,6 +684,38 @@
   color: var(--zh-blue-dark, #1e3a5f);
 }
 
+.menu-plan-composer__hiddenFileInput {
+  display: none;
+}
+
+.menu-plan-composer__legacyTabs {
+  margin-top: 12px;
+}
+
+.menu-plan-composer__legacyBuilderWrap {
+  margin-top: 16px;
+}
+
+.menu-plan-composer__legacySubtleLabel {
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+.menu-plan-composer__legacyInlineCheck {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.menu-plan-composer__legacySubtleHelp {
+  margin-top: 4px;
+}
+
+.menu-plan-composer__legacyJsonTextarea {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+}
+
 @media (max-width: 860px) {
   .menu-plan-composer__advancedFilterTip {
     margin-left: 0;
