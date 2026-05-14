@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage, PageShell, TableCard } from '../../../../components/PageShell';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
+import { ZHConfirmModal } from '../../../../components/zh/ZHConfirmModal';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { TransferenciaEstadoBadge } from '../components/TransferenciaEstadoBadge';
@@ -19,6 +21,7 @@ export function TransferenciaDetailPage() {
 
   const { loading: actLoading, error: actError, confirmar, cancelar } =
     useTransferenciaAcciones(refetch);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
   if (!canView) return <NoAccessPage title="Detalle de Transferencia" />;
 
@@ -45,7 +48,7 @@ export function TransferenciaDetailPage() {
                 variant="destructive" size="md"
                 disabled={actLoading}
                 onClick={() => {
-                  if (confirm('¿Cancelar esta transferencia?')) void cancelar(id!);
+                  setCancelConfirmOpen(true);
                 }}
               >
                 Cancelar
@@ -110,6 +113,22 @@ export function TransferenciaDetailPage() {
           </>
         )}
       </TableCard>
+      {cancelConfirmOpen ? (
+        <ZHConfirmModal
+          title="Cancelar transferencia"
+          message="¿Cancelar esta transferencia?"
+          confirmLabel="Cancelar transferencia"
+          cancelLabel="Volver"
+          variant="destructive"
+          loading={actLoading}
+          onCancel={() => setCancelConfirmOpen(false)}
+          onConfirm={async () => {
+            if (!id) return;
+            await cancelar(id);
+            setCancelConfirmOpen(false);
+          }}
+        />
+      ) : null}
     </PageShell>
   );
 }

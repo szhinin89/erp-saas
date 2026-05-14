@@ -13,6 +13,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { useI18n } from '../../i18n/i18n';
 import type { FuncionalidadArbolDto } from '../../services/superAdminService';
+import { ZHPromptModal } from '../zh/ZHPromptModal';
 import {
   buildFuncionalidadMaps,
   createFolderEditorItem,
@@ -69,6 +70,8 @@ type Props = {
   crmToolbar?: ReactNode;
   /** Bloque bajo el título del árbol (p. ej. pastillas de plan y búsqueda). */
   crmMasterStack?: ReactNode;
+  /** Bloque bajo el título de biblioteca (filtros del catálogo). */
+  crmLibraryStack?: ReactNode;
   /** Pie del panel árbol (acciones y ayuda). */
   crmMasterFooter?: ReactNode;
   /** Columna central: controles y tarjeta de plan bajo la vista previa. */
@@ -83,6 +86,13 @@ type Props = {
 };
 
 const EXPANDED_STORAGE_KEY = 'crmTreeExpandedState';
+type PromptRequest = {
+  kind: 'folder' | 'form';
+  parentUid: ParentRef;
+  title: string;
+  label: string;
+  defaultValue: string;
+};
 
 function LibraryRow({ node, dense, onPreview }: { node: FuncionalidadArbolDto; dense?: boolean; onPreview?: (node: FuncionalidadArbolDto) => void }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -142,6 +152,7 @@ export function MenuBuilder({
   panelTitles,
   crmToolbar,
   crmMasterStack,
+  crmLibraryStack,
   crmMasterFooter,
   crmPreviewExtras,
   previewItemsOverride = null,
@@ -152,6 +163,7 @@ export function MenuBuilder({
   const { t } = useI18n();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [previewForm, setPreviewForm] = useState<FuncionalidadArbolDto | null>(null);
+  const [promptRequest, setPromptRequest] = useState<PromptRequest | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set<string>();
     try {
@@ -266,9 +278,17 @@ export function MenuBuilder({
   const addChildFolder = useCallback(
     (parentUid: ParentRef) => {
       const defaultName = 'Nueva carpeta';
-      const name = crmUi ? window.prompt('Nombre de carpeta', defaultName)?.trim() : defaultName;
-      if (!name) return;
-      const folder = createFolderEditorItem(name);
+      if (crmUi) {
+        setPromptRequest({
+          kind: 'folder',
+          parentUid,
+          title: 'Nueva carpeta',
+          label: 'Nombre de carpeta',
+          defaultValue: defaultName,
+        });
+        return;
+      }
+      const folder = createFolderEditorItem(defaultName);
       if (parentUid === ROOT_PARENT) {
         onTreeChange(insertChildAt(tree, ROOT_PARENT, tree.length, folder));
         return;
@@ -283,9 +303,17 @@ export function MenuBuilder({
   const addChildForm = useCallback(
     (parentUid: ParentRef) => {
       const defaultName = 'Nuevo formulario';
-      const name = crmUi ? window.prompt('Nombre de formulario', defaultName)?.trim() : defaultName;
-      if (!name) return;
-      const form = createFormEditorItem(name);
+      if (crmUi) {
+        setPromptRequest({
+          kind: 'form',
+          parentUid,
+          title: 'Nuevo formulario',
+          label: 'Nombre de formulario',
+          defaultValue: defaultName,
+        });
+        return;
+      }
+      const form = createFormEditorItem(defaultName);
       if (parentUid === ROOT_PARENT) {
         onTreeChange(insertChildAt(tree, ROOT_PARENT, tree.length, form));
         return;
@@ -295,6 +323,32 @@ export function MenuBuilder({
       onTreeChange(insertChildAt(tree, parentUid, p.children.length, form));
     },
     [crmUi, onTreeChange, tree],
+  );
+
+  const confirmCreateNode = useCallback(
+    (name: string) => {
+      if (!promptRequest) return;
+      const parentUid = promptRequest.parentUid;
+      const node = promptRequest.kind === 'folder'
+        ? createFolderEditorItem(name)
+        : createFormEditorItem(name);
+
+      if (parentUid === ROOT_PARENT) {
+        onTreeChange(insertChildAt(tree, ROOT_PARENT, tree.length, node));
+        setPromptRequest(null);
+        return;
+      }
+
+      const p = findNodeByUid(tree, parentUid as string);
+      if (!p || !isEditorFolder(p)) {
+        setPromptRequest(null);
+        return;
+      }
+
+      onTreeChange(insertChildAt(tree, parentUid, p.children.length, node));
+      setPromptRequest(null);
+    },
+    [onTreeChange, promptRequest, tree],
   );
 
   const sensors = useSensors(
@@ -478,6 +532,7 @@ export function MenuBuilder({
                   <p className="menu-builder-panel__hint" title={t('superadmin.menuBuilder.libraryHint')}>
                     {crmUi ? 'Arrastra y suelta hacia el árbol maestro.' : t('superadmin.menuBuilder.libraryHintShort')}
                   </p>
+                  {crmUi && crmLibraryStack ? <div className="menu-builder-panel__crmStack">{crmLibraryStack}</div> : null}
                 </header>
                 <div className="menu-builder-panel__body">
                   {availableLib.length === 0 ? (
@@ -545,15 +600,15 @@ export function MenuBuilder({
                   </div>
                 </header>
                 <div className="menu-builder-panel__body menu-builder-canvas-inner">
-                  {treeEmpty ? (
-                    <div className="menu-builder-canvas-empty-float">
-                      <span className="menu-builder-canvas-empty__icon" aria-hidden>
-                        ⎘
-                      </span>
-                      {crmUi ? 'Arrastra formularios desde la columna derecha o añade carpeta/formulario raíz.' : t('superadmin.menuBuilder.canvasEmpty')}
-                    </div>
-                  ) : null}
                   <div className="menu-builder-canvas-branch-wrap">
+                    {treeEmpty ? (
+                      <div className="menu-builder-canvas-empty-float">
+                        <span className="menu-builder-canvas-empty__icon" aria-hidden>
+                          ⎘
+                        </span>
+                        {crmUi ? 'Arrastra formularios desde la columna derecha o añade carpeta/formulario raíz.' : t('superadmin.menuBuilder.canvasEmpty')}
+                      </div>
+                    ) : null}
                     <SortableTreeBranch
                       parentUid={ROOT_PARENT}
                       nodes={treeForRender}
@@ -654,6 +709,18 @@ export function MenuBuilder({
               </div>
             </div>
           </div>
+        ) : null}
+
+        {promptRequest ? (
+          <ZHPromptModal
+            title={promptRequest.title}
+            label={promptRequest.label}
+            initialValue={promptRequest.defaultValue}
+            confirmLabel="Aceptar"
+            cancelLabel="Cancelar"
+            onCancel={() => setPromptRequest(null)}
+            onConfirm={confirmCreateNode}
+          />
         ) : null}
       </div>
 

@@ -1,9 +1,13 @@
-import { Fragment } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { isEditorFolder, type EditorMenuItem } from './menuBuilderTypes';
 import { ROOT_PARENT, type ParentRef, gapId, sortableTreeId } from './treeOps';
+import { Modal } from '../Modal';
+import { ZHBtn, ZHField } from '../zh/ZHForm';
+import { ZHConfirmModal } from '../zh/ZHConfirmModal';
+import { ZHActionsRow } from '../zh/ZHLayout';
 
 function GapZone({ zoneId }: { zoneId: string }) {
   const { setNodeRef, isOver } = useDroppable({ id: zoneId });
@@ -51,7 +55,33 @@ export function SortableTreeRow({
   onMoveUp,
   onMoveDown,
 }: RowProps) {
+  type EditDraft = {
+    nombre: string;
+    icono: string;
+    ruta: string;
+    permiso: string;
+  };
   const folder = isEditorFolder(node);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [editDraft, setEditDraft] = useState<EditDraft>({
+    nombre: node.nombre,
+    icono: node.icono ?? '',
+    ruta: node.ruta ?? '',
+    permiso: node.permiso ?? '',
+  });
+
+  useEffect(() => {
+    if (!editOpen) {
+      setEditDraft({
+        nombre: node.nombre,
+        icono: node.icono ?? '',
+        ruta: node.ruta ?? '',
+        permiso: node.permiso ?? '',
+      });
+    }
+  }, [editOpen, node.icono, node.nombre, node.permiso, node.ruta]);
+
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: sortableTreeId(node.uid),
     data: { parentUid, uid: node.uid },
@@ -73,6 +103,7 @@ export function SortableTreeRow({
     }
     return count;
   };
+  const childCount = useMemo(() => descendants(node.children), [node.children]);
   const renderName = () => {
     if (!searchNeedle) return node.nombre;
     const idx = node.nombre.toLowerCase().indexOf(searchNeedle.toLowerCase());
@@ -249,23 +280,7 @@ export function SortableTreeRow({
             <button
               type="button"
               className="menu-builder-crm-action"
-              onClick={() => {
-                const nextName = window.prompt('Nombre', node.nombre);
-                if (!nextName || !nextName.trim()) return;
-                const nextIcon = window.prompt('Ícono', node.icono ?? '') ?? '';
-                if (folder) {
-                  onPatch(node.uid, { nombre: nextName.trim(), icono: nextIcon.trim() });
-                  return;
-                }
-                const nextRoute = window.prompt('Ruta', node.ruta ?? '') ?? '';
-                const nextPerm = window.prompt('Permiso', node.permiso ?? '') ?? '';
-                onPatch(node.uid, {
-                  nombre: nextName.trim(),
-                  icono: nextIcon.trim(),
-                  ruta: nextRoute.trim(),
-                  permiso: nextPerm.trim(),
-                });
-              }}
+              onClick={() => setEditOpen(true)}
               aria-label="Editar nombre del ítem"
               title="Editar"
             >
@@ -280,11 +295,7 @@ export function SortableTreeRow({
                 onRemove(node.uid);
                 return;
               }
-              const childCount = descendants(node.children);
-              const kind = folder ? 'carpeta' : 'formulario';
-              const extra = childCount > 0 ? `\nSe eliminarán ${childCount} hijo(s).` : '';
-              const ok = window.confirm(`¿Eliminar ${kind} "${node.nombre}"?${extra}`);
-              if (ok) onRemove(node.uid);
+              setDeleteOpen(true);
             }}
             aria-label="Eliminar ítem"
             title="Eliminar"
@@ -310,6 +321,92 @@ export function SortableTreeRow({
           onAddChildForm={onAddChildForm}
           onMoveUp={onMoveUp}
           onMoveDown={onMoveDown}
+        />
+      ) : null}
+      {editOpen ? (
+        <Modal title={`Editar ${folder ? 'carpeta' : 'formulario'}`} onClose={() => setEditOpen(false)} size="sm">
+          <ZHField label="Nombre">
+            <input
+              className="zh-input"
+              value={editDraft.nombre}
+              onChange={(e) => setEditDraft((prev) => ({ ...prev, nombre: e.target.value }))}
+            />
+          </ZHField>
+          <ZHField label="Ícono">
+            <input
+              className="zh-input"
+              value={editDraft.icono}
+              onChange={(e) => setEditDraft((prev) => ({ ...prev, icono: e.target.value }))}
+              placeholder="Ej. fa-folder"
+            />
+          </ZHField>
+          {!folder ? (
+            <>
+              <ZHField label="Ruta">
+                <input
+                  className="zh-input"
+                  value={editDraft.ruta}
+                  onChange={(e) => setEditDraft((prev) => ({ ...prev, ruta: e.target.value }))}
+                  placeholder="/modulo/recurso"
+                />
+              </ZHField>
+              <ZHField label="Permiso">
+                <input
+                  className="zh-input"
+                  value={editDraft.permiso}
+                  onChange={(e) => setEditDraft((prev) => ({ ...prev, permiso: e.target.value }))}
+                  placeholder="modulo.recurso.accion"
+                />
+              </ZHField>
+            </>
+          ) : null}
+          <ZHActionsRow className="zh-mt-16">
+            <ZHBtn variant="ghost" size="md" type="button" onClick={() => setEditOpen(false)}>
+              Cancelar
+            </ZHBtn>
+            <ZHBtn
+              variant="primary"
+              size="md"
+              type="button"
+              onClick={() => {
+                const nextName = editDraft.nombre.trim();
+                if (!nextName) return;
+                onPatch(node.uid, {
+                  nombre: nextName,
+                  icono: editDraft.icono.trim(),
+                  ...(folder
+                    ? {}
+                    : {
+                        ruta: editDraft.ruta.trim(),
+                        permiso: editDraft.permiso.trim(),
+                      }),
+                });
+                setEditOpen(false);
+              }}
+              disabled={!editDraft.nombre.trim()}
+            >
+              Guardar
+            </ZHBtn>
+          </ZHActionsRow>
+        </Modal>
+      ) : null}
+      {deleteOpen ? (
+        <ZHConfirmModal
+          title={`Eliminar ${folder ? 'carpeta' : 'formulario'}`}
+          message={
+            <>
+              ¿Eliminar <strong>{node.nombre}</strong>?
+              {childCount > 0 ? <><br />Se eliminarán {childCount} hijo(s).</> : null}
+            </>
+          }
+          confirmLabel="Eliminar"
+          cancelLabel="Cancelar"
+          variant="destructive"
+          onCancel={() => setDeleteOpen(false)}
+          onConfirm={() => {
+            onRemove(node.uid);
+            setDeleteOpen(false);
+          }}
         />
       ) : null}
     </div>

@@ -179,6 +179,13 @@ if (app.Environment.IsDevelopment() &&
     await syncScope.ServiceProvider.GetRequiredService<ModuloDiscoveryService>().SincronizarModulosAsync();
 }
 
+// Catálogo mínimo de planes SaaS en BD (idempotente).
+using (var plansScope = app.Services.CreateScope())
+{
+    var db = plansScope.ServiceProvider.GetRequiredService<ErpDbContext>();
+    await SaasPlansBootstrap.EnsureDefaultsAsync(db);
+}
+
 // Bootstrap seguro de primera ejecución:
 // - Sin credenciales por defecto.
 // - Emite token efímero de un solo uso (15 minutos) solo en consola del servidor.

@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage, PageShell, TableCard } from '../../../../components/PageShell';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
+import { ZHConfirmModal } from '../../../../components/zh/ZHConfirmModal';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { AjusteEstadoBadge, AjusteTipoBadge } from '../components/AjusteEstadoBadge';
@@ -17,6 +19,7 @@ export function AjusteDetailPage() {
 
   const { data: ajuste, loading, error, refetch } = useAjusteDetalle(id ?? null);
   const { loading: actLoading, error: actError, ejecutar, cancelar } = useAjusteAcciones(refetch);
+  const [pendingAction, setPendingAction] = useState<'execute' | 'cancel' | null>(null);
 
   if (!canView) return <NoAccessPage title="Detalle de Ajuste" />;
 
@@ -32,8 +35,7 @@ export function AjusteDetailPage() {
             {canExecute && (
               <ZHBtn variant="primary" size="md" disabled={actLoading}
                 onClick={() => {
-                  if (confirm('¿Ejecutar este ajuste? El stock se actualizará inmediatamente.'))
-                    void ejecutar(id!);
+                  setPendingAction('execute');
                 }}>
                 {actLoading ? 'Procesando…' : 'Ejecutar'}
               </ZHBtn>
@@ -41,7 +43,7 @@ export function AjusteDetailPage() {
             {canCancel && (
               <ZHBtn variant="destructive" size="md" disabled={actLoading}
                 onClick={() => {
-                  if (confirm('¿Cancelar este ajuste?')) void cancelar(id!);
+                  setPendingAction('cancel');
                 }}>
                 Cancelar
               </ZHBtn>
@@ -85,6 +87,30 @@ export function AjusteDetailPage() {
           </>
         )}
       </TableCard>
+      {pendingAction ? (
+        <ZHConfirmModal
+          title={pendingAction === 'execute' ? 'Ejecutar ajuste' : 'Cancelar ajuste'}
+          message={
+            pendingAction === 'execute'
+              ? '¿Ejecutar este ajuste? El stock se actualizará inmediatamente.'
+              : '¿Cancelar este ajuste?'
+          }
+          variant={pendingAction === 'execute' ? 'primary' : 'destructive'}
+          confirmLabel={pendingAction === 'execute' ? 'Ejecutar' : 'Cancelar ajuste'}
+          cancelLabel="Volver"
+          loading={actLoading}
+          onCancel={() => setPendingAction(null)}
+          onConfirm={async () => {
+            if (!id) return;
+            if (pendingAction === 'execute') {
+              await ejecutar(id);
+            } else {
+              await cancelar(id);
+            }
+            setPendingAction(null);
+          }}
+        />
+      ) : null}
     </PageShell>
   );
 }

@@ -1,0 +1,37 @@
+---
+description: Estandar frontend para reemplazar prompt/confirm/alert nativos por modales ZH reutilizables
+globs: frontend/src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Frontend sin dialogs nativos
+
+## Regla
+
+- No usar `window.prompt`, `window.confirm`, `window.alert`, ni sus aliases globales (`prompt`, `confirm`, `alert`) en UI.
+- Usar componentes reutilizables del sistema:
+  - Confirmaciones: `ZHConfirmModal`
+  - Entrada de texto tipo prompt: `ZHPromptModal`
+  - Flujos complejos: `Modal` + controles `ZH*`
+
+## Patrón requerido
+
+- El modal se controla con estado React (`isOpen`, `pendingAction`, `draft`, etc.).
+- Las acciones de confirmación/cancelación deben vivir en callbacks explícitos (`onConfirm`, `onCancel`).
+- El texto de confirmación debe ser claro y específico del dominio (ej. “¿Cancelar transferencia?”).
+
+## Ejemplos
+
+```tsx
+// ❌ NO
+if (confirm('¿Eliminar?')) onDelete();
+
+// ✅ SI
+<ZHConfirmModal
+  title="Eliminar registro"
+  message="¿Deseas eliminar este registro?"
+  onConfirm={onDelete}
+  onCancel={() => setOpen(false)}
+/>
+```
+

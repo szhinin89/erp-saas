@@ -18,6 +18,7 @@ Usar este orden de precedencia cuando varias reglas apliquen al mismo cambio:
 - CQRS/validacion en Application: `backend-cqrs-validation-result.mdc`
 - Multi-tenant y TenantId: `backend-multitenancy-jwt-source.mdc`
 - Frontend modular + i18n + validacion: `frontend-modules-i18n-validation.mdc`
+- Frontend dialogs estandar (sin prompt/confirm nativos): `frontend-no-native-dialogs.mdc`
 - Navegacion SaaS sin IDs en URL: `saas-navigation-no-sensitive-url.mdc`
 - Stack permitido y fuente de verdad de herramientas: `stack-tools-source-of-truth.mdc`
 

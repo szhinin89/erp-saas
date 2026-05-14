@@ -21,16 +21,20 @@ public sealed class SubscriptionService : ISubscriptionService
             .FirstOrDefaultAsync(f => f.Code == code, ct);
         if (feature is null) return false;
 
-        var sub = await GetActiveSubscriptionRowAsync(tenantId, ct);
-        if (sub is null) return false;
+        var (planId, subscriptionId) = await ResolveEffectivePlanAndSubscriptionAsync(tenantId, ct);
+        if (planId is null) return false;
 
-        var overrideRow = await _db.TenantSubscriptionFeatureOverrides.AsNoTracking()
-            .FirstOrDefaultAsync(o => o.SubscriptionId == sub.Id && o.FeatureId == feature.Id, ct);
+        TenantSubscriptionFeatureOverride? overrideRow = null;
+        if (subscriptionId is not null)
+        {
+            overrideRow = await _db.TenantSubscriptionFeatureOverrides.AsNoTracking()
+                .FirstOrDefaultAsync(o => o.SubscriptionId == subscriptionId.Value && o.FeatureId == feature.Id, ct);
+        }
         if (overrideRow is not null && !overrideRow.IsEnabled)
             return false;
 
         var inPlan = await _db.SaasPlanFeatures.AsNoTracking()
-            .AnyAsync(pf => pf.PlanId == sub.PlanId && pf.FeatureId == feature.Id && pf.IsIncluded, ct);
+            .AnyAsync(pf => pf.PlanId == planId.Value && pf.FeatureId == feature.Id && pf.IsIncluded, ct);
         if (inPlan) return true;
 
         return overrideRow is { IsEnabled: true };
@@ -94,17 +98,46 @@ public sealed class SubscriptionService : ISubscriptionService
 
     private async Task<long?> GetEffectiveLimitAsync(Guid tenantId, Guid featureId, CancellationToken ct)
     {
-        var sub = await GetActiveSubscriptionRowAsync(tenantId, ct);
-        if (sub is null) return null;
+        var (planId, subscriptionId) = await ResolveEffectivePlanAndSubscriptionAsync(tenantId, ct);
+        if (planId is null) return null;
 
-        var ov = await _db.TenantSubscriptionFeatureOverrides.AsNoTracking()
-            .FirstOrDefaultAsync(o => o.SubscriptionId == sub.Id && o.FeatureId == featureId, ct);
-        if (ov?.LimitOverridePerPeriod is not null)
-            return ov.LimitOverridePerPeriod;
+        if (subscriptionId is not null)
+        {
+            var ov = await _db.TenantSubscriptionFeatureOverrides.AsNoTracking()
+                .FirstOrDefaultAsync(o => o.SubscriptionId == subscriptionId.Value && o.FeatureId == featureId, ct);
+            if (ov?.LimitOverridePerPeriod is not null)
+                return ov.LimitOverridePerPeriod;
+        }
 
         var pf = await _db.SaasPlanFeatures.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.PlanId == sub.PlanId && x.FeatureId == featureId, ct);
+            .FirstOrDefaultAsync(x => x.PlanId == planId.Value && x.FeatureId == featureId, ct);
         return pf?.LimitPerPeriod;
+    }
+
+    private async Task<(Guid? PlanId, Guid? SubscriptionId)> ResolveEffectivePlanAndSubscriptionAsync(
+        Guid tenantId,
+        CancellationToken ct)
+    {
+        var sub = await GetActiveSubscriptionRowAsync(tenantId, ct);
+        if (sub is not null)
+            return (sub.PlanId, sub.Id);
+
+        var planCode = await _db.Tenants.AsNoTracking()
+            .Where(t => t.Id == tenantId)
+            .Select(t => t.PlanCode)
+            .FirstOrDefaultAsync(ct);
+
+        if (string.IsNullOrWhiteSpace(planCode))
+            return (null, null);
+
+        var normalizedCode = planCode.Trim().ToLowerInvariant();
+
+        var planId = await _db.SaasPlans.AsNoTracking()
+            .Where(p => p.Code.ToLower() == normalizedCode)
+            .Select(p => (Guid?)p.Id)
+            .FirstOrDefaultAsync(ct);
+
+        return (planId, null);
     }
 
     private static string MonthlyPeriodKey(DateTime utc) => utc.ToString("yyyy-MM");

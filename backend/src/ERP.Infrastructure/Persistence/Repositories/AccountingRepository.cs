@@ -25,7 +25,8 @@ public class AccountingRepository : IAccountingRepository
 
     public async Task<IReadOnlyList<Account>> GetAllByTenantAsync(Guid tenantId, CancellationToken ct = default)
         => await _context.Accounts
-            .OrderBy(a => a.Code.Value)
+            .OrderBy(a => a.CreatedAt)
+            .ThenBy(a => a.Id)
             .ToListAsync(ct);
 
     public async Task<(IReadOnlyList<Account> Items, int TotalCount)> GetAccountsPageAsync(
@@ -42,7 +43,8 @@ public class AccountingRepository : IAccountingRepository
 
         var total = await query.CountAsync(ct);
         var items = await query
-            .OrderBy(a => a.Code.Value)
+            .OrderBy(a => a.CreatedAt)
+            .ThenBy(a => a.Id)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);

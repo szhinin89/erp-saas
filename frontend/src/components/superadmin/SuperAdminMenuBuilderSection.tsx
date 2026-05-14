@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { TableCard } from '../PageShell';
 import { ZHBtn, ZHField } from '../zh/ZHForm';
+import { ZHConfirmModal } from '../zh/ZHConfirmModal';
 import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../zh/ZHLayout';
 import { ZHPageNotice } from '../zh/ZHPageNotice';
 import { useI18n } from '../../i18n/i18n';
@@ -8,6 +9,7 @@ import { MenuBuilder, type MenuBuilderViewMode } from '../menu-builder/MenuBuild
 import type { MenuPreviewLayout } from '../menu-builder/MenuPreview';
 import {
   buildFuncionalidadMaps,
+  editorToMenuItems,
   normalizeParsedMenuGroups,
   readPlanCustomMenuBarLayout,
   serializeEditorTreeToMenuJson,
@@ -27,12 +29,9 @@ import type { SessionMenuGroupDto } from '../../types/access';
 import { formatApiRequestError } from '../../modules/lib/apiError';
 import { adminNavigationToSessionMenu } from '../../modules/superadmin/adminNavigationToSessionMenu';
 import {
-  buildPlanFromDraft,
   parseImportedCrmWorkspace,
-  normalizeCrmPlans,
   normalizePlanActiveById,
   resolveInheritedActiveNodeIds,
-  type CrmPlanModel,
   type CrmWorkspaceExportPayload,
 } from './crmPlanIntegrity';
 import '../menu-builder/menu-builder.css';
@@ -109,21 +108,23 @@ function planEmoji(code: string): string {
 type SubMode = 'plan' | 'tenant';
 
 type EditorMainTab = 'json' | 'visual';
+type SimResolvedMenuSource = 'current-plan' | 'custom' | 'plan' | 'global';
 
 const MENU_BUILDER_SCHEMA_VERSION = 171;
 const CRM_PLAN_ACTIVE_STORAGE_KEY = 'crmPlanActiveNodeIds';
 const CRM_TREE_STORAGE_KEY = 'crmMenuTree';
-const CRM_PLANS_STORAGE_KEY = 'crmPlans';
 const CRM_AUDIT_STORAGE_KEY = 'crmAuditLog';
 
-type CrmLocalPlan = CrmPlanModel & { layout: MenuPreviewLayout };
-
-const DEFAULT_CRM_PLANS: CrmLocalPlan[] = [
-  { id: 'starter', code: 'STARTER', name: 'STARTER', priceMonthly: 49, priceYearly: 470, description: 'Ideal para pequeñas empresas', layout: 'horizontal', highlight: false },
-  { id: 'business', code: 'BUSINESS', name: 'BUSINESS', priceMonthly: 99, priceYearly: 950, description: 'El paquete más popular', layout: 'horizontal', highlight: true },
-  { id: 'professional', code: 'PROFESSIONAL', name: 'PROFESSIONAL', priceMonthly: 179, priceYearly: 1718, description: 'Gestión financiera completa', layout: 'horizontal', highlight: false },
-  { id: 'enterprise', code: 'ENTERPRISE', name: 'ENTERPRISE', priceMonthly: 299, priceYearly: 2870, description: 'Máxima personalización', layout: 'horizontal', highlight: false },
-];
+type CrmLocalPlan = {
+  id: string;
+  code: string;
+  name: string;
+  priceMonthly: number;
+  priceYearly: number;
+  description: string;
+  layout: MenuPreviewLayout;
+  highlight: boolean;
+};
 
 const DEFAULT_CRM_TREE_SEED: EditorMenuItem[] = [
   {
@@ -163,6 +164,29 @@ const DEFAULT_CRM_TREE_SEED: EditorMenuItem[] = [
 
 function cloneDefaultCrmTreeSeed(): EditorMenuItem[] {
   return JSON.parse(JSON.stringify(DEFAULT_CRM_TREE_SEED)) as EditorMenuItem[];
+}
+
+function mapSaasPlanAdminToCrmPlan(plan: SaasPlanAdmin): CrmLocalPlan {
+  const code = (plan.code ?? '').trim().toUpperCase();
+  const name = (plan.name ?? '').trim() || code || 'PLAN';
+  const cycle = (plan.billingCycle ?? '').trim().toLowerCase();
+  const rawAmount = Number(plan.priceAmount ?? 0);
+  const safeAmount = Number.isFinite(rawAmount) && rawAmount > 0 ? rawAmount : 0;
+  const isYearly = cycle === 'yearly' || cycle === 'annual' || cycle === 'anual';
+  const monthly = isYearly ? safeAmount / 12 : safeAmount;
+  const yearly = isYearly ? safeAmount : monthly * 12 * 0.8;
+  const layout = (plan.menuSidebarLayout ?? '').trim().toLowerCase() === 'vertical' ? 'vertical' : 'horizontal';
+
+  return {
+    id: plan.id,
+    code,
+    name,
+    priceMonthly: Math.round(monthly),
+    priceYearly: Math.round(yearly),
+    description: `${name} (${code || 'N/A'})`,
+    layout,
+    highlight: !!plan.isRecommended,
+  };
 }
 
 function formatMoney(amount: number, currency: string, locale: string): string {
@@ -262,6 +286,8 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
   const [simTenantId, setSimTenantId] = useState('');
   const [previewPlanId, setPreviewPlanId] = useState('');
   const [simPreviewItems, setSimPreviewItems] = useState<MenuItem[] | null>(null);
+  const [simResolvedMenuSource, setSimResolvedMenuSource] = useState<SimResolvedMenuSource>('current-plan');
+  const [resetPlanConfirmOpen, setResetPlanConfirmOpen] = useState(false);
   const [showAnnual, setShowAnnual] = useState(false);
   const [newPlanModalOpen, setNewPlanModalOpen] = useState(false);
   const [newPlanName, setNewPlanName] = useState('');
@@ -271,17 +297,10 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
   const [newPlanInheritOnCreate, setNewPlanInheritOnCreate] = useState(false);
   const [newPlanInheritSourcePlanId, setNewPlanInheritSourcePlanId] = useState('');
   const importWorkspaceInputRef = useRef<HTMLInputElement | null>(null);
-  const [crmPlans, setCrmPlans] = useState<CrmLocalPlan[]>(() => {
-    if (typeof window === 'undefined') return DEFAULT_CRM_PLANS;
-    try {
-      const raw = window.localStorage.getItem(CRM_PLANS_STORAGE_KEY);
-      if (!raw) return DEFAULT_CRM_PLANS;
-      const parsed = JSON.parse(raw) as unknown;
-      return normalizeCrmPlans(parsed, DEFAULT_CRM_PLANS);
-    } catch {
-      return DEFAULT_CRM_PLANS;
-    }
-  });
+  const crmPlans = useMemo(
+    () => plans.map(mapSaasPlanAdminToCrmPlan),
+    [plans],
+  );
   const [planActiveById, setPlanActiveById] = useState<Record<string, string[]>>(() => {
     if (typeof window === 'undefined') return {};
     try {
@@ -364,34 +383,20 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
 
   useEffect(() => {
     if (!crmWorkspace || !planId) return;
-    setCrmPlans((prev) => {
-      let changed = false;
-      const next = prev.map((p) => {
-        if (p.id !== planId) return p;
-        if (p.layout === previewLayout) return p;
-        changed = true;
-        return { ...p, layout: previewLayout };
-      });
-      return changed ? next : prev;
-    });
-  }, [crmWorkspace, planId, previewLayout]);
-
-  useEffect(() => {
-    if (!crmWorkspace || !planId) return;
     if (typeof window === 'undefined') return;
     let cancelled = false;
     void (async () => {
       try {
-        const raw = window.localStorage.getItem(CRM_TREE_STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw) as EditorMenuItem[];
-          if (Array.isArray(parsed) && parsed.length) {
-            resetEditorTree(parsed);
-            return;
-          }
+        const bundle = await superAdminService.getPlanMenu(planId);
+        if (cancelled) return;
+        if (bundle.menuConfigJson?.trim()) {
+          applyMenuJsonString(JSON.stringify(JSON.parse(bundle.menuConfigJson), null, 2));
+          const l = bundle.menuSidebarLayout?.trim().toLowerCase();
+          if (l === 'horizontal' || l === 'vertical') setPreviewLayout(l);
+          return;
         }
       } catch {
-        // ignore malformed local data and fallback to global menu.
+        // fallback to global menu below.
       }
 
       try {
@@ -425,12 +430,6 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
     if (typeof window === 'undefined') return;
     window.localStorage.setItem(CRM_TREE_STORAGE_KEY, JSON.stringify(visualTree));
   }, [crmWorkspace, visualTree]);
-
-  useEffect(() => {
-    if (!crmWorkspace) return;
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(CRM_PLANS_STORAGE_KEY, JSON.stringify(crmPlans));
-  }, [crmWorkspace, crmPlans]);
 
   useEffect(() => {
     if (!crmWorkspace) return;
@@ -771,7 +770,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
   };
 
   const persistCrmPlan = useCallback(async () => {
-    if (crmWorkspace || !planId || hydratingPlanRef.current) return;
+    if (!planId || hydratingPlanRef.current) return;
     if (Date.now() - planSwitchClock.current < 900) return;
     const trimmed = json.trim();
     setErr('');
@@ -806,24 +805,27 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
   }, [crmWorkspace, planId, json, previewLayout, appendAudit, t]);
 
   useEffect(() => {
-    if (crmWorkspace || !planId) return;
+    if (!planId) return;
     if (hydratingPlanRef.current) return;
     if (Date.now() - planSwitchClock.current < 900) return;
     const tid = window.setTimeout(() => {
       void persistCrmPlan();
     }, 900);
     return () => window.clearTimeout(tid);
-  }, [crmWorkspace, planId, json, previewLayout, persistCrmPlan]);
+  }, [planId, json, previewLayout, persistCrmPlan]);
 
   useEffect(() => {
     setSimPreviewItems(null);
     setSimTenantId('');
     setPreviewPlanId('');
+    setSimResolvedMenuSource('current-plan');
   }, [planId]);
 
   if (crmWorkspace) {
     const activePlan = crmPlans.find((p) => p.id === planId);
-    const previewPlan = crmPlans.find((p) => p.id === (previewPlanId || planId)) ?? activePlan;
+    const previewPlanKey = (previewPlanId || planId || '').trim().toLowerCase();
+    const previewPlan = crmPlans.find((p) => p.id.trim().toLowerCase() === previewPlanKey || p.code.trim().toLowerCase() === previewPlanKey) ?? activePlan;
+    const selectedSimTenant = tenants.find((x) => x.id === simTenantId) ?? null;
     const wizardSteps = [
       {
         title: '1) Selecciona un plan',
@@ -871,40 +873,77 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
       });
       appendAudit(`${checked ? 'Activado' : 'Desactivado'}: ${node.nombre}`);
     };
-    const createNewPlan = () => {
-      const inheritanceSourcePlanId = newPlanInheritSourcePlanId || planId;
-      const draft = buildPlanFromDraft(
-        {
-          name: newPlanName,
-          monthly: newPlanMonthly,
-          yearly: newPlanYearly,
-          description: newPlanDescription,
-        },
-        crmPlans,
-      );
-      if ('error' in draft) {
-        setErr(draft.error);
+    const createNewPlan = async () => {
+      const normalizedName = newPlanName.trim();
+      const monthly = Number.parseFloat(newPlanMonthly.trim());
+      if (!normalizedName || !Number.isFinite(monthly) || monthly <= 0) {
+        setErr('Completa nombre y precio mensual válidos');
         return;
       }
-      const plan: CrmLocalPlan = draft.plan;
+
+      const inheritanceSourcePlanId = newPlanInheritSourcePlanId || planId;
       const inheritedNodeIds = newPlanInheritOnCreate
         ? resolveInheritedActiveNodeIds(planActiveById, inheritanceSourcePlanId, visualTreeIdSet)
         : [];
-      setCrmPlans((prev) => [...prev, plan]);
-      setPlanId(plan.id);
-      setPlanActiveById((prev) => ({ ...prev, [plan.id]: inheritedNodeIds }));
-      setNewPlanModalOpen(false);
-      setNewPlanName('');
-      setNewPlanMonthly('199');
-      setNewPlanYearly('');
-      setNewPlanDescription('');
-      setNewPlanInheritOnCreate(false);
-      setNewPlanInheritSourcePlanId('');
-      if (newPlanInheritOnCreate && inheritedNodeIds.length > 0) {
-        const sourceLabel = crmPlans.find((p) => p.id === inheritanceSourcePlanId)?.name ?? inheritanceSourcePlanId;
-        appendAudit(`Plan creado: ${plan.name} (heredó ${inheritedNodeIds.length} nodos desde ${sourceLabel})`);
-      } else {
-        appendAudit(`Plan creado: ${plan.name}`);
+
+      const code = normalizedName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '')
+        .slice(0, 40) || `plan-${Date.now().toString().slice(-6)}`;
+
+      const shortLabel = normalizedName
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 32) || 'PLAN';
+
+      setBusy(true);
+      setErr('');
+      try {
+        const newPlanId = await superAdminService.createSaasPlan({
+          code,
+          name: normalizedName,
+          shortLabel,
+          isActive: true,
+          priceAmount: monthly,
+          currency: 'USD',
+          billingCycle: 'monthly',
+          isPubliclyVisible: true,
+          isRecommended: false,
+          sortOrder: plans.length,
+          externalBillingRef: null,
+        });
+
+        const nextPlans = await superAdminService.listSaasPlansAdmin();
+        setPlans(nextPlans);
+        const created = nextPlans.find((p) => p.id === newPlanId);
+        const createdLabel = created?.name ?? normalizedName;
+        setPlanId(newPlanId);
+        setPlanActiveById((prev) => ({ ...prev, [newPlanId]: inheritedNodeIds }));
+        setNewPlanModalOpen(false);
+        setNewPlanName('');
+        setNewPlanMonthly('199');
+        setNewPlanYearly('');
+        setNewPlanDescription('');
+        setNewPlanInheritOnCreate(false);
+        setNewPlanInheritSourcePlanId('');
+        if (newPlanInheritOnCreate && inheritedNodeIds.length > 0) {
+          const sourceLabel = crmPlans.find((p) => p.id === inheritanceSourcePlanId)?.name ?? inheritanceSourcePlanId;
+          appendAudit(`Plan creado: ${createdLabel} (heredó ${inheritedNodeIds.length} nodos desde ${sourceLabel})`);
+        } else {
+          appendAudit(`Plan creado: ${createdLabel}`);
+        }
+      } catch (e) {
+        setErr(
+          formatApiRequestError(e, {
+            offline: t('common.apiUnreachable'),
+            generic: t('common.errorGeneric'),
+          }),
+        );
+      } finally {
+        setBusy(false);
       }
     };
     const copyFromLowerPlan = () => {
@@ -919,10 +958,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
       appendAudit(`Plan ${activePlan?.name ?? planId} heredó activaciones de ${crmPlans.find((p) => p.id === lower)?.name ?? lower}`);
     };
     const resetPlanLocal = () => {
-      const ok = window.confirm('Resetear plan a vacío?');
-      if (!ok) return;
-      setPlanActiveById((prev) => ({ ...prev, [planId]: [] }));
-      appendAudit(`Plan ${activePlan?.name ?? planId} reseteado`);
+      setResetPlanConfirmOpen(true);
     };
     const exportWorkspaceSnapshot = () => {
       const payload: CrmWorkspaceExportPayload<EditorMenuItem> = {
@@ -952,16 +988,15 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
       try {
         const text = await file.text();
         const parsed = JSON.parse(text) as unknown;
-        const imported = parseImportedCrmWorkspace(parsed, DEFAULT_CRM_PLANS);
-        const importedPlans = imported.plans as CrmLocalPlan[];
-        const firstPlan = importedPlans[0];
-        setCrmPlans(importedPlans);
+        const imported = parseImportedCrmWorkspace(parsed, crmPlans);
         setPlanActiveById(imported.planActiveById);
         resetEditorTree(Array.isArray(imported.tree) ? (imported.tree as EditorMenuItem[]) : []);
         setAuditLines(imported.auditLines);
-        if (firstPlan) {
-          setPlanId(firstPlan.id);
-          setPreviewLayout(firstPlan.layout);
+        const effectivePlanId = crmPlans.some((p) => p.id === planId) ? planId : crmPlans[0]?.id;
+        if (effectivePlanId) {
+          setPlanId(effectivePlanId);
+          const selected = crmPlans.find((p) => p.id === effectivePlanId);
+          if (selected) setPreviewLayout(selected.layout);
         }
         appendAudit(`Snapshot importado (v${imported.version})`);
       } catch {
@@ -1022,6 +1057,10 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             + Nuevo Plan
           </button>
         </div>
+      </div>
+    );
+    const crmLibraryStack: ReactNode = (
+      <div className="menu-plan-composer__masterStack">
         <div className="menu-plan-composer__searchRow">
           <span className="menu-plan-composer__searchIcon" aria-hidden>
             🔍
@@ -1155,6 +1194,16 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
         <div className="menu-plan-composer__mockTopBar" aria-label="Simulación de barra de menú superior">
           Menú para {previewPlan?.code ?? activePlan?.code ?? '…'} (barra superior)
         </div>
+        <div className="menu-plan-composer__callout menu-plan-composer__callout--soft" role="status" aria-live="polite">
+          <strong>Origen del menú:</strong>{' '}
+          {simResolvedMenuSource === 'custom'
+            ? 'Personalizado de la empresa'
+            : simResolvedMenuSource === 'plan'
+              ? 'Configuración del plan'
+              : simResolvedMenuSource === 'global'
+                ? 'Menú global (fallback)'
+                : 'Plan actual en edición'}
+        </div>
         <div className="menu-plan-composer__callout menu-plan-composer__callout--soft" role="note">
           <strong>🔎 Tooltips:</strong> al pasar el cursor sobre cada ítem verás la ruta y permiso asociados.
         </div>
@@ -1174,9 +1223,9 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             aria-label="Seleccionar empresa para simular su menú efectivo"
           >
             <option value="">— Menú del plan actual —</option>
-            {crmPlans.map((x) => (
+            {tenants.map((x) => (
               <option key={x.id} value={x.id}>
-                {x.code}
+                {x.name} ({(x.planCode ?? 'SIN_PLAN').toUpperCase()})
               </option>
             ))}
           </select>
@@ -1184,9 +1233,47 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             variant="ghost"
             size="md"
             type="button"
-            onClick={() => {
-              setPreviewPlanId(simTenantId || planId);
-              appendAudit(`Simulando empresa con plan ${(crmPlans.find((p) => p.id === (simTenantId || planId))?.code ?? planId)}`);
+            onClick={async () => {
+              if (!simTenantId) {
+                setSimPreviewItems(null);
+                setPreviewPlanId(planId);
+                setSimResolvedMenuSource('current-plan');
+                appendAudit(`Simulando menú del plan ${((activePlan?.code ?? planId) || 'actual').toUpperCase()}`);
+                return;
+              }
+
+              setBusy(true);
+              setErr('');
+              try {
+                const resolved = await superAdminService.getTenantResolvedMenu(simTenantId);
+                const groups = normalizeParsedMenuGroups(Array.isArray(resolved.menu) ? resolved.menu : []);
+                const resolvedTree = sessionGroupsToEditorTree(groups, byPerm);
+                setSimPreviewItems(editorToMenuItems(resolvedTree));
+
+                const tenantPlanCode = (selectedSimTenant?.planCode ?? '').trim().toLowerCase();
+                const matched = crmPlans.find((p) => p.code.trim().toLowerCase() === tenantPlanCode);
+                setPreviewPlanId((matched?.id ?? tenantPlanCode) || planId);
+                const source: SimResolvedMenuSource = resolved.hasCustomMenu
+                  ? 'custom'
+                  : resolved.usedPlanMenu
+                    ? 'plan'
+                    : 'global';
+                setSimResolvedMenuSource(source);
+
+                appendAudit(
+                  `Simulando empresa ${selectedSimTenant?.name ?? simTenantId} · ` +
+                  `${resolved.hasCustomMenu ? 'menú personalizado' : resolved.usedPlanMenu ? 'menú del plan' : 'menú global'}`,
+                );
+              } catch (e) {
+                setErr(
+                  formatApiRequestError(e, {
+                    offline: t('common.apiUnreachable'),
+                    generic: t('common.errorGeneric'),
+                  }),
+                );
+              } finally {
+                setBusy(false);
+              }
             }}
             disabled={busy || savingAuto}
             aria-label="Actualizar vista previa con el plan seleccionado"
@@ -1273,12 +1360,12 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             onBuilderMessage={(msg) => setErr(msg)}
             crmToolbar={crmToolbar}
             crmMasterStack={crmMasterStack}
+            crmLibraryStack={crmLibraryStack}
             crmMasterFooter={crmMasterFooter}
             crmPreviewExtras={crmPreviewExtras}
             previewItemsOverride={simPreviewItems}
-            activeNodeIds={previewActiveSet}
+            activeNodeIds={simPreviewItems ? undefined : previewActiveSet}
             onToggleNodeActive={onToggleNodeActive}
-            treeSearchQuery={catalogSearch}
             panelTitles={{
               canvas: '📁 Árbol maestro',
               preview: '🖥 Vista empresa (previsualización)',
@@ -1330,6 +1417,28 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             )}
           </ul>
         </section>
+
+        {resetPlanConfirmOpen ? (
+          <ZHConfirmModal
+            title="Resetear plan"
+            message={
+              <>
+                ¿Seguro que deseas resetear <strong>{activePlan?.name ?? activePlan?.code ?? planId}</strong>?
+                <br />
+                Se desactivarán todos los nodos de este plan.
+              </>
+            }
+            confirmLabel="Resetear"
+            cancelLabel="Cancelar"
+            variant="destructive"
+            onCancel={() => setResetPlanConfirmOpen(false)}
+            onConfirm={() => {
+              setPlanActiveById((prev) => ({ ...prev, [planId]: [] }));
+              appendAudit(`Plan ${activePlan?.name ?? planId} reseteado`);
+              setResetPlanConfirmOpen(false);
+            }}
+          />
+        ) : null}
 
         {newPlanModalOpen ? (
           <div className="menu-plan-composer__modalBackdrop" role="dialog" aria-modal="true" aria-label="Crear nuevo plan">

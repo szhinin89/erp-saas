@@ -89,6 +89,8 @@ public class ErpDbContext : DbContext
         bool acceptAllChangesOnSuccess,
         CancellationToken cancellationToken = default)
     {
+        await SyncTenantSubscriptionsFromPlanCodeAsync(cancellationToken);
+
         var entitiesWithEvents = ChangeTracker.Entries<IHasDomainEvents>()
             .Where(e => e.Entity.DomainEvents.Any())
             .Select(e => e.Entity)
@@ -107,6 +109,72 @@ public class ErpDbContext : DbContext
             result += await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
 
         return result;
+    }
+
+    private async Task SyncTenantSubscriptionsFromPlanCodeAsync(CancellationToken cancellationToken)
+    {
+        var tenantEntries = ChangeTracker.Entries<Tenant>()
+            .Where(e =>
+                e.State == EntityState.Added ||
+                (e.State == EntityState.Modified && e.Property(nameof(Tenant.PlanCode)).IsModified))
+            .ToList();
+
+        if (tenantEntries.Count == 0)
+            return;
+
+        var planCodeSet = tenantEntries
+            .Select(e => (e.Entity.PlanCode ?? string.Empty).Trim().ToLowerInvariant())
+            .Where(code => code.Length > 0)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+        var planByCode = planCodeSet.Count == 0
+            ? new Dictionary<string, Guid>(StringComparer.Ordinal)
+            : await SaasPlans.AsNoTracking()
+                .Where(p => planCodeSet.Contains((p.Code ?? string.Empty).Trim().ToLower()))
+                .ToDictionaryAsync(
+                    p => (p.Code ?? string.Empty).Trim().ToLowerInvariant(),
+                    p => p.Id,
+                    StringComparer.Ordinal,
+                    cancellationToken);
+
+        foreach (var entry in tenantEntries)
+        {
+            var tenant = entry.Entity;
+            var tenantId = tenant.Id;
+            if (tenantId == Guid.Empty)
+                continue;
+
+            var normalizedPlanCode = (tenant.PlanCode ?? string.Empty).Trim().ToLowerInvariant();
+            var planId = Guid.Empty;
+            var hasValidPlan = normalizedPlanCode.Length > 0 && planByCode.TryGetValue(normalizedPlanCode, out planId);
+
+            var existing = await TenantSaasSubscriptions.IgnoreQueryFilters()
+                .FirstOrDefaultAsync(s => s.TenantId == tenantId, cancellationToken);
+
+            if (!hasValidPlan)
+            {
+                if (existing is not null)
+                    TenantSaasSubscriptions.Remove(existing);
+                continue;
+            }
+
+            if (existing is null)
+            {
+                await TenantSaasSubscriptions.AddAsync(
+                    TenantSaasSubscription.Create(tenantId, planId, Guid.Empty),
+                    cancellationToken);
+                continue;
+            }
+
+            if (existing.PlanId == planId && existing.Status == TenantSubscriptionStatus.Active)
+                continue;
+
+            TenantSaasSubscriptions.Remove(existing);
+            await TenantSaasSubscriptions.AddAsync(
+                TenantSaasSubscription.Create(tenantId, planId, Guid.Empty),
+                cancellationToken);
+        }
     }
 
     public DbSet<Account> Accounts => Set<Account>();
