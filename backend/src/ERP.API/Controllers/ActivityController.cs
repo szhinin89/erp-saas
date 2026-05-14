@@ -1,3 +1,4 @@
+using MediatR;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Audit.DTOs;
@@ -10,9 +11,6 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>Auditoría de actividad (ámbito del usuario o de una entidad en el tenant actual).</summary>
-/// <remarks>
-/// Autorización: <c>Session</c> únicamente; sin <c>perm:*</c> porque los handlers acotan por tenant y usuario.
-/// </remarks>
 [Modulo("Actividad", "session:activity", "📜", "/actividad", null, 200)]
 [ApiController]
 [Route("api/[controller]")]
@@ -20,18 +18,11 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class ActivityController : ControllerBase
 {
-    private readonly GetMyActivityHandler _getMy;
-    private readonly GetEntityActivityHandler _getEntity;
+    private readonly IMediator _mediator;
 
-    public ActivityController(GetMyActivityHandler getMy, GetEntityActivityHandler getEntity)
-    {
-        _getMy = getMy;
-        _getEntity = getEntity;
-    }
+    public ActivityController(IMediator mediator) => _mediator = mediator;
 
-    /// <summary>
-    /// Historial del usuario autenticado (últimas acciones).
-    /// </summary>
+    /// <summary>Historial del usuario autenticado (últimas acciones).</summary>
     [HttpGet("my")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<UserActivityDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMy(
@@ -40,13 +31,11 @@ public class ActivityController : ControllerBase
         [FromQuery] int pageSize = 25,
         CancellationToken ct = default)
     {
-        var result = await _getMy.HandleAsync(module, page, pageSize, ct);
+        var result = await _mediator.Send(new GetMyActivityQuery(module, page, pageSize), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<UserActivityDto>());
     }
 
-    /// <summary>
-    /// Últimos movimientos de auditoría sobre una entidad (tenant actual), cualquier usuario que haya actuado.
-    /// </summary>
+    /// <summary>Últimos movimientos de auditoría sobre una entidad (tenant actual).</summary>
     [HttpGet("entity")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<UserActivityDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetForEntity(
@@ -55,8 +44,7 @@ public class ActivityController : ControllerBase
         [FromQuery] int take = 10,
         CancellationToken ct = default)
     {
-        var result = await _getEntity.HandleAsync(entityType, entityId, take, ct);
+        var result = await _mediator.Send(new GetEntityActivityQuery(entityType, entityId, take), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<UserActivityDto>());
     }
 }
-

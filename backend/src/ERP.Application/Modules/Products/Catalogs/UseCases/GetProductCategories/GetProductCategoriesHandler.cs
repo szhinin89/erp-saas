@@ -2,9 +2,11 @@ using ERP.Application.Common;
 using ERP.Application.Products.Catalogs.DTOs;
 using ERP.Domain.Products.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Products.Catalogs.UseCases.GetProductCategories;
 
-public class GetProductCategoriesHandler
+public class GetProductCategoriesHandler : IRequestHandler<GetProductCategoriesQuery, Result<IReadOnlyList<ProductCategoryListItemDto>>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly ICurrentTenant _currentTenant;
@@ -15,14 +17,12 @@ public class GetProductCategoriesHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<IReadOnlyList<ProductCategoryListItemDto>>> HandleAsync(
-        Guid? lineId,
-        bool? activeFilter,
-        string? search,
-        CancellationToken ct = default)
+    public async Task<Result<IReadOnlyList<ProductCategoryListItemDto>>> Handle(
+        GetProductCategoriesQuery query,
+        CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
-        var items = await _repo.GetProductCategoryListRowsAsync(tenantId, lineId, activeFilter, search, ct);
+        var items = await _repo.GetProductCategoryListRowsAsync(tenantId, query.LineId, query.ActiveFilter, query.Search, ct);
         var dtos = items
             .Select(x => new ProductCategoryListItemDto(x.Id, x.Code, x.Name, x.LineId, x.LineCode, x.LineName, x.IsActive))
             .ToList();

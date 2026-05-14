@@ -10,9 +10,11 @@ using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Tenants.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Auth.UseCases.PasswordReset;
 
-public sealed class ForgotPasswordHandler
+public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordCommand, Result<bool>>
 {
     public const string NoAccountMessage = "No existe una cuenta con ese correo.";
     public const string MultipleAccountsMessage = "Hay múltiples cuentas con ese correo. Contacte a soporte.";
@@ -47,7 +49,7 @@ public sealed class ForgotPasswordHandler
         _validator = validator;
     }
 
-    public async Task<Result<bool>> HandleAsync(ForgotPasswordCommand command, CancellationToken ct = default)
+    public async Task<Result<bool>> Handle(ForgotPasswordCommand command, CancellationToken ct)
     {
         var vr = await _validator.ValidateAsync(command, ct);
         if (!vr.IsValid)

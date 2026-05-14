@@ -2,9 +2,11 @@ using ERP.Application.Common;
 using ERP.Application.Products.Catalogs.DTOs;
 using ERP.Domain.Products.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Products.Catalogs.UseCases.GetProductSubcategories;
 
-public class GetProductSubcategoriesHandler
+public class GetProductSubcategoriesHandler : IRequestHandler<GetProductSubcategoriesQuery, Result<IReadOnlyList<ProductSubcategoryListItemDto>>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly ICurrentTenant _currentTenant;
@@ -15,15 +17,12 @@ public class GetProductSubcategoriesHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<IReadOnlyList<ProductSubcategoryListItemDto>>> HandleAsync(
-        Guid? lineId,
-        Guid? categoryId,
-        bool? activeFilter,
-        string? search,
-        CancellationToken ct = default)
+    public async Task<Result<IReadOnlyList<ProductSubcategoryListItemDto>>> Handle(
+        GetProductSubcategoriesQuery query,
+        CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
-        var items = await _repo.GetProductSubcategoryListRowsAsync(tenantId, lineId, categoryId, activeFilter, search, ct);
+        var items = await _repo.GetProductSubcategoryListRowsAsync(tenantId, query.LineId, query.CategoryId, query.ActiveFilter, query.Search, ct);
         var dtos = items
             .Select(x => new ProductSubcategoryListItemDto(
                 x.Id,

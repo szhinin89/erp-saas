@@ -1,19 +1,17 @@
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Branches.DTOs;
 using ERP.Domain.Geography.Interfaces;
 
 namespace ERP.Application.Modules.Branches.UseCases.GetGeoCountries;
 
-public sealed class GetGeoCountriesHandler
+public sealed class GetGeoCountriesHandler : IRequestHandler<GetGeoCountriesQuery, Result<IReadOnlyList<GeographyItemDto>>>
 {
     private readonly IGeographyReadRepository _geo;
 
-    public GetGeoCountriesHandler(IGeographyReadRepository geo)
-    {
-        _geo = geo;
-    }
+    public GetGeoCountriesHandler(IGeographyReadRepository geo) => _geo = geo;
 
-    public async Task<Result<IReadOnlyList<GeographyItemDto>>> HandleAsync(CancellationToken ct = default)
+    public async Task<Result<IReadOnlyList<GeographyItemDto>>> Handle(GetGeoCountriesQuery query, CancellationToken ct)
     {
         var items = await _geo.GetCountriesAsync(ct);
         return Result<IReadOnlyList<GeographyItemDto>>.Success(

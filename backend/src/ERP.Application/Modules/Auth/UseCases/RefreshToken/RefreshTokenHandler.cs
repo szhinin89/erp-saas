@@ -1,3 +1,4 @@
+using MediatR;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -8,11 +9,7 @@ using ERP.Domain.Tenants.Interfaces;
 
 namespace ERP.Application.Auth.UseCases.RefreshToken;
 
-/// <summary>
-/// Valida el refresh token, lo rota y emite un nuevo access token + refresh token.
-/// No requiere access token (se puede llamar con el token expirado).
-/// </summary>
-public sealed class RefreshTokenHandler
+public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, Result<AuthResponseDto>>
 {
     private readonly IRefreshTokenService _refreshTokenService;
     private readonly IUserRepository      _userRepository;
@@ -37,10 +34,9 @@ public sealed class RefreshTokenHandler
         _accessTokenService  = accessTokenService;
     }
 
-    public async Task<Result<AuthResponseDto>> HandleAsync(
-        string rawRefreshToken, CancellationToken ct = default)
+    public async Task<Result<AuthResponseDto>> Handle(RefreshTokenCommand command, CancellationToken ct)
     {
-        var validation = await _refreshTokenService.ValidateAndRotateAsync(rawRefreshToken, ct);
+        var validation = await _refreshTokenService.ValidateAndRotateAsync(command.RawRefreshToken, ct);
         if (!validation.IsValid)
             return Result<AuthResponseDto>.Failure(validation.Error!);
 
@@ -51,8 +47,6 @@ public sealed class RefreshTokenHandler
             _ => Result<AuthResponseDto>.Failure("Tipo de usuario no soportado en refresh."),
         };
     }
-
-    // ── Camino Legacy (tabla users) ───────────────────────────────────────
 
     private async Task<Result<AuthResponseDto>> HandleLegacyAsync(
         RefreshTokenValidationResult v, CancellationToken ct)
@@ -79,8 +73,6 @@ public sealed class RefreshTokenHandler
             RefreshTokenExpiry = v.NewExpiry,
         });
     }
-
-    // ── Camino Identity (tabla identity_users + memberships) ──────────────
 
     private async Task<Result<AuthResponseDto>> HandleIdentityAsync(
         RefreshTokenValidationResult v, CancellationToken ct)

@@ -5,9 +5,11 @@ using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Products.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Products.Catalogs.UseCases.CreateProductLine;
 
-public class CreateProductLineHandler
+public class CreateProductLineHandler : IRequestHandler<CreateProductLineCommand, Result<ProductLineDto>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
@@ -26,7 +28,7 @@ public class CreateProductLineHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<ProductLineDto>> HandleAsync(CreateProductLineCommand command, CancellationToken ct = default)
+    public async Task<Result<ProductLineDto>> Handle(CreateProductLineCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId = _currentUser.UserId;

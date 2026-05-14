@@ -1,3 +1,4 @@
+using MediatR;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Domain.Auth.Interfaces;
@@ -5,7 +6,7 @@ using ERP.Domain.Tenants.Interfaces;
 
 namespace ERP.Application.Auth.UseCases.SwitchTenant;
 
-public class SwitchTenantHandler
+public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<AuthResponseDto>>
 {
     private readonly ICurrentUser _currentUser;
     private readonly IUserRepository _userRepository;
@@ -24,7 +25,7 @@ public class SwitchTenantHandler
         _jwtService = jwtService;
     }
 
-    public async Task<Result<AuthResponseDto>> HandleAsync(SwitchTenantCommand command, CancellationToken ct = default)
+    public async Task<Result<AuthResponseDto>> Handle(SwitchTenantCommand command, CancellationToken ct)
     {
         if (!_currentUser.IsAuthenticated || _currentUser.UserId == Guid.Empty)
             return Result<AuthResponseDto>.Failure("No autenticado.");

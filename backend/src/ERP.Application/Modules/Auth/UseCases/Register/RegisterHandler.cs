@@ -1,3 +1,4 @@
+using MediatR;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -7,7 +8,7 @@ using ERP.Domain.Tenants.Interfaces;
 
 namespace ERP.Application.Auth.UseCases.Register;
 
-public class RegisterHandler
+public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthResponseDto>>
 {
     private readonly IUserRepository _userRepository;
     private readonly ITenantRepository _tenantRepository;
@@ -26,9 +27,9 @@ public class RegisterHandler
         _passwordHasher   = passwordHasher;
     }
 
-    public async Task<Result<AuthResponseDto>> HandleAsync(
+    public async Task<Result<AuthResponseDto>> Handle(
         RegisterCommand command,
-        CancellationToken ct = default)
+        CancellationToken ct)
     {
         if (string.Equals(command.Role, "SuperAdmin", StringComparison.Ordinal))
         {

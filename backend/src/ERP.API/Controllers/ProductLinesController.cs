@@ -1,3 +1,4 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -12,9 +13,7 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-/// <summary>
-/// Catálogo maestro: Líneas de producto (Product Lines) del tenant autenticado.
-/// </summary>
+/// <summary>Catálogo maestro: Líneas de producto del tenant autenticado.</summary>
 [Modulo("Líneas de producto", "perm:inventario.productLines.view", "🏷️", "/inventario/structure", "perm:inventario.products.view", 37)]
 [ApiController]
 [Route("api/[controller]")]
@@ -22,25 +21,9 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class ProductLinesController : ControllerBase
 {
-    private readonly CreateProductLineHandler _create;
-    private readonly GetProductLinesHandler _get;
-    private readonly UpdateProductLineHandler _update;
-    private readonly DisableProductLineHandler _disable;
-    private readonly EnableProductLineHandler _enable;
+    private readonly IMediator _mediator;
 
-    public ProductLinesController(
-        CreateProductLineHandler create,
-        GetProductLinesHandler get,
-        UpdateProductLineHandler update,
-        DisableProductLineHandler disable,
-        EnableProductLineHandler enable)
-    {
-        _create = create;
-        _get = get;
-        _update = update;
-        _disable = disable;
-        _enable = enable;
-    }
+    public ProductLinesController(IMediator mediator) => _mediator = mediator;
 
     /// <summary>Lista líneas de producto del tenant.</summary>
     [HttpGet]
@@ -51,7 +34,7 @@ public class ProductLinesController : ControllerBase
     {
         var activeFilter = CatalogQueryParameters.ParseActiveFilter(Request.Query);
         var search = CatalogQueryParameters.ParseSearch(Request.Query);
-        var result = await _get.HandleAsync(activeFilter, search, ct);
+        var result = await _mediator.Send(new GetProductLinesQuery(activeFilter, search), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<ProductLineDto>());
     }
 
@@ -63,7 +46,7 @@ public class ProductLinesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateProductLineCommand command, CancellationToken ct = default)
     {
-        var result = await _create.HandleAsync(command, ct);
+        var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
@@ -77,7 +60,7 @@ public class ProductLinesController : ControllerBase
         if (id != command.Id)
             return this.ApiBadRequest("El id de ruta no coincide con el cuerpo.");
 
-        var result = await _update.HandleAsync(command, ct);
+        var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result);
     }
 
@@ -85,7 +68,7 @@ public class ProductLinesController : ControllerBase
     [Authorize(Policy = "perm:inventario.productLines.delete")]
     public async Task<IActionResult> Disable(Guid id, CancellationToken ct = default)
     {
-        var result = await _disable.HandleAsync(id, ct);
+        var result = await _mediator.Send(new DisableProductLineCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Deshabilitado");
     }
 
@@ -93,7 +76,7 @@ public class ProductLinesController : ControllerBase
     [Authorize(Policy = "perm:inventario.productLines.update")]
     public async Task<IActionResult> Enable(Guid id, CancellationToken ct = default)
     {
-        var result = await _enable.HandleAsync(id, ct);
+        var result = await _mediator.Send(new EnableProductLineCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Habilitado");
     }
 }

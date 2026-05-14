@@ -4,9 +4,11 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Products.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Products.Catalogs.UseCases.EnableProductLine;
 
-public class EnableProductLineHandler
+public class EnableProductLineHandler : IRequestHandler<EnableProductLineCommand, Result<ProductLineDto>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
@@ -25,12 +27,12 @@ public class EnableProductLineHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<ProductLineDto>> HandleAsync(Guid id, CancellationToken ct = default)
+    public async Task<Result<ProductLineDto>> Handle(EnableProductLineCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId = _currentUser.UserId;
 
-        var entity = await _repo.GetProductLineByIdAsync(tenantId, id, ct);
+        var entity = await _repo.GetProductLineByIdAsync(tenantId, command.Id, ct);
         if (entity is null)
             return Result<ProductLineDto>.Failure("Línea no encontrada.");
 

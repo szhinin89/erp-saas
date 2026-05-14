@@ -5,9 +5,11 @@ using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Products.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Products.Catalogs.UseCases.CreateProductCategory;
 
-public class CreateProductCategoryHandler
+public class CreateProductCategoryHandler : IRequestHandler<CreateProductCategoryCommand, Result<ProductCategoryDto>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
@@ -26,7 +28,7 @@ public class CreateProductCategoryHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<ProductCategoryDto>> HandleAsync(CreateProductCategoryCommand command, CancellationToken ct = default)
+    public async Task<Result<ProductCategoryDto>> Handle(CreateProductCategoryCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId = _currentUser.UserId;

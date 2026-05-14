@@ -30,17 +30,10 @@ namespace ERP.API.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly DisableProductHandler _disable;
-    private readonly EnableProductHandler _enable;
 
-    public ProductsController(
-        IMediator mediator,
-        DisableProductHandler disable,
-        EnableProductHandler enable)
+    public ProductsController(IMediator mediator)
     {
         _mediator = mediator;
-        _disable  = disable;
-        _enable   = enable;
     }
 
     /// <summary>Retorna todos los productos activos del tenant.</summary>
@@ -200,7 +193,7 @@ public class ProductsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Disable(Guid id, CancellationToken ct)
     {
-        var result = await _disable.HandleAsync(id, ct);
+        var result = await _mediator.Send(new DisableProductCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Deshabilitado");
     }
 
@@ -215,7 +208,7 @@ public class ProductsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Enable(Guid id, CancellationToken ct)
     {
-        var result = await _enable.HandleAsync(id, ct);
+        var result = await _mediator.Send(new EnableProductCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Habilitado");
     }
 }

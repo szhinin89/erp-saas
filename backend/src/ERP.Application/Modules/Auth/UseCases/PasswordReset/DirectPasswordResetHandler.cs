@@ -1,3 +1,4 @@
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Interfaces;
@@ -6,7 +7,7 @@ using ERP.Domain.Tenants.Interfaces;
 
 namespace ERP.Application.Auth.UseCases.PasswordReset;
 
-public sealed class DirectPasswordResetHandler
+public sealed class DirectPasswordResetHandler : IRequestHandler<DirectPasswordResetCommand, Result<bool>>
 {
     private readonly ITenantRepository _tenantRepository;
     private readonly IUserRepository _userRepository;
@@ -25,7 +26,7 @@ public sealed class DirectPasswordResetHandler
         _refreshTokenService = refreshTokenService;
     }
 
-    public async Task<Result<bool>> HandleAsync(DirectPasswordResetCommand command, CancellationToken ct = default)
+    public async Task<Result<bool>> Handle(DirectPasswordResetCommand command, CancellationToken ct)
     {
         var tenant = await _tenantRepository.GetByIdAsync(command.TenantId, ct);
 

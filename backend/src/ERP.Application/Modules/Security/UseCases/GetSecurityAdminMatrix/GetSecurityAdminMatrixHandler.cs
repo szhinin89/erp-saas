@@ -1,3 +1,4 @@
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Security.DTOs;
 using ERP.Domain.Auth.Interfaces;
@@ -5,7 +6,7 @@ using ERP.Domain.Security.Interfaces;
 
 namespace ERP.Application.Security.UseCases.GetSecurityAdminMatrix;
 
-public class GetSecurityAdminMatrixHandler
+public class GetSecurityAdminMatrixHandler : IRequestHandler<GetSecurityAdminMatrixQuery, Result<(IReadOnlyList<SecurityUserDto> Users, IReadOnlyList<SecurityAdminScopeAssignmentDto> Assignments)>>
 {
     private readonly ICurrentTenant _currentTenant;
     private readonly IUserRepository _userRepository;
@@ -21,8 +22,8 @@ public class GetSecurityAdminMatrixHandler
         _securityRepository = securityRepository;
     }
 
-    public async Task<Result<(IReadOnlyList<SecurityUserDto> Users, IReadOnlyList<SecurityAdminScopeAssignmentDto> Assignments)>> HandleAsync(
-        CancellationToken ct = default)
+    public async Task<Result<(IReadOnlyList<SecurityUserDto> Users, IReadOnlyList<SecurityAdminScopeAssignmentDto> Assignments)>> Handle(
+        GetSecurityAdminMatrixQuery query, CancellationToken ct)
     {
         if (!_currentTenant.IsAuthenticated || _currentTenant.TenantId == Guid.Empty)
             return Result<(IReadOnlyList<SecurityUserDto>, IReadOnlyList<SecurityAdminScopeAssignmentDto>)>.Failure("Tenant inválido.");

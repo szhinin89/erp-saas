@@ -1,3 +1,4 @@
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Tenants.DTOs;
 using ERP.Domain.Tenants.Entities;
@@ -5,7 +6,7 @@ using ERP.Domain.Tenants.Interfaces;
 
 namespace ERP.Application.Tenants.UseCases.UpdateTenantSubscription;
 
-public sealed class UpdateTenantSubscriptionHandler
+public sealed class UpdateTenantSubscriptionHandler : IRequestHandler<UpdateTenantSubscriptionCommand, Result<TenantDto>>
 {
     private readonly ITenantRepository _repository;
     private readonly ICurrentUser _currentUser;
@@ -16,7 +17,7 @@ public sealed class UpdateTenantSubscriptionHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<TenantDto>> HandleAsync(UpdateTenantSubscriptionCommand command, CancellationToken ct = default)
+    public async Task<Result<TenantDto>> Handle(UpdateTenantSubscriptionCommand command, CancellationToken ct)
     {
         if (command.EnabledModules is { Count: > 0 })
             TenantSubscriptionCatalog.ValidateModuleKeysOrThrow(command.EnabledModules);

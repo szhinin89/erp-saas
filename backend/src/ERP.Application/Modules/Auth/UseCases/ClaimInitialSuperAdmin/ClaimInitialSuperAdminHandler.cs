@@ -4,9 +4,11 @@ using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Auth.UseCases.ClaimInitialSuperAdmin;
 
-public sealed class ClaimInitialSuperAdminHandler
+public sealed class ClaimInitialSuperAdminHandler : IRequestHandler<ClaimInitialSuperAdminCommand, Result<AuthResponseDto>>
 {
     private const int MinPasswordLength = 10;
 
@@ -27,9 +29,9 @@ public sealed class ClaimInitialSuperAdminHandler
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<Result<AuthResponseDto>> HandleAsync(
+    public async Task<Result<AuthResponseDto>> Handle(
         ClaimInitialSuperAdminCommand command,
-        CancellationToken ct = default)
+        CancellationToken ct)
     {
         if (!await _firstRunSetupService.ValidateSetupTokenAsync(command.SetupToken, ct))
             return Result<AuthResponseDto>.Failure("Token de instalación inválido o no configurado.");

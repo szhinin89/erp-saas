@@ -1,3 +1,7 @@
+using MediatR;
+using ERP.Application.Common;
+using ERP.Application.Auth.DTOs;
+
 namespace ERP.Application.Auth.UseCases.Register;
 
 public record RegisterCommand(
@@ -7,4 +11,4 @@ public record RegisterCommand(
     string Password,
     Guid TenantId,
     string Role = "User"
-);
+) : IRequest<Result<AuthResponseDto>>;

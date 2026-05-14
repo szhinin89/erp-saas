@@ -4,9 +4,11 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Products.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Products.Catalogs.UseCases.DisableProductSubcategory;
 
-public class DisableProductSubcategoryHandler
+public class DisableProductSubcategoryHandler : IRequestHandler<DisableProductSubcategoryCommand, Result<ProductSubcategoryDto>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
@@ -25,12 +27,12 @@ public class DisableProductSubcategoryHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<ProductSubcategoryDto>> HandleAsync(Guid id, CancellationToken ct = default)
+    public async Task<Result<ProductSubcategoryDto>> Handle(DisableProductSubcategoryCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId = _currentUser.UserId;
 
-        var entity = await _repo.GetProductSubcategoryByIdAsync(tenantId, id, ct);
+        var entity = await _repo.GetProductSubcategoryByIdAsync(tenantId, command.Id, ct);
         if (entity is null)
             return Result<ProductSubcategoryDto>.Failure("Subcategoría no encontrada.");
 

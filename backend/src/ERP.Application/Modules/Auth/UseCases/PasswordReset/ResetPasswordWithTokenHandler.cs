@@ -7,9 +7,11 @@ using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Auth.UseCases.PasswordReset;
 
-public sealed class ResetPasswordWithTokenHandler
+public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswordWithTokenCommand, Result<bool>>
 {
     public const string InvalidTokenMessage = "El enlace de recuperación no es válido o ha expirado.";
 
@@ -39,7 +41,7 @@ public sealed class ResetPasswordWithTokenHandler
         _validator = validator;
     }
 
-    public async Task<Result<bool>> HandleAsync(ResetPasswordWithTokenCommand command, CancellationToken ct = default)
+    public async Task<Result<bool>> Handle(ResetPasswordWithTokenCommand command, CancellationToken ct)
     {
         var vr = await _validator.ValidateAsync(command, ct);
         if (!vr.IsValid)

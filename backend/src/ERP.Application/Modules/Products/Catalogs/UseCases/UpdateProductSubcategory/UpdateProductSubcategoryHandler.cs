@@ -4,9 +4,11 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Products.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Products.Catalogs.UseCases.UpdateProductSubcategory;
 
-public class UpdateProductSubcategoryHandler
+public class UpdateProductSubcategoryHandler : IRequestHandler<UpdateProductSubcategoryCommand, Result<ProductSubcategoryDto>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
@@ -25,7 +27,7 @@ public class UpdateProductSubcategoryHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<ProductSubcategoryDto>> HandleAsync(UpdateProductSubcategoryCommand command, CancellationToken ct = default)
+    public async Task<Result<ProductSubcategoryDto>> Handle(UpdateProductSubcategoryCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId = _currentUser.UserId;

@@ -1,3 +1,7 @@
+using MediatR;
+using ERP.Application.Common;
+using ERP.Application.Tenants.DTOs;
+
 namespace ERP.Application.Tenants.UseCases.CreateTenant;
 
 public record CreateTenantCommand(
@@ -13,4 +17,4 @@ public record CreateTenantCommand(
     int Priority = 0,
     string? PlanCode = null,
     IReadOnlyList<string>? EnabledModules = null
-);
+) : IRequest<Result<TenantDto>>;

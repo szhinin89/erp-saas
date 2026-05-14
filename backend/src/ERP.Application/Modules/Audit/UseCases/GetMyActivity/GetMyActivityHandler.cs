@@ -1,10 +1,11 @@
+using MediatR;
 using ERP.Application.Audit.DTOs;
 using ERP.Application.Common;
 using ERP.Domain.Audit.Interfaces;
 
 namespace ERP.Application.Audit.UseCases.GetMyActivity;
 
-public class GetMyActivityHandler
+public class GetMyActivityHandler : IRequestHandler<GetMyActivityQuery, Result<IReadOnlyList<UserActivityDto>>>
 {
     private readonly IUserActivityRepository _repo;
     private readonly ICurrentTenant _currentTenant;
@@ -20,24 +21,19 @@ public class GetMyActivityHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<IReadOnlyList<UserActivityDto>>> HandleAsync(
-        string? module,
-        int page = 1,
-        int pageSize = 25,
-        CancellationToken ct = default)
+    public async Task<Result<IReadOnlyList<UserActivityDto>>> Handle(GetMyActivityQuery query, CancellationToken ct)
     {
         if (!_currentUser.IsAuthenticated || _currentUser.UserId == Guid.Empty)
             return Result<IReadOnlyList<UserActivityDto>>.Failure("No autenticado.");
 
-        if (page < 1) page = 1;
-        if (pageSize < 1) pageSize = 25;
-        if (pageSize > 100) pageSize = 100;
-
+        var page = query.Page < 1 ? 1 : query.Page;
+        var pageSize = query.PageSize < 1 ? 25 : query.PageSize > 100 ? 100 : query.PageSize;
         var skip = (page - 1) * pageSize;
+
         var list = await _repo.GetMyRecentAsync(
             _currentTenant.TenantId,
             _currentUser.UserId,
-            module,
+            query.Module,
             skip,
             pageSize,
             ct);
@@ -58,4 +54,3 @@ public class GetMyActivityHandler
         return Result<IReadOnlyList<UserActivityDto>>.Success(dto);
     }
 }
-

@@ -1,10 +1,11 @@
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Tenants.DTOs;
 using ERP.Domain.Tenants.Interfaces;
 
 namespace ERP.Application.Tenants.UseCases.UpdateTenantGlobalParameters;
 
-public sealed class UpdateTenantGlobalParametersHandler
+public sealed class UpdateTenantGlobalParametersHandler : IRequestHandler<UpdateTenantGlobalParametersCommand, Result<TenantDto>>
 {
     private readonly ITenantRepository _repository;
     private readonly ICurrentUser _currentUser;
@@ -15,7 +16,7 @@ public sealed class UpdateTenantGlobalParametersHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<TenantDto>> HandleAsync(UpdateTenantGlobalParametersCommand command, CancellationToken ct = default)
+    public async Task<Result<TenantDto>> Handle(UpdateTenantGlobalParametersCommand command, CancellationToken ct)
     {
         var tenant = await _repository.GetByIdAsync(command.TenantId, ct);
         if (tenant is null)

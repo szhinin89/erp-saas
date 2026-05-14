@@ -1,10 +1,11 @@
+using MediatR;
 using ERP.Application.Audit.DTOs;
 using ERP.Application.Common;
 using ERP.Domain.Audit.Interfaces;
 
 namespace ERP.Application.Audit.UseCases.GetEntityActivity;
 
-public class GetEntityActivityHandler
+public class GetEntityActivityHandler : IRequestHandler<GetEntityActivityQuery, Result<IReadOnlyList<UserActivityDto>>>
 {
     private readonly IUserActivityRepository _repo;
     private readonly ICurrentTenant _currentTenant;
@@ -20,28 +21,23 @@ public class GetEntityActivityHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<IReadOnlyList<UserActivityDto>>> HandleAsync(
-        string entityType,
-        Guid entityId,
-        int take = 10,
-        CancellationToken ct = default)
+    public async Task<Result<IReadOnlyList<UserActivityDto>>> Handle(GetEntityActivityQuery query, CancellationToken ct)
     {
         if (!_currentUser.IsAuthenticated || _currentUser.UserId == Guid.Empty)
             return Result<IReadOnlyList<UserActivityDto>>.Failure("No autenticado.");
 
-        if (entityId == Guid.Empty)
+        if (query.EntityId == Guid.Empty)
             return Result<IReadOnlyList<UserActivityDto>>.Failure("EntityId requerido.");
 
-        if (string.IsNullOrWhiteSpace(entityType))
+        if (string.IsNullOrWhiteSpace(query.EntityType))
             return Result<IReadOnlyList<UserActivityDto>>.Failure("EntityType requerido.");
 
-        if (take < 1) take = 10;
-        if (take > 50) take = 50;
+        var take = query.Take < 1 ? 10 : query.Take > 50 ? 50 : query.Take;
 
         var list = await _repo.GetByEntityAsync(
             _currentTenant.TenantId,
-            entityType.Trim(),
-            entityId,
+            query.EntityType.Trim(),
+            query.EntityId,
             take,
             ct);
 

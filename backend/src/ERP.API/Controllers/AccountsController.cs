@@ -30,17 +30,10 @@ namespace ERP.API.Controllers;
 public class AccountsController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly DisableAccountHandler _disable;
-    private readonly EnableAccountHandler _enable;
 
-    public AccountsController(
-        IMediator mediator,
-        DisableAccountHandler disable,
-        EnableAccountHandler enable)
+    public AccountsController(IMediator mediator)
     {
         _mediator = mediator;
-        _disable  = disable;
-        _enable   = enable;
     }
 
     // ── Plan de cuentas ────────────────────────────────────────────
@@ -112,7 +105,7 @@ public class AccountsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DisableAccount(Guid id, CancellationToken ct)
     {
-        var result = await _disable.HandleAsync(id, ct);
+        var result = await _mediator.Send(new DisableAccountCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Deshabilitada");
     }
 
@@ -126,7 +119,7 @@ public class AccountsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> EnableAccount(Guid id, CancellationToken ct)
     {
-        var result = await _enable.HandleAsync(id, ct);
+        var result = await _mediator.Send(new EnableAccountCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Habilitada");
     }
 

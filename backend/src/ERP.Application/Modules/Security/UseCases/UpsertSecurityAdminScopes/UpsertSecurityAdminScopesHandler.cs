@@ -1,10 +1,11 @@
+using MediatR;
 using ERP.Application.Common;
 using ERP.Domain.Security.Entities;
 using ERP.Domain.Security.Interfaces;
 
 namespace ERP.Application.Security.UseCases.UpsertSecurityAdminScopes;
 
-public class UpsertSecurityAdminScopesHandler
+public class UpsertSecurityAdminScopesHandler : IRequestHandler<UpsertSecurityAdminScopesCommand, Result<bool>>
 {
     private static readonly int[] AllScopes =
     [
@@ -28,7 +29,7 @@ public class UpsertSecurityAdminScopesHandler
         _repository = repository;
     }
 
-    public async Task<Result<bool>> HandleAsync(UpsertSecurityAdminScopesCommand command, CancellationToken ct = default)
+    public async Task<Result<bool>> Handle(UpsertSecurityAdminScopesCommand command, CancellationToken ct)
     {
         if (!_currentTenant.IsAuthenticated || _currentTenant.TenantId == Guid.Empty)
             return Result<bool>.Failure("Tenant inválido.");

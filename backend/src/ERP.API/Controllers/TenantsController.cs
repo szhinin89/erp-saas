@@ -1,3 +1,4 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
@@ -16,12 +17,7 @@ namespace ERP.API.Controllers;
 /// <summary>
 /// Gestión de tenants (empresas).
 /// Restringido: solo accesible por administradores del sistema.
-/// En producción considerar un rol dedicado como "SystemAdmin".
 /// </summary>
-/// <remarks>
-/// Autorización por <b>rol</b> en acciones (<c>SuperAdmin</c>, <c>Admin</c>) — sin claves <c>perm:</c> en este controlador.
-/// Clase con <c>[Authorize(Policy = "Session")]</c> para dejar explícito el token de sesión además de los roles por método.
-/// </remarks>
 [ApiController]
 [Modulo("Tenants API", "perm:tenants.api", "🧩", null, null, 990, VisibleEnMenu = false)]
 [Route("api/[controller]")]
@@ -29,30 +25,16 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class TenantsController : ControllerBase
 {
-    private readonly CreateTenantHandler _createHandler;
-    private readonly UpdateTenantPasswordResetModeHandler _updatePasswordResetModeHandler;
-    private readonly UpdateTenantSubscriptionHandler _updateTenantSubscriptionHandler;
-    private readonly UpdateTenantCompanyHandler _updateTenantCompanyHandler;
-    private readonly UpdateTenantGlobalParametersHandler _updateTenantGlobalParametersHandler;
+    private readonly IMediator _mediator;
     private readonly ITenantRepository _tenantRepository;
 
-    public TenantsController(
-        CreateTenantHandler createHandler,
-        UpdateTenantPasswordResetModeHandler updatePasswordResetModeHandler,
-        UpdateTenantSubscriptionHandler updateTenantSubscriptionHandler,
-        UpdateTenantCompanyHandler updateTenantCompanyHandler,
-        UpdateTenantGlobalParametersHandler updateTenantGlobalParametersHandler,
-        ITenantRepository tenantRepository)
+    public TenantsController(IMediator mediator, ITenantRepository tenantRepository)
     {
-        _createHandler = createHandler;
-        _updatePasswordResetModeHandler = updatePasswordResetModeHandler;
-        _updateTenantSubscriptionHandler = updateTenantSubscriptionHandler;
-        _updateTenantCompanyHandler = updateTenantCompanyHandler;
-        _updateTenantGlobalParametersHandler = updateTenantGlobalParametersHandler;
+        _mediator = mediator;
         _tenantRepository = tenantRepository;
     }
 
-    /// <summary>Obtiene el detalle de un tenant (SuperAdmin). Incluye datos comerciales/legales y suscripción.</summary>
+    /// <summary>Obtiene el detalle de un tenant (SuperAdmin).</summary>
     [HttpGet("{id:guid}")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status200OK)]
@@ -78,22 +60,14 @@ public class TenantsController : ControllerBase
         CancellationToken ct)
     {
         var command = new UpdateTenantCompanyCommand(
-            id,
-            body.Name,
-            body.Slug,
-            body.Ruc,
-            body.ShortName,
-            body.TradeName,
-            body.Dinardap,
-            body.LogoUrl,
-            body.DisplayOrder,
-            body.Priority);
+            id, body.Name, body.Slug, body.Ruc, body.ShortName,
+            body.TradeName, body.Dinardap, body.LogoUrl, body.DisplayOrder, body.Priority);
 
-        var result = await _updateTenantCompanyHandler.HandleAsync(command, ct);
+        var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Actualiza parámetros globales de la empresa (SuperAdmin), dependientes del plan comercial.</summary>
+    /// <summary>Actualiza parámetros globales de la empresa (SuperAdmin).</summary>
     [HttpPatch("{id:guid}/global-parameters")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status200OK)]
@@ -104,18 +78,11 @@ public class TenantsController : ControllerBase
         [FromBody] UpdateTenantGlobalParametersBody body,
         CancellationToken ct)
     {
-        var command = new UpdateTenantGlobalParametersCommand(
-            id,
-            body.ElectronicBillingTrialEnabled);
-
-        var result = await _updateTenantGlobalParametersHandler.HandleAsync(command, ct);
+        var result = await _mediator.Send(new UpdateTenantGlobalParametersCommand(id, body.ElectronicBillingTrialEnabled), ct);
         return this.ToOkOrBadRequest(result);
     }
 
     /// <summary>Crea un nuevo tenant (empresa) en el sistema.</summary>
-    /// <remarks>El slug debe ser único y se usa como identificador amigable del tenant.</remarks>
-    /// <response code="201">Tenant creado correctamente.</response>
-    /// <response code="400">El slug ya está en uso.</response>
     [HttpPost]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status201Created)]
@@ -123,18 +90,13 @@ public class TenantsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Create(
-        [FromBody] CreateTenantCommand command,
-        CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody] CreateTenantCommand command, CancellationToken ct)
     {
-        var result = await _createHandler.HandleAsync(command, ct);
+        var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
-    /// <summary>
-    /// Retorna configuración pública mínima del tenant (sin datos sensibles).
-    /// Útil para flujos anónimos como recuperación de contraseña.
-    /// </summary>
+    /// <summary>Retorna configuración pública mínima del tenant (sin datos sensibles).</summary>
     [HttpGet("{id:guid}/public-settings")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<TenantPublicSettingsDto?>), StatusCodes.Status200OK)]
@@ -148,10 +110,7 @@ public class TenantsController : ControllerBase
         return this.ApiOk(new TenantPublicSettingsDto(tenant.Id, (int)tenant.PasswordResetMode));
     }
 
-    /// <summary>
-    /// Actualiza el modo de recuperación de contraseña del tenant.
-    /// Restringido a Admin.
-    /// </summary>
+    /// <summary>Actualiza el modo de recuperación de contraseña del tenant.</summary>
     [HttpPatch("{id:guid}/password-reset-mode")]
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -167,20 +126,13 @@ public class TenantsController : ControllerBase
         if (id != command.TenantId)
             return this.ApiBadRequest("TenantId no coincide con la ruta.");
 
-        var result = await _updatePasswordResetModeHandler.HandleAsync(command, ct);
+        var result = await _mediator.Send(command, ct);
         return result.IsSuccess
             ? this.ApiOk(new { })
             : this.ApiBadRequest(result.Error ?? "Error");
     }
 
-    /// <summary>
-    /// Actualiza el código de plan del tenant y la lista de módulos habilitados (<c>enabledModules</c>).
-    /// Solo SuperAdmin: acota qué módulos puede usar la empresa frente a permisos y API.
-    /// </summary>
-    /// <remarks>
-    /// La composición detallada del plan (features por ítem de menú) se administra con
-    /// <c>PUT /api/superadmin/saas-plans/{planId}/features</c>; ver <c>docs/COMPANIES-PLAN-MENU-ADMIN.md</c>.
-    /// </remarks>
+    /// <summary>Actualiza el código de plan del tenant y los módulos habilitados.</summary>
     [HttpPatch("{id:guid}/subscription")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status200OK)]
@@ -193,20 +145,17 @@ public class TenantsController : ControllerBase
         [FromBody] UpdateTenantSubscriptionBody body,
         CancellationToken ct)
     {
-        var command = new UpdateTenantSubscriptionCommand(id, body.PlanCode, body.EnabledModules);
-        var result = await _updateTenantSubscriptionHandler.HandleAsync(command, ct);
+        var result = await _mediator.Send(new UpdateTenantSubscriptionCommand(id, body.PlanCode, body.EnabledModules), ct);
         return this.ToOkOrBadRequest(result);
     }
 }
 
-/// <summary>Cuerpo para <c>PATCH .../subscription</c> (plan + lista de claves de módulo).</summary>
 public sealed class UpdateTenantSubscriptionBody
 {
     public string? PlanCode { get; set; }
     public List<string>? EnabledModules { get; set; }
 }
 
-/// <summary>Cuerpo para <c>PATCH .../company</c> (datos de empresa sin admin ni suscripción).</summary>
 public sealed class UpdateTenantCompanyRequest
 {
     public string Name { get; set; } = "";
@@ -220,7 +169,6 @@ public sealed class UpdateTenantCompanyRequest
     public int Priority { get; set; }
 }
 
-/// <summary>Cuerpo para <c>PATCH .../global-parameters</c> (parámetros globales por empresa).</summary>
 public sealed class UpdateTenantGlobalParametersBody
 {
     public bool ElectronicBillingTrialEnabled { get; set; }

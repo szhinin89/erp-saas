@@ -6,9 +6,11 @@ using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Auth.UseCases.Login;
 
-public class LoginHandler
+public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto>>
 {
     private readonly IUserRepository     _userRepository;
     private readonly ITenantRepository   _tenantRepository;
@@ -39,9 +41,9 @@ public class LoginHandler
         _refreshTokenService = refreshTokenService;
     }
 
-    public async Task<Result<AuthResponseDto>> HandleAsync(
+    public async Task<Result<AuthResponseDto>> Handle(
         LoginCommand command,
-        CancellationToken ct = default)
+        CancellationToken ct)
     {
         var email = command.Email.Trim();
 

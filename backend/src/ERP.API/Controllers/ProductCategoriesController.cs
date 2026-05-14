@@ -1,3 +1,4 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -12,9 +13,7 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-/// <summary>
-/// Catálogo maestro: Categorías de producto (dependen de una línea).
-/// </summary>
+/// <summary>Catálogo maestro: Categorías de producto (dependen de una línea).</summary>
 [Modulo("Categorías", "perm:inventario.categories.view", "📁", "/inventario/structure", "perm:inventario.products.view", 39)]
 [ApiController]
 [Route("api/[controller]")]
@@ -22,25 +21,9 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class ProductCategoriesController : ControllerBase
 {
-    private readonly CreateProductCategoryHandler _create;
-    private readonly GetProductCategoriesHandler _get;
-    private readonly UpdateProductCategoryHandler _update;
-    private readonly DisableProductCategoryHandler _disable;
-    private readonly EnableProductCategoryHandler _enable;
+    private readonly IMediator _mediator;
 
-    public ProductCategoriesController(
-        CreateProductCategoryHandler create,
-        GetProductCategoriesHandler get,
-        UpdateProductCategoryHandler update,
-        DisableProductCategoryHandler disable,
-        EnableProductCategoryHandler enable)
-    {
-        _create = create;
-        _get = get;
-        _update = update;
-        _disable = disable;
-        _enable = enable;
-    }
+    public ProductCategoriesController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
     [Authorize(Policy = "perm:inventario.categories.view")]
@@ -50,7 +33,7 @@ public class ProductCategoriesController : ControllerBase
     {
         var activeFilter = CatalogQueryParameters.ParseActiveFilter(Request.Query);
         var search = CatalogQueryParameters.ParseSearch(Request.Query);
-        var result = await _get.HandleAsync(lineId, activeFilter, search, ct);
+        var result = await _mediator.Send(new GetProductCategoriesQuery(lineId, activeFilter, search), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<ProductCategoryListItemDto>());
     }
 
@@ -62,7 +45,7 @@ public class ProductCategoriesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateProductCategoryCommand command, CancellationToken ct = default)
     {
-        var result = await _create.HandleAsync(command, ct);
+        var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
@@ -74,7 +57,7 @@ public class ProductCategoriesController : ControllerBase
         if (id != command.Id)
             return this.ApiBadRequest("El id de ruta no coincide con el cuerpo.");
 
-        var result = await _update.HandleAsync(command, ct);
+        var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result);
     }
 
@@ -82,7 +65,7 @@ public class ProductCategoriesController : ControllerBase
     [Authorize(Policy = "perm:inventario.categories.delete")]
     public async Task<IActionResult> Disable(Guid id, CancellationToken ct = default)
     {
-        var result = await _disable.HandleAsync(id, ct);
+        var result = await _mediator.Send(new DisableProductCategoryCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Deshabilitado");
     }
 
@@ -90,7 +73,7 @@ public class ProductCategoriesController : ControllerBase
     [Authorize(Policy = "perm:inventario.categories.update")]
     public async Task<IActionResult> Enable(Guid id, CancellationToken ct = default)
     {
-        var result = await _enable.HandleAsync(id, ct);
+        var result = await _mediator.Send(new EnableProductCategoryCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Habilitado");
     }
 }

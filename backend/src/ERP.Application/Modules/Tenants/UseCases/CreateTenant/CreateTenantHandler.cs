@@ -1,3 +1,4 @@
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Tenants.DTOs;
 using ERP.Domain.Tenants.Entities;
@@ -5,7 +6,7 @@ using ERP.Domain.Tenants.Interfaces;
 
 namespace ERP.Application.Tenants.UseCases.CreateTenant;
 
-public class CreateTenantHandler
+public class CreateTenantHandler : IRequestHandler<CreateTenantCommand, Result<TenantDto>>
 {
     private readonly ITenantRepository _repository;
     private readonly ICurrentUser _currentUser;
@@ -21,9 +22,9 @@ public class CreateTenantHandler
         _deployment = deployment;
     }
 
-    public async Task<Result<TenantDto>> HandleAsync(
+    public async Task<Result<TenantDto>> Handle(
         CreateTenantCommand command,
-        CancellationToken ct = default)
+        CancellationToken ct)
     {
         var exists = await _repository.GetBySlugAsync(command.Slug, ct);
         if (exists is not null)

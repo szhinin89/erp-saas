@@ -4,9 +4,11 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Products.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Products.Catalogs.UseCases.EnableProductCategory;
 
-public class EnableProductCategoryHandler
+public class EnableProductCategoryHandler : IRequestHandler<EnableProductCategoryCommand, Result<ProductCategoryDto>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
@@ -25,12 +27,12 @@ public class EnableProductCategoryHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<ProductCategoryDto>> HandleAsync(Guid id, CancellationToken ct = default)
+    public async Task<Result<ProductCategoryDto>> Handle(EnableProductCategoryCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId = _currentUser.UserId;
 
-        var entity = await _repo.GetProductCategoryByIdAsync(tenantId, id, ct);
+        var entity = await _repo.GetProductCategoryByIdAsync(tenantId, command.Id, ct);
         if (entity is null)
             return Result<ProductCategoryDto>.Failure("Categoría no encontrada.");
 
@@ -38,6 +40,7 @@ public class EnableProductCategoryHandler
             return Result<ProductCategoryDto>.Failure("La categoría ya está activa.");
 
         var line = await _repo.GetProductLineByIdAsync(tenantId, entity.LineId, ct);
+
         if (line is null || !line.IsActive)
             return Result<ProductCategoryDto>.Failure("No se puede reactivar la categoría: la línea padre no existe o está deshabilitada.");
 

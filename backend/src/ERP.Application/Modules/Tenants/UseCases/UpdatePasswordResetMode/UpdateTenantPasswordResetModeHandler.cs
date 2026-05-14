@@ -1,9 +1,10 @@
+using MediatR;
 using ERP.Application.Common;
 using ERP.Domain.Tenants.Interfaces;
 
 namespace ERP.Application.Tenants.UseCases.UpdatePasswordResetMode;
 
-public class UpdateTenantPasswordResetModeHandler
+public class UpdateTenantPasswordResetModeHandler : IRequestHandler<UpdateTenantPasswordResetModeCommand, Result<bool>>
 {
     private readonly ITenantRepository _repository;
     private readonly ICurrentUser _currentUser;
@@ -14,7 +15,7 @@ public class UpdateTenantPasswordResetModeHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<bool>> HandleAsync(UpdateTenantPasswordResetModeCommand command, CancellationToken ct = default)
+    public async Task<Result<bool>> Handle(UpdateTenantPasswordResetModeCommand command, CancellationToken ct)
     {
         if (!_currentUser.IsAuthenticated)
             return Result<bool>.Failure("No autenticado.");

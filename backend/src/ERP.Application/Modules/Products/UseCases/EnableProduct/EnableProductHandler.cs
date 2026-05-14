@@ -4,9 +4,11 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Products.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Products.UseCases.EnableProduct;
 
-public class EnableProductHandler
+public class EnableProductHandler : IRequestHandler<EnableProductCommand, Result<ProductDto>>
 {
     private readonly IProductRepository _repository;
     private readonly IUserActivityRepository _activity;
@@ -25,12 +27,12 @@ public class EnableProductHandler
         _currentUser   = currentUser;
     }
 
-    public async Task<Result<ProductDto>> HandleAsync(Guid id, CancellationToken ct = default)
+    public async Task<Result<ProductDto>> Handle(EnableProductCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
-        var product = await _repository.GetByIdAsync(id, tenantId, ct);
+        var product = await _repository.GetByIdAsync(command.Id, tenantId, ct);
         if (product is null)
             return Result<ProductDto>.Failure("Producto no encontrado.");
 

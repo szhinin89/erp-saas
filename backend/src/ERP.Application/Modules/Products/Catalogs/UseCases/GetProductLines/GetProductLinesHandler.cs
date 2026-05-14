@@ -2,9 +2,11 @@ using ERP.Application.Common;
 using ERP.Application.Products.Catalogs.DTOs;
 using ERP.Domain.Products.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Products.Catalogs.UseCases.GetProductLines;
 
-public class GetProductLinesHandler
+public class GetProductLinesHandler : IRequestHandler<GetProductLinesQuery, Result<IReadOnlyList<ProductLineDto>>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly ICurrentTenant _currentTenant;
@@ -15,13 +17,12 @@ public class GetProductLinesHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<IReadOnlyList<ProductLineDto>>> HandleAsync(
-        bool? activeFilter,
-        string? search,
-        CancellationToken ct = default)
+    public async Task<Result<IReadOnlyList<ProductLineDto>>> Handle(
+        GetProductLinesQuery query,
+        CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
-        var items = await _repo.GetProductLinesAsync(tenantId, activeFilter, search, ct);
+        var items = await _repo.GetProductLinesAsync(tenantId, query.ActiveFilter, query.Search, ct);
         var dtos = items.Select(x => new ProductLineDto(x.Id, x.Code, x.Name, x.IsActive)).ToList();
         return Result<IReadOnlyList<ProductLineDto>>.Success(dtos);
     }

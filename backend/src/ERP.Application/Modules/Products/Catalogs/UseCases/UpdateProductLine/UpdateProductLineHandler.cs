@@ -4,9 +4,11 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Products.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Products.Catalogs.UseCases.UpdateProductLine;
 
-public class UpdateProductLineHandler
+public class UpdateProductLineHandler : IRequestHandler<UpdateProductLineCommand, Result<ProductLineDto>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
@@ -25,9 +27,9 @@ public class UpdateProductLineHandler
         _currentUser   = currentUser;
     }
 
-    public async Task<Result<ProductLineDto>> HandleAsync(
+    public async Task<Result<ProductLineDto>> Handle(
         UpdateProductLineCommand command,
-        CancellationToken ct = default)
+        CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;

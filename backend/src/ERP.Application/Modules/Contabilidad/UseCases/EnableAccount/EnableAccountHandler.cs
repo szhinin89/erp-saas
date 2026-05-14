@@ -4,9 +4,11 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Contabilidad.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Modules.Contabilidad.UseCases.EnableAccount;
 
-public class EnableAccountHandler
+public class EnableAccountHandler : IRequestHandler<EnableAccountCommand, Result<AccountDto>>
 {
     private readonly IAccountingRepository _repository;
     private readonly IUserActivityRepository _activity;
@@ -25,12 +27,12 @@ public class EnableAccountHandler
         _currentUser   = currentUser;
     }
 
-    public async Task<Result<AccountDto>> HandleAsync(Guid id, CancellationToken ct = default)
+    public async Task<Result<AccountDto>> Handle(EnableAccountCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
-        var account = await _repository.GetByIdAsync(id, tenantId, ct);
+        var account = await _repository.GetByIdAsync(command.Id, tenantId, ct);
         if (account is null)
             return Result<AccountDto>.Failure("Cuenta no encontrada.");
 

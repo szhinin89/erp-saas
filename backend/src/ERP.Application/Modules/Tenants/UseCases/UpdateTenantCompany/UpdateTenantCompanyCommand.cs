@@ -1,3 +1,7 @@
+using MediatR;
+using ERP.Application.Common;
+using ERP.Application.Tenants.DTOs;
+
 namespace ERP.Application.Tenants.UseCases.UpdateTenantCompany;
 
 public record UpdateTenantCompanyCommand(
@@ -10,4 +14,4 @@ public record UpdateTenantCompanyCommand(
     string? Dinardap,
     string? LogoUrl,
     int DisplayOrder,
-    int Priority);
+    int Priority) : IRequest<Result<TenantDto>>;

@@ -1,3 +1,7 @@
+using MediatR;
+using ERP.Application.Common;
+using ERP.Application.Auth.DTOs;
+
 namespace ERP.Application.Auth.UseCases.ClaimInitialSuperAdmin;
 
 /// <summary>
@@ -9,4 +13,4 @@ public sealed record ClaimInitialSuperAdminCommand(
     string FirstName,
     string LastName,
     string Email,
-    string Password);
+    string Password) : IRequest<Result<AuthResponseDto>>;

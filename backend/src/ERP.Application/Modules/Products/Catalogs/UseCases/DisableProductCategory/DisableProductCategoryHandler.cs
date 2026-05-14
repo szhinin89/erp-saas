@@ -4,9 +4,11 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Products.Interfaces;
 
+using MediatR;
+
 namespace ERP.Application.Products.Catalogs.UseCases.DisableProductCategory;
 
-public class DisableProductCategoryHandler
+public class DisableProductCategoryHandler : IRequestHandler<DisableProductCategoryCommand, Result<ProductCategoryDto>>
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
@@ -25,19 +27,19 @@ public class DisableProductCategoryHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<ProductCategoryDto>> HandleAsync(Guid id, CancellationToken ct = default)
+    public async Task<Result<ProductCategoryDto>> Handle(DisableProductCategoryCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId = _currentUser.UserId;
 
-        var entity = await _repo.GetProductCategoryByIdAsync(tenantId, id, ct);
+        var entity = await _repo.GetProductCategoryByIdAsync(tenantId, command.Id, ct);
         if (entity is null)
             return Result<ProductCategoryDto>.Failure("Categoría no encontrada.");
 
         if (!entity.IsActive)
             return Result<ProductCategoryDto>.Failure("La categoría ya está deshabilitada.");
 
-        var activeChildren = await _repo.CountActiveSubcategoriesByCategoryAsync(tenantId, id, ct);
+        var activeChildren = await _repo.CountActiveSubcategoriesByCategoryAsync(tenantId, command.Id, ct);
         if (activeChildren > 0)
             return Result<ProductCategoryDto>.Failure("No se puede deshabilitar la categoría mientras tenga subcategorías activas.");
 

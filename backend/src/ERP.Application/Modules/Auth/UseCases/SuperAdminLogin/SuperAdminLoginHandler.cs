@@ -1,3 +1,4 @@
+using MediatR;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -5,7 +6,7 @@ using ERP.Domain.Auth.Interfaces;
 
 namespace ERP.Application.Auth.UseCases.SuperAdminLogin;
 
-public class SuperAdminLoginHandler
+public class SuperAdminLoginHandler : IRequestHandler<SuperAdminLoginCommand, Result<AuthResponseDto>>
 {
     private readonly IUserRepository _userRepository;
     private readonly IJwtService _jwtService;
@@ -24,7 +25,7 @@ public class SuperAdminLoginHandler
         _passwordHasher = passwordHasher;
     }
 
-    public async Task<Result<AuthResponseDto>> HandleAsync(SuperAdminLoginCommand command, CancellationToken ct = default)
+    public async Task<Result<AuthResponseDto>> Handle(SuperAdminLoginCommand command, CancellationToken ct)
     {
         if (!_deployment.IsSuperAdminPanelEnabled)
             return Result<AuthResponseDto>.Failure(DeploymentAuthMessages.SuperAdminPanelDisabled);
