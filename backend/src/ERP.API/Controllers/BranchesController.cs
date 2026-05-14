@@ -14,7 +14,7 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-[Modulo("Sucursales", "perm:saas.branches.view", "🏢", "/configuracion/sucursales", null, 30)]
+[Modulo("Sucursales", "perm:saas.branches.view", "🏢", "/configuracion/sucursales", "session:geography", 30)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

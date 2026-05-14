@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SuperAdminPageTemplate } from '../../components/superadmin/SuperAdminPageTemplate';
 import { SuperAdminMenuBuilderSection } from '../../components/superadmin/SuperAdminMenuBuilderSection';
+import { SuperAdminPlansSection } from '../../components/superadmin/SuperAdminPlansSection';
 import { useI18n } from '../../i18n/i18n';
 import './menu-plans-hub.css';
 
@@ -81,15 +82,7 @@ export function SuperAdminMenuPlansHubPage() {
             <SuperAdminMenuBuilderSection crmWorkspace />
           ) : null}
 
-          {tab === 'planes' ? (
-            <section className="menu-plans-hub__placeholderCard" aria-labelledby="menu-plans-catalog-heading">
-              <h2 id="menu-plans-catalog-heading">📊 Gestión de Planes y Suscripciones</h2>
-              <p className="subtle">Aquí se mostrará la administración de planes, precios, ciclos de facturación y suscripciones de clientes.</p>
-              <div className="menu-plans-hub__placeholderNote">
-                <span aria-hidden>ℹ️</span> Módulo en construcción.
-              </div>
-            </section>
-          ) : null}
+          {tab === 'planes' ? <SuperAdminPlansSection /> : null}
 
           {tab === 'auditoriaGlobal' ? (
             <section className="menu-plans-hub__placeholderCard" aria-labelledby="menu-plans-audit-heading">

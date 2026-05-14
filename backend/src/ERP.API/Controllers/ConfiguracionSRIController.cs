@@ -15,7 +15,7 @@ namespace ERP.API.Controllers;
 /// Un único registro por tenant: PUT siempre crea o actualiza (upsert).
 /// El secuencial actual NO se resetea al actualizar.
 /// </summary>
-[Modulo("Configuración SRI", "perm:ventas.configuracion.view", "🧾", "/configuracion/sri", null, 35)]
+[Modulo("Configuración SRI", "perm:ventas.configuracion.view", "🧾", "/configuracion/sri", "perm:ventas.facturas.view", 35)]
 [ApiController]
 [Route("api/configuracion-sri")]
 [Authorize]

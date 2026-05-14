@@ -310,6 +310,8 @@ export function SortableTreeRow({
           nodes={node.children}
           depth={depth + 1}
           crmLayout={crmLayout}
+          activeIds={activeIds}
+          onToggleActive={onToggleActive}
           expandedIds={expandedIds}
           onToggleExpand={onToggleExpand}
           forceExpandedIds={forceExpandedIds}

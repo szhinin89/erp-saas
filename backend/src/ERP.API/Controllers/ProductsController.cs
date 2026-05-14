@@ -22,7 +22,7 @@ namespace ERP.API.Controllers;
 /// Gestión del catálogo de productos del tenant autenticado.
 /// Todos los endpoints filtran automáticamente por el tenant del JWT.
 /// </summary>
-[Modulo("Productos", "perm:inventario.products.view", "📦", "/products", null, 38)]
+[Modulo("Productos", "perm:inventario.products.view", "📦", "/inventario/products", null, 38)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

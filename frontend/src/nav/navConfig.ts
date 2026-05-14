@@ -76,7 +76,7 @@ const MENU_ROUTE_ALIASES: Record<string, string> = {
   '/contabilidad': '/accounting',
   '/contabilidad/configuracion': '/accounting',
   '/configuracion/sucursales': '/saas/branches',
-  '/logistica/bodegas': '/inventario/transferencias',
+  '/logistica/bodegas': '/inventario/bodegas',
   '/inventario/stock': '/products',
   '/ventas': '/ventas/facturas',
   '/ventas/clientes': '/ventas/customers',

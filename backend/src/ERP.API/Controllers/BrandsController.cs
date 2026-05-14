@@ -13,7 +13,7 @@ namespace ERP.API.Controllers;
 /// <summary>
 /// Catálogo maestro: Marcas (Brands) del tenant autenticado.
 /// </summary>
-[Modulo("Marcas", "perm:inventario.brands.view", "✨", "/catalog/brands", null, 37)]
+[Modulo("Marcas", "perm:inventario.brands.view", "✨", "/inventario/brands", "perm:inventario.products.view", 37)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

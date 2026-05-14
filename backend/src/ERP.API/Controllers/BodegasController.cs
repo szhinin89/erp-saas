@@ -18,7 +18,7 @@ namespace ERP.API.Controllers;
 /// Gestión de bodegas / almacenes del tenant autenticado.
 /// Todos los endpoints filtran automáticamente por el tenant del JWT.
 /// </summary>
-[Modulo("Bodegas", "perm:inventario.bodegas.view", "📦", "/logistica/bodegas", null, 40)]
+[Modulo("Bodegas", "perm:inventario.bodegas.view", "📦", "/inventario/bodegas", "perm:inventario.products.view", 40)]
 [ApiController]
 [Route("api/[controller]")]
 [Route("api/logistica/bodegas")]

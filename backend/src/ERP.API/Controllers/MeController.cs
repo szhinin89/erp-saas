@@ -1,4 +1,5 @@
 using ERP.API.Contracts;
+using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Navigation.DTOs;
 using ERP.Application.Navigation.UseCases.GetSessionMenu;
@@ -10,6 +11,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>Alias de sesión para el usuario autenticado (<c>/api/me/*</c>).</summary>
 [ApiController]
+[Modulo("Me API", "perm:session.me.api", "🧩", null, null, 987, VisibleEnMenu = false)]
 [Route("api/me")]
 [Produces("application/json")]
 public sealed class MeController : ControllerBase

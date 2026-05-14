@@ -17,6 +17,7 @@ import { OrdenesCompraListPage }  from '../modules/compras/ordenes/pages/Ordenes
 import { CrearOrdenCompraPage }   from '../modules/compras/ordenes/pages/CrearOrdenCompraPage';
 import { OrdenCompraDetailPage }  from '../modules/compras/ordenes/pages/OrdenCompraDetailPage';
 import { TenantFeaturePlaceholderPage } from '../pages/TenantFeaturePlaceholderPage';
+import { BodegasPage } from '../pages/BodegasPage';
 
 export const catalogRoutes = [
   // ── Órdenes de Compra ──────────────────────────────────────────────────────
@@ -51,6 +52,8 @@ export const catalogRoutes = [
 
   // Rutas referenciadas por el catálogo API sin pantalla dedicada aún (evitan caer en * → /dashboard).
   <Route key="inv-kardex" path="/inventario/kardex" element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="inv-bodegas" path="/inventario/bodegas" element={<BodegasPage />} />,
+  <Route key="legacy-logistica-bodegas" path="/logistica/bodegas" element={<Navigate to="/inventario/bodegas" replace />} />,
   <Route key="ventas-notas" path="/ventas/notas" element={<TenantFeaturePlaceholderPage />} />,
   <Route key="ventas-ret-rec" path="/ventas/retenciones-recibidas" element={<TenantFeaturePlaceholderPage />} />,
   <Route key="compras-prov" path="/compras/proveedores" element={<TenantFeaturePlaceholderPage />} />,

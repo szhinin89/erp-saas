@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Tenants.UseCases.CreateTenant;
@@ -22,6 +23,7 @@ namespace ERP.API.Controllers;
 /// Clase con <c>[Authorize(Policy = "Session")]</c> para dejar explícito el token de sesión además de los roles por método.
 /// </remarks>
 [ApiController]
+[Modulo("Tenants API", "perm:tenants.api", "🧩", null, null, 990, VisibleEnMenu = false)]
 [Route("api/[controller]")]
 [Authorize(Policy = "Session")]
 [Produces("application/json")]

@@ -1,4 +1,5 @@
 using ERP.API.Contracts;
+using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Subscriptions;
 using Microsoft.AspNetCore.Authorization;
@@ -8,6 +9,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>Catálogo público de planes (landing / precios externos). Sin autenticación.</summary>
 [ApiController]
+[Modulo("Public Plans API", "perm:public.plans.api", "🧩", null, null, 993, VisibleEnMenu = false)]
 [Route("api/public")]
 [AllowAnonymous]
 [Produces("application/json")]

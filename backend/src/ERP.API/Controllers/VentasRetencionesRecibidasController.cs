@@ -9,7 +9,7 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-[Modulo("Retenciones recibidas", "perm:ventas.retenciones-recibidas.list", "📋", "/ventas/retenciones-recibidas", null, 53)]
+[Modulo("Retenciones recibidas", "perm:ventas.retenciones-recibidas.list", "📋", "/ventas/retenciones-recibidas", "perm:ventas.facturas.view", 53)]
 [ApiController]
 [Route("api/ventas/retenciones-recibidas")]
 [Authorize]

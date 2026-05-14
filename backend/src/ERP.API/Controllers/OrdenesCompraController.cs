@@ -20,7 +20,7 @@ namespace ERP.API.Controllers;
 /// Órdenes de Compra — documento interno que autoriza la compra a un proveedor.
 /// Flujo: Borrador → Enviada → Aprobada ⇄ RecibidaParcial → Cerrada (+ Cancelada).
 /// </summary>
-[Modulo("Órdenes de compra", "perm:compras.ordenes.view", "📝", "/compras/ordenes", null, 44)]
+[Modulo("Órdenes de compra", "perm:compras.ordenes.view", "📝", "/compras/ordenes", "perm:compras.facturas.view", 44)]
 [ApiController]
 [Route("api/compras/ordenes")]
 [Authorize]

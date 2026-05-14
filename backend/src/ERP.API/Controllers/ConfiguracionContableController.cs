@@ -10,7 +10,7 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>Configuración de cuentas por defecto por tenant (compras, ventas, IVA, caja, mapeo de gastos).</summary>
-[Modulo("Config. contable", "perm:accounting.config.view", "⚙️", "/contabilidad/configuracion", null, 25)]
+[Modulo("Config. contable", "perm:accounting.config.view", "⚙️", "/contabilidad/configuracion", "perm:accounting.accounts.view", 25)]
 [ApiController]
 [Route("api/contabilidad/configuracion")]
 [Authorize]

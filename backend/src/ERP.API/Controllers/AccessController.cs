@@ -1,4 +1,5 @@
 using ERP.API.Authorization;
+using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Access.DTOs;
@@ -30,6 +31,7 @@ namespace ERP.API.Controllers;
 /// <c>Roles</c> (membresías globales, perfiles, permisos de perfil). Ver criterio P0 en <c>docs/ESTADO-PROYECTO.md</c> (sección backlog de refactor).
 /// </remarks>
 [ApiController]
+[Modulo("Access IAM API", "perm:access.iam.api", "🧩", null, null, 983, VisibleEnMenu = false)]
 [Route("api/[controller]")]
 [Produces("application/json")]
 public class AccessController : ControllerBase

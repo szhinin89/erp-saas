@@ -1,4 +1,5 @@
 using ERP.API.Contracts;
+using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Common;
 using ERP.Application.Subscriptions;
@@ -9,6 +10,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>CRUD de planes SaaS y catálogo de features (solo SuperAdmin).</summary>
 [ApiController]
+[Modulo("SaaS Plans Admin", "perm:superadmin.saas-plans.admin", "🧩", null, null, 980, VisibleEnMenu = false, EsSuperAdmin = true)]
 [Route("api/superadmin/saas-plans")]
 [Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]

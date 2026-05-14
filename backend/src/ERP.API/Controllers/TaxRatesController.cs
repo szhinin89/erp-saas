@@ -14,7 +14,7 @@ namespace ERP.API.Controllers;
 /// <summary>
 /// Catálogo maestro: Tarifas de impuestos (IVA/ICE) del tenant autenticado.
 /// </summary>
-[Modulo("Impuestos (IVA/ICE)", "perm:inventario.taxRates.view", "📊", "/catalog/tax-rates", null, 37)]
+[Modulo("Impuestos (IVA/ICE)", "perm:inventario.taxRates.view", "📊", "/inventario/tax-rates", "perm:inventario.products.view", 37)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

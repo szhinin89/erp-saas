@@ -102,6 +102,12 @@ function parseFolderUidFromLabelKey(labelKey: string | undefined): string | null
   return m[1];
 }
 
+function parseLeafUidFromLabelKey(labelKey: string | undefined): string | null {
+  const m = /^nav\.planLeaf\.(.+)$/.exec((labelKey ?? '').trim());
+  if (!m?.[1] || m[1].length < 3) return null;
+  return m[1];
+}
+
 function findFuncionalidadByPerm(
   byPerm: Map<string, FuncionalidadArbolDto>,
   perm: string,
@@ -120,7 +126,9 @@ function sessionItemToEditor(s: SessionMenuItemDto, byPerm: Map<string, Funciona
   const route = (s.routePath ?? '').trim();
   const folder = !perm && !route;
   const cat = perm ? findFuncionalidadByPerm(byPerm, perm) : undefined;
-  const stableUid = folder ? parseFolderUidFromLabelKey(s.labelKey) ?? crypto.randomUUID() : crypto.randomUUID();
+  const stableUid = folder
+    ? parseFolderUidFromLabelKey(s.labelKey) ?? crypto.randomUUID()
+    : parseLeafUidFromLabelKey(s.labelKey) ?? `leaf-${slugPerm(perm || route || s.displayLabel || s.labelKey || crypto.randomUUID())}`;
   const iconFromSession = s.icon?.trim();
 
   if (folder) {
@@ -177,7 +185,7 @@ function editorNodeToSessionItem(n: EditorMenuItem, sortOrder: number): SessionM
   const ruta = (n.ruta ?? '').trim() || '/dashboard';
   return {
     routePath: ruta,
-    labelKey: `nav.planLeaf.${slugPerm(perm)}`,
+    labelKey: `nav.planLeaf.${n.uid}`,
     displayLabel: n.nombre,
     sortOrder,
     moduleKey: null,

@@ -10,7 +10,7 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>Consultas de inventario (stock por bodega).</summary>
-[Modulo("Stock por bodega", "perm:inventario.bodegas.view", "📦", "/inventario/stock", null, 41)]
+[Modulo("Stock por bodega", "session:inventario.stock", "📦", "/inventario/stock", "perm:inventario.products.view", 41)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

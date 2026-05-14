@@ -13,7 +13,7 @@ namespace ERP.API.Controllers;
 /// <summary>
 /// Catálogo maestro: Tipos de producto del tenant autenticado.
 /// </summary>
-[Modulo("Tipos de producto", "perm:inventario.productTypes.view", "🔖", "/catalog/types", null, 37)]
+[Modulo("Tipos de producto", "perm:inventario.productTypes.view", "🔖", "/inventario/product-types", "perm:inventario.products.view", 37)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

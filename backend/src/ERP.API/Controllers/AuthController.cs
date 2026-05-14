@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Auth.UseCases.Register;
@@ -19,6 +20,7 @@ namespace ERP.API.Controllers;
 /// No requiere autenticación previa.
 /// </summary>
 [ApiController]
+[Modulo("Auth API", "perm:auth.api", "🧩", null, null, 988, VisibleEnMenu = false)]
 [Route("api/[controller]")]
 [Produces("application/json")]
 public class AuthController : ControllerBase

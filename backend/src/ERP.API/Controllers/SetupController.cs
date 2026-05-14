@@ -1,4 +1,5 @@
 using ERP.API.Contracts;
+using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Auth.UseCases.ClaimInitialSuperAdmin;
@@ -18,6 +19,7 @@ namespace ERP.API.Controllers;
 /// Ver <c>docs/SUPERADMIN-Y-FIRST-RUN.md</c>.
 /// </remarks>
 [ApiController]
+[Modulo("Setup API", "perm:setup.api", "🧩", null, null, 986, VisibleEnMenu = false)]
 [Route("api/[controller]")]
 [Produces("application/json")]
 public sealed class SetupController : ControllerBase

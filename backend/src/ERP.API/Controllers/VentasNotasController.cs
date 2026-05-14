@@ -9,7 +9,7 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-[Modulo("Notas ventas", "perm:ventas.notas.list", "📃", "/ventas/notas", null, 51)]
+[Modulo("Notas ventas", "perm:ventas.notas.list", "📃", "/ventas/notas", "perm:ventas.facturas.view", 51)]
 [ApiController]
 [Route("api/ventas/notas")]
 [Authorize]

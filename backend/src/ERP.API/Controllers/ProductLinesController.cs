@@ -15,7 +15,7 @@ namespace ERP.API.Controllers;
 /// <summary>
 /// Catálogo maestro: Líneas de producto (Product Lines) del tenant autenticado.
 /// </summary>
-[Modulo("Líneas de producto", "perm:inventario.productLines.view", "🏷️", "/catalog/lines", null, 37)]
+[Modulo("Líneas de producto", "perm:inventario.productLines.view", "🏷️", "/inventario/structure", "perm:inventario.products.view", 37)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

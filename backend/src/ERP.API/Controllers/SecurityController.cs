@@ -1,4 +1,5 @@
 using ERP.API.Contracts;
+using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Security.UseCases.GetSecurityAdminMatrix;
 using ERP.Application.Security.UseCases.UpsertSecurityAdminScopes;
@@ -16,6 +17,7 @@ namespace ERP.API.Controllers;
 /// Exige token de sesión (<c>Session</c>) y rol <c>SuperAdmin</c> (no basta con bootstrap).
 /// </remarks>
 [ApiController]
+[Modulo("Security API", "perm:security.api", "🧩", null, null, 989, VisibleEnMenu = false)]
 [Route("api/[controller]")]
 [Authorize(Policy = "Session")]
 [Authorize(Roles = "SuperAdmin")]

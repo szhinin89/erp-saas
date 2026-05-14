@@ -1,4 +1,5 @@
 using ERP.API.Contracts;
+using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Navigation;
 using Microsoft.AspNetCore.Authorization;
@@ -8,6 +9,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>Rutas en español para menú por empresa (<c>/api/superadmin/empresas/…</c>).</summary>
 [ApiController]
+[Modulo("SuperAdmin Empresas Menú", "perm:superadmin.empresas-menu.admin", "🧩", null, null, 985, VisibleEnMenu = false, EsSuperAdmin = true)]
 [Route("api/superadmin/empresas")]
 [Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]

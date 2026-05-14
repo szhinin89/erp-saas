@@ -17,7 +17,7 @@ namespace ERP.API.Controllers;
 /// Ajustes manuales de stock (incremento o disminución) sobre un producto en una bodega.
 /// Flujo: Borrador → Ejecutado (stock afectado) | Cancelado (sin efecto).
 /// </summary>
-[Modulo("Ajustes de inventario", "perm:inventario.ajustes.view", "⚖️", "/inventario/ajustes", null, 43)]
+[Modulo("Ajustes de inventario", "perm:inventario.ajustes.view", "⚖️", "/inventario/ajustes", "perm:inventario.products.view", 43)]
 [ApiController]
 [Route("api/inventario/ajustes")]
 [Authorize]

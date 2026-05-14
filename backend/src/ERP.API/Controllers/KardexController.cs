@@ -23,7 +23,7 @@ namespace ERP.API.Controllers;
 /// Kardex valorizado de inventario por producto y bodega (método: promedio ponderado móvil).
 /// Soporta modo síncrono (respuesta inmediata) y asíncrono (202 + jobId).
 /// </summary>
-[Modulo("Kardex", "perm:inventario.kardex.view", "📊", "/inventario/kardex", null, 42)]
+[Modulo("Kardex", "perm:inventario.kardex.view", "📊", "/inventario/kardex", "perm:inventario.products.view", 42)]
 [ApiController]
 [Route("api/inventario/kardex")]
 [Authorize]

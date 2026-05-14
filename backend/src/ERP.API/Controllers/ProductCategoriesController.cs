@@ -15,7 +15,7 @@ namespace ERP.API.Controllers;
 /// <summary>
 /// Catálogo maestro: Categorías de producto (dependen de una línea).
 /// </summary>
-[Modulo("Categorías", "perm:inventario.categories.view", "📁", "/catalog/categories", null, 39)]
+[Modulo("Categorías", "perm:inventario.categories.view", "📁", "/inventario/structure", "perm:inventario.products.view", 39)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

@@ -43,13 +43,8 @@ public sealed class ModuloDiscoveryService
         foreach (var type in controllerTypes)
         {
             var classAttr = type.GetCustomAttribute<ModuloAttribute>(inherit: true);
-            if (classAttr is null)
-                continue;
-
-            if (ShouldExclude(classAttr.PermisoBase))
-                continue;
-
-            rows.Add(ToRow(classAttr, NormalizePadre(classAttr.Padre)));
+            if (classAttr is not null && !ShouldExclude(classAttr.PermisoBase))
+                rows.Add(ToRow(classAttr, NormalizePadre(classAttr.Padre)));
 
             foreach (var method in type.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
             {
@@ -63,9 +58,13 @@ public sealed class ModuloDiscoveryService
                 if (ShouldExclude(methodAttr.PermisoBase))
                     continue;
 
-                var parentPermiso = string.IsNullOrWhiteSpace(methodAttr.Padre)
-                    ? classAttr.PermisoBase.Trim()
-                    : methodAttr.Padre.Trim();
+                string? parentPermiso;
+                if (!string.IsNullOrWhiteSpace(methodAttr.Padre))
+                    parentPermiso = methodAttr.Padre.Trim();
+                else if (classAttr is not null && !string.IsNullOrWhiteSpace(classAttr.PermisoBase))
+                    parentPermiso = classAttr.PermisoBase.Trim();
+                else
+                    parentPermiso = null;
 
                 rows.Add(ToRow(methodAttr, parentPermiso));
             }

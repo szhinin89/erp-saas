@@ -15,7 +15,7 @@ namespace ERP.API.Controllers;
 /// <summary>
 /// Catálogo maestro: Subcategorías (dependen de una categoría).
 /// </summary>
-[Modulo("Subcategorías", "perm:inventario.subcategories.view", "📂", "/catalog/subcategories", null, 39)]
+[Modulo("Subcategorías", "perm:inventario.subcategories.view", "📂", "/inventario/structure", "perm:inventario.products.view", 39)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
