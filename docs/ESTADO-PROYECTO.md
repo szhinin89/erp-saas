@@ -6,7 +6,7 @@
 > **Enlaces legacy:** `docs/STATUS-2026-05-ERP.md` redirige aquí (un solo lugar para el estado).  
 > **Backlog de refactor** y **refactor modular por sprints** (antes `docs/REFACTOR-*.md`) están en las secciones más abajo en este mismo archivo.
 >
-> Última actualización: **11 de mayo de 2026** (notas proveedor compras/gastos, reset DB desde cero, migración baseline única, seeder dev, ajustes de verificación local) | Commit: `0aab504`  
+> Última actualización: **13 de mayo de 2026** (menu builder completo, integración planes SaaS, controladores refactorizados, página bodegas, servicios suscripción) | Commit: `7d83fcc`  
 > Inventario oficial de herramientas en uso: [`docs/HERRAMIENTAS-ERP-SAAS.md`](HERRAMIENTAS-ERP-SAAS.md)
 
 ---
@@ -15,7 +15,8 @@
 
 El ERP SaaS tiene **backend completo** para los módulos de **Compras (facturas + órdenes de compra + retención en la fuente emitida + notas proveedor crédito/débito), Gastos, Inventario,
 Transferencias entre Bodegas, Ajustes de Inventario**, **Ventas con facturación electrónica SRI Ecuador (simulada)** y **notas de crédito/débito** asociadas a facturas autorizadas, más **registro de retenciones recibidas** desde XML, **configuración contable por empresa** (mapeo de cuentas para asientos) y **Caja / bancos** (caja chica, cuentas bancarias, extractos, conciliación).
-El frontend de Transferencias, Ajustes y **Órdenes de Compra** está implementado; hay **pantallas parciales** de contabilidad (config de cuentas por empresa, árbol de cuentas) e i18n para nuevas rutas.
+El frontend de Transferencias, Ajustes, **Órdenes de Compra** y **Bodegas** está implementado; hay **pantallas parciales** de contabilidad (config de cuentas por empresa, árbol de cuentas) e i18n para nuevas rutas.
+**Menu Builder completo** con operaciones de árbol, historial, validación de integridad plan-menú y preview en tiempo real. **Integración completa de planes SaaS** con sidebar layout y composer inline.
 Hay **cobertura automática activa** (cuatro proyectos de test; ver sección *Tests*) y la API corre en local con la configuración de desarrollo (HTTP 5003 / HTTPS 5001).
 
 **Lo que falta para el MVP comercial:**
@@ -101,6 +102,10 @@ dotnet test src/ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj #   3 t
 |-----|---------------|
 | Gestión de tenants, planes, features | `TenantsController`, `SaasPlansAdminController` |
 | Menú dinámico por tenant (BD) | `ERP.Application/Modules/Navigation/` |
+| **Menu Builder completo** (árbol, operaciones, historial) | `frontend/src/components/menu-builder/` |
+| **Integración planes SaaS con sidebar layout** | `SaasPlan.MenuSidebarLayout`, `AdminNavigationMenuService` |
+| **Validación integridad plan-menú** | `crmPlanIntegrity.ts`, `menuPreviewService.ts` |
+| **Composer inline de planes y menú** | `SuperAdminMenuBuilderSection.tsx`, `SuperAdminMenuPlansHubPage.tsx` |
 | Perfiles de acceso + permisos granulares | `ERP.Application/Modules/Access/` |
 | Actividad de usuario (auditoría) | `ERP.Domain/Modules/Audit/` |
 | Config jerárquica (global → módulo → feature) | `ERP.Domain/Modules/Configuration/` |
@@ -350,7 +355,7 @@ CI ejecuta el conjunto vía `dotnet test backend/src/ERP.slnx` (ver ADR 0003 y `
 
 ## Migraciones EF Core
 
-Desde el **11/05/2026** se mantiene una **baseline única** en `backend/src/ERP.Infrastructure/Migrations/` (`InitialCreate`) generada desde el modelo actual.  
+Desde el **13/05/2026** se mantiene una **baseline única** en `backend/src/ERP.Infrastructure/Migrations/` (`InitialCreate`) más la migración `AddSaasPlanMenuSidebarLayout` (20260513172014) para configuración de sidebar layout en planes SaaS.  
 Si necesitas reset completo local, usa el flujo de esquema limpio + `dotnet ef database update` (sin re-aplicar cadena histórica de migraciones viejas).
 
 ```bash
@@ -407,6 +412,7 @@ else
 - **Transferencias** — `frontend/src/modules/inventario/transferencias/` (listado, crear, detalle con Confirmar/Cancelar, stock en tiempo real)
 - **Ajustes de Inventario** — `frontend/src/modules/inventario/ajustes/` (listado, crear con selector de motivo predefinido y stock disponible, detalle con Ejecutar/Cancelar)
 - **Órdenes de Compra** — `frontend/src/modules/compras/ordenes/` (listado, crear con líneas dinámicas, detalle con Enviar/Aprobar/Cancelar/Vincular factura)
+- **Bodegas** — `frontend/src/pages/BodegasPage.tsx` (listado, gestión de almacenes con `bodegaService.ts`)
 
 #### Pendiente — Ventas
 ```
@@ -457,7 +463,27 @@ Implementado en dominio, aplicación, infraestructura, API y migración `AddNota
 
 ---
 
-## Permisos por módulo
+## ✅ Completado recientemente (13/05/2026)
+
+### Menu Builder y SaaS Integration
+| Funcionalidad | Estado | Archivos clave |
+|--------------|--------|---------------|
+| **Menu Builder completo** con operaciones de árbol, historial y undo/redo | ✅ | `MenuBuilder.tsx`, `TreeNode.tsx`, `withHistory.ts` |
+| **Validación de integridad plan-menú** (CRM) | ✅ | `crmPlanIntegrity.ts`, `crmPlanIntegrity.test.ts` |
+| **Preview de menú en tiempo real** | ✅ | `menuPreviewService.ts`, `menuService.ts` |
+| **Configuración sidebar layout en planes SaaS** | ✅ | `SaasPlan.MenuSidebarLayout`, migración `AddSaasPlanMenuSidebarLayout` |
+| **Composer inline de planes y menú** | ✅ | `SuperAdminMenuBuilderSection.tsx`, `SuperAdminMenuPlansHubPage.tsx` |
+| **Bootstrap de planes SaaS** | ✅ | `SaasPlansBootstrap.cs` |
+| **Componente ZH Prompt Modal** | ✅ | `ZHPromptModal.tsx` |
+
+### Controladores y API
+| Funcionalidad | Estado | Archivos clave |
+|--------------|--------|---------------|
+| **Refactor completo de controladores** con mejor manejo de errores | ✅ | Todos los controladores API (47 archivos) |
+| **Servicio de módulos discovery** | ✅ | `ModuloDiscoveryService.cs` |
+| **Página Bodegas con servicio dedicado** | ✅ | `BodegasPage.tsx`, `bodegaService.ts` |
+
+### Prioridad 4 — Mejoras técnicas menores
 
 ### Transferencias (migración `AddTransferenciasInventario`)
 
