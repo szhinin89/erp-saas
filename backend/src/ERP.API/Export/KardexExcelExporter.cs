@@ -1,5 +1,5 @@
 using ClosedXML.Excel;
-using ERP.Application.Inventario.DTOs;
+using ERP.Application.Inventory.DTOs;
 
 namespace ERP.API.Export;
 

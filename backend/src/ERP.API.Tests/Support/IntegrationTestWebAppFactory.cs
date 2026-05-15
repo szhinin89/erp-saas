@@ -35,6 +35,8 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
         builder.UseSetting("Jwt:Issuer", "ZHTechnologies");
         builder.UseSetting("Jwt:Audience", "ERPUsers");
         builder.UseSetting("Jwt:ExpirationMinutes", "60");
+        builder.UseSetting("HealthChecks:EnableRedis", "false");
+        builder.UseSetting("HealthChecks:SriProbeUrl", "");
 
         builder.ConfigureAppConfiguration((_, config) =>
         {
@@ -42,6 +44,9 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
             {
                 ["ConnectionStrings:DefaultConnection"] = "Host=unused",
                 ["ConnectionStrings:Redis"] = "",
+                ["Redis:ConnectionString"] = "",
+                ["HealthChecks:EnableRedis"] = "false",
+                ["HealthChecks:SriProbeUrl"] = "",
                 ["Jwt:SecretKey"]                      = IntegrationTestConstants.JwtSecretKey,
                 ["Jwt:Issuer"]                         = "ZHTechnologies",
                 ["Jwt:Audience"]                       = "ERPUsers",
@@ -55,20 +60,20 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
             // Quitar el registro Npgsql de AddInfrastructure y sustituir por InMemory sin mezclar proveedores internos.
             foreach (var d in services.Where(x =>
                          x.ServiceType == typeof(DbContextOptions<ErpDbContext>)
-                         || x.ServiceType == typeof(ErpDbContext)).ToList())
+                         || x.ServiceType == typeof(ErpDbContext)
+                         || (x.ServiceType.IsGenericType
+                             && x.ServiceType.GetGenericTypeDefinition().Name == "IDbContextOptionsConfiguration`1"
+                             && x.ServiceType.GenericTypeArguments[0] == typeof(ErpDbContext)))
+                     .ToList())
+            {
                 services.Remove(d);
+            }
 
             var dbName = "erp-api-integration-" + Guid.NewGuid().ToString("N");
-            services.AddScoped(sp =>
+            services.AddDbContext<ErpDbContext>((sp, opts) =>
             {
-                var opts = new DbContextOptionsBuilder<ErpDbContext>()
-                    .UseInMemoryDatabase(dbName)
-                    .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning))
-                    .Options;
-                return new ErpDbContext(
-                    opts,
-                    sp.GetRequiredService<ICurrentTenant>(),
-                    sp.GetRequiredService<IPublisher>());
+                opts.UseInMemoryDatabase(dbName)
+                    .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning));
             });
 
             foreach (var d in services.Where(x => x.ServiceType == typeof(ICurrentTenant)).ToList())

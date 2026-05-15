@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using ERP.Domain.Modules.Compras.Entities;
-using ERP.Domain.Modules.Compras.Interfaces;
+using ERP.Domain.Modules.Purchasing.Entities;
+using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 

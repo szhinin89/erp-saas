@@ -1,6 +1,6 @@
 using ERP.Application.Common;
-using ERP.Application.Inventario.DTOs;
-using ERP.Application.Inventario.UseCases.GetKardex;
+using ERP.Application.Inventory.DTOs;
+using ERP.Application.Inventory.UseCases.GetKardex;
 
 namespace ERP.Application.Common.Interfaces;
 

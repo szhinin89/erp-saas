@@ -3,12 +3,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Inventario.DTOs;
-using ERP.Application.Inventario.UseCases.CancelarTransferencia;
-using ERP.Application.Inventario.UseCases.ConfirmarTransferencia;
-using ERP.Application.Inventario.UseCases.CrearTransferencia;
-using ERP.Application.Inventario.UseCases.GetTransferenciaById;
-using ERP.Application.Inventario.UseCases.GetTransferenciasList;
+using ERP.Application.Inventory.DTOs;
+using ERP.Application.Inventory.UseCases.CancelarTransferencia;
+using ERP.Application.Inventory.UseCases.ConfirmarTransferencia;
+using ERP.Application.Inventory.UseCases.CrearTransferencia;
+using ERP.Application.Inventory.UseCases.GetTransferenciaById;
+using ERP.Application.Inventory.UseCases.GetTransferenciasList;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

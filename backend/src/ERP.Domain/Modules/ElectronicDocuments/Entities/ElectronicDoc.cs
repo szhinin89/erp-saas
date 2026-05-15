@@ -6,7 +6,7 @@ namespace ERP.Domain.Modules.ElectronicDocuments.Entities;
 /// <summary>
 /// Cabecera común de TODOS los comprobantes que emite la empresa.
 /// Extensiones 1:1: SalesInvoice, CreditNote, DebitNote, DeliveryGuide,
-/// WithholdingCert, PurchaseSettlement.
+/// WithholdingCertificate, PurchaseSettlement.
 /// Estado: draft → validated → authorized | rejected | error | voided
 /// </summary>
 public class ElectronicDoc
@@ -65,7 +65,7 @@ public class ElectronicDoc
     public CreditNote?        CreditNote        { get; set; }
     public DebitNote?         DebitNote         { get; set; }
     public DeliveryGuide?     DeliveryGuide     { get; set; }
-    public WithholdingCert?   WithholdingCert   { get; set; }
+    public WithholdingCertificate? WithholdingCertificate { get; set; }
     public PurchaseSettlement? PurchaseSettlement { get; set; }
 
     // Líneas

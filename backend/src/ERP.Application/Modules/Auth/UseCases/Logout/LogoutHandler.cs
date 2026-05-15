@@ -31,4 +31,8 @@ public sealed class LogoutHandler : IRequestHandler<LogoutCommand, Result<string
         await _refreshTokenService.RevokeAsync(command.RawRefreshToken, "Logout", ct);
         return Result<string>.Success("Sesión cerrada correctamente.");
     }
+
+    // Backward-compatible helper used by integration tests.
+    public Task<Result<string>> HandleAsync(string rawRefreshToken, bool allDevices, CancellationToken ct = default)
+        => Handle(new LogoutCommand(rawRefreshToken, allDevices), ct);
 }

@@ -2,6 +2,7 @@ using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using ERP.API.Hangfire;
+using ERP.API.Health;
 using ERP.API.Extensions;
 using ERP.API.Middleware;
 using ERP.API.Services;
@@ -93,9 +94,12 @@ builder.Services.AddScoped<ModuloDiscoveryService>();
 // Health: live = proceso arriba; ready = BD, Redis (si hay), URL externa opcional (SRI)
 var healthChecks = builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live"])
-    .AddDbContextCheck<ErpDbContext>("database", tags: ["ready"]);
+    .AddCheck<ErpDbContextReadyHealthCheck>("database", tags: ["ready"]);
 
-if (!string.IsNullOrWhiteSpace(redisConnection))
+var enableRedisHealthCheck = builder.Configuration.GetValue("HealthChecks:EnableRedis", true);
+if (!builder.Environment.IsEnvironment("Testing")
+    && enableRedisHealthCheck
+    && !string.IsNullOrWhiteSpace(redisConnection))
     healthChecks.AddRedis(redisConnection, name: "redis", tags: ["ready"]);
 
 var sriProbeUrl = builder.Configuration["HealthChecks:SriProbeUrl"];
@@ -239,7 +243,7 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
 });
 
-if (!app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
     app.UseHttpsRedirection();
 
 app.UseAuthentication();

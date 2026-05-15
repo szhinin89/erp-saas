@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Modules.Compras.DTOs;
-using ERP.Application.Modules.Compras.UseCases.NotasProveedor;
+using ERP.Application.Modules.Purchasing.DTOs;
+using ERP.Application.Modules.Purchasing.UseCases.NotasProveedor;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

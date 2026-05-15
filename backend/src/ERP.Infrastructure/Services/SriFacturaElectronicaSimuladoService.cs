@@ -3,7 +3,7 @@ using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Configuration.Entities;
-using ERP.Domain.Modules.Ventas.Entities;
+using ERP.Domain.Modules.Sales.Entities;
 
 namespace ERP.Infrastructure.Services;
 

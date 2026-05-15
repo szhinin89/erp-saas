@@ -1,7 +1,7 @@
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
-using ERP.Application.Inventario.DTOs;
+using ERP.Application.Inventory.DTOs;
 
 namespace ERP.API.Export;
 

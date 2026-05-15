@@ -1,6 +1,6 @@
 using FluentAssertions;
 using ERP.API.Tests.Support;
-using ERP.Domain.Modules.Ventas.Entities;
+using ERP.Domain.Modules.Sales.Entities;
 
 namespace ERP.API.Tests.Unit;
 

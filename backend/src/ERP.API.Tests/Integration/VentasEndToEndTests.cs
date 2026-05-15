@@ -2,12 +2,12 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
-using ERP.Application.Ventas.UseCases.AnularFactura;
-using ERP.Application.Ventas.UseCases.CrearVenta;
-using ERP.Application.Ventas.UseCases.EmitirFacturaElectronica;
-using ERP.Application.Ventas.UseCases.GetVentaById;
-using ERP.Application.Ventas.UseCases.ValidarVenta;
-using ERP.Domain.Modules.Inventario.Enums;
+using ERP.Application.Sales.UseCases.AnularFactura;
+using ERP.Application.Sales.UseCases.CrearVenta;
+using ERP.Application.Sales.UseCases.EmitirFacturaElectronica;
+using ERP.Application.Sales.UseCases.GetVentaById;
+using ERP.Application.Sales.UseCases.ValidarVenta;
+using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;

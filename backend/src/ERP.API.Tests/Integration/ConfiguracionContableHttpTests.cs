@@ -5,9 +5,9 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Contracts;
 using ERP.API.Tests.Support;
-using ERP.Application.Modules.Contabilidad.DTOs;
-using ERP.Domain.Modules.Contabilidad.Entities;
-using ERP.Domain.Modules.Contabilidad.Enums;
+using ERP.Application.Modules.Accounting.DTOs;
+using ERP.Domain.Modules.Accounting.Entities;
+using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;

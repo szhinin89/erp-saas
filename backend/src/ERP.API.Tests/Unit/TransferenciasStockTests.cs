@@ -2,10 +2,10 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
-using ERP.Application.Inventario.UseCases.CrearTransferencia;
-using ERP.Domain.Modules.Inventario.Entities;
-using ERP.Domain.Modules.Inventario.Entities;
-using ERP.Domain.Modules.Inventario.Enums;
+using ERP.Application.Inventory.UseCases.CrearTransferencia;
+using ERP.Domain.Modules.Inventory.Entities;
+using ERP.Domain.Modules.Inventory.Entities;
+using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Unit;

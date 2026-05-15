@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using ERP.Domain.Modules.Caja.Entities;
-using ERP.Domain.Modules.Caja.Interfaces;
+using ERP.Domain.Modules.Cash.Entities;
+using ERP.Domain.Modules.Cash.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 

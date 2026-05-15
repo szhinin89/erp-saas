@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RazorLight;
 using ERP.Application.Common.Interfaces;
-using ERP.Application.Ventas.Models;
+using ERP.Application.Sales.Models;
 using ERP.Domain.Configuration.Entities;
 using ERP.Infrastructure.Persistence;
 
@@ -37,7 +37,7 @@ public sealed class TirillaFacturaService : ITirillaFacturaService
 
     public async Task<string> GenerarHtmlFacturaAsync(Guid ventaId, CancellationToken ct = default)
     {
-        var venta = await _dbContext.Set<ERP.Domain.Modules.Ventas.Entities.VentasFactura>()
+        var venta = await _dbContext.Set<ERP.Domain.Modules.Sales.Entities.VentasFactura>()
             .Include(v => v.Cliente)
             .Include(v => v.Detalles)
             .FirstOrDefaultAsync(v => v.Id == ventaId && v.Estado == "Autorizado", ct);

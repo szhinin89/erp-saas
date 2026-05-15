@@ -1,5 +1,5 @@
 using FluentAssertions;
-using ERP.Application.Modules.Compras.Services;
+using ERP.Application.Modules.Purchasing.Services;
 
 namespace ERP.API.Tests.Unit;
 

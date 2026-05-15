@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Modules.Inventario.DTOs;
-using ERP.Application.Modules.Inventario.UseCases.GetStockActualPorBodega;
+using ERP.Application.Modules.Inventory.DTOs;
+using ERP.Application.Modules.Inventory.UseCases.GetStockActualPorBodega;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

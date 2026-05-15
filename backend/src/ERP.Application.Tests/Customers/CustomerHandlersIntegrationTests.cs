@@ -1,11 +1,11 @@
 using FluentAssertions;
 using ERP.Application.Common;
-using ERP.Application.Modules.Ventas.UseCases.CrearCliente;
-using ERP.Application.Modules.Ventas.UseCases.ListarClientes;
+using ERP.Application.Modules.Sales.UseCases.CrearCliente;
+using ERP.Application.Modules.Sales.UseCases.ListarClientes;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Modules.Ventas.Entities;
-using ERP.Domain.Modules.Ventas.Interfaces;
+using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Tests.Customers;
 

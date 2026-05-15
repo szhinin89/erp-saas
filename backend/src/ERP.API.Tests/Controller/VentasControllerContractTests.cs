@@ -6,11 +6,11 @@ using ERP.API.Contracts;
 using ERP.API.Tests.Support;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
-using ERP.Application.Ventas.DTOs;
-using ERP.Application.Ventas.UseCases.AnularFactura;
-using ERP.Application.Ventas.UseCases.CrearVenta;
-using ERP.Application.Ventas.UseCases.EmitirFacturaElectronica;
-using ERP.Application.Ventas.UseCases.ValidarVenta;
+using ERP.Application.Sales.DTOs;
+using ERP.Application.Sales.UseCases.AnularFactura;
+using ERP.Application.Sales.UseCases.CrearVenta;
+using ERP.Application.Sales.UseCases.EmitirFacturaElectronica;
+using ERP.Application.Sales.UseCases.ValidarVenta;
 
 namespace ERP.API.Tests.Controller;
 

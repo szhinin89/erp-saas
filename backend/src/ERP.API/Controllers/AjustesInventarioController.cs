@@ -3,12 +3,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Inventario.DTOs;
-using ERP.Application.Inventario.UseCases.CancelarAjuste;
-using ERP.Application.Inventario.UseCases.CrearAjuste;
-using ERP.Application.Inventario.UseCases.EjecutarAjuste;
-using ERP.Application.Inventario.UseCases.GetAjusteById;
-using ERP.Application.Inventario.UseCases.GetAjustesList;
+using ERP.Application.Inventory.DTOs;
+using ERP.Application.Inventory.UseCases.CancelarAjuste;
+using ERP.Application.Inventory.UseCases.CrearAjuste;
+using ERP.Application.Inventory.UseCases.EjecutarAjuste;
+using ERP.Application.Inventory.UseCases.GetAjusteById;
+using ERP.Application.Inventory.UseCases.GetAjustesList;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using ERP.Domain.Modules.Contabilidad.Entities;
+using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Products.Entities;
 
 namespace ERP.Infrastructure.Persistence.Configurations;

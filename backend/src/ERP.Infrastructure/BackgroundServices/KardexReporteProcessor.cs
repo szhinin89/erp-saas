@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common.Interfaces;
-using ERP.Application.Inventario.UseCases.GetKardex;
+using ERP.Application.Inventory.UseCases.GetKardex;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.Infrastructure.BackgroundServices;

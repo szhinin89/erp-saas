@@ -1,0 +1,126 @@
+using ERP.Application.Common;
+using ERP.Application.Modules.Cash.DTOs;
+using ERP.Application.Common;
+using ERP.Domain.Common;
+using ERP.Domain.Modules.Cash.Interfaces;
+using ERP.Domain.Modules.Accounting.Interfaces;
+
+namespace ERP.Application.Modules.Cash.Services;
+
+public sealed class ConciliacionService : IConciliacionService
+{
+    private const decimal ToleranciaMonto = 0.02m;
+    private static readonly TimeSpan ToleranciaFecha = TimeSpan.FromDays(3);
+
+    private readonly ICajaRepository _caja;
+    private readonly IAccountingRepository _accounting;
+    private readonly ICurrentUser _user;
+
+    public ConciliacionService(
+        ICajaRepository caja,
+        IAccountingRepository accounting,
+        ICurrentUser user)
+    {
+        _caja        = caja;
+        _accounting = accounting;
+        _user        = user;
+    }
+
+    public async Task<Result<IReadOnlyList<SugerenciaConciliacionDto>>> SugerirConciliacionAsync(
+        Guid extractoId,
+        CancellationToken ct)
+    {
+        var extracto = await _caja.GetExtractoWithMovimientosAsync(extractoId, ct);
+        if (extracto is null)
+            return Result<IReadOnlyList<SugerenciaConciliacionDto>>.Failure("Extracto no encontrado.");
+
+        var cuenta = await _caja.GetCuentaBancariaByIdAsync(extracto.CuentaBancariaId, ct);
+        if (cuenta?.CuentaContableId is not { } glId)
+        {
+            return Result<IReadOnlyList<SugerenciaConciliacionDto>>.Failure(
+                "La cuenta bancaria no tiene cuenta contable asociada; no se pueden sugerir coincidencias.");
+        }
+
+        var desde = extracto.PeriodoDesde.AddDays(-5);
+        var hasta = extracto.PeriodoHasta.AddDays(5);
+
+        var asientos = await _accounting.GetPostedJournalEntriesWithAccountAsync(
+            extracto.TenantId,
+            glId,
+            desde,
+            hasta,
+            ct);
+
+        var sugerencias = new List<SugerenciaConciliacionDto>();
+
+        foreach (var mov in extracto.Movimientos.Where(m => m.Estado == "Pendiente"))
+        {
+            Guid? mejor = null;
+            string? motivo = null;
+            var mejorDiff = decimal.MaxValue;
+
+            foreach (var je in asientos)
+            {
+                var linea = je.Lines.FirstOrDefault(l => l.AccountId == glId);
+                if (linea is null)
+                    continue;
+
+                var montoLinea = linea.Debit.Amount > 0 ? linea.Debit.Amount : linea.Credit.Amount;
+                var diff       = Math.Abs(montoLinea - mov.Monto);
+                if (diff > ToleranciaMonto)
+                    continue;
+
+                var okTipo = CoincideTipoMovimiento(mov.Tipo, linea.Debit.Amount, linea.Credit.Amount);
+                if (!okTipo)
+                    continue;
+
+                if (Math.Abs((je.Date - mov.Fecha).Ticks) > ToleranciaFecha.Ticks)
+                    continue;
+
+                if (diff < mejorDiff)
+                {
+                    mejorDiff = diff;
+                    mejor     = je.Id;
+                    motivo    = $"Monto y fecha cercanos al asiento {je.Reference}.";
+                }
+            }
+
+            sugerencias.Add(new SugerenciaConciliacionDto(mov.Id, mejor, motivo));
+        }
+
+        return Result<IReadOnlyList<SugerenciaConciliacionDto>>.Success(sugerencias);
+    }
+
+    private static bool CoincideTipoMovimiento(string tipoMov, decimal debit, decimal credit)
+    {
+        var t = tipoMov.Trim();
+        if (t.Equals("Debito", StringComparison.OrdinalIgnoreCase))
+            return debit > 0;
+        if (t.Equals("Credito", StringComparison.OrdinalIgnoreCase))
+            return credit > 0;
+        return false;
+    }
+
+    public async Task<Result<bool>> ConciliarMovimientoAsync(
+        Guid movimientoId,
+        Guid asientoContableId,
+        CancellationToken ct)
+    {
+        var extracto = await _caja.GetExtractoWithMovimientosForMovimientoAsync(movimientoId, ct);
+        if (extracto is null)
+            return Result<bool>.Failure("Movimiento o extracto no encontrado.");
+
+        var m = extracto.Movimientos.FirstOrDefault(x => x.Id == movimientoId);
+        if (m is null)
+            return Result<bool>.Failure("Movimiento no encontrado en el extracto.");
+
+        var asiento = await _accounting.GetJournalEntryByIdAsync(asientoContableId, extracto.TenantId, ct);
+        if (asiento is null || asiento.Status != DocumentStatus.Posted)
+            return Result<bool>.Failure("Asiento contable no encontrado o no está contabilizado.");
+
+        m.Conciliar(asientoContableId);
+        extracto.MarcarConciliadoSiCompleto(_user.UserId);
+        await _accounting.SaveChangesAsync(ct);
+        return Result<bool>.Success(true);
+    }
+}

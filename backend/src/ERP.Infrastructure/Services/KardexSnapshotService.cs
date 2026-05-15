@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common.Interfaces;
-using ERP.Application.Inventario;
-using ERP.Domain.Modules.Inventario.Entities;
-using ERP.Domain.Modules.Inventario.Interfaces;
+using ERP.Application.Inventory;
+using ERP.Domain.Modules.Inventory.Entities;
+using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Infrastructure.Services;
 

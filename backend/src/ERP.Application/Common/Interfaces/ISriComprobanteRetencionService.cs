@@ -1,5 +1,5 @@
 using ERP.Domain.Configuration.Entities;
-using ERP.Domain.Modules.Compras.Entities;
+using ERP.Domain.Modules.Purchasing.Entities;
 
 namespace ERP.Application.Common.Interfaces;
 

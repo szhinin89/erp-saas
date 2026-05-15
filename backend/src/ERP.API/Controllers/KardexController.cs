@@ -9,11 +9,11 @@ using ERP.API.Extensions;
 using ERP.Application.Common;
 using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
-using ERP.Application.Inventario.DTOs;
-using ERP.Application.Inventario.UseCases.GetKardex;
-using ERP.Application.Inventario.UseCases.RecalcularSnapshots;
-using ERP.Domain.Modules.Inventario.Entities;
-using ERP.Domain.Modules.Inventario.Interfaces;
+using ERP.Application.Inventory.DTOs;
+using ERP.Application.Inventory.UseCases.GetKardex;
+using ERP.Application.Inventory.UseCases.RecalcularSnapshots;
+using ERP.Domain.Modules.Inventory.Entities;
+using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Infrastructure.BackgroundServices;
 using ERP.API.Attributes;
 

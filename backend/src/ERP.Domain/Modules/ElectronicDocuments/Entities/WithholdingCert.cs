@@ -5,7 +5,7 @@ namespace ERP.Domain.Modules.ElectronicDocuments.Entities;
 /// EMITIDOS por la empresa a sus proveedores (doc_type 07).
 /// Los campos supplier_* son snapshot del proveedor en el momento de emisión.
 /// </summary>
-public class WithholdingCert
+public class WithholdingCertificate
 {
     public Guid    Id            { get; set; }
     public Guid    CompanyId     { get; set; }
@@ -17,4 +17,12 @@ public class WithholdingCert
 
     public ElectronicDoc                  ElectronicDoc { get; set; } = null!;
     public ICollection<WithholdingDetail> Details       { get; set; } = [];
+}
+
+/// <summary>
+/// Alias legado para compatibilidad temporal. Use <see cref="WithholdingCertificate"/>.
+/// </summary>
+[Obsolete("Use WithholdingCertificate instead.")]
+public class WithholdingCert : WithholdingCertificate
+{
 }

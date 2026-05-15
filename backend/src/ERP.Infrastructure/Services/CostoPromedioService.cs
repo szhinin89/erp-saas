@@ -1,5 +1,5 @@
 using ERP.Application.Common.Interfaces;
-using ERP.Domain.Modules.Inventario.Interfaces;
+using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Infrastructure.Services;
 

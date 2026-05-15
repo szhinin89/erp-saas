@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.Purchases;
 
-public class PurchInvDetailConfiguration : IEntityTypeConfiguration<PurchInvDetail>
+public class PurchInvDetailConfiguration : IEntityTypeConfiguration<PurchaseInvoiceDetail>
 {
-    public void Configure(EntityTypeBuilder<PurchInvDetail> builder)
+    public void Configure(EntityTypeBuilder<PurchaseInvoiceDetail> builder)
     {
         builder.ToTable("purch_inv_detail");
         builder.HasKey(x => x.Id);

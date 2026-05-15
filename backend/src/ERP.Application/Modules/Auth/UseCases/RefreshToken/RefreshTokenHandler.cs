@@ -48,6 +48,10 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
         };
     }
 
+    // Backward-compatible helper used by integration tests.
+    public Task<Result<AuthResponseDto>> HandleAsync(string rawRefreshToken, CancellationToken ct = default)
+        => Handle(new RefreshTokenCommand(rawRefreshToken), ct);
+
     private async Task<Result<AuthResponseDto>> HandleLegacyAsync(
         RefreshTokenValidationResult v, CancellationToken ct)
     {

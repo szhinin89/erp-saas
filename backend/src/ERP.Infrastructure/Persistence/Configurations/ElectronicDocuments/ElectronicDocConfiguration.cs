@@ -66,8 +66,8 @@ public class ElectronicDocConfiguration : IEntityTypeConfiguration<ElectronicDoc
             .HasForeignKey<DebitNote>(x => x.Id).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(x => x.DeliveryGuide).WithOne(x => x.ElectronicDoc)
             .HasForeignKey<DeliveryGuide>(x => x.Id).OnDelete(DeleteBehavior.Cascade);
-        builder.HasOne(x => x.WithholdingCert).WithOne(x => x.ElectronicDoc)
-            .HasForeignKey<WithholdingCert>(x => x.Id).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.WithholdingCertificate).WithOne(x => x.ElectronicDoc)
+            .HasForeignKey<WithholdingCertificate>(x => x.Id).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne(x => x.PurchaseSettlement).WithOne(x => x.ElectronicDoc)
             .HasForeignKey<PurchaseSettlement>(x => x.Id).OnDelete(DeleteBehavior.Cascade);
     }

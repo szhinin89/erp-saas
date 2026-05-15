@@ -6,9 +6,9 @@ using ERP.API.Contracts;
 using ERP.Application.Common;
 using ERP.Application.Modules.Branches.DTOs;
 using ERP.Application.Modules.Branches.UseCases.CreateBranch;
-using ERP.Application.Modules.Ventas.DTOs;
-using ERP.Application.Modules.Ventas.UseCases.CrearCliente;
-using ERP.Application.Modules.Ventas.UseCases.ObtenerCliente;
+using ERP.Application.Modules.Sales.DTOs;
+using ERP.Application.Modules.Sales.UseCases.CrearCliente;
+using ERP.Application.Modules.Sales.UseCases.ObtenerCliente;
 
 namespace ERP.API.Tests;
 

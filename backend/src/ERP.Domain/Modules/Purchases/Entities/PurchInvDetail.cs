@@ -1,7 +1,7 @@
 namespace ERP.Domain.Modules.Purchases.Entities;
 
 /// <summary>Líneas de la factura de compra recibida.</summary>
-public class PurchInvDetail
+public class PurchaseInvoiceDetail
 {
     public Guid    Id          { get; set; }
     public Guid    InvoiceId   { get; set; }
@@ -19,4 +19,12 @@ public class PurchInvDetail
     public short   SortOrder   { get; set; }
 
     public PurchaseInvoice Invoice { get; set; } = null!;
+}
+
+/// <summary>
+/// Alias legado para compatibilidad temporal. Use <see cref="PurchaseInvoiceDetail"/>.
+/// </summary>
+[Obsolete("Use PurchaseInvoiceDetail instead.")]
+public class PurchInvDetail : PurchaseInvoiceDetail
+{
 }

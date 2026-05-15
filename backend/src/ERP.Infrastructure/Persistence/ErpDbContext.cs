@@ -1,7 +1,7 @@
 using System.Linq;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
-using ERP.Domain.Modules.Contabilidad.Entities;
+using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Common;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Auth.Entities;
@@ -12,18 +12,18 @@ using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Geography.Entities;
 using ERP.Domain.Audit.Entities;
-using ERP.Domain.Modules.Ventas.Entities;
+using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Domain.Modules.Menu.Entities;
 using ERP.Domain.Navigation.Entities;
 using ERP.Domain.Configuration.Entities;
-using ERP.Domain.Modules.Ventas.Entities;
-using ERP.Domain.Modules.Inventario.Entities;
-using ERP.Domain.Modules.Compras.Entities;
-using ERP.Domain.Modules.Compras.Entities;
-using ERP.Domain.Modules.Gastos.Entities;
-using ERP.Domain.Modules.Caja.Entities;
-using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Inventory.Entities;
+using ERP.Domain.Modules.Purchasing.Entities;
+using ERP.Domain.Modules.Purchasing.Entities;
+using ERP.Domain.Modules.Expenses.Entities;
+using ERP.Domain.Modules.Cash.Entities;
+using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
@@ -238,6 +238,7 @@ public class ErpDbContext : DbContext
 
     // ── Gastos ────────────────────────────────────────────────────────────
     public DbSet<GastoFactura> GastoFacturas => Set<GastoFactura>();
+    public DbSet<ExpenseDetail> ExpenseDetails => Set<ExpenseDetail>();
 
     // ── Caja / Bancos ─────────────────────────────────────────────────────
     public DbSet<CuentaBancaria> CuentasBancarias => Set<CuentaBancaria>();
@@ -255,6 +256,7 @@ public class ErpDbContext : DbContext
     public DbSet<Transferencia>        Transferencias         => Set<Transferencia>();
     public DbSet<TransferenciaDetalle> TransferenciaDetalles  => Set<TransferenciaDetalle>();
     public DbSet<AjusteInventario>     AjustesInventario      => Set<AjusteInventario>();
+    public DbSet<StockAdjustmentLine>  StockAdjustmentLines   => Set<StockAdjustmentLine>();
 
     public DbSet<SaasFeatureDefinition> SaasFeatureDefinitions => Set<SaasFeatureDefinition>();
     public DbSet<SaasPlan> SaasPlans => Set<SaasPlan>();
@@ -303,7 +305,7 @@ public class ErpDbContext : DbContext
     public DbSet<CreditNote>          CreditNotes          => Set<CreditNote>();
     public DbSet<DebitNote>           DebitNotes           => Set<DebitNote>();
     public DbSet<DeliveryGuide>       DeliveryGuides       => Set<DeliveryGuide>();
-    public DbSet<WithholdingCert>     WithholdingCerts     => Set<WithholdingCert>();
+    public DbSet<WithholdingCertificate> WithholdingCertificates => Set<WithholdingCertificate>();
     public DbSet<PurchaseSettlement>  PurchaseSettlements  => Set<PurchaseSettlement>();
     public DbSet<InvoiceDetail>       InvoiceDetails       => Set<InvoiceDetail>();
     public DbSet<NoteDetail>          NoteDetails          => Set<NoteDetail>();
@@ -312,7 +314,7 @@ public class ErpDbContext : DbContext
 
     // ── Documentos recibidos (compras / retenciones de clientes) ─────────
     public DbSet<PurchaseInvoice>    PurchaseInvoices     => Set<PurchaseInvoice>();
-    public DbSet<PurchInvDetail>     PurchInvDetails      => Set<PurchInvDetail>();
+    public DbSet<PurchaseInvoiceDetail> PurchaseInvoiceDetails => Set<PurchaseInvoiceDetail>();
     public DbSet<SupplierNote>       SupplierNotes        => Set<SupplierNote>();
     public DbSet<SupplierNoteDetail> SupplierNoteDetails  => Set<SupplierNoteDetail>();
     public DbSet<ReceivedWithholding> ReceivedWithholdings => Set<ReceivedWithholding>();

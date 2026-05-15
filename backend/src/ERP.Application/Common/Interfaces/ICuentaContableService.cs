@@ -1,5 +1,5 @@
 using ERP.Application.Common;
-using ERP.Application.Modules.Contabilidad.DTOs;
+using ERP.Application.Modules.Accounting.DTOs;
 
 namespace ERP.Application.Common.Interfaces;
 

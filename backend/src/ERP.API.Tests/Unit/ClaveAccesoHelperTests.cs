@@ -1,5 +1,5 @@
 using FluentAssertions;
-using ERP.Application.Ventas.Helpers;
+using ERP.Application.Sales.Helpers;
 
 namespace ERP.API.Tests.Unit;
 

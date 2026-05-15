@@ -1,6 +1,6 @@
-using ERP.Domain.Modules.Contabilidad.Entities;
-using ERP.Domain.Modules.Contabilidad.Enums;
-using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.Accounting.Entities;
+using ERP.Domain.Modules.Accounting.Enums;
+using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Common.Validators;
 using ERP.Domain.Products.Entities;

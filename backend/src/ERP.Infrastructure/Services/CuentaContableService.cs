@@ -1,8 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
-using ERP.Application.Modules.Contabilidad.DTOs;
-using ERP.Domain.Modules.Contabilidad.Entities;
-using ERP.Domain.Modules.Contabilidad.Interfaces;
+using ERP.Application.Modules.Accounting.DTOs;
+using ERP.Domain.Modules.Accounting.Entities;
+using ERP.Domain.Modules.Accounting.Interfaces;
 
 namespace ERP.Infrastructure.Services;
 

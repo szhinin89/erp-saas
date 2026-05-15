@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Common;
-using ERP.Domain.Modules.Contabilidad.Entities;
-using ERP.Domain.Modules.Contabilidad.Interfaces;
-using ERP.Domain.Modules.Contabilidad.ValueObjects;
+using ERP.Domain.Modules.Accounting.Entities;
+using ERP.Domain.Modules.Accounting.Interfaces;
+using ERP.Domain.Modules.Accounting.ValueObjects;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 

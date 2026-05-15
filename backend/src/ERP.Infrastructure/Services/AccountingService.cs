@@ -1,9 +1,9 @@
 using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
-using ERP.Application.Modules.Contabilidad.UseCases.CreateJournalEntry;
-using ERP.Domain.Modules.Contabilidad.Enums;
-using ERP.Domain.Modules.Contabilidad.Interfaces;
+using ERP.Application.Modules.Accounting.UseCases.CreateJournalEntry;
+using ERP.Domain.Modules.Accounting.Enums;
+using ERP.Domain.Modules.Accounting.Interfaces;
 
 namespace ERP.Infrastructure.Services;
 

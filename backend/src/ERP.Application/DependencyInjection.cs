@@ -4,8 +4,8 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.Application.Behaviors;
 using ERP.Application.Common.Interfaces;
-using ERP.Application.Modules.Inventario.Services;
-using ERP.Application.Modules.Caja.Services;
+using ERP.Application.Modules.Inventory.Services;
+using ERP.Application.Modules.Cash.Services;
 
 namespace ERP.Application;
 
@@ -32,8 +32,7 @@ public static class DependencyInjection
             .Where(t => t.IsClass
                      && !t.IsAbstract
                      && t.Name.EndsWith("Handler")
-                     && t.Namespace?.Contains("UseCases") == true
-                     && !ImplementsIRequestHandlerMarker(t));
+                     && t.Namespace?.Contains("UseCases") == true);
 
         foreach (var handlerType in handlerTypes)
             services.AddScoped(handlerType);
@@ -41,6 +40,4 @@ public static class DependencyInjection
         return services;
     }
 
-    private static bool ImplementsIRequestHandlerMarker(Type t) =>
-        t.GetInterfaces().Any(static i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>));
 }

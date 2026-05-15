@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations.ElectronicDocuments;
 
-public class WithholdingCertConfiguration : IEntityTypeConfiguration<WithholdingCert>
+public class WithholdingCertConfiguration : IEntityTypeConfiguration<WithholdingCertificate>
 {
-    public void Configure(EntityTypeBuilder<WithholdingCert> builder)
+    public void Configure(EntityTypeBuilder<WithholdingCertificate> builder)
     {
         builder.ToTable("withholding_cert");
         builder.HasKey(x => x.Id);

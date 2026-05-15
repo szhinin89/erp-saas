@@ -1,10 +1,10 @@
 using FluentAssertions;
 using Moq;
 using ERP.Application.Common;
-using ERP.Application.Modules.Ventas.UseCases.CrearCliente;
+using ERP.Application.Modules.Sales.UseCases.CrearCliente;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Modules.Ventas.Interfaces;
+using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Tests;
 
@@ -19,7 +19,7 @@ public sealed class CreateCustomerHandlerTests
         var repo = new Mock<ICustomerRepository>(MockBehavior.Strict);
         repo.Setup(r => r.ExistsIdentificationAsync(tenantId, "RUC", It.IsAny<string>(), null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
-        repo.Setup(r => r.AddAsync(It.IsAny<ERP.Domain.Modules.Ventas.Entities.Customer>(), It.IsAny<CancellationToken>()))
+        repo.Setup(r => r.AddAsync(It.IsAny<ERP.Domain.Modules.Sales.Entities.Customer>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -58,7 +58,7 @@ public sealed class CreateCustomerHandlerTests
         result.Value!.LegalName.Should().Be("Cliente Demo S.A.");
         result.Value.IdentificationType.Should().Be("RUC");
 
-        repo.Verify(r => r.AddAsync(It.IsAny<ERP.Domain.Modules.Ventas.Entities.Customer>(), It.IsAny<CancellationToken>()), Times.Once);
+        repo.Verify(r => r.AddAsync(It.IsAny<ERP.Domain.Modules.Sales.Entities.Customer>(), It.IsAny<CancellationToken>()), Times.Once);
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         activity.Verify(a => a.AddAsync(It.IsAny<UserActivity>(), It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -87,7 +87,7 @@ public sealed class CreateCustomerHandlerTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("identificación");
-        repo.Verify(r => r.AddAsync(It.IsAny<ERP.Domain.Modules.Ventas.Entities.Customer>(), It.IsAny<CancellationToken>()), Times.Never);
+        repo.Verify(r => r.AddAsync(It.IsAny<ERP.Domain.Modules.Sales.Entities.Customer>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

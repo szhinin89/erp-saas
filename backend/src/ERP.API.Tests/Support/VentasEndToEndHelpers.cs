@@ -1,9 +1,9 @@
-using ERP.Domain.Modules.Contabilidad.Entities;
-using ERP.Domain.Modules.Contabilidad.Enums;
+using ERP.Domain.Modules.Accounting.Entities;
+using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Configuration.Entities;
-using ERP.Domain.Modules.Ventas.Entities;
-using ERP.Domain.Modules.Inventario.Entities;
-using ERP.Domain.Modules.Inventario.Enums;
+using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Inventory.Entities;
+using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Support;

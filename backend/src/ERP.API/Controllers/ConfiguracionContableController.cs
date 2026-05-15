@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Modules.Contabilidad.DTOs;
-using ERP.Application.Modules.Contabilidad.UseCases.ConfiguracionContable;
+using ERP.Application.Modules.Accounting.DTOs;
+using ERP.Application.Modules.Accounting.UseCases.ConfiguracionContable;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

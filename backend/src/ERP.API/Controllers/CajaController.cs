@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Modules.Caja.DTOs;
-using ERP.Application.Modules.Caja.UseCases;
-using ERP.Domain.Modules.Caja;
+using ERP.Application.Modules.Cash.DTOs;
+using ERP.Application.Modules.Cash.UseCases;
+using ERP.Domain.Modules.Cash;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

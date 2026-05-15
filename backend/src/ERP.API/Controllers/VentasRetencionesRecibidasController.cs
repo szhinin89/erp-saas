@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Ventas.DTOs;
-using ERP.Application.Ventas.UseCases.RetencionesRecibidas;
+using ERP.Application.Sales.DTOs;
+using ERP.Application.Sales.UseCases.RetencionesRecibidas;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

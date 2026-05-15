@@ -4,9 +4,9 @@ using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
-using ERP.Application.Ventas.DTOs;
+using ERP.Application.Sales.DTOs;
 using ERP.Domain.Configuration.Entities;
-using ERP.Domain.Modules.Ventas.Entities;
+using ERP.Domain.Modules.Sales.Entities;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;
@@ -196,9 +196,9 @@ public sealed class VentasHttpTests
         var sucursalId     = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
 
         var crear = await mediator.Send(
-            new ERP.Application.Ventas.UseCases.CrearVenta.CrearVentaCommand(
+            new ERP.Application.Sales.UseCases.CrearVenta.CrearVentaCommand(
                 clienteId, seed.BodegaId, sucursalId,
-                new List<ERP.Application.Ventas.UseCases.CrearVenta.ItemVentaDto>
+                new List<ERP.Application.Sales.UseCases.CrearVenta.ItemVentaDto>
                     { new(seed.ProductId, 1m, 10m) }),
             CancellationToken.None);
         crear.IsSuccess.Should().BeTrue(crear.Error);

@@ -46,7 +46,7 @@ public class PurchaseInvoice
     public Guid?    CreatedBy       { get; set; }
 
     // Navigation
-    public SriTaxSupport?              TaxSupport    { get; set; }
-    public ICollection<PurchInvDetail> Lines         { get; set; } = [];
-    public ICollection<SupplierNote>   SupplierNotes { get; set; } = [];
+    public SriTaxSupport?                    TaxSupport    { get; set; }
+    public ICollection<PurchaseInvoiceDetail> Lines         { get; set; } = [];
+    public ICollection<SupplierNote>         SupplierNotes { get; set; } = [];
 }

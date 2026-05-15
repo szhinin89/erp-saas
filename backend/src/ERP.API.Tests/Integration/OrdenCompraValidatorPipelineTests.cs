@@ -2,8 +2,8 @@ using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
-using ERP.Application.Modules.Compras.DTOs;
-using ERP.Application.Modules.Compras.UseCases.CrearOrdenCompra;
+using ERP.Application.Modules.Purchasing.DTOs;
+using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
 
 namespace ERP.API.Tests.Integration;
 

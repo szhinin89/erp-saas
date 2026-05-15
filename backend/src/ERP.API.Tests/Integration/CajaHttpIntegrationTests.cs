@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Contracts;
 using ERP.API.Tests.Support;
-using ERP.Application.Modules.Caja.DTOs;
+using ERP.Application.Modules.Cash.DTOs;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;
