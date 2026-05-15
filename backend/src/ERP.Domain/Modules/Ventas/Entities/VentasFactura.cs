@@ -11,7 +11,7 @@ public sealed class VentasFactura : AuditableEntity, ITenantEntity
     public const int EstablecimientoMaxLen = 3;
     public const int PuntoEmisionMaxLen = 3;
     public const int SecuencialMaxLen = 9;
-    public const int ClaveAccesoMaxLen = 48;
+    public const int ClaveAccesoMaxLen = 49;
     public const int EstadoMaxLen = 20;
     public const int XmlPathMaxLen = 500;
     public const int MensajeErrorMaxLen = 1000;

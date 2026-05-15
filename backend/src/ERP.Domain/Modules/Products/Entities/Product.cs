@@ -83,6 +83,15 @@ public class Product : MasterEntity, ITenantEntity
     // ── Aranceles / importación ──────────────────────────────────
     public bool HandlesTariff { get; private set; }
 
+    // ── SRI ───────────────────────────────────────────────────────
+    /// <summary>
+    /// Tipo de servicio SRI para el XML del comprobante electrónico.
+    /// Null / vacío = bien físico.
+    /// Valores SRI: "01"=Servicios, "02"=Arrendamiento, "03"=Honorarios,
+    /// "04"=Comisiones, "05"=Otros.
+    /// </summary>
+    public string? SriServiceCode { get; private set; }
+
     // ── Códigos de barras ─────────────────────────────────────────
     public IReadOnlyList<ProductBarcode> Barcodes => _barcodes.AsReadOnly();
     public IReadOnlyList<ProductSupplierCode> SupplierCodes => _supplierCodes.AsReadOnly();
@@ -137,7 +146,8 @@ public class Product : MasterEntity, ITenantEntity
         bool hasMultipleColors = false,
         bool hasSizes = false,
         bool handlesTariff = false,
-        bool isForSale = true)
+        bool isForSale = true,
+        string? sriServiceCode = null)
     {
         var identity = ProductIdentity.Create(saleCode, shortName, description);
 
@@ -195,6 +205,7 @@ public class Product : MasterEntity, ITenantEntity
             HandlesTariff     = handlesTariff,
             IsFavorite        = false,
             IsForSale         = isForSale,
+            SriServiceCode    = sriServiceCode,
         };
 
         product.SetCreated(createdBy);
@@ -235,7 +246,8 @@ public class Product : MasterEntity, ITenantEntity
         bool hasMultipleColors,
         bool hasSizes,
         bool handlesTariff,
-        Guid updatedBy)
+        Guid updatedBy,
+        string? sriServiceCode = null)
     {
         var identity = ProductIdentity.Create(SaleCode, shortName, description);
 
@@ -282,6 +294,7 @@ public class Product : MasterEntity, ITenantEntity
         HasMultipleColors    = hasMultipleColors;
         HasSizes             = hasSizes;
         HandlesTariff        = handlesTariff;
+        SriServiceCode       = sriServiceCode;
         SetUpdated(updatedBy);
     }
 

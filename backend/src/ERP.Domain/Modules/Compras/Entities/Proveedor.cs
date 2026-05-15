@@ -26,6 +26,22 @@ public sealed class Proveedor : MasterEntity, ITenantEntity
     public string? Direccion      { get; private set; }
     public string  CondicionPago  { get; private set; } = null!;
 
+    // ── Campos SRI / comerciales ──────────────────────────────────
+    /// <summary>ISO-3 del país. FK → sri_country.code. Ej: "ECU".</summary>
+    public string?  CountryCode    { get; private set; }
+    /// <summary>Sustento tributario por defecto. FK → sri_tax_support.code.</summary>
+    public string?  TaxSupportCode { get; private set; }
+    /// <summary>Días de crédito acordados (0 = contado).</summary>
+    public short    PaymentDays    { get; private set; }
+    /// <summary>Límite de crédito aprobado. Null = sin límite.</summary>
+    public decimal? CreditLimit    { get; private set; }
+
+    /// <summary>
+    /// Código SRI de tipo de identificación. No persiste en BD.
+    /// Requerido para el XML del comprobante de retención emitido.
+    /// </summary>
+    public string SriIdTypeCode => TipoPersona == TipoNatural ? "05" : "04";
+
     private Proveedor() { }
 
     public static Proveedor Create(
@@ -37,22 +53,30 @@ public sealed class Proveedor : MasterEntity, ITenantEntity
         string? telefono,
         string? direccion,
         string condicionPago,
-        Guid   createdBy)
+        Guid   createdBy,
+        string? countryCode    = null,
+        string? taxSupportCode = null,
+        short   paymentDays    = 0,
+        decimal? creditLimit   = null)
     {
         ValidarTipo(tipoPersona);
         ValidarRuc(ruc);
 
         var p = new Proveedor
         {
-            Id           = Guid.NewGuid(),
-            TenantId     = tenantId,
-            TipoPersona  = tipoPersona,
-            RazonSocial  = razonSocial.Trim(),
-            Ruc          = ruc.Trim(),
-            Correo       = Trim(correo),
-            Telefono     = Trim(telefono),
-            Direccion    = Trim(direccion),
-            CondicionPago = condicionPago,
+            Id             = Guid.NewGuid(),
+            TenantId       = tenantId,
+            TipoPersona    = tipoPersona,
+            RazonSocial    = razonSocial.Trim(),
+            Ruc            = ruc.Trim(),
+            Correo         = Trim(correo),
+            Telefono       = Trim(telefono),
+            Direccion      = Trim(direccion),
+            CondicionPago  = condicionPago,
+            CountryCode    = Trim(countryCode),
+            TaxSupportCode = Trim(taxSupportCode),
+            PaymentDays    = paymentDays,
+            CreditLimit    = creditLimit,
         };
         p.SetCreated(createdBy);
         return p;
@@ -66,18 +90,26 @@ public sealed class Proveedor : MasterEntity, ITenantEntity
         string? telefono,
         string? direccion,
         string condicionPago,
-        Guid   updatedBy)
+        Guid   updatedBy,
+        string? countryCode    = null,
+        string? taxSupportCode = null,
+        short   paymentDays    = 0,
+        decimal? creditLimit   = null)
     {
         ValidarTipo(tipoPersona);
         ValidarRuc(ruc);
 
-        TipoPersona   = tipoPersona;
-        RazonSocial   = razonSocial.Trim();
-        Ruc           = ruc.Trim();
-        Correo        = Trim(correo);
-        Telefono      = Trim(telefono);
-        Direccion     = Trim(direccion);
-        CondicionPago = condicionPago;
+        TipoPersona    = tipoPersona;
+        RazonSocial    = razonSocial.Trim();
+        Ruc            = ruc.Trim();
+        Correo         = Trim(correo);
+        Telefono       = Trim(telefono);
+        Direccion      = Trim(direccion);
+        CondicionPago  = condicionPago;
+        CountryCode    = Trim(countryCode);
+        TaxSupportCode = Trim(taxSupportCode);
+        PaymentDays    = paymentDays;
+        CreditLimit    = creditLimit;
         SetUpdated(updatedBy);
     }
 

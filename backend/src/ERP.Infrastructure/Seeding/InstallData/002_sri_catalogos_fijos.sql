@@ -7,446 +7,340 @@
 -- Son IGUALES para todos los contribuyentes.
 -- NO deben ser modificadas por el usuario final.
 -- ============================================================
+-- =========================================================
+-- SRI CATALOGS - COMMON (no company dependency)
+-- Basado en Ficha Técnica SRI v2.32 (Octubre 2025)
+-- Ejecutar este script UNA SOLA VEZ en la base de datos.
+-- =========================================================
+-- =========================================================
+-- 1) SRI IMMUTABLE CATALOGS (prefix: sri_)
+-- =========================================================
 
--- ============================================================
--- TABLA: sri_tipo_emision (Tabla 2)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_tipo_emision (
-    codigo      VARCHAR(1)   NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(60)  NOT NULL,
-    activo      BOOLEAN      NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_emission_type (
+    emission_code     VARCHAR(1) PRIMARY KEY,
+    emission_name     VARCHAR(80) NOT NULL
 );
 
-INSERT INTO sri_tipo_emision (codigo, descripcion) VALUES
-    ('1', 'Emisión Normal')
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_tipo_comprobante (Tabla 3)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_tipo_comprobante (
-    codigo      VARCHAR(2)   NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(100) NOT NULL,
-    activo      BOOLEAN      NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_document_type (
+    document_code     VARCHAR(2) PRIMARY KEY,
+    document_name     VARCHAR(120) NOT NULL,
+    xml_tag           VARCHAR(40)
 );
 
-INSERT INTO sri_tipo_comprobante (codigo, descripcion) VALUES
-    ('01', 'FACTURA'),
-    ('03', 'LIQUIDACIÓN DE COMPRA DE BIENES Y PRESTACIÓN DE SERVICIOS'),
-    ('04', 'NOTA DE CRÉDITO'),
-    ('05', 'NOTA DE DÉBITO'),
-    ('06', 'GUÍA DE REMISIÓN'),
-    ('07', 'COMPROBANTE DE RETENCIÓN')
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_tipo_ambiente (Tabla 4)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_tipo_ambiente (
-    codigo      VARCHAR(1)   NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(50)  NOT NULL,
-    activo      BOOLEAN      NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_environment_type (
+    env_code          VARCHAR(1) PRIMARY KEY,
+    env_name          VARCHAR(40) NOT NULL
 );
 
-INSERT INTO sri_tipo_ambiente (codigo, descripcion) VALUES
-    ('1', 'PRUEBAS'),
-    ('2', 'PRODUCCIÓN')
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_tipo_identificacion (Tabla 6)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_tipo_identificacion (
-    codigo      VARCHAR(2)   NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(80)  NOT NULL,
-    activo      BOOLEAN      NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_identification_type (
+    ident_code        VARCHAR(2) PRIMARY KEY,
+    ident_name        VARCHAR(80) NOT NULL
 );
 
-INSERT INTO sri_tipo_identificacion (codigo, descripcion) VALUES
-    ('04', 'RUC'),
-    ('05', 'CÉDULA'),
-    ('06', 'PASAPORTE'),
-    ('07', 'VENTA A CONSUMIDOR FINAL'),
-    ('08', 'IDENTIFICACIÓN DEL EXTERIOR')
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_codigo_impuesto (Tabla 16)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_codigo_impuesto (
-    codigo      VARCHAR(2)   NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(60)  NOT NULL,
-    activo      BOOLEAN      NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_tax_code (
+    tax_code          VARCHAR(2) PRIMARY KEY,
+    tax_name          VARCHAR(60) NOT NULL
 );
 
-INSERT INTO sri_codigo_impuesto (codigo, descripcion) VALUES
-    ('2', 'IVA'),
-    ('3', 'ICE'),
-    ('5', 'IRBPNR')
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_tarifa_iva (Tabla 17)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_tarifa_iva (
-    codigo      VARCHAR(2)     NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(80)    NOT NULL,
-    porcentaje  NUMERIC(5,2)   NOT NULL,
-    activo      BOOLEAN        NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_vat_rate (
+    vat_code          VARCHAR(2) PRIMARY KEY,
+    vat_name          VARCHAR(80) NOT NULL,
+    rate_pct          NUMERIC(7,4)
 );
 
-INSERT INTO sri_tarifa_iva (codigo, descripcion, porcentaje) VALUES
-    ('0',  '0% - Tarifa cero',                          0.00),
-    ('2',  '12% - IVA doce por ciento',                12.00),
-    ('3',  '14% - IVA catorce por ciento',             14.00),
-    ('4',  '15% - IVA quince por ciento',              15.00),
-    ('5',  '5%  - IVA cinco por ciento',                5.00),
-    ('6',  'No objeto de Impuesto',                     0.00),
-    ('7',  'Exento de IVA',                             0.00),
-    ('8',  '8%  - IVA diferenciado (sector turismo)',   8.00),
-    ('10', '13% - IVA trece por ciento',               13.00)
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_tarifa_ice (Tabla 18 - datos actualizados a oct 2025)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_tarifa_ice (
-    codigo              VARCHAR(10)    NOT NULL PRIMARY KEY,
-    descripcion         VARCHAR(200)   NOT NULL,
-    tarifa_ad_valorem   NUMERIC(6,2),
-    tarifa_especifica   NUMERIC(10,4),
-    unidad_especifica   VARCHAR(30),
-    activo              BOOLEAN        NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_ice_rate (
+    ice_code          VARCHAR(4) PRIMARY KEY,
+    ice_name          VARCHAR(180) NOT NULL,
+    ad_val_pct        NUMERIC(7,4),
+    spec_rate         NUMERIC(10,4),
+    rate_type         VARCHAR(20) DEFAULT 'AD_VALOREM',
+    rate_note         VARCHAR(120),
+    valid_from        DATE,
+    valid_to          DATE,
+    is_current        BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-INSERT INTO sri_tarifa_ice (codigo, descripcion, tarifa_ad_valorem, tarifa_especifica, unidad_especifica) VALUES
-    ('3011', 'ICE Cigarrillos Rubios',                                         NULL,  0.16,  'unidad'),
-    ('3021', 'ICE Cigarrillos Negros',                                         NULL,  0.16,  'unidad'),
-    ('3023', 'ICE Tabacos y Productos del Tabaco excl. Cigarrillos y Sucedáneos', 150.00, NULL, NULL),
-    ('3031', 'ICE Bebidas Alcohólicas',                                         75.00, 10.00, 'litro'),
-    ('3033', 'ICE Alcohol',                                                     75.00, 10.00, 'litro'),
-    ('3041', 'ICE Cerveza Industrial',                                          75.00, NULL,  NULL),
-    ('3043', 'ICE Cerveza Artesanal',                                           NULL,  1.50,  'litro'),
-    ('3053', 'ICE Bebidas Gaseosas con Alto Contenido de Azúcar',              NULL,  0.18,  '100g azúcar'),
-    ('3054', 'ICE Bebidas Gaseosas con Bajo Contenido de Azúcar',              10.00, NULL,  NULL),
-    ('3073', 'ICE Vehículos Motorizados PVP hasta USD 20.000',                   5.00, NULL,  NULL),
-    ('3075', 'ICE Vehículos Motorizados PVP USD 30.000–40.000',                 15.00, NULL,  NULL),
-    ('3077', 'ICE Vehículos Motorizados PVP USD 40.000–50.000',                 20.00, NULL,  NULL),
-    ('3078', 'ICE Vehículos Motorizados PVP USD 50.000–60.000',                 25.00, NULL,  NULL),
-    ('3079', 'ICE Vehículos Motorizados PVP USD 60.000–70.000',                 30.00, NULL,  NULL),
-    ('3080', 'ICE Vehículos Motorizados PVP superior a USD 70.000',             35.00, NULL,  NULL),
-    ('3081', 'ICE Aviones, Tricares, Yates, Barcos de Recreo',                  15.00, NULL,  NULL),
-    ('3092', 'ICE Servicios de Televisión Prepagada',                            0.00, NULL,  NULL),
-    ('3093', 'ICE Servicios de Telefonía - Sociedades',                          15.00, NULL,  NULL),
-    ('3101', 'ICE Bebidas Energizantes',                                         10.00, NULL,  NULL),
-    ('3111', 'ICE Bebidas No Alcohólicas con Azúcar',                           NULL,  0.18,  '100g azúcar'),
-    ('3532', 'ICE Importación Alcohol SENAE',                                   75.00, 10.00, 'litro'),
-    ('3533', 'ICE Importación Bebidas Alcohólicas',                             75.00, NULL,  NULL),
-    ('3541', 'ICE Cerveza Gran Escala CAE',                                     75.00, NULL,  NULL),
-    ('3542', 'ICE Cigarrillos Rubios CAE',                                      NULL,  0.16,  'unidad'),
-    ('3543', 'ICE Cigarrillos Negros CAE',                                      NULL,  0.16,  'unidad'),
-    ('3544', 'ICE Tabaco y Sucedáneos excl. Cigarrillos CAE',                  150.00, NULL,  NULL),
-    ('3545', 'ICE Cerveza Artesanal SENAE',                                     75.00, 1.50,  'litro'),
-    ('3552', 'ICE Bebidas Gaseosas Alto Azúcar SENAE',                          NULL,  0.18,  '100g azúcar'),
-    ('3553', 'ICE Bebidas Gaseosas Bajo Azúcar SENAE',                          10.00, NULL,  NULL),
-    ('3581', 'ICE Aeronaves CAE',                                               15.00, NULL,  NULL),
-    ('3601', 'ICE Bebidas Energizantes SENAE',                                   10.00, NULL,  NULL),
-    ('3602', 'ICE Bebidas No Alcohólicas con Azúcar SENAE',                    NULL,  0.18,  '100g azúcar'),
-    ('3610', 'ICE Perfumes y Aguas de Tocador',                                  20.00, NULL,  NULL),
-    ('3620', 'ICE Videojuegos',                                                   0.00, NULL,  NULL),
-    ('3630', 'ICE Municiones, Armas Deportivas y de Fuego',                    300.00, NULL,  NULL),
-    ('3640', 'ICE Focos Incandescentes',                                        100.00, NULL,  NULL),
-    ('3660', 'ICE Acciones, Cuotas, Membresías, Afiliaciones',                  35.00, NULL,  NULL),
-    ('3671', 'ICE Calefones y Sistemas de Calentamiento a Gas',                100.00, NULL,  NULL),
-    ('3680', 'ICE Fundas Plásticas',                                             NULL,  0.08,  'unidad'),
-    ('3681', 'ICE Servicios de Telefonía Móvil Personas Naturales',              0.00, NULL,  NULL),
-    ('3682', 'ICE Líquidos consumibles nicotina / Tabaco calentado',           150.00, NULL,  NULL),
-    ('3683', 'ICE Líquidos consumibles nicotina / Tabaco calentado SENAE',      50.00, NULL,  NULL),
-    ('3684', 'ICE Camionetas y Vehículos de Rescate PVP hasta USD 30.000',       5.00, NULL,  NULL),
-    ('3685', 'ICE Camionetas y Vehículos de Rescate PVP hasta USD 30.000 SENAE', 5.00, NULL,  NULL),
-    ('3686', 'ICE Vehículos excl. camionetas PVP USD 20.000–30.000',            10.00, NULL,  NULL),
-    ('3687', 'ICE Vehículos excl. camionetas PVP USD 20.000–30.000 SENAE',      10.00, NULL,  NULL),
-    ('3688', 'ICE Vehículos Híbridos PVP hasta USD 35.000',                      0.00, NULL,  NULL),
-    ('3689', 'ICE Vehículos Híbridos PVP hasta USD 35.000 SENAE',                0.00, NULL,  NULL),
-    ('3690', 'ICE Vehículos Híbridos PVP USD 35.000–40.000',                     8.00, NULL,  NULL),
-    ('3691', 'ICE Vehículos Híbridos PVP USD 35.000–40.000 SENAE',               8.00, NULL,  NULL),
-    ('3692', 'ICE Vehículos Híbridos PVP USD 40.000–50.000',                    14.00, NULL,  NULL),
-    ('3693', 'ICE Vehículos Híbridos PVP USD 40.000–50.000 SENAE',              14.00, NULL,  NULL),
-    ('3694', 'ICE Vehículos Híbridos PVP USD 50.000–60.000 SENAE',              20.00, NULL,  NULL),
-    ('3695', 'ICE Vehículos Híbridos PVP USD 50.000–60.000',                    20.00, NULL,  NULL),
-    ('3696', 'ICE Vehículos Híbridos PVP USD 60.000–70.000',                    26.00, NULL,  NULL),
-    ('3697', 'ICE Vehículos Híbridos PVP USD 60.000–70.000 SENAE',              26.00, NULL,  NULL),
-    ('3698', 'ICE Vehículos Híbridos PVP superior a USD 70.000',                32.00, NULL,  NULL),
-    ('3699', 'ICE Vehículos Híbridos PVP superior a USD 70.000 SENAE',          32.00, NULL,  NULL),
-    ('3710', 'ICE Perfumes y Aguas de Tocador CAE',                              20.00, NULL,  NULL),
-    ('3720', 'ICE Videojuegos CAE',                                              35.00, NULL,  NULL),
-    ('3730', 'ICE Importación Armas de Fuego y Municiones CAE',                300.00, NULL,  NULL),
-    ('3740', 'ICE Focos Incandescentes CAE',                                    100.00, NULL,  NULL),
-    ('3771', 'ICE Calefones y Sistemas de Calentamiento SENAE',                100.00, NULL,  NULL),
-    ('3871', 'ICE Vehículos Motorizados SENAE PVP hasta USD 20.000',             5.00, NULL,  NULL),
-    ('3873', 'ICE Vehículos Motorizados SENAE PVP USD 30.000–40.000',           15.00, NULL,  NULL),
-    ('3874', 'ICE Vehículos Motorizados SENAE PVP USD 40.000–50.000',           20.00, NULL,  NULL),
-    ('3875', 'ICE Vehículos Motorizados SENAE PVP USD 50.000–60.000',           25.00, NULL,  NULL),
-    ('3876', 'ICE Vehículos Motorizados SENAE PVP USD 60.000–70.000',           30.00, NULL,  NULL),
-    ('3877', 'ICE Vehículos Motorizados SENAE PVP superior a USD 70.000',       35.00, NULL,  NULL),
-    ('3878', 'ICE Aviones, Tricares, Yates, Barcos de Recreo SENAE',            15.00, NULL,  NULL)
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_impuesto_retener (Tabla 19)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_impuesto_retener (
-    codigo      VARCHAR(2)   NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(60)  NOT NULL,
-    activo      BOOLEAN      NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_withholding_tax_type (
+    wh_tax_code       VARCHAR(2) PRIMARY KEY,
+    wh_tax_name       VARCHAR(80) NOT NULL
 );
 
-INSERT INTO sri_impuesto_retener (codigo, descripcion) VALUES
-    ('1', 'RENTA'),
-    ('2', 'IVA'),
-    ('6', 'ISD')
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_porcentaje_retencion_iva (Tabla 20 - IVA)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_porcentaje_retencion_iva (
-    codigo      VARCHAR(5)     NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(80)    NOT NULL,
-    porcentaje  NUMERIC(5,2)   NOT NULL,
-    activo      BOOLEAN        NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_vat_withholding_rate (
+    vat_wh_code       VARCHAR(4) PRIMARY KEY,
+    rate_pct          NUMERIC(7,4) NOT NULL,
+    rate_name         VARCHAR(80) NOT NULL
 );
 
-INSERT INTO sri_porcentaje_retencion_iva (codigo, descripcion, porcentaje) VALUES
-    ('1',  'Retención IVA 30%',                                           30.00),
-    ('2',  'Retención IVA 70%',                                           70.00),
-    ('3',  'Retención IVA 100%',                                         100.00),
-    ('7',  'Retención IVA 0% (Res. NAC-DGERCGC15-00000284)',               0.00),
-    ('8',  'No procede retención de IVA',                                  0.00),
-    ('9',  'Retención IVA 10%',                                           10.00),
-    ('10', 'Retención IVA 20%',                                           20.00),
-    ('11', 'Retención IVA 50%',                                           50.00)
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_porcentaje_retencion_isd (Tabla 20 - ISD histórico)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_porcentaje_retencion_isd (
-    codigo          VARCHAR(10)    NOT NULL PRIMARY KEY,
-    descripcion     VARCHAR(100)   NOT NULL,
-    porcentaje      NUMERIC(5,4)   NOT NULL,
-    vigencia_desde  DATE,
-    vigencia_hasta  DATE,
-    activo          BOOLEAN        NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_isd_withholding_rate (
+    isd_wh_code       VARCHAR(8) NOT NULL,
+    rate_pct          NUMERIC(7,4) NOT NULL,
+    valid_from        DATE NOT NULL,
+    valid_to          DATE,
+    is_current        BOOLEAN NOT NULL DEFAULT TRUE,
+    PRIMARY KEY (isd_wh_code, valid_from)
 );
 
-INSERT INTO sri_porcentaje_retencion_isd (codigo, descripcion, porcentaje, vigencia_desde, vigencia_hasta, activo) VALUES
-    ('4580_v1', 'ISD 5.00%  (hasta 31-dic-2021)',        5.0000, '2013-01-01', '2021-12-31', FALSE),
-    ('4580_v2', 'ISD 4.75%  (ene 2022)',                 4.7500, '2022-01-01', '2022-03-31', FALSE),
-    ('4580_v3', 'ISD 4.50%  (abr–jun 2022)',             4.5000, '2022-04-01', '2022-06-30', FALSE),
-    ('4580_v4', 'ISD 4.25%  (jul–sep 2022)',             4.2500, '2022-07-01', '2022-09-30', FALSE),
-    ('4580_v5', 'ISD 4.00%  (oct–dic 2022)',             4.0000, '2022-10-01', '2022-12-31', FALSE),
-    ('4580_v6', 'ISD 3.75%  (feb–jun 2023)',             3.7500, '2023-02-01', '2023-06-30', FALSE),
-    ('4580_v7', 'ISD 3.50%  (jul 2023–mar 2024)',        3.5000, '2023-07-01', '2024-03-31', FALSE),
-    ('4580_v8', 'ISD 5.00%  (desde abr-2024)',           5.0000, '2024-04-01', NULL,         TRUE),
-    ('4586',    'ISD 2.50%  (desde may-2025 según ley)', 2.5000, '2025-05-01', NULL,         TRUE)
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_porcentaje_retencion_iva_presuntivo (Tabla 23)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_porcentaje_retencion_iva_presuntivo (
-    codigo      VARCHAR(5)     NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(150)   NOT NULL,
-    porcentaje  NUMERIC(6,2)   NOT NULL,
-    activo      BOOLEAN        NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_presumptive_vat_withholding_rate (
+    pres_vat_code     VARCHAR(4) PRIMARY KEY,
+    rate_pct          NUMERIC(7,4) NOT NULL,
+    rate_name         VARCHAR(120) NOT NULL
 );
 
-INSERT INTO sri_porcentaje_retencion_iva_presuntivo (codigo, descripcion, porcentaje) VALUES
-    ('3', 'Retención IVA 100% (IVA según Res. NAC-DGERCGC21-00000063)',                100.00),
-    ('4', 'Retención IVA 12% (Presuntiva editores a voceadores)',                       12.00),
-    ('5', 'Retención IVA 100% (Venta periódicos/revistas a distribuidores)',           100.00),
-    ('6', 'Retención IVA 100% (Venta periódicos/revistas a voceadores)',               100.00)
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_retencion_renta_derivados (Tabla 23 - renta)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_retencion_renta_derivados (
-    codigo      VARCHAR(5)     NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(100)   NOT NULL,
-    porcentaje  NUMERIC(5,3)   NOT NULL,
-    activo      BOOLEAN        NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_oil_derivatives_income_withholding (
+    oil_inc_code      VARCHAR(4) PRIMARY KEY,
+    rate_pct          NUMERIC(9,6) NOT NULL,
+    rate_name         VARCHAR(120) NOT NULL
 );
 
-INSERT INTO sri_retencion_renta_derivados (codigo, descripcion, porcentaje) VALUES
-    ('327', 'Retención Renta 0.2% (2 por mil) - Derivados de petróleo', 0.200),
-    ('328', 'Retención Renta 0.3% (3 por mil) - Derivados de petróleo', 0.300)
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_forma_pago (Tabla 24)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_forma_pago (
-    codigo          VARCHAR(3)   NOT NULL PRIMARY KEY,
-    descripcion     VARCHAR(80)  NOT NULL,
-    vigencia_desde  DATE,
-    activo          BOOLEAN      NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_payment_method (
+    payment_code      VARCHAR(2) PRIMARY KEY,
+    payment_name      VARCHAR(120) NOT NULL,
+    start_date        DATE,
+    end_date          DATE
 );
 
-INSERT INTO sri_forma_pago (codigo, descripcion, vigencia_desde) VALUES
-    ('01', 'SIN UTILIZACIÓN DEL SISTEMA FINANCIERO',       '2013-01-01'),
-    ('15', 'COMPENSACIÓN DE DEUDAS',                       '2013-01-01'),
-    ('16', 'TARJETA DE DÉBITO',                            '2016-06-01'),
-    ('17', 'DINERO ELECTRÓNICO',                           '2016-06-01'),
-    ('18', 'TARJETA PREPAGO',                              '2016-06-01'),
-    ('19', 'TARJETA DE CRÉDITO',                           '2016-06-01'),
-    ('20', 'OTROS CON UTILIZACIÓN DEL SISTEMA FINANCIERO', '2016-06-01'),
-    ('21', 'ENDOSO DE TÍTULOS',                            '2016-06-01')
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_estado_comprobante
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_estado_comprobante (
-    siglas      VARCHAR(5)   NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(60)  NOT NULL
+CREATE TABLE IF NOT EXISTS sri_document_status (
+    status_code       VARCHAR(3) PRIMARY KEY,
+    status_name       VARCHAR(40) NOT NULL
 );
 
-INSERT INTO sri_estado_comprobante (siglas, descripcion) VALUES
-    ('PPR', 'EN PROCESAMIENTO'),
-    ('AUT', 'AUTORIZADO'),
-    ('NAT', 'NO AUTORIZADO')
-ON CONFLICT (siglas) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_pais (Tabla 25)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_pais (
-    codigo      VARCHAR(5)   NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(80)  NOT NULL,
-    activo      BOOLEAN      NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_country (
+    country_code      VARCHAR(3) PRIMARY KEY,
+    country_name      VARCHAR(120) NOT NULL
 );
 
-INSERT INTO sri_pais (codigo, descripcion) VALUES
-    ('016', 'AMERICAN SAMOA'), ('032', 'ARGENTINA'), ('068', 'BOLIVIA'), ('076', 'BRASIL'),
-    ('100', 'BULGARIA'), ('116', 'CAMBOYA'), ('124', 'CANADÁ'), ('152', 'CHILE'),
-    ('156', 'CHINA'), ('170', 'COLOMBIA'), ('188', 'COSTA RICA'), ('192', 'CUBA'),
-    ('214', 'REPÚBLICA DOMINICANA'), ('218', 'ECUADOR'), ('222', 'EL SALVADOR'),
-    ('246', 'FINLANDIA'), ('250', 'FRANCIA'), ('276', 'ALEMANIA'), ('300', 'GRECIA'),
-    ('320', 'GUATEMALA'), ('332', 'HAITÍ'), ('340', 'HONDURAS'), ('356', 'INDIA'),
-    ('364', 'IRÁN'), ('376', 'ISRAEL'), ('380', 'ITALIA'), ('388', 'JAMAICA'),
-    ('392', 'JAPÓN'), ('484', 'MÉXICO'), ('558', 'NICARAGUA'), ('591', 'PANAMÁ'),
-    ('598', 'PAPUA NUEVA GUINEA'), ('600', 'PARAGUAY'), ('604', 'PERÚ'), ('616', 'POLONIA'),
-    ('620', 'PORTUGAL'), ('630', 'PUERTO RICO'), ('642', 'RUMANIA'), ('643', 'RUSIA'),
-    ('682', 'ARABIA SAUDITA'), ('703', 'ESLOVAQUIA'), ('724', 'ESPAÑA'), ('752', 'SUECIA'),
-    ('756', 'SUIZA'), ('764', 'TAILANDIA'), ('792', 'TURQUÍA'), ('826', 'REINO UNIDO'),
-    ('840', 'ESTADOS UNIDOS DE AMERICA'), ('858', 'URUGUAY'), ('862', 'VENEZUELA'),
-    ('074', 'BOUVET ISLAND'), ('334', 'QATAR'), ('335', 'MALDIVAS'), ('336', 'NEPAL'),
-    ('337', 'OMAN'), ('338', 'SINGAPUR'), ('339', 'SRI LANKA (CEILAN)'), ('593', 'ECUADOR')
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_documento_sustento (ATS)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_documento_sustento (
-    codigo      VARCHAR(3)   NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(120) NOT NULL,
-    activo      BOOLEAN      NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_supporting_document (
+    support_code      VARCHAR(2) PRIMARY KEY,
+    support_name      VARCHAR(140) NOT NULL
 );
 
-INSERT INTO sri_documento_sustento (codigo, descripcion) VALUES
-    ('01', 'Factura'),
-    ('04', 'Nota de Crédito'),
-    ('05', 'Nota de Débito'),
-    ('06', 'Guía de Remisión'),
-    ('07', 'Comprobante de Retención'),
-    ('41', 'Comprobante de Reembolso'),
-    ('42', 'Documento de retención presuntiva o autoretención')
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_tipo_proveedor_reembolso (Tabla 26)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_tipo_proveedor_reembolso (
-    codigo      VARCHAR(2)   NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(50)  NOT NULL,
-    activo      BOOLEAN      NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_reimbursement_provider_type (
+    provider_code     VARCHAR(2) PRIMARY KEY,
+    provider_name     VARCHAR(80) NOT NULL
 );
 
-INSERT INTO sri_tipo_proveedor_reembolso (codigo, descripcion) VALUES
-    ('01', 'Persona Natural'),
-    ('02', 'Sociedad')
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_codigo_error (Numeral 11)
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_codigo_error (
-    codigo              INTEGER      NOT NULL PRIMARY KEY,
-    tipo                VARCHAR(20)  NOT NULL CHECK (tipo IN ('ERROR', 'ADVERTENCIA', 'VALIDACION')),
-    descripcion         VARCHAR(255) NOT NULL,
-    posible_solucion    TEXT,
-    activo              BOOLEAN      NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_error_code (
+    error_code        VARCHAR(10) PRIMARY KEY,
+    error_type        VARCHAR(20) NOT NULL, -- ERROR / WARNING / DIG
+    error_name        VARCHAR(140) NOT NULL,
+    error_desc        TEXT,
+    source_area       VARCHAR(25)
 );
 
-INSERT INTO sri_codigo_error (codigo, tipo, descripcion, posible_solucion) VALUES
-    (2,    'ERROR',       'RUC del emisor se encuentra NO ACTIVO',          'Verificar que el número de RUC esté en estado ACTIVO en el SRI'),
-    (10,   'ERROR',       'Establecimiento del emisor se encuentra Clausurado', 'No se autorizará comprobantes hasta que concluya la clausura'),
-    (26,   'ERROR',       'Tamaño máximo superado',                         'El archivo supera el tamaño permitido (individual 320KB, lote 500KB)'),
-    (35,   'ERROR',       'Documento inválido',                             'El XML no pasa la validación de esquema XSD. Revisar estructura y etiquetas.'),
-    (39,   'ERROR',       'Firma inválida',                                 'La firma electrónica no es válida (XAdES_BES). Verificar certificado y librería.'),
-    (43,   'ERROR',       'Clave acceso registrada',                        'La clave de acceso ya existe en la base de datos del SRI. No se puede duplicar.'),
-    (45,   'ERROR',       'Secuencial registrado',                          'El secuencial ya fue usado para ese tipo de comprobante, establecimiento y punto de emisión.'),
-    (52,   'ERROR',       'Error en diferencias',                           'Los cálculos del comprobante son incorrectos (suma de impuestos, totales). Revisar.'),
-    (65,   'ERROR',       'Fecha de emisión extemporánea',                  'El comprobante fue enviado fuera del plazo permitido (emisión vs envío).'),
-    (70,   'ERROR',       'Clave de acceso en procesamiento',               'El comprobante ya fue enviado y está en proceso. No reenviar hasta respuesta.'),
-    (59,   'ADVERTENCIA', 'Identificación no existe',                       'El número de identificación del adquirente no existe en el RUC.'),
-    (60,   'ADVERTENCIA', 'Ambiente ejecución',                             'Comprobante emitido en ambiente de pruebas (solo informativo).'),
-    (62,   'ADVERTENCIA', 'Identificación incorrecta',                      'El número de identificación no pasa el dígito verificador (cédula mal ingresada).'),
-    (2000, 'VALIDACION',  'Éxito',                                          'Proceso exitoso de devolución automática de IVA'),
-    (3000, 'VALIDACION',  'ERROR_FORMATO',                                  'Los campos registrados no cumplen con el formato establecido')
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_tipo_regimen
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_tipo_regimen (
-    codigo      VARCHAR(5)   NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(100) NOT NULL,
-    activo      BOOLEAN      NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_regime_type (
+    regime_code       VARCHAR(4) PRIMARY KEY,
+    regime_name       VARCHAR(120) NOT NULL
 );
 
-INSERT INTO sri_tipo_regimen (codigo, descripcion) VALUES
-    ('01', 'RÉGIMEN GENERAL'),
-    ('02', 'RIMPE - EMPRENDEDOR'),
-    ('03', 'RIMPE - NEGOCIO POPULAR'),
-    ('04', 'MICROEMPRESA')
-ON CONFLICT (codigo) DO NOTHING;
-
--- ============================================================
--- TABLA: sri_sustento_tributario
--- ============================================================
-CREATE TABLE IF NOT EXISTS sri_sustento_tributario (
-    codigo      VARCHAR(3)   NOT NULL PRIMARY KEY,
-    descripcion VARCHAR(200) NOT NULL,
-    activo      BOOLEAN      NOT NULL DEFAULT TRUE
+CREATE TABLE IF NOT EXISTS sri_tax_support_code (
+    support_tax_code  VARCHAR(4) PRIMARY KEY,
+    support_tax_name  VARCHAR(180) NOT NULL
 );
 
-INSERT INTO sri_sustento_tributario (codigo, descripcion) VALUES
-    ('01', 'Crédito Tributario para declaración de IVA (servicios y bienes distintos de inventarios y activos fijos)'),
-    ('02', 'Costo o Gasto para declaración de IR (otros costos y gastos)'),
-    ('03', 'Activo Fijo - Crédito Tributario para declaración de IVA'),
-    ('04', 'Activo Fijo - Costo o Gasto para declaración de IR'),
-    ('05', 'Liquidación Crédito Tributario para declaración de IVA (No objeto de IVA)'),
-    ('06', 'Liquidación Costo o Gasto para declaración de IR (No objeto de IVA)'),
-    ('07', 'Compras con sustento tributario para declaración IR e IVA (inventario)'),
-    ('08', 'Valor pagado por Anticipos'),
-    ('09', 'Pagos de Dividendos Anticipados'),
-    ('10', 'Pagos de Participación a Trabajadores'),
-    ('20', 'Sustento de Importaciones (liquidación de compra de bienes y prestación de servicios)')
-ON CONFLICT (codigo) DO NOTHING;
+-- =========================================================
+-- INSERTS (datos oficiales SRI)
+-- =========================================================
 
--- ============================================================
--- FIN DEL SCRIPT DE CATÁLOGOS FIJOS SRI
--- ============================================================
+INSERT INTO sri_emission_type (emission_code, emission_name) VALUES ('1','Normal')
+ON CONFLICT (emission_code) DO NOTHING;
+
+INSERT INTO sri_document_type (document_code, document_name, xml_tag) VALUES
+('01','Invoice','factura'),
+('03','Purchase Settlement','liquidacionCompra'),
+('04','Credit Note','notaCredito'),
+('05','Debit Note','notaDebito'),
+('06','Delivery Guide','guiaRemision'),
+('07','Withholding Certificate','comprobanteRetencion'),
+('41','Withholding Presumptive Doc','docSustento'),
+('42','Self/Intermediary Withholding Doc','docSustento')
+ON CONFLICT (document_code) DO NOTHING;
+
+INSERT INTO sri_environment_type (env_code, env_name) VALUES ('1','Testing'), ('2','Production')
+ON CONFLICT (env_code) DO NOTHING;
+
+INSERT INTO sri_identification_type (ident_code, ident_name) VALUES
+('04','RUC'), ('05','National ID'), ('06','Passport'), ('07','Final Consumer'), ('08','Foreign Identification')
+ON CONFLICT (ident_code) DO NOTHING;
+
+INSERT INTO sri_tax_code (tax_code, tax_name) VALUES ('2','VAT'), ('3','ICE'), ('5','IRBPNR')
+ON CONFLICT (tax_code) DO NOTHING;
+
+INSERT INTO sri_vat_rate (vat_code, vat_name, rate_pct) VALUES
+('0','VAT 0%',0.0000),
+('2','VAT 12%',12.0000),
+('3','VAT 14%',14.0000),
+('4','VAT 15%',15.0000),
+('5','VAT 5%',5.0000),
+('6','Not Subject VAT',NULL),
+('7','VAT Exempt',NULL),
+('8','VAT 8% (differentiated tourism)',8.0000),
+('10','VAT 13%',13.0000)
+ON CONFLICT (vat_code) DO NOTHING;
+
+INSERT INTO sri_ice_rate (ice_code, ice_name, ad_val_pct, spec_rate, rate_type, rate_note, valid_from, is_current) VALUES
+('3011','ICE Cigarrillos Rubios',NULL,0.1600,'SPECIFIC','specific per unit',DATE '2020-01-01',TRUE),
+('3021','ICE Cigarrillos Negros',NULL,0.1600,'SPECIFIC','specific per unit',DATE '2020-01-01',TRUE),
+('3023','ICE Tabaco y sucedaneos excepto cigarrillos',150.0000,NULL,'AD_VALOREM','ad valorem 150%',DATE '2020-01-01',TRUE),
+('3031','ICE Bebidas alcoholicas',75.0000,7.2500,'MIXED','ad valorem + specific',DATE '2020-01-01',TRUE),
+('3041','ICE Cerveza industrial gran escala',75.0000,13.2000,'MIXED','mixed',DATE '2020-01-01',TRUE),
+('3043','ICE Cerveza artesanal',NULL,1.1500,'SPECIFIC','specific per liter',DATE '2020-01-01',TRUE),
+('3033','ICE Alcohol',75.0000,7.2200,'MIXED','mixed',DATE '2020-01-01',TRUE),
+('3053','ICE Bebidas gaseosas alto azucar',NULL,NULL,'SPECIFIC','0.18 per 100g sugar',DATE '2020-01-01',TRUE),
+('3054','ICE Bebidas gaseosas bajo azucar',10.0000,NULL,'AD_VALOREM','ad valorem 10%',DATE '2020-01-01',TRUE),
+('3073','ICE Vehiculos hasta 20000',5.0000,NULL,'AD_VALOREM','ad valorem 5%',DATE '2020-01-01',TRUE),
+('3075','ICE Vehiculos 30000-40000',15.0000,NULL,'AD_VALOREM','ad valorem 15%',DATE '2020-01-01',TRUE),
+('3077','ICE Vehiculos 40000-50000',20.0000,NULL,'AD_VALOREM','ad valorem 20%',DATE '2020-01-01',TRUE),
+('3078','ICE Vehiculos 50000-60000',25.0000,NULL,'AD_VALOREM','ad valorem 25%',DATE '2020-01-01',TRUE),
+('3079','ICE Vehiculos 60000-70000',30.0000,NULL,'AD_VALOREM','ad valorem 30%',DATE '2020-01-01',TRUE),
+('3080','ICE Vehiculos >70000',35.0000,NULL,'AD_VALOREM','ad valorem 35%',DATE '2020-01-01',TRUE),
+('3081','ICE Aviones tricars yates barcos',15.0000,NULL,'AD_VALOREM','ad valorem 15%',DATE '2020-01-01',TRUE),
+('3092','ICE Television prepagada',15.0000,NULL,'AD_VALOREM','ad valorem 15%',DATE '2020-01-01',TRUE),
+('3093','ICE Telefonia sociedades',15.0000,NULL,'AD_VALOREM','ad valorem 15%',DATE '2020-01-01',TRUE),
+('3101','ICE Bebidas energizantes',10.0000,NULL,'AD_VALOREM','ad valorem 10%',DATE '2020-01-01',TRUE),
+('3111','ICE Bebidas no alcoholicas',NULL,NULL,'SPECIFIC','0.18 per 100g sugar',DATE '2020-01-01',TRUE),
+('3610','ICE Perfumes y aguas de tocador',20.0000,NULL,'AD_VALOREM','ad valorem 20%',DATE '2020-01-01',TRUE),
+('3620','ICE Videojuegos',35.0000,NULL,'AD_VALOREM','ad valorem 35%',DATE '2020-01-01',TRUE),
+('3630','ICE Armas y municiones',300.0000,NULL,'AD_VALOREM','ad valorem 300%',DATE '2020-01-01',TRUE),
+('3640','ICE Focos incandescentes',100.0000,NULL,'AD_VALOREM','ad valorem 100%',DATE '2020-01-01',TRUE),
+('3660','ICE Cuotas membresias afiliaciones',35.0000,NULL,'AD_VALOREM','ad valorem 35%',DATE '2020-01-01',TRUE),
+('3671','ICE Calefones y calentamiento agua gas SRI',100.0000,NULL,'AD_VALOREM','ad valorem 100%',DATE '2020-01-01',TRUE),
+('3680','ICE Fundas plasticas',NULL,0.0400,'SPECIFIC','specific per unit',DATE '2020-01-01',TRUE),
+('3681','ICE Telefonia movil personas naturales',10.0000,NULL,'AD_VALOREM','ad valorem 10%',DATE '2020-01-01',TRUE),
+('3682','ICE Consumibles tabaco calentado SRI',150.0000,NULL,'AD_VALOREM','ad valorem 150%',DATE '2020-01-01',TRUE),
+('3683','ICE Consumibles tabaco calentado SENAE',150.0000,NULL,'AD_VALOREM','ad valorem 150%',DATE '2020-01-01',TRUE),
+('3684','ICE Vehiculos rescate/camionetas <=30000',5.0000,NULL,'AD_VALOREM','ad valorem 5%',DATE '2020-01-01',TRUE),
+('3685','ICE Vehiculos rescate/camionetas <=30000 SENAE',5.0000,NULL,'AD_VALOREM','ad valorem 5%',DATE '2020-01-01',TRUE),
+('3686','ICE Vehiculos excepto rescate 20000-30000',10.0000,NULL,'AD_VALOREM','ad valorem 10%',DATE '2020-01-01',TRUE),
+('3687','ICE Vehiculos excepto rescate 20000-30000 SENAE',10.0000,NULL,'AD_VALOREM','ad valorem 10%',DATE '2020-01-01',TRUE),
+('3688','ICE Vehiculos hibridos <=35000',0.0000,NULL,'AD_VALOREM','ad valorem 0%',DATE '2020-01-01',TRUE),
+('3689','ICE Vehiculos hibridos <=35000 SENAE',0.0000,NULL,'AD_VALOREM','ad valorem 0%',DATE '2020-01-01',TRUE),
+('3690','ICE Vehiculos hibridos 35000-40000 SENAE',8.0000,NULL,'AD_VALOREM','ad valorem 8%',DATE '2020-01-01',TRUE),
+('3691','ICE Vehiculos hibridos 35000-40000',8.0000,NULL,'AD_VALOREM','ad valorem 8%',DATE '2020-01-01',TRUE),
+('3692','ICE Vehiculos hibridos 40000-50000',14.0000,NULL,'AD_VALOREM','ad valorem 14%',DATE '2020-01-01',TRUE),
+('3693','ICE Vehiculos hibridos 40000-50000 SENAE',14.0000,NULL,'AD_VALOREM','ad valorem 14%',DATE '2020-01-01',TRUE),
+('3694','ICE Vehiculos hibridos 50000-60000 SENAE',20.0000,NULL,'AD_VALOREM','ad valorem 20%',DATE '2020-01-01',TRUE),
+('3695','ICE Vehiculos hibridos 50000-60000',20.0000,NULL,'AD_VALOREM','ad valorem 20%',DATE '2020-01-01',TRUE),
+('3696','ICE Vehiculos hibridos 60000-70000',26.0000,NULL,'AD_VALOREM','ad valorem 26%',DATE '2020-01-01',TRUE),
+('3697','ICE Vehiculos hibridos 60000-70000 SENAE',26.0000,NULL,'AD_VALOREM','ad valorem 26%',DATE '2020-01-01',TRUE),
+('3698','ICE Vehiculos hibridos >70000',32.0000,NULL,'AD_VALOREM','ad valorem 32%',DATE '2020-01-01',TRUE),
+('3699','ICE Vehiculos hibridos >70000 SENAE',32.0000,NULL,'AD_VALOREM','ad valorem 32%',DATE '2020-01-01',TRUE),
+('3532','ICE Import alcohol SENAE',75.0000,7.2200,'MIXED','mixed',DATE '2020-01-01',TRUE),
+('3533','ICE Import bebidas alcoholicas',75.0000,7.2500,'MIXED','mixed',DATE '2020-01-01',TRUE),
+('3541','ICE Cerveza gran escala CAE',75.0000,7.2500,'MIXED','mixed',DATE '2020-01-01',TRUE),
+('3542','ICE Cigarrillos rubios CAE',NULL,0.1600,'SPECIFIC','specific per unit',DATE '2020-01-01',TRUE),
+('3543','ICE Cigarrillos negros CAE',NULL,0.1600,'SPECIFIC','specific per unit',DATE '2020-01-01',TRUE),
+('3544','ICE Tabaco excepto cigarrillos CAE',150.0000,NULL,'AD_VALOREM','ad valorem 150%',DATE '2020-01-01',TRUE),
+('3545','ICE Cerveza artesanal SENAE',75.0000,1.5000,'MIXED','mixed',DATE '2020-01-01',TRUE),
+('3552','ICE Gaseosas alto azucar SENAE',NULL,NULL,'SPECIFIC','0.18 per 100g sugar',DATE '2020-01-01',TRUE),
+('3553','ICE Gaseosas bajo azucar SENAE',10.0000,NULL,'AD_VALOREM','ad valorem 10%',DATE '2020-01-01',TRUE),
+('3581','ICE Aeronaves CAE',15.0000,NULL,'AD_VALOREM','ad valorem 15%',DATE '2020-01-01',TRUE),
+('3582','ICE Avionetas/helicopteros CAE',15.0000,NULL,'AD_VALOREM','ad valorem 15%',DATE '2020-01-01',TRUE),
+('3601','ICE Bebidas energizantes SENAE',10.0000,NULL,'AD_VALOREM','ad valorem 10%',DATE '2020-01-01',TRUE),
+('3602','ICE Bebidas no alcoholicas SENAE',NULL,NULL,'SPECIFIC','0.18 per 100g sugar',DATE '2020-01-01',TRUE),
+('3710','ICE Perfumes CAE',20.0000,NULL,'AD_VALOREM','ad valorem 20%',DATE '2020-01-01',TRUE),
+('3720','ICE Video juegos CAE',35.0000,NULL,'AD_VALOREM','ad valorem 35%',DATE '2020-01-01',TRUE),
+('3730','ICE Import armas y municiones CAE',300.0000,NULL,'AD_VALOREM','ad valorem 300%',DATE '2020-01-01',TRUE),
+('3740','ICE Focos incandescentes CAE',100.0000,NULL,'AD_VALOREM','ad valorem 100%',DATE '2020-01-01',TRUE),
+('3771','ICE Calefones y calentamiento agua SENAE',100.0000,NULL,'AD_VALOREM','ad valorem 100%',DATE '2020-01-01',TRUE),
+('3871','ICE Vehiculos <=20000 SENAE',5.0000,NULL,'AD_VALOREM','ad valorem 5%',DATE '2020-01-01',TRUE),
+('3873','ICE Vehiculos 30000-40000 SENAE',15.0000,NULL,'AD_VALOREM','ad valorem 15%',DATE '2020-01-01',TRUE),
+('3874','ICE Vehiculos 40000-50000 SENAE',20.0000,NULL,'AD_VALOREM','ad valorem 20%',DATE '2020-01-01',TRUE),
+('3875','ICE Vehiculos 50000-60000 SENAE',25.0000,NULL,'AD_VALOREM','ad valorem 25%',DATE '2020-01-01',TRUE),
+('3876','ICE Vehiculos 60000-70000 SENAE',30.0000,NULL,'AD_VALOREM','ad valorem 30%',DATE '2020-01-01',TRUE),
+('3877','ICE Vehiculos >70000 SENAE',35.0000,NULL,'AD_VALOREM','ad valorem 35%',DATE '2020-01-01',TRUE),
+('3878','ICE Aviones tricars yates SENAE',15.0000,NULL,'AD_VALOREM','ad valorem 15%',DATE '2020-01-01',TRUE)
+ON CONFLICT (ice_code) DO NOTHING;
+
+INSERT INTO sri_withholding_tax_type (wh_tax_code, wh_tax_name) VALUES
+('1','Income Tax'), ('2','VAT'), ('4','Presumptive VAT and Income'), ('6','ISD')
+ON CONFLICT (wh_tax_code) DO NOTHING;
+
+INSERT INTO sri_vat_withholding_rate (vat_wh_code, rate_pct, rate_name) VALUES
+('1',30.0000,'VAT withholding 30%'),
+('2',70.0000,'VAT withholding 70%'),
+('3',100.0000,'VAT withholding 100%'),
+('7',0.0000,'VAT withholding zero'),
+('8',0.0000,'VAT withholding not applicable'),
+('9',10.0000,'VAT withholding 10%'),
+('10',20.0000,'VAT withholding 20%'),
+('11',50.0000,'VAT withholding 50%')
+ON CONFLICT (vat_wh_code) DO NOTHING;
+
+INSERT INTO sri_isd_withholding_rate (isd_wh_code, rate_pct, valid_from, valid_to, is_current) VALUES
+('4580',5.0000,DATE '2013-03-01',DATE '2025-12-31',FALSE),
+('4580',5.0000,DATE '2026-01-01',NULL,TRUE)
+ON CONFLICT (isd_wh_code, valid_from) DO NOTHING;
+
+INSERT INTO sri_presumptive_vat_withholding_rate (pres_vat_code, rate_pct, rate_name) VALUES
+('3',100.0000,'Presumptive VAT withholding 100%'),
+('4',12.0000,'Editors to hawkers margin withholding'),
+('5',100.0000,'Newspaper/magazine to distributors'),
+('6',100.0000,'Newspaper/magazine to hawkers')
+ON CONFLICT (pres_vat_code) DO NOTHING;
+
+INSERT INTO sri_oil_derivatives_income_withholding (oil_inc_code, rate_pct, rate_name) VALUES
+('327',0.002000,'Income withholding 2 per thousand'),
+('328',0.003000,'Income withholding 3 per thousand')
+ON CONFLICT (oil_inc_code) DO NOTHING;
+
+INSERT INTO sri_payment_method (payment_code, payment_name, start_date, end_date) VALUES
+('01','No financial system usage',DATE '2013-01-01',NULL),
+('15','Debt compensation',DATE '2013-01-01',NULL),
+('16','Debit card',DATE '2016-06-01',NULL),
+('17','Electronic money',DATE '2016-06-01',NULL),
+('18','Prepaid card',DATE '2016-06-01',NULL),
+('19','Credit card',DATE '2016-06-01',NULL),
+('20','Other with financial system usage',DATE '2016-06-01',NULL),
+('21','Endorsement of securities',DATE '2016-06-01',NULL)
+ON CONFLICT (payment_code) DO NOTHING;
+
+INSERT INTO sri_document_status (status_code, status_name) VALUES
+('PPR','In processing'), ('AUT','Authorized'), ('NAT','Not authorized')
+ON CONFLICT (status_code) DO NOTHING;
+
+-- Países (solo una muestra representativa; agregar todos los necesarios)
+INSERT INTO sri_country (country_code, country_name) VALUES
+('032','ARGENTINA'), ('068','BOLIVIA'), ('076','BRAZIL'), ('152','CHILE'),
+('170','COLOMBIA'), ('218','ECUADOR'), ('600','PARAGUAY'), ('604','PERU'),
+('858','URUGUAY'), ('862','VENEZUELA'), ('840','UNITED STATES'), ('724','SPAIN'),
+('593','ECUADOR'), ('594','AGUAS INTERNACIONALES')
+ON CONFLICT (country_code) DO NOTHING;
+
+INSERT INTO sri_supporting_document (support_code, support_name) VALUES
+('01','Invoice'), ('04','Credit Note'), ('05','Debit Note'), ('06','Delivery Guide'),
+('07','Withholding Certificate'), ('41','Withholding Presumptive Support'),
+('42','Self/Intermediary Withholding Support')
+ON CONFLICT (support_code) DO NOTHING;
+
+INSERT INTO sri_reimbursement_provider_type (provider_code, provider_name) VALUES
+('01','Domestic provider'), ('02','Foreign provider')
+ON CONFLICT (provider_code) DO NOTHING;
+
+INSERT INTO sri_error_code (error_code, error_type, error_name, error_desc, source_area) VALUES
+('35','ERROR','Invalid document','XML schema validation failed','RECEPCION'),
+('39','ERROR','Invalid signature','Issuer electronic signature invalid','AUTORIZACION'),
+('43','ERROR','Access key already registered','Access key already exists','RECEPCION'),
+('45','ERROR','Sequential already registered','Sequential already exists','RECEPCION'),
+('52','ERROR','Difference validation error','Calculation mismatch in document','AUTORIZACION'),
+('59','WARNING','Identification not found','Buyer identification does not exist','EMISOR'),
+('65','ERROR','Late issue date','Out-of-time emission by emission type','EMISOR'),
+('70','ERROR','Access key in process','Same key still processing','RECEPCION'),
+('2000','DIG','SUCCESS','Success','DIG')
+ON CONFLICT (error_code) DO NOTHING;
+
+INSERT INTO sri_regime_type (regime_code, regime_name) VALUES
+('GEN','General Regime'), ('RIM1','RIMPE Entrepreneur'), ('RIM2','RIMPE Popular Business'), ('EXT','Foreign Regime')
+ON CONFLICT (regime_code) DO NOTHING;
+
+INSERT INTO sri_tax_support_code (support_tax_code, support_tax_name) VALUES
+('01','Domestic purchase with invoice'),
+('02','Import goods'),
+('03','Import services'),
+('04','Local purchase with withholding'),
+('05','Purchase to final consumer'),
+('06','Reimbursement operation'),
+('07','Purchase settlement'),
+('08','Exports and assimilated'),
+('09','Tax credit not applicable'),
+('10','Other tax support')
+ON CONFLICT (support_tax_code) DO NOTHING;

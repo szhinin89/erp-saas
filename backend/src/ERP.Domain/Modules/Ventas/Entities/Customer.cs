@@ -25,6 +25,27 @@ public sealed class Customer : MasterEntity, ITenantEntity
     public string? Email { get; private set; }
     public string? Notes { get; private set; }
 
+    // ── Campos SRI / comerciales ──────────────────────────────────
+    /// <summary>ISO-3 del país. FK → sri_country.code. Ej: "ECU".</summary>
+    public string?  CountryCode { get; private set; }
+    /// <summary>Días de crédito acordados (0 = contado).</summary>
+    public short    PaymentDays { get; private set; }
+    /// <summary>Límite de crédito aprobado. Null = sin límite.</summary>
+    public decimal? CreditLimit { get; private set; }
+
+    /// <summary>
+    /// Código SRI del tipo de identificación. No persiste en BD.
+    /// Requerido para generar el XML del comprobante electrónico.
+    /// </summary>
+    public string SriIdTypeCode => IdentificationType switch
+    {
+        "RUC"      => "04",
+        "CI"       => "05",
+        "PASSPORT" => "06",
+        "OTHER"    => "08",
+        _          => "07"
+    };
+
     private Customer() { }
 
     public static Customer Create(
@@ -37,7 +58,10 @@ public sealed class Customer : MasterEntity, ITenantEntity
         string? phone,
         string? email,
         string? notes,
-        Guid createdBy)
+        Guid createdBy,
+        string? countryCode  = null,
+        short   paymentDays  = 0,
+        decimal? creditLimit = null)
     {
         var identification = CustomerIdentification.Create(identificationType, identificationNumber);
         var name = legalName.Trim();
@@ -47,16 +71,19 @@ public sealed class Customer : MasterEntity, ITenantEntity
 
         var c = new Customer
         {
-            Id = Guid.NewGuid(),
-            TenantId = tenantId,
-            IdentificationType = identification.Type,
+            Id                   = Guid.NewGuid(),
+            TenantId             = tenantId,
+            IdentificationType   = identification.Type,
             IdentificationNumber = identification.Number,
-            LegalName = name,
-            TradeName = NullIfWhiteSpace(tradeName),
-            AddressLine = NullIfWhiteSpace(addressLine),
-            Phone = NullIfWhiteSpace(phone),
-            Email = validEmail?.Value,
-            Notes = NullIfWhiteSpace(notes),
+            LegalName            = name,
+            TradeName            = NullIfWhiteSpace(tradeName),
+            AddressLine          = NullIfWhiteSpace(addressLine),
+            Phone                = NullIfWhiteSpace(phone),
+            Email                = validEmail?.Value,
+            Notes                = NullIfWhiteSpace(notes),
+            CountryCode          = NullIfWhiteSpace(countryCode),
+            PaymentDays          = paymentDays,
+            CreditLimit          = creditLimit,
         };
         c.SetCreated(createdBy);
         return c;
@@ -71,19 +98,25 @@ public sealed class Customer : MasterEntity, ITenantEntity
         string? phone,
         string? email,
         string? notes,
-        Guid updatedBy)
+        Guid updatedBy,
+        string? countryCode  = null,
+        short   paymentDays  = 0,
+        decimal? creditLimit = null)
     {
         var identification = CustomerIdentification.Create(identificationType, identificationNumber);
-        IdentificationType = identification.Type;
+        IdentificationType   = identification.Type;
         IdentificationNumber = identification.Number;
         LegalName = legalName.Trim();
         if (string.IsNullOrWhiteSpace(LegalName))
             throw new ArgumentException("La razón social o nombre es obligatoria.", nameof(legalName));
-        TradeName = NullIfWhiteSpace(tradeName);
+        TradeName   = NullIfWhiteSpace(tradeName);
         AddressLine = NullIfWhiteSpace(addressLine);
-        Phone = NullIfWhiteSpace(phone);
-        Email = CustomerEmail.CreateOptional(email)?.Value;
-        Notes = NullIfWhiteSpace(notes);
+        Phone       = NullIfWhiteSpace(phone);
+        Email       = CustomerEmail.CreateOptional(email)?.Value;
+        Notes       = NullIfWhiteSpace(notes);
+        CountryCode = NullIfWhiteSpace(countryCode);
+        PaymentDays = paymentDays;
+        CreditLimit = creditLimit;
         SetUpdated(updatedBy);
     }
 

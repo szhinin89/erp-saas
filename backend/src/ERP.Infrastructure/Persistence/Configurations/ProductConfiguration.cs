@@ -139,6 +139,9 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         // ── Aranceles / importación ───────────────────────────────
         builder.Property(p => p.HandlesTariff).HasColumnName("handles_tariff").IsRequired();
 
+        // ── SRI ───────────────────────────────────────────────────
+        builder.Property(p => p.SriServiceCode).HasColumnName("sri_service_code").HasMaxLength(5);
+
         // ── Estado (MasterEntity) ─────────────────────────────────
         builder.Property(p => p.IsActive).HasColumnName("is_active").IsRequired();
 
