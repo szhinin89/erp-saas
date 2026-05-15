@@ -5,7 +5,7 @@ using ERP.Application.Sales.DTOs;
 namespace ERP.Application.Sales.UseCases.GetStockDisponibleParaVenta;
 
 [RequireFeature(SubscriptionFeatureCodes.Sales)]
-public sealed record GetStockDisponibleParaVentaQuery(
+public sealed record GetStockDisponibleParaSaleQuery(
     Guid    ProductId,
     Guid    WarehouseId
 ) : IRequest<Result<StockDisponibleDto>>;

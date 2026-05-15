@@ -5,25 +5,25 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.GetCompraById;
 
-public sealed class GetCompraByIdQueryHandler
-    : IRequestHandler<GetCompraByIdQuery, Result<PurchBillDetailDto?>>
+public sealed class GetPurchaseByIdQueryHandler
+    : IRequestHandler<GetPurchaseByIdQuery, Result<PurchBillDetailDto?>>
 {
     private readonly IPurchBillRepository _repo;
     private readonly ICurrentTenant    _tenant;
 
-    public GetCompraByIdQueryHandler(IPurchBillRepository repo, ICurrentTenant tenant)
+    public GetPurchaseByIdQueryHandler(IPurchBillRepository repo, ICurrentTenant tenant)
     {
         _repo   = repo;
         _tenant = tenant;
     }
 
     public async Task<Result<PurchBillDetailDto?>> Handle(
-        GetCompraByIdQuery query, CancellationToken ct)
+        GetPurchaseByIdQuery query, CancellationToken ct)
     {
         var c = await _repo.GetByIdAsync(_tenant.TenantId, query.Id, ct);
         if (c is null) return Result<PurchBillDetailDto?>.Success(null);
 
-        var detalles = c.Lines.Select(d => new CompraDetalleDto(
+        var detalles = c.Lines.Select(d => new PurchaseBillLineDto(
             d.Id, d.ProductId, d.Description, d.SupplierProductCode,
             d.Quantity, d.UnitPrice, d.DiscountPct,
             d.Subtotal, d.VatPct, d.VatAmount, d.Total)).ToList();

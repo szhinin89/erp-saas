@@ -9,23 +9,23 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Inventory.UseCases.CancelarAjuste;
 
-public sealed class CancelarAjusteCommandHandler
-    : IRequestHandler<CancelarAjusteCommand, Result<StockAdjustmentDto>>
+public sealed class CancelStockAdjustmentCommandHandler
+    : IRequestHandler<CancelStockAdjustmentCommand, Result<StockAdjustmentDto>>
 {
     private readonly IStockAdjustmentRepository _ajusteRepo;
     private readonly IUserActivityRepository     _activity;
     private readonly ICurrentTenant              _currentTenant;
     private readonly ICurrentUser                _currentUser;
     private readonly IUnitOfWork                 _unitOfWork;
-    private readonly ILogger<CancelarAjusteCommandHandler> _logger;
+    private readonly ILogger<CancelStockAdjustmentCommandHandler> _logger;
 
-    public CancelarAjusteCommandHandler(
+    public CancelStockAdjustmentCommandHandler(
         IStockAdjustmentRepository ajusteRepo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
-        ILogger<CancelarAjusteCommandHandler> logger)
+        ILogger<CancelStockAdjustmentCommandHandler> logger)
     {
         _ajusteRepo    = ajusteRepo;
         _activity      = activity;
@@ -36,12 +36,12 @@ public sealed class CancelarAjusteCommandHandler
     }
 
     public async Task<Result<StockAdjustmentDto>> Handle(
-        CancelarAjusteCommand command, CancellationToken ct)
+        CancelStockAdjustmentCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
-        var ajuste = await _ajusteRepo.GetByIdAsync(tenantId, command.AjusteId, ct);
+        var ajuste = await _ajusteRepo.GetByIdAsync(tenantId, command.AdjustmentId, ct);
         if (ajuste is null)
             return Result<StockAdjustmentDto>.Failure("Ajuste no encontrado.");
 
@@ -78,7 +78,7 @@ public sealed class CancelarAjusteCommandHandler
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al cancelar ajuste {Id}", command.AjusteId);
+            _logger.LogError(ex, "Error al cancelar ajuste {Id}", command.AdjustmentId);
             return Result<StockAdjustmentDto>.Failure($"No se pudo cancelar el ajuste: {ex.Message}");
         }
     }

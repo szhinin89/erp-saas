@@ -5,18 +5,18 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 
 namespace ERP.Application.Modules.Accounting.UseCases.ConfiguracionContable;
 
-public sealed class GetConfiguracionContableQueryHandler
-    : IRequestHandler<GetConfiguracionContableQuery, Result<AccountingSetupDto?>>
+public sealed class GetConfigurationContableQueryHandler
+    : IRequestHandler<GetConfigurationContableQuery, Result<AccountingSetupDto?>>
 {
     private readonly IAccountingSetupRepository _repo;
 
-    public GetConfiguracionContableQueryHandler(IAccountingSetupRepository repo)
+    public GetConfigurationContableQueryHandler(IAccountingSetupRepository repo)
     {
         _repo = repo;
     }
 
     public async Task<Result<AccountingSetupDto?>> Handle(
-        GetConfiguracionContableQuery request,
+        GetConfigurationContableQuery request,
         CancellationToken ct)
     {
         var e = await _repo.GetSetupAsync(ct);

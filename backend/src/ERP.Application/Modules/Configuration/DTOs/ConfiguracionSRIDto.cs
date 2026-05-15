@@ -1,6 +1,6 @@
 ﻿namespace ERP.Application.Configuration.DTOs;
 
-public record ConfiguracionSRIDto(
+public record SriConfigurationDto(
     Guid    TenantId,
     string  RucEmpresa,
     string  RazonSocial,

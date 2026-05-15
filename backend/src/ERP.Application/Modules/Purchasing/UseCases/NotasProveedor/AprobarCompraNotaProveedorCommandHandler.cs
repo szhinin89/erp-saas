@@ -14,8 +14,8 @@ using ERP.Domain.Modules.Expenses.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.NotasProveedor;
 
-public sealed class AprobarCompraNotaProveedorCommandHandler
-    : IRequestHandler<AprobarCompraNotaProveedorCommand, Result<CompraNotaProveedorDto>>
+public sealed class ApprovePurchaseSupplierNoteCommandHandler
+    : IRequestHandler<ApprovePurchaseSupplierNoteCommand, Result<SupplierPurchaseNoteDto>>
 {
     private readonly IPurchBillRepository       _compraRepo;
     private readonly IExpenseInvoiceRepository _gastoRepo;
@@ -24,9 +24,9 @@ public sealed class AprobarCompraNotaProveedorCommandHandler
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork           _unitOfWork;
-    private readonly ILogger<AprobarCompraNotaProveedorCommandHandler> _logger;
+    private readonly ILogger<ApprovePurchaseSupplierNoteCommandHandler> _logger;
 
-    public AprobarCompraNotaProveedorCommandHandler(
+    public ApprovePurchaseSupplierNoteCommandHandler(
         IPurchBillRepository compraRepo,
         IExpenseInvoiceRepository gastoRepo,
         IAccountingService accounting,
@@ -34,7 +34,7 @@ public sealed class AprobarCompraNotaProveedorCommandHandler
         ICurrentTenant tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
-        ILogger<AprobarCompraNotaProveedorCommandHandler> logger)
+        ILogger<ApprovePurchaseSupplierNoteCommandHandler> logger)
     {
         _compraRepo   = compraRepo;
         _gastoRepo    = gastoRepo;
@@ -46,8 +46,8 @@ public sealed class AprobarCompraNotaProveedorCommandHandler
         _logger       = logger;
     }
 
-    public async Task<Result<CompraNotaProveedorDto>> Handle(
-        AprobarCompraNotaProveedorCommand command,
+    public async Task<Result<SupplierPurchaseNoteDto>> Handle(
+        ApprovePurchaseSupplierNoteCommand command,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
@@ -55,14 +55,14 @@ public sealed class AprobarCompraNotaProveedorCommandHandler
 
         var nota = await _compraRepo.GetPurchNoteByIdWithLinesAsync(tenantId, command.NotaId, ct);
         if (nota is null)
-            return Result<CompraNotaProveedorDto>.Failure("Nota de Supplier no encontrada.");
+            return Result<SupplierPurchaseNoteDto>.Failure("Nota de Supplier no encontrada.");
 
         if (nota.Status != "Borrador")
-            return Result<CompraNotaProveedorDto>.Failure(
+            return Result<SupplierPurchaseNoteDto>.Failure(
                 $"Solo se puede aprobar una nota en Borrador (estado: {nota.Status}).");
 
         if (!nota.PurchBillId.HasValue && !nota.ExpenseInvoiceId.HasValue)
-            return Result<CompraNotaProveedorDto>.Failure(
+            return Result<SupplierPurchaseNoteDto>.Failure(
                 "Vincule la nota a una factura de compra o de gasto antes de aprobar.");
 
         var numeroNota = $"{nota.EstabCode}-{nota.EmPointCode}-{nota.Sequential}";
@@ -78,7 +78,7 @@ public sealed class AprobarCompraNotaProveedorCommandHandler
                 if (compra is null || compra.Status != PurchaseStatus.Approved)
                 {
                     await _unitOfWork.RollbackAsync(ct);
-                    return Result<CompraNotaProveedorDto>.Failure(
+                    return Result<SupplierPurchaseNoteDto>.Failure(
                         "La factura de compra vinculada no existe o no está aprobada.");
                 }
 
@@ -110,7 +110,7 @@ public sealed class AprobarCompraNotaProveedorCommandHandler
                 if (gasto is null || gasto.Status != ExpenseStatus.Approved)
                 {
                     await _unitOfWork.RollbackAsync(ct);
-                    return Result<CompraNotaProveedorDto>.Failure(
+                    return Result<SupplierPurchaseNoteDto>.Failure(
                         "La factura de gasto vinculada no existe o no está aprobada.");
                 }
 
@@ -138,7 +138,7 @@ public sealed class AprobarCompraNotaProveedorCommandHandler
             if (!asientoResult.IsSuccess)
             {
                 await _unitOfWork.RollbackAsync(ct);
-                return Result<CompraNotaProveedorDto>.Failure(
+                return Result<SupplierPurchaseNoteDto>.Failure(
                     asientoResult.Error ?? "No se pudo registrar el asiento contable de la nota.");
             }
 
@@ -171,13 +171,13 @@ public sealed class AprobarCompraNotaProveedorCommandHandler
             await _unitOfWork.CommitAsync(ct);
 
             _logger.LogInformation("Nota Supplier aprobada: {NotaId}, asiento {JournalEntryId}", nota.Id, asientoId);
-            return Result<CompraNotaProveedorDto>.Success(ToDto(nota));
+            return Result<SupplierPurchaseNoteDto>.Success(ToDto(nota));
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
             _logger.LogError(ex, "Error al aprobar nota Supplier {NotaId}", command.NotaId);
-            return Result<CompraNotaProveedorDto>.Failure($"No se pudo aprobar la nota: {ex.Message}");
+            return Result<SupplierPurchaseNoteDto>.Failure($"No se pudo aprobar la nota: {ex.Message}");
         }
     }
 
@@ -229,7 +229,7 @@ public sealed class AprobarCompraNotaProveedorCommandHandler
         return lines;
     }
 
-    private static CompraNotaProveedorDto ToDto(PurchNote n) => new(
+    private static SupplierPurchaseNoteDto ToDto(PurchNote n) => new(
         n.Id,
         n.SupplierId,
         n.PurchBillId,

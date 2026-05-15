@@ -94,7 +94,7 @@ public sealed class GenerarIssuedRetentionCommandHandler
                 else
                     continue;
 
-                var valor = CompraRetencionCalculo.CalcularValorRetenido(@base, cfg.Percentage);
+                var valor = PurchaseRetentionCalculo.CalcularValorRetenido(@base, cfg.Percentage);
                 if (valor <= 0) continue;
 
                 var det = PurchRetentionLine.Create(

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -9,21 +9,21 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-/// <summary>Notas de crédito/débito recibidas de proveedores (SRI), aplicables a compras o gastos.</summary>
-[Modulo("Notas proveedor", "perm:compras.notas-proveedor.view", "📄", "/compras/notas-proveedor", "perm:compras.facturas.view", 47)]
+/// <summary>Notas de crÃ©dito/dÃ©bito recibidas de proveedores (SRI), aplicables a compras o gastos.</summary>
+[Modulo("Notas proveedor", "perm:compras.notas-proveedor.view", "ðŸ“„", "/compras/notas-proveedor", "perm:compras.facturas.view", 47)]
 [ApiController]
 [Route("api/compras/notas-proveedor")]
 [Authorize]
 [Produces("application/json")]
-public sealed class ComprasNotasProveedorController : ControllerBase
+public sealed class PurchaseSupplierNotesController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public ComprasNotasProveedorController(IMediator mediator) => _mediator = mediator;
+    public PurchaseSupplierNotesController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
     [Authorize(Policy = "perm:compras.notas-proveedor.view")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<CompraNotaProveedorDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<SupplierPurchaseNoteDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Listar(CancellationToken ct = default)
     {
         Guid? proveedorId = null, compraFacturaId = null, gastoFacturaId = null;
@@ -36,15 +36,15 @@ public sealed class ComprasNotasProveedorController : ControllerBase
         var estado = Request.Query.TryGetValue("estado", out var ev) ? ev.ToString() : null;
 
         var result = await _mediator.Send(
-            new GetComprasNotasProveedorQuery(proveedorId, compraFacturaId, gastoFacturaId, estado), ct);
-        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<CompraNotaProveedorDto>());
+            new GetPurchasesNotesSupplierQuery(proveedorId, compraFacturaId, gastoFacturaId, estado), ct);
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<SupplierPurchaseNoteDto>());
     }
 
     /// <summary>Importa XML de nota (multipart campo <c>xmlFile</c>).</summary>
     [HttpPost]
     [Authorize(Policy = "perm:compras.notas-proveedor.create")]
     [Consumes("multipart/form-data")]
-    [ProducesResponseType(typeof(ApiResponse<CompraNotaProveedorDto?>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<SupplierPurchaseNoteDto?>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Importar(
         IFormFile xmlFile,
         [FromForm] Guid? compraFacturaId,
@@ -58,7 +58,7 @@ public sealed class ComprasNotasProveedorController : ControllerBase
         await xmlFile.CopyToAsync(ms, ct);
         var content = ms.ToArray();
 
-        var cmd = new ImportarCompraNotaProveedorCommand(
+        var cmd = new ImportPurchaseSupplierNoteCommand(
             content,
             xmlFile.FileName,
             compraFacturaId,
@@ -69,14 +69,14 @@ public sealed class ComprasNotasProveedorController : ControllerBase
 
     [HttpPut("{id:guid}/aprobar")]
     [Authorize(Policy = "perm:compras.notas-proveedor.approve")]
-    [ProducesResponseType(typeof(ApiResponse<CompraNotaProveedorDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SupplierPurchaseNoteDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Aprobar(
         Guid id,
-        [FromBody] AprobarCompraNotaProveedorBody? body,
+        [FromBody] ApprovePurchaseSupplierNoteBody? body,
         CancellationToken ct = default)
     {
         var result = await _mediator.Send(
-            new AprobarCompraNotaProveedorCommand(
+            new ApprovePurchaseSupplierNoteCommand(
                 id,
                 body?.NumeroAutorizacion,
                 body?.FechaAutorizacion),
@@ -85,7 +85,7 @@ public sealed class ComprasNotasProveedorController : ControllerBase
     }
 }
 
-public sealed class AprobarCompraNotaProveedorBody
+public sealed class ApprovePurchaseSupplierNoteBody
 {
     public string? NumeroAutorizacion { get; set; }
     public DateTime? FechaAutorizacion { get; set; }

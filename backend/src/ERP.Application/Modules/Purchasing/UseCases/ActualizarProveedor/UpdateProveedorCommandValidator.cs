@@ -6,9 +6,9 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.ActualizarProveedor;
 
-public sealed class UpdateProveedorCommandValidator : AbstractValidator<UpdateProveedorCommand>
+public sealed class UpdateSupplierCommandValidator : AbstractValidator<UpdateSupplierCommand>
 {
-    public UpdateProveedorCommandValidator(
+    public UpdateSupplierCommandValidator(
         ISupplierRepository repo,
         ICurrentTenant tenant)
     {

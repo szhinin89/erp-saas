@@ -23,15 +23,15 @@ namespace ERP.API.Controllers;
 /// </summary>
 [Modulo("Ventas", "perm:ventas.facturas.view", "ðŸ§¾", "/ventas", null, 50)]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/Ventas")]
 [Authorize]
 [Produces("application/json")]
-public sealed class VentasController : ControllerBase
+public sealed class SalesController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly ITirillaFacturaService _tirillaFacturaService;
 
-    public VentasController(
+    public SalesController(
         IMediator mediator,
         ITirillaFacturaService tirillaFacturaService)
     {
@@ -45,7 +45,7 @@ public sealed class VentasController : ControllerBase
     /// <remarks>Query params: pageNumber, pageSize, clienteId, desde (YYYY-MM-DD), hasta, estado, search.</remarks>
     [HttpGet]
     [Authorize(Policy = "perm:ventas.facturas.view")]
-    [ProducesResponseType(typeof(ApiResponse<VentasPagedResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SalesPagedResult>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
         int pageNumber = 1, pageSize = 20;
@@ -63,7 +63,7 @@ public sealed class VentasController : ControllerBase
         var search = CatalogQueryParameters.ParseSearch(Request.Query);
 
         var result = await _mediator.Send(
-            new GetVentasListQuery(pageNumber, pageSize, clienteId, desde, hasta, estado, search), ct);
+            new GetSalesListQuery(pageNumber, pageSize, clienteId, desde, hasta, estado, search), ct);
 
         return this.ToOkOrBadRequest(result, "OK");
     }
@@ -76,7 +76,7 @@ public sealed class VentasController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetVentaByIdQuery(id), ct);
+        var result = await _mediator.Send(new GetSaleByIdQuery(id), ct);
         return this.ToOkOrNotFound(result);
     }
 
@@ -93,7 +93,7 @@ public sealed class VentasController : ControllerBase
         if (!Request.Query.TryGetValue("bodegaId",   out var bv) || !Guid.TryParse(bv, out var bodegaId))
             return this.ApiBadRequest("El parÃ¡metro bodegaId es requerido y debe ser un GUID vÃ¡lido.");
 
-        var result = await _mediator.Send(new GetStockDisponibleParaVentaQuery(productoId, bodegaId), ct);
+        var result = await _mediator.Send(new GetStockDisponibleParaSaleQuery(productoId, bodegaId), ct);
         return this.ToOkOrBadRequest(result, "OK");
     }
 
@@ -107,7 +107,7 @@ public sealed class VentasController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Crear(
-        [FromBody] CrearVentaCommand command, CancellationToken ct = default)
+        [FromBody] CreateSaleCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
@@ -125,7 +125,7 @@ public sealed class VentasController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Validate(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new ValidarVentaCommand(id), ct);
+        var result = await _mediator.Send(new ValidarSaleCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Validado");
     }
 

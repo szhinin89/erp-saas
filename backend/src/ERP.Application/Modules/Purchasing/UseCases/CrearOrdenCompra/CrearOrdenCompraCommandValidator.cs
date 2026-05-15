@@ -2,9 +2,9 @@
 
 namespace ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
 
-public sealed class CrearOrdenCompraCommandValidator : AbstractValidator<CrearOrdenCompraCommand>
+public sealed class CrearOrderPurchaseCommandValidator : AbstractValidator<CrearOrderPurchaseCommand>
 {
-    public CrearOrdenCompraCommandValidator()
+    public CrearOrderPurchaseCommandValidator()
     {
         RuleFor(x => x.SupplierId)
             .NotEmpty().WithMessage("El Supplier es obligatorio.");

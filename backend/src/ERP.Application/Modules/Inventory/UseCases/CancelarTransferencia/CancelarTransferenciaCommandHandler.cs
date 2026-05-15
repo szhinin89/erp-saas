@@ -8,23 +8,23 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Inventory.UseCases.CancelarTransferencia;
 
-public sealed class CancelarTransferenciaCommandHandler
-    : IRequestHandler<CancelarTransferenciaCommand, Result<TransferenciaDto>>
+public sealed class CancelTransferCommandHandler
+    : IRequestHandler<CancelTransferCommand, Result<TransferDto>>
 {
     private readonly IStockTransferRepository _transferenciaRepo;
     private readonly IUserActivityRepository  _activity;
     private readonly ICurrentTenant           _currentTenant;
     private readonly ICurrentUser             _currentUser;
     private readonly IUnitOfWork              _unitOfWork;
-    private readonly ILogger<CancelarTransferenciaCommandHandler> _logger;
+    private readonly ILogger<CancelTransferCommandHandler> _logger;
 
-    public CancelarTransferenciaCommandHandler(
+    public CancelTransferCommandHandler(
         IStockTransferRepository transferenciaRepo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
-        ILogger<CancelarTransferenciaCommandHandler> logger)
+        ILogger<CancelTransferCommandHandler> logger)
     {
         _transferenciaRepo = transferenciaRepo;
         _activity          = activity;
@@ -34,18 +34,18 @@ public sealed class CancelarTransferenciaCommandHandler
         _logger            = logger;
     }
 
-    public async Task<Result<TransferenciaDto>> Handle(
-        CancelarTransferenciaCommand command, CancellationToken ct)
+    public async Task<Result<TransferDto>> Handle(
+        CancelTransferCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
-        var transfer = await _transferenciaRepo.GetByIdAsync(tenantId, command.TransferenciaId, ct);
+        var transfer = await _transferenciaRepo.GetByIdAsync(tenantId, command.TransferId, ct);
         if (transfer is null)
-            return Result<TransferenciaDto>.Failure("transfer no encontrada.");
+            return Result<TransferDto>.Failure("transfer no encontrada.");
 
         if (transfer.Status != "Borrador")
-            return Result<TransferenciaDto>.Failure(
+            return Result<TransferDto>.Failure(
                 $"Solo se puede cancelar una transfer en Borrador (estado actual: {transfer.Status}).");
 
         transfer.Cancel(userId);
@@ -64,7 +64,7 @@ public sealed class CancelarTransferenciaCommandHandler
 
             _logger.LogInformation("transfer cancelada: {Numero}", transfer.TransferNumber);
 
-            return Result<TransferenciaDto>.Success(new TransferenciaDto(
+            return Result<TransferDto>.Success(new TransferDto(
             transfer.Id, transfer.TransferNumber,
             transfer.SourceWarehouseId,
             transfer.SourceWarehouse?.Name ?? transfer.SourceWarehouseId.ToString(),
@@ -78,8 +78,8 @@ public sealed class CancelarTransferenciaCommandHandler
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al cancelar transfer {Id}", command.TransferenciaId);
-            return Result<TransferenciaDto>.Failure($"No se pudo cancelar la transfer: {ex.Message}");
+            _logger.LogError(ex, "Error al cancelar transfer {Id}", command.TransferId);
+            return Result<TransferDto>.Failure($"No se pudo cancelar la transfer: {ex.Message}");
         }
     }
 }

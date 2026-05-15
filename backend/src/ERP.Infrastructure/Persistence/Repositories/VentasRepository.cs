@@ -4,11 +4,11 @@ using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class VentasRepository : ISalesRepository
+public sealed class SalesRepository : ISalesRepository
 {
     private readonly ErpDbContext _context;
 
-    public VentasRepository(ErpDbContext context) => _context = context;
+    public SalesRepository(ErpDbContext context) => _context = context;
 
     public Task AddBillAsync(SalesBill factura, CancellationToken ct = default)
         => _context.SalesBills.AddAsync(factura, ct).AsTask();

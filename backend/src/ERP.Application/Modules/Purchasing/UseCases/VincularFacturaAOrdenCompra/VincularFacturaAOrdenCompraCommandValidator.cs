@@ -2,10 +2,10 @@
 
 namespace ERP.Application.Modules.Purchasing.UseCases.VincularFacturaAOrdenCompra;
 
-public sealed class VincularFacturaAOrdenCompraCommandValidator
-    : AbstractValidator<VincularFacturaAOrdenCompraCommand>
+public sealed class VincularFacturaAOrderPurchaseCommandValidator
+    : AbstractValidator<VincularFacturaAOrderPurchaseCommand>
 {
-    public VincularFacturaAOrdenCompraCommandValidator()
+    public VincularFacturaAOrderPurchaseCommandValidator()
     {
         RuleFor(x => x.OrdenCompraId)
             .NotEmpty()

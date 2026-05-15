@@ -5,7 +5,7 @@ using ERP.Application.Modules.Purchasing.DTOs;
 namespace ERP.Application.Modules.Purchasing.UseCases.VincularFacturaAOrdenCompra;
 
 [RequireFeature(SubscriptionFeatureCodes.Purchases)]
-public sealed record VincularFacturaAOrdenCompraCommand(
+public sealed record VincularFacturaAOrderPurchaseCommand(
     Guid OrdenCompraId,
     Guid PurchBillId
-) : IRequest<Result<OrdenCompraDto>>;
+) : IRequest<Result<PurchaseOrderDto>>;

@@ -11,8 +11,8 @@ using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Inventory.UseCases.CrearTransferencia;
 
-public sealed class CrearTransferenciaCommandHandler
-    : IRequestHandler<CrearTransferenciaCommand, Result<TransferenciaDto>>
+public sealed class CreateTransferCommandHandler
+    : IRequestHandler<CreateTransferCommand, Result<TransferDto>>
 {
     private readonly IStockTransferRepository    _transferenciaRepo;
     private readonly IWarehouseRepository           _bodegaRepo;
@@ -22,9 +22,9 @@ public sealed class CrearTransferenciaCommandHandler
     private readonly ICurrentTenant              _currentTenant;
     private readonly ICurrentUser                _currentUser;
     private readonly IUnitOfWork                 _unitOfWork;
-    private readonly ILogger<CrearTransferenciaCommandHandler> _logger;
+    private readonly ILogger<CreateTransferCommandHandler> _logger;
 
-    public CrearTransferenciaCommandHandler(
+    public CreateTransferCommandHandler(
         IStockTransferRepository transferenciaRepo,
         IWarehouseRepository bodegaRepo,
         IProductRepository productRepo,
@@ -33,7 +33,7 @@ public sealed class CrearTransferenciaCommandHandler
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
-        ILogger<CrearTransferenciaCommandHandler> logger)
+        ILogger<CreateTransferCommandHandler> logger)
     {
         _transferenciaRepo = transferenciaRepo;
         _bodegaRepo        = bodegaRepo;
@@ -46,8 +46,8 @@ public sealed class CrearTransferenciaCommandHandler
         _logger            = logger;
     }
 
-    public async Task<Result<TransferenciaDto>> Handle(
-        CrearTransferenciaCommand command, CancellationToken ct)
+    public async Task<Result<TransferDto>> Handle(
+        CreateTransferCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
@@ -59,11 +59,11 @@ public sealed class CrearTransferenciaCommandHandler
         // 1. Validar bodegas
         var origen = await _bodegaRepo.GetByIdAsync(tenantId, command.SourceWarehouseId, ct);
         if (origen is null || !origen.IsActive)
-            return Result<TransferenciaDto>.Failure("La Warehouse origen no existe o no está activa.");
+            return Result<TransferDto>.Failure("La Warehouse origen no existe o no está activa.");
 
         var destino = await _bodegaRepo.GetByIdAsync(tenantId, command.TargetWarehouseId, ct);
         if (destino is null || !destino.IsActive)
-            return Result<TransferenciaDto>.Failure("La Warehouse destino no existe o no está activa.");
+            return Result<TransferDto>.Failure("La Warehouse destino no existe o no está activa.");
 
         // 2. Validar productos + stock (de-duplication por ProductoId)
         var productos = new Dictionary<Guid, ERP.Domain.Products.Entities.Product>();
@@ -72,7 +72,7 @@ public sealed class CrearTransferenciaCommandHandler
             if (productos.ContainsKey(item.ProductId)) continue;
             var producto = await _productRepo.GetByIdAsync(item.ProductId, tenantId, ct);
             if (producto is null || !producto.IsActive)
-                return Result<TransferenciaDto>.Failure(
+                return Result<TransferDto>.Failure(
                     $"El producto {item.ProductId} no existe o no está activo.");
             productos[item.ProductId] = producto;
         }
@@ -90,7 +90,7 @@ public sealed class CrearTransferenciaCommandHandler
                 _logger.LogWarning(
                     "Stock insuficiente: producto={ProductoId}, disponible={Disp}, solicitado={Sol}",
                     item.ProductId, stock?.AvailableQuantity ?? 0, item.Quantity);
-                return Result<TransferenciaDto>.Failure(
+                return Result<TransferDto>.Failure(
                     $"Stock insuficiente para '{producto.ShortName}' en la Warehouse origen. " +
                     $"Disponible: {stock?.AvailableQuantity ?? 0}, Solicitado: {item.Quantity}");
             }
@@ -132,17 +132,17 @@ public sealed class CrearTransferenciaCommandHandler
             _logger.LogInformation("StockTransfer creada: {Numero} ({Id})",
                 t.TransferNumber, t.Id);
 
-            return Result<TransferenciaDto>.Success(ToDto(t, origen.Name, destino.Name));
+            return Result<TransferDto>.Success(ToDto(t, origen.Name, destino.Name));
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
             _logger.LogError(ex, "Error al crear transfer (tenant {TenantId})", tenantId);
-            return Result<TransferenciaDto>.Failure($"No se pudo crear la transfer: {ex.Message}");
+            return Result<TransferDto>.Failure($"No se pudo crear la transfer: {ex.Message}");
         }
     }
 
-    private static TransferenciaDto ToDto(StockTransfer t, string nombreOrigen, string nombreDestino) => new(
+    private static TransferDto ToDto(StockTransfer t, string nombreOrigen, string nombreDestino) => new(
         t.Id, t.TransferNumber,
         t.SourceWarehouseId, nombreOrigen,
         t.TargetWarehouseId, nombreDestino,

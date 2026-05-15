@@ -2,7 +2,7 @@ namespace ERP.API.Attributes;
 
 /// <summary>
 /// Describe un módulo o subítem de menú asociado a un controlador o acción HTTP.
-/// <see cref="ERP.API.Services.ModuloDiscoveryService"/> sincroniza estos metadatos con la tabla <c>funcionalidades</c>.
+/// <see cref="ERP.API.Services.ModuloDiscoveryService"/> sincroniza estos metadatos con la tabla <c>app_features</c>.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
 public sealed class ModuloAttribute : Attribute

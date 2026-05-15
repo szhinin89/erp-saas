@@ -4,8 +4,8 @@ using ERP.Application.Modules.Purchasing.DTOs;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.ListarProveedores;
 
-public sealed record GetProveedoresQuery(
+public record GetSuppliersQuery(
     bool?   ActiveFilter,
     string? Search,
     string?   PersonType
-) : IRequest<Result<IReadOnlyList<ProveedorDto>>>;
+) : IRequest<Result<IReadOnlyList<SupplierDto>>>;

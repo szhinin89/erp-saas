@@ -5,20 +5,20 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.GetCompras;
 
-public sealed class GetComprasQueryHandler
-    : IRequestHandler<GetComprasQuery, Result<IReadOnlyList<PurchBillDto>>>
+public sealed class GetPurchasesQueryHandler
+    : IRequestHandler<GetPurchasesQuery, Result<IReadOnlyList<PurchBillDto>>>
 {
     private readonly IPurchBillRepository _repo;
     private readonly ICurrentTenant    _tenant;
 
-    public GetComprasQueryHandler(IPurchBillRepository repo, ICurrentTenant tenant)
+    public GetPurchasesQueryHandler(IPurchBillRepository repo, ICurrentTenant tenant)
     {
         _repo   = repo;
         _tenant = tenant;
     }
 
     public async Task<Result<IReadOnlyList<PurchBillDto>>> Handle(
-        GetComprasQuery query, CancellationToken ct)
+        GetPurchasesQuery query, CancellationToken ct)
     {
         var list = await _repo.GetAsync(
             _tenant.TenantId, query.Status, query.SupplierId,

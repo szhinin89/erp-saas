@@ -3,9 +3,9 @@ using ERP.Domain.Modules.Purchasing.Entities;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.RechazarCompra;
 
-public sealed class RechazarCompraCommandValidator : AbstractValidator<RechazarCompraCommand>
+public sealed class RechazarPurchaseCommandValidator : AbstractValidator<RechazarPurchaseCommand>
 {
-    public RechazarCompraCommandValidator()
+    public RechazarPurchaseCommandValidator()
     {
         RuleFor(x => x.PurchBillId)
             .NotEmpty()

@@ -169,7 +169,7 @@ public sealed class KardexService : IKardexService
 
         return Result<KardexResponse>.Success(new KardexResponse(
             new KardexProductoDto(producto.Id, producto.ShortName, producto.SaleCode),
-            new KardexBodegaDto(Warehouse.Id, Warehouse.Name),
+            new KardexWarehouseDto(Warehouse.Id, Warehouse.Name),
             rows,
             resumen));
     }

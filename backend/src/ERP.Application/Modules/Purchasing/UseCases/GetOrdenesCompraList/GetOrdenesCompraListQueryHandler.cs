@@ -7,14 +7,14 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.GetOrdenesCompraList;
 
-public sealed class GetOrdenesCompraListQueryHandler
-    : IRequestHandler<GetOrdenesCompraListQuery, Result<OrdenesCompraPagedResult>>
+public sealed class GetPurchaseOrdersListQueryHandler
+    : IRequestHandler<GetPurchaseOrdersListQuery, Result<PurchaseOrdersPagedResult>>
 {
     private readonly IPurchaseOrderRepository _repo;
     private readonly ISupplierRepository   _proveedorRepo;
     private readonly ICurrentTenant         _currentTenant;
 
-    public GetOrdenesCompraListQueryHandler(
+    public GetPurchaseOrdersListQueryHandler(
         IPurchaseOrderRepository repo,
         ISupplierRepository proveedorRepo,
         ICurrentTenant currentTenant)
@@ -24,8 +24,8 @@ public sealed class GetOrdenesCompraListQueryHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<OrdenesCompraPagedResult>> Handle(
-        GetOrdenesCompraListQuery query, CancellationToken ct)
+    public async Task<Result<PurchaseOrdersPagedResult>> Handle(
+        GetPurchaseOrdersListQuery query, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
 
@@ -43,9 +43,9 @@ public sealed class GetOrdenesCompraListQueryHandler
         }
 
         var dtos = items.Select(o =>
-            CrearOrdenCompraCommandHandler.ToDto(o, proveedores.GetValueOrDefault(o.SupplierId, ""))).ToList();
+            CrearOrderPurchaseCommandHandler.ToDto(o, proveedores.GetValueOrDefault(o.SupplierId, ""))).ToList();
 
-        return Result<OrdenesCompraPagedResult>.Success(
-            new OrdenesCompraPagedResult(dtos, total, query.PageNumber, query.PageSize));
+        return Result<PurchaseOrdersPagedResult>.Success(
+            new PurchaseOrdersPagedResult(dtos, total, query.PageNumber, query.PageSize));
     }
 }

@@ -5,12 +5,13 @@ using ERP.Application.Inventory.DTOs;
 namespace ERP.Application.Inventory.UseCases.CrearTransferencia;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
-public sealed record CrearTransferenciaCommand(
+public record CreateTransferCommand(
     Guid                        SourceWarehouseId,
     Guid                        TargetWarehouseId,
     string? Reason,
     string? Notes,
-    List<ItemTransferenciaDto>  Items
-) : IRequest<Result<TransferenciaDto>>;
+    List<TransferItemDto>  Items
+) : IRequest<Result<TransferDto>>;
 
-public record ItemTransferenciaDto(Guid ProductId, decimal Quantity);
+public record TransferItemDto(Guid ProductId, decimal Quantity);
+

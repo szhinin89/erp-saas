@@ -12,14 +12,14 @@ namespace ERP.API.Controllers;
 /// <summary>Consultas de inventario (stock por bodega).</summary>
 [Modulo("Stock por bodega", "session:inventario.stock", "ðŸ“¦", "/inventario/stock", "perm:inventario.products.view", 41)]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/Inventario")]
 [Authorize]
 [Produces("application/json")]
-public sealed class InventarioController : ControllerBase
+public sealed class InventoryController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public InventarioController(IMediator mediator) => _mediator = mediator;
+    public InventoryController(IMediator mediator) => _mediator = mediator;
 
     /// <summary>Saldo de stock en una bodega; filtro opcional por producto.</summary>
     [HttpGet("stock-actual")]
@@ -31,7 +31,7 @@ public sealed class InventarioController : ControllerBase
         [FromQuery] Guid? productoId = null,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetCurrentStockPorBodegaQuery(bodegaId, productoId), ct);
+        var result = await _mediator.Send(new GetCurrentStockPorWarehouseQuery(bodegaId, productoId), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<CurrentStockListItemDto>());
     }
 }

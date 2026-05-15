@@ -1,12 +1,12 @@
 ﻿namespace ERP.Application.Inventory.DTOs;
 
-public record TransferenciaDetalleDto(
+public record TransferDetailItemDto(
     Guid    Id,
     Guid    ProductId,
     string  Description,
     decimal Quantity);
 
-public record TransferenciaDto(
+public record TransferDto(
     Guid      Id,
     string    NumeroTransferencia,
     Guid      BodegaOrigenId,
@@ -21,7 +21,7 @@ public record TransferenciaDto(
     Guid?     ConfirmadoPor,
     DateTime  CreatedAt);
 
-public record TransferenciaDetailDto(
+public record TransferDetailDto(
     Guid      Id,
     string    NumeroTransferencia,
     Guid      BodegaOrigenId,
@@ -35,10 +35,13 @@ public record TransferenciaDetailDto(
     DateTime? FechaConfirmacion,
     Guid?     ConfirmadoPor,
     DateTime  CreatedAt,
-    IReadOnlyList<TransferenciaDetalleDto> Detalles);
+    IReadOnlyList<TransferDetailItemDto> Detalles);
 
-public record TransferenciasPagedResult(
-    IReadOnlyList<TransferenciaDto> Items,
+public record TransfersPagedResult(
+    IReadOnlyList<TransferDto> Items,
     int TotalCount,
     int PageNumber,
     int PageSize);
+
+
+

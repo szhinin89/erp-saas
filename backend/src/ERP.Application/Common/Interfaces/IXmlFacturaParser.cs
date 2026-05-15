@@ -1,12 +1,12 @@
-namespace ERP.Application.Common.Interfaces;
+﻿namespace ERP.Application.Common.Interfaces;
 
 /// <summary>
-/// Parsea un comprobante electrónico SRI Ecuador (XML) y extrae los datos relevantes.
+/// Parsea un comprobante electrÃ³nico SRI Ecuador (XML) y extrae los datos relevantes.
 /// </summary>
 public interface IXmlFacturaParser
 {
     Task<FacturaParseResult> ParseAsync(Stream xmlStream, CancellationToken ct = default);
-    Task<NotaProveedorParseResult> ParseNotaProveedorAsync(Stream xmlStream, CancellationToken ct = default);
+    Task<SupplierNoteParseResult> ParseSupplierNoteAsync(Stream xmlStream, CancellationToken ct = default);
 }
 
 public sealed record FacturaParseResult(
@@ -30,7 +30,7 @@ public sealed record ItemFactura(
     decimal Subtotal
 );
 
-public sealed record NotaProveedorParseResult(
+public sealed record SupplierNoteParseResult(
     string                    NoteType,
     string                    Reason,
     string                    AccessKey,
@@ -44,10 +44,10 @@ public sealed record NotaProveedorParseResult(
     decimal                   Subtotal,
     decimal                   VatTotal,
     decimal                   Total,
-    IReadOnlyList<ItemNotaProveedor> Items
+    IReadOnlyList<SupplierNoteItem> Items
 );
 
-public sealed record ItemNotaProveedor(
+public sealed record SupplierNoteItem(
     string  ProductCode,
     string  Description,
     decimal Quantity,

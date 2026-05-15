@@ -12,8 +12,8 @@ using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Inventory.UseCases.ConfirmarTransferencia;
 
-public sealed class ConfirmarTransferenciaCommandHandler
-    : IRequestHandler<ConfirmarTransferenciaCommand, Result<TransferenciaDto>>
+public sealed class ConfirmTransferCommandHandler
+    : IRequestHandler<ConfirmTransferCommand, Result<TransferDto>>
 {
     private readonly IStockTransferRepository   _transferenciaRepo;
     private readonly IStockRepository _inventario;
@@ -23,9 +23,9 @@ public sealed class ConfirmarTransferenciaCommandHandler
     private readonly IUnitOfWork                _unitOfWork;
     private readonly ICurrentTenant             _currentTenant;
     private readonly ICurrentUser               _currentUser;
-    private readonly ILogger<ConfirmarTransferenciaCommandHandler> _logger;
+    private readonly ILogger<ConfirmTransferCommandHandler> _logger;
 
-    public ConfirmarTransferenciaCommandHandler(
+    public ConfirmTransferCommandHandler(
         IStockTransferRepository transferenciaRepo,
         IStockRepository inventario,
         ICostoPromedioService costoServicio,
@@ -34,7 +34,7 @@ public sealed class ConfirmarTransferenciaCommandHandler
         IUnitOfWork unitOfWork,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
-        ILogger<ConfirmarTransferenciaCommandHandler> logger)
+        ILogger<ConfirmTransferCommandHandler> logger)
     {
         _transferenciaRepo = transferenciaRepo;
         _inventario        = inventario;
@@ -47,22 +47,22 @@ public sealed class ConfirmarTransferenciaCommandHandler
         _logger            = logger;
     }
 
-    public async Task<Result<TransferenciaDto>> Handle(
-        ConfirmarTransferenciaCommand command, CancellationToken ct)
+    public async Task<Result<TransferDto>> Handle(
+        ConfirmTransferCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
-        var transfer = await _transferenciaRepo.GetByIdAsync(tenantId, command.TransferenciaId, ct);
+        var transfer = await _transferenciaRepo.GetByIdAsync(tenantId, command.TransferId, ct);
         if (transfer is null)
-            return Result<TransferenciaDto>.Failure("transfer no encontrada.");
+            return Result<TransferDto>.Failure("transfer no encontrada.");
 
         if (transfer.Status != "Borrador")
-            return Result<TransferenciaDto>.Failure(
+            return Result<TransferDto>.Failure(
                 $"Solo se puede confirmar una transfer en Borrador (estado actual: {transfer.Status}).");
 
         if (transfer.Lines.Count == 0)
-            return Result<TransferenciaDto>.Failure("La transfer no tiene ítems.");
+            return Result<TransferDto>.Failure("La transfer no tiene ítems.");
 
         _logger.LogInformation(
             "Confirmando transfer {Numero} ({Id}): {Count} ítems",
@@ -93,7 +93,7 @@ public sealed class ConfirmarTransferenciaCommandHandler
                     _logger.LogWarning(
                         "Stock insuficiente (posiblemente por concurrencia): producto={Pid}, solicitado={S}",
                         detalle.ProductId, detalle.Quantity);
-                    return Result<TransferenciaDto>.Failure(
+                    return Result<TransferDto>.Failure(
                         $"Stock insuficiente para '{detalle.Description}' en la Warehouse origen. " +
                         $"El saldo pudo haber sido modificado por otra operación concurrente.");
                 }
@@ -145,7 +145,7 @@ public sealed class ConfirmarTransferenciaCommandHandler
                 "transfer confirmada: {Numero} ({Id})",
                 transfer.TransferNumber, transfer.Id);
 
-            return Result<TransferenciaDto>.Success(new TransferenciaDto(
+            return Result<TransferDto>.Success(new TransferDto(
                 transfer.Id, transfer.TransferNumber,
                 transfer.SourceWarehouseId,
                 transfer.SourceWarehouse?.Name ?? transfer.SourceWarehouseId.ToString(),
@@ -159,14 +159,14 @@ public sealed class ConfirmarTransferenciaCommandHandler
         catch (InvalidOperationException ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogWarning(ex, "Error de negocio al confirmar transfer {Id}", command.TransferenciaId);
-            return Result<TransferenciaDto>.Failure(ex.Message);
+            _logger.LogWarning(ex, "Error de negocio al confirmar transfer {Id}", command.TransferId);
+            return Result<TransferDto>.Failure(ex.Message);
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error inesperado al confirmar transfer {Id}", command.TransferenciaId);
-            return Result<TransferenciaDto>.Failure($"Error al confirmar la transfer: {ex.Message}");
+            _logger.LogError(ex, "Error inesperado al confirmar transfer {Id}", command.TransferId);
+            return Result<TransferDto>.Failure($"Error al confirmar la transfer: {ex.Message}");
         }
     }
 }

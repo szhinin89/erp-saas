@@ -6,19 +6,19 @@ using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.GetVentasList;
 
-public sealed class GetVentasListQueryHandler
-    : IRequestHandler<GetVentasListQuery, Result<VentasPagedResult>>
+public sealed class GetSalesListQueryHandler
+    : IRequestHandler<GetSalesListQuery, Result<SalesPagedResult>>
 {
     private readonly ISalesRepository _ventasRepository;
     private readonly ICurrentTenant    _currentTenant;
 
-    public GetVentasListQueryHandler(ISalesRepository ventasRepository, ICurrentTenant currentTenant)
+    public GetSalesListQueryHandler(ISalesRepository ventasRepository, ICurrentTenant currentTenant)
     {
         _ventasRepository = ventasRepository;
         _currentTenant    = currentTenant;
     }
 
-    public async Task<Result<VentasPagedResult>> Handle(GetVentasListQuery query, CancellationToken ct)
+    public async Task<Result<SalesPagedResult>> Handle(GetSalesListQuery query, CancellationToken ct)
     {
         var pageNumber = Math.Max(1, query.PageNumber);
         var pageSize   = Math.Clamp(query.PageSize, 1, 100);
@@ -35,7 +35,7 @@ public sealed class GetVentasListQueryHandler
             ct);
 
         var dtos = items.Select(ToDto).ToList();
-        return Result<VentasPagedResult>.Success(new VentasPagedResult(dtos, totalCount, pageNumber, pageSize));
+        return Result<SalesPagedResult>.Success(new SalesPagedResult(dtos, totalCount, pageNumber, pageSize));
     }
 
     private static SalesBillDto ToDto(SalesBill f) => new(

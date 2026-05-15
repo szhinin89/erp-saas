@@ -2,13 +2,13 @@
 
 public record KardexResponse(
     KardexProductoDto                  Producto,
-    KardexBodegaDto                    Warehouse,
+    KardexWarehouseDto                    Warehouse,
     IReadOnlyList<MovimientoKardexDto> Rows,
     ResumenKardexDto                   Resumen);
 
 public record KardexProductoDto(Guid Id, string  Name, string Codigo);
 
-public record KardexBodegaDto(Guid Id, string  Name);
+public record KardexWarehouseDto(Guid Id, string  Name);
 
 public record MovimientoKardexDto(
     DateTime Fecha,

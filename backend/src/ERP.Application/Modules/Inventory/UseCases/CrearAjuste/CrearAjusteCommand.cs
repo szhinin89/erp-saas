@@ -5,7 +5,7 @@ using ERP.Application.Inventory.DTOs;
 namespace ERP.Application.Inventory.UseCases.CrearAjuste;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
-public sealed record CrearAjusteCommand(
+public record CreateStockAdjustmentCommand(
     Guid    WarehouseId,
     Guid    ProductId,
     decimal AdjustmentQty,

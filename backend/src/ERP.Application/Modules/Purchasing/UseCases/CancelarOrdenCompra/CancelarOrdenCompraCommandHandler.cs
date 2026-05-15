@@ -10,23 +10,23 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.CancelarOrdenCompra;
 
-public sealed class CancelarOrdenCompraCommandHandler
-    : IRequestHandler<CancelarOrdenCompraCommand, Result<OrdenCompraDto>>
+public sealed class CancelarOrderPurchaseCommandHandler
+    : IRequestHandler<CancelarOrderPurchaseCommand, Result<PurchaseOrderDto>>
 {
     private readonly IPurchaseOrderRepository  _ordenRepo;
     private readonly ISupplierRepository    _proveedorRepo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _currentTenant;
     private readonly ICurrentUser            _currentUser;
-    private readonly ILogger<CancelarOrdenCompraCommandHandler> _logger;
+    private readonly ILogger<CancelarOrderPurchaseCommandHandler> _logger;
 
-    public CancelarOrdenCompraCommandHandler(
+    public CancelarOrderPurchaseCommandHandler(
         IPurchaseOrderRepository ordenRepo,
         ISupplierRepository proveedorRepo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
-        ILogger<CancelarOrdenCompraCommandHandler> logger)
+        ILogger<CancelarOrderPurchaseCommandHandler> logger)
     {
         _ordenRepo     = ordenRepo;
         _proveedorRepo = proveedorRepo;
@@ -36,18 +36,18 @@ public sealed class CancelarOrdenCompraCommandHandler
         _logger        = logger;
     }
 
-    public async Task<Result<OrdenCompraDto>> Handle(
-        CancelarOrdenCompraCommand command, CancellationToken ct)
+    public async Task<Result<PurchaseOrderDto>> Handle(
+        CancelarOrderPurchaseCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
         var orden = await _ordenRepo.GetByIdAsync(tenantId, command.OrdenId, ct);
         if (orden is null)
-            return Result<OrdenCompraDto>.Failure("Orden de compra no encontrada.");
+            return Result<PurchaseOrderDto>.Failure("Orden de compra no encontrada.");
 
         if (orden.Status is "Cerrada" or "Cancelada")
-            return Result<OrdenCompraDto>.Failure(
+            return Result<PurchaseOrderDto>.Failure(
                 $"No se puede cancelar una OC en estado {orden.Status}.");
 
         orden.Cancel(userId);
@@ -62,7 +62,7 @@ public sealed class CancelarOrdenCompraCommandHandler
         _logger.LogInformation("OC cancelada: {Numero}", orden.OrderNumber);
 
         var Supplier = await _proveedorRepo.GetByIdAsync(tenantId, orden.SupplierId, ct);
-        return Result<OrdenCompraDto>.Success(
-            CrearOrdenCompraCommandHandler.ToDto(orden, Supplier?.LegalName ?? orden.SupplierId.ToString()));
+        return Result<PurchaseOrderDto>.Success(
+            CrearOrderPurchaseCommandHandler.ToDto(orden, Supplier?.LegalName ?? orden.SupplierId.ToString()));
     }
 }

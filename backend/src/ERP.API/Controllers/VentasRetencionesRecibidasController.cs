@@ -14,18 +14,18 @@ namespace ERP.API.Controllers;
 [Route("api/ventas/retenciones-recibidas")]
 [Authorize]
 [Produces("application/json")]
-public sealed class VentasRetencionesRecibidasController : ControllerBase
+public sealed class SalesReceivedWithholdingsController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public VentasRetencionesRecibidasController(IMediator mediator) => _mediator = mediator;
+    public SalesReceivedWithholdingsController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
     [Authorize(Policy = "perm:ventas.retenciones-recibidas.list")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<SalesRetentionListItemDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Listar(CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetVentasRetencionesRecibidasListQuery(), ct);
+        var result = await _mediator.Send(new GetSalesRetentionsReceivedListQuery(), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<SalesRetentionListItemDto>());
     }
 

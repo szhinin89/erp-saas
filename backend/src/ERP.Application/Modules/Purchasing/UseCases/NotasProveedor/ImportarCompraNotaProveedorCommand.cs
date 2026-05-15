@@ -4,9 +4,9 @@ using ERP.Application.Modules.Purchasing.DTOs;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.NotasProveedor;
 
-public sealed record ImportarCompraNotaProveedorCommand(
+public sealed record ImportPurchaseSupplierNoteCommand(
     byte[]  XmlContent,
     string? XmlNombreArchivo,
     Guid?   PurchBillId,
     Guid?   ExpenseInvoiceId
-) : IRequest<Result<CompraNotaProveedorDto>>;
+) : IRequest<Result<SupplierPurchaseNoteDto>>;

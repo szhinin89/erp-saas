@@ -28,7 +28,6 @@
     <RootNamespace>ERP.Infrastructure</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Seeding\Scripts\inec_ecuador_geography.sql" />
     <EmbeddedResource Include="Seeding\InstallData\*.sql" />
   </ItemGroup>
 </Project>

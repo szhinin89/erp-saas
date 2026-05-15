@@ -5,15 +5,16 @@ using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.RetencionesRecibidas;
 
-public sealed record GetVentasRetencionesRecibidasListQuery : IRequest<Result<IReadOnlyList<SalesRetentionListItemDto>>>;
+public record GetSalesRetentionsReceivedListQuery : IRequest<Result<IReadOnlyList<SalesRetentionListItemDto>>>;
 
-public sealed class GetVentasRetencionesRecibidasListQueryHandler
-    : IRequestHandler<GetVentasRetencionesRecibidasListQuery, Result<IReadOnlyList<SalesRetentionListItemDto>>>
+
+public sealed class GetSalesRetentionsReceivedListQueryHandler
+    : IRequestHandler<GetSalesRetentionsReceivedListQuery, Result<IReadOnlyList<SalesRetentionListItemDto>>>
 {
     private readonly ISalesRepository _ventasRepository;
     private readonly ICurrentTenant  _currentTenant;
 
-    public GetVentasRetencionesRecibidasListQueryHandler(
+    public GetSalesRetentionsReceivedListQueryHandler(
         ISalesRepository ventasRepository,
         ICurrentTenant currentTenant)
     {
@@ -22,7 +23,7 @@ public sealed class GetVentasRetencionesRecibidasListQueryHandler
     }
 
     public async Task<Result<IReadOnlyList<SalesRetentionListItemDto>>> Handle(
-        GetVentasRetencionesRecibidasListQuery request,
+        GetSalesRetentionsReceivedListQuery request,
         CancellationToken ct)
     {
         var list = await _ventasRepository.GetRetentionsAsync(_currentTenant.TenantId, ct);

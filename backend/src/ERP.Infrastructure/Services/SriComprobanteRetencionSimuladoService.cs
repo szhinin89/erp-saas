@@ -7,14 +7,14 @@ using ERP.Domain.Modules.Purchasing.Entities;
 
 namespace ERP.Infrastructure.Services;
 
-public sealed class SriComprobanteRetencionSimuladoService : ISriComprobanteRetencionService
+public sealed class SriWithholdingSimulatedService : ISriComprobanteRetentionService
 {
     private readonly IFileStorage _fileStorage;
-    private readonly ILogger<SriComprobanteRetencionSimuladoService> _logger;
+    private readonly ILogger<SriWithholdingSimulatedService> _logger;
 
-    public SriComprobanteRetencionSimuladoService(
+    public SriWithholdingSimulatedService(
         IFileStorage fileStorage,
-        ILogger<SriComprobanteRetencionSimuladoService> logger)
+        ILogger<SriWithholdingSimulatedService> logger)
     {
         _fileStorage = fileStorage;
         _logger      = logger;

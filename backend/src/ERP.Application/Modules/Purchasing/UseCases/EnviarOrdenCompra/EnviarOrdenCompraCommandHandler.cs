@@ -10,23 +10,23 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.EnviarOrdenCompra;
 
-public sealed class EnviarOrdenCompraCommandHandler
-    : IRequestHandler<EnviarOrdenCompraCommand, Result<OrdenCompraDto>>
+public sealed class EnviarOrderPurchaseCommandHandler
+    : IRequestHandler<EnviarOrderPurchaseCommand, Result<PurchaseOrderDto>>
 {
     private readonly IPurchaseOrderRepository  _ordenRepo;
     private readonly ISupplierRepository    _proveedorRepo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _currentTenant;
     private readonly ICurrentUser            _currentUser;
-    private readonly ILogger<EnviarOrdenCompraCommandHandler> _logger;
+    private readonly ILogger<EnviarOrderPurchaseCommandHandler> _logger;
 
-    public EnviarOrdenCompraCommandHandler(
+    public EnviarOrderPurchaseCommandHandler(
         IPurchaseOrderRepository ordenRepo,
         ISupplierRepository proveedorRepo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
-        ILogger<EnviarOrdenCompraCommandHandler> logger)
+        ILogger<EnviarOrderPurchaseCommandHandler> logger)
     {
         _ordenRepo     = ordenRepo;
         _proveedorRepo = proveedorRepo;
@@ -36,18 +36,18 @@ public sealed class EnviarOrdenCompraCommandHandler
         _logger        = logger;
     }
 
-    public async Task<Result<OrdenCompraDto>> Handle(
-        EnviarOrdenCompraCommand command, CancellationToken ct)
+    public async Task<Result<PurchaseOrderDto>> Handle(
+        EnviarOrderPurchaseCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
         var orden = await _ordenRepo.GetByIdAsync(tenantId, command.OrdenId, ct);
         if (orden is null)
-            return Result<OrdenCompraDto>.Failure("Orden de compra no encontrada.");
+            return Result<PurchaseOrderDto>.Failure("Orden de compra no encontrada.");
 
         if (orden.Status != "Borrador")
-            return Result<OrdenCompraDto>.Failure(
+            return Result<PurchaseOrderDto>.Failure(
                 $"Solo se puede enviar una OC en Borrador (estado actual: {orden.Status}).");
 
         orden.Send(userId);
@@ -62,7 +62,7 @@ public sealed class EnviarOrdenCompraCommandHandler
         _logger.LogInformation("OC enviada: {Numero}", orden.OrderNumber);
 
         var Supplier = await _proveedorRepo.GetByIdAsync(tenantId, orden.SupplierId, ct);
-        return Result<OrdenCompraDto>.Success(
-            CrearOrdenCompraCommandHandler.ToDto(orden, Supplier?.LegalName ?? orden.SupplierId.ToString()));
+        return Result<PurchaseOrderDto>.Success(
+            CrearOrderPurchaseCommandHandler.ToDto(orden, Supplier?.LegalName ?? orden.SupplierId.ToString()));
     }
 }

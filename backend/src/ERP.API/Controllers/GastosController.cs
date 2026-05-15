@@ -22,14 +22,14 @@ namespace ERP.API.Controllers;
 /// </summary>
 [Modulo("Gastos", "perm:gastos.facturas.view", "ðŸ’¸", "/gastos", null, 55)]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/Gastos")]
 [Authorize]
 [Produces("application/json")]
-public sealed class GastosController : ControllerBase
+public sealed class ExpensesController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public GastosController(IMediator mediator) => _mediator = mediator;
+    public ExpensesController(IMediator mediator) => _mediator = mediator;
 
     /// <summary>Lista gastos con filtros opcionales (estado, proveedor, fechas, texto).</summary>
     /// <remarks>Query: <c>estado</c>, <c>proveedorId</c>, <c>desde</c>, <c>hasta</c>, <c>search</c>.</remarks>
@@ -53,7 +53,7 @@ public sealed class GastosController : ControllerBase
         var search = CatalogQueryParameters.ParseSearch(Request.Query);
 
         var result = await _mediator.Send(
-            new GetGastosQuery(estado, proveedorId, desde, hasta, search), ct);
+            new GetExpensesQuery(estado, proveedorId, desde, hasta, search), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<ExpenseInvoiceDto>());
     }
 

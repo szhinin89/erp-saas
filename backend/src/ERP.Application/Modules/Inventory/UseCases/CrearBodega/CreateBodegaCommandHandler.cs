@@ -8,15 +8,15 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Modules.Inventory.UseCases.CrearBodega;
 
-public sealed class CreateBodegaCommandHandler
-    : IRequestHandler<CreateBodegaCommand, Result<BodegaDto>>
+public sealed class CreateWarehouseCommandHandler
+    : IRequestHandler<CreateWarehouseCommand, Result<WarehouseDto>>
 {
     private readonly IWarehouseRepository       _repo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
 
-    public CreateBodegaCommandHandler(
+    public CreateWarehouseCommandHandler(
         IWarehouseRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
@@ -28,13 +28,13 @@ public sealed class CreateBodegaCommandHandler
         _user     = user;
     }
 
-    public async Task<Result<BodegaDto>> Handle(CreateBodegaCommand command, CancellationToken ct)
+    public async Task<Result<WarehouseDto>> Handle(CreateWarehouseCommand command, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
         if (await _repo.ExistsNameAsync(tenantId, command.Name, null, ct))
-            return Result<BodegaDto>.Failure($"Ya existe una Warehouse con el nombre '{command.Name}' en este tenant.");
+            return Result<WarehouseDto>.Failure($"Ya existe una Warehouse con el nombre '{command.Name}' en este tenant.");
 
         var wh = Warehouse.Create(
             tenantId, command.BranchId, command.Name,
@@ -48,9 +48,9 @@ public sealed class CreateBodegaCommandHandler
             description: wh.Name), ct);
         await _repo.SaveChangesAsync(ct);
 
-        return Result<BodegaDto>.Success(ToDto(wh));
+        return Result<WarehouseDto>.Success(ToDto(wh));
     }
 
-    private static BodegaDto ToDto(Warehouse b) =>
+    private static WarehouseDto ToDto(Warehouse b) =>
         new(b.Id, b.BranchId, b.Name, b.Address, b.Manager, b.IsActive);
 }

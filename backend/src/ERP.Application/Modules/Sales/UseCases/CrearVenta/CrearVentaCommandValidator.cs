@@ -2,9 +2,9 @@
 
 namespace ERP.Application.Sales.UseCases.CrearVenta;
 
-public sealed class CrearVentaCommandValidator : AbstractValidator<CrearVentaCommand>
+public sealed class CreateSaleCommandValidator : AbstractValidator<CreateSaleCommand>
 {
-    public CrearVentaCommandValidator()
+    public CreateSaleCommandValidator()
     {
         RuleFor(x => x.CustomerId)
             .NotEmpty().WithMessage("El ID del cliente es obligatorio.");

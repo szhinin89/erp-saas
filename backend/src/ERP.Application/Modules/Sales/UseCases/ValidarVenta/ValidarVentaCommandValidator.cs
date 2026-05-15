@@ -1,10 +1,10 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Sales.UseCases.ValidarVenta;
 
-public sealed class ValidarVentaCommandValidator : AbstractValidator<ValidarVentaCommand>
+public sealed class ValidarSaleCommandValidator : AbstractValidator<ValidarSaleCommand>
 {
-    public ValidarVentaCommandValidator()
+    public ValidarSaleCommandValidator()
     {
         RuleFor(x => x.VentaId)
             .NotEmpty().WithMessage("El ID de la factura es obligatorio.");

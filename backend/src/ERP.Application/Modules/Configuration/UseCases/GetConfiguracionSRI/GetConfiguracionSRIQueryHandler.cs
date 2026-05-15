@@ -5,13 +5,13 @@ using ERP.Domain.Configuration.Interfaces;
 
 namespace ERP.Application.Configuration.UseCases.GetSriSettings;
 
-public sealed class GetConfiguracionSRIQueryHandler
-    : IRequestHandler<GetConfiguracionSRIQuery, Result<ConfiguracionSRIDto?>>
+public sealed class GetSriConfigurationQueryHandler
+    : IRequestHandler<GetSriConfigurationQuery, Result<SriConfigurationDto?>>
 {
     private readonly ISriSettingsRepository _repo;
     private readonly ICurrentTenant              _currentTenant;
 
-    public GetConfiguracionSRIQueryHandler(
+    public GetSriConfigurationQueryHandler(
         ISriSettingsRepository repo,
         ICurrentTenant currentTenant)
     {
@@ -19,14 +19,14 @@ public sealed class GetConfiguracionSRIQueryHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<ConfiguracionSRIDto?>> Handle(
-        GetConfiguracionSRIQuery query, CancellationToken ct)
+    public async Task<Result<SriConfigurationDto?>> Handle(
+        GetSriConfigurationQuery query, CancellationToken ct)
     {
         var config = await _repo.GetByTenantIdAsync(_currentTenant.TenantId, ct);
         if (config is null)
-            return Result<ConfiguracionSRIDto?>.Success(null);
+            return Result<SriConfigurationDto?>.Success(null);
 
-        return Result<ConfiguracionSRIDto?>.Success(new ConfiguracionSRIDto(
+        return Result<SriConfigurationDto?>.Success(new SriConfigurationDto(
             config.TenantId,
             config.Ruc,
             config.LegalName,

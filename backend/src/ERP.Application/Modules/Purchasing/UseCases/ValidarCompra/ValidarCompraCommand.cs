@@ -5,5 +5,5 @@ using ERP.Application.Modules.Purchasing.DTOs;
 namespace ERP.Application.Modules.Purchasing.UseCases.ValidarCompra;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
-public sealed record ValidarCompraCommand(Guid PurchBillId)
+public sealed record ValidarPurchaseCommand(Guid PurchBillId)
     : IRequest<Result<PurchBillDto>>;

@@ -2,9 +2,9 @@
 
 namespace ERP.Application.Sales.UseCases.GetVentasList;
 
-public sealed class GetVentasListQueryValidator : AbstractValidator<GetVentasListQuery>
+public sealed class GetSalesListQueryValidator : AbstractValidator<GetSalesListQuery>
 {
-    public GetVentasListQueryValidator()
+    public GetSalesListQueryValidator()
     {
         RuleFor(x => x.PageNumber)
             .GreaterThanOrEqualTo(1).WithMessage("El número de página debe ser mayor o igual a 1.");

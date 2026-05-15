@@ -33,7 +33,7 @@ public sealed record BankTransactionDto(
     Guid?     JournalEntryId,
     string    Status);
 
-public sealed record SugerenciaConciliacionDto(
+public sealed record SugerenciaReconciliationDto(
     Guid BankTransactionId,
     Guid? AsientoContableSugeridoId,
     string? Reason);

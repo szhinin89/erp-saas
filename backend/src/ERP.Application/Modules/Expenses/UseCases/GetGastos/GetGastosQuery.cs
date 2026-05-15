@@ -7,7 +7,7 @@ using ERP.Domain.Modules.Expenses.Enums;
 namespace ERP.Application.Modules.Expenses.UseCases.GetGastos;
 
 [RequireFeature(SubscriptionFeatureCodes.Gastos)]
-public sealed record GetGastosQuery(
+public record GetExpensesQuery(
     ExpenseStatus? Status,
     Guid?        SupplierId,
     DateTime?    DateFrom,

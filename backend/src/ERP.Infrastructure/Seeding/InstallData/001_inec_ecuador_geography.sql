@@ -1,4 +1,0 @@
--- InstallData script 001
--- Carga de datos INEC de Ecuador (provincias, cantones, parroquias)
--- El SQL real se mantiene en Scripts para permitir su regeneración.
--- @source-resource ERP.Infrastructure.Seeding.Scripts.inec_ecuador_geography.sql

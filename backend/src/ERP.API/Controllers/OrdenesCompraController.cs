@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -17,27 +17,27 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// Órdenes de Compra — documento interno que autoriza la compra a un proveedor.
-/// Flujo: Borrador → Enviada → Aprobada ⇄ RecibidaParcial → Cerrada (+ Cancelada).
+/// Ã“rdenes de Compra â€” documento interno que autoriza la compra a un proveedor.
+/// Flujo: Borrador â†’ Enviada â†’ Aprobada â‡„ RecibidaParcial â†’ Cerrada (+ Cancelada).
 /// </summary>
-[Modulo("Órdenes de compra", "perm:compras.ordenes.view", "📝", "/compras/ordenes", "perm:compras.facturas.view", 44)]
+[Modulo("Ã“rdenes de compra", "perm:compras.ordenes.view", "ðŸ“", "/compras/ordenes", "perm:compras.facturas.view", 44)]
 [ApiController]
 [Route("api/compras/ordenes")]
 [Authorize]
 [Produces("application/json")]
-public sealed class OrdenesCompraController : ControllerBase
+public sealed class PurchaseOrdersController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public OrdenesCompraController(IMediator mediator) => _mediator = mediator;
+    public PurchaseOrdersController(IMediator mediator) => _mediator = mediator;
 
-    // ── Queries ───────────────────────────────────────────────────────────
+    // â”€â”€ Queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    /// <summary>Lista paginada de órdenes de compra con filtros opcionales.</summary>
+    /// <summary>Lista paginada de Ã³rdenes de compra con filtros opcionales.</summary>
     /// <remarks>Query params: pageNumber, pageSize, proveedorId, estado, fechaDesde (YYYY-MM-DD), fechaHasta.</remarks>
     [HttpGet]
     [Authorize(Policy = "perm:compras.ordenes.view")]
-    [ProducesResponseType(typeof(ApiResponse<OrdenesCompraPagedResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PurchaseOrdersPagedResult>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
         int pageNumber = 1, pageSize = 20;
@@ -54,78 +54,78 @@ public sealed class OrdenesCompraController : ControllerBase
         if (Request.Query.TryGetValue("fechaHasta", out var fhv) && DateTime.TryParse(fhv, out var fh)) hasta = fh;
 
         var result = await _mediator.Send(
-            new GetOrdenesCompraListQuery(pageNumber, pageSize, proveedorId, estado, desde, hasta), ct);
+            new GetPurchaseOrdersListQuery(pageNumber, pageSize, proveedorId, estado, desde, hasta), ct);
 
         return this.ToOkOrBadRequest(result, "OK");
     }
 
     /// <summary>
-    /// Lista de OC aprobadas o con recepción parcial que tienen saldo pendiente por facturar.
-    /// Útil para el selector al vincular facturas electrónicas.
+    /// Lista de OC aprobadas o con recepciÃ³n parcial que tienen saldo pendiente por facturar.
+    /// Ãštil para el selector al vincular facturas electrÃ³nicas.
     /// </summary>
     [HttpGet("pendientes-por-facturar")]
     [Authorize(Policy = "perm:compras.ordenes.view")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<OrdenCompraDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<PurchaseOrderDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPendientesPorFacturar(CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetOrdenesPendientesPorFacturarQuery(), ct);
+        var result = await _mediator.Send(new GetOrdersPendientesPorFacturarQuery(), ct);
         return this.ToOkOrBadRequest(result, "OK");
     }
 
-    /// <summary>Retorna el detalle completo de una OC (con líneas y facturas vinculadas).</summary>
+    /// <summary>Retorna el detalle completo de una OC (con lÃ­neas y facturas vinculadas).</summary>
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "perm:compras.ordenes.view")]
-    [ProducesResponseType(typeof(ApiResponse<OrdenCompraDetailDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDetailDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetOrdenCompraByIdQuery(id), ct);
+        var result = await _mediator.Send(new GetPurchaseOrderByIdQuery(id), ct);
         return this.ToOkOrBadRequest(result, "OK");
     }
 
-    // ── Crear ─────────────────────────────────────────────────────────────
+    // â”€â”€ Crear â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>
     /// Crea una OC en estado Borrador.
     /// </summary>
     /// <response code="201">OC creada en estado Borrador.</response>
-    /// <response code="400">Datos inválidos o proveedor no encontrado.</response>
+    /// <response code="400">Datos invÃ¡lidos o proveedor no encontrado.</response>
     [HttpPost]
     [Authorize(Policy = "perm:compras.ordenes.create")]
-    [ProducesResponseType(typeof(ApiResponse<OrdenCompraDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Crear(
-        [FromBody] CrearOrdenCompraCommand command, CancellationToken ct = default)
+        [FromBody] CrearOrderPurchaseCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
-    // ── Transiciones de estado ────────────────────────────────────────────
+    // â”€â”€ Transiciones de estado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>
-    /// Envía la OC al proveedor (Borrador → Enviada).
+    /// EnvÃ­a la OC al proveedor (Borrador â†’ Enviada).
     /// </summary>
     [HttpPatch("{id:guid}/enviar")]
     [Authorize(Policy = "perm:compras.ordenes.send")]
-    [ProducesResponseType(typeof(ApiResponse<OrdenCompraDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Enviar(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new EnviarOrdenCompraCommand(id), ct);
+        var result = await _mediator.Send(new EnviarOrderPurchaseCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Enviada");
     }
 
     /// <summary>
-    /// Aprueba la OC (Borrador/Enviada → Aprobada).
+    /// Aprueba la OC (Borrador/Enviada â†’ Aprobada).
     /// Solo una OC aprobada puede recibir facturas vinculadas.
     /// </summary>
     [HttpPatch("{id:guid}/aprobar")]
     [Authorize(Policy = "perm:compras.ordenes.approve")]
-    [ProducesResponseType(typeof(ApiResponse<OrdenCompraDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Aprobar(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new AprobarOrdenCompraCommand(id), ct);
+        var result = await _mediator.Send(new AprobarOrderPurchaseCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Aprobada");
     }
 
@@ -134,23 +134,23 @@ public sealed class OrdenesCompraController : ControllerBase
     /// </summary>
     [HttpPatch("{id:guid}/cancelar")]
     [Authorize(Policy = "perm:compras.ordenes.cancel")]
-    [ProducesResponseType(typeof(ApiResponse<OrdenCompraDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Cancelar(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new CancelarOrdenCompraCommand(id), ct);
+        var result = await _mediator.Send(new CancelarOrderPurchaseCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Cancelada");
     }
 
     /// <summary>
-    /// Vincula una factura electrónica aprobada a esta OC.
-    /// Actualiza las cantidades facturadas y cierra la OC si está completamente cubierta.
+    /// Vincula una factura electrÃ³nica aprobada a esta OC.
+    /// Actualiza las cantidades facturadas y cierra la OC si estÃ¡ completamente cubierta.
     /// </summary>
     /// <response code="200">Factura vinculada. OC actualizada (estado puede cambiar a RecibidaParcial o Cerrada).</response>
     /// <response code="400">Factura no aprobada, ya vinculada, o cantidades excedidas.</response>
     [HttpPost("{id:guid}/vincular-factura")]
     [Authorize(Policy = "perm:compras.ordenes.link-invoice")]
-    [ProducesResponseType(typeof(ApiResponse<OrdenCompraDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> VincularFactura(
         Guid id,
@@ -158,7 +158,7 @@ public sealed class OrdenesCompraController : ControllerBase
         CancellationToken ct = default)
     {
         var result = await _mediator.Send(
-            new VincularFacturaAOrdenCompraCommand(id, body.CompraFacturaId), ct);
+            new VincularFacturaAOrderPurchaseCommand(id, body.CompraFacturaId), ct);
         return this.ToOkOrBadRequest(result, "Factura vinculada");
     }
 }

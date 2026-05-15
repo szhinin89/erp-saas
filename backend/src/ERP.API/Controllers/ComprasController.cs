@@ -21,14 +21,14 @@ namespace ERP.API.Controllers;
 /// </summary>
 [Modulo("Compras", "perm:compras.facturas.view", "ðŸ›’", "/compras", null, 45)]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/Compras")]
 [Authorize]
 [Produces("application/json")]
-public sealed class ComprasController : ControllerBase
+public sealed class PurchasesController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public ComprasController(IMediator mediator) => _mediator = mediator;
+    public PurchasesController(IMediator mediator) => _mediator = mediator;
 
     // â”€â”€ Queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -54,7 +54,7 @@ public sealed class ComprasController : ControllerBase
         var search = CatalogQueryParameters.ParseSearch(Request.Query);
 
         var result = await _mediator.Send(
-            new GetComprasQuery(estado, proveedorId, desde, hasta, search), ct);
+            new GetPurchasesQuery(estado, proveedorId, desde, hasta, search), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<PurchBillDto>());
     }
 
@@ -66,7 +66,7 @@ public sealed class ComprasController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetCompraByIdQuery(id), ct);
+        var result = await _mediator.Send(new GetPurchaseByIdQuery(id), ct);
         return this.ToOkOrNotFound(result);
     }
 
@@ -80,9 +80,9 @@ public sealed class ComprasController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PurchBillDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CrearManual(
-        [FromBody] CrearCompraCommand command, CancellationToken ct = default)
+        [FromBody] CrearPurchaseCommand command, CancellationToken ct = default)
     {
-        var cmd = command with { Modo = ModoCreacionCompra.Manual };
+        var cmd = command with { Modo = ModoCreacionPurchase.Manual };
         var result = await _mediator.Send(cmd, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
     }
@@ -112,8 +112,8 @@ public sealed class ComprasController : ControllerBase
         await xmlFile.CopyToAsync(ms, ct);
         content = ms.ToArray();
 
-        var command = new CrearCompraCommand(
-            Modo: ModoCreacionCompra.Xml,
+        var command = new CrearPurchaseCommand(
+            Modo: ModoCreacionPurchase.Xml,
             XmlContent: content,
             XmlNombreArchivo: xmlFile.FileName,
             SupplierId: null, InvoiceNumber: null, InvoiceDate: null,
@@ -139,7 +139,7 @@ public sealed class ComprasController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Validar(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new ValidarCompraCommand(id), ct);
+        var result = await _mediator.Send(new ValidarPurchaseCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Validado");
     }
 
@@ -155,7 +155,7 @@ public sealed class ComprasController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Aprobar(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new AprobarCompraCommand(id), ct);
+        var result = await _mediator.Send(new AprobarPurchaseCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Aprobado");
     }
 
@@ -168,14 +168,14 @@ public sealed class ComprasController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Rechazar(
         Guid id,
-        [FromBody] RechazarCompraRequest request,
+        [FromBody] RejectPurchaseRequest request,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new RechazarCompraCommand(id, request.Motivo), ct);
+        var result = await _mediator.Send(new RechazarPurchaseCommand(id, request.Motivo), ct);
         return this.ToOkOrBadRequest(result, "Rechazado");
     }
 }
 
 /// <summary>Cuerpo del request de rechazo.</summary>
-public sealed record RechazarCompraRequest(string Motivo);
+public sealed record RejectPurchaseRequest(string Motivo);
 

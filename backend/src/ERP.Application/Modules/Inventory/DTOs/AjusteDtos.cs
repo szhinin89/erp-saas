@@ -17,7 +17,7 @@ public record StockAdjustmentDto(
     Guid?     EjecutadoPor,
     DateTime  CreatedAt);
 
-public record AjustesPagedResult(
+public record StockAdjustmentsPagedResult(
     IReadOnlyList<StockAdjustmentDto> Items,
     int TotalCount,
     int PageNumber,

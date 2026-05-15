@@ -22,11 +22,11 @@ namespace ERP.API.Controllers;
 [Route("api/inventario/transferencias")]
 [Authorize]
 [Produces("application/json")]
-public sealed class TransferenciasController : ControllerBase
+public sealed class TransfersController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public TransferenciasController(IMediator mediator) => _mediator = mediator;
+    public TransfersController(IMediator mediator) => _mediator = mediator;
 
     // ── Queries ───────────────────────────────────────────────────────────
 
@@ -34,7 +34,7 @@ public sealed class TransferenciasController : ControllerBase
     /// <remarks>Query params: pageNumber, pageSize, bodegaOrigenId, bodegaDestinoId, estado, fechaDesde (YYYY-MM-DD), fechaHasta.</remarks>
     [HttpGet]
     [Authorize(Policy = "perm:inventario.transferencias.view")]
-    [ProducesResponseType(typeof(ApiResponse<TransferenciasPagedResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<TransfersPagedResult>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
         int pageNumber = 1, pageSize = 20;
@@ -52,7 +52,7 @@ public sealed class TransferenciasController : ControllerBase
         if (Request.Query.TryGetValue("fechaHasta", out var fhv) && DateTime.TryParse(fhv, out var fh)) hasta = fh;
 
         var result = await _mediator.Send(
-            new GetTransferenciasListQuery(pageNumber, pageSize, bodegaOrigenId, bodegaDestinoId, estado, desde, hasta), ct);
+            new GetTransfersListQuery(pageNumber, pageSize, bodegaOrigenId, bodegaDestinoId, estado, desde, hasta), ct);
 
         return this.ToOkOrBadRequest(result, "OK");
     }
@@ -60,10 +60,10 @@ public sealed class TransferenciasController : ControllerBase
     /// <summary>Retorna el detalle completo de una transferencia (con ítems).</summary>
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "perm:inventario.transferencias.view")]
-    [ProducesResponseType(typeof(ApiResponse<TransferenciaDetailDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<TransferDetailDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetTransferenciaByIdQuery(id), ct);
+        var result = await _mediator.Send(new GetTransferByIdQuery(id), ct);
         return this.ToOkOrBadRequest(result, "OK");
     }
 
@@ -77,10 +77,10 @@ public sealed class TransferenciasController : ControllerBase
     /// <response code="400">Bodegas inválidas o stock insuficiente en la bodega origen.</response>
     [HttpPost]
     [Authorize(Policy = "perm:inventario.transferencias.create")]
-    [ProducesResponseType(typeof(ApiResponse<TransferenciaDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<TransferDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Crear(
-        [FromBody] CrearTransferenciaCommand command, CancellationToken ct = default)
+        [FromBody] CreateTransferCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
@@ -96,11 +96,11 @@ public sealed class TransferenciasController : ControllerBase
     /// <response code="400">Stock insuficiente o estado no válido.</response>
     [HttpPatch("{id:guid}/confirmar")]
     [Authorize(Policy = "perm:inventario.transferencias.confirm")]
-    [ProducesResponseType(typeof(ApiResponse<TransferenciaDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<TransferDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Confirmar(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new ConfirmarTransferenciaCommand(id), ct);
+        var result = await _mediator.Send(new ConfirmTransferCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Confirmado");
     }
 
@@ -110,11 +110,11 @@ public sealed class TransferenciasController : ControllerBase
     /// </summary>
     [HttpPatch("{id:guid}/cancelar")]
     [Authorize(Policy = "perm:inventario.transferencias.cancel")]
-    [ProducesResponseType(typeof(ApiResponse<TransferenciaDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<TransferDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Cancelar(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new CancelarTransferenciaCommand(id), ct);
+        var result = await _mediator.Send(new CancelTransferCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Cancelado");
     }
 }

@@ -6,20 +6,20 @@ using ERP.Domain.Modules.Expenses.Interfaces;
 
 namespace ERP.Application.Modules.Expenses.UseCases.GetGastos;
 
-public sealed class GetGastosQueryHandler
-    : IRequestHandler<GetGastosQuery, Result<IReadOnlyList<ExpenseInvoiceDto>>>
+public sealed class GetExpensesQueryHandler
+    : IRequestHandler<GetExpensesQuery, Result<IReadOnlyList<ExpenseInvoiceDto>>>
 {
     private readonly IExpenseInvoiceRepository _repo;
     private readonly ICurrentTenant        _tenant;
 
-    public GetGastosQueryHandler(IExpenseInvoiceRepository repo, ICurrentTenant tenant)
+    public GetExpensesQueryHandler(IExpenseInvoiceRepository repo, ICurrentTenant tenant)
     {
         _repo   = repo;
         _tenant = tenant;
     }
 
     public async Task<Result<IReadOnlyList<ExpenseInvoiceDto>>> Handle(
-        GetGastosQuery query,
+        GetExpensesQuery query,
         CancellationToken ct)
     {
         var list = await _repo.GetAsync(

@@ -8,15 +8,15 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Modules.Inventory.UseCases.ActualizarBodega;
 
-public sealed class UpdateBodegaCommandHandler
-    : IRequestHandler<UpdateBodegaCommand, Result<BodegaDto>>
+public sealed class UpdateWarehouseCommandHandler
+    : IRequestHandler<UpdateWarehouseCommand, Result<WarehouseDto>>
 {
     private readonly IWarehouseRepository       _repo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
 
-    public UpdateBodegaCommandHandler(
+    public UpdateWarehouseCommandHandler(
         IWarehouseRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
@@ -28,17 +28,17 @@ public sealed class UpdateBodegaCommandHandler
         _user     = user;
     }
 
-    public async Task<Result<BodegaDto>> Handle(UpdateBodegaCommand command, CancellationToken ct)
+    public async Task<Result<WarehouseDto>> Handle(UpdateWarehouseCommand command, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
         var Warehouse = await _repo.GetByIdAsync(tenantId, command.Id, ct);
         if (Warehouse is null)
-            return Result<BodegaDto>.Failure("Warehouse no encontrada.");
+            return Result<WarehouseDto>.Failure("Warehouse no encontrada.");
 
         if (await _repo.ExistsNameAsync(tenantId, command.Name, command.Id, ct))
-            return Result<BodegaDto>.Failure($"Ya existe otra Warehouse con el nombre '{command.Name}' en este tenant.");
+            return Result<WarehouseDto>.Failure($"Ya existe otra Warehouse con el nombre '{command.Name}' en este tenant.");
 
         Warehouse.Update(command.BranchId, command.Name, command.Address, command.Manager, userId);
 
@@ -49,9 +49,9 @@ public sealed class UpdateBodegaCommandHandler
             description: Warehouse.Name), ct);
         await _repo.SaveChangesAsync(ct);
 
-        return Result<BodegaDto>.Success(ToDto(Warehouse));
+        return Result<WarehouseDto>.Success(ToDto(Warehouse));
     }
 
-    private static BodegaDto ToDto(Warehouse b) =>
+    private static WarehouseDto ToDto(Warehouse b) =>
         new(b.Id, b.BranchId, b.Name, b.Address, b.Manager, b.IsActive);
 }

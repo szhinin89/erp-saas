@@ -5,16 +5,16 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.Retenciones;
 
-public sealed record GetCompraRetencionesEmitidasListQuery(Guid? SupplierId)
+public sealed record GetPurchaseRetentionsEmitidasListQuery(Guid? SupplierId)
     : IRequest<Result<IReadOnlyList<IssuedRetentionListItemDto>>>;
 
-public sealed class GetCompraRetencionesEmitidasListQueryHandler
-    : IRequestHandler<GetCompraRetencionesEmitidasListQuery, Result<IReadOnlyList<IssuedRetentionListItemDto>>>
+public sealed class GetPurchaseRetentionsEmitidasListQueryHandler
+    : IRequestHandler<GetPurchaseRetentionsEmitidasListQuery, Result<IReadOnlyList<IssuedRetentionListItemDto>>>
 {
     private readonly IPurchBillRepository _compraRepository;
     private readonly ICurrentTenant  _currentTenant;
 
-    public GetCompraRetencionesEmitidasListQueryHandler(
+    public GetPurchaseRetentionsEmitidasListQueryHandler(
         IPurchBillRepository compraRepository,
         ICurrentTenant currentTenant)
     {
@@ -23,7 +23,7 @@ public sealed class GetCompraRetencionesEmitidasListQueryHandler
     }
 
     public async Task<Result<IReadOnlyList<IssuedRetentionListItemDto>>> Handle(
-        GetCompraRetencionesEmitidasListQuery request,
+        GetPurchaseRetentionsEmitidasListQuery request,
         CancellationToken ct)
     {
         var items = await _compraRepository.GetIssuedRetentionsAsync(

@@ -6,9 +6,9 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.CrearProveedor;
 
-public sealed class CreateProveedorCommandValidator : AbstractValidator<CreateProveedorCommand>
+public sealed class CreateSupplierCommandValidator : AbstractValidator<CreateSupplierCommand>
 {
-    public CreateProveedorCommandValidator(
+    public CreateSupplierCommandValidator(
         ISupplierRepository repo,
         ICurrentTenant tenant)
     {

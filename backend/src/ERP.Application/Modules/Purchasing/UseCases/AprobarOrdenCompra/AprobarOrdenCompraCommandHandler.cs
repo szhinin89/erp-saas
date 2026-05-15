@@ -10,23 +10,23 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.AprobarOrdenCompra;
 
-public sealed class AprobarOrdenCompraCommandHandler
-    : IRequestHandler<AprobarOrdenCompraCommand, Result<OrdenCompraDto>>
+public sealed class AprobarOrderPurchaseCommandHandler
+    : IRequestHandler<AprobarOrderPurchaseCommand, Result<PurchaseOrderDto>>
 {
     private readonly IPurchaseOrderRepository  _ordenRepo;
     private readonly ISupplierRepository    _proveedorRepo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _currentTenant;
     private readonly ICurrentUser            _currentUser;
-    private readonly ILogger<AprobarOrdenCompraCommandHandler> _logger;
+    private readonly ILogger<AprobarOrderPurchaseCommandHandler> _logger;
 
-    public AprobarOrdenCompraCommandHandler(
+    public AprobarOrderPurchaseCommandHandler(
         IPurchaseOrderRepository ordenRepo,
         ISupplierRepository proveedorRepo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
-        ILogger<AprobarOrdenCompraCommandHandler> logger)
+        ILogger<AprobarOrderPurchaseCommandHandler> logger)
     {
         _ordenRepo     = ordenRepo;
         _proveedorRepo = proveedorRepo;
@@ -36,18 +36,18 @@ public sealed class AprobarOrdenCompraCommandHandler
         _logger        = logger;
     }
 
-    public async Task<Result<OrdenCompraDto>> Handle(
-        AprobarOrdenCompraCommand command, CancellationToken ct)
+    public async Task<Result<PurchaseOrderDto>> Handle(
+        AprobarOrderPurchaseCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
         var orden = await _ordenRepo.GetByIdAsync(tenantId, command.OrdenId, ct);
         if (orden is null)
-            return Result<OrdenCompraDto>.Failure("Orden de compra no encontrada.");
+            return Result<PurchaseOrderDto>.Failure("Orden de compra no encontrada.");
 
         if (orden.Status is not ("Borrador" or "Enviada"))
-            return Result<OrdenCompraDto>.Failure(
+            return Result<PurchaseOrderDto>.Failure(
                 $"Solo se puede aprobar una OC en Borrador o Enviada (estado actual: {orden.Status}).");
 
         orden.Approve(userId);
@@ -62,7 +62,7 @@ public sealed class AprobarOrdenCompraCommandHandler
         _logger.LogInformation("OC aprobada: {Numero}", orden.OrderNumber);
 
         var Supplier = await _proveedorRepo.GetByIdAsync(tenantId, orden.SupplierId, ct);
-        return Result<OrdenCompraDto>.Success(
-            CrearOrdenCompraCommandHandler.ToDto(orden, Supplier?.LegalName ?? orden.SupplierId.ToString()));
+        return Result<PurchaseOrderDto>.Success(
+            CrearOrderPurchaseCommandHandler.ToDto(orden, Supplier?.LegalName ?? orden.SupplierId.ToString()));
     }
 }

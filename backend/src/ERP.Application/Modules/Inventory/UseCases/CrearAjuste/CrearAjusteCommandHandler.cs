@@ -11,8 +11,8 @@ using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Inventory.UseCases.CrearAjuste;
 
-public sealed class CrearAjusteCommandHandler
-    : IRequestHandler<CrearAjusteCommand, Result<StockAdjustmentDto>>
+public sealed class CreateStockAdjustmentCommandHandler
+    : IRequestHandler<CreateStockAdjustmentCommand, Result<StockAdjustmentDto>>
 {
     private readonly IStockAdjustmentRepository _ajusteRepo;
     private readonly IWarehouseRepository           _bodegaRepo;
@@ -21,9 +21,9 @@ public sealed class CrearAjusteCommandHandler
     private readonly ICurrentTenant              _currentTenant;
     private readonly ICurrentUser                _currentUser;
     private readonly IUnitOfWork                 _unitOfWork;
-    private readonly ILogger<CrearAjusteCommandHandler> _logger;
+    private readonly ILogger<CreateStockAdjustmentCommandHandler> _logger;
 
-    public CrearAjusteCommandHandler(
+    public CreateStockAdjustmentCommandHandler(
         IStockAdjustmentRepository ajusteRepo,
         IWarehouseRepository bodegaRepo,
         IProductRepository productRepo,
@@ -31,7 +31,7 @@ public sealed class CrearAjusteCommandHandler
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
-        ILogger<CrearAjusteCommandHandler> logger)
+        ILogger<CreateStockAdjustmentCommandHandler> logger)
     {
         _ajusteRepo    = ajusteRepo;
         _bodegaRepo    = bodegaRepo;
@@ -44,7 +44,7 @@ public sealed class CrearAjusteCommandHandler
     }
 
     public async Task<Result<StockAdjustmentDto>> Handle(
-        CrearAjusteCommand command, CancellationToken ct)
+        CreateStockAdjustmentCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;

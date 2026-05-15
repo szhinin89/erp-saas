@@ -83,7 +83,7 @@ public sealed class SriFacturaParser : IXmlFacturaParser
             Items:             items));
     }
 
-    public Task<NotaProveedorParseResult> ParseNotaProveedorAsync(Stream xmlStream, CancellationToken ct = default)
+    public Task<SupplierNoteParseResult> ParseSupplierNoteAsync(Stream xmlStream, CancellationToken ct = default)
     {
         XDocument doc;
         try
@@ -141,7 +141,7 @@ public sealed class SriFacturaParser : IXmlFacturaParser
         if (items.Count == 0)
             throw new XmlParseException("El comprobante no contiene ningún detalle (<detalle>).");
 
-        return Task.FromResult(new NotaProveedorParseResult(
+        return Task.FromResult(new SupplierNoteParseResult(
             NoteType:          tipoNota,
             Reason:            motivo,
             AccessKey:         claveAcceso,
@@ -286,7 +286,7 @@ public sealed class SriFacturaParser : IXmlFacturaParser
         return ParseDecimalText(v);
     }
 
-    private static ItemNotaProveedor ParseDetalleNota(XElement det)
+    private static SupplierNoteItem ParseDetalleNota(XElement det)
     {
         var codigo = det.Element("codigoPrincipal")?.Value.Trim() ?? string.Empty;
         var desc   = RequireText(det, "descripcion");
@@ -301,7 +301,7 @@ public sealed class SriFacturaParser : IXmlFacturaParser
             .Sum(i => ParseDecimalText(i.Element("valor")?.Value ?? "0")) ?? 0m;
 
         var total = subtotal + impuesto;
-        return new ItemNotaProveedor(
+        return new SupplierNoteItem(
             codigo, desc, cantidad, precioUnitario, descuento, subtotal, impuesto, total);
     }
 }

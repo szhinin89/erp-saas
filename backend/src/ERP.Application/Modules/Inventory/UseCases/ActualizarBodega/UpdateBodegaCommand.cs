@@ -5,10 +5,10 @@ using ERP.Application.Modules.Inventory.DTOs;
 namespace ERP.Application.Modules.Inventory.UseCases.ActualizarBodega;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
-public sealed record UpdateBodegaCommand(
+public record UpdateWarehouseCommand(
     Guid    Id,
     Guid    BranchId,
     string  Name,
     string? Address,
     string? Manager
-) : IRequest<Result<BodegaDto>>;
+) : IRequest<Result<WarehouseDto>>;

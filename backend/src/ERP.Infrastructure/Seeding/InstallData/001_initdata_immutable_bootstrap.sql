@@ -1,12 +1,27 @@
--- División Político Administrativa (DPA) — Ecuador.
--- Origen: INEC (Instituto Nacional de Estadística y Censos), vía capas ArcGIS
---         publicadas en Ecuador en Cifras (metadatos del servicio citan el geoportal INEC).
--- Generado con: erp-saas/scripts/import_inec_ecuador_geography.ps1
--- (Sin BEGIN/COMMIT: la migración EF ya corre dentro de una transacción.)
+-- Immutable bootstrap seed: Ecuador geographic base catalogs.
+-- Source: INEC (Instituto Nacional de Estadistica y Censos), via ArcGIS layers
+--         published in Ecuador en Cifras (service metadata references INEC geoportal).
+-- Generated with: erp-saas/scripts/import_inec_ecuador_geography.ps1
+-- (No BEGIN/COMMIT: EF migration already runs inside a transaction.)
 
-INSERT INTO geo_countries (id, name) VALUES ('EC', 'Ecuador')
+-- Canonical country source: sri_country
+INSERT INTO sri_country (code, iso2, name, phone_code, is_active)
+VALUES ('ECU', 'EC', 'Ecuador', '+593', TRUE)
+ON CONFLICT (code) DO UPDATE
+SET iso2 = EXCLUDED.iso2,
+    name = EXCLUDED.name,
+    phone_code = EXCLUDED.phone_code,
+    is_active = EXCLUDED.is_active;
+
+-- geo_countries is derived from sri_country for geography FK compatibility.
+INSERT INTO geo_countries (id, name)
+SELECT 'EC', sc.name
+FROM sri_country sc
+WHERE sc.code = 'ECU'
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
 
+-- INEC hierarchy level 1: provinces.
+-- Used for country-level territorial segmentation in addresses and reporting.
 INSERT INTO geo_provinces (id, country_id, name) VALUES ('01', 'EC', 'AZUAY')
 ON CONFLICT (id) DO UPDATE SET country_id = EXCLUDED.country_id, name = EXCLUDED.name;
 INSERT INTO geo_provinces (id, country_id, name) VALUES ('02', 'EC', 'BOLIVAR')
@@ -58,6 +73,8 @@ ON CONFLICT (id) DO UPDATE SET country_id = EXCLUDED.country_id, name = EXCLUDED
 INSERT INTO geo_provinces (id, country_id, name) VALUES ('90', 'EC', 'ZONA NO DELIMITADA')
 ON CONFLICT (id) DO UPDATE SET country_id = EXCLUDED.country_id, name = EXCLUDED.name;
 
+-- INEC hierarchy level 2: cantons.
+-- Used for municipality-level segmentation under each province.
 INSERT INTO geo_cantons (id, province_id, name) VALUES ('0101', '01', 'CUENCA')
 ON CONFLICT (id) DO UPDATE SET province_id = EXCLUDED.province_id, name = EXCLUDED.name;
 INSERT INTO geo_cantons (id, province_id, name) VALUES ('0102', '01', 'GIRON')
@@ -507,6 +524,8 @@ ON CONFLICT (id) DO UPDATE SET province_id = EXCLUDED.province_id, name = EXCLUD
 INSERT INTO geo_cantons (id, province_id, name) VALUES ('9004', '90', 'EL PIEDRERO')
 ON CONFLICT (id) DO UPDATE SET province_id = EXCLUDED.province_id, name = EXCLUDED.name;
 
+-- INEC hierarchy level 3: parishes.
+-- Used for fine-grained locality references beneath each canton.
 INSERT INTO geo_parishes (id, canton_id, name) VALUES ('010150', '0101', 'CUENCA')
 ON CONFLICT (id) DO UPDATE SET canton_id = EXCLUDED.canton_id, name = EXCLUDED.name;
 INSERT INTO geo_parishes (id, canton_id, name) VALUES ('010151', '0101', 'BAÑOS')

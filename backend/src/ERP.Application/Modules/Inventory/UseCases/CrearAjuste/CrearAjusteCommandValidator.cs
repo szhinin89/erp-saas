@@ -2,9 +2,9 @@
 
 namespace ERP.Application.Inventory.UseCases.CrearAjuste;
 
-public sealed class CrearAjusteCommandValidator : AbstractValidator<CrearAjusteCommand>
+public sealed class CreateStockAdjustmentCommandValidator : AbstractValidator<CreateStockAdjustmentCommand>
 {
-    public CrearAjusteCommandValidator()
+    public CreateStockAdjustmentCommandValidator()
     {
         RuleFor(x => x.WarehouseId)
             .NotEmpty().WithMessage("La Warehouse es obligatoria.");

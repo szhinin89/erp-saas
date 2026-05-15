@@ -2,11 +2,11 @@ using FluentValidation;
 
 namespace ERP.Application.Inventory.UseCases.EjecutarAjuste;
 
-public sealed class EjecutarAjusteCommandValidator : AbstractValidator<EjecutarAjusteCommand>
+public sealed class ExecuteStockAdjustmentCommandValidator : AbstractValidator<ExecuteStockAdjustmentCommand>
 {
-    public EjecutarAjusteCommandValidator()
+    public ExecuteStockAdjustmentCommandValidator()
     {
-        RuleFor(x => x.AjusteId)
+        RuleFor(x => x.AdjustmentId)
             .NotEmpty()
             .WithMessage("El ID del ajuste es obligatorio.");
     }

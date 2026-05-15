@@ -51,7 +51,7 @@ public sealed class RegistrarSalesRetentionCommandHandler
         if (string.IsNullOrWhiteSpace(command.XmlContent))
             return Result<Guid>.Failure("El XML es obligatorio.");
 
-        if (!RetencionRecibidaXmlParser.TryParse(command.XmlContent, out var clave, out var fecha, out var total))
+        if (!RetentionRecibidaXmlParser.TryParse(command.XmlContent, out var clave, out var fecha, out var total))
             return Result<Guid>.Failure("No se pudo interpretar el XML de retención (clave / totales).");
 
         var existe = await _ventasRepository.ExistsRetentionAccessKeyAsync(tenantId, clave, ct);

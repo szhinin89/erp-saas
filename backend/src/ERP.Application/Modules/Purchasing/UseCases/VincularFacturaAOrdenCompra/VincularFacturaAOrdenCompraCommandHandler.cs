@@ -12,8 +12,8 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.VincularFacturaAOrdenCompra;
 
-public sealed class VincularFacturaAOrdenCompraCommandHandler
-    : IRequestHandler<VincularFacturaAOrdenCompraCommand, Result<OrdenCompraDto>>
+public sealed class VincularFacturaAOrderPurchaseCommandHandler
+    : IRequestHandler<VincularFacturaAOrderPurchaseCommand, Result<PurchaseOrderDto>>
 {
     private readonly IPurchaseOrderRepository  _ordenRepo;
     private readonly IPurchBillRepository       _compraRepo;
@@ -22,9 +22,9 @@ public sealed class VincularFacturaAOrdenCompraCommandHandler
     private readonly ICurrentTenant          _currentTenant;
     private readonly ICurrentUser            _currentUser;
     private readonly IUnitOfWork             _unitOfWork;
-    private readonly ILogger<VincularFacturaAOrdenCompraCommandHandler> _logger;
+    private readonly ILogger<VincularFacturaAOrderPurchaseCommandHandler> _logger;
 
-    public VincularFacturaAOrdenCompraCommandHandler(
+    public VincularFacturaAOrderPurchaseCommandHandler(
         IPurchaseOrderRepository ordenRepo,
         IPurchBillRepository compraRepo,
         ISupplierRepository proveedorRepo,
@@ -32,7 +32,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandler
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
-        ILogger<VincularFacturaAOrdenCompraCommandHandler> logger)
+        ILogger<VincularFacturaAOrderPurchaseCommandHandler> logger)
     {
         _ordenRepo     = ordenRepo;
         _compraRepo    = compraRepo;
@@ -44,8 +44,8 @@ public sealed class VincularFacturaAOrdenCompraCommandHandler
         _logger        = logger;
     }
 
-    public async Task<Result<OrdenCompraDto>> Handle(
-        VincularFacturaAOrdenCompraCommand command, CancellationToken ct)
+    public async Task<Result<PurchaseOrderDto>> Handle(
+        VincularFacturaAOrderPurchaseCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
@@ -53,26 +53,26 @@ public sealed class VincularFacturaAOrdenCompraCommandHandler
         // 1. Cargar la OC con sus detalles
         var orden = await _ordenRepo.GetByIdAsync(tenantId, command.OrdenCompraId, ct);
         if (orden is null)
-            return Result<OrdenCompraDto>.Failure("Orden de compra no encontrada.");
+            return Result<PurchaseOrderDto>.Failure("Orden de compra no encontrada.");
 
         if (orden.Status is not ("Aprobada" or "RecibidaParcial"))
-            return Result<OrdenCompraDto>.Failure(
+            return Result<PurchaseOrderDto>.Failure(
                 $"Solo se puede vincular una factura a OC en Aprobada o RecibidaParcial (estado: {orden.Status}).");
 
         // 2. Cargar la factura con sus detalles
         var factura = await _compraRepo.GetByIdAsync(tenantId, command.PurchBillId, ct);
         if (factura is null)
-            return Result<OrdenCompraDto>.Failure("Factura de compra no encontrada.");
+            return Result<PurchaseOrderDto>.Failure("Factura de compra no encontrada.");
 
         if (factura.Status != PurchaseStatus.Approved)
-            return Result<OrdenCompraDto>.Failure(
+            return Result<PurchaseOrderDto>.Failure(
                 "Solo se pueden vincular facturas en estado Aprobado.");
 
         // 3. Verificar que no esté ya vinculada a esta OC
         var yaVinculada = await _ordenRepo.BillAlreadyLinkedAsync(
             tenantId, command.OrdenCompraId, command.PurchBillId, ct);
         if (yaVinculada)
-            return Result<OrdenCompraDto>.Failure("Esta factura ya está vinculada a la orden de compra.");
+            return Result<PurchaseOrderDto>.Failure("Esta factura ya está vinculada a la orden de compra.");
 
         // 4. Matching por ProductoId, validación de cantidades y detección de discrepancias de precio
         const decimal ToleranciaPrecioPct = 0.01m; // 1 % — diferencias menores se ignoran
@@ -92,7 +92,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandler
                 if (detalleOrden is null)
                 {
                     await _unitOfWork.RollbackAsync(ct);
-                    return Result<OrdenCompraDto>.Failure(
+                    return Result<PurchaseOrderDto>.Failure(
                         $"El producto '{detalleFactura.Description}' de la factura no está incluido en esta orden de compra.");
                 }
 
@@ -100,7 +100,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandler
                 if (nuevoFacturado > detalleOrden.OrderedQty)
                 {
                     await _unitOfWork.RollbackAsync(ct);
-                    return Result<OrdenCompraDto>.Failure(
+                    return Result<PurchaseOrderDto>.Failure(
                         $"La cantidad a facturar ({nuevoFacturado:F3}) excede la cantidad pedida " +
                         $"({detalleOrden.OrderedQty:F3}) para '{detalleFactura.Description}'. " +
                         $"Pendiente por facturar: {detalleOrden.PendingToInvoice:F3}.");
@@ -156,8 +156,8 @@ public sealed class VincularFacturaAOrdenCompraCommandHandler
                 factura.InvoiceNumber, orden.OrderNumber, orden.Status, advertencias.Count);
 
             var Supplier = await _proveedorRepo.GetByIdAsync(tenantId, orden.SupplierId, ct);
-            return Result<OrdenCompraDto>.Success(
-                CrearOrdenCompraCommandHandler.ToDto(
+            return Result<PurchaseOrderDto>.Success(
+                CrearOrderPurchaseCommandHandler.ToDto(
                     orden,
                     Supplier?.LegalName ?? orden.SupplierId.ToString(),
                     advertencias));
@@ -166,7 +166,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandler
         {
             await _unitOfWork.RollbackAsync(ct);
             _logger.LogError(ex, "Error al vincular factura a OC {OrdenId}", command.OrdenCompraId);
-            return Result<OrdenCompraDto>.Failure($"No se pudo vincular la factura: {ex.Message}");
+            return Result<PurchaseOrderDto>.Failure($"No se pudo vincular la factura: {ex.Message}");
         }
     }
 }

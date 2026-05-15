@@ -7,14 +7,14 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.GetOrdenesPendientesPorFacturar;
 
-public sealed class GetOrdenesPendientesPorFacturarQueryHandler
-    : IRequestHandler<GetOrdenesPendientesPorFacturarQuery, Result<IReadOnlyList<OrdenCompraDto>>>
+public sealed class GetOrdersPendientesPorFacturarQueryHandler
+    : IRequestHandler<GetOrdersPendientesPorFacturarQuery, Result<IReadOnlyList<PurchaseOrderDto>>>
 {
     private readonly IPurchaseOrderRepository _repo;
     private readonly ISupplierRepository   _proveedorRepo;
     private readonly ICurrentTenant         _currentTenant;
 
-    public GetOrdenesPendientesPorFacturarQueryHandler(
+    public GetOrdersPendientesPorFacturarQueryHandler(
         IPurchaseOrderRepository repo,
         ISupplierRepository proveedorRepo,
         ICurrentTenant currentTenant)
@@ -24,8 +24,8 @@ public sealed class GetOrdenesPendientesPorFacturarQueryHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<IReadOnlyList<OrdenCompraDto>>> Handle(
-        GetOrdenesPendientesPorFacturarQuery query, CancellationToken ct)
+    public async Task<Result<IReadOnlyList<PurchaseOrderDto>>> Handle(
+        GetOrdersPendientesPorFacturarQuery query, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var ordenes  = await _repo.GetPendingToInvoiceAsync(tenantId, ct);
@@ -39,9 +39,9 @@ public sealed class GetOrdenesPendientesPorFacturarQueryHandler
         }
 
         var dtos = ordenes
-            .Select(o => CrearOrdenCompraCommandHandler.ToDto(o, proveedores.GetValueOrDefault(o.SupplierId, "")))
+            .Select(o => CrearOrderPurchaseCommandHandler.ToDto(o, proveedores.GetValueOrDefault(o.SupplierId, "")))
             .ToList();
 
-        return Result<IReadOnlyList<OrdenCompraDto>>.Success(dtos);
+        return Result<IReadOnlyList<PurchaseOrderDto>>.Success(dtos);
     }
 }

@@ -14,8 +14,8 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
 
-public sealed class CrearCompraCommandHandler
-    : IRequestHandler<CrearCompraCommand, Result<PurchBillDto>>
+public sealed class CrearPurchaseCommandHandler
+    : IRequestHandler<CrearPurchaseCommand, Result<PurchBillDto>>
 {
     private readonly IPurchBillRepository       _compraRepo;
     private readonly ISupplierRepository    _proveedorRepo;
@@ -26,9 +26,9 @@ public sealed class CrearCompraCommandHandler
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
-    private readonly ILogger<CrearCompraCommandHandler> _logger;
+    private readonly ILogger<CrearPurchaseCommandHandler> _logger;
 
-    public CrearCompraCommandHandler(
+    public CrearPurchaseCommandHandler(
         IPurchBillRepository repo,
         ISupplierRepository proveedorRepo,
         IWarehouseRepository bodegaRepo,
@@ -38,7 +38,7 @@ public sealed class CrearCompraCommandHandler
         ICurrentTenant tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
-        ILogger<CrearCompraCommandHandler> logger)
+        ILogger<CrearPurchaseCommandHandler> logger)
     {
         _compraRepo    = repo;
         _proveedorRepo = proveedorRepo;
@@ -53,9 +53,9 @@ public sealed class CrearCompraCommandHandler
     }
 
     public async Task<Result<PurchBillDto>> Handle(
-        CrearCompraCommand command, CancellationToken ct)
+        CrearPurchaseCommand command, CancellationToken ct)
     {
-        return command.Modo == ModoCreacionCompra.Xml
+        return command.Modo == ModoCreacionPurchase.Xml
             ? await HandleXml(command, ct)
             : await HandleManual(command, ct);
     }
@@ -63,7 +63,7 @@ public sealed class CrearCompraCommandHandler
     // ── Modo XML ─────────────────────────────────────────────────────────
 
     private async Task<Result<PurchBillDto>> HandleXml(
-        CrearCompraCommand command, CancellationToken ct)
+        CrearPurchaseCommand command, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
@@ -124,7 +124,7 @@ public sealed class CrearCompraCommandHandler
             if (command.AsignacionesBodega is { Count: > 0 })
             {
                 var detalleList = compra.Lines.ToList();
-                var errXml = await CompraAsignacionBodegasRules.ValidateAgainstDetallesAsync(
+                var errXml = await PurchaseAsignacionWarehousesRules.ValidateAgainstDetallesAsync(
                     detalleList, command.AsignacionesBodega, tenantId, _bodegaRepo, ct);
                 if (errXml is not null)
                 {
@@ -174,7 +174,7 @@ public sealed class CrearCompraCommandHandler
     // ── Modo Manual ───────────────────────────────────────────────────────
 
     private async Task<Result<PurchBillDto>> HandleManual(
-        CrearCompraCommand command, CancellationToken ct)
+        CrearPurchaseCommand command, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
@@ -201,7 +201,7 @@ public sealed class CrearCompraCommandHandler
 
         if (command.AsignacionesBodega is { Count: > 0 })
         {
-            var err = await CompraAsignacionBodegasRules.ValidateAsync(
+            var err = await PurchaseAsignacionWarehousesRules.ValidateAsync(
                 command.Lines!, command.AsignacionesBodega, tenantId, _bodegaRepo, ct);
             if (err is not null)
                 return Result<PurchBillDto>.Failure(err);

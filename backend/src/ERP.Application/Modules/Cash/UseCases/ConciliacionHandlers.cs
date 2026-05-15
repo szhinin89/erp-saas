@@ -5,18 +5,18 @@ using ERP.Application.Modules.Cash.Services;
 
 namespace ERP.Application.Modules.Cash.UseCases;
 
-public sealed record SugerirConciliacionQuery(Guid ExtractoId)
-    : IRequest<Result<IReadOnlyList<SugerenciaConciliacionDto>>>;
+public sealed record SugerirReconciliationQuery(Guid ExtractoId)
+    : IRequest<Result<IReadOnlyList<SugerenciaReconciliationDto>>>;
 
-public sealed class SugerirConciliacionQueryHandler
-    : IRequestHandler<SugerirConciliacionQuery, Result<IReadOnlyList<SugerenciaConciliacionDto>>>
+public sealed class SugerirReconciliationQueryHandler
+    : IRequestHandler<SugerirReconciliationQuery, Result<IReadOnlyList<SugerenciaReconciliationDto>>>
 {
-    private readonly IConciliacionService _svc;
+    private readonly IReconciliationService _svc;
 
-    public SugerirConciliacionQueryHandler(IConciliacionService svc) => _svc = svc;
+    public SugerirReconciliationQueryHandler(IReconciliationService svc) => _svc = svc;
 
-    public Task<Result<IReadOnlyList<SugerenciaConciliacionDto>>> Handle(
-        SugerirConciliacionQuery request,
+    public Task<Result<IReadOnlyList<SugerenciaReconciliationDto>>> Handle(
+        SugerirReconciliationQuery request,
         CancellationToken ct)
         => _svc.SugerirConciliacionAsync(request.ExtractoId, ct);
 }
@@ -27,9 +27,9 @@ public sealed record ConciliarBankTransactionCommand(Guid MovimientoId, Guid Jou
 public sealed class ConciliarBankTransactionCommandHandler
     : IRequestHandler<ConciliarBankTransactionCommand, Result<bool>>
 {
-    private readonly IConciliacionService _svc;
+    private readonly IReconciliationService _svc;
 
-    public ConciliarBankTransactionCommandHandler(IConciliacionService svc) => _svc = svc;
+    public ConciliarBankTransactionCommandHandler(IReconciliationService svc) => _svc = svc;
 
     public Task<Result<bool>> Handle(ConciliarBankTransactionCommand request, CancellationToken ct)
         => _svc.ConciliarMovimientoAsync(request.MovimientoId, request.JournalEntryId, ct);

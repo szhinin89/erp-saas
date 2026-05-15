@@ -4,11 +4,11 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class OrdenCompraRepository : IPurchaseOrderRepository
+public sealed class PurchaseOrderRepository : IPurchaseOrderRepository
 {
     private readonly ErpDbContext _context;
 
-    public OrdenCompraRepository(ErpDbContext context) => _context = context;
+    public PurchaseOrderRepository(ErpDbContext context) => _context = context;
 
     public Task AddAsync(PurchaseOrder orden, CancellationToken ct = default)
         => _context.PurchaseOrders.AddAsync(orden, ct).AsTask();

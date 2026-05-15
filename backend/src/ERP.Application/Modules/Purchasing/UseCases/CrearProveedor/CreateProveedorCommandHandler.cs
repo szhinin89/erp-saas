@@ -8,15 +8,15 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.CrearProveedor;
 
-public sealed class CreateProveedorCommandHandler
-    : IRequestHandler<CreateProveedorCommand, Result<ProveedorDto>>
+public sealed class CreateSupplierCommandHandler
+    : IRequestHandler<CreateSupplierCommand, Result<SupplierDto>>
 {
     private readonly ISupplierRepository    _repo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
 
-    public CreateProveedorCommandHandler(
+    public CreateSupplierCommandHandler(
         ISupplierRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
@@ -28,13 +28,13 @@ public sealed class CreateProveedorCommandHandler
         _user     = user;
     }
 
-    public async Task<Result<ProveedorDto>> Handle(CreateProveedorCommand command, CancellationToken ct)
+    public async Task<Result<SupplierDto>> Handle(CreateSupplierCommand command, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
         if (await _repo.ExistsRucAsync(tenantId, command.Ruc, null, ct))
-            return Result<ProveedorDto>.Failure($"Ya existe un Supplier con el RUC '{command.Ruc}' en este tenant.");
+            return Result<SupplierDto>.Failure($"Ya existe un Supplier con el RUC '{command.Ruc}' en este tenant.");
 
         Supplier Supplier;
         try
@@ -46,7 +46,7 @@ public sealed class CreateProveedorCommandHandler
         }
         catch (ArgumentException ex)
         {
-            return Result<ProveedorDto>.Failure(ex.Message);
+            return Result<SupplierDto>.Failure(ex.Message);
         }
 
         await _repo.AddAsync(Supplier, ct);
@@ -57,10 +57,10 @@ public sealed class CreateProveedorCommandHandler
             description: $"{Supplier.Ruc} — {Supplier.LegalName}"), ct);
         await _repo.SaveChangesAsync(ct);
 
-        return Result<ProveedorDto>.Success(ToDto(Supplier));
+        return Result<SupplierDto>.Success(ToDto(Supplier));
     }
 
-    private static ProveedorDto ToDto(Supplier p) =>
+    private static SupplierDto ToDto(Supplier p) =>
         new(p.Id, p.PersonType, p.LegalName, p.Ruc,
             p.Email, p.Phone, p.Address, p.PaymentTerms, p.IsActive);
 }

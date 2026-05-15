@@ -12,12 +12,12 @@ public record PurchaseOrderLineDto(
     decimal   VatTotal,
     decimal Total);
 
-public record OrdenPurchBillVinculadaDto(
+public record LinkedPurchaseBillDto(
     Guid     PurchBillId,
     string   NumeroFactura,
     DateTime FechaVinculacion);
 
-public record OrdenCompraDto(
+public record PurchaseOrderDto(
     Guid      Id,
     string    NumeroOrden,
     Guid    SupplierId,
@@ -45,7 +45,7 @@ public record OrdenCompraDto(
     public IReadOnlyList<string>? Advertencias { get; init; }
 };
 
-public record OrdenCompraDetailDto(
+public record PurchaseOrderDetailDto(
     Guid      Id,
     string    NumeroOrden,
     Guid    SupplierId,
@@ -66,18 +66,22 @@ public record OrdenCompraDetailDto(
     DateTime? FechaCierre,
     DateTime  CreatedAt,
     IReadOnlyList<PurchaseOrderLineDto>          Lines,
-    IReadOnlyList<OrdenPurchBillVinculadaDto>  FacturasVinculadas);
+    IReadOnlyList<LinkedPurchaseBillDto>  FacturasVinculadas);
 
-public record OrdenesCompraPagedResult(
-    IReadOnlyList<OrdenCompraDto> Items,
+public record PurchaseOrdersPagedResult(
+    IReadOnlyList<PurchaseOrderDto> Items,
     int TotalCount,
     int PageNumber,
     int PageSize);
 
-public record ItemOrdenCompraRequest(
+public record PurchaseOrderItemRequest(
     Guid    ProductId,
     decimal Quantity,
     decimal UnitPrice,
     decimal VatPct = 15m);
+
+
+
+
 
 

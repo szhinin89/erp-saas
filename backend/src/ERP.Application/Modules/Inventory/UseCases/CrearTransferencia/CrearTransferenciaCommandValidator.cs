@@ -2,9 +2,9 @@
 
 namespace ERP.Application.Inventory.UseCases.CrearTransferencia;
 
-public sealed class CrearTransferenciaCommandValidator : AbstractValidator<CrearTransferenciaCommand>
+public sealed class CreateTransferCommandValidator : AbstractValidator<CreateTransferCommand>
 {
-    public CrearTransferenciaCommandValidator()
+    public CreateTransferCommandValidator()
     {
         RuleFor(x => x.SourceWarehouseId)
             .NotEmpty().WithMessage("La Warehouse origen es obligatoria.");

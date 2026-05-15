@@ -3,7 +3,7 @@
 namespace ERP.Application.Sales.Services;
 
 /// <summary>Extracción mínima de datos desde XML de comprobante de retención (SRI / Supplier).</summary>
-public static class RetencionRecibidaXmlParser
+public static class RetentionRecibidaXmlParser
 {
     public static bool TryParse(string xml, out string claveAcceso, out DateTime? fechaEmision, out decimal  totalRetained)
     {

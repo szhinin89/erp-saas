@@ -5,11 +5,11 @@ using ERP.Application.Modules.Purchasing.DTOs;
 namespace ERP.Application.Modules.Purchasing.UseCases.GetOrdenesCompraList;
 
 [RequireFeature(SubscriptionFeatureCodes.Purchases)]
-public sealed record GetOrdenesCompraListQuery(
+public record GetPurchaseOrdersListQuery(
     int       PageNumber,
     int       PageSize,
     Guid? SupplierId,
     string?   Status,
     DateTime? DateFrom,
     DateTime? DateTo
-) : IRequest<Result<OrdenesCompraPagedResult>>;
+) : IRequest<Result<PurchaseOrdersPagedResult>>;

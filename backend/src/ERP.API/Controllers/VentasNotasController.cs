@@ -14,22 +14,22 @@ namespace ERP.API.Controllers;
 [Route("api/ventas/notas")]
 [Authorize]
 [Produces("application/json")]
-public sealed class VentasNotasController : ControllerBase
+public sealed class SalesNotesController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public VentasNotasController(IMediator mediator) => _mediator = mediator;
+    public SalesNotesController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
     [Authorize(Policy = "perm:ventas.notas.list")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<VentasNotaListItemDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<SalesNoteListItemDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Listar(
         [FromQuery] Guid? facturaId,
         [FromQuery] string? estado,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetVentasNotasListQuery(facturaId, estado), ct);
-        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<VentasNotaListItemDto>());
+        var result = await _mediator.Send(new GetSalesNotesListQuery(facturaId, estado), ct);
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<SalesNoteListItemDto>());
     }
 
     [HttpPost]
@@ -46,7 +46,7 @@ public sealed class VentasNotasController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Enviar(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new EnviarVentasNotaSriCommand(id), ct);
+        var result = await _mediator.Send(new EnviarSalesNotesriCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Enviado");
     }
 }

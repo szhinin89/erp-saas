@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +12,7 @@ namespace ERP.Application;
 public static class DependencyInjection
 {
     /// <summary>
-    /// Registra MediatR, pipeline de suscripción SaaS y handlers clásicos (scan).
+    /// Registra MediatR, pipeline de suscripciÃ³n SaaS y handlers clÃ¡sicos (scan).
     /// Los <see cref="MediatR.IRequestHandler{TRequest,TResponse}"/> los registra MediatR; no duplicarlos en el scan.
     /// </summary>
     public static IServiceCollection AddApplication(this IServiceCollection services)
@@ -21,7 +21,7 @@ public static class DependencyInjection
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
         services.AddScoped<IKardexService, KardexService>();
-        services.AddScoped<IConciliacionService, ConciliacionService>();
+        services.AddScoped<IReconciliationService, ReconciliationService>();
         services.AddValidatorsFromAssembly(assembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(SubscriptionGateBehavior<,>));

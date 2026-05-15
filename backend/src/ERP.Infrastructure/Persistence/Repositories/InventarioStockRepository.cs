@@ -4,11 +4,11 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class InventarioStockRepository : IStockRepository
+public sealed class StockRepository : IStockRepository
 {
     private readonly ErpDbContext _context;
 
-    public InventarioStockRepository(ErpDbContext context) => _context = context;
+    public StockRepository(ErpDbContext context) => _context = context;
 
     public Task<CurrentStock?> GetStockAsync(
         Guid tenantId,

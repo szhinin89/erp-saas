@@ -22,11 +22,11 @@ namespace ERP.API.Controllers;
 [Route("api/inventario/ajustes")]
 [Authorize]
 [Produces("application/json")]
-public sealed class AjustesInventarioController : ControllerBase
+public sealed class InventoryAdjustmentsController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public AjustesInventarioController(IMediator mediator) => _mediator = mediator;
+    public InventoryAdjustmentsController(IMediator mediator) => _mediator = mediator;
 
     // â”€â”€ Queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -34,7 +34,7 @@ public sealed class AjustesInventarioController : ControllerBase
     /// <remarks>Query params: pageNumber, pageSize, bodegaId, productoId, estado, fechaDesde (YYYY-MM-DD), fechaHasta.</remarks>
     [HttpGet]
     [Authorize(Policy = "perm:inventario.ajustes.view")]
-    [ProducesResponseType(typeof(ApiResponse<AjustesPagedResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<StockAdjustmentsPagedResult>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
         int pageNumber = 1, pageSize = 20;
@@ -52,7 +52,7 @@ public sealed class AjustesInventarioController : ControllerBase
         if (Request.Query.TryGetValue("fechaHasta", out var fhv) && DateTime.TryParse(fhv, out var fh)) hasta = fh;
 
         var result = await _mediator.Send(
-            new GetAjustesListQuery(pageNumber, pageSize, bodegaId, productoId, estado, desde, hasta), ct);
+            new GetStockAdjustmentsListQuery(pageNumber, pageSize, bodegaId, productoId, estado, desde, hasta), ct);
 
         return this.ToOkOrBadRequest(result, "OK");
     }
@@ -63,7 +63,7 @@ public sealed class AjustesInventarioController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<StockAdjustmentDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetAjusteByIdQuery(id), ct);
+        var result = await _mediator.Send(new GetStockAdjustmentByIdQuery(id), ct);
         return this.ToOkOrBadRequest(result, "OK");
     }
 
@@ -79,7 +79,7 @@ public sealed class AjustesInventarioController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<StockAdjustmentDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Crear(
-        [FromBody] CrearAjusteCommand command, CancellationToken ct = default)
+        [FromBody] CreateStockAdjustmentCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
@@ -99,7 +99,7 @@ public sealed class AjustesInventarioController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Ejecutar(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new EjecutarAjusteCommand(id), ct);
+        var result = await _mediator.Send(new ExecuteStockAdjustmentCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Ejecutado");
     }
 
@@ -113,7 +113,7 @@ public sealed class AjustesInventarioController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Cancelar(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new CancelarAjusteCommand(id), ct);
+        var result = await _mediator.Send(new CancelStockAdjustmentCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Cancelado");
     }
 }

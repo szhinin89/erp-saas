@@ -2,7 +2,7 @@
 
 namespace ERP.Application.Modules.Purchasing.DTOs;
 
-public record CompraDetalleDto(
+public record PurchaseBillLineDto(
     Guid     Id,
     Guid?     ProductId,
     string  Description,
@@ -55,9 +55,9 @@ public record PurchBillDetailDto(
     string?       MotivoRechazo,
     Guid?     JournalEntryId,
     DateTime      CreatedAt,
-    IReadOnlyList<CompraDetalleDto> Detalles);
+    IReadOnlyList<PurchaseBillLineDto> Detalles);
 
-public record CompraNotaProveedorDto(
+public record SupplierPurchaseNoteDto(
     Guid      Id,
     Guid    SupplierId,
     Guid?     PurchBillId,
@@ -76,3 +76,4 @@ public record CompraNotaProveedorDto(
     string?   XmlPath,
     Guid?     JournalEntryId,
     DateTime  CreatedAt);
+

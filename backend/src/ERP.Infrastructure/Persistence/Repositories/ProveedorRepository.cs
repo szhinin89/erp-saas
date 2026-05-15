@@ -4,11 +4,11 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class ProveedorRepository : ISupplierRepository
+public sealed class SupplierRepository : ISupplierRepository
 {
     private readonly ErpDbContext _context;
 
-    public ProveedorRepository(ErpDbContext context) => _context = context;
+    public SupplierRepository(ErpDbContext context) => _context = context;
 
     public Task AddAsync(Supplier Supplier, CancellationToken ct = default)
         => _context.Suppliers.AddAsync(Supplier, ct).AsTask();

@@ -20,19 +20,19 @@ namespace ERP.API.Controllers;
 [Route("api/configuracion-sri")]
 [Authorize]
 [Produces("application/json")]
-public sealed class ConfiguracionSRIController : ControllerBase
+public sealed class SriConfigurationController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public ConfiguracionSRIController(IMediator mediator) => _mediator = mediator;
+    public SriConfigurationController(IMediator mediator) => _mediator = mediator;
 
     /// <summary>Retorna la configuraciÃ³n SRI del tenant autenticado, o null si no estÃ¡ configurada.</summary>
     [HttpGet]
     [Authorize(Policy = "perm:ventas.configuracion.view")]
-    [ProducesResponseType(typeof(ApiResponse<ConfiguracionSRIDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SriConfigurationDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetConfiguracionSRIQuery(), ct);
+        var result = await _mediator.Send(new GetSriConfigurationQuery(), ct);
         return this.ToOkOrBadRequest(result, "OK");
     }
 
@@ -44,10 +44,10 @@ public sealed class ConfiguracionSRIController : ControllerBase
     /// <response code="400">Datos invÃ¡lidos.</response>
     [HttpPut]
     [Authorize(Policy = "perm:ventas.configuracion.edit")]
-    [ProducesResponseType(typeof(ApiResponse<ConfiguracionSRIDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SriConfigurationDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Upsert(
-        [FromBody] UpsertConfiguracionSRICommand command, CancellationToken ct = default)
+        [FromBody] UpsertSriConfigurationCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result, "Guardado");

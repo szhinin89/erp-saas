@@ -5,5 +5,5 @@ using ERP.Application.Modules.Purchasing.DTOs;
 namespace ERP.Application.Modules.Purchasing.UseCases.RechazarCompra;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
-public sealed record RechazarCompraCommand(Guid PurchBillId, string  Reason)
+public sealed record RechazarPurchaseCommand(Guid PurchBillId, string  Reason)
     : IRequest<Result<PurchBillDto>>;

@@ -8,15 +8,15 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.HabilitarProveedor;
 
-public sealed class EnableProveedorCommandHandler
-    : IRequestHandler<EnableProveedorCommand, Result<ProveedorDto>>
+public sealed class EnableSupplierCommandHandler
+    : IRequestHandler<EnableSupplierCommand, Result<SupplierDto>>
 {
     private readonly ISupplierRepository    _repo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
 
-    public EnableProveedorCommandHandler(
+    public EnableSupplierCommandHandler(
         ISupplierRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
@@ -28,14 +28,14 @@ public sealed class EnableProveedorCommandHandler
         _user     = user;
     }
 
-    public async Task<Result<ProveedorDto>> Handle(EnableProveedorCommand command, CancellationToken ct)
+    public async Task<Result<SupplierDto>> Handle(EnableSupplierCommand command, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
         var Supplier = await _repo.GetByIdAsync(tenantId, command.Id, ct);
-        if (Supplier is null) return Result<ProveedorDto>.Failure("Supplier no encontrado.");
-        if (Supplier.IsActive) return Result<ProveedorDto>.Failure("El Supplier ya está activo.");
+        if (Supplier is null) return Result<SupplierDto>.Failure("Supplier no encontrado.");
+        if (Supplier.IsActive) return Result<SupplierDto>.Failure("El Supplier ya está activo.");
 
         Supplier.Enable(userId);
 
@@ -46,10 +46,10 @@ public sealed class EnableProveedorCommandHandler
             description: $"{Supplier.Ruc} — {Supplier.LegalName}"), ct);
         await _repo.SaveChangesAsync(ct);
 
-        return Result<ProveedorDto>.Success(ToDto(Supplier));
+        return Result<SupplierDto>.Success(ToDto(Supplier));
     }
 
-    private static ProveedorDto ToDto(Supplier p) =>
+    private static SupplierDto ToDto(Supplier p) =>
         new(p.Id, p.PersonType, p.LegalName, p.Ruc,
             p.Email, p.Phone, p.Address, p.PaymentTerms, p.IsActive);
 }

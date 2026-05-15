@@ -7,14 +7,14 @@ using ERP.Domain.Modules.Cash.Interfaces;
 
 namespace ERP.Application.Modules.Cash.UseCases;
 
-public sealed record ListCajasChicasQuery : IRequest<Result<IReadOnlyList<PettyCashDto>>>;
+public sealed record ListCashesChicasQuery : IRequest<Result<IReadOnlyList<PettyCashDto>>>;
 
-public sealed class ListCajasChicasQueryHandler : IRequestHandler<ListCajasChicasQuery, Result<IReadOnlyList<PettyCashDto>>>
+public sealed class ListCashesChicasQueryHandler : IRequestHandler<ListCashesChicasQuery, Result<IReadOnlyList<PettyCashDto>>>
 {
     private readonly ICashRepository _caja;
-    public ListCajasChicasQueryHandler(ICashRepository caja) => _caja = caja;
+    public ListCashesChicasQueryHandler(ICashRepository caja) => _caja = caja;
 
-    public async Task<Result<IReadOnlyList<PettyCashDto>>> Handle(ListCajasChicasQuery _, CancellationToken ct)
+    public async Task<Result<IReadOnlyList<PettyCashDto>>> Handle(ListCashesChicasQuery _, CancellationToken ct)
     {
         var list = await _caja.ListPettyCashesAsync(ct);
         return Result<IReadOnlyList<PettyCashDto>>.Success(

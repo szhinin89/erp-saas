@@ -13,7 +13,7 @@ using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.Notas;
 
-public sealed class EnviarVentasNotaSriCommandHandler : IRequestHandler<EnviarVentasNotaSriCommand, Result<Guid>>
+public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<EnviarSalesNotesriCommand, Result<Guid>>
 {
     private readonly ISalesRepository             _ventasRepository;
     private readonly ISriSettingsRepository _configSriRepository;
@@ -25,9 +25,9 @@ public sealed class EnviarVentasNotaSriCommandHandler : IRequestHandler<EnviarVe
     private readonly IUnitOfWork                 _unitOfWork;
     private readonly ICurrentTenant              _currentTenant;
     private readonly ICurrentUser                _currentUser;
-    private readonly ILogger<EnviarVentasNotaSriCommandHandler> _logger;
+    private readonly ILogger<EnviarSalesNotesriCommandHandler> _logger;
 
-    public EnviarVentasNotaSriCommandHandler(
+    public EnviarSalesNotesriCommandHandler(
         ISalesRepository ventasRepository,
         ISriSettingsRepository configSriRepository,
         ISriFacturaElectronicaService sriService,
@@ -38,7 +38,7 @@ public sealed class EnviarVentasNotaSriCommandHandler : IRequestHandler<EnviarVe
         IUnitOfWork unitOfWork,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
-        ILogger<EnviarVentasNotaSriCommandHandler> logger)
+        ILogger<EnviarSalesNotesriCommandHandler> logger)
     {
         _ventasRepository    = ventasRepository;
         _configSriRepository = configSriRepository;
@@ -53,7 +53,7 @@ public sealed class EnviarVentasNotaSriCommandHandler : IRequestHandler<EnviarVe
         _logger              = logger;
     }
 
-    public async Task<Result<Guid>> Handle(EnviarVentasNotaSriCommand command, CancellationToken ct)
+    public async Task<Result<Guid>> Handle(EnviarSalesNotesriCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;

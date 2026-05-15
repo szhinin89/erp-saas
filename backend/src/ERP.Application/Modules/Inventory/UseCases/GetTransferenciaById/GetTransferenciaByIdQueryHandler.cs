@@ -5,13 +5,13 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Inventory.UseCases.GetTransferenciaById;
 
-public sealed class GetTransferenciaByIdQueryHandler
-    : IRequestHandler<GetTransferenciaByIdQuery, Result<TransferenciaDetailDto?>>
+public sealed class GetTransferByIdQueryHandler
+    : IRequestHandler<GetTransferByIdQuery, Result<TransferDetailDto?>>
 {
     private readonly IStockTransferRepository _repo;
     private readonly ICurrentTenant           _currentTenant;
 
-    public GetTransferenciaByIdQueryHandler(
+    public GetTransferByIdQueryHandler(
         IStockTransferRepository repo,
         ICurrentTenant currentTenant)
     {
@@ -19,17 +19,17 @@ public sealed class GetTransferenciaByIdQueryHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<TransferenciaDetailDto?>> Handle(
-        GetTransferenciaByIdQuery query, CancellationToken ct)
+    public async Task<Result<TransferDetailDto?>> Handle(
+        GetTransferByIdQuery query, CancellationToken ct)
     {
         var t = await _repo.GetByIdAsync(_currentTenant.TenantId, query.Id, ct);
         if (t is null)
-            return Result<TransferenciaDetailDto?>.Success(null);
+            return Result<TransferDetailDto?>.Success(null);
 
-        var detalles = t.Lines.Select(d => new TransferenciaDetalleDto(
+        var detalles = t.Lines.Select(d => new TransferDetailItemDto(
             d.Id, d.ProductId, d.Description, d.Quantity)).ToList();
 
-        return Result<TransferenciaDetailDto?>.Success(new TransferenciaDetailDto(
+        return Result<TransferDetailDto?>.Success(new TransferDetailDto(
             t.Id, t.TransferNumber,
             t.SourceWarehouseId,
             t.SourceWarehouse?.Name ?? t.SourceWarehouseId.ToString(),

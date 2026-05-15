@@ -11,8 +11,8 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Inventory.UseCases.EjecutarAjuste;
 
-public sealed class EjecutarAjusteCommandHandler
-    : IRequestHandler<EjecutarAjusteCommand, Result<StockAdjustmentDto>>
+public sealed class ExecuteStockAdjustmentCommandHandler
+    : IRequestHandler<ExecuteStockAdjustmentCommand, Result<StockAdjustmentDto>>
 {
     private readonly IStockAdjustmentRepository _ajusteRepo;
     private readonly IStockRepository  _inventario;
@@ -21,9 +21,9 @@ public sealed class EjecutarAjusteCommandHandler
     private readonly IUnitOfWork                 _unitOfWork;
     private readonly ICurrentTenant              _currentTenant;
     private readonly ICurrentUser                _currentUser;
-    private readonly ILogger<EjecutarAjusteCommandHandler> _logger;
+    private readonly ILogger<ExecuteStockAdjustmentCommandHandler> _logger;
 
-    public EjecutarAjusteCommandHandler(
+    public ExecuteStockAdjustmentCommandHandler(
         IStockAdjustmentRepository ajusteRepo,
         IStockRepository inventario,
         ICostoPromedioService costoServicio,
@@ -31,7 +31,7 @@ public sealed class EjecutarAjusteCommandHandler
         IUnitOfWork unitOfWork,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
-        ILogger<EjecutarAjusteCommandHandler> logger)
+        ILogger<ExecuteStockAdjustmentCommandHandler> logger)
     {
         _ajusteRepo    = ajusteRepo;
         _inventario    = inventario;
@@ -44,12 +44,12 @@ public sealed class EjecutarAjusteCommandHandler
     }
 
     public async Task<Result<StockAdjustmentDto>> Handle(
-        EjecutarAjusteCommand command, CancellationToken ct)
+        ExecuteStockAdjustmentCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
-        var ajuste = await _ajusteRepo.GetByIdAsync(tenantId, command.AjusteId, ct);
+        var ajuste = await _ajusteRepo.GetByIdAsync(tenantId, command.AdjustmentId, ct);
         if (ajuste is null)
             return Result<StockAdjustmentDto>.Failure("Ajuste no encontrado.");
 
@@ -136,13 +136,13 @@ public sealed class EjecutarAjusteCommandHandler
         catch (InvalidOperationException ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogWarning(ex, "Error de negocio al ejecutar ajuste {Id}", command.AjusteId);
+            _logger.LogWarning(ex, "Error de negocio al ejecutar ajuste {Id}", command.AdjustmentId);
             return Result<StockAdjustmentDto>.Failure(ex.Message);
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error inesperado al ejecutar ajuste {Id}", command.AjusteId);
+            _logger.LogError(ex, "Error inesperado al ejecutar ajuste {Id}", command.AdjustmentId);
             return Result<StockAdjustmentDto>.Failure($"Error al ejecutar el ajuste: {ex.Message}");
         }
     }

@@ -15,18 +15,18 @@ namespace ERP.API.Controllers;
 [Route("api/contabilidad/configuracion")]
 [Authorize]
 [Produces("application/json")]
-public sealed class ConfiguracionContableController : ControllerBase
+public sealed class AccountingConfigurationController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public ConfiguracionContableController(IMediator mediator) => _mediator = mediator;
+    public AccountingConfigurationController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
     [Authorize(Policy = "perm:accounting.config.view")]
     [ProducesResponseType(typeof(ApiResponse<AccountingSetupDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetConfiguracionContableQuery(), ct);
+        var result = await _mediator.Send(new GetConfigurationContableQuery(), ct);
         return this.ToOkOrBadRequest(result, "OK");
     }
 
@@ -34,7 +34,7 @@ public sealed class ConfiguracionContableController : ControllerBase
     [Authorize(Policy = "perm:accounting.config.edit")]
     [ProducesResponseType(typeof(ApiResponse<AccountingSetupDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Upsert(
-        [FromBody] UpsertConfiguracionContableCommand command,
+        [FromBody] UpsertConfigurationContableCommand command,
         CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);

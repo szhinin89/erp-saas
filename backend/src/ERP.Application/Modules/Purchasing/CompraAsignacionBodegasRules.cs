@@ -4,14 +4,14 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 namespace ERP.Application.Modules.Purchasing;
 
 /// <summary>Validación de distribución de cantidades de compra por Warehouse.</summary>
-public static class CompraAsignacionBodegasRules
+public static class PurchaseAsignacionWarehousesRules
 {
     public const decimal CantidadTolerance = 0.000001m;
 
     /// <returns>null si es válido; mensaje de error en caso contrario.</returns>
     public static async Task<string?> ValidateAsync(
-        IReadOnlyList<DetalleCompraInput> detalles,
-        IReadOnlyList<AsignacionBodegaRequest> asignaciones,
+        IReadOnlyList<DetallePurchaseInput> detalles,
+        IReadOnlyList<AsignacionWarehouseRequest> asignaciones,
         Guid tenantId,
         IWarehouseRepository bodegas,
         CancellationToken ct)
@@ -52,13 +52,13 @@ public static class CompraAsignacionBodegasRules
     /// <summary>Valida asignaciones contra líneas ya materializadas (mismo orden que al crear la compra).</summary>
     public static async Task<string?> ValidateAgainstDetallesAsync(
         IReadOnlyList<ERP.Domain.Modules.Purchasing.Entities.PurchBillLine> detallesOrdenados,
-        IReadOnlyList<AsignacionBodegaRequest> asignaciones,
+        IReadOnlyList<AsignacionWarehouseRequest> asignaciones,
         Guid tenantId,
         IWarehouseRepository bodegas,
         CancellationToken ct)
     {
         var inputs = detallesOrdenados
-            .Select(d => new DetalleCompraInput(
+            .Select(d => new DetallePurchaseInput(
                 d.Description,
                 d.SupplierProductCode,
                 d.ProductId,

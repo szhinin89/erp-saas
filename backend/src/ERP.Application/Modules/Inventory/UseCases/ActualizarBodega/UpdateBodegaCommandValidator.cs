@@ -5,9 +5,9 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Modules.Inventory.UseCases.ActualizarBodega;
 
-public sealed class UpdateBodegaCommandValidator : AbstractValidator<UpdateBodegaCommand>
+public sealed class UpdateWarehouseCommandValidator : AbstractValidator<UpdateWarehouseCommand>
 {
-    public UpdateBodegaCommandValidator(
+    public UpdateWarehouseCommandValidator(
         IWarehouseRepository repo,
         ICurrentTenant tenant)
     {

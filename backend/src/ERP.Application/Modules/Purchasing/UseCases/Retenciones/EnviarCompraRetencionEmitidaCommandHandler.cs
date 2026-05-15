@@ -16,7 +16,7 @@ public sealed class EnviarIssuedRetentionCommandHandler
 {
     private readonly IPurchBillRepository                    _compraRepository;
     private readonly ISriSettingsRepository          _configSriRepository;
-    private readonly ISriComprobanteRetencionService      _sri;
+    private readonly ISriComprobanteRetentionService      _sri;
     private readonly IFileStorage                         _fileStorage;
     private readonly IAccountingService                   _accounting;
     private readonly IUserActivityRepository              _activity;
@@ -28,7 +28,7 @@ public sealed class EnviarIssuedRetentionCommandHandler
     public EnviarIssuedRetentionCommandHandler(
         IPurchBillRepository compraRepository,
         ISriSettingsRepository configSriRepository,
-        ISriComprobanteRetencionService sri,
+        ISriComprobanteRetentionService sri,
         IFileStorage fileStorage,
         IAccountingService accounting,
         IUserActivityRepository activity,

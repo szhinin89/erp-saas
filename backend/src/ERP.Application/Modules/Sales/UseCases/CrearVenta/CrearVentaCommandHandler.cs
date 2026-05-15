@@ -15,7 +15,7 @@ using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.CrearVenta;
 
-public sealed class CrearVentaCommandHandler : IRequestHandler<CrearVentaCommand, Result<Guid>>
+public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand, Result<Guid>>
 {
     private readonly ISalesRepository _ventasRepository;
     private readonly ISriSettingsRepository _configSriRepository;
@@ -28,9 +28,9 @@ public sealed class CrearVentaCommandHandler : IRequestHandler<CrearVentaCommand
     private readonly ICurrentTenant          _currentTenant;
     private readonly ICurrentUser            _currentUser;
     private readonly IUnitOfWork             _unitOfWork;
-    private readonly ILogger<CrearVentaCommandHandler> _logger;
+    private readonly ILogger<CreateSaleCommandHandler> _logger;
 
-    public CrearVentaCommandHandler(
+    public CreateSaleCommandHandler(
         ISalesRepository ventasRepository,
         ISriSettingsRepository configSriRepository,
         IStockRepository stockRepository,
@@ -42,7 +42,7 @@ public sealed class CrearVentaCommandHandler : IRequestHandler<CrearVentaCommand
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
-        ILogger<CrearVentaCommandHandler> logger)
+        ILogger<CreateSaleCommandHandler> logger)
     {
         _ventasRepository    = ventasRepository;
         _configSriRepository = configSriRepository;
@@ -59,7 +59,7 @@ public sealed class CrearVentaCommandHandler : IRequestHandler<CrearVentaCommand
     }
 
     public async Task<Result<Guid>> Handle(
-        CrearVentaCommand command,
+        CreateSaleCommand command,
         CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;

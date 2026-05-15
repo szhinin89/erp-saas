@@ -10,8 +10,8 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.ValidarCompra;
 
-public sealed class ValidarCompraCommandHandler
-    : IRequestHandler<ValidarCompraCommand, Result<PurchBillDto>>
+public sealed class ValidarPurchaseCommandHandler
+    : IRequestHandler<ValidarPurchaseCommand, Result<PurchBillDto>>
 {
     private readonly IPurchBillRepository       _repo;
     private readonly ISupplierRepository    _proveedorRepo;
@@ -20,7 +20,7 @@ public sealed class ValidarCompraCommandHandler
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
 
-    public ValidarCompraCommandHandler(
+    public ValidarPurchaseCommandHandler(
         IPurchBillRepository repo,
         ISupplierRepository proveedorRepo,
         IUserActivityRepository activity,
@@ -37,7 +37,7 @@ public sealed class ValidarCompraCommandHandler
     }
 
     public async Task<Result<PurchBillDto>> Handle(
-        ValidarCompraCommand command, CancellationToken ct)
+        ValidarPurchaseCommand command, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;

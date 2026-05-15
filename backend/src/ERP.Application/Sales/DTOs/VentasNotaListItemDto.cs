@@ -1,6 +1,6 @@
 ﻿namespace ERP.Application.Sales.DTOs;
 
-public sealed record VentasNotaListItemDto(
+public record SalesNoteListItemDto(
     Guid Id,
     Guid FacturaOriginalId,
     string TipoNota,

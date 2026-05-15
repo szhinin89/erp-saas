@@ -5,5 +5,5 @@ using ERP.Application.Inventory.DTOs;
 namespace ERP.Application.Inventory.UseCases.CancelarAjuste;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
-public sealed record CancelarAjusteCommand(Guid AjusteId)
+public record CancelStockAdjustmentCommand(Guid AdjustmentId)
     : IRequest<Result<StockAdjustmentDto>>;

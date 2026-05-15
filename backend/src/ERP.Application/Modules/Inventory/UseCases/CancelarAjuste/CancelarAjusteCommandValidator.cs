@@ -2,11 +2,11 @@ using FluentValidation;
 
 namespace ERP.Application.Inventory.UseCases.CancelarAjuste;
 
-public sealed class CancelarAjusteCommandValidator : AbstractValidator<CancelarAjusteCommand>
+public sealed class CancelStockAdjustmentCommandValidator : AbstractValidator<CancelStockAdjustmentCommand>
 {
-    public CancelarAjusteCommandValidator()
+    public CancelStockAdjustmentCommandValidator()
     {
-        RuleFor(x => x.AjusteId)
+        RuleFor(x => x.AdjustmentId)
             .NotEmpty()
             .WithMessage("El ID del ajuste es obligatorio.");
     }

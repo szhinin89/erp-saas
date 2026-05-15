@@ -5,11 +5,11 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class CompraRepository : IPurchBillRepository
+public sealed class PurchBillRepository : IPurchBillRepository
 {
     private readonly ErpDbContext _context;
 
-    public CompraRepository(ErpDbContext context) => _context = context;
+    public PurchBillRepository(ErpDbContext context) => _context = context;
 
     public Task AddAsync(PurchBill compra, CancellationToken ct = default)
         => _context.PurchBills.AddAsync(compra, ct).AsTask();

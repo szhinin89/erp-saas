@@ -1,4 +1,4 @@
-﻿using ERP.API.Contracts;
+using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.API.Services;
@@ -15,12 +15,12 @@ namespace ERP.API.Controllers;
 [Route("api/superadmin/AppFeatures")]
 [Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]
-public sealed class SuperAdminFuncionalidadesController : ControllerBase
+public sealed class SuperAdminAppFeaturesController : ControllerBase
 {
     private readonly ErpDbContext _db;
     private readonly ModuloDiscoveryService _discovery;
 
-    public SuperAdminFuncionalidadesController(ErpDbContext db, ModuloDiscoveryService discovery)
+    public SuperAdminAppFeaturesController(ErpDbContext db, ModuloDiscoveryService discovery)
     {
         _db = db;
         _discovery = discovery;
@@ -36,7 +36,7 @@ public sealed class SuperAdminFuncionalidadesController : ControllerBase
     }
 
     [HttpGet("arbol")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<AppFeatureArbolDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<AppFeatureTreeDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Arbol(CancellationToken ct)
     {
         static string ExtractFunctionalModuleKey(string? ruta, string? permiso, string? nombre)
@@ -92,7 +92,7 @@ public sealed class SuperAdminFuncionalidadesController : ControllerBase
 
         // No usar Dictionary con clave PadreId == null: en runtime puede lanzarse ArgumentNullException
         // y el ExceptionMiddleware la mapea a HTTP 400.
-        List<AppFeatureArbolDto> BuildTree(Guid? parentId)
+        List<AppFeatureTreeDto> BuildTree(Guid? parentId)
         {
             return rows
                 .Where(x => x.ParentId == parentId)
@@ -100,14 +100,14 @@ public sealed class SuperAdminFuncionalidadesController : ControllerBase
                 .ThenBy(x => ExtractFunctionalModuleKey(x.Path, x.Permission, x.Name))
                 .ThenBy(x => x.SortOrder)
                 .ThenBy(x => x.Name)
-                .Select(x => new AppFeatureArbolDto
+                .Select(x => new AppFeatureTreeDto
                 {
                     Id = x.Id,
                     Name = x.Name,
-                    Icono = x.Icon,
-                    Ruta = x.Path,
-                    Permiso = x.Permission,
-                    Hijos = BuildTree(x.Id),
+                    Icon = x.Icon,
+                    Path = x.Path,
+                    Permission = x.Permission,
+                    Children = BuildTree(x.Id),
                 })
                 .ToList();
         }
@@ -116,6 +116,3 @@ public sealed class SuperAdminFuncionalidadesController : ControllerBase
         return this.ApiOk(roots);
     }
 }
-
-
-

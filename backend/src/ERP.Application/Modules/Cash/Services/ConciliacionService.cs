@@ -7,7 +7,7 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 
 namespace ERP.Application.Modules.Cash.Services;
 
-public sealed class ConciliacionService : IConciliacionService
+public sealed class ReconciliationService : IReconciliationService
 {
     private const decimal ToleranciaMonto = 0.02m;
     private static readonly TimeSpan dateToleranceDays = TimeSpan.FromDays(3);
@@ -16,7 +16,7 @@ public sealed class ConciliacionService : IConciliacionService
     private readonly IAccountingRepository _accounting;
     private readonly ICurrentUser _user;
 
-    public ConciliacionService(
+    public ReconciliationService(
         ICashRepository caja,
         IAccountingRepository accounting,
         ICurrentUser user)
@@ -26,18 +26,18 @@ public sealed class ConciliacionService : IConciliacionService
         _user        = user;
     }
 
-    public async Task<Result<IReadOnlyList<SugerenciaConciliacionDto>>> SugerirConciliacionAsync(
+    public async Task<Result<IReadOnlyList<SugerenciaReconciliationDto>>> SugerirConciliacionAsync(
         Guid extractoId,
         CancellationToken ct)
     {
         var extracto = await _caja.GetBankStatementWithTransactionsAsync(extractoId, ct);
         if (extracto is null)
-            return Result<IReadOnlyList<SugerenciaConciliacionDto>>.Failure("Extracto no encontrado.");
+            return Result<IReadOnlyList<SugerenciaReconciliationDto>>.Failure("Extracto no encontrado.");
 
         var cuenta = await _caja.GetBankAccountByIdAsync(extracto.BankAccountId, ct);
         if (cuenta?.LedgerAccountId is not { } glId)
         {
-            return Result<IReadOnlyList<SugerenciaConciliacionDto>>.Failure(
+            return Result<IReadOnlyList<SugerenciaReconciliationDto>>.Failure(
                 "La cuenta bancaria no tiene cuenta contable asociada; no se pueden sugerir coincidencias.");
         }
 
@@ -51,7 +51,7 @@ public sealed class ConciliacionService : IConciliacionService
             hasta,
             ct);
 
-        var sugerencias = new List<SugerenciaConciliacionDto>();
+        var sugerencias = new List<SugerenciaReconciliationDto>();
 
         foreach (var mov in extracto.Transactions.Where(m => m.Status == "Pendiente"))
         {
@@ -85,10 +85,10 @@ public sealed class ConciliacionService : IConciliacionService
                 }
             }
 
-            sugerencias.Add(new SugerenciaConciliacionDto(mov.Id, mejor, motivo));
+            sugerencias.Add(new SugerenciaReconciliationDto(mov.Id, mejor, motivo));
         }
 
-        return Result<IReadOnlyList<SugerenciaConciliacionDto>>.Success(sugerencias);
+        return Result<IReadOnlyList<SugerenciaReconciliationDto>>.Success(sugerencias);
     }
 
     private static bool CoincideTipoMovimiento(string tipoMov, decimal debit, decimal credit)

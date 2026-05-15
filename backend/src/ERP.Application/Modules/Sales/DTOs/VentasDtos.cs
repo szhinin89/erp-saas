@@ -1,6 +1,6 @@
 ﻿namespace ERP.Application.Sales.DTOs;
 
-public record VentasDetalleDto(
+public record SalesDetailDto(
     Guid    Id,
     Guid    ProductId,
     string  Description,
@@ -54,9 +54,9 @@ public record SalesBillDetailDto(
     string?   ErrorMessage,
     Guid?     JournalEntryId,
     DateTime  CreatedAt,
-    IReadOnlyList<VentasDetalleDto> Lines);
+    IReadOnlyList<SalesDetailDto> Lines);
 
-public record VentasPagedResult(
+public record SalesPagedResult(
     IReadOnlyList<SalesBillDto> Items,
     int TotalCount,
     int PageNumber,
@@ -68,3 +68,4 @@ public record StockDisponibleDto(
     decimal AvailableQty,
     decimal TotalQty,
     decimal ReservedQty);
+

@@ -8,15 +8,15 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Modules.Inventory.UseCases.HabilitarBodega;
 
-public sealed class EnableBodegaCommandHandler
-    : IRequestHandler<EnableBodegaCommand, Result<BodegaDto>>
+public sealed class EnableWarehouseCommandHandler
+    : IRequestHandler<EnableWarehouseCommand, Result<WarehouseDto>>
 {
     private readonly IWarehouseRepository       _repo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
 
-    public EnableBodegaCommandHandler(
+    public EnableWarehouseCommandHandler(
         IWarehouseRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
@@ -28,14 +28,14 @@ public sealed class EnableBodegaCommandHandler
         _user     = user;
     }
 
-    public async Task<Result<BodegaDto>> Handle(EnableBodegaCommand command, CancellationToken ct)
+    public async Task<Result<WarehouseDto>> Handle(EnableWarehouseCommand command, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
         var Warehouse = await _repo.GetByIdAsync(tenantId, command.Id, ct);
-        if (Warehouse is null) return Result<BodegaDto>.Failure("Warehouse no encontrada.");
-        if (Warehouse.IsActive) return Result<BodegaDto>.Failure("La Warehouse ya está activa.");
+        if (Warehouse is null) return Result<WarehouseDto>.Failure("Warehouse no encontrada.");
+        if (Warehouse.IsActive) return Result<WarehouseDto>.Failure("La Warehouse ya está activa.");
 
         Warehouse.Enable(userId);
 
@@ -46,9 +46,9 @@ public sealed class EnableBodegaCommandHandler
             description: Warehouse.Name), ct);
         await _repo.SaveChangesAsync(ct);
 
-        return Result<BodegaDto>.Success(ToDto(Warehouse));
+        return Result<WarehouseDto>.Success(ToDto(Warehouse));
     }
 
-    private static BodegaDto ToDto(Warehouse b) =>
+    private static WarehouseDto ToDto(Warehouse b) =>
         new(b.Id, b.BranchId, b.Name, b.Address, b.Manager, b.IsActive);
 }

@@ -4,11 +4,11 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class TransferenciaRepository : IStockTransferRepository
+public sealed class StockTransferRepository : IStockTransferRepository
 {
     private readonly ErpDbContext _context;
 
-    public TransferenciaRepository(ErpDbContext context) => _context = context;
+    public StockTransferRepository(ErpDbContext context) => _context = context;
 
     public Task AddAsync(StockTransfer StockTransfer, CancellationToken ct = default)
         => _context.StockTransfers.AddAsync(StockTransfer, ct).AsTask();

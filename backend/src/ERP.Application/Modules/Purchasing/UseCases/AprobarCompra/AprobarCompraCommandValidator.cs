@@ -2,9 +2,9 @@
 
 namespace ERP.Application.Modules.Purchasing.UseCases.AprobarCompra;
 
-public sealed class AprobarCompraCommandValidator : AbstractValidator<AprobarCompraCommand>
+public sealed class AprobarPurchaseCommandValidator : AbstractValidator<AprobarPurchaseCommand>
 {
-    public AprobarCompraCommandValidator()
+    public AprobarPurchaseCommandValidator()
     {
         RuleFor(x => x.PurchBillId)
             .NotEmpty()

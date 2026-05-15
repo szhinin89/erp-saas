@@ -8,8 +8,8 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.RechazarCompra;
 
-public sealed class RechazarCompraCommandHandler
-    : IRequestHandler<RechazarCompraCommand, Result<PurchBillDto>>
+public sealed class RechazarPurchaseCommandHandler
+    : IRequestHandler<RechazarPurchaseCommand, Result<PurchBillDto>>
 {
     private readonly IPurchBillRepository       _repo;
     private readonly IUserActivityRepository _activity;
@@ -17,7 +17,7 @@ public sealed class RechazarCompraCommandHandler
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
 
-    public RechazarCompraCommandHandler(
+    public RechazarPurchaseCommandHandler(
         IPurchBillRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
@@ -32,7 +32,7 @@ public sealed class RechazarCompraCommandHandler
     }
 
     public async Task<Result<PurchBillDto>> Handle(
-        RechazarCompraCommand command, CancellationToken ct)
+        RechazarPurchaseCommand command, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;

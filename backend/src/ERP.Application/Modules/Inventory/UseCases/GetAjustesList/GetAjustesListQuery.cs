@@ -5,7 +5,7 @@ using ERP.Application.Inventory.DTOs;
 namespace ERP.Application.Inventory.UseCases.GetAjustesList;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
-public sealed record GetAjustesListQuery(
+public record GetStockAdjustmentsListQuery(
     int       PageNumber,
     int       PageSize,
     Guid?     WarehouseId,
@@ -13,4 +13,4 @@ public sealed record GetAjustesListQuery(
     string?   Status,
     DateTime? DateFrom,
     DateTime? DateTo
-) : IRequest<Result<AjustesPagedResult>>;
+) : IRequest<Result<StockAdjustmentsPagedResult>>;

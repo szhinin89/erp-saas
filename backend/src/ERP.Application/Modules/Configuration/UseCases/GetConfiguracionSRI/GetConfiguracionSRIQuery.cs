@@ -4,4 +4,4 @@ using ERP.Application.Configuration.DTOs;
 
 namespace ERP.Application.Configuration.UseCases.GetSriSettings;
 
-public sealed record GetConfiguracionSRIQuery : IRequest<Result<ConfiguracionSRIDto?>>;
+public record GetSriConfigurationQuery : IRequest<Result<SriConfigurationDto?>>;

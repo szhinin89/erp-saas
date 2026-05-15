@@ -5,7 +5,7 @@ using ERP.Application.Inventory.DTOs;
 namespace ERP.Application.Inventory.UseCases.GetTransferenciasList;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
-public sealed record GetTransferenciasListQuery(
+public record GetTransfersListQuery(
     int       PageNumber      = 1,
     int       PageSize        = 20,
     Guid?     SourceWarehouseId  = null,
@@ -13,4 +13,4 @@ public sealed record GetTransferenciasListQuery(
     string?   Status          = null,
     DateTime? DateFrom      = null,
     DateTime? DateTo      = null
-) : IRequest<Result<TransferenciasPagedResult>>;
+) : IRequest<Result<TransfersPagedResult>>;

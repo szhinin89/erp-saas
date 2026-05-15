@@ -1,7 +1,7 @@
-namespace ERP.Application.Modules.Purchasing.Services;
+﻿namespace ERP.Application.Modules.Purchasing.Services;
 
-/// <summary>Cálculo de valor retenido según base y porcentaje (retenciones en la fuente).</summary>
-public static class CompraRetencionCalculo
+/// <summary>CÃ¡lculo de valor retenido segÃºn base y porcentaje (retenciones en la fuente).</summary>
+public static class PurchaseRetentionCalculo
 {
     public static decimal CalcularValorRetenido(decimal baseImponible, decimal porcentajeRetencion)
         => Math.Round(baseImponible * porcentajeRetencion / 100m, 2);

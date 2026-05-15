@@ -16,12 +16,12 @@ namespace ERP.API.Controllers;
 [Route("api/caja")]
 [Authorize]
 [Produces("application/json")]
-public sealed class CajaController : ControllerBase
+public sealed class CashController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IStatementParser _parser;
 
-    public CajaController(IMediator mediator, IStatementParser parser)
+    public CashController(IMediator mediator, IStatementParser parser)
     {
         _mediator = mediator;
         _parser   = parser;
@@ -105,8 +105,8 @@ public sealed class CajaController : ControllerBase
     [Authorize(Policy = "perm:caja.extractos.view")]
     public async Task<IActionResult> SugerirConciliacion(Guid extractoId, CancellationToken ct)
     {
-        var r = await _mediator.Send(new SugerirConciliacionQuery(extractoId), ct);
-        return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<SugerenciaConciliacionDto>());
+        var r = await _mediator.Send(new SugerirReconciliationQuery(extractoId), ct);
+        return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<SugerenciaReconciliationDto>());
     }
 
     public sealed record ConciliarRequest(Guid AsientoContableId);
@@ -123,13 +123,13 @@ public sealed class CajaController : ControllerBase
     [Authorize(Policy = "perm:caja.cajachica.view")]
     public async Task<IActionResult> ListCajasChicas(CancellationToken ct)
     {
-        var r = await _mediator.Send(new ListCajasChicasQuery(), ct);
+        var r = await _mediator.Send(new ListCashesChicasQuery(), ct);
         return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<PettyCashDto>());
     }
 
     [HttpPost("cajas-chicas")]
     [Authorize(Policy = "perm:caja.cajachica.create")]
-    public async Task<IActionResult> CrearCajaChica([FromBody] CrearCajaChicaRequest body, CancellationToken ct)
+    public async Task<IActionResult> CrearCajaChica([FromBody] CreatePettyCashRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(
             new CrearPettyCashCommand(body.Nombre, body.SaldoAsignado, body.CuentaBancariaIdReposicion, body.CuentaContableCajaId),
@@ -139,7 +139,7 @@ public sealed class CajaController : ControllerBase
 
     [HttpPost("caja-chica/gastos")]
     [Authorize(Policy = "perm:caja.cajachica.edit")]
-    public async Task<IActionResult> CrearGastoCajaChica([FromBody] CrearGastoCajaChicaRequest body, CancellationToken ct)
+    public async Task<IActionResult> CrearGastoCajaChica([FromBody] CreatePettyCashExpenseRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(
             new CrearGastoPettyCashCommand(
@@ -155,7 +155,7 @@ public sealed class CajaController : ControllerBase
 
     [HttpPost("caja-chica/arqueos")]
     [Authorize(Policy = "perm:caja.arqueos.perform")]
-    public async Task<IActionResult> CrearArqueo([FromBody] CrearArqueoCajaRequest body, CancellationToken ct)
+    public async Task<IActionResult> CrearArqueo([FromBody] CreateCashCountRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(
             new CrearCashCountCommand(body.CajaChicaId, body.FechaArqueo, body.EfectivoFisico, body.Observaciones),
@@ -173,7 +173,7 @@ public sealed class CajaController : ControllerBase
 
     [HttpPost("caja-chica/reposicion")]
     [Authorize(Policy = "perm:caja.cajachica.edit")]
-    public async Task<IActionResult> Reposicion([FromBody] ReposicionCajaChicaRequest body, CancellationToken ct)
+    public async Task<IActionResult> Reposicion([FromBody] PettyCashReplenishmentRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(new ReposicionPettyCashCommand(body.CajaChicaId, body.Monto), ct);
         return this.ToOkOrBadRequest(r, "OK");
@@ -205,13 +205,13 @@ public sealed class CajaController : ControllerBase
         decimal SaldoInicial,
         Guid? CuentaContableId);
 
-    public sealed record CrearCajaChicaRequest(
+    public sealed record CreatePettyCashRequest(
         string Nombre,
         decimal SaldoAsignado,
         Guid? CuentaBancariaIdReposicion,
         Guid? CuentaContableCajaId);
 
-    public sealed record CrearGastoCajaChicaRequest(
+    public sealed record CreatePettyCashExpenseRequest(
         Guid CajaChicaId,
         DateTime Fecha,
         string Concepto,
@@ -219,13 +219,13 @@ public sealed class CajaController : ControllerBase
         string TipoComprobante,
         string? NumeroComprobante);
 
-    public sealed record CrearArqueoCajaRequest(
+    public sealed record CreateCashCountRequest(
         Guid CajaChicaId,
         DateTime FechaArqueo,
         decimal EfectivoFisico,
         string? Observaciones);
 
-    public sealed record ReposicionCajaChicaRequest(Guid CajaChicaId, decimal Monto);
+    public sealed record PettyCashReplenishmentRequest(Guid CajaChicaId, decimal Monto);
 }
 
 

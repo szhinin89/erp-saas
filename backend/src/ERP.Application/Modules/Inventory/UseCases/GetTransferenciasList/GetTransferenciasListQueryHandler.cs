@@ -6,13 +6,13 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Inventory.UseCases.GetTransferenciasList;
 
-public sealed class GetTransferenciasListQueryHandler
-    : IRequestHandler<GetTransferenciasListQuery, Result<TransferenciasPagedResult>>
+public sealed class GetTransfersListQueryHandler
+    : IRequestHandler<GetTransfersListQuery, Result<TransfersPagedResult>>
 {
     private readonly IStockTransferRepository _repo;
     private readonly ICurrentTenant           _currentTenant;
 
-    public GetTransferenciasListQueryHandler(
+    public GetTransfersListQueryHandler(
         IStockTransferRepository repo,
         ICurrentTenant currentTenant)
     {
@@ -20,8 +20,8 @@ public sealed class GetTransferenciasListQueryHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<TransferenciasPagedResult>> Handle(
-        GetTransferenciasListQuery query, CancellationToken ct)
+    public async Task<Result<TransfersPagedResult>> Handle(
+        GetTransfersListQuery query, CancellationToken ct)
     {
         var pageNumber = Math.Max(1, query.PageNumber);
         var pageSize   = Math.Clamp(query.PageSize, 1, 100);
@@ -34,11 +34,11 @@ public sealed class GetTransferenciasListQueryHandler
             ct);
 
         var dtos = items.Select(ToDto).ToList();
-        return Result<TransferenciasPagedResult>.Success(
-            new TransferenciasPagedResult(dtos, total, pageNumber, pageSize));
+        return Result<TransfersPagedResult>.Success(
+            new TransfersPagedResult(dtos, total, pageNumber, pageSize));
     }
 
-    private static TransferenciaDto ToDto(StockTransfer t) => new(
+    private static TransferDto ToDto(StockTransfer t) => new(
         t.Id, t.TransferNumber,
         t.SourceWarehouseId,
         t.SourceWarehouse?.Name ?? t.SourceWarehouseId.ToString(),

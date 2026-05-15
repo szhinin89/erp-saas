@@ -1,6 +1,6 @@
 ﻿namespace ERP.Application.Modules.Inventory.DTOs;
 
-public record BodegaDto(
+public record WarehouseDto(
     Guid   Id,
     Guid    BranchId,
     string  Name,
@@ -8,7 +8,7 @@ public record BodegaDto(
     string? Manager,
     bool   IsActive);
 
-public record BodegaDetailDto(
+public record WarehouseDetailDto(
     Guid      Id,
     Guid    BranchId,
     string  Name,
@@ -19,3 +19,4 @@ public record BodegaDetailDto(
     DateTime? UpdatedAt,
     Guid      CreatedBy,
     Guid?     UpdatedBy);
+

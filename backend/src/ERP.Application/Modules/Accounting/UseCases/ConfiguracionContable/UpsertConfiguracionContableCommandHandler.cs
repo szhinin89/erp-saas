@@ -7,15 +7,15 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 
 namespace ERP.Application.Modules.Accounting.UseCases.ConfiguracionContable;
 
-public sealed class UpsertConfiguracionContableCommandHandler
-    : IRequestHandler<UpsertConfiguracionContableCommand, Result<AccountingSetupDto>>
+public sealed class UpsertConfigurationContableCommandHandler
+    : IRequestHandler<UpsertConfigurationContableCommand, Result<AccountingSetupDto>>
 {
     private readonly IAccountingSetupRepository _configRepo;
     private readonly IAccountingRepository      _accounts;
     private readonly ICurrentTenant             _tenant;
     private readonly ICurrentUser               _user;
 
-    public UpsertConfiguracionContableCommandHandler(
+    public UpsertConfigurationContableCommandHandler(
         IAccountingSetupRepository configRepo,
         IAccountingRepository accounts,
         ICurrentTenant tenant,
@@ -28,7 +28,7 @@ public sealed class UpsertConfiguracionContableCommandHandler
     }
 
     public async Task<Result<AccountingSetupDto>> Handle(
-        UpsertConfiguracionContableCommand command,
+        UpsertConfigurationContableCommand command,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;

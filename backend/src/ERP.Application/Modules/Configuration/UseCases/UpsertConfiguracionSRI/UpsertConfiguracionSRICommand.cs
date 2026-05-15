@@ -4,7 +4,7 @@ using ERP.Application.Configuration.DTOs;
 
 namespace ERP.Application.Configuration.UseCases.UpsertSriSettings;
 
-public sealed record UpsertConfiguracionSRICommand(
+public record UpsertSriConfigurationCommand(
     string  Ruc,
     string  LegalName,
     string? TradeName,
@@ -18,4 +18,4 @@ public sealed record UpsertConfiguracionSRICommand(
     int     Environment,
     int     EmissionType,
     string  WsdlUrl
-) : IRequest<Result<ConfiguracionSRIDto>>;
+) : IRequest<Result<SriConfigurationDto>>;

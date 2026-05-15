@@ -1,6 +1,6 @@
-namespace ERP.Application.Modules.Purchasing.DTOs;
+﻿namespace ERP.Application.Modules.Purchasing.DTOs;
 
-public record ProveedorDto(
+public record SupplierDto(
     Guid    Id,
     string  TipoPersona,
     string  RazonSocial,
@@ -11,7 +11,7 @@ public record ProveedorDto(
     string  CondicionPago,
     bool    IsActive);
 
-public record ProveedorDetailDto(
+public record SupplierDetailDto(
     Guid      Id,
     string    TipoPersona,
     string    RazonSocial,
@@ -25,3 +25,4 @@ public record ProveedorDetailDto(
     DateTime? UpdatedAt,
     Guid      CreatedBy,
     Guid?     UpdatedBy);
+

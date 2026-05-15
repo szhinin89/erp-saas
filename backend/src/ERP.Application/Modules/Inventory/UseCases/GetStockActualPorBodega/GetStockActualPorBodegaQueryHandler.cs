@@ -6,14 +6,14 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Modules.Inventory.UseCases.GetCurrentStockPorBodega;
 
-public sealed class GetCurrentStockPorBodegaQueryHandler
-    : IRequestHandler<GetCurrentStockPorBodegaQuery, Result<IReadOnlyList<CurrentStockListItemDto>>>
+public sealed class GetCurrentStockPorWarehouseQueryHandler
+    : IRequestHandler<GetCurrentStockPorWarehouseQuery, Result<IReadOnlyList<CurrentStockListItemDto>>>
 {
     private readonly IStockRepository _stock;
     private readonly IWarehouseRepository          _bodegas;
     private readonly ICurrentTenant             _tenant;
 
-    public GetCurrentStockPorBodegaQueryHandler(
+    public GetCurrentStockPorWarehouseQueryHandler(
         IStockRepository stock,
         IWarehouseRepository bodegas,
         ICurrentTenant tenant)
@@ -24,7 +24,7 @@ public sealed class GetCurrentStockPorBodegaQueryHandler
     }
 
     public async Task<Result<IReadOnlyList<CurrentStockListItemDto>>> Handle(
-        GetCurrentStockPorBodegaQuery query,
+        GetCurrentStockPorWarehouseQuery query,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;

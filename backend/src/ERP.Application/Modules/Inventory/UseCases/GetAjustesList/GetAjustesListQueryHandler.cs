@@ -5,13 +5,13 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Inventory.UseCases.GetAjustesList;
 
-public sealed class GetAjustesListQueryHandler
-    : IRequestHandler<GetAjustesListQuery, Result<AjustesPagedResult>>
+public sealed class GetStockAdjustmentsListQueryHandler
+    : IRequestHandler<GetStockAdjustmentsListQuery, Result<StockAdjustmentsPagedResult>>
 {
     private readonly IStockAdjustmentRepository _repo;
     private readonly ICurrentTenant              _currentTenant;
 
-    public GetAjustesListQueryHandler(
+    public GetStockAdjustmentsListQueryHandler(
         IStockAdjustmentRepository repo,
         ICurrentTenant currentTenant)
     {
@@ -19,8 +19,8 @@ public sealed class GetAjustesListQueryHandler
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<AjustesPagedResult>> Handle(
-        GetAjustesListQuery query, CancellationToken ct)
+    public async Task<Result<StockAdjustmentsPagedResult>> Handle(
+        GetStockAdjustmentsListQuery query, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
 
@@ -39,7 +39,7 @@ public sealed class GetAjustesListQueryHandler
             a.ExecutedAt, a.ExecutedBy,
             a.CreatedAt)).ToList();
 
-        return Result<AjustesPagedResult>.Success(
-            new AjustesPagedResult(dtos, total, query.PageNumber, query.PageSize));
+        return Result<StockAdjustmentsPagedResult>.Success(
+            new StockAdjustmentsPagedResult(dtos, total, query.PageNumber, query.PageSize));
     }
 }

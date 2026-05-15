@@ -2,12 +2,12 @@
 
 namespace ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
 
-public sealed class CrearCompraCommandValidator : AbstractValidator<CrearCompraCommand>
+public sealed class CrearPurchaseCommandValidator : AbstractValidator<CrearPurchaseCommand>
 {
-    public CrearCompraCommandValidator()
+    public CrearPurchaseCommandValidator()
     {
         // ── XML ──────────────────────────────────────────────────────────
-        When(x => x.Modo == ModoCreacionCompra.Xml, () =>
+        When(x => x.Modo == ModoCreacionPurchase.Xml, () =>
         {
             RuleFor(x => x.XmlContent)
                 .NotNull().WithMessage("El contenido del archivo XML es requerido en modo XML.")
@@ -15,7 +15,7 @@ public sealed class CrearCompraCommandValidator : AbstractValidator<CrearCompraC
         });
 
         // ── Manual ───────────────────────────────────────────────────────
-        When(x => x.Modo == ModoCreacionCompra.Manual, () =>
+        When(x => x.Modo == ModoCreacionPurchase.Manual, () =>
         {
             RuleFor(x => x.SupplierId)
                 .NotEmpty().WithMessage("El Supplier es obligatorio en modo manual.");

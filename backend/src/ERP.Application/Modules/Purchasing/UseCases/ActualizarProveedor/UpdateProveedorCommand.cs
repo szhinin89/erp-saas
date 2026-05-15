@@ -1,11 +1,11 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.ActualizarProveedor;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
-public sealed record UpdateProveedorCommand(
+public sealed record UpdateSupplierCommand(
     Guid    Id,
     string  PersonType,
     string  LegalName,
@@ -14,4 +14,4 @@ public sealed record UpdateProveedorCommand(
     string? Phone,
     string? Address,
     string  PaymentTerms
-) : IRequest<Result<ProveedorDto>>;
+) : IRequest<Result<SupplierDto>>;

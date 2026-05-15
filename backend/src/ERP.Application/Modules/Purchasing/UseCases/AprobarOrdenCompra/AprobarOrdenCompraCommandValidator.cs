@@ -1,10 +1,10 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.AprobarOrdenCompra;
 
-public sealed class AprobarOrdenCompraCommandValidator : AbstractValidator<AprobarOrdenCompraCommand>
+public sealed class AprobarOrderPurchaseCommandValidator : AbstractValidator<AprobarOrderPurchaseCommand>
 {
-    public AprobarOrdenCompraCommandValidator()
+    public AprobarOrderPurchaseCommandValidator()
     {
         RuleFor(x => x.OrdenId)
             .NotEmpty()

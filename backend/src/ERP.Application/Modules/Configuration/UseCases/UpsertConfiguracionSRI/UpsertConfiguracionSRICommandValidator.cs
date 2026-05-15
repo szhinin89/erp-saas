@@ -3,9 +3,9 @@ using ERP.Domain.Configuration.Entities;
 
 namespace ERP.Application.Configuration.UseCases.UpsertSriSettings;
 
-public sealed class UpsertConfiguracionSRICommandValidator : AbstractValidator<UpsertConfiguracionSRICommand>
+public sealed class UpsertSriConfigurationCommandValidator : AbstractValidator<UpsertSriConfigurationCommand>
 {
-    public UpsertConfiguracionSRICommandValidator()
+    public UpsertSriConfigurationCommandValidator()
     {
         RuleFor(x => x.Ruc)
             .NotEmpty().WithMessage("El RUC de la empresa es obligatorio.")

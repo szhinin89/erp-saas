@@ -14,18 +14,18 @@ namespace ERP.API.Controllers;
 [Route("api/compras/retenciones")]
 [Authorize]
 [Produces("application/json")]
-public sealed class ComprasRetencionesController : ControllerBase
+public sealed class PurchaseWithholdingsController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public ComprasRetencionesController(IMediator mediator) => _mediator = mediator;
+    public PurchaseWithholdingsController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
     [Authorize(Policy = "perm:compras.retenciones.list")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<IssuedRetentionListItemDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Listar([FromQuery] Guid? proveedorId, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetCompraRetencionesEmitidasListQuery(proveedorId), ct);
+        var result = await _mediator.Send(new GetPurchaseRetentionsEmitidasListQuery(proveedorId), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<IssuedRetentionListItemDto>());
     }
 

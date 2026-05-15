@@ -3,7 +3,7 @@ using ERP.Domain.Modules.Purchasing.Entities;
 
 namespace ERP.Application.Common.Interfaces;
 
-public interface ISriComprobanteRetencionService
+public interface ISriComprobanteRetentionService
 {
     Task<string> GenerarXmlRetencionAsync(
         IssuedRetention retencion,

@@ -6,20 +6,20 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.NotasProveedor;
 
-public sealed class GetComprasNotasProveedorQueryHandler
-    : IRequestHandler<GetComprasNotasProveedorQuery, Result<IReadOnlyList<CompraNotaProveedorDto>>>
+public sealed class GetPurchasesNotesSupplierQueryHandler
+    : IRequestHandler<GetPurchasesNotesSupplierQuery, Result<IReadOnlyList<SupplierPurchaseNoteDto>>>
 {
     private readonly IPurchBillRepository _repo;
     private readonly ICurrentTenant    _tenant;
 
-    public GetComprasNotasProveedorQueryHandler(IPurchBillRepository repo, ICurrentTenant tenant)
+    public GetPurchasesNotesSupplierQueryHandler(IPurchBillRepository repo, ICurrentTenant tenant)
     {
         _repo   = repo;
         _tenant = tenant;
     }
 
-    public async Task<Result<IReadOnlyList<CompraNotaProveedorDto>>> Handle(
-        GetComprasNotasProveedorQuery query,
+    public async Task<Result<IReadOnlyList<SupplierPurchaseNoteDto>>> Handle(
+        GetPurchasesNotesSupplierQuery query,
         CancellationToken ct)
     {
         var list = await _repo.GetPurchNotesAsync(
@@ -30,7 +30,7 @@ public sealed class GetComprasNotasProveedorQueryHandler
             query.Status,
             ct);
 
-        IReadOnlyList<CompraNotaProveedorDto> dtos = list.Select(n => new CompraNotaProveedorDto(
+        IReadOnlyList<SupplierPurchaseNoteDto> dtos = list.Select(n => new SupplierPurchaseNoteDto(
             n.Id,
             n.SupplierId,
             n.PurchBillId,
@@ -50,6 +50,6 @@ public sealed class GetComprasNotasProveedorQueryHandler
             n.JournalEntryId,
             n.CreatedAt)).ToList();
 
-        return Result<IReadOnlyList<CompraNotaProveedorDto>>.Success(dtos);
+        return Result<IReadOnlyList<SupplierPurchaseNoteDto>>.Success(dtos);
     }
 }

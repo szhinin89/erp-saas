@@ -2,9 +2,9 @@
 
 namespace ERP.Application.Modules.Purchasing.UseCases.DeshabilitarProveedor;
 
-public sealed class DisableProveedorCommandValidator : AbstractValidator<DisableProveedorCommand>
+public sealed class DisableSupplierCommandValidator : AbstractValidator<DisableSupplierCommand>
 {
-    public DisableProveedorCommandValidator()
+    public DisableSupplierCommandValidator()
     {
         RuleFor(x => x.Id)
             .NotEmpty()

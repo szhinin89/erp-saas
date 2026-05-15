@@ -15,6 +15,7 @@ using ERP.Infrastructure.Seeding.InstallData;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using QuestPDF.Infrastructure;
 using Serilog;
@@ -170,6 +171,14 @@ builder.Services.AddAuthorization(options =>
 
 var app = builder.Build();
 
+// Ensure schema is up to date before any startup queries
+// (e.g., SaasPlansBootstrap reading saas_plans).
+using (var migrationScope = app.Services.CreateScope())
+{
+    var db = migrationScope.ServiceProvider.GetRequiredService<ErpDbContext>();
+    await db.Database.MigrateAsync();
+}
+
 // Datos demo (tenant-demo + admin) solo si se activa explícitamente — ver appsettings.Development → Development:SeedDemoTenant.
 if (app.Environment.IsDevelopment() &&
     app.Configuration.GetValue("Development:SeedDemoTenant", false))
@@ -194,8 +203,15 @@ using (var plansScope = app.Services.CreateScope())
 // InstallData: carga automática de datos base (idempotente por script/checksum).
 using (var installDataScope = app.Services.CreateScope())
 {
-    var installData = installDataScope.ServiceProvider.GetRequiredService<IInstallDataBootstrapService>();
-    await installData.ApplyPendingAsync();
+    try
+    {
+        var installData = installDataScope.ServiceProvider.GetRequiredService<IInstallDataBootstrapService>();
+        await installData.ApplyPendingAsync();
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "InstallData failed at startup. Continuing without blocking API startup.");
+    }
 }
 
 // Bootstrap seguro de primera ejecución:

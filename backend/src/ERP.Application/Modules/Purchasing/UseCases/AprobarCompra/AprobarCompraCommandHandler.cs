@@ -11,8 +11,8 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.AprobarCompra;
 
-public sealed class AprobarCompraCommandHandler
-    : IRequestHandler<AprobarCompraCommand, Result<PurchBillDto>>
+public sealed class AprobarPurchaseCommandHandler
+    : IRequestHandler<AprobarPurchaseCommand, Result<PurchBillDto>>
 {
     private readonly IPurchBillRepository          _repo;
     private readonly IAccountingService         _accounting;
@@ -20,16 +20,16 @@ public sealed class AprobarCompraCommandHandler
     private readonly ICurrentTenant             _tenant;
     private readonly ICurrentUser               _user;
     private readonly IUnitOfWork                _unitOfWork;
-    private readonly ILogger<AprobarCompraCommandHandler> _logger;
+    private readonly ILogger<AprobarPurchaseCommandHandler> _logger;
 
-    public AprobarCompraCommandHandler(
+    public AprobarPurchaseCommandHandler(
         IPurchBillRepository repo,
         IAccountingService accounting,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
-        ILogger<AprobarCompraCommandHandler> logger)
+        ILogger<AprobarPurchaseCommandHandler> logger)
     {
         _repo       = repo;
         _accounting = accounting;
@@ -41,7 +41,7 @@ public sealed class AprobarCompraCommandHandler
     }
 
     public async Task<Result<PurchBillDto>> Handle(
-        AprobarCompraCommand command,
+        AprobarPurchaseCommand command,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;

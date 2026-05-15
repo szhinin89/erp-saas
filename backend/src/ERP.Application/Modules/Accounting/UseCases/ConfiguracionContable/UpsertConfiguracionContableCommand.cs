@@ -5,7 +5,7 @@ using ERP.Application.Modules.Accounting.DTOs;
 namespace ERP.Application.Modules.Accounting.UseCases.ConfiguracionContable;
 
 [RequireFeature(SubscriptionFeatureCodes.Accounting)]
-public sealed record UpsertConfiguracionContableCommand(
+public sealed record UpsertConfigurationContableCommand(
     Guid? InventoryAccountId,
     Guid? CostOfSalesAccountId,
     Guid? SuppliersAccountId,

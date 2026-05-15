@@ -2,11 +2,11 @@
 
 namespace ERP.Application.Inventory.UseCases.CancelarTransferencia;
 
-public sealed class CancelarTransferenciaCommandValidator : AbstractValidator<CancelarTransferenciaCommand>
+public sealed class CancelTransferCommandValidator : AbstractValidator<CancelTransferCommand>
 {
-    public CancelarTransferenciaCommandValidator()
+    public CancelTransferCommandValidator()
     {
-        RuleFor(x => x.TransferenciaId)
+        RuleFor(x => x.TransferId)
             .NotEmpty()
             .WithMessage("El ID de la transfer es obligatorio.");
     }

@@ -4521,13 +4521,13 @@ namespace ERP.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ParentId")
-                        .HasDatabaseName("ix_app_feature_parent_id");
+                        .HasDatabaseName("ix_app_features_parent_id");
 
                     b.HasIndex("Permission")
                         .IsUnique()
-                        .HasDatabaseName("uq_app_feature_permission");
+                        .HasDatabaseName("uq_app_features_permission");
 
-                    b.ToTable("app_feature", (string)null);
+                    b.ToTable("app_features", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Purchases.Entities.PurchaseInvoice", b =>

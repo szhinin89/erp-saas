@@ -65,8 +65,8 @@ Deployment/
  InstanceQuotaFileStore.cs
 EnglishAliases.cs
 Migrations/
- 20260515204802_InitialSchemaAndEnglishNames.cs
- 20260515204802_InitialSchemaAndEnglishNames.Designer.cs
+ 20260515214637_InitialSchemaClean.cs
+ 20260515214637_InitialSchemaClean.Designer.cs
  ErpDbContextModelSnapshot.cs
 obj/Debug/net10.0/
  .NETCoreApp,Version=v10.0.AssemblyAttributes.cs

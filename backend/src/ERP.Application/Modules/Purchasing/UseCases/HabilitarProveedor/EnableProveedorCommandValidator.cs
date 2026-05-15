@@ -2,9 +2,9 @@
 
 namespace ERP.Application.Modules.Purchasing.UseCases.HabilitarProveedor;
 
-public sealed class EnableProveedorCommandValidator : AbstractValidator<EnableProveedorCommand>
+public sealed class EnableSupplierCommandValidator : AbstractValidator<EnableSupplierCommand>
 {
-    public EnableProveedorCommandValidator()
+    public EnableSupplierCommandValidator()
     {
         RuleFor(x => x.Id)
             .NotEmpty()

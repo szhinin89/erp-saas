@@ -5,9 +5,9 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Modules.Inventory.UseCases.CrearBodega;
 
-public sealed class CreateBodegaCommandValidator : AbstractValidator<CreateBodegaCommand>
+public sealed class CreateWarehouseCommandValidator : AbstractValidator<CreateWarehouseCommand>
 {
-    public CreateBodegaCommandValidator(
+    public CreateWarehouseCommandValidator(
         IWarehouseRepository repo,
         ICurrentTenant tenant)
     {

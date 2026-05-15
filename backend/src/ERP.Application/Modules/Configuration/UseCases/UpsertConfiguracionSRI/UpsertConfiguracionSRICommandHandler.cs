@@ -6,14 +6,14 @@ using ERP.Domain.Configuration.Interfaces;
 
 namespace ERP.Application.Configuration.UseCases.UpsertSriSettings;
 
-public sealed class UpsertConfiguracionSRICommandHandler
-    : IRequestHandler<UpsertConfiguracionSRICommand, Result<ConfiguracionSRIDto>>
+public sealed class UpsertSriConfigurationCommandHandler
+    : IRequestHandler<UpsertSriConfigurationCommand, Result<SriConfigurationDto>>
 {
     private readonly ISriSettingsRepository _repo;
     private readonly ICurrentTenant              _currentTenant;
     private readonly ICurrentUser                _currentUser;
 
-    public UpsertConfiguracionSRICommandHandler(
+    public UpsertSriConfigurationCommandHandler(
         ISriSettingsRepository repo,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser)
@@ -23,8 +23,8 @@ public sealed class UpsertConfiguracionSRICommandHandler
         _currentUser   = currentUser;
     }
 
-    public async Task<Result<ConfiguracionSRIDto>> Handle(
-        UpsertConfiguracionSRICommand command, CancellationToken ct)
+    public async Task<Result<SriConfigurationDto>> Handle(
+        UpsertSriConfigurationCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
@@ -53,7 +53,7 @@ public sealed class UpsertConfiguracionSRICommandHandler
 
             await _repo.AddAsync(config, ct);
             await _repo.SaveChangesAsync(ct);
-            return Result<ConfiguracionSRIDto>.Success(ToDto(config));
+            return Result<SriConfigurationDto>.Success(ToDto(config));
         }
 
         existing.Update(
@@ -74,10 +74,10 @@ public sealed class UpsertConfiguracionSRICommandHandler
 
         await _repo.UpdateAsync(existing, ct);
         await _repo.SaveChangesAsync(ct);
-        return Result<ConfiguracionSRIDto>.Success(ToDto(existing));
+        return Result<SriConfigurationDto>.Success(ToDto(existing));
     }
 
-    private static ConfiguracionSRIDto ToDto(SriSettings c) => new(
+    private static SriConfigurationDto ToDto(SriSettings c) => new(
         c.TenantId, c.Ruc, c.LegalName, c.TradeName,
         c.MainAddress, c.RequiresAccounting, c.SpecialTaxpayer,
         c.EstabCode, c.EmPointCode, c.CurrentSequential,

@@ -8,15 +8,15 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Modules.Inventory.UseCases.DeshabilitarBodega;
 
-public sealed class DisableBodegaCommandHandler
-    : IRequestHandler<DisableBodegaCommand, Result<BodegaDto>>
+public sealed class DisableWarehouseCommandHandler
+    : IRequestHandler<DisableWarehouseCommand, Result<WarehouseDto>>
 {
     private readonly IWarehouseRepository       _repo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
 
-    public DisableBodegaCommandHandler(
+    public DisableWarehouseCommandHandler(
         IWarehouseRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
@@ -28,14 +28,14 @@ public sealed class DisableBodegaCommandHandler
         _user     = user;
     }
 
-    public async Task<Result<BodegaDto>> Handle(DisableBodegaCommand command, CancellationToken ct)
+    public async Task<Result<WarehouseDto>> Handle(DisableWarehouseCommand command, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
         var Warehouse = await _repo.GetByIdAsync(tenantId, command.Id, ct);
-        if (Warehouse is null) return Result<BodegaDto>.Failure("Warehouse no encontrada.");
-        if (!Warehouse.IsActive) return Result<BodegaDto>.Failure("La Warehouse ya está deshabilitada.");
+        if (Warehouse is null) return Result<WarehouseDto>.Failure("Warehouse no encontrada.");
+        if (!Warehouse.IsActive) return Result<WarehouseDto>.Failure("La Warehouse ya está deshabilitada.");
 
         Warehouse.Disable(userId);
 
@@ -46,9 +46,9 @@ public sealed class DisableBodegaCommandHandler
             description: Warehouse.Name), ct);
         await _repo.SaveChangesAsync(ct);
 
-        return Result<BodegaDto>.Success(ToDto(Warehouse));
+        return Result<WarehouseDto>.Success(ToDto(Warehouse));
     }
 
-    private static BodegaDto ToDto(Warehouse b) =>
+    private static WarehouseDto ToDto(Warehouse b) =>
         new(b.Id, b.BranchId, b.Name, b.Address, b.Manager, b.IsActive);
 }

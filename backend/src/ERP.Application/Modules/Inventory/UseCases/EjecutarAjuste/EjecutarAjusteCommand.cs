@@ -5,5 +5,5 @@ using ERP.Application.Inventory.DTOs;
 namespace ERP.Application.Inventory.UseCases.EjecutarAjuste;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
-public sealed record EjecutarAjusteCommand(Guid AjusteId)
+public record ExecuteStockAdjustmentCommand(Guid AdjustmentId)
     : IRequest<Result<StockAdjustmentDto>>;

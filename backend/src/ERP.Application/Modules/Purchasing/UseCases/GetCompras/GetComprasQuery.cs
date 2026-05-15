@@ -5,7 +5,7 @@ using ERP.Domain.Modules.Purchasing.Enums;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.GetCompras;
 
-public sealed record GetComprasQuery(
+public record GetPurchasesQuery(
     PurchaseStatus? Status,
     Guid?          SupplierId,
     DateTime?      DateFrom,

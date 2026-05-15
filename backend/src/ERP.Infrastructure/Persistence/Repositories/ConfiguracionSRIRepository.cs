@@ -4,11 +4,11 @@ using ERP.Domain.Configuration.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class ConfiguracionSRIRepository : ISriSettingsRepository
+public sealed class SriSettingsRepository : ISriSettingsRepository
 {
     private readonly ErpDbContext _context;
 
-    public ConfiguracionSRIRepository(ErpDbContext context) => _context = context;
+    public SriSettingsRepository(ErpDbContext context) => _context = context;
 
     public Task<SriSettings?> GetByTenantIdAsync(Guid tenantId, CancellationToken ct = default)
         => _context.SriSettings.FirstOrDefaultAsync(c => c.TenantId == tenantId, ct);

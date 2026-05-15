@@ -11,8 +11,8 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
 
-public sealed class CrearOrdenCompraCommandHandler
-    : IRequestHandler<CrearOrdenCompraCommand, Result<OrdenCompraDto>>
+public sealed class CrearOrderPurchaseCommandHandler
+    : IRequestHandler<CrearOrderPurchaseCommand, Result<PurchaseOrderDto>>
 {
     private readonly IPurchaseOrderRepository  _ordenRepo;
     private readonly ISupplierRepository    _proveedorRepo;
@@ -20,16 +20,16 @@ public sealed class CrearOrdenCompraCommandHandler
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _currentTenant;
     private readonly ICurrentUser            _currentUser;
-    private readonly ILogger<CrearOrdenCompraCommandHandler> _logger;
+    private readonly ILogger<CrearOrderPurchaseCommandHandler> _logger;
 
-    public CrearOrdenCompraCommandHandler(
+    public CrearOrderPurchaseCommandHandler(
         IPurchaseOrderRepository ordenRepo,
         ISupplierRepository proveedorRepo,
         IProductRepository productRepo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
-        ILogger<CrearOrdenCompraCommandHandler> logger)
+        ILogger<CrearOrderPurchaseCommandHandler> logger)
     {
         _ordenRepo     = ordenRepo;
         _proveedorRepo = proveedorRepo;
@@ -40,15 +40,15 @@ public sealed class CrearOrdenCompraCommandHandler
         _logger        = logger;
     }
 
-    public async Task<Result<OrdenCompraDto>> Handle(
-        CrearOrdenCompraCommand command, CancellationToken ct)
+    public async Task<Result<PurchaseOrderDto>> Handle(
+        CrearOrderPurchaseCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
         var Supplier = await _proveedorRepo.GetByIdAsync(tenantId, command.SupplierId, ct);
         if (Supplier is null || !Supplier.IsActive)
-            return Result<OrdenCompraDto>.Failure("El Supplier no existe o no está activo.");
+            return Result<PurchaseOrderDto>.Failure("El Supplier no existe o no está activo.");
 
         // Validar productos y construir detalles
         var productosValidados = new Dictionary<Guid, ERP.Domain.Products.Entities.Product>();
@@ -57,7 +57,7 @@ public sealed class CrearOrdenCompraCommandHandler
             if (productosValidados.ContainsKey(item.ProductId)) continue;
             var producto = await _productRepo.GetByIdAsync(item.ProductId, tenantId, ct);
             if (producto is null || !producto.IsActive)
-                return Result<OrdenCompraDto>.Failure(
+                return Result<PurchaseOrderDto>.Failure(
                     $"El producto {item.ProductId} no existe o no está activo.");
             productosValidados[item.ProductId] = producto;
         }
@@ -92,10 +92,10 @@ public sealed class CrearOrdenCompraCommandHandler
 
         _logger.LogInformation("OC creada: {Numero} ({Id})", orden.OrderNumber, orden.Id);
 
-        return Result<OrdenCompraDto>.Success(ToDto(orden, Supplier.LegalName));
+        return Result<PurchaseOrderDto>.Success(ToDto(orden, Supplier.LegalName));
     }
 
-    internal static OrdenCompraDto ToDto(
+    internal static PurchaseOrderDto ToDto(
         PurchaseOrder o, string proveedorNombre,
         IReadOnlyList<string>? advertencias = null) => new(
         o.Id, o.OrderNumber,

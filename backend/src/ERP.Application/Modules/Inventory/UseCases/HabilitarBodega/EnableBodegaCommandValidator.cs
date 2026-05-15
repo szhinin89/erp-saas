@@ -2,9 +2,9 @@
 
 namespace ERP.Application.Modules.Inventory.UseCases.HabilitarBodega;
 
-public sealed class EnableBodegaCommandValidator : AbstractValidator<EnableBodegaCommand>
+public sealed class EnableWarehouseCommandValidator : AbstractValidator<EnableWarehouseCommand>
 {
-    public EnableBodegaCommandValidator()
+    public EnableWarehouseCommandValidator()
     {
         RuleFor(x => x.Id)
             .NotEmpty()

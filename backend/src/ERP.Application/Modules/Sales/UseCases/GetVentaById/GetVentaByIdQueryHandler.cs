@@ -5,25 +5,25 @@ using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.GetVentaById;
 
-public sealed class GetVentaByIdQueryHandler
-    : IRequestHandler<GetVentaByIdQuery, Result<SalesBillDetailDto?>>
+public sealed class GetSaleByIdQueryHandler
+    : IRequestHandler<GetSaleByIdQuery, Result<SalesBillDetailDto?>>
 {
     private readonly ISalesRepository _ventasRepository;
     private readonly ICurrentTenant    _currentTenant;
 
-    public GetVentaByIdQueryHandler(ISalesRepository ventasRepository, ICurrentTenant currentTenant)
+    public GetSaleByIdQueryHandler(ISalesRepository ventasRepository, ICurrentTenant currentTenant)
     {
         _ventasRepository = ventasRepository;
         _currentTenant    = currentTenant;
     }
 
-    public async Task<Result<SalesBillDetailDto?>> Handle(GetVentaByIdQuery query, CancellationToken ct)
+    public async Task<Result<SalesBillDetailDto?>> Handle(GetSaleByIdQuery query, CancellationToken ct)
     {
         var factura = await _ventasRepository.GetBillByIdAsync(_currentTenant.TenantId, query.Id, ct);
         if (factura is null)
             return Result<SalesBillDetailDto?>.Success(null);
 
-        var detalles = factura.Lines.Select(d => new VentasDetalleDto(
+        var detalles = factura.Lines.Select(d => new SalesDetailDto(
             d.Id, d.ProductId, d.Description,
             d.Quantity, d.UnitPrice,
             d.Subtotal, d.VatTotal, d.Total)).ToList();
