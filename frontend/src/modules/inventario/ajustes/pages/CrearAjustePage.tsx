@@ -74,10 +74,11 @@ export function CrearAjustePage() {
     if (err) { setLocalError(err); return; }
     setLocalError(null);
     await crear({
-      bodegaId, productoId,
-      cantidadAjuste: cantidadConSigno,
-      motivo: motivoFinal.trim(),
-      observaciones: obs.trim() || null,
+      warehouseId: bodegaId,
+      productId: productoId,
+      adjustmentQty: cantidadConSigno,
+      reason: motivoFinal.trim(),
+      notes: obs.trim() || null,
     });
   };
 
@@ -103,7 +104,7 @@ export function CrearAjustePage() {
                   onChange={(e) => setBodegaId(e.target.value)}>
                   <option value="">— seleccionar —</option>
                   {(bodegas ?? []).map((b) => (
-                    <option key={b.id} value={b.id}>{b.nombre}</option>
+                    <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>
               </ZHField>

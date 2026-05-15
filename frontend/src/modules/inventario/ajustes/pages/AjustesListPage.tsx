@@ -93,9 +93,9 @@ export function AjustesListPage() {
                     <td data-label="Producto">{a.productoNombre}</td>
                     <td data-label="Bodega">{a.bodegaNombre}</td>
                     <td data-label="Cantidad"><AjusteTipoBadge tipo={a.tipoAjuste} cantidad={Math.abs(a.cantidadAjuste)} /></td>
-                    <td data-label="Motivo">{a.motivo}</td>
+                    <td data-label="Motivo">{a.reason}</td>
                     <td data-label="Fecha">{new Date(a.fechaAjuste).toLocaleDateString()}</td>
-                    <td data-label="Estado"><AjusteEstadoBadge estado={a.estado} /></td>
+                    <td data-label="Estado"><AjusteEstadoBadge estado={a.status} /></td>
                     <td data-label="Acciones" className="aj-cell-actions">
                       <ZHBtn variant="ghost" size="sm" onClick={(e) => {
                         e.stopPropagation();

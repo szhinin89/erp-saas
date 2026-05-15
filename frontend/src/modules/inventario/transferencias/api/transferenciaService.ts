@@ -7,9 +7,9 @@ export type EstadoTransferencia = 'Borrador' | 'Confirmado' | 'Cancelado';
 
 export interface TransferenciaDetalle {
   id: string;
-  productoId: string;
-  descripcion: string;
-  cantidad: number;
+  productId: string;
+  description: string;
+  quantity: number;
 }
 
 export interface Transferencia {
@@ -20,9 +20,9 @@ export interface Transferencia {
   bodegaDestinoId: string;
   bodegaDestinoNombre: string;
   fechaTransferencia: string;
-  estado: EstadoTransferencia;
-  motivo: string | null;
-  observaciones: string | null;
+  status: EstadoTransferencia;
+  reason: string | null;
+  notes: string | null;
   fechaConfirmacion: string | null;
   confirmadoPor: string | null;
   createdAt: string;
@@ -40,15 +40,15 @@ export interface TransferenciasPagedResult {
 }
 
 export interface ItemTransferenciaRequest {
-  productoId: string;
-  cantidad: number;
+  productId: string;
+  quantity: number;
 }
 
 export interface CrearTransferenciaRequest {
-  bodegaOrigenId: string;
-  bodegaDestinoId: string;
-  motivo: string | null;
-  observaciones: string | null;
+  sourceWarehouseId: string;
+  targetWarehouseId: string;
+  reason: string | null;
+  notes: string | null;
   items: ItemTransferenciaRequest[];
 }
 
@@ -66,13 +66,13 @@ export interface TransferenciasFilter {
 
 export interface BodegaOpcion {
   id: string;
-  nombre: string;
+  name: string;
   isActive: boolean;
 }
 
 export interface StockDisponible {
-  productoId: string;
-  cantidadDisponible: number;
+  productId: string;
+  availableQuantity: number;
 }
 
 // ── Servicio ───────────────────────────────────────────────────────────────────
@@ -135,6 +135,6 @@ export const transferenciaService = {
     const res = await api.get<ApiResponse<StockDisponible[]>>(
       `/api/inventario/stock-actual?${q.toString()}`
     );
-    return res.data.responseObject?.[0]?.cantidadDisponible ?? 0;
+    return res.data.responseObject?.[0]?.availableQuantity ?? 0;
   },
 };

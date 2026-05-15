@@ -60,11 +60,11 @@ export function CrearTransferenciaPage() {
     if (err) { setLocalError(err); return; }
     setLocalError(null);
     await crear({
-      bodegaOrigenId,
-      bodegaDestinoId,
-      motivo:       motivo.trim() || null,
-      observaciones: observaciones.trim() || null,
-      items: itemRowsToRequest(items),
+      sourceWarehouseId: bodegaOrigenId,
+      targetWarehouseId: bodegaDestinoId,
+      reason:  motivo.trim() || null,
+      notes:   observaciones.trim() || null,
+      items:   itemRowsToRequest(items),
     });
   };
 
@@ -88,7 +88,7 @@ export function CrearTransferenciaPage() {
                 >
                   <option value="">— seleccionar —</option>
                   {(bodegas ?? []).map((b) => (
-                    <option key={b.id} value={b.id}>{b.nombre}</option>
+                    <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>
               </ZHField>
@@ -103,7 +103,7 @@ export function CrearTransferenciaPage() {
                   {(bodegas ?? [])
                     .filter((b) => b.id !== bodegaOrigenId)
                     .map((b) => (
-                      <option key={b.id} value={b.id}>{b.nombre}</option>
+                      <option key={b.id} value={b.id}>{b.name}</option>
                     ))}
                 </select>
               </ZHField>

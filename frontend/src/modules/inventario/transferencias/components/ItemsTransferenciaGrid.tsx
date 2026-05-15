@@ -159,5 +159,5 @@ function ItemRowComponent({ row, idx, productos, disabled, onUpdate, onRemove }:
 export function itemRowsToRequest(rows: ItemRow[]): ItemTransferenciaRequest[] {
   return rows
     .filter((r) => r.productoId && r.cantidad > 0)
-    .map((r) => ({ productoId: r.productoId, cantidad: r.cantidad }));
+    .map((r) => ({ productId: r.productoId, quantity: r.cantidad }));
 }

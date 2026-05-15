@@ -27,7 +27,7 @@ export function TransferenciaDetailPage() {
 
   if (!canView) return <NoAccessPage title="Detalle de Transferencia" />;
 
-  const esBorrador = transferencia?.estado === 'Borrador';
+  const esBorrador = transferencia?.status === 'Borrador';
 
   return (
     <PageShell
@@ -74,12 +74,12 @@ export function TransferenciaDetailPage() {
             {/* Encabezado */}
             <div className="trf-detail-grid">
               <Dato label="Número"  valor={transferencia.numeroTransferencia} />
-              <Dato label="Estado"  valor={<TransferenciaEstadoBadge estado={transferencia.estado} />} />
+              <Dato label="Estado"  valor={<TransferenciaEstadoBadge estado={transferencia.status} />} />
               <Dato label="Fecha"   valor={new Date(transferencia.fechaTransferencia).toLocaleString()} />
               <Dato label="Bodega origen"  valor={transferencia.bodegaOrigenNombre} />
               <Dato label="Bodega destino" valor={transferencia.bodegaDestinoNombre} />
-              {transferencia.motivo && <Dato label="Motivo" valor={transferencia.motivo} />}
-              {transferencia.observaciones && <Dato label="Observaciones" valor={transferencia.observaciones} />}
+              {transferencia.reason && <Dato label="Motivo" valor={transferencia.reason} />}
+              {transferencia.notes && <Dato label="Observaciones" valor={transferencia.notes} />}
               {transferencia.fechaConfirmacion && (
                 <Dato
                   label="Confirmado el"
@@ -100,8 +100,8 @@ export function TransferenciaDetailPage() {
               <tbody>
                 {transferencia.detalles.map((d) => (
                   <tr key={d.id}>
-                    <td data-label="Producto">{d.descripcion}</td>
-                    <td data-label="Cantidad" className="trf-text-right">{d.cantidad}</td>
+                    <td data-label="Producto">{d.description}</td>
+                    <td data-label="Cantidad" className="trf-text-right">{d.quantity}</td>
                   </tr>
                 ))}
               </tbody>

@@ -5,10 +5,10 @@ export type CatalogActiveStatus = 'all' | 'active' | 'inactive';
 
 export type BodegaDto = {
   id: string;
-  sucursalId: string;
-  nombre: string;
-  ubicacion: string | null;
-  encargado: string | null;
+  branchId: string;
+  name: string;
+  address: string | null;
+  manager: string | null;
   isActive: boolean;
 };
 
@@ -20,10 +20,10 @@ export type BodegaDetailDto = BodegaDto & {
 };
 
 export type BodegaPayload = {
-  sucursalId: string;
-  nombre: string;
-  ubicacion?: string | null;
-  encargado?: string | null;
+  branchId: string;
+  name: string;
+  address?: string | null;
+  manager?: string | null;
 };
 
 function get<T>(url: string) {

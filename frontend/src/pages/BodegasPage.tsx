@@ -28,10 +28,10 @@ const emptyForm: FormState = {
 
 function toPayload(form: FormState): BodegaPayload {
   return {
-    sucursalId: form.sucursalId.trim(),
-    nombre: form.nombre.trim(),
-    ubicacion: form.ubicacion.trim() || null,
-    encargado: form.encargado.trim() || null,
+    branchId: form.sucursalId.trim(),
+    name: form.nombre.trim(),
+    address: form.ubicacion.trim() || null,
+    manager: form.encargado.trim() || null,
   };
 }
 
@@ -108,10 +108,10 @@ export function BodegasPage() {
     setEditingId(row.id);
     setAuditEntityId(row.id);
     setForm({
-      sucursalId: row.sucursalId,
-      nombre: row.nombre,
-      ubicacion: row.ubicacion ?? '',
-      encargado: row.encargado ?? '',
+      sucursalId: row.branchId,
+      nombre: row.name,
+      ubicacion: row.address ?? '',
+      encargado: row.manager ?? '',
     });
   };
 
@@ -257,10 +257,10 @@ export function BodegasPage() {
             <tbody>
               {items.map((row) => (
                 <tr key={row.id}>
-                  <td data-label="Nombre">{row.nombre}</td>
-                  <td data-label="Sucursal">{branchNameById.get(row.sucursalId) ?? row.sucursalId}</td>
-                  <td data-label="Ubicación">{row.ubicacion ?? '—'}</td>
-                  <td data-label="Encargado">{row.encargado ?? '—'}</td>
+                  <td data-label="Nombre">{row.name}</td>
+                  <td data-label="Sucursal">{branchNameById.get(row.branchId) ?? row.branchId}</td>
+                  <td data-label="Ubicación">{row.address ?? '—'}</td>
+                  <td data-label="Encargado">{row.manager ?? '—'}</td>
                   <td data-label={t('common.status')}>
                     <Badge label={row.isActive ? t('common.active') : t('common.inactive')} variant={row.isActive ? 'green' : 'gray'} />
                   </td>

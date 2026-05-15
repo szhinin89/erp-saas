@@ -62,7 +62,7 @@ export function TransferenciasListPage() {
           >
             <option value="">Todas las bodegas origen</option>
             {(bodegas ?? []).map((b) => (
-              <option key={b.id} value={b.id}>{b.nombre}</option>
+              <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
 
@@ -74,7 +74,7 @@ export function TransferenciasListPage() {
           >
             <option value="">Todas las bodegas destino</option>
             {(bodegas ?? []).map((b) => (
-              <option key={b.id} value={b.id}>{b.nombre}</option>
+              <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
 
@@ -116,7 +116,7 @@ export function TransferenciasListPage() {
                     <td data-label="Origen">{t.bodegaOrigenNombre}</td>
                     <td data-label="Destino">{t.bodegaDestinoNombre}</td>
                     <td data-label="Fecha">{new Date(t.fechaTransferencia).toLocaleDateString()}</td>
-                    <td data-label="Estado"><TransferenciaEstadoBadge estado={t.estado} /></td>
+                    <td data-label="Estado"><TransferenciaEstadoBadge estado={t.status} /></td>
                     <td data-label="Acciones" className="trf-cell-actions">
                       <ZHBtn variant="ghost" size="sm" onClick={(e) => {
                         e.stopPropagation();

@@ -9,16 +9,16 @@ export type TipoAjuste   = 'Incremento' | 'Disminucion';
 export interface AjusteInventario {
   id: string;
   numeroAjuste: string;
-  bodegaId: string;
+  warehouseId: string;
   bodegaNombre: string;
-  productoId: string;
+  productId: string;
   productoNombre: string;
   cantidadAjuste: number;
   tipoAjuste: TipoAjuste;
-  motivo: string;
-  observaciones: string | null;
+  reason: string;
+  notes: string | null;
   fechaAjuste: string;
-  estado: EstadoAjuste;
+  status: EstadoAjuste;
   fechaEjecucion: string | null;
   ejecutadoPor: string | null;
   createdAt: string;
@@ -42,11 +42,11 @@ export interface AjustesFilter {
 }
 
 export interface CrearAjusteRequest {
-  bodegaId: string;
-  productoId: string;
-  cantidadAjuste: number;
-  motivo: string;
-  observaciones: string | null;
+  warehouseId: string;
+  productId: string;
+  adjustmentQty: number;
+  reason: string;
+  notes: string | null;
 }
 
 // ── Servicio ──────────────────────────────────────────────────────────────
@@ -100,10 +100,10 @@ export const ajusteService = {
   // ── Auxiliar: stock actual para mostrar máximo disponible ───────────────
   async getStockDisponible(bodegaId: string, productoId: string): Promise<number> {
     const q = new URLSearchParams({ bodegaId, productoId });
-    const res = await api.get<ApiResponse<Array<{ productoId: string; cantidadDisponible: number }>>>(
+    const res = await api.get<ApiResponse<Array<{ productId: string; availableQuantity: number }>>>(
       `/api/inventario/stock-actual?${q.toString()}`
     );
-    return res.data.responseObject?.[0]?.cantidadDisponible ?? 0;
+    return res.data.responseObject?.[0]?.availableQuantity ?? 0;
   },
 };
 

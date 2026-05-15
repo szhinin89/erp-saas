@@ -1,48 +1,88 @@
-/* Global bridge: force legacy classes to new ZH look */
+/* === RESETEA EL BOX-SIZING PARA TODO === */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
+/* === VARIABLES PUENTE UNIFICADAS === */
 :root {
-  --zh-bridge-card-radius: var(--radius-xl, 16px);
+  --zh-bridge-radius-sm: var(--radius-sm, 8px);
+  --zh-bridge-radius-md: var(--radius-md, 10px);
+  --zh-bridge-radius-xl: var(--radius-xl, 16px);
   --zh-bridge-border: var(--zh-color-border, #dbe2ea);
   --zh-bridge-surface: var(--zh-color-surface, #fff);
   --zh-bridge-soft: var(--zh-color-surface-soft, #f8fafc);
+  --zh-bridge-shadow-sm: var(--zh-shadow-sm, 0 10px 28px rgba(15, 23, 42, 0.08));
+  --zh-bridge-shadow-md: var(--zh-shadow-md, 0 16px 36px rgba(15, 23, 42, 0.1));
+  --zh-bridge-input-height: 38px;
+  --zh-bridge-transition: 0.2s ease;
 }
 
-/* Shared old containers */
-.table-card {
-  border-radius: var(--zh-bridge-card-radius);
+/* === ESTILOS BASE PARA TEXTO Y FOCO === */
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.5;
+}
+
+/* Anillo de foco accesible */
+:focus-visible {
+  outline: 2px solid var(--zh-color-primary, #1d4f91);
+  outline-offset: 2px;
+}
+
+/* === CONTENEDORES PRINCIPALES === */
+:where(.table-card),
+:where(.sa-shell-outlet),
+:where(.sa-tenantRow),
+:where(.sa-overviewHubCard) {
+  border-radius: var(--zh-bridge-radius-xl);
   border: 1px solid var(--zh-bridge-border);
   background: var(--zh-bridge-surface);
-  box-shadow: var(--zh-shadow-sm, 0 10px 28px rgba(15, 23, 42, 0.08));
+  box-shadow: var(--zh-bridge-shadow-sm);
 }
 
-.zh-card-section {
+/* Hover suave para tarjetas interactivas */
+:where(.sa-tenantRow):hover,
+:where(.sa-overviewHubCard):hover {
+  border-color: rgba(29, 79, 145, 0.4);
+  box-shadow: var(--zh-bridge-shadow-md);
+  transition: border-color var(--zh-bridge-transition),
+              box-shadow var(--zh-bridge-transition);
+}
+
+/* Secciones internas */
+:where(.zh-card-section) {
   padding: 18px;
 }
 
-.zh-card-section-title {
+:where(.zh-card-section-title) {
   font-size: 1.02rem;
   font-weight: 800;
   color: var(--zh-color-text, #0f172a);
 }
 
-.subtle {
-  font-size: 14px;
+:where(.subtle) {
+  font-size: 0.875rem;      /* 14px en relativo */
   color: var(--color-text-muted, #64748b);
 }
 
-/* Global heading style used by old pages */
-.zh-screen-heading {
+/* === ENCABEZADOS DE PANTALLA === */
+:where(.zh-screen-heading) {
   margin: 0 0 16px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--zh-bridge-border);
 }
 
-.zh-screen-heading-kicker {
+:where(.zh-screen-heading-kicker) {
   font-size: 11px;
   letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #64748b);
 }
 
-.zh-screen-heading-chip {
+:where(.zh-screen-heading-chip) {
   width: 4px;
   height: 30px;
   border-radius: 999px;
@@ -50,81 +90,103 @@
   box-shadow: none;
 }
 
-.zh-screen-heading-title {
+:where(.zh-screen-heading-title) {
   font-size: 1.28rem;
+  font-weight: 700;
   letter-spacing: -0.01em;
   text-transform: none;
 }
 
-.zh-screen-heading-sub {
+:where(.zh-screen-heading-sub) {
   font-size: 0.95rem;
+  color: var(--color-text-muted, #64748b);
 }
 
-/* SuperAdmin shell */
-.sa-shell-outlet {
-  border-radius: var(--zh-bridge-card-radius);
+/* === PESTAÑAS DEL SHELL === */
+:where(.sa-shell-tabs) {
   border: 1px solid var(--zh-bridge-border);
-  background: var(--zh-bridge-surface);
+  border-radius: var(--zh-bridge-radius-xl);
+  padding: 4px;
+  display: flex;
+  gap: 4px;
 }
 
-.sa-shell-tabs {
-  border: 1px solid var(--zh-bridge-border);
-  border-radius: var(--zh-bridge-card-radius);
-}
-
-.sa-shell-tabs a {
+:where(.sa-shell-tabs a) {
   border-radius: 999px;
   font-size: 0.92rem;
+  padding: 6px 16px;
+  text-decoration: none;
+  color: var(--color-text-muted, #64748b);
+  transition: background var(--zh-bridge-transition),
+              color var(--zh-bridge-transition);
 }
 
-.sa-shell-tabs a.active {
+:where(.sa-shell-tabs a.active) {
   background: var(--zh-blue-light, #eff6ff);
   border-color: transparent;
   color: var(--zh-color-primary, #1d4f91);
+  font-weight: 600;
 }
 
-/* SuperAdmin companies/overview cards */
-.sa-tenantRow,
-.sa-overviewHubCard {
+:where(.sa-shell-tabs a:hover:not(.active)) {
+  background: rgba(29, 79, 145, 0.05);
+}
+
+/* === BARRA DE BÚSQUEDA === */
+:where(.zh-search-bar__input),
+:where(.zh-search-bar__select) {
+  border-radius: var(--zh-bridge-radius-md);
   border: 1px solid var(--zh-bridge-border);
-  background: var(--zh-bridge-surface);
-  box-shadow: var(--zh-shadow-sm, 0 10px 28px rgba(15, 23, 42, 0.08));
+  height: var(--zh-bridge-input-height);
+  font-size: 0.875rem;
+  padding: 0 12px;
+  background: #fff;
+  transition: border-color var(--zh-bridge-transition);
 }
 
-.sa-tenantRow:hover,
-.sa-overviewHubCard:hover {
-  border-color: rgba(29, 79, 145, 0.4);
-  box-shadow: var(--zh-shadow-md, 0 16px 36px rgba(15, 23, 42, 0.1));
+:where(.zh-search-bar__input):focus,
+:where(.zh-search-bar__select):focus {
+  border-color: var(--zh-color-primary, #1d4f91);
 }
 
-/* Legacy search bars */
-.zh-search-bar__input,
-.zh-search-bar__select {
-  border-radius: var(--zh-radius-md, 10px);
-  border: 1px solid var(--zh-bridge-border);
-  height: 38px;
-  font-size: 14px;
-}
-
-.zh-search-bar__btnPrimary {
-  height: 38px;
+:where(.zh-search-bar__btnPrimary) {
+  height: var(--zh-bridge-input-height);
+  padding: 0 20px;
   border-radius: 999px;
   background: var(--zh-color-primary, #1d4f91);
+  color: white;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: none;
+  cursor: pointer;
+  transition: background var(--zh-bridge-transition),
+              transform 0.1s ease;
 }
 
-.zh-search-bar__zone1,
-.zh-search-bar__zone2 {
+:where(.zh-search-bar__btnPrimary):hover {
+  background: #163a6b; /* versión oscura del primario */
+}
+
+:where(.zh-search-bar__btnPrimary):active {
+  transform: scale(0.97);
+}
+
+:where(.zh-search-bar__zone1),
+:where(.zh-search-bar__zone2) {
   background: transparent;
 }
 
-/* Companies tables (legacy classes) */
-.companies-table {
+/* === TABLAS === */
+:where(.companies-table) {
   border: 1px solid var(--zh-bridge-border);
-  border-radius: var(--zh-radius-md, 10px);
+  border-radius: var(--zh-bridge-radius-md);
   background: var(--zh-bridge-surface);
+  overflow: hidden; /* respeta el border-radius en la tabla interna */
 }
 
-.companies-readonly-value {
+:where(.companies-readonly-value) {
   background: var(--zh-bridge-soft);
-  border-radius: var(--zh-radius-sm, 8px);
+  border-radius: var(--zh-bridge-radius-sm);
+  padding: 4px 8px;
+  display: inline-block;
 }

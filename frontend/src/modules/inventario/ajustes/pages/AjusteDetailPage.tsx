@@ -25,7 +25,7 @@ export function AjusteDetailPage() {
 
   if (!canView) return <NoAccessPage title="Detalle de Ajuste" />;
 
-  const esBorrador = ajuste?.estado === 'Borrador';
+  const esBorrador = ajuste?.status === 'Borrador';
 
   return (
     <PageShell
@@ -67,15 +67,15 @@ export function AjusteDetailPage() {
           <>
             <div className="aj-detail-grid">
               <Dato label="Número"   valor={ajuste.numeroAjuste} />
-              <Dato label="Estado"   valor={<AjusteEstadoBadge estado={ajuste.estado} />} />
+              <Dato label="Estado"   valor={<AjusteEstadoBadge estado={ajuste.status} />} />
               <Dato label="Tipo"     valor={
                 <AjusteTipoBadge tipo={ajuste.tipoAjuste} cantidad={Math.abs(ajuste.cantidadAjuste)} />
               } />
               <Dato label="Producto" valor={ajuste.productoNombre} />
               <Dato label="Bodega"   valor={ajuste.bodegaNombre} />
-              <Dato label="Motivo"   valor={ajuste.motivo} />
+              <Dato label="Motivo"   valor={ajuste.reason} />
               <Dato label="Fecha"    valor={new Date(ajuste.fechaAjuste).toLocaleString()} />
-              {ajuste.observaciones && <Dato label="Observaciones" valor={ajuste.observaciones} />}
+              {ajuste.notes && <Dato label="Observaciones" valor={ajuste.notes} />}
               {ajuste.fechaEjecucion && (
                 <Dato label="Ejecutado el" valor={new Date(ajuste.fechaEjecucion).toLocaleString()} />
               )}
