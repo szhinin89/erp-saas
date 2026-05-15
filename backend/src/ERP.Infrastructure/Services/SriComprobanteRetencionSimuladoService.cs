@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common.Interfaces;
@@ -21,9 +21,9 @@ public sealed class SriComprobanteRetencionSimuladoService : ISriComprobanteRete
     }
 
     public async Task<string> GenerarXmlRetencionAsync(
-        CompraRetencionEmitida retencion,
-        List<CompraDetalleRetencionEmitida> detalles,
-        ConfiguracionSRI config)
+        IssuedRetention retencion,
+        List<PurchRetentionLine> detalles,
+        SriSettings config)
     {
         var xmlDoc = new XDocument(
             new XDeclaration("1.0", "UTF-8", null),
@@ -31,36 +31,36 @@ public sealed class SriComprobanteRetencionSimuladoService : ISriComprobanteRete
                 new XAttribute("id", "comprobante"),
                 new XAttribute("version", "1.0.0"),
                 new XElement("infoTributaria",
-                    new XElement("ambiente", config.Ambiente),
-                    new XElement("tipoEmision", config.TipoEmision),
-                    new XElement("razonSocial", config.RazonSocial),
-                    new XElement("ruc", config.RucEmpresa),
-                    new XElement("claveAcceso", retencion.ClaveAcceso),
+                    new XElement("ambiente", config.Environment),
+                    new XElement("tipoEmision", config.EmissionType),
+                    new XElement("razonSocial", config.LegalName),
+                    new XElement("ruc", config.Ruc),
+                    new XElement("claveAcceso", retencion.AccessKey),
                     new XElement("codDoc", "07"),
-                    new XElement("estab", retencion.Establecimiento),
-                    new XElement("ptoEmi", retencion.PuntoEmision),
-                    new XElement("secuencial", retencion.Secuencial),
-                    new XElement("dirMatriz", config.DireccionMatriz)),
+                    new XElement("estab", retencion.EstablishmentCode),
+                    new XElement("ptoEmi", retencion.EmissionPointCode),
+                    new XElement("secuencial", retencion.Sequential),
+                    new XElement("dirMatriz", config.MainAddress)),
                 new XElement("infoCompRetencion",
-                    new XElement("fechaEmision", retencion.FechaEmision.ToString("dd/MM/yyyy")),
-                    new XElement("dirEstablecimiento", config.DireccionMatriz),
-                    new XElement("obligadoContabilidad", config.ObligadoContabilidad ? "SI" : "NO"),
+                    new XElement("fechaEmision", retencion.IssueDate.ToString("dd/MM/yyyy")),
+                    new XElement("dirEstablecimiento", config.MainAddress),
+                    new XElement("obligadoContabilidad", config.RequiresAccounting ? "SI" : "NO"),
                     new XElement("tipoIdentificacionSujetoRetenido", "04"),
-                    new XElement("razonSocialSujetoRetenido", retencion.Proveedor.RazonSocial),
-                    new XElement("identificacionSujetoRetenido", retencion.Proveedor.Ruc),
-                    new XElement("periodoFiscal", retencion.FechaEmision.ToString("MM/yyyy"))),
+                    new XElement("razonSocialSujetoRetenido", retencion.Supplier.LegalName),
+                    new XElement("identificacionSujetoRetenido", retencion.Supplier.Ruc),
+                    new XElement("periodoFiscal", retencion.IssueDate.ToString("MM/yyyy"))),
                 new XElement("impuestos",
                     detalles.Select(d => new XElement("impuesto",
-                        new XElement("codigo", d.Impuesto == "IVA" ? "2" : "1"),
-                        new XElement("codigoRetencion", d.CodigoRetencion),
-                        new XElement("baseImponible", d.BaseImponible.ToString("F2")),
-                        new XElement("porcentajeRetener", d.PorcentajeRetencion.ToString("F2")),
-                        new XElement("valorRetenido", d.ValorRetenido.ToString("F2")))))
+                        new XElement("codigo", d.TaxType == "IVA" ? "2" : "1"),
+                        new XElement("codigoRetencion", d.RetentionCode),
+                        new XElement("baseImponible", d.TaxableBase.ToString("F2")),
+                        new XElement("porcentajeRetener", d.RetentionPct.ToString("F2")),
+                        new XElement("valorRetenido", d.AmountRetained.ToString("F2")))))
             ));
 
         var xmlString = xmlDoc.ToString();
         _logger.LogDebug("[SRI-SIM] XML retención generado para {RetencionId}", retencion.Id);
-        var path = $"retenciones/compras/{retencion.ClaveAcceso}.xml";
+        var path = $"retenciones/compras/{retencion.AccessKey}.xml";
         await _fileStorage.SaveAsync(path, new MemoryStream(Encoding.UTF8.GetBytes(xmlString)));
         return xmlString;
     }
@@ -73,11 +73,13 @@ public sealed class SriComprobanteRetencionSimuladoService : ISriComprobanteRete
         var numeroAuth = Guid.NewGuid().ToString("N")[..10].ToUpper();
         return Task.FromResult(new SriAutorizacionResponse
         {
-            Autorizada         = true,
-            NumeroAutorizacion = numeroAuth,
-            FechaAutorizacion  = DateTime.UtcNow,
-            XmlAutorizado      = Encoding.UTF8.GetString(xmlFirmado),
-            MensajeError       = null,
+            IsAuthorized = true,
+            AuthNumber = numeroAuth,
+            AuthDate = DateTime.UtcNow,
+            AuthorizedXml = Encoding.UTF8.GetString(xmlFirmado),
+            ErrorMessage = null,
         });
     }
 }
+
+

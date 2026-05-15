@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -13,7 +13,7 @@ using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Support;
 
-/// <summary>API real con EF InMemory, suscripción ilimitada y tenant/usuario mutables para integración.</summary>
+/// <summary>API real con EF InMemory, suscripciÃ³n ilimitada y tenant/usuario mutables para integraciÃ³n.</summary>
 internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program>
 {
     public MutableCurrentTenant MutableTenant { get; } = new();
@@ -30,7 +30,7 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
 
         builder.UseEnvironment("Development");
 
-        // Gana a user-secrets / appsettings para que el JWT de prueba coincida con la validación del host.
+        // Gana a user-secrets / appsettings para que el JWT de prueba coincida con la validaciÃ³n del host.
         builder.UseSetting("Jwt:SecretKey", IntegrationTestConstants.JwtSecretKey);
         builder.UseSetting("Jwt:Issuer", "ZHTechnologies");
         builder.UseSetting("Jwt:Audience", "ERPUsers");
@@ -96,3 +96,4 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
         });
     }
 }
+

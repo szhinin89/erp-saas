@@ -1,4 +1,4 @@
-using ERP.Domain.Modules.Accounting.Entities;
+﻿using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Branches.Entities;
@@ -15,7 +15,7 @@ internal static class IntegrationSeedData
         Guid   TenantId,
         Guid   UserId,
         Guid   ProductId,
-        Guid   BodegaId,
+        Guid   WarehouseId,
         string ProveedorRuc,
         string ClaveAcceso49);
 
@@ -31,7 +31,7 @@ internal static class IntegrationSeedData
         throw new InvalidOperationException("RUC de prueba no encontrado.");
     }
 
-    /// <summary>XML mínimo compatible con <see cref="ERP.Infrastructure.Services.SriFacturaParser"/>.</summary>
+    /// <summary>XML mÃ­nimo compatible con <see cref="ERP.Infrastructure.Services.SriFacturaParser"/>.</summary>
     internal static string BuildFacturaXml(string clave49, string rucEmisor) =>
         $"""
         <?xml version="1.0" encoding="UTF-8"?>
@@ -57,7 +57,7 @@ internal static class IntegrationSeedData
           <detalles>
             <detalle>
               <codigoPrincipal>P-INT</codigoPrincipal>
-              <descripcion>Item integración</descripcion>
+              <descripcion>Item integraciÃ³n</descripcion>
               <cantidad>2</cantidad>
               <precioUnitario>25</precioUnitario>
               <descuento>0</descuento>
@@ -76,7 +76,7 @@ internal static class IntegrationSeedData
         var userId = Guid.NewGuid();
         mu.UserId = userId;
 
-        var tenant = Tenant.Create("Empresa integración", "empresa-int", userId);
+        var tenant = Tenant.Create("Empresa integraciÃ³n", "empresa-int", userId);
         mt.TenantId = tenant.Id;
         var tid = tenant.Id;
         db.Tenants.Add(tenant);
@@ -99,7 +99,7 @@ internal static class IntegrationSeedData
             createdBy: userId);
         db.Branches.Add(branch);
 
-        var line    = ProductLine.Create(tid, "L-INT", "Línea INT", userId);
+        var line    = ProductLine.Create(tid, "L-INT", "LÃ­nea INT", userId);
         var category = ProductCategory.Create(tid, "C-INT", "Cat INT", line.Id, userId);
         var sub      = ProductSubcategory.Create(tid, "S-INT", "Sub INT", category.Id, userId);
         var uom      = UnitOfMeasure.Create(tid, "U", "Unidad", userId);
@@ -126,14 +126,14 @@ internal static class IntegrationSeedData
 
         await db.SaveChangesAsync(ct);
 
-        var bodega = Bodega.Create(tid, branch.Id, "Bodega Central", null, null, userId);
-        db.Bodegas.Add(bodega);
+        var bodega = Warehouse.Create(tid, branch.Id, "Warehouse Central", null, null, userId);
+        db.Warehouses.Add(bodega);
 
         var product = Product.Create(
             tid,
             "SKU-INT-01",
             "Prod INT",
-            "Producto integración stock",
+            "Producto integraciÃ³n stock",
             line.Id,
             category.Id,
             sub.Id,
@@ -162,3 +162,7 @@ internal static class IntegrationSeedData
         return new SeedResult(tid, userId, product.Id, bodega.Id, ruc, clave);
     }
 }
+
+
+
+

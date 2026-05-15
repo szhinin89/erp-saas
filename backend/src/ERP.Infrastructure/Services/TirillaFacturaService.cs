@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -35,30 +35,30 @@ public sealed class TirillaFacturaService : ITirillaFacturaService
             .Build();
     }
 
-    public async Task<string> GenerarHtmlFacturaAsync(Guid ventaId, CancellationToken ct = default)
+    public async Task<string> GenerarHtmlFacturaAsync(Guid     salesBillId, CancellationToken ct = default)
     {
-        var venta = await _dbContext.Set<ERP.Domain.Modules.Sales.Entities.VentasFactura>()
+        var venta = await _dbContext.Set<ERP.Domain.Modules.Sales.Entities.SalesBill>()
             .Include(v => v.Cliente)
-            .Include(v => v.Detalles)
-            .FirstOrDefaultAsync(v => v.Id == ventaId && v.Estado == "Autorizado", ct);
+            .Include(v => v.Lines)
+            .FirstOrDefaultAsync(v => v.Id == salesBillId && v.Status == "Autorizado", ct);
 
         if (venta is null)
             throw new KeyNotFoundException("Factura no encontrada o no autorizada.");
 
-        var config = await _dbContext.Set<ConfiguracionFacturacion>()
+        var config = await _dbContext.Set<BillingSettings>()
             .FirstOrDefaultAsync(c => c.TenantId == venta.TenantId, ct);
 
         if (config is null)
         {
             _logger.LogWarning("No existe configuración de facturación para el tenant {TenantId}. Usando valores por defecto.", venta.TenantId);
-            config = ConfiguracionFacturacion.CreateDefault(venta.TenantId, Guid.Empty);
+            config = BillingSettings.CreateDefault(venta.TenantId, Guid.Empty);
         }
 
         var model = new FacturaTirillaModel
         {
             Venta = venta,
             Configuracion = config,
-            EsPrueba = string.IsNullOrWhiteSpace(venta.ClaveAcceso) || !venta.ClaveAcceso.StartsWith("1")
+            EsPrueba = string.IsNullOrWhiteSpace(venta.AccessKey) || !venta.AccessKey.StartsWith("1")
         };
 
         var html = await _razorEngine.CompileRenderAsync(TemplateFileName, model);

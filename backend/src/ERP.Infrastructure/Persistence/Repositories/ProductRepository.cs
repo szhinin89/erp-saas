@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Products.Interfaces;
 
@@ -17,7 +17,7 @@ public class ProductRepository : IProductRepository
         => await _context.Products
             .FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId, ct);
 
-    public async Task<Product?> GetByIdWithDetailsAsync(Guid id, Guid tenantId, CancellationToken ct = default)
+    public async Task<Product?> GetByIdWithLinesAsync(Guid id, Guid tenantId, CancellationToken ct = default)
         => await _context.Products
             .Include(p => p.Barcodes)
             .Include(p => p.SupplierCodes)

@@ -1,4 +1,4 @@
-using ERP.Application.Common;
+﻿using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Accounting.DTOs;
 using ERP.Domain.Modules.Accounting.Entities;
@@ -8,11 +8,11 @@ namespace ERP.Infrastructure.Services;
 
 public sealed class CuentaContableService : ICuentaContableService
 {
-    private readonly IConfiguracionContableRepository _configRepo;
+    private readonly IAccountingSetupRepository _configRepo;
     private readonly IAccountingRepository _accounts;
 
     public CuentaContableService(
-        IConfiguracionContableRepository configRepo,
+        IAccountingSetupRepository configRepo,
         IAccountingRepository accounts)
     {
         _configRepo = configRepo;
@@ -22,23 +22,23 @@ public sealed class CuentaContableService : ICuentaContableService
     public async Task<Result<CuentasParaAsiento?>> ObtenerCuentasParaCompraAsync(
         Guid tenantId,
         decimal subtotalInventario,
-        decimal iva,
+        decimal  vatTotal,
         CancellationToken ct)
     {
-        var config = await _configRepo.GetConfiguracionEmpresaAsync(ct);
+        var config = await _configRepo.GetSetupAsync(ct);
         if (config is null)
             return Result<CuentasParaAsiento?>.Success(null);
 
-        if (config.CuentaInventarioId is null || config.CuentaProveedoresId is null)
+        if (config.InventoryAccountId is null || config.SuppliersAccountId is null)
             return Result<CuentasParaAsiento?>.Failure(
                 "La configuración contable del tenant está incompleta: indique Cuenta de inventario y Cuenta de proveedores (pasivo).");
 
-        if (iva > 0.01m && config.CuentaIvaComprasId is null)
+        if (vatTotal > 0.01m && config.VatPurchasesAccountId is null)
             return Result<CuentasParaAsiento?>.Failure(
-                "La compra tiene IVA pero no está configurada la cuenta de IVA compras (IVA descontable / crédito tributario).");
+                "La compra tiene vatTotal pero no está configurada la cuenta de vatTotal compras (vatTotal descontable / crédito tributario).");
 
-        var inv = await _accounts.GetByIdAsync(config.CuentaInventarioId.Value, tenantId, ct);
-        var prov = await _accounts.GetByIdAsync(config.CuentaProveedoresId.Value, tenantId, ct);
+        var inv = await _accounts.GetByIdAsync(config.InventoryAccountId.Value, tenantId, ct);
+        var prov = await _accounts.GetByIdAsync(config.SuppliersAccountId.Value, tenantId, ct);
         var rInv = ValidateDetail(inv, "Inventario");
         if (rInv is not null)
             return Result<CuentasParaAsiento?>.Failure(rInv);
@@ -46,41 +46,41 @@ public sealed class CuentaContableService : ICuentaContableService
         if (rProv is not null)
             return Result<CuentasParaAsiento?>.Failure(rProv);
 
-        if (config.CuentaIvaComprasId is not null)
+        if (config.VatPurchasesAccountId is not null)
         {
-            var ivaC = await _accounts.GetByIdAsync(config.CuentaIvaComprasId.Value, tenantId, ct);
-            var rIva = ValidateDetail(ivaC, "IVA compras");
+            var ivaC = await _accounts.GetByIdAsync(config.VatPurchasesAccountId.Value, tenantId, ct);
+            var rIva = ValidateDetail(ivaC, "vatTotal compras");
             if (rIva is not null)
                 return Result<CuentasParaAsiento?>.Failure(rIva);
         }
 
         return Result<CuentasParaAsiento?>.Success(new CuentasParaAsiento(
-            CuentaDebitoPrincipal:   config.CuentaInventarioId.Value,
-            CuentaCreditoPrincipal:  config.CuentaProveedoresId.Value,
-            CuentaIvaDebito:         config.CuentaIvaComprasId,
+            CuentaDebitoPrincipal:   config.InventoryAccountId.Value,
+            CuentaCreditoPrincipal:  config.SuppliersAccountId.Value,
+            CuentaIvaDebito:         config.VatPurchasesAccountId,
             CuentaIvaCredito:        null));
     }
 
     public async Task<Result<CuentasParaAsiento?>> ObtenerCuentasParaVentaAsync(
         Guid tenantId,
         decimal subtotalVentas,
-        decimal iva,
+        decimal  vatTotal,
         CancellationToken ct)
     {
-        var config = await _configRepo.GetConfiguracionEmpresaAsync(ct);
+        var config = await _configRepo.GetSetupAsync(ct);
         if (config is null)
             return Result<CuentasParaAsiento?>.Success(null);
 
-        if (config.CuentaClientesId is null || config.CuentaVentasId is null)
+        if (config.CustomersAccountId is null || config.SalesAccountId is null)
             return Result<CuentasParaAsiento?>.Failure(
                 "La configuración contable del tenant está incompleta: indique Cuenta de clientes (activo) y Cuenta de ventas (ingreso).");
 
-        if (iva > 0.01m && config.CuentaIvaVentasId is null)
+        if (vatTotal > 0.01m && config.VatSalesAccountId is null)
             return Result<CuentasParaAsiento?>.Failure(
-                "La venta tiene IVA pero no está configurada la cuenta de IVA ventas (IVA por pagar).");
+                "La venta tiene vatTotal pero no está configurada la cuenta de vatTotal ventas (vatTotal por pagar).");
 
-        var cli = await _accounts.GetByIdAsync(config.CuentaClientesId.Value, tenantId, ct);
-        var ven = await _accounts.GetByIdAsync(config.CuentaVentasId.Value, tenantId, ct);
+        var cli = await _accounts.GetByIdAsync(config.CustomersAccountId.Value, tenantId, ct);
+        var ven = await _accounts.GetByIdAsync(config.SalesAccountId.Value, tenantId, ct);
         var rCli = ValidateDetail(cli, "Clientes");
         if (rCli is not null)
             return Result<CuentasParaAsiento?>.Failure(rCli);
@@ -88,57 +88,57 @@ public sealed class CuentaContableService : ICuentaContableService
         if (rVen is not null)
             return Result<CuentasParaAsiento?>.Failure(rVen);
 
-        if (config.CuentaIvaVentasId is not null)
+        if (config.VatSalesAccountId is not null)
         {
-            var ivaV = await _accounts.GetByIdAsync(config.CuentaIvaVentasId.Value, tenantId, ct);
-            var rIva = ValidateDetail(ivaV, "IVA ventas");
+            var ivaV = await _accounts.GetByIdAsync(config.VatSalesAccountId.Value, tenantId, ct);
+            var rIva = ValidateDetail(ivaV, "vatTotal ventas");
             if (rIva is not null)
                 return Result<CuentasParaAsiento?>.Failure(rIva);
         }
 
         return Result<CuentasParaAsiento?>.Success(new CuentasParaAsiento(
-            CuentaDebitoPrincipal:   config.CuentaClientesId.Value,
-            CuentaCreditoPrincipal:  config.CuentaVentasId.Value,
+            CuentaDebitoPrincipal:   config.CustomersAccountId.Value,
+            CuentaCreditoPrincipal:  config.SalesAccountId.Value,
             CuentaIvaDebito:         null,
-            CuentaIvaCredito:        config.CuentaIvaVentasId));
+            CuentaIvaCredito:        config.VatSalesAccountId));
     }
 
-    public async Task<Result<Guid?>> ObtenerCuentaParaGastoAsync(Guid tenantId, string categoriaGasto, CancellationToken ct)
+    public async Task<Result<Guid?>> ObtenerCuentaParaGastoAsync(Guid tenantId, string   category, CancellationToken ct)
     {
-        var row = await _configRepo.GetGastoCategoriaByCategoriaAsync(categoriaGasto, ct);
+        var row = await _configRepo.GetExpenseCategoryByCategoryAsync(category, ct);
         if (row is null)
             return Result<Guid?>.Success(null);
 
-        var acc = await _accounts.GetByIdAsync(row.CuentaGastoId, tenantId, ct);
-        var err = ValidateDetail(acc, $"Gasto categoría '{row.Categoria}'");
+        var acc = await _accounts.GetByIdAsync(row.ExpenseAccountId, tenantId, ct);
+        var err = ValidateDetail(acc, $"Gasto categoría '{row.Category}'");
         if (err is not null)
             return Result<Guid?>.Failure(err);
 
-        return Result<Guid?>.Success(row.CuentaGastoId);
+        return Result<Guid?>.Success(row.ExpenseAccountId);
     }
 
     public async Task<Result<Guid?>> ObtenerCuentaCajaParaGastoAsync(Guid tenantId, CancellationToken ct)
     {
-        var config = await _configRepo.GetConfiguracionEmpresaAsync(ct);
+        var config = await _configRepo.GetSetupAsync(ct);
         if (config is null)
             return Result<Guid?>.Success(null);
 
-        if (config.CuentaEfectivoId is not null)
+        if (config.CashAccountId is not null)
         {
-            var a = await _accounts.GetByIdAsync(config.CuentaEfectivoId.Value, tenantId, ct);
+            var a = await _accounts.GetByIdAsync(config.CashAccountId.Value, tenantId, ct);
             var e = ValidateDetail(a, "Caja / efectivo");
             if (e is not null)
                 return Result<Guid?>.Failure(e);
-            return Result<Guid?>.Success(config.CuentaEfectivoId);
+            return Result<Guid?>.Success(config.CashAccountId);
         }
 
-        if (config.CuentaBancoId is not null)
+        if (config.BankAccountId is not null)
         {
-            var a = await _accounts.GetByIdAsync(config.CuentaBancoId.Value, tenantId, ct);
+            var a = await _accounts.GetByIdAsync(config.BankAccountId.Value, tenantId, ct);
             var err = ValidateDetail(a, "Banco");
             if (err is not null)
                 return Result<Guid?>.Failure(err);
-            return Result<Guid?>.Success(config.CuentaBancoId);
+            return Result<Guid?>.Success(config.BankAccountId);
         }
 
         return Result<Guid?>.Success(null);
@@ -155,3 +155,4 @@ public sealed class CuentaContableService : ICuentaContableService
         return null;
     }
 }
+

@@ -1,4 +1,4 @@
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 
 namespace ERP.Infrastructure.BackgroundServices;
 
@@ -6,7 +6,7 @@ namespace ERP.Infrastructure.BackgroundServices;
 /// Canal en memoria para encolar IDs de reportes de Kardex pendientes.
 /// Singleton: compartido entre el controller (produce) y el processor (consume).
 /// </summary>
-public sealed class KardexReporteQueue
+public sealed class KardexReportQueue
 {
     private readonly Channel<Guid> _channel =
         Channel.CreateBounded<Guid>(new BoundedChannelOptions(500)

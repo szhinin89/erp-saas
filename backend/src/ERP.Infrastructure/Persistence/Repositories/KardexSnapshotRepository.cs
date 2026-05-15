@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
@@ -11,14 +11,14 @@ public sealed class KardexSnapshotRepository : IKardexSnapshotRepository
     public KardexSnapshotRepository(ErpDbContext context) => _context = context;
 
     public Task<KardexSnapshot?> GetLatestBeforeAsync(
-        Guid tenantId, Guid productoId, Guid bodegaId,
+        Guid tenantId, Guid productoId, Guid WarehouseId,
         DateTime hastaUtc, CancellationToken ct = default)
         => _context.KardexSnapshots
             .Where(s => s.TenantId   == tenantId
-                     && s.ProductoId == productoId
-                     && s.BodegaId   == bodegaId
-                     && s.FechaSnapshot <= hastaUtc.Date)
-            .OrderByDescending(s => s.FechaSnapshot)
+                     && s.ProductId == productoId
+                     && s.WarehouseId   == WarehouseId
+                     && s.SnapshotDate <= hastaUtc.Date)
+            .OrderByDescending(s => s.SnapshotDate)
             .FirstOrDefaultAsync(ct);
 
     public async Task UpsertAsync(KardexSnapshot snapshot, CancellationToken ct = default)
@@ -32,37 +32,37 @@ public sealed class KardexSnapshotRepository : IKardexSnapshotRepository
 
         await _context.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO kardex_snapshots
-                (id, tenant_id, producto_id, bodega_id, fecha_snapshot,
-                 cantidad_saldo, valor_saldo, costo_promedio, computado_en)
+            INSERT INTO kardex_snapshot
+                (id, tenant_id, product_id, warehouse_id, snapshot_date,
+                 balance_qty, balance_value, average_cost, computed_at)
             VALUES
-                ({snapshot.Id}, {snapshot.TenantId}, {snapshot.ProductoId}, {snapshot.BodegaId},
-                 {snapshot.FechaSnapshot.Date}, {snapshot.CantidadSaldo}, {snapshot.ValorSaldo},
-                 {snapshot.CostoPromedio}, {snapshot.ComputadoEn})
-            ON CONFLICT (tenant_id, producto_id, bodega_id, fecha_snapshot)
+                ({snapshot.Id}, {snapshot.TenantId}, {snapshot.ProductId}, {snapshot.WarehouseId},
+                 {snapshot.SnapshotDate.Date}, {snapshot.BalanceQty}, {snapshot.BalanceValue},
+                 {snapshot.AverageCost}, {snapshot.ComputedAt})
+            ON CONFLICT (tenant_id, product_id, warehouse_id, snapshot_date)
             DO UPDATE SET
-                cantidad_saldo = EXCLUDED.cantidad_saldo,
-                valor_saldo    = EXCLUDED.valor_saldo,
-                costo_promedio = EXCLUDED.costo_promedio,
-                computado_en   = EXCLUDED.computado_en
+                balance_qty   = EXCLUDED.balance_qty,
+                balance_value = EXCLUDED.balance_value,
+                average_cost  = EXCLUDED.average_cost,
+                computed_at   = EXCLUDED.computed_at
             """, ct);
     }
 
-    public async Task<IReadOnlyList<(Guid ProductoId, Guid BodegaId)>> GetDistinctProductoBodegaAsync(
+    public async Task<IReadOnlyList<(Guid ProductId, Guid WarehouseId)>> GetDistinctProductWarehouseAsync(
         Guid tenantId, CancellationToken ct = default)
     {
-        var rows = await _context.InventarioMovimientos
+        var rows = await _context.StockMovements
             .Where(m => m.TenantId == tenantId)
-            .Select(m => new { m.ProductoId, m.BodegaId })
+            .Select(m => new { m.ProductId, m.WarehouseId })
             .Distinct()
             .ToListAsync(ct);
 
-        return rows.Select(r => (r.ProductoId, r.BodegaId)).ToList();
+        return rows.Select(r => (r.ProductId, r.WarehouseId)).ToList();
     }
 
-    public async Task<IReadOnlyList<Guid>> GetTenantsConMovimientosAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<Guid>> GetTenantsWithMovementsAsync(CancellationToken ct = default)
     {
-        return await _context.InventarioMovimientos
+        return await _context.StockMovements
             .Select(m => m.TenantId)
             .Distinct()
             .ToListAsync(ct);
@@ -74,9 +74,9 @@ public sealed class KardexSnapshotRepository : IKardexSnapshotRepository
     {
         var existing = await _context.KardexSnapshots.FirstOrDefaultAsync(
             s => s.TenantId   == snap.TenantId
-              && s.ProductoId == snap.ProductoId
-              && s.BodegaId   == snap.BodegaId
-              && s.FechaSnapshot == snap.FechaSnapshot.Date, ct);
+              && s.ProductId == snap.ProductId
+              && s.WarehouseId   == snap.WarehouseId
+              && s.SnapshotDate == snap.SnapshotDate.Date, ct);
 
         if (existing is null)
         {
@@ -85,10 +85,10 @@ public sealed class KardexSnapshotRepository : IKardexSnapshotRepository
         else
         {
             // Actualizar en memoria via reflexión de propiedades privadas
-            SetProp(existing, nameof(KardexSnapshot.CantidadSaldo), snap.CantidadSaldo);
-            SetProp(existing, nameof(KardexSnapshot.ValorSaldo),    snap.ValorSaldo);
-            SetProp(existing, nameof(KardexSnapshot.CostoPromedio), snap.CostoPromedio);
-            SetProp(existing, nameof(KardexSnapshot.ComputadoEn),   snap.ComputadoEn);
+            SetProp(existing, nameof(KardexSnapshot.BalanceQty), snap.BalanceQty);
+            SetProp(existing, nameof(KardexSnapshot.BalanceValue),    snap.BalanceValue);
+            SetProp(existing, nameof(KardexSnapshot.AverageCost), snap.AverageCost);
+            SetProp(existing, nameof(KardexSnapshot.ComputedAt),   snap.ComputedAt);
         }
 
         await _context.SaveChangesAsync(ct);

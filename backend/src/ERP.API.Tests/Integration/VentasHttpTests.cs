@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
@@ -17,7 +17,7 @@ namespace ERP.API.Tests.Integration;
 /// </summary>
 public sealed class VentasHttpTests
 {
-    // ── Setup ─────────────────────────────────────────────────────────────
+    // â”€â”€ Setup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static async Task<(IntegrationTestWebAppFactory Factory, System.Net.Http.HttpClient Client, IntegrationSeedData.SeedResult Seed)>
         CreateClientAsync(decimal stockInicial = 10m)
@@ -37,7 +37,7 @@ public sealed class VentasHttpTests
         return (factory, client, seed);
     }
 
-    // ── GET /api/ventas ───────────────────────────────────────────────────
+    // â”€â”€ GET /api/ventas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task Ventas_GetAll_con_admin_token_responde_200()
@@ -77,12 +77,12 @@ public sealed class VentasHttpTests
         body.Should().Contain("\"success\":true");
     }
 
-    // ── GET /api/ventas/{id} ──────────────────────────────────────────────
+    // â”€â”€ GET /api/ventas/{id} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task Ventas_GetById_factura_inexistente_responde_200_con_payload_nulo()
     {
-        // El handler retorna Success(null) para "no encontrado" → 200 con payload null.
+        // El handler retorna Success(null) para "no encontrado" â†’ 200 con payload null.
         var (factory, client, _) = await CreateClientAsync();
         await using var _ = factory;
 
@@ -94,7 +94,7 @@ public sealed class VentasHttpTests
         body.Should().Contain("\"responseObject\":null");
     }
 
-    // ── POST /api/ventas ──────────────────────────────────────────────────
+    // â”€â”€ POST /api/ventas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task Ventas_Crear_con_payload_valido_responde_201()
@@ -110,7 +110,7 @@ public sealed class VentasHttpTests
         var payload = new
         {
             clienteId  = clienteId,
-            bodegaId   = seed.BodegaId,
+            bodegaId   = seed.WarehouseId,
             sucursalId = sucursalId,
             items      = new[] { new { productoId = seed.ProductId, cantidad = 1, precioUnitario = 10.0 } }
         };
@@ -129,7 +129,7 @@ public sealed class VentasHttpTests
         var (factory, client, _) = await CreateClientAsync();
         await using var _ = factory;
 
-        // Enviar command con Items vacíos — FluentValidation debería rechazar
+        // Enviar command con Items vacÃ­os â€” FluentValidation deberÃ­a rechazar
         var payload = new
         {
             clienteId  = Guid.Empty,
@@ -140,15 +140,15 @@ public sealed class VentasHttpTests
 
         var res = await client.PostAsJsonAsync("/api/ventas", payload);
 
-        // FluentValidation lanza ValidationException → ExceptionMiddleware → 422
+        // FluentValidation lanza ValidationException â†’ ExceptionMiddleware â†’ 422
         ((int)res.StatusCode).Should().BeOneOf(400, 422);
         var body = await res.Content.ReadAsStringAsync();
         // ExceptionMiddleware usa formato {status, message, errors} en 422
-        // ApiResponse usa {success, message} en 400 — ambos incluyen "message"
+        // ApiResponse usa {success, message} en 400 â€” ambos incluyen "message"
         body.Should().Contain("message");
     }
 
-    // ── GET /api/ventas/stock ─────────────────────────────────────────────
+    // â”€â”€ GET /api/ventas/stock â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task Ventas_GetStock_SinParametros_Retorna400()
@@ -170,7 +170,7 @@ public sealed class VentasHttpTests
         await using var _ = factory;
 
         var res = await client.GetAsync(
-            $"/api/ventas/stock?productoId={seed.ProductId}&bodegaId={seed.BodegaId}");
+            $"/api/ventas/stock?productoId={seed.ProductId}&bodegaId={seed.WarehouseId}");
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await res.Content.ReadAsStringAsync();
@@ -181,7 +181,7 @@ public sealed class VentasHttpTests
         ro.GetProperty("cantidadTotal").GetDecimal().Should().Be(5m);
     }
 
-    // ── PATCH /api/ventas/{id}/validar ────────────────────────────────────
+    // â”€â”€ PATCH /api/ventas/{id}/validar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task Ventas_Validar_factura_borrador_responde_200()
@@ -197,7 +197,7 @@ public sealed class VentasHttpTests
 
         var crear = await mediator.Send(
             new ERP.Application.Sales.UseCases.CrearVenta.CrearVentaCommand(
-                clienteId, seed.BodegaId, sucursalId,
+                clienteId, seed.WarehouseId, sucursalId,
                 new List<ERP.Application.Sales.UseCases.CrearVenta.ItemVentaDto>
                     { new(seed.ProductId, 1m, 10m) }),
             CancellationToken.None);
@@ -211,7 +211,7 @@ public sealed class VentasHttpTests
         body.Should().Contain("\"message\":\"Validado\"");
     }
 
-    // ── GET /api/configuracion-sri ────────────────────────────────────────
+    // â”€â”€ GET /api/configuracion-sri â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task ConfiguracionSRI_Get_tenant_configurado_responde_200()
@@ -238,64 +238,64 @@ public sealed class VentasHttpTests
         var clienteId = db.Customers.First(c => c.TenantId == seed.TenantId).Id;
         var branchId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
 
-        var config = ConfiguracionFacturacion.Create(
+        var config = BillingSettings.Create(
             tenantId: seed.TenantId,
-            razonSocial: "Razon Social Test",
-            nombreComercial: "Comercial Test",
+            legalName: "Razon Social Test",
+            tradeName: "Comercial Test",
             ruc: "1790016910001",
-            direccionMatriz: "Av. Prueba 123",
-            telefono: "0999999999",
-            correo: "test@example.com",
-            obligadoContabilidad: true,
-            contribuyenteEspecial: "1234",
+            mainAddress: "Av. Prueba 123",
+            phone: "0999999999",
+            email: "test@example.com",
+            requiresAccounting: true,
+            specialTaxpayer: "1234",
             logoBase64: null,
-            leyendaAdicional: "Gracias por su compra",
-            anchoTirilla: 80,
+            footerText: "Gracias por su compra",
+            receiptWidth: 80,
             createdBy: seed.UserId);
 
-        db.ConfiguracionFacturaciones.Add(config);
+        db.BillingSettings.Add(config);
 
-        var factura = VentasFactura.Create(
+        var factura = SalesBill.Create(
             seed.TenantId,
             branchId,
             clienteId,
-            seed.BodegaId,
-            tipoDocumento: "01",
-            establecimiento: "001",
-            puntoEmision: "001",
-            secuencial: "000000001",
-            claveAcceso: new string('1', 48),
-            fechaEmision: DateTime.UtcNow,
+            seed.WarehouseId,
+            docType: "01",
+            estabCode: "001",
+            emPointCode: "001",
+            sequential: "000000001",
+            accessKey: new string('1', 48),
+            issueDate: DateTime.UtcNow,
             subtotal: 100m,
-            impuesto: 12m,
+            vatTotal: 12m,
             total: 112m,
-            xmlGeneradoPath: null,
-            xmlAutorizacionPath: null,
-            numeroAutorizacion: null,
-            fechaAutorizacion: null,
-            mensajeError: null,
+            xmlSignedPath: null,
+            xmlAuthPath: null,
+            authNumber: null,
+            authDate: null,
+            errorMessage: null,
             createdBy: seed.UserId);
 
-        var detalle = VentasDetalle.Create(
+        var detalle = SalesBillLine.Create(
             seed.TenantId,
             seed.ProductId,
-            cantidad: 1m,
-            precioUnitario: 100m,
-            impuesto: 12m,
-            descripcion: "Producto de prueba",
+            quantity: 1m,
+            unitPrice: 100m,
+            vatTotal: 12m,
+            description: "Producto de prueba",
             createdBy: seed.UserId);
-        detalle.AsignarFacturaId(factura.Id);
-        factura.AgregarDetalle(detalle);
-        factura.Validar(seed.UserId);
-        factura.Autorizar(
+        detalle.AssignBillId(factura.Id);
+        factura.AddLine(detalle);
+        factura.Validate(seed.UserId);
+        factura.Authorize(
             seed.UserId,
-            numeroAutorizacion: "AUTH-123",
-            fechaAutorizacion: DateTime.UtcNow,
-            xmlGeneradoPath: null,
-            xmlAutorizacionPath: null,
-            asientoId: Guid.NewGuid());
+            authNumber: "AUTH-123",
+            authDate: DateTime.UtcNow,
+            xmlSignedPath: null,
+            xmlAuthPath: null,
+            journalEntryId: Guid.NewGuid());
 
-        db.VentasFacturas.Add(factura);
+        db.SalesBills.Add(factura);
         await db.SaveChangesAsync(CancellationToken.None);
 
         var res = await client.GetAsync($"/api/ventas/{factura.Id}/imprimir");
@@ -324,47 +324,47 @@ public sealed class VentasHttpTests
         var clienteId = db.Customers.First(c => c.TenantId == seed.TenantId).Id;
         var branchId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
 
-        var factura = VentasFactura.Create(
+        var factura = SalesBill.Create(
             seed.TenantId,
             branchId,
             clienteId,
-            seed.BodegaId,
-            tipoDocumento: "01",
-            establecimiento: "001",
-            puntoEmision: "001",
-            secuencial: "000000002",
-            claveAcceso: new string('1', 48),
-            fechaEmision: DateTime.UtcNow,
+            seed.WarehouseId,
+            docType: "01",
+            estabCode: "001",
+            emPointCode: "001",
+            sequential: "000000002",
+            accessKey: new string('1', 48),
+            issueDate: DateTime.UtcNow,
             subtotal: 50m,
-            impuesto: 6m,
+            vatTotal: 6m,
             total: 56m,
-            xmlGeneradoPath: null,
-            xmlAutorizacionPath: null,
-            numeroAutorizacion: null,
-            fechaAutorizacion: null,
-            mensajeError: null,
+            xmlSignedPath: null,
+            xmlAuthPath: null,
+            authNumber: null,
+            authDate: null,
+            errorMessage: null,
             createdBy: seed.UserId);
 
-        var detalle = VentasDetalle.Create(
+        var detalle = SalesBillLine.Create(
             seed.TenantId,
             seed.ProductId,
-            cantidad: 1m,
-            precioUnitario: 50m,
-            impuesto: 6m,
-            descripcion: "Item default",
+            quantity: 1m,
+            unitPrice: 50m,
+            vatTotal: 6m,
+            description: "Item default",
             createdBy: seed.UserId);
-        detalle.AsignarFacturaId(factura.Id);
-        factura.AgregarDetalle(detalle);
-        factura.Validar(seed.UserId);
-        factura.Autorizar(
+        detalle.AssignBillId(factura.Id);
+        factura.AddLine(detalle);
+        factura.Validate(seed.UserId);
+        factura.Authorize(
             seed.UserId,
-            numeroAutorizacion: "AUTH-456",
-            fechaAutorizacion: DateTime.UtcNow,
-            xmlGeneradoPath: null,
-            xmlAutorizacionPath: null,
-            asientoId: Guid.NewGuid());
+            authNumber: "AUTH-456",
+            authDate: DateTime.UtcNow,
+            xmlSignedPath: null,
+            xmlAuthPath: null,
+            journalEntryId: Guid.NewGuid());
 
-        db.VentasFacturas.Add(factura);
+        db.SalesBills.Add(factura);
         await db.SaveChangesAsync(CancellationToken.None);
 
         var res = await client.GetAsync($"/api/ventas/{factura.Id}/imprimir");
@@ -376,3 +376,13 @@ public sealed class VentasHttpTests
         html.Should().Contain("Item default");
     }
 }
+
+
+
+
+
+
+
+
+
+

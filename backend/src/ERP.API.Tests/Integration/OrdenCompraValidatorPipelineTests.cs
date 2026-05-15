@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
@@ -28,7 +28,7 @@ public sealed class OrdenCompraValidatorPipelineTests
 
         await act.Should()
             .ThrowAsync<FluentValidation.ValidationException>()
-            .WithMessage("*ítem*");
+            .WithMessage("*Ã­tem*");
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public sealed class OrdenCompraValidatorPipelineTests
             Guid.NewGuid(),
             DateTime.UtcNow.AddDays(10),
             null, null, null,
-            Items: [new ItemOrdenCompraRequest(Guid.NewGuid(), Cantidad: 0m, PrecioUnitario: 10m, IvaPorcentaje: 15m)]),
+            Items: [new ItemOrdenCompraRequest(Guid.NewGuid(), Quantity: 0m, UnitPrice: 10m, VatPct: 15m)]),
             CancellationToken.None);
 
         await act.Should()
@@ -58,7 +58,7 @@ public sealed class OrdenCompraValidatorPipelineTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var act = async () => await mediator.Send(new CrearOrdenCompraCommand(
-            ProveedorId: Guid.Empty,
+            SupplierId: Guid.Empty,
             DateTime.UtcNow.AddDays(10),
             null, null, null,
             Items: [new ItemOrdenCompraRequest(Guid.NewGuid(), 5m, 10m, 15m)]),
@@ -80,7 +80,7 @@ public sealed class OrdenCompraValidatorPipelineTests
             Guid.NewGuid(),
             DateTime.UtcNow.AddDays(10),
             null, null, null,
-            Items: [new ItemOrdenCompraRequest(Guid.NewGuid(), 5m, PrecioUnitario: -1m, IvaPorcentaje: 15m)]),
+            Items: [new ItemOrdenCompraRequest(Guid.NewGuid(), 5m, UnitPrice: -1m, VatPct: 15m)]),
             CancellationToken.None);
 
         await act.Should()
@@ -88,3 +88,10 @@ public sealed class OrdenCompraValidatorPipelineTests
             .WithMessage("*negativo*");
     }
 }
+
+
+
+
+
+
+

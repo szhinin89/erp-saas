@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,7 +10,7 @@ using ERP.Application.Modules.Purchasing.UseCases.ValidarCompra;
 using ERP.Application.Modules.Expenses.UseCases.AprobarGasto;
 using ERP.Application.Modules.Expenses.UseCases.CrearGasto;
 using ERP.Application.Modules.Expenses.UseCases.ValidarGasto;
-using ERP.Application.Modules.Inventory.UseCases.GetStockActualPorBodega;
+using ERP.Application.Modules.Inventory.UseCases.GetCurrentStockPorBodega;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Infrastructure.Persistence;
 
@@ -36,16 +36,16 @@ public sealed class CompraGastoEndToEndTests
                 ModoCreacionCompra.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xml),
                 XmlNombreArchivo: "factura.xml",
-                ProveedorId: null,
-                NumeroFactura: null,
-                FechaFactura: null,
-                FechaVencimiento: null,
-                CondicionPago: null,
-                Observaciones: null,
-                Detalles: null,
+                SupplierId: null,
+                InvoiceNumber: null,
+                InvoiceDate: null,
+                DueDate: null,
+                PaymentTerms: null,
+                Notes: null,
+                Lines: null,
                 AsignacionesBodega: new[]
                 {
-                    new AsignacionBodegaRequest(0, seed.BodegaId, 2m, seed.ProductId),
+                    new AsignacionBodegaRequest(0, seed.WarehouseId, 2m, seed.ProductId),
                 }),
             CancellationToken.None);
 
@@ -58,13 +58,13 @@ public sealed class CompraGastoEndToEndTests
         apr.IsSuccess.Should().BeTrue(apr.Error);
 
         var stock = await mediator.Send(
-            new GetStockActualPorBodegaQuery(seed.BodegaId, seed.ProductId),
+            new GetCurrentStockPorBodegaQuery(seed.WarehouseId, seed.ProductId),
             CancellationToken.None);
 
         stock.IsSuccess.Should().BeTrue();
         stock.Value.Should().NotBeNull();
         stock.Value!.Should().ContainSingle();
-        stock.Value[0].Cantidad.Should().Be(2m);
+        stock.Value[0].Quantity.Should().Be(2m);
     }
 
     [Fact]
@@ -83,25 +83,33 @@ public sealed class CompraGastoEndToEndTests
                 ModoCreacionGasto.Manual,
                 XmlContent: null,
                 XmlNombreArchivo: null,
-                ProveedorId: null,
-                FechaEmision: DateTime.UtcNow.Date,
-                Concepto: "Taxi integración",
-                CategoriaGasto: "Viajes",
+                SupplierId: null,
+                IssueDate: DateTime.UtcNow.Date,
+                Concept: "Taxi integraciÃ³n",
+                Category: "Viajes",
                 Subtotal: 10m,
-                Impuesto: 2m,
+                VatTotal: 2m,
                 Total: 12m,
-                Observaciones: null),
+                Notes: null),
             CancellationToken.None);
 
         crear.IsSuccess.Should().BeTrue(crear.Error);
-        crear.Value!.Estado.Should().Be(EstadoGasto.Borrador);
+        crear.Value!.Status.Should().Be(ExpenseStatus.Draft);
 
         var val = await mediator.Send(new ValidarGastoCommand(crear.Value.Id), CancellationToken.None);
         val.IsSuccess.Should().BeTrue(val.Error);
 
         var apr = await mediator.Send(new AprobarGastoCommand(crear.Value.Id), CancellationToken.None);
         apr.IsSuccess.Should().BeTrue(apr.Error);
-        apr.Value!.Estado.Should().Be(EstadoGasto.Aprobado);
-        apr.Value.AsientoContableId.Should().NotBeNull();
+        apr.Value!.Status.Should().Be(ExpenseStatus.Approved);
+        apr.Value.JournalEntryId.Should().NotBeNull();
     }
 }
+
+
+
+
+
+
+
+

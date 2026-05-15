@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Xml.Linq;
 using ERP.Application.Common.Exceptions;
 using ERP.Application.Common.Interfaces;
@@ -62,7 +62,7 @@ public sealed class SriFacturaParser : IXmlFacturaParser
         // Suma de todos los impuestos del encabezado (IVA + ICE + otros)
         var impuesto = infoFact
             .Element("totalConImpuestos")
-            ?.Elements("totalImpuesto")
+            ?.Elements("totalVat")
             .Sum(t => ParseDecimalText(t.Element("valor")?.Value ?? "0")) ?? 0m;
 
         // ── detalles ──────────────────────────────────────────────────────
@@ -72,15 +72,15 @@ public sealed class SriFacturaParser : IXmlFacturaParser
             throw new XmlParseException("El comprobante no contiene ningún detalle (<detalle>).");
 
         return Task.FromResult(new FacturaParseResult(
-            ClaveAcceso:          claveAcceso,
-            NumeroFactura:        numeroFactura,
-            FechaEmision:         fechaEmision,
-            RucProveedor:         ruc,
-            RazonSocialProveedor: razonSocial,
-            Subtotal:             subtotal,
-            Impuesto:             impuesto,
-            Total:                total,
-            Items:                items));
+            AccessKey:         claveAcceso,
+            InvoiceNumber:     numeroFactura,
+            IssueDate:         fechaEmision,
+            SupplierRuc:       ruc,
+            SupplierLegalName: razonSocial,
+            Subtotal:          subtotal,
+            VatTotal:          impuesto,
+            Total:             total,
+            Items:             items));
     }
 
     public Task<NotaProveedorParseResult> ParseNotaProveedorAsync(Stream xmlStream, CancellationToken ct = default)
@@ -127,7 +127,7 @@ public sealed class SriFacturaParser : IXmlFacturaParser
         var subtotal = ParseDecimal(infoNota, "totalSinImpuestos");
         var impuesto = infoNota
             .Element("totalConImpuestos")
-            ?.Elements("totalImpuesto")
+            ?.Elements("totalVat")
             .Sum(t => ParseDecimalText(t.Element("valor")?.Value ?? "0")) ?? 0m;
 
         var total =
@@ -142,20 +142,20 @@ public sealed class SriFacturaParser : IXmlFacturaParser
             throw new XmlParseException("El comprobante no contiene ningún detalle (<detalle>).");
 
         return Task.FromResult(new NotaProveedorParseResult(
-            TipoNota:             tipoNota,
-            Motivo:               motivo,
-            ClaveAcceso:          claveAcceso,
-            Establecimiento:      estab,
-            PuntoEmision:         ptoEmi,
-            Secuencial:           secuencial,
-            NumeroNota:           numeroNota,
-            FechaEmision:         fechaEmision,
-            RucProveedor:         ruc,
-            RazonSocialProveedor: razonSocial,
-            Subtotal:             subtotal,
-            Impuesto:             impuesto,
-            Total:                total,
-            Items:                items));
+            NoteType:          tipoNota,
+            Reason:            motivo,
+            AccessKey:         claveAcceso,
+            EstabCode:         estab,
+            EmPointCode:       ptoEmi,
+            Sequential:        secuencial,
+            NoteNumber:        numeroNota,
+            IssueDate:         fechaEmision,
+            SupplierRuc:       ruc,
+            SupplierLegalName: razonSocial,
+            Subtotal:          subtotal,
+            VatTotal:          impuesto,
+            Total:             total,
+            Items:             items));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

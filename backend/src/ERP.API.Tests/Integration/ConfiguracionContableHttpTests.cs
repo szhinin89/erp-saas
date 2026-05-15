@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
@@ -12,7 +12,7 @@ using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;
 
-/// <summary>Tests HTTP end-to-end: configuración contable por tenant.</summary>
+/// <summary>Tests HTTP end-to-end: configuraciÃ³n contable por tenant.</summary>
 public sealed class ConfiguracionContableHttpTests
 {
     private static async Task<(IntegrationTestWebAppFactory Factory, HttpClient Client, IntegrationSeedData.SeedResult Seed)>
@@ -84,7 +84,7 @@ public sealed class ConfiguracionContableHttpTests
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
             var inv = Account.Create(seed.TenantId, "1.1.10", "Inventario INT", AccountType.Asset, AccountNature.Debit, seed.UserId);
-            var prov = Account.Create(seed.TenantId, "2.1.10", "Proveedores INT", AccountType.Liability, AccountNature.Credit, seed.UserId);
+            var prov = Account.Create(seed.TenantId, "2.1.10", "Suppliers INT", AccountType.Liability, AccountNature.Credit, seed.UserId);
             var ventas = Account.Create(seed.TenantId, "4.1.10", "Ventas INT", AccountType.Revenue, AccountNature.Credit, seed.UserId);
             var clientes = Account.Create(seed.TenantId, "1.1.20", "Clientes INT", AccountType.Asset, AccountNature.Debit, seed.UserId);
             var ivaV = Account.Create(seed.TenantId, "2.1.20", "IVA ventas INT", AccountType.Liability, AccountNature.Credit, seed.UserId);
@@ -136,7 +136,7 @@ public sealed class ConfiguracionContableHttpTests
         listBody.Should().Contain("\"categoria\":\"Luz\"");
 
         // delete
-        var created = await postRes.Content.ReadFromJsonAsync<ApiResponse<ConfiguracionGastoCategoriaDto>>(
+        var created = await postRes.Content.ReadFromJsonAsync<ApiResponse<ExpenseCategoryDto>>(
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         created.Should().NotBeNull();
         created!.Success.Should().BeTrue();
@@ -147,4 +147,6 @@ public sealed class ConfiguracionContableHttpTests
         delRes.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }
+
+
 

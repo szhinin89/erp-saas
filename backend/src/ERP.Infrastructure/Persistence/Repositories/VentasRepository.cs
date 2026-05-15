@@ -1,46 +1,46 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class VentasRepository : IVentasRepository
+public sealed class VentasRepository : ISalesRepository
 {
     private readonly ErpDbContext _context;
 
     public VentasRepository(ErpDbContext context) => _context = context;
 
-    public Task AddFacturaAsync(VentasFactura factura, CancellationToken ct = default)
-        => _context.VentasFacturas.AddAsync(factura, ct).AsTask();
+    public Task AddBillAsync(SalesBill factura, CancellationToken ct = default)
+        => _context.SalesBills.AddAsync(factura, ct).AsTask();
 
-    public Task<VentasFactura?> GetFacturaByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.VentasFacturas
+    public Task<SalesBill?> GetBillByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+        => _context.SalesBills
             .Include(f => f.Cliente)
-            .Include(f => f.Detalles)
+            .Include(f => f.Lines)
             .FirstOrDefaultAsync(f => f.TenantId == tenantId && f.Id == id, ct);
 
-    public async Task<IReadOnlyList<VentasFactura>> GetFacturasAsync(
+    public async Task<IReadOnlyList<SalesBill>> GetBillsAsync(
         Guid tenantId,
         DateTime? fechaDesde,
         DateTime? fechaHasta,
         string? estado,
         CancellationToken ct = default)
     {
-        var query = _context.VentasFacturas
+        var query = _context.SalesBills
             .Include(f => f.Cliente)
             .Where(f => f.TenantId == tenantId);
 
         if (fechaDesde.HasValue)
-            query = query.Where(f => f.FechaEmision >= fechaDesde.Value);
+            query = query.Where(f => f.IssueDate >= fechaDesde.Value);
         if (fechaHasta.HasValue)
-            query = query.Where(f => f.FechaEmision <= fechaHasta.Value);
+            query = query.Where(f => f.IssueDate <= fechaHasta.Value);
         if (!string.IsNullOrEmpty(estado))
-            query = query.Where(f => f.Estado == estado);
+            query = query.Where(f => f.Status == estado);
 
         return await query.ToListAsync(ct);
     }
 
-    public async Task<(IReadOnlyList<VentasFactura> Items, int TotalCount)> GetFacturasPagedAsync(
+    public async Task<(IReadOnlyList<SalesBill> Items, int TotalCount)> GetBillsPagedAsync(
         Guid tenantId,
         int pageNumber,
         int pageSize,
@@ -51,27 +51,27 @@ public sealed class VentasRepository : IVentasRepository
         string? search,
         CancellationToken ct = default)
     {
-        var query = _context.VentasFacturas
+        var query = _context.SalesBills
             .Include(f => f.Cliente)
             .Where(f => f.TenantId == tenantId);
 
         if (clienteId.HasValue)
-            query = query.Where(f => f.ClienteId == clienteId.Value);
+            query = query.Where(f => f.CustomerId == clienteId.Value);
         if (fechaDesde.HasValue)
-            query = query.Where(f => f.FechaEmision >= fechaDesde.Value);
+            query = query.Where(f => f.IssueDate >= fechaDesde.Value);
         if (fechaHasta.HasValue)
-            query = query.Where(f => f.FechaEmision <= fechaHasta.Value);
+            query = query.Where(f => f.IssueDate <= fechaHasta.Value);
         if (!string.IsNullOrEmpty(estado))
-            query = query.Where(f => f.Estado == estado);
+            query = query.Where(f => f.Status == estado);
         if (!string.IsNullOrEmpty(search))
             query = query.Where(f =>
-                f.Secuencial.Contains(search) ||
-                f.ClaveAcceso.Contains(search) ||
-                f.NumeroAutorizacion != null && f.NumeroAutorizacion.Contains(search));
+                f.Sequential.Contains(search) ||
+                f.AccessKey.Contains(search) ||
+                f.AuthNumber != null && f.AuthNumber.Contains(search));
 
         var totalCount = await query.CountAsync(ct);
         var items = await query
-            .OrderByDescending(f => f.FechaEmision)
+            .OrderByDescending(f => f.IssueDate)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
@@ -79,51 +79,51 @@ public sealed class VentasRepository : IVentasRepository
         return (items, totalCount);
     }
 
-    public Task AddNotaCreditoDebitoAsync(VentasNotaCreditoDebito nota, CancellationToken ct = default)
-        => _context.VentasNotasCreditoDebito.AddAsync(nota, ct).AsTask();
+    public Task AddNoteAsync(SalesNote nota, CancellationToken ct = default)
+        => _context.SalesNotes.AddAsync(nota, ct).AsTask();
 
-    public Task<VentasNotaCreditoDebito?> GetNotaByIdWithDetailsAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.VentasNotasCreditoDebito
-            .Include(n => n.FacturaOriginal)
+    public Task<SalesNote?> GetNoteByIdWithLinesAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+        => _context.SalesNotes
+            .Include(n => n.OriginalBill)
                 .ThenInclude(f => f.Cliente)
-            .Include(n => n.Detalles)
+            .Include(n => n.Lines)
             .FirstOrDefaultAsync(n => n.TenantId == tenantId && n.Id == id, ct);
 
-    public async Task<IReadOnlyList<VentasNotaCreditoDebito>> GetNotasAsync(
+    public async Task<IReadOnlyList<SalesNote>> GetNotesAsync(
         Guid tenantId,
         Guid? facturaOriginalId,
         string? estado,
         CancellationToken ct = default)
     {
-        var q = _context.VentasNotasCreditoDebito
-            .Include(n => n.FacturaOriginal)
+        var q = _context.SalesNotes
+            .Include(n => n.OriginalBill)
                 .ThenInclude(f => f.Cliente)
             .Where(n => n.TenantId == tenantId);
 
         if (facturaOriginalId.HasValue)
-            q = q.Where(n => n.VentasFacturaOriginalId == facturaOriginalId.Value);
+            q = q.Where(n => n.OriginalBillId == facturaOriginalId.Value);
         if (!string.IsNullOrWhiteSpace(estado))
-            q = q.Where(n => n.Estado == estado);
+            q = q.Where(n => n.Status == estado);
 
-        return await q.OrderByDescending(n => n.FechaEmision).ToListAsync(ct);
+        return await q.OrderByDescending(n => n.IssueDate).ToListAsync(ct);
     }
 
-    public Task AddRetencionRecibidaAsync(VentasRetencionRecibida retencion, CancellationToken ct = default)
-        => _context.VentasRetencionesRecibidas.AddAsync(retencion, ct).AsTask();
+    public Task AddRetentionAsync(SalesRetention retencion, CancellationToken ct = default)
+        => _context.SalesRetentions.AddAsync(retencion, ct).AsTask();
 
-    public async Task<IReadOnlyList<VentasRetencionRecibida>> GetRetencionesRecibidasAsync(
+    public async Task<IReadOnlyList<SalesRetention>> GetRetentionsAsync(
         Guid tenantId,
         CancellationToken ct = default)
-        => await _context.VentasRetencionesRecibidas
-            .Include(r => r.Cliente)
-            .Include(r => r.Detalles)
+        => await _context.SalesRetentions
+            .Include(r => r.Customer)
+            .Include(r => r.Lines)
             .Where(r => r.TenantId == tenantId)
-            .OrderByDescending(r => r.FechaEmision)
+            .OrderByDescending(r => r.IssueDate)
             .ToListAsync(ct);
 
-    public Task<bool> ExistsRetencionRecibidaClaveAsync(Guid tenantId, string claveAcceso, CancellationToken ct = default)
-        => _context.VentasRetencionesRecibidas.AnyAsync(
-            r => r.TenantId == tenantId && r.ClaveAcceso == claveAcceso, ct);
+    public Task<bool> ExistsRetentionAccessKeyAsync(Guid tenantId, string claveAcceso, CancellationToken ct = default)
+        => _context.SalesRetentions.AnyAsync(
+            r => r.TenantId == tenantId && r.AccessKey == claveAcceso, ct);
 
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);

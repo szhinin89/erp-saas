@@ -1,59 +1,59 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class AjusteInventarioRepository : IAjusteInventarioRepository
+public sealed class StockAdjustmentRepository : IStockAdjustmentRepository
 {
     private readonly ErpDbContext _context;
 
-    public AjusteInventarioRepository(ErpDbContext context) => _context = context;
+    public StockAdjustmentRepository(ErpDbContext context) => _context = context;
 
-    public Task AddAsync(AjusteInventario ajuste, CancellationToken ct = default)
-        => _context.AjustesInventario.AddAsync(ajuste, ct).AsTask();
+    public Task AddAsync(StockAdjustment ajuste, CancellationToken ct = default)
+        => _context.StockAdjustments.AddAsync(ajuste, ct).AsTask();
 
-    public Task<AjusteInventario?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.AjustesInventario
+    public Task<StockAdjustment?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+        => _context.StockAdjustments
             .FirstOrDefaultAsync(a => a.TenantId == tenantId && a.Id == id, ct);
 
-    public async Task<int> GetNextSecuencialAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<int> GetNextSequentialAsync(Guid tenantId, CancellationToken ct = default)
     {
         // MaxAsync nullable — compatible con PostgreSQL e InMemory
-        var max = await _context.AjustesInventario
+        var max = await _context.StockAdjustments
             .Where(a => a.TenantId == tenantId)
-            .MaxAsync(a => (int?)a.Secuencial, ct);
+            .MaxAsync(a => (int?)a.Sequential, ct);
         return (max ?? 0) + 1;
     }
 
-    public async Task<(IReadOnlyList<AjusteInventario> Items, int TotalCount)> GetPagedAsync(
+    public async Task<(IReadOnlyList<StockAdjustment> Items, int TotalCount)> GetPagedAsync(
         Guid      tenantId,
         int       pageNumber,
         int       pageSize,
-        Guid?     bodegaId,
+        Guid?     WarehouseId,
         Guid?     productoId,
         string?   estado,
         DateTime? fechaDesde,
         DateTime? fechaHasta,
         CancellationToken ct = default)
     {
-        var query = _context.AjustesInventario
+        var query = _context.StockAdjustments
             .Where(a => a.TenantId == tenantId);
 
-        if (bodegaId.HasValue)
-            query = query.Where(a => a.BodegaId == bodegaId.Value);
+        if (WarehouseId.HasValue)
+            query = query.Where(a => a.WarehouseId == WarehouseId.Value);
         if (productoId.HasValue)
-            query = query.Where(a => a.ProductoId == productoId.Value);
+            query = query.Where(a => a.ProductId == productoId.Value);
         if (!string.IsNullOrEmpty(estado))
-            query = query.Where(a => a.Estado == estado);
+            query = query.Where(a => a.Status == estado);
         if (fechaDesde.HasValue)
-            query = query.Where(a => a.FechaAjuste >= fechaDesde.Value);
+            query = query.Where(a => a.AdjustmentDate >= fechaDesde.Value);
         if (fechaHasta.HasValue)
-            query = query.Where(a => a.FechaAjuste <= fechaHasta.Value);
+            query = query.Where(a => a.AdjustmentDate <= fechaHasta.Value);
 
         var total = await query.CountAsync(ct);
         var items = await query
-            .OrderByDescending(a => a.FechaAjuste)
+            .OrderByDescending(a => a.AdjustmentDate)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);

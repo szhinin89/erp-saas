@@ -1,10 +1,10 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class ConfiguracionContableRepository : IConfiguracionContableRepository
+public sealed class ConfiguracionContableRepository : IAccountingSetupRepository
 {
     private readonly ErpDbContext _context;
 
@@ -13,34 +13,34 @@ public sealed class ConfiguracionContableRepository : IConfiguracionContableRepo
         _context = context;
     }
 
-    public async Task<ConfiguracionContableEmpresa?> GetConfiguracionEmpresaAsync(CancellationToken ct = default)
-        => await _context.ConfiguracionContableEmpresas.FirstOrDefaultAsync(ct);
+    public async Task<AccountingSetup?> GetSetupAsync(CancellationToken ct = default)
+        => await _context.AccountingSetups.FirstOrDefaultAsync(ct);
 
-    public async Task AddConfiguracionEmpresaAsync(ConfiguracionContableEmpresa entity, CancellationToken ct = default)
-        => await _context.ConfiguracionContableEmpresas.AddAsync(entity, ct);
+    public async Task AddSetupAsync(AccountingSetup entity, CancellationToken ct = default)
+        => await _context.AccountingSetups.AddAsync(entity, ct);
 
-    public async Task<IReadOnlyList<ConfiguracionGastoCategoria>> GetGastoCategoriasAsync(CancellationToken ct = default)
-        => await _context.ConfiguracionGastoCategorias
-            .OrderBy(g => g.Categoria)
+    public async Task<IReadOnlyList<ExpenseCategory>> GetExpenseCategoriesAsync(CancellationToken ct = default)
+        => await _context.ExpenseCategories
+            .OrderBy(g => g.Category)
             .ToListAsync(ct);
 
-    public async Task<ConfiguracionGastoCategoria?> GetGastoCategoriaByCategoriaAsync(string categoria, CancellationToken ct = default)
+    public async Task<ExpenseCategory?> GetExpenseCategoryByCategoryAsync(string categoria, CancellationToken ct = default)
     {
         var c = categoria.Trim();
-        return await _context.ConfiguracionGastoCategorias
+        return await _context.ExpenseCategories
             .FirstOrDefaultAsync(
-                g => g.Categoria.ToLower() == c.ToLower(),
+                g => g.Category.ToLower() == c.ToLower(),
                 ct);
     }
 
-    public async Task<ConfiguracionGastoCategoria?> GetGastoCategoriaByIdAsync(Guid id, CancellationToken ct = default)
-        => await _context.ConfiguracionGastoCategorias.FirstOrDefaultAsync(g => g.Id == id, ct);
+    public async Task<ExpenseCategory?> GetExpenseCategoryByIdAsync(Guid id, CancellationToken ct = default)
+        => await _context.ExpenseCategories.FirstOrDefaultAsync(g => g.Id == id, ct);
 
-    public async Task AddGastoCategoriaAsync(ConfiguracionGastoCategoria entity, CancellationToken ct = default)
-        => await _context.ConfiguracionGastoCategorias.AddAsync(entity, ct);
+    public async Task AddExpenseCategoryAsync(ExpenseCategory entity, CancellationToken ct = default)
+        => await _context.ExpenseCategories.AddAsync(entity, ct);
 
-    public void RemoveGastoCategoria(ConfiguracionGastoCategoria entity)
-        => _context.ConfiguracionGastoCategorias.Remove(entity);
+    public void RemoveExpenseCategory(ExpenseCategory entity)
+        => _context.ExpenseCategories.Remove(entity);
 
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);

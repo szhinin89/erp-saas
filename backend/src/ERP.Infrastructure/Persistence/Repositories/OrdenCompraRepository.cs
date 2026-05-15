@@ -1,36 +1,36 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class OrdenCompraRepository : IOrdenCompraRepository
+public sealed class OrdenCompraRepository : IPurchaseOrderRepository
 {
     private readonly ErpDbContext _context;
 
     public OrdenCompraRepository(ErpDbContext context) => _context = context;
 
-    public Task AddAsync(OrdenCompra orden, CancellationToken ct = default)
-        => _context.OrdenesCompra.AddAsync(orden, ct).AsTask();
+    public Task AddAsync(PurchaseOrder orden, CancellationToken ct = default)
+        => _context.PurchaseOrders.AddAsync(orden, ct).AsTask();
 
-    public Task<OrdenCompra?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.OrdenesCompra
+    public Task<PurchaseOrder?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+        => _context.PurchaseOrders
             .FirstOrDefaultAsync(o => o.TenantId == tenantId && o.Id == id, ct);
 
-    public Task<OrdenCompra?> GetByIdWithDetallesAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.OrdenesCompra
-            .Include(o => o.Detalles)
+    public Task<PurchaseOrder?> GetByIdWithLinesAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+        => _context.PurchaseOrders
+            .Include(o => o.Lines)
             .FirstOrDefaultAsync(o => o.TenantId == tenantId && o.Id == id, ct);
 
-    public async Task<int> GetNextSecuencialAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<int> GetNextSequentialAsync(Guid tenantId, CancellationToken ct = default)
     {
-        var max = await _context.OrdenesCompra
+        var max = await _context.PurchaseOrders
             .Where(o => o.TenantId == tenantId)
-            .MaxAsync(o => (int?)o.Secuencial, ct);
+            .MaxAsync(o => (int?)o.Sequential, ct);
         return (max ?? 0) + 1;
     }
 
-    public async Task<(IReadOnlyList<OrdenCompra> Items, int TotalCount)> GetPagedAsync(
+    public async Task<(IReadOnlyList<PurchaseOrder> Items, int TotalCount)> GetPagedAsync(
         Guid      tenantId,
         int       pageNumber,
         int       pageSize,
@@ -40,21 +40,21 @@ public sealed class OrdenCompraRepository : IOrdenCompraRepository
         DateTime? fechaHasta,
         CancellationToken ct = default)
     {
-        var query = _context.OrdenesCompra
+        var query = _context.PurchaseOrders
             .Where(o => o.TenantId == tenantId);
 
         if (proveedorId.HasValue)
-            query = query.Where(o => o.ProveedorId == proveedorId.Value);
+            query = query.Where(o => o.SupplierId == proveedorId.Value);
         if (!string.IsNullOrEmpty(estado))
-            query = query.Where(o => o.Estado == estado);
+            query = query.Where(o => o.Status == estado);
         if (fechaDesde.HasValue)
-            query = query.Where(o => o.FechaEmision >= fechaDesde.Value);
+            query = query.Where(o => o.IssueDate >= fechaDesde.Value);
         if (fechaHasta.HasValue)
-            query = query.Where(o => o.FechaEmision <= fechaHasta.Value);
+            query = query.Where(o => o.IssueDate <= fechaHasta.Value);
 
         var total = await query.CountAsync(ct);
         var items = await query
-            .OrderByDescending(o => o.FechaEmision)
+            .OrderByDescending(o => o.IssueDate)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
@@ -62,41 +62,41 @@ public sealed class OrdenCompraRepository : IOrdenCompraRepository
         return (items, total);
     }
 
-    public Task<IReadOnlyList<OrdenCompra>> GetPendientesPorFacturarAsync(
+    public Task<IReadOnlyList<PurchaseOrder>> GetPendingToInvoiceAsync(
         Guid tenantId, CancellationToken ct = default)
-        => _context.OrdenesCompra
+        => _context.PurchaseOrders
             .Where(o => o.TenantId == tenantId
-                && (o.Estado == "Aprobada" || o.Estado == "RecibidaParcial")
-                && o.Detalles.Any(d => d.CantidadFacturada < d.CantidadPedida))
-            .OrderBy(o => o.FechaEmision)
+                && (o.Status == "Aprobada" || o.Status == "RecibidaParcial")
+                && o.Lines.Any(d => d.InvoicedQty < d.OrderedQty))
+            .OrderBy(o => o.IssueDate)
             .ToListAsync(ct)
-            .ContinueWith(t => (IReadOnlyList<OrdenCompra>)t.Result, TaskContinuationOptions.ExecuteSynchronously);
+            .ContinueWith(t => (IReadOnlyList<PurchaseOrder>)t.Result, TaskContinuationOptions.ExecuteSynchronously);
 
-    public Task<bool> FacturaYaVinculadaAsync(
+    public Task<bool> BillAlreadyLinkedAsync(
         Guid tenantId, Guid ordenId, Guid facturaId, CancellationToken ct = default)
-        => _context.OrdenesCompraFacturas
+        => _context.PurchaseOrderBills
             .AnyAsync(v => v.TenantId == tenantId
-                && v.OrdenCompraId == ordenId
-                && v.CompraFacturaId == facturaId, ct);
+                && v.PurchaseOrderId == ordenId
+                && v.PurchBillId == facturaId, ct);
 
-    public async Task<IReadOnlyList<(Guid CompraFacturaId, string NumeroFactura, DateTime FechaVinculacion)>>
-        GetVinculacionesAsync(Guid tenantId, Guid ordenId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<(Guid PurchBillId, string InvoiceNumber, DateTime LinkedAt)>>
+        GetBillLinksAsync(Guid tenantId, Guid ordenId, CancellationToken ct = default)
     {
-        var results = await _context.OrdenesCompraFacturas
-            .Where(v => v.TenantId == tenantId && v.OrdenCompraId == ordenId)
-            .Join(_context.CompraFacturas,
-                  v => v.CompraFacturaId,
+        var results = await _context.PurchaseOrderBills
+            .Where(v => v.TenantId == tenantId && v.PurchaseOrderId == ordenId)
+            .Join(_context.PurchBills,
+                  v => v.PurchBillId,
                   f => f.Id,
-                  (v, f) => new { v.CompraFacturaId, f.NumeroFactura, v.FechaVinculacion })
+                  (v, f) => new { v.PurchBillId, f.InvoiceNumber, v.LinkedAt })
             .ToListAsync(ct);
 
         return results
-            .Select(x => (x.CompraFacturaId, x.NumeroFactura, x.FechaVinculacion))
+            .Select(x => (x.PurchBillId, x.InvoiceNumber, x.LinkedAt))
             .ToList();
     }
 
-    public Task AddOrdenCompraFacturaAsync(OrdenCompraFactura vinculo, CancellationToken ct = default)
-        => _context.OrdenesCompraFacturas.AddAsync(vinculo, ct).AsTask();
+    public Task AddOrderBillLinkAsync(PurchaseOrderBill vinculo, CancellationToken ct = default)
+        => _context.PurchaseOrderBills.AddAsync(vinculo, ct).AsTask();
 
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);

@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Domain.Subscriptions.Interfaces;
@@ -171,7 +171,7 @@ public sealed class SubscriptionService : ISubscriptionService
             "SALES" => "ventas",
             "CUSTOMERS" => "ventas",
             "INVENTORY" => "inventario",
-            "BODEGAS" => "inventario",
+            "WarehouseS" => "inventario",
             "ACCOUNTING" => "accounting",
             "COMPRAS" => "compras",
             "PURCHASES" => "compras",

@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using ERP.API.Tests.Support;
 using ERP.Domain.Modules.Sales.Entities;
 
@@ -15,11 +15,11 @@ public sealed class VentasNotaTotalsTests
         var productId = Guid.NewGuid();
         var clave     = ClaveAcceso49TestFactory.FromPrefix48(new string('7', 48));
 
-        var nota = VentasNotaCreditoDebito.Create(
+        var nota = SalesNote.Create(
             tenantId,
             facturaId,
             "CREDITO",
-            "Devolución",
+            "DevoluciÃ³n",
             "04",
             "001",
             "001",
@@ -28,22 +28,24 @@ public sealed class VentasNotaTotalsTests
             DateTime.UtcNow,
             userId);
 
-        var d1 = VentasNotaDetalle.Create(tenantId, productId, 2m, 10m, 1.20m, "Línea A", userId);
-        var d2 = VentasNotaDetalle.Create(tenantId, productId, 1m, 5m, 0m, "Línea B", userId);
-        d1.AsignarNotaId(nota.Id);
-        d2.AsignarNotaId(nota.Id);
-        nota.AgregarDetalle(d1);
-        nota.AgregarDetalle(d2);
+        var d1 = SalesNoteLine.Create(tenantId, productId, 2m, 10m, 1.20m, "LÃ­nea A", userId);
+        var d2 = SalesNoteLine.Create(tenantId, productId, 1m, 5m, 0m, "LÃ­nea B", userId);
+        d1.AssignNoteId(nota.Id);
+        d2.AssignNoteId(nota.Id);
+        nota.AddLine(d1);
+        nota.AddLine(d2);
 
-        var sumSub = nota.Detalles.Sum(d => d.Subtotal);
-        var sumIva = nota.Detalles.Sum(d => d.Impuesto);
-        var sumTot = nota.Detalles.Sum(d => d.Total);
+        var sumSub = nota.Lines.Sum(d => d.Subtotal);
+        var sumIva = nota.Lines.Sum(d => d.VatTotal);
+        var sumTot = nota.Lines.Sum(d => d.Total);
 
         nota.Subtotal.Should().Be(sumSub);
-        nota.Impuesto.Should().Be(sumIva);
+        nota.VatTotal.Should().Be(sumIva);
         nota.Total.Should().Be(sumTot);
         nota.Subtotal.Should().Be(25m);
-        nota.Impuesto.Should().Be(1.20m);
+        nota.VatTotal.Should().Be(1.20m);
         nota.Total.Should().Be(26.20m);
     }
 }
+
+

@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
@@ -15,7 +15,7 @@ using ERP.Infrastructure.Persistence;
 namespace ERP.API.Tests.Integration;
 
 /// <summary>
-/// Pruebas de integración del flujo completo de Órdenes de Compra (OC).
+/// Pruebas de integraciÃ³n del flujo completo de Ã“rdenes de Compra (OC).
 /// Usan EF InMemory; no persisten entre tests.
 /// </summary>
 public sealed class OrdenesCompraEndToEndTests
@@ -32,16 +32,16 @@ public sealed class OrdenesCompraEndToEndTests
 
         var result = await mediator.Send(new CrearOrdenCompraCommand(
             proveedorId,
-            FechaRequerida: DateTime.UtcNow.AddDays(30),
-            BodegaDestinoId: null,
-            DireccionEntrega: null,
-            Observaciones: "Pedido prueba",
+            RequiredDate: DateTime.UtcNow.AddDays(30),
+            TargetWarehouseId: null,
+            DeliveryAddress: null,
+            Notes: "Pedido prueba",
             Items: [new ItemOrdenCompraRequest(productoId, 10m, 15m, 15m)]),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.NumeroOrden.Should().Be("OC-0001");
-        result.Value.Estado.Should().Be("Borrador");
+        result.Value.Status.Should().Be("Borrador");
         result.Value.Total.Should().BeGreaterThan(0);
     }
 
@@ -65,12 +65,12 @@ public sealed class OrdenesCompraEndToEndTests
         var enviar = await mediator.Send(
             new EnviarOrdenCompraCommand(crear.Value!.Id), CancellationToken.None);
         enviar.IsSuccess.Should().BeTrue(enviar.Error);
-        enviar.Value!.Estado.Should().Be("Enviada");
+        enviar.Value!.Status.Should().Be("Enviada");
 
         var aprobar = await mediator.Send(
             new AprobarOrdenCompraCommand(crear.Value.Id), CancellationToken.None);
         aprobar.IsSuccess.Should().BeTrue(aprobar.Error);
-        aprobar.Value!.Estado.Should().Be("Aprobada");
+        aprobar.Value!.Status.Should().Be("Aprobada");
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public sealed class OrdenesCompraEndToEndTests
             new CancelarOrdenCompraCommand(crear.Value!.Id), CancellationToken.None);
 
         cancelar.IsSuccess.Should().BeTrue(cancelar.Error);
-        cancelar.Value!.Estado.Should().Be("Cancelada");
+        cancelar.Value!.Status.Should().Be("Cancelada");
     }
 
     [Fact]
@@ -115,14 +115,14 @@ public sealed class OrdenesCompraEndToEndTests
         await mediator.Send(new AprobarOrdenCompraCommand(crear.Value!.Id), CancellationToken.None);
 
         // Crear factura de compra Aprobada con 5 unidades del mismo producto
-        var factura = BuildFacturaAprobada(tenantId, proveedorId, productoId, cantidad: 5m, userId, db);
+        var factura = BuildFacturaAprobada(tenantId, proveedorId, productoId, quantity: 5m, userId, db);
 
         var vincular = await mediator.Send(
             new VincularFacturaAOrdenCompraCommand(crear.Value.Id, factura.Id),
             CancellationToken.None);
 
         vincular.IsSuccess.Should().BeTrue(vincular.Error);
-        vincular.Value!.Estado.Should().Be("Cerrada");
+        vincular.Value!.Status.Should().Be("Cerrada");
     }
 
     [Fact]
@@ -145,17 +145,17 @@ public sealed class OrdenesCompraEndToEndTests
         await mediator.Send(new AprobarOrdenCompraCommand(crear.Value!.Id), CancellationToken.None);
 
         // Factura solo trae 4 unidades
-        var factura = BuildFacturaAprobada(tenantId, proveedorId, productoId, cantidad: 4m, userId, db);
+        var factura = BuildFacturaAprobada(tenantId, proveedorId, productoId, quantity: 4m, userId, db);
 
         var vincular = await mediator.Send(
             new VincularFacturaAOrdenCompraCommand(crear.Value.Id, factura.Id),
             CancellationToken.None);
 
         vincular.IsSuccess.Should().BeTrue(vincular.Error);
-        vincular.Value!.Estado.Should().Be("RecibidaParcial");
+        vincular.Value!.Status.Should().Be("RecibidaParcial");
     }
 
-    // ── Seed ──────────────────────────────────────────────────────────────
+    // â”€â”€ Seed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static async Task<(Guid ProveedorId, Guid ProductoId)> SeedAsync(
         ErpDbContext db, IntegrationTestWebAppFactory factory)
@@ -163,37 +163,46 @@ public sealed class OrdenesCompraEndToEndTests
         var seed = await IntegrationSeedData.SeedAsync(
             db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
 
-        var proveedor = Proveedor.Create(
-            seed.TenantId, "Juridica", "Proveedor Test S.A.",
-            seed.ProveedorRuc, correo: null, telefono: null, direccion: null,
+        var proveedor = Supplier.Create(
+            seed.TenantId, "Juridica", "Supplier Test S.A.",
+            seed.ProveedorRuc, email: null, phone: null, address: null,
             "30 dias", seed.UserId);
-        db.Proveedores.Add(proveedor);
+        db.Suppliers.Add(proveedor);
         await db.SaveChangesAsync(CancellationToken.None);
 
         return (proveedor.Id, seed.ProductId);
     }
 
-    private static CompraFactura BuildFacturaAprobada(
-        Guid tenantId, Guid proveedorId, Guid productoId, decimal cantidad,
+    private static PurchBill BuildFacturaAprobada(
+        Guid tenantId, Guid proveedorId, Guid productoId, decimal quantity,
         Guid userId, ErpDbContext db)
     {
         var numero = $"001-001-{Guid.NewGuid().ToString()[..8]}";
-        var f = CompraFactura.Create(
+        var f = PurchBill.Create(
             tenantId, proveedorId, numero,
-            claveAcceso: null, xmlPath: null,
-            DateTime.UtcNow, fechaVencimiento: null,
-            "30 dias", observaciones: null, userId);
+            accessKey: null, xmlPath: null,
+            DateTime.UtcNow, dueDate: null,
+            "30 dias", notes: null, userId);
 
-        f.AgregarDetalle(
-            "Producto Test E2E", codigoPrincipalProveedor: null, productoId,
-            cantidad, precioUnitario: 10m,
-            descuentoPorcentaje: 0m, ivaPorcentaje: 15m, userId);
+        f.AddLine(
+            "Producto Test E2E", supplierProductCode: null, productoId,
+            quantity, unitPrice: 10m,
+            discountPct: 0m, vatPct: 15m, userId);
 
-        f.Validar(userId);
-        f.Aprobar(userId, asientoContableId: null, Array.Empty<CompraAprobadaStockLine>());
+        f.Validate(userId);
+        f.Approve(userId, journalEntryId: null, Array.Empty<PurchBillApprovedStockLine>());
 
-        db.CompraFacturas.Add(f);
+        db.PurchBills.Add(f);
         db.SaveChanges();
         return f;
     }
 }
+
+
+
+
+
+
+
+
+

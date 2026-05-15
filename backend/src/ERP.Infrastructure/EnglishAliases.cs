@@ -1,11 +1,4 @@
-global using Invoice = ERP.Domain.Modules.Sales.Entities.VentasFactura;
-global using SalesInvoiceDetail = ERP.Domain.Modules.Sales.Entities.VentasDetalle;
-global using StockTransfer = ERP.Domain.Modules.Inventory.Entities.Transferencia;
-global using StockTransferLine = ERP.Domain.Modules.Inventory.Entities.TransferenciaDetalle;
-global using StockAdjustment = ERP.Domain.Modules.Inventory.Entities.AjusteInventario;
-global using PurchaseOrder = ERP.Domain.Modules.Purchasing.Entities.OrdenCompra;
-global using PurchaseOrderLine = ERP.Domain.Modules.Purchasing.Entities.OrdenCompraDetalle;
-global using Expense = ERP.Domain.Modules.Expenses.Entities.GastoFactura;
-global using Supplier = ERP.Domain.Modules.Purchasing.Entities.Proveedor;
-global using Warehouse = ERP.Domain.Modules.Inventory.Entities.Bodega;
-global using BankAccount = ERP.Domain.Modules.Cash.Entities.CuentaBancaria;
+// Backward-compat aliases for Infrastructure layer
+global using Invoice = ERP.Domain.Modules.Sales.Entities.SalesBill;
+global using SalesInvoiceDetail = ERP.Domain.Modules.Sales.Entities.SalesBillLine;
+global using Expense = ERP.Domain.Modules.Expenses.Entities.ExpenseInvoice;

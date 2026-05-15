@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using FluentAssertions;
 using MediatR;
@@ -26,12 +26,12 @@ using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;
 
-/// <summary>§6.1 escenarios NC/ND, retención emitida (compras) y retención recibida (ventas).</summary>
+/// <summary>Â§6.1 escenarios NC/ND, retenciÃ³n emitida (compras) y retenciÃ³n recibida (ventas).</summary>
 public sealed class NotasYRetencionesEndToEndTests
 {
     private static CrearVentaCommand BuildCrearVenta(
-        Guid clienteId, Guid bodegaId, Guid sucursalId, Guid productoId, decimal cantidad)
-        => new(clienteId, bodegaId, sucursalId, new List<ItemVentaDto> { new(productoId, cantidad, 25.00m) });
+        Guid clienteId, Guid bodegaId, Guid sucursalId, Guid productoId, decimal quantity)
+        => new(clienteId, bodegaId, sucursalId, new List<ItemVentaDto> { new(productoId, quantity, 25.00m) });
 
     private static string BuildRetencionRecibidaXml(string clave49, decimal valorRetenido)
     {
@@ -42,7 +42,7 @@ public sealed class NotasYRetencionesEndToEndTests
               <infoTributaria><claveAcceso>{clave49}</claveAcceso></infoTributaria>
               <infoCompRetencion><fechaEmision>10/05/2026</fechaEmision></infoCompRetencion>
               <impuestos>
-                <impuesto><valorRetenido>{v}</valorRetenido></impuesto>
+                <vatTotal><valorRetenido>{v}</valorRetenido></vatTotal>
               </impuestos>
             </comprobanteRetencion>
             """;
@@ -53,17 +53,17 @@ public sealed class NotasYRetencionesEndToEndTests
         string clave49,
         string rucProveedor,
         string secuencial,
-        decimal cantidad,
-        decimal precioUnitario,
+        decimal quantity,
+        decimal unitPrice,
         decimal subtotal,
-        decimal impuesto,
+        decimal vatTotal,
         string codigoPrincipal = "P-INT",
         string motivo = "Ajuste proveedor")
     {
         var tipo = tipoNota.Trim().ToUpperInvariant();
         var root = tipo == "DEBITO" ? "notaDebito" : "notaCredito";
         var info = tipo == "DEBITO" ? "infoNotaDebito" : "infoNotaCredito";
-        var total = subtotal + impuesto;
+        var total = subtotal + vatTotal;
 
         return $"""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -82,7 +82,7 @@ public sealed class NotasYRetencionesEndToEndTests
                 <totalSinImpuestos>{subtotal.ToString(CultureInfo.InvariantCulture)}</totalSinImpuestos>
                 <totalConImpuestos>
                   <totalImpuesto>
-                    <valor>{impuesto.ToString(CultureInfo.InvariantCulture)}</valor>
+                    <valor>{vatTotal.ToString(CultureInfo.InvariantCulture)}</valor>
                   </totalImpuesto>
                 </totalConImpuestos>
                 <importeTotal>{total.ToString(CultureInfo.InvariantCulture)}</importeTotal>
@@ -91,15 +91,15 @@ public sealed class NotasYRetencionesEndToEndTests
               <detalles>
                 <detalle>
                   <codigoPrincipal>{codigoPrincipal}</codigoPrincipal>
-                  <descripcion>Item integración</descripcion>
-                  <cantidad>{cantidad.ToString(CultureInfo.InvariantCulture)}</cantidad>
-                  <precioUnitario>{precioUnitario.ToString(CultureInfo.InvariantCulture)}</precioUnitario>
+                  <descripcion>Item integraciÃ³n</descripcion>
+                  <cantidad>{quantity.ToString(CultureInfo.InvariantCulture)}</cantidad>
+                  <precioUnitario>{unitPrice.ToString(CultureInfo.InvariantCulture)}</precioUnitario>
                   <descuento>0</descuento>
                   <precioTotalSinImpuesto>{subtotal.ToString(CultureInfo.InvariantCulture)}</precioTotalSinImpuesto>
                   <impuestos>
-                    <impuesto>
-                      <valor>{impuesto.ToString(CultureInfo.InvariantCulture)}</valor>
-                    </impuesto>
+                    <vatTotal>
+                      <valor>{vatTotal.ToString(CultureInfo.InvariantCulture)}</valor>
+                    </vatTotal>
                   </impuestos>
                 </detalle>
               </detalles>
@@ -122,22 +122,22 @@ public sealed class NotasYRetencionesEndToEndTests
         var sucursalId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
 
         var venta = await mediator.Send(
-            BuildCrearVenta(clienteId, seed.BodegaId, sucursalId, seed.ProductId, 2m),
+            BuildCrearVenta(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 2m),
             CancellationToken.None);
         venta.IsSuccess.Should().BeTrue(venta.Error);
         await mediator.Send(new ValidarVentaCommand(venta.Value), CancellationToken.None);
         var emitir = await mediator.Send(new EmitirFacturaElectronicaCommand(venta.Value), CancellationToken.None);
         emitir.IsSuccess.Should().BeTrue(emitir.Error);
 
-        db.StockActual.First(s =>
-                s.TenantId == seed.TenantId && s.ProductoId == seed.ProductId && s.BodegaId == seed.BodegaId)
-            .Cantidad.Should().Be(8m);
+        db.CurrentStocks.First(s =>
+                s.TenantId == seed.TenantId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
+            .Quantity.Should().Be(8m);
 
         var crearNota = await mediator.Send(
-            new CrearVentasNotaCreditoDebitoCommand(
+            new CrearSalesNoteCommand(
                 venta.Value,
                 "CREDITO",
-                "Devolución parcial",
+                "DevoluciÃ³n parcial",
                 new[] { new CrearVentasNotaItemDto(seed.ProductId, 1m, 25m) }),
             CancellationToken.None);
         crearNota.IsSuccess.Should().BeTrue(crearNota.Error);
@@ -145,19 +145,19 @@ public sealed class NotasYRetencionesEndToEndTests
         var enviar = await mediator.Send(new EnviarVentasNotaSriCommand(crearNota.Value), CancellationToken.None);
         enviar.IsSuccess.Should().BeTrue(enviar.Error);
 
-        var nota = await db.VentasNotasCreditoDebito.FindAsync(new object[] { crearNota.Value }, CancellationToken.None);
+        var nota = await db.SalesNotes.FindAsync(new object[] { crearNota.Value }, CancellationToken.None);
         nota.Should().NotBeNull();
-        nota!.Estado.Should().Be("Autorizado");
-        nota.XmlGeneradoPath.Should().NotBeNullOrEmpty();
+        nota!.Status.Should().Be("Autorizado");
+        nota.XmlSignedPath.Should().NotBeNullOrEmpty();
 
-        db.StockActual.First(s =>
-                s.TenantId == seed.TenantId && s.ProductoId == seed.ProductId && s.BodegaId == seed.BodegaId)
-            .Cantidad.Should().Be(9m);
+        db.CurrentStocks.First(s =>
+                s.TenantId == seed.TenantId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
+            .Quantity.Should().Be(9m);
 
-        db.InventarioMovimientos.Count(m =>
+        db.StockMovements.Count(m =>
                 m.TenantId == seed.TenantId
-                && m.TipoMovimiento == TipoMovimientoInventario.DevolucionVenta
-                && m.DocumentoOrigenId == nota.Id)
+                && m.MovementType == StockMovementType.SaleReturn
+                && m.SourceDocId == nota.Id)
             .Should().Be(1);
     }
 
@@ -177,14 +177,14 @@ public sealed class NotasYRetencionesEndToEndTests
         var cuentaVentas = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "4.1.99");
 
         var venta = await mediator.Send(
-            BuildCrearVenta(clienteId, seed.BodegaId, sucursalId, seed.ProductId, 1m),
+            BuildCrearVenta(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 1m),
             CancellationToken.None);
         venta.IsSuccess.Should().BeTrue(venta.Error);
         await mediator.Send(new ValidarVentaCommand(venta.Value), CancellationToken.None);
         await mediator.Send(new EmitirFacturaElectronicaCommand(venta.Value), CancellationToken.None);
 
         var crearNd = await mediator.Send(
-            new CrearVentasNotaCreditoDebitoCommand(
+            new CrearSalesNoteCommand(
                 venta.Value,
                 "DEBITO",
                 "Ajuste",
@@ -195,10 +195,10 @@ public sealed class NotasYRetencionesEndToEndTests
         var enviar = await mediator.Send(new EnviarVentasNotaSriCommand(crearNd.Value), CancellationToken.None);
         enviar.IsSuccess.Should().BeTrue(enviar.Error);
 
-        var nota = await db.VentasNotasCreditoDebito.FindAsync(new object[] { crearNd.Value }, CancellationToken.None);
-        nota!.AsientoContableId.Should().NotBeNull();
+        var nota = await db.SalesNotes.FindAsync(new object[] { crearNd.Value }, CancellationToken.None);
+        nota!.JournalEntryId.Should().NotBeNull();
 
-        var lineas = db.JournalEntryLines.Where(l => l.JournalEntryId == nota.AsientoContableId).ToList();
+        var lineas = db.JournalEntryLines.Where(l => l.JournalEntryId == nota.JournalEntryId).ToList();
         lineas.Should().NotBeEmpty();
         lineas.Should().Contain(l =>
             l.AccountId == cuentaVentas.Id
@@ -223,21 +223,21 @@ public sealed class NotasYRetencionesEndToEndTests
                 ModoCreacionCompra.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xmlCompra),
                 XmlNombreArchivo: "factura.xml",
-                ProveedorId: null,
-                NumeroFactura: null,
-                FechaFactura: null,
-                FechaVencimiento: null,
-                CondicionPago: null,
-                Observaciones: null,
-                Detalles: null,
-                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.BodegaId, 2m, seed.ProductId) }),
+                SupplierId: null,
+                InvoiceNumber: null,
+                InvoiceDate: null,
+                DueDate: null,
+                PaymentTerms: null,
+                Notes: null,
+                Lines: null,
+                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.WarehouseId, 2m, seed.ProductId) }),
             CancellationToken.None);
         compraRes.IsSuccess.Should().BeTrue(compraRes.Error);
         await mediator.Send(new ValidarCompraCommand(compraRes.Value!.Id), CancellationToken.None);
         await mediator.Send(new AprobarCompraCommand(compraRes.Value.Id), CancellationToken.None);
 
-        var compra = db.CompraFacturas.First(c => c.Id == compraRes.Value.Id);
-        var lineasCompra = db.JournalEntryLines.Where(l => l.JournalEntryId == compra.AsientoContableId).ToList();
+        var compra = db.PurchBills.First(c => c.Id == compraRes.Value.Id);
+        var lineasCompra = db.JournalEntryLines.Where(l => l.JournalEntryId == compra.JournalEntryId).ToList();
         lineasCompra.Should().Contain(l => l.AccountId == cuentaPasivo.Id && l.Credit.Amount == compra.Total);
 
         var claveNota = ClaveAcceso49TestFactory.FromPrefix48(new string('1', 48));
@@ -246,17 +246,17 @@ public sealed class NotasYRetencionesEndToEndTests
             claveNota,
             seed.ProveedorRuc,
             secuencial: "000000101",
-            cantidad: 1m,
-            precioUnitario: 25m,
+            quantity: 1m,
+            unitPrice: 25m,
             subtotal: 25m,
-            impuesto: 3m);
+            vatTotal: 3m);
 
         var importar = await mediator.Send(
             new ImportarCompraNotaProveedorCommand(
                 Encoding.UTF8.GetBytes(xmlNota),
                 "nota-credito-proveedor.xml",
                 compraRes.Value.Id,
-                GastoFacturaId: null),
+                ExpenseInvoiceId: null),
             CancellationToken.None);
         importar.IsSuccess.Should().BeTrue(importar.Error);
 
@@ -265,21 +265,21 @@ public sealed class NotasYRetencionesEndToEndTests
             CancellationToken.None);
         aprobar.IsSuccess.Should().BeTrue(aprobar.Error);
 
-        var nota = db.CompraNotasProveedor.First(n => n.Id == importar.Value.Id);
-        nota.Estado.Should().Be("Aprobado");
-        nota.AsientoContableId.Should().NotBeNull();
+        var nota = db.PurchNotes.First(n => n.Id == importar.Value.Id);
+        nota.Status.Should().Be("Aprobado");
+        nota.JournalEntryId.Should().NotBeNull();
 
-        db.StockActual.First(s =>
-                s.TenantId == seed.TenantId && s.ProductoId == seed.ProductId && s.BodegaId == seed.BodegaId)
-            .Cantidad.Should().Be(3m);
+        db.CurrentStocks.First(s =>
+                s.TenantId == seed.TenantId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
+            .Quantity.Should().Be(3m);
 
-        db.InventarioMovimientos.Count(m =>
+        db.StockMovements.Count(m =>
                 m.TenantId == seed.TenantId
-                && m.TipoMovimiento == TipoMovimientoInventario.NotaCreditoProveedor
-                && m.DocumentoOrigenId == nota.Id)
+                && m.MovementType == StockMovementType.SupplierCreditNote
+                && m.SourceDocId == nota.Id)
             .Should().Be(1);
 
-        var lineasNota = db.JournalEntryLines.Where(l => l.JournalEntryId == nota.AsientoContableId).ToList();
+        var lineasNota = db.JournalEntryLines.Where(l => l.JournalEntryId == nota.JournalEntryId).ToList();
         lineasNota.Should().Contain(l => l.AccountId == cuentaPasivo.Id && l.Debit.Amount == nota.Total && l.Credit.Amount == 0m);
     }
 
@@ -300,14 +300,14 @@ public sealed class NotasYRetencionesEndToEndTests
                 ModoCreacionCompra.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xmlCompra),
                 XmlNombreArchivo: "factura.xml",
-                ProveedorId: null,
-                NumeroFactura: null,
-                FechaFactura: null,
-                FechaVencimiento: null,
-                CondicionPago: null,
-                Observaciones: null,
-                Detalles: null,
-                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.BodegaId, 2m, seed.ProductId) }),
+                SupplierId: null,
+                InvoiceNumber: null,
+                InvoiceDate: null,
+                DueDate: null,
+                PaymentTerms: null,
+                Notes: null,
+                Lines: null,
+                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.WarehouseId, 2m, seed.ProductId) }),
             CancellationToken.None);
         compraRes.IsSuccess.Should().BeTrue(compraRes.Error);
         await mediator.Send(new ValidarCompraCommand(compraRes.Value!.Id), CancellationToken.None);
@@ -319,17 +319,17 @@ public sealed class NotasYRetencionesEndToEndTests
             claveNota,
             seed.ProveedorRuc,
             secuencial: "000000102",
-            cantidad: 1m,
-            precioUnitario: 25m,
+            quantity: 1m,
+            unitPrice: 25m,
             subtotal: 25m,
-            impuesto: 3m);
+            vatTotal: 3m);
 
         var importar = await mediator.Send(
             new ImportarCompraNotaProveedorCommand(
                 Encoding.UTF8.GetBytes(xmlNota),
                 "nota-debito-proveedor.xml",
                 compraRes.Value.Id,
-                GastoFacturaId: null),
+                ExpenseInvoiceId: null),
             CancellationToken.None);
         importar.IsSuccess.Should().BeTrue(importar.Error);
 
@@ -338,24 +338,24 @@ public sealed class NotasYRetencionesEndToEndTests
             CancellationToken.None);
         aprobar.IsSuccess.Should().BeTrue(aprobar.Error);
 
-        var nota = db.CompraNotasProveedor.First(n => n.Id == importar.Value.Id);
-        nota.Estado.Should().Be("Aprobado");
-        nota.AsientoContableId.Should().NotBeNull();
+        var nota = db.PurchNotes.First(n => n.Id == importar.Value.Id);
+        nota.Status.Should().Be("Aprobado");
+        nota.JournalEntryId.Should().NotBeNull();
 
-        db.StockActual.First(s =>
-                s.TenantId == seed.TenantId && s.ProductoId == seed.ProductId && s.BodegaId == seed.BodegaId)
-            .Cantidad.Should().Be(1m);
+        db.CurrentStocks.First(s =>
+                s.TenantId == seed.TenantId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
+            .Quantity.Should().Be(1m);
 
-        db.InventarioMovimientos.Count(m =>
+        db.StockMovements.Count(m =>
                 m.TenantId == seed.TenantId
-                && m.TipoMovimiento == TipoMovimientoInventario.NotaDebitoProveedor
-                && m.DocumentoOrigenId == nota.Id)
+                && m.MovementType == StockMovementType.SupplierDebitNote
+                && m.SourceDocId == nota.Id)
             .Should().Be(1);
 
-        var compraActualizada = db.CompraFacturas.First(c => c.Id == compraRes.Value.Id);
-        compraActualizada.TotalNotasProveedorAplicado.Should().Be(0m);
+        var compraActualizada = db.PurchBills.First(c => c.Id == compraRes.Value.Id);
+        compraActualizada.TotalNotesApplied.Should().Be(0m);
 
-        var lineasNota = db.JournalEntryLines.Where(l => l.JournalEntryId == nota.AsientoContableId).ToList();
+        var lineasNota = db.JournalEntryLines.Where(l => l.JournalEntryId == nota.JournalEntryId).ToList();
         lineasNota.Should().Contain(l => l.AccountId == cuentaPasivo.Id && l.Credit.Amount == nota.Total && l.Debit.Amount == 0m);
     }
 
@@ -375,20 +375,20 @@ public sealed class NotasYRetencionesEndToEndTests
                 ModoCreacionCompra.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xmlCompra),
                 XmlNombreArchivo: "factura.xml",
-                ProveedorId: null,
-                NumeroFactura: null,
-                FechaFactura: null,
-                FechaVencimiento: null,
-                CondicionPago: null,
-                Observaciones: null,
-                Detalles: null,
-                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.BodegaId, 2m, seed.ProductId) }),
+                SupplierId: null,
+                InvoiceNumber: null,
+                InvoiceDate: null,
+                DueDate: null,
+                PaymentTerms: null,
+                Notes: null,
+                Lines: null,
+                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.WarehouseId, 2m, seed.ProductId) }),
             CancellationToken.None);
         compraRes.IsSuccess.Should().BeTrue(compraRes.Error);
         await mediator.Send(new ValidarCompraCommand(compraRes.Value!.Id), CancellationToken.None);
         await mediator.Send(new AprobarCompraCommand(compraRes.Value.Id), CancellationToken.None);
 
-        var proveedorId = db.CompraFacturas.First(c => c.Id == compraRes.Value.Id).ProveedorId;
+        var proveedorId = db.PurchBills.First(c => c.Id == compraRes.Value.Id).SupplierId;
         var cuentaPasivo = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "2.1.99");
 
         var gastoRes = await mediator.Send(
@@ -396,21 +396,21 @@ public sealed class NotasYRetencionesEndToEndTests
                 ModoCreacionGasto.Manual,
                 XmlContent: null,
                 XmlNombreArchivo: null,
-                ProveedorId: proveedorId,
-                FechaEmision: DateTime.UtcNow.Date,
-                Concepto: "Servicio de soporte",
-                CategoriaGasto: "Viajes",
+                SupplierId: proveedorId,
+                IssueDate: DateTime.UtcNow.Date,
+                Concept: "Servicio de soporte",
+                Category: "Viajes",
                 Subtotal: 20m,
-                Impuesto: 2m,
+                VatTotal: 2m,
                 Total: 22m,
-                Observaciones: null),
+                Notes: null),
             CancellationToken.None);
         gastoRes.IsSuccess.Should().BeTrue(gastoRes.Error);
         await mediator.Send(new ValidarGastoCommand(gastoRes.Value!.Id), CancellationToken.None);
         await mediator.Send(new AprobarGastoCommand(gastoRes.Value.Id), CancellationToken.None);
 
-        var stockAntes = db.StockActual.First(s =>
-            s.TenantId == seed.TenantId && s.ProductoId == seed.ProductId && s.BodegaId == seed.BodegaId).Cantidad;
+        var stockAntes = db.CurrentStocks.First(s =>
+            s.TenantId == seed.TenantId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId).Quantity;
 
         var claveNota = ClaveAcceso49TestFactory.FromPrefix48(new string('3', 48));
         var xmlNota = BuildNotaProveedorXml(
@@ -418,16 +418,16 @@ public sealed class NotasYRetencionesEndToEndTests
             claveNota,
             seed.ProveedorRuc,
             secuencial: "000000103",
-            cantidad: 1m,
-            precioUnitario: 10m,
+            quantity: 1m,
+            unitPrice: 10m,
             subtotal: 10m,
-            impuesto: 1m);
+            vatTotal: 1m);
 
         var importar = await mediator.Send(
             new ImportarCompraNotaProveedorCommand(
                 Encoding.UTF8.GetBytes(xmlNota),
                 "nota-credito-gasto.xml",
-                CompraFacturaId: null,
+                PurchBillId: null,
                 gastoRes.Value.Id),
             CancellationToken.None);
         importar.IsSuccess.Should().BeTrue(importar.Error);
@@ -437,21 +437,21 @@ public sealed class NotasYRetencionesEndToEndTests
             CancellationToken.None);
         aprobar.IsSuccess.Should().BeTrue(aprobar.Error);
 
-        var nota = db.CompraNotasProveedor.First(n => n.Id == importar.Value.Id);
-        var gasto = db.GastoFacturas.First(g => g.Id == gastoRes.Value.Id);
+        var nota = db.PurchNotes.First(n => n.Id == importar.Value.Id);
+        var gasto = db.ExpenseInvoices.First(g => g.Id == gastoRes.Value.Id);
 
-        gasto.TotalNotasProveedorAplicado.Should().Be(nota.Total);
-        db.StockActual.First(s =>
-                s.TenantId == seed.TenantId && s.ProductoId == seed.ProductId && s.BodegaId == seed.BodegaId)
-            .Cantidad.Should().Be(stockAntes);
+        gasto.TotalNotesApplied.Should().Be(nota.Total);
+        db.CurrentStocks.First(s =>
+                s.TenantId == seed.TenantId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
+            .Quantity.Should().Be(stockAntes);
 
-        db.InventarioMovimientos.Count(m =>
+        db.StockMovements.Count(m =>
                 m.TenantId == seed.TenantId
-                && m.DocumentoOrigenTipo == "CompraNotaProveedor"
-                && m.DocumentoOrigenId == nota.Id)
+                && m.SourceDocType == "CompraNotaProveedor"
+                && m.SourceDocId == nota.Id)
             .Should().Be(0);
 
-        var lineasNota = db.JournalEntryLines.Where(l => l.JournalEntryId == nota.AsientoContableId).ToList();
+        var lineasNota = db.JournalEntryLines.Where(l => l.JournalEntryId == nota.JournalEntryId).ToList();
         lineasNota.Should().Contain(l => l.AccountId == cuentaPasivo.Id && l.Debit.Amount == nota.Total && l.Credit.Amount == 0m);
     }
 
@@ -472,7 +472,7 @@ public sealed class NotasYRetencionesEndToEndTests
             tid, "2.1.88", "PROVEEDORES cuenta CxP", AccountType.Liability, AccountNature.Credit, userId));
         db.Accounts.Add(Account.Create(
             tid, "2.2.77", "Pasivo RETENCIONES fuente", AccountType.Liability, AccountNature.Credit, userId));
-        db.ConfiguracionRetenciones.Add(ConfiguracionRetencion.Create(
+        db.RetentionSettings.Add(RetentionSettings.Create(
             tid, "RENTA", "PROVEEDOR", "303", 1.5m, userId));
         await db.SaveChangesAsync(CancellationToken.None);
 
@@ -482,39 +482,39 @@ public sealed class NotasYRetencionesEndToEndTests
                 ModoCreacionCompra.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xml),
                 XmlNombreArchivo: "factura.xml",
-                ProveedorId: null,
-                NumeroFactura: null,
-                FechaFactura: null,
-                FechaVencimiento: null,
-                CondicionPago: null,
-                Observaciones: null,
-                Detalles: null,
-                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.BodegaId, 2m, seed.ProductId) }),
+                SupplierId: null,
+                InvoiceNumber: null,
+                InvoiceDate: null,
+                DueDate: null,
+                PaymentTerms: null,
+                Notes: null,
+                Lines: null,
+                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.WarehouseId, 2m, seed.ProductId) }),
             CancellationToken.None);
         crear.IsSuccess.Should().BeTrue(crear.Error);
         await mediator.Send(new ValidarCompraCommand(crear.Value!.Id), CancellationToken.None);
         await mediator.Send(new AprobarCompraCommand(crear.Value.Id), CancellationToken.None);
 
-        var compra = db.CompraFacturas.First(c => c.Id == crear.Value.Id);
+        var compra = db.PurchBills.First(c => c.Id == crear.Value.Id);
         compra.Subtotal.Should().BeGreaterThan(0m);
 
-        var gen = await mediator.Send(new GenerarCompraRetencionEmitidaCommand(compra.Id), CancellationToken.None);
+        var gen = await mediator.Send(new GenerarIssuedRetentionCommand(compra.Id), CancellationToken.None);
         gen.IsSuccess.Should().BeTrue(gen.Error);
 
-        var env = await mediator.Send(new EnviarCompraRetencionEmitidaCommand(gen.Value), CancellationToken.None);
+        var env = await mediator.Send(new EnviarIssuedRetentionCommand(gen.Value), CancellationToken.None);
         env.IsSuccess.Should().BeTrue(env.Error);
 
-        var ret = await db.CompraRetencionesEmitidas.FindAsync(new object[] { gen.Value }, CancellationToken.None);
-        ret!.Estado.Should().Be("Autorizado");
-        ret.AsientoContableId.Should().NotBeNull();
-        ret.XmlGeneradoPath.Should().NotBeNullOrEmpty();
+        var ret = await db.IssuedRetentions.FindAsync(new object[] { gen.Value }, CancellationToken.None);
+        ret!.Status.Should().Be("Autorizado");
+        ret.JournalEntryId.Should().NotBeNull();
+        ret.XmlSignedPath.Should().NotBeNullOrEmpty();
 
         var esperado = CompraRetencionCalculo.CalcularValorRetenido(compra.Subtotal, 1.5m);
-        ret.TotalRetenido.Should().Be(esperado);
+        ret.TotalRetained.Should().Be(esperado);
 
-        var lineas = db.JournalEntryLines.Where(l => l.JournalEntryId == ret.AsientoContableId).ToList();
-        lineas.Sum(l => l.Debit.Amount).Should().Be(ret.TotalRetenido);
-        lineas.Sum(l => l.Credit.Amount).Should().Be(ret.TotalRetenido);
+        var lineas = db.JournalEntryLines.Where(l => l.JournalEntryId == ret.JournalEntryId).ToList();
+        lineas.Sum(l => l.Debit.Amount).Should().Be(ret.TotalRetained);
+        lineas.Sum(l => l.Credit.Amount).Should().Be(ret.TotalRetained);
     }
 
     [Fact]
@@ -533,14 +533,14 @@ public sealed class NotasYRetencionesEndToEndTests
         db.Accounts.Add(Account.Create(
             tid, "2.3.01", "IVA por pagar pruebas", AccountType.Liability, AccountNature.Credit, userId));
         db.Accounts.Add(Account.Create(
-            tid, "1.2.01", "Clientes por COBRAR integración", AccountType.Asset, AccountNature.Debit, userId));
+            tid, "1.2.01", "Clientes por COBRAR integraciÃ³n", AccountType.Asset, AccountNature.Debit, userId));
         await db.SaveChangesAsync(CancellationToken.None);
 
         var clienteId  = db.Customers.First(c => c.TenantId == seed.TenantId).Id;
         var sucursalId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
 
         var venta = await mediator.Send(
-            BuildCrearVenta(clienteId, seed.BodegaId, sucursalId, seed.ProductId, 1m),
+            BuildCrearVenta(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 1m),
             CancellationToken.None);
         venta.IsSuccess.Should().BeTrue(venta.Error);
         await mediator.Send(new ValidarVentaCommand(venta.Value), CancellationToken.None);
@@ -550,16 +550,30 @@ public sealed class NotasYRetencionesEndToEndTests
         var xml      = BuildRetencionRecibidaXml(claveRet, 3.75m);
 
         var reg = await mediator.Send(
-            new RegistrarVentasRetencionRecibidaCommand(venta.Value, xml),
+            new RegistrarSalesRetentionCommand(venta.Value, xml),
             CancellationToken.None);
         reg.IsSuccess.Should().BeTrue(reg.Error);
 
-        var ret = db.VentasRetencionesRecibidas.First(r => r.Id == reg.Value);
-        ret.VentasFacturaId.Should().Be(venta.Value);
-        ret.AsientoContableId.Should().NotBeNull();
+        var ret = db.SalesRetentions.First(r => r.Id == reg.Value);
+        ret.SalesBillId.Should().Be(venta.Value);
+        ret.JournalEntryId.Should().NotBeNull();
 
-        var lineas = db.JournalEntryLines.Where(l => l.JournalEntryId == ret.AsientoContableId).ToList();
+        var lineas = db.JournalEntryLines.Where(l => l.JournalEntryId == ret.JournalEntryId).ToList();
         lineas.Sum(l => l.Debit.Amount).Should().Be(3.75m);
         lineas.Sum(l => l.Credit.Amount).Should().Be(3.75m);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Accounting.UseCases.CreateJournalEntry;
@@ -31,18 +31,18 @@ public sealed class AccountingService : IAccountingService
     }
 
     public async Task<Result<Guid>> CrearAsientoCompraAsync(
-        Guid     compraId,
-        string   referencia,
-        DateTime fecha,
+        Guid     purchBillId,
+        string   reference,
+        DateTime date,
         decimal  subtotal,
-        decimal  iva,
+        decimal  vatTotal,
         decimal  total,
-        string   descripcion,
+        string   description,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
 
-        var mapping = await _cuentaContable.ObtenerCuentasParaCompraAsync(tenantId, subtotal, iva, ct);
+        var mapping = await _cuentaContable.ObtenerCuentasParaCompraAsync(tenantId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas de compra.");
 
@@ -54,8 +54,8 @@ public sealed class AccountingService : IAccountingService
             {
                 new(m.CuentaDebitoPrincipal, subtotal, 0m, "USD"),
             };
-            if (iva > 0.01m && m.CuentaIvaDebito.HasValue)
-                list.Add(new JournalEntryLineCommand(m.CuentaIvaDebito.Value, iva, 0m, "USD"));
+            if (vatTotal > 0.01m && m.CuentaIvaDebito.HasValue)
+                list.Add(new JournalEntryLineCommand(m.CuentaIvaDebito.Value, vatTotal, 0m, "USD"));
             list.Add(new JournalEntryLineCommand(m.CuentaCreditoPrincipal, 0m, total, "USD"));
             lines = list.ToArray();
         }
@@ -81,9 +81,9 @@ public sealed class AccountingService : IAccountingService
         }
 
         var command = new CreateJournalEntryCommand(
-            Reference:   referencia,
-            Date:        fecha,
-            Description: descripcion,
+            Reference:   reference,
+            Date:        date,
+            Description: description,
             Lines:       lines);
 
         var result = await _mediator.Send(command, ct);
@@ -94,18 +94,18 @@ public sealed class AccountingService : IAccountingService
     }
 
     public async Task<Result<Guid>> CrearAsientoVentaAsync(
-        Guid     ventaId,
-        string   referencia,
-        DateTime fecha,
+        Guid     salesBillId,
+        string   reference,
+        DateTime date,
         decimal  subtotal,
-        decimal  iva,
+        decimal  vatTotal,
         decimal  total,
-        string   descripcion,
+        string   description,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
 
-        var mapping = await _cuentaContable.ObtenerCuentasParaVentaAsync(tenantId, subtotal, iva, ct);
+        var mapping = await _cuentaContable.ObtenerCuentasParaVentaAsync(tenantId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas de venta.");
 
@@ -118,8 +118,8 @@ public sealed class AccountingService : IAccountingService
                 new(m.CuentaDebitoPrincipal, total, 0m, "USD"),
                 new(m.CuentaCreditoPrincipal, 0m, subtotal, "USD"),
             };
-            if (iva > 0.01m && m.CuentaIvaCredito.HasValue)
-                list.Add(new JournalEntryLineCommand(m.CuentaIvaCredito.Value, 0m, iva, "USD"));
+            if (vatTotal > 0.01m && m.CuentaIvaCredito.HasValue)
+                list.Add(new JournalEntryLineCommand(m.CuentaIvaCredito.Value, 0m, vatTotal, "USD"));
             lines = list.ToArray();
         }
         else
@@ -144,9 +144,9 @@ public sealed class AccountingService : IAccountingService
         }
 
         var command = new CreateJournalEntryCommand(
-            Reference:   referencia,
-            Date:        fecha,
-            Description: descripcion,
+            Reference:   reference,
+            Date:        date,
+            Description: description,
             Lines:       lines);
 
         var result = await _mediator.Send(command, ct);
@@ -157,20 +157,20 @@ public sealed class AccountingService : IAccountingService
     }
 
     public async Task<Result<Guid>> CrearAsientoGastoAsync(
-        Guid     gastoId,
-        string   categoriaGasto,
-        string   referencia,
-        DateTime fecha,
+        Guid     expenseId,
+        string   category,
+        string   reference,
+        DateTime date,
         decimal  subtotal,
-        decimal  impuesto,
+        decimal  vatTotal,
         decimal  total,
-        string   descripcion,
+        string   description,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var cuentas  = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
 
-        var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(tenantId, categoriaGasto, ct);
+        var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(tenantId, category, ct);
         if (!debitoGasto.IsSuccess)
             return Result<Guid>.Failure(debitoGasto.Error ?? "Error al resolver cuenta de gasto.");
 
@@ -179,7 +179,7 @@ public sealed class AccountingService : IAccountingService
             cuentaGastoId = debitoGasto.Value.Value;
         else
         {
-            var cat = (categoriaGasto ?? string.Empty).Trim();
+            var cat = (category ?? string.Empty).Trim();
             var cuentaGasto = cuentas.FirstOrDefault(c =>
                 c.IsActive
                 && c.AllowsMovements
@@ -218,9 +218,9 @@ public sealed class AccountingService : IAccountingService
         }
 
         var command = new CreateJournalEntryCommand(
-            Reference:   referencia,
-            Date:        fecha,
-            Description: descripcion,
+            Reference:   reference,
+            Date:        date,
+            Description: description,
             Lines:
             [
                 new JournalEntryLineCommand(cuentaGastoId, total, 0m, "USD"),
@@ -235,17 +235,17 @@ public sealed class AccountingService : IAccountingService
     }
 
     public async Task<Result<Guid>> CrearAsientoNotaCreditoVentaAsync(
-        Guid     notaId,
-        string   referencia,
-        DateTime fecha,
+        Guid     noteId,
+        string   reference,
+        DateTime date,
         decimal  subtotal,
-        decimal  iva,
+        decimal  vatTotal,
         decimal  total,
-        string   descripcion,
+        string   description,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
-        var mapping    = await _cuentaContable.ObtenerCuentasParaVentaAsync(tenantId, subtotal, iva, ct);
+        var mapping    = await _cuentaContable.ObtenerCuentasParaVentaAsync(tenantId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas.");
 
@@ -258,8 +258,8 @@ public sealed class AccountingService : IAccountingService
                 new(m.CuentaCreditoPrincipal, subtotal, 0m, "USD"),
                 new(m.CuentaDebitoPrincipal, 0m, total, "USD"),
             };
-            if (iva > 0.01m && m.CuentaIvaCredito.HasValue)
-                list.Insert(1, new JournalEntryLineCommand(m.CuentaIvaCredito.Value, iva, 0m, "USD"));
+            if (vatTotal > 0.01m && m.CuentaIvaCredito.HasValue)
+                list.Insert(1, new JournalEntryLineCommand(m.CuentaIvaCredito.Value, vatTotal, 0m, "USD"));
             lines = list.ToArray();
         }
         else
@@ -280,24 +280,24 @@ public sealed class AccountingService : IAccountingService
         }
 
         var result = await _mediator.Send(
-            new CreateJournalEntryCommand(referencia, fecha, descripcion, lines), ct);
+            new CreateJournalEntryCommand(reference, date, description, lines), ct);
         return result.IsSuccess
             ? Result<Guid>.Success(result.Value!.Id)
             : Result<Guid>.Failure(result.Error ?? "Error al crear asiento de nota de crédito.");
     }
 
     public async Task<Result<Guid>> CrearAsientoNotaDebitoVentaAsync(
-        Guid     notaId,
-        string   referencia,
-        DateTime fecha,
+        Guid     noteId,
+        string   reference,
+        DateTime date,
         decimal  subtotal,
-        decimal  iva,
+        decimal  vatTotal,
         decimal  total,
-        string   descripcion,
+        string   description,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
-        var mapping    = await _cuentaContable.ObtenerCuentasParaVentaAsync(tenantId, subtotal, iva, ct);
+        var mapping    = await _cuentaContable.ObtenerCuentasParaVentaAsync(tenantId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas.");
 
@@ -310,8 +310,8 @@ public sealed class AccountingService : IAccountingService
                 new(m.CuentaDebitoPrincipal, total, 0m, "USD"),
                 new(m.CuentaCreditoPrincipal, 0m, subtotal, "USD"),
             };
-            if (iva > 0.01m && m.CuentaIvaCredito.HasValue)
-                list.Add(new JournalEntryLineCommand(m.CuentaIvaCredito.Value, 0m, iva, "USD"));
+            if (vatTotal > 0.01m && m.CuentaIvaCredito.HasValue)
+                list.Add(new JournalEntryLineCommand(m.CuentaIvaCredito.Value, 0m, vatTotal, "USD"));
             lines = list.ToArray();
         }
         else
@@ -332,18 +332,18 @@ public sealed class AccountingService : IAccountingService
         }
 
         var result = await _mediator.Send(
-            new CreateJournalEntryCommand(referencia, fecha, descripcion, lines), ct);
+            new CreateJournalEntryCommand(reference, date, description, lines), ct);
         return result.IsSuccess
             ? Result<Guid>.Success(result.Value!.Id)
             : Result<Guid>.Failure(result.Error ?? "Error al crear asiento de nota de débito.");
     }
 
     public async Task<Result<Guid>> CrearAsientoRetencionEmitidaAsync(
-        Guid     retencionId,
-        string   referencia,
-        DateTime fecha,
-        decimal  totalRetenido,
-        string   descripcion,
+        Guid     retentionId,
+        string   reference,
+        DateTime date,
+        decimal  totalRetained,
+        string   description,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
@@ -352,39 +352,39 @@ public sealed class AccountingService : IAccountingService
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit)
             .ToList();
 
-        var cuentaProveedor = pasivos.FirstOrDefault(c =>
+        var cuentaSupplier = pasivos.FirstOrDefault(c =>
             c.Name.Contains("PROVEED", StringComparison.OrdinalIgnoreCase))
             ?? pasivos.FirstOrDefault();
 
         var cuentaRetencion = pasivos.FirstOrDefault(c =>
-            c.Id != cuentaProveedor?.Id &&
+            c.Id != cuentaSupplier?.Id &&
             (c.Name.Contains("RETENC", StringComparison.OrdinalIgnoreCase)
              || c.Name.Contains("FUENTE", StringComparison.OrdinalIgnoreCase)))
-            ?? pasivos.FirstOrDefault(c => c.Id != cuentaProveedor?.Id);
+            ?? pasivos.FirstOrDefault(c => c.Id != cuentaSupplier?.Id);
 
-        if (cuentaProveedor is null || cuentaRetencion is null)
+        if (cuentaSupplier is null || cuentaRetencion is null)
             return Result<Guid>.Failure(
                 "Se requieren al menos dos cuentas de pasivo (proveedores y retenciones) para el asiento de retención emitida.");
 
         var lines = new[]
         {
-            new JournalEntryLineCommand(cuentaProveedor.Id, totalRetenido, 0m, "USD"),
-            new JournalEntryLineCommand(cuentaRetencion.Id, 0m, totalRetenido, "USD"),
+            new JournalEntryLineCommand(cuentaSupplier.Id, totalRetained, 0m, "USD"),
+            new JournalEntryLineCommand(cuentaRetencion.Id, 0m, totalRetained, "USD"),
         };
 
         var result = await _mediator.Send(
-            new CreateJournalEntryCommand(referencia, fecha, descripcion, lines), ct);
+            new CreateJournalEntryCommand(reference, date, description, lines), ct);
         return result.IsSuccess
             ? Result<Guid>.Success(result.Value!.Id)
             : Result<Guid>.Failure(result.Error ?? "Error al crear asiento de retención emitida.");
     }
 
     public async Task<Result<Guid>> CrearAsientoRetencionRecibidaAsync(
-        Guid     retencionId,
-        string   referencia,
-        DateTime fecha,
-        decimal  totalRetenido,
-        string   descripcion,
+        Guid     retentionId,
+        string   reference,
+        DateTime date,
+        decimal  totalRetained,
+        string   description,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
@@ -392,7 +392,7 @@ public sealed class AccountingService : IAccountingService
 
         var ivaPasivo = cuentas.FirstOrDefault(c =>
             c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit
-            && (c.Name.Contains("IVA", StringComparison.OrdinalIgnoreCase)
+            && (c.Name.Contains("vatTotal", StringComparison.OrdinalIgnoreCase)
                 || c.Name.Contains("IMPUEST", StringComparison.OrdinalIgnoreCase)));
 
         var clientes = cuentas.FirstOrDefault(c =>
@@ -405,33 +405,33 @@ public sealed class AccountingService : IAccountingService
 
         if (ivaPasivo is null || clientes is null)
             return Result<Guid>.Failure(
-                "Se requiere una cuenta de pasivo (IVA/impuestos) y una de activo (clientes) para la retención recibida.");
+                "Se requiere una cuenta de pasivo (vatTotal/impuestos) y una de activo (clientes) para la retención recibida.");
 
         var lines = new[]
         {
-            new JournalEntryLineCommand(ivaPasivo.Id, totalRetenido, 0m, "USD"),
-            new JournalEntryLineCommand(clientes.Id, 0m, totalRetenido, "USD"),
+            new JournalEntryLineCommand(ivaPasivo.Id, totalRetained, 0m, "USD"),
+            new JournalEntryLineCommand(clientes.Id, 0m, totalRetained, "USD"),
         };
 
         var result = await _mediator.Send(
-            new CreateJournalEntryCommand(referencia, fecha, descripcion, lines), ct);
+            new CreateJournalEntryCommand(reference, date, description, lines), ct);
         return result.IsSuccess
             ? Result<Guid>.Success(result.Value!.Id)
             : Result<Guid>.Failure(result.Error ?? "Error al crear asiento de retención recibida.");
     }
 
     public async Task<Result<Guid>> CrearAsientoNotaCreditoCompraProveedorAsync(
-        Guid     notaId,
-        string   referencia,
-        DateTime fecha,
+        Guid     noteId,
+        string   reference,
+        DateTime date,
         decimal  subtotal,
-        decimal  impuesto,
+        decimal  vatTotal,
         decimal  total,
-        string   descripcion,
+        string   description,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
-        var mapping  = await _cuentaContable.ObtenerCuentasParaCompraAsync(tenantId, subtotal, impuesto, ct);
+        var mapping  = await _cuentaContable.ObtenerCuentasParaCompraAsync(tenantId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas de compra.");
 
@@ -444,8 +444,8 @@ public sealed class AccountingService : IAccountingService
                 new(m.CuentaCreditoPrincipal, total, 0m, "USD"),
                 new(m.CuentaDebitoPrincipal, 0m, subtotal, "USD"),
             };
-            if (impuesto > 0.01m && m.CuentaIvaDebito.HasValue)
-                list.Add(new JournalEntryLineCommand(m.CuentaIvaDebito.Value, 0m, impuesto, "USD"));
+            if (vatTotal > 0.01m && m.CuentaIvaDebito.HasValue)
+                list.Add(new JournalEntryLineCommand(m.CuentaIvaDebito.Value, 0m, vatTotal, "USD"));
             lines = list.ToArray();
         }
         else
@@ -467,24 +467,24 @@ public sealed class AccountingService : IAccountingService
         }
 
         var result = await _mediator.Send(
-            new CreateJournalEntryCommand(referencia, fecha, descripcion, lines), ct);
+            new CreateJournalEntryCommand(reference, date, description, lines), ct);
         return result.IsSuccess
             ? Result<Guid>.Success(result.Value!.Id)
             : Result<Guid>.Failure(result.Error ?? "Error al crear asiento de nota de crédito de compra.");
     }
 
     public async Task<Result<Guid>> CrearAsientoNotaDebitoCompraProveedorAsync(
-        Guid     notaId,
-        string   referencia,
-        DateTime fecha,
+        Guid     noteId,
+        string   reference,
+        DateTime date,
         decimal  subtotal,
-        decimal  impuesto,
+        decimal  vatTotal,
         decimal  total,
-        string   descripcion,
+        string   description,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
-        var mapping  = await _cuentaContable.ObtenerCuentasParaCompraAsync(tenantId, subtotal, impuesto, ct);
+        var mapping  = await _cuentaContable.ObtenerCuentasParaCompraAsync(tenantId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas de compra.");
 
@@ -496,8 +496,8 @@ public sealed class AccountingService : IAccountingService
             {
                 new(m.CuentaDebitoPrincipal, subtotal, 0m, "USD"),
             };
-            if (impuesto > 0.01m && m.CuentaIvaDebito.HasValue)
-                list.Add(new JournalEntryLineCommand(m.CuentaIvaDebito.Value, impuesto, 0m, "USD"));
+            if (vatTotal > 0.01m && m.CuentaIvaDebito.HasValue)
+                list.Add(new JournalEntryLineCommand(m.CuentaIvaDebito.Value, vatTotal, 0m, "USD"));
             list.Add(new JournalEntryLineCommand(m.CuentaCreditoPrincipal, 0m, total, "USD"));
             lines = list.ToArray();
         }
@@ -520,19 +520,19 @@ public sealed class AccountingService : IAccountingService
         }
 
         var result = await _mediator.Send(
-            new CreateJournalEntryCommand(referencia, fecha, descripcion, lines), ct);
+            new CreateJournalEntryCommand(reference, date, description, lines), ct);
         return result.IsSuccess
             ? Result<Guid>.Success(result.Value!.Id)
             : Result<Guid>.Failure(result.Error ?? "Error al crear asiento de nota de débito de compra.");
     }
 
     public async Task<Result<Guid>> CrearAsientoNotaCreditoGastoProveedorAsync(
-        Guid     notaId,
-        string   referencia,
-        DateTime fecha,
+        Guid     noteId,
+        string   reference,
+        DateTime date,
         decimal  total,
-        string   categoriaGasto,
-        string   descripcion,
+        string   category,
+        string   description,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
@@ -541,13 +541,13 @@ public sealed class AccountingService : IAccountingService
         var pasivos = cuentas.Where(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit)
             .ToList();
-        var cuentaProveedor = pasivos.FirstOrDefault(c =>
+        var cuentaSupplier = pasivos.FirstOrDefault(c =>
             c.Name.Contains("PROVEED", StringComparison.OrdinalIgnoreCase))
             ?? pasivos.FirstOrDefault();
-        if (cuentaProveedor is null)
+        if (cuentaSupplier is null)
             return Result<Guid>.Failure("No se encontró cuenta de proveedores (pasivo) para la nota de crédito de gasto.");
 
-        var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(tenantId, categoriaGasto, ct);
+        var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(tenantId, category, ct);
         if (!debitoGasto.IsSuccess)
             return Result<Guid>.Failure(debitoGasto.Error ?? "Error al resolver cuenta de gasto.");
 
@@ -556,7 +556,7 @@ public sealed class AccountingService : IAccountingService
             cuentaGastoId = debitoGasto.Value.Value;
         else
         {
-            var cat = (categoriaGasto ?? string.Empty).Trim();
+            var cat = (category ?? string.Empty).Trim();
             var cuentaGasto = cuentas.FirstOrDefault(c =>
                 c.IsActive
                 && c.AllowsMovements
@@ -573,24 +573,24 @@ public sealed class AccountingService : IAccountingService
 
         var lines = new[]
         {
-            new JournalEntryLineCommand(cuentaProveedor.Id, total, 0m, "USD"),
+            new JournalEntryLineCommand(cuentaSupplier.Id, total, 0m, "USD"),
             new JournalEntryLineCommand(cuentaGastoId, 0m, total, "USD"),
         };
 
         var result = await _mediator.Send(
-            new CreateJournalEntryCommand(referencia, fecha, descripcion, lines), ct);
+            new CreateJournalEntryCommand(reference, date, description, lines), ct);
         return result.IsSuccess
             ? Result<Guid>.Success(result.Value!.Id)
             : Result<Guid>.Failure(result.Error ?? "Error al crear asiento de nota de crédito de gasto.");
     }
 
     public async Task<Result<Guid>> CrearAsientoNotaDebitoGastoProveedorAsync(
-        Guid     notaId,
-        string   referencia,
-        DateTime fecha,
+        Guid     noteId,
+        string   reference,
+        DateTime date,
         decimal  total,
-        string   categoriaGasto,
-        string   descripcion,
+        string   category,
+        string   description,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
@@ -599,13 +599,13 @@ public sealed class AccountingService : IAccountingService
         var pasivos = cuentas.Where(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit)
             .ToList();
-        var cuentaProveedor = pasivos.FirstOrDefault(c =>
+        var cuentaSupplier = pasivos.FirstOrDefault(c =>
             c.Name.Contains("PROVEED", StringComparison.OrdinalIgnoreCase))
             ?? pasivos.FirstOrDefault();
-        if (cuentaProveedor is null)
+        if (cuentaSupplier is null)
             return Result<Guid>.Failure("No se encontró cuenta de proveedores (pasivo) para la nota de débito de gasto.");
 
-        var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(tenantId, categoriaGasto, ct);
+        var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(tenantId, category, ct);
         if (!debitoGasto.IsSuccess)
             return Result<Guid>.Failure(debitoGasto.Error ?? "Error al resolver cuenta de gasto.");
 
@@ -614,7 +614,7 @@ public sealed class AccountingService : IAccountingService
             cuentaGastoId = debitoGasto.Value.Value;
         else
         {
-            var cat = (categoriaGasto ?? string.Empty).Trim();
+            var cat = (category ?? string.Empty).Trim();
             var cuentaGasto = cuentas.FirstOrDefault(c =>
                 c.IsActive
                 && c.AllowsMovements
@@ -632,13 +632,14 @@ public sealed class AccountingService : IAccountingService
         var lines = new[]
         {
             new JournalEntryLineCommand(cuentaGastoId, total, 0m, "USD"),
-            new JournalEntryLineCommand(cuentaProveedor.Id, 0m, total, "USD"),
+            new JournalEntryLineCommand(cuentaSupplier.Id, 0m, total, "USD"),
         };
 
         var result = await _mediator.Send(
-            new CreateJournalEntryCommand(referencia, fecha, descripcion, lines), ct);
+            new CreateJournalEntryCommand(reference, date, description, lines), ct);
         return result.IsSuccess
             ? Result<Guid>.Success(result.Value!.Id)
             : Result<Guid>.Failure(result.Error ?? "Error al crear asiento de nota de débito de gasto.");
     }
 }
+

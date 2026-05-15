@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using ERP.Application.Sales.Helpers;
 using ERP.Domain.Modules.Sales.Entities;
 
@@ -10,23 +10,23 @@ public sealed class VentasDomainTests
     private static readonly Guid TenantId = Guid.NewGuid();
     private static readonly Guid UserId   = Guid.NewGuid();
 
-    // ── RecalcularTotales ─────────────────────────────────────────────────
+    // â”€â”€ RecalcularTotales â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public void VentasFactura_AgregarDetalle_recalcula_totales_correctamente()
     {
         var factura = BuildFactura();
 
-        var d1 = VentasDetalle.Create(TenantId, Guid.NewGuid(), cantidad: 2m, precioUnitario: 10m, impuesto: 2.4m, "Prod A", UserId);
-        var d2 = VentasDetalle.Create(TenantId, Guid.NewGuid(), cantidad: 1m, precioUnitario: 50m, impuesto: 7.5m, "Prod B", UserId);
+        var d1 = SalesBillLine.Create(TenantId, Guid.NewGuid(), quantity: 2m, unitPrice: 10m, vatTotal: 2.4m, "Prod A", UserId);
+        var d2 = SalesBillLine.Create(TenantId, Guid.NewGuid(), quantity: 1m, unitPrice: 50m, vatTotal: 7.5m, "Prod B", UserId);
 
-        d1.AsignarFacturaId(factura.Id);
-        d2.AsignarFacturaId(factura.Id);
-        factura.AgregarDetalle(d1);
-        factura.AgregarDetalle(d2);
+        d1.AssignBillId(factura.Id);
+        d2.AssignBillId(factura.Id);
+        factura.AddLine(d1);
+        factura.AddLine(d2);
 
         factura.Subtotal.Should().Be(70m);   // 2*10 + 1*50
-        factura.Impuesto.Should().Be(9.9m);  // 2.4 + 7.5
+        factura.VatTotal.Should().Be(9.9m);  // 2.4 + 7.5
         factura.Total.Should().Be(79.9m);
     }
 
@@ -38,39 +38,39 @@ public sealed class VentasDomainTests
 
         for (var i = 1; i <= 3; i++)
         {
-            var d = VentasDetalle.Create(TenantId, productoId, cantidad: i, precioUnitario: 10m, impuesto: 0m, $"Prod {i}", UserId);
-            d.AsignarFacturaId(factura.Id);
-            factura.AgregarDetalle(d);
+            var d = SalesBillLine.Create(TenantId, productoId, quantity: i, unitPrice: 10m, vatTotal: 0m, $"Prod {i}", UserId);
+            d.AssignBillId(factura.Id);
+            factura.AddLine(d);
         }
 
         factura.Subtotal.Should().Be(60m); // (1+2+3) * 10
         factura.Total.Should().Be(60m);
     }
 
-    // ── Transiciones de estado ────────────────────────────────────────────
+    // â”€â”€ Transiciones de estado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public void VentasFactura_estadoInicial_es_Borrador()
     {
         var factura = BuildFactura();
-        factura.Estado.Should().Be("Borrador");
+        factura.Status.Should().Be("Borrador");
     }
 
     [Fact]
     public void VentasFactura_Validar_cambia_estado_a_Validado()
     {
         var factura = BuildFactura();
-        factura.Validar(UserId);
-        factura.Estado.Should().Be("Validado");
+        factura.Validate(UserId);
+        factura.Status.Should().Be("Validado");
     }
 
     [Fact]
     public void VentasFactura_Validar_falla_si_no_es_Borrador()
     {
         var factura = BuildFactura();
-        factura.Validar(UserId);
+        factura.Validate(UserId);
 
-        var acto = () => factura.Validar(UserId);
+        var acto = () => factura.Validate(UserId);
         acto.Should().Throw<InvalidOperationException>()
             .WithMessage("*Borrador*");
     }
@@ -79,20 +79,20 @@ public sealed class VentasDomainTests
     public void VentasFactura_Autorizar_cambia_estado_a_Autorizado()
     {
         var factura = BuildFactura();
-        factura.Validar(UserId);
+        factura.Validate(UserId);
 
-        factura.Autorizar(UserId, "AUTH001", DateTime.UtcNow, "path/gen.xml", "path/aut.xml", Guid.NewGuid());
+        factura.Authorize(UserId, "AUTH001", DateTime.UtcNow, "path/gen.xml", "path/aut.xml", Guid.NewGuid());
 
-        factura.Estado.Should().Be("Autorizado");
-        factura.NumeroAutorizacion.Should().Be("AUTH001");
-        factura.AsientoContableId.Should().NotBeNull();
+        factura.Status.Should().Be("Autorizado");
+        factura.AuthNumber.Should().Be("AUTH001");
+        factura.JournalEntryId.Should().NotBeNull();
     }
 
     [Fact]
     public void VentasFactura_Autorizar_falla_si_no_es_Validado()
     {
         var factura = BuildFactura(); // Borrador
-        var acto = () => factura.Autorizar(UserId, "X", DateTime.UtcNow, null, null, Guid.NewGuid());
+        var acto = () => factura.Authorize(UserId, "X", DateTime.UtcNow, null, null, Guid.NewGuid());
         acto.Should().Throw<InvalidOperationException>().WithMessage("*Validada*");
     }
 
@@ -100,36 +100,36 @@ public sealed class VentasDomainTests
     public void VentasFactura_Rechazar_guarda_mensaje_de_error()
     {
         var factura = BuildFactura();
-        factura.Rechazar(UserId, "RUC inválido según SRI.");
+        factura.Reject(UserId, "RUC invÃ¡lido segÃºn SRI.");
 
-        factura.Estado.Should().Be("Rechazado");
-        factura.MensajeError.Should().Be("RUC inválido según SRI.");
+        factura.Status.Should().Be("Rechazado");
+        factura.ErrorMessage.Should().Be("RUC invÃ¡lido segÃºn SRI.");
     }
 
     [Fact]
     public void VentasFactura_MarcarErrorEnvio_cambia_estado_a_ErrorEnvio()
     {
         var factura = BuildFactura();
-        factura.MarcarErrorEnvio(UserId, "Timeout al conectar con SRI.");
-        factura.Estado.Should().Be("ErrorEnvio");
+        factura.MarkSendError(UserId, "Timeout al conectar con SRI.");
+        factura.Status.Should().Be("ErrorEnvio");
     }
 
     [Fact]
     public void VentasFactura_PrepararReintento_resetea_a_Validado()
     {
         var factura = BuildFactura();
-        factura.MarcarErrorEnvio(UserId, "Timeout");
-        factura.PrepararReintento(UserId);
+        factura.MarkSendError(UserId, "Timeout");
+        factura.PrepareRetry(UserId);
 
-        factura.Estado.Should().Be("Validado");
-        factura.MensajeError.Should().BeNull();
+        factura.Status.Should().Be("Validado");
+        factura.ErrorMessage.Should().BeNull();
     }
 
     [Fact]
     public void VentasFactura_PrepararReintento_falla_si_no_es_ErrorEnvio_o_Rechazado()
     {
         var factura = BuildFactura(); // Borrador
-        var acto = () => factura.PrepararReintento(UserId);
+        var acto = () => factura.PrepareRetry(UserId);
         acto.Should().Throw<InvalidOperationException>();
     }
 
@@ -137,41 +137,50 @@ public sealed class VentasDomainTests
     public void VentasFactura_Anular_cambia_estado_a_Anulado()
     {
         var factura = BuildFactura();
-        factura.Anular(UserId);
-        factura.Estado.Should().Be("Anulado");
+        factura.Void(UserId);
+        factura.Status.Should().Be("Anulado");
     }
 
     [Fact]
     public void VentasFactura_Anular_falla_si_ya_esta_Autorizado()
     {
         var factura = BuildFactura();
-        factura.Validar(UserId);
-        factura.Autorizar(UserId, "NUM", DateTime.UtcNow, null, null, Guid.NewGuid());
+        factura.Validate(UserId);
+        factura.Authorize(UserId, "NUM", DateTime.UtcNow, null, null, Guid.NewGuid());
 
-        var acto = () => factura.Anular(UserId);
+        var acto = () => factura.Void(UserId);
         acto.Should().Throw<InvalidOperationException>().WithMessage("*Autorizado*");
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    private static VentasFactura BuildFactura() => VentasFactura.Create(
+    private static SalesBill BuildFactura() => SalesBill.Create(
         tenantId:          TenantId,
-        sucursalId:        Guid.NewGuid(),
-        clienteId:         Guid.NewGuid(),
-        bodegaId:          Guid.NewGuid(),
-        tipoDocumento:     "01",
-        establecimiento:   "001",
-        puntoEmision:      "001",
-        secuencial:        "000000001",
-        claveAcceso:       new string('0', 48) + "0",
-        fechaEmision:      DateTime.UtcNow,
+        branchId:        Guid.NewGuid(),
+        customerId:         Guid.NewGuid(),
+        warehouseId:          Guid.NewGuid(),
+        docType:     "01",
+        estabCode:   "001",
+        emPointCode:      "001",
+        sequential:        "000000001",
+        accessKey:       new string('0', 48) + "0",
+        issueDate:      DateTime.UtcNow,
         subtotal:          0m,
-        impuesto:          0m,
+        vatTotal:          0m,
         total:             0m,
-        xmlGeneradoPath:   null,
-        xmlAutorizacionPath: null,
-        numeroAutorizacion:  null,
-        fechaAutorizacion:   null,
-        mensajeError:        null,
+        xmlSignedPath:   null,
+        xmlAuthPath: null,
+        authNumber:  null,
+        authDate:   null,
+        errorMessage:        null,
         createdBy:           UserId);
 }
+
+
+
+
+
+
+
+
+

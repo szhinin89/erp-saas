@@ -1,25 +1,25 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class ConfiguracionFacturacionRepository : IConfiguracionFacturacionRepository
+public sealed class BillingSettingsRepository : IBillingSettingsRepository
 {
     private readonly ErpDbContext _context;
 
-    public ConfiguracionFacturacionRepository(ErpDbContext context) => _context = context;
+    public BillingSettingsRepository(ErpDbContext context) => _context = context;
 
-    public Task<ConfiguracionFacturacion?> GetByTenantIdAsync(Guid tenantId, CancellationToken ct = default)
-        => _context.ConfiguracionFacturaciones.FirstOrDefaultAsync(c => c.TenantId == tenantId, ct);
+    public Task<BillingSettings?> GetByTenantIdAsync(Guid tenantId, CancellationToken ct = default)
+        => _context.BillingSettings.FirstOrDefaultAsync(c => c.TenantId == tenantId, ct);
 
-    public Task AddAsync(ConfiguracionFacturacion config, CancellationToken ct = default)
-        => _context.ConfiguracionFacturaciones.AddAsync(config, ct).AsTask();
+    public Task AddAsync(BillingSettings config, CancellationToken ct = default)
+        => _context.BillingSettings.AddAsync(config, ct).AsTask();
 
-    public Task UpdateAsync(ConfiguracionFacturacion config, CancellationToken ct = default)
+    public Task UpdateAsync(BillingSettings config, CancellationToken ct = default)
     {
-        _context.ConfiguracionFacturaciones.Update(config);
+        _context.BillingSettings.Update(config);
         return Task.CompletedTask;
     }
 

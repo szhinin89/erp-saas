@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventory;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -14,12 +14,12 @@ namespace ERP.Infrastructure.Services;
 public sealed class KardexSnapshotService : IKardexSnapshotCalculator
 {
     private readonly IKardexSnapshotRepository  _snapRepo;
-    private readonly IInventarioStockRepository _movRepo;
+    private readonly IStockRepository _movRepo;
     private readonly ILogger<KardexSnapshotService> _logger;
 
     public KardexSnapshotService(
         IKardexSnapshotRepository  snapRepo,
-        IInventarioStockRepository movRepo,
+        IStockRepository movRepo,
         ILogger<KardexSnapshotService> logger)
     {
         _snapRepo = snapRepo;
@@ -34,7 +34,7 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
     /// </summary>
     public async Task<int> RecalcularTodosAsync(DateTime hastaFecha, CancellationToken ct)
     {
-        var tenants = await _snapRepo.GetTenantsConMovimientosAsync(ct);
+        var tenants = await _snapRepo.GetTenantsWithMovementsAsync(ct);
         var total   = 0;
 
         foreach (var tenantId in tenants)
@@ -52,21 +52,21 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
     public async Task<int> RecalcularTenantAsync(
         Guid      tenantId,
         Guid?     productoId,
-        Guid?     bodegaId,
+        Guid?     WarehouseId,
         DateTime  hastaFecha,
         CancellationToken ct)
     {
-        IReadOnlyList<(Guid ProductoId, Guid BodegaId)> combos;
+        IReadOnlyList<(Guid ProductoId, Guid WarehouseId)> combos;
 
-        if (productoId.HasValue && bodegaId.HasValue)
-            combos = [(productoId.Value, bodegaId.Value)];
+        if (productoId.HasValue && WarehouseId.HasValue)
+            combos = [(productoId.Value, WarehouseId.Value)];
         else
         {
-            var todos = await _snapRepo.GetDistinctProductoBodegaAsync(tenantId, ct);
+            var todos = await _snapRepo.GetDistinctProductWarehouseAsync(tenantId, ct);
             combos = productoId.HasValue
-                ? todos.Where(c => c.ProductoId == productoId.Value).ToList()
-                : bodegaId.HasValue
-                    ? todos.Where(c => c.BodegaId == bodegaId.Value).ToList()
+                ? todos.Where(c => c.ProductId == productoId.Value).ToList()
+                : WarehouseId.HasValue
+                    ? todos.Where(c => c.WarehouseId == WarehouseId.Value).ToList()
                     : todos;
         }
 
@@ -83,7 +83,7 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
             catch (Exception ex)
             {
                 _logger.LogWarning(ex,
-                    "Error al calcular snapshot tenant={T} producto={P} bodega={B}",
+                    "Error al calcular snapshot tenant={T} producto={P} Warehouse={B}",
                     tenantId, pid, bid);
             }
         }
@@ -91,31 +91,31 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
         return total;
     }
 
-    // ── Cálculo por combinación (producto × bodega) ──────────────────────────
+    // ── Cálculo por combinación (producto × Warehouse) ──────────────────────────
 
     private async Task<int> ProcesarComboAsync(
-        Guid tenantId, Guid productoId, Guid bodegaId,
+        Guid tenantId, Guid productoId, Guid WarehouseId,
         DateTime hastaFecha, CancellationToken ct)
     {
         var ayer = hastaFecha.Date;
 
         // Punto de partida: snapshot más reciente disponible
         var ultimoSnap = await _snapRepo.GetLatestBeforeAsync(
-            tenantId, productoId, bodegaId, ayer, ct);
+            tenantId, productoId, WarehouseId, ayer, ct);
 
-        decimal saldoCantidad = ultimoSnap?.CantidadSaldo ?? 0m;
-        decimal saldoValor    = ultimoSnap?.ValorSaldo    ?? 0m;
-        decimal costoPromedio = ultimoSnap?.CostoPromedio ?? 0m;
+        decimal saldoCantidad = ultimoSnap?.BalanceQty ?? 0m;
+        decimal saldoValor    = ultimoSnap?.BalanceValue    ?? 0m;
+        decimal costoPromedio = ultimoSnap?.AverageCost ?? 0m;
 
         var desdeUtc  = ultimoSnap is null
             ? (DateTime?)null
-            : ultimoSnap.FechaSnapshot.AddDays(1);
+            : ultimoSnap.SnapshotDate.AddDays(1);
         var hastaUtc  = ayer.AddDays(1).AddTicks(-1);
 
-        var movs = await _movRepo.GetMovimientosAsync(
-            tenantId, productoId, bodegaId, desdeUtc, hastaUtc, ct);
+        var movs = await _movRepo.GetMovementsAsync(
+            tenantId, productoId, WarehouseId, desdeUtc, hastaUtc, ct);
 
-        if (movs.Count == 0 && ultimoSnap?.FechaSnapshot.Date == ayer)
+        if (movs.Count == 0 && ultimoSnap?.SnapshotDate.Date == ayer)
             return 0; // snapshot de ayer ya existe y sin nuevos movimientos
 
         // Calcular snapshot acumulado día a día
@@ -129,10 +129,10 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
         foreach (var grupo in porDia)
         {
             foreach (var m in grupo.OrderBy(x => x.CreatedAt).ThenBy(x => x.Id))
-                KardexCalculator.AplicarMovimiento(m, ref saldoCantidad, ref saldoValor, ref costoPromedio);
+                KardexCalculator.ApplyMovement(m, ref saldoCantidad, ref saldoValor, ref costoPromedio);
 
             var snap = KardexSnapshot.Create(
-                tenantId, productoId, bodegaId, grupo.Key,
+                tenantId, productoId, WarehouseId, grupo.Key,
                 saldoCantidad, saldoValor, costoPromedio);
 
             await _snapRepo.UpsertAsync(snap, ct);
@@ -144,7 +144,7 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
         if (ultimoDiaConMovs != ayer)
         {
             var snapAyer = KardexSnapshot.Create(
-                tenantId, productoId, bodegaId, ayer,
+                tenantId, productoId, WarehouseId, ayer,
                 saldoCantidad, saldoValor, costoPromedio);
             await _snapRepo.UpsertAsync(snapAyer, ct);
             snapshotsGuardados++;

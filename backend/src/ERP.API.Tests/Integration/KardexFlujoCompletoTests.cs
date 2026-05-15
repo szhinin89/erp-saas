@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,12 +18,12 @@ namespace ERP.API.Tests.Integration;
 /// <summary>
 /// Test E2E que recorre el flujo real de compras y ventas y verifica el Kardex resultante.
 /// Replica exactamente el escenario de prueba manual en Swagger:
-///   - Compra 10 uds @ $5 → Compra 10 uds @ $7 → Venta 5 uds
+///   - Compra 10 uds @ $5 â†’ Compra 10 uds @ $7 â†’ Venta 5 uds
 ///   - Costo promedio esperado: $6, valor salida: $30, stock final: 15 uds a $90
 /// </summary>
 public sealed class KardexFlujoCompletoTests
 {
-    // ── Setup ──────────────────────────────────────────────────────────────
+    // â”€â”€ Setup â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static async Task<(
         IMediator Mediator,
@@ -51,77 +51,77 @@ public sealed class KardexFlujoCompletoTests
         var sucursalId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
 
         // Crear proveedor de prueba
-        var proveedor = Proveedor.Create(
+        var proveedor = Supplier.Create(
             seed.TenantId,
-            Proveedor.TipoJuridica,
-            "Proveedor E2E S.A.",
+            Supplier.TypeLegal,
+            "Supplier E2E S.A.",
             seed.ProveedorRuc,
-            correo:       null,
-            telefono:     null,
-            direccion:    null,
-            condicionPago: "Contado",
+            email:       null,
+            phone:     null,
+            address:    null,
+            paymentTerms: "Contado",
             createdBy:    seed.UserId);
-        db.Proveedores.Add(proveedor);
+        db.Suppliers.Add(proveedor);
         await db.SaveChangesAsync();
 
         return (mediator, db, seed, clienteId, sucursalId, proveedor.Id);
     }
 
-    // ── Helper para crear una CompraFactura completa (Borrador→Validado→Aprobado) ──
+    // â”€â”€ Helper para crear una PurchBill completa (Borradorâ†’Validadoâ†’Aprobado) â”€â”€
 
     private static async Task<Guid> CrearYAprobarCompraAsync(
         IMediator mediator,
         Guid proveedorId,
         Guid productoId,
         Guid bodegaId,
-        string numeroFactura,
-        decimal cantidad,
-        decimal precioUnitario)
+        string invoiceNumber,
+        decimal quantity,
+        decimal unitPrice)
     {
         // 1. Crear en estado Borrador (modo Manual, sin XML)
         var crear = await mediator.Send(
             new CrearCompraCommand(
                 Modo: ModoCreacionCompra.Manual,
                 XmlContent: null, XmlNombreArchivo: null,
-                ProveedorId:      proveedorId,
-                NumeroFactura:    numeroFactura,
-                FechaFactura:     DateTime.Today,
-                FechaVencimiento: null,
-                CondicionPago:    "Contado",
-                Observaciones:    null,
-                Detalles: [new DetalleCompraInput(
+                SupplierId:      proveedorId,
+                InvoiceNumber:    invoiceNumber,
+                InvoiceDate:     DateTime.Today,
+                DueDate: null,
+                PaymentTerms:    "Contado",
+                Notes:    null,
+                Lines: [new DetalleCompraInput(
                     "Producto test kardex", null, productoId,
-                    cantidad, precioUnitario, 0m, 0m)],
-                AsignacionesBodega: [new AsignacionBodegaRequest(0, bodegaId, cantidad, productoId)]),
+                    quantity, unitPrice, 0m, 0m)],
+                AsignacionesBodega: [new AsignacionBodegaRequest(0, bodegaId, quantity, productoId)]),
             CancellationToken.None);
 
-        crear.IsSuccess.Should().BeTrue($"CrearCompra {numeroFactura} falló: {crear.Error}");
+        crear.IsSuccess.Should().BeTrue($"CrearCompra {invoiceNumber} fallÃ³: {crear.Error}");
         var compraId = crear.Value!.Id;
 
-        // 2. Validar (Borrador → Validado)
+        // 2. Validar (Borrador â†’ Validado)
         var validar = await mediator.Send(
             new ValidarCompraCommand(compraId), CancellationToken.None);
-        validar.IsSuccess.Should().BeTrue($"ValidarCompra {numeroFactura} falló: {validar.Error}");
+        validar.IsSuccess.Should().BeTrue($"ValidarCompra {invoiceNumber} fallÃ³: {validar.Error}");
 
-        // 3. Aprobar (Validado → Aprobado): registra movimiento de inventario con CostoUnitario
+        // 3. Aprobar (Validado â†’ Aprobado): registra movimiento de inventario con CostoUnitario
         var aprobar = await mediator.Send(
             new AprobarCompraCommand(compraId), CancellationToken.None);
-        aprobar.IsSuccess.Should().BeTrue($"AprobarCompra {numeroFactura} falló: {aprobar.Error}");
+        aprobar.IsSuccess.Should().BeTrue($"AprobarCompra {invoiceNumber} fallÃ³: {aprobar.Error}");
 
         return compraId;
     }
 
-    // ── Escenario principal (escenario idéntico al de la prueba manual en Swagger) ──
+    // â”€â”€ Escenario principal (escenario idÃ©ntico al de la prueba manual en Swagger) â”€â”€
 
     [Fact]
     public async Task Flujo_completo_dos_compras_y_una_venta_genera_kardex_correcto()
     {
         /*
          * Escenario:
-         *   Compra 1: 10 uds @ $5.00 → saldo=10, val=$50,  avg=$5.000
-         *   Compra 2: 10 uds @ $7.00 → saldo=20, val=$120, avg=$6.000  ← (50+70)/20
-         *   Venta:     5 uds @ avg   → saldo=15, val=$90,  avg=$6.000
-         *   Costo salida = 5 × $6 = $30, saldo valor = $120 - $30 = $90
+         *   Compra 1: 10 uds @ $5.00 â†’ saldo=10, val=$50,  avg=$5.000
+         *   Compra 2: 10 uds @ $7.00 â†’ saldo=20, val=$120, avg=$6.000  â† (50+70)/20
+         *   Venta:     5 uds @ avg   â†’ saldo=15, val=$90,  avg=$6.000
+         *   Costo salida = 5 Ã— $6 = $30, saldo valor = $120 - $30 = $90
          *
          * Verificamos: saldo, valor, promedio en cada fila del kardex y el resumen.
          */
@@ -130,37 +130,37 @@ public sealed class KardexFlujoCompletoTests
 
         var tid = seed.TenantId;
         var pid = seed.ProductId;
-        var bid = seed.BodegaId;
+        var bid = seed.WarehouseId;
 
-        // ── COMPRA 1: 10 uds @ $5 ─────────────────────────────────────────
+        // â”€â”€ COMPRA 1: 10 uds @ $5 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         await CrearYAprobarCompraAsync(
             mediator, proveedorId, pid, bid,
-            numeroFactura: "001-001-000000001",
-            cantidad:       10m,
-            precioUnitario: 5m);
+            invoiceNumber: "001-001-000000001",
+            quantity:       10m,
+            unitPrice: 5m);
 
-        // Verificación intermedia: stock=10, valor=$50
-        var stock1 = await db.StockActual.FirstOrDefaultAsync(
-            s => s.TenantId == tid && s.ProductoId == pid && s.BodegaId == bid);
+        // VerificaciÃ³n intermedia: stock=10, valor=$50
+        var stock1 = await db.CurrentStocks.FirstOrDefaultAsync(
+            s => s.TenantId == tid && s.ProductId == pid && s.WarehouseId == bid);
         stock1.Should().NotBeNull();
-        stock1!.Cantidad.Should().Be(10m);
-        stock1.ValorTotalStock.Should().Be(50m);
-        stock1.CostoPromedioActual.Should().Be(5m);
+        stock1!.Quantity.Should().Be(10m);
+        stock1.TotalStockValue.Should().Be(50m);
+        stock1.AverageCost.Should().Be(5m);
 
-        // ── COMPRA 2: 10 uds @ $7 ─────────────────────────────────────────
+        // â”€â”€ COMPRA 2: 10 uds @ $7 â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         await CrearYAprobarCompraAsync(
             mediator, proveedorId, pid, bid,
-            numeroFactura: "001-001-000000002",
-            cantidad:       10m,
-            precioUnitario: 7m);
+            invoiceNumber: "001-001-000000002",
+            quantity:       10m,
+            unitPrice: 7m);
 
-        // Verificación intermedia: stock=20, valor=$120, avg=$6
+        // VerificaciÃ³n intermedia: stock=20, valor=$120, avg=$6
         db.Entry(stock1).Reload();
-        stock1.Cantidad.Should().Be(20m);
-        stock1.ValorTotalStock.Should().Be(120m);
-        stock1.CostoPromedioActual.Should().Be(6m);
+        stock1.Quantity.Should().Be(20m);
+        stock1.TotalStockValue.Should().Be(120m);
+        stock1.AverageCost.Should().Be(6m);
 
-        // ── VENTA: 5 uds ──────────────────────────────────────────────────
+        // â”€â”€ VENTA: 5 uds â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         var crearVenta = await mediator.Send(
             new CrearVentaCommand(clienteId, bid, sucursalId,
                 new List<ItemVentaDto> { new(pid, 5m, 10m) }),   // precio venta $10 (irrelevante para el costo)
@@ -172,13 +172,13 @@ public sealed class KardexFlujoCompletoTests
             new EmitirFacturaElectronicaCommand(crearVenta.Value), CancellationToken.None);
         emitir.IsSuccess.Should().BeTrue(emitir.Error);
 
-        // Verificación intermedia: stock=15, valor=$90, avg=$6
+        // VerificaciÃ³n intermedia: stock=15, valor=$90, avg=$6
         db.Entry(stock1).Reload();
-        stock1.Cantidad.Should().Be(15m);
-        stock1.ValorTotalStock.Should().BeApproximately(90m, 0.001m);
-        stock1.CostoPromedioActual.Should().BeApproximately(6m, 0.001m);
+        stock1.Quantity.Should().Be(15m);
+        stock1.TotalStockValue.Should().BeApproximately(90m, 0.001m);
+        stock1.AverageCost.Should().BeApproximately(6m, 0.001m);
 
-        // ── KARDEX: verificación completa ─────────────────────────────────
+        // â”€â”€ KARDEX: verificaciÃ³n completa â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         var kardex = await mediator.Send(
             new GetKardexQuery(pid, bid, null, null), CancellationToken.None);
 
@@ -186,31 +186,31 @@ public sealed class KardexFlujoCompletoTests
         var k = kardex.Value!;
 
         // Debe haber exactamente 3 filas (2 compras + 1 venta)
-        k.Movimientos.Should().HaveCount(3, "dos compras + una venta");
+        k.Rows.Should().HaveCount(3, "dos compras + una venta");
 
         // Fila 1: Compra 10 @ $5
-        var f1 = k.Movimientos[0];
-        f1.TipoMovimiento.Should().Be("Compra");
+        var f1 = k.Rows[0];
+        f1.MovementType.Should().Be("Compra");
         f1.EntradaCantidad.Should().Be(10m);
         f1.EntradaValor.Should().Be(50m);
         f1.SaldoCantidad.Should().Be(10m);
         f1.SaldoValor.Should().Be(50m);
         f1.CostoUnitarioPromedio.Should().Be(5m);
 
-        // Fila 2: Compra 10 @ $7 → promedio sube a $6
-        var f2 = k.Movimientos[1];
-        f2.TipoMovimiento.Should().Be("Compra");
+        // Fila 2: Compra 10 @ $7 â†’ promedio sube a $6
+        var f2 = k.Rows[1];
+        f2.MovementType.Should().Be("Compra");
         f2.EntradaCantidad.Should().Be(10m);
-        f2.EntradaValor.Should().Be(70m);        // 10 × $7
+        f2.EntradaValor.Should().Be(70m);        // 10 Ã— $7
         f2.SaldoCantidad.Should().Be(20m);
         f2.SaldoValor.Should().Be(120m);         // $50 + $70
         f2.CostoUnitarioPromedio.Should().Be(6m);  // ($50+$70) / 20 = $6
 
         // Fila 3: Venta 5 uds al costo promedio $6
-        var f3 = k.Movimientos[2];
-        f3.TipoMovimiento.Should().Be("Venta");
+        var f3 = k.Rows[2];
+        f3.MovementType.Should().Be("Venta");
         f3.SalidaCantidad.Should().Be(5m);
-        f3.SalidaValor.Should().BeApproximately(30m, 0.001m);  // 5 × $6
+        f3.SalidaValor.Should().BeApproximately(30m, 0.001m);  // 5 Ã— $6
         f3.SaldoCantidad.Should().Be(15m);
         f3.SaldoValor.Should().BeApproximately(90m, 0.001m);   // $120 - $30
         f3.CostoUnitarioPromedio.Should().BeApproximately(6m, 0.001m); // no cambia
@@ -222,7 +222,7 @@ public sealed class KardexFlujoCompletoTests
         r.EntradasCantidad.Should().Be(20m);                  // 10 + 10
         r.EntradasValor.Should().Be(120m);                    // $50 + $70
         r.SalidasCantidad.Should().Be(5m);
-        r.SalidasValor.Should().BeApproximately(30m, 0.001m); // 5 × $6
+        r.SalidasValor.Should().BeApproximately(30m, 0.001m); // 5 Ã— $6
         r.InventarioFinalCantidad.Should().Be(15m);
         r.InventarioFinalValor.Should().BeApproximately(90m, 0.001m);
         r.CostoPromedioFinal.Should().BeApproximately(6m, 0.001m);
@@ -232,17 +232,17 @@ public sealed class KardexFlujoCompletoTests
     public async Task Flujo_tres_compras_con_promedios_mixtos_kardex_correcto()
     {
         /*
-         * Compra 1:  5 uds @ $10  → saldo=5,  val=$50,  avg=$10.00
-         * Compra 2:  5 uds @ $20  → saldo=10, val=$150, avg=$15.00
-         * Venta 1:   4 uds @ $15  → saldo=6,  val=$90,  avg=$15.00
-         * Compra 3:  6 uds @ $12  → saldo=12, val=$162, avg=$13.50
-         * Venta 2:   6 uds @ $13.50 → saldo=6, val=$81, avg=$13.50
+         * Compra 1:  5 uds @ $10  â†’ saldo=5,  val=$50,  avg=$10.00
+         * Compra 2:  5 uds @ $20  â†’ saldo=10, val=$150, avg=$15.00
+         * Venta 1:   4 uds @ $15  â†’ saldo=6,  val=$90,  avg=$15.00
+         * Compra 3:  6 uds @ $12  â†’ saldo=12, val=$162, avg=$13.50
+         * Venta 2:   6 uds @ $13.50 â†’ saldo=6, val=$81, avg=$13.50
          */
         await using var factory = new IntegrationTestWebAppFactory();
         var (mediator, db, seed, clienteId, sucursalId, proveedorId) = await SetupAsync(factory);
 
         var pid = seed.ProductId;
-        var bid = seed.BodegaId;
+        var bid = seed.WarehouseId;
 
         await CrearYAprobarCompraAsync(mediator, proveedorId, pid, bid, "001-001-000000010", 5m, 10m);
         await CrearYAprobarCompraAsync(mediator, proveedorId, pid, bid, "001-001-000000011", 5m, 20m);
@@ -268,34 +268,34 @@ public sealed class KardexFlujoCompletoTests
 
         kardex.IsSuccess.Should().BeTrue();
         var k = kardex.Value!;
-        k.Movimientos.Should().HaveCount(5);
+        k.Rows.Should().HaveCount(5);
 
         // C1: saldo=5 @10
-        k.Movimientos[0].SaldoCantidad.Should().Be(5m);
-        k.Movimientos[0].CostoUnitarioPromedio.Should().Be(10m);
+        k.Rows[0].SaldoCantidad.Should().Be(5m);
+        k.Rows[0].CostoUnitarioPromedio.Should().Be(10m);
 
         // C2: saldo=10 avg=(50+100)/10=15
-        k.Movimientos[1].SaldoCantidad.Should().Be(10m);
-        k.Movimientos[1].CostoUnitarioPromedio.Should().Be(15m);
+        k.Rows[1].SaldoCantidad.Should().Be(10m);
+        k.Rows[1].CostoUnitarioPromedio.Should().Be(15m);
 
         // V1: salida 4@15=$60, saldo=6, val=$90
-        k.Movimientos[2].SalidaCantidad.Should().Be(4m);
-        k.Movimientos[2].SalidaValor.Should().BeApproximately(60m, 0.001m);
-        k.Movimientos[2].SaldoCantidad.Should().Be(6m);
-        k.Movimientos[2].SaldoValor.Should().BeApproximately(90m, 0.001m);
-        k.Movimientos[2].CostoUnitarioPromedio.Should().BeApproximately(15m, 0.001m);
+        k.Rows[2].SalidaCantidad.Should().Be(4m);
+        k.Rows[2].SalidaValor.Should().BeApproximately(60m, 0.001m);
+        k.Rows[2].SaldoCantidad.Should().Be(6m);
+        k.Rows[2].SaldoValor.Should().BeApproximately(90m, 0.001m);
+        k.Rows[2].CostoUnitarioPromedio.Should().BeApproximately(15m, 0.001m);
 
         // C3: saldo=12, val=90+72=162, avg=162/12=13.50
-        k.Movimientos[3].SaldoCantidad.Should().Be(12m);
-        k.Movimientos[3].SaldoValor.Should().BeApproximately(162m, 0.001m);
-        k.Movimientos[3].CostoUnitarioPromedio.Should().BeApproximately(13.5m, 0.001m);
+        k.Rows[3].SaldoCantidad.Should().Be(12m);
+        k.Rows[3].SaldoValor.Should().BeApproximately(162m, 0.001m);
+        k.Rows[3].CostoUnitarioPromedio.Should().BeApproximately(13.5m, 0.001m);
 
         // V2: salida 6@13.50=$81, saldo=6, val=$81
-        k.Movimientos[4].SalidaCantidad.Should().Be(6m);
-        k.Movimientos[4].SalidaValor.Should().BeApproximately(81m, 0.001m);
-        k.Movimientos[4].SaldoCantidad.Should().Be(6m);
-        k.Movimientos[4].SaldoValor.Should().BeApproximately(81m, 0.001m);
-        k.Movimientos[4].CostoUnitarioPromedio.Should().BeApproximately(13.5m, 0.001m);
+        k.Rows[4].SalidaCantidad.Should().Be(6m);
+        k.Rows[4].SalidaValor.Should().BeApproximately(81m, 0.001m);
+        k.Rows[4].SaldoCantidad.Should().Be(6m);
+        k.Rows[4].SaldoValor.Should().BeApproximately(81m, 0.001m);
+        k.Rows[4].CostoUnitarioPromedio.Should().BeApproximately(13.5m, 0.001m);
 
         // Resumen final
         k.Resumen.InventarioFinalCantidad.Should().Be(6m);
@@ -303,3 +303,13 @@ public sealed class KardexFlujoCompletoTests
         k.Resumen.CostoPromedioFinal.Should().BeApproximately(13.5m, 0.001m);
     }
 }
+
+
+
+
+
+
+
+
+
+

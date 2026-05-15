@@ -1,11 +1,11 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
 using ERP.Application.Inventory.UseCases.CancelarTransferencia;
 using ERP.Application.Inventory.UseCases.ConfirmarTransferencia;
 using ERP.Application.Inventory.UseCases.CrearTransferencia;
-using ERP.Application.Modules.Inventory.UseCases.GetStockActualPorBodega;
+using ERP.Application.Modules.Inventory.UseCases.GetCurrentStockPorBodega;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -15,7 +15,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ERP.API.Tests.Integration;
 
 /// <summary>
-/// Pruebas de integración del flujo completo de Transferencias entre bodegas.
+/// Pruebas de integraciÃ³n del flujo completo de Transferencias entre bodegas.
 /// Verifican que el stock se mueva correctamente al confirmar y que los
 /// movimientos de inventario queden registrados.
 /// </summary>
@@ -34,52 +34,52 @@ public sealed class TransferenciasEndToEndTests
         // 1. Crear en Borrador
         var crear = await mediator.Send(new CrearTransferenciaCommand(
             origenId, destinoId,
-            Motivo: "Reposición bodega destino",
-            Observaciones: null,
-            Items: [new(productoId, Cantidad: 4m)]),
+            Reason: "ReposiciÃ³n bodega destino",
+            Notes: null,
+            Items: [new(productoId, Quantity: 4m)]),
             CancellationToken.None);
 
         crear.IsSuccess.Should().BeTrue(crear.Error);
         var transferenciaId = crear.Value!.Id;
-        crear.Value.Estado.Should().Be("Borrador");
+        crear.Value.Status.Should().Be("Borrador");
 
-        // 2. Confirmar — mueve el stock
+        // 2. Confirmar â€” mueve el stock
         var confirmar = await mediator.Send(
             new ConfirmarTransferenciaCommand(transferenciaId),
             CancellationToken.None);
 
         confirmar.IsSuccess.Should().BeTrue(confirmar.Error);
-        confirmar.Value!.Estado.Should().Be("Confirmado");
+        confirmar.Value!.Status.Should().Be("Confirmado");
         confirmar.Value.FechaConfirmacion.Should().NotBeNull();
 
         // 3. Verificar stock en bodega origen: 10 - 4 = 6
         var stockOrigenResult = await mediator.Send(
-            new GetStockActualPorBodegaQuery(origenId, productoId), CancellationToken.None);
+            new GetCurrentStockPorBodegaQuery(origenId, productoId), CancellationToken.None);
         stockOrigenResult.IsSuccess.Should().BeTrue();
-        var itemOrigen = stockOrigenResult.Value!.FirstOrDefault(i => i.ProductoId == productoId);
+        var itemOrigen = stockOrigenResult.Value!.FirstOrDefault(i => i.ProductId == productoId);
         itemOrigen.Should().NotBeNull("el producto debe seguir teniendo stock en bodega origen");
-        itemOrigen!.CantidadDisponible.Should().Be(6m);
+        itemOrigen!.AvailableQuantity.Should().Be(6m);
 
         // 4. Verificar stock en bodega destino: 0 + 4 = 4
         var stockDestinoResult = await mediator.Send(
-            new GetStockActualPorBodegaQuery(destinoId, productoId), CancellationToken.None);
+            new GetCurrentStockPorBodegaQuery(destinoId, productoId), CancellationToken.None);
         stockDestinoResult.IsSuccess.Should().BeTrue();
-        var itemDestino = stockDestinoResult.Value!.FirstOrDefault(i => i.ProductoId == productoId);
+        var itemDestino = stockDestinoResult.Value!.FirstOrDefault(i => i.ProductId == productoId);
         itemDestino.Should().NotBeNull("el producto debe tener stock en bodega destino tras la transferencia");
-        itemDestino!.CantidadDisponible.Should().Be(4m);
+        itemDestino!.AvailableQuantity.Should().Be(4m);
 
         // 5. Verificar que se crearon exactamente 2 movimientos para esta transferencia
         var tenantId = factory.MutableTenant.TenantId;
-        var movimientos = await db.InventarioMovimientos
+        var movimientos = await db.StockMovements
             .Where(m => m.TenantId == tenantId
-                     && m.DocumentoOrigenId == transferenciaId)
+                     && m.SourceDocId == transferenciaId)
             .ToListAsync(CancellationToken.None);
 
         movimientos.Should().HaveCount(2, "debe haber un movimiento de salida y uno de entrada");
-        movimientos.Should().ContainSingle(m => m.TipoMovimiento == TipoMovimientoInventario.TransferenciaSalida
-                                             && m.Cantidad == -4m);
-        movimientos.Should().ContainSingle(m => m.TipoMovimiento == TipoMovimientoInventario.TransferenciaEntrada
-                                             && m.Cantidad == 4m);
+        movimientos.Should().ContainSingle(m => m.MovementType == StockMovementType.TransferExit
+                                             && m.Quantity == -4m);
+        movimientos.Should().ContainSingle(m => m.MovementType == StockMovementType.TransferEntry
+                                             && m.Quantity == 4m);
     }
 
     [Fact]
@@ -92,12 +92,12 @@ public sealed class TransferenciasEndToEndTests
 
         var (origenId, destinoId, productoId) = await SeedAsync(db, factory, stockOrigen: 3m);
 
-        // Crear con 3 unidades (OK para Borrador — valida en Crear)
+        // Crear con 3 unidades (OK para Borrador â€” valida en Crear)
         var crear = await mediator.Send(new CrearTransferenciaCommand(
             origenId, destinoId,
-            Motivo: null,
-            Observaciones: null,
-            Items: [new(productoId, Cantidad: 3m)]),
+            Reason: null,
+            Notes: null,
+            Items: [new(productoId, Quantity: 3m)]),
             CancellationToken.None);
 
         crear.IsSuccess.Should().BeTrue(crear.Error);
@@ -105,10 +105,10 @@ public sealed class TransferenciasEndToEndTests
         // Consumir el stock manualmente para simular una venta concurrente
         var tenantId = factory.MutableTenant.TenantId;
         var userId   = factory.MutableUser.UserId;
-        var stockEntity = db.StockActual.First(s => s.TenantId == tenantId
-                                                  && s.BodegaId == origenId
-                                                  && s.ProductoId == productoId);
-        stockEntity.AplicarMovimiento(-3m, userId); // agota el stock
+        var stockEntity = db.CurrentStocks.First(s => s.TenantId == tenantId
+                                                  && s.WarehouseId == origenId
+                                                  && s.ProductId == productoId);
+        stockEntity.ApplyMovement(-3m, userId); // agota el stock
         await db.SaveChangesAsync(CancellationToken.None);
 
         // Confirmar ahora debe fallar
@@ -120,15 +120,15 @@ public sealed class TransferenciasEndToEndTests
         confirmar.Error.Should().Contain("Stock insuficiente");
 
         // El stock no debe haberse modificado (rollback efectivo)
-        var stockPost = db.StockActual.First(s => s.TenantId == tenantId
-                                               && s.BodegaId == origenId
-                                               && s.ProductoId == productoId);
-        stockPost.CantidadDisponible.Should().Be(0m);
+        var stockPost = db.CurrentStocks.First(s => s.TenantId == tenantId
+                                               && s.WarehouseId == origenId
+                                               && s.ProductId == productoId);
+        stockPost.AvailableQuantity.Should().Be(0m);
 
-        var movs = db.InventarioMovimientos
-            .Where(m => m.TenantId == tenantId && m.DocumentoOrigenId == crear.Value.Id)
+        var movs = db.StockMovements
+            .Where(m => m.TenantId == tenantId && m.SourceDocId == crear.Value.Id)
             .ToList();
-        movs.Should().BeEmpty("no se deben registrar movimientos si la confirmación falló");
+        movs.Should().BeEmpty("no se deben registrar movimientos si la confirmaciÃ³n fallÃ³");
     }
 
     [Fact]
@@ -143,9 +143,9 @@ public sealed class TransferenciasEndToEndTests
 
         var crear = await mediator.Send(new CrearTransferenciaCommand(
             origenId, destinoId,
-            Motivo: null,
-            Observaciones: null,
-            Items: [new(productoId, Cantidad: 7m)]),
+            Reason: null,
+            Notes: null,
+            Items: [new(productoId, Quantity: 7m)]),
             CancellationToken.None);
 
         crear.IsSuccess.Should().BeTrue(crear.Error);
@@ -155,14 +155,14 @@ public sealed class TransferenciasEndToEndTests
             CancellationToken.None);
 
         cancelar.IsSuccess.Should().BeTrue(cancelar.Error);
-        cancelar.Value!.Estado.Should().Be("Cancelado");
+        cancelar.Value!.Status.Should().Be("Cancelado");
 
         // El stock en la bodega origen debe permanecer intacto
         var tenantId = factory.MutableTenant.TenantId;
-        var stock = db.StockActual.First(s => s.TenantId == tenantId
-                                           && s.BodegaId == origenId
-                                           && s.ProductoId == productoId);
-        stock.CantidadDisponible.Should().Be(10m, "cancelar no debe afectar el stock");
+        var stock = db.CurrentStocks.First(s => s.TenantId == tenantId
+                                           && s.WarehouseId == origenId
+                                           && s.ProductId == productoId);
+        stock.AvailableQuantity.Should().Be(10m, "cancelar no debe afectar el stock");
     }
 
     [Fact]
@@ -177,9 +177,9 @@ public sealed class TransferenciasEndToEndTests
 
         var crear = await mediator.Send(new CrearTransferenciaCommand(
             origenId, destinoId,
-            Motivo: null,
-            Observaciones: null,
-            Items: [new(productoId, Cantidad: 2m)]),
+            Reason: null,
+            Notes: null,
+            Items: [new(productoId, Quantity: 2m)]),
             CancellationToken.None);
 
         crear.IsSuccess.Should().BeTrue(crear.Error);
@@ -205,9 +205,9 @@ public sealed class TransferenciasEndToEndTests
 
         var crear = await mediator.Send(new CrearTransferenciaCommand(
             origenId, destinoId,
-            Motivo: null,
-            Observaciones: null,
-            Items: [new(productoId, Cantidad: 2m)]),
+            Reason: null,
+            Notes: null,
+            Items: [new(productoId, Quantity: 2m)]),
             CancellationToken.None);
 
         crear.IsSuccess.Should().BeTrue(crear.Error);
@@ -220,7 +220,7 @@ public sealed class TransferenciasEndToEndTests
         cancelar.Error.Should().Contain("Borrador");
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static async Task<(Guid OrigenId, Guid DestinoId, Guid ProductoId)>
         SeedAsync(
@@ -236,29 +236,41 @@ public sealed class TransferenciasEndToEndTests
         var productoId = seed.ProductId;
 
         var branchId = db.Branches.First(b => b.TenantId == tenantId).Id;
-        var destino  = Bodega.Create(tenantId, branchId, "Bodega Destino E2E", null, null, userId);
-        db.Bodegas.Add(destino);
+        var destino  = Warehouse.Create(tenantId, branchId, "Warehouse Destino E2E", null, null, userId);
+        db.Warehouses.Add(destino);
         await db.SaveChangesAsync(CancellationToken.None);
 
         if (stockOrigen > 0)
         {
-            var stock = StockActual.Create(tenantId, productoId, seed.BodegaId, userId);
-            stock.AplicarMovimiento(stockOrigen, userId);
-            db.StockActual.Add(stock);
+            var stock = CurrentStock.Create(tenantId, productoId, seed.WarehouseId, userId);
+            stock.ApplyMovement(stockOrigen, userId);
+            db.CurrentStocks.Add(stock);
 
-            var mov = InventarioMovimiento.Create(
-                tenantId, productoId, seed.BodegaId,
-                TipoMovimientoInventario.AjustePositivo,
-                cantidad:            stockOrigen,
-                cantidadAnterior:    0,
-                referencia:          "Stock inicial E2E transferencia",
-                documentoOrigenId:   null,
-                documentoOrigenTipo: null,
+            var mov = StockMovement.Create(
+                tenantId, productoId, seed.WarehouseId,
+                StockMovementType.PositiveAdjust,
+                quantity:            stockOrigen,
+                previousQuantity:    0,
+                reference:          "Stock inicial E2E transferencia",
+                sourceDocId:   null,
+                sourceDocType: null,
                 createdBy:           userId);
-            db.InventarioMovimientos.Add(mov);
+            db.StockMovements.Add(mov);
             await db.SaveChangesAsync(CancellationToken.None);
         }
 
-        return (seed.BodegaId, destino.Id, productoId);
+        return (seed.WarehouseId, destino.Id, productoId);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+

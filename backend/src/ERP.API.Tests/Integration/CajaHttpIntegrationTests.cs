@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
@@ -13,7 +13,7 @@ using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;
 
-/// <summary>Tests HTTP del módulo Caja / Bancos (extractos, caja chica, flujo real).</summary>
+/// <summary>Tests HTTP del mÃ³dulo Caja / Bancos (extractos, caja chica, flujo real).</summary>
 public sealed class CajaHttpIntegrationTests
 {
     private static async Task<(IntegrationTestWebAppFactory Factory, HttpClient Client, IntegrationSeedData.SeedResult Seed)>
@@ -73,7 +73,7 @@ public sealed class CajaHttpIntegrationTests
         crear.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var jsonOpts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        var cuentaId = (await crear.Content.ReadFromJsonAsync<ApiResponse<CuentaBancariaDto>>(jsonOpts))!.ResponseObject.Id;
+        var cuentaId = (await crear.Content.ReadFromJsonAsync<ApiResponse<BankAccountDto>>(jsonOpts))!.ResponseObject.Id;
 
         const string csv = """
             fecha,descripcion,debito,credito
@@ -100,7 +100,7 @@ public sealed class CajaHttpIntegrationTests
         var listBody = await list.Content.ReadAsStringAsync();
         listBody.Should().Contain("\"success\":true");
 
-        var extractoId = (await import.Content.ReadFromJsonAsync<ApiResponse<ExtractoBancarioDto>>(jsonOpts))!.ResponseObject.Id;
+        var extractoId = (await import.Content.ReadFromJsonAsync<ApiResponse<BankStatementDto>>(jsonOpts))!.ResponseObject.Id;
         var det = await client.GetAsync($"/api/caja/extractos/{extractoId}");
         det.StatusCode.Should().Be(HttpStatusCode.OK);
         var detBody = await det.Content.ReadAsStringAsync();
@@ -130,7 +130,7 @@ public sealed class CajaHttpIntegrationTests
             "/api/caja/cajas-chicas",
             new { nombre = "Caja INT", saldoAsignado = 200m, cuentaBancariaIdReposicion = (Guid?)null, cuentaContableCajaId = cuentaGlId });
         crearCaja.StatusCode.Should().Be(HttpStatusCode.Created);
-        var cajaId = (await crearCaja.Content.ReadFromJsonAsync<ApiResponse<CajaChicaDto>>(jsonOpts))!.ResponseObject.Id;
+        var cajaId = (await crearCaja.Content.ReadFromJsonAsync<ApiResponse<PettyCashDto>>(jsonOpts))!.ResponseObject.Id;
 
         var gasto = await client.PostAsJsonAsync(
             "/api/caja/caja-chica/gastos",
@@ -138,7 +138,7 @@ public sealed class CajaHttpIntegrationTests
             {
                 cajaChicaId = cajaId,
                 fecha = DateTime.UtcNow,
-                concepto = "Útiles",
+                concepto = "Ãštiles",
                 monto = 10m,
                 tipoComprobante = "Recibo",
                 numeroComprobante = "R-1",
@@ -152,3 +152,4 @@ public sealed class CajaHttpIntegrationTests
     }
 
 }
+

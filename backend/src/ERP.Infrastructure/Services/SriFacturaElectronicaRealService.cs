@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common.Exceptions;
 using ERP.Application.Common.Interfaces;
@@ -26,13 +26,13 @@ public sealed class SriFacturaElectronicaRealService : ISriFacturaElectronicaSer
     }
 
     public Task<string> GenerarXmlFacturaAsync(
-        VentasFactura factura,
-        List<VentasDetalle> detalles,
-        ConfiguracionSRI config)
+        SalesBill factura,
+        List<SalesBillLine> detalles,
+        SriSettings config)
     {
         _logger.LogWarning(
             "GenerarXmlFacturaAsync no implementado — factura {FacturaId}, clave {ClaveAcceso}",
-            factura.Id, factura.ClaveAcceso);
+            factura.Id, factura.AccessKey);
 
         // TODO: Implementar generación real de XML según XSD del SRI Ecuador v1.1.0
         //   - Validar estructura completa contra XSD oficial
@@ -44,10 +44,10 @@ public sealed class SriFacturaElectronicaRealService : ISriFacturaElectronicaSer
     }
 
     public Task<string> GenerarXmlNotaCreditoDebitoAsync(
-        VentasFactura facturaOriginal,
-        VentasNotaCreditoDebito nota,
-        List<VentasNotaDetalle> detalles,
-        ConfiguracionSRI config)
+        SalesBill facturaOriginal,
+        SalesNote nota,
+        List<SalesNoteLine> detalles,
+        SriSettings config)
     {
         _logger.LogWarning(
             "GenerarXmlNotaCreditoDebitoAsync no implementado — nota {NotaId}", nota.Id);

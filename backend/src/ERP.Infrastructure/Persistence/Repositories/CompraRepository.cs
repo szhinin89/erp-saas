@@ -1,131 +1,131 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Enums;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class CompraRepository : ICompraRepository
+public sealed class CompraRepository : IPurchBillRepository
 {
     private readonly ErpDbContext _context;
 
     public CompraRepository(ErpDbContext context) => _context = context;
 
-    public Task AddAsync(CompraFactura compra, CancellationToken ct = default)
-        => _context.CompraFacturas.AddAsync(compra, ct).AsTask();
+    public Task AddAsync(PurchBill compra, CancellationToken ct = default)
+        => _context.PurchBills.AddAsync(compra, ct).AsTask();
 
-    public Task<CompraFactura?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.CompraFacturas
+    public Task<PurchBill?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+        => _context.PurchBills
             .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.Id == id, ct);
 
-    public Task<CompraFactura?> GetByIdWithDetailsAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.CompraFacturas
-            .Include(c => c.Detalles)
+    public Task<PurchBill?> GetByIdWithLinesAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+        => _context.PurchBills
+            .Include(c => c.Lines)
             .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.Id == id, ct);
 
-    public Task<bool> ExistsClaveAccesoAsync(Guid tenantId, string claveAcceso, CancellationToken ct = default)
-        => _context.CompraFacturas
-            .AnyAsync(c => c.TenantId == tenantId && c.ClaveAcceso == claveAcceso, ct);
+    public Task<bool> ExistsAccessKeyAsync(Guid tenantId, string claveAcceso, CancellationToken ct = default)
+        => _context.PurchBills
+            .AnyAsync(c => c.TenantId == tenantId && c.AccessKey == claveAcceso, ct);
 
-    public async Task<IReadOnlyList<CompraFactura>> GetAsync(
+    public async Task<IReadOnlyList<PurchBill>> GetAsync(
         Guid tenantId,
-        EstadoCompra? estado,
+        PurchaseStatus? estado,
         Guid?         proveedorId,
         DateTime?     desde,
         DateTime?     hasta,
         string?       search,
         CancellationToken ct = default)
     {
-        var q = _context.CompraFacturas.Where(c => c.TenantId == tenantId);
+        var q = _context.PurchBills.Where(c => c.TenantId == tenantId);
 
-        if (estado.HasValue)        q = q.Where(c => c.Estado == estado.Value);
-        if (proveedorId.HasValue)   q = q.Where(c => c.ProveedorId == proveedorId.Value);
-        if (desde.HasValue)         q = q.Where(c => c.FechaFactura >= desde.Value.Date);
-        if (hasta.HasValue)         q = q.Where(c => c.FechaFactura <= hasta.Value.Date);
+        if (estado.HasValue)        q = q.Where(c => c.Status == estado.Value);
+        if (proveedorId.HasValue)   q = q.Where(c => c.SupplierId == proveedorId.Value);
+        if (desde.HasValue)         q = q.Where(c => c.InvoiceDate >= desde.Value.Date);
+        if (hasta.HasValue)         q = q.Where(c => c.InvoiceDate <= hasta.Value.Date);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim().ToLower();
             q = q.Where(c =>
-                c.NumeroFactura.ToLower().Contains(s) ||
-                (c.ClaveAcceso != null && c.ClaveAcceso.Contains(s)));
+                c.InvoiceNumber.ToLower().Contains(s) ||
+                (c.AccessKey != null && c.AccessKey.Contains(s)));
         }
 
-        return await q.OrderByDescending(c => c.FechaFactura).ToListAsync(ct);
+        return await q.OrderByDescending(c => c.InvoiceDate).ToListAsync(ct);
     }
 
-    public async Task<IReadOnlyList<CompraBodegaAsignacion>> GetBodegaAsignacionesByCompraFacturaIdAsync(
+    public async Task<IReadOnlyList<PurchWarehouseAlloc>> GetWarehouseAllocsByBillIdAsync(
         Guid tenantId,
-        Guid compraFacturaId,
+        Guid PurchBillId,
         CancellationToken ct = default)
-        => await _context.CompraBodegaAsignaciones
-            .Where(a => a.TenantId == tenantId && a.CompraFacturaId == compraFacturaId)
-            .OrderBy(a => a.CompraDetalleId)
-            .ThenBy(a => a.BodegaId)
+        => await _context.PurchWarehouseAllocs
+            .Where(a => a.TenantId == tenantId && a.PurchBillId == PurchBillId)
+            .OrderBy(a => a.PurchBillLineId)
+            .ThenBy(a => a.WarehouseId)
             .ToListAsync(ct);
 
-    public Task AddBodegaAsignacionAsync(CompraBodegaAsignacion asignacion, CancellationToken ct = default)
-        => _context.CompraBodegaAsignaciones.AddAsync(asignacion, ct).AsTask();
+    public Task AddWarehouseAllocAsync(PurchWarehouseAlloc asignacion, CancellationToken ct = default)
+        => _context.PurchWarehouseAllocs.AddAsync(asignacion, ct).AsTask();
 
-    public Task AddRetencionEmitidaAsync(CompraRetencionEmitida retencion, CancellationToken ct = default)
-        => _context.CompraRetencionesEmitidas.AddAsync(retencion, ct).AsTask();
+    public Task AddIssuedRetentionAsync(IssuedRetention retencion, CancellationToken ct = default)
+        => _context.IssuedRetentions.AddAsync(retencion, ct).AsTask();
 
-    public Task<CompraRetencionEmitida?> GetRetencionEmitidaByIdWithDetailsAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.CompraRetencionesEmitidas
-            .Include(r => r.Proveedor)
-            .Include(r => r.Detalles)
+    public Task<IssuedRetention?> GetIssuedRetentionByIdWithLinesAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+        => _context.IssuedRetentions
+            .Include(r => r.Supplier)
+            .Include(r => r.Lines)
             .FirstOrDefaultAsync(r => r.TenantId == tenantId && r.Id == id, ct);
 
-    public async Task<IReadOnlyList<CompraRetencionEmitida>> GetRetencionesEmitidasAsync(
+    public async Task<IReadOnlyList<IssuedRetention>> GetIssuedRetentionsAsync(
         Guid tenantId,
         Guid? proveedorId,
         CancellationToken ct = default)
     {
-        var q = _context.CompraRetencionesEmitidas
-            .Include(r => r.Proveedor)
+        var q = _context.IssuedRetentions
+            .Include(r => r.Supplier)
             .Where(r => r.TenantId == tenantId);
         if (proveedorId.HasValue)
-            q = q.Where(r => r.ProveedorId == proveedorId.Value);
-        return await q.OrderByDescending(r => r.FechaEmision).ToListAsync(ct);
+            q = q.Where(r => r.SupplierId == proveedorId.Value);
+        return await q.OrderByDescending(r => r.IssueDate).ToListAsync(ct);
     }
 
-    public Task AddNotaProveedorAsync(CompraNotaProveedor nota, CancellationToken ct = default)
-        => _context.CompraNotasProveedor.AddAsync(nota, ct).AsTask();
+    public Task AddPurchNoteAsync(PurchNote nota, CancellationToken ct = default)
+        => _context.PurchNotes.AddAsync(nota, ct).AsTask();
 
-    public Task<CompraNotaProveedor?> GetNotaProveedorByIdWithDetailsAsync(
+    public Task<PurchNote?> GetPurchNoteByIdWithLinesAsync(
         Guid tenantId,
         Guid id,
         CancellationToken ct = default)
-        => _context.CompraNotasProveedor
-            .Include(n => n.Detalles)
+        => _context.PurchNotes
+            .Include(n => n.Lines)
             .FirstOrDefaultAsync(n => n.TenantId == tenantId && n.Id == id, ct);
 
-    public Task<bool> ExistsNotaProveedorClaveAccesoAsync(
+    public Task<bool> ExistsPurchNoteAccessKeyAsync(
         Guid tenantId,
         string claveAcceso,
         CancellationToken ct = default)
-        => _context.CompraNotasProveedor.AnyAsync(
-            n => n.TenantId == tenantId && n.ClaveAcceso == claveAcceso, ct);
+        => _context.PurchNotes.AnyAsync(
+            n => n.TenantId == tenantId && n.AccessKey == claveAcceso, ct);
 
-    public async Task<IReadOnlyList<CompraNotaProveedor>> GetNotasProveedorAsync(
+    public async Task<IReadOnlyList<PurchNote>> GetPurchNotesAsync(
         Guid tenantId,
         Guid? proveedorId,
-        Guid? compraFacturaId,
-        Guid? gastoFacturaId,
+        Guid? PurchBillId,
+        Guid? ExpenseInvoiceId,
         string? estado,
         CancellationToken ct = default)
     {
-        var q = _context.CompraNotasProveedor.Where(n => n.TenantId == tenantId);
-        if (proveedorId.HasValue) q = q.Where(n => n.ProveedorId == proveedorId.Value);
-        if (compraFacturaId.HasValue) q = q.Where(n => n.CompraFacturaId == compraFacturaId.Value);
-        if (gastoFacturaId.HasValue) q = q.Where(n => n.GastoFacturaId == gastoFacturaId.Value);
+        var q = _context.PurchNotes.Where(n => n.TenantId == tenantId);
+        if (proveedorId.HasValue) q = q.Where(n => n.SupplierId == proveedorId.Value);
+        if (PurchBillId.HasValue) q = q.Where(n => n.PurchBillId == PurchBillId.Value);
+        if (ExpenseInvoiceId.HasValue) q = q.Where(n => n.ExpenseInvoiceId == ExpenseInvoiceId.Value);
         if (!string.IsNullOrWhiteSpace(estado))
         {
             var e = estado.Trim();
-            q = q.Where(n => n.Estado == e);
+            q = q.Where(n => n.Status == e);
         }
 
-        return await q.OrderByDescending(n => n.FechaEmision).ToListAsync(ct);
+        return await q.OrderByDescending(n => n.IssueDate).ToListAsync(ct);
     }
 
     public Task SaveChangesAsync(CancellationToken ct = default)

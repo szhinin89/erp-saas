@@ -1,4 +1,4 @@
-using ERP.Domain.Modules.Accounting.Entities;
+﻿using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Modules.Sales.Entities;
@@ -15,7 +15,7 @@ internal static class VentasEndToEndHelpers
 {
     /// <summary>
     /// Siembra los prerequisitos para tests de ventas:
-    /// cuenta Revenue, cliente activo, ConfiguracionSRI y opcionalmente stock inicial.
+    /// cuenta Revenue, cliente activo, SriSettings y opcionalmente stock inicial.
     /// </summary>
     internal static async Task SeedVentasPrerequisitesAsync(
         ErpDbContext db,
@@ -27,7 +27,7 @@ internal static class VentasEndToEndHelpers
         var tenantId = seed.TenantId;
         var userId   = seed.UserId;
         var productId = seed.ProductId;
-        var bodegaId  = seed.BodegaId;
+        var bodegaId  = seed.WarehouseId;
 
         // Cuenta de ingresos (Revenue) para el asiento contable de venta
         var revenue = Account.Create(
@@ -48,46 +48,60 @@ internal static class VentasEndToEndHelpers
             createdBy:            userId);
         db.Customers.Add(cliente);
 
-        // ConfiguracionSRI (Ambiente 1 = pruebas)
-        var sri = ConfiguracionSRI.Create(
+        // SriSettings (Ambiente 1 = pruebas)
+        var sri = SriSettings.Create(
             tenantId:              tenantId,
-            rucEmpresa:            "9999999999999",
-            razonSocial:           "Empresa Test SRL",
-            nombreComercial:       null,
-            direccionMatriz:       "Av. Integracion 001",
-            obligadoContabilidad:  false,
-            contribuyenteEspecial: null,
-            establecimiento:       "001",
-            puntoEmision:          "001",
-            secuencialActual:      1,
-            certificadoP12Path:    "simulado.p12",
-            certificadoPassword:   "test",
-            ambiente:              1,
-            tipoEmision:           1,
-            urlSriAutorizacion:    "https://test-sri.example.com/wsdl",
+            ruc:            "9999999999999",
+            legalName:           "Empresa Test SRL",
+            tradeName:       null,
+            mainAddress:       "Av. Integracion 001",
+            requiresAccounting:  false,
+            specialTaxpayer: null,
+            estabCode:       "001",
+            emPointCode:          "001",
+            currentSequential:      1,
+            certP12Path:    "simulado.p12",
+            certPassword:   "test",
+            environment:              1,
+            emissionType:           1,
+            wsdlUrl:    "https://test-sri.example.com/wsdl",
             createdBy:             userId);
-        db.ConfiguracionSRIs.Add(sri);
+        db.SriSettings.Add(sri);
 
         await db.SaveChangesAsync(ct);
 
         if (crearStockActual && stockInicial > 0)
         {
-            var stock = StockActual.Create(tenantId, productId, bodegaId, userId);
-            stock.AplicarMovimiento(stockInicial, userId);
-            db.StockActual.Add(stock);
+            var stock = CurrentStock.Create(tenantId, productId, bodegaId, userId);
+            stock.ApplyMovement(stockInicial, userId);
+            db.CurrentStocks.Add(stock);
 
-            var movInicial = InventarioMovimiento.Create(
+            var movInicial = StockMovement.Create(
                 tenantId, productId, bodegaId,
-                TipoMovimientoInventario.AjustePositivo,
-                cantidad:         stockInicial,
-                cantidadAnterior: 0,
-                referencia:       "Stock inicial prueba",
-                documentoOrigenId:   null,
-                documentoOrigenTipo: null,
+                StockMovementType.PositiveAdjust,
+                quantity:         stockInicial,
+                previousQuantity: 0,
+                reference:       "Stock inicial prueba",
+                sourceDocId:   null,
+                sourceDocType: null,
                 createdBy:           userId);
-            db.InventarioMovimientos.Add(movInicial);
+            db.StockMovements.Add(movInicial);
 
             await db.SaveChangesAsync(ct);
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

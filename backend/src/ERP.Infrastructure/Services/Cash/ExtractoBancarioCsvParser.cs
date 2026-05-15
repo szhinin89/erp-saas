@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using ERP.Domain.Modules.Cash;
 
@@ -9,22 +9,22 @@ namespace ERP.Infrastructure.Services.Cash;
 /// fecha | descripcion | debito | credito | referencia (opcional),
 /// o fecha | descripcion | monto | tipo (Debito/Credito).
 /// </summary>
-public sealed class ExtractoBancarioCsvParser : IExtractoParser
+public sealed class BankStatementCsvParser : IStatementParser
 {
-    public async Task<IReadOnlyList<MovimientoExtractoParseRow>> ParseAsync(Stream stream, CancellationToken ct = default)
+    public async Task<IReadOnlyList<StatementParseRow>> ParseAsync(Stream stream, CancellationToken ct = default)
     {
         using var reader = new StreamReader(stream, leaveOpen: true);
         var text = await reader.ReadToEndAsync(ct);
         if (string.IsNullOrWhiteSpace(text))
-            return Array.Empty<MovimientoExtractoParseRow>();
+            return Array.Empty<StatementParseRow>();
 
         var lines = text.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         if (lines.Length < 2)
-            return Array.Empty<MovimientoExtractoParseRow>();
+            return Array.Empty<StatementParseRow>();
 
         var header = SplitCsv(lines[0]);
         var idx = BuildHeaderIndex(header);
-        var rows = new List<MovimientoExtractoParseRow>();
+        var rows = new List<StatementParseRow>();
 
         for (var i = 1; i < lines.Length; i++)
         {
@@ -40,7 +40,7 @@ public sealed class ExtractoBancarioCsvParser : IExtractoParser
             {
                 var monto = ParseDecimal(GetCol(cols, idx, "monto", "amount"));
                 var tipo  = NormalizeTipo(GetCol(cols, idx, "tipo", "type"));
-                rows.Add(new MovimientoExtractoParseRow(fecha, desc, monto, tipo, refe));
+                rows.Add(new StatementParseRow(fecha, desc, monto, tipo, refe));
                 continue;
             }
 
@@ -49,9 +49,9 @@ public sealed class ExtractoBancarioCsvParser : IExtractoParser
             if (debito > 0 && credito > 0)
                 throw new InvalidOperationException($"Línea {i + 1}: no puede haber débito y crédito simultáneos.");
             if (debito > 0)
-                rows.Add(new MovimientoExtractoParseRow(fecha, desc, debito, "Debito", refe));
+                rows.Add(new StatementParseRow(fecha, desc, debito, "Debito", refe));
             else if (credito > 0)
-                rows.Add(new MovimientoExtractoParseRow(fecha, desc, credito, "Credito", refe));
+                rows.Add(new StatementParseRow(fecha, desc, credito, "Credito", refe));
         }
 
         return rows;

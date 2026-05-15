@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -59,7 +59,7 @@ public sealed class InstallDataBootstrapService : IInstallDataBootstrapService
         if (!provider.Contains("Npgsql", StringComparison.OrdinalIgnoreCase))
         {
             _logger.LogInformation(
-                "InstallData omitido: proveedor actual '{Provider}' no es PostgreSQL/Npgsql.",
+                "InstallData omitido: Supplier actual '{Provider}' no es PostgreSQL/Npgsql.",
                 provider);
             return;
         }
@@ -78,7 +78,7 @@ public sealed class InstallDataBootstrapService : IInstallDataBootstrapService
 
         var conn = _db.Database.GetDbConnection() as NpgsqlConnection
             ?? throw new InvalidOperationException(
-                $"Se esperaba NpgsqlConnection para InstallData, proveedor actual: '{provider}'.");
+                $"Se esperaba NpgsqlConnection para InstallData, Supplier actual: '{provider}'.");
         var shouldCloseConnection = conn.State != ConnectionState.Open;
         if (shouldCloseConnection)
             await conn.OpenAsync(ct);

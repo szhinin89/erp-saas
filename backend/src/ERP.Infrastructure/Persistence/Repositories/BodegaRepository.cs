@@ -1,58 +1,58 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class BodegaRepository : IBodegaRepository
+public sealed class WarehouseRepository : IWarehouseRepository
 {
     private readonly ErpDbContext _context;
 
-    public BodegaRepository(ErpDbContext context) => _context = context;
+    public WarehouseRepository(ErpDbContext context) => _context = context;
 
-    public Task AddAsync(Bodega bodega, CancellationToken ct = default)
-        => _context.Bodegas.AddAsync(bodega, ct).AsTask();
+    public Task AddAsync(Warehouse Warehouse, CancellationToken ct = default)
+        => _context.Warehouses.AddAsync(Warehouse, ct).AsTask();
 
-    public Task<Bodega?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.Bodegas.FirstOrDefaultAsync(b => b.TenantId == tenantId && b.Id == id, ct);
+    public Task<Warehouse?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+        => _context.Warehouses.FirstOrDefaultAsync(b => b.TenantId == tenantId && b.Id == id, ct);
 
-    public async Task<bool> ExistsNombreAsync(
+    public async Task<bool> ExistsNameAsync(
         Guid tenantId,
         string nombre,
         Guid? excludeId,
         CancellationToken ct = default)
     {
-        var q = _context.Bodegas
-            .Where(b => b.TenantId == tenantId && b.Nombre == nombre.Trim());
+        var q = _context.Warehouses
+            .Where(b => b.TenantId == tenantId && b.Name == nombre.Trim());
         if (excludeId.HasValue)
             q = q.Where(b => b.Id != excludeId.Value);
         return await q.AnyAsync(ct);
     }
 
-    public async Task<IReadOnlyList<Bodega>> GetAsync(
+    public async Task<IReadOnlyList<Warehouse>> GetAsync(
         Guid tenantId,
         bool? activeFilter,
         string? search,
         Guid? sucursalId,
         CancellationToken ct = default)
     {
-        var q = _context.Bodegas.Where(b => b.TenantId == tenantId);
+        var q = _context.Warehouses.Where(b => b.TenantId == tenantId);
 
         if (activeFilter is true)  q = q.Where(b => b.IsActive);
         else if (activeFilter is false) q = q.Where(b => !b.IsActive);
 
-        if (sucursalId.HasValue) q = q.Where(b => b.SucursalId == sucursalId.Value);
+        if (sucursalId.HasValue) q = q.Where(b => b.BranchId == sucursalId.Value);
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim().ToLower();
             q = q.Where(b =>
-                b.Nombre.ToLower().Contains(s) ||
-                (b.Ubicacion != null && b.Ubicacion.ToLower().Contains(s)) ||
-                (b.Encargado != null && b.Encargado.ToLower().Contains(s)));
+                b.Name.ToLower().Contains(s) ||
+                (b.Address != null && b.Address.ToLower().Contains(s)) ||
+                (b.Manager != null && b.Manager.ToLower().Contains(s)));
         }
 
-        return await q.OrderBy(b => b.Nombre).ToListAsync(ct);
+        return await q.OrderBy(b => b.Name).ToListAsync(ct);
     }
 
     public Task SaveChangesAsync(CancellationToken ct = default)

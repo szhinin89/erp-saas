@@ -1,56 +1,56 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class InventarioStockRepository : IInventarioStockRepository
+public sealed class InventarioStockRepository : IStockRepository
 {
     private readonly ErpDbContext _context;
 
     public InventarioStockRepository(ErpDbContext context) => _context = context;
 
-    public Task<StockActual?> GetStockByTenantBodegaProductAsync(
+    public Task<CurrentStock?> GetStockAsync(
         Guid tenantId,
-        Guid bodegaId,
+        Guid WarehouseId,
         Guid productoId,
         CancellationToken ct = default)
-        => _context.StockActual.FirstOrDefaultAsync(
-            s => s.TenantId == tenantId && s.BodegaId == bodegaId && s.ProductoId == productoId,
+        => _context.CurrentStocks.FirstOrDefaultAsync(
+            s => s.TenantId == tenantId && s.WarehouseId == WarehouseId && s.ProductId == productoId,
             ct);
 
-    public async Task<IReadOnlyList<StockActual>> GetStockByTenantBodegaAsync(
+    public async Task<IReadOnlyList<CurrentStock>> GetStockByWarehouseAsync(
         Guid tenantId,
-        Guid bodegaId,
+        Guid WarehouseId,
         Guid? productoId,
         CancellationToken ct = default)
     {
-        var q = _context.StockActual
-            .Where(s => s.TenantId == tenantId && s.BodegaId == bodegaId);
+        var q = _context.CurrentStocks
+            .Where(s => s.TenantId == tenantId && s.WarehouseId == WarehouseId);
 
         if (productoId.HasValue)
-            q = q.Where(s => s.ProductoId == productoId.Value);
+            q = q.Where(s => s.ProductId == productoId.Value);
 
-        return await q.OrderBy(s => s.ProductoId).ToListAsync(ct);
+        return await q.OrderBy(s => s.ProductId).ToListAsync(ct);
     }
 
-    public Task AddStockActualAsync(StockActual entity, CancellationToken ct = default)
-        => _context.StockActual.AddAsync(entity, ct).AsTask();
+    public Task AddCurrentStockAsync(CurrentStock entity, CancellationToken ct = default)
+        => _context.CurrentStocks.AddAsync(entity, ct).AsTask();
 
-    public Task AddMovimientoAsync(InventarioMovimiento movimiento, CancellationToken ct = default)
-        => _context.InventarioMovimientos.AddAsync(movimiento, ct).AsTask();
+    public Task AddMovementAsync(StockMovement movimiento, CancellationToken ct = default)
+        => _context.StockMovements.AddAsync(movimiento, ct).AsTask();
 
     // ── Operaciones atómicas de concurrencia ─────────────────────────────────
 
     /// <inheritdoc/>
-    public async Task<decimal?> DecrementarStockAtomicoAsync(
-        Guid tenantId, Guid bodegaId, Guid productoId,
+    public async Task<decimal?> DecrementStockAtomicAsync(
+        Guid tenantId, Guid WarehouseId, Guid productoId,
         decimal delta, Guid updatedBy,
         CancellationToken ct = default,
         decimal costoUnitario = 0m)
     {
         if (IsInMemoryProvider())
-            return await DecrementarInMemoryAsync(tenantId, bodegaId, productoId, delta, updatedBy, ct, costoUnitario);
+            return await DecrementarInMemoryAsync(tenantId, WarehouseId, productoId, delta, updatedBy, ct, costoUnitario);
 
         var valorSalida = delta * costoUnitario;
 
@@ -65,7 +65,7 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
                    updated_at           = NOW(),
                    updated_by           = {updatedBy}
             WHERE  tenant_id   = {tenantId}
-              AND  bodega_id   = {bodegaId}
+              AND  Warehouse_id   = {WarehouseId}
               AND  producto_id = {productoId}
               AND  (cantidad - cantidad_reservada) >= {delta}
             """, ct);
@@ -73,16 +73,16 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
         if (rows == 0)
             return null; // stock insuficiente
 
-        var tracked = _context.ChangeTracker.Entries<StockActual>()
+        var tracked = _context.ChangeTracker.Entries<CurrentStock>()
             .FirstOrDefault(e =>
                 e.Entity.TenantId   == tenantId  &&
-                e.Entity.BodegaId   == bodegaId  &&
-                e.Entity.ProductoId == productoId);
+                e.Entity.WarehouseId   == WarehouseId  &&
+                e.Entity.ProductId == productoId);
 
         decimal cantidadAnterior;
         if (tracked is not null)
         {
-            cantidadAnterior = tracked.Entity.Cantidad;
+            cantidadAnterior = tracked.Entity.Quantity;
             tracked.State = EntityState.Detached;
         }
         else
@@ -94,22 +94,22 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
     }
 
     /// <inheritdoc/>
-    public async Task<decimal> IncrementarStockAtomicoAsync(
-        Guid tenantId, Guid bodegaId, Guid productoId,
+    public async Task<decimal> IncrementStockAtomicAsync(
+        Guid tenantId, Guid WarehouseId, Guid productoId,
         decimal delta, Guid createdBy,
         CancellationToken ct = default,
         decimal costoUnitario = 0m)
     {
         if (IsInMemoryProvider())
-            return await IncrementarInMemoryAsync(tenantId, bodegaId, productoId, delta, createdBy, ct, costoUnitario);
+            return await IncrementarInMemoryAsync(tenantId, WarehouseId, productoId, delta, createdBy, ct, costoUnitario);
 
-        var tracked = _context.ChangeTracker.Entries<StockActual>()
+        var tracked = _context.ChangeTracker.Entries<CurrentStock>()
             .FirstOrDefault(e =>
                 e.Entity.TenantId   == tenantId  &&
-                e.Entity.BodegaId   == bodegaId  &&
-                e.Entity.ProductoId == productoId);
+                e.Entity.WarehouseId   == WarehouseId  &&
+                e.Entity.ProductId == productoId);
 
-        var cantidadAnterior = tracked?.Entity.Cantidad ?? 0m;
+        var cantidadAnterior = tracked?.Entity.Quantity ?? 0m;
         if (tracked is not null)
             tracked.State = EntityState.Detached;
 
@@ -120,14 +120,14 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
         await _context.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO stock_actual
-                (id, tenant_id, producto_id, bodega_id,
+                (id, tenant_id, producto_id, Warehouse_id,
                  cantidad, cantidad_reservada, valor_total_stock, ultima_actualizacion,
                  created_at, created_by, updated_at, updated_by)
             VALUES
-                ({newId}, {tenantId}, {productoId}, {bodegaId},
+                ({newId}, {tenantId}, {productoId}, {WarehouseId},
                  {delta}, 0, {valorEntrada}, NOW(),
                  NOW(), {createdBy}, NOW(), {createdBy})
-            ON CONFLICT (tenant_id, producto_id, bodega_id)
+            ON CONFLICT (tenant_id, producto_id, Warehouse_id)
             DO UPDATE SET
                 cantidad             = stock_actual.cantidad + EXCLUDED.cantidad,
                 valor_total_stock    = stock_actual.valor_total_stock + EXCLUDED.valor_total_stock,
@@ -139,18 +139,18 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
         return cantidadAnterior;
     }
 
-    public async Task<IReadOnlyList<InventarioMovimiento>> GetMovimientosAsync(
+    public async Task<IReadOnlyList<StockMovement>> GetMovementsAsync(
         Guid      tenantId,
         Guid      productoId,
-        Guid      bodegaId,
+        Guid      WarehouseId,
         DateTime? desdeUtc,
         DateTime? hastaUtc,
         CancellationToken ct = default)
     {
-        var q = _context.InventarioMovimientos
+        var q = _context.StockMovements
             .Where(m => m.TenantId == tenantId
-                     && m.ProductoId == productoId
-                     && m.BodegaId  == bodegaId);
+                     && m.ProductId == productoId
+                     && m.WarehouseId  == WarehouseId);
 
         if (desdeUtc.HasValue)
             q = q.Where(m => m.CreatedAt >= desdeUtc.Value);
@@ -162,44 +162,44 @@ public sealed class InventarioStockRepository : IInventarioStockRepository
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    // EF InMemory no soporta SQL raw; detectamos el proveedor por nombre.
+    // EF InMemory no soporta SQL raw; detectamos el Supplier por nombre.
     private bool IsInMemoryProvider()
         => _context.Database.ProviderName?.Contains("InMemory", StringComparison.OrdinalIgnoreCase) == true;
 
     // ── Fallbacks para EF InMemory (pruebas) ─────────────────────────────────
 
     private async Task<decimal?> DecrementarInMemoryAsync(
-        Guid tenantId, Guid bodegaId, Guid productoId,
+        Guid tenantId, Guid WarehouseId, Guid productoId,
         decimal delta, Guid updatedBy, CancellationToken ct, decimal costoUnitario = 0m)
     {
-        var stock = await _context.StockActual.FirstOrDefaultAsync(
-            s => s.TenantId == tenantId && s.BodegaId == bodegaId && s.ProductoId == productoId, ct);
+        var stock = await _context.CurrentStocks.FirstOrDefaultAsync(
+            s => s.TenantId == tenantId && s.WarehouseId == WarehouseId && s.ProductId == productoId, ct);
 
-        if (stock is null || stock.CantidadDisponible < delta)
+        if (stock is null || stock.AvailableQuantity < delta)
             return null;
 
-        var anterior = stock.Cantidad;
-        stock.AplicarMovimiento(-delta, updatedBy, costoUnitario);
+        var anterior = stock.Quantity;
+        stock.ApplyMovement(-delta, updatedBy, costoUnitario);
         return anterior;
     }
 
     private async Task<decimal> IncrementarInMemoryAsync(
-        Guid tenantId, Guid bodegaId, Guid productoId,
+        Guid tenantId, Guid WarehouseId, Guid productoId,
         decimal delta, Guid createdBy, CancellationToken ct, decimal costoUnitario = 0m)
     {
-        var stock = await _context.StockActual.FirstOrDefaultAsync(
-            s => s.TenantId == tenantId && s.BodegaId == bodegaId && s.ProductoId == productoId, ct);
+        var stock = await _context.CurrentStocks.FirstOrDefaultAsync(
+            s => s.TenantId == tenantId && s.WarehouseId == WarehouseId && s.ProductId == productoId, ct);
 
         if (stock is null)
         {
-            stock = StockActual.Create(tenantId, productoId, bodegaId, createdBy);
-            await _context.StockActual.AddAsync(stock, ct);
-            stock.AplicarMovimiento(delta, createdBy, costoUnitario);
+            stock = CurrentStock.Create(tenantId, productoId, WarehouseId, createdBy);
+            await _context.CurrentStocks.AddAsync(stock, ct);
+            stock.ApplyMovement(delta, createdBy, costoUnitario);
             return 0;
         }
 
-        var anterior = stock.Cantidad;
-        stock.AplicarMovimiento(delta, createdBy, costoUnitario);
+        var anterior = stock.Quantity;
+        stock.ApplyMovement(delta, createdBy, costoUnitario);
         return anterior;
     }
 }

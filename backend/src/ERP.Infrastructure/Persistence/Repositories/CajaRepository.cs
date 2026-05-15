@@ -1,78 +1,78 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Cash.Entities;
 using ERP.Domain.Modules.Cash.Interfaces;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-public sealed class CajaRepository : ICajaRepository
+public sealed class CajaRepository : ICashRepository
 {
     private readonly ErpDbContext _db;
 
     public CajaRepository(ErpDbContext db) => _db = db;
 
-    public Task<CuentaBancaria?> GetCuentaBancariaByIdAsync(Guid id, CancellationToken ct = default)
-        => _db.CuentasBancarias.FirstOrDefaultAsync(x => x.Id == id, ct);
+    public Task<BankAccount?> GetBankAccountByIdAsync(Guid id, CancellationToken ct = default)
+        => _db.BankAccounts.FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public async Task<IReadOnlyList<CuentaBancaria>> ListCuentasBancariasAsync(CancellationToken ct = default)
-        => await _db.CuentasBancarias.OrderBy(x => x.Nombre).ToListAsync(ct);
+    public async Task<IReadOnlyList<BankAccount>> ListBankAccountsAsync(CancellationToken ct = default)
+        => await _db.BankAccounts.OrderBy(x => x.Name).ToListAsync(ct);
 
-    public Task AddCuentaBancariaAsync(CuentaBancaria entity, CancellationToken ct = default)
-        => _db.CuentasBancarias.AddAsync(entity, ct).AsTask();
+    public Task AddBankAccountAsync(BankAccount entity, CancellationToken ct = default)
+        => _db.BankAccounts.AddAsync(entity, ct).AsTask();
 
-    public Task<ExtractoBancario?> GetExtractoByIdAsync(Guid id, CancellationToken ct = default)
-        => _db.ExtractosBancarios.FirstOrDefaultAsync(x => x.Id == id, ct);
+    public Task<BankStatement?> GetBankStatementByIdAsync(Guid id, CancellationToken ct = default)
+        => _db.BankStatements.FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public Task<ExtractoBancario?> GetExtractoWithMovimientosAsync(Guid id, CancellationToken ct = default)
-        => _db.ExtractosBancarios
-            .Include(x => x.Movimientos)
+    public Task<BankStatement?> GetBankStatementWithTransactionsAsync(Guid id, CancellationToken ct = default)
+        => _db.BankStatements
+            .Include(x => x.Transactions)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public async Task<ExtractoBancario?> GetExtractoWithMovimientosForMovimientoAsync(
+    public async Task<BankStatement?> GetBankStatementForTransactionAsync(
         Guid movimientoId,
         CancellationToken ct = default)
     {
-        var mov = await _db.MovimientosBancarios.AsNoTracking().FirstOrDefaultAsync(m => m.Id == movimientoId, ct);
+        var mov = await _db.BankTransactions.AsNoTracking().FirstOrDefaultAsync(m => m.Id == movimientoId, ct);
         if (mov is null)
             return null;
-        return await GetExtractoWithMovimientosAsync(mov.ExtractoBancarioId, ct);
+        return await GetBankStatementWithTransactionsAsync(mov.BankStatementId, ct);
     }
 
-    public async Task<IReadOnlyList<ExtractoBancario>> ListExtractosByCuentaAsync(
-        Guid cuentaBancariaId,
+    public async Task<IReadOnlyList<BankStatement>> ListStatementsByAccountAsync(
+        Guid BankAccountId,
         CancellationToken ct = default)
-        => await _db.ExtractosBancarios
-            .Include(x => x.Movimientos)
-            .Where(x => x.CuentaBancariaId == cuentaBancariaId)
-            .OrderByDescending(x => x.FechaCarga)
+        => await _db.BankStatements
+            .Include(x => x.Transactions)
+            .Where(x => x.BankAccountId == BankAccountId)
+            .OrderByDescending(x => x.LoadedAt)
             .ToListAsync(ct);
 
-    public Task AddExtractoAsync(ExtractoBancario entity, CancellationToken ct = default)
-        => _db.ExtractosBancarios.AddAsync(entity, ct).AsTask();
+    public Task AddBankStatementAsync(BankStatement entity, CancellationToken ct = default)
+        => _db.BankStatements.AddAsync(entity, ct).AsTask();
 
-    public Task<MovimientoBancario?> GetMovimientoByIdAsync(Guid id, CancellationToken ct = default)
-        => _db.MovimientosBancarios.FirstOrDefaultAsync(x => x.Id == id, ct);
+    public Task<BankTransaction?> GetBankTransactionByIdAsync(Guid id, CancellationToken ct = default)
+        => _db.BankTransactions.FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public Task<CajaChica?> GetCajaChicaByIdAsync(Guid id, CancellationToken ct = default)
-        => _db.CajasChicas.FirstOrDefaultAsync(x => x.Id == id, ct);
+    public Task<PettyCash?> GetPettyCashByIdAsync(Guid id, CancellationToken ct = default)
+        => _db.PettyCashes.FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public async Task<IReadOnlyList<CajaChica>> ListCajasChicasAsync(CancellationToken ct = default)
-        => await _db.CajasChicas.OrderBy(x => x.Nombre).ToListAsync(ct);
+    public async Task<IReadOnlyList<PettyCash>> ListPettyCashesAsync(CancellationToken ct = default)
+        => await _db.PettyCashes.OrderBy(x => x.Name).ToListAsync(ct);
 
-    public Task AddCajaChicaAsync(CajaChica entity, CancellationToken ct = default)
-        => _db.CajasChicas.AddAsync(entity, ct).AsTask();
+    public Task AddPettyCashAsync(PettyCash entity, CancellationToken ct = default)
+        => _db.PettyCashes.AddAsync(entity, ct).AsTask();
 
-    public Task AddArqueoAsync(ArqueoCaja entity, CancellationToken ct = default)
-        => _db.ArqueosCaja.AddAsync(entity, ct).AsTask();
+    public Task AddCashCountAsync(CashCount entity, CancellationToken ct = default)
+        => _db.CashCounts.AddAsync(entity, ct).AsTask();
 
-    public Task<ArqueoCaja?> GetArqueoByIdAsync(Guid id, CancellationToken ct = default)
-        => _db.ArqueosCaja.FirstOrDefaultAsync(x => x.Id == id, ct);
+    public Task<CashCount?> GetCashCountByIdAsync(Guid id, CancellationToken ct = default)
+        => _db.CashCounts.FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public Task AddGastoCajaAsync(GastoCajaChica entity, CancellationToken ct = default)
-        => _db.GastosCajaChica.AddAsync(entity, ct).AsTask();
+    public Task AddPettyCashExpenseAsync(PettyCashExpense entity, CancellationToken ct = default)
+        => _db.PettyCashExpenses.AddAsync(entity, ct).AsTask();
 
-    public async Task<IReadOnlyList<GastoCajaChica>> ListGastosCajaAsync(Guid cajaChicaId, CancellationToken ct = default)
-        => await _db.GastosCajaChica
-            .Where(x => x.CajaChicaId == cajaChicaId)
-            .OrderByDescending(x => x.Fecha)
+    public async Task<IReadOnlyList<PettyCashExpense>> ListPettyCashExpensesAsync(Guid PettyCashId, CancellationToken ct = default)
+        => await _db.PettyCashExpenses
+            .Where(x => x.PettyCashId == PettyCashId)
+            .OrderByDescending(x => x.ExpenseDate)
             .ToListAsync(ct);
 }

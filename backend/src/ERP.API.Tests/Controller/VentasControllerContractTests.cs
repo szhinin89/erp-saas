@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Controllers;
@@ -22,7 +22,7 @@ namespace ERP.API.Tests.Controller;
 /// </summary>
 public sealed class VentasControllerContractTests
 {
-    // ── Crear ─────────────────────────────────────────────────────────────
+    // â”€â”€ Crear â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task Crear_WhenSuccess_Returns201WithId()
@@ -61,7 +61,7 @@ public sealed class VentasControllerContractTests
         payload.Message.Should().Contain("Stock insuficiente");
     }
 
-    // ── Validar ───────────────────────────────────────────────────────────
+    // â”€â”€ Validar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task Validar_WhenSuccess_Returns200()
@@ -69,7 +69,7 @@ public sealed class VentasControllerContractTests
         var id   = Guid.NewGuid();
         var ctrl = CreateController(new StubMediator(_ => Result<Guid>.Success(id)));
 
-        var result = await ctrl.Validar(id, CancellationToken.None);
+        var result = await ctrl.Validate(id, CancellationToken.None);
 
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         ok.StatusCode.Should().Be(200);
@@ -84,13 +84,13 @@ public sealed class VentasControllerContractTests
         var ctrl = CreateController(
             new StubMediator(_ => Result<Guid>.Failure("Solo se puede validar una factura en Borrador.")));
 
-        var result = await ctrl.Validar(Guid.NewGuid(), CancellationToken.None);
+        var result = await ctrl.Validate(Guid.NewGuid(), CancellationToken.None);
 
         result.Should().BeOfType<BadRequestObjectResult>()
               .Which.StatusCode.Should().Be(400);
     }
 
-    // ── Emitir ────────────────────────────────────────────────────────────
+    // â”€â”€ Emitir â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task Emitir_WhenSuccess_Returns200WithMessage()
@@ -116,7 +116,7 @@ public sealed class VentasControllerContractTests
         result.Should().BeOfType<BadRequestObjectResult>();
     }
 
-    // ── Anular ────────────────────────────────────────────────────────────
+    // â”€â”€ Anular â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task Anular_WhenSuccess_Returns200()
@@ -124,7 +124,7 @@ public sealed class VentasControllerContractTests
         var id   = Guid.NewGuid();
         var ctrl = CreateController(new StubMediator(_ => Result<Guid>.Success(id)));
 
-        var result = await ctrl.Anular(id, CancellationToken.None);
+        var result = await ctrl.Void(id, CancellationToken.None);
 
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().BeOfType<ApiResponse<Guid>>()
@@ -137,16 +137,16 @@ public sealed class VentasControllerContractTests
         var ctrl = CreateController(
             new StubMediator(_ => Result<Guid>.Failure("No se puede anular una factura ya autorizada.")));
 
-        var result = await ctrl.Anular(Guid.NewGuid(), CancellationToken.None);
+        var result = await ctrl.Void(Guid.NewGuid(), CancellationToken.None);
         result.Should().BeOfType<BadRequestObjectResult>();
     }
 
-    // ── GetById ───────────────────────────────────────────────────────────
+    // â”€â”€ GetById â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task GetById_WhenFound_Returns200WithDetail()
     {
-        var dto = new VentasFacturaDetailDto(
+        var dto = new SalesBillDetailDto(
             Guid.NewGuid(), Guid.NewGuid(), "Cliente Test",
             Guid.NewGuid(), Guid.NewGuid(),
             "01", "001", "001", "000000001", new string('0', 49),
@@ -156,28 +156,28 @@ public sealed class VentasControllerContractTests
             new List<VentasDetalleDto>());
 
         var ctrl = CreateController(
-            new StubMediator(_ => Result<VentasFacturaDetailDto?>.Success(dto)));
+            new StubMediator(_ => Result<SalesBillDetailDto?>.Success(dto)));
 
         var result = await ctrl.GetById(dto.Id, CancellationToken.None);
 
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        ok.Value.Should().BeOfType<ApiResponse<VentasFacturaDetailDto?>>()
+        ok.Value.Should().BeOfType<ApiResponse<SalesBillDetailDto?>>()
           .Which.ResponseObject.Should().Be(dto);
     }
 
     [Fact]
     public async Task GetById_WhenNotFound_Returns200WithNullPayload()
     {
-        // El patrón de la API retorna Success(null) para "no encontrado" → 200 con payload nulo.
-        // Para un 404 real, el handler debería devolver Result.Failure.
+        // El patrÃ³n de la API retorna Success(null) para "no encontrado" â†’ 200 con payload nulo.
+        // Para un 404 real, el handler deberÃ­a devolver Result.Failure.
         var ctrl = CreateController(
-            new StubMediator(_ => Result<VentasFacturaDetailDto?>.Success(null)));
+            new StubMediator(_ => Result<SalesBillDetailDto?>.Success(null)));
 
         var result = await ctrl.GetById(Guid.NewGuid(), CancellationToken.None);
 
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         ok.StatusCode.Should().Be(200);
-        var payload = ok.Value.Should().BeOfType<ApiResponse<VentasFacturaDetailDto?>>().Subject;
+        var payload = ok.Value.Should().BeOfType<ApiResponse<SalesBillDetailDto?>>().Subject;
         payload.Success.Should().BeTrue();
         payload.ResponseObject.Should().BeNull();
     }
@@ -186,7 +186,7 @@ public sealed class VentasControllerContractTests
     public async Task GetById_WhenRepositoryFails_Returns404()
     {
         var ctrl = CreateController(
-            new StubMediator(_ => Result<VentasFacturaDetailDto?>.Failure("No encontrado.")));
+            new StubMediator(_ => Result<SalesBillDetailDto?>.Failure("No encontrado.")));
 
         var result = await ctrl.GetById(Guid.NewGuid(), CancellationToken.None);
         result.Should().BeOfType<NotFoundObjectResult>().Which.StatusCode.Should().Be(404);
@@ -216,21 +216,21 @@ public sealed class VentasControllerContractTests
         result.Should().BeOfType<NotFoundResult>();
     }
 
-    // ── GetStock ──────────────────────────────────────────────────────────
+    // â”€â”€ GetStock â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task GetStock_SinParametros_Retorna400()
     {
-        // HttpContext simulado con query vacía requeriría MockHttpContext.
-        // En su lugar verificamos que la lógica de parseo rechaza GUIDs vacíos.
+        // HttpContext simulado con query vacÃ­a requerirÃ­a MockHttpContext.
+        // En su lugar verificamos que la lÃ³gica de parseo rechaza GUIDs vacÃ­os.
         // Este test valida el contrato sin servidor HTTP.
-        var ctrl = CreateController(new StubMediator(_ => throw new InvalidOperationException("no debería llegar")));
+        var ctrl = CreateController(new StubMediator(_ => throw new InvalidOperationException("no deberÃ­a llegar")));
 
         // Sin HttpContext real, GetStock lanza NullRef al leer Request.Query
-        // Verificamos que la línea de validación existe en el controlador
+        // Verificamos que la lÃ­nea de validaciÃ³n existe en el controlador
         // mediante tests HTTP en VentasHttpTests.
         // (ver VentasHttpTests.Ventas_GetStock_SinParametros_Retorna400)
-        await Task.CompletedTask; // placeholder — la cobertura real está en VentasHttpTests
+        await Task.CompletedTask; // placeholder â€” la cobertura real estÃ¡ en VentasHttpTests
     }
     private static VentasController CreateController(IMediator mediator, ITirillaFacturaService? service = null)
     {
@@ -255,3 +255,5 @@ public sealed class VentasControllerContractTests
         }
     }
 }
+
+

@@ -20,10 +20,8 @@ using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Purchasing.Entities;
-using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Cash.Entities;
-using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
@@ -185,8 +183,8 @@ public class ErpDbContext : DbContext
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
     public DbSet<JournalEntryLine> JournalEntryLines => Set<JournalEntryLine>();
-    public DbSet<ConfiguracionContableEmpresa> ConfiguracionContableEmpresas => Set<ConfiguracionContableEmpresa>();
-    public DbSet<ConfiguracionGastoCategoria> ConfiguracionGastoCategorias => Set<ConfiguracionGastoCategoria>();
+    public DbSet<AccountingSetup> AccountingSetups => Set<AccountingSetup>();
+    public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<TaxRate> TaxRates => Set<TaxRate>();
     public DbSet<ProductLine> ProductLines => Set<ProductLine>();
@@ -213,50 +211,58 @@ public class ErpDbContext : DbContext
     public DbSet<Branch> Branches => Set<Branch>();
     public DbSet<UserActivity> UserActivities => Set<UserActivity>();
     public DbSet<Customer> Customers => Set<Customer>();
-    public DbSet<VentasFactura> VentasFacturas => Set<VentasFactura>();
-    public DbSet<VentasNotaCreditoDebito> VentasNotasCreditoDebito => Set<VentasNotaCreditoDebito>();
-    public DbSet<VentasRetencionRecibida> VentasRetencionesRecibidas => Set<VentasRetencionRecibida>();
-    public DbSet<ConfiguracionSRI> ConfiguracionSRIs => Set<ConfiguracionSRI>();
-    public DbSet<ConfiguracionRetencion> ConfiguracionRetenciones => Set<ConfiguracionRetencion>();
+    // ── Sales (traditional) ───────────────────────────────────────────────
+    public DbSet<SalesBill>           SalesBills          => Set<SalesBill>();
+    public DbSet<SalesBillLine>       SalesBillLines      => Set<SalesBillLine>();
+    public DbSet<SalesNote>           SalesNotes          => Set<SalesNote>();
+    public DbSet<SalesNoteLine>       SalesNoteLines      => Set<SalesNoteLine>();
+    public DbSet<SalesRetention>      SalesRetentions     => Set<SalesRetention>();
+    public DbSet<SalesRetentionLine>  SalesRetentionLines => Set<SalesRetentionLine>();
 
-    // ── Logística / Bodegas ───────────────────────────────────────────────
-    public DbSet<Bodega> Bodegas => Set<Bodega>();
+    // ── Configuration ─────────────────────────────────────────────────────
+    public DbSet<SriSettings>       SriSettings       => Set<SriSettings>();
+    public DbSet<RetentionSettings> RetentionSettings => Set<RetentionSettings>();
+    public DbSet<BillingSettings>   BillingSettings   => Set<BillingSettings>();
 
-    // ── Proveedores ───────────────────────────────────────────────────────
-    public DbSet<Proveedor> Proveedores => Set<Proveedor>();
+    // ── Logistics / Warehouses ────────────────────────────────────────────
+    public DbSet<Warehouse> Warehouses => Set<Warehouse>();
 
-    // ── Compras ───────────────────────────────────────────────────────────
-    public DbSet<CompraFactura>          CompraFacturas          => Set<CompraFactura>();
-    public DbSet<CompraNotaProveedor>    CompraNotasProveedor    => Set<CompraNotaProveedor>();
-    public DbSet<CompraNotaProveedorDetalle> CompraNotaProveedorDetalles => Set<CompraNotaProveedorDetalle>();
-    public DbSet<CompraRetencionEmitida> CompraRetencionesEmitidas => Set<CompraRetencionEmitida>();
-    public DbSet<CompraDetalle>          CompraDetalles          => Set<CompraDetalle>();
-    public DbSet<CompraBodegaAsignacion> CompraBodegaAsignaciones => Set<CompraBodegaAsignacion>();
-    public DbSet<OrdenCompra>            OrdenesCompra           => Set<OrdenCompra>();
-    public DbSet<OrdenCompraDetalle>     OrdenesCompraDetalles   => Set<OrdenCompraDetalle>();
-    public DbSet<OrdenCompraFactura>     OrdenesCompraFacturas   => Set<OrdenCompraFactura>();
+    // ── Suppliers ────────────────────────────────────────────────────────
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
 
-    // ── Gastos ────────────────────────────────────────────────────────────
-    public DbSet<GastoFactura> GastoFacturas => Set<GastoFactura>();
-    public DbSet<ExpenseDetail> ExpenseDetails => Set<ExpenseDetail>();
+    // ── Purchasing (traditional) ──────────────────────────────────────────
+    public DbSet<PurchBill>           PurchBills            => Set<PurchBill>();
+    public DbSet<PurchBillLine>       PurchBillLines        => Set<PurchBillLine>();
+    public DbSet<PurchNote>           PurchNotes            => Set<PurchNote>();
+    public DbSet<PurchNoteLine>       PurchNoteLines        => Set<PurchNoteLine>();
+    public DbSet<IssuedRetention>     IssuedRetentions      => Set<IssuedRetention>();
+    public DbSet<PurchRetentionLine>  PurchRetentionLines   => Set<PurchRetentionLine>();
+    public DbSet<PurchWarehouseAlloc> PurchWarehouseAllocs  => Set<PurchWarehouseAlloc>();
+    public DbSet<PurchaseOrder>       PurchaseOrders        => Set<PurchaseOrder>();
+    public DbSet<PurchaseOrderLine>   PurchaseOrderLines    => Set<PurchaseOrderLine>();
+    public DbSet<PurchaseOrderBill>   PurchaseOrderBills    => Set<PurchaseOrderBill>();
 
-    // ── Caja / Bancos ─────────────────────────────────────────────────────
-    public DbSet<CuentaBancaria> CuentasBancarias => Set<CuentaBancaria>();
-    public DbSet<ExtractoBancario> ExtractosBancarios => Set<ExtractoBancario>();
-    public DbSet<MovimientoBancario> MovimientosBancarios => Set<MovimientoBancario>();
-    public DbSet<CajaChica> CajasChicas => Set<CajaChica>();
-    public DbSet<ArqueoCaja> ArqueosCaja => Set<ArqueoCaja>();
-    public DbSet<GastoCajaChica> GastosCajaChica => Set<GastoCajaChica>();
+    // ── Expenses ──────────────────────────────────────────────────────────
+    public DbSet<ExpenseInvoice> ExpenseInvoices => Set<ExpenseInvoice>();
+    public DbSet<ExpenseDetail>  ExpenseDetails  => Set<ExpenseDetail>();
 
-    // ── Inventario ────────────────────────────────────────────────────────
-    public DbSet<StockActual>          StockActual            => Set<StockActual>();
-    public DbSet<InventarioMovimiento> InventarioMovimientos  => Set<InventarioMovimiento>();
-    public DbSet<KardexSnapshot>       KardexSnapshots        => Set<KardexSnapshot>();
-    public DbSet<KardexReporte>        KardexReportes         => Set<KardexReporte>();
-    public DbSet<Transferencia>        Transferencias         => Set<Transferencia>();
-    public DbSet<TransferenciaDetalle> TransferenciaDetalles  => Set<TransferenciaDetalle>();
-    public DbSet<AjusteInventario>     AjustesInventario      => Set<AjusteInventario>();
-    public DbSet<StockAdjustmentLine>  StockAdjustmentLines   => Set<StockAdjustmentLine>();
+    // ── Cash / Banking ────────────────────────────────────────────────────
+    public DbSet<BankAccount>      BankAccounts      => Set<BankAccount>();
+    public DbSet<BankStatement>    BankStatements    => Set<BankStatement>();
+    public DbSet<BankTransaction>  BankTransactions  => Set<BankTransaction>();
+    public DbSet<PettyCash>        PettyCashes       => Set<PettyCash>();
+    public DbSet<CashCount>        CashCounts        => Set<CashCount>();
+    public DbSet<PettyCashExpense> PettyCashExpenses => Set<PettyCashExpense>();
+
+    // ── Inventory ─────────────────────────────────────────────────────────
+    public DbSet<CurrentStock>        CurrentStocks        => Set<CurrentStock>();
+    public DbSet<StockMovement>       StockMovements       => Set<StockMovement>();
+    public DbSet<KardexSnapshot>      KardexSnapshots      => Set<KardexSnapshot>();
+    public DbSet<KardexReport>        KardexReports        => Set<KardexReport>();
+    public DbSet<StockTransfer>       StockTransfers       => Set<StockTransfer>();
+    public DbSet<StockTransferLine>   StockTransferLines   => Set<StockTransferLine>();
+    public DbSet<StockAdjustment>     StockAdjustments     => Set<StockAdjustment>();
+    public DbSet<StockAdjustmentLine> StockAdjustmentLines => Set<StockAdjustmentLine>();
 
     public DbSet<SaasFeatureDefinition> SaasFeatureDefinitions => Set<SaasFeatureDefinition>();
     public DbSet<SaasPlan> SaasPlans => Set<SaasPlan>();
@@ -268,11 +274,10 @@ public class ErpDbContext : DbContext
     public DbSet<UiNavGroup> UiNavGroups => Set<UiNavGroup>();
     public DbSet<UiNavItem> UiNavItems => Set<UiNavItem>();
     public DbSet<TenantCustomMenu> TenantCustomMenus => Set<TenantCustomMenu>();
-    public DbSet<Funcionalidad> Funcionalidades => Set<Funcionalidad>();
+    public DbSet<AppFeature> AppFeatures => Set<AppFeature>();
     public DbSet<ConfigGlobal> ConfigGlobals => Set<ConfigGlobal>();
     public DbSet<ConfigModule> ConfigModules => Set<ConfigModule>();
     public DbSet<ConfigFeature> ConfigFeatures => Set<ConfigFeature>();
-    public DbSet<ConfiguracionFacturacion> ConfiguracionFacturaciones => Set<ConfiguracionFacturacion>();
 
     // ── Catálogos SRI (globales, sin tenant_id) ───────────────────────────
     public DbSet<SriEnvironment>    SriEnvironments    => Set<SriEnvironment>();
