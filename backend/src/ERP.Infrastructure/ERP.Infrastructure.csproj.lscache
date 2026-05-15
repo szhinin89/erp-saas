@@ -65,20 +65,8 @@ Deployment/
  InstanceQuotaFileStore.cs
 EnglishAliases.cs
 Migrations/
- 20260511211736_InitialCreate.cs
- 20260511211736_InitialCreate.Designer.cs
- 20260511235353_AddFirstRunSetupState.cs
- 20260511235353_AddFirstRunSetupState.Designer.cs
- 20260512145742_AddCompletedAtToFirstRunSetupState.cs
- 20260512145742_AddCompletedAtToFirstRunSetupState.Designer.cs
- 20260512161332_AddPasswordResetTokens.cs
- 20260512161332_AddPasswordResetTokens.Designer.cs
- 20260512174758_MenuConfigPlanAndTenantCustom.cs
- 20260512174758_MenuConfigPlanAndTenantCustom.Designer.cs
- 20260512183153_AddFuncionalidadesTable.cs
- 20260512183153_AddFuncionalidadesTable.Designer.cs
- 20260513172014_AddSaasPlanMenuSidebarLayout.cs
- 20260513172014_AddSaasPlanMenuSidebarLayout.Designer.cs
+ 20260515204802_InitialSchemaAndEnglishNames.cs
+ 20260515204802_InitialSchemaAndEnglishNames.Designer.cs
  ErpDbContextModelSnapshot.cs
 obj/Debug/net10.0/
  .NETCoreApp,Version=v10.0.AssemblyAttributes.cs
@@ -206,11 +194,6 @@ Persistence/
  ErpDbContext.cs
  ErpDbContextFactory.cs
  GrowthAnalyticsReader.cs
- Migrations/
-  20260515110923_AddElectronicInvoicingSchema.cs
-  20260515110923_AddElectronicInvoicingSchema.Designer.cs
-  20260515202448_RenameSpanishToEnglish.cs
-  20260515202448_RenameSpanishToEnglish.Designer.cs
  Navigation/NavigationMenuConfiguracionBootstrap.cs
  NoOpPublisher.cs
  Repositories/
