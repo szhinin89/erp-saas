@@ -185,11 +185,11 @@ export type AdminNavigationMenu = {
 
 export type FuncionalidadArbolDto = {
   id: string;
-  nombre: string;
-  icono: string | null;
-  ruta: string | null;
-  permiso: string;
-  hijos: FuncionalidadArbolDto[];
+  name: string;
+  icon: string | null;
+  path: string | null;
+  permission: string;
+  children: FuncionalidadArbolDto[];
 };
 
 export type NavItemSiblingOrderLevel = {
@@ -374,12 +374,12 @@ export const superAdminService = {
 
   getFuncionalidadesArbol: () =>
     api
-      .get<ApiResponse<FuncionalidadArbolDto[]>>('/api/superadmin/funcionalidades/arbol')
+      .get<ApiResponse<FuncionalidadArbolDto[]>>('/api/superadmin/AppFeatures/arbol')
       .then((r) => r.data.responseObject ?? []),
 
   syncFuncionalidadesCatalogo: () =>
     api
-      .post<ApiResponse<{ sincronizados: number }>>('/api/superadmin/funcionalidades/sincronizar')
+      .post<ApiResponse<{ sincronizados: number }>>('/api/superadmin/AppFeatures/sincronizar')
       .then((r) => r.data.responseObject),
 
   deleteTenantCustomMenu: (tenantId: string) =>

@@ -55,13 +55,13 @@ export function createFormEditorItem(nombre = 'Nuevo formulario'): EditorMenuIte
 }
 
 export function funcionalidadToEditorItem(f: FuncionalidadArbolDto): EditorMenuItem {
-  const ruta = (f.ruta ?? '').trim() || '/dashboard';
-  const permiso = (f.permiso ?? '').trim();
+  const ruta = (f.path ?? '').trim() || '/dashboard';
+  const permiso = (f.permission ?? '').trim();
   return {
     uid: crypto.randomUUID(),
     funcionalidadId: f.id,
-    nombre: f.nombre,
-    icono: (f.icono ?? undefined) || undefined,
+    nombre: f.name,
+    icono: (f.icon ?? undefined) || undefined,
     ruta,
     permiso,
     children: [],
@@ -74,7 +74,7 @@ export function flattenFuncionalidades(arbol: FuncionalidadArbolDto[]): Funciona
   const walk = (nodes: FuncionalidadArbolDto[]) => {
     for (const n of nodes) {
       out.push(n);
-      walk(n.hijos ?? []);
+      walk(n.children ?? []);
     }
   };
   walk(arbol);
@@ -87,9 +87,9 @@ export function buildFuncionalidadMaps(arbol: FuncionalidadArbolDto[]) {
   const walk = (nodes: FuncionalidadArbolDto[]) => {
     for (const n of nodes) {
       byId.set(n.id, n);
-      const p = (n.permiso ?? '').trim();
+      const p = (n.permission ?? '').trim();
       if (p) byPerm.set(p, n);
-      walk(n.hijos ?? []);
+      walk(n.children ?? []);
     }
   };
   walk(arbol);
@@ -146,7 +146,7 @@ function sessionItemToEditor(s: SessionMenuItemDto, byPerm: Map<string, Funciona
     uid: stableUid,
     funcionalidadId: cat?.id,
     nombre: (s.displayLabel ?? s.labelKey ?? '').trim() || 'Item',
-    icono: iconFromSession || cat?.icono || undefined,
+    icono: iconFromSession || cat?.icon || undefined,
     ruta: route || '/dashboard',
     permiso: perm || 'session:menu',
     children: [],

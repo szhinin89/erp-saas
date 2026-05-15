@@ -57,9 +57,9 @@ function filterFuncionalidadesArbol(rows: FuncionalidadArbolDto[], options: Cata
 
   const textMatches = (n: FuncionalidadArbolDto): boolean => {
     if (!shouldFilterText) return true;
-    const name = (n.nombre ?? '').toLowerCase();
-    const perm = (n.permiso ?? '').toLowerCase();
-    const route = (n.ruta ?? '').toLowerCase();
+    const name = (n.name ?? '').toLowerCase();
+    const perm = (n.permission ?? '').toLowerCase();
+    const route = (n.path ?? '').toLowerCase();
     switch (options.field) {
       case 'name':
         return name.includes(needle);
@@ -75,21 +75,21 @@ function filterFuncionalidadesArbol(rows: FuncionalidadArbolDto[], options: Cata
 
   const typeMatches = (n: FuncionalidadArbolDto): boolean => {
     if (!shouldFilterType) return true;
-    const isFolder = (n.hijos ?? []).length > 0;
+    const isFolder = (n.children ?? []).length > 0;
     return options.nodeType === 'folders' ? isFolder : !isFolder;
   };
 
   const routeMatches = (n: FuncionalidadArbolDto): boolean => {
     if (!shouldFilterRoute) return true;
-    return Boolean((n.ruta ?? '').trim());
+    return Boolean((n.path ?? '').trim());
   };
 
   const walk = (nodes: FuncionalidadArbolDto[]): FuncionalidadArbolDto[] => {
     const out: FuncionalidadArbolDto[] = [];
     for (const n of nodes) {
-      const hijos = walk(n.hijos ?? []);
-      const hay = (textMatches(n) && typeMatches(n) && routeMatches(n)) || hijos.length > 0;
-      if (hay) out.push({ ...n, hijos });
+      const children = walk(n.children ?? []);
+      const hay = (textMatches(n) && typeMatches(n) && routeMatches(n)) || children.length > 0;
+      if (hay) out.push({ ...n, children });
     }
     return out;
   };

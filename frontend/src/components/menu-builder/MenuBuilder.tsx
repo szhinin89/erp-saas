@@ -99,7 +99,7 @@ function LibraryRow({ node, dense, onPreview }: { node: FuncionalidadArbolDto; d
     id: libDragId(node.id),
   });
   const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
-  const iconChar = (node.icono ?? '').trim().slice(0, 2) || '◇';
+  const iconChar = (node.icon ?? '').trim().slice(0, 2) || '◇';
   return (
     <div
       ref={setNodeRef}
@@ -112,10 +112,10 @@ function LibraryRow({ node, dense, onPreview }: { node: FuncionalidadArbolDto; d
         {iconChar}
       </span>
       <div className="menu-builder-lib-text">
-        <div className="menu-builder-lib-name">{node.nombre}</div>
-        <div className="menu-builder-lib-perm" title={node.permiso}>
-          {node.ruta?.trim() ? `${node.ruta} · ` : ''}
-          {node.permiso}
+        <div className="menu-builder-lib-name">{node.name}</div>
+        <div className="menu-builder-lib-perm" title={node.permission}>
+          {node.path?.trim() ? `${node.path} · ` : ''}
+          {node.permission}
         </div>
       </div>
       {dense ? (
@@ -193,8 +193,8 @@ export function MenuBuilder({
     };
     walk(tree);
     return flatLib.filter((n) => {
-      const perm = (n.permiso ?? '').trim().toLowerCase();
-      const ruta = (n.ruta ?? '').trim().toLowerCase();
+      const perm = (n.permission ?? '').trim().toLowerCase();
+      const ruta = (n.path ?? '').trim().toLowerCase();
       if (perm && existingLeaves.has(`perm:${perm}`)) return false;
       if (ruta && existingLeaves.has(`ruta:${ruta}`)) return false;
       return true;
@@ -423,7 +423,7 @@ export function MenuBuilder({
   const overlayLabel = useMemo(() => {
     if (!activeId) return '';
     const lid = parseLibDragId(activeId);
-    if (lid) return byId.get(lid)?.nombre ?? '';
+    if (lid) return byId.get(lid)?.name ?? '';
     const tid = parseSortableTreeId(activeId);
     if (tid) {
       const loc = findLocation(tree, tid);
@@ -679,14 +679,14 @@ export function MenuBuilder({
                 </button>
               </div>
               <p className="menu-builder-form-preview-subtle">
-                Vista previa visual de <strong>{previewForm.nombre}</strong>
+                Vista previa visual de <strong>{previewForm.name}</strong>
               </p>
               <div className="menu-builder-form-preview-meta">
                 <span>
-                  <strong>Ruta:</strong> {previewForm.ruta?.trim() || '—'}
+                  <strong>Ruta:</strong> {previewForm.path?.trim() || '—'}
                 </span>
                 <span>
-                  <strong>Permiso:</strong> {previewForm.permiso?.trim() || '—'}
+                  <strong>Permiso:</strong> {previewForm.permission?.trim() || '—'}
                 </span>
               </div>
               <div className="menu-builder-form-preview-body">
