@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -11,13 +11,13 @@ namespace ERP.Application.Modules.Inventory.UseCases.CrearBodega;
 public sealed class CreateBodegaCommandHandler
     : IRequestHandler<CreateBodegaCommand, Result<BodegaDto>>
 {
-    private readonly IBodegaRepository       _repo;
+    private readonly IWarehouseRepository       _repo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
 
     public CreateBodegaCommandHandler(
-        IBodegaRepository repo,
+        IWarehouseRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
         ICurrentUser user)
@@ -33,24 +33,24 @@ public sealed class CreateBodegaCommandHandler
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
-        if (await _repo.ExistsNombreAsync(tenantId, command.Nombre, null, ct))
-            return Result<BodegaDto>.Failure($"Ya existe una bodega con el nombre '{command.Nombre}' en este tenant.");
+        if (await _repo.ExistsNameAsync(tenantId, command.Name, null, ct))
+            return Result<BodegaDto>.Failure($"Ya existe una Warehouse con el nombre '{command.Name}' en este tenant.");
 
-        var bodega = Bodega.Create(
-            tenantId, command.SucursalId, command.Nombre,
-            command.Ubicacion, command.Encargado, userId);
+        var wh = Warehouse.Create(
+            tenantId, command.BranchId, command.Name,
+            command.Address, command.Manager, userId);
 
-        await _repo.AddAsync(bodega, ct);
+        await _repo.AddAsync(wh, ct);
         await _activity.AddAsync(UserActivity.Create(
             tenantId, userId, _user.Email, _user.FullName,
-            module: "inventario", action: "bodega.create",
-            entityType: "Bodega", entityId: bodega.Id,
-            description: bodega.Nombre), ct);
+            module: "inventario", action: "Warehouse.create",
+            entityType: "Warehouse", entityId: wh.Id,
+            description: wh.Name), ct);
         await _repo.SaveChangesAsync(ct);
 
-        return Result<BodegaDto>.Success(ToDto(bodega));
+        return Result<BodegaDto>.Success(ToDto(wh));
     }
 
-    private static BodegaDto ToDto(Bodega b) =>
-        new(b.Id, b.SucursalId, b.Nombre, b.Ubicacion, b.Encargado, b.IsActive);
+    private static BodegaDto ToDto(Warehouse b) =>
+        new(b.Id, b.BranchId, b.Name, b.Address, b.Manager, b.IsActive);
 }

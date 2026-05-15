@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Modules.Purchasing.Interfaces;
@@ -6,34 +6,34 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 namespace ERP.Application.Modules.Purchasing.UseCases.GetCompraById;
 
 public sealed class GetCompraByIdQueryHandler
-    : IRequestHandler<GetCompraByIdQuery, Result<CompraFacturaDetailDto?>>
+    : IRequestHandler<GetCompraByIdQuery, Result<PurchBillDetailDto?>>
 {
-    private readonly ICompraRepository _repo;
+    private readonly IPurchBillRepository _repo;
     private readonly ICurrentTenant    _tenant;
 
-    public GetCompraByIdQueryHandler(ICompraRepository repo, ICurrentTenant tenant)
+    public GetCompraByIdQueryHandler(IPurchBillRepository repo, ICurrentTenant tenant)
     {
         _repo   = repo;
         _tenant = tenant;
     }
 
-    public async Task<Result<CompraFacturaDetailDto?>> Handle(
+    public async Task<Result<PurchBillDetailDto?>> Handle(
         GetCompraByIdQuery query, CancellationToken ct)
     {
-        var c = await _repo.GetByIdWithDetailsAsync(_tenant.TenantId, query.Id, ct);
-        if (c is null) return Result<CompraFacturaDetailDto?>.Success(null);
+        var c = await _repo.GetByIdAsync(_tenant.TenantId, query.Id, ct);
+        if (c is null) return Result<PurchBillDetailDto?>.Success(null);
 
-        var detalles = c.Detalles.Select(d => new CompraDetalleDto(
-            d.Id, d.ProductoId, d.Descripcion, d.CodigoPrincipalProveedor,
-            d.Cantidad, d.PrecioUnitario, d.DescuentoPorcentaje,
-            d.Subtotal, d.IvaPorcentaje, d.IvaValor, d.Total)).ToList();
+        var detalles = c.Lines.Select(d => new CompraDetalleDto(
+            d.Id, d.ProductId, d.Description, d.SupplierProductCode,
+            d.Quantity, d.UnitPrice, d.DiscountPct,
+            d.Subtotal, d.VatPct, d.VatAmount, d.Total)).ToList();
 
-        return Result<CompraFacturaDetailDto?>.Success(new CompraFacturaDetailDto(
-            c.Id, c.ProveedorId, c.NumeroFactura, c.ClaveAcceso, c.XmlPath,
-            c.FechaFactura, c.FechaVencimiento, c.Estado, c.CondicionPago,
-            c.Subtotal, c.IvaTotal, c.Total, c.Observaciones,
-            c.ValidadoPor, c.ValidadoEn, c.AprobadoPor, c.AprobadoEn,
-            c.RechazadoPor, c.RechazadoEn, c.MotivoRechazo, c.AsientoContableId,
+        return Result<PurchBillDetailDto?>.Success(new PurchBillDetailDto(
+            c.Id, c.SupplierId, c.InvoiceNumber, c.AccessKey, c.XmlPath,
+            c.InvoiceDate, c.DueDate, c.Status, c.PaymentTerms,
+            c.Subtotal, c.VatTotal, c.Total, c.Notes,
+            c.ValidatedBy, c.ValidatedAt, c.ApprovedBy, c.ApprovedAt,
+            c.RejectedBy, c.RejectedAt, c.RejectionReason, c.JournalEntryId,
             c.CreatedAt, detalles));
     }
 }

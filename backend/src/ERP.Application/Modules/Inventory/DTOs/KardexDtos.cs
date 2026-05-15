@@ -1,18 +1,18 @@
-namespace ERP.Application.Inventory.DTOs;
+﻿namespace ERP.Application.Inventory.DTOs;
 
 public record KardexResponse(
     KardexProductoDto                  Producto,
-    KardexBodegaDto                    Bodega,
-    IReadOnlyList<MovimientoKardexDto> Movimientos,
+    KardexBodegaDto                    Warehouse,
+    IReadOnlyList<MovimientoKardexDto> Rows,
     ResumenKardexDto                   Resumen);
 
-public record KardexProductoDto(Guid Id, string Nombre, string Codigo);
+public record KardexProductoDto(Guid Id, string  Name, string Codigo);
 
-public record KardexBodegaDto(Guid Id, string Nombre);
+public record KardexBodegaDto(Guid Id, string  Name);
 
 public record MovimientoKardexDto(
     DateTime Fecha,
-    string   TipoMovimiento,
+    string   MovementType,
     string?  Referencia,
     decimal  EntradaCantidad,
     decimal  EntradaValor,
@@ -32,3 +32,4 @@ public record ResumenKardexDto(
     decimal InventarioFinalCantidad,
     decimal InventarioFinalValor,
     decimal CostoPromedioFinal);
+

@@ -1,6 +1,6 @@
-namespace ERP.Application.Configuration.DTOs;
+﻿namespace ERP.Application.Configuration.DTOs;
 
-public sealed record ConfiguracionFacturacionDto(
+public sealed record BillingSettingsDto(
     Guid Id,
     Guid TenantId,
     string RazonSocial,

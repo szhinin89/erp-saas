@@ -1,9 +1,9 @@
-namespace ERP.Application.Modules.Purchasing.DTOs;
+﻿namespace ERP.Application.Modules.Purchasing.DTOs;
 
-public sealed record CompraRetencionEmitidaListItemDto(
+public sealed record IssuedRetentionListItemDto(
     Guid Id,
-    Guid ProveedorId,
-    string ClaveAcceso,
-    string Estado,
+    Guid    SupplierId,
+    string    AccessKey,
+    string    Status,
     decimal TotalRetenido,
-    DateTime FechaEmision);
+    DateTime  IssueDate);

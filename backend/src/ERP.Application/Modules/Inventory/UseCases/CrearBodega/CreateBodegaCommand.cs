@@ -6,8 +6,8 @@ namespace ERP.Application.Modules.Inventory.UseCases.CrearBodega;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
 public sealed record CreateBodegaCommand(
-    Guid    SucursalId,
-    string  Nombre,
-    string? Ubicacion,
-    string? Encargado
+    Guid    BranchId,
+    string  Name,
+    string? Address,
+    string? Manager
 ) : IRequest<Result<BodegaDto>>;

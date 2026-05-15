@@ -16,9 +16,9 @@ public sealed class CrearOrdenCompraCommandValidatorTests
         new(
             proveedorId ?? Guid.NewGuid(),
             fecha ?? DateTime.UtcNow.AddDays(10),
-            BodegaDestinoId:  null,
-            DireccionEntrega: null,
-            Observaciones:    null,
+            TargetWarehouseId:  null,
+            DeliveryAddress: null,
+            Notes:    null,
             Items: items ?? [new ItemOrdenCompraRequest(Guid.NewGuid(), 5m, 10m, 15m)]);
 
     // ── ProveedorId ───────────────────────────────────────────────────────
@@ -56,17 +56,17 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     public void Item_cantidad_cero_falla()
     {
         var items = new List<ItemOrdenCompraRequest>
-            { new(Guid.NewGuid(), Cantidad: 0m, PrecioUnitario: 10m, IvaPorcentaje: 15m) };
+            { new(Guid.NewGuid(), Quantity: 0m, UnitPrice: 10m, VatPct: 15m) };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName.Contains("Cantidad"));
+        result.Errors.Should().Contain(e => e.PropertyName.Contains("Quantity"));
     }
 
     [Fact]
     public void Item_cantidad_negativa_falla()
     {
         var items = new List<ItemOrdenCompraRequest>
-            { new(Guid.NewGuid(), Cantidad: -1m, PrecioUnitario: 10m, IvaPorcentaje: 15m) };
+            { new(Guid.NewGuid(), Quantity: -1m, UnitPrice: 10m, VatPct: 15m) };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeFalse();
     }
@@ -75,10 +75,10 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     public void Item_precio_negativo_falla()
     {
         var items = new List<ItemOrdenCompraRequest>
-            { new(Guid.NewGuid(), Cantidad: 5m, PrecioUnitario: -1m, IvaPorcentaje: 15m) };
+            { new(Guid.NewGuid(), Quantity: 5m, UnitPrice: -1m, VatPct: 15m) };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName.Contains("PrecioUnitario"));
+        result.Errors.Should().Contain(e => e.PropertyName.Contains("UnitPrice"));
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     {
         // Precio 0 permitido (servicios gratuitos, muestras)
         var items = new List<ItemOrdenCompraRequest>
-            { new(Guid.NewGuid(), Cantidad: 5m, PrecioUnitario: 0m, IvaPorcentaje: 15m) };
+            { new(Guid.NewGuid(), Quantity: 5m, UnitPrice: 0m, VatPct: 15m) };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeTrue();
     }
@@ -95,17 +95,17 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     public void Item_iva_negativo_falla()
     {
         var items = new List<ItemOrdenCompraRequest>
-            { new(Guid.NewGuid(), Cantidad: 5m, PrecioUnitario: 10m, IvaPorcentaje: -1m) };
+            { new(Guid.NewGuid(), Quantity: 5m, UnitPrice: 10m, VatPct: -1m) };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName.Contains("IvaPorcentaje"));
+        result.Errors.Should().Contain(e => e.PropertyName.Contains("VatPct"));
     }
 
     [Fact]
     public void Item_iva_cero_es_valido()
     {
         var items = new List<ItemOrdenCompraRequest>
-            { new(Guid.NewGuid(), Cantidad: 5m, PrecioUnitario: 10m, IvaPorcentaje: 0m) };
+            { new(Guid.NewGuid(), Quantity: 5m, UnitPrice: 10m, VatPct: 0m) };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeTrue();
     }
@@ -114,10 +114,10 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     public void Item_productoId_vacio_falla()
     {
         var items = new List<ItemOrdenCompraRequest>
-            { new(Guid.Empty, Cantidad: 5m, PrecioUnitario: 10m, IvaPorcentaje: 15m) };
+            { new(Guid.Empty, Quantity: 5m, UnitPrice: 10m, VatPct: 15m) };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName.Contains("ProductoId"));
+        result.Errors.Should().Contain(e => e.PropertyName.Contains("ProductId"));
     }
 
     // ── Comando válido ────────────────────────────────────────────────────
@@ -134,8 +134,8 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     {
         var items = new List<ItemOrdenCompraRequest>
         {
-            new(Guid.NewGuid(), Cantidad: 10m, PrecioUnitario:  5m, IvaPorcentaje: 15m),
-            new(Guid.NewGuid(), Cantidad:  5m, PrecioUnitario: 10m, IvaPorcentaje: 15m),
+            new(Guid.NewGuid(), Quantity: 10m, UnitPrice:  5m, VatPct: 15m),
+            new(Guid.NewGuid(), Quantity:  5m, UnitPrice: 10m, VatPct: 15m),
         };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeTrue();

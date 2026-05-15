@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Accounting.DTOs;
@@ -8,15 +8,15 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 namespace ERP.Application.Modules.Accounting.UseCases.ConfiguracionContable;
 
 public sealed class UpsertConfiguracionContableCommandHandler
-    : IRequestHandler<UpsertConfiguracionContableCommand, Result<ConfiguracionContableEmpresaDto>>
+    : IRequestHandler<UpsertConfiguracionContableCommand, Result<AccountingSetupDto>>
 {
-    private readonly IConfiguracionContableRepository _configRepo;
-    private readonly IAccountingRepository            _accounts;
-    private readonly ICurrentTenant                   _tenant;
-    private readonly ICurrentUser                     _user;
+    private readonly IAccountingSetupRepository _configRepo;
+    private readonly IAccountingRepository      _accounts;
+    private readonly ICurrentTenant             _tenant;
+    private readonly ICurrentUser               _user;
 
     public UpsertConfiguracionContableCommandHandler(
-        IConfiguracionContableRepository configRepo,
+        IAccountingSetupRepository configRepo,
         IAccountingRepository accounts,
         ICurrentTenant tenant,
         ICurrentUser user)
@@ -27,7 +27,7 @@ public sealed class UpsertConfiguracionContableCommandHandler
         _user       = user;
     }
 
-    public async Task<Result<ConfiguracionContableEmpresaDto>> Handle(
+    public async Task<Result<AccountingSetupDto>> Handle(
         UpsertConfiguracionContableCommand command,
         CancellationToken ct)
     {
@@ -36,72 +36,72 @@ public sealed class UpsertConfiguracionContableCommandHandler
 
         foreach (var (role, id) in new (string, Guid?)[]
                  {
-                     ("Inventario", command.CuentaInventarioId),
-                     ("Costo de venta", command.CuentaCostoVentaId),
-                     ("Proveedores", command.CuentaProveedoresId),
-                     ("Ventas", command.CuentaVentasId),
-                     ("Clientes", command.CuentaClientesId),
-                     ("IVA compras", command.CuentaIvaComprasId),
-                     ("IVA ventas", command.CuentaIvaVentasId),
-                     ("Efectivo / caja", command.CuentaEfectivoId),
-                     ("Banco", command.CuentaBancoId),
+                     ("Inventario", command.InventoryAccountId),
+                     ("Costo de venta", command.CostOfSalesAccountId),
+                     ("Proveedores", command.SuppliersAccountId),
+                     ("Ventas", command.SalesAccountId),
+                     ("Clientes", command.CustomersAccountId),
+                     ("IVA compras", command.VatPurchasesAccountId),
+                     ("IVA ventas", command.VatSalesAccountId),
+                     ("Efectivo / caja", command.CashAccountId),
+                     ("Banco", command.BankAccountId),
                  })
         {
             if (id is null)
                 continue;
             var err = await ValidateAccountAsync(id.Value, tenantId, role, ct);
             if (err is not null)
-                return Result<ConfiguracionContableEmpresaDto>.Failure(err);
+                return Result<AccountingSetupDto>.Failure(err);
         }
 
-        var existing = await _configRepo.GetConfiguracionEmpresaAsync(ct);
+        var existing = await _configRepo.GetSetupAsync(ct);
         if (existing is null)
         {
-            var created = ConfiguracionContableEmpresa.Create(tenantId, userId);
-            created.UpdateCuentas(
-                command.CuentaInventarioId,
-                command.CuentaCostoVentaId,
-                command.CuentaProveedoresId,
-                command.CuentaVentasId,
-                command.CuentaClientesId,
-                command.CuentaIvaComprasId,
-                command.CuentaIvaVentasId,
-                command.CuentaEfectivoId,
-                command.CuentaBancoId,
+            var created = AccountingSetup.Create(tenantId, userId);
+            created.UpdateAccounts(
+                command.InventoryAccountId,
+                command.CostOfSalesAccountId,
+                command.SuppliersAccountId,
+                command.SalesAccountId,
+                command.CustomersAccountId,
+                command.VatPurchasesAccountId,
+                command.VatSalesAccountId,
+                command.CashAccountId,
+                command.BankAccountId,
                 userId);
-            await _configRepo.AddConfiguracionEmpresaAsync(created, ct);
+            await _configRepo.AddSetupAsync(created, ct);
         }
         else
         {
-            existing.UpdateCuentas(
-                command.CuentaInventarioId,
-                command.CuentaCostoVentaId,
-                command.CuentaProveedoresId,
-                command.CuentaVentasId,
-                command.CuentaClientesId,
-                command.CuentaIvaComprasId,
-                command.CuentaIvaVentasId,
-                command.CuentaEfectivoId,
-                command.CuentaBancoId,
+            existing.UpdateAccounts(
+                command.InventoryAccountId,
+                command.CostOfSalesAccountId,
+                command.SuppliersAccountId,
+                command.SalesAccountId,
+                command.CustomersAccountId,
+                command.VatPurchasesAccountId,
+                command.VatSalesAccountId,
+                command.CashAccountId,
+                command.BankAccountId,
                 userId);
         }
 
         await _configRepo.SaveChangesAsync(ct);
 
-        var saved = await _configRepo.GetConfiguracionEmpresaAsync(ct);
+        var saved = await _configRepo.GetSetupAsync(ct);
         if (saved is null)
-            return Result<ConfiguracionContableEmpresaDto>.Failure("No se pudo leer la configuración guardada.");
+            return Result<AccountingSetupDto>.Failure("No se pudo leer la configuración guardada.");
 
-        return Result<ConfiguracionContableEmpresaDto>.Success(new ConfiguracionContableEmpresaDto(
-            saved.CuentaInventarioId,
-            saved.CuentaCostoVentaId,
-            saved.CuentaProveedoresId,
-            saved.CuentaVentasId,
-            saved.CuentaClientesId,
-            saved.CuentaIvaComprasId,
-            saved.CuentaIvaVentasId,
-            saved.CuentaEfectivoId,
-            saved.CuentaBancoId));
+        return Result<AccountingSetupDto>.Success(new AccountingSetupDto(
+            saved.InventoryAccountId,
+            saved.CostOfSalesAccountId,
+            saved.SuppliersAccountId,
+            saved.SalesAccountId,
+            saved.CustomersAccountId,
+            saved.VatPurchasesAccountId,
+            saved.VatSalesAccountId,
+            saved.CashAccountId,
+            saved.BankAccountId));
     }
 
     private async Task<string?> ValidateAccountAsync(Guid accountId, Guid tenantId, string role, CancellationToken ct)

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Sales.DTOs;
 using ERP.Domain.Modules.Sales.Interfaces;
@@ -6,50 +6,50 @@ using ERP.Domain.Modules.Sales.Interfaces;
 namespace ERP.Application.Sales.UseCases.GetVentaById;
 
 public sealed class GetVentaByIdQueryHandler
-    : IRequestHandler<GetVentaByIdQuery, Result<VentasFacturaDetailDto?>>
+    : IRequestHandler<GetVentaByIdQuery, Result<SalesBillDetailDto?>>
 {
-    private readonly IVentasRepository _ventasRepository;
+    private readonly ISalesRepository _ventasRepository;
     private readonly ICurrentTenant    _currentTenant;
 
-    public GetVentaByIdQueryHandler(IVentasRepository ventasRepository, ICurrentTenant currentTenant)
+    public GetVentaByIdQueryHandler(ISalesRepository ventasRepository, ICurrentTenant currentTenant)
     {
         _ventasRepository = ventasRepository;
         _currentTenant    = currentTenant;
     }
 
-    public async Task<Result<VentasFacturaDetailDto?>> Handle(GetVentaByIdQuery query, CancellationToken ct)
+    public async Task<Result<SalesBillDetailDto?>> Handle(GetVentaByIdQuery query, CancellationToken ct)
     {
-        var factura = await _ventasRepository.GetFacturaByIdAsync(_currentTenant.TenantId, query.Id, ct);
+        var factura = await _ventasRepository.GetBillByIdAsync(_currentTenant.TenantId, query.Id, ct);
         if (factura is null)
-            return Result<VentasFacturaDetailDto?>.Success(null);
+            return Result<SalesBillDetailDto?>.Success(null);
 
-        var detalles = factura.Detalles.Select(d => new VentasDetalleDto(
-            d.Id, d.ProductoId, d.Descripcion,
-            d.Cantidad, d.PrecioUnitario,
-            d.Subtotal, d.Impuesto, d.Total)).ToList();
+        var detalles = factura.Lines.Select(d => new VentasDetalleDto(
+            d.Id, d.ProductId, d.Description,
+            d.Quantity, d.UnitPrice,
+            d.Subtotal, d.VatTotal, d.Total)).ToList();
 
-        return Result<VentasFacturaDetailDto?>.Success(new VentasFacturaDetailDto(
+        return Result<SalesBillDetailDto?>.Success(new SalesBillDetailDto(
             factura.Id,
-            factura.ClienteId,
-            factura.Cliente?.LegalName ?? factura.ClienteId.ToString(),
-            factura.BodegaId,
-            factura.SucursalId,
-            factura.TipoDocumento,
-            factura.Establecimiento,
-            factura.PuntoEmision,
-            factura.Secuencial,
-            factura.ClaveAcceso,
-            factura.FechaEmision,
+            factura.CustomerId,
+            factura.Cliente?.LegalName ?? factura.CustomerId.ToString(),
+            factura.WarehouseId,
+            factura.BranchId,
+            factura.DocType,
+            factura.EstabCode,
+            factura.EmPointCode,
+            factura.Sequential,
+            factura.AccessKey,
+            factura.IssueDate,
             factura.Subtotal,
-            factura.Impuesto,
+            factura.VatTotal,
             factura.Total,
-            factura.Estado,
-            factura.NumeroAutorizacion,
-            factura.FechaAutorizacion,
-            factura.XmlGeneradoPath,
-            factura.XmlAutorizacionPath,
-            factura.MensajeError,
-            factura.AsientoContableId,
+            factura.Status,
+            factura.AuthNumber,
+            factura.AuthDate,
+            factura.XmlSignedPath,
+            factura.XmlAuthPath,
+            factura.ErrorMessage,
+            factura.JournalEntryId,
             factura.CreatedAt,
             detalles));
     }

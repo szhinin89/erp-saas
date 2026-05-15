@@ -1,20 +1,20 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Sales.DTOs;
 using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.Notas;
 
-public sealed record GetVentasNotasListQuery(Guid? FacturaOriginalId, string? Estado)
+public sealed record GetVentasNotasListQuery(Guid? OriginalBillId, string? Status)
     : IRequest<Result<IReadOnlyList<VentasNotaListItemDto>>>;
 
 public sealed class GetVentasNotasListQueryHandler
     : IRequestHandler<GetVentasNotasListQuery, Result<IReadOnlyList<VentasNotaListItemDto>>>
 {
-    private readonly IVentasRepository _ventasRepository;
+    private readonly ISalesRepository _ventasRepository;
     private readonly ICurrentTenant  _currentTenant;
 
-    public GetVentasNotasListQueryHandler(IVentasRepository ventasRepository, ICurrentTenant currentTenant)
+    public GetVentasNotasListQueryHandler(ISalesRepository ventasRepository, ICurrentTenant currentTenant)
     {
         _ventasRepository = ventasRepository;
         _currentTenant    = currentTenant;
@@ -24,17 +24,17 @@ public sealed class GetVentasNotasListQueryHandler
         GetVentasNotasListQuery request,
         CancellationToken ct)
     {
-        var items = await _ventasRepository.GetNotasAsync(
-            _currentTenant.TenantId, request.FacturaOriginalId, request.Estado, ct);
+        var items = await _ventasRepository.GetNotesAsync(
+            _currentTenant.TenantId, request.OriginalBillId, request.Status, ct);
 
         var dto = items.Select(n => new VentasNotaListItemDto(
             n.Id,
-            n.VentasFacturaOriginalId,
-            n.TipoNota,
-            n.Estado,
-            n.ClaveAcceso,
+            n.OriginalBillId,
+            n.NoteType,
+            n.Status,
+            n.AccessKey,
             n.Total,
-            n.FechaEmision)).ToList();
+            n.IssueDate)).ToList();
 
         return Result<IReadOnlyList<VentasNotaListItemDto>>.Success(dto);
     }

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -11,13 +11,13 @@ namespace ERP.Application.Modules.Inventory.UseCases.HabilitarBodega;
 public sealed class EnableBodegaCommandHandler
     : IRequestHandler<EnableBodegaCommand, Result<BodegaDto>>
 {
-    private readonly IBodegaRepository       _repo;
+    private readonly IWarehouseRepository       _repo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
 
     public EnableBodegaCommandHandler(
-        IBodegaRepository repo,
+        IWarehouseRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
         ICurrentUser user)
@@ -33,22 +33,22 @@ public sealed class EnableBodegaCommandHandler
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
-        var bodega = await _repo.GetByIdAsync(tenantId, command.Id, ct);
-        if (bodega is null) return Result<BodegaDto>.Failure("Bodega no encontrada.");
-        if (bodega.IsActive) return Result<BodegaDto>.Failure("La bodega ya está activa.");
+        var Warehouse = await _repo.GetByIdAsync(tenantId, command.Id, ct);
+        if (Warehouse is null) return Result<BodegaDto>.Failure("Warehouse no encontrada.");
+        if (Warehouse.IsActive) return Result<BodegaDto>.Failure("La Warehouse ya está activa.");
 
-        bodega.Enable(userId);
+        Warehouse.Enable(userId);
 
         await _activity.AddAsync(UserActivity.Create(
             tenantId, userId, _user.Email, _user.FullName,
-            module: "inventario", action: "bodega.enable",
-            entityType: "Bodega", entityId: bodega.Id,
-            description: bodega.Nombre), ct);
+            module: "inventario", action: "Warehouse.enable",
+            entityType: "Warehouse", entityId: Warehouse.Id,
+            description: Warehouse.Name), ct);
         await _repo.SaveChangesAsync(ct);
 
-        return Result<BodegaDto>.Success(ToDto(bodega));
+        return Result<BodegaDto>.Success(ToDto(Warehouse));
     }
 
-    private static BodegaDto ToDto(Bodega b) =>
-        new(b.Id, b.SucursalId, b.Nombre, b.Ubicacion, b.Encargado, b.IsActive);
+    private static BodegaDto ToDto(Warehouse b) =>
+        new(b.Id, b.BranchId, b.Name, b.Address, b.Manager, b.IsActive);
 }

@@ -16,5 +16,5 @@ public class StockAdjustmentLine
     public string? Reason { get; set; }
     public short SortOrder { get; set; }
 
-    public AjusteInventario StockAdjustment { get; set; } = null!;
+    public StockAdjustment StockAdjustment { get; set; } = null!;
 }

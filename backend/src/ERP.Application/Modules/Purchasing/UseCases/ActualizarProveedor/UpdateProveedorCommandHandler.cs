@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -11,13 +11,13 @@ namespace ERP.Application.Modules.Purchasing.UseCases.ActualizarProveedor;
 public sealed class UpdateProveedorCommandHandler
     : IRequestHandler<UpdateProveedorCommand, Result<ProveedorDto>>
 {
-    private readonly IProveedorRepository    _repo;
+    private readonly ISupplierRepository    _repo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
 
     public UpdateProveedorCommandHandler(
-        IProveedorRepository repo,
+        ISupplierRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
         ICurrentUser user)
@@ -33,19 +33,19 @@ public sealed class UpdateProveedorCommandHandler
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
-        var proveedor = await _repo.GetByIdAsync(tenantId, command.Id, ct);
-        if (proveedor is null)
-            return Result<ProveedorDto>.Failure("Proveedor no encontrado.");
+        var Supplier = await _repo.GetByIdAsync(tenantId, command.Id, ct);
+        if (Supplier is null)
+            return Result<ProveedorDto>.Failure("Supplier no encontrado.");
 
         if (await _repo.ExistsRucAsync(tenantId, command.Ruc, command.Id, ct))
-            return Result<ProveedorDto>.Failure($"Ya existe otro proveedor con el RUC '{command.Ruc}' en este tenant.");
+            return Result<ProveedorDto>.Failure($"Ya existe otro Supplier con el RUC '{command.Ruc}' en este tenant.");
 
         try
         {
-            proveedor.Update(
-                command.TipoPersona, command.RazonSocial, command.Ruc,
-                command.Correo, command.Telefono, command.Direccion,
-                command.CondicionPago, userId);
+            Supplier.Update(
+                command.PersonType, command.LegalName, command.Ruc,
+                command.Email, command.Phone, command.Address,
+                command.PaymentTerms, userId);
         }
         catch (ArgumentException ex)
         {
@@ -54,15 +54,15 @@ public sealed class UpdateProveedorCommandHandler
 
         await _activity.AddAsync(UserActivity.Create(
             tenantId, userId, _user.Email, _user.FullName,
-            module: "compras", action: "proveedor.update",
-            entityType: "Proveedor", entityId: proveedor.Id,
-            description: $"{proveedor.Ruc} — {proveedor.RazonSocial}"), ct);
+            module: "compras", action: "Supplier.update",
+            entityType: "Supplier", entityId: Supplier.Id,
+            description: $"{Supplier.Ruc} — {Supplier.LegalName}"), ct);
         await _repo.SaveChangesAsync(ct);
 
-        return Result<ProveedorDto>.Success(ToDto(proveedor));
+        return Result<ProveedorDto>.Success(ToDto(Supplier));
     }
 
-    private static ProveedorDto ToDto(Proveedor p) =>
-        new(p.Id, p.TipoPersona, p.RazonSocial, p.Ruc,
-            p.Correo, p.Telefono, p.Direccion, p.CondicionPago, p.IsActive);
+    private static ProveedorDto ToDto(Supplier p) =>
+        new(p.Id, p.PersonType, p.LegalName, p.Ruc,
+            p.Email, p.Phone, p.Address, p.PaymentTerms, p.IsActive);
 }

@@ -1,21 +1,21 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Configuration.DTOs;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Common;
 
-namespace ERP.Application.Configuration.UseCases.UpsertConfiguracionFacturacion;
+namespace ERP.Application.Configuration.UseCases.UpsertBillingSettings;
 
-public sealed class UpsertConfiguracionFacturacionCommandHandler
-    : IRequestHandler<UpsertConfiguracionFacturacionCommand, Result<ConfiguracionFacturacionDto>>
+public sealed class UpsertBillingSettingsCommandHandler
+    : IRequestHandler<UpsertBillingSettingsCommand, Result<BillingSettingsDto>>
 {
-    private readonly IConfiguracionFacturacionRepository _repo;
+    private readonly IBillingSettingsRepository _repo;
     private readonly ICurrentTenant _currentTenant;
     private readonly ICurrentUser _currentUser;
 
-    public UpsertConfiguracionFacturacionCommandHandler(
-        IConfiguracionFacturacionRepository repo,
+    public UpsertBillingSettingsCommandHandler(
+        IBillingSettingsRepository repo,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser)
     {
@@ -24,26 +24,26 @@ public sealed class UpsertConfiguracionFacturacionCommandHandler
         _currentUser = currentUser;
     }
 
-    public async Task<Result<ConfiguracionFacturacionDto>> Handle(
-        UpsertConfiguracionFacturacionCommand command,
+    public async Task<Result<BillingSettingsDto>> Handle(
+        UpsertBillingSettingsCommand command,
         CancellationToken ct)
     {
         var config = await _repo.GetByTenantIdAsync(_currentTenant.TenantId, ct);
         if (config is null)
         {
-            config = ConfiguracionFacturacion.Create(
+            config = BillingSettings.Create(
                 _currentTenant.TenantId,
-                command.RazonSocial,
-                command.NombreComercial,
+                command.LegalName,
+                command.TradeName,
                 command.Ruc,
-                command.DireccionMatriz,
-                command.Telefono,
-                command.Correo,
-                command.ObligadoContabilidad,
-                command.ContribuyenteEspecial,
+                command.MainAddress,
+                command.Phone,
+                command.Email,
+                command.RequiresAccounting,
+                command.SpecialTaxpayer,
                 command.LogoBase64,
-                command.LeyendaAdicional,
-                command.AnchoTirilla,
+                command.FooterText,
+                command.ReceiptWidth,
                 _currentUser.UserId);
 
             await _repo.AddAsync(config, ct);
@@ -51,17 +51,17 @@ public sealed class UpsertConfiguracionFacturacionCommandHandler
         else
         {
             config.Update(
-                command.RazonSocial,
-                command.NombreComercial,
+                command.LegalName,
+                command.TradeName,
                 command.Ruc,
-                command.DireccionMatriz,
-                command.Telefono,
-                command.Correo,
-                command.ObligadoContabilidad,
-                command.ContribuyenteEspecial,
+                command.MainAddress,
+                command.Phone,
+                command.Email,
+                command.RequiresAccounting,
+                command.SpecialTaxpayer,
                 command.LogoBase64,
-                command.LeyendaAdicional,
-                command.AnchoTirilla,
+                command.FooterText,
+                command.ReceiptWidth,
                 _currentUser.UserId);
 
             await _repo.UpdateAsync(config, ct);
@@ -69,19 +69,19 @@ public sealed class UpsertConfiguracionFacturacionCommandHandler
 
         await _repo.SaveChangesAsync(ct);
 
-        return Result<ConfiguracionFacturacionDto>.Success(new ConfiguracionFacturacionDto(
+        return Result<BillingSettingsDto>.Success(new BillingSettingsDto(
             config.Id,
             config.TenantId,
-            config.RazonSocial,
-            config.NombreComercial,
+            config.LegalName,
+            config.TradeName,
             config.Ruc,
-            config.DireccionMatriz,
-            config.Telefono,
-            config.Correo,
-            config.ObligadoContabilidad,
-            config.ContribuyenteEspecial,
+            config.MainAddress,
+            config.Phone,
+            config.Email,
+            config.RequiresAccounting,
+            config.SpecialTaxpayer,
             config.LogoBase64,
-            config.LeyendaAdicional,
-            config.AnchoTirilla));
+            config.FooterText,
+            config.ReceiptWidth));
     }
 }

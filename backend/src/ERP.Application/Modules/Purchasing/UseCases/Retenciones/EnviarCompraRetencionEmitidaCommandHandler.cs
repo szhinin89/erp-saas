@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
@@ -11,11 +11,11 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.Retenciones;
 
-public sealed class EnviarCompraRetencionEmitidaCommandHandler
-    : IRequestHandler<EnviarCompraRetencionEmitidaCommand, Result<Guid>>
+public sealed class EnviarIssuedRetentionCommandHandler
+    : IRequestHandler<EnviarIssuedRetentionCommand, Result<Guid>>
 {
-    private readonly ICompraRepository                    _compraRepository;
-    private readonly IConfiguracionSRIRepository          _configSriRepository;
+    private readonly IPurchBillRepository                    _compraRepository;
+    private readonly ISriSettingsRepository          _configSriRepository;
     private readonly ISriComprobanteRetencionService      _sri;
     private readonly IFileStorage                         _fileStorage;
     private readonly IAccountingService                   _accounting;
@@ -23,11 +23,11 @@ public sealed class EnviarCompraRetencionEmitidaCommandHandler
     private readonly IUnitOfWork                          _unitOfWork;
     private readonly ICurrentTenant                       _currentTenant;
     private readonly ICurrentUser                         _currentUser;
-    private readonly ILogger<EnviarCompraRetencionEmitidaCommandHandler> _logger;
+    private readonly ILogger<EnviarIssuedRetentionCommandHandler> _logger;
 
-    public EnviarCompraRetencionEmitidaCommandHandler(
-        ICompraRepository compraRepository,
-        IConfiguracionSRIRepository configSriRepository,
+    public EnviarIssuedRetentionCommandHandler(
+        IPurchBillRepository compraRepository,
+        ISriSettingsRepository configSriRepository,
         ISriComprobanteRetencionService sri,
         IFileStorage fileStorage,
         IAccountingService accounting,
@@ -35,7 +35,7 @@ public sealed class EnviarCompraRetencionEmitidaCommandHandler
         IUnitOfWork unitOfWork,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
-        ILogger<EnviarCompraRetencionEmitidaCommandHandler> logger)
+        ILogger<EnviarIssuedRetentionCommandHandler> logger)
     {
         _compraRepository      = compraRepository;
         _configSriRepository   = configSriRepository;
@@ -49,42 +49,42 @@ public sealed class EnviarCompraRetencionEmitidaCommandHandler
         _logger                = logger;
     }
 
-    public async Task<Result<Guid>> Handle(EnviarCompraRetencionEmitidaCommand command, CancellationToken ct)
+    public async Task<Result<Guid>> Handle(EnviarIssuedRetentionCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
-        var ret = await _compraRepository.GetRetencionEmitidaByIdWithDetailsAsync(tenantId, command.RetencionId, ct);
+        var ret = await _compraRepository.GetIssuedRetentionByIdWithLinesAsync(tenantId, command.RetencionId, ct);
         if (ret is null)
             return Result<Guid>.Failure("Retención no encontrada.");
 
-        if (ret.Estado == "Borrador")
-            ret.Validar(userId);
+        if (ret.Status == "Borrador")
+            ret.Validate(userId);
 
-        if (ret.Estado != "Validado")
-            return Result<Guid>.Failure($"Estado inválido para enviar: {ret.Estado}");
+        if (ret.Status != "Validado")
+            return Result<Guid>.Failure($"Estado inválido para enviar: {ret.Status}");
 
         var configSri = await _configSriRepository.GetByTenantIdAsync(tenantId, ct);
         if (configSri is null)
             return Result<Guid>.Failure("Configuración SRI ausente.");
 
-        var detalles = ret.Detalles.ToList();
+        var detalles = ret.Lines.ToList();
         string xml;
         byte[] firmado;
         try
         {
             xml     = await _sri.GenerarXmlRetencionAsync(ret, detalles, configSri);
-            firmado = await _sri.FirmarXmlAsync(xml, configSri.CertificadoP12Path, configSri.CertificadoPassword);
+            firmado = await _sri.FirmarXmlAsync(xml, configSri.CertP12Path, configSri.CertPassword);
         }
         catch (SriCommunicationException ex)
         {
-            ret.MarcarErrorEnvio(userId, ex.Message);
+            ret.Reject(userId, ex.Message);
             await _compraRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure(ex.Message);
         }
         catch (Exception ex)
         {
-            ret.MarcarErrorEnvio(userId, ex.Message);
+            ret.Reject(userId, ex.Message);
             await _compraRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure(ex.Message);
         }
@@ -92,20 +92,20 @@ public sealed class EnviarCompraRetencionEmitidaCommandHandler
         SriAutorizacionResponse resp;
         try
         {
-            resp = await _sri.EnviarAsync(firmado, configSri.UrlSriAutorizacion);
+            resp = await _sri.EnviarAsync(firmado, configSri.WsdlUrl);
         }
         catch (Exception ex)
         {
-            ret.MarcarErrorEnvio(userId, ex.Message);
+            ret.Reject(userId, ex.Message);
             await _compraRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure(ex.Message);
         }
 
-        if (!resp.Autorizada)
+        if (!resp.IsAuthorized)
         {
-            ret.Rechazar(userId, resp.MensajeError ?? "Rechazada");
+            ret.Reject(userId, resp.ErrorMessage ?? "Rechazada");
             await _compraRepository.SaveChangesAsync(ct);
-            return Result<Guid>.Failure(resp.MensajeError ?? "Rechazada");
+            return Result<Guid>.Failure(resp.ErrorMessage ?? "Rechazada");
         }
 
         var xmlGen = $"compras/retenciones/{tenantId}/{ret.Id}/generado.xml";
@@ -113,7 +113,7 @@ public sealed class EnviarCompraRetencionEmitidaCommandHandler
         try
         {
             await _fileStorage.SaveAsync(xmlGen, new MemoryStream(firmado), ct);
-            await _fileStorage.SaveAsync(xmlAut, new MemoryStream(Encoding.UTF8.GetBytes(resp.XmlAutorizado)), ct);
+            await _fileStorage.SaveAsync(xmlAut, new MemoryStream(Encoding.UTF8.GetBytes(resp.AuthorizedXml)), ct);
         }
         catch (Exception ex)
         {
@@ -125,23 +125,23 @@ public sealed class EnviarCompraRetencionEmitidaCommandHandler
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var refNum = $"{ret.Establecimiento}-{ret.PuntoEmision}-{ret.Secuencial}";
+            var refNum = $"{ret.EstablishmentCode}-{ret.EmissionPointCode}-{ret.Sequential}";
             var asiento = await _accounting.CrearAsientoRetencionEmitidaAsync(
-                ret.Id, refNum, ret.FechaEmision, ret.TotalRetenido,
+                ret.Id, refNum, ret.IssueDate, ret.TotalRetained,
                 $"Retención en la fuente {refNum}", ct);
             if (!asiento.IsSuccess)
             {
                 await _unitOfWork.RollbackAsync(ct);
-                ret.MarcarErrorEnvio(userId, asiento.Error ?? "Asiento");
+                ret.Reject(userId, asiento.Error ?? "Asiento");
                 await _compraRepository.SaveChangesAsync(ct);
                 return Result<Guid>.Failure(asiento.Error ?? "Asiento");
             }
 
-            ret.Autorizar(userId, resp.NumeroAutorizacion, resp.FechaAutorizacion, xmlGen, xmlAut, asiento.Value);
+            ret.Authorize(userId, resp.AuthNumber, resp.AuthDate, xmlGen, xmlAut, asiento.Value);
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "compras", action: "compras.retencion.enviar",
-                entityType: "CompraRetencionEmitida", entityId: ret.Id,
+                entityType: "IssuedRetention", entityId: ret.Id,
                 description: refNum), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
@@ -151,7 +151,7 @@ public sealed class EnviarCompraRetencionEmitidaCommandHandler
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            ret.MarcarErrorEnvio(userId, ex.Message);
+            ret.Reject(userId, ex.Message);
             await _compraRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure(ex.Message);
         }

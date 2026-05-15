@@ -1,4 +1,4 @@
-using ERP.Application.Common;
+﻿using ERP.Application.Common;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Application.Common;
 using ERP.Domain.Common;
@@ -10,14 +10,14 @@ namespace ERP.Application.Modules.Cash.Services;
 public sealed class ConciliacionService : IConciliacionService
 {
     private const decimal ToleranciaMonto = 0.02m;
-    private static readonly TimeSpan ToleranciaFecha = TimeSpan.FromDays(3);
+    private static readonly TimeSpan dateToleranceDays = TimeSpan.FromDays(3);
 
-    private readonly ICajaRepository _caja;
+    private readonly ICashRepository _caja;
     private readonly IAccountingRepository _accounting;
     private readonly ICurrentUser _user;
 
     public ConciliacionService(
-        ICajaRepository caja,
+        ICashRepository caja,
         IAccountingRepository accounting,
         ICurrentUser user)
     {
@@ -30,19 +30,19 @@ public sealed class ConciliacionService : IConciliacionService
         Guid extractoId,
         CancellationToken ct)
     {
-        var extracto = await _caja.GetExtractoWithMovimientosAsync(extractoId, ct);
+        var extracto = await _caja.GetBankStatementWithTransactionsAsync(extractoId, ct);
         if (extracto is null)
             return Result<IReadOnlyList<SugerenciaConciliacionDto>>.Failure("Extracto no encontrado.");
 
-        var cuenta = await _caja.GetCuentaBancariaByIdAsync(extracto.CuentaBancariaId, ct);
-        if (cuenta?.CuentaContableId is not { } glId)
+        var cuenta = await _caja.GetBankAccountByIdAsync(extracto.BankAccountId, ct);
+        if (cuenta?.LedgerAccountId is not { } glId)
         {
             return Result<IReadOnlyList<SugerenciaConciliacionDto>>.Failure(
                 "La cuenta bancaria no tiene cuenta contable asociada; no se pueden sugerir coincidencias.");
         }
 
-        var desde = extracto.PeriodoDesde.AddDays(-5);
-        var hasta = extracto.PeriodoHasta.AddDays(5);
+        var desde = extracto.PeriodFrom.AddDays(-5);
+        var hasta = extracto.PeriodTo.AddDays(5);
 
         var asientos = await _accounting.GetPostedJournalEntriesWithAccountAsync(
             extracto.TenantId,
@@ -53,7 +53,7 @@ public sealed class ConciliacionService : IConciliacionService
 
         var sugerencias = new List<SugerenciaConciliacionDto>();
 
-        foreach (var mov in extracto.Movimientos.Where(m => m.Estado == "Pendiente"))
+        foreach (var mov in extracto.Transactions.Where(m => m.Status == "Pendiente"))
         {
             Guid? mejor = null;
             string? motivo = null;
@@ -66,15 +66,15 @@ public sealed class ConciliacionService : IConciliacionService
                     continue;
 
                 var montoLinea = linea.Debit.Amount > 0 ? linea.Debit.Amount : linea.Credit.Amount;
-                var diff       = Math.Abs(montoLinea - mov.Monto);
+                var diff       = Math.Abs(montoLinea - mov.Amount);
                 if (diff > ToleranciaMonto)
                     continue;
 
-                var okTipo = CoincideTipoMovimiento(mov.Tipo, linea.Debit.Amount, linea.Credit.Amount);
+                var okTipo = CoincideTipoMovimiento(mov.TransactionType, linea.Debit.Amount, linea.Credit.Amount);
                 if (!okTipo)
                     continue;
 
-                if (Math.Abs((je.Date - mov.Fecha).Ticks) > ToleranciaFecha.Ticks)
+                if (Math.Abs((je.Date - mov.TransactionDate).Ticks) > dateToleranceDays.Ticks)
                     continue;
 
                 if (diff < mejorDiff)
@@ -106,11 +106,11 @@ public sealed class ConciliacionService : IConciliacionService
         Guid asientoContableId,
         CancellationToken ct)
     {
-        var extracto = await _caja.GetExtractoWithMovimientosForMovimientoAsync(movimientoId, ct);
+        var extracto = await _caja.GetBankStatementForTransactionAsync(movimientoId, ct);
         if (extracto is null)
             return Result<bool>.Failure("Movimiento o extracto no encontrado.");
 
-        var m = extracto.Movimientos.FirstOrDefault(x => x.Id == movimientoId);
+        var m = extracto.Transactions.FirstOrDefault(x => x.Id == movimientoId);
         if (m is null)
             return Result<bool>.Failure("Movimiento no encontrado en el extracto.");
 
@@ -118,8 +118,8 @@ public sealed class ConciliacionService : IConciliacionService
         if (asiento is null || asiento.Status != DocumentStatus.Posted)
             return Result<bool>.Failure("Asiento contable no encontrado o no está contabilizado.");
 
-        m.Conciliar(asientoContableId);
-        extracto.MarcarConciliadoSiCompleto(_user.UserId);
+        m.Reconcile(asientoContableId);
+        extracto.MarkReconciledIfComplete(_user.UserId);
         await _accounting.SaveChangesAsync(ct);
         return Result<bool>.Success(true);
     }

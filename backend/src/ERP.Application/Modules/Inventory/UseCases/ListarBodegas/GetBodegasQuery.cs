@@ -7,7 +7,7 @@ namespace ERP.Application.Modules.Inventory.UseCases.ListarBodegas;
 public sealed record GetBodegasQuery(
     bool?  ActiveFilter,
     string? Search,
-    Guid?  SucursalId
+    Guid?  BranchId
 ) : IRequest<Result<IReadOnlyList<BodegaDto>>>, ICacheable
 {
     /// <inheritdoc />

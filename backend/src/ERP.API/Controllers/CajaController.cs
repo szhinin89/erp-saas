@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -10,8 +10,8 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-/// <summary>Conciliación bancaria, caja chica y flujo de efectivo (tenant).</summary>
-[Modulo("Caja y bancos", "perm:caja.extractos.view", "🏦", "/caja", null, 60)]
+/// <summary>ConciliaciÃ³n bancaria, caja chica y flujo de efectivo (tenant).</summary>
+[Modulo("Caja y bancos", "perm:caja.extractos.view", "ðŸ¦", "/caja", null, 60)]
 [ApiController]
 [Route("api/caja")]
 [Authorize]
@@ -19,9 +19,9 @@ namespace ERP.API.Controllers;
 public sealed class CajaController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly IExtractoParser _parser;
+    private readonly IStatementParser _parser;
 
-    public CajaController(IMediator mediator, IExtractoParser parser)
+    public CajaController(IMediator mediator, IStatementParser parser)
     {
         _mediator = mediator;
         _parser   = parser;
@@ -29,20 +29,20 @@ public sealed class CajaController : ControllerBase
 
     [HttpGet("cuentas-bancarias")]
     [Authorize(Policy = "perm:caja.extractos.view")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<CuentaBancariaDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BankAccountDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListCuentasBancarias(CancellationToken ct)
     {
         var r = await _mediator.Send(new ListCuentasBancariasQuery(), ct);
-        return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<CuentaBancariaDto>());
+        return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<BankAccountDto>());
     }
 
     [HttpPost("cuentas-bancarias")]
     [Authorize(Policy = "perm:caja.extractos.create")]
-    [ProducesResponseType(typeof(ApiResponse<CuentaBancariaDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<BankAccountDto>), StatusCodes.Status201Created)]
     public async Task<IActionResult> CrearCuentaBancaria([FromBody] CrearCuentaBancariaRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(
-            new CrearCuentaBancariaCommand(
+            new CrearBankAccountCommand(
                 body.Nombre,
                 body.NumeroCuenta,
                 body.TipoCuenta,
@@ -58,7 +58,7 @@ public sealed class CajaController : ControllerBase
     public async Task<IActionResult> ListExtractos([FromQuery] Guid cuentaBancariaId, CancellationToken ct)
     {
         var r = await _mediator.Send(new ListExtractosPorCuentaQuery(cuentaBancariaId), ct);
-        return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<ExtractoBancarioDto>());
+        return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<BankStatementDto>());
     }
 
     [HttpGet("extractos/{id:guid}")]
@@ -76,10 +76,10 @@ public sealed class CajaController : ControllerBase
     public async Task<IActionResult> ImportarExtracto([FromForm] ImportarExtractoForm form, CancellationToken ct)
     {
         if (form.Archivo is null || form.Archivo.Length == 0)
-            return BadRequest(new ApiResponse<object>(false, "Archivo vacío.", new { }));
+            return BadRequest(new ApiResponse<object>(false, "Archivo vacÃ­o.", new { }));
 
         await using var stream = form.Archivo.OpenReadStream();
-        IReadOnlyList<MovimientoExtractoParseRow> movs;
+        IReadOnlyList<StatementParseRow> movs;
         try
         {
             movs = await _parser.ParseAsync(stream, ct);
@@ -89,7 +89,7 @@ public sealed class CajaController : ControllerBase
             return BadRequest(new ApiResponse<object>(false, $"No se pudo leer el archivo: {ex.Message}", new { }));
         }
 
-        var cmd = new ImportarExtractoBancarioCommand(
+        var cmd = new ImportarBankStatementCommand(
             form.CuentaBancariaId,
             form.PeriodoDesde,
             form.PeriodoHasta,
@@ -115,7 +115,7 @@ public sealed class CajaController : ControllerBase
     [Authorize(Policy = "perm:caja.conciliar")]
     public async Task<IActionResult> ConciliarMovimiento(Guid movimientoId, [FromBody] ConciliarRequest body, CancellationToken ct)
     {
-        var r = await _mediator.Send(new ConciliarMovimientoBancarioCommand(movimientoId, body.AsientoContableId), ct);
+        var r = await _mediator.Send(new ConciliarBankTransactionCommand(movimientoId, body.AsientoContableId), ct);
         return this.ToOkOrBadRequest(r, "Conciliado", () => false);
     }
 
@@ -124,7 +124,7 @@ public sealed class CajaController : ControllerBase
     public async Task<IActionResult> ListCajasChicas(CancellationToken ct)
     {
         var r = await _mediator.Send(new ListCajasChicasQuery(), ct);
-        return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<CajaChicaDto>());
+        return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<PettyCashDto>());
     }
 
     [HttpPost("cajas-chicas")]
@@ -132,7 +132,7 @@ public sealed class CajaController : ControllerBase
     public async Task<IActionResult> CrearCajaChica([FromBody] CrearCajaChicaRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(
-            new CrearCajaChicaCommand(body.Nombre, body.SaldoAsignado, body.CuentaBancariaIdReposicion, body.CuentaContableCajaId),
+            new CrearPettyCashCommand(body.Nombre, body.SaldoAsignado, body.CuentaBancariaIdReposicion, body.CuentaContableCajaId),
             ct);
         return this.ToCreatedOrBadRequest(r, "Creado");
     }
@@ -142,7 +142,7 @@ public sealed class CajaController : ControllerBase
     public async Task<IActionResult> CrearGastoCajaChica([FromBody] CrearGastoCajaChicaRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(
-            new CrearGastoCajaChicaCommand(
+            new CrearGastoPettyCashCommand(
                 body.CajaChicaId,
                 body.Fecha,
                 body.Concepto,
@@ -158,7 +158,7 @@ public sealed class CajaController : ControllerBase
     public async Task<IActionResult> CrearArqueo([FromBody] CrearArqueoCajaRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(
-            new CrearArqueoCajaCommand(body.CajaChicaId, body.FechaArqueo, body.EfectivoFisico, body.Observaciones),
+            new CrearCashCountCommand(body.CajaChicaId, body.FechaArqueo, body.EfectivoFisico, body.Observaciones),
             ct);
         return this.ToCreatedOrBadRequest(r, "Creado");
     }
@@ -167,7 +167,7 @@ public sealed class CajaController : ControllerBase
     [Authorize(Policy = "perm:caja.arqueos.perform")]
     public async Task<IActionResult> AprobarArqueo(Guid arqueoId, CancellationToken ct)
     {
-        var r = await _mediator.Send(new AprobarArqueoCajaCommand(arqueoId), ct);
+        var r = await _mediator.Send(new AprobarCashCountCommand(arqueoId), ct);
         return this.ToOkOrBadRequest(r, "Aprobado");
     }
 
@@ -175,7 +175,7 @@ public sealed class CajaController : ControllerBase
     [Authorize(Policy = "perm:caja.cajachica.edit")]
     public async Task<IActionResult> Reposicion([FromBody] ReposicionCajaChicaRequest body, CancellationToken ct)
     {
-        var r = await _mediator.Send(new ReposicionCajaChicaCommand(body.CajaChicaId, body.Monto), ct);
+        var r = await _mediator.Send(new ReposicionPettyCashCommand(body.CajaChicaId, body.Monto), ct);
         return this.ToOkOrBadRequest(r, "OK");
     }
 
@@ -227,3 +227,6 @@ public sealed class CajaController : ControllerBase
 
     public sealed record ReposicionCajaChicaRequest(Guid CajaChicaId, decimal Monto);
 }
+
+
+

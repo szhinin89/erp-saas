@@ -1,18 +1,18 @@
 using ERP.Application.Common;
 using MediatR;
 
-namespace ERP.Application.Configuration.UseCases.UpsertConfiguracionFacturacion;
+namespace ERP.Application.Configuration.UseCases.UpsertBillingSettings;
 
-public sealed record UpsertConfiguracionFacturacionCommand(
-    string RazonSocial,
-    string NombreComercial,
-    string Ruc,
-    string DireccionMatriz,
-    string Telefono,
-    string? Correo,
-    bool ObligadoContabilidad,
-    string? ContribuyenteEspecial,
+public sealed record UpsertBillingSettingsCommand(
+    string  LegalName,
+    string  TradeName,
+    string  Ruc,
+    string  MainAddress,
+    string  Phone,
+    string? Email,
+    bool    RequiresAccounting,
+    string? SpecialTaxpayer,
     string? LogoBase64,
-    string? LeyendaAdicional,
-    int AnchoTirilla)
-    : IRequest<Result<ERP.Application.Configuration.DTOs.ConfiguracionFacturacionDto>>;
+    string? FooterText,
+    int     ReceiptWidth)
+    : IRequest<Result<ERP.Application.Configuration.DTOs.BillingSettingsDto>>;

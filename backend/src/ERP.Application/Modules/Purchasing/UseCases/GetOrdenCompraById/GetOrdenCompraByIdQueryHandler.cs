@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
@@ -10,13 +10,13 @@ namespace ERP.Application.Modules.Purchasing.UseCases.GetOrdenCompraById;
 public sealed class GetOrdenCompraByIdQueryHandler
     : IRequestHandler<GetOrdenCompraByIdQuery, Result<OrdenCompraDetailDto?>>
 {
-    private readonly IOrdenCompraRepository _repo;
-    private readonly IProveedorRepository   _proveedorRepo;
+    private readonly IPurchaseOrderRepository _repo;
+    private readonly ISupplierRepository   _proveedorRepo;
     private readonly ICurrentTenant         _currentTenant;
 
     public GetOrdenCompraByIdQueryHandler(
-        IOrdenCompraRepository repo,
-        IProveedorRepository proveedorRepo,
+        IPurchaseOrderRepository repo,
+        ISupplierRepository proveedorRepo,
         ICurrentTenant currentTenant)
     {
         _repo          = repo;
@@ -29,32 +29,34 @@ public sealed class GetOrdenCompraByIdQueryHandler
     {
         var tenantId = _currentTenant.TenantId;
 
-        var orden = await _repo.GetByIdWithDetallesAsync(tenantId, query.OrdenId, ct);
+        var orden = await _repo.GetByIdAsync(tenantId, query.OrdenId, ct);
         if (orden is null)
             return Result<OrdenCompraDetailDto?>.Success(null);
 
-        var proveedor   = await _proveedorRepo.GetByIdAsync(tenantId, orden.ProveedorId, ct);
-        var vinculadas  = await _repo.GetVinculacionesAsync(tenantId, orden.Id, ct);
+        var Supplier   = await _proveedorRepo.GetByIdAsync(tenantId, orden.SupplierId, ct);
+        var vinculadas  = await _repo.GetBillLinksAsync(tenantId, orden.Id, ct);
 
-        var detalles = orden.Detalles.Select(d => new OrdenCompraDetalleDto(
-            d.Id, d.ProductoId, d.Descripcion,
-            d.CantidadPedida, d.CantidadFacturada, d.PendienteFacturar,
-            d.PrecioUnitario, d.Subtotal, d.Impuesto, d.Total)).ToList();
+        var lines = orden.Lines.Select(d => new PurchaseOrderLineDto(
+            d.Id, d.ProductId, d.Description,
+            d.OrderedQty, d.InvoicedQty, d.PendingToInvoice,
+            d.UnitCost, d.Subtotal, d.TaxAmount, d.Total)).ToList();
 
         var facturasVinculadas = vinculadas
-            .Select(v => new OrdenCompraFacturaVinculadaDto(v.CompraFacturaId, v.NumeroFactura, v.FechaVinculacion))
+            .Select(v => new OrdenPurchBillVinculadaDto(v.PurchBillId, v.InvoiceNumber, v.LinkedAt))
             .ToList();
 
         return Result<OrdenCompraDetailDto?>.Success(new OrdenCompraDetailDto(
-            orden.Id, orden.NumeroOrden,
-            orden.ProveedorId, proveedor?.RazonSocial ?? orden.ProveedorId.ToString(),
-            orden.FechaEmision, orden.FechaRequerida,
-            orden.Estado, orden.Moneda,
-            orden.Subtotal, orden.Impuesto, orden.Total,
-            orden.Observaciones, orden.DireccionEntrega,
-            orden.BodegaDestinoId,
-            orden.FechaEnvio, orden.FechaAprobacion, orden.AprobadoPor, orden.FechaCierre,
+            orden.Id, orden.OrderNumber,
+            orden.SupplierId, Supplier?.LegalName ?? orden.SupplierId.ToString(),
+            orden.IssueDate, orden.RequiredDate,
+            orden.Status, orden.Currency,
+            orden.Subtotal, orden.TaxTotal, orden.Total,
+            orden.Notes, orden.DeliveryAddress,
+            orden.TargetWarehouseId,
+            orden.SentAt, orden.ApprovedAt, orden.ApprovedBy, orden.ClosedAt,
             orden.CreatedAt,
-            detalles, facturasVinculadas));
+            lines, facturasVinculadas));
     }
 }
+
+

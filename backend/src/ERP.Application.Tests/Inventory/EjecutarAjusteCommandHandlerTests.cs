@@ -13,7 +13,7 @@ using Moq;
 namespace ERP.Application.Tests.Inventario;
 
 /// <summary>
-/// Pruebas unitarias de EjecutarAjusteCommandHandler con mocks de IInventarioStockRepository.
+/// Pruebas unitarias de EjecutarAjusteCommandHandler con mocks de IStockRepository.
 /// Verifican el ajuste atómico de stock para los casos de incremento y disminución.
 /// </summary>
 public sealed class EjecutarAjusteCommandHandlerTests
@@ -29,14 +29,14 @@ public sealed class EjecutarAjusteCommandHandlerTests
         var result = await ctx.Handle();
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Estado.Should().Be("Ejecutado");
+        result.Value!.Status.Should().Be("Executed");
         result.Value.FechaEjecucion.Should().NotBeNull();
 
         ctx.Movimientos.Should().HaveCount(1);
-        ctx.Movimientos[0].TipoMovimiento.Should().Be(TipoMovimientoInventario.AjustePositivo);
-        ctx.Movimientos[0].Cantidad.Should().Be(15m);
-        ctx.Movimientos[0].CantidadAnterior.Should().Be(50m);
-        ctx.Movimientos[0].DocumentoOrigenTipo.Should().Be("AjusteInventario");
+        ctx.Movimientos[0].MovementType.Should().Be(StockMovementType.PositiveAdjust);
+        ctx.Movimientos[0].Quantity.Should().Be(15m);
+        ctx.Movimientos[0].PreviousQuantity.Should().Be(50m);
+        ctx.Movimientos[0].SourceDocType.Should().Be("StockAdjustment");
 
         ctx.Uow.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         ctx.Uow.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -50,7 +50,7 @@ public sealed class EjecutarAjusteCommandHandlerTests
 
         await ctx.Handle();
 
-        ctx.StockRepo.Verify(x => x.DecrementarStockAtomicoAsync(
+        ctx.StockRepo.Verify(x => x.DecrementStockAtomicAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
             It.IsAny<decimal>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -67,9 +67,9 @@ public sealed class EjecutarAjusteCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         ctx.Movimientos.Should().HaveCount(1);
-        ctx.Movimientos[0].TipoMovimiento.Should().Be(TipoMovimientoInventario.AjusteNegativo);
-        ctx.Movimientos[0].Cantidad.Should().Be(-10m);
-        ctx.Movimientos[0].CantidadAnterior.Should().Be(30m);
+        ctx.Movimientos[0].MovementType.Should().Be(StockMovementType.NegativeAdjust);
+        ctx.Movimientos[0].Quantity.Should().Be(-10m);
+        ctx.Movimientos[0].PreviousQuantity.Should().Be(30m);
 
         ctx.Uow.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -98,7 +98,7 @@ public sealed class EjecutarAjusteCommandHandlerTests
 
         await ctx.Handle();
 
-        ctx.StockRepo.Verify(x => x.IncrementarStockAtomicoAsync(
+        ctx.StockRepo.Verify(x => x.IncrementStockAtomicAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
             It.IsAny<decimal>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -109,7 +109,7 @@ public sealed class EjecutarAjusteCommandHandlerTests
     public async Task Ejecutar_ajuste_ya_ejecutado_retorna_failure()
     {
         var ctx = new TestContext(cantidadAjuste: 5m);
-        ctx.Ajuste.Ejecutar(ctx.UserId);
+        ctx.Ajuste.Execute(ctx.UserId);
 
         var result = await ctx.Handle();
 
@@ -121,7 +121,7 @@ public sealed class EjecutarAjusteCommandHandlerTests
     public async Task Ejecutar_ajuste_cancelado_retorna_failure()
     {
         var ctx = new TestContext(cantidadAjuste: 5m);
-        ctx.Ajuste.Cancelar(ctx.UserId);
+        ctx.Ajuste.Cancel(ctx.UserId);
 
         var result = await ctx.Handle();
 
@@ -135,7 +135,7 @@ public sealed class EjecutarAjusteCommandHandlerTests
         var ctx = new TestContext(cantidadAjuste: 5m);
         ctx.AjusteRepo.Setup(x => x.GetByIdAsync(
                 ctx.TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((AjusteInventario?)null);
+            .ReturnsAsync((StockAdjustment?)null);
 
         var result = await ctx.Handle();
 
@@ -152,13 +152,13 @@ public sealed class EjecutarAjusteCommandHandlerTests
         public Guid BodegaId  { get; } = Guid.NewGuid();
         public Guid ProductoId { get; } = Guid.NewGuid();
 
-        public AjusteInventario Ajuste { get; }
+        public StockAdjustment Ajuste { get; }
 
-        public Mock<IAjusteInventarioRepository> AjusteRepo { get; } = new();
-        public Mock<IInventarioStockRepository>  StockRepo  { get; } = new();
+        public Mock<IStockAdjustmentRepository> AjusteRepo { get; } = new();
+        public Mock<IStockRepository>  StockRepo  { get; } = new();
         public Mock<IUnitOfWork>                 Uow        { get; } = new();
 
-        public List<InventarioMovimiento> Movimientos { get; } = [];
+        public List<StockMovement> Movimientos { get; } = [];
 
         private readonly Mock<IUserActivityRepository> _activity = new();
         private readonly Mock<ICostoPromedioService>   _costo    = new();
@@ -176,8 +176,8 @@ public sealed class EjecutarAjusteCommandHandlerTests
             _user.SetupGet(x => x.Email).Returns("test@erp.dev");
             _user.SetupGet(x => x.FullName).Returns("Test User");
 
-            Ajuste = AjusteInventario.Create(
-                TenantId, secuencial: 1,
+            Ajuste = StockAdjustment.Create(
+                TenantId, sequential: 1,
                 BodegaId, "Bodega Test",
                 ProductoId, "Producto Test",
                 cantidadAjuste, "Ajuste físico", null, UserId);
@@ -187,9 +187,9 @@ public sealed class EjecutarAjusteCommandHandlerTests
             AjusteRepo.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
-            StockRepo.Setup(x => x.AddMovimientoAsync(
-                    It.IsAny<InventarioMovimiento>(), It.IsAny<CancellationToken>()))
-                .Callback<InventarioMovimiento, CancellationToken>((m, _) => Movimientos.Add(m))
+            StockRepo.Setup(x => x.AddMovementAsync(
+                    It.IsAny<StockMovement>(), It.IsAny<CancellationToken>()))
+                .Callback<StockMovement, CancellationToken>((m, _) => Movimientos.Add(m))
                 .Returns(Task.CompletedTask);
 
             Uow.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
@@ -203,21 +203,21 @@ public sealed class EjecutarAjusteCommandHandlerTests
         }
 
         public void WithIncrementoExitoso(decimal cantAnterior)
-            => StockRepo.Setup(x => x.IncrementarStockAtomicoAsync(
+            => StockRepo.Setup(x => x.IncrementStockAtomicAsync(
                     TenantId, BodegaId, ProductoId, It.IsAny<decimal>(), UserId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(cantAnterior);
 
         public void WithDecrementoExitoso(decimal cantAnterior)
-            => StockRepo.Setup(x => x.DecrementarStockAtomicoAsync(
+            => StockRepo.Setup(x => x.DecrementStockAtomicAsync(
                     TenantId, BodegaId, ProductoId, It.IsAny<decimal>(), UserId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((decimal?)cantAnterior);
 
         public void WithDecrementoFallido()
-            => StockRepo.Setup(x => x.DecrementarStockAtomicoAsync(
+            => StockRepo.Setup(x => x.DecrementStockAtomicAsync(
                     TenantId, BodegaId, ProductoId, It.IsAny<decimal>(), UserId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((decimal?)null);
 
-        public Task<Result<AjusteInventarioDto>> Handle()
+        public Task<Result<StockAdjustmentDto>> Handle()
         {
             var handler = new EjecutarAjusteCommandHandler(
                 AjusteRepo.Object,
@@ -233,3 +233,5 @@ public sealed class EjecutarAjusteCommandHandlerTests
         }
     }
 }
+
+

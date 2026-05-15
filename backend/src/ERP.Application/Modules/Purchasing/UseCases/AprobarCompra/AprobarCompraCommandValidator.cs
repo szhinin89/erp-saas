@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.AprobarCompra;
 
@@ -6,7 +6,7 @@ public sealed class AprobarCompraCommandValidator : AbstractValidator<AprobarCom
 {
     public AprobarCompraCommandValidator()
     {
-        RuleFor(x => x.CompraFacturaId)
+        RuleFor(x => x.PurchBillId)
             .NotEmpty()
             .WithMessage("El ID de la factura de compra es obligatorio.");
     }

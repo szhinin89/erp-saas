@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
@@ -12,8 +12,8 @@ using ERP.Infrastructure.Persistence;
 namespace ERP.API.Extensions;
 
 /// <summary>
-/// Seed opcional de desarrollo: tenant-demo + admin identity + datos mínimos contables.
-/// <b>No se ejecuta por defecto.</b> Actívalo con <c>Development:SeedDemoTenant = true</c> en appsettings.Development.json.
+/// Seed opcional de desarrollo: tenant-demo + admin identity + datos mÃ­nimos contables.
+/// <b>No se ejecuta por defecto.</b> ActÃ­valo con <c>Development:SeedDemoTenant = true</c> en appsettings.Development.json.
 /// </summary>
 internal static class DevDatabaseSeeder
 {
@@ -82,7 +82,7 @@ internal static class DevDatabaseSeeder
                 createdBy: SeederActorId));
         }
 
-        // Si el tenant ya existía, solo completamos identidad/membresía faltante.
+        // Si el tenant ya existÃ­a, solo completamos identidad/membresÃ­a faltante.
         if (!tenantJustCreated)
         {
             await db.SaveChangesAsync(ct);
@@ -92,7 +92,7 @@ internal static class DevDatabaseSeeder
         var branch = Branch.Create(
             tenantId: tenant.Id,
             name: "Sucursal Principal",
-            address: "Dirección Principal",
+            address: "DirecciÃ³n Principal",
             reference: null,
             phones: null,
             countryId: null,
@@ -107,12 +107,12 @@ internal static class DevDatabaseSeeder
         db.Branches.Add(branch);
         await db.SaveChangesAsync(ct);
 
-        db.Bodegas.Add(Bodega.Create(
+        db.Warehouses.Add(Warehouse.Create(
             tenantId: tenant.Id,
-            sucursalId: branch.Id,
-            nombre: "Bodega Principal",
-            ubicacion: null,
-            encargado: null,
+            branchId: branch.Id,
+            name: "Warehouse Principal",
+            address: null,
+            manager: null,
             createdBy: SeederActorId));
 
         db.Accounts.AddRange(
@@ -129,3 +129,5 @@ internal static class DevDatabaseSeeder
         await db.SaveChangesAsync(ct);
     }
 }
+
+

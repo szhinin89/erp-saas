@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -9,7 +9,7 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-[Modulo("Notas ventas", "perm:ventas.notas.list", "📃", "/ventas/notas", "perm:ventas.facturas.view", 51)]
+[Modulo("Notas ventas", "perm:ventas.notas.list", "ðŸ“ƒ", "/ventas/notas", "perm:ventas.facturas.view", 51)]
 [ApiController]
 [Route("api/ventas/notas")]
 [Authorize]
@@ -35,7 +35,7 @@ public sealed class VentasNotasController : ControllerBase
     [HttpPost]
     [Authorize(Policy = "perm:ventas.notas.create")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    public async Task<IActionResult> Crear([FromBody] CrearVentasNotaCreditoDebitoCommand command, CancellationToken ct = default)
+    public async Task<IActionResult> Crear([FromBody] CrearSalesNoteCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
@@ -50,3 +50,4 @@ public sealed class VentasNotasController : ControllerBase
         return this.ToOkOrBadRequest(result, "Enviado");
     }
 }
+

@@ -1,4 +1,4 @@
-namespace ERP.Application.Configuration.DTOs;
+﻿namespace ERP.Application.Configuration.DTOs;
 
 public record ConfiguracionSRIDto(
     Guid    TenantId,
@@ -8,8 +8,8 @@ public record ConfiguracionSRIDto(
     string  DireccionMatriz,
     bool    ObligadoContabilidad,
     string? ContribuyenteEspecial,
-    string  Establecimiento,
-    string  PuntoEmision,
+    string    EstabCode,
+    string    EmPointCode,
     int     SecuencialActual,
     string  CertificadoP12Path,
     int     Ambiente,

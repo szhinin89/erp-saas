@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
 
@@ -17,30 +17,30 @@ public sealed class CrearCompraCommandValidator : AbstractValidator<CrearCompraC
         // ── Manual ───────────────────────────────────────────────────────
         When(x => x.Modo == ModoCreacionCompra.Manual, () =>
         {
-            RuleFor(x => x.ProveedorId)
-                .NotEmpty().WithMessage("El proveedor es obligatorio en modo manual.");
+            RuleFor(x => x.SupplierId)
+                .NotEmpty().WithMessage("El Supplier es obligatorio en modo manual.");
 
-            RuleFor(x => x.NumeroFactura)
+            RuleFor(x => x.InvoiceNumber)
                 .NotEmpty().WithMessage("El número de factura es obligatorio en modo manual.")
                 .MaximumLength(50);
 
-            RuleFor(x => x.FechaFactura)
+            RuleFor(x => x.InvoiceDate)
                 .NotNull().WithMessage("La fecha de factura es obligatoria en modo manual.");
 
-            RuleFor(x => x.CondicionPago)
+            RuleFor(x => x.PaymentTerms)
                 .NotEmpty().WithMessage("La condición de pago es obligatoria en modo manual.")
                 .MaximumLength(30);
 
-            RuleFor(x => x.Detalles)
+            RuleFor(x => x.Lines)
                 .NotEmpty().WithMessage("Debe ingresar al menos un detalle en modo manual.");
 
-            RuleForEach(x => x.Detalles).ChildRules(d =>
+            RuleForEach(x => x.Lines).ChildRules(d =>
             {
-                d.RuleFor(l => l.Descripcion)
+                d.RuleFor(l => l.Description)
                     .NotEmpty().WithMessage("La descripción del detalle es obligatoria.");
-                d.RuleFor(l => l.Cantidad)
+                d.RuleFor(l => l.Quantity)
                     .GreaterThan(0).WithMessage("La cantidad debe ser mayor a cero.");
-                d.RuleFor(l => l.PrecioUnitario)
+                d.RuleFor(l => l.UnitPrice)
                     .GreaterThanOrEqualTo(0).WithMessage("El precio unitario no puede ser negativo.");
             });
         });

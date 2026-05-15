@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using ERP.Application.Common.Exceptions;
 using ERP.Domain.Common.Validators;
 using ERP.Infrastructure.Services;
@@ -42,15 +42,15 @@ public sealed class SriFacturaParserTests
 
         var r = await parser.ParseAsync(ms, CancellationToken.None);
 
-        r.ClaveAcceso.Should().Be(clave);
-        r.RucProveedor.Should().Be(ruc);
-        r.NumeroFactura.Should().Be("001-001-000000001");
-        r.FechaEmision.Should().Be(new DateTime(2026, 5, 9));
+        r.AccessKey.Should().Be(clave);
+        r.SupplierRuc.Should().Be(ruc);
+        r.InvoiceNumber.Should().Be("001-001-000000001");
+        r.IssueDate.Should().Be(new DateTime(2026, 5, 9));
         r.Subtotal.Should().Be(100m);
-        r.Impuesto.Should().Be(12m);
+        r.VatTotal.Should().Be(12m);
         r.Total.Should().Be(112m);
         r.Items.Should().HaveCount(1);
-        r.Items[0].Descripcion.ToLowerInvariant().Should().Contain("prueba");
+        r.Items[0].Description.ToLowerInvariant().Should().Contain("prueba");
     }
 
     [Fact]
@@ -63,3 +63,4 @@ public sealed class SriFacturaParserTests
         await act.Should().ThrowAsync<XmlParseException>();
     }
 }
+

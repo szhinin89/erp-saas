@@ -1,4 +1,4 @@
-using QuestPDF.Fluent;
+﻿using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using ERP.Application.Inventory.DTOs;
@@ -39,10 +39,10 @@ public static class KardexPdfExporter
 
                 page.Header().Column(col =>
                 {
-                    // Título
+                    // TÃ­tulo
                     col.Item()
                        .Background(ColPrimario).Padding(8)
-                       .Text("KARDEX VALORIZADO — PROMEDIO PONDERADO MÓVIL")
+                       .Text("KARDEX VALORIZADO â€” PROMEDIO PONDERADO MÃ“VIL")
                        .Bold().FontSize(11).FontColor(ColWhite);
 
                     // Ficha informativa
@@ -50,12 +50,12 @@ public static class KardexPdfExporter
                     {
                         row.RelativeItem().Column(info =>
                         {
-                            info.Item().Row(r => { r.ConstantItem(55).Text("Producto:").Bold().FontColor(ColPrimario); r.RelativeItem().Text($"{kardex.Producto.Nombre}  [{kardex.Producto.Codigo}]"); });
-                            info.Item().Row(r => { r.ConstantItem(55).Text("Bodega:").Bold().FontColor(ColPrimario);   r.RelativeItem().Text(kardex.Bodega.Nombre); });
+                            info.Item().Row(r => { r.ConstantItem(55).Text("Producto:").Bold().FontColor(ColPrimario); r.RelativeItem().Text($"{kardex.Producto.Name}  [{kardex.Producto.Codigo}]"); });
+                            info.Item().Row(r => { r.ConstantItem(55).Text("Bodega:").Bold().FontColor(ColPrimario);   r.RelativeItem().Text(kardex.Warehouse.Name); });
                         });
                         row.RelativeItem().Column(info =>
                         {
-                            info.Item().Row(r => { r.ConstantItem(55).Text("Período:").Bold().FontColor(ColPrimario);  r.RelativeItem().Text(periodo); });
+                            info.Item().Row(r => { r.ConstantItem(55).Text("PerÃ­odo:").Bold().FontColor(ColPrimario);  r.RelativeItem().Text(periodo); });
                             info.Item().Row(r => { r.ConstantItem(55).Text("Emitido:").Bold().FontColor(ColPrimario);  r.RelativeItem().Text(DateTime.Now.ToString("dd/MM/yyyy HH:mm")); });
                         });
                     });
@@ -77,7 +77,7 @@ public static class KardexPdfExporter
                            .Background("#EBEBEB").Border(1).BorderColor("#AAAAAA").Padding(5)
                            .Row(row =>
                            {
-                               row.RelativeItem().Text("SALDO INICIAL (antes del período)").Bold();
+                               row.RelativeItem().Text("SALDO INICIAL (antes del perÃ­odo)").Bold();
                                row.ConstantItem(105).AlignRight().Text($"Cant: {kardex.Resumen.InventarioInicialCantidad:N4}");
                                row.ConstantItem(110).AlignRight().Text($"Valor: {kardex.Resumen.InventarioInicialValor:N4}");
                                row.ConstantItem(110).AlignRight().Text($"Promedio: {cpa:N4}");
@@ -134,15 +134,15 @@ public static class KardexPdfExporter
                         });
 
                         // Filas de datos
-                        for (var i = 0; i < kardex.Movimientos.Count; i++)
+                        for (var i = 0; i < kardex.Rows.Count; i++)
                         {
-                            var m   = kardex.Movimientos[i];
+                            var m   = kardex.Rows[i];
                             var alt = i % 2 == 1 ? ColAltRow : ColWhite;
                             var entBg = m.EntradaCantidad > 0 ? ColEntrada : alt;
                             var salBg = m.SalidaCantidad  > 0 ? ColSalida  : alt;
 
                             Cell(table, m.Fecha.ToLocalTime().ToString("dd/MM/yy HH:mm"), alt,   left: true);
-                            Cell(table, m.TipoMovimiento,               alt,    left: true);
+                            Cell(table, m.MovementType,               alt,    left: true);
                             Cell(table, m.Referencia ?? "",             alt,    left: true);
                             Cell(table, Fmt(m.EntradaCantidad), entBg, zero: m.EntradaCantidad == 0);
                             Cell(table, Fmt(m.EntradaValor),   entBg, zero: m.EntradaValor    == 0);
@@ -159,7 +159,7 @@ public static class KardexPdfExporter
                        .Background(ColResumen).Border(1).BorderColor("#CCCC88").Padding(6)
                        .Column(resCol =>
                        {
-                           resCol.Item().Text("RESUMEN DEL PERÍODO").Bold().FontSize(9).FontColor(ColPrimario);
+                           resCol.Item().Text("RESUMEN DEL PERÃODO").Bold().FontSize(9).FontColor(ColPrimario);
                            resCol.Item().PaddingTop(4).Row(row =>
                            {
                                ResumenBox(row, "Inv. Inicial",  kardex.Resumen.InventarioInicialCantidad, kardex.Resumen.InventarioInicialValor, ColPrimario);
@@ -181,7 +181,7 @@ public static class KardexPdfExporter
                 {
                     t.Span("Generado el ").FontSize(7).FontColor(ColGrayMid);
                     t.Span(DateTime.Now.ToString("dd/MM/yyyy HH:mm")).FontSize(7).FontColor(ColGrayMid);
-                    t.Span("  |  Pág. ").FontSize(7).FontColor(ColGrayMid);
+                    t.Span("  |  PÃ¡g. ").FontSize(7).FontColor(ColGrayMid);
                     t.CurrentPageNumber().FontSize(7).FontColor(ColGrayMid);
                     t.Span(" de ").FontSize(7).FontColor(ColGrayMid);
                     t.TotalPages().FontSize(7).FontColor(ColGrayMid);
@@ -190,7 +190,7 @@ public static class KardexPdfExporter
         }).GeneratePdf();
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static void Cell(
         TableDescriptor t, string text, string bg,
@@ -220,5 +220,7 @@ public static class KardexPdfExporter
                   c.Item().Text($"$ {valor:N4}").Bold().FontSize(8);
               });
 
-    private static string Fmt(decimal v) => v == 0 ? "—" : v.ToString("N4");
+    private static string Fmt(decimal v) => v == 0 ? "â€”" : v.ToString("N4");
 }
+
+

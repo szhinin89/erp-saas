@@ -22,9 +22,9 @@ public sealed class CompraAsignacionBodegasRulesTests
             new AsignacionBodegaRequest(0, b1, 6m),
         };
 
-        var bodegas = new Mock<IBodegaRepository>();
+        var bodegas = new Mock<IWarehouseRepository>();
         bodegas.Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), b1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Bodega.Create(Guid.NewGuid(), Guid.NewGuid(), "B1", null, null, Guid.NewGuid()));
+            .ReturnsAsync(Warehouse.Create(Guid.NewGuid(), Guid.NewGuid(), "B1", null, null, Guid.NewGuid()));
 
         var err = await CompraAsignacionBodegasRules.ValidateAsync(
             detalles, asignaciones, Guid.NewGuid(), bodegas.Object, CancellationToken.None);
@@ -54,11 +54,11 @@ public sealed class CompraAsignacionBodegasRulesTests
             new AsignacionBodegaRequest(1, b2, 5m),
         };
 
-        var bodegas = new Mock<IBodegaRepository>();
+        var bodegas = new Mock<IWarehouseRepository>();
         bodegas.Setup(x => x.GetByIdAsync(tenantId, b1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Bodega.Create(tenantId, Guid.NewGuid(), "B1", null, null, Guid.NewGuid()));
+            .ReturnsAsync(Warehouse.Create(tenantId, Guid.NewGuid(), "B1", null, null, Guid.NewGuid()));
         bodegas.Setup(x => x.GetByIdAsync(tenantId, b2, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Bodega.Create(tenantId, Guid.NewGuid(), "B2", null, null, Guid.NewGuid()));
+            .ReturnsAsync(Warehouse.Create(tenantId, Guid.NewGuid(), "B2", null, null, Guid.NewGuid()));
 
         var err = await CompraAsignacionBodegasRules.ValidateAsync(
             detalles, asignaciones, tenantId, bodegas.Object, CancellationToken.None);
@@ -66,3 +66,4 @@ public sealed class CompraAsignacionBodegasRulesTests
         err.Should().BeNull();
     }
 }
+

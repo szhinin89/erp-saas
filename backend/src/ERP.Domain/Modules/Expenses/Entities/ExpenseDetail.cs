@@ -15,5 +15,5 @@ public class ExpenseDetail
     public decimal LineTotal { get; set; }
     public short SortOrder { get; set; }
 
-    public GastoFactura Expense { get; set; } = null!;
+    public ExpenseInvoice Expense { get; set; } = null!;
 }

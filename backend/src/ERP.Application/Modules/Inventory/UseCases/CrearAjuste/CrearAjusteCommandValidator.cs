@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Inventory.UseCases.CrearAjuste;
 
@@ -6,20 +6,20 @@ public sealed class CrearAjusteCommandValidator : AbstractValidator<CrearAjusteC
 {
     public CrearAjusteCommandValidator()
     {
-        RuleFor(x => x.BodegaId)
-            .NotEmpty().WithMessage("La bodega es obligatoria.");
+        RuleFor(x => x.WarehouseId)
+            .NotEmpty().WithMessage("La Warehouse es obligatoria.");
 
-        RuleFor(x => x.ProductoId)
+        RuleFor(x => x.ProductId)
             .NotEmpty().WithMessage("El producto es obligatorio.");
 
-        RuleFor(x => x.CantidadAjuste)
+        RuleFor(x => x.AdjustmentQty)
             .NotEqual(0).WithMessage("La cantidad de ajuste no puede ser cero.");
 
-        RuleFor(x => x.Motivo)
+        RuleFor(x => x.Reason)
             .NotEmpty().WithMessage("El motivo es obligatorio.")
             .MaximumLength(200).WithMessage("El motivo no puede superar 200 caracteres.");
 
-        RuleFor(x => x.Observaciones)
-            .MaximumLength(1000).When(x => x.Observaciones is not null);
+        RuleFor(x => x.Notes)
+            .MaximumLength(1000).When(x => x.Notes is not null);
     }
 }

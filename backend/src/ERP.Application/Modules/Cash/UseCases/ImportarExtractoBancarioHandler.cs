@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Application.Common;
@@ -8,24 +8,24 @@ using ERP.Domain.Modules.Cash.Interfaces;
 
 namespace ERP.Application.Modules.Cash.UseCases;
 
-public sealed record ImportarExtractoBancarioCommand(
-    Guid CuentaBancariaId,
-    DateTime PeriodoDesde,
-    DateTime PeriodoHasta,
-    decimal SaldoInicialExtracto,
-    decimal SaldoFinalExtracto,
-    IReadOnlyList<MovimientoExtractoParseRow> Movimientos) : IRequest<Result<ExtractoBancarioDto>>;
+public sealed record ImportarBankStatementCommand(
+    Guid BankAccountId,
+    DateTime PeriodFrom,
+    DateTime PeriodTo,
+    decimal OpeningBalance,
+    decimal ClosingBalance,
+    IReadOnlyList<StatementParseRow> Rows) : IRequest<Result<BankStatementDto>>;
 
-public sealed class ImportarExtractoBancarioCommandHandler
-    : IRequestHandler<ImportarExtractoBancarioCommand, Result<ExtractoBancarioDto>>
+public sealed class ImportarBankStatementCommandHandler
+    : IRequestHandler<ImportarBankStatementCommand, Result<BankStatementDto>>
 {
-    private readonly ICajaRepository _caja;
+    private readonly ICashRepository _caja;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
-    public ImportarExtractoBancarioCommandHandler(
-        ICajaRepository caja,
+    public ImportarBankStatementCommandHandler(
+        ICashRepository caja,
         ICurrentTenant tenant,
         ICurrentUser user,
         IUnitOfWork uow)
@@ -36,58 +36,58 @@ public sealed class ImportarExtractoBancarioCommandHandler
         _uow    = uow;
     }
 
-    public async Task<Result<ExtractoBancarioDto>> Handle(ImportarExtractoBancarioCommand cmd, CancellationToken ct)
+    public async Task<Result<BankStatementDto>> Handle(ImportarBankStatementCommand cmd, CancellationToken ct)
     {
-        var cuenta = await _caja.GetCuentaBancariaByIdAsync(cmd.CuentaBancariaId, ct);
+        var cuenta = await _caja.GetBankAccountByIdAsync(cmd.BankAccountId, ct);
         if (cuenta is null || !cuenta.IsActive)
-            return Result<ExtractoBancarioDto>.Failure("Cuenta bancaria no encontrada o inactiva.");
+            return Result<BankStatementDto>.Failure("Cuenta bancaria no encontrada o inactiva.");
 
-        if (cmd.Movimientos.Count == 0)
-            return Result<ExtractoBancarioDto>.Failure("No hay movimientos para importar.");
+        if (cmd.Rows.Count == 0)
+            return Result<BankStatementDto>.Failure("No hay movimientos para importar.");
 
         decimal net = 0;
-        foreach (var r in cmd.Movimientos)
+        foreach (var r in cmd.Rows)
         {
-            if (r.Tipo.Equals("Credito", StringComparison.OrdinalIgnoreCase))
-                net += r.Monto;
-            else if (r.Tipo.Equals("Debito", StringComparison.OrdinalIgnoreCase))
-                net -= r.Monto;
+            if (r.TransactionType.Equals("Credito", StringComparison.OrdinalIgnoreCase))
+                net += r.Amount;
+            else if (r.TransactionType.Equals("Debito", StringComparison.OrdinalIgnoreCase))
+                net -= r.Amount;
             else
-                return Result<ExtractoBancarioDto>.Failure($"Tipo de movimiento no válido: {r.Tipo}");
+                return Result<BankStatementDto>.Failure($"Tipo de movimiento no válido: {r.TransactionType}");
         }
 
-        var esperado = cmd.SaldoInicialExtracto + net;
-        if (Math.Abs(esperado - cmd.SaldoFinalExtracto) > 0.05m)
+        var esperado = cmd.OpeningBalance + net;
+        if (Math.Abs(esperado - cmd.ClosingBalance) > 0.05m)
         {
-            return Result<ExtractoBancarioDto>.Failure(
-                $"El saldo final del extracto ({cmd.SaldoFinalExtracto:F2}) no coincide con saldo inicial + movimientos ({esperado:F2}).");
+            return Result<BankStatementDto>.Failure(
+                $"El saldo final del extracto ({cmd.ClosingBalance:F2}) no coincide con saldo inicial + movimientos ({esperado:F2}).");
         }
 
-        var extracto = ExtractoBancario.Create(
+        var extracto = BankStatement.Create(
             _tenant.TenantId,
-            cmd.CuentaBancariaId,
-            cmd.PeriodoDesde,
-            cmd.PeriodoHasta,
-            cmd.SaldoInicialExtracto,
-            cmd.SaldoFinalExtracto,
+            cmd.BankAccountId,
+            cmd.PeriodFrom,
+            cmd.PeriodTo,
+            cmd.OpeningBalance,
+            cmd.ClosingBalance,
             _user.UserId);
 
-        foreach (var r in cmd.Movimientos.OrderBy(x => x.Fecha))
-            extracto.AgregarMovimiento(r.Fecha, r.Descripcion, r.Monto, r.Tipo, r.Referencia, _user.UserId);
+        foreach (var r in cmd.Rows.OrderBy(x => x.TransactionDate))
+            extracto.AddTransaction(r.TransactionDate, r.Description, r.Amount, r.TransactionType, r.Reference, _user.UserId);
 
-        await _caja.AddExtractoAsync(extracto, ct);
+        await _caja.AddBankStatementAsync(extracto, ct);
         await _uow.SaveChangesAsync(ct);
 
-        return Result<ExtractoBancarioDto>.Success(
-            new ExtractoBancarioDto(
+        return Result<BankStatementDto>.Success(
+            new BankStatementDto(
                 extracto.Id,
-                extracto.CuentaBancariaId,
-                extracto.PeriodoDesde,
-                extracto.PeriodoHasta,
-                extracto.SaldoInicialExtracto,
-                extracto.SaldoFinalExtracto,
-                extracto.FechaCarga,
-                extracto.Conciliado,
-                extracto.Movimientos.Count));
+                extracto.BankAccountId,
+                extracto.PeriodFrom,
+                extracto.PeriodTo,
+                extracto.OpeningBalance,
+                extracto.ClosingBalance,
+                extracto.LoadedAt,
+                extracto.IsReconciled,
+                extracto.Transactions.Count));
     }
 }

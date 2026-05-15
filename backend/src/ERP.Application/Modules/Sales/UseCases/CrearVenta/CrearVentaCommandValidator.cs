@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Sales.UseCases.CrearVenta;
 
@@ -6,13 +6,13 @@ public sealed class CrearVentaCommandValidator : AbstractValidator<CrearVentaCom
 {
     public CrearVentaCommandValidator()
     {
-        RuleFor(x => x.ClienteId)
+        RuleFor(x => x.CustomerId)
             .NotEmpty().WithMessage("El ID del cliente es obligatorio.");
 
-        RuleFor(x => x.BodegaId)
-            .NotEmpty().WithMessage("El ID de la bodega es obligatorio.");
+        RuleFor(x => x.WarehouseId)
+            .NotEmpty().WithMessage("El ID de la Warehouse es obligatorio.");
 
-        RuleFor(x => x.SucursalId)
+        RuleFor(x => x.BranchId)
             .NotEmpty().WithMessage("El ID de la sucursal es obligatorio.");
 
         RuleFor(x => x.Items)
@@ -22,13 +22,13 @@ public sealed class CrearVentaCommandValidator : AbstractValidator<CrearVentaCom
         RuleForEach(x => x.Items)
             .ChildRules(item =>
             {
-                item.RuleFor(i => i.ProductoId)
+                item.RuleFor(i => i.ProductId)
                     .NotEmpty().WithMessage("El ID del producto es obligatorio.");
 
-                item.RuleFor(i => i.Cantidad)
+                item.RuleFor(i => i.Quantity)
                     .GreaterThan(0).WithMessage("La cantidad debe ser mayor a cero.");
 
-                item.RuleFor(i => i.PrecioUnitario)
+                item.RuleFor(i => i.UnitPrice)
                     .GreaterThanOrEqualTo(0).WithMessage("El precio unitario no puede ser negativo.");
             });
     }

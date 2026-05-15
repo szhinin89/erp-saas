@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 
@@ -8,8 +8,8 @@ namespace ERP.Application.Modules.Purchasing.UseCases.GetOrdenesCompraList;
 public sealed record GetOrdenesCompraListQuery(
     int       PageNumber,
     int       PageSize,
-    Guid?     ProveedorId,
-    string?   Estado,
-    DateTime? FechaDesde,
-    DateTime? FechaHasta
+    Guid? SupplierId,
+    string?   Status,
+    DateTime? DateFrom,
+    DateTime? DateTo
 ) : IRequest<Result<OrdenesCompraPagedResult>>;

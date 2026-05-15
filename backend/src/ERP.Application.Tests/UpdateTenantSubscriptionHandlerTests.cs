@@ -29,7 +29,7 @@ public sealed class UpdateTenantSubscriptionHandlerTests
             PlanCode: "pro",
             EnabledModules: new[] { "accounting", "saas" });
 
-        var result = await handler.HandleAsync(cmd);
+        var result = await handler.Handle(cmd, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
@@ -56,8 +56,8 @@ public sealed class UpdateTenantSubscriptionHandlerTests
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
 
         var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object);
-        var result = await handler.HandleAsync(
-            new UpdateTenantSubscriptionCommand(tenantId, PlanCode: null, EnabledModules: Array.Empty<string>()));
+        var result = await handler.Handle(
+            new UpdateTenantSubscriptionCommand(tenantId, PlanCode: null, EnabledModules: Array.Empty<string>()), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)
@@ -74,8 +74,8 @@ public sealed class UpdateTenantSubscriptionHandlerTests
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
 
         var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object);
-        var result = await handler.HandleAsync(
-            new UpdateTenantSubscriptionCommand(Guid.NewGuid(), "x", new[] { "inventario" }));
+        var result = await handler.Handle(
+            new UpdateTenantSubscriptionCommand(Guid.NewGuid(), "x", new[] { "inventario" }), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("no encontrada");
@@ -93,8 +93,8 @@ public sealed class UpdateTenantSubscriptionHandlerTests
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
 
         var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object);
-        var act = () => handler.HandleAsync(
-            new UpdateTenantSubscriptionCommand(tenant.Id, null, new[] { "not-a-module" }));
+        var act = () => handler.Handle(
+            new UpdateTenantSubscriptionCommand(tenant.Id, null, new[] { "not-a-module" }), CancellationToken.None);
 
         await act.Should().ThrowAsync<ArgumentException>();
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Domain.Audit.Entities;
@@ -9,7 +9,7 @@ namespace ERP.Application.Sales.UseCases.ValidarVenta;
 
 public sealed class ValidarVentaCommandHandler : IRequestHandler<ValidarVentaCommand, Result<Guid>>
 {
-    private readonly IVentasRepository    _ventasRepository;
+    private readonly ISalesRepository    _ventasRepository;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _currentTenant;
     private readonly ICurrentUser            _currentUser;
@@ -17,7 +17,7 @@ public sealed class ValidarVentaCommandHandler : IRequestHandler<ValidarVentaCom
     private readonly ILogger<ValidarVentaCommandHandler> _logger;
 
     public ValidarVentaCommandHandler(
-        IVentasRepository ventasRepository,
+        ISalesRepository ventasRepository,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
@@ -39,38 +39,38 @@ public sealed class ValidarVentaCommandHandler : IRequestHandler<ValidarVentaCom
 
         _logger.LogInformation("Validando factura {FacturaId} (tenant={TenantId})", command.VentaId, tenantId);
 
-        var factura = await _ventasRepository.GetFacturaByIdAsync(tenantId, command.VentaId, ct);
+        var factura = await _ventasRepository.GetBillByIdAsync(tenantId, command.VentaId, ct);
         if (factura is null)
             return Result<Guid>.Failure("Factura de venta no encontrada.");
 
-        if (factura.Estado != "Borrador")
+        if (factura.Status != "Borrador")
             return Result<Guid>.Failure(
-                $"Solo se puede validar una factura en Borrador (estado actual: {factura.Estado}).");
+                $"Solo se puede validar una factura en Borrador (estado actual: {factura.Status}).");
 
-        if (factura.Detalles.Count == 0)
+        if (factura.Lines.Count == 0)
             return Result<Guid>.Failure("La factura debe tener al menos un detalle.");
 
         // Verificar consistencia de totales (tolerancia 0.01)
-        var totalCalculado = factura.Subtotal + factura.Impuesto;
+        var totalCalculado = factura.Subtotal + factura.VatTotal;
         if (Math.Abs(totalCalculado - factura.Total) > 0.01m)
             return Result<Guid>.Failure(
-                $"Los totales no cuadran: Subtotal({factura.Subtotal:F2}) + IVA({factura.Impuesto:F2}) = " +
+                $"Los totales no cuadran: Subtotal({factura.Subtotal:F2}) + IVA({factura.VatTotal:F2}) = " +
                 $"{totalCalculado:F2}, pero Total es {factura.Total:F2}.");
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            factura.Validar(userId);
+            factura.Validate(userId);
 
             _logger.LogInformation(
                 "Factura {FacturaId} validada: secuencial={Secuencial}, total={Total}",
-                factura.Id, factura.Secuencial, factura.Total);
+                factura.Id, factura.Sequential, factura.Total);
 
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "ventas", action: "venta.validar",
-                entityType: "VentasFactura", entityId: factura.Id,
-                description: $"{factura.Establecimiento}-{factura.PuntoEmision}-{factura.Secuencial}"), ct);
+                entityType: "SalesBill", entityId: factura.Id,
+                description: $"{factura.EstabCode}-{factura.EmPointCode}-{factura.Sequential}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);

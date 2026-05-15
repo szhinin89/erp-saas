@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Purchasing.DTOs;
@@ -9,10 +9,10 @@ namespace ERP.Application.Modules.Purchasing.UseCases.NotasProveedor;
 public sealed class GetComprasNotasProveedorQueryHandler
     : IRequestHandler<GetComprasNotasProveedorQuery, Result<IReadOnlyList<CompraNotaProveedorDto>>>
 {
-    private readonly ICompraRepository _repo;
+    private readonly IPurchBillRepository _repo;
     private readonly ICurrentTenant    _tenant;
 
-    public GetComprasNotasProveedorQueryHandler(ICompraRepository repo, ICurrentTenant tenant)
+    public GetComprasNotasProveedorQueryHandler(IPurchBillRepository repo, ICurrentTenant tenant)
     {
         _repo   = repo;
         _tenant = tenant;
@@ -22,32 +22,32 @@ public sealed class GetComprasNotasProveedorQueryHandler
         GetComprasNotasProveedorQuery query,
         CancellationToken ct)
     {
-        var list = await _repo.GetNotasProveedorAsync(
+        var list = await _repo.GetPurchNotesAsync(
             _tenant.TenantId,
-            query.ProveedorId,
-            query.CompraFacturaId,
-            query.GastoFacturaId,
-            query.Estado,
+            query.SupplierId,
+            query.PurchBillId,
+            query.ExpenseInvoiceId,
+            query.Status,
             ct);
 
         IReadOnlyList<CompraNotaProveedorDto> dtos = list.Select(n => new CompraNotaProveedorDto(
             n.Id,
-            n.ProveedorId,
-            n.CompraFacturaId,
-            n.GastoFacturaId,
-            n.TipoNota,
-            n.Motivo,
-            n.ClaveAcceso,
-            n.FechaEmision,
-            n.Establecimiento,
-            n.PuntoEmision,
-            n.Secuencial,
+            n.SupplierId,
+            n.PurchBillId,
+            n.ExpenseInvoiceId,
+            n.NoteType,
+            n.Reason,
+            n.AccessKey,
+            n.IssueDate,
+            n.EstabCode,
+            n.EmPointCode,
+            n.Sequential,
             n.Subtotal,
-            n.Impuesto,
+            n.VatTotal,
             n.Total,
-            n.Estado,
+            n.Status,
             n.XmlPath,
-            n.AsientoContableId,
+            n.JournalEntryId,
             n.CreatedAt)).ToList();
 
         return Result<IReadOnlyList<CompraNotaProveedorDto>>.Success(dtos);

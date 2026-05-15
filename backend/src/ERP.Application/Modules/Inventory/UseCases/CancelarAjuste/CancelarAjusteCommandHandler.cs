@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
@@ -10,9 +10,9 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 namespace ERP.Application.Inventory.UseCases.CancelarAjuste;
 
 public sealed class CancelarAjusteCommandHandler
-    : IRequestHandler<CancelarAjusteCommand, Result<AjusteInventarioDto>>
+    : IRequestHandler<CancelarAjusteCommand, Result<StockAdjustmentDto>>
 {
-    private readonly IAjusteInventarioRepository _ajusteRepo;
+    private readonly IStockAdjustmentRepository _ajusteRepo;
     private readonly IUserActivityRepository     _activity;
     private readonly ICurrentTenant              _currentTenant;
     private readonly ICurrentUser                _currentUser;
@@ -20,7 +20,7 @@ public sealed class CancelarAjusteCommandHandler
     private readonly ILogger<CancelarAjusteCommandHandler> _logger;
 
     public CancelarAjusteCommandHandler(
-        IAjusteInventarioRepository ajusteRepo,
+        IStockAdjustmentRepository ajusteRepo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
@@ -35,7 +35,7 @@ public sealed class CancelarAjusteCommandHandler
         _logger        = logger;
     }
 
-    public async Task<Result<AjusteInventarioDto>> Handle(
+    public async Task<Result<StockAdjustmentDto>> Handle(
         CancelarAjusteCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
@@ -43,13 +43,13 @@ public sealed class CancelarAjusteCommandHandler
 
         var ajuste = await _ajusteRepo.GetByIdAsync(tenantId, command.AjusteId, ct);
         if (ajuste is null)
-            return Result<AjusteInventarioDto>.Failure("Ajuste no encontrado.");
+            return Result<StockAdjustmentDto>.Failure("Ajuste no encontrado.");
 
-        if (ajuste.Estado != "Borrador")
-            return Result<AjusteInventarioDto>.Failure(
-                $"Solo se puede cancelar un ajuste en Borrador (estado actual: {ajuste.Estado}).");
+        if (ajuste.Status != "Borrador")
+            return Result<StockAdjustmentDto>.Failure(
+                $"Solo se puede cancelar un ajuste en Borrador (estado actual: {ajuste.Status}).");
 
-        ajuste.Cancelar(userId);
+        ajuste.Cancel(userId);
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
@@ -57,29 +57,29 @@ public sealed class CancelarAjusteCommandHandler
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "inventario", action: "ajuste.cancelar",
-                entityType: "AjusteInventario", entityId: ajuste.Id,
-                description: ajuste.NumeroAjuste), ct);
+                entityType: "StockAdjustment", entityId: ajuste.Id,
+                description: ajuste.AdjustmentNumber), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
 
-            _logger.LogInformation("Ajuste cancelado: {Numero}", ajuste.NumeroAjuste);
+            _logger.LogInformation("Ajuste cancelado: {Numero}", ajuste.AdjustmentNumber);
 
-            return Result<AjusteInventarioDto>.Success(new(
-            ajuste.Id, ajuste.NumeroAjuste,
-            ajuste.BodegaId,   ajuste.BodegaNombre,
-            ajuste.ProductoId, ajuste.ProductoNombre,
-            ajuste.CantidadAjuste, ajuste.TipoAjuste,
-            ajuste.Motivo, ajuste.Observaciones,
-            ajuste.FechaAjuste, ajuste.Estado,
-            ajuste.FechaEjecucion, ajuste.EjecutadoPor,
+            return Result<StockAdjustmentDto>.Success(new(
+            ajuste.Id, ajuste.AdjustmentNumber,
+            ajuste.WarehouseId,   ajuste.WarehouseName,
+            ajuste.ProductId, ajuste.ProductName,
+            ajuste.AdjustmentQty, ajuste.AdjustmentType,
+            ajuste.Reason, ajuste.Notes,
+            ajuste.AdjustmentDate, ajuste.Status,
+            ajuste.ExecutedAt, ajuste.ExecutedBy,
             ajuste.CreatedAt));
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
             _logger.LogError(ex, "Error al cancelar ajuste {Id}", command.AjusteId);
-            return Result<AjusteInventarioDto>.Failure($"No se pudo cancelar el ajuste: {ex.Message}");
+            return Result<StockAdjustmentDto>.Failure($"No se pudo cancelar el ajuste: {ex.Message}");
         }
     }
 }

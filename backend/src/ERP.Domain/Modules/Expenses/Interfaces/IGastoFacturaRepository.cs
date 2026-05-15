@@ -3,22 +3,18 @@ using ERP.Domain.Modules.Expenses.Enums;
 
 namespace ERP.Domain.Modules.Expenses.Interfaces;
 
-public interface IGastoFacturaRepository
+public interface IExpenseInvoiceRepository
 {
-    Task AddAsync(GastoFactura gasto, CancellationToken ct = default);
-
-    Task<GastoFactura?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
-
-    Task<bool> ExistsClaveAccesoAsync(Guid tenantId, string claveAcceso, CancellationToken ct = default);
-
-    Task<IReadOnlyList<GastoFactura>> GetAsync(
-        Guid tenantId,
-        EstadoGasto? estado,
-        Guid? proveedorId,
-        DateTime? desde,
-        DateTime? hasta,
-        string? search,
+    Task AddAsync(ExpenseInvoice expense, CancellationToken ct = default);
+    Task<ExpenseInvoice?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+    Task<bool> ExistsAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default);
+    Task<IReadOnlyList<ExpenseInvoice>> GetAsync(
+        Guid          tenantId,
+        ExpenseStatus? status,
+        Guid?          supplierId,
+        DateTime?      from,
+        DateTime?      to,
+        string?        search,
         CancellationToken ct = default);
-
     Task SaveChangesAsync(CancellationToken ct = default);
 }

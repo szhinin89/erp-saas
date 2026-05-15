@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 
 using ERP.Application.Modules.Expenses.DTOs;
@@ -6,5 +6,5 @@ using ERP.Application.Modules.Expenses.DTOs;
 namespace ERP.Application.Modules.Expenses.UseCases.ValidarGasto;
 
 [RequireFeature(SubscriptionFeatureCodes.Gastos)]
-public sealed record ValidarGastoCommand(Guid GastoFacturaId)
-    : IRequest<Result<GastoFacturaDto>>;
+public sealed record ValidarGastoCommand(Guid ExpenseInvoiceId)
+    : IRequest<Result<ExpenseInvoiceDto>>;

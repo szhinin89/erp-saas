@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Application.Common;
@@ -7,42 +7,42 @@ using ERP.Domain.Modules.Cash.Interfaces;
 
 namespace ERP.Application.Modules.Cash.UseCases;
 
-public sealed record ListCajasChicasQuery : IRequest<Result<IReadOnlyList<CajaChicaDto>>>;
+public sealed record ListCajasChicasQuery : IRequest<Result<IReadOnlyList<PettyCashDto>>>;
 
-public sealed class ListCajasChicasQueryHandler : IRequestHandler<ListCajasChicasQuery, Result<IReadOnlyList<CajaChicaDto>>>
+public sealed class ListCajasChicasQueryHandler : IRequestHandler<ListCajasChicasQuery, Result<IReadOnlyList<PettyCashDto>>>
 {
-    private readonly ICajaRepository _caja;
-    public ListCajasChicasQueryHandler(ICajaRepository caja) => _caja = caja;
+    private readonly ICashRepository _caja;
+    public ListCajasChicasQueryHandler(ICashRepository caja) => _caja = caja;
 
-    public async Task<Result<IReadOnlyList<CajaChicaDto>>> Handle(ListCajasChicasQuery _, CancellationToken ct)
+    public async Task<Result<IReadOnlyList<PettyCashDto>>> Handle(ListCajasChicasQuery _, CancellationToken ct)
     {
-        var list = await _caja.ListCajasChicasAsync(ct);
-        return Result<IReadOnlyList<CajaChicaDto>>.Success(
-            list.Select(x => new CajaChicaDto(
+        var list = await _caja.ListPettyCashesAsync(ct);
+        return Result<IReadOnlyList<PettyCashDto>>.Success(
+            list.Select(x => new PettyCashDto(
                 x.Id,
-                x.Nombre,
-                x.SaldoAsignado,
-                x.SaldoActual,
-                x.CuentaBancariaIdReposicion,
-                x.CuentaContableCajaId,
+                x.Name,
+                x.AssignedBalance,
+                x.CurrentBalance,
+                x.ReplenishBankAccountId,
+                x.LedgerAccountId,
                 x.IsActive)).ToList());
     }
 }
 
-public sealed record CrearCajaChicaCommand(
-    string Nombre,
-    decimal SaldoAsignado,
-    Guid? CuentaBancariaIdReposicion,
-    Guid? CuentaContableCajaId) : IRequest<Result<CajaChicaDto>>;
+public sealed record CrearPettyCashCommand(
+    string Name,
+    decimal AssignedBalance,
+    Guid? ReplenishBankAccountId,
+    Guid? LedgerAccountId) : IRequest<Result<PettyCashDto>>;
 
-public sealed class CrearCajaChicaCommandHandler : IRequestHandler<CrearCajaChicaCommand, Result<CajaChicaDto>>
+public sealed class CrearPettyCashCommandHandler : IRequestHandler<CrearPettyCashCommand, Result<PettyCashDto>>
 {
-    private readonly ICajaRepository _caja;
+    private readonly ICashRepository _caja;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
-    public CrearCajaChicaCommandHandler(ICajaRepository caja, ICurrentTenant tenant, ICurrentUser user, IUnitOfWork uow)
+    public CrearPettyCashCommandHandler(ICashRepository caja, ICurrentTenant tenant, ICurrentUser user, IUnitOfWork uow)
     {
         _caja   = caja;
         _tenant = tenant;
@@ -50,47 +50,47 @@ public sealed class CrearCajaChicaCommandHandler : IRequestHandler<CrearCajaChic
         _uow    = uow;
     }
 
-    public async Task<Result<CajaChicaDto>> Handle(CrearCajaChicaCommand cmd, CancellationToken ct)
+    public async Task<Result<PettyCashDto>> Handle(CrearPettyCashCommand cmd, CancellationToken ct)
     {
-        var c = CajaChica.Create(
+        var c = PettyCash.Create(
             _tenant.TenantId,
-            cmd.Nombre,
-            cmd.SaldoAsignado,
+            cmd.Name,
+            cmd.AssignedBalance,
             _user.UserId,
-            cmd.CuentaBancariaIdReposicion,
-            cmd.CuentaContableCajaId);
-        await _caja.AddCajaChicaAsync(c, ct);
+            cmd.ReplenishBankAccountId,
+            cmd.LedgerAccountId);
+        await _caja.AddPettyCashAsync(c, ct);
         await _uow.SaveChangesAsync(ct);
-        return Result<CajaChicaDto>.Success(
-            new CajaChicaDto(
+        return Result<PettyCashDto>.Success(
+            new PettyCashDto(
                 c.Id,
-                c.Nombre,
-                c.SaldoAsignado,
-                c.SaldoActual,
-                c.CuentaBancariaIdReposicion,
-                c.CuentaContableCajaId,
+                c.Name,
+                c.AssignedBalance,
+                c.CurrentBalance,
+                c.ReplenishBankAccountId,
+                c.LedgerAccountId,
                 c.IsActive));
     }
 }
 
-public sealed record CrearGastoCajaChicaCommand(
-    Guid CajaChicaId,
-    DateTime Fecha,
-    string Concepto,
-    decimal Monto,
-    string TipoComprobante,
-    string? NumeroComprobante) : IRequest<Result<GastoCajaChicaDto>>;
+public sealed record CrearGastoPettyCashCommand(
+    Guid PettyCashId,
+    DateTime TransactionDate,
+    string Concept,
+    decimal Amount,
+    string VoucherType,
+    string? VoucherNumber) : IRequest<Result<GastoPettyCashDto>>;
 
-public sealed class CrearGastoCajaChicaCommandHandler
-    : IRequestHandler<CrearGastoCajaChicaCommand, Result<GastoCajaChicaDto>>
+public sealed class CrearGastoPettyCashCommandHandler
+    : IRequestHandler<CrearGastoPettyCashCommand, Result<GastoPettyCashDto>>
 {
-    private readonly ICajaRepository _caja;
+    private readonly ICashRepository _caja;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
-    public CrearGastoCajaChicaCommandHandler(
-        ICajaRepository caja,
+    public CrearGastoPettyCashCommandHandler(
+        ICashRepository caja,
         ICurrentTenant tenant,
         ICurrentUser user,
         IUnitOfWork uow)
@@ -101,61 +101,61 @@ public sealed class CrearGastoCajaChicaCommandHandler
         _uow    = uow;
     }
 
-    public async Task<Result<GastoCajaChicaDto>> Handle(CrearGastoCajaChicaCommand cmd, CancellationToken ct)
+    public async Task<Result<GastoPettyCashDto>> Handle(CrearGastoPettyCashCommand cmd, CancellationToken ct)
     {
-        var caja = await _caja.GetCajaChicaByIdAsync(cmd.CajaChicaId, ct);
+        var caja = await _caja.GetPettyCashByIdAsync(cmd.PettyCashId, ct);
         if (caja is null || !caja.IsActive)
-            return Result<GastoCajaChicaDto>.Failure("Caja chica no encontrada o inactiva.");
+            return Result<GastoPettyCashDto>.Failure("Caja chica no encontrada o inactiva.");
 
         try
         {
-            caja.RegistrarGasto(cmd.Monto, _user.UserId);
+            caja.RegisterExpense(cmd.Amount, _user.UserId);
         }
         catch (InvalidOperationException ex)
         {
-            return Result<GastoCajaChicaDto>.Failure(ex.Message);
+            return Result<GastoPettyCashDto>.Failure(ex.Message);
         }
 
-        var gasto = GastoCajaChica.Create(
+        var gasto = PettyCashExpense.Create(
             _tenant.TenantId,
-            cmd.CajaChicaId,
-            cmd.Fecha,
-            cmd.Concepto,
-            cmd.Monto,
-            cmd.TipoComprobante,
-            cmd.NumeroComprobante,
+            cmd.PettyCashId,
+            cmd.TransactionDate,
+            cmd.Concept,
+            cmd.Amount,
+            cmd.VoucherType,
+            cmd.VoucherNumber,
             _user.UserId);
 
-        await _caja.AddGastoCajaAsync(gasto, ct);
+        await _caja.AddPettyCashExpenseAsync(gasto, ct);
         await _uow.SaveChangesAsync(ct);
 
-        return Result<GastoCajaChicaDto>.Success(
-            new GastoCajaChicaDto(
+        return Result<GastoPettyCashDto>.Success(
+            new GastoPettyCashDto(
                 gasto.Id,
-                gasto.CajaChicaId,
-                gasto.Fecha,
-                gasto.Concepto,
-                gasto.Monto,
-                gasto.TipoComprobante,
-                gasto.NumeroComprobante,
-                gasto.AsientoContableId));
+                gasto.PettyCashId,
+                gasto.ExpenseDate,
+                gasto.Description,
+                gasto.Amount,
+                gasto.VoucherType,
+                gasto.VoucherNumber,
+                gasto.JournalEntryId));
     }
 }
 
-public sealed record CrearArqueoCajaCommand(
-    Guid CajaChicaId,
-    DateTime FechaArqueo,
-    decimal EfectivoFisico,
-    string? Observaciones) : IRequest<Result<ArqueoCajaDto>>;
+public sealed record CrearCashCountCommand(
+    Guid PettyCashId,
+    DateTime CountDate,
+    decimal PhysicalCash,
+    string? Notes) : IRequest<Result<CashCountDto>>;
 
-public sealed class CrearArqueoCajaCommandHandler : IRequestHandler<CrearArqueoCajaCommand, Result<ArqueoCajaDto>>
+public sealed class CrearCashCountCommandHandler : IRequestHandler<CrearCashCountCommand, Result<CashCountDto>>
 {
-    private readonly ICajaRepository _caja;
+    private readonly ICashRepository _caja;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
-    public CrearArqueoCajaCommandHandler(ICajaRepository caja, ICurrentTenant tenant, ICurrentUser user, IUnitOfWork uow)
+    public CrearCashCountCommandHandler(ICashRepository caja, ICurrentTenant tenant, ICurrentUser user, IUnitOfWork uow)
     {
         _caja   = caja;
         _tenant = tenant;
@@ -163,134 +163,134 @@ public sealed class CrearArqueoCajaCommandHandler : IRequestHandler<CrearArqueoC
         _uow    = uow;
     }
 
-    public async Task<Result<ArqueoCajaDto>> Handle(CrearArqueoCajaCommand cmd, CancellationToken ct)
+    public async Task<Result<CashCountDto>> Handle(CrearCashCountCommand cmd, CancellationToken ct)
     {
-        var caja = await _caja.GetCajaChicaByIdAsync(cmd.CajaChicaId, ct);
+        var caja = await _caja.GetPettyCashByIdAsync(cmd.PettyCashId, ct);
         if (caja is null)
-            return Result<ArqueoCajaDto>.Failure("Caja chica no encontrada.");
+            return Result<CashCountDto>.Failure("Caja chica no encontrada.");
 
-        var arqueo = ArqueoCaja.Create(
+        var arqueo = CashCount.Create(
             _tenant.TenantId,
-            cmd.CajaChicaId,
-            cmd.FechaArqueo,
-            cmd.EfectivoFisico,
-            caja.SaldoActual,
-            cmd.Observaciones,
+            cmd.PettyCashId,
+            cmd.CountDate,
+            cmd.PhysicalCash,
+            caja.CurrentBalance,
+            cmd.Notes,
             _user.UserId);
 
-        await _caja.AddArqueoAsync(arqueo, ct);
+        await _caja.AddCashCountAsync(arqueo, ct);
         await _uow.SaveChangesAsync(ct);
 
-        return Result<ArqueoCajaDto>.Success(
-            new ArqueoCajaDto(
+        return Result<CashCountDto>.Success(
+            new CashCountDto(
                 arqueo.Id,
-                arqueo.CajaChicaId,
-                arqueo.FechaArqueo,
-                arqueo.EfectivoFisico,
-                arqueo.Diferencia,
-                arqueo.Observaciones,
-                arqueo.Aprobado));
+                arqueo.PettyCashId,
+                arqueo.CountDate,
+                arqueo.PhysicalCash,
+                arqueo.Difference,
+                arqueo.Notes,
+                arqueo.IsApproved));
     }
 }
 
-public sealed record AprobarArqueoCajaCommand(Guid ArqueoId) : IRequest<Result<ArqueoCajaDto>>;
+public sealed record AprobarCashCountCommand(Guid ArqueoId) : IRequest<Result<CashCountDto>>;
 
-public sealed class AprobarArqueoCajaCommandHandler : IRequestHandler<AprobarArqueoCajaCommand, Result<ArqueoCajaDto>>
+public sealed class AprobarCashCountCommandHandler : IRequestHandler<AprobarCashCountCommand, Result<CashCountDto>>
 {
-    private readonly ICajaRepository _caja;
+    private readonly ICashRepository _caja;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
-    public AprobarArqueoCajaCommandHandler(ICajaRepository caja, ICurrentUser user, IUnitOfWork uow)
+    public AprobarCashCountCommandHandler(ICashRepository caja, ICurrentUser user, IUnitOfWork uow)
     {
         _caja = caja;
         _user = user;
         _uow  = uow;
     }
 
-    public async Task<Result<ArqueoCajaDto>> Handle(AprobarArqueoCajaCommand cmd, CancellationToken ct)
+    public async Task<Result<CashCountDto>> Handle(AprobarCashCountCommand cmd, CancellationToken ct)
     {
-        var arqueo = await _caja.GetArqueoByIdAsync(cmd.ArqueoId, ct);
+        var arqueo = await _caja.GetCashCountByIdAsync(cmd.ArqueoId, ct);
         if (arqueo is null)
-            return Result<ArqueoCajaDto>.Failure("Arqueo no encontrado.");
+            return Result<CashCountDto>.Failure("Arqueo no encontrado.");
 
-        var caja = await _caja.GetCajaChicaByIdAsync(arqueo.CajaChicaId, ct);
+        var caja = await _caja.GetPettyCashByIdAsync(arqueo.PettyCashId, ct);
         if (caja is null)
-            return Result<ArqueoCajaDto>.Failure("Caja chica no encontrada.");
+            return Result<CashCountDto>.Failure("Caja chica no encontrada.");
 
         try
         {
-            arqueo.Aprobar(_user.UserId);
-            caja.AplicarSaldoTrasArqueo(arqueo.EfectivoFisico, _user.UserId);
+            arqueo.Approve(_user.UserId);
+            caja.ApplyBalanceFromCount(arqueo.PhysicalCash, _user.UserId);
         }
         catch (InvalidOperationException ex)
         {
-            return Result<ArqueoCajaDto>.Failure(ex.Message);
+            return Result<CashCountDto>.Failure(ex.Message);
         }
 
         await _uow.SaveChangesAsync(ct);
 
-        return Result<ArqueoCajaDto>.Success(
-            new ArqueoCajaDto(
+        return Result<CashCountDto>.Success(
+            new CashCountDto(
                 arqueo.Id,
-                arqueo.CajaChicaId,
-                arqueo.FechaArqueo,
-                arqueo.EfectivoFisico,
-                arqueo.Diferencia,
-                arqueo.Observaciones,
-                arqueo.Aprobado));
+                arqueo.PettyCashId,
+                arqueo.CountDate,
+                arqueo.PhysicalCash,
+                arqueo.Difference,
+                arqueo.Notes,
+                arqueo.IsApproved));
     }
 }
 
-public sealed record ReposicionCajaChicaCommand(Guid CajaChicaId, decimal Monto) : IRequest<Result<CajaChicaDto>>;
+public sealed record ReposicionPettyCashCommand(Guid PettyCashId, decimal Amount) : IRequest<Result<PettyCashDto>>;
 
-public sealed class ReposicionCajaChicaCommandHandler
-    : IRequestHandler<ReposicionCajaChicaCommand, Result<CajaChicaDto>>
+public sealed class ReposicionPettyCashCommandHandler
+    : IRequestHandler<ReposicionPettyCashCommand, Result<PettyCashDto>>
 {
-    private readonly ICajaRepository _caja;
+    private readonly ICashRepository _caja;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
-    public ReposicionCajaChicaCommandHandler(ICajaRepository caja, ICurrentUser user, IUnitOfWork uow)
+    public ReposicionPettyCashCommandHandler(ICashRepository caja, ICurrentUser user, IUnitOfWork uow)
     {
         _caja = caja;
         _user = user;
         _uow  = uow;
     }
 
-    public async Task<Result<CajaChicaDto>> Handle(ReposicionCajaChicaCommand cmd, CancellationToken ct)
+    public async Task<Result<PettyCashDto>> Handle(ReposicionPettyCashCommand cmd, CancellationToken ct)
     {
-        var caja = await _caja.GetCajaChicaByIdAsync(cmd.CajaChicaId, ct);
+        var caja = await _caja.GetPettyCashByIdAsync(cmd.PettyCashId, ct);
         if (caja is null || !caja.IsActive)
-            return Result<CajaChicaDto>.Failure("Caja chica no encontrada o inactiva.");
+            return Result<PettyCashDto>.Failure("Caja chica no encontrada o inactiva.");
 
-        if (caja.CuentaBancariaIdReposicion is null)
-            return Result<CajaChicaDto>.Failure(
+        if (caja.ReplenishBankAccountId is null)
+            return Result<PettyCashDto>.Failure(
                 "La caja chica no tiene cuenta bancaria de reposición configurada.");
 
         try
         {
-            caja.RegistrarReposicion(cmd.Monto, _user.UserId);
+            caja.RegisterReplenishment(cmd.Amount, _user.UserId);
         }
         catch (ArgumentException ex)
         {
-            return Result<CajaChicaDto>.Failure(ex.Message);
+            return Result<PettyCashDto>.Failure(ex.Message);
         }
 
-        var banco = await _caja.GetCuentaBancariaByIdAsync(caja.CuentaBancariaIdReposicion.Value, ct);
+        var banco = await _caja.GetBankAccountByIdAsync(caja.ReplenishBankAccountId.Value, ct);
         if (banco is not null)
-            banco.IncrementarSaldo(-cmd.Monto, _user.UserId);
+            banco.IncrementBalance(-cmd.Amount, _user.UserId);
 
         await _uow.SaveChangesAsync(ct);
 
-        return Result<CajaChicaDto>.Success(
-            new CajaChicaDto(
+        return Result<PettyCashDto>.Success(
+            new PettyCashDto(
                 caja.Id,
-                caja.Nombre,
-                caja.SaldoAsignado,
-                caja.SaldoActual,
-                caja.CuentaBancariaIdReposicion,
-                caja.CuentaContableCajaId,
+                caja.Name,
+                caja.AssignedBalance,
+                caja.CurrentBalance,
+                caja.ReplenishBankAccountId,
+                caja.LedgerAccountId,
                 caja.IsActive));
     }
 }

@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Modules.Accounting.UseCases.CreateJournalEntry;
 

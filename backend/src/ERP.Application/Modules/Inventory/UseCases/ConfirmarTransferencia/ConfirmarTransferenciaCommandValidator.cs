@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Inventory.UseCases.ConfirmarTransferencia;
 
@@ -7,6 +7,6 @@ public sealed class ConfirmarTransferenciaCommandValidator : AbstractValidator<C
     public ConfirmarTransferenciaCommandValidator()
     {
         RuleFor(x => x.TransferenciaId)
-            .NotEmpty().WithMessage("El ID de la transferencia es obligatorio.");
+            .NotEmpty().WithMessage("El ID de la transfer es obligatorio.");
     }
 }

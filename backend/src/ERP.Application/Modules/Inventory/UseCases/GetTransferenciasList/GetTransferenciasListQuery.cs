@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 
@@ -8,9 +8,9 @@ namespace ERP.Application.Inventory.UseCases.GetTransferenciasList;
 public sealed record GetTransferenciasListQuery(
     int       PageNumber      = 1,
     int       PageSize        = 20,
-    Guid?     BodegaOrigenId  = null,
-    Guid?     BodegaDestinoId = null,
-    string?   Estado          = null,
-    DateTime? FechaDesde      = null,
-    DateTime? FechaHasta      = null
+    Guid?     SourceWarehouseId  = null,
+    Guid?     TargetWarehouseId = null,
+    string?   Status          = null,
+    DateTime? DateFrom      = null,
+    DateTime? DateTo      = null
 ) : IRequest<Result<TransferenciasPagedResult>>;

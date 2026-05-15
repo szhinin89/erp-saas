@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 
@@ -8,19 +8,19 @@ public enum ModoCreacionCompra { Xml = 1, Manual = 2 }
 
 /// <summary>Datos de una línea de detalle en modo Manual.</summary>
 public sealed record DetalleCompraInput(
-    string  Descripcion,
-    string? CodigoPrincipal,
-    Guid?   ProductoId,
-    decimal Cantidad,
-    decimal PrecioUnitario,
-    decimal DescuentoPorcentaje,
-    decimal IvaPorcentaje);
+    string  Description,
+    string? ProductCode,
+    Guid?   ProductId,
+    decimal Quantity,
+    decimal UnitPrice,
+    decimal DiscountPct,
+    decimal VatPct);
 
 /// <summary>
-/// Distribución de la cantidad de un detalle (<see cref="ItemIndex"/>) hacia una bodega.
+/// Distribución de la cantidad de un detalle (<see cref="ItemIndex"/>) hacia una Warehouse.
 /// <see cref="ProductoId"/> opcional: si viene, enlaza inventario aunque la línea (p. ej. XML) no tenga producto.
 /// </summary>
-public sealed record AsignacionBodegaRequest(int ItemIndex, Guid BodegaId, decimal Cantidad, Guid? ProductoId = null);
+public sealed record AsignacionBodegaRequest(int ItemIndex, Guid    WarehouseId, decimal Quantity, Guid?     ProductId = null);
 
 /// <summary>Crea una factura de compra. <c>AsignacionesBodega</c> es opcional; si viene, la suma por ítem debe igualar la cantidad de cada detalle.</summary>
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
@@ -32,12 +32,12 @@ public sealed record CrearCompraCommand(
     string? XmlNombreArchivo,
 
     // ── Manual ───────────────────────────────────────────────────────────
-    Guid?     ProveedorId,
-    string?   NumeroFactura,
-    DateTime? FechaFactura,
-    DateTime? FechaVencimiento,
-    string?   CondicionPago,
-    string?   Observaciones,
-    IReadOnlyList<DetalleCompraInput>? Detalles,
+    Guid?     SupplierId,
+    string?   InvoiceNumber,
+    DateTime? InvoiceDate,
+    DateTime? DueDate,
+    string?   PaymentTerms,
+    string? Notes,
+    IReadOnlyList<DetalleCompraInput>? Lines,
     IReadOnlyList<AsignacionBodegaRequest>? AsignacionesBodega
-) : IRequest<Result<CompraFacturaDto>>;
+) : IRequest<Result<PurchBillDto>>;

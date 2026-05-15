@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Expenses.DTOs;
 
@@ -12,12 +12,12 @@ public sealed record CrearGastoCommand(
     ModoCreacionGasto Modo,
     byte[]?           XmlContent,
     string?           XmlNombreArchivo,
-    Guid?             ProveedorId,
-    DateTime?         FechaEmision,
-    string?           Concepto,
-    string?           CategoriaGasto,
-    decimal?          Subtotal,
-    decimal?          Impuesto,
-    decimal?          Total,
-    string?           Observaciones
-) : IRequest<Result<GastoFacturaDto>>;
+    Guid?     SupplierId,
+    DateTime? IssueDate,
+    string?   Concept,
+    string?   Category,
+    decimal?  Subtotal,
+    decimal?  VatTotal,
+    decimal?  Total,
+    string?   Notes
+) : IRequest<Result<ExpenseInvoiceDto>>;

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 
 using ERP.Application.Modules.Expenses.DTOs;
@@ -8,9 +8,9 @@ namespace ERP.Application.Modules.Expenses.UseCases.GetGastos;
 
 [RequireFeature(SubscriptionFeatureCodes.Gastos)]
 public sealed record GetGastosQuery(
-    EstadoGasto? Estado,
-    Guid?        ProveedorId,
-    DateTime?    Desde,
-    DateTime?    Hasta,
+    ExpenseStatus? Status,
+    Guid?        SupplierId,
+    DateTime?    DateFrom,
+    DateTime?    DateTo,
     string?      Search
-) : IRequest<Result<IReadOnlyList<GastoFacturaDto>>>;
+) : IRequest<Result<IReadOnlyList<ExpenseInvoiceDto>>>;

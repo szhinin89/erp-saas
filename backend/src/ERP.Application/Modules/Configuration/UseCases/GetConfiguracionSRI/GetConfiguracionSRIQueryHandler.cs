@@ -1,18 +1,18 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Configuration.DTOs;
 using ERP.Domain.Configuration.Interfaces;
 
-namespace ERP.Application.Configuration.UseCases.GetConfiguracionSRI;
+namespace ERP.Application.Configuration.UseCases.GetSriSettings;
 
 public sealed class GetConfiguracionSRIQueryHandler
     : IRequestHandler<GetConfiguracionSRIQuery, Result<ConfiguracionSRIDto?>>
 {
-    private readonly IConfiguracionSRIRepository _repo;
+    private readonly ISriSettingsRepository _repo;
     private readonly ICurrentTenant              _currentTenant;
 
     public GetConfiguracionSRIQueryHandler(
-        IConfiguracionSRIRepository repo,
+        ISriSettingsRepository repo,
         ICurrentTenant currentTenant)
     {
         _repo          = repo;
@@ -28,18 +28,18 @@ public sealed class GetConfiguracionSRIQueryHandler
 
         return Result<ConfiguracionSRIDto?>.Success(new ConfiguracionSRIDto(
             config.TenantId,
-            config.RucEmpresa,
-            config.RazonSocial,
-            config.NombreComercial,
-            config.DireccionMatriz,
-            config.ObligadoContabilidad,
-            config.ContribuyenteEspecial,
-            config.Establecimiento,
-            config.PuntoEmision,
-            config.SecuencialActual,
-            config.CertificadoP12Path,
-            config.Ambiente,
-            config.TipoEmision,
-            config.UrlSriAutorizacion));
+            config.Ruc,
+            config.LegalName,
+            config.TradeName,
+            config.MainAddress,
+            config.RequiresAccounting,
+            config.SpecialTaxpayer,
+            config.EstabCode,
+            config.EmPointCode,
+            config.CurrentSequential,
+            config.CertP12Path,
+            config.Environment,
+            config.EmissionType,
+            config.WsdlUrl));
     }
 }

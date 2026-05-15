@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Application.Modules.Cash.Services;
@@ -21,16 +21,16 @@ public sealed class SugerirConciliacionQueryHandler
         => _svc.SugerirConciliacionAsync(request.ExtractoId, ct);
 }
 
-public sealed record ConciliarMovimientoBancarioCommand(Guid MovimientoId, Guid AsientoContableId)
+public sealed record ConciliarBankTransactionCommand(Guid MovimientoId, Guid JournalEntryId)
     : IRequest<Result<bool>>;
 
-public sealed class ConciliarMovimientoBancarioCommandHandler
-    : IRequestHandler<ConciliarMovimientoBancarioCommand, Result<bool>>
+public sealed class ConciliarBankTransactionCommandHandler
+    : IRequestHandler<ConciliarBankTransactionCommand, Result<bool>>
 {
     private readonly IConciliacionService _svc;
 
-    public ConciliarMovimientoBancarioCommandHandler(IConciliacionService svc) => _svc = svc;
+    public ConciliarBankTransactionCommandHandler(IConciliacionService svc) => _svc = svc;
 
-    public Task<Result<bool>> Handle(ConciliarMovimientoBancarioCommand request, CancellationToken ct)
-        => _svc.ConciliarMovimientoAsync(request.MovimientoId, request.AsientoContableId, ct);
+    public Task<Result<bool>> Handle(ConciliarBankTransactionCommand request, CancellationToken ct)
+        => _svc.ConciliarMovimientoAsync(request.MovimientoId, request.JournalEntryId, ct);
 }

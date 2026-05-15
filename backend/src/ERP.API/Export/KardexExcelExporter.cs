@@ -1,15 +1,15 @@
-using ClosedXML.Excel;
+﻿using ClosedXML.Excel;
 using ERP.Application.Inventory.DTOs;
 
 namespace ERP.API.Export;
 
 /// <summary>
 /// Genera un libro Excel (.xlsx) con el Kardex valorizado.
-/// Diseño: encabezado informativo → inventario inicial → tabla de movimientos → resumen.
+/// DiseÃ±o: encabezado informativo â†’ inventario inicial â†’ tabla de movimientos â†’ resumen.
 /// </summary>
 public static class KardexExcelExporter
 {
-    // ── Paleta ────────────────────────────────────────────────────────────────
+    // â”€â”€ Paleta â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     private static readonly XLColor ColHeaderBg  = XLColor.FromArgb(0x1F, 0x49, 0x7D); // azul corporativo
     private static readonly XLColor ColHeaderFg  = XLColor.White;
     private static readonly XLColor ColEntrada   = XLColor.FromArgb(0xE2, 0xEF, 0xDA); // verde suave
@@ -25,30 +25,30 @@ public static class KardexExcelExporter
 
         var row = 1;
 
-        // ── BLOQUE DE ENCABEZADO ──────────────────────────────────────────────
+        // â”€â”€ BLOQUE DE ENCABEZADO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         row = WriteHeader(ws, kardex, fechaInicio, fechaFin, row);
 
-        // ── SALDO INICIAL (solo si hay filtro de fecha) ───────────────────────
+        // â”€â”€ SALDO INICIAL (solo si hay filtro de fecha) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (kardex.Resumen.InventarioInicialCantidad != 0 || fechaInicio.HasValue)
         {
             row = WriteInicialBalance(ws, kardex.Resumen, row);
         }
 
-        // ── TABLA DE MOVIMIENTOS ─────────────────────────────────────────────
+        // â”€â”€ TABLA DE MOVIMIENTOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         int tableHeaderRow = row;
         row = WriteTableHeader(ws, row);
-        row = WriteMovimientos(ws, kardex.Movimientos, row, tableHeaderRow);
+        row = WriteMovimientos(ws, kardex.Rows, row, tableHeaderRow);
 
-        // ── FILA DE RESUMEN ───────────────────────────────────────────────────
+        // â”€â”€ FILA DE RESUMEN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         row = WriteResumen(ws, kardex.Resumen, row);
 
-        // ── AJUSTE DE COLUMNAS ────────────────────────────────────────────────
+        // â”€â”€ AJUSTE DE COLUMNAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         ws.Columns().AdjustToContents(minWidth: 10, maxWidth: 30);
         ws.Column(1).Width = 14;  // Fecha
         ws.Column(2).Width = 22;  // Tipo movimiento
         ws.Column(3).Width = 22;  // Referencia
 
-        // ── CONGELAR ENCABEZADO ───────────────────────────────────────────────
+        // â”€â”€ CONGELAR ENCABEZADO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         ws.SheetView.FreezeRows(tableHeaderRow);
 
         using var ms = new MemoryStream();
@@ -56,9 +56,9 @@ public static class KardexExcelExporter
         return ms.ToArray();
     }
 
-    // ────────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Secciones privadas
-    // ────────────────────────────────────────────────────────────────────────
+    // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static int WriteHeader(
         IXLWorksheet ws, KardexResponse k,
@@ -66,9 +66,9 @@ public static class KardexExcelExporter
     {
         var r = startRow;
 
-        // Título
+        // TÃ­tulo
         var titleCell = ws.Cell(r, 1);
-        titleCell.Value = "KARDEX VALORIZADO — PROMEDIO PONDERADO MÓVIL";
+        titleCell.Value = "KARDEX VALORIZADO â€” PROMEDIO PONDERADO MÃ“VIL";
         titleCell.Style.Font.Bold      = true;
         titleCell.Style.Font.FontSize  = 14;
         titleCell.Style.Font.FontColor = XLColor.FromArgb(0x1F, 0x49, 0x7D);
@@ -76,13 +76,13 @@ public static class KardexExcelExporter
         r++;
 
         // Empresa / producto / bodega
-        SetInfoRow(ws, r++, "Producto", $"{k.Producto.Nombre}  [{k.Producto.Codigo}]");
-        SetInfoRow(ws, r++, "Bodega",   k.Bodega.Nombre);
+        SetInfoRow(ws, r++, "Producto", $"{k.Producto.Name}  [{k.Producto.Codigo}]");
+        SetInfoRow(ws, r++, "Bodega",   k.Warehouse.Name);
 
         var periodoTexto = fechaInicio.HasValue || fechaFin.HasValue
             ? $"{fechaInicio?.ToString("dd/MM/yyyy") ?? "inicio"} al {fechaFin?.ToString("dd/MM/yyyy") ?? "hoy"}"
             : "Todo el historial";
-        SetInfoRow(ws, r++, "Período",  periodoTexto);
+        SetInfoRow(ws, r++, "PerÃ­odo",  periodoTexto);
         SetInfoRow(ws, r++, "Emitido",  DateTime.Now.ToString("dd/MM/yyyy HH:mm"));
 
         r++; // fila en blanco separadora
@@ -105,7 +105,7 @@ public static class KardexExcelExporter
         range.Style.Fill.BackgroundColor = XLColor.FromArgb(0xED, 0xED, 0xED);
         range.Style.Font.Bold            = true;
 
-        ws.Cell(row, 1).Value  = "SALDO INICIAL (antes del período)";
+        ws.Cell(row, 1).Value  = "SALDO INICIAL (antes del perÃ­odo)";
         ws.Cell(row, 8).Value  = r.InventarioInicialCantidad;
         ws.Cell(row, 9).Value  = r.InventarioInicialValor;
         ws.Cell(row, 10).Value = r.InventarioInicialCantidad > 0
@@ -151,7 +151,7 @@ public static class KardexExcelExporter
             cell.Style.Border.BottomBorder      = XLBorderStyleValues.Medium;
         }
 
-        // Columnas de texto sin fondo de grupo — aplicar fondo de encabezado también al nivel superior
+        // Columnas de texto sin fondo de grupo â€” aplicar fondo de encabezado tambiÃ©n al nivel superior
         foreach (var col in new[] { 1, 2, 3 })
         {
             ws.Cell(startRow, col).Style.Fill.BackgroundColor = ColHeaderBg;
@@ -187,7 +187,7 @@ public static class KardexExcelExporter
             var alt = i % 2 == 1;
 
             ws.Cell(row, 1).Value  = m.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
-            ws.Cell(row, 2).Value  = m.TipoMovimiento;
+            ws.Cell(row, 2).Value  = m.MovementType;
             ws.Cell(row, 3).Value  = m.Referencia ?? "";
             ws.Cell(row, 4).Value  = m.EntradaCantidad;
             ws.Cell(row, 5).Value  = m.EntradaValor;
@@ -229,14 +229,14 @@ public static class KardexExcelExporter
 
     private static int WriteResumen(IXLWorksheet ws, ResumenKardexDto r, int startRow)
     {
-        var row = startRow + 1; // línea en blanco
+        var row = startRow + 1; // lÃ­nea en blanco
 
         var range = ws.Range(row, 1, row, 10);
         range.Style.Fill.BackgroundColor = ColResumenBg;
         range.Style.Font.Bold            = true;
         range.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
 
-        ws.Cell(row, 1).Value  = "RESUMEN DEL PERÍODO";
+        ws.Cell(row, 1).Value  = "RESUMEN DEL PERÃODO";
         ws.Cell(row, 4).Value  = r.EntradasCantidad;
         ws.Cell(row, 5).Value  = r.EntradasValor;
         ws.Cell(row, 6).Value  = r.SalidasCantidad;
@@ -249,12 +249,12 @@ public static class KardexExcelExporter
         return row + 1;
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static void ApplyNumberFormat(IXLWorksheet ws, int row, int colFrom, int colTo)
     {
         for (var c = colFrom; c <= colTo; c++)
-            ws.Cell(row, c).Style.NumberFormat.Format = "#,##0.000000;-#,##0.000000;—";
+            ws.Cell(row, c).Style.NumberFormat.Format = "#,##0.000000;-#,##0.000000;â€”";
     }
 
     private static void ZeroToGray(IXLWorksheet ws, int row, int col)
@@ -264,3 +264,5 @@ public static class KardexExcelExporter
             cell.Style.Font.FontColor = XLColor.LightGray;
     }
 }
+
+

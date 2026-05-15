@@ -1,10 +1,11 @@
-namespace ERP.Application.Modules.Inventory.DTOs;
+﻿namespace ERP.Application.Modules.Inventory.DTOs;
 
-public sealed record StockActualListItemDto(
+public sealed record CurrentStockListItemDto(
     Guid     Id,
-    Guid     ProductoId,
-    Guid     BodegaId,
-    decimal  Cantidad,
-    decimal  CantidadReservada,
-    decimal  CantidadDisponible,
+    Guid    ProductId,
+    Guid    WarehouseId,
+    decimal Quantity,
+    decimal ReservedQty,
+    decimal AvailableQuantity,
     DateTime UltimaActualizacion);
+

@@ -1,9 +1,9 @@
-using ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
+﻿using ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing;
 
-/// <summary>Validación de distribución de cantidades de compra por bodega.</summary>
+/// <summary>Validación de distribución de cantidades de compra por Warehouse.</summary>
 public static class CompraAsignacionBodegasRules
 {
     public const decimal CantidadTolerance = 0.000001m;
@@ -13,7 +13,7 @@ public static class CompraAsignacionBodegasRules
         IReadOnlyList<DetalleCompraInput> detalles,
         IReadOnlyList<AsignacionBodegaRequest> asignaciones,
         Guid tenantId,
-        IBodegaRepository bodegas,
+        IWarehouseRepository bodegas,
         CancellationToken ct)
     {
         if (asignaciones.Count == 0)
@@ -24,23 +24,23 @@ public static class CompraAsignacionBodegasRules
             if (a.ItemIndex < 0 || a.ItemIndex >= detalles.Count)
                 return $"ItemIndex {a.ItemIndex} está fuera de rango (0..{detalles.Count - 1}).";
 
-            if (a.Cantidad <= 0)
+            if (a.Quantity <= 0)
                 return $"La cantidad asignada debe ser mayor a cero (ItemIndex {a.ItemIndex}).";
 
-            var bodega = await bodegas.GetByIdAsync(tenantId, a.BodegaId, ct);
-            if (bodega is null)
-                return $"Bodega {a.BodegaId} no encontrada en el tenant.";
-            if (!bodega.IsActive)
-                return $"La bodega '{bodega.Nombre}' está deshabilitada.";
+            var Warehouse = await bodegas.GetByIdAsync(tenantId, a.WarehouseId, ct);
+            if (Warehouse is null)
+                return $"Warehouse {a.WarehouseId} no encontrada en el tenant.";
+            if (!Warehouse.IsActive)
+                return $"La Warehouse '{Warehouse.Name}' está deshabilitada.";
         }
 
         var sums = new decimal[detalles.Count];
         foreach (var a in asignaciones)
-            sums[a.ItemIndex] += a.Cantidad;
+            sums[a.ItemIndex] += a.Quantity;
 
         for (var i = 0; i < detalles.Count; i++)
         {
-            var esperada = detalles[i].Cantidad;
+            var esperada = detalles[i].Quantity;
             var suma   = sums[i];
             if (Math.Abs(suma - esperada) > CantidadTolerance)
                 return $"La suma de cantidades asignadas al ítem {i} ({suma}) no coincide con la cantidad del detalle ({esperada}).";
@@ -51,21 +51,21 @@ public static class CompraAsignacionBodegasRules
 
     /// <summary>Valida asignaciones contra líneas ya materializadas (mismo orden que al crear la compra).</summary>
     public static async Task<string?> ValidateAgainstDetallesAsync(
-        IReadOnlyList<ERP.Domain.Modules.Purchasing.Entities.CompraDetalle> detallesOrdenados,
+        IReadOnlyList<ERP.Domain.Modules.Purchasing.Entities.PurchBillLine> detallesOrdenados,
         IReadOnlyList<AsignacionBodegaRequest> asignaciones,
         Guid tenantId,
-        IBodegaRepository bodegas,
+        IWarehouseRepository bodegas,
         CancellationToken ct)
     {
         var inputs = detallesOrdenados
             .Select(d => new DetalleCompraInput(
-                d.Descripcion,
-                d.CodigoPrincipalProveedor,
-                d.ProductoId,
-                d.Cantidad,
-                d.PrecioUnitario,
-                d.DescuentoPorcentaje,
-                d.IvaPorcentaje))
+                d.Description,
+                d.SupplierProductCode,
+                d.ProductId,
+                d.Quantity,
+                d.UnitPrice,
+                d.DiscountPct,
+                d.VatPct))
             .ToList();
 
         return await ValidateAsync(inputs, asignaciones, tenantId, bodegas, ct);

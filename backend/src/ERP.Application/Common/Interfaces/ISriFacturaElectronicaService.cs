@@ -5,13 +5,13 @@ namespace ERP.Application.Common.Interfaces;
 
 public interface ISriFacturaElectronicaService
 {
-    Task<string> GenerarXmlFacturaAsync(VentasFactura factura, List<VentasDetalle> detalles, ConfiguracionSRI config);
+    Task<string> GenerarXmlFacturaAsync(SalesBill factura, List<SalesBillLine> detalles, SriSettings config);
 
     Task<string> GenerarXmlNotaCreditoDebitoAsync(
-        VentasFactura facturaOriginal,
-        VentasNotaCreditoDebito nota,
-        List<VentasNotaDetalle> detalles,
-        ConfiguracionSRI config);
+        SalesBill facturaOriginal,
+        SalesNote nota,
+        List<SalesNoteLine> detalles,
+        SriSettings config);
 
     Task<byte[]> FirmarXmlAsync(string xmlContent, string p12Path, string password);
     Task<SriAutorizacionResponse> EnviarAlSriAsync(byte[] xmlFirmado, string urlWsdl);
@@ -19,9 +19,9 @@ public interface ISriFacturaElectronicaService
 
 public class SriAutorizacionResponse
 {
-    public bool Autorizada { get; set; }
-    public string NumeroAutorizacion { get; set; } = null!;
-    public DateTime FechaAutorizacion { get; set; }
-    public string XmlAutorizado { get; set; } = null!;
-    public string? MensajeError { get; set; }
+    public bool     IsAuthorized  { get; set; }
+    public string   AuthNumber    { get; set; } = null!;
+    public DateTime AuthDate      { get; set; }
+    public string   AuthorizedXml { get; set; } = null!;
+    public string?  ErrorMessage  { get; set; }
 }

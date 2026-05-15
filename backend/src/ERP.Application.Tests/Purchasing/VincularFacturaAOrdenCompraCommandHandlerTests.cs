@@ -25,9 +25,9 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         var result = await ctx.Handle();
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Estado.Should().Be("Cerrada");
-        ctx.OrdenRepo.Verify(x => x.AddOrdenCompraFacturaAsync(
-            It.IsAny<OrdenCompraFactura>(), It.IsAny<CancellationToken>()), Times.Once);
+        result.Value!.Status.Should().Be("Closed");
+        ctx.OrdenRepo.Verify(x => x.AddOrderBillLinkAsync(
+            It.IsAny<PurchaseOrderBill>(), It.IsAny<CancellationToken>()), Times.Once);
         ctx.UnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         ctx.UnitOfWork.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -41,7 +41,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         var result = await ctx.Handle();
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Estado.Should().Be("RecibidaParcial");
+        result.Value!.Status.Should().Be("PartiallyReceived");
     }
 
     // ── OC no encontrada / estado inválido ────────────────────────────────
@@ -50,9 +50,9 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
     public async Task Vincular_OC_no_encontrada_retorna_failure()
     {
         var ctx = new TestContext();
-        ctx.OrdenRepo.Setup(x => x.GetByIdWithDetallesAsync(
+        ctx.OrdenRepo.Setup(x => x.GetByIdWithLinesAsync(
                 ctx.TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((OrdenCompra?)null);
+            .ReturnsAsync((PurchaseOrder?)null);
 
         var result = await ctx.Handle();
 
@@ -65,14 +65,14 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
     {
         var ctx = new TestContext();
         var oc  = ctx.BuildOrdenCompra(aprobar: false); // estado Borrador
-        ctx.OrdenRepo.Setup(x => x.GetByIdWithDetallesAsync(
+        ctx.OrdenRepo.Setup(x => x.GetByIdWithLinesAsync(
                 ctx.TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(oc);
 
         var result = await ctx.Handle();
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Aprobada");
+        result.Error.Should().Contain("Approved");
     }
 
     // ── Factura no encontrada / no aprobada ──────────────────────────────
@@ -81,9 +81,9 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
     public async Task Vincular_factura_no_encontrada_retorna_failure()
     {
         var ctx = new TestContext();
-        ctx.CompraRepo.Setup(x => x.GetByIdWithDetailsAsync(
+        ctx.CompraRepo.Setup(x => x.GetByIdWithLinesAsync(
                 ctx.TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((CompraFactura?)null);
+            .ReturnsAsync((PurchBill?)null);
 
         var result = await ctx.Handle();
 
@@ -96,7 +96,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
     {
         var ctx     = new TestContext();
         var factura = ctx.BuildFactura(aprobar: false); // estado Borrador
-        ctx.CompraRepo.Setup(x => x.GetByIdWithDetailsAsync(
+        ctx.CompraRepo.Setup(x => x.GetByIdWithLinesAsync(
                 ctx.TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(factura);
 
@@ -112,7 +112,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
     public async Task Vincular_factura_ya_vinculada_retorna_failure()
     {
         var ctx = new TestContext();
-        ctx.OrdenRepo.Setup(x => x.FacturaYaVinculadaAsync(
+        ctx.OrdenRepo.Setup(x => x.BillAlreadyLinkedAsync(
                 ctx.TenantId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
@@ -193,11 +193,11 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         private readonly decimal _precioOC;
         private readonly decimal _precioFactura;
 
-        public Mock<IOrdenCompraRepository> OrdenRepo  { get; } = new();
-        public Mock<ICompraRepository>      CompraRepo { get; } = new();
+        public Mock<IPurchaseOrderRepository> OrdenRepo  { get; } = new();
+        public Mock<IPurchBillRepository>      CompraRepo { get; } = new();
         public Mock<IUnitOfWork>           UnitOfWork  { get; } = new();
 
-        private readonly Mock<IProveedorRepository>    _proveedorRepo = new();
+        private readonly Mock<ISupplierRepository>    _proveedorRepo = new();
         private readonly Mock<IUserActivityRepository> _activity      = new();
         private readonly Mock<ICurrentTenant>          _tenant        = new();
         private readonly Mock<ICurrentUser>            _user          = new();
@@ -233,60 +233,60 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
             _ordenId   = orden.Id;
             _facturaId = factura.Id;
 
-            OrdenRepo.Setup(x => x.GetByIdWithDetallesAsync(TenantId, orden.Id, It.IsAny<CancellationToken>()))
+            OrdenRepo.Setup(x => x.GetByIdWithLinesAsync(TenantId, orden.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(orden);
-            OrdenRepo.Setup(x => x.FacturaYaVinculadaAsync(
+            OrdenRepo.Setup(x => x.BillAlreadyLinkedAsync(
                     TenantId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(false);
-            OrdenRepo.Setup(x => x.AddOrdenCompraFacturaAsync(
-                    It.IsAny<OrdenCompraFactura>(), It.IsAny<CancellationToken>()))
+            OrdenRepo.Setup(x => x.AddOrderBillLinkAsync(
+                    It.IsAny<PurchaseOrderBill>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
-            CompraRepo.Setup(x => x.GetByIdWithDetailsAsync(TenantId, factura.Id, It.IsAny<CancellationToken>()))
+            CompraRepo.Setup(x => x.GetByIdWithLinesAsync(TenantId, factura.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(factura);
 
             _proveedorRepo.Setup(x => x.GetByIdAsync(TenantId, ProveedorId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync((ERP.Domain.Modules.Purchasing.Entities.Proveedor?)null);
+                .ReturnsAsync((ERP.Domain.Modules.Purchasing.Entities.Supplier?)null);
 
             _activity.Setup(x => x.AddAsync(
                     It.IsAny<ERP.Domain.Audit.Entities.UserActivity>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
         }
 
-        public OrdenCompra BuildOrdenCompra(bool aprobar)
+        public PurchaseOrder BuildOrdenCompra(bool aprobar)
         {
-            var oc = OrdenCompra.Create(
-                TenantId, secuencial: 1, ProveedorId,
+            var oc = PurchaseOrder.Create(
+                TenantId, sequential: 1, ProveedorId,
                 DateTime.UtcNow.AddDays(30),
-                bodegaDestinoId: null, direccionEntrega: null, observaciones: null,
+                targetWarehouseId: null, deliveryAddress: null, notes: null,
                 UserId);
 
-            var detalle = OrdenCompraDetalle.Create(
+            var detalle = PurchaseOrderLine.Create(
                 TenantId, oc.Id, ProductoId, "Producto Test",
-                _cantidadPedida, precioUnitario: _precioOC, ivaPorcentaje: 15m, UserId);
-            oc.AgregarDetalle(detalle);
+                _cantidadPedida, unitCost: _precioOC, vatPct: 15m, UserId);
+            oc.AddLine(detalle);
 
-            if (aprobar) oc.Aprobar(UserId);
+            if (aprobar) oc.Approve(UserId);
             return oc;
         }
 
-        public CompraFactura BuildFactura(bool aprobar)
+        public PurchBill BuildFactura(bool aprobar)
         {
-            var f = CompraFactura.Create(
+            var f = PurchBill.Create(
                 TenantId, ProveedorId, "001-001-000000001",
-                claveAcceso: null, xmlPath: null,
-                DateTime.UtcNow, fechaVencimiento: null,
-                "30 dias", observaciones: null, UserId);
+                accessKey: null, xmlPath: null,
+                DateTime.UtcNow, dueDate: null,
+                "30 dias", notes: null, UserId);
 
-            f.AgregarDetalle(
+            f.AddLine(
                 "Producto Test", null, ProductoId,
-                _cantidadFactura, precioUnitario: _precioFactura,
-                descuentoPorcentaje: 0m, ivaPorcentaje: 15m, UserId);
+                _cantidadFactura, unitPrice: _precioFactura,
+                discountPct: 0m, vatPct: 15m, UserId);
 
             if (aprobar)
             {
-                f.Validar(UserId);
-                f.Aprobar(UserId, asientoContableId: null, Array.Empty<CompraAprobadaStockLine>());
+                f.Validate(UserId);
+                f.Approve(UserId, journalEntryId: null, Array.Empty<PurchBillApprovedStockLine>());
             }
             return f;
         }
@@ -309,3 +309,5 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         }
     }
 }
+
+

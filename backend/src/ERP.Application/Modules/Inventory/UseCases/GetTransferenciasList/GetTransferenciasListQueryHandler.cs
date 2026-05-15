@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -9,11 +9,11 @@ namespace ERP.Application.Inventory.UseCases.GetTransferenciasList;
 public sealed class GetTransferenciasListQueryHandler
     : IRequestHandler<GetTransferenciasListQuery, Result<TransferenciasPagedResult>>
 {
-    private readonly ITransferenciaRepository _repo;
+    private readonly IStockTransferRepository _repo;
     private readonly ICurrentTenant           _currentTenant;
 
     public GetTransferenciasListQueryHandler(
-        ITransferenciaRepository repo,
+        IStockTransferRepository repo,
         ICurrentTenant currentTenant)
     {
         _repo          = repo;
@@ -29,8 +29,8 @@ public sealed class GetTransferenciasListQueryHandler
         var (items, total) = await _repo.GetPagedAsync(
             _currentTenant.TenantId,
             pageNumber, pageSize,
-            query.BodegaOrigenId, query.BodegaDestinoId,
-            query.Estado, query.FechaDesde, query.FechaHasta,
+            query.SourceWarehouseId, query.TargetWarehouseId,
+            query.Status, query.DateFrom, query.DateTo,
             ct);
 
         var dtos = items.Select(ToDto).ToList();
@@ -38,14 +38,14 @@ public sealed class GetTransferenciasListQueryHandler
             new TransferenciasPagedResult(dtos, total, pageNumber, pageSize));
     }
 
-    private static TransferenciaDto ToDto(Transferencia t) => new(
-        t.Id, t.NumeroTransferencia,
-        t.BodegaOrigenId,
-        t.BodegaOrigen?.Nombre ?? t.BodegaOrigenId.ToString(),
-        t.BodegaDestinoId,
-        t.BodegaDestino?.Nombre ?? t.BodegaDestinoId.ToString(),
-        t.FechaTransferencia, t.Estado,
-        t.Motivo, t.Observaciones,
-        t.FechaConfirmacion, t.ConfirmadoPor,
+    private static TransferenciaDto ToDto(StockTransfer t) => new(
+        t.Id, t.TransferNumber,
+        t.SourceWarehouseId,
+        t.SourceWarehouse?.Name ?? t.SourceWarehouseId.ToString(),
+        t.TargetWarehouseId,
+        t.TargetWarehouse?.Name ?? t.TargetWarehouseId.ToString(),
+        t.TransferDate, t.Status,
+        t.Reason, t.Notes,
+        t.ConfirmedAt, t.ConfirmedBy,
         t.CreatedAt);
 }

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Domain.Modules.Purchasing.Events;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -7,69 +7,69 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Modules.Inventory.EventHandlers;
 
-public sealed class CompraNotaProveedorAprobadaEventHandler : INotificationHandler<CompraNotaProveedorAprobadaEvent>
+public sealed class PurchNoteApprovedEventHandler : INotificationHandler<PurchNoteApprovedEvent>
 {
-    private readonly IInventarioStockRepository _inventario;
-    private readonly ILogger<CompraNotaProveedorAprobadaEventHandler> _logger;
+    private readonly IStockRepository _inventario;
+    private readonly ILogger<PurchNoteApprovedEventHandler> _logger;
 
-    public CompraNotaProveedorAprobadaEventHandler(
-        IInventarioStockRepository inventario,
-        ILogger<CompraNotaProveedorAprobadaEventHandler> logger)
+    public PurchNoteApprovedEventHandler(
+        IStockRepository inventario,
+        ILogger<PurchNoteApprovedEventHandler> logger)
     {
         _inventario = inventario;
         _logger     = logger;
     }
 
-    public async Task Handle(CompraNotaProveedorAprobadaEvent notification, CancellationToken ct)
+    public async Task Handle(PurchNoteApprovedEvent notification, CancellationToken ct)
     {
         var tenantId = notification.TenantId;
         var userId   = notification.UserId;
 
-        var tipoMov = notification.TipoNota == "CREDITO"
-            ? TipoMovimientoInventario.NotaCreditoProveedor
-            : TipoMovimientoInventario.NotaDebitoProveedor;
+        var tipoMov = notification.NoteType == "CREDITO"
+            ? StockMovementType.SupplierCreditNote
+            : StockMovementType.SupplierDebitNote;
 
         foreach (var line in notification.StockLines)
         {
-            var stock = await _inventario.GetStockByTenantBodegaProductAsync(
-                tenantId, line.BodegaId, line.ProductoId, ct);
+            var stock = await _inventario.GetStockAsync(
+                tenantId, line.WarehouseId, line.ProductId, ct);
             if (stock is null)
             {
-                if (line.DeltaCantidad > 0)
+                if (line.QuantityDelta > 0)
                 {
-                    stock = StockActual.Create(tenantId, line.ProductoId, line.BodegaId, userId);
-                    await _inventario.AddStockActualAsync(stock, ct);
+                    stock = CurrentStock.Create(tenantId, line.ProductId, line.WarehouseId, userId);
+                    await _inventario.AddCurrentStockAsync(stock, ct);
                 }
                 else
                 {
                     _logger.LogWarning(
-                        "Nota proveedor {NotaId}: no hay stock en bodega {BodegaId} producto {ProductoId} para aplicar salida.",
-                        notification.NotaId, line.BodegaId, line.ProductoId);
+                        "Nota Supplier {NotaId}: no hay stock en Warehouse {BodegaId} producto {ProductoId} para aplicar salida.",
+                        notification.NoteId, line.WarehouseId, line.ProductId);
                     continue;
                 }
             }
 
-            var cantidadAnterior = stock.Cantidad;
-            var costo            = line.CostoUnitario;
-            if (line.DeltaCantidad < 0 && stock.Cantidad > 0)
-                costo = stock.CostoPromedioActual;
+            var cantidadAnterior = stock.Quantity;
+            var costo            = line.UnitCost;
+            if (line.QuantityDelta < 0 && stock.Quantity > 0)
+                costo = stock.AverageCost;
 
-            stock.AplicarMovimiento(line.DeltaCantidad, userId, costo);
+            stock.ApplyMovement(line.QuantityDelta, userId, costo);
 
-            var movimiento = InventarioMovimiento.Create(
+            var movimiento = StockMovement.Create(
                 tenantId,
-                line.ProductoId,
-                line.BodegaId,
+                line.ProductId,
+                line.WarehouseId,
                 tipoMov,
-                cantidad:            line.DeltaCantidad,
-                cantidadAnterior:    cantidadAnterior,
-                referencia:          notification.NumeroNota,
-                documentoOrigenId:   notification.NotaId,
-                documentoOrigenTipo: "CompraNotaProveedor",
-                createdBy:           userId,
-                costoUnitario:       costo);
+                quantity:            line.QuantityDelta,
+                previousQuantity:    cantidadAnterior,
+                reference:          notification.NoteNumber,
+                sourceDocId:   notification.NoteId,
+                sourceDocType: "PurchNote",
+                createdBy: userId,
+                unitCost:       costo);
 
-            await _inventario.AddMovimientoAsync(movimiento, ct);
+            await _inventario.AddMovementAsync(movimiento, ct);
         }
     }
 }

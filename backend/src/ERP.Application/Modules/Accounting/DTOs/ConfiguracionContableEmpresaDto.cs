@@ -1,6 +1,6 @@
-namespace ERP.Application.Modules.Accounting.DTOs;
+﻿namespace ERP.Application.Modules.Accounting.DTOs;
 
-public sealed record ConfiguracionContableEmpresaDto(
+public sealed record AccountingSetupDto(
     Guid? CuentaInventarioId,
     Guid? CuentaCostoVentaId,
     Guid? CuentaProveedoresId,

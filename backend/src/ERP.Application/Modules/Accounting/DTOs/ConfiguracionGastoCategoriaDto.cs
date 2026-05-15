@@ -1,6 +1,6 @@
-namespace ERP.Application.Modules.Accounting.DTOs;
+﻿namespace ERP.Application.Modules.Accounting.DTOs;
 
-public sealed record ConfiguracionGastoCategoriaDto(
+public sealed record ExpenseCategoryDto(
     Guid Id,
     string Categoria,
     Guid CuentaGastoId);

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Products.DTOs;
 using ERP.Domain.Products.Entities;
@@ -52,7 +52,7 @@ public class UpdateProductHandler : IRequestHandler<UpdateProductCommand, Result
                 return Result<ProductDto>.Failure("La tarifa de ICE no es válida o no está vigente.");
         }
 
-        var product = await _repository.GetByIdWithDetailsAsync(command.Id, tenantId, ct);
+        var product = await _repository.GetByIdAsync(command.Id, tenantId, ct);
         if (product is null)
             return Result<ProductDto>.Failure("Producto no encontrado.");
 

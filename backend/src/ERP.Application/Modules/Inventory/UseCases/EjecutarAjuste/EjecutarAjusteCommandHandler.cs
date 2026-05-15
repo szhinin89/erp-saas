@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -12,10 +12,10 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 namespace ERP.Application.Inventory.UseCases.EjecutarAjuste;
 
 public sealed class EjecutarAjusteCommandHandler
-    : IRequestHandler<EjecutarAjusteCommand, Result<AjusteInventarioDto>>
+    : IRequestHandler<EjecutarAjusteCommand, Result<StockAdjustmentDto>>
 {
-    private readonly IAjusteInventarioRepository _ajusteRepo;
-    private readonly IInventarioStockRepository  _inventario;
+    private readonly IStockAdjustmentRepository _ajusteRepo;
+    private readonly IStockRepository  _inventario;
     private readonly ICostoPromedioService       _costoServicio;
     private readonly IUserActivityRepository     _activity;
     private readonly IUnitOfWork                 _unitOfWork;
@@ -24,8 +24,8 @@ public sealed class EjecutarAjusteCommandHandler
     private readonly ILogger<EjecutarAjusteCommandHandler> _logger;
 
     public EjecutarAjusteCommandHandler(
-        IAjusteInventarioRepository ajusteRepo,
-        IInventarioStockRepository inventario,
+        IStockAdjustmentRepository ajusteRepo,
+        IStockRepository inventario,
         ICostoPromedioService costoServicio,
         IUserActivityRepository activity,
         IUnitOfWork unitOfWork,
@@ -43,7 +43,7 @@ public sealed class EjecutarAjusteCommandHandler
         _logger        = logger;
     }
 
-    public async Task<Result<AjusteInventarioDto>> Handle(
+    public async Task<Result<StockAdjustmentDto>> Handle(
         EjecutarAjusteCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
@@ -51,109 +51,109 @@ public sealed class EjecutarAjusteCommandHandler
 
         var ajuste = await _ajusteRepo.GetByIdAsync(tenantId, command.AjusteId, ct);
         if (ajuste is null)
-            return Result<AjusteInventarioDto>.Failure("Ajuste no encontrado.");
+            return Result<StockAdjustmentDto>.Failure("Ajuste no encontrado.");
 
-        if (ajuste.Estado != "Borrador")
-            return Result<AjusteInventarioDto>.Failure(
-                $"Solo se puede ejecutar un ajuste en Borrador (estado actual: {ajuste.Estado}).");
+        if (ajuste.Status != "Borrador")
+            return Result<StockAdjustmentDto>.Failure(
+                $"Solo se puede ejecutar un ajuste en Borrador (estado actual: {ajuste.Status}).");
 
         _logger.LogInformation(
-            "Ejecutando ajuste {Numero} ({Id}): {Cantidad} en bodega {Bodega}",
-            ajuste.NumeroAjuste, ajuste.Id, ajuste.CantidadAjuste, ajuste.BodegaNombre);
+            "Ejecutando ajuste {Numero} ({Id}): {Cantidad} en Warehouse {Warehouse}",
+            ajuste.AdjustmentNumber, ajuste.Id, ajuste.AdjustmentQty, ajuste.WarehouseName);
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
             decimal cantidadAnterior;
-            TipoMovimientoInventario tipoMovimiento;
+            StockMovementType tipoMovimiento;
             decimal? costoUnitarioMovimiento;
 
-            if (ajuste.CantidadAjuste > 0)
+            if (ajuste.AdjustmentQty > 0)
             {
                 // Incremento: UPSERT atómico — siempre tiene éxito.
                 // Los ajustes de entrada no tienen costo de compra conocido.
-                cantidadAnterior = await _inventario.IncrementarStockAtomicoAsync(
-                    tenantId, ajuste.BodegaId, ajuste.ProductoId,
-                    ajuste.CantidadAjuste, userId, ct, costoUnitario: 0m);
-                tipoMovimiento       = TipoMovimientoInventario.AjustePositivo;
+                cantidadAnterior = await _inventario.IncrementStockAtomicAsync(
+                    tenantId, ajuste.WarehouseId, ajuste.ProductId,
+                    ajuste.AdjustmentQty, userId, ct, unitCost: 0m);
+                tipoMovimiento       = StockMovementType.PositiveAdjust;
                 costoUnitarioMovimiento = null; // sin valorización para entrada manual
             }
             else
             {
                 // Disminución: obtener costo promedio actual ANTES de decrementar.
                 var costoPromedio = await _costoServicio.ObtenerCostoPromedioAsync(
-                    tenantId, ajuste.ProductoId, ajuste.BodegaId, ct);
+                    tenantId, ajuste.ProductId, ajuste.WarehouseId, ct);
 
-                var cantAnteriorNullable = await _inventario.DecrementarStockAtomicoAsync(
-                    tenantId, ajuste.BodegaId, ajuste.ProductoId,
-                    Math.Abs(ajuste.CantidadAjuste), userId, ct, costoPromedio);
+                var cantAnteriorNullable = await _inventario.DecrementStockAtomicAsync(
+                    tenantId, ajuste.WarehouseId, ajuste.ProductId,
+                    Math.Abs(ajuste.AdjustmentQty), userId, ct, costoPromedio);
 
                 if (cantAnteriorNullable is null)
                 {
                     await _unitOfWork.RollbackAsync(ct);
                     _logger.LogWarning(
                         "Stock insuficiente al ejecutar ajuste {Numero}: solicitado={S}",
-                        ajuste.NumeroAjuste, ajuste.CantidadAjuste);
-                    return Result<AjusteInventarioDto>.Failure(
-                        $"Stock insuficiente en '{ajuste.BodegaNombre}' para disminuir " +
-                        $"{Math.Abs(ajuste.CantidadAjuste)} unidades de '{ajuste.ProductoNombre}'.");
+                        ajuste.AdjustmentNumber, ajuste.AdjustmentQty);
+                    return Result<StockAdjustmentDto>.Failure(
+                        $"Stock insuficiente en '{ajuste.WarehouseName}' para disminuir " +
+                        $"{Math.Abs(ajuste.AdjustmentQty)} unidades de '{ajuste.ProductName}'.");
                 }
 
                 cantidadAnterior        = cantAnteriorNullable.Value;
-                tipoMovimiento          = TipoMovimientoInventario.AjusteNegativo;
+                tipoMovimiento          = StockMovementType.NegativeAdjust;
                 costoUnitarioMovimiento = costoPromedio;
             }
 
-            await _inventario.AddMovimientoAsync(
-                InventarioMovimiento.Create(
-                    tenantId, ajuste.ProductoId, ajuste.BodegaId,
+            await _inventario.AddMovementAsync(
+                StockMovement.Create(
+                    tenantId, ajuste.ProductId, ajuste.WarehouseId,
                     tipoMovimiento,
-                    cantidad:            ajuste.CantidadAjuste,
-                    cantidadAnterior:    cantidadAnterior,
-                    referencia:          ajuste.NumeroAjuste,
-                    documentoOrigenId:   ajuste.Id,
-                    documentoOrigenTipo: "AjusteInventario",
-                    createdBy:           userId,
-                    costoUnitario:       costoUnitarioMovimiento),
+                    quantity:            ajuste.AdjustmentQty,
+                    previousQuantity:    cantidadAnterior,
+                    reference:          ajuste.AdjustmentNumber,
+                    sourceDocId:   ajuste.Id,
+                    sourceDocType: "StockAdjustment",
+                    createdBy: userId,
+                    unitCost:       costoUnitarioMovimiento),
                 ct);
 
-            ajuste.Ejecutar(userId);
+            ajuste.Execute(userId);
 
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "inventario", action: "ajuste.ejecutar",
-                entityType: "AjusteInventario", entityId: ajuste.Id,
-                description: ajuste.NumeroAjuste), ct);
+                entityType: "StockAdjustment", entityId: ajuste.Id,
+                description: ajuste.AdjustmentNumber), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
 
             _logger.LogInformation(
-                "Ajuste ejecutado: {Numero} ({Id})", ajuste.NumeroAjuste, ajuste.Id);
+                "Ajuste ejecutado: {Numero} ({Id})", ajuste.AdjustmentNumber, ajuste.Id);
 
-            return Result<AjusteInventarioDto>.Success(ToDto(ajuste));
+            return Result<StockAdjustmentDto>.Success(ToDto(ajuste));
         }
         catch (InvalidOperationException ex)
         {
             await _unitOfWork.RollbackAsync(ct);
             _logger.LogWarning(ex, "Error de negocio al ejecutar ajuste {Id}", command.AjusteId);
-            return Result<AjusteInventarioDto>.Failure(ex.Message);
+            return Result<StockAdjustmentDto>.Failure(ex.Message);
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
             _logger.LogError(ex, "Error inesperado al ejecutar ajuste {Id}", command.AjusteId);
-            return Result<AjusteInventarioDto>.Failure($"Error al ejecutar el ajuste: {ex.Message}");
+            return Result<StockAdjustmentDto>.Failure($"Error al ejecutar el ajuste: {ex.Message}");
         }
     }
 
-    private static AjusteInventarioDto ToDto(AjusteInventario a) => new(
-        a.Id, a.NumeroAjuste,
-        a.BodegaId,   a.BodegaNombre,
-        a.ProductoId, a.ProductoNombre,
-        a.CantidadAjuste, a.TipoAjuste,
-        a.Motivo, a.Observaciones,
-        a.FechaAjuste, a.Estado,
-        a.FechaEjecucion, a.EjecutadoPor,
+    private static StockAdjustmentDto ToDto(StockAdjustment a) => new(
+        a.Id, a.AdjustmentNumber,
+        a.WarehouseId,   a.WarehouseName,
+        a.ProductId, a.ProductName,
+        a.AdjustmentQty, a.AdjustmentType,
+        a.Reason, a.Notes,
+        a.AdjustmentDate, a.Status,
+        a.ExecutedAt, a.ExecutedBy,
         a.CreatedAt);
 }

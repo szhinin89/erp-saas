@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Inventory.UseCases.CrearTransferencia;
 
@@ -6,25 +6,25 @@ public sealed class CrearTransferenciaCommandValidator : AbstractValidator<Crear
 {
     public CrearTransferenciaCommandValidator()
     {
-        RuleFor(x => x.BodegaOrigenId)
-            .NotEmpty().WithMessage("La bodega origen es obligatoria.");
+        RuleFor(x => x.SourceWarehouseId)
+            .NotEmpty().WithMessage("La Warehouse origen es obligatoria.");
 
-        RuleFor(x => x.BodegaDestinoId)
-            .NotEmpty().WithMessage("La bodega destino es obligatoria.");
+        RuleFor(x => x.TargetWarehouseId)
+            .NotEmpty().WithMessage("La Warehouse destino es obligatoria.");
 
         RuleFor(x => x)
-            .Must(x => x.BodegaOrigenId != x.BodegaDestinoId)
-            .WithMessage("La bodega origen y destino deben ser distintas.");
+            .Must(x => x.SourceWarehouseId != x.TargetWarehouseId)
+            .WithMessage("La Warehouse origen y destino deben ser distintas.");
 
         RuleFor(x => x.Items)
-            .NotEmpty().WithMessage("Debe incluir al menos un ítem en la transferencia.");
+            .NotEmpty().WithMessage("Debe incluir al menos un ítem en la transfer.");
 
         RuleForEach(x => x.Items).ChildRules(item =>
         {
-            item.RuleFor(i => i.ProductoId)
+            item.RuleFor(i => i.ProductId)
                 .NotEmpty().WithMessage("El ID del producto es obligatorio.");
 
-            item.RuleFor(i => i.Cantidad)
+            item.RuleFor(i => i.Quantity)
                 .GreaterThan(0).WithMessage("La cantidad debe ser mayor a cero.");
         });
     }

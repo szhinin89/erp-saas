@@ -1,12 +1,12 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 
 namespace ERP.Application.Sales.UseCases.Notas;
 
-public sealed record CrearVentasNotaItemDto(Guid ProductoId, decimal Cantidad, decimal PrecioUnitario);
+public sealed record CrearVentasNotaItemDto(Guid    ProductId, decimal Quantity, decimal UnitPrice);
 
-public sealed record CrearVentasNotaCreditoDebitoCommand(
-    Guid FacturaOriginalId,
-    string TipoNota,
-    string Motivo,
+public sealed record CrearSalesNoteCommand(
+    Guid   OriginalBillId,
+    string NoteType,
+    string Reason,
     IReadOnlyList<CrearVentasNotaItemDto> Items) : IRequest<Result<Guid>>;

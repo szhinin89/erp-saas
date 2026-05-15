@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Sales.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -8,11 +8,11 @@ namespace ERP.Application.Sales.UseCases.GetStockDisponibleParaVenta;
 public sealed class GetStockDisponibleParaVentaQueryHandler
     : IRequestHandler<GetStockDisponibleParaVentaQuery, Result<StockDisponibleDto>>
 {
-    private readonly IInventarioStockRepository _stockRepository;
+    private readonly IStockRepository _stockRepository;
     private readonly ICurrentTenant             _currentTenant;
 
     public GetStockDisponibleParaVentaQueryHandler(
-        IInventarioStockRepository stockRepository,
+        IStockRepository stockRepository,
         ICurrentTenant currentTenant)
     {
         _stockRepository = stockRepository;
@@ -22,18 +22,18 @@ public sealed class GetStockDisponibleParaVentaQueryHandler
     public async Task<Result<StockDisponibleDto>> Handle(
         GetStockDisponibleParaVentaQuery query, CancellationToken ct)
     {
-        var stock = await _stockRepository.GetStockByTenantBodegaProductAsync(
-            _currentTenant.TenantId, query.BodegaId, query.ProductoId, ct);
+        var stock = await _stockRepository.GetStockAsync(
+            _currentTenant.TenantId, query.WarehouseId, query.ProductId, ct);
 
         if (stock is null)
             return Result<StockDisponibleDto>.Success(
-                new StockDisponibleDto(query.ProductoId, query.BodegaId, 0, 0, 0));
+                new StockDisponibleDto(query.ProductId, query.WarehouseId, 0, 0, 0));
 
         return Result<StockDisponibleDto>.Success(new StockDisponibleDto(
-            stock.ProductoId,
-            stock.BodegaId,
-            stock.CantidadDisponible,
-            stock.Cantidad,
-            stock.CantidadReservada));
+            stock.ProductId,
+            stock.WarehouseId,
+            stock.AvailableQuantity,
+            stock.Quantity,
+            stock.ReservedQuantity));
     }
 }

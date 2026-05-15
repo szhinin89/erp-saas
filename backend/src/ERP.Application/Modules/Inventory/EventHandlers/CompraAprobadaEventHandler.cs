@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Domain.Modules.Purchasing.Events;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -7,61 +7,61 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Modules.Inventory.EventHandlers;
 
-public sealed class CompraAprobadaEventHandler : INotificationHandler<CompraAprobadaEvent>
+public sealed class PurchBillApprovedEventHandler : INotificationHandler<PurchBillApprovedEvent>
 {
-    private readonly IInventarioStockRepository _inventario;
-    private readonly ILogger<CompraAprobadaEventHandler> _logger;
+    private readonly IStockRepository _inventario;
+    private readonly ILogger<PurchBillApprovedEventHandler> _logger;
 
-    public CompraAprobadaEventHandler(
-        IInventarioStockRepository inventario,
-        ILogger<CompraAprobadaEventHandler> logger)
+    public PurchBillApprovedEventHandler(
+        IStockRepository inventario,
+        ILogger<PurchBillApprovedEventHandler> logger)
     {
         _inventario = inventario;
         _logger     = logger;
     }
 
-    public async Task Handle(CompraAprobadaEvent notification, CancellationToken ct)
+    public async Task Handle(PurchBillApprovedEvent notification, CancellationToken ct)
     {
         var tenantId = notification.TenantId;
         var userId   = notification.ApprovedByUserId;
 
         foreach (var line in notification.StockLines)
         {
-            if (!line.ProductoId.HasValue)
+            if (!line.ProductId.HasValue)
             {
                 _logger.LogWarning(
-                    "Compra {CompraId}: línea sin producto; no se actualiza inventario (detalle {DetalleId}, bodega {BodegaId}).",
-                    notification.CompraFacturaId, line.CompraDetalleId, line.BodegaId);
+                    "Compra {CompraId}: línea sin producto; no se actualiza inventario (detalle {DetalleId}, Warehouse {BodegaId}).",
+                    notification.PurchBillId, line.BillLineId, line.WarehouseId);
                 continue;
             }
 
-            var productoId = line.ProductoId.Value;
+            var productoId = line.ProductId.Value;
 
-            var stock = await _inventario.GetStockByTenantBodegaProductAsync(
-                tenantId, line.BodegaId, productoId, ct);
+            var stock = await _inventario.GetStockAsync(
+                tenantId, line.WarehouseId, productoId, ct);
             if (stock is null)
             {
-                stock = StockActual.Create(tenantId, productoId, line.BodegaId, userId);
-                await _inventario.AddStockActualAsync(stock, ct);
+                stock = CurrentStock.Create(tenantId, productoId, line.WarehouseId, userId);
+                await _inventario.AddCurrentStockAsync(stock, ct);
             }
 
-            var cantidadAnterior = stock.Cantidad;
-            stock.AplicarMovimiento(line.Cantidad, userId, line.CostoUnitarioNeto);
+            var cantidadAnterior = stock.Quantity;
+            stock.ApplyMovement(line.Quantity, userId, line.NetUnitCost);
 
-            var movimiento = InventarioMovimiento.Create(
+            var movimiento = StockMovement.Create(
                 tenantId,
                 productoId,
-                line.BodegaId,
-                TipoMovimientoInventario.EntradaCompra,
-                cantidad:            line.Cantidad,
-                cantidadAnterior:    cantidadAnterior,
-                referencia:          notification.NumeroFactura,
-                documentoOrigenId:   notification.CompraFacturaId,
-                documentoOrigenTipo: "CompraFactura",
-                createdBy:           userId,
-                costoUnitario:       line.CostoUnitarioNeto);
+                line.WarehouseId,
+                StockMovementType.PurchaseEntry,
+                quantity:            line.Quantity,
+                previousQuantity:    cantidadAnterior,
+                reference:          notification.InvoiceNumber,
+                sourceDocId:   notification.PurchBillId,
+                sourceDocType: "PurchBill",
+                createdBy: userId,
+                unitCost:       line.NetUnitCost);
 
-            await _inventario.AddMovimientoAsync(movimiento, ct);
+            await _inventario.AddMovementAsync(movimiento, ct);
         }
     }
 }

@@ -16,22 +16,22 @@ namespace ERP.Infrastructure.Persistence.Migrations
         {
             migrationBuilder.DropForeignKey(
                 name: "FK_compra_notas_proveedor_proveedores_proveedor_id",
-                table: "compra_notas_proveedor");
+                table: "compra_notas_Supplier");
 
             migrationBuilder.DropForeignKey(
                 name: "FK_compra_retenciones_emitidas_proveedores_proveedor_id",
                 table: "compra_retenciones_emitidas");
 
             migrationBuilder.DropForeignKey(
-                name: "FK_transferencias_bodegas_bodega_destino_id",
+                name: "FK_transferencias_Warehouses_Warehouse_destino_id",
                 table: "transferencias");
 
             migrationBuilder.DropForeignKey(
-                name: "FK_transferencias_bodegas_bodega_origen_id",
+                name: "FK_transferencias_Warehouses_Warehouse_origen_id",
                 table: "transferencias");
 
             migrationBuilder.DropForeignKey(
-                name: "FK_ventas_facturas_bodegas_bodega_id",
+                name: "FK_ventas_facturas_Warehouses_Warehouse_id",
                 table: "ventas_facturas");
 
             migrationBuilder.DropPrimaryKey(
@@ -39,15 +39,15 @@ namespace ERP.Infrastructure.Persistence.Migrations
                 table: "proveedores");
 
             migrationBuilder.DropPrimaryKey(
-                name: "PK_bodegas",
-                table: "bodegas");
+                name: "PK_Warehouses",
+                table: "Warehouses");
 
             migrationBuilder.RenameTable(
                 name: "proveedores",
                 newName: "supplier");
 
             migrationBuilder.RenameTable(
-                name: "bodegas",
+                name: "Warehouses",
                 newName: "warehouse");
 
             migrationBuilder.RenameColumn(
@@ -111,12 +111,12 @@ namespace ERP.Infrastructure.Persistence.Migrations
                 newName: "manager");
 
             migrationBuilder.RenameIndex(
-                name: "ix_bodegas_tenant_nombre",
+                name: "ix_Warehouses_tenant_nombre",
                 table: "warehouse",
                 newName: "uq_warehouse_tenant_name");
 
             migrationBuilder.RenameIndex(
-                name: "ix_bodegas_sucursal_id",
+                name: "ix_Warehouses_sucursal_id",
                 table: "warehouse",
                 newName: "ix_warehouse_establishment_id");
 
@@ -1480,7 +1480,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
                     { "12", true, "Exportación de Bienes" },
                     { "13", true, "No aplica" },
                     { "14", true, "Exportación de servicios con domicilio en el exterior" },
-                    { "15", true, "Proveedor directo de exportador de bienes" },
+                    { "15", true, "Supplier directo de exportador de bienes" },
                     { "19", true, "Reembolso de gastos" },
                     { "20", true, "Notas de crédito por devoluciones" }
                 });
@@ -1871,7 +1871,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
             migrationBuilder.AddForeignKey(
                 name: "FK_compra_notas_proveedor_supplier_proveedor_id",
-                table: "compra_notas_proveedor",
+                table: "compra_notas_Supplier",
                 column: "proveedor_id",
                 principalTable: "supplier",
                 principalColumn: "id",
@@ -1886,25 +1886,25 @@ namespace ERP.Infrastructure.Persistence.Migrations
                 onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
-                name: "FK_transferencias_warehouse_bodega_destino_id",
+                name: "FK_transferencias_warehouse_Warehouse_destino_id",
                 table: "transferencias",
-                column: "bodega_destino_id",
+                column: "Warehouse_destino_id",
                 principalTable: "warehouse",
                 principalColumn: "id",
                 onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
-                name: "FK_transferencias_warehouse_bodega_origen_id",
+                name: "FK_transferencias_warehouse_Warehouse_origen_id",
                 table: "transferencias",
-                column: "bodega_origen_id",
+                column: "Warehouse_origen_id",
                 principalTable: "warehouse",
                 principalColumn: "id",
                 onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
-                name: "FK_ventas_facturas_warehouse_bodega_id",
+                name: "FK_ventas_facturas_warehouse_Warehouse_id",
                 table: "ventas_facturas",
-                column: "bodega_id",
+                column: "Warehouse_id",
                 principalTable: "warehouse",
                 principalColumn: "id",
                 onDelete: ReferentialAction.Restrict);
@@ -1915,22 +1915,22 @@ namespace ERP.Infrastructure.Persistence.Migrations
         {
             migrationBuilder.DropForeignKey(
                 name: "FK_compra_notas_proveedor_supplier_proveedor_id",
-                table: "compra_notas_proveedor");
+                table: "compra_notas_Supplier");
 
             migrationBuilder.DropForeignKey(
                 name: "FK_compra_retenciones_emitidas_supplier_proveedor_id",
                 table: "compra_retenciones_emitidas");
 
             migrationBuilder.DropForeignKey(
-                name: "FK_transferencias_warehouse_bodega_destino_id",
+                name: "FK_transferencias_warehouse_Warehouse_destino_id",
                 table: "transferencias");
 
             migrationBuilder.DropForeignKey(
-                name: "FK_transferencias_warehouse_bodega_origen_id",
+                name: "FK_transferencias_warehouse_Warehouse_origen_id",
                 table: "transferencias");
 
             migrationBuilder.DropForeignKey(
-                name: "FK_ventas_facturas_warehouse_bodega_id",
+                name: "FK_ventas_facturas_warehouse_Warehouse_id",
                 table: "ventas_facturas");
 
             migrationBuilder.DropTable(
@@ -2106,7 +2106,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
             migrationBuilder.RenameTable(
                 name: "warehouse",
-                newName: "bodegas");
+                newName: "Warehouses");
 
             migrationBuilder.RenameTable(
                 name: "supplier",
@@ -2114,33 +2114,33 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
             migrationBuilder.RenameColumn(
                 name: "name",
-                table: "bodegas",
+                table: "Warehouses",
                 newName: "nombre");
 
             migrationBuilder.RenameColumn(
                 name: "manager",
-                table: "bodegas",
+                table: "Warehouses",
                 newName: "encargado");
 
             migrationBuilder.RenameColumn(
                 name: "establishment_id",
-                table: "bodegas",
+                table: "Warehouses",
                 newName: "sucursal_id");
 
             migrationBuilder.RenameColumn(
                 name: "address",
-                table: "bodegas",
+                table: "Warehouses",
                 newName: "ubicacion");
 
             migrationBuilder.RenameIndex(
                 name: "uq_warehouse_tenant_name",
-                table: "bodegas",
-                newName: "ix_bodegas_tenant_nombre");
+                table: "Warehouses",
+                newName: "ix_Warehouses_tenant_nombre");
 
             migrationBuilder.RenameIndex(
                 name: "ix_warehouse_establishment_id",
-                table: "bodegas",
-                newName: "ix_bodegas_sucursal_id");
+                table: "Warehouses",
+                newName: "ix_Warehouses_sucursal_id");
 
             migrationBuilder.RenameColumn(
                 name: "phone",
@@ -2204,8 +2204,8 @@ namespace ERP.Infrastructure.Persistence.Migrations
                 oldMaxLength: 49);
 
             migrationBuilder.AddPrimaryKey(
-                name: "PK_bodegas",
-                table: "bodegas",
+                name: "PK_Warehouses",
+                table: "Warehouses",
                 column: "id");
 
             migrationBuilder.AddPrimaryKey(
@@ -2215,7 +2215,7 @@ namespace ERP.Infrastructure.Persistence.Migrations
 
             migrationBuilder.AddForeignKey(
                 name: "FK_compra_notas_proveedor_proveedores_proveedor_id",
-                table: "compra_notas_proveedor",
+                table: "compra_notas_Supplier",
                 column: "proveedor_id",
                 principalTable: "proveedores",
                 principalColumn: "id",
@@ -2230,26 +2230,26 @@ namespace ERP.Infrastructure.Persistence.Migrations
                 onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
-                name: "FK_transferencias_bodegas_bodega_destino_id",
+                name: "FK_transferencias_Warehouses_Warehouse_destino_id",
                 table: "transferencias",
-                column: "bodega_destino_id",
-                principalTable: "bodegas",
+                column: "Warehouse_destino_id",
+                principalTable: "Warehouses",
                 principalColumn: "id",
                 onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
-                name: "FK_transferencias_bodegas_bodega_origen_id",
+                name: "FK_transferencias_Warehouses_Warehouse_origen_id",
                 table: "transferencias",
-                column: "bodega_origen_id",
-                principalTable: "bodegas",
+                column: "Warehouse_origen_id",
+                principalTable: "Warehouses",
                 principalColumn: "id",
                 onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
-                name: "FK_ventas_facturas_bodegas_bodega_id",
+                name: "FK_ventas_facturas_Warehouses_Warehouse_id",
                 table: "ventas_facturas",
-                column: "bodega_id",
-                principalTable: "bodegas",
+                column: "Warehouse_id",
+                principalTable: "Warehouses",
                 principalColumn: "id",
                 onDelete: ReferentialAction.Restrict);
         }

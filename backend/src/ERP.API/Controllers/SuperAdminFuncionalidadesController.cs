@@ -1,4 +1,4 @@
-using ERP.API.Contracts;
+﻿using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.API.Services;
@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore;
 namespace ERP.API.Controllers;
 
 [ApiController]
-[Modulo("SuperAdmin Funcionalidades", "perm:superadmin.funcionalidades.admin", "🧩", null, null, 984, VisibleEnMenu = false, EsSuperAdmin = true)]
-[Route("api/superadmin/funcionalidades")]
+[Modulo("SuperAdmin AppFeatures", "perm:superadmin.AppFeatures.admin", "ðŸ§©", null, null, 984, VisibleEnMenu = false, EsSuperAdmin = true)]
+[Route("api/superadmin/AppFeatures")]
 [Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]
 public sealed class SuperAdminFuncionalidadesController : ControllerBase
@@ -26,7 +26,7 @@ public sealed class SuperAdminFuncionalidadesController : ControllerBase
         _discovery = discovery;
     }
 
-    /// <summary>Sincroniza catálogo desde <c>[Modulo]</c> en controladores/acciones.</summary>
+    /// <summary>Sincroniza catÃ¡logo desde <c>[Modulo]</c> en controladores/acciones.</summary>
     [HttpPost("sincronizar")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Sincronizar(CancellationToken ct)
@@ -36,7 +36,7 @@ public sealed class SuperAdminFuncionalidadesController : ControllerBase
     }
 
     [HttpGet("arbol")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<FuncionalidadArbolDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<AppFeatureArbolDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Arbol(CancellationToken ct)
     {
         static string ExtractFunctionalModuleKey(string? ruta, string? permiso, string? nombre)
@@ -75,38 +75,38 @@ public sealed class SuperAdminFuncionalidadesController : ControllerBase
             _ => 500,
         };
 
-        var rows = await _db.Funcionalidades
+        var rows = await _db.AppFeatures
             .AsNoTracking()
-            .Where(x => x.VisibleEnMenu)
+            .Where(x => x.IsVisibleInMenu)
             .Select(x => new
             {
                 x.Id,
-                x.Nombre,
-                x.Icono,
-                x.Ruta,
-                x.Permiso,
-                x.PadreId,
-                x.Orden,
+                x.Name,
+                x.Icon,
+                x.Path,
+                x.Permission,
+                x.ParentId,
+                x.SortOrder,
             })
             .ToListAsync(ct);
 
         // No usar Dictionary con clave PadreId == null: en runtime puede lanzarse ArgumentNullException
         // y el ExceptionMiddleware la mapea a HTTP 400.
-        List<FuncionalidadArbolDto> BuildTree(Guid? parentId)
+        List<AppFeatureArbolDto> BuildTree(Guid? parentId)
         {
             return rows
-                .Where(x => x.PadreId == parentId)
-                .OrderBy(x => FunctionalModuleRank(ExtractFunctionalModuleKey(x.Ruta, x.Permiso, x.Nombre)))
-                .ThenBy(x => ExtractFunctionalModuleKey(x.Ruta, x.Permiso, x.Nombre))
-                .ThenBy(x => x.Orden)
-                .ThenBy(x => x.Nombre)
-                .Select(x => new FuncionalidadArbolDto
+                .Where(x => x.ParentId == parentId)
+                .OrderBy(x => FunctionalModuleRank(ExtractFunctionalModuleKey(x.Path, x.Permission, x.Name)))
+                .ThenBy(x => ExtractFunctionalModuleKey(x.Path, x.Permission, x.Name))
+                .ThenBy(x => x.SortOrder)
+                .ThenBy(x => x.Name)
+                .Select(x => new AppFeatureArbolDto
                 {
                     Id = x.Id,
-                    Nombre = x.Nombre,
-                    Icono = x.Icono,
-                    Ruta = x.Ruta,
-                    Permiso = x.Permiso,
+                    Name = x.Name,
+                    Icono = x.Icon,
+                    Ruta = x.Path,
+                    Permiso = x.Permission,
                     Hijos = BuildTree(x.Id),
                 })
                 .ToList();
@@ -116,3 +116,6 @@ public sealed class SuperAdminFuncionalidadesController : ControllerBase
         return this.ApiOk(roots);
     }
 }
+
+
+

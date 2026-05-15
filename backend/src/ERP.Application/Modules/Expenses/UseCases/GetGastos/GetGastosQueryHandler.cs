@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Domain.Modules.Expenses.Entities;
@@ -7,48 +7,48 @@ using ERP.Domain.Modules.Expenses.Interfaces;
 namespace ERP.Application.Modules.Expenses.UseCases.GetGastos;
 
 public sealed class GetGastosQueryHandler
-    : IRequestHandler<GetGastosQuery, Result<IReadOnlyList<GastoFacturaDto>>>
+    : IRequestHandler<GetGastosQuery, Result<IReadOnlyList<ExpenseInvoiceDto>>>
 {
-    private readonly IGastoFacturaRepository _repo;
+    private readonly IExpenseInvoiceRepository _repo;
     private readonly ICurrentTenant        _tenant;
 
-    public GetGastosQueryHandler(IGastoFacturaRepository repo, ICurrentTenant tenant)
+    public GetGastosQueryHandler(IExpenseInvoiceRepository repo, ICurrentTenant tenant)
     {
         _repo   = repo;
         _tenant = tenant;
     }
 
-    public async Task<Result<IReadOnlyList<GastoFacturaDto>>> Handle(
+    public async Task<Result<IReadOnlyList<ExpenseInvoiceDto>>> Handle(
         GetGastosQuery query,
         CancellationToken ct)
     {
         var list = await _repo.GetAsync(
             _tenant.TenantId,
-            query.Estado,
-            query.ProveedorId,
-            query.Desde,
-            query.Hasta,
+            query.Status,
+            query.SupplierId,
+            query.DateFrom,
+            query.DateTo,
             query.Search,
             ct);
 
         var dtos = list.Select(ToDto).ToList();
-        return Result<IReadOnlyList<GastoFacturaDto>>.Success(dtos);
+        return Result<IReadOnlyList<ExpenseInvoiceDto>>.Success(dtos);
     }
 
-    private static GastoFacturaDto ToDto(GastoFactura g) => new(
+    private static ExpenseInvoiceDto ToDto(ExpenseInvoice g) => new(
         g.Id,
-        g.ClaveAcceso,
-        g.FechaEmision,
-        g.ProveedorId,
-        g.NumeroFactura,
-        g.Concepto,
-        g.CategoriaGasto,
+        g.AccessKey,
+        g.IssueDate,
+        g.SupplierId,
+        g.InvoiceNumber,
+        g.Concept,
+        g.Category,
         g.Subtotal,
-        g.Impuesto,
+        g.TaxTotal,
         g.Total,
-        g.Estado,
+        g.Status,
         g.XmlPath,
-        g.Observaciones,
-        g.AsientoContableId,
+        g.Notes,
+        g.JournalEntryId,
         g.CreatedAt);
 }

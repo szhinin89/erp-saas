@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Sales.DTOs;
 
@@ -8,9 +8,9 @@ namespace ERP.Application.Sales.UseCases.GetVentasList;
 public sealed record GetVentasListQuery(
     int       PageNumber  = 1,
     int       PageSize    = 20,
-    Guid?     ClienteId   = null,
-    DateTime? FechaDesde  = null,
-    DateTime? FechaHasta  = null,
-    string?   Estado      = null,
+    Guid?     CustomerId  = null,
+    DateTime? DateFrom  = null,
+    DateTime? DateTo  = null,
+    string?   Status      = null,
     string?   Search      = null
 ) : IRequest<Result<VentasPagedResult>>;

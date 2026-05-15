@@ -3,41 +3,38 @@ using ERP.Domain.Modules.Purchasing.Enums;
 
 namespace ERP.Domain.Modules.Purchasing.Interfaces;
 
-public interface ICompraRepository
+public interface IPurchBillRepository
 {
-    Task AddAsync(CompraFactura compra, CancellationToken ct = default);
-    Task<CompraFactura?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
-    Task<CompraFactura?> GetByIdWithDetailsAsync(Guid tenantId, Guid id, CancellationToken ct = default);
-    Task<bool> ExistsClaveAccesoAsync(Guid tenantId, string claveAcceso, CancellationToken ct = default);
-    Task<IReadOnlyList<CompraFactura>> GetAsync(
-        Guid tenantId,
-        EstadoCompra? estado,
-        Guid?        proveedorId,
-        DateTime?    desde,
-        DateTime?    hasta,
-        string?      search,
+    Task AddAsync(PurchBill bill, CancellationToken ct = default);
+    Task<PurchBill?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+    Task<PurchBill?> GetByIdWithLinesAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+    Task<bool> ExistsAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default);
+    Task<IReadOnlyList<PurchBill>> GetAsync(
+        Guid           tenantId,
+        PurchaseStatus? status,
+        Guid?          supplierId,
+        DateTime?      from,
+        DateTime?      to,
+        string?        search,
         CancellationToken ct = default);
 
-    Task<IReadOnlyList<CompraBodegaAsignacion>> GetBodegaAsignacionesByCompraFacturaIdAsync(
-        Guid tenantId,
-        Guid compraFacturaId,
-        CancellationToken ct = default);
+    Task<IReadOnlyList<PurchWarehouseAlloc>> GetWarehouseAllocsByBillIdAsync(
+        Guid tenantId, Guid purchBillId, CancellationToken ct = default);
+    Task AddWarehouseAllocAsync(PurchWarehouseAlloc alloc, CancellationToken ct = default);
 
-    Task AddBodegaAsignacionAsync(CompraBodegaAsignacion asignacion, CancellationToken ct = default);
+    Task AddIssuedRetentionAsync(IssuedRetention retention, CancellationToken ct = default);
+    Task<IssuedRetention?> GetIssuedRetentionByIdWithLinesAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+    Task<IReadOnlyList<IssuedRetention>> GetIssuedRetentionsAsync(Guid tenantId, Guid? supplierId, CancellationToken ct = default);
 
-    Task AddRetencionEmitidaAsync(CompraRetencionEmitida retencion, CancellationToken ct = default);
-    Task<CompraRetencionEmitida?> GetRetencionEmitidaByIdWithDetailsAsync(Guid tenantId, Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<CompraRetencionEmitida>> GetRetencionesEmitidasAsync(Guid tenantId, Guid? proveedorId, CancellationToken ct = default);
-
-    Task AddNotaProveedorAsync(CompraNotaProveedor nota, CancellationToken ct = default);
-    Task<CompraNotaProveedor?> GetNotaProveedorByIdWithDetailsAsync(Guid tenantId, Guid id, CancellationToken ct = default);
-    Task<bool> ExistsNotaProveedorClaveAccesoAsync(Guid tenantId, string claveAcceso, CancellationToken ct = default);
-    Task<IReadOnlyList<CompraNotaProveedor>> GetNotasProveedorAsync(
-        Guid tenantId,
-        Guid? proveedorId,
-        Guid? compraFacturaId,
-        Guid? gastoFacturaId,
-        string? estado,
+    Task AddPurchNoteAsync(PurchNote note, CancellationToken ct = default);
+    Task<PurchNote?> GetPurchNoteByIdWithLinesAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+    Task<bool> ExistsPurchNoteAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default);
+    Task<IReadOnlyList<PurchNote>> GetPurchNotesAsync(
+        Guid    tenantId,
+        Guid?   supplierId,
+        Guid?   purchBillId,
+        Guid?   expenseInvoiceId,
+        string? status,
         CancellationToken ct = default);
 
     Task SaveChangesAsync(CancellationToken ct = default);

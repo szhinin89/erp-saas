@@ -1,10 +1,10 @@
-namespace ERP.Application.Sales.DTOs;
+﻿namespace ERP.Application.Sales.DTOs;
 
 public sealed record VentasNotaListItemDto(
     Guid Id,
     Guid FacturaOriginalId,
     string TipoNota,
-    string Estado,
-    string ClaveAcceso,
+    string    Status,
+    string    AccessKey,
     decimal Total,
-    DateTime FechaEmision);
+    DateTime  IssueDate);

@@ -15,7 +15,7 @@ using Moq;
 namespace ERP.Application.Tests.Inventario;
 
 /// <summary>
-/// Pruebas unitarias de CrearTransferenciaCommandHandler con mocks de IInventarioStockRepository.
+/// Pruebas unitarias de CrearTransferenciaCommandHandler con mocks de IStockRepository.
 /// Verifican la lógica de validación de stock sin tocar la base de datos.
 /// </summary>
 public sealed class CrearTransferenciaCommandHandlerTests
@@ -54,7 +54,7 @@ public sealed class CrearTransferenciaCommandHandlerTests
         var ctx = new TestContext();
         ctx.BodegaOrigenRepo.Setup(x => x.GetByIdAsync(
                 ctx.TenantId, ctx.BodegaOrigenId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Bodega?)null);
+            .ReturnsAsync((Warehouse?)null);
 
         var result = await ctx.Handle(cantidadItem: 1m);
 
@@ -68,7 +68,7 @@ public sealed class CrearTransferenciaCommandHandlerTests
         var ctx = new TestContext();
         ctx.BodegaOrigenRepo.Setup(x => x.GetByIdAsync(
                 ctx.TenantId, ctx.BodegaDestinoId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Bodega?)null);
+            .ReturnsAsync((Warehouse?)null);
 
         var result = await ctx.Handle(cantidadItem: 1m);
 
@@ -101,7 +101,7 @@ public sealed class CrearTransferenciaCommandHandlerTests
         var result = await ctx.Handle(cantidadItem: 3m);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Estado.Should().Be("Borrador");
+        result.Value!.Status.Should().Be("Draft");
         result.Value.NumeroTransferencia.Should().StartWith("TR-");
     }
 
@@ -116,11 +116,11 @@ public sealed class CrearTransferenciaCommandHandlerTests
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.BodegaOrigenId.Should().Be(ctx.BodegaOrigenId);
         result.Value.BodegaDestinoId.Should().Be(ctx.BodegaDestinoId);
-        result.Value.Estado.Should().Be("Borrador");
+        result.Value.Status.Should().Be("Draft");
 
         // Verificar que se guardó en repositorio y se confirmó la transacción
         ctx.TransferenciaRepo.Verify(x => x.AddAsync(
-            It.IsAny<Transferencia>(), It.IsAny<CancellationToken>()), Times.Once);
+            It.IsAny<StockTransfer>(), It.IsAny<CancellationToken>()), Times.Once);
         ctx.UnitOfWork.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         ctx.UnitOfWork.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -139,7 +139,7 @@ public sealed class CrearTransferenciaCommandHandlerTests
         result.IsSuccess.Should().BeTrue(result.Error);
 
         // No debe haberse consultado el stock
-        ctx.StockRepo.Verify(x => x.GetStockByTenantBodegaProductAsync(
+        ctx.StockRepo.Verify(x => x.GetStockAsync(
             It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(),
             It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -154,10 +154,10 @@ public sealed class CrearTransferenciaCommandHandlerTests
         public Guid BodegaDestinoId { get; } = Guid.NewGuid();
         public Guid ProductoId    { get; } = Guid.NewGuid();
 
-        public Mock<ITransferenciaRepository>    TransferenciaRepo { get; } = new();
-        public Mock<IBodegaRepository>           BodegaOrigenRepo  { get; } = new();
+        public Mock<IStockTransferRepository>    TransferenciaRepo { get; } = new();
+        public Mock<IWarehouseRepository>           BodegaOrigenRepo  { get; } = new();
         public Mock<IProductRepository>          ProductRepo       { get; } = new();
-        public Mock<IInventarioStockRepository>  StockRepo         { get; } = new();
+        public Mock<IStockRepository>  StockRepo         { get; } = new();
         public Mock<IUnitOfWork>                 UnitOfWork        { get; } = new();
 
         private readonly Mock<IUserActivityRepository> _activity  = new();
@@ -178,8 +178,8 @@ public sealed class CrearTransferenciaCommandHandlerTests
             _user.SetupGet(x => x.FullName).Returns("Test User");
 
             // Bodegas activas por defecto
-            var origen  = Bodega.Create(TenantId, Guid.NewGuid(), "Bodega Origen",  null, null, UserId);
-            var destino = Bodega.Create(TenantId, Guid.NewGuid(), "Bodega Destino", null, null, UserId);
+            var origen  = Warehouse.Create(TenantId, Guid.NewGuid(), "Bodega Origen",  null, null, UserId);
+            var destino = Warehouse.Create(TenantId, Guid.NewGuid(), "Bodega Destino", null, null, UserId);
 
             BodegaOrigenRepo.Setup(x => x.GetByIdAsync(TenantId, BodegaOrigenId,  It.IsAny<CancellationToken>())).ReturnsAsync(origen);
             BodegaOrigenRepo.Setup(x => x.GetByIdAsync(TenantId, BodegaDestinoId, It.IsAny<CancellationToken>())).ReturnsAsync(destino);
@@ -189,9 +189,9 @@ public sealed class CrearTransferenciaCommandHandlerTests
                 .ReturnsAsync(BuildProducto());
 
             // Secuencial = 1
-            TransferenciaRepo.Setup(x => x.GetNextSecuencialAsync(TenantId, It.IsAny<CancellationToken>()))
+            TransferenciaRepo.Setup(x => x.GetNextSequentialAsync(TenantId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(1);
-            TransferenciaRepo.Setup(x => x.AddAsync(It.IsAny<Transferencia>(), It.IsAny<CancellationToken>()))
+            TransferenciaRepo.Setup(x => x.AddAsync(It.IsAny<StockTransfer>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
             _activity.Setup(x => x.AddAsync(
@@ -202,15 +202,15 @@ public sealed class CrearTransferenciaCommandHandlerTests
         /// <summary>Configura el stock de la bodega origen.</summary>
         public void WithStockOrigen(decimal? cantidad)
         {
-            StockActual? stock = null;
+            CurrentStock? stock = null;
             if (cantidad.HasValue)
             {
-                stock = StockActual.Create(TenantId, ProductoId, BodegaOrigenId, UserId);
+                stock = CurrentStock.Create(TenantId, ProductoId, BodegaOrigenId, UserId);
                 if (cantidad.Value > 0)
-                    stock.AplicarMovimiento(cantidad.Value, UserId);
+                    stock.ApplyMovement(cantidad.Value, UserId);
             }
 
-            StockRepo.Setup(x => x.GetStockByTenantBodegaProductAsync(
+            StockRepo.Setup(x => x.GetStockAsync(
                     TenantId, BodegaOrigenId, ProductoId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(stock);
         }
@@ -244,9 +244,10 @@ public sealed class CrearTransferenciaCommandHandlerTests
             return handler.Handle(
                 new CrearTransferenciaCommand(
                     BodegaOrigenId, BodegaDestinoId,
-                    Motivo: null, Observaciones: null,
+                    Reason: null, Notes: null,
                     Items: [new(ProductoId, cantidadItem)]),
                 CancellationToken.None);
         }
     }
 }
+

@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using ERP.Application.Common;
 using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
@@ -20,19 +20,19 @@ public sealed class KardexService : IKardexService
 {
     private static readonly Guid SyntheticUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
 
-    private readonly IInventarioStockRepository _inventario;
+    private readonly IStockRepository _inventario;
     private readonly IKardexSnapshotRepository _snapshots;
     private readonly IProductRepository _productos;
-    private readonly IBodegaRepository _bodegas;
+    private readonly IWarehouseRepository _bodegas;
     private readonly ICurrentTenant _tenant;
     private readonly KardexOptions _opts;
     private readonly IKardexMaterializedDailySummariesReader _mvReader;
 
     public KardexService(
-        IInventarioStockRepository inventario,
+        IStockRepository inventario,
         IKardexSnapshotRepository snapshots,
         IProductRepository productos,
-        IBodegaRepository bodegas,
+        IWarehouseRepository bodegas,
         ICurrentTenant tenant,
         IOptions<KardexOptions> options,
         IKardexMaterializedDailySummariesReader mvReader)
@@ -57,19 +57,19 @@ public sealed class KardexService : IKardexService
     private async Task<Result<KardexResponse>> GenerarInternalAsync(
         Guid tenantId, GetKardexQuery query, CancellationToken ct)
     {
-        var producto = await _productos.GetByIdAsync(query.ProductoId, tenantId, ct);
+        var producto = await _productos.GetByIdAsync(query.ProductId, tenantId, ct);
         if (producto is null)
             return Result<KardexResponse>.Failure("Producto no encontrado.");
 
-        var bodega = await _bodegas.GetByIdAsync(tenantId, query.BodegaId, ct);
-        if (bodega is null)
-            return Result<KardexResponse>.Failure("Bodega no encontrada.");
+        var Warehouse = await _bodegas.GetByIdAsync(tenantId, query.WarehouseId, ct);
+        if (Warehouse is null)
+            return Result<KardexResponse>.Failure("Warehouse no encontrada.");
 
-        DateTime? desdeUtc = query.FechaInicio.HasValue
-            ? DateTime.SpecifyKind(query.FechaInicio.Value.Date, DateTimeKind.Utc)
+        DateTime? desdeUtc = query.DateFrom.HasValue
+            ? DateTime.SpecifyKind(query.DateFrom.Value.Date, DateTimeKind.Utc)
             : null;
-        DateTime? hastaUtc = query.FechaFin.HasValue
-            ? DateTime.SpecifyKind(query.FechaFin.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc)
+        DateTime? hastaUtc = query.DateTo.HasValue
+            ? DateTime.SpecifyKind(query.DateTo.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Utc)
             : null;
 
         decimal saldoCantidad = 0m;
@@ -81,40 +81,40 @@ public sealed class KardexService : IKardexService
             var anteriorAlPeriodo = desdeUtc.Value.AddTicks(-1);
             var snapshot = _opts.UseScalableMode
                 ? await _snapshots.GetLatestBeforeAsync(
-                    tenantId, query.ProductoId, query.BodegaId, anteriorAlPeriodo, ct)
+                    tenantId, query.ProductId, query.WarehouseId, anteriorAlPeriodo, ct)
                 : null;
 
             if (snapshot is not null)
             {
-                saldoCantidad = snapshot.CantidadSaldo;
-                saldoValor    = snapshot.ValorSaldo;
-                costoPromedio = snapshot.CostoPromedio;
+                saldoCantidad = snapshot.BalanceQty;
+                saldoValor    = snapshot.BalanceValue;
+                costoPromedio = snapshot.AverageCost;
 
-                var gapDesde = snapshot.FechaSnapshot.AddDays(1);
+                var gapDesde = snapshot.SnapshotDate.AddDays(1);
                 if (gapDesde < desdeUtc.Value)
                 {
                     (saldoCantidad, saldoValor, costoPromedio) = await AplicarHuecoSnapshotAsync(
-                        tenantId, query.ProductoId, query.BodegaId,
+                        tenantId, query.ProductId, query.WarehouseId,
                         gapDesde, anteriorAlPeriodo,
                         saldoCantidad, saldoValor, costoPromedio, ct);
                 }
             }
             else
             {
-                var previos = await _inventario.GetMovimientosAsync(
-                    tenantId, query.ProductoId, query.BodegaId,
+                var previos = await _inventario.GetMovementsAsync(
+                    tenantId, query.ProductId, query.WarehouseId,
                     null, anteriorAlPeriodo, ct);
 
                 foreach (var m in previos)
-                    KardexCalculator.AplicarMovimiento(m, ref saldoCantidad, ref saldoValor, ref costoPromedio);
+                    KardexCalculator.ApplyMovement(m, ref saldoCantidad, ref saldoValor, ref costoPromedio);
             }
         }
 
         var inventarioInicialCantidad = saldoCantidad;
         var inventarioInicialValor    = saldoValor;
 
-        var movimientos = await _inventario.GetMovimientosAsync(
-            tenantId, query.ProductoId, query.BodegaId, desdeUtc, hastaUtc, ct);
+        var movimientos = await _inventario.GetMovementsAsync(
+            tenantId, query.ProductId, query.WarehouseId, desdeUtc, hastaUtc, ct);
 
         var rows = new List<MovimientoKardexDto>(movimientos.Count);
 
@@ -123,10 +123,10 @@ public sealed class KardexService : IKardexService
             decimal entradaCant = 0m, entradaValor = 0m;
             decimal salidaCant  = 0m, salidaValor  = 0m;
 
-            if (m.Cantidad > 0)
+            if (m.Quantity > 0)
             {
-                entradaCant  = m.Cantidad;
-                var costoEntrada = m.CostoUnitario ?? 0m;
+                entradaCant  = m.Quantity;
+                var costoEntrada = m.UnitCost ?? 0m;
                 entradaValor = entradaCant * costoEntrada;
 
                 saldoValor    += entradaValor;
@@ -135,7 +135,7 @@ public sealed class KardexService : IKardexService
             }
             else
             {
-                salidaCant  = -m.Cantidad;
+                salidaCant  = -m.Quantity;
                 salidaValor = salidaCant * costoPromedio;
 
                 saldoCantidad -= salidaCant;
@@ -145,8 +145,8 @@ public sealed class KardexService : IKardexService
 
             rows.Add(new MovimientoKardexDto(
                 Fecha:                m.CreatedAt,
-                TipoMovimiento:       DescripcionTipo(m.TipoMovimiento.ToString()),
-                Referencia:           m.Referencia,
+                MovementType:  DescripcionTipo(m.MovementType.ToString()),
+                Referencia:           m.Reference,
                 EntradaCantidad:      entradaCant,
                 EntradaValor:         Math.Round(entradaValor, 6),
                 SalidaCantidad:       salidaCant,
@@ -169,7 +169,7 @@ public sealed class KardexService : IKardexService
 
         return Result<KardexResponse>.Success(new KardexResponse(
             new KardexProductoDto(producto.Id, producto.ShortName, producto.SaleCode),
-            new KardexBodegaDto(bodega.Id, bodega.Nombre),
+            new KardexBodegaDto(Warehouse.Id, Warehouse.Name),
             rows,
             resumen));
     }
@@ -220,7 +220,7 @@ public sealed class KardexService : IKardexService
 
                 if (mvRows is { Count: > 0 })
                 {
-                    foreach (var row in mvRows.OrderBy(r => r.Fecha))
+                    foreach (var row in mvRows.OrderBy(r => r.Date))
                     {
                         (saldoCantidad, saldoValor, costoPromedio) = AplicarAgregadoMvDia(
                             row, tenantId, productoId, bodegaId,
@@ -272,10 +272,10 @@ public sealed class KardexService : IKardexService
         decimal saldoCantidad, decimal saldoValor, decimal costoPromedio,
         CancellationToken ct)
     {
-        var movs = await _inventario.GetMovimientosAsync(
+        var movs = await _inventario.GetMovementsAsync(
             tenantId, productoId, bodegaId, desdeUtc, hastaUtc, ct);
         foreach (var m in movs)
-            KardexCalculator.AplicarMovimiento(m, ref saldoCantidad, ref saldoValor, ref costoPromedio);
+            KardexCalculator.ApplyMovement(m, ref saldoCantidad, ref saldoValor, ref costoPromedio);
 
         return (saldoCantidad, saldoValor, costoPromedio);
     }
@@ -285,33 +285,33 @@ public sealed class KardexService : IKardexService
         Guid tenantId, Guid productoId, Guid bodegaId,
         decimal saldoCantidad, decimal saldoValor, decimal costoPromedio)
     {
-        if (row.EntradasCantidad > 0m)
+        if (row.EntryQty > 0m)
         {
-            var costoUnit = row.EntradasValor / row.EntradasCantidad;
-            var m = InventarioMovimiento.Create(
+            var costoUnit = row.EntryValue / row.EntryQty;
+            var m = StockMovement.Create(
                 tenantId, productoId, bodegaId,
-                TipoMovimientoInventario.EntradaCompra,
-                row.EntradasCantidad,
+                StockMovementType.PurchaseEntry,
+                row.EntryQty,
                 saldoCantidad,
-                $"MV día {row.Fecha:O}",
+                $"MV día {row.Date:O}",
                 null, null,
                 SyntheticUserId,
                 costoUnit);
-            KardexCalculator.AplicarMovimiento(m, ref saldoCantidad, ref saldoValor, ref costoPromedio);
+            KardexCalculator.ApplyMovement(m, ref saldoCantidad, ref saldoValor, ref costoPromedio);
         }
 
-        if (row.SalidasCantidad > 0m)
+        if (row.ExitQty > 0m)
         {
-            var m = InventarioMovimiento.Create(
+            var m = StockMovement.Create(
                 tenantId, productoId, bodegaId,
-                TipoMovimientoInventario.SalidaVenta,
-                -row.SalidasCantidad,
+                StockMovementType.SaleExit,
+                -row.ExitQty,
                 saldoCantidad,
-                $"MV día {row.Fecha:O}",
+                $"MV día {row.Date:O}",
                 null, null,
                 SyntheticUserId,
                 null);
-            KardexCalculator.AplicarMovimiento(m, ref saldoCantidad, ref saldoValor, ref costoPromedio);
+            KardexCalculator.ApplyMovement(m, ref saldoCantidad, ref saldoValor, ref costoPromedio);
         }
 
         return (saldoCantidad, saldoValor, costoPromedio);
@@ -323,10 +323,11 @@ public sealed class KardexService : IKardexService
         "SalidaVenta"          => "Venta",
         "AjustePositivo"       => "Ajuste (+)",
         "AjusteNegativo"       => "Ajuste (-)",
-        "TransferenciaEntrada" => "Transferencia entrada",
-        "TransferenciaSalida"  => "Transferencia salida",
+        "TransferenciaEntrada" => "transfer entrada",
+        "TransferenciaSalida"  => "transfer salida",
         "DevolucionCompra"     => "Devolución compra",
         "DevolucionVenta"      => "Devolución venta",
         _                      => tipo,
     };
 }
+

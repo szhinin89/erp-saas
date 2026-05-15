@@ -1,38 +1,33 @@
-namespace ERP.Application.Sales.Helpers;
+﻿namespace ERP.Application.Sales.Helpers;
 
-/// <summary>
-/// Genera la clave de acceso de 49 dígitos exigida por el SRI Ecuador (XSD v1.1.0).
-/// Formato: ddMMyyyy(8) + TipoDoc(2) + RUC(13) + Ambiente(1) + Estab(3) + PtoEmi(3) + Secuencial(9) + CodNum(8) + TipoEmision(1) + Verificador(1)
-/// </summary>
 public static class ClaveAccesoHelper
 {
     public static string Generar(
-        string   rucEmpresa,
-        int      ambiente,
-        string   establecimiento,
-        string   puntoEmision,
-        int      tipoEmision,
-        string   secuencial,
-        DateTime fechaEmision,
-        string   tipoDocumento = "01")
+        string   ruc,
+        int      environment,
+        string   estabCode,
+        string   emPointCode,
+        int      emissionType,
+        string   sequential,
+        DateTime issueDate,
+        string   docType = "01")
     {
-        var fechaStr       = fechaEmision.ToString("ddMMyyyy");
-        var ruc            = rucEmpresa.PadLeft(13, '0');
-        var estab          = establecimiento.PadLeft(3, '0');
-        var pto            = puntoEmision.PadLeft(3, '0');
+        var fechaStr       = issueDate.ToString("ddMMyyyy");
+        var rucPadded      = ruc.PadLeft(13, '0');
+        var estab          = estabCode.PadLeft(3, '0');
+        var pto            = emPointCode.PadLeft(3, '0');
         var codigoNumerico = GenerarCodigoNumerico();
 
-        var clave48 = $"{fechaStr}{tipoDocumento}{ruc}{ambiente}{estab}{pto}{secuencial}{codigoNumerico}{tipoEmision}";
+        var clave48 = $"{fechaStr}{docType}{rucPadded}{environment}{estab}{pto}{sequential}{codigoNumerico}{emissionType}";
 
         var digito = CalcularDigitoVerificador(clave48);
         return $"{clave48}{digito}";
     }
 
-    /// <summary>Módulo 11 según ficha técnica SRI Ecuador.</summary>
     public static int CalcularDigitoVerificador(string clave48Digitos)
     {
         if (clave48Digitos.Length != 48)
-            throw new ArgumentException($"La clave debe tener exactamente 48 dígitos (recibidos: {clave48Digitos.Length}).", nameof(clave48Digitos));
+            throw new ArgumentException($"La clave debe tener exactamente 48 digitos (recibidos: {clave48Digitos.Length}).", nameof(clave48Digitos));
 
         var pesos = new[] { 2, 3, 4, 5, 6, 7 };
         var suma  = 0;
@@ -46,3 +41,4 @@ public static class ClaveAccesoHelper
     private static string GenerarCodigoNumerico()
         => Random.Shared.Next(10_000_000, 99_999_999).ToString();
 }
+

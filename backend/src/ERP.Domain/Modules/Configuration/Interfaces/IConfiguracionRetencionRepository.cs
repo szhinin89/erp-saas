@@ -2,9 +2,9 @@ using ERP.Domain.Configuration.Entities;
 
 namespace ERP.Domain.Configuration.Interfaces;
 
-public interface IConfiguracionRetencionRepository
+public interface IRetentionSettingsRepository
 {
-    Task<IReadOnlyList<ConfiguracionRetencion>> GetActivosParaProveedorAsync(Guid tenantId, CancellationToken ct = default);
-    Task AddAsync(ConfiguracionRetencion entity, CancellationToken ct = default);
+    Task<IReadOnlyList<RetentionSettings>> GetActiveForSupplierAsync(Guid tenantId, CancellationToken ct = default);
+    Task AddAsync(RetentionSettings entity, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

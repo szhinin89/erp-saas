@@ -1,4 +1,4 @@
-using ERP.Domain.Modules.Purchases.Entities;
+﻿using ERP.Domain.Modules.Purchases.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

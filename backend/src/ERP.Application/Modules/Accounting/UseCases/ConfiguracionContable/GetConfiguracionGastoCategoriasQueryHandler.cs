@@ -1,26 +1,26 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.DTOs;
 using ERP.Domain.Modules.Accounting.Interfaces;
 
 namespace ERP.Application.Modules.Accounting.UseCases.ConfiguracionContable;
 
-public sealed class GetConfiguracionGastoCategoriasQueryHandler
-    : IRequestHandler<GetConfiguracionGastoCategoriasQuery, Result<IReadOnlyList<ConfiguracionGastoCategoriaDto>>>
+public sealed class GetExpenseCategorysQueryHandler
+    : IRequestHandler<GetExpenseCategorysQuery, Result<IReadOnlyList<ExpenseCategoryDto>>>
 {
-    private readonly IConfiguracionContableRepository _repo;
+    private readonly IAccountingSetupRepository _repo;
 
-    public GetConfiguracionGastoCategoriasQueryHandler(IConfiguracionContableRepository repo)
+    public GetExpenseCategorysQueryHandler(IAccountingSetupRepository repo)
     {
         _repo = repo;
     }
 
-    public async Task<Result<IReadOnlyList<ConfiguracionGastoCategoriaDto>>> Handle(
-        GetConfiguracionGastoCategoriasQuery request,
+    public async Task<Result<IReadOnlyList<ExpenseCategoryDto>>> Handle(
+        GetExpenseCategorysQuery request,
         CancellationToken ct)
     {
-        var items = await _repo.GetGastoCategoriasAsync(ct);
-        var dtos = items.Select(g => new ConfiguracionGastoCategoriaDto(g.Id, g.Categoria, g.CuentaGastoId)).ToList();
-        return Result<IReadOnlyList<ConfiguracionGastoCategoriaDto>>.Success(dtos);
+        var items = await _repo.GetExpenseCategoriesAsync(ct);
+        var dtos = items.Select(g => new ExpenseCategoryDto(g.Id, g.Category, g.ExpenseAccountId)).ToList();
+        return Result<IReadOnlyList<ExpenseCategoryDto>>.Success(dtos);
     }
 }

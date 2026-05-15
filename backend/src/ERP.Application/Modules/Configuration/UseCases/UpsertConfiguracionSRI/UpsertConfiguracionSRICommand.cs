@@ -1,21 +1,21 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Configuration.DTOs;
 
-namespace ERP.Application.Configuration.UseCases.UpsertConfiguracionSRI;
+namespace ERP.Application.Configuration.UseCases.UpsertSriSettings;
 
 public sealed record UpsertConfiguracionSRICommand(
-    string  RucEmpresa,
-    string  RazonSocial,
-    string? NombreComercial,
-    string  DireccionMatriz,
-    bool    ObligadoContabilidad,
-    string? ContribuyenteEspecial,
-    string  Establecimiento,
-    string  PuntoEmision,
-    string  CertificadoP12Path,
-    string  CertificadoPassword,
-    int     Ambiente,
-    int     TipoEmision,
-    string  UrlSriAutorizacion
+    string  Ruc,
+    string  LegalName,
+    string? TradeName,
+    string  MainAddress,
+    bool    RequiresAccounting,
+    string? SpecialTaxpayer,
+    string  EstabCode,
+    string  EmPointCode,
+    string  CertP12Path,
+    string  CertPassword,
+    int     Environment,
+    int     EmissionType,
+    string  WsdlUrl
 ) : IRequest<Result<ConfiguracionSRIDto>>;

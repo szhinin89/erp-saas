@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -15,8 +15,8 @@ namespace ERP.Application.Inventory.UseCases.ConfirmarTransferencia;
 public sealed class ConfirmarTransferenciaCommandHandler
     : IRequestHandler<ConfirmarTransferenciaCommand, Result<TransferenciaDto>>
 {
-    private readonly ITransferenciaRepository   _transferenciaRepo;
-    private readonly IInventarioStockRepository _inventario;
+    private readonly IStockTransferRepository   _transferenciaRepo;
+    private readonly IStockRepository _inventario;
     private readonly ICostoPromedioService      _costoServicio;
     private readonly IProductRepository         _productRepo;
     private readonly IUserActivityRepository    _activity;
@@ -26,8 +26,8 @@ public sealed class ConfirmarTransferenciaCommandHandler
     private readonly ILogger<ConfirmarTransferenciaCommandHandler> _logger;
 
     public ConfirmarTransferenciaCommandHandler(
-        ITransferenciaRepository transferenciaRepo,
-        IInventarioStockRepository inventario,
+        IStockTransferRepository transferenciaRepo,
+        IStockRepository inventario,
         ICostoPromedioService costoServicio,
         IProductRepository productRepo,
         IUserActivityRepository activity,
@@ -53,120 +53,120 @@ public sealed class ConfirmarTransferenciaCommandHandler
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
-        var transferencia = await _transferenciaRepo.GetByIdAsync(tenantId, command.TransferenciaId, ct);
-        if (transferencia is null)
-            return Result<TransferenciaDto>.Failure("Transferencia no encontrada.");
+        var transfer = await _transferenciaRepo.GetByIdAsync(tenantId, command.TransferenciaId, ct);
+        if (transfer is null)
+            return Result<TransferenciaDto>.Failure("transfer no encontrada.");
 
-        if (transferencia.Estado != "Borrador")
+        if (transfer.Status != "Borrador")
             return Result<TransferenciaDto>.Failure(
-                $"Solo se puede confirmar una transferencia en Borrador (estado actual: {transferencia.Estado}).");
+                $"Solo se puede confirmar una transfer en Borrador (estado actual: {transfer.Status}).");
 
-        if (transferencia.Detalles.Count == 0)
-            return Result<TransferenciaDto>.Failure("La transferencia no tiene ítems.");
+        if (transfer.Lines.Count == 0)
+            return Result<TransferenciaDto>.Failure("La transfer no tiene ítems.");
 
         _logger.LogInformation(
-            "Confirmando transferencia {Numero} ({Id}): {Count} ítems",
-            transferencia.NumeroTransferencia, transferencia.Id, transferencia.Detalles.Count);
+            "Confirmando transfer {Numero} ({Id}): {Count} ítems",
+            transfer.TransferNumber, transfer.Id, transfer.Lines.Count);
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            foreach (var detalle in transferencia.Detalles)
+            foreach (var detalle in transfer.Lines)
             {
-                var producto = await _productRepo.GetByIdAsync(detalle.ProductoId, tenantId, ct);
+                var producto = await _productRepo.GetByIdAsync(detalle.ProductId, tenantId, ct);
                 if (producto is not null && (producto.IsService || !producto.TracksStock))
                     continue;
 
-                // Obtener el costo promedio actual de la bodega ORIGEN antes del decremento.
+                // Obtener el costo promedio actual de la Warehouse ORIGEN antes del decremento.
                 // Se usa para valorizar la salida y la entrada en destino con el mismo costo.
                 var costoPromedio = await _costoServicio.ObtenerCostoPromedioAsync(
-                    tenantId, detalle.ProductoId, transferencia.BodegaOrigenId, ct);
+                    tenantId, detalle.ProductId, transfer.SourceWarehouseId, ct);
 
-                // ── Decremento atómico en bodega ORIGEN ───────────────────────
-                var cantAnteriorOrigen = await _inventario.DecrementarStockAtomicoAsync(
-                    tenantId, transferencia.BodegaOrigenId, detalle.ProductoId,
-                    detalle.Cantidad, userId, ct, costoPromedio);
+                // ── Decremento atómico en Warehouse ORIGEN ───────────────────────
+                var cantAnteriorOrigen = await _inventario.DecrementStockAtomicAsync(
+                    tenantId, transfer.SourceWarehouseId, detalle.ProductId,
+                    detalle.Quantity, userId, ct, costoPromedio);
 
                 if (cantAnteriorOrigen is null)
                 {
                     await _unitOfWork.RollbackAsync(ct);
                     _logger.LogWarning(
                         "Stock insuficiente (posiblemente por concurrencia): producto={Pid}, solicitado={S}",
-                        detalle.ProductoId, detalle.Cantidad);
+                        detalle.ProductId, detalle.Quantity);
                     return Result<TransferenciaDto>.Failure(
-                        $"Stock insuficiente para '{detalle.Descripcion}' en la bodega origen. " +
+                        $"Stock insuficiente para '{detalle.Description}' en la Warehouse origen. " +
                         $"El saldo pudo haber sido modificado por otra operación concurrente.");
                 }
 
-                await _inventario.AddMovimientoAsync(
-                    InventarioMovimiento.Create(
-                        tenantId, detalle.ProductoId, transferencia.BodegaOrigenId,
-                        TipoMovimientoInventario.TransferenciaSalida,
-                        cantidad:            -detalle.Cantidad,
-                        cantidadAnterior:    cantAnteriorOrigen.Value,
-                        referencia:          transferencia.NumeroTransferencia,
-                        documentoOrigenId:   transferencia.Id,
-                        documentoOrigenTipo: "Transferencia",
-                        createdBy:           userId,
-                        costoUnitario:       costoPromedio),
+                await _inventario.AddMovementAsync(
+                    StockMovement.Create(
+                        tenantId, detalle.ProductId, transfer.SourceWarehouseId,
+                        StockMovementType.TransferExit,
+                        quantity:            -detalle.Quantity,
+                        previousQuantity:    cantAnteriorOrigen.Value,
+                        reference:          transfer.TransferNumber,
+                        sourceDocId:   transfer.Id,
+                        sourceDocType: "transfer",
+                        createdBy: userId,
+                        unitCost:       costoPromedio),
                     ct);
 
-                // ── Incremento atómico en bodega DESTINO ──────────────────────
-                var cantAnteriorDestino = await _inventario.IncrementarStockAtomicoAsync(
-                    tenantId, transferencia.BodegaDestinoId, detalle.ProductoId,
-                    detalle.Cantidad, userId, ct, costoPromedio);
+                // ── Incremento atómico en Warehouse DESTINO ──────────────────────
+                var cantAnteriorDestino = await _inventario.IncrementStockAtomicAsync(
+                    tenantId, transfer.TargetWarehouseId, detalle.ProductId,
+                    detalle.Quantity, userId, ct, costoPromedio);
 
-                await _inventario.AddMovimientoAsync(
-                    InventarioMovimiento.Create(
-                        tenantId, detalle.ProductoId, transferencia.BodegaDestinoId,
-                        TipoMovimientoInventario.TransferenciaEntrada,
-                        cantidad:            +detalle.Cantidad,
-                        cantidadAnterior:    cantAnteriorDestino,
-                        referencia:          transferencia.NumeroTransferencia,
-                        documentoOrigenId:   transferencia.Id,
-                        documentoOrigenTipo: "Transferencia",
-                        createdBy:           userId,
-                        costoUnitario:       costoPromedio),
+                await _inventario.AddMovementAsync(
+                    StockMovement.Create(
+                        tenantId, detalle.ProductId, transfer.TargetWarehouseId,
+                        StockMovementType.TransferEntry,
+                        quantity:            +detalle.Quantity,
+                        previousQuantity:    cantAnteriorDestino,
+                        reference:          transfer.TransferNumber,
+                        sourceDocId:   transfer.Id,
+                        sourceDocType: "transfer",
+                        createdBy: userId,
+                        unitCost:       costoPromedio),
                     ct);
             }
 
-            transferencia.Confirmar(userId);
+            transfer.Confirm(userId);
 
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _currentUser.Email, _currentUser.FullName,
-                module: "inventario", action: "transferencia.confirmar",
-                entityType: "Transferencia", entityId: transferencia.Id,
-                description: transferencia.NumeroTransferencia), ct);
+                module: "inventario", action: "transfer.confirmar",
+                entityType: "transfer", entityId: transfer.Id,
+                description: transfer.TransferNumber), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
 
             _logger.LogInformation(
-                "Transferencia confirmada: {Numero} ({Id})",
-                transferencia.NumeroTransferencia, transferencia.Id);
+                "transfer confirmada: {Numero} ({Id})",
+                transfer.TransferNumber, transfer.Id);
 
             return Result<TransferenciaDto>.Success(new TransferenciaDto(
-                transferencia.Id, transferencia.NumeroTransferencia,
-                transferencia.BodegaOrigenId,
-                transferencia.BodegaOrigen?.Nombre ?? transferencia.BodegaOrigenId.ToString(),
-                transferencia.BodegaDestinoId,
-                transferencia.BodegaDestino?.Nombre ?? transferencia.BodegaDestinoId.ToString(),
-                transferencia.FechaTransferencia, transferencia.Estado,
-                transferencia.Motivo, transferencia.Observaciones,
-                transferencia.FechaConfirmacion, transferencia.ConfirmadoPor,
-                transferencia.CreatedAt));
+                transfer.Id, transfer.TransferNumber,
+                transfer.SourceWarehouseId,
+                transfer.SourceWarehouse?.Name ?? transfer.SourceWarehouseId.ToString(),
+                transfer.TargetWarehouseId,
+                transfer.TargetWarehouse?.Name ?? transfer.TargetWarehouseId.ToString(),
+                transfer.TransferDate, transfer.Status,
+                transfer.Reason, transfer.Notes,
+                transfer.ConfirmedAt, transfer.ConfirmedBy,
+                transfer.CreatedAt));
         }
         catch (InvalidOperationException ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogWarning(ex, "Error de negocio al confirmar transferencia {Id}", command.TransferenciaId);
+            _logger.LogWarning(ex, "Error de negocio al confirmar transfer {Id}", command.TransferenciaId);
             return Result<TransferenciaDto>.Failure(ex.Message);
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error inesperado al confirmar transferencia {Id}", command.TransferenciaId);
-            return Result<TransferenciaDto>.Failure($"Error al confirmar la transferencia: {ex.Message}");
+            _logger.LogError(ex, "Error inesperado al confirmar transfer {Id}", command.TransferenciaId);
+            return Result<TransferenciaDto>.Failure($"Error al confirmar la transfer: {ex.Message}");
         }
     }
 }

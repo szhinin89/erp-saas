@@ -6,11 +6,11 @@ namespace ERP.Application.Modules.Purchasing.UseCases.CrearProveedor;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
 public sealed record CreateProveedorCommand(
-    string  TipoPersona,
-    string  RazonSocial,
+    string  PersonType,
+    string  LegalName,
     string  Ruc,
-    string? Correo,
-    string? Telefono,
-    string? Direccion,
-    string  CondicionPago
+    string? Email,
+    string? Phone,
+    string? Address,
+    string  PaymentTerms
 ) : IRequest<Result<ProveedorDto>>;

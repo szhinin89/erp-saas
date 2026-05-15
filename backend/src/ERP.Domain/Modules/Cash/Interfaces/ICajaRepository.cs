@@ -2,28 +2,26 @@ using ERP.Domain.Modules.Cash.Entities;
 
 namespace ERP.Domain.Modules.Cash.Interfaces;
 
-public interface ICajaRepository
+public interface ICashRepository
 {
-    Task<CuentaBancaria?> GetCuentaBancariaByIdAsync(Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<CuentaBancaria>> ListCuentasBancariasAsync(CancellationToken ct = default);
-    Task AddCuentaBancariaAsync(CuentaBancaria entity, CancellationToken ct = default);
+    Task<BankAccount?> GetBankAccountByIdAsync(Guid id, CancellationToken ct = default);
+    Task<IReadOnlyList<BankAccount>> ListBankAccountsAsync(CancellationToken ct = default);
+    Task AddBankAccountAsync(BankAccount entity, CancellationToken ct = default);
 
-    Task<ExtractoBancario?> GetExtractoByIdAsync(Guid id, CancellationToken ct = default);
-    Task<ExtractoBancario?> GetExtractoWithMovimientosAsync(Guid id, CancellationToken ct = default);
+    Task<BankStatement?> GetBankStatementByIdAsync(Guid id, CancellationToken ct = default);
+    Task<BankStatement?> GetBankStatementWithTransactionsAsync(Guid id, CancellationToken ct = default);
+    Task<BankStatement?> GetBankStatementForTransactionAsync(Guid transactionId, CancellationToken ct = default);
+    Task<IReadOnlyList<BankStatement>> ListStatementsByAccountAsync(Guid bankAccountId, CancellationToken ct = default);
+    Task AddBankStatementAsync(BankStatement entity, CancellationToken ct = default);
 
-    /// <summary>Carga el extracto con movimientos rastreados, localizando por id de movimiento.</summary>
-    Task<ExtractoBancario?> GetExtractoWithMovimientosForMovimientoAsync(Guid movimientoId, CancellationToken ct = default);
-    Task<IReadOnlyList<ExtractoBancario>> ListExtractosByCuentaAsync(Guid cuentaBancariaId, CancellationToken ct = default);
-    Task AddExtractoAsync(ExtractoBancario entity, CancellationToken ct = default);
+    Task<BankTransaction?> GetBankTransactionByIdAsync(Guid id, CancellationToken ct = default);
 
-    Task<MovimientoBancario?> GetMovimientoByIdAsync(Guid id, CancellationToken ct = default);
+    Task<PettyCash?> GetPettyCashByIdAsync(Guid id, CancellationToken ct = default);
+    Task<IReadOnlyList<PettyCash>> ListPettyCashesAsync(CancellationToken ct = default);
+    Task AddPettyCashAsync(PettyCash entity, CancellationToken ct = default);
 
-    Task<CajaChica?> GetCajaChicaByIdAsync(Guid id, CancellationToken ct = default);
-    Task<IReadOnlyList<CajaChica>> ListCajasChicasAsync(CancellationToken ct = default);
-    Task AddCajaChicaAsync(CajaChica entity, CancellationToken ct = default);
-
-    Task AddArqueoAsync(ArqueoCaja entity, CancellationToken ct = default);
-    Task<ArqueoCaja?> GetArqueoByIdAsync(Guid id, CancellationToken ct = default);
-    Task AddGastoCajaAsync(GastoCajaChica entity, CancellationToken ct = default);
-    Task<IReadOnlyList<GastoCajaChica>> ListGastosCajaAsync(Guid cajaChicaId, CancellationToken ct = default);
+    Task AddCashCountAsync(CashCount entity, CancellationToken ct = default);
+    Task<CashCount?> GetCashCountByIdAsync(Guid id, CancellationToken ct = default);
+    Task AddPettyCashExpenseAsync(PettyCashExpense entity, CancellationToken ct = default);
+    Task<IReadOnlyList<PettyCashExpense>> ListPettyCashExpensesAsync(Guid pettyCashId, CancellationToken ct = default);
 }

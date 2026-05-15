@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.DTOs;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -6,32 +6,32 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 namespace ERP.Application.Modules.Accounting.UseCases.ConfiguracionContable;
 
 public sealed class GetConfiguracionContableQueryHandler
-    : IRequestHandler<GetConfiguracionContableQuery, Result<ConfiguracionContableEmpresaDto?>>
+    : IRequestHandler<GetConfiguracionContableQuery, Result<AccountingSetupDto?>>
 {
-    private readonly IConfiguracionContableRepository _repo;
+    private readonly IAccountingSetupRepository _repo;
 
-    public GetConfiguracionContableQueryHandler(IConfiguracionContableRepository repo)
+    public GetConfiguracionContableQueryHandler(IAccountingSetupRepository repo)
     {
         _repo = repo;
     }
 
-    public async Task<Result<ConfiguracionContableEmpresaDto?>> Handle(
+    public async Task<Result<AccountingSetupDto?>> Handle(
         GetConfiguracionContableQuery request,
         CancellationToken ct)
     {
-        var e = await _repo.GetConfiguracionEmpresaAsync(ct);
+        var e = await _repo.GetSetupAsync(ct);
         if (e is null)
-            return Result<ConfiguracionContableEmpresaDto?>.Success(null);
+            return Result<AccountingSetupDto?>.Success(null);
 
-        return Result<ConfiguracionContableEmpresaDto?>.Success(new ConfiguracionContableEmpresaDto(
-            e.CuentaInventarioId,
-            e.CuentaCostoVentaId,
-            e.CuentaProveedoresId,
-            e.CuentaVentasId,
-            e.CuentaClientesId,
-            e.CuentaIvaComprasId,
-            e.CuentaIvaVentasId,
-            e.CuentaEfectivoId,
-            e.CuentaBancoId));
+        return Result<AccountingSetupDto?>.Success(new AccountingSetupDto(
+            e.InventoryAccountId,
+            e.CostOfSalesAccountId,
+            e.SuppliersAccountId,
+            e.SalesAccountId,
+            e.CustomersAccountId,
+            e.VatPurchasesAccountId,
+            e.VatSalesAccountId,
+            e.CashAccountId,
+            e.BankAccountId));
     }
 }

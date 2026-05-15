@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using ERP.Application.Navigation.DTOs;
 
@@ -93,14 +93,14 @@ public static class SessionMenuJsonParser
         if (children is null)
             return null;
 
-        var nombre = (i.Nombre ?? string.Empty).Trim();
+        var nombre = (i.Name ?? string.Empty).Trim();
         var labelKey = (i.LabelKey ?? string.Empty).Trim();
         var isBuilderShape = string.IsNullOrEmpty(labelKey) && nombre.Length > 0;
 
         if (isBuilderShape)
         {
-            var ruta = (i.Ruta ?? string.Empty).Trim();
-            var permiso = (i.Permiso ?? string.Empty).Trim();
+            var ruta = (i.Path ?? string.Empty).Trim();
+            var permiso = (i.Permission ?? string.Empty).Trim();
             var leaf = ruta.Length > 0 && permiso.Length > 0;
             var folder = ruta.Length == 0 && permiso.Length == 0;
 
@@ -114,7 +114,7 @@ public static class SessionMenuJsonParser
                 ? Guid.NewGuid().ToString("n")[..12]
                 : SanitizeId(i.BuilderId!);
 
-            var icon = FirstNonEmpty(i.Icono, i.Icon);
+            var icon = FirstNonEmpty(i.Icon, i.Icon);
             if (leaf)
             {
                 var lk = $"nav.planLeaf.{SlugPerm(permiso)}";
@@ -154,7 +154,7 @@ public static class SessionMenuJsonParser
         var roles = i.ItemRoles is { Count: > 0 } ? i.ItemRoles : null;
         var routePath = (i.RoutePath ?? string.Empty).Trim();
         var permKey = string.IsNullOrWhiteSpace(i.PermissionKey) ? null : i.PermissionKey.Trim();
-        var iconLegacy = FirstNonEmpty(i.Icono, i.Icon);
+        var iconLegacy = FirstNonEmpty(i.Icon, i.Icon);
         return new SessionMenuItemDto(
             routePath,
             i.LabelKey.Trim(),
@@ -232,16 +232,16 @@ public static class SessionMenuJsonParser
         public string? Icon { get; set; }
 
         [JsonPropertyName("nombre")]
-        public string? Nombre { get; set; }
+        public string? Name { get; set; }
 
         [JsonPropertyName("icono")]
         public string? Icono { get; set; }
 
         [JsonPropertyName("ruta")]
-        public string? Ruta { get; set; }
+        public string? Path { get; set; }
 
         [JsonPropertyName("permiso")]
-        public string? Permiso { get; set; }
+        public string? Permission { get; set; }
 
         [JsonPropertyName("hijos")]
         public List<MenuItemJson>? Hijos { get; set; }

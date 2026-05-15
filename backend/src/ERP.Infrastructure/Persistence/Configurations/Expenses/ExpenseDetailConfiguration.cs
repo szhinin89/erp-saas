@@ -1,4 +1,4 @@
-using ERP.Domain.Modules.Expenses.Entities;
+﻿using ERP.Domain.Modules.Expenses.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

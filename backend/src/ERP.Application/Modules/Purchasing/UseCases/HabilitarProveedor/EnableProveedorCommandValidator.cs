@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.HabilitarProveedor;
 
@@ -8,6 +8,6 @@ public sealed class EnableProveedorCommandValidator : AbstractValidator<EnablePr
     {
         RuleFor(x => x.Id)
             .NotEmpty()
-            .WithMessage("El ID del proveedor es obligatorio.");
+            .WithMessage("El ID del Supplier es obligatorio.");
     }
 }

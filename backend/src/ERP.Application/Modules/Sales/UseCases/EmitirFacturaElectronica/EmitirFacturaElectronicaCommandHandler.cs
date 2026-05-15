@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
@@ -16,8 +16,8 @@ namespace ERP.Application.Sales.UseCases.EmitirFacturaElectronica;
 public sealed class EmitirFacturaElectronicaCommandHandler
     : IRequestHandler<EmitirFacturaElectronicaCommand, Result<Guid>>
 {
-    private readonly IVentasRepository               _ventasRepository;
-    private readonly IConfiguracionSRIRepository     _configSriRepository;
+    private readonly ISalesRepository               _ventasRepository;
+    private readonly ISriSettingsRepository     _configSriRepository;
     private readonly ISriFacturaElectronicaService   _sriService;
     private readonly IFileStorage                    _fileStorage;
     private readonly IAccountingService              _accounting;
@@ -29,8 +29,8 @@ public sealed class EmitirFacturaElectronicaCommandHandler
     private readonly ILogger<EmitirFacturaElectronicaCommandHandler> _logger;
 
     public EmitirFacturaElectronicaCommandHandler(
-        IVentasRepository ventasRepository,
-        IConfiguracionSRIRepository configSriRepository,
+        ISalesRepository ventasRepository,
+        ISriSettingsRepository configSriRepository,
         ISriFacturaElectronicaService sriService,
         IFileStorage fileStorage,
         IAccountingService accounting,
@@ -62,13 +62,13 @@ public sealed class EmitirFacturaElectronicaCommandHandler
         var userId   = _currentUser.UserId;
 
         // 1. Cargar factura con detalles
-        var factura = await _ventasRepository.GetFacturaByIdAsync(tenantId, command.VentaId, ct);
+        var factura = await _ventasRepository.GetBillByIdAsync(tenantId, command.VentaId, ct);
         if (factura is null)
             return Result<Guid>.Failure("Factura de venta no encontrada.");
 
-        if (factura.Estado != "Validado")
+        if (factura.Status != "Validado")
             return Result<Guid>.Failure(
-                $"Solo se puede emitir una factura Validada (estado actual: {factura.Estado}).");
+                $"Solo se puede emitir una factura Validada (estado actual: {factura.Status}).");
 
         // 2. Cargar configuración SRI
         var configSri = await _configSriRepository.GetByTenantIdAsync(tenantId, ct);
@@ -76,7 +76,7 @@ public sealed class EmitirFacturaElectronicaCommandHandler
             return Result<Guid>.Failure("La configuración SRI no está configurada para este tenant.");
 
         // 3. Generar y firmar XML
-        var detalles = factura.Detalles.ToList();
+        var detalles = factura.Lines.ToList();
         string xmlContent;
         byte[] xmlFirmado;
         try
@@ -84,19 +84,19 @@ public sealed class EmitirFacturaElectronicaCommandHandler
             _logger.LogDebug("Generando y firmando XML para factura {FacturaId}", factura.Id);
             xmlContent = await _sriService.GenerarXmlFacturaAsync(factura, detalles, configSri);
             xmlFirmado = await _sriService.FirmarXmlAsync(
-                xmlContent, configSri.CertificadoP12Path, configSri.CertificadoPassword);
+                xmlContent, configSri.CertP12Path, configSri.CertPassword);
         }
         catch (SriCommunicationException ex)
         {
             _logger.LogError(ex, "Error SRI al generar/firmar XML de factura {FacturaId}", factura.Id);
-            factura.MarcarErrorEnvio(userId, ex.Message);
+            factura.Reject(userId, ex.Message);
             await _ventasRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error SRI: {ex.Message}");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error inesperado al generar/firmar XML de factura {FacturaId}", factura.Id);
-            factura.MarcarErrorEnvio(userId, $"Error al generar XML: {ex.Message}");
+            factura.Reject(userId, $"Error al generar XML: {ex.Message}");
             await _ventasRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error al generar XML: {ex.Message}");
         }
@@ -105,30 +105,30 @@ public sealed class EmitirFacturaElectronicaCommandHandler
         SriAutorizacionResponse response;
         try
         {
-            _logger.LogDebug("Enviando XML al SRI para factura {FacturaId} (url={Url})", factura.Id, configSri.UrlSriAutorizacion);
-            response = await _sriService.EnviarAlSriAsync(xmlFirmado, configSri.UrlSriAutorizacion);
+            _logger.LogDebug("Enviando XML al SRI para factura {FacturaId} (url={Url})", factura.Id, configSri.WsdlUrl);
+            response = await _sriService.EnviarAlSriAsync(xmlFirmado, configSri.WsdlUrl);
         }
         catch (SriCommunicationException ex)
         {
             _logger.LogError(ex, "Error de comunicación SRI para factura {FacturaId}", factura.Id);
-            factura.MarcarErrorEnvio(userId, ex.Message);
+            factura.Reject(userId, ex.Message);
             await _ventasRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error SRI: {ex.Message}");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error de red al enviar factura {FacturaId} al SRI", factura.Id);
-            factura.MarcarErrorEnvio(userId, $"Error de comunicación con SRI: {ex.Message}");
+            factura.Reject(userId, $"Error de comunicación con SRI: {ex.Message}");
             await _ventasRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error de red al comunicarse con el SRI: {ex.Message}");
         }
 
         // 5. Respuesta no autorizada
-        if (!response.Autorizada)
+        if (!response.IsAuthorized)
         {
-            var mensajeError = response.MensajeError ?? "SRI rechazó la factura sin indicar motivo.";
+            var mensajeError = response.ErrorMessage ?? "SRI rechazó la factura sin indicar motivo.";
             _logger.LogWarning("SRI rechazó factura {FacturaId}: {Error}", factura.Id, mensajeError);
-            factura.Rechazar(userId, mensajeError);
+            factura.Reject(userId, mensajeError);
             await _ventasRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"El SRI rechazó la factura: {mensajeError}");
         }
@@ -141,7 +141,7 @@ public sealed class EmitirFacturaElectronicaCommandHandler
             await _fileStorage.SaveAsync(xmlGeneradoPath,
                 new MemoryStream(xmlFirmado), ct);
             await _fileStorage.SaveAsync(xmlAutorizacionPath,
-                new MemoryStream(Encoding.UTF8.GetBytes(response.XmlAutorizado)), ct);
+                new MemoryStream(Encoding.UTF8.GetBytes(response.AuthorizedXml)), ct);
         }
         catch (Exception ex)
         {
@@ -151,44 +151,44 @@ public sealed class EmitirFacturaElectronicaCommandHandler
             xmlAutorizacionPath = null;
         }
 
-        // 7. Transacción: asiento + cambio de estado (inventario vía VentaAutorizadaEvent)
+        // 7. Transacción: asiento + cambio de estado (inventario vía SalesBillAuthorizedEvent)
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var numeroFactura = $"{factura.Establecimiento}-{factura.PuntoEmision}-{factura.Secuencial}";
+            var numeroFactura = $"{factura.EstabCode}-{factura.EmPointCode}-{factura.Sequential}";
 
             var asientoResult = await _accounting.CrearAsientoVentaAsync(
-                ventaId:     factura.Id,
-                referencia:  numeroFactura,
-                fecha:       factura.FechaEmision,
+                salesBillId:     factura.Id,
+                reference:  numeroFactura,
+                date:       factura.IssueDate,
                 subtotal:    factura.Subtotal,
-                iva:         factura.Impuesto,
+                vatTotal:         factura.VatTotal,
                 total:       factura.Total,
-                descripcion: $"Venta {numeroFactura} — cliente {factura.ClienteId}",
+                description: $"Venta {numeroFactura} — cliente {factura.CustomerId}",
                 ct);
 
             if (!asientoResult.IsSuccess)
             {
                 await _unitOfWork.RollbackAsync(ct);
-                factura.MarcarErrorEnvio(userId,
+                factura.Reject(userId,
                     $"Autorizado por SRI pero falló el asiento contable: {asientoResult.Error}");
                 await _ventasRepository.SaveChangesAsync(ct);
                 return Result<Guid>.Failure(asientoResult.Error ?? "Error al crear asiento contable.");
             }
 
-            var stockLines = new List<VentaAutorizadaStockLine>();
+            var stockLines = new List<SalesBillAuthorizedStockLine>();
             foreach (var detalle in detalles)
             {
-                var producto = await _productRepository.GetByIdAsync(detalle.ProductoId, tenantId, ct);
+                var producto = await _productRepository.GetByIdAsync(detalle.ProductId, tenantId, ct);
                 if (producto is null || producto.IsService || !producto.TracksStock)
                     continue;
-                stockLines.Add(new VentaAutorizadaStockLine(detalle.ProductoId, detalle.Cantidad));
+                stockLines.Add(new SalesBillAuthorizedStockLine(detalle.ProductId, detalle.Quantity));
             }
 
-            factura.Autorizar(
+            factura.Authorize(
                 userId,
-                response.NumeroAutorizacion,
-                response.FechaAutorizacion,
+                response.AuthNumber,
+                response.AuthDate,
                 xmlGeneradoPath,
                 xmlAutorizacionPath,
                 asientoResult.Value,
@@ -197,15 +197,15 @@ public sealed class EmitirFacturaElectronicaCommandHandler
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "ventas", action: "venta.emitir",
-                entityType: "VentasFactura", entityId: factura.Id,
-                description: $"{numeroFactura} — auth: {response.NumeroAutorizacion}"), ct);
+                entityType: "SalesBill", entityId: factura.Id,
+                description: $"{numeroFactura} — auth: {response.AuthNumber}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
 
             _logger.LogInformation(
                 "Factura emitida: id {FacturaId}, tenant {TenantId}, autorizacion {NumAuth}.",
-                factura.Id, tenantId, response.NumeroAutorizacion);
+                factura.Id, tenantId, response.AuthNumber);
 
             return Result<Guid>.Success(factura.Id);
         }
@@ -213,7 +213,7 @@ public sealed class EmitirFacturaElectronicaCommandHandler
         {
             await _unitOfWork.RollbackAsync(ct);
             _logger.LogError(ex, "Error al procesar emisión de factura {FacturaId}", command.VentaId);
-            factura.MarcarErrorEnvio(userId,
+            factura.Reject(userId,
                 $"Autorizado por SRI pero falló el procesamiento interno: {ex.Message}");
             await _ventasRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error al procesar la emisión: {ex.Message}");

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -12,9 +12,9 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 namespace ERP.Application.Modules.Purchasing.UseCases.AprobarCompra;
 
 public sealed class AprobarCompraCommandHandler
-    : IRequestHandler<AprobarCompraCommand, Result<CompraFacturaDto>>
+    : IRequestHandler<AprobarCompraCommand, Result<PurchBillDto>>
 {
-    private readonly ICompraRepository          _repo;
+    private readonly IPurchBillRepository          _repo;
     private readonly IAccountingService         _accounting;
     private readonly IUserActivityRepository    _activity;
     private readonly ICurrentTenant             _tenant;
@@ -23,7 +23,7 @@ public sealed class AprobarCompraCommandHandler
     private readonly ILogger<AprobarCompraCommandHandler> _logger;
 
     public AprobarCompraCommandHandler(
-        ICompraRepository repo,
+        IPurchBillRepository repo,
         IAccountingService accounting,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
@@ -40,53 +40,53 @@ public sealed class AprobarCompraCommandHandler
         _logger     = logger;
     }
 
-    public async Task<Result<CompraFacturaDto>> Handle(
+    public async Task<Result<PurchBillDto>> Handle(
         AprobarCompraCommand command,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
-        var compra = await _repo.GetByIdWithDetailsAsync(tenantId, command.CompraFacturaId, ct);
+        var compra = await _repo.GetByIdAsync(tenantId, command.PurchBillId, ct);
         if (compra is null)
-            return Result<CompraFacturaDto>.Failure("Compra no encontrada.");
+            return Result<PurchBillDto>.Failure("Compra no encontrada.");
 
-        if (compra.Estado != EstadoCompra.Validado)
-            return Result<CompraFacturaDto>.Failure(
-                $"Solo se puede aprobar una compra Validada (estado actual: {compra.Estado}).");
+        if (compra.Status != PurchaseStatus.Validated)
+            return Result<PurchBillDto>.Failure(
+                $"Solo se puede aprobar una compra Validada (estado actual: {compra.Status}).");
 
         var asignaciones =
-            await _repo.GetBodegaAsignacionesByCompraFacturaIdAsync(tenantId, command.CompraFacturaId, ct);
+            await _repo.GetWarehouseAllocsByBillIdAsync(tenantId, command.PurchBillId, ct);
 
-        var stockLines = new List<CompraAprobadaStockLine>();
+        var stockLines = new List<PurchBillApprovedStockLine>();
         foreach (var asig in asignaciones)
         {
-            var detalle = compra.Detalles.FirstOrDefault(d => d.Id == asig.CompraDetalleId);
+            var detalle = compra.Lines.FirstOrDefault(d => d.Id == asig.PurchBillLineId);
             if (detalle is null)
             {
                 _logger.LogWarning(
                     "Compra {CompraId}: asignación huérfana (detalle {DetalleId} no encontrado en la factura).",
-                    compra.Id, asig.CompraDetalleId);
+                    compra.Id, asig.PurchBillLineId);
                 continue;
             }
 
-            if (!asig.ProductoId.HasValue)
+            if (!asig.ProductId.HasValue)
             {
                 _logger.LogWarning(
-                    "Compra {CompraId}: línea sin producto enlazado; no se actualiza inventario físico (detalle {DetalleId}, bodega {BodegaId}, cantidad {Cantidad}).",
-                    compra.Id, asig.CompraDetalleId, asig.BodegaId, asig.Cantidad);
+                    "Compra {CompraId}: línea sin producto enlazado; no se actualiza inventario físico (detalle {DetalleId}, Warehouse {BodegaId}, cantidad {Cantidad}).",
+                    compra.Id, asig.PurchBillLineId, asig.WarehouseId, asig.Quantity);
                 continue;
             }
 
-            var costoUnitario = detalle.Cantidad > 0
-                ? detalle.PrecioUnitario * (1 - detalle.DescuentoPorcentaje / 100m)
+            var costoUnitario = detalle.Quantity > 0
+                ? detalle.UnitPrice * (1 - detalle.DiscountPct / 100m)
                 : 0m;
 
-            stockLines.Add(new CompraAprobadaStockLine(
-                asig.CompraDetalleId,
-                asig.ProductoId,
-                asig.BodegaId,
-                asig.Cantidad,
+            stockLines.Add(new PurchBillApprovedStockLine(
+                asig.PurchBillLineId,
+                asig.ProductId,
+                asig.WarehouseId,
+                asig.Quantity,
                 costoUnitario));
         }
 
@@ -95,50 +95,50 @@ public sealed class AprobarCompraCommandHandler
         {
             var asientoResult = await _accounting.CrearAsientoCompraAsync(
                 compra.Id,
-                referencia:  compra.NumeroFactura,
-                fecha:       compra.FechaFactura,
+                reference:  compra.InvoiceNumber,
+                date:       compra.InvoiceDate,
                 subtotal:    compra.Subtotal,
-                iva:         compra.IvaTotal,
+                vatTotal:         compra.VatTotal,
                 total:       compra.Total,
-                descripcion: $"Compra {compra.NumeroFactura} — {compra.ProveedorId}",
+                description: $"Compra {compra.InvoiceNumber} — {compra.SupplierId}",
                 ct);
 
             if (!asientoResult.IsSuccess)
             {
                 await _unitOfWork.RollbackAsync(ct);
-                return Result<CompraFacturaDto>.Failure(
+                return Result<PurchBillDto>.Failure(
                     asientoResult.Error ?? "No se pudo registrar el asiento contable de la compra.");
             }
 
             var asientoId = asientoResult.Value;
 
-            compra.Aprobar(userId, asientoId, stockLines);
+            compra.Approve(userId, asientoId, stockLines);
 
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _user.Email, _user.FullName,
                 module: "compras", action: "compra.aprobar",
-                entityType: "CompraFactura", entityId: compra.Id,
-                description: $"{compra.NumeroFactura} — asiento: {asientoId}"), ct);
+                entityType: "PurchBill", entityId: compra.Id,
+                description: $"{compra.InvoiceNumber} — asiento: {asientoId}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
 
             _logger.LogInformation(
-                "Compra aprobada: id {CompraId}, tenant {TenantId}, usuario {UserId}, asiento {AsientoId}.",
+                "Compra aprobada: id {CompraId}, tenant {TenantId}, usuario {UserId}, asiento {JournalEntryId}.",
                 compra.Id, tenantId, userId, asientoId);
 
-            return Result<CompraFacturaDto>.Success(ToDto(compra));
+            return Result<PurchBillDto>.Success(ToDto(compra));
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al aprobar compra {CompraId}", command.CompraFacturaId);
-            return Result<CompraFacturaDto>.Failure($"No se pudo aprobar la compra: {ex.Message}");
+            _logger.LogError(ex, "Error al aprobar compra {CompraId}", command.PurchBillId);
+            return Result<PurchBillDto>.Failure($"No se pudo aprobar la compra: {ex.Message}");
         }
     }
 
-    private static CompraFacturaDto ToDto(ERP.Domain.Modules.Purchasing.Entities.CompraFactura c) => new(
-        c.Id, c.ProveedorId, c.NumeroFactura, c.ClaveAcceso, c.XmlPath,
-        c.FechaFactura, c.FechaVencimiento, c.Estado, c.CondicionPago,
-        c.Subtotal, c.IvaTotal, c.Total, c.Observaciones, c.AsientoContableId, c.CreatedAt);
+    private static PurchBillDto ToDto(ERP.Domain.Modules.Purchasing.Entities.PurchBill c) => new(
+        c.Id, c.SupplierId, c.InvoiceNumber, c.AccessKey, c.XmlPath,
+        c.InvoiceDate, c.DueDate, c.Status, c.PaymentTerms,
+        c.Subtotal, c.VatTotal, c.Total, c.Notes, c.JournalEntryId, c.CreatedAt);
 }

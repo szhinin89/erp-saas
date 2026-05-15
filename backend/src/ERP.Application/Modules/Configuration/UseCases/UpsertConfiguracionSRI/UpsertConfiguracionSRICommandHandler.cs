@@ -1,20 +1,20 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Configuration.DTOs;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 
-namespace ERP.Application.Configuration.UseCases.UpsertConfiguracionSRI;
+namespace ERP.Application.Configuration.UseCases.UpsertSriSettings;
 
 public sealed class UpsertConfiguracionSRICommandHandler
     : IRequestHandler<UpsertConfiguracionSRICommand, Result<ConfiguracionSRIDto>>
 {
-    private readonly IConfiguracionSRIRepository _repo;
+    private readonly ISriSettingsRepository _repo;
     private readonly ICurrentTenant              _currentTenant;
     private readonly ICurrentUser                _currentUser;
 
     public UpsertConfiguracionSRICommandHandler(
-        IConfiguracionSRIRepository repo,
+        ISriSettingsRepository repo,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser)
     {
@@ -33,54 +33,53 @@ public sealed class UpsertConfiguracionSRICommandHandler
 
         if (existing is null)
         {
-            var config = ConfiguracionSRI.Create(
-                tenantId:             tenantId,
-                rucEmpresa:           command.RucEmpresa,
-                razonSocial:          command.RazonSocial,
-                nombreComercial:      command.NombreComercial,
-                direccionMatriz:      command.DireccionMatriz,
-                obligadoContabilidad: command.ObligadoContabilidad,
-                contribuyenteEspecial: command.ContribuyenteEspecial,
-                establecimiento:      command.Establecimiento,
-                puntoEmision:         command.PuntoEmision,
-                secuencialActual:     1,
-                certificadoP12Path:   command.CertificadoP12Path,
-                certificadoPassword:  command.CertificadoPassword,
-                ambiente:             command.Ambiente,
-                tipoEmision:          command.TipoEmision,
-                urlSriAutorizacion:   command.UrlSriAutorizacion,
-                createdBy:            userId);
+            var config = SriSettings.Create(
+                tenantId:          tenantId,
+                ruc:               command.Ruc,
+                legalName:         command.LegalName,
+                tradeName:         command.TradeName,
+                mainAddress:       command.MainAddress,
+                requiresAccounting: command.RequiresAccounting,
+                specialTaxpayer:   command.SpecialTaxpayer,
+                estabCode:         command.EstabCode,
+                emPointCode:       command.EmPointCode,
+                currentSequential: 1,
+                certP12Path:       command.CertP12Path,
+                certPassword:      command.CertPassword,
+                environment:       command.Environment,
+                emissionType:      command.EmissionType,
+                wsdlUrl:           command.WsdlUrl,
+                createdBy: userId);
 
             await _repo.AddAsync(config, ct);
             await _repo.SaveChangesAsync(ct);
             return Result<ConfiguracionSRIDto>.Success(ToDto(config));
         }
 
-        // Update: preservar SecuencialActual para no romper la numeración en curso
         existing.Update(
-            rucEmpresa:           command.RucEmpresa,
-            razonSocial:          command.RazonSocial,
-            nombreComercial:      command.NombreComercial,
-            direccionMatriz:      command.DireccionMatriz,
-            obligadoContabilidad: command.ObligadoContabilidad,
-            contribuyenteEspecial: command.ContribuyenteEspecial,
-            establecimiento:      command.Establecimiento,
-            puntoEmision:         command.PuntoEmision,
-            certificadoP12Path:   command.CertificadoP12Path,
-            certificadoPassword:  command.CertificadoPassword,
-            ambiente:             command.Ambiente,
-            tipoEmision:          command.TipoEmision,
-            urlSriAutorizacion:   command.UrlSriAutorizacion,
-            updatedBy:            userId);
+            ruc:               command.Ruc,
+            legalName:         command.LegalName,
+            tradeName:         command.TradeName,
+            mainAddress:       command.MainAddress,
+            requiresAccounting: command.RequiresAccounting,
+            specialTaxpayer:   command.SpecialTaxpayer,
+            estabCode:         command.EstabCode,
+            emPointCode:       command.EmPointCode,
+            certP12Path:       command.CertP12Path,
+            certPassword:      command.CertPassword,
+            environment:       command.Environment,
+            emissionType:      command.EmissionType,
+            wsdlUrl:           command.WsdlUrl,
+            updatedBy:         userId);
 
         await _repo.UpdateAsync(existing, ct);
         await _repo.SaveChangesAsync(ct);
         return Result<ConfiguracionSRIDto>.Success(ToDto(existing));
     }
 
-    private static ConfiguracionSRIDto ToDto(ConfiguracionSRI c) => new(
-        c.TenantId, c.RucEmpresa, c.RazonSocial, c.NombreComercial,
-        c.DireccionMatriz, c.ObligadoContabilidad, c.ContribuyenteEspecial,
-        c.Establecimiento, c.PuntoEmision, c.SecuencialActual,
-        c.CertificadoP12Path, c.Ambiente, c.TipoEmision, c.UrlSriAutorizacion);
+    private static ConfiguracionSRIDto ToDto(SriSettings c) => new(
+        c.TenantId, c.Ruc, c.LegalName, c.TradeName,
+        c.MainAddress, c.RequiresAccounting, c.SpecialTaxpayer,
+        c.EstabCode, c.EmPointCode, c.CurrentSequential,
+        c.CertP12Path, c.Environment, c.EmissionType, c.WsdlUrl);
 }

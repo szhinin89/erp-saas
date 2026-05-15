@@ -1,9 +1,8 @@
 namespace ERP.Domain.Modules.Cash;
 
-/// <summary>Fila normalizada tras parsear un extracto (CSV/Excel).</summary>
-public sealed record MovimientoExtractoParseRow(
-    DateTime Fecha,
-    string Descripcion,
-    decimal Monto,
-    string Tipo,
-    string? Referencia);
+public sealed record StatementParseRow(
+    DateTime TransactionDate,
+    string   Description,
+    decimal  Amount,
+    string   TransactionType,
+    string?  Reference);

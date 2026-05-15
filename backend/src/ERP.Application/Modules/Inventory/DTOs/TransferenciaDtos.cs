@@ -1,10 +1,10 @@
-namespace ERP.Application.Inventory.DTOs;
+﻿namespace ERP.Application.Inventory.DTOs;
 
 public record TransferenciaDetalleDto(
     Guid    Id,
-    Guid    ProductoId,
-    string  Descripcion,
-    decimal Cantidad);
+    Guid    ProductId,
+    string  Description,
+    decimal Quantity);
 
 public record TransferenciaDto(
     Guid      Id,
@@ -14,9 +14,9 @@ public record TransferenciaDto(
     Guid      BodegaDestinoId,
     string    BodegaDestinoNombre,
     DateTime  FechaTransferencia,
-    string    Estado,
-    string?   Motivo,
-    string?   Observaciones,
+    string    Status,
+    string? Reason,
+    string? Notes,
     DateTime? FechaConfirmacion,
     Guid?     ConfirmadoPor,
     DateTime  CreatedAt);
@@ -29,9 +29,9 @@ public record TransferenciaDetailDto(
     Guid      BodegaDestinoId,
     string    BodegaDestinoNombre,
     DateTime  FechaTransferencia,
-    string    Estado,
-    string?   Motivo,
-    string?   Observaciones,
+    string    Status,
+    string? Reason,
+    string? Notes,
     DateTime? FechaConfirmacion,
     Guid?     ConfirmadoPor,
     DateTime  CreatedAt,

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 
@@ -8,9 +8,9 @@ namespace ERP.Application.Inventory.UseCases.GetAjustesList;
 public sealed record GetAjustesListQuery(
     int       PageNumber,
     int       PageSize,
-    Guid?     BodegaId,
-    Guid?     ProductoId,
-    string?   Estado,
-    DateTime? FechaDesde,
-    DateTime? FechaHasta
+    Guid?     WarehouseId,
+    Guid?     ProductId,
+    string?   Status,
+    DateTime? DateFrom,
+    DateTime? DateTo
 ) : IRequest<Result<AjustesPagedResult>>;

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Domain.Modules.Expenses.Entities;
@@ -7,40 +7,40 @@ using ERP.Domain.Modules.Expenses.Interfaces;
 namespace ERP.Application.Modules.Expenses.UseCases.GetGastoById;
 
 public sealed class GetGastoByIdQueryHandler
-    : IRequestHandler<GetGastoByIdQuery, Result<GastoFacturaDto?>>
+    : IRequestHandler<GetGastoByIdQuery, Result<ExpenseInvoiceDto?>>
 {
-    private readonly IGastoFacturaRepository _repo;
+    private readonly IExpenseInvoiceRepository _repo;
     private readonly ICurrentTenant        _tenant;
 
-    public GetGastoByIdQueryHandler(IGastoFacturaRepository repo, ICurrentTenant tenant)
+    public GetGastoByIdQueryHandler(IExpenseInvoiceRepository repo, ICurrentTenant tenant)
     {
         _repo   = repo;
         _tenant = tenant;
     }
 
-    public async Task<Result<GastoFacturaDto?>> Handle(GetGastoByIdQuery query, CancellationToken ct)
+    public async Task<Result<ExpenseInvoiceDto?>> Handle(GetGastoByIdQuery query, CancellationToken ct)
     {
         var g = await _repo.GetByIdAsync(_tenant.TenantId, query.Id, ct);
         if (g is null)
-            return Result<GastoFacturaDto?>.Success(null);
+            return Result<ExpenseInvoiceDto?>.Success(null);
 
-        return Result<GastoFacturaDto?>.Success(ToDto(g));
+        return Result<ExpenseInvoiceDto?>.Success(ToDto(g));
     }
 
-    private static GastoFacturaDto ToDto(GastoFactura g) => new(
+    private static ExpenseInvoiceDto ToDto(ExpenseInvoice g) => new(
         g.Id,
-        g.ClaveAcceso,
-        g.FechaEmision,
-        g.ProveedorId,
-        g.NumeroFactura,
-        g.Concepto,
-        g.CategoriaGasto,
+        g.AccessKey,
+        g.IssueDate,
+        g.SupplierId,
+        g.InvoiceNumber,
+        g.Concept,
+        g.Category,
         g.Subtotal,
-        g.Impuesto,
+        g.TaxTotal,
         g.Total,
-        g.Estado,
+        g.Status,
         g.XmlPath,
-        g.Observaciones,
-        g.AsientoContableId,
+        g.Notes,
+        g.JournalEntryId,
         g.CreatedAt);
 }

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -10,16 +10,16 @@ using ERP.Domain.Modules.Expenses.Interfaces;
 namespace ERP.Application.Modules.Expenses.UseCases.RechazarGasto;
 
 public sealed class RechazarGastoCommandHandler
-    : IRequestHandler<RechazarGastoCommand, Result<GastoFacturaDto>>
+    : IRequestHandler<RechazarGastoCommand, Result<ExpenseInvoiceDto>>
 {
-    private readonly IGastoFacturaRepository   _repo;
+    private readonly IExpenseInvoiceRepository   _repo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
 
     public RechazarGastoCommandHandler(
-        IGastoFacturaRepository repo,
+        IExpenseInvoiceRepository repo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
         ICurrentUser user,
@@ -32,25 +32,25 @@ public sealed class RechazarGastoCommandHandler
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result<GastoFacturaDto>> Handle(RechazarGastoCommand command, CancellationToken ct)
+    public async Task<Result<ExpenseInvoiceDto>> Handle(RechazarGastoCommand command, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
-        var gasto = await _repo.GetByIdAsync(tenantId, command.GastoFacturaId, ct);
+        var gasto = await _repo.GetByIdAsync(tenantId, command.ExpenseInvoiceId, ct);
         if (gasto is null)
-            return Result<GastoFacturaDto>.Failure("Gasto no encontrado.");
+            return Result<ExpenseInvoiceDto>.Failure("Gasto no encontrado.");
 
-        if (gasto.Estado == EstadoGasto.Aprobado)
-            return Result<GastoFacturaDto>.Failure("No se puede rechazar un gasto ya aprobado.");
+        if (gasto.Status == ExpenseStatus.Approved)
+            return Result<ExpenseInvoiceDto>.Failure("No se puede rechazar un gasto ya aprobado.");
 
         try
         {
-            gasto.Rechazar(userId, command.Motivo);
+            gasto.Reject(userId, command.Reason);
         }
         catch (Exception ex)
         {
-            return Result<GastoFacturaDto>.Failure(ex.Message);
+            return Result<ExpenseInvoiceDto>.Failure(ex.Message);
         }
 
         await _unitOfWork.BeginTransactionAsync(ct);
@@ -59,36 +59,36 @@ public sealed class RechazarGastoCommandHandler
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _user.Email, _user.FullName,
                 module: "gastos", action: "gasto.rechazar",
-                entityType: "GastoFactura", entityId: gasto.Id,
-                description: command.Motivo), ct);
+                entityType: "ExpenseInvoice", entityId: gasto.Id,
+                description: command.Reason), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
 
-            return Result<GastoFacturaDto>.Success(ToDto(gasto));
+            return Result<ExpenseInvoiceDto>.Success(ToDto(gasto));
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            return Result<GastoFacturaDto>.Failure(
+            return Result<ExpenseInvoiceDto>.Failure(
                 $"No se pudo rechazar el gasto: {ex.Message}");
         }
     }
 
-    private static GastoFacturaDto ToDto(GastoFactura g) => new(
+    private static ExpenseInvoiceDto ToDto(ExpenseInvoice g) => new(
         g.Id,
-        g.ClaveAcceso,
-        g.FechaEmision,
-        g.ProveedorId,
-        g.NumeroFactura,
-        g.Concepto,
-        g.CategoriaGasto,
+        g.AccessKey,
+        g.IssueDate,
+        g.SupplierId,
+        g.InvoiceNumber,
+        g.Concept,
+        g.Category,
         g.Subtotal,
-        g.Impuesto,
+        g.TaxTotal,
         g.Total,
-        g.Estado,
+        g.Status,
         g.XmlPath,
-        g.Observaciones,
-        g.AsientoContableId,
+        g.Notes,
+        g.JournalEntryId,
         g.CreatedAt);
 }

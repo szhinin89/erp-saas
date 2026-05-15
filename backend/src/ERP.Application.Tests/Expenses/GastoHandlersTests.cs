@@ -17,7 +17,7 @@ namespace ERP.Application.Tests.Gastos;
 
 public sealed class GastoHandlersTests
 {
-    private static string ClaveAcceso49() => new string('7', GastoFactura.ClaveAccesoLen);
+    private static string ClaveAcceso49() => new string('7', ExpenseInvoice.AccessKeyLen);
 
     [Fact]
     public async Task Crear_manual_total_menor_umbral_queda_en_borrador()
@@ -25,10 +25,10 @@ public sealed class GastoHandlersTests
         var tenantId = Guid.NewGuid();
         var userId   = Guid.NewGuid();
 
-        GastoFactura? guardado = null;
-        var gastos = new Mock<IGastoFacturaRepository>();
-        gastos.Setup(x => x.AddAsync(It.IsAny<GastoFactura>(), It.IsAny<CancellationToken>()))
-            .Callback<GastoFactura, CancellationToken>((g, _) => guardado = g)
+        ExpenseInvoice? guardado = null;
+        var gastos = new Mock<IExpenseInvoiceRepository>();
+        gastos.Setup(x => x.AddAsync(It.IsAny<ExpenseInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<ExpenseInvoice, CancellationToken>((g, _) => guardado = g)
             .Returns(Task.CompletedTask);
 
         var uow = new Mock<IUnitOfWork>();
@@ -37,7 +37,7 @@ public sealed class GastoHandlersTests
         uow.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         uow.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
-        var prov = new Mock<IProveedorRepository>();
+        var prov = new Mock<ISupplierRepository>();
         var parser = new Mock<IXmlFacturaParser>();
         var storage = new Mock<IFileStorage>();
         var activity = new Mock<IUserActivityRepository>();
@@ -58,20 +58,20 @@ public sealed class GastoHandlersTests
             ModoCreacionGasto.Manual,
             XmlContent: null,
             XmlNombreArchivo: null,
-            ProveedorId: null,
-            FechaEmision: DateTime.UtcNow.Date,
-            Concepto: "Papelería",
-            CategoriaGasto: "Administrativo",
+            SupplierId: null,
+            IssueDate: DateTime.UtcNow.Date,
+            Concept: "Papelería",
+            Category: "Administrativo",
             Subtotal: 80m,
-            Impuesto: 12m,
+            VatTotal: 12m,
             Total: 92m,
-            Observaciones: null);
+            Notes: null);
 
         var result = await handler.Handle(cmd, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         guardado.Should().NotBeNull();
-        guardado!.Estado.Should().Be(EstadoGasto.Borrador);
+        guardado!.Status.Should().Be(ExpenseStatus.Draft);
         guardado.Total.Should().Be(92m);
     }
 
@@ -81,8 +81,8 @@ public sealed class GastoHandlersTests
         var tenantId = Guid.NewGuid();
         var userId   = Guid.NewGuid();
 
-        var gastos = new Mock<IGastoFacturaRepository>();
-        var prov = new Mock<IProveedorRepository>();
+        var gastos = new Mock<IExpenseInvoiceRepository>();
+        var prov = new Mock<ISupplierRepository>();
         var parser = new Mock<IXmlFacturaParser>();
         var storage = new Mock<IFileStorage>();
         var activity = new Mock<IUserActivityRepository>();
@@ -109,7 +109,7 @@ public sealed class GastoHandlersTests
             "Equipo",
             "CAPEX",
             Subtotal: 200m,
-            Impuesto: 24m,
+            VatTotal: 24m,
             Total: 224m,
             null);
 
@@ -117,7 +117,7 @@ public sealed class GastoHandlersTests
 
         result.IsSuccess.Should().BeFalse();
         result.Error.Should().Contain("100");
-        gastos.Verify(x => x.AddAsync(It.IsAny<GastoFactura>(), It.IsAny<CancellationToken>()), Times.Never);
+        gastos.Verify(x => x.AddAsync(It.IsAny<ExpenseInvoice>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -135,15 +135,15 @@ public sealed class GastoHandlersTests
             ruc,
             "Proveedor XML SA",
             Subtotal: 400m,
-            Impuesto: 48m,
+            VatTotal: 48m,
             Total: 448m,
             Items: new[] { new ItemFactura("X", "Servicio cloud", 1m, 400m, 0m, 400m) });
 
-        var gastos = new Mock<IGastoFacturaRepository>();
-        gastos.Setup(x => x.ExistsClaveAccesoAsync(tenantId, clave, It.IsAny<CancellationToken>())).ReturnsAsync(false);
-        GastoFactura? guardado = null;
-        gastos.Setup(x => x.AddAsync(It.IsAny<GastoFactura>(), It.IsAny<CancellationToken>()))
-            .Callback<GastoFactura, CancellationToken>((g, _) => guardado = g)
+        var gastos = new Mock<IExpenseInvoiceRepository>();
+        gastos.Setup(x => x.ExistsAccessKeyAsync(tenantId, clave, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        ExpenseInvoice? guardado = null;
+        gastos.Setup(x => x.AddAsync(It.IsAny<ExpenseInvoice>(), It.IsAny<CancellationToken>()))
+            .Callback<ExpenseInvoice, CancellationToken>((g, _) => guardado = g)
             .Returns(Task.CompletedTask);
 
         var uow = new Mock<IUnitOfWork>();
@@ -152,12 +152,12 @@ public sealed class GastoHandlersTests
         uow.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         uow.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
-        var prov = new Mock<IProveedorRepository>();
+        var prov = new Mock<ISupplierRepository>();
         prov.Setup(x => x.GetAsync(tenantId, null, ruc, null, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Array.Empty<Proveedor>());
-        Proveedor? nuevoProv = null;
-        prov.Setup(x => x.AddAsync(It.IsAny<Proveedor>(), It.IsAny<CancellationToken>()))
-            .Callback<Proveedor, CancellationToken>((p, _) => nuevoProv = p)
+            .ReturnsAsync(Array.Empty<Supplier>());
+        Supplier? nuevoProv = null;
+        prov.Setup(x => x.AddAsync(It.IsAny<Supplier>(), It.IsAny<CancellationToken>()))
+            .Callback<Supplier, CancellationToken>((p, _) => nuevoProv = p)
             .Returns(Task.CompletedTask);
 
         var parser = new Mock<IXmlFacturaParser>();
@@ -188,7 +188,7 @@ public sealed class GastoHandlersTests
             xmlBytes,
             "factura.xml",
             null, null, null,
-            CategoriaGasto: "Servicios TI",
+            Category: "Servicios TI",
             null, null, null,
             null);
 
@@ -196,9 +196,9 @@ public sealed class GastoHandlersTests
 
         result.IsSuccess.Should().BeTrue();
         guardado.Should().NotBeNull();
-        guardado!.Estado.Should().Be(EstadoGasto.Borrador);
+        guardado!.Status.Should().Be(ExpenseStatus.Draft);
         guardado.Total.Should().Be(448m);
-        guardado.ClaveAcceso.Should().Be(clave);
+        guardado.AccessKey.Should().Be(clave);
         nuevoProv.Should().NotBeNull();
         nuevoProv!.Ruc.Should().Be(ruc);
     }
@@ -209,11 +209,11 @@ public sealed class GastoHandlersTests
         var tenantId = Guid.NewGuid();
         var userId   = Guid.NewGuid();
 
-        var gasto = GastoFactura.CreateManual(
-            tenantId, proveedorId: null, DateTime.UtcNow.Date, "Taxi", "Viajes",
+        var gasto = ExpenseInvoice.CreateManual(
+            tenantId, supplierId: null, DateTime.UtcNow.Date, "Taxi", "Viajes",
             10m, 1.2m, 11.2m, null, userId);
 
-        var gastos = new Mock<IGastoFacturaRepository>();
+        var gastos = new Mock<IExpenseInvoiceRepository>();
         gastos.Setup(x => x.GetByIdAsync(tenantId, gasto.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(gasto);
 
@@ -223,7 +223,7 @@ public sealed class GastoHandlersTests
         uowValidar.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         uowValidar.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
-        var provRepo = new Mock<IProveedorRepository>();
+        var provRepo = new Mock<ISupplierRepository>();
 
         var activity = new Mock<IUserActivityRepository>();
         activity.Setup(x => x.AddAsync(It.IsAny<ERP.Domain.Audit.Entities.UserActivity>(), It.IsAny<CancellationToken>()))
@@ -240,17 +240,17 @@ public sealed class GastoHandlersTests
             gastos.Object, provRepo.Object, activity.Object, tenant.Object, user.Object, uowValidar.Object);
         var valRes = await validar.Handle(new ValidarGastoCommand(gasto.Id), CancellationToken.None);
         valRes.IsSuccess.Should().BeTrue();
-        gasto.Estado.Should().Be(EstadoGasto.Validado);
+        gasto.Status.Should().Be(ExpenseStatus.Validated);
 
         var asientoId = Guid.NewGuid();
         var accounting = new Mock<IAccountingService>();
         accounting.Setup(x => x.CrearAsientoGastoAsync(
                 gasto.Id,
-                gasto.CategoriaGasto,
+                gasto.Category,
                 It.IsAny<string>(),
-                gasto.FechaEmision,
+                gasto.IssueDate,
                 gasto.Subtotal,
-                gasto.Impuesto,
+                gasto.TaxTotal,
                 gasto.Total,
                 It.IsAny<string>(),
                 It.IsAny<CancellationToken>()))
@@ -274,18 +274,19 @@ public sealed class GastoHandlersTests
         var aprRes = await aprobar.Handle(new AprobarGastoCommand(gasto.Id), CancellationToken.None);
 
         aprRes.IsSuccess.Should().BeTrue();
-        gasto.Estado.Should().Be(EstadoGasto.Aprobado);
-        gasto.AsientoContableId.Should().Be(asientoId);
+        gasto.Status.Should().Be(ExpenseStatus.Approved);
+        gasto.JournalEntryId.Should().Be(asientoId);
         accounting.Verify(x => x.CrearAsientoGastoAsync(
             gasto.Id,
-            gasto.CategoriaGasto,
+            gasto.Category,
             It.IsAny<string>(),
-            gasto.FechaEmision,
+            gasto.IssueDate,
             gasto.Subtotal,
-            gasto.Impuesto,
+            gasto.TaxTotal,
             gasto.Total,
             It.IsAny<string>(),
             It.IsAny<CancellationToken>()), Times.Once);
         uow.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 }
+

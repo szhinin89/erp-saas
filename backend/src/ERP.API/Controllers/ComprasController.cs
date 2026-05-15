@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -16,10 +16,10 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// Gestión del submódulo de Compras.
-/// Flujo: Borrador → (Validado) → Aprobado | Rechazado.
+/// GestiÃ³n del submÃ³dulo de Compras.
+/// Flujo: Borrador â†’ (Validado) â†’ Aprobado | Rechazado.
 /// </summary>
-[Modulo("Compras", "perm:compras.facturas.view", "🛒", "/compras", null, 45)]
+[Modulo("Compras", "perm:compras.facturas.view", "ðŸ›’", "/compras", null, 45)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -30,18 +30,18 @@ public sealed class ComprasController : ControllerBase
 
     public ComprasController(IMediator mediator) => _mediator = mediator;
 
-    // ── Queries ───────────────────────────────────────────────────────────
+    // â”€â”€ Queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>Lista facturas de compra con filtros opcionales.</summary>
     /// <remarks>Query params: estado, proveedorId, desde (YYYY-MM-DD), hasta, search.</remarks>
     [HttpGet]
     [Authorize(Policy = "perm:compras.facturas.view")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<CompraFacturaDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<PurchBillDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
-        EstadoCompra? estado = null;
+        PurchaseStatus? estado = null;
         if (Request.Query.TryGetValue("estado", out var ev) &&
-            Enum.TryParse<EstadoCompra>(ev, out var ep)) estado = ep;
+            Enum.TryParse<PurchaseStatus>(ev, out var ep)) estado = ep;
 
         Guid? proveedorId = null;
         if (Request.Query.TryGetValue("proveedorId", out var pv) &&
@@ -55,14 +55,14 @@ public sealed class ComprasController : ControllerBase
 
         var result = await _mediator.Send(
             new GetComprasQuery(estado, proveedorId, desde, hasta, search), ct);
-        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<CompraFacturaDto>());
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<PurchBillDto>());
     }
 
-    /// <summary>Retorna el detalle completo de una factura de compra (con líneas).</summary>
+    /// <summary>Retorna el detalle completo de una factura de compra (con lÃ­neas).</summary>
     /// <response code="404">La compra no existe o no pertenece al tenant.</response>
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "perm:compras.facturas.view")]
-    [ProducesResponseType(typeof(ApiResponse<CompraFacturaDetailDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PurchBillDetailDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct = default)
     {
@@ -70,14 +70,14 @@ public sealed class ComprasController : ControllerBase
         return this.ToOkOrNotFound(result);
     }
 
-    // ── Crear ─────────────────────────────────────────────────────────────
+    // â”€â”€ Crear â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>Crea una factura de compra en modo Manual.</summary>
     /// <response code="201">Compra creada en estado Borrador.</response>
-    /// <response code="422">Datos inválidos.</response>
+    /// <response code="422">Datos invÃ¡lidos.</response>
     [HttpPost("manual")]
     [Authorize(Policy = "perm:compras.facturas.create")]
-    [ProducesResponseType(typeof(ApiResponse<CompraFacturaDto?>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<PurchBillDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CrearManual(
         [FromBody] CrearCompraCommand command, CancellationToken ct = default)
@@ -90,15 +90,15 @@ public sealed class ComprasController : ControllerBase
     /// <summary>
     /// Crea una factura de compra a partir de un XML del SRI Ecuador.
     /// Sube el archivo como multipart/form-data con campo 'xmlFile'.
-    /// Si el proveedor (por RUC) no existe en el tenant, se crea automáticamente.
+    /// Si el proveedor (por RUC) no existe en el tenant, se crea automÃ¡ticamente.
     /// </summary>
     /// <response code="201">Compra creada en estado Borrador.</response>
     /// <response code="400">Clave de acceso duplicada o error en el XML.</response>
-    /// <response code="422">XML vacío o inválido.</response>
+    /// <response code="422">XML vacÃ­o o invÃ¡lido.</response>
     [HttpPost("xml")]
     [Authorize(Policy = "perm:compras.facturas.create")]
     [Consumes("multipart/form-data")]
-    [ProducesResponseType(typeof(ApiResponse<CompraFacturaDto?>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<PurchBillDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CrearDesdeXml(
@@ -116,26 +116,26 @@ public sealed class ComprasController : ControllerBase
             Modo: ModoCreacionCompra.Xml,
             XmlContent: content,
             XmlNombreArchivo: xmlFile.FileName,
-            ProveedorId: null, NumeroFactura: null, FechaFactura: null,
-            FechaVencimiento: null, CondicionPago: null,
-            Observaciones: null, Detalles: null,
+            SupplierId: null, InvoiceNumber: null, InvoiceDate: null,
+            DueDate: null, PaymentTerms: null,
+            Notes: null, Lines: null,
             AsignacionesBodega: null);
 
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
-    // ── Transiciones de estado ────────────────────────────────────────────
+    // â”€â”€ Transiciones de estado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>
     /// Valida una compra en Borrador: verifica proveedor activo, totales y clave de acceso.
     /// Cambia estado a Validado.
     /// </summary>
     /// <response code="200">Compra validada.</response>
-    /// <response code="400">Error de validación de negocio.</response>
+    /// <response code="400">Error de validaciÃ³n de negocio.</response>
     [HttpPatch("{id:guid}/validar")]
     [Authorize(Policy = "perm:compras.facturas.validate")]
-    [ProducesResponseType(typeof(ApiResponse<CompraFacturaDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PurchBillDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Validar(Guid id, CancellationToken ct = default)
     {
@@ -148,10 +148,10 @@ public sealed class ComprasController : ControllerBase
     /// Requiere rol Revisor o Admin.
     /// </summary>
     /// <response code="200">Compra aprobada (con o sin asiento contable).</response>
-    /// <response code="400">La compra no está en estado Validado.</response>
+    /// <response code="400">La compra no estÃ¡ en estado Validado.</response>
     [HttpPatch("{id:guid}/aprobar")]
     [Authorize(Policy = "perm:compras.facturas.approve")]
-    [ProducesResponseType(typeof(ApiResponse<CompraFacturaDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PurchBillDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Aprobar(Guid id, CancellationToken ct = default)
     {
@@ -161,10 +161,10 @@ public sealed class ComprasController : ControllerBase
 
     /// <summary>Rechaza una compra (Borrador o Validada) con un motivo obligatorio.</summary>
     /// <response code="200">Compra rechazada.</response>
-    /// <response code="400">La compra ya está Aprobada o Rechazada.</response>
+    /// <response code="400">La compra ya estÃ¡ Aprobada o Rechazada.</response>
     [HttpPatch("{id:guid}/rechazar")]
     [Authorize(Policy = "perm:compras.facturas.reject")]
-    [ProducesResponseType(typeof(ApiResponse<CompraFacturaDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PurchBillDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Rechazar(
         Guid id,
@@ -178,3 +178,4 @@ public sealed class ComprasController : ControllerBase
 
 /// <summary>Cuerpo del request de rechazo.</summary>
 public sealed record RechazarCompraRequest(string Motivo);
+

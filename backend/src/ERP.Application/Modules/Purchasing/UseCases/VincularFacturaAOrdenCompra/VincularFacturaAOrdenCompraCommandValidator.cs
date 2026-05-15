@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.VincularFacturaAOrdenCompra;
 
@@ -11,7 +11,7 @@ public sealed class VincularFacturaAOrdenCompraCommandValidator
             .NotEmpty()
             .WithMessage("El ID de la orden de compra es obligatorio.");
 
-        RuleFor(x => x.CompraFacturaId)
+        RuleFor(x => x.PurchBillId)
             .NotEmpty()
             .WithMessage("El ID de la factura de compra es obligatorio.");
     }

@@ -1,24 +1,24 @@
-namespace ERP.Application.Inventory.DTOs;
+﻿namespace ERP.Application.Inventory.DTOs;
 
-public record AjusteInventarioDto(
+public record StockAdjustmentDto(
     Guid      Id,
     string    NumeroAjuste,
-    Guid      BodegaId,
+    Guid    WarehouseId,
     string    BodegaNombre,
-    Guid      ProductoId,
+    Guid    ProductId,
     string    ProductoNombre,
     decimal   CantidadAjuste,
     string    TipoAjuste,
-    string    Motivo,
-    string?   Observaciones,
+    string  Reason,
+    string? Notes,
     DateTime  FechaAjuste,
-    string    Estado,
+    string    Status,
     DateTime? FechaEjecucion,
     Guid?     EjecutadoPor,
     DateTime  CreatedAt);
 
 public record AjustesPagedResult(
-    IReadOnlyList<AjusteInventarioDto> Items,
+    IReadOnlyList<StockAdjustmentDto> Items,
     int TotalCount,
     int PageNumber,
     int PageSize);

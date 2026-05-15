@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using ERP.API.Attributes;
 using ERP.Domain.Modules.Menu.Entities;
 using ERP.Infrastructure.Persistence;
@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore;
 namespace ERP.API.Services;
 
 /// <summary>
-/// Descubre <see cref="ModuloAttribute"/> en controladores/acciones y sincroniza la tabla <c>funcionalidades</c>.
-/// Omite filas cuyo <see cref="ModuloAttribute.PermisoBase"/> comienza por <c>SuperAdmin</c> (insensible a mayúsculas).
+/// Descubre <see cref="ModuloAttribute"/> en controladores/acciones y sincroniza la tabla <c>AppFeatures</c>.
+/// Omite filas cuyo <see cref="ModuloAttribute.PermisoBase"/> comienza por <c>SuperAdmin</c> (insensible a mayÃºsculas).
 /// </summary>
 public sealed class ModuloDiscoveryService
 {
@@ -77,8 +77,8 @@ public sealed class ModuloDiscoveryService
         var utc = DateTime.UtcNow;
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
-        var tracked = await _db.Funcionalidades.AsTracking()
-            .ToDictionaryAsync(x => x.Permiso, x => x, StringComparer.OrdinalIgnoreCase, ct);
+        var tracked = await _db.AppFeatures.AsTracking()
+            .ToDictionaryAsync(x => x.Permission, x => x, StringComparer.OrdinalIgnoreCase, ct);
 
         var permToId = tracked.ToDictionary(x => x.Key, x => x.Value.Id, StringComparer.OrdinalIgnoreCase);
 
@@ -92,7 +92,7 @@ public sealed class ModuloDiscoveryService
             if (batch.Count == 0)
             {
                 foreach (var orphan in pending)
-                    _logger.LogWarning("Funcionalidad con padre no resuelto (omitida): {Permiso} → padre {Padre}", orphan.Permiso, orphan.PadrePermiso);
+                    _logger.LogWarning("AppFeature con padre no resuelto (omitida): {Permiso} â†’ padre {Padre}", orphan.Permiso, orphan.PadrePermiso);
                 break;
             }
 
@@ -109,7 +109,7 @@ public sealed class ModuloDiscoveryService
                 }
                 else
                 {
-                    var created = Funcionalidad.Create(
+                    var created = AppFeature.Create(
                         r.Nombre,
                         r.Icono,
                         r.Ruta,
@@ -119,7 +119,7 @@ public sealed class ModuloDiscoveryService
                         r.VisibleEnMenu,
                         r.EsSuperAdmin,
                         utc);
-                    _db.Funcionalidades.Add(created);
+                    _db.AppFeatures.Add(created);
                     tracked[r.Permiso] = created;
                     permToId[r.Permiso] = created.Id;
                 }
@@ -129,7 +129,7 @@ public sealed class ModuloDiscoveryService
         }
 
         await tx.CommitAsync(ct);
-        _logger.LogInformation("Sincronización de funcionalidades completada ({Count} permisos únicos).", byPerm.Count);
+        _logger.LogInformation("SincronizaciÃ³n de AppFeatures completada ({Count} permisos Ãºnicos).", byPerm.Count);
         return byPerm.Count;
     }
 
@@ -164,3 +164,5 @@ public sealed class ModuloDiscoveryService
         return m.GetCustomAttributes(inherit: true).Any(static a => a is HttpMethodAttribute);
     }
 }
+
+

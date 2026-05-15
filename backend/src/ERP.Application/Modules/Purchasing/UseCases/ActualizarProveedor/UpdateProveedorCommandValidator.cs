@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 using ERP.Application.Common;
 using ERP.Domain.Common.Validators;
 using ERP.Domain.Modules.Purchasing.Entities;
@@ -9,45 +9,45 @@ namespace ERP.Application.Modules.Purchasing.UseCases.ActualizarProveedor;
 public sealed class UpdateProveedorCommandValidator : AbstractValidator<UpdateProveedorCommand>
 {
     public UpdateProveedorCommandValidator(
-        IProveedorRepository repo,
+        ISupplierRepository repo,
         ICurrentTenant tenant)
     {
         RuleFor(x => x.Id)
-            .NotEmpty().WithMessage("El ID del proveedor es obligatorio.");
+            .NotEmpty().WithMessage("El ID del Supplier es obligatorio.");
 
-        RuleFor(x => x.TipoPersona)
+        RuleFor(x => x.PersonType)
             .NotEmpty().WithMessage("El tipo de persona es obligatorio.")
-            .Must(t => t == Proveedor.TipoNatural || t == Proveedor.TipoJuridica)
-            .WithMessage($"TipoPersona debe ser '{Proveedor.TipoNatural}' o '{Proveedor.TipoJuridica}'.");
+            .Must(t => t == Supplier.TypeNatural || t == Supplier.TypeLegal)
+            .WithMessage($"TipoPersona debe ser '{Supplier.TypeNatural}' o '{Supplier.TypeLegal}'.");
 
-        RuleFor(x => x.RazonSocial)
+        RuleFor(x => x.LegalName)
             .NotEmpty().WithMessage("La razón social es obligatoria.")
-            .MaximumLength(Proveedor.RazonSocialMaxLen);
+            .MaximumLength(Supplier.LegalNameMaxLen);
 
         RuleFor(x => x.Ruc)
             .NotEmpty().WithMessage("El RUC es obligatorio.")
-            .Length(Proveedor.RucMaxLen).WithMessage("El RUC debe tener exactamente 13 dígitos.")
+            .Length(Supplier.RucMaxLen).WithMessage("El RUC debe tener exactamente 13 dígitos.")
             .Must(ruc => RucValidator.EsRucValido(ruc))
             .WithMessage("El RUC no es válido según el algoritmo del SRI (módulo 10/11).")
             .MustAsync(async (command, ruc, ct) =>
                 !await repo.ExistsRucAsync(tenant.TenantId, ruc, command.Id, ct))
-            .WithMessage("Ya existe otro proveedor con ese RUC en el tenant.");
+            .WithMessage("Ya existe otro Supplier con ese RUC en el tenant.");
 
-        RuleFor(x => x.Correo)
+        RuleFor(x => x.Email)
             .EmailAddress().WithMessage("El correo electrónico no es válido.")
-            .MaximumLength(Proveedor.CorreoMaxLen)
-            .When(x => !string.IsNullOrWhiteSpace(x.Correo));
+            .MaximumLength(Supplier.EmailMaxLen)
+            .When(x => !string.IsNullOrWhiteSpace(x.Email));
 
-        RuleFor(x => x.Telefono)
-            .MaximumLength(Proveedor.TelefonoMaxLen)
-            .When(x => !string.IsNullOrWhiteSpace(x.Telefono));
+        RuleFor(x => x.Phone)
+            .MaximumLength(Supplier.PhoneMaxLen)
+            .When(x => !string.IsNullOrWhiteSpace(x.Phone));
 
-        RuleFor(x => x.Direccion)
-            .MaximumLength(Proveedor.DireccionMaxLen)
-            .When(x => !string.IsNullOrWhiteSpace(x.Direccion));
+        RuleFor(x => x.Address)
+            .MaximumLength(Supplier.AddressMaxLen)
+            .When(x => !string.IsNullOrWhiteSpace(x.Address));
 
-        RuleFor(x => x.CondicionPago)
+        RuleFor(x => x.PaymentTerms)
             .NotEmpty().WithMessage("La condición de pago es obligatoria.")
-            .MaximumLength(Proveedor.CondicionPagoMaxLen);
+            .MaximumLength(Supplier.PaymentTermsMaxLen);
     }
 }

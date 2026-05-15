@@ -1,14 +1,14 @@
-@model ERP.Application.Sales.Models.FacturaTirillaModel
+﻿@model ERP.Application.Sales.Models.FacturaTirillaModel
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="utf-8" />
     <title>Tirilla de Factura</title>
     <style>
-        /* Tirilla térmica: ancho según ConfiguracionFacturacion.AnchoTirilla (58 o 80 mm) */
+        /* Tirilla tÃ©rmica: ancho segÃºn ConfiguracionFacturacion.ReceiptWidth (58 o 80 mm) */
         body {
-            width: @(Model.Configuracion.AnchoTirilla + 8)mm;
-            max-width: @(Model.Configuracion.AnchoTirilla + 8)mm;
+            width: @(Model.Configuracion.ReceiptWidth + 8)mm;
+            max-width: @(Model.Configuracion.ReceiptWidth + 8)mm;
             margin: 0;
             padding: 8px 4px;
             font-family: "Segoe UI", Arial, sans-serif;
@@ -19,7 +19,7 @@
 
         .ticket {
             width: 100%;
-            max-width: @(Model.Configuracion.AnchoTirilla)mm;
+            max-width: @(Model.Configuracion.ReceiptWidth)mm;
         }
 
         .center {
@@ -96,14 +96,14 @@
             {
                 <img src="data:image/png;base64,@Model.Configuracion.LogoBase64" alt="Logo" />
             }
-            <div class="bold">@Model.Configuracion.NombreComercial</div>
-            <div class="small">@Model.Configuracion.RazonSocial</div>
+            <div class="bold">@Model.Configuracion.TradeName</div>
+            <div class="small">@Model.Configuracion.LegalName</div>
             <div class="small">RUC: @Model.Configuracion.Ruc</div>
-            <div class="small">@Model.Configuracion.DireccionMatriz</div>
-            <div class="small">Tel: @Model.Configuracion.Telefono</div>
-            @if (!string.IsNullOrWhiteSpace(Model.Configuracion.Correo))
+            <div class="small">@Model.Configuracion.MainAddress</div>
+            <div class="small">Tel: @Model.Configuracion.Phone</div>
+            @if (!string.IsNullOrWhiteSpace(Model.Configuracion.Email))
             {
-                <div class="small">@Model.Configuracion.Correo</div>
+                <div class="small">@Model.Configuracion.Email</div>
             }
         </div>
 
@@ -112,21 +112,21 @@
         <table class="invoice-meta small">
             <tr>
                 <td>Factura:</td>
-                <td class="bold">@Model.Venta.TipoDocumento-@Model.Venta.Establecimiento-@Model.Venta.PuntoEmision-@Model.Venta.Secuencial</td>
+                <td class="bold">@Model.Venta.DocType-@Model.Venta.EstabCode-@Model.Venta.EmPointCode-@Model.Venta.Sequential</td>
             </tr>
             <tr>
                 <td>Fecha:</td>
-                <td>@Model.Venta.FechaEmision.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>@Model.Venta.IssueDate.ToString("dd/MM/yyyy HH:mm")</td>
             </tr>
             <tr>
                 <td>Estado:</td>
-                <td>@Model.Venta.Estado</td>
+                <td>@Model.Venta.Status</td>
             </tr>
-            @if (!string.IsNullOrWhiteSpace(Model.Venta.NumeroAutorizacion))
+            @if (!string.IsNullOrWhiteSpace(Model.Venta.AuthNumber))
             {
                 <tr>
-                    <td>Autorización:</td>
-                    <td>@Model.Venta.NumeroAutorizacion</td>
+                    <td>AutorizaciÃ³n:</td>
+                    <td>@Model.Venta.AuthNumber</td>
                 </tr>
             }
         </table>
@@ -139,13 +139,13 @@
                 <td class="bold">@(!string.IsNullOrWhiteSpace(Model.Venta.Cliente.TradeName) ? Model.Venta.Cliente.TradeName : Model.Venta.Cliente.LegalName)</td>
             </tr>
             <tr>
-                <td>Identificación:</td>
+                <td>IdentificaciÃ³n:</td>
                 <td>@Model.Venta.Cliente.IdentificationType @Model.Venta.Cliente.IdentificationNumber</td>
             </tr>
             @if (!string.IsNullOrWhiteSpace(Model.Venta.Cliente.AddressLine))
             {
                 <tr>
-                    <td>Dirección:</td>
+                    <td>DirecciÃ³n:</td>
                     <td>@Model.Venta.Cliente.AddressLine</td>
                 </tr>
             }
@@ -156,19 +156,19 @@
         <table class="items small">
             <thead>
                 <tr>
-                    <th class="description">Descripción</th>
+                    <th class="description">DescripciÃ³n</th>
                     <th class="quantity">Qty</th>
                     <th class="price">P.U.</th>
                     <th class="total">Total</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach (var detalle in Model.Venta.Detalles)
+                @foreach (var detalle in Model.Venta.Lines)
                 {
                     <tr>
-                        <td class="description">@detalle.Descripcion</td>
-                        <td class="quantity">@detalle.Cantidad</td>
-                        <td class="price">@detalle.PrecioUnitario.ToString("N2")</td>
+                        <td class="description">@detalle.Description</td>
+                        <td class="quantity">@detalle.Quantity</td>
+                        <td class="price">@detalle.UnitPrice.ToString("N2")</td>
                         <td class="total">@detalle.Total.ToString("N2")</td>
                     </tr>
                 }
@@ -184,7 +184,7 @@
             </tr>
             <tr>
                 <td>Impuesto</td>
-                <td class="total">@Model.Venta.Impuesto.ToString("N2")</td>
+                <td class="total">@Model.Venta.VatTotal.ToString("N2")</td>
             </tr>
             <tr class="bold">
                 <td>Total</td>
@@ -194,9 +194,9 @@
 
         <div class="line"></div>
 
-        @if (!string.IsNullOrWhiteSpace(Model.Configuracion.LeyendaAdicional))
+        @if (!string.IsNullOrWhiteSpace(Model.Configuracion.FooterText))
         {
-            <div class="small center">@Model.Configuracion.LeyendaAdicional</div>
+            <div class="small center">@Model.Configuracion.FooterText</div>
         }
 
         @if (Model.EsPrueba)
@@ -204,10 +204,12 @@
             <div class="small center bold spacer">FACTURA DE PRUEBA</div>
         }
 
-        @if (!string.IsNullOrWhiteSpace(Model.Venta.ClaveAcceso))
+        @if (!string.IsNullOrWhiteSpace(Model.Venta.AccessKey))
         {
-            <div class="barcode">@Model.Venta.ClaveAcceso</div>
+            <div class="barcode">@Model.Venta.AccessKey</div>
         }
     </section>
 </body>
 </html>
+
+

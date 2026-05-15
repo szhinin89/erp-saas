@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Domain.Modules.Cash.Interfaces;
@@ -6,46 +6,46 @@ using ERP.Domain.Modules.Cash.Interfaces;
 namespace ERP.Application.Modules.Cash.UseCases;
 
 public sealed record ExtractoDetalleDto(
-    ExtractoBancarioDto Cabecera,
-    IReadOnlyList<MovimientoBancarioDto> Movimientos);
+    BankStatementDto Cabecera,
+    IReadOnlyList<BankTransactionDto> Rows);
 
 public sealed record GetExtractoDetalleQuery(Guid ExtractoId) : IRequest<Result<ExtractoDetalleDto>>;
 
 public sealed class GetExtractoDetalleQueryHandler : IRequestHandler<GetExtractoDetalleQuery, Result<ExtractoDetalleDto>>
 {
-    private readonly ICajaRepository _caja;
+    private readonly ICashRepository _caja;
 
-    public GetExtractoDetalleQueryHandler(ICajaRepository caja) => _caja = caja;
+    public GetExtractoDetalleQueryHandler(ICashRepository caja) => _caja = caja;
 
     public async Task<Result<ExtractoDetalleDto>> Handle(GetExtractoDetalleQuery request, CancellationToken ct)
     {
-        var x = await _caja.GetExtractoWithMovimientosAsync(request.ExtractoId, ct);
+        var x = await _caja.GetBankStatementWithTransactionsAsync(request.ExtractoId, ct);
         if (x is null)
             return Result<ExtractoDetalleDto>.Failure("Extracto no encontrado.");
 
-        var cab = new ExtractoBancarioDto(
+        var cab = new BankStatementDto(
             x.Id,
-            x.CuentaBancariaId,
-            x.PeriodoDesde,
-            x.PeriodoHasta,
-            x.SaldoInicialExtracto,
-            x.SaldoFinalExtracto,
-            x.FechaCarga,
-            x.Conciliado,
-            x.Movimientos.Count);
+            x.BankAccountId,
+            x.PeriodFrom,
+            x.PeriodTo,
+            x.OpeningBalance,
+            x.ClosingBalance,
+            x.LoadedAt,
+            x.IsReconciled,
+            x.Transactions.Count);
 
-        var movs = x.Movimientos
-            .OrderBy(m => m.Fecha)
-            .Select(m => new MovimientoBancarioDto(
+        var movs = x.Transactions
+            .OrderBy(m => m.TransactionDate)
+            .Select(m => new BankTransactionDto(
                 m.Id,
-                m.ExtractoBancarioId,
-                m.Fecha,
-                m.Descripcion,
-                m.Monto,
-                m.Tipo,
-                m.Referencia,
-                m.AsientoContableId,
-                m.Estado))
+                m.BankStatementId,
+                m.TransactionDate,
+                m.Description,
+                m.Amount,
+                m.TransactionType,
+                m.Reference,
+                m.JournalEntryId,
+                m.Status))
             .ToList();
 
         return Result<ExtractoDetalleDto>.Success(new ExtractoDetalleDto(cab, movs));

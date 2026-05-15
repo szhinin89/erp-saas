@@ -1,21 +1,21 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
-namespace ERP.Application.Modules.Inventory.UseCases.GetStockActualPorBodega;
+namespace ERP.Application.Modules.Inventory.UseCases.GetCurrentStockPorBodega;
 
-public sealed class GetStockActualPorBodegaQueryHandler
-    : IRequestHandler<GetStockActualPorBodegaQuery, Result<IReadOnlyList<StockActualListItemDto>>>
+public sealed class GetCurrentStockPorBodegaQueryHandler
+    : IRequestHandler<GetCurrentStockPorBodegaQuery, Result<IReadOnlyList<CurrentStockListItemDto>>>
 {
-    private readonly IInventarioStockRepository _stock;
-    private readonly IBodegaRepository          _bodegas;
+    private readonly IStockRepository _stock;
+    private readonly IWarehouseRepository          _bodegas;
     private readonly ICurrentTenant             _tenant;
 
-    public GetStockActualPorBodegaQueryHandler(
-        IInventarioStockRepository stock,
-        IBodegaRepository bodegas,
+    public GetCurrentStockPorBodegaQueryHandler(
+        IStockRepository stock,
+        IWarehouseRepository bodegas,
         ICurrentTenant tenant)
     {
         _stock   = stock;
@@ -23,25 +23,25 @@ public sealed class GetStockActualPorBodegaQueryHandler
         _tenant  = tenant;
     }
 
-    public async Task<Result<IReadOnlyList<StockActualListItemDto>>> Handle(
-        GetStockActualPorBodegaQuery query,
+    public async Task<Result<IReadOnlyList<CurrentStockListItemDto>>> Handle(
+        GetCurrentStockPorBodegaQuery query,
         CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
-        var bodega   = await _bodegas.GetByIdAsync(tenantId, query.BodegaId, ct);
-        if (bodega is null)
-            return Result<IReadOnlyList<StockActualListItemDto>>.Failure("Bodega no encontrada.");
+        var Warehouse   = await _bodegas.GetByIdAsync(tenantId, query.WarehouseId, ct);
+        if (Warehouse is null)
+            return Result<IReadOnlyList<CurrentStockListItemDto>>.Failure("Warehouse no encontrada.");
 
-        var rows = await _stock.GetStockByTenantBodegaAsync(tenantId, query.BodegaId, query.ProductoId, ct);
-        var dtos = rows.Select(s => new StockActualListItemDto(
+        var rows = await _stock.GetStockByWarehouseAsync(tenantId, query.WarehouseId, query.ProductId, ct);
+        var dtos = rows.Select(s => new CurrentStockListItemDto(
             s.Id,
-            s.ProductoId,
-            s.BodegaId,
-            s.Cantidad,
-            s.CantidadReservada,
-            s.CantidadDisponible,
-            s.UltimaActualizacion)).ToList();
+            s.ProductId,
+            s.WarehouseId,
+            s.Quantity,
+            s.ReservedQuantity,
+            s.AvailableQuantity,
+            s.LastUpdatedAt)).ToList();
 
-        return Result<IReadOnlyList<StockActualListItemDto>>.Success(dtos);
+        return Result<IReadOnlyList<CurrentStockListItemDto>>.Success(dtos);
     }
 }

@@ -1,7 +1,6 @@
 namespace ERP.Domain.Modules.Cash;
 
-/// <summary>Convierte un archivo de extracto bancario en movimientos normalizados.</summary>
-public interface IExtractoParser
+public interface IStatementParser
 {
-    Task<IReadOnlyList<MovimientoExtractoParseRow>> ParseAsync(Stream stream, CancellationToken ct = default);
+    Task<IReadOnlyList<StatementParseRow>> ParseAsync(Stream stream, CancellationToken ct = default);
 }

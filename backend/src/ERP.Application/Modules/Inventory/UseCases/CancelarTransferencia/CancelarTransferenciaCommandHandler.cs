@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
@@ -11,7 +11,7 @@ namespace ERP.Application.Inventory.UseCases.CancelarTransferencia;
 public sealed class CancelarTransferenciaCommandHandler
     : IRequestHandler<CancelarTransferenciaCommand, Result<TransferenciaDto>>
 {
-    private readonly ITransferenciaRepository _transferenciaRepo;
+    private readonly IStockTransferRepository _transferenciaRepo;
     private readonly IUserActivityRepository  _activity;
     private readonly ICurrentTenant           _currentTenant;
     private readonly ICurrentUser             _currentUser;
@@ -19,7 +19,7 @@ public sealed class CancelarTransferenciaCommandHandler
     private readonly ILogger<CancelarTransferenciaCommandHandler> _logger;
 
     public CancelarTransferenciaCommandHandler(
-        ITransferenciaRepository transferenciaRepo,
+        IStockTransferRepository transferenciaRepo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
@@ -40,46 +40,46 @@ public sealed class CancelarTransferenciaCommandHandler
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
-        var transferencia = await _transferenciaRepo.GetByIdAsync(tenantId, command.TransferenciaId, ct);
-        if (transferencia is null)
-            return Result<TransferenciaDto>.Failure("Transferencia no encontrada.");
+        var transfer = await _transferenciaRepo.GetByIdAsync(tenantId, command.TransferenciaId, ct);
+        if (transfer is null)
+            return Result<TransferenciaDto>.Failure("transfer no encontrada.");
 
-        if (transferencia.Estado != "Borrador")
+        if (transfer.Status != "Borrador")
             return Result<TransferenciaDto>.Failure(
-                $"Solo se puede cancelar una transferencia en Borrador (estado actual: {transferencia.Estado}).");
+                $"Solo se puede cancelar una transfer en Borrador (estado actual: {transfer.Status}).");
 
-        transferencia.Cancelar(userId);
+        transfer.Cancel(userId);
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _currentUser.Email, _currentUser.FullName,
-                module: "inventario", action: "transferencia.cancelar",
-                entityType: "Transferencia", entityId: transferencia.Id,
-                description: transferencia.NumeroTransferencia), ct);
+                module: "inventario", action: "transfer.cancelar",
+                entityType: "transfer", entityId: transfer.Id,
+                description: transfer.TransferNumber), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
 
-            _logger.LogInformation("Transferencia cancelada: {Numero}", transferencia.NumeroTransferencia);
+            _logger.LogInformation("transfer cancelada: {Numero}", transfer.TransferNumber);
 
             return Result<TransferenciaDto>.Success(new TransferenciaDto(
-            transferencia.Id, transferencia.NumeroTransferencia,
-            transferencia.BodegaOrigenId,
-            transferencia.BodegaOrigen?.Nombre ?? transferencia.BodegaOrigenId.ToString(),
-            transferencia.BodegaDestinoId,
-            transferencia.BodegaDestino?.Nombre ?? transferencia.BodegaDestinoId.ToString(),
-            transferencia.FechaTransferencia, transferencia.Estado,
-            transferencia.Motivo, transferencia.Observaciones,
-            transferencia.FechaConfirmacion, transferencia.ConfirmadoPor,
-            transferencia.CreatedAt));
+            transfer.Id, transfer.TransferNumber,
+            transfer.SourceWarehouseId,
+            transfer.SourceWarehouse?.Name ?? transfer.SourceWarehouseId.ToString(),
+            transfer.TargetWarehouseId,
+            transfer.TargetWarehouse?.Name ?? transfer.TargetWarehouseId.ToString(),
+            transfer.TransferDate, transfer.Status,
+            transfer.Reason, transfer.Notes,
+            transfer.ConfirmedAt, transfer.ConfirmedBy,
+            transfer.CreatedAt));
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al cancelar transferencia {Id}", command.TransferenciaId);
-            return Result<TransferenciaDto>.Failure($"No se pudo cancelar la transferencia: {ex.Message}");
+            _logger.LogError(ex, "Error al cancelar transfer {Id}", command.TransferenciaId);
+            return Result<TransferenciaDto>.Failure($"No se pudo cancelar la transfer: {ex.Message}");
         }
     }
 }

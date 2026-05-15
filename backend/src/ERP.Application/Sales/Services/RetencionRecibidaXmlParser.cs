@@ -1,15 +1,15 @@
-using System.Xml.Linq;
+﻿using System.Xml.Linq;
 
 namespace ERP.Application.Sales.Services;
 
-/// <summary>Extracción mínima de datos desde XML de comprobante de retención (SRI / proveedor).</summary>
+/// <summary>Extracción mínima de datos desde XML de comprobante de retención (SRI / Supplier).</summary>
 public static class RetencionRecibidaXmlParser
 {
-    public static bool TryParse(string xml, out string claveAcceso, out DateTime? fechaEmision, out decimal totalRetenido)
+    public static bool TryParse(string xml, out string claveAcceso, out DateTime? fechaEmision, out decimal  totalRetained)
     {
         claveAcceso   = string.Empty;
         fechaEmision = null;
-        totalRetenido = 0m;
+        totalRetained = 0m;
         try
         {
             var doc = XDocument.Parse(xml);
@@ -54,7 +54,7 @@ public static class RetencionRecibidaXmlParser
                     suma = vr;
             }
 
-            totalRetenido = suma;
+            totalRetained = suma;
             return true;
         }
         catch

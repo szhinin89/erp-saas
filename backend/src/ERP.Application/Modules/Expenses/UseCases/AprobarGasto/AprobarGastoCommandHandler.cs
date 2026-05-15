@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -12,9 +12,9 @@ using ERP.Domain.Modules.Expenses.Interfaces;
 namespace ERP.Application.Modules.Expenses.UseCases.AprobarGasto;
 
 public sealed class AprobarGastoCommandHandler
-    : IRequestHandler<AprobarGastoCommand, Result<GastoFacturaDto>>
+    : IRequestHandler<AprobarGastoCommand, Result<ExpenseInvoiceDto>>
 {
-    private readonly IGastoFacturaRepository   _repo;
+    private readonly IExpenseInvoiceRepository   _repo;
     private readonly IAccountingService      _accounting;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
@@ -23,7 +23,7 @@ public sealed class AprobarGastoCommandHandler
     private readonly ILogger<AprobarGastoCommandHandler> _logger;
 
     public AprobarGastoCommandHandler(
-        IGastoFacturaRepository repo,
+        IExpenseInvoiceRepository repo,
         IAccountingService accounting,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
@@ -40,76 +40,76 @@ public sealed class AprobarGastoCommandHandler
         _logger     = logger;
     }
 
-    public async Task<Result<GastoFacturaDto>> Handle(AprobarGastoCommand command, CancellationToken ct)
+    public async Task<Result<ExpenseInvoiceDto>> Handle(AprobarGastoCommand command, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
-        var gasto = await _repo.GetByIdAsync(tenantId, command.GastoFacturaId, ct);
+        var gasto = await _repo.GetByIdAsync(tenantId, command.ExpenseInvoiceId, ct);
         if (gasto is null)
-            return Result<GastoFacturaDto>.Failure("Gasto no encontrado.");
+            return Result<ExpenseInvoiceDto>.Failure("Gasto no encontrado.");
 
-        if (gasto.Estado != EstadoGasto.Validado)
-            return Result<GastoFacturaDto>.Failure(
-                $"Solo se puede aprobar un gasto Validado (estado actual: {gasto.Estado}).");
+        if (gasto.Status != ExpenseStatus.Validated)
+            return Result<ExpenseInvoiceDto>.Failure(
+                $"Solo se puede aprobar un gasto Validado (estado actual: {gasto.Status}).");
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var referencia = gasto.NumeroFactura ?? gasto.ClaveAcceso ?? gasto.Id.ToString("N")[..8];
+            var referencia = gasto.InvoiceNumber ?? gasto.AccessKey ?? gasto.Id.ToString("N")[..8];
             var asientoResult = await _accounting.CrearAsientoGastoAsync(
                 gasto.Id,
-                gasto.CategoriaGasto,
-                referencia:  referencia,
-                fecha:       gasto.FechaEmision,
-                subtotal:    gasto.Subtotal,
-                impuesto:    gasto.Impuesto,
+                gasto.Category,
+                reference:  referencia,
+                date:       gasto.IssueDate,
+                subtotal: gasto.Subtotal,
+                vatTotal: gasto.TaxTotal,
                 total:       gasto.Total,
-                descripcion: $"Gasto {gasto.Concepto} — {gasto.CategoriaGasto}",
+                description: $"Gasto {gasto.Concept} — {gasto.Category}",
                 ct);
 
             if (!asientoResult.IsSuccess)
             {
                 await _unitOfWork.RollbackAsync(ct);
-                return Result<GastoFacturaDto>.Failure(
+                return Result<ExpenseInvoiceDto>.Failure(
                     asientoResult.Error ?? "No se pudo registrar el asiento contable del gasto.");
             }
 
-            gasto.Aprobar(userId, asientoResult.Value);
+            gasto.Approve(userId, asientoResult.Value);
 
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _user.Email, _user.FullName,
                 module: "gastos", action: "gasto.aprobar",
-                entityType: "GastoFactura", entityId: gasto.Id,
-                description: $"{gasto.Concepto} — asiento: {asientoResult.Value}"), ct);
+                entityType: "ExpenseInvoice", entityId: gasto.Id,
+                description: $"{gasto.Concept} — asiento: {asientoResult.Value}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
 
-            return Result<GastoFacturaDto>.Success(ToDto(gasto));
+            return Result<ExpenseInvoiceDto>.Success(ToDto(gasto));
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al aprobar gasto {GastoId}", command.GastoFacturaId);
-            return Result<GastoFacturaDto>.Failure($"No se pudo aprobar el gasto: {ex.Message}");
+            _logger.LogError(ex, "Error al aprobar gasto {GastoId}", command.ExpenseInvoiceId);
+            return Result<ExpenseInvoiceDto>.Failure($"No se pudo aprobar el gasto: {ex.Message}");
         }
     }
 
-    private static GastoFacturaDto ToDto(GastoFactura g) => new(
+    private static ExpenseInvoiceDto ToDto(ExpenseInvoice g) => new(
         g.Id,
-        g.ClaveAcceso,
-        g.FechaEmision,
-        g.ProveedorId,
-        g.NumeroFactura,
-        g.Concepto,
-        g.CategoriaGasto,
+        g.AccessKey,
+        g.IssueDate,
+        g.SupplierId,
+        g.InvoiceNumber,
+        g.Concept,
+        g.Category,
         g.Subtotal,
-        g.Impuesto,
+        g.TaxTotal,
         g.Total,
-        g.Estado,
+        g.Status,
         g.XmlPath,
-        g.Observaciones,
-        g.AsientoContableId,
+        g.Notes,
+        g.JournalEntryId,
         g.CreatedAt);
 }

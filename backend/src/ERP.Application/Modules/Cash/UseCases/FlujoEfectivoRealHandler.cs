@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Application.Common;
@@ -7,18 +7,18 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 
 namespace ERP.Application.Modules.Cash.UseCases;
 
-public sealed record GetFlujoEfectivoRealQuery(DateTime Desde, DateTime Hasta)
+public sealed record GetFlujoEfectivoRealQuery(DateTime DateFrom, DateTime DateTo)
     : IRequest<Result<IReadOnlyList<FlujoEfectivoDiaDto>>>;
 
 public sealed class GetFlujoEfectivoRealQueryHandler
     : IRequestHandler<GetFlujoEfectivoRealQuery, Result<IReadOnlyList<FlujoEfectivoDiaDto>>>
 {
-    private readonly ICajaRepository _caja;
+    private readonly ICashRepository _caja;
     private readonly IAccountingRepository _accounting;
     private readonly ICurrentTenant _tenant;
 
     public GetFlujoEfectivoRealQueryHandler(
-        ICajaRepository caja,
+        ICashRepository caja,
         IAccountingRepository accounting,
         ICurrentTenant tenant)
     {
@@ -33,15 +33,15 @@ public sealed class GetFlujoEfectivoRealQueryHandler
     {
         var ids = new HashSet<Guid>();
 
-        foreach (var c in await _caja.ListCuentasBancariasAsync(ct))
+        foreach (var c in await _caja.ListBankAccountsAsync(ct))
         {
-            if (c.CuentaContableId is { } bid)
+            if (c.LedgerAccountId is { } bid)
                 ids.Add(bid);
         }
 
-        foreach (var c in await _caja.ListCajasChicasAsync(ct))
+        foreach (var c in await _caja.ListPettyCashesAsync(ct))
         {
-            if (c.CuentaContableCajaId is { } cid)
+            if (c.LedgerAccountId is { } cid)
                 ids.Add(cid);
         }
 
@@ -54,8 +54,8 @@ public sealed class GetFlujoEfectivoRealQueryHandler
         var lines = await _accounting.GetPostedLineAmountsByAccountsAsync(
             _tenant.TenantId,
             ids.ToList(),
-            request.Desde,
-            request.Hasta,
+            request.DateFrom,
+            request.DateTo,
             ct);
 
         var porDia = lines

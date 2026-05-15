@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Application.Common;
@@ -7,52 +7,52 @@ using ERP.Domain.Modules.Cash.Interfaces;
 
 namespace ERP.Application.Modules.Cash.UseCases;
 
-public sealed record ListCuentasBancariasQuery : IRequest<Result<IReadOnlyList<CuentaBancariaDto>>>;
+public sealed record ListCuentasBancariasQuery : IRequest<Result<IReadOnlyList<BankAccountDto>>>;
 
 public sealed class ListCuentasBancariasQueryHandler
-    : IRequestHandler<ListCuentasBancariasQuery, Result<IReadOnlyList<CuentaBancariaDto>>>
+    : IRequestHandler<ListCuentasBancariasQuery, Result<IReadOnlyList<BankAccountDto>>>
 {
-    private readonly ICajaRepository _caja;
+    private readonly ICashRepository _caja;
 
-    public ListCuentasBancariasQueryHandler(ICajaRepository caja) => _caja = caja;
+    public ListCuentasBancariasQueryHandler(ICashRepository caja) => _caja = caja;
 
-    public async Task<Result<IReadOnlyList<CuentaBancariaDto>>> Handle(
+    public async Task<Result<IReadOnlyList<BankAccountDto>>> Handle(
         ListCuentasBancariasQuery request,
         CancellationToken ct)
     {
-        var list = await _caja.ListCuentasBancariasAsync(ct);
-        return Result<IReadOnlyList<CuentaBancariaDto>>.Success(
-            list.Select(x => new CuentaBancariaDto(
+        var list = await _caja.ListBankAccountsAsync(ct);
+        return Result<IReadOnlyList<BankAccountDto>>.Success(
+            list.Select(x => new BankAccountDto(
                 x.Id,
-                x.Nombre,
-                x.NumeroCuenta,
-                x.TipoCuenta,
-                x.Moneda,
-                x.SaldoInicial,
-                x.SaldoActual,
+                x.Name,
+                x.AccountNumber,
+                x.AccountType,
+                x.Currency,
+                x.InitialBalance,
+                x.CurrentBalance,
                 x.IsActive,
-                x.CuentaContableId)).ToList());
+                x.LedgerAccountId)).ToList());
     }
 }
 
-public sealed record CrearCuentaBancariaCommand(
-    string Nombre,
-    string NumeroCuenta,
-    string TipoCuenta,
-    string Moneda,
-    decimal SaldoInicial,
-    Guid? CuentaContableId) : IRequest<Result<CuentaBancariaDto>>;
+public sealed record CrearBankAccountCommand(
+    string Name,
+    string AccountNumber,
+    string AccountType,
+    string Currency,
+    decimal InitialBalance,
+    Guid? LedgerAccountId) : IRequest<Result<BankAccountDto>>;
 
-public sealed class CrearCuentaBancariaCommandHandler
-    : IRequestHandler<CrearCuentaBancariaCommand, Result<CuentaBancariaDto>>
+public sealed class CrearBankAccountCommandHandler
+    : IRequestHandler<CrearBankAccountCommand, Result<BankAccountDto>>
 {
-    private readonly ICajaRepository _caja;
+    private readonly ICashRepository _caja;
     private readonly ICurrentTenant _tenant;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
-    public CrearCuentaBancariaCommandHandler(
-        ICajaRepository caja,
+    public CrearBankAccountCommandHandler(
+        ICashRepository caja,
         ICurrentTenant tenant,
         ICurrentUser user,
         IUnitOfWork uow)
@@ -63,58 +63,58 @@ public sealed class CrearCuentaBancariaCommandHandler
         _uow    = uow;
     }
 
-    public async Task<Result<CuentaBancariaDto>> Handle(CrearCuentaBancariaCommand cmd, CancellationToken ct)
+    public async Task<Result<BankAccountDto>> Handle(CrearBankAccountCommand cmd, CancellationToken ct)
     {
-        var entity = CuentaBancaria.Create(
+        var entity = BankAccount.Create(
             _tenant.TenantId,
-            cmd.Nombre,
-            cmd.NumeroCuenta,
-            cmd.TipoCuenta,
-            cmd.Moneda,
-            cmd.SaldoInicial,
+            cmd.Name,
+            cmd.AccountNumber,
+            cmd.AccountType,
+            cmd.Currency,
+            cmd.InitialBalance,
             _user.UserId,
-            cmd.CuentaContableId);
-        await _caja.AddCuentaBancariaAsync(entity, ct);
+            cmd.LedgerAccountId);
+        await _caja.AddBankAccountAsync(entity, ct);
         await _uow.SaveChangesAsync(ct);
-        return Result<CuentaBancariaDto>.Success(
-            new CuentaBancariaDto(
+        return Result<BankAccountDto>.Success(
+            new BankAccountDto(
                 entity.Id,
-                entity.Nombre,
-                entity.NumeroCuenta,
-                entity.TipoCuenta,
-                entity.Moneda,
-                entity.SaldoInicial,
-                entity.SaldoActual,
+                entity.Name,
+                entity.AccountNumber,
+                entity.AccountType,
+                entity.Currency,
+                entity.InitialBalance,
+                entity.CurrentBalance,
                 entity.IsActive,
-                entity.CuentaContableId));
+                entity.LedgerAccountId));
     }
 }
 
-public sealed record ListExtractosPorCuentaQuery(Guid CuentaBancariaId)
-    : IRequest<Result<IReadOnlyList<ExtractoBancarioDto>>>;
+public sealed record ListExtractosPorCuentaQuery(Guid BankAccountId)
+    : IRequest<Result<IReadOnlyList<BankStatementDto>>>;
 
 public sealed class ListExtractosPorCuentaQueryHandler
-    : IRequestHandler<ListExtractosPorCuentaQuery, Result<IReadOnlyList<ExtractoBancarioDto>>>
+    : IRequestHandler<ListExtractosPorCuentaQuery, Result<IReadOnlyList<BankStatementDto>>>
 {
-    private readonly ICajaRepository _caja;
+    private readonly ICashRepository _caja;
 
-    public ListExtractosPorCuentaQueryHandler(ICajaRepository caja) => _caja = caja;
+    public ListExtractosPorCuentaQueryHandler(ICashRepository caja) => _caja = caja;
 
-    public async Task<Result<IReadOnlyList<ExtractoBancarioDto>>> Handle(
+    public async Task<Result<IReadOnlyList<BankStatementDto>>> Handle(
         ListExtractosPorCuentaQuery request,
         CancellationToken ct)
     {
-        var list = await _caja.ListExtractosByCuentaAsync(request.CuentaBancariaId, ct);
-        return Result<IReadOnlyList<ExtractoBancarioDto>>.Success(
-            list.Select(x => new ExtractoBancarioDto(
+        var list = await _caja.ListStatementsByAccountAsync(request.BankAccountId, ct);
+        return Result<IReadOnlyList<BankStatementDto>>.Success(
+            list.Select(x => new BankStatementDto(
                 x.Id,
-                x.CuentaBancariaId,
-                x.PeriodoDesde,
-                x.PeriodoHasta,
-                x.SaldoInicialExtracto,
-                x.SaldoFinalExtracto,
-                x.FechaCarga,
-                x.Conciliado,
-                x.Movimientos.Count)).ToList());
+                x.BankAccountId,
+                x.PeriodFrom,
+                x.PeriodTo,
+                x.OpeningBalance,
+                x.ClosingBalance,
+                x.LoadedAt,
+                x.IsReconciled,
+                x.Transactions.Count)).ToList());
     }
 }

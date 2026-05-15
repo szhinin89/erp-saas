@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -6,36 +6,36 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 namespace ERP.Application.Inventory.UseCases.GetAjusteById;
 
 public sealed class GetAjusteByIdQueryHandler
-    : IRequestHandler<GetAjusteByIdQuery, Result<AjusteInventarioDto?>>
+    : IRequestHandler<GetAjusteByIdQuery, Result<StockAdjustmentDto?>>
 {
-    private readonly IAjusteInventarioRepository _repo;
+    private readonly IStockAdjustmentRepository _repo;
     private readonly ICurrentTenant              _currentTenant;
 
     public GetAjusteByIdQueryHandler(
-        IAjusteInventarioRepository repo,
+        IStockAdjustmentRepository repo,
         ICurrentTenant currentTenant)
     {
         _repo          = repo;
         _currentTenant = currentTenant;
     }
 
-    public async Task<Result<AjusteInventarioDto?>> Handle(
+    public async Task<Result<StockAdjustmentDto?>> Handle(
         GetAjusteByIdQuery query, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var ajuste   = await _repo.GetByIdAsync(tenantId, query.AjusteId, ct);
 
         if (ajuste is null)
-            return Result<AjusteInventarioDto?>.Success(null);
+            return Result<StockAdjustmentDto?>.Success(null);
 
-        return Result<AjusteInventarioDto?>.Success(new(
-            ajuste.Id, ajuste.NumeroAjuste,
-            ajuste.BodegaId, ajuste.BodegaNombre,
-            ajuste.ProductoId, ajuste.ProductoNombre,
-            ajuste.CantidadAjuste, ajuste.TipoAjuste,
-            ajuste.Motivo, ajuste.Observaciones,
-            ajuste.FechaAjuste, ajuste.Estado,
-            ajuste.FechaEjecucion, ajuste.EjecutadoPor,
+        return Result<StockAdjustmentDto?>.Success(new(
+            ajuste.Id, ajuste.AdjustmentNumber,
+            ajuste.WarehouseId, ajuste.WarehouseName,
+            ajuste.ProductId, ajuste.ProductName,
+            ajuste.AdjustmentQty, ajuste.AdjustmentType,
+            ajuste.Reason, ajuste.Notes,
+            ajuste.AdjustmentDate, ajuste.Status,
+            ajuste.ExecutedAt, ajuste.ExecutedBy,
             ajuste.CreatedAt));
     }
 }

@@ -58,7 +58,7 @@ public class LoginHandlerTests
             passwordHasher.Object,
             refreshTokenService.Object);
 
-        var result = await handler.HandleAsync(new LoginCommand(email, password));
+        var result = await handler.Handle(new LoginCommand(email, password), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();

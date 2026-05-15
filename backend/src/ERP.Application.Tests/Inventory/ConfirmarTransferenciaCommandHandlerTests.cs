@@ -14,7 +14,7 @@ using Moq;
 namespace ERP.Application.Tests.Inventario;
 
 /// <summary>
-/// Pruebas unitarias de ConfirmarTransferenciaCommandHandler con mocks de IInventarioStockRepository.
+/// Pruebas unitarias de ConfirmarTransferenciaCommandHandler con mocks de IStockRepository.
 /// Verifican el movimiento atómico de stock y el manejo de transacciones,
 /// incluyendo el escenario de stock insuficiente por concurrencia.
 /// </summary>
@@ -32,15 +32,15 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
         var result = await ctx.Handle();
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Estado.Should().Be("Confirmado");
+        result.Value!.Status.Should().Be("Confirmed");
         result.Value.FechaConfirmacion.Should().NotBeNull();
 
         // 2 movimientos: TransferenciaSalida + TransferenciaEntrada
         ctx.Movimientos.Should().HaveCount(2);
         ctx.Movimientos.Should().ContainSingle(
-            m => m.TipoMovimiento == TipoMovimientoInventario.TransferenciaSalida && m.Cantidad == -5m);
+            m => m.MovementType == StockMovementType.TransferExit && m.Quantity == -5m);
         ctx.Movimientos.Should().ContainSingle(
-            m => m.TipoMovimiento == TipoMovimientoInventario.TransferenciaEntrada && m.Cantidad == 5m);
+            m => m.MovementType == StockMovementType.TransferEntry && m.Quantity == 5m);
 
         ctx.Uow.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         ctx.Uow.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -57,13 +57,13 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
 
         // Movimiento salida: cantidadAnterior = 10 (stock antes del descuento)
         ctx.Movimientos.Should().ContainSingle(
-            m => m.TipoMovimiento == TipoMovimientoInventario.TransferenciaSalida
-              && m.CantidadAnterior == 10m);
+            m => m.MovementType == StockMovementType.TransferExit
+              && m.PreviousQuantity == 10m);
 
         // Movimiento entrada: cantidadAnterior = 3 (stock destino antes del incremento)
         ctx.Movimientos.Should().ContainSingle(
-            m => m.TipoMovimiento == TipoMovimientoInventario.TransferenciaEntrada
-              && m.CantidadAnterior == 3m);
+            m => m.MovementType == StockMovementType.TransferEntry
+              && m.PreviousQuantity == 3m);
     }
 
     // ── Concurrencia ──────────────────────────────────────────────────────
@@ -110,7 +110,7 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
         var ctx = new TestContext();
         ctx.TransferenciaRepo.Setup(x => x.GetByIdAsync(
                 ctx.TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Transferencia?)null);
+            .ReturnsAsync((StockTransfer?)null);
 
         var result = await ctx.Handle();
 
@@ -122,7 +122,7 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
     public async Task Confirmar_falla_si_transferencia_ya_esta_confirmada()
     {
         var ctx = new TestContext();
-        ctx.Transferencia.Confirmar(ctx.UserId);
+        ctx.StockTransfer.Confirm(ctx.UserId);
 
         var result = await ctx.Handle();
 
@@ -134,7 +134,7 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
     public async Task Confirmar_falla_si_transferencia_esta_cancelada()
     {
         var ctx = new TestContext();
-        ctx.Transferencia.Cancelar(ctx.UserId);
+        ctx.StockTransfer.Cancel(ctx.UserId);
 
         var result = await ctx.Handle();
 
@@ -152,13 +152,13 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
         public Guid BodegaDestinoId { get; } = Guid.NewGuid();
         public Guid ProductoId     { get; } = Guid.NewGuid();
 
-        public Transferencia Transferencia { get; }
+        public StockTransfer StockTransfer { get; }
 
-        public Mock<ITransferenciaRepository>   TransferenciaRepo { get; } = new();
-        public Mock<IInventarioStockRepository> StockRepo         { get; } = new();
+        public Mock<IStockTransferRepository>   TransferenciaRepo { get; } = new();
+        public Mock<IStockRepository> StockRepo         { get; } = new();
         public Mock<IUnitOfWork> Uow { get; } = new();
 
-        public List<InventarioMovimiento> Movimientos { get; } = [];
+        public List<StockMovement> Movimientos { get; } = [];
 
         private readonly Mock<IProductRepository>      _productRepo = new();
         private readonly Mock<ICostoPromedioService>   _costo       = new();
@@ -177,19 +177,19 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
             _user.SetupGet(x => x.Email).Returns("test@erp.dev");
             _user.SetupGet(x => x.FullName).Returns("Test User");
 
-            // Transferencia en Borrador con un ítem de 5 unidades
-            Transferencia = Transferencia.Create(
-                TenantId, secuencial: 1,
+            // StockTransfer en Borrador con un ítem de 5 unidades
+            StockTransfer = StockTransfer.Create(
+                TenantId, sequential: 1,
                 BodegaOrigenId, BodegaDestinoId,
-                motivo: null, observaciones: null, createdBy: UserId);
-            var detalle = TransferenciaDetalle.Create(
-                TenantId, Transferencia.Id, ProductoId,
-                cantidad: 5m, descripcion: "Producto test", createdBy: UserId);
-            Transferencia.AgregarDetalle(detalle);
+                reason: null, notes: null, createdBy: UserId);
+            var detalle = StockTransferLine.Create(
+                TenantId, StockTransfer.Id, ProductoId,
+                quantity: 5m, description: "Producto test", createdBy: UserId);
+            StockTransfer.AddLine(detalle);
 
             TransferenciaRepo.Setup(x => x.GetByIdAsync(
-                    TenantId, Transferencia.Id, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(Transferencia);
+                    TenantId, StockTransfer.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(StockTransfer);
             TransferenciaRepo.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
@@ -197,9 +197,9 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
                     ProductoId, TenantId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((ERP.Domain.Products.Entities.Product?)null);
 
-            StockRepo.Setup(x => x.AddMovimientoAsync(
-                    It.IsAny<InventarioMovimiento>(), It.IsAny<CancellationToken>()))
-                .Callback<InventarioMovimiento, CancellationToken>((m, _) => Movimientos.Add(m))
+            StockRepo.Setup(x => x.AddMovementAsync(
+                    It.IsAny<StockMovement>(), It.IsAny<CancellationToken>()))
+                .Callback<StockMovement, CancellationToken>((m, _) => Movimientos.Add(m))
                 .Returns(Task.CompletedTask);
 
             Uow.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
@@ -214,19 +214,19 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
 
         /// <summary>El decremento atómico tiene stock suficiente y retorna la cantidadAnterior.</summary>
         public void WithDecrementoExitoso(decimal cantAnteriorOrigen)
-            => StockRepo.Setup(x => x.DecrementarStockAtomicoAsync(
+            => StockRepo.Setup(x => x.DecrementStockAtomicAsync(
                     TenantId, BodegaOrigenId, ProductoId, 5m, UserId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((decimal?)cantAnteriorOrigen);
 
         /// <summary>El decremento atómico devuelve null → stock insuficiente (concurrencia o agotado).</summary>
         public void WithDecrementoFallido()
-            => StockRepo.Setup(x => x.DecrementarStockAtomicoAsync(
+            => StockRepo.Setup(x => x.DecrementStockAtomicAsync(
                     TenantId, BodegaOrigenId, ProductoId, 5m, UserId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((decimal?)null);
 
         /// <summary>El incremento atómico retorna la cantidadAnterior en destino.</summary>
         public void WithIncrementoExitoso(decimal cantAnteriorDestino)
-            => StockRepo.Setup(x => x.IncrementarStockAtomicoAsync(
+            => StockRepo.Setup(x => x.IncrementStockAtomicAsync(
                     TenantId, BodegaDestinoId, ProductoId, 5m, UserId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(cantAnteriorDestino);
 
@@ -244,8 +244,10 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
                 NullLogger<ConfirmarTransferenciaCommandHandler>.Instance);
 
             return handler.Handle(
-                new ConfirmarTransferenciaCommand(Transferencia.Id),
+                new ConfirmarTransferenciaCommand(StockTransfer.Id),
                 CancellationToken.None);
         }
     }
 }
+
+

@@ -1,9 +1,9 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.DTOs;
 
-namespace ERP.Application.Modules.Inventory.UseCases.GetStockActualPorBodega;
+namespace ERP.Application.Modules.Inventory.UseCases.GetCurrentStockPorBodega;
 
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
-public sealed record GetStockActualPorBodegaQuery(Guid BodegaId, Guid? ProductoId)
-    : IRequest<Result<IReadOnlyList<StockActualListItemDto>>>;
+public sealed record GetCurrentStockPorBodegaQuery(Guid    WarehouseId, Guid?     ProductId)
+    : IRequest<Result<IReadOnlyList<CurrentStockListItemDto>>>;

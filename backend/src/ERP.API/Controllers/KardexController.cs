@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -20,10 +20,10 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// Kardex valorizado de inventario por producto y bodega (método: promedio ponderado móvil).
-/// Soporta modo síncrono (respuesta inmediata) y asíncrono (202 + jobId).
+/// Kardex valorizado de inventario por producto y bodega (mÃ©todo: promedio ponderado mÃ³vil).
+/// Soporta modo sÃ­ncrono (respuesta inmediata) y asÃ­ncrono (202 + jobId).
 /// </summary>
-[Modulo("Kardex", "perm:inventario.kardex.view", "📊", "/inventario/kardex", "perm:inventario.products.view", 42)]
+[Modulo("Kardex", "perm:inventario.kardex.view", "ðŸ“Š", "/inventario/kardex", "perm:inventario.products.view", 42)]
 [ApiController]
 [Route("api/inventario/kardex")]
 [Authorize]
@@ -33,15 +33,15 @@ public sealed class KardexController : ControllerBase
     private readonly IMediator              _mediator;
     private readonly KardexOptions          _opts;
     private readonly ICurrentTenant         _tenant;
-    private readonly IKardexReporteRepository _reporteRepo;
-    private readonly KardexReporteQueue     _queue;
+    private readonly IKardexReportRepository _reporteRepo;
+    private readonly KardexReportQueue     _queue;
 
     public KardexController(
         IMediator                  mediator,
         IOptions<KardexOptions>    opts,
         ICurrentTenant             tenant,
-        IKardexReporteRepository   reporteRepo,
-        KardexReporteQueue         queue)
+        IKardexReportRepository   reporteRepo,
+        KardexReportQueue         queue)
     {
         _mediator    = mediator;
         _opts        = opts.Value;
@@ -50,12 +50,12 @@ public sealed class KardexController : ControllerBase
         _queue       = queue;
     }
 
-    // ── Kardex síncrono / redirección automática a async ─────────────────────
+    // â”€â”€ Kardex sÃ­ncrono / redirecciÃ³n automÃ¡tica a async â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>
     /// Retorna el kardex valorizado de un producto en una bodega.
-    /// Si el rango supera <c>MaxDaysForSync</c> y el modo asíncrono está activo,
-    /// retorna 202 Accepted con un <c>jobId</c> para consultar el resultado más tarde.
+    /// Si el rango supera <c>MaxDaysForSync</c> y el modo asÃ­ncrono estÃ¡ activo,
+    /// retorna 202 Accepted con un <c>jobId</c> para consultar el resultado mÃ¡s tarde.
     /// </summary>
     /// <remarks>
     /// Query params: productoId, bodegaId, fechaInicio (YYYY-MM-DD), fechaFin (YYYY-MM-DD).
@@ -70,7 +70,7 @@ public sealed class KardexController : ControllerBase
         var (ok, productoId, bodegaId, fechaInicio, fechaFin, err) = ParseQueryParams();
         if (!ok) return err!;
 
-        // Redirección automática a async si el rango es muy largo
+        // RedirecciÃ³n automÃ¡tica a async si el rango es muy largo
         if (DebeUsarAsync(fechaInicio, fechaFin))
             return await EnqueueReporteAsync(productoId, bodegaId, fechaInicio, fechaFin, ct);
 
@@ -80,10 +80,10 @@ public sealed class KardexController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK");
     }
 
-    // ── Solicitar reporte asíncrono explícitamente ────────────────────────────
+    // â”€â”€ Solicitar reporte asÃ­ncrono explÃ­citamente â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>
-    /// Solicita el kardex en modo asíncrono.
+    /// Solicita el kardex en modo asÃ­ncrono.
     /// Siempre retorna 202 Accepted con un <c>jobId</c>; el resultado se consulta en
     /// <c>GET /api/inventario/kardex/resultado/{jobId}</c>.
     /// </summary>
@@ -99,16 +99,16 @@ public sealed class KardexController : ControllerBase
         return await EnqueueReporteAsync(productoId, bodegaId, fechaInicio, fechaFin, ct);
     }
 
-    // ── Obtener resultado de un reporte asíncrono ─────────────────────────────
+    // â”€â”€ Obtener resultado de un reporte asÃ­ncrono â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>
-    /// Retorna el resultado de un reporte de Kardex generado de forma asíncrona.
+    /// Retorna el resultado de un reporte de Kardex generado de forma asÃ­ncrona.
     /// </summary>
     /// <param name="jobId">ID del reporte obtenido en la solicitud.</param>
     /// <response code="200">Reporte completado.</response>
-    /// <response code="202">Reporte aún en proceso.</response>
+    /// <response code="202">Reporte aÃºn en proceso.</response>
     /// <response code="404">Reporte no encontrado.</response>
-    /// <response code="400">El reporte terminó con error.</response>
+    /// <response code="400">El reporte terminÃ³ con error.</response>
     [HttpGet("resultado/{jobId:guid}")]
     [Authorize(Policy = "perm:inventario.kardex.view")]
     [ProducesResponseType(typeof(ApiResponse<KardexResponse>), StatusCodes.Status200OK)]
@@ -122,24 +122,24 @@ public sealed class KardexController : ControllerBase
         if (reporte is null)
             return NotFound(new { mensaje = "Reporte no encontrado." });
 
-        if (reporte.Estado == KardexReporte.EstadoPendiente ||
-            reporte.Estado == KardexReporte.EstadoProcesando)
+        if (reporte.Status == KardexReport.StatusPending ||
+            reporte.Status == KardexReport.StatusProcessing)
         {
             Response.Headers.Append("Retry-After", "5");
             return Accepted(new
             {
                 jobId   = reporte.Id,
-                estado  = reporte.Estado,
-                mensaje = "El reporte aún está siendo procesado. Consulte nuevamente en unos segundos.",
+                estado  = reporte.Status,
+                mensaje = "El reporte aÃºn estÃ¡ siendo procesado. Consulte nuevamente en unos segundos.",
             });
         }
 
-        if (reporte.Estado == KardexReporte.EstadoError)
-            return BadRequest(new { mensaje = reporte.ErrorMensaje });
+        if (reporte.Status == KardexReport.StatusError)
+            return BadRequest(new { mensaje = reporte.ErrorMessage });
 
         // Completado: deserializar y retornar
-        var kardex = reporte.ResultadoJson is not null
-            ? JsonSerializer.Deserialize<KardexResponse>(reporte.ResultadoJson,
+        var kardex = reporte.ResultJson is not null
+            ? JsonSerializer.Deserialize<KardexResponse>(reporte.ResultJson,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
             : null;
 
@@ -148,7 +148,7 @@ public sealed class KardexController : ControllerBase
             : Ok(new { data = kardex, message = "OK" });
     }
 
-    // ── Exportar Excel ────────────────────────────────────────────────────────
+    // â”€â”€ Exportar Excel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>Exporta el kardex a Excel (.xlsx) con tabla formateada y resumen.</summary>
     [HttpGet("exportar/excel")]
@@ -174,7 +174,7 @@ public sealed class KardexController : ControllerBase
             fileName);
     }
 
-    // ── Exportar PDF ──────────────────────────────────────────────────────────
+    // â”€â”€ Exportar PDF â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>Exporta el kardex a PDF (A4 horizontal) con tabla y resumen.</summary>
     [HttpGet("exportar/pdf")]
@@ -198,11 +198,11 @@ public sealed class KardexController : ControllerBase
         return File(bytes, "application/pdf", fileName);
     }
 
-    // ── Recalcular snapshots (administrador) ──────────────────────────────────
+    // â”€â”€ Recalcular snapshots (administrador) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>
     /// Recalcula los snapshots diarios del kardex bajo demanda.
-    /// Útil para reconstruir el historial tras migración o correcciones manuales.
+    /// Ãštil para reconstruir el historial tras migraciÃ³n o correcciones manuales.
     /// Requiere rol SuperAdmin o Administrador.
     /// </summary>
     [HttpPost("recalcular")]
@@ -221,7 +221,7 @@ public sealed class KardexController : ControllerBase
         return Ok(new { data = new { snapshotsGenerados = result.Value }, message = "OK" });
     }
 
-    // ── Helpers privados ──────────────────────────────────────────────────────
+    // â”€â”€ Helpers privados â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private (bool Ok, Guid ProductoId, Guid BodegaId,
              DateTime? FechaInicio, DateTime? FechaFin,
@@ -230,11 +230,11 @@ public sealed class KardexController : ControllerBase
     {
         if (!Request.Query.TryGetValue("productoId", out var pv) || !Guid.TryParse(pv, out var productoId))
             return (false, default, default, null, null,
-                BadRequest("productoId es requerido y debe ser un GUID válido."));
+                BadRequest("productoId es requerido y debe ser un GUID vÃ¡lido."));
 
         if (!Request.Query.TryGetValue("bodegaId", out var bv) || !Guid.TryParse(bv, out var bodegaId))
             return (false, default, default, null, null,
-                BadRequest("bodegaId es requerido y debe ser un GUID válido."));
+                BadRequest("bodegaId es requerido y debe ser un GUID vÃ¡lido."));
 
         DateTime? fechaInicio = null, fechaFin = null;
         if (Request.Query.TryGetValue("fechaInicio", out var fiv) && DateTime.TryParse(fiv, out var fi))
@@ -259,7 +259,7 @@ public sealed class KardexController : ControllerBase
         DateTime? fechaInicio, DateTime? fechaFin,
         CancellationToken ct)
     {
-        var reporte = KardexReporte.Create(
+        var reporte = KardexReport.Create(
             _tenant.TenantId, productoId, bodegaId, fechaInicio, fechaFin);
 
         await _reporteRepo.AddAsync(reporte, ct);
@@ -271,8 +271,8 @@ public sealed class KardexController : ControllerBase
         return Accepted(new
         {
             jobId   = reporte.Id,
-            estado  = reporte.Estado,
-            mensaje = "El reporte está siendo procesado. " +
+            estado  = reporte.Status,
+            mensaje = "El reporte estÃ¡ siendo procesado. " +
                       $"Consulte el resultado en /api/inventario/kardex/resultado/{reporte.Id}",
         });
     }
@@ -293,3 +293,6 @@ public sealed record RecalcularSnapshotsBody(
     Guid?     ProductoId = null,
     Guid?     BodegaId   = null,
     DateTime? Hasta      = null);
+
+
+

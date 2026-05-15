@@ -1,17 +1,17 @@
-using FluentValidation;
+﻿using FluentValidation;
 
-namespace ERP.Application.Configuration.UseCases.UpsertConfiguracionFacturacion;
+namespace ERP.Application.Configuration.UseCases.UpsertBillingSettings;
 
-public sealed class UpsertConfiguracionFacturacionCommandValidator
-    : AbstractValidator<UpsertConfiguracionFacturacionCommand>
+public sealed class UpsertBillingSettingsCommandValidator
+    : AbstractValidator<UpsertBillingSettingsCommand>
 {
-    public UpsertConfiguracionFacturacionCommandValidator()
+    public UpsertBillingSettingsCommandValidator()
     {
-        RuleFor(x => x.RazonSocial)
+        RuleFor(x => x.LegalName)
             .NotEmpty()
             .MaximumLength(150);
 
-        RuleFor(x => x.NombreComercial)
+        RuleFor(x => x.TradeName)
             .NotEmpty()
             .MaximumLength(150);
 
@@ -19,31 +19,31 @@ public sealed class UpsertConfiguracionFacturacionCommandValidator
             .NotEmpty()
             .Length(13);
 
-        RuleFor(x => x.DireccionMatriz)
+        RuleFor(x => x.MainAddress)
             .NotEmpty()
             .MaximumLength(250);
 
-        RuleFor(x => x.Telefono)
+        RuleFor(x => x.Phone)
             .NotEmpty()
             .MaximumLength(25);
 
-        RuleFor(x => x.Correo)
+        RuleFor(x => x.Email)
             .EmailAddress()
-            .When(x => !string.IsNullOrWhiteSpace(x.Correo));
+            .When(x => !string.IsNullOrWhiteSpace(x.Email));
 
-        RuleFor(x => x.ContribuyenteEspecial)
+        RuleFor(x => x.SpecialTaxpayer)
             .MaximumLength(50)
-            .When(x => !string.IsNullOrWhiteSpace(x.ContribuyenteEspecial));
+            .When(x => !string.IsNullOrWhiteSpace(x.SpecialTaxpayer));
 
         RuleFor(x => x.LogoBase64)
             .MaximumLength(100000)
             .When(x => !string.IsNullOrWhiteSpace(x.LogoBase64));
 
-        RuleFor(x => x.LeyendaAdicional)
+        RuleFor(x => x.FooterText)
             .MaximumLength(500)
-            .When(x => !string.IsNullOrWhiteSpace(x.LeyendaAdicional));
+            .When(x => !string.IsNullOrWhiteSpace(x.FooterText));
 
-        RuleFor(x => x.AnchoTirilla)
+        RuleFor(x => x.ReceiptWidth)
             .InclusiveBetween(58, 80)
             .Must(x => x == 58 || x == 80)
             .WithMessage("El ancho de tirilla debe ser 58 o 80 mm.");

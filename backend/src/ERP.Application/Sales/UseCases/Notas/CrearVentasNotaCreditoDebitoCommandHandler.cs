@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Sales.Helpers;
@@ -11,29 +11,29 @@ using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.Notas;
 
-public sealed class CrearVentasNotaCreditoDebitoCommandHandler
-    : IRequestHandler<CrearVentasNotaCreditoDebitoCommand, Result<Guid>>
+public sealed class CrearSalesNoteCommandHandler
+    : IRequestHandler<CrearSalesNoteCommand, Result<Guid>>
 {
-    private readonly IVentasRepository           _ventasRepository;
-    private readonly IConfiguracionSRIRepository _configSriRepository;
+    private readonly ISalesRepository           _ventasRepository;
+    private readonly ISriSettingsRepository _configSriRepository;
     private readonly IProductRepository          _productRepository;
     private readonly ITaxRateRepository          _taxRateRepository;
     private readonly IUserActivityRepository     _activity;
     private readonly ICurrentTenant              _currentTenant;
     private readonly ICurrentUser                _currentUser;
     private readonly IUnitOfWork                 _unitOfWork;
-    private readonly ILogger<CrearVentasNotaCreditoDebitoCommandHandler> _logger;
+    private readonly ILogger<CrearSalesNoteCommandHandler> _logger;
 
-    public CrearVentasNotaCreditoDebitoCommandHandler(
-        IVentasRepository ventasRepository,
-        IConfiguracionSRIRepository configSriRepository,
+    public CrearSalesNoteCommandHandler(
+        ISalesRepository ventasRepository,
+        ISriSettingsRepository configSriRepository,
         IProductRepository productRepository,
         ITaxRateRepository taxRateRepository,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
-        ILogger<CrearVentasNotaCreditoDebitoCommandHandler> logger)
+        ILogger<CrearSalesNoteCommandHandler> logger)
     {
         _ventasRepository    = ventasRepository;
         _configSriRepository = configSriRepository;
@@ -46,7 +46,7 @@ public sealed class CrearVentasNotaCreditoDebitoCommandHandler
         _logger              = logger;
     }
 
-    public async Task<Result<Guid>> Handle(CrearVentasNotaCreditoDebitoCommand command, CancellationToken ct)
+    public async Task<Result<Guid>> Handle(CrearSalesNoteCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
@@ -54,12 +54,12 @@ public sealed class CrearVentasNotaCreditoDebitoCommandHandler
         if (command.Items.Count == 0)
             return Result<Guid>.Failure("La nota debe tener al menos un detalle.");
 
-        var factura = await _ventasRepository.GetFacturaByIdAsync(tenantId, command.FacturaOriginalId, ct);
+        var factura = await _ventasRepository.GetBillByIdAsync(tenantId, command.OriginalBillId, ct);
         if (factura is null)
             return Result<Guid>.Failure("Factura original no encontrada.");
-        if (factura.Estado != "Autorizado")
+        if (factura.Status != "Autorizado")
             return Result<Guid>.Failure(
-                $"La factura original debe estar Autorizada (estado actual: {factura.Estado}).");
+                $"La factura original debe estar Autorizada (estado actual: {factura.Status}).");
 
         var configSri = await _configSriRepository.GetByTenantIdAsync(tenantId, ct);
         if (configSri is null)
@@ -68,11 +68,11 @@ public sealed class CrearVentasNotaCreditoDebitoCommandHandler
         var productos = new Dictionary<Guid, ERP.Domain.Products.Entities.Product>();
         foreach (var item in command.Items)
         {
-            if (productos.ContainsKey(item.ProductoId)) continue;
-            var p = await _productRepository.GetByIdAsync(item.ProductoId, tenantId, ct);
+            if (productos.ContainsKey(item.ProductId)) continue;
+            var p = await _productRepository.GetByIdAsync(item.ProductId, tenantId, ct);
             if (p is null || !p.IsActive)
-                return Result<Guid>.Failure($"Producto {item.ProductoId} no existe o no está activo.");
-            productos[item.ProductoId] = p;
+                return Result<Guid>.Failure($"Producto {item.ProductId} no existe o no está activo.");
+            productos[item.ProductId] = p;
         }
 
         await _unitOfWork.BeginTransactionAsync(ct);
@@ -82,16 +82,16 @@ public sealed class CrearVentasNotaCreditoDebitoCommandHandler
             await _configSriRepository.UpdateAsync(configSri, ct);
 
             var fechaEmision = DateTime.UtcNow;
-            var tipoDoc = string.Equals(command.TipoNota, "DEBITO", StringComparison.OrdinalIgnoreCase) ? "05" : "04";
+            var tipoDoc = string.Equals(command.NoteType, "DEBITO", StringComparison.OrdinalIgnoreCase) ? "05" : "04";
             var claveAcceso = ClaveAccesoHelper.Generar(
-                configSri.RucEmpresa, configSri.Ambiente, configSri.Establecimiento,
-                configSri.PuntoEmision, configSri.TipoEmision, secuencial, fechaEmision, tipoDoc);
+                configSri.Ruc, configSri.Environment, configSri.EstabCode,
+                configSri.EmPointCode, configSri.EmissionType, secuencial, fechaEmision, tipoDoc);
 
-            var detalles = new List<VentasNotaDetalle>();
+            var detalles = new List<SalesNoteLine>();
             foreach (var item in command.Items)
             {
-                var producto = productos[item.ProductoId];
-                var subtotalItem = item.Cantidad * item.PrecioUnitario;
+                var producto = productos[item.ProductId];
+                var subtotalItem = item.Quantity * item.UnitPrice;
                 decimal impuestoItem = 0;
                 if (producto.AppliesVatOnSale && producto.SaleTaxId.HasValue)
                 {
@@ -100,20 +100,20 @@ public sealed class CrearVentasNotaCreditoDebitoCommandHandler
                         impuestoItem = subtotalItem * taxRate.Percentage / 100;
                 }
 
-                var det = VentasNotaDetalle.Create(
-                    tenantId, item.ProductoId, item.Cantidad, item.PrecioUnitario, impuestoItem,
+                var det = SalesNoteLine.Create(
+                    tenantId, item.ProductId, item.Quantity, item.UnitPrice, impuestoItem,
                     producto.Description, userId);
                 detalles.Add(det);
             }
 
-            var nota = VentasNotaCreditoDebito.Create(
+            var nota = SalesNote.Create(
                 tenantId,
                 factura.Id,
-                command.TipoNota,
-                command.Motivo,
+                command.NoteType,
+                command.Reason,
                 tipoDoc,
-                configSri.Establecimiento,
-                configSri.PuntoEmision,
+                configSri.EstabCode,
+                configSri.EmPointCode,
                 secuencial,
                 claveAcceso,
                 fechaEmision,
@@ -121,17 +121,17 @@ public sealed class CrearVentasNotaCreditoDebitoCommandHandler
 
             foreach (var d in detalles)
             {
-                d.AsignarNotaId(nota.Id);
-                nota.AgregarDetalle(d);
+                d.AssignNoteId(nota.Id);
+                nota.AddLine(d);
             }
 
-            await _ventasRepository.AddNotaCreditoDebitoAsync(nota, ct);
+            await _ventasRepository.AddNoteAsync(nota, ct);
 
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "ventas", action: "ventas.nota.crear",
-                entityType: "VentasNotaCreditoDebito", entityId: nota.Id,
-                description: $"{nota.TipoNota} {nota.Establecimiento}-{nota.PuntoEmision}-{nota.Secuencial}"), ct);
+                entityType: "SalesNote", entityId: nota.Id,
+                description: $"{nota.NoteType} {nota.EstabCode}-{nota.EmPointCode}-{nota.Sequential}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
@@ -147,10 +147,10 @@ public sealed class CrearVentasNotaCreditoDebitoCommandHandler
         }
     }
 
-    private static string CapturarSecuencialComoString(ERP.Domain.Configuration.Entities.ConfiguracionSRI config)
+    private static string CapturarSecuencialComoString(ERP.Domain.Configuration.Entities.SriSettings config)
     {
-        var secuencial = config.SecuencialActual.ToString("D9");
-        config.IncrementarSecuencial();
+        var secuencial = config.CurrentSequential.ToString("D9");
+        config.IncrementSequential();
         return secuencial;
     }
 }

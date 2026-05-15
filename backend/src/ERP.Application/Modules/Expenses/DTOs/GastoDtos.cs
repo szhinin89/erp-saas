@@ -1,20 +1,21 @@
-using ERP.Domain.Modules.Expenses.Enums;
+﻿using ERP.Domain.Modules.Expenses.Enums;
 
 namespace ERP.Application.Modules.Expenses.DTOs;
 
-public sealed record GastoFacturaDto(
+public sealed record ExpenseInvoiceDto(
     Guid         Id,
     string?      ClaveAcceso,
-    DateTime     FechaEmision,
-    Guid?        ProveedorId,
+    DateTime  IssueDate,
+    Guid? SupplierId,
     string?      NumeroFactura,
     string       Concepto,
     string       CategoriaGasto,
     decimal      Subtotal,
-    decimal      Impuesto,
+    decimal   VatTotal,
     decimal      Total,
-    EstadoGasto Estado,
+    ExpenseStatus Status,
     string?      XmlPath,
-    string?      Observaciones,
-    Guid?        AsientoContableId,
+    string? Notes,
+    Guid?     JournalEntryId,
     DateTime     CreatedAt);
+

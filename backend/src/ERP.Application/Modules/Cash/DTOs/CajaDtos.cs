@@ -1,8 +1,8 @@
-namespace ERP.Application.Modules.Cash.DTOs;
+﻿namespace ERP.Application.Modules.Cash.DTOs;
 
-public sealed record CuentaBancariaDto(
+public sealed record BankAccountDto(
     Guid Id,
-    string Nombre,
+    string  Name,
     string NumeroCuenta,
     string TipoCuenta,
     string Moneda,
@@ -11,59 +11,59 @@ public sealed record CuentaBancariaDto(
     bool Activo,
     Guid? CuentaContableId);
 
-public sealed record ExtractoBancarioDto(
+public sealed record BankStatementDto(
     Guid Id,
-    Guid CuentaBancariaId,
-    DateTime PeriodoDesde,
-    DateTime PeriodoHasta,
-    decimal SaldoInicialExtracto,
-    decimal SaldoFinalExtracto,
+    Guid BankAccountId,
+    DateTime PeriodFrom,
+    DateTime PeriodTo,
+    decimal OpeningBalance,
+    decimal ClosingBalance,
     DateTime FechaCarga,
     bool Conciliado,
-    int CantidadMovimientos);
+    int CantidadRows);
 
-public sealed record MovimientoBancarioDto(
+public sealed record BankTransactionDto(
     Guid Id,
-    Guid ExtractoBancarioId,
+    Guid BankStatementId,
     DateTime Fecha,
-    string Descripcion,
+    string  Description,
     decimal Monto,
     string Tipo,
     string Referencia,
-    Guid? AsientoContableId,
-    string Estado);
+    Guid?     JournalEntryId,
+    string    Status);
 
 public sealed record SugerenciaConciliacionDto(
-    Guid MovimientoBancarioId,
+    Guid BankTransactionId,
     Guid? AsientoContableSugeridoId,
-    string? Motivo);
+    string? Reason);
 
 public sealed record FlujoEfectivoDiaDto(DateOnly Fecha, decimal Entradas, decimal Salidas, decimal Neto);
 
-public sealed record GastoCajaChicaDto(
+public sealed record GastoPettyCashDto(
     Guid Id,
-    Guid CajaChicaId,
+    Guid PettyCashId,
     DateTime Fecha,
     string Concepto,
     decimal Monto,
     string TipoComprobante,
     string NumeroComprobante,
-    Guid? AsientoContableId);
+    Guid?     JournalEntryId);
 
-public sealed record ArqueoCajaDto(
+public sealed record CashCountDto(
     Guid Id,
-    Guid CajaChicaId,
+    Guid PettyCashId,
     DateTime FechaArqueo,
     decimal EfectivoFisico,
     decimal Diferencia,
     string Observaciones,
     bool Aprobado);
 
-public sealed record CajaChicaDto(
+public sealed record PettyCashDto(
     Guid Id,
-    string Nombre,
+    string  Name,
     decimal SaldoAsignado,
     decimal SaldoActual,
-    Guid? CuentaBancariaIdReposicion,
+    Guid? BankAccountIdReposicion,
     Guid? CuentaContableCajaId,
     bool Activo);

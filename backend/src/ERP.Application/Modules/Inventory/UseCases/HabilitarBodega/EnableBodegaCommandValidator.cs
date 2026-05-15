@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Modules.Inventory.UseCases.HabilitarBodega;
 
@@ -8,6 +8,6 @@ public sealed class EnableBodegaCommandValidator : AbstractValidator<EnableBodeg
     {
         RuleFor(x => x.Id)
             .NotEmpty()
-            .WithMessage("El ID de la bodega es obligatorio.");
+            .WithMessage("El ID de la Warehouse es obligatorio.");
     }
 }

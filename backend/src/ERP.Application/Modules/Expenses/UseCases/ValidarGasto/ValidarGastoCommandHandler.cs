@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -11,18 +11,18 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 namespace ERP.Application.Modules.Expenses.UseCases.ValidarGasto;
 
 public sealed class ValidarGastoCommandHandler
-    : IRequestHandler<ValidarGastoCommand, Result<GastoFacturaDto>>
+    : IRequestHandler<ValidarGastoCommand, Result<ExpenseInvoiceDto>>
 {
-    private readonly IGastoFacturaRepository   _repo;
-    private readonly IProveedorRepository      _proveedorRepo;
+    private readonly IExpenseInvoiceRepository   _repo;
+    private readonly ISupplierRepository      _proveedorRepo;
     private readonly IUserActivityRepository   _activity;
     private readonly ICurrentTenant            _tenant;
     private readonly ICurrentUser              _user;
     private readonly IUnitOfWork               _unitOfWork;
 
     public ValidarGastoCommandHandler(
-        IGastoFacturaRepository repo,
-        IProveedorRepository proveedorRepo,
+        IExpenseInvoiceRepository repo,
+        ISupplierRepository proveedorRepo,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
         ICurrentUser user,
@@ -36,47 +36,47 @@ public sealed class ValidarGastoCommandHandler
         _unitOfWork    = unitOfWork;
     }
 
-    public async Task<Result<GastoFacturaDto>> Handle(ValidarGastoCommand command, CancellationToken ct)
+    public async Task<Result<ExpenseInvoiceDto>> Handle(ValidarGastoCommand command, CancellationToken ct)
     {
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
-        var gasto = await _repo.GetByIdAsync(tenantId, command.GastoFacturaId, ct);
+        var gasto = await _repo.GetByIdAsync(tenantId, command.ExpenseInvoiceId, ct);
         if (gasto is null)
-            return Result<GastoFacturaDto>.Failure("Gasto no encontrado.");
+            return Result<ExpenseInvoiceDto>.Failure("Gasto no encontrado.");
 
-        if (gasto.Estado != EstadoGasto.Borrador)
-            return Result<GastoFacturaDto>.Failure(
-                $"Solo se puede validar un gasto en Borrador (estado actual: {gasto.Estado}).");
+        if (gasto.Status != ExpenseStatus.Draft)
+            return Result<ExpenseInvoiceDto>.Failure(
+                $"Solo se puede validar un gasto en Borrador (estado actual: {gasto.Status}).");
 
-        if (gasto.ProveedorId.HasValue)
+        if (gasto.SupplierId.HasValue)
         {
-            var proveedor = await _proveedorRepo.GetByIdAsync(tenantId, gasto.ProveedorId.Value, ct);
-            if (proveedor is null || !proveedor.IsActive)
-                return Result<GastoFacturaDto>.Failure("El proveedor del gasto no existe o está deshabilitado.");
+            var Supplier = await _proveedorRepo.GetByIdAsync(tenantId, gasto.SupplierId.Value, ct);
+            if (Supplier is null || !Supplier.IsActive)
+                return Result<ExpenseInvoiceDto>.Failure("El Supplier del gasto no existe o está deshabilitado.");
         }
 
-        var totalCalc = gasto.Subtotal + gasto.Impuesto;
-        if (Math.Abs(totalCalc - gasto.Total) > GastoFactura.ToleranciaTotal)
-            return Result<GastoFacturaDto>.Failure(
-                $"Los totales no cuadran: Subtotal({gasto.Subtotal:F2}) + Impuesto({gasto.Impuesto:F2}) = " +
+        var totalCalc = gasto.Subtotal + gasto.TaxTotal;
+        if (Math.Abs(totalCalc - gasto.Total) > ExpenseInvoice.TotalTolerance)
+            return Result<ExpenseInvoiceDto>.Failure(
+                $"Los totales no cuadran: Subtotal({gasto.Subtotal:F2}) + Impuesto({gasto.TaxTotal:F2}) = " +
                 $"{totalCalc:F2}, pero Total es {gasto.Total:F2}.");
 
-        if (!string.IsNullOrEmpty(gasto.ClaveAcceso))
+        if (!string.IsNullOrEmpty(gasto.AccessKey))
         {
-            var clave = gasto.ClaveAcceso;
-            if (clave.Length != GastoFactura.ClaveAccesoLen || !clave.All(char.IsDigit))
-                return Result<GastoFacturaDto>.Failure(
+            var clave = gasto.AccessKey;
+            if (clave.Length != ExpenseInvoice.AccessKeyLen || !clave.All(char.IsDigit))
+                return Result<ExpenseInvoiceDto>.Failure(
                     "La clave de acceso debe tener exactamente 49 dígitos numéricos.");
         }
 
         try
         {
-            gasto.Validar(userId);
+            gasto.Validate(userId);
         }
         catch (Exception ex)
         {
-            return Result<GastoFacturaDto>.Failure(ex.Message);
+            return Result<ExpenseInvoiceDto>.Failure(ex.Message);
         }
 
         await _unitOfWork.BeginTransactionAsync(ct);
@@ -85,35 +85,35 @@ public sealed class ValidarGastoCommandHandler
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _user.Email, _user.FullName,
                 module: "gastos", action: "gasto.validar",
-                entityType: "GastoFactura", entityId: gasto.Id,
-                description: gasto.Concepto), ct);
+                entityType: "ExpenseInvoice", entityId: gasto.Id,
+                description: gasto.Concept), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
 
-            return Result<GastoFacturaDto>.Success(ToDto(gasto));
+            return Result<ExpenseInvoiceDto>.Success(ToDto(gasto));
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            return Result<GastoFacturaDto>.Failure($"No se pudo validar el gasto: {ex.Message}");
+            return Result<ExpenseInvoiceDto>.Failure($"No se pudo validar el gasto: {ex.Message}");
         }
     }
 
-    private static GastoFacturaDto ToDto(GastoFactura g) => new(
+    private static ExpenseInvoiceDto ToDto(ExpenseInvoice g) => new(
         g.Id,
-        g.ClaveAcceso,
-        g.FechaEmision,
-        g.ProveedorId,
-        g.NumeroFactura,
-        g.Concepto,
-        g.CategoriaGasto,
+        g.AccessKey,
+        g.IssueDate,
+        g.SupplierId,
+        g.InvoiceNumber,
+        g.Concept,
+        g.Category,
         g.Subtotal,
-        g.Impuesto,
+        g.TaxTotal,
         g.Total,
-        g.Estado,
+        g.Status,
         g.XmlPath,
-        g.Observaciones,
-        g.AsientoContableId,
+        g.Notes,
+        g.JournalEntryId,
         g.CreatedAt);
 }

@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
@@ -15,8 +15,8 @@ namespace ERP.Application.Sales.UseCases.Notas;
 
 public sealed class EnviarVentasNotaSriCommandHandler : IRequestHandler<EnviarVentasNotaSriCommand, Result<Guid>>
 {
-    private readonly IVentasRepository             _ventasRepository;
-    private readonly IConfiguracionSRIRepository _configSriRepository;
+    private readonly ISalesRepository             _ventasRepository;
+    private readonly ISriSettingsRepository _configSriRepository;
     private readonly ISriFacturaElectronicaService _sriService;
     private readonly IFileStorage                _fileStorage;
     private readonly IAccountingService          _accounting;
@@ -28,8 +28,8 @@ public sealed class EnviarVentasNotaSriCommandHandler : IRequestHandler<EnviarVe
     private readonly ILogger<EnviarVentasNotaSriCommandHandler> _logger;
 
     public EnviarVentasNotaSriCommandHandler(
-        IVentasRepository ventasRepository,
-        IConfiguracionSRIRepository configSriRepository,
+        ISalesRepository ventasRepository,
+        ISriSettingsRepository configSriRepository,
         ISriFacturaElectronicaService sriService,
         IFileStorage fileStorage,
         IAccountingService accounting,
@@ -58,42 +58,42 @@ public sealed class EnviarVentasNotaSriCommandHandler : IRequestHandler<EnviarVe
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
-        var nota = await _ventasRepository.GetNotaByIdWithDetailsAsync(tenantId, command.NotaId, ct);
+        var nota = await _ventasRepository.GetNoteByIdWithLinesAsync(tenantId, command.NotaId, ct);
         if (nota is null)
             return Result<Guid>.Failure("Nota no encontrada.");
 
-        if (nota.Estado == "Borrador")
-            nota.Validar(userId);
+        if (nota.Status == "Borrador")
+            nota.Validate(userId);
 
-        if (nota.Estado != "Validado")
-            return Result<Guid>.Failure($"La nota debe estar Validada para enviar (estado: {nota.Estado}).");
+        if (nota.Status != "Validado")
+            return Result<Guid>.Failure($"La nota debe estar Validada para enviar (estado: {nota.Status}).");
 
-        var facturaOriginal = nota.FacturaOriginal;
-        if (facturaOriginal.Estado != "Autorizado")
+        var facturaOriginal = nota.OriginalBill;
+        if (facturaOriginal.Status != "Autorizado")
             return Result<Guid>.Failure("La factura original debe permanecer autorizada.");
 
         var configSri = await _configSriRepository.GetByTenantIdAsync(tenantId, ct);
         if (configSri is null)
             return Result<Guid>.Failure("La configuración SRI no está configurada para este tenant.");
 
-        var detalles = nota.Detalles.ToList();
+        var detalles = nota.Lines.ToList();
         string xmlContent;
         byte[] xmlFirmado;
         try
         {
             xmlContent = await _sriService.GenerarXmlNotaCreditoDebitoAsync(facturaOriginal, nota, detalles, configSri);
             xmlFirmado = await _sriService.FirmarXmlAsync(
-                xmlContent, configSri.CertificadoP12Path, configSri.CertificadoPassword);
+                xmlContent, configSri.CertP12Path, configSri.CertPassword);
         }
         catch (SriCommunicationException ex)
         {
-            nota.MarcarErrorEnvio(userId, ex.Message);
+            nota.Reject(userId, ex.Message);
             await _ventasRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error SRI: {ex.Message}");
         }
         catch (Exception ex)
         {
-            nota.MarcarErrorEnvio(userId, ex.Message);
+            nota.Reject(userId, ex.Message);
             await _ventasRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error al generar XML: {ex.Message}");
         }
@@ -101,26 +101,26 @@ public sealed class EnviarVentasNotaSriCommandHandler : IRequestHandler<EnviarVe
         SriAutorizacionResponse response;
         try
         {
-            response = await _sriService.EnviarAlSriAsync(xmlFirmado, configSri.UrlSriAutorizacion);
+            response = await _sriService.EnviarAlSriAsync(xmlFirmado, configSri.WsdlUrl);
         }
         catch (SriCommunicationException ex)
         {
-            nota.MarcarErrorEnvio(userId, ex.Message);
+            nota.Reject(userId, ex.Message);
             await _ventasRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error SRI: {ex.Message}");
         }
         catch (Exception ex)
         {
-            nota.MarcarErrorEnvio(userId, ex.Message);
+            nota.Reject(userId, ex.Message);
             await _ventasRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error de comunicación con SRI: {ex.Message}");
         }
 
-        if (!response.Autorizada)
+        if (!response.IsAuthorized)
         {
-            nota.Rechazar(userId, response.MensajeError ?? "Rechazada por el SRI.");
+            nota.Reject(userId, response.ErrorMessage ?? "Rechazada por el SRI.");
             await _ventasRepository.SaveChangesAsync(ct);
-            return Result<Guid>.Failure(response.MensajeError ?? "El SRI rechazó la nota.");
+            return Result<Guid>.Failure(response.ErrorMessage ?? "El SRI rechazó la nota.");
         }
 
         var xmlGeneradoPath     = $"ventas/notas/{tenantId}/{nota.Id}/generado.xml";
@@ -129,7 +129,7 @@ public sealed class EnviarVentasNotaSriCommandHandler : IRequestHandler<EnviarVe
         {
             await _fileStorage.SaveAsync(xmlGeneradoPath, new MemoryStream(xmlFirmado), ct);
             await _fileStorage.SaveAsync(xmlAutorizacionPath,
-                new MemoryStream(Encoding.UTF8.GetBytes(response.XmlAutorizado)), ct);
+                new MemoryStream(Encoding.UTF8.GetBytes(response.AuthorizedXml)), ct);
         }
         catch (Exception ex)
         {
@@ -141,41 +141,41 @@ public sealed class EnviarVentasNotaSriCommandHandler : IRequestHandler<EnviarVe
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var numero = $"{nota.Establecimiento}-{nota.PuntoEmision}-{nota.Secuencial}";
+            var numero = $"{nota.EstabCode}-{nota.EmPointCode}-{nota.Sequential}";
             Result<Guid> asientoResult;
-            if (string.Equals(nota.TipoNota, "CREDITO", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(nota.NoteType, "CREDITO", StringComparison.OrdinalIgnoreCase))
                 asientoResult = await _accounting.CrearAsientoNotaCreditoVentaAsync(
-                    nota.Id, numero, nota.FechaEmision, nota.Subtotal, nota.Impuesto, nota.Total,
+                    nota.Id, numero, nota.IssueDate, nota.Subtotal, nota.VatTotal, nota.Total,
                     $"Nota de crédito {numero}", ct);
             else
                 asientoResult = await _accounting.CrearAsientoNotaDebitoVentaAsync(
-                    nota.Id, numero, nota.FechaEmision, nota.Subtotal, nota.Impuesto, nota.Total,
+                    nota.Id, numero, nota.IssueDate, nota.Subtotal, nota.VatTotal, nota.Total,
                     $"Nota de débito {numero}", ct);
 
             if (!asientoResult.IsSuccess)
             {
                 await _unitOfWork.RollbackAsync(ct);
-                nota.MarcarErrorEnvio(userId, $"Autorizado por SRI pero falló el asiento: {asientoResult.Error}");
+                nota.Reject(userId, $"Autorizado por SRI pero falló el asiento: {asientoResult.Error}");
                 await _ventasRepository.SaveChangesAsync(ct);
                 return Result<Guid>.Failure(asientoResult.Error ?? "Error contable.");
             }
 
-            if (string.Equals(nota.TipoNota, "CREDITO", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(nota.NoteType, "CREDITO", StringComparison.OrdinalIgnoreCase))
             {
-                var stockLines = new List<NotaCreditoStockLine>();
+                var stockLines = new List<SalesNoteStockLine>();
                 foreach (var detalle in detalles)
                 {
-                    var producto = await _productRepository.GetByIdAsync(detalle.ProductoId, tenantId, ct);
+                    var producto = await _productRepository.GetByIdAsync(detalle.ProductId, tenantId, ct);
                     if (producto is null || producto.IsService || !producto.TracksStock)
                         continue;
-                    stockLines.Add(new NotaCreditoStockLine(detalle.ProductoId, detalle.Cantidad));
+                    stockLines.Add(new SalesNoteStockLine(detalle.ProductId, detalle.Quantity));
                 }
 
-                nota.AutorizarNotaCredito(
+                nota.AuthorizeCreditNote(
                     userId,
-                    facturaOriginal.BodegaId,
-                    response.NumeroAutorizacion,
-                    response.FechaAutorizacion,
+                    facturaOriginal.WarehouseId,
+                    response.AuthNumber,
+                    response.AuthDate,
                     xmlGeneradoPath,
                     xmlAutorizacionPath,
                     asientoResult.Value,
@@ -183,10 +183,10 @@ public sealed class EnviarVentasNotaSriCommandHandler : IRequestHandler<EnviarVe
             }
             else
             {
-                nota.AutorizarNotaDebito(
+                nota.AuthorizeDebitNote(
                     userId,
-                    response.NumeroAutorizacion,
-                    response.FechaAutorizacion,
+                    response.AuthNumber,
+                    response.AuthDate,
                     xmlGeneradoPath,
                     xmlAutorizacionPath,
                     asientoResult.Value);
@@ -195,8 +195,8 @@ public sealed class EnviarVentasNotaSriCommandHandler : IRequestHandler<EnviarVe
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "ventas", action: "ventas.nota.enviar",
-                entityType: "VentasNotaCreditoDebito", entityId: nota.Id,
-                description: $"{numero} — auth {response.NumeroAutorizacion}"), ct);
+                entityType: "SalesNote", entityId: nota.Id,
+                description: $"{numero} — auth {response.AuthNumber}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
@@ -205,7 +205,7 @@ public sealed class EnviarVentasNotaSriCommandHandler : IRequestHandler<EnviarVe
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            nota.MarcarErrorEnvio(userId, ex.Message);
+            nota.Reject(userId, ex.Message);
             await _ventasRepository.SaveChangesAsync(ct);
             return Result<Guid>.Failure(ex.Message);
         }

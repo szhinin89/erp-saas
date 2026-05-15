@@ -17,7 +17,7 @@ namespace ERP.Application.Tests.Compras;
 public sealed class AprobarCompraCommandHandlerStockTests
 {
     [Fact]
-    public async Task CompraAprobadaEventHandler_crea_stock_y_movimientos()
+    public async Task PurchBillApprovedEventHandler_crea_stock_y_movimientos()
     {
         var tenantId = Guid.NewGuid();
         var userId   = Guid.NewGuid();
@@ -29,33 +29,33 @@ public sealed class AprobarCompraCommandHandlerStockTests
 
         var lines = new[]
         {
-            new CompraAprobadaStockLine(Guid.NewGuid(), p1, b1, 6m, 1m),
-            new CompraAprobadaStockLine(Guid.NewGuid(), p1, b2, 4m, 1m),
-            new CompraAprobadaStockLine(Guid.NewGuid(), p2, b2, 5m, 1m),
+            new PurchBillApprovedStockLine(Guid.NewGuid(), p1, b1, 6m, 1m),
+            new PurchBillApprovedStockLine(Guid.NewGuid(), p1, b2, 4m, 1m),
+            new PurchBillApprovedStockLine(Guid.NewGuid(), p2, b2, 5m, 1m),
         };
 
-        var movimientos = new List<InventarioMovimiento>();
-        var stocks      = new List<StockActual>();
+        var movimientos = new List<StockMovement>();
+        var stocks      = new List<CurrentStock>();
 
-        var inv = new Mock<IInventarioStockRepository>();
-        inv.Setup(x => x.GetStockByTenantBodegaProductAsync(tenantId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((StockActual?)null);
-        inv.Setup(x => x.AddStockActualAsync(It.IsAny<StockActual>(), It.IsAny<CancellationToken>()))
-            .Callback<StockActual, CancellationToken>((s, _) => stocks.Add(s))
+        var inv = new Mock<IStockRepository>();
+        inv.Setup(x => x.GetStockAsync(tenantId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CurrentStock?)null);
+        inv.Setup(x => x.AddCurrentStockAsync(It.IsAny<CurrentStock>(), It.IsAny<CancellationToken>()))
+            .Callback<CurrentStock, CancellationToken>((s, _) => stocks.Add(s))
             .Returns(Task.CompletedTask);
-        inv.Setup(x => x.AddMovimientoAsync(It.IsAny<InventarioMovimiento>(), It.IsAny<CancellationToken>()))
-            .Callback<InventarioMovimiento, CancellationToken>((m, _) => movimientos.Add(m))
+        inv.Setup(x => x.AddMovementAsync(It.IsAny<StockMovement>(), It.IsAny<CancellationToken>()))
+            .Callback<StockMovement, CancellationToken>((m, _) => movimientos.Add(m))
             .Returns(Task.CompletedTask);
 
-        var handler = new CompraAprobadaEventHandler(
+        var handler = new PurchBillApprovedEventHandler(
             inv.Object,
-            NullLogger<CompraAprobadaEventHandler>.Instance);
+            NullLogger<PurchBillApprovedEventHandler>.Instance);
 
-        var ev = new CompraAprobadaEvent(Guid.NewGuid(), tenantId, "F-9001", userId, lines);
+        var ev = new PurchBillApprovedEvent(Guid.NewGuid(), tenantId, "F-9001", userId, lines);
         await handler.Handle(ev, CancellationToken.None);
 
         movimientos.Should().HaveCount(3);
-        movimientos.Sum(m => m.Cantidad).Should().Be(15m);
+        movimientos.Sum(m => m.Quantity).Should().Be(15m);
         stocks.Should().HaveCount(3);
     }
 
@@ -70,27 +70,27 @@ public sealed class AprobarCompraCommandHandlerStockTests
         var b1       = Guid.NewGuid();
         var b2       = Guid.NewGuid();
 
-        var compra = CompraFactura.Create(
+        var compra = PurchBill.Create(
             tenantId, provId, "F-9001", null, null,
             DateTime.UtcNow.Date, null, "Contado", null, userId);
-        compra.AgregarDetalle("P1", null, p1, 10m, 1m, 0m, 0m, userId);
-        compra.AgregarDetalle("P2", null, p2, 5m, 1m, 0m, 0m, userId);
-        compra.Validar(userId);
+        compra.AddLine("P1", null, p1, 10m, 1m, 0m, 0m, userId);
+        compra.AddLine("P2", null, p2, 5m, 1m, 0m, 0m, userId);
+        compra.Validate(userId);
 
-        var d0 = compra.Detalles[0].Id;
-        var d1 = compra.Detalles[1].Id;
+        var d0 = compra.Lines[0].Id;
+        var d1 = compra.Lines[1].Id;
 
-        IReadOnlyList<CompraBodegaAsignacion> asignaciones =
+        IReadOnlyList<PurchWarehouseAlloc> asignaciones =
         [
-            CompraBodegaAsignacion.Create(tenantId, compra.Id, d0, b1, p1, 6m, userId),
-            CompraBodegaAsignacion.Create(tenantId, compra.Id, d0, b2, p1, 4m, userId),
-            CompraBodegaAsignacion.Create(tenantId, compra.Id, d1, b2, p2, 5m, userId),
+            PurchWarehouseAlloc.Create(tenantId, compra.Id, d0, b1, p1, 6m, userId),
+            PurchWarehouseAlloc.Create(tenantId, compra.Id, d0, b2, p1, 4m, userId),
+            PurchWarehouseAlloc.Create(tenantId, compra.Id, d1, b2, p2, 5m, userId),
         ];
 
-        var repo = new Mock<ICompraRepository>();
-        repo.Setup(x => x.GetByIdWithDetailsAsync(tenantId, compra.Id, It.IsAny<CancellationToken>()))
+        var repo = new Mock<IPurchBillRepository>();
+        repo.Setup(x => x.GetByIdWithLinesAsync(tenantId, compra.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(compra);
-        repo.Setup(x => x.GetBodegaAsignacionesByCompraFacturaIdAsync(tenantId, compra.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(x => x.GetWarehouseAllocsByBillIdAsync(tenantId, compra.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(asignaciones);
 
         var accounting = new Mock<ERP.Application.Common.Interfaces.IAccountingService>();
@@ -101,7 +101,7 @@ public sealed class AprobarCompraCommandHandlerStockTests
                 It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<Guid>.Success(asientoId));
 
-        var inv = new Mock<IInventarioStockRepository>();
+        var inv = new Mock<IStockRepository>();
         var activity = new Mock<IUserActivityRepository>();
         activity.Setup(x => x.AddAsync(It.IsAny<ERP.Domain.Audit.Entities.UserActivity>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -131,12 +131,12 @@ public sealed class AprobarCompraCommandHandlerStockTests
         var result = await handler.Handle(new AprobarCompraCommand(compra.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        compra.Estado.Should().Be(EstadoCompra.Aprobado);
-        inv.Verify(x => x.AddMovimientoAsync(It.IsAny<InventarioMovimiento>(), It.IsAny<CancellationToken>()), Times.Never);
-        inv.Verify(x => x.GetStockByTenantBodegaProductAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        compra.Status.Should().Be(PurchaseStatus.Approved);
+        inv.Verify(x => x.AddMovementAsync(It.IsAny<StockMovement>(), It.IsAny<CancellationToken>()), Times.Never);
+        inv.Verify(x => x.GetStockAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
 
-        compra.DomainEvents.Should().ContainSingle(e => e is CompraAprobadaEvent);
-        var ev = (CompraAprobadaEvent)compra.DomainEvents.Single(e => e is CompraAprobadaEvent);
+        compra.DomainEvents.Should().ContainSingle(e => e is PurchBillApprovedEvent);
+        var ev = (PurchBillApprovedEvent)compra.DomainEvents.Single(e => e is PurchBillApprovedEvent);
         ev.StockLines.Should().HaveCount(3);
 
         uow.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
@@ -150,17 +150,17 @@ public sealed class AprobarCompraCommandHandlerStockTests
         var userId   = Guid.NewGuid();
         var provId   = Guid.NewGuid();
 
-        var compra = CompraFactura.Create(
+        var compra = PurchBill.Create(
             tenantId, provId, "F-9002", null, null,
             DateTime.UtcNow.Date, null, "Contado", null, userId);
-        compra.AgregarDetalle("X", null, Guid.NewGuid(), 1m, 1m, 0m, 0m, userId);
-        compra.Validar(userId);
+        compra.AddLine("X", null, Guid.NewGuid(), 1m, 1m, 0m, 0m, userId);
+        compra.Validate(userId);
 
-        var repo = new Mock<ICompraRepository>();
-        repo.Setup(x => x.GetByIdWithDetailsAsync(tenantId, compra.Id, It.IsAny<CancellationToken>()))
+        var repo = new Mock<IPurchBillRepository>();
+        repo.Setup(x => x.GetByIdWithLinesAsync(tenantId, compra.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(compra);
-        repo.Setup(x => x.GetBodegaAsignacionesByCompraFacturaIdAsync(tenantId, compra.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Array.Empty<CompraBodegaAsignacion>());
+        repo.Setup(x => x.GetWarehouseAllocsByBillIdAsync(tenantId, compra.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Array.Empty<PurchWarehouseAlloc>());
 
         var accounting = new Mock<ERP.Application.Common.Interfaces.IAccountingService>();
         accounting.Setup(x => x.CrearAsientoCompraAsync(
@@ -169,7 +169,7 @@ public sealed class AprobarCompraCommandHandlerStockTests
                 It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result<Guid>.Failure("sin cuentas"));
 
-        var inv = new Mock<IInventarioStockRepository>();
+        var inv = new Mock<IStockRepository>();
         var activity = new Mock<IUserActivityRepository>();
 
         var uow = new Mock<IUnitOfWork>();
@@ -195,8 +195,10 @@ public sealed class AprobarCompraCommandHandlerStockTests
         var result = await handler.Handle(new AprobarCompraCommand(compra.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        compra.Estado.Should().Be(EstadoCompra.Validado);
+        compra.Status.Should().Be(PurchaseStatus.Validated);
         uow.Verify(x => x.RollbackAsync(It.IsAny<CancellationToken>()), Times.Once);
         uow.Verify(x => x.CommitAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }
+
+

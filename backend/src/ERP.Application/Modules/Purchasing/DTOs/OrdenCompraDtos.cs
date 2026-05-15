@@ -1,37 +1,37 @@
-namespace ERP.Application.Modules.Purchasing.DTOs;
+﻿namespace ERP.Application.Modules.Purchasing.DTOs;
 
-public record OrdenCompraDetalleDto(
+public record PurchaseOrderLineDto(
     Guid    Id,
-    Guid    ProductoId,
-    string  Descripcion,
+    Guid    ProductId,
+    string  Description,
     decimal CantidadPedida,
     decimal CantidadFacturada,
     decimal PendienteFacturar,
-    decimal PrecioUnitario,
+    decimal UnitPrice,
     decimal Subtotal,
-    decimal Impuesto,
+    decimal   VatTotal,
     decimal Total);
 
-public record OrdenCompraFacturaVinculadaDto(
-    Guid     CompraFacturaId,
+public record OrdenPurchBillVinculadaDto(
+    Guid     PurchBillId,
     string   NumeroFactura,
     DateTime FechaVinculacion);
 
 public record OrdenCompraDto(
     Guid      Id,
     string    NumeroOrden,
-    Guid      ProveedorId,
+    Guid    SupplierId,
     string    ProveedorNombre,
-    DateTime  FechaEmision,
+    DateTime  IssueDate,
     DateTime  FechaRequerida,
-    string    Estado,
+    string    Status,
     string    Moneda,
     decimal   Subtotal,
-    decimal   Impuesto,
+    decimal   VatTotal,
     decimal   Total,
-    string?   Observaciones,
+    string? Notes,
     string?   DireccionEntrega,
-    Guid?     BodegaDestinoId,
+    Guid?     TargetWarehouseId,
     DateTime? FechaEnvio,
     DateTime? FechaAprobacion,
     Guid?     AprobadoPor,
@@ -48,25 +48,25 @@ public record OrdenCompraDto(
 public record OrdenCompraDetailDto(
     Guid      Id,
     string    NumeroOrden,
-    Guid      ProveedorId,
+    Guid    SupplierId,
     string    ProveedorNombre,
-    DateTime  FechaEmision,
+    DateTime  IssueDate,
     DateTime  FechaRequerida,
-    string    Estado,
+    string    Status,
     string    Moneda,
     decimal   Subtotal,
-    decimal   Impuesto,
+    decimal   VatTotal,
     decimal   Total,
-    string?   Observaciones,
+    string? Notes,
     string?   DireccionEntrega,
-    Guid?     BodegaDestinoId,
+    Guid?     TargetWarehouseId,
     DateTime? FechaEnvio,
     DateTime? FechaAprobacion,
     Guid?     AprobadoPor,
     DateTime? FechaCierre,
     DateTime  CreatedAt,
-    IReadOnlyList<OrdenCompraDetalleDto>          Detalles,
-    IReadOnlyList<OrdenCompraFacturaVinculadaDto>  FacturasVinculadas);
+    IReadOnlyList<PurchaseOrderLineDto>          Lines,
+    IReadOnlyList<OrdenPurchBillVinculadaDto>  FacturasVinculadas);
 
 public record OrdenesCompraPagedResult(
     IReadOnlyList<OrdenCompraDto> Items,
@@ -75,7 +75,9 @@ public record OrdenesCompraPagedResult(
     int PageSize);
 
 public record ItemOrdenCompraRequest(
-    Guid    ProductoId,
-    decimal Cantidad,
-    decimal PrecioUnitario,
-    decimal IvaPorcentaje = 15m);
+    Guid    ProductId,
+    decimal Quantity,
+    decimal UnitPrice,
+    decimal VatPct = 15m);
+
+

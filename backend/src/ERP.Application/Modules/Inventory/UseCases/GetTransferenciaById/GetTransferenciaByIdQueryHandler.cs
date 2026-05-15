@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -8,11 +8,11 @@ namespace ERP.Application.Inventory.UseCases.GetTransferenciaById;
 public sealed class GetTransferenciaByIdQueryHandler
     : IRequestHandler<GetTransferenciaByIdQuery, Result<TransferenciaDetailDto?>>
 {
-    private readonly ITransferenciaRepository _repo;
+    private readonly IStockTransferRepository _repo;
     private readonly ICurrentTenant           _currentTenant;
 
     public GetTransferenciaByIdQueryHandler(
-        ITransferenciaRepository repo,
+        IStockTransferRepository repo,
         ICurrentTenant currentTenant)
     {
         _repo          = repo;
@@ -26,18 +26,18 @@ public sealed class GetTransferenciaByIdQueryHandler
         if (t is null)
             return Result<TransferenciaDetailDto?>.Success(null);
 
-        var detalles = t.Detalles.Select(d => new TransferenciaDetalleDto(
-            d.Id, d.ProductoId, d.Descripcion, d.Cantidad)).ToList();
+        var detalles = t.Lines.Select(d => new TransferenciaDetalleDto(
+            d.Id, d.ProductId, d.Description, d.Quantity)).ToList();
 
         return Result<TransferenciaDetailDto?>.Success(new TransferenciaDetailDto(
-            t.Id, t.NumeroTransferencia,
-            t.BodegaOrigenId,
-            t.BodegaOrigen?.Nombre ?? t.BodegaOrigenId.ToString(),
-            t.BodegaDestinoId,
-            t.BodegaDestino?.Nombre ?? t.BodegaDestinoId.ToString(),
-            t.FechaTransferencia, t.Estado,
-            t.Motivo, t.Observaciones,
-            t.FechaConfirmacion, t.ConfirmadoPor,
+            t.Id, t.TransferNumber,
+            t.SourceWarehouseId,
+            t.SourceWarehouse?.Name ?? t.SourceWarehouseId.ToString(),
+            t.TargetWarehouseId,
+            t.TargetWarehouse?.Name ?? t.TargetWarehouseId.ToString(),
+            t.TransferDate, t.Status,
+            t.Reason, t.Notes,
+            t.ConfirmedAt, t.ConfirmedBy,
             t.CreatedAt, detalles));
     }
 }

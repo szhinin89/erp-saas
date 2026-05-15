@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
@@ -14,8 +14,8 @@ namespace ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
 public sealed class CrearOrdenCompraCommandHandler
     : IRequestHandler<CrearOrdenCompraCommand, Result<OrdenCompraDto>>
 {
-    private readonly IOrdenCompraRepository  _ordenRepo;
-    private readonly IProveedorRepository    _proveedorRepo;
+    private readonly IPurchaseOrderRepository  _ordenRepo;
+    private readonly ISupplierRepository    _proveedorRepo;
     private readonly IProductRepository      _productRepo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _currentTenant;
@@ -23,8 +23,8 @@ public sealed class CrearOrdenCompraCommandHandler
     private readonly ILogger<CrearOrdenCompraCommandHandler> _logger;
 
     public CrearOrdenCompraCommandHandler(
-        IOrdenCompraRepository ordenRepo,
-        IProveedorRepository proveedorRepo,
+        IPurchaseOrderRepository ordenRepo,
+        ISupplierRepository proveedorRepo,
         IProductRepository productRepo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
@@ -46,39 +46,39 @@ public sealed class CrearOrdenCompraCommandHandler
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
 
-        var proveedor = await _proveedorRepo.GetByIdAsync(tenantId, command.ProveedorId, ct);
-        if (proveedor is null || !proveedor.IsActive)
-            return Result<OrdenCompraDto>.Failure("El proveedor no existe o no está activo.");
+        var Supplier = await _proveedorRepo.GetByIdAsync(tenantId, command.SupplierId, ct);
+        if (Supplier is null || !Supplier.IsActive)
+            return Result<OrdenCompraDto>.Failure("El Supplier no existe o no está activo.");
 
         // Validar productos y construir detalles
         var productosValidados = new Dictionary<Guid, ERP.Domain.Products.Entities.Product>();
         foreach (var item in command.Items)
         {
-            if (productosValidados.ContainsKey(item.ProductoId)) continue;
-            var producto = await _productRepo.GetByIdAsync(item.ProductoId, tenantId, ct);
+            if (productosValidados.ContainsKey(item.ProductId)) continue;
+            var producto = await _productRepo.GetByIdAsync(item.ProductId, tenantId, ct);
             if (producto is null || !producto.IsActive)
                 return Result<OrdenCompraDto>.Failure(
-                    $"El producto {item.ProductoId} no existe o no está activo.");
-            productosValidados[item.ProductoId] = producto;
+                    $"El producto {item.ProductId} no existe o no está activo.");
+            productosValidados[item.ProductId] = producto;
         }
 
-        var secuencial = await _ordenRepo.GetNextSecuencialAsync(tenantId, ct);
+        var secuencial = await _ordenRepo.GetNextSequentialAsync(tenantId, ct);
 
-        var orden = OrdenCompra.Create(
+        var orden = PurchaseOrder.Create(
             tenantId, secuencial,
-            command.ProveedorId, command.FechaRequerida,
-            command.BodegaDestinoId, command.DireccionEntrega, command.Observaciones,
+            command.SupplierId, command.RequiredDate,
+            command.TargetWarehouseId, command.DeliveryAddress, command.Notes,
             userId);
 
         foreach (var item in command.Items)
         {
-            var producto = productosValidados[item.ProductoId];
-            var detalle  = OrdenCompraDetalle.Create(
-                tenantId, orden.Id, item.ProductoId,
+            var producto = productosValidados[item.ProductId];
+            var detalle  = PurchaseOrderLine.Create(
+                tenantId, orden.Id, item.ProductId,
                 producto.ShortName,
-                item.Cantidad, item.PrecioUnitario, item.IvaPorcentaje,
+                item.Quantity, item.UnitPrice, item.VatPct,
                 userId);
-            orden.AgregarDetalle(detalle);
+            orden.AddLine(detalle);
         }
 
         await _ordenRepo.AddAsync(orden, ct);
@@ -87,25 +87,25 @@ public sealed class CrearOrdenCompraCommandHandler
         await _activity.AddAsync(UserActivity.Create(
             tenantId, userId, _currentUser.Email, _currentUser.FullName,
             module: "compras", action: "orden-compra.crear",
-            entityType: "OrdenCompra", entityId: orden.Id,
-            description: orden.NumeroOrden), ct);
+            entityType: "PurchaseOrder", entityId: orden.Id,
+            description: orden.OrderNumber), ct);
 
-        _logger.LogInformation("OC creada: {Numero} ({Id})", orden.NumeroOrden, orden.Id);
+        _logger.LogInformation("OC creada: {Numero} ({Id})", orden.OrderNumber, orden.Id);
 
-        return Result<OrdenCompraDto>.Success(ToDto(orden, proveedor.RazonSocial));
+        return Result<OrdenCompraDto>.Success(ToDto(orden, Supplier.LegalName));
     }
 
     internal static OrdenCompraDto ToDto(
-        OrdenCompra o, string proveedorNombre,
+        PurchaseOrder o, string proveedorNombre,
         IReadOnlyList<string>? advertencias = null) => new(
-        o.Id, o.NumeroOrden,
-        o.ProveedorId, proveedorNombre,
-        o.FechaEmision, o.FechaRequerida,
-        o.Estado, o.Moneda,
-        o.Subtotal, o.Impuesto, o.Total,
-        o.Observaciones, o.DireccionEntrega,
-        o.BodegaDestinoId,
-        o.FechaEnvio, o.FechaAprobacion, o.AprobadoPor, o.FechaCierre,
+        o.Id, o.OrderNumber,
+        o.SupplierId, proveedorNombre,
+        o.IssueDate, o.RequiredDate,
+        o.Status, o.Currency,
+        o.Subtotal, o.TaxTotal, o.Total,
+        o.Notes, o.DeliveryAddress,
+        o.TargetWarehouseId,
+        o.SentAt, o.ApprovedAt, o.ApprovedBy, o.ClosedAt,
         o.CreatedAt)
     {
         Advertencias = advertencias is { Count: > 0 } ? advertencias : null,

@@ -1,4 +1,4 @@
-using ERP.Domain.Modules.ElectronicDocuments.Entities;
+﻿using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

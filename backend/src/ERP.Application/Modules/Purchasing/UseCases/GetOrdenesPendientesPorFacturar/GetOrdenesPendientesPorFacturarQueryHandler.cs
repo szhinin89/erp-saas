@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
@@ -10,13 +10,13 @@ namespace ERP.Application.Modules.Purchasing.UseCases.GetOrdenesPendientesPorFac
 public sealed class GetOrdenesPendientesPorFacturarQueryHandler
     : IRequestHandler<GetOrdenesPendientesPorFacturarQuery, Result<IReadOnlyList<OrdenCompraDto>>>
 {
-    private readonly IOrdenCompraRepository _repo;
-    private readonly IProveedorRepository   _proveedorRepo;
+    private readonly IPurchaseOrderRepository _repo;
+    private readonly ISupplierRepository   _proveedorRepo;
     private readonly ICurrentTenant         _currentTenant;
 
     public GetOrdenesPendientesPorFacturarQueryHandler(
-        IOrdenCompraRepository repo,
-        IProveedorRepository proveedorRepo,
+        IPurchaseOrderRepository repo,
+        ISupplierRepository proveedorRepo,
         ICurrentTenant currentTenant)
     {
         _repo          = repo;
@@ -28,18 +28,18 @@ public sealed class GetOrdenesPendientesPorFacturarQueryHandler
         GetOrdenesPendientesPorFacturarQuery query, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
-        var ordenes  = await _repo.GetPendientesPorFacturarAsync(tenantId, ct);
+        var ordenes  = await _repo.GetPendingToInvoiceAsync(tenantId, ct);
 
-        var proveedorIds = ordenes.Select(o => o.ProveedorId).Distinct().ToList();
+        var proveedorIds = ordenes.Select(o => o.SupplierId).Distinct().ToList();
         var proveedores  = new Dictionary<Guid, string>();
         foreach (var pid in proveedorIds)
         {
             var p = await _proveedorRepo.GetByIdAsync(tenantId, pid, ct);
-            proveedores[pid] = p?.RazonSocial ?? pid.ToString();
+            proveedores[pid] = p?.LegalName ?? pid.ToString();
         }
 
         var dtos = ordenes
-            .Select(o => CrearOrdenCompraCommandHandler.ToDto(o, proveedores.GetValueOrDefault(o.ProveedorId, "")))
+            .Select(o => CrearOrdenCompraCommandHandler.ToDto(o, proveedores.GetValueOrDefault(o.SupplierId, "")))
             .ToList();
 
         return Result<IReadOnlyList<OrdenCompraDto>>.Success(dtos);

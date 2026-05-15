@@ -1,9 +1,9 @@
-namespace ERP.Application.Sales.DTOs;
+﻿namespace ERP.Application.Sales.DTOs;
 
-public sealed record VentasRetencionRecibidaListItemDto(
+public sealed record SalesRetentionListItemDto(
     Guid Id,
-    Guid ClienteId,
-    string ClaveAcceso,
-    DateTime FechaEmision,
+    Guid      CustomerId,
+    string    AccessKey,
+    DateTime  IssueDate,
     decimal ValorRetenido,
-    Guid? VentasFacturaId);
+    Guid? SalesBillId);

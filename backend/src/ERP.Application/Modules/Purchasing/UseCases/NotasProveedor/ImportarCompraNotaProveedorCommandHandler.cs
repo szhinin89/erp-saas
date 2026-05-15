@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -16,9 +16,9 @@ namespace ERP.Application.Modules.Purchasing.UseCases.NotasProveedor;
 public sealed class ImportarCompraNotaProveedorCommandHandler
     : IRequestHandler<ImportarCompraNotaProveedorCommand, Result<CompraNotaProveedorDto>>
 {
-    private readonly ICompraRepository        _compraRepo;
-    private readonly IProveedorRepository     _proveedorRepo;
-    private readonly IGastoFacturaRepository  _gastoRepo;
+    private readonly IPurchBillRepository        _compraRepo;
+    private readonly ISupplierRepository     _proveedorRepo;
+    private readonly IExpenseInvoiceRepository  _gastoRepo;
     private readonly IXmlFacturaParser       _parser;
     private readonly IFileStorage             _storage;
     private readonly IUserActivityRepository  _activity;
@@ -28,9 +28,9 @@ public sealed class ImportarCompraNotaProveedorCommandHandler
     private readonly ILogger<ImportarCompraNotaProveedorCommandHandler> _logger;
 
     public ImportarCompraNotaProveedorCommandHandler(
-        ICompraRepository compraRepo,
-        IProveedorRepository proveedorRepo,
-        IGastoFacturaRepository gastoRepo,
+        IPurchBillRepository compraRepo,
+        ISupplierRepository proveedorRepo,
+        IExpenseInvoiceRepository gastoRepo,
         IXmlFacturaParser parser,
         IFileStorage storage,
         IUserActivityRepository activity,
@@ -58,7 +58,7 @@ public sealed class ImportarCompraNotaProveedorCommandHandler
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
-        if (command.CompraFacturaId.HasValue && command.GastoFacturaId.HasValue)
+        if (command.PurchBillId.HasValue && command.ExpenseInvoiceId.HasValue)
             return Result<CompraNotaProveedorDto>.Failure(
                 "Indique solo una factura destino: compra o gasto, no ambas.");
 
@@ -70,46 +70,46 @@ public sealed class ImportarCompraNotaProveedorCommandHandler
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Fallo al parsear XML de nota proveedor (tenant {TenantId}).", tenantId);
+            _logger.LogWarning(ex, "Fallo al parsear XML de nota Supplier (tenant {TenantId}).", tenantId);
             return Result<CompraNotaProveedorDto>.Failure($"Error al leer el XML: {ex.Message}");
         }
 
-        if (await _compraRepo.ExistsNotaProveedorClaveAccesoAsync(tenantId, parsed.ClaveAcceso, ct))
+        if (await _compraRepo.ExistsPurchNoteAccessKeyAsync(tenantId, parsed.AccessKey, ct))
             return Result<CompraNotaProveedorDto>.Failure(
-                $"Ya existe una nota de proveedor con la clave de acceso '{parsed.ClaveAcceso}'.");
+                $"Ya existe una nota de Supplier con la clave de acceso '{parsed.AccessKey}'.");
 
-        var proveedor = await _proveedorRepo.GetByRucAsync(tenantId, parsed.RucProveedor, ct);
-        if (proveedor is null)
+        var Supplier = await _proveedorRepo.GetByRucAsync(tenantId, parsed.SupplierRuc, ct);
+        if (Supplier is null)
             return Result<CompraNotaProveedorDto>.Failure(
-                $"No hay proveedor registrado con RUC '{parsed.RucProveedor}'. Cree el proveedor antes de importar la nota.");
+                $"No hay Supplier registrado con RUC '{parsed.SupplierRuc}'. Cree el Supplier antes de importar la nota.");
 
-        CompraFactura? compra = null;
-        IReadOnlyList<CompraBodegaAsignacion> compraAsignaciones = Array.Empty<CompraBodegaAsignacion>();
-        if (command.CompraFacturaId.HasValue)
+        PurchBill? compra = null;
+        IReadOnlyList<PurchWarehouseAlloc> compraAsignaciones = Array.Empty<PurchWarehouseAlloc>();
+        if (command.PurchBillId.HasValue)
         {
-            compra = await _compraRepo.GetByIdWithDetailsAsync(tenantId, command.CompraFacturaId.Value, ct);
+            compra = await _compraRepo.GetByIdAsync(tenantId, command.PurchBillId.Value, ct);
             if (compra is null)
                 return Result<CompraNotaProveedorDto>.Failure("Factura de compra no encontrada.");
-            if (compra.ProveedorId != proveedor.Id)
+            if (compra.SupplierId != Supplier.Id)
                 return Result<CompraNotaProveedorDto>.Failure(
-                    "El proveedor de la nota no coincide con el de la factura de compra.");
-            if (compra.Estado != EstadoCompra.Aprobado)
+                    "El Supplier de la nota no coincide con el de la factura de compra.");
+            if (compra.Status != PurchaseStatus.Approved)
                 return Result<CompraNotaProveedorDto>.Failure(
                     "Solo se pueden vincular notas a una compra en estado Aprobado.");
 
-            compraAsignaciones = await _compraRepo.GetBodegaAsignacionesByCompraFacturaIdAsync(
+            compraAsignaciones = await _compraRepo.GetWarehouseAllocsByBillIdAsync(
                 tenantId, compra.Id, ct);
         }
 
-        if (command.GastoFacturaId.HasValue)
+        if (command.ExpenseInvoiceId.HasValue)
         {
-            var gasto = await _gastoRepo.GetByIdAsync(tenantId, command.GastoFacturaId.Value, ct);
+            var gasto = await _gastoRepo.GetByIdAsync(tenantId, command.ExpenseInvoiceId.Value, ct);
             if (gasto is null)
                 return Result<CompraNotaProveedorDto>.Failure("Factura de gasto no encontrada.");
-            if (gasto.ProveedorId != proveedor.Id)
+            if (gasto.SupplierId != Supplier.Id)
                 return Result<CompraNotaProveedorDto>.Failure(
-                    "El proveedor de la nota no coincide con el del gasto.");
-            if (gasto.Estado != EstadoGasto.Aprobado)
+                    "El Supplier de la nota no coincide con el del gasto.");
+            if (gasto.Status != ExpenseStatus.Approved)
                 return Result<CompraNotaProveedorDto>.Failure(
                     "Solo se pueden vincular notas a un gasto en estado Aprobado.");
         }
@@ -118,99 +118,99 @@ public sealed class ImportarCompraNotaProveedorCommandHandler
         try
         {
             var fileName = string.IsNullOrWhiteSpace(command.XmlNombreArchivo)
-                ? $"{parsed.ClaveAcceso}.xml"
+                ? $"{parsed.AccessKey}.xml"
                 : command.XmlNombreArchivo.Trim();
-            var xmlPath = $"compras/notas-proveedor/{parsed.ClaveAcceso}/{fileName}";
+            var xmlPath = $"compras/notas-Supplier/{parsed.AccessKey}/{fileName}";
             using (var xmlStream = new MemoryStream(command.XmlContent))
                 await _storage.SaveAsync(xmlPath, xmlStream, ct);
 
-            var nota = CompraNotaProveedor.Create(
+            var nota = PurchNote.Create(
                 tenantId,
-                proveedor.Id,
-                command.CompraFacturaId,
-                command.GastoFacturaId,
-                parsed.TipoNota,
-                parsed.Motivo,
-                parsed.ClaveAcceso,
-                parsed.FechaEmision,
-                parsed.Establecimiento,
-                parsed.PuntoEmision,
-                parsed.Secuencial,
+                Supplier.Id,
+                command.PurchBillId,
+                command.ExpenseInvoiceId,
+                parsed.NoteType,
+                parsed.Reason,
+                parsed.AccessKey,
+                parsed.IssueDate,
+                parsed.EstabCode,
+                parsed.EmPointCode,
+                parsed.Sequential,
                 userId);
             nota.SetXmlPath(xmlPath, userId);
 
             foreach (var item in parsed.Items)
             {
                 Guid? productoId = null;
-                if (compra is not null && !string.IsNullOrEmpty(item.CodigoPrincipal))
+                if (compra is not null && !string.IsNullOrEmpty(item.ProductCode))
                 {
-                    var det = compra.Detalles.FirstOrDefault(d =>
-                        string.Equals(d.CodigoPrincipalProveedor, item.CodigoPrincipal, StringComparison.OrdinalIgnoreCase));
-                    productoId = det?.ProductoId;
+                    var det = compra.Lines.FirstOrDefault(d =>
+                        string.Equals(d.SupplierProductCode, item.ProductCode, StringComparison.OrdinalIgnoreCase));
+                    productoId = det?.ProductId;
                     if (!productoId.HasValue && det is not null)
                     {
                         productoId = compraAsignaciones
-                            .FirstOrDefault(a => a.CompraDetalleId == det.Id && a.ProductoId.HasValue)
-                            ?.ProductoId;
+                            .FirstOrDefault(a => a.PurchBillLineId == det.Id && a.ProductId.HasValue)
+                            ?.ProductId;
                     }
                 }
 
-                var linea = CompraNotaProveedorDetalle.Create(
+                var linea = PurchNoteLine.Create(
                     tenantId,
                     productoId,
-                    string.IsNullOrEmpty(item.CodigoPrincipal) ? null : item.CodigoPrincipal,
-                    item.Descripcion,
-                    item.Cantidad,
-                    item.PrecioUnitario,
+                    string.IsNullOrEmpty(item.ProductCode) ? null : item.ProductCode,
+                    item.Description,
+                    item.Quantity,
+                    item.UnitPrice,
                     item.Subtotal,
-                    item.Impuesto,
+                    item.VatAmount,
                     item.Total,
                     userId);
-                nota.AgregarDetalle(linea);
+                nota.AddLine(linea);
             }
 
-            await _compraRepo.AddNotaProveedorAsync(nota, ct);
+            await _compraRepo.AddPurchNoteAsync(nota, ct);
 
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _user.Email, _user.FullName,
-                module: "compras", action: "notas-proveedor.importar",
-                entityType: "CompraNotaProveedor", entityId: nota.Id,
-                description: $"{parsed.TipoNota} {parsed.NumeroNota} — clave {parsed.ClaveAcceso}"), ct);
+                module: "compras", action: "notas-Supplier.importar",
+                entityType: "PurchNote", entityId: nota.Id,
+                description: $"{parsed.NoteType} {parsed.Sequential} — clave {parsed.AccessKey}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
 
             _logger.LogInformation(
-                "Nota proveedor importada: id {NotaId}, tenant {TenantId}, tipo {Tipo}.",
-                nota.Id, tenantId, parsed.TipoNota);
+                "Nota Supplier importada: id {NotaId}, tenant {TenantId}, tipo {Tipo}.",
+                nota.Id, tenantId, parsed.NoteType);
 
             return Result<CompraNotaProveedorDto>.Success(ToDto(nota));
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al importar nota proveedor");
+            _logger.LogError(ex, "Error al importar nota Supplier");
             return Result<CompraNotaProveedorDto>.Failure($"No se pudo importar la nota: {ex.Message}");
         }
     }
 
-    private static CompraNotaProveedorDto ToDto(CompraNotaProveedor n) => new(
+    private static CompraNotaProveedorDto ToDto(PurchNote n) => new(
         n.Id,
-        n.ProveedorId,
-        n.CompraFacturaId,
-        n.GastoFacturaId,
-        n.TipoNota,
-        n.Motivo,
-        n.ClaveAcceso,
-        n.FechaEmision,
-        n.Establecimiento,
-        n.PuntoEmision,
-        n.Secuencial,
+        n.SupplierId,
+        n.PurchBillId,
+        n.ExpenseInvoiceId,
+        n.NoteType,
+        n.Reason,
+        n.AccessKey,
+        n.IssueDate,
+        n.EstabCode,
+        n.EmPointCode,
+        n.Sequential,
         n.Subtotal,
-        n.Impuesto,
+        n.VatTotal,
         n.Total,
-        n.Estado,
+        n.Status,
         n.XmlPath,
-        n.AsientoContableId,
+        n.JournalEntryId,
         n.CreatedAt);
 }

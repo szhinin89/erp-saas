@@ -1,11 +1,11 @@
-namespace ERP.Application.Navigation.DTOs;
+﻿namespace ERP.Application.Navigation.DTOs;
 
-public sealed class FuncionalidadArbolDto
+public sealed class AppFeatureArbolDto
 {
     public Guid Id { get; init; }
-    public string Nombre { get; init; } = "";
+    public string  Name { get; init; } = "";
     public string? Icono { get; init; }
     public string? Ruta { get; init; }
     public string Permiso { get; init; } = "";
-    public IReadOnlyList<FuncionalidadArbolDto> Hijos { get; init; } = Array.Empty<FuncionalidadArbolDto>();
+    public IReadOnlyList<AppFeatureArbolDto> Hijos { get; init; } = Array.Empty<AppFeatureArbolDto>();
 }

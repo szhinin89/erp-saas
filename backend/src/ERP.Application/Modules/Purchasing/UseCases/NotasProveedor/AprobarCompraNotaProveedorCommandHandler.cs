@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -17,8 +17,8 @@ namespace ERP.Application.Modules.Purchasing.UseCases.NotasProveedor;
 public sealed class AprobarCompraNotaProveedorCommandHandler
     : IRequestHandler<AprobarCompraNotaProveedorCommand, Result<CompraNotaProveedorDto>>
 {
-    private readonly ICompraRepository       _compraRepo;
-    private readonly IGastoFacturaRepository _gastoRepo;
+    private readonly IPurchBillRepository       _compraRepo;
+    private readonly IExpenseInvoiceRepository _gastoRepo;
     private readonly IAccountingService     _accounting;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _tenant;
@@ -27,8 +27,8 @@ public sealed class AprobarCompraNotaProveedorCommandHandler
     private readonly ILogger<AprobarCompraNotaProveedorCommandHandler> _logger;
 
     public AprobarCompraNotaProveedorCommandHandler(
-        ICompraRepository compraRepo,
-        IGastoFacturaRepository gastoRepo,
+        IPurchBillRepository compraRepo,
+        IExpenseInvoiceRepository gastoRepo,
         IAccountingService accounting,
         IUserActivityRepository activity,
         ICurrentTenant tenant,
@@ -53,85 +53,85 @@ public sealed class AprobarCompraNotaProveedorCommandHandler
         var tenantId = _tenant.TenantId;
         var userId   = _user.UserId;
 
-        var nota = await _compraRepo.GetNotaProveedorByIdWithDetailsAsync(tenantId, command.NotaId, ct);
+        var nota = await _compraRepo.GetPurchNoteByIdWithLinesAsync(tenantId, command.NotaId, ct);
         if (nota is null)
-            return Result<CompraNotaProveedorDto>.Failure("Nota de proveedor no encontrada.");
+            return Result<CompraNotaProveedorDto>.Failure("Nota de Supplier no encontrada.");
 
-        if (nota.Estado != "Borrador")
+        if (nota.Status != "Borrador")
             return Result<CompraNotaProveedorDto>.Failure(
-                $"Solo se puede aprobar una nota en Borrador (estado: {nota.Estado}).");
+                $"Solo se puede aprobar una nota en Borrador (estado: {nota.Status}).");
 
-        if (!nota.CompraFacturaId.HasValue && !nota.GastoFacturaId.HasValue)
+        if (!nota.PurchBillId.HasValue && !nota.ExpenseInvoiceId.HasValue)
             return Result<CompraNotaProveedorDto>.Failure(
                 "Vincule la nota a una factura de compra o de gasto antes de aprobar.");
 
-        var numeroNota = $"{nota.Establecimiento}-{nota.PuntoEmision}-{nota.Secuencial}";
-        var descripcionBase = $"Nota {nota.TipoNota} proveedor {numeroNota} (clave {nota.ClaveAcceso})";
+        var numeroNota = $"{nota.EstabCode}-{nota.EmPointCode}-{nota.Sequential}";
+        var descripcionBase = $"Nota {nota.NoteType} Supplier {numeroNota} (clave {nota.AccessKey})";
 
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
             Result<Guid> asientoResult;
-            if (nota.CompraFacturaId.HasValue)
+            if (nota.PurchBillId.HasValue)
             {
-                var compra = await _compraRepo.GetByIdAsync(tenantId, nota.CompraFacturaId.Value, ct);
-                if (compra is null || compra.Estado != EstadoCompra.Aprobado)
+                var compra = await _compraRepo.GetByIdAsync(tenantId, nota.PurchBillId.Value, ct);
+                if (compra is null || compra.Status != PurchaseStatus.Approved)
                 {
                     await _unitOfWork.RollbackAsync(ct);
                     return Result<CompraNotaProveedorDto>.Failure(
                         "La factura de compra vinculada no existe o no está aprobada.");
                 }
 
-                compra.RegistrarNotaProveedorAplicada(nota.TipoNota, nota.Total, userId);
+                compra.RegisterAppliedNote(nota.NoteType, nota.Total, userId);
 
-                asientoResult = nota.TipoNota == "CREDITO"
+                asientoResult = nota.NoteType == "CREDITO"
                     ? await _accounting.CrearAsientoNotaCreditoCompraProveedorAsync(
                         nota.Id,
-                        referencia:  numeroNota,
-                        fecha:       nota.FechaEmision,
+                        reference:  numeroNota,
+                        date:       nota.IssueDate,
                         subtotal:    nota.Subtotal,
-                        impuesto:    nota.Impuesto,
+                        vatTotal:    nota.VatTotal,
                         total:       nota.Total,
-                        descripcion: $"{descripcionBase} — compra {compra.NumeroFactura}",
+                        description: $"{descripcionBase} — compra {compra.InvoiceNumber}",
                         ct)
                     : await _accounting.CrearAsientoNotaDebitoCompraProveedorAsync(
                         nota.Id,
-                        referencia:  numeroNota,
-                        fecha:       nota.FechaEmision,
+                        reference:  numeroNota,
+                        date:       nota.IssueDate,
                         subtotal:    nota.Subtotal,
-                        impuesto:    nota.Impuesto,
+                        vatTotal:    nota.VatTotal,
                         total:       nota.Total,
-                        descripcion: $"{descripcionBase} — compra {compra.NumeroFactura}",
+                        description: $"{descripcionBase} — compra {compra.InvoiceNumber}",
                         ct);
             }
             else
             {
-                var gasto = await _gastoRepo.GetByIdAsync(tenantId, nota.GastoFacturaId!.Value, ct);
-                if (gasto is null || gasto.Estado != EstadoGasto.Aprobado)
+                var gasto = await _gastoRepo.GetByIdAsync(tenantId, nota.ExpenseInvoiceId!.Value, ct);
+                if (gasto is null || gasto.Status != ExpenseStatus.Approved)
                 {
                     await _unitOfWork.RollbackAsync(ct);
                     return Result<CompraNotaProveedorDto>.Failure(
                         "La factura de gasto vinculada no existe o no está aprobada.");
                 }
 
-                gasto.RegistrarNotaProveedorAplicada(nota.TipoNota, nota.Total, userId);
+                gasto.RegisterAppliedSupplierNote(nota.NoteType, nota.Total, userId);
 
-                asientoResult = nota.TipoNota == "CREDITO"
+                asientoResult = nota.NoteType == "CREDITO"
                     ? await _accounting.CrearAsientoNotaCreditoGastoProveedorAsync(
                         nota.Id,
-                        referencia:     numeroNota,
-                        fecha:          nota.FechaEmision,
+                        reference:     numeroNota,
+                        date:          nota.IssueDate,
                         total:          nota.Total,
-                        categoriaGasto: gasto.CategoriaGasto,
-                        descripcion:    $"{descripcionBase} — gasto {gasto.Concepto}",
+                        category: gasto.Category,
+                        description:    $"{descripcionBase} — gasto {gasto.Concept}",
                         ct)
                     : await _accounting.CrearAsientoNotaDebitoGastoProveedorAsync(
                         nota.Id,
-                        referencia:     numeroNota,
-                        fecha:          nota.FechaEmision,
+                        reference:     numeroNota,
+                        date:          nota.IssueDate,
                         total:          nota.Total,
-                        categoriaGasto: gasto.CategoriaGasto,
-                        descripcion:    $"{descripcionBase} — gasto {gasto.Concepto}",
+                        category: gasto.Category,
+                        description:    $"{descripcionBase} — gasto {gasto.Concept}",
                         ct);
             }
 
@@ -143,84 +143,84 @@ public sealed class AprobarCompraNotaProveedorCommandHandler
             }
 
             var asientoId = asientoResult.Value;
-            IReadOnlyList<CompraNotaProveedorStockLine>? stockLines = null;
-            if (nota.CompraFacturaId.HasValue)
+            IReadOnlyList<PurchNoteStockLine>? stockLines = null;
+            if (nota.PurchBillId.HasValue)
             {
-                var compraFull = await _compraRepo.GetByIdWithDetailsAsync(tenantId, nota.CompraFacturaId.Value, ct);
+                var compraFull = await _compraRepo.GetByIdAsync(tenantId, nota.PurchBillId.Value, ct);
                 var asigs =
-                    await _compraRepo.GetBodegaAsignacionesByCompraFacturaIdAsync(
-                        tenantId, nota.CompraFacturaId.Value, ct);
+                    await _compraRepo.GetWarehouseAllocsByBillIdAsync(
+                        tenantId, nota.PurchBillId.Value, ct);
                 if (compraFull is not null)
                     stockLines = BuildStockLines(nota, compraFull, asigs);
             }
 
-            nota.Aprobar(
+            nota.Approve(
                 userId,
                 asientoId,
-                command.NumeroAutorizacion,
-                command.FechaAutorizacion,
+                command.AuthNumber,
+                command.AuthDate,
                 stockLines);
 
             await _activity.AddAsync(UserActivity.Create(
                 tenantId, userId, _user.Email, _user.FullName,
-                module: "compras", action: "notas-proveedor.aprobar",
-                entityType: "CompraNotaProveedor", entityId: nota.Id,
+                module: "compras", action: "notas-Supplier.aprobar",
+                entityType: "PurchNote", entityId: nota.Id,
                 description: $"{numeroNota} — asiento {asientoId}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
 
-            _logger.LogInformation("Nota proveedor aprobada: {NotaId}, asiento {AsientoId}", nota.Id, asientoId);
+            _logger.LogInformation("Nota Supplier aprobada: {NotaId}, asiento {JournalEntryId}", nota.Id, asientoId);
             return Result<CompraNotaProveedorDto>.Success(ToDto(nota));
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al aprobar nota proveedor {NotaId}", command.NotaId);
+            _logger.LogError(ex, "Error al aprobar nota Supplier {NotaId}", command.NotaId);
             return Result<CompraNotaProveedorDto>.Failure($"No se pudo aprobar la nota: {ex.Message}");
         }
     }
 
-    private static IReadOnlyList<CompraNotaProveedorStockLine> BuildStockLines(
-        CompraNotaProveedor nota,
-        CompraFactura compra,
-        IReadOnlyList<CompraBodegaAsignacion> asignaciones)
+    private static IReadOnlyList<PurchNoteStockLine> BuildStockLines(
+        PurchNote nota,
+        PurchBill compra,
+        IReadOnlyList<PurchWarehouseAlloc> asignaciones)
     {
-        var lines = new List<CompraNotaProveedorStockLine>();
-        foreach (var nd in nota.Detalles)
+        var lines = new List<PurchNoteStockLine>();
+        foreach (var nd in nota.Lines)
         {
-            if (!nd.ProductoId.HasValue)
+            if (!nd.ProductId.HasValue)
                 continue;
 
-            var compraDet = compra.Detalles.FirstOrDefault(d =>
-                (!string.IsNullOrEmpty(nd.CodigoPrincipalProveedor) &&
-                 string.Equals(d.CodigoPrincipalProveedor, nd.CodigoPrincipalProveedor, StringComparison.OrdinalIgnoreCase))
-                || (d.ProductoId == nd.ProductoId));
+            var compraDet = compra.Lines.FirstOrDefault(d =>
+                (!string.IsNullOrEmpty(nd.SupplierProductCode) &&
+                 string.Equals(d.SupplierProductCode, nd.SupplierProductCode, StringComparison.OrdinalIgnoreCase))
+                || (d.ProductId == nd.ProductId));
 
             if (compraDet is null)
                 continue;
 
             var asigs = asignaciones
-                .Where(a => a.CompraDetalleId == compraDet.Id && a.ProductoId == nd.ProductoId)
+                .Where(a => a.PurchBillLineId == compraDet.Id && a.ProductId == nd.ProductId)
                 .ToList();
             if (asigs.Count == 0)
                 continue;
 
-            var detCant = compraDet.Cantidad;
-            var sign    = nota.TipoNota == "CREDITO" ? 1m : -1m;
-            var costo   = compraDet.Cantidad > 0
-                ? compraDet.PrecioUnitario * (1 - compraDet.DescuentoPorcentaje / 100m)
+            var detCant = compraDet.Quantity;
+            var sign    = nota.NoteType == "CREDITO" ? 1m : -1m;
+            var costo   = compraDet.Quantity > 0
+                ? compraDet.UnitPrice * (1 - compraDet.DiscountPct / 100m)
                 : 0m;
 
             foreach (var a in asigs)
             {
-                var frac = detCant > 0 ? a.Cantidad / detCant : 1m / asigs.Count;
-                var qty  = nd.Cantidad * frac * sign;
+                var frac = detCant > 0 ? a.Quantity / detCant : 1m / asigs.Count;
+                var qty  = nd.Quantity * frac * sign;
                 if (qty == 0)
                     continue;
-                lines.Add(new CompraNotaProveedorStockLine(
-                    nd.ProductoId.Value,
-                    a.BodegaId,
+                lines.Add(new PurchNoteStockLine(
+                    nd.ProductId.Value,
+                    a.WarehouseId,
                     qty,
                     costo));
             }
@@ -229,23 +229,23 @@ public sealed class AprobarCompraNotaProveedorCommandHandler
         return lines;
     }
 
-    private static CompraNotaProveedorDto ToDto(CompraNotaProveedor n) => new(
+    private static CompraNotaProveedorDto ToDto(PurchNote n) => new(
         n.Id,
-        n.ProveedorId,
-        n.CompraFacturaId,
-        n.GastoFacturaId,
-        n.TipoNota,
-        n.Motivo,
-        n.ClaveAcceso,
-        n.FechaEmision,
-        n.Establecimiento,
-        n.PuntoEmision,
-        n.Secuencial,
+        n.SupplierId,
+        n.PurchBillId,
+        n.ExpenseInvoiceId,
+        n.NoteType,
+        n.Reason,
+        n.AccessKey,
+        n.IssueDate,
+        n.EstabCode,
+        n.EmPointCode,
+        n.Sequential,
         n.Subtotal,
-        n.Impuesto,
+        n.VatTotal,
         n.Total,
-        n.Estado,
+        n.Status,
         n.XmlPath,
-        n.AsientoContableId,
+        n.JournalEntryId,
         n.CreatedAt);
 }

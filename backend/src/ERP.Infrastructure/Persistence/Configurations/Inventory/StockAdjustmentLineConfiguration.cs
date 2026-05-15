@@ -1,4 +1,4 @@
-using ERP.Domain.Modules.Inventory.Entities;
+﻿using ERP.Domain.Modules.Inventory.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

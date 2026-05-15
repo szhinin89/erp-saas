@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -7,56 +7,56 @@ using ERP.Domain.Modules.Sales.Events;
 
 namespace ERP.Application.Modules.Inventory.EventHandlers;
 
-public sealed class VentaAutorizadaEventHandler : INotificationHandler<VentaAutorizadaEvent>
+public sealed class SalesBillAuthorizedEventHandler : INotificationHandler<SalesBillAuthorizedEvent>
 {
-    private readonly IInventarioStockRepository _inventario;
-    private readonly ILogger<VentaAutorizadaEventHandler> _logger;
+    private readonly IStockRepository _inventario;
+    private readonly ILogger<SalesBillAuthorizedEventHandler> _logger;
 
-    public VentaAutorizadaEventHandler(
-        IInventarioStockRepository inventario,
-        ILogger<VentaAutorizadaEventHandler> logger)
+    public SalesBillAuthorizedEventHandler(
+        IStockRepository inventario,
+        ILogger<SalesBillAuthorizedEventHandler> logger)
     {
         _inventario = inventario;
         _logger     = logger;
     }
 
-    public async Task Handle(VentaAutorizadaEvent notification, CancellationToken ct)
+    public async Task Handle(SalesBillAuthorizedEvent notification, CancellationToken ct)
     {
         var tenantId = notification.TenantId;
         var userId   = notification.UserId;
-        var bodegaId = notification.BodegaId;
+        var bodegaId = notification.WarehouseId;
 
         foreach (var line in notification.StockLines)
         {
-            var stock = await _inventario.GetStockByTenantBodegaProductAsync(
-                tenantId, bodegaId, line.ProductoId, ct);
+            var stock = await _inventario.GetStockAsync(
+                tenantId, bodegaId, line.ProductId, ct);
 
             if (stock is null)
             {
                 _logger.LogWarning(
-                    "Venta {FacturaId}: sin stock registrado para producto {ProductoId} en bodega {BodegaId}; se omite descuento.",
-                    notification.VentaFacturaId, line.ProductoId, bodegaId);
+                    "Venta {FacturaId}: sin stock registrado para producto {ProductoId} en Warehouse {BodegaId}; se omite descuento.",
+                    notification.SalesBillId, line.ProductId, bodegaId);
                 continue;
             }
 
-            var cantidadAnterior = stock.Cantidad;
-            var costoPromedioVenta = stock.CostoPromedioActual;
-            stock.AplicarMovimiento(-line.Cantidad, userId, costoPromedioVenta);
+            var cantidadAnterior = stock.Quantity;
+            var costoPromedioVenta = stock.AverageCost;
+            stock.ApplyMovement(-line.Quantity, userId, costoPromedioVenta);
 
-            var movimiento = InventarioMovimiento.Create(
+            var movimiento = StockMovement.Create(
                 tenantId,
-                line.ProductoId,
+                line.ProductId,
                 bodegaId,
-                TipoMovimientoInventario.SalidaVenta,
-                cantidad:            -line.Cantidad,
-                cantidadAnterior:    cantidadAnterior,
-                referencia:          notification.NumeroFactura,
-                documentoOrigenId:   notification.VentaFacturaId,
-                documentoOrigenTipo: "VentasFactura",
-                createdBy:           userId,
-                costoUnitario:       costoPromedioVenta);
+                StockMovementType.SaleExit,
+                quantity:            -line.Quantity,
+                previousQuantity:    cantidadAnterior,
+                reference:          notification.BillNumber,
+                sourceDocId:   notification.SalesBillId,
+                sourceDocType: "SalesBill",
+                createdBy: userId,
+                unitCost:       costoPromedioVenta);
 
-            await _inventario.AddMovimientoAsync(movimiento, ct);
+            await _inventario.AddMovementAsync(movimiento, ct);
         }
     }
 }

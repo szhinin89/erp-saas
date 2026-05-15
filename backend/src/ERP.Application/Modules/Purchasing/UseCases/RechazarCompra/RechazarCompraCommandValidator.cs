@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 using ERP.Domain.Modules.Purchasing.Entities;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.RechazarCompra;
@@ -7,14 +7,14 @@ public sealed class RechazarCompraCommandValidator : AbstractValidator<RechazarC
 {
     public RechazarCompraCommandValidator()
     {
-        RuleFor(x => x.CompraFacturaId)
+        RuleFor(x => x.PurchBillId)
             .NotEmpty()
             .WithMessage("El ID de la factura de compra es obligatorio.");
 
-        RuleFor(x => x.Motivo)
+        RuleFor(x => x.Reason)
             .NotEmpty()
             .WithMessage("El motivo de rechazo es obligatorio.")
-            .MaximumLength(CompraFactura.MotivoRechazoMaxLen)
-            .WithMessage($"El motivo no puede superar {CompraFactura.MotivoRechazoMaxLen} caracteres.");
+            .MaximumLength(PurchBill.RejectionReasonMaxLen)
+            .WithMessage($"El motivo no puede superar {PurchBill.RejectionReasonMaxLen} caracteres.");
     }
 }

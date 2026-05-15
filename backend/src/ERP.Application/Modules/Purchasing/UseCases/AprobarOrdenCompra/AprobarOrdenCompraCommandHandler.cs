@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
@@ -13,16 +13,16 @@ namespace ERP.Application.Modules.Purchasing.UseCases.AprobarOrdenCompra;
 public sealed class AprobarOrdenCompraCommandHandler
     : IRequestHandler<AprobarOrdenCompraCommand, Result<OrdenCompraDto>>
 {
-    private readonly IOrdenCompraRepository  _ordenRepo;
-    private readonly IProveedorRepository    _proveedorRepo;
+    private readonly IPurchaseOrderRepository  _ordenRepo;
+    private readonly ISupplierRepository    _proveedorRepo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _currentTenant;
     private readonly ICurrentUser            _currentUser;
     private readonly ILogger<AprobarOrdenCompraCommandHandler> _logger;
 
     public AprobarOrdenCompraCommandHandler(
-        IOrdenCompraRepository ordenRepo,
-        IProveedorRepository proveedorRepo,
+        IPurchaseOrderRepository ordenRepo,
+        ISupplierRepository proveedorRepo,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
@@ -46,23 +46,23 @@ public sealed class AprobarOrdenCompraCommandHandler
         if (orden is null)
             return Result<OrdenCompraDto>.Failure("Orden de compra no encontrada.");
 
-        if (orden.Estado is not ("Borrador" or "Enviada"))
+        if (orden.Status is not ("Borrador" or "Enviada"))
             return Result<OrdenCompraDto>.Failure(
-                $"Solo se puede aprobar una OC en Borrador o Enviada (estado actual: {orden.Estado}).");
+                $"Solo se puede aprobar una OC en Borrador o Enviada (estado actual: {orden.Status}).");
 
-        orden.Aprobar(userId);
+        orden.Approve(userId);
 
         await _activity.AddAsync(UserActivity.Create(
             tenantId, userId, _currentUser.Email, _currentUser.FullName,
             module: "compras", action: "orden-compra.aprobar",
-            entityType: "OrdenCompra", entityId: orden.Id,
-            description: orden.NumeroOrden), ct);
+            entityType: "PurchaseOrder", entityId: orden.Id,
+            description: orden.OrderNumber), ct);
 
         await _ordenRepo.SaveChangesAsync(ct);
-        _logger.LogInformation("OC aprobada: {Numero}", orden.NumeroOrden);
+        _logger.LogInformation("OC aprobada: {Numero}", orden.OrderNumber);
 
-        var proveedor = await _proveedorRepo.GetByIdAsync(tenantId, orden.ProveedorId, ct);
+        var Supplier = await _proveedorRepo.GetByIdAsync(tenantId, orden.SupplierId, ct);
         return Result<OrdenCompraDto>.Success(
-            CrearOrdenCompraCommandHandler.ToDto(orden, proveedor?.RazonSocial ?? orden.ProveedorId.ToString()));
+            CrearOrdenCompraCommandHandler.ToDto(orden, Supplier?.LegalName ?? orden.SupplierId.ToString()));
     }
 }
