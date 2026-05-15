@@ -27,6 +27,8 @@ using ERP.Domain.Modules.Inventario.Entities;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.ElectronicDocuments.Entities;
+using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Auxiliary.Entities;
 using ERP.Application.Common;
 using System.Linq.Expressions;
 
@@ -307,6 +309,19 @@ public class ErpDbContext : DbContext
     public DbSet<NoteDetail>          NoteDetails          => Set<NoteDetail>();
     public DbSet<DeliveryDetail>      DeliveryDetails      => Set<DeliveryDetail>();
     public DbSet<WithholdingDetail>   WithholdingDetails   => Set<WithholdingDetail>();
+
+    // ── Documentos recibidos (compras / retenciones de clientes) ─────────
+    public DbSet<PurchaseInvoice>    PurchaseInvoices     => Set<PurchaseInvoice>();
+    public DbSet<PurchInvDetail>     PurchInvDetails      => Set<PurchInvDetail>();
+    public DbSet<SupplierNote>       SupplierNotes        => Set<SupplierNote>();
+    public DbSet<SupplierNoteDetail> SupplierNoteDetails  => Set<SupplierNoteDetail>();
+    public DbSet<ReceivedWithholding> ReceivedWithholdings => Set<ReceivedWithholding>();
+    public DbSet<ReceivedWhDetail>   ReceivedWhDetails    => Set<ReceivedWhDetail>();
+
+    // ── Auxiliares SRI (logs, reintentos, devolución IVA) ─────────────────
+    public DbSet<WsLog>         WsLogs        => Set<WsLog>();
+    public DbSet<RetryControl>  RetryControls => Set<RetryControl>();
+    public DbSet<VatRefund>     VatRefunds    => Set<VatRefund>();
 
     /// <summary>
     /// Evaluada en cada query, no al compilar el modelo.
