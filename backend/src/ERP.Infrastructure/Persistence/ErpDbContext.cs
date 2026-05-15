@@ -24,13 +24,16 @@ using ERP.Domain.Modules.Compras.Entities;
 using ERP.Domain.Modules.Gastos.Entities;
 using ERP.Domain.Modules.Caja.Entities;
 using ERP.Domain.Modules.Inventario.Entities;
+using ERP.Domain.Modules.SriCatalogs.Entities;
+using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Application.Common;
 using System.Linq.Expressions;
 
 namespace ERP.Infrastructure.Persistence;
 
 /// <summary>
-/// DbContext centralizado para todas las entidades (31 DbSets).
+/// DbContext centralizado para todas las entidades (31 + 32 nuevos DbSets).
 /// 
 /// ⚠️ RIESGO ARQUITECTÓNICO: Este contexto está concentrando demasiados módulos.
 /// 
@@ -266,6 +269,44 @@ public class ErpDbContext : DbContext
     public DbSet<ConfigModule> ConfigModules => Set<ConfigModule>();
     public DbSet<ConfigFeature> ConfigFeatures => Set<ConfigFeature>();
     public DbSet<ConfiguracionFacturacion> ConfiguracionFacturaciones => Set<ConfiguracionFacturacion>();
+
+    // ── Catálogos SRI (globales, sin tenant_id) ───────────────────────────
+    public DbSet<SriEnvironment>    SriEnvironments    => Set<SriEnvironment>();
+    public DbSet<SriEmissionType>   SriEmissionTypes   => Set<SriEmissionType>();
+    public DbSet<SriDocType>        SriDocTypes        => Set<SriDocType>();
+    public DbSet<SriIdType>         SriIdTypes         => Set<SriIdType>();
+    public DbSet<SriVatRate>        SriVatRates        => Set<SriVatRate>();
+    public DbSet<SriIceRate>        SriIceRates        => Set<SriIceRate>();
+    public DbSet<SriRetentionCode>  SriRetentionCodes  => Set<SriRetentionCode>();
+    public DbSet<SriPaymentMethod>  SriPaymentMethods  => Set<SriPaymentMethod>();
+    public DbSet<SriTaxRegime>      SriTaxRegimes      => Set<SriTaxRegime>();
+    public DbSet<SriTaxSupport>     SriTaxSupports     => Set<SriTaxSupport>();
+    public DbSet<SriUom>            SriUoms            => Set<SriUom>();
+    public DbSet<SriErrorCode>      SriErrorCodes      => Set<SriErrorCode>();
+    public DbSet<SriCountry>        SriCountries       => Set<SriCountry>();
+
+    // ── Company / Configuración SRI por empresa ───────────────────────────
+    public DbSet<Company>            Companies          => Set<Company>();
+    public DbSet<DigitalCertificate> DigitalCerts       => Set<DigitalCertificate>();
+    public DbSet<Establishment>      Establishments     => Set<Establishment>();
+    public DbSet<EmissionPoint>      EmissionPoints     => Set<EmissionPoint>();
+    public DbSet<DocumentSequence>   DocumentSequences  => Set<DocumentSequence>();
+    public DbSet<GeneralParameter>   GeneralParameters  => Set<GeneralParameter>();
+
+    // ── Documentos Electrónicos ───────────────────────────────────────────
+    public DbSet<ElectronicDoc>       ElectronicDocs       => Set<ElectronicDoc>();
+    public DbSet<DocPayment>          DocPayments          => Set<DocPayment>();
+    public DbSet<DocTax>              DocTaxes             => Set<DocTax>();
+    public DbSet<SalesInvoice>        SalesInvoices        => Set<SalesInvoice>();
+    public DbSet<CreditNote>          CreditNotes          => Set<CreditNote>();
+    public DbSet<DebitNote>           DebitNotes           => Set<DebitNote>();
+    public DbSet<DeliveryGuide>       DeliveryGuides       => Set<DeliveryGuide>();
+    public DbSet<WithholdingCert>     WithholdingCerts     => Set<WithholdingCert>();
+    public DbSet<PurchaseSettlement>  PurchaseSettlements  => Set<PurchaseSettlement>();
+    public DbSet<InvoiceDetail>       InvoiceDetails       => Set<InvoiceDetail>();
+    public DbSet<NoteDetail>          NoteDetails          => Set<NoteDetail>();
+    public DbSet<DeliveryDetail>      DeliveryDetails      => Set<DeliveryDetail>();
+    public DbSet<WithholdingDetail>   WithholdingDetails   => Set<WithholdingDetail>();
 
     /// <summary>
     /// Evaluada en cada query, no al compilar el modelo.
