@@ -2,7 +2,7 @@ using ERP.Domain.Modules.Company.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace ERP.Infrastructure.Persistence.Configurations.Company;
+namespace ERP.Infrastructure.Persistence.Configurations.CompanyConfig;
 
 public class DigitalCertificateConfiguration : IEntityTypeConfiguration<DigitalCertificate>
 {

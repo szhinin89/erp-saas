@@ -3,7 +3,7 @@ using ERP.Domain.Modules.SriCatalogs.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace ERP.Infrastructure.Persistence.Configurations.Company;
+namespace ERP.Infrastructure.Persistence.Configurations.CompanyConfig;
 
 public class CompanyConfiguration : IEntityTypeConfiguration<Company>
 {
