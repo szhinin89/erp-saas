@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
 import { useI18n } from '../i18n/i18n';
-import { ZHFormHeader, ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormActions } from '../components/zh/ZHForm';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';
-import { ZHCenteredCard } from '../components/zh/ZHCenteredCard';
 import { passwordResetFormSchema, type PasswordResetFormValues } from '../schemas/auth/passwordResetSchema';
-import './LoginPage.css';
+import './PasswordResetPage.css';
 
 export function PasswordResetPage() {
   const navigate = useNavigate();
@@ -22,12 +20,7 @@ export function PasswordResetPage() {
     formState: { errors },
   } = useForm<PasswordResetFormValues>({
     resolver: zodResolver(passwordResetFormSchema),
-    defaultValues: {
-      tenantId: '',
-      email: '',
-      newPassword: '',
-      confirmPassword: '',
-    },
+    defaultValues: { tenantId: '', email: '', newPassword: '', confirmPassword: '' },
   });
 
   const tenantIdWatched = watch('tenantId');
@@ -69,9 +62,7 @@ export function PasswordResetPage() {
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [tenantIdWatched, t]);
 
   const onValid = async (form: PasswordResetFormValues) => {
@@ -82,7 +73,6 @@ export function PasswordResetPage() {
       setError(t('reset.error.disabled'));
       return;
     }
-
     if (tenantAllowsDirectReset === null && tenantCheckError) {
       setError(t('reset.tenantCheck.unavailable'));
       return;
@@ -99,7 +89,8 @@ export function PasswordResetPage() {
       setTimeout(() => navigate('/login'), 800);
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? t('login.error.default');
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        t('login.error.default');
       setError(msg);
     } finally {
       setLoading(false);
@@ -112,30 +103,52 @@ export function PasswordResetPage() {
       : tenantAllowsDirectReset === false
         ? t('reset.error.disabled')
         : tenantCheckError || undefined;
+
   const tenantHintType =
-    tenantAllowsDirectReset === true ? 'success' : tenantAllowsDirectReset === false ? 'error' : tenantCheckError ? 'info' : undefined;
+    tenantAllowsDirectReset === true
+      ? 'success'
+      : tenantAllowsDirectReset === false
+        ? 'error'
+        : tenantCheckError
+          ? 'info'
+          : undefined;
 
   return (
-    <ZHCenteredCard bgClassName="login-bg" cardClassName="login-card">
-      <form className="login-form" onSubmit={handleSubmit(onValid)} noValidate>
-        <ZHFormHeader title={t('reset.title')} subtitle={t('reset.directSubtitle')} />
-        <ZHFormBody>
-          <p className="login-form-hint">
-            <Link to="/forgot-password">{t('login.forgotPassword')}</Link>
-          </p>
-          {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
-          {success ? <ZHPageNotice variant="success" message={success} /> : null}
+    <div className="zh-auth-bg">
+      <div className="zh-auth-bg-orb zh-auth-bg-orb--tr" aria-hidden="true" />
+      <div className="zh-auth-bg-orb zh-auth-bg-orb--bl" aria-hidden="true" />
+      <div className="zh-auth-bg-grid" aria-hidden="true" />
 
-          <ZHFormSection title={t('reset.title')}>
-            <ZHGrid cols={1}>
-              <ZHField
-                label={t('login.tenantId.label')}
-                required
-                fieldError={errors.tenantId?.message}
-                hint={errors.tenantId ? undefined : tenantHint}
-                hintType={errors.tenantId ? undefined : tenantHintType}
-              >
+      <div className="zh-auth-wrapper">
+        {/* Marca */}
+        <header className="zh-auth-brand">
+          <div className="zh-auth-brand-icon" aria-hidden="true">
+            <span className="material-symbols-outlined">manage_accounts</span>
+          </div>
+          <h1 className="pr-brand-name">ZH Technologies</h1>
+          <p className="pr-brand-sub">Restablecer Contraseña</p>
+        </header>
+
+        {/* Card */}
+        <div className="zh-auth-card">
+          <div className="zh-auth-card-header">
+            <h2 className="zh-auth-card-title">{t('reset.title')}</h2>
+            <p className="zh-auth-card-desc">{t('reset.directSubtitle')}</p>
+          </div>
+
+          {error && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />}
+          {success && <ZHPageNotice variant="success" message={success} />}
+
+          <form className="zh-auth-form" onSubmit={handleSubmit(onValid)} noValidate>
+            {/* Tenant ID */}
+            <div className={`zh-auth-field${errors.tenantId ? ' zh-auth-field--error' : ''}`}>
+              <label className="zh-auth-label" htmlFor="tenantId">
+                {t('login.tenantId.label')}
+              </label>
+              <div className="zh-auth-input-wrap">
+                <span className="zh-auth-input-icon material-symbols-outlined" aria-hidden="true">domain</span>
                 <input
+                  className="zh-auth-input"
                   id="tenantId"
                   type="text"
                   placeholder={t('login.tenantId.placeholder')}
@@ -143,10 +156,25 @@ export function PasswordResetPage() {
                   disabled={loading}
                   {...register('tenantId')}
                 />
-              </ZHField>
+              </div>
+              {errors.tenantId?.message ? (
+                <span className="zh-auth-field-error">{errors.tenantId.message}</span>
+              ) : tenantHint ? (
+                <span className={`zh-auth-field-hint${tenantHintType ? ` zh-auth-field-hint--${tenantHintType}` : ''}`}>
+                  {tenantHint}
+                </span>
+              ) : null}
+            </div>
 
-              <ZHField label={t('reset.email.label')} required fieldError={errors.email?.message}>
+            {/* Email */}
+            <div className={`zh-auth-field${errors.email ? ' zh-auth-field--error' : ''}`}>
+              <label className="zh-auth-label" htmlFor="email">
+                {t('reset.email.label')}
+              </label>
+              <div className="zh-auth-input-wrap">
+                <span className="zh-auth-input-icon material-symbols-outlined" aria-hidden="true">mail</span>
                 <input
+                  className="zh-auth-input"
                   id="email"
                   type="email"
                   placeholder={t('login.email.placeholder')}
@@ -154,10 +182,21 @@ export function PasswordResetPage() {
                   disabled={loading}
                   {...register('email')}
                 />
-              </ZHField>
+              </div>
+              {errors.email?.message && (
+                <span className="zh-auth-field-error">{errors.email.message}</span>
+              )}
+            </div>
 
-              <ZHField label={t('reset.newPassword.label')} required fieldError={errors.newPassword?.message}>
+            {/* Nueva contraseña */}
+            <div className={`zh-auth-field${errors.newPassword ? ' zh-auth-field--error' : ''}`}>
+              <label className="zh-auth-label" htmlFor="newPassword">
+                {t('reset.newPassword.label')}
+              </label>
+              <div className="zh-auth-input-wrap">
+                <span className="zh-auth-input-icon material-symbols-outlined" aria-hidden="true">lock</span>
                 <input
+                  className="zh-auth-input"
                   id="newPassword"
                   type="password"
                   placeholder={t('login.password.placeholder')}
@@ -165,10 +204,21 @@ export function PasswordResetPage() {
                   disabled={loading}
                   {...register('newPassword')}
                 />
-              </ZHField>
+              </div>
+              {errors.newPassword?.message && (
+                <span className="zh-auth-field-error">{errors.newPassword.message}</span>
+              )}
+            </div>
 
-              <ZHField label={t('reset.confirmPassword.label')} required fieldError={errors.confirmPassword?.message}>
+            {/* Confirmar contraseña */}
+            <div className={`zh-auth-field${errors.confirmPassword ? ' zh-auth-field--error' : ''}`}>
+              <label className="zh-auth-label" htmlFor="confirmPassword">
+                {t('reset.confirmPassword.label')}
+              </label>
+              <div className="zh-auth-input-wrap">
+                <span className="zh-auth-input-icon material-symbols-outlined" aria-hidden="true">lock_open</span>
                 <input
+                  className="zh-auth-input"
                   id="confirmPassword"
                   type="password"
                   placeholder={t('login.password.placeholder')}
@@ -176,25 +226,44 @@ export function PasswordResetPage() {
                   disabled={loading}
                   {...register('confirmPassword')}
                 />
-              </ZHField>
-            </ZHGrid>
-          </ZHFormSection>
+              </div>
+              {errors.confirmPassword?.message && (
+                <span className="zh-auth-field-error">{errors.confirmPassword.message}</span>
+              )}
+            </div>
 
-          <ZHFormActions
-            onCancel={() => navigate('/login')}
-            onDraft={undefined}
-            onSave={undefined}
-            disableDraft
-            disableSave={loading || tenantAllowsDirectReset === false}
-            saveButtonType="submit"
-            labels={{
-              cancel: t('tenantSelect.back') ?? t('common.cancel'),
-              draft: t('common.saveDraft') ?? 'Guardar borrador',
-              save: loading ? t('reset.button.loading') : t('reset.button.submit'),
-            }}
-          />
-        </ZHFormBody>
-      </form>
-    </ZHCenteredCard>
+            <button
+              type="submit"
+              className="zh-auth-submit"
+              disabled={loading || tenantAllowsDirectReset === false}
+            >
+              <span>{loading ? t('reset.button.loading') : t('reset.button.submit')}</span>
+              {!loading && (
+                <span className="material-symbols-outlined" aria-hidden="true">check_circle</span>
+              )}
+            </button>
+          </form>
+
+          <button type="button" className="zh-auth-back" onClick={() => navigate('/login')}>
+            <span className="material-symbols-outlined zh-auth-back-arrow" aria-hidden="true">arrow_back</span>
+            Volver al inicio de sesión
+          </button>
+        </div>
+
+        <div className="zh-auth-banner" aria-hidden="true">
+          <span className="material-symbols-outlined zh-auth-banner-icon">admin_panel_settings</span>
+          <div className="zh-auth-banner-overlay" />
+        </div>
+
+        <footer className="zh-auth-footer">
+          <div className="zh-auth-footer-links">
+            <a href="#" className="zh-auth-footer-link">Centro de ayuda</a>
+            <span className="zh-auth-footer-sep" aria-hidden="true">|</span>
+            <a href="#" className="zh-auth-footer-link">Privacidad</a>
+          </div>
+          <p className="zh-auth-footer-copy">© 2024 ZH Technologies. Todos los derechos reservados.</p>
+        </footer>
+      </div>
+    </div>
   );
 }

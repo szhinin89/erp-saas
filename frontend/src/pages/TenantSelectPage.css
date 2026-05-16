@@ -1,1 +1,114 @@
-/* estilos pendientes */
+/* TenantSelectPage — page-specific styles */
+
+/* Wider wrapper than default 440px */
+.ts-wrapper { max-width: 500px; }
+
+/* ── Card ─────────────────────────────────────────────────── */
+.ts-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-md);
+  width: 100%;
+  overflow: hidden;
+}
+
+.ts-card-body {
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* ── Card header ──────────────────────────────────────────── */
+.ts-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.ts-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.ts-count {
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-container);
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+/* ── Search ───────────────────────────────────────────────── */
+.ts-search {
+  padding-left: 36px;
+  background-color: var(--color-surface-container-low);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: left 10px center;
+}
+
+/* ── Tenant list ──────────────────────────────────────────── */
+.ts-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.ts-empty {
+  text-align: center;
+  padding: var(--space-8) 0;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+/* ── Card footer ──────────────────────────────────────────── */
+.ts-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+}
+
+.ts-card-footer-link {
+  font-size: 12px;
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: opacity var(--transition);
+}
+.ts-card-footer-link:hover { opacity: 0.75; text-decoration: none; }
+
+/* ── Page bottom bar ──────────────────────────────────────── */
+.ts-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.ts-footer-nav {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.ts-footer-link {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.ts-footer-link:hover { color: var(--color-text-primary); text-decoration: none; }

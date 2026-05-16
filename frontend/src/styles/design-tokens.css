@@ -4,13 +4,18 @@
    ============================================================ */
 :root {
   /* ── Brand ──────────────────────────────────────────────── */
-  --color-primary:           #3a5f84;
-  --color-primary-dim:       #a5caf4;
-  --color-primary-container: #53779e;
-  --color-on-primary:        #ffffff;
-  --color-secondary:         #3c6188;
-  --color-secondary-container: #add2ff;
-  --color-on-secondary:      #ffffff;
+  --color-primary:               #3a5f84;
+  --color-primary-dim:           #a5caf4;
+  --color-primary-container:     #53779e;
+  --color-on-primary:            #ffffff;
+  --color-on-primary-container:  #fdfcff;
+  --color-secondary:             #3c6188;
+  --color-secondary-container:   #add2ff;
+  --color-on-secondary:          #ffffff;
+  --color-on-secondary-container:#355a81;
+  --color-tertiary:              #555d64;
+  --color-tertiary-container:    #6d767d;
+  --color-on-tertiary:           #ffffff;
 
   /* ── Semantic ────────────────────────────────────────────── */
   --color-error:   #C0392B;
@@ -87,6 +92,10 @@
   --text-label-sm-height:  14px;
   --text-label-sm-weight:  600;
   --text-label-sm-spacing: 0.05em;
+
+  /* ── Tinted surfaces ─────────────────────────────────────── */
+  --color-surface-primary-tint:  #e8f0f8;  /* table thead, subtle primary accent */
+  --color-surface-tertiary-fixed: #dbe3eb; /* tertiary-fixed */
 
   /* ── Shadows ──────────────────────────────────────────────── */
   --shadow-xs: 0 1px 2px rgba(0,0,0,0.06);

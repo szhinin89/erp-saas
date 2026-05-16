@@ -1,1 +1,257 @@
-/* estilos pendientes */
+/* AppLayout — main app shell, nav menu, superadmin banner */
+
+/* ── Tenant header wrapper ────────────────────────────────── */
+.app-tenantHeaderWrap {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+/* ── Superadmin impersonation banner ──────────────────────── */
+/* Shown when a SuperAdmin has entered a tenant's dashboard */
+.superadmin-banner {
+  background: var(--color-secondary-container);
+  color: var(--color-on-secondary-container);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+}
+
+.superadmin-banner-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 8px var(--space-6);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-on-secondary-container);
+  text-align: left;
+  transition: background var(--transition);
+}
+.superadmin-banner-toggle:hover { background: rgba(0,0,0,0.04); }
+
+.superadmin-banner-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.superadmin-banner-title { font-weight: 700; }
+
+.superadmin-banner-tenantInline {
+  font-weight: 600;
+  color: var(--color-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.superadmin-banner-tenantIdInline {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-on-surface-variant);
+  opacity: 0.7;
+}
+
+.superadmin-banner-caret { margin-left: auto; flex-shrink: 0; }
+
+.superadmin-banner-details {
+  padding: var(--space-3) var(--space-6);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  background: rgba(255,255,255,0.5);
+}
+
+.superadmin-banner-tenant {
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 13px;
+}
+
+.superadmin-banner-tenantId {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+}
+
+.superadmin-banner-btn {
+  margin-left: auto;
+  padding: 6px var(--space-4);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: var(--font-family);
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+.superadmin-banner-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary) 85%, #000);
+}
+.superadmin-banner-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* ── Main menu — horizontal nav bar ──────────────────────── */
+/* Renders as bottomLeft inside ZHAppTenantHeader → zh-tenant-status */
+.app-mainmenu {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 0;
+}
+
+.app-mainmenu--loading {
+  padding: var(--space-2) 0;
+  opacity: 0.6;
+}
+
+.app-mainmenu-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font-family: var(--font-family);
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: rgba(255, 255, 255, 0.75);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color var(--transition), background var(--transition), border-color var(--transition);
+  margin-bottom: -1px;
+}
+.app-mainmenu-item:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.10);
+}
+.app-mainmenu-item.is-active {
+  color: #ffffff;
+  border-bottom-color: var(--color-secondary-fixed-dim, #a5caf6);
+  font-weight: 700;
+}
+
+/* ── Main menu popover (dropdown) ─────────────────────────── */
+.app-mainmenu-popover {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  min-width: 200px;
+  max-width: 280px;
+  z-index: 500;
+  padding: var(--space-2) 0;
+  overflow: hidden;
+}
+
+.app-mainmenu-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.app-mainmenu-row.is-nested { padding-left: var(--space-4); }
+
+.app-mainmenu-link {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  padding: 9px var(--space-4);
+  font-size: var(--text-body-md-size);
+  color: var(--color-text-primary);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app-mainmenu-navBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-family);
+  text-align: left;
+  width: 100%;
+  border-radius: 0;
+  transition: background var(--transition), color var(--transition);
+}
+.app-mainmenu-navBtn:hover { background: var(--color-surface-container-low); }
+
+.app-mainmenu-parent {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ── Branch (nested menu) ─────────────────────────────────── */
+.app-mainmenu-branchRoot { width: 100%; }
+
+.app-mainmenu-branchToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-on-surface-variant);
+}
+.app-mainmenu-branchToggle:hover { color: var(--color-text-primary); }
+
+.app-mainmenu-branchCaret {
+  font-size: 10px;
+  flex-shrink: 0;
+  color: var(--color-outline);
+}
+
+.app-mainmenu-branchLabel { font-size: var(--text-body-md-size); }
+
+.app-mainmenu-branchChildren {
+  border-left: 2px solid var(--color-border);
+  margin-left: var(--space-5);
+}
+
+/* ── Favorites ────────────────────────────────────────────── */
+.app-mainmenu-fav {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-outline-variant);
+  font-size: 14px;
+  padding: 2px 6px;
+  transition: color var(--transition);
+  line-height: 1;
+}
+.app-mainmenu-fav:hover { color: var(--color-warning); }
+.app-mainmenu-fav.is-on { color: var(--color-warning); }
+
+/* ── Vertical plan nav ────────────────────────────────────── */
+.app-mainmenu--planVertical {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  width: 200px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.app-mainmenu-verticalSection { width: 100%; }
+
+.app-mainmenu-verticalSectionLabel {
+  padding: 6px var(--space-4) 4px;
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  letter-spacing: var(--text-label-sm-spacing);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}

@@ -1,1 +1,37 @@
-/* estilos pendientes */
+/* VentasFacturasPage — estilos específicos de la página */
+/* Clases globales en page-template.css (pg-*) y zh-ui.css (zh-*) */
+
+/* ── Status badges ───────────────────────────────────────── */
+.vf-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  letter-spacing: var(--text-label-sm-spacing);
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.vf-badge--success { background: rgba(26, 122, 74, 0.10);  color: var(--color-success); }
+.vf-badge--warning { background: rgba(186, 117, 23, 0.10); color: var(--color-warning); }
+.vf-badge--error   { background: rgba(192, 57, 43, 0.10);  color: var(--color-error); }
+.vf-badge--neutral { background: var(--color-surface-container); color: var(--color-text-secondary); }
+
+/* ── Column overrides ────────────────────────────────────── */
+.vf-col-numero   { color: var(--color-primary); font-weight: var(--text-label-md-weight); }
+.vf-col-date     { color: var(--color-text-secondary); }
+.vf-col-total    { font-weight: 600; text-align: right; }
+.vf-col-right    { text-align: right; }
+.vf-cell-right   { text-align: right; }
+.vf-cell-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+/* ── 2-col support grid (log + accent) ──────────────────── */
+.vf-support-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-4);
+}
+@media (max-width: 1024px) {
+  .vf-support-grid { grid-template-columns: 1fr; }
+}

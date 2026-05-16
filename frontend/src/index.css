@@ -1,5 +1,6 @@
 @import './styles/design-tokens.css';
 @import './styles/zh-ui.css';
+@import './styles/page-template.css';
 
 /* ── Reset mínimo ──────────────────────────────────────────── */
 *, *::before, *::after {

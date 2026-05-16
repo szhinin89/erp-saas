@@ -1,1 +1,228 @@
-/* estilos pendientes */
+/* SuperAdminPanelPage — page-level styles */
+
+/* ── Tabs wrapper (non-shell mode) ───────────────────────── */
+.sa-panelTabsWrap { margin-bottom: var(--space-4); }
+.sa-panelTabs     { width: fit-content; }
+
+/* ── Overview ────────────────────────────────────────────── */
+.sa-overviewKpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* KPI bento grid */
+.sa-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+@media (max-width: 768px) {
+  .sa-kpi-grid { grid-template-columns: 1fr; }
+}
+
+.sa-kpi-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.sa-kpi-card-left { min-width: 0; }
+
+.sa-kpi-label {
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  letter-spacing: var(--text-label-sm-spacing);
+  text-transform: uppercase;
+  color: var(--color-on-surface-variant);
+  margin: 0 0 4px;
+}
+
+.sa-kpi-value {
+  font-size: var(--text-headline-lg-size);
+  font-weight: var(--text-headline-lg-weight);
+  letter-spacing: var(--text-headline-lg-spacing);
+  color: var(--color-on-surface);
+  margin: 0;
+  line-height: 1.1;
+}
+
+.sa-kpi-trend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+}
+.sa-kpi-trend--up      { color: var(--color-success); }
+.sa-kpi-trend--warning { color: var(--color-warning); }
+.sa-kpi-trend--neutral { color: var(--color-text-secondary); }
+.sa-kpi-trend .material-symbols-outlined { font-size: 16px; }
+
+.sa-kpi-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sa-kpi-icon .material-symbols-outlined { font-size: 32px; }
+.sa-kpi-icon--primary   { background: var(--color-primary-fixed);   color: var(--color-primary); }
+.sa-kpi-icon--secondary { background: var(--color-secondary-fixed); color: var(--color-secondary); }
+.sa-kpi-icon--tertiary  { background: var(--color-tertiary-fixed);  color: var(--color-tertiary); }
+
+/* ── Welcome note ────────────────────────────────────────── */
+.sa-welcome-note     { margin-bottom: var(--space-4); }
+
+/* ── Hub cards grid ──────────────────────────────────────── */
+.sa-overviewHubIntro { margin-bottom: var(--space-4); }
+
+.sa-overviewHubGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+@media (max-width: 640px) {
+  .sa-overviewHubGrid { grid-template-columns: 1fr; }
+}
+
+.sa-overviewHubCard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  background: var(--color-surface-container-low);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.sa-overviewHubCard:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-xs);
+}
+
+.sa-overviewHubCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.sa-overviewHubCardTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.sa-overviewHubBadge {
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  background: var(--color-surface-container);
+  color: var(--color-text-secondary);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+.sa-overviewHubCardBody { font-size: 12px; color: var(--color-text-secondary); }
+
+.sa-overviewHubCardAction { margin-top: auto; width: fit-content; }
+
+/* ── Tenant search ───────────────────────────────────────── */
+.sa-search-row { margin-bottom: var(--space-4); }
+
+/* ── Tenant list ─────────────────────────────────────────── */
+.sa-tenantList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.sa-tenantRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.sa-tenantRow:hover {
+  border-color: var(--color-outline-variant);
+  box-shadow: var(--shadow-xs);
+}
+
+.sa-tenantName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.sa-tenantMeta {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.sa-tenant-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.sa-tenantPlanModules {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sa-tenantPlanRow,
+.sa-tenantModulesRow {
+  font-size: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.sa-tenantPlanKey,
+.sa-tenantModulesKey { white-space: nowrap; }
+
+.sa-tenant-actions { margin-top: var(--space-2); }
+
+/* ── Modules ─────────────────────────────────────────────── */
+.sa-modules-hint { margin: var(--space-2) 0 var(--space-3); font-size: 12px; }
+
+.sa-moduleChecks {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+@media (max-width: 480px) {
+  .sa-moduleChecks { grid-template-columns: 1fr; }
+}
+
+/* Shared checkbox label */
+.sap-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-body-md-size);
+  cursor: pointer;
+  margin-bottom: var(--space-3);
+}
+.sa-moduleCheck { margin-bottom: 0; }
