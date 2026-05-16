@@ -74,9 +74,13 @@ public class BranchConfiguration : IEntityTypeConfiguration<Branch>
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
 
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
-        builder.Property(x => x.Address).HasColumnName("address").HasMaxLength(100).IsRequired();
+        builder.Property(x => x.Address).HasColumnName("address").HasMaxLength(200).IsRequired();
+        builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(20);
+        builder.Property(x => x.BranchType).HasColumnName("branch_type").HasMaxLength(50);
         builder.Property(x => x.Reference).HasColumnName("reference").HasMaxLength(100);
         builder.Property(x => x.Phones).HasColumnName("phones").HasMaxLength(200);
+        builder.Property(x => x.Email).HasColumnName("email").HasMaxLength(150);
+        builder.Property(x => x.ManagerName).HasColumnName("manager_name").HasMaxLength(100);
 
         builder.Property(x => x.CountryId).HasColumnName("country_id").HasMaxLength(10);
         builder.Property(x => x.ProvinceId).HasColumnName("province_id").HasMaxLength(10);
@@ -85,6 +89,8 @@ public class BranchConfiguration : IEntityTypeConfiguration<Branch>
 
         builder.Property(x => x.Latitude).HasColumnName("latitude").HasMaxLength(25);
         builder.Property(x => x.Longitude).HasColumnName("longitude").HasMaxLength(25);
+        builder.Property(x => x.StorageCapacity).HasColumnName("storage_capacity").HasColumnType("decimal(12,2)");
+        builder.Property(x => x.DailySalesGoal).HasColumnName("daily_sales_goal").HasColumnType("decimal(12,2)");
         builder.Property(x => x.RechargeOption).HasColumnName("recharge_option").HasMaxLength(20);
 
         builder.Property(x => x.IsMainBranch).HasColumnName("is_main_branch").IsRequired();

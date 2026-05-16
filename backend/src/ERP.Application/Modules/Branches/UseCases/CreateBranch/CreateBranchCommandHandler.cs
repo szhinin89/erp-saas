@@ -49,18 +49,26 @@ public sealed class CreateBranchCommandHandler : IRequestHandler<CreateBranchCom
         if (command.IsMainBranch)
             await _repo.ClearMainBranchExceptAsync(tenantId, null, userId, ct);
 
+        var code = $"SUC-{DateTime.UtcNow.Year}-{Guid.NewGuid():N}"[..14];
+
         var entity = Branch.Create(
             tenantId,
             command.Name,
             command.Address,
+            code,
+            command.BranchType,
             command.Reference,
             command.Phones,
+            command.Email,
+            command.ManagerName,
             command.CountryId,
             command.ProvinceId,
             command.CantonId,
             command.ParishId,
             command.Latitude,
             command.Longitude,
+            command.StorageCapacity,
+            command.DailySalesGoal,
             command.RechargeOption,
             command.IsMainBranch,
             userId);
@@ -85,14 +93,20 @@ public sealed class CreateBranchCommandHandler : IRequestHandler<CreateBranchCom
             entity.Id,
             entity.Name,
             entity.Address,
+            entity.Code,
+            entity.BranchType,
             entity.Reference,
             entity.Phones,
+            entity.Email,
+            entity.ManagerName,
             entity.CountryId,
             entity.ProvinceId,
             entity.CantonId,
             entity.ParishId,
             entity.Latitude,
             entity.Longitude,
+            entity.StorageCapacity,
+            entity.DailySalesGoal,
             entity.RechargeOption,
             entity.IsActive,
             entity.IsMainBranch));

@@ -90,20 +90,26 @@ internal static class DevDatabaseSeeder
         }
 
         var branch = Branch.Create(
-            tenantId: tenant.Id,
-            name: "Sucursal Principal",
-            address: "DirecciÃ³n Principal",
-            reference: null,
-            phones: null,
-            countryId: null,
-            provinceId: null,
-            cantonId: null,
-            parishId: null,
-            latitude: null,
-            longitude: null,
-            rechargeOption: null,
-            isMainBranch: true,
-            createdBy: SeederActorId);
+            tenantId:        tenant.Id,
+            name:            "Sucursal Principal",
+            address:         "Dirección Principal",
+            code:            "SUC-SEED-001",
+            branchType:      null,
+            reference:       null,
+            phones:          null,
+            email:           null,
+            managerName:     null,
+            countryId:       null,
+            provinceId:      null,
+            cantonId:        null,
+            parishId:        null,
+            latitude:        null,
+            longitude:       null,
+            storageCapacity: null,
+            dailySalesGoal:  null,
+            rechargeOption:  null,
+            isMainBranch:    true,
+            createdBy:       SeederActorId);
         db.Branches.Add(branch);
         await db.SaveChangesAsync(ct);
 

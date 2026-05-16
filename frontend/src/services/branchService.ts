@@ -5,14 +5,20 @@ export type BranchDto = {
   id: string;
   name: string;
   address: string;
+  code: string | null;
+  branchType: string | null;
   reference: string | null;
   phones: string | null;
+  email: string | null;
+  managerName: string | null;
   countryId: string | null;
   provinceId: string | null;
   cantonId: string | null;
   parishId: string | null;
   latitude: string | null;
   longitude: string | null;
+  storageCapacity: number | null;
+  dailySalesGoal: number | null;
   rechargeOption: string | null;
   isActive: boolean;
   isMainBranch: boolean;
@@ -53,7 +59,6 @@ function rowToGeo(row: unknown): GeographyItemDto | null {
   return null;
 }
 
-/** Acepta id/name, Id/Name, tuplas JSON, o nombres tipo Item1/Item2. */
 export function normalizeGeographyList(data: unknown): GeographyItemDto[] {
   if (!Array.isArray(data)) return [];
   const out: GeographyItemDto[] = [];
@@ -106,14 +111,14 @@ export const branchService = {
 
   getById: (id: string) => get<BranchDetailDto>(`/api/branches/${id}`),
 
-  create: (body: Omit<BranchDto, 'id' | 'isActive' | 'isMainBranch'> & { isActive: boolean; isMainBranch: boolean }) =>
+  create: (body: Omit<BranchDto, 'id' | 'code'>) =>
     post<BranchDto>('/api/branches', body),
 
-  update: (id: string, body: Omit<BranchDto, 'id'> & { id: string }) =>
+  update: (id: string, body: Omit<BranchDto, 'id' | 'code'> & { id: string }) =>
     put<BranchDto>(`/api/branches/${id}`, body),
 
   disable: (id: string) => patch<BranchDto>(`/api/branches/${id}/disable`),
-  enable: (id: string) => patch<BranchDto>(`/api/branches/${id}/enable`),
+  enable:  (id: string) => patch<BranchDto>(`/api/branches/${id}/enable`),
 
   countries: () => getGeography('/api/geography/countries'),
   provinces: (countryId: string) =>
