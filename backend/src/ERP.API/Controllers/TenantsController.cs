@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
@@ -19,7 +19,7 @@ namespace ERP.API.Controllers;
 /// Restringido: solo accesible por administradores del sistema.
 /// </summary>
 [ApiController]
-[Modulo("Tenants API", "perm:tenants.api", "🧩", null, null, 990, VisibleEnMenu = false)]
+[AppFeature("Tenants API", "perm:tenants.api", "🧩", null, null, 990, IsVisibleInMenu = false)]
 [Route("api/[controller]")]
 [Authorize(Policy = "Session")]
 [Produces("application/json")]

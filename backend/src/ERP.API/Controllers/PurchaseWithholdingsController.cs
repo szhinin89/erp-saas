@@ -9,7 +9,7 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-[Modulo("Retenciones compras", "perm:compras.retenciones.list", "ðŸ“‘", "/compras/retenciones", "perm:compras.facturas.view", 48)]
+[AppFeature("Retenciones compras", "perm:compras.retenciones.list", "ðŸ“‘", "/compras/retenciones", "perm:compras.facturas.view", 48)]
 [ApiController]
 [Route("api/compras/retenciones")]
 [Authorize]
@@ -23,7 +23,7 @@ public sealed class PurchaseWithholdingsController : ControllerBase
     [HttpGet]
     [Authorize(Policy = "perm:compras.retenciones.list")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<IssuedRetentionListItemDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Listar([FromQuery] Guid? proveedorId, CancellationToken ct = default)
+    public async Task<IActionResult> List([FromQuery] Guid? proveedorId, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new GetPurchaseRetentionsEmitidasListQuery(proveedorId), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<IssuedRetentionListItemDto>());
@@ -32,7 +32,7 @@ public sealed class PurchaseWithholdingsController : ControllerBase
     [HttpPost]
     [Authorize(Policy = "perm:compras.retenciones.create")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    public async Task<IActionResult> Generar([FromBody] GenerarIssuedRetentionCommand command, CancellationToken ct = default)
+    public async Task<IActionResult> Generate([FromBody] GenerarIssuedRetentionCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Generado");
@@ -41,7 +41,7 @@ public sealed class PurchaseWithholdingsController : ControllerBase
     [HttpPut("{id:guid}/enviar")]
     [Authorize(Policy = "perm:compras.retenciones.send")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Enviar(Guid id, CancellationToken ct = default)
+    public async Task<IActionResult> Send(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new EnviarIssuedRetentionCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Enviado");

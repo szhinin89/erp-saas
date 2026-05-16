@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
@@ -12,7 +12,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>Rutas de instalación puntuales (sin autenticación previa).</summary>
 [ApiController]
-[Modulo("Setup API", "perm:setup.api", "🧩", null, null, 986, VisibleEnMenu = false)]
+[AppFeature("Setup API", "perm:setup.api", "🧩", null, null, 986, IsVisibleInMenu = false)]
 [Route("api/[controller]")]
 [Produces("application/json")]
 public sealed class SetupController : ControllerBase

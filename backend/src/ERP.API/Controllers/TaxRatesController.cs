@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using ERP.API.Contracts;
@@ -14,7 +14,7 @@ namespace ERP.API.Controllers;
 /// <summary>
 /// Catálogo maestro: Tarifas de impuestos (IVA/ICE) del tenant autenticado.
 /// </summary>
-[Modulo("Impuestos (IVA/ICE)", "perm:inventario.taxRates.view", "📊", "/inventario/tax-rates", "perm:inventario.products.view", 37)]
+[AppFeature("Impuestos (IVA/ICE)", "perm:inventario.taxRates.view", "📊", "/inventario/tax-rates", "perm:inventario.products.view", 37)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

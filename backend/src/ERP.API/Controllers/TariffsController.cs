@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using ERP.API.Contracts;
@@ -13,7 +13,7 @@ namespace ERP.API.Controllers;
 /// <summary>
 /// Catálogo maestro: Tarifas / aranceles del tenant autenticado.
 /// </summary>
-[Modulo("Tarifas", "perm:inventario.tariffs.view", "💲", "/inventario/tariffs", "perm:inventario.products.view", 37)]
+[AppFeature("Tarifas", "perm:inventario.tariffs.view", "💲", "/inventario/tariffs", "perm:inventario.products.view", 37)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

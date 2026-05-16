@@ -10,7 +10,7 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>Notas de crÃ©dito/dÃ©bito recibidas de proveedores (SRI), aplicables a compras o gastos.</summary>
-[Modulo("Notas proveedor", "perm:compras.notas-proveedor.view", "ðŸ“„", "/compras/notas-proveedor", "perm:compras.facturas.view", 47)]
+[AppFeature("Notas proveedor", "perm:compras.notas-proveedor.view", "ðŸ“„", "/compras/notas-proveedor", "perm:compras.facturas.view", 47)]
 [ApiController]
 [Route("api/compras/notas-proveedor")]
 [Authorize]
@@ -24,7 +24,7 @@ public sealed class PurchaseSupplierNotesController : ControllerBase
     [HttpGet]
     [Authorize(Policy = "perm:compras.notas-proveedor.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<SupplierPurchaseNoteDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Listar(CancellationToken ct = default)
+    public async Task<IActionResult> List(CancellationToken ct = default)
     {
         Guid? proveedorId = null, compraFacturaId = null, gastoFacturaId = null;
         if (Request.Query.TryGetValue("proveedorId", out var pv) && Guid.TryParse(pv, out var pid))
@@ -33,10 +33,10 @@ public sealed class PurchaseSupplierNotesController : ControllerBase
             compraFacturaId = cid;
         if (Request.Query.TryGetValue("gastoFacturaId", out var gv) && Guid.TryParse(gv, out var gid))
             gastoFacturaId = gid;
-        var estado = Request.Query.TryGetValue("estado", out var ev) ? ev.ToString() : null;
+        var status = Request.Query.TryGetValue("estado", out var ev) ? ev.ToString() : null;
 
         var result = await _mediator.Send(
-            new GetPurchasesNotesSupplierQuery(proveedorId, compraFacturaId, gastoFacturaId, estado), ct);
+            new GetPurchasesNotesSupplierQuery(proveedorId, compraFacturaId, gastoFacturaId, status), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<SupplierPurchaseNoteDto>());
     }
 
@@ -45,7 +45,7 @@ public sealed class PurchaseSupplierNotesController : ControllerBase
     [Authorize(Policy = "perm:compras.notas-proveedor.create")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(ApiResponse<SupplierPurchaseNoteDto?>), StatusCodes.Status201Created)]
-    public async Task<IActionResult> Importar(
+    public async Task<IActionResult> Import(
         IFormFile xmlFile,
         [FromForm] Guid? compraFacturaId,
         [FromForm] Guid? gastoFacturaId,
@@ -70,7 +70,7 @@ public sealed class PurchaseSupplierNotesController : ControllerBase
     [HttpPut("{id:guid}/aprobar")]
     [Authorize(Policy = "perm:compras.notas-proveedor.approve")]
     [ProducesResponseType(typeof(ApiResponse<SupplierPurchaseNoteDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Aprobar(
+    public async Task<IActionResult> Approve(
         Guid id,
         [FromBody] ApprovePurchaseSupplierNoteBody? body,
         CancellationToken ct = default)
@@ -78,8 +78,8 @@ public sealed class PurchaseSupplierNotesController : ControllerBase
         var result = await _mediator.Send(
             new ApprovePurchaseSupplierNoteCommand(
                 id,
-                body?.NumeroAutorizacion,
-                body?.FechaAutorizacion),
+                body?.AuthorizationNumber,
+                body?.AuthorizationDate),
             ct);
         return this.ToOkOrBadRequest(result, "Aprobado");
     }
@@ -87,6 +87,6 @@ public sealed class PurchaseSupplierNotesController : ControllerBase
 
 public sealed class ApprovePurchaseSupplierNoteBody
 {
-    public string? NumeroAutorizacion { get; set; }
-    public DateTime? FechaAutorizacion { get; set; }
+    public string? AuthorizationNumber { get; set; }
+    public DateTime? AuthorizationDate { get; set; }
 }

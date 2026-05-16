@@ -1,4 +1,4 @@
-using ERP.API.Attributes;
+﻿using ERP.API.Attributes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,10 +16,10 @@ namespace ERP.API.Controllers;
 public sealed class SpaMenuCatalogController : ControllerBase
 {
     [HttpGet("profiles")]
-    [Modulo("Perfiles", "perm:access.profiles.view", "👤", "/profiles", null, 86)]
+    [AppFeature("Perfiles", "perm:access.profiles.view", "👤", "/profiles", null, 86)]
     public IActionResult ProfilesCatalogMarker() => NotFound();
 
     [HttpGet("tenant-access")]
-    [Modulo("Acceso usuarios", "perm:access.memberships.view", "🧑‍🤝‍🧑", "/access", null, 87)]
+    [AppFeature("Acceso usuarios", "perm:access.memberships.view", "🧑‍🤝‍🧑", "/access", null, 87)]
     public IActionResult TenantAccessCatalogMarker() => NotFound();
 }

@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -14,7 +14,7 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-[Modulo("Clientes", "perm:ventas.customers.view", "👤", "/ventas/clientes", "perm:ventas.facturas.view", 52)]
+[AppFeature("Clientes", "perm:ventas.customers.view", "👤", "/ventas/clientes", "perm:ventas.facturas.view", 52)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

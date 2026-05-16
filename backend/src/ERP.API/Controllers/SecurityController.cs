@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
@@ -14,7 +14,7 @@ namespace ERP.API.Controllers;
 /// Acceso restringido: solo SuperAdmin.
 /// </summary>
 [ApiController]
-[Modulo("Security API", "perm:security.api", "🧩", null, null, 989, VisibleEnMenu = false)]
+[AppFeature("Security API", "perm:security.api", "🧩", null, null, 989, IsVisibleInMenu = false)]
 [Route("api/[controller]")]
 [Authorize(Policy = "Session")]
 [Authorize(Roles = "SuperAdmin")]

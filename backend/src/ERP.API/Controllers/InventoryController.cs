@@ -10,7 +10,7 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>Consultas de inventario (stock por bodega).</summary>
-[Modulo("Stock por bodega", "session:inventario.stock", "ðŸ“¦", "/inventario/stock", "perm:inventario.products.view", 41)]
+[AppFeature("Stock por bodega", "session:inventario.stock", "ðŸ“¦", "/inventario/stock", "perm:inventario.products.view", 41)]
 [ApiController]
 [Route("api/Inventario")]
 [Authorize]
@@ -26,12 +26,12 @@ public sealed class InventoryController : ControllerBase
     [Authorize(Policy = "perm:inventario.bodegas.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<CurrentStockListItemDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GetStockActual(
-        [FromQuery] Guid bodegaId,
-        [FromQuery] Guid? productoId = null,
+    public async Task<IActionResult> GetCurrentStock(
+        [FromQuery(Name = "bodegaId")] Guid warehouseId,
+        [FromQuery(Name = "productoId")] Guid? productId = null,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetCurrentStockPorWarehouseQuery(bodegaId, productoId), ct);
+        var result = await _mediator.Send(new GetCurrentStockPorWarehouseQuery(warehouseId, productId), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<CurrentStockListItemDto>());
     }
 }

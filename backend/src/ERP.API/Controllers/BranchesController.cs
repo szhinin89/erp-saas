@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -14,7 +14,7 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-[Modulo("Sucursales", "perm:saas.branches.view", "🏢", "/configuracion/sucursales", "session:geography", 30)]
+[AppFeature("Sucursales", "perm:saas.branches.view", "🏢", "/configuracion/sucursales", "session:geography", 30)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

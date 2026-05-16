@@ -9,7 +9,7 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-[Modulo("Notas ventas", "perm:ventas.notas.list", "ðŸ“ƒ", "/ventas/notas", "perm:ventas.facturas.view", 51)]
+[AppFeature("Notas ventas", "perm:ventas.notas.list", "ðŸ“ƒ", "/ventas/notas", "perm:ventas.facturas.view", 51)]
 [ApiController]
 [Route("api/ventas/notas")]
 [Authorize]
@@ -23,7 +23,7 @@ public sealed class SalesNotesController : ControllerBase
     [HttpGet]
     [Authorize(Policy = "perm:ventas.notas.list")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<SalesNoteListItemDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Listar(
+    public async Task<IActionResult> List(
         [FromQuery] Guid? facturaId,
         [FromQuery] string? estado,
         CancellationToken ct = default)
@@ -35,7 +35,7 @@ public sealed class SalesNotesController : ControllerBase
     [HttpPost]
     [Authorize(Policy = "perm:ventas.notas.create")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    public async Task<IActionResult> Crear([FromBody] CrearSalesNoteCommand command, CancellationToken ct = default)
+    public async Task<IActionResult> Create([FromBody] CrearSalesNoteCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
@@ -44,7 +44,7 @@ public sealed class SalesNotesController : ControllerBase
     [HttpPut("{id:guid}/enviar")]
     [Authorize(Policy = "perm:ventas.notas.send")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Enviar(Guid id, CancellationToken ct = default)
+    public async Task<IActionResult> Send(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new EnviarSalesNotesriCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Enviado");

@@ -56,7 +56,7 @@ TemporaryDependencyNodeTargetIdentifier=net10.0
 /warnaserror+:NU1605,SYSLIB0011
 
 [sourceFiles]
-Attributes/ModuloAttribute.cs
+Attributes/AppFeatureAttribute.cs
 Authorization/
  GlobalSuperAdminRequirement.cs
  PermissionHandler.cs
@@ -72,51 +72,51 @@ Contracts/
  Products/GetProductReportRequest.cs
 Controllers/
  AccessController.cs
+ AccountingConfigurationController.cs
  AccountsController.cs
  ActivityController.cs
- AjustesInventarioController.cs
  AuthController.cs
- BodegasController.cs
  BranchesController.cs
  BrandsController.cs
- CajaController.cs
- ComprasController.cs
- ComprasNotasProveedorController.cs
- ComprasRetencionesController.cs
- ConfiguracionContableController.cs
- ConfiguracionSRIController.cs
+ CashController.cs
  CustomersController.cs
- GastosController.cs
+ ExpensesController.cs
  GeographyController.cs
- InventarioController.cs
+ InventoryAdjustmentsController.cs
+ InventoryController.cs
  KardexController.cs
  MeController.cs
- OrdenesCompraController.cs
  ProductCategoriesController.cs
  ProductLinesController.cs
  ProductsController.cs
  ProductSubcategoriesController.cs
  ProductTypesController.cs
- ProveedoresController.cs
  PublicDeploymentController.cs
  PublicPlansController.cs
+ PurchaseOrdersController.cs
+ PurchasesController.cs
+ PurchaseSupplierNotesController.cs
+ PurchaseWithholdingsController.cs
  SaasPlansAdminController.cs
+ SalesController.cs
+ SalesNotesController.cs
+ SalesReceivedWithholdingsController.cs
  SecurityController.cs
  SetupController.cs
  SpaMenuCatalogController.cs
+ SriConfigurationController.cs
+ SuperAdminAppFeaturesController.cs
  SuperAdminConfigController.cs
  SuperAdminController.cs
  SuperAdminEmpresasMenuController.cs
- SuperAdminFuncionalidadesController.cs
  SuperAdminPlanesMenuController.cs
+ SuppliersController.cs
  TariffsController.cs
  TaxRatesController.cs
  TenantsController.cs
- TransferenciasController.cs
+ TransfersController.cs
  UnitsOfMeasureController.cs
- VentasController.cs
- VentasNotasController.cs
- VentasRetencionesRecibidasController.cs
+ WarehousesController.cs
 EnglishAliases.cs
 Export/
  KardexExcelExporter.cs
@@ -137,7 +137,7 @@ obj/Debug/net10.0/
  ERP.API.GlobalUsings.g.cs
  ERP.API.RazorAssemblyInfo.cs
 Program.cs
-Services/ModuloDiscoveryService.cs
+Services/AppFeatureDiscoveryService.cs
 
 [metadataReferences]
 ../

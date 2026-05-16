@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -14,7 +14,7 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>Catálogo maestro: Categorías de producto (dependen de una línea).</summary>
-[Modulo("Categorías", "perm:inventario.categories.view", "📁", "/inventario/structure", "perm:inventario.products.view", 39)]
+[AppFeature("Categorías", "perm:inventario.categories.view", "📁", "/inventario/structure", "perm:inventario.products.view", 39)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

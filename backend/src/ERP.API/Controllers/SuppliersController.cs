@@ -18,7 +18,7 @@ namespace ERP.API.Controllers;
 /// GestiÃ³n del catÃ¡logo de proveedores del tenant autenticado.
 /// Incluye validaciÃ³n de RUC ecuatoriano (algoritmo SRI mÃ³dulo 10/11).
 /// </summary>
-[Modulo("Proveedores", "perm:compras.proveedores.view", "ðŸ­", "/compras/proveedores", "perm:compras.facturas.view", 46)]
+[AppFeature("Proveedores", "perm:compras.proveedores.view", "ðŸ­", "/compras/proveedores", "perm:compras.facturas.view", 46)]
 [ApiController]
 [Route("api/Proveedores")]
 [Authorize]

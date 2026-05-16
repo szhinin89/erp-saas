@@ -20,7 +20,7 @@ namespace ERP.API.Controllers;
 /// Facturas de gasto (registro manual o importaciÃ³n XML del SRI Ecuador).
 /// Flujo de estados: Borrador â†’ Validado â†’ Aprobado | Rechazado. Requiere permisos <c>gastos.facturas.*</c> en el perfil (los roles Admin/SuperAdmin los omiten).
 /// </summary>
-[Modulo("Gastos", "perm:gastos.facturas.view", "ðŸ’¸", "/gastos", null, 55)]
+[AppFeature("Gastos", "perm:gastos.facturas.view", "ðŸ’¸", "/gastos", null, 55)]
 [ApiController]
 [Route("api/Gastos")]
 [Authorize]
@@ -73,7 +73,7 @@ public sealed class ExpensesController : ControllerBase
     [HttpPost("manual")]
     [Authorize(Policy = "perm:gastos.facturas.create")]
     [ProducesResponseType(typeof(ApiResponse<ExpenseInvoiceDto?>), StatusCodes.Status201Created)]
-    public async Task<IActionResult> CrearManual(
+    public async Task<IActionResult> CreateManual(
         [FromBody] CrearGastoCommand command,
         CancellationToken ct = default)
     {
@@ -90,7 +90,7 @@ public sealed class ExpensesController : ControllerBase
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(ApiResponse<ExpenseInvoiceDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CrearDesdeXml(
+    public async Task<IActionResult> CreateFromXml(
         IFormFile xmlFile,
         [FromForm] string categoriaGasto,
         [FromForm] string? observaciones,
@@ -125,7 +125,7 @@ public sealed class ExpensesController : ControllerBase
     [Authorize(Policy = "perm:gastos.facturas.validate")]
     [ProducesResponseType(typeof(ApiResponse<ExpenseInvoiceDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Validar(Guid id, CancellationToken ct = default)
+    public async Task<IActionResult> Validate(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new ValidarGastoCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Validado");
@@ -136,7 +136,7 @@ public sealed class ExpensesController : ControllerBase
     [Authorize(Policy = "perm:gastos.facturas.approve")]
     [ProducesResponseType(typeof(ApiResponse<ExpenseInvoiceDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Aprobar(Guid id, CancellationToken ct = default)
+    public async Task<IActionResult> Approve(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new AprobarGastoCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Aprobado");
@@ -147,17 +147,17 @@ public sealed class ExpensesController : ControllerBase
     [Authorize(Policy = "perm:gastos.facturas.reject")]
     [ProducesResponseType(typeof(ApiResponse<ExpenseInvoiceDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Rechazar(
+    public async Task<IActionResult> Reject(
         Guid id,
-        [FromBody] RechazarGastoRequest request,
+        [FromBody] RejectExpenseRequest request,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new RechazarGastoCommand(id, request.Motivo), ct);
+        var result = await _mediator.Send(new RechazarGastoCommand(id, request.Reason), ct);
         return this.ToOkOrBadRequest(result, "Rechazado");
     }
 }
 
-public sealed record RechazarGastoRequest(string Motivo);
+public sealed record RejectExpenseRequest(string Reason);
 
 
 

@@ -1,4 +1,4 @@
-using ERP.API.Contracts;
+﻿using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Subscriptions;
@@ -9,7 +9,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>Rutas en español para menú de planes (<c>/api/superadmin/planes/…</c>).</summary>
 [ApiController]
-[Modulo("SuperAdmin Planes Menú", "perm:superadmin.planes-menu.admin", "🧩", null, null, 981, VisibleEnMenu = false, EsSuperAdmin = true)]
+[AppFeature("SuperAdmin Planes Menú", "perm:superadmin.planes-menu.admin", "🧩", null, null, 981, IsVisibleInMenu = false, IsSuperAdmin = true)]
 [Route("api/superadmin/planes")]
 [Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]

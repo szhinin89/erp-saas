@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using ERP.API.Contracts;
@@ -13,7 +13,7 @@ namespace ERP.API.Controllers;
 /// <summary>
 /// Catálogo maestro: Unidades de medida (UoM) del tenant autenticado.
 /// </summary>
-[Modulo("Unidades de medida", "perm:inventario.units.view", "📏", "/inventario/units", "perm:inventario.products.view", 37)]
+[AppFeature("Unidades de medida", "perm:inventario.units.view", "📏", "/inventario/units", "perm:inventario.products.view", 37)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

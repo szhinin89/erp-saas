@@ -21,7 +21,7 @@ namespace ERP.API.Controllers;
 /// GestiÃ³n del mÃ³dulo de Ventas â€” FacturaciÃ³n ElectrÃ³nica SRI Ecuador.
 /// Flujo: Borrador â†’ Validado â†’ Autorizado | Rechazado | ErrorEnvio.
 /// </summary>
-[Modulo("Ventas", "perm:ventas.facturas.view", "ðŸ§¾", "/ventas", null, 50)]
+[AppFeature("Ventas", "perm:ventas.facturas.view", "ðŸ§¾", "/ventas", null, 50)]
 [ApiController]
 [Route("api/Ventas")]
 [Authorize]
@@ -42,7 +42,7 @@ public sealed class SalesController : ControllerBase
     // â”€â”€ Queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /// <summary>Lista facturas de venta paginadas con filtros opcionales.</summary>
-    /// <remarks>Query params: pageNumber, pageSize, clienteId, desde (YYYY-MM-DD), hasta, estado, search.</remarks>
+    /// <remarks>Query params: pageNumber, pageSize, customerId, desde (YYYY-MM-DD), hasta, estado, search.</remarks>
     [HttpGet]
     [Authorize(Policy = "perm:ventas.facturas.view")]
     [ProducesResponseType(typeof(ApiResponse<SalesPagedResult>), StatusCodes.Status200OK)]
@@ -52,18 +52,18 @@ public sealed class SalesController : ControllerBase
         if (Request.Query.TryGetValue("pageNumber", out var pnv) && int.TryParse(pnv, out var pni)) pageNumber = pni;
         if (Request.Query.TryGetValue("pageSize",   out var psv) && int.TryParse(psv, out var psi)) pageSize   = psi;
 
-        Guid? clienteId = null;
-        if (Request.Query.TryGetValue("clienteId", out var cv) && Guid.TryParse(cv, out var cid)) clienteId = cid;
+        Guid? customerId = null;
+        if (Request.Query.TryGetValue("clienteId", out var cv) && Guid.TryParse(cv, out var cid)) customerId = cid;
 
         DateTime? desde = null, hasta = null;
         if (Request.Query.TryGetValue("desde", out var dv) && DateTime.TryParse(dv, out var d)) desde = d;
         if (Request.Query.TryGetValue("hasta", out var hv) && DateTime.TryParse(hv, out var h)) hasta = h;
 
-        var estado = Request.Query.TryGetValue("estado", out var ev) ? ev.ToString() : null;
+        var status = Request.Query.TryGetValue("estado", out var ev) ? ev.ToString() : null;
         var search = CatalogQueryParameters.ParseSearch(Request.Query);
 
         var result = await _mediator.Send(
-            new GetSalesListQuery(pageNumber, pageSize, clienteId, desde, hasta, estado, search), ct);
+            new GetSalesListQuery(pageNumber, pageSize, customerId, desde, hasta, status, search), ct);
 
         return this.ToOkOrBadRequest(result, "OK");
     }
@@ -106,7 +106,7 @@ public sealed class SalesController : ControllerBase
     [Authorize(Policy = "perm:ventas.facturas.create")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Crear(
+    public async Task<IActionResult> Create(
         [FromBody] CreateSaleCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
@@ -138,7 +138,7 @@ public sealed class SalesController : ControllerBase
     [Authorize(Policy = "perm:ventas.facturas.emit")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Emitir(Guid id, CancellationToken ct = default)
+    public async Task<IActionResult> Emit(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new EmitirFacturaElectronicaCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Emitido");
@@ -152,7 +152,7 @@ public sealed class SalesController : ControllerBase
     [Authorize(Policy = "perm:ventas.facturas.emit")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Reintentar(Guid id, CancellationToken ct = default)
+    public async Task<IActionResult> Retry(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new ReintentarEnvioCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Reintentado");
@@ -180,7 +180,7 @@ public sealed class SalesController : ControllerBase
     [Produces("text/html")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Imprimir(Guid id, CancellationToken ct = default)
+    public async Task<IActionResult> Print(Guid id, CancellationToken ct = default)
     {
         try
         {

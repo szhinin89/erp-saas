@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Audit.DTOs;
@@ -11,7 +11,7 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>Auditoría de actividad (ámbito del usuario o de una entidad en el tenant actual).</summary>
-[Modulo("Actividad", "session:activity", "📜", "/actividad", null, 200)]
+[AppFeature("Actividad", "session:activity", "📜", "/actividad", null, 200)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Policy = "Session")]

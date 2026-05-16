@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
@@ -21,7 +21,7 @@ namespace ERP.API.Controllers;
 /// No requiere autenticación previa.
 /// </summary>
 [ApiController]
-[Modulo("Auth API", "perm:auth.api", "🧩", null, null, 988, VisibleEnMenu = false)]
+[AppFeature("Auth API", "perm:auth.api", "🧩", null, null, 988, IsVisibleInMenu = false)]
 [Route("api/[controller]")]
 [Produces("application/json")]
 public class AuthController : ControllerBase

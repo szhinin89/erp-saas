@@ -1,4 +1,4 @@
-using ERP.API.Contracts;
+﻿using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Admin;
@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 [ApiController]
-[Modulo("SuperAdmin Config", "perm:superadmin.config.admin", "🧩", null, null, 991, VisibleEnMenu = false, EsSuperAdmin = true)]
+[AppFeature("SuperAdmin Config", "perm:superadmin.config.admin", "🧩", null, null, 991, IsVisibleInMenu = false, IsSuperAdmin = true)]
 [Route("api/superadmin/config")]
 [Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]

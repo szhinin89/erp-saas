@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -13,7 +13,7 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>Catálogo de ubicación (solo lectura) para combos en cascada.</summary>
-[Modulo("Geografía", "session:geography", "🌎", "/configuracion/geografia", null, 210)]
+[AppFeature("Geografía", "session:geography", "🌎", "/configuracion/geografia", null, 210)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Policy = "Session")]

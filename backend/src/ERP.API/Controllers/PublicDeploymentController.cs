@@ -1,4 +1,4 @@
-using ERP.API.Contracts;
+﻿using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Common;
@@ -11,7 +11,7 @@ namespace ERP.API.Controllers;
 /// Configuración pública mínima del despliegue (sin secretos). Usada por el SPA antes del login.
 /// </summary>
 [ApiController]
-[Modulo("Public Deployment API", "perm:public.deployment.api", "🧩", null, null, 992, VisibleEnMenu = false)]
+[AppFeature("Public Deployment API", "perm:public.deployment.api", "🧩", null, null, 992, IsVisibleInMenu = false)]
 [Route("api/public")]
 [Produces("application/json")]
 public sealed class PublicDeploymentController : ControllerBase

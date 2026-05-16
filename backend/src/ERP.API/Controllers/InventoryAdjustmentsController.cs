@@ -17,7 +17,7 @@ namespace ERP.API.Controllers;
 /// Ajustes manuales de stock (incremento o disminuciÃ³n) sobre un producto en una bodega.
 /// Flujo: Borrador â†’ Ejecutado (stock afectado) | Cancelado (sin efecto).
 /// </summary>
-[Modulo("Ajustes de inventario", "perm:inventario.ajustes.view", "âš–ï¸", "/inventario/ajustes", "perm:inventario.products.view", 43)]
+[AppFeature("Ajustes de inventario", "perm:inventario.ajustes.view", "âš–ï¸", "/inventario/ajustes", "perm:inventario.products.view", 43)]
 [ApiController]
 [Route("api/inventario/ajustes")]
 [Authorize]
@@ -41,18 +41,18 @@ public sealed class InventoryAdjustmentsController : ControllerBase
         if (Request.Query.TryGetValue("pageNumber", out var pnv) && int.TryParse(pnv, out var pni)) pageNumber = pni;
         if (Request.Query.TryGetValue("pageSize",   out var psv) && int.TryParse(psv, out var psi)) pageSize   = psi;
 
-        Guid? bodegaId = null, productoId = null;
-        if (Request.Query.TryGetValue("bodegaId",   out var bv) && Guid.TryParse(bv, out var bid)) bodegaId   = bid;
-        if (Request.Query.TryGetValue("productoId", out var pv) && Guid.TryParse(pv, out var pid)) productoId = pid;
+        Guid? warehouseId = null, productId = null;
+        if (Request.Query.TryGetValue("bodegaId",   out var bv) && Guid.TryParse(bv, out var bid)) warehouseId = bid;
+        if (Request.Query.TryGetValue("productoId", out var pv) && Guid.TryParse(pv, out var pid)) productId   = pid;
 
-        var estado = Request.Query.TryGetValue("estado", out var ev) ? ev.ToString() : null;
+        var status = Request.Query.TryGetValue("estado", out var ev) ? ev.ToString() : null;
 
-        DateTime? desde = null, hasta = null;
-        if (Request.Query.TryGetValue("fechaDesde", out var fdv) && DateTime.TryParse(fdv, out var fd)) desde = fd;
-        if (Request.Query.TryGetValue("fechaHasta", out var fhv) && DateTime.TryParse(fhv, out var fh)) hasta = fh;
+        DateTime? from = null, to = null;
+        if (Request.Query.TryGetValue("fechaDesde", out var fdv) && DateTime.TryParse(fdv, out var fd)) from = fd;
+        if (Request.Query.TryGetValue("fechaHasta", out var fhv) && DateTime.TryParse(fhv, out var fh)) to   = fh;
 
         var result = await _mediator.Send(
-            new GetStockAdjustmentsListQuery(pageNumber, pageSize, bodegaId, productoId, estado, desde, hasta), ct);
+            new GetStockAdjustmentsListQuery(pageNumber, pageSize, warehouseId, productId, status, from, to), ct);
 
         return this.ToOkOrBadRequest(result, "OK");
     }
@@ -78,7 +78,7 @@ public sealed class InventoryAdjustmentsController : ControllerBase
     [Authorize(Policy = "perm:inventario.ajustes.create")]
     [ProducesResponseType(typeof(ApiResponse<StockAdjustmentDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Crear(
+    public async Task<IActionResult> Create(
         [FromBody] CreateStockAdjustmentCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
@@ -97,7 +97,7 @@ public sealed class InventoryAdjustmentsController : ControllerBase
     [Authorize(Policy = "perm:inventario.ajustes.execute")]
     [ProducesResponseType(typeof(ApiResponse<StockAdjustmentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Ejecutar(Guid id, CancellationToken ct = default)
+    public async Task<IActionResult> Execute(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new ExecuteStockAdjustmentCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Ejecutado");
@@ -111,7 +111,7 @@ public sealed class InventoryAdjustmentsController : ControllerBase
     [Authorize(Policy = "perm:inventario.ajustes.cancel")]
     [ProducesResponseType(typeof(ApiResponse<StockAdjustmentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Cancelar(Guid id, CancellationToken ct = default)
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new CancelStockAdjustmentCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Cancelado");

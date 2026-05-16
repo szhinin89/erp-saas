@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -22,7 +22,7 @@ namespace ERP.API.Controllers;
 /// Módulo de contabilidad: plan de cuentas y asientos contables del tenant autenticado.
 /// Todos los endpoints filtran automáticamente por el tenant del JWT.
 /// </summary>
-[Modulo("Contabilidad", "perm:accounting.accounts.view", "📒", "/contabilidad", null, 20)]
+[AppFeature("Contabilidad", "perm:accounting.accounts.view", "📒", "/contabilidad", null, 20)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

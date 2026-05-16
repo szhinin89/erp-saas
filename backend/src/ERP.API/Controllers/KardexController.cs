@@ -23,7 +23,7 @@ namespace ERP.API.Controllers;
 /// Kardex valorizado de inventario por producto y bodega (mÃ©todo: promedio ponderado mÃ³vil).
 /// Soporta modo sÃ­ncrono (respuesta inmediata) y asÃ­ncrono (202 + jobId).
 /// </summary>
-[Modulo("Kardex", "perm:inventario.kardex.view", "ðŸ“Š", "/inventario/kardex", "perm:inventario.products.view", 42)]
+[AppFeature("Kardex", "perm:inventario.kardex.view", "ðŸ“Š", "/inventario/kardex", "perm:inventario.products.view", 42)]
 [ApiController]
 [Route("api/inventario/kardex")]
 [Authorize]
@@ -67,15 +67,15 @@ public sealed class KardexController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetKardex(CancellationToken ct = default)
     {
-        var (ok, productoId, bodegaId, fechaInicio, fechaFin, err) = ParseQueryParams();
+        var (ok, productId, warehouseId, startDate, endDate, err) = ParseQueryParams();
         if (!ok) return err!;
 
         // RedirecciÃ³n automÃ¡tica a async si el rango es muy largo
-        if (DebeUsarAsync(fechaInicio, fechaFin))
-            return await EnqueueReporteAsync(productoId, bodegaId, fechaInicio, fechaFin, ct);
+        if (ShouldUseAsync(startDate, endDate))
+            return await EnqueueAsync(productId, warehouseId, startDate, endDate, ct);
 
         var result = await _mediator.Send(
-            new GetKardexQuery(productoId, bodegaId, fechaInicio, fechaFin), ct);
+            new GetKardexQuery(productId, warehouseId, startDate, endDate), ct);
 
         return this.ToOkOrBadRequest(result, "OK");
     }
@@ -91,12 +91,12 @@ public sealed class KardexController : ControllerBase
     [Authorize(Policy = "perm:inventario.kardex.view")]
     [ProducesResponseType(typeof(object), StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SolicitarKardex(CancellationToken ct = default)
+    public async Task<IActionResult> RequestKardex(CancellationToken ct = default)
     {
-        var (ok, productoId, bodegaId, fechaInicio, fechaFin, err) = ParseQueryParams();
+        var (ok, productId, warehouseId, startDate, endDate, err) = ParseQueryParams();
         if (!ok) return err!;
 
-        return await EnqueueReporteAsync(productoId, bodegaId, fechaInicio, fechaFin, ct);
+        return await EnqueueAsync(productId, warehouseId, startDate, endDate, ct);
     }
 
     // â”€â”€ Obtener resultado de un reporte asÃ­ncrono â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -115,7 +115,7 @@ public sealed class KardexController : ControllerBase
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> ObtenerResultado(Guid jobId, CancellationToken ct = default)
+    public async Task<IActionResult> GetResult(Guid jobId, CancellationToken ct = default)
     {
         var reporte = await _reporteRepo.GetByIdAsync(_tenant.TenantId, jobId, ct);
 
@@ -156,18 +156,18 @@ public sealed class KardexController : ControllerBase
     [Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> ExportarExcel(CancellationToken ct = default)
+    public async Task<IActionResult> ExportExcel(CancellationToken ct = default)
     {
-        var (ok, productoId, bodegaId, fechaInicio, fechaFin, err) = ParseQueryParams();
+        var (ok, productId, warehouseId, startDate, endDate, err) = ParseQueryParams();
         if (!ok) return err!;
 
         var result = await _mediator.Send(
-            new GetKardexQuery(productoId, bodegaId, fechaInicio, fechaFin), ct);
+            new GetKardexQuery(productId, warehouseId, startDate, endDate), ct);
 
         if (!result.IsSuccess) return BadRequest(result.Error);
 
-        var bytes    = KardexExcelExporter.Generate(result.Value!, fechaInicio, fechaFin);
-        var fileName = BuildFileName(result.Value!, fechaInicio, fechaFin, "xlsx");
+        var bytes    = KardexExcelExporter.Generate(result.Value!, startDate, endDate);
+        var fileName = BuildFileName(result.Value!, startDate, endDate, "xlsx");
 
         return File(bytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -182,18 +182,18 @@ public sealed class KardexController : ControllerBase
     [Produces("application/pdf")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> ExportarPdf(CancellationToken ct = default)
+    public async Task<IActionResult> ExportPdf(CancellationToken ct = default)
     {
-        var (ok, productoId, bodegaId, fechaInicio, fechaFin, err) = ParseQueryParams();
+        var (ok, productId, warehouseId, startDate, endDate, err) = ParseQueryParams();
         if (!ok) return err!;
 
         var result = await _mediator.Send(
-            new GetKardexQuery(productoId, bodegaId, fechaInicio, fechaFin), ct);
+            new GetKardexQuery(productId, warehouseId, startDate, endDate), ct);
 
         if (!result.IsSuccess) return BadRequest(result.Error);
 
-        var bytes    = KardexPdfExporter.Generate(result.Value!, fechaInicio, fechaFin);
-        var fileName = BuildFileName(result.Value!, fechaInicio, fechaFin, "pdf");
+        var bytes    = KardexPdfExporter.Generate(result.Value!, startDate, endDate);
+        var fileName = BuildFileName(result.Value!, startDate, endDate, "pdf");
 
         return File(bytes, "application/pdf", fileName);
     }
@@ -214,7 +214,7 @@ public sealed class KardexController : ControllerBase
         CancellationToken ct = default)
     {
         var result = await _mediator.Send(
-            new RecalcularSnapshotsCommand(body.ProductoId, body.BodegaId, body.Hasta), ct);
+            new RecalcularSnapshotsCommand(body.ProductId, body.WarehouseId, body.Until), ct);
 
         if (!result.IsSuccess)
             return BadRequest(new { mensaje = result.Error });
@@ -223,29 +223,29 @@ public sealed class KardexController : ControllerBase
 
     // â”€â”€ Helpers privados â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    private (bool Ok, Guid ProductoId, Guid BodegaId,
-             DateTime? FechaInicio, DateTime? FechaFin,
+    private (bool Ok, Guid ProductId, Guid WarehouseId,
+             DateTime? StartDate, DateTime? EndDate,
              IActionResult? Error)
         ParseQueryParams()
     {
-        if (!Request.Query.TryGetValue("productoId", out var pv) || !Guid.TryParse(pv, out var productoId))
+        if (!Request.Query.TryGetValue("productoId", out var pv) || !Guid.TryParse(pv, out var productId))
             return (false, default, default, null, null,
-                BadRequest("productoId es requerido y debe ser un GUID vÃ¡lido."));
+                BadRequest("productoId is required and must be a valid GUID."));
 
-        if (!Request.Query.TryGetValue("bodegaId", out var bv) || !Guid.TryParse(bv, out var bodegaId))
+        if (!Request.Query.TryGetValue("bodegaId", out var bv) || !Guid.TryParse(bv, out var warehouseId))
             return (false, default, default, null, null,
-                BadRequest("bodegaId es requerido y debe ser un GUID vÃ¡lido."));
+                BadRequest("bodegaId is required and must be a valid GUID."));
 
-        DateTime? fechaInicio = null, fechaFin = null;
+        DateTime? startDate = null, endDate = null;
         if (Request.Query.TryGetValue("fechaInicio", out var fiv) && DateTime.TryParse(fiv, out var fi))
-            fechaInicio = fi;
+            startDate = fi;
         if (Request.Query.TryGetValue("fechaFin",    out var ffv) && DateTime.TryParse(ffv, out var ff))
-            fechaFin = ff;
+            endDate = ff;
 
-        return (true, productoId, bodegaId, fechaInicio, fechaFin, null);
+        return (true, productId, warehouseId, startDate, endDate, null);
     }
 
-    private bool DebeUsarAsync(DateTime? fechaInicio, DateTime? fechaFin)
+    private bool ShouldUseAsync(DateTime? fechaInicio, DateTime? fechaFin)
     {
         if (!_opts.UseScalableMode || !_opts.EnableAsyncReport) return false;
         if (fechaInicio is null || fechaFin is null) return false;
@@ -254,13 +254,12 @@ public sealed class KardexController : ControllerBase
         return dias > _opts.MaxDaysForSync;
     }
 
-    private async Task<IActionResult> EnqueueReporteAsync(
-        Guid productoId, Guid bodegaId,
-        DateTime? fechaInicio, DateTime? fechaFin,
+    private async Task<IActionResult> EnqueueAsync(
+        Guid productId, Guid warehouseId,
+        DateTime? startDate, DateTime? endDate,
         CancellationToken ct)
     {
-        var reporte = KardexReport.Create(
-            _tenant.TenantId, productoId, bodegaId, fechaInicio, fechaFin);
+        var reporte = KardexReport.Create(_tenant.TenantId, productId, warehouseId, startDate, endDate);
 
         await _reporteRepo.AddAsync(reporte, ct);
         await _reporteRepo.SaveChangesAsync(ct);
@@ -278,21 +277,21 @@ public sealed class KardexController : ControllerBase
     }
 
     private static string BuildFileName(
-        KardexResponse k, DateTime? desde, DateTime? hasta, string ext)
+        KardexResponse k, DateTime? from, DateTime? to, string ext)
     {
-        var code    = k.Producto.Codigo.Replace("/", "-");
-        var periodo = desde.HasValue || hasta.HasValue
-            ? $"_{desde?.ToString("yyyyMMdd") ?? "inicio"}-{hasta?.ToString("yyyyMMdd") ?? "hoy"}"
+        var code   = k.Producto.Codigo.Replace("/", "-");
+        var period = from.HasValue || to.HasValue
+            ? $"_{from?.ToString("yyyyMMdd") ?? "start"}-{to?.ToString("yyyyMMdd") ?? "today"}"
             : "";
-        return $"Kardex_{code}{periodo}.{ext}";
+        return $"Kardex_{code}{period}.{ext}";
     }
 }
 
 /// <summary>Body del endpoint <c>POST /recalcular</c>.</summary>
 public sealed record RecalcularSnapshotsBody(
-    Guid?     ProductoId = null,
-    Guid?     BodegaId   = null,
-    DateTime? Hasta      = null);
+    Guid? ProductId = null,
+    Guid? WarehouseId   = null,
+    DateTime? Until      = null);
 
 
 

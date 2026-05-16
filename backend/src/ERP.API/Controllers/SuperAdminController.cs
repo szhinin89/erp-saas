@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
@@ -21,7 +21,7 @@ namespace ERP.API.Controllers;
 /// Estos endpoints ignoran el contexto del tenant porque el SuperAdmin opera a nivel sistema.
 /// </summary>
 [ApiController]
-[Modulo("SuperAdmin Global", "perm:superadmin.global.admin", "🧩", null, null, 982, VisibleEnMenu = false, EsSuperAdmin = true)]
+[AppFeature("SuperAdmin Global", "perm:superadmin.global.admin", "🧩", null, null, 982, IsVisibleInMenu = false, IsSuperAdmin = true)]
 [Route("api/superadmin")]
 [Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]

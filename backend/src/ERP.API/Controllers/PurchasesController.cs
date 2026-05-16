@@ -19,7 +19,7 @@ namespace ERP.API.Controllers;
 /// GestiÃ³n del submÃ³dulo de Compras.
 /// Flujo: Borrador â†’ (Validado) â†’ Aprobado | Rechazado.
 /// </summary>
-[Modulo("Compras", "perm:compras.facturas.view", "ðŸ›’", "/compras", null, 45)]
+[AppFeature("Compras", "perm:compras.facturas.view", "ðŸ›’", "/compras", null, 45)]
 [ApiController]
 [Route("api/Compras")]
 [Authorize]
@@ -79,7 +79,7 @@ public sealed class PurchasesController : ControllerBase
     [Authorize(Policy = "perm:compras.facturas.create")]
     [ProducesResponseType(typeof(ApiResponse<PurchBillDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> CrearManual(
+    public async Task<IActionResult> CreateManual(
         [FromBody] CrearPurchaseCommand command, CancellationToken ct = default)
     {
         var cmd = command with { Modo = ModoCreacionPurchase.Manual };
@@ -101,7 +101,7 @@ public sealed class PurchasesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PurchBillDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> CrearDesdeXml(
+    public async Task<IActionResult> CreateFromXml(
         IFormFile xmlFile, CancellationToken ct = default)
     {
         if (xmlFile is null || xmlFile.Length == 0)
@@ -137,7 +137,7 @@ public sealed class PurchasesController : ControllerBase
     [Authorize(Policy = "perm:compras.facturas.validate")]
     [ProducesResponseType(typeof(ApiResponse<PurchBillDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Validar(Guid id, CancellationToken ct = default)
+    public async Task<IActionResult> Validate(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new ValidarPurchaseCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Validado");
@@ -153,7 +153,7 @@ public sealed class PurchasesController : ControllerBase
     [Authorize(Policy = "perm:compras.facturas.approve")]
     [ProducesResponseType(typeof(ApiResponse<PurchBillDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Aprobar(Guid id, CancellationToken ct = default)
+    public async Task<IActionResult> Approve(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new AprobarPurchaseCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Aprobado");
@@ -166,16 +166,16 @@ public sealed class PurchasesController : ControllerBase
     [Authorize(Policy = "perm:compras.facturas.reject")]
     [ProducesResponseType(typeof(ApiResponse<PurchBillDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Rechazar(
+    public async Task<IActionResult> Reject(
         Guid id,
         [FromBody] RejectPurchaseRequest request,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new RechazarPurchaseCommand(id, request.Motivo), ct);
+        var result = await _mediator.Send(new RechazarPurchaseCommand(id, request.Reason), ct);
         return this.ToOkOrBadRequest(result, "Rechazado");
     }
 }
 
 /// <summary>Cuerpo del request de rechazo.</summary>
-public sealed record RejectPurchaseRequest(string Motivo);
+public sealed record RejectPurchaseRequest(string Reason);
 

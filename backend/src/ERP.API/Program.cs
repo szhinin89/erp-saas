@@ -1,4 +1,4 @@
-using Hangfire;
+﻿using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using ERP.API.Hangfire;
@@ -90,7 +90,7 @@ else
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
-builder.Services.AddScoped<ModuloDiscoveryService>();
+builder.Services.AddScoped<AppFeatureDiscoveryService>();
 
 // Health: live = proceso arriba; ready = BD, Redis (si hay), URL externa opcional (SRI)
 var healthChecks = builder.Services.AddHealthChecks()
@@ -190,7 +190,7 @@ if (app.Environment.IsDevelopment() &&
     app.Configuration.GetValue("Development:SyncFuncionalidadesOnStartup", false))
 {
     using var syncScope = app.Services.CreateScope();
-    await syncScope.ServiceProvider.GetRequiredService<ModuloDiscoveryService>().SincronizarModulosAsync();
+    await syncScope.ServiceProvider.GetRequiredService<AppFeatureDiscoveryService>().SyncFeaturesAsync();
 }
 
 // Catálogo mínimo de planes SaaS en BD (idempotente).

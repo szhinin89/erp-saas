@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -22,7 +22,7 @@ namespace ERP.API.Controllers;
 /// Gestión del catálogo de productos del tenant autenticado.
 /// Todos los endpoints filtran automáticamente por el tenant del JWT.
 /// </summary>
-[Modulo("Productos", "perm:inventario.products.view", "📦", "/inventario/products", null, 38)]
+[AppFeature("Productos", "perm:inventario.products.view", "📦", "/inventario/products", null, 38)]
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]

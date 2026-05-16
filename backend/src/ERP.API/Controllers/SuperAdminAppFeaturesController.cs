@@ -1,4 +1,4 @@
-using ERP.API.Contracts;
+﻿using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.API.Services;
@@ -11,37 +11,37 @@ using Microsoft.EntityFrameworkCore;
 namespace ERP.API.Controllers;
 
 [ApiController]
-[Modulo("SuperAdmin AppFeatures", "perm:superadmin.AppFeatures.admin", "ðŸ§©", null, null, 984, VisibleEnMenu = false, EsSuperAdmin = true)]
+[AppFeature("SuperAdmin AppFeatures", "perm:superadmin.AppFeatures.admin", "ðŸ§©", null, null, 984, IsVisibleInMenu = false, IsSuperAdmin = true)]
 [Route("api/superadmin/AppFeatures")]
 [Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]
 public sealed class SuperAdminAppFeaturesController : ControllerBase
 {
     private readonly ErpDbContext _db;
-    private readonly ModuloDiscoveryService _discovery;
+    private readonly AppFeatureDiscoveryService _discovery;
 
-    public SuperAdminAppFeaturesController(ErpDbContext db, ModuloDiscoveryService discovery)
+    public SuperAdminAppFeaturesController(ErpDbContext db, AppFeatureDiscoveryService discovery)
     {
         _db = db;
         _discovery = discovery;
     }
 
-    /// <summary>Sincroniza catÃ¡logo desde <c>[Modulo]</c> en controladores/acciones.</summary>
+    /// <summary>Syncs the catalog from <c>[AppFeature]</c> attributes on controllers/actions.</summary>
     [HttpPost("sincronizar")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Sincronizar(CancellationToken ct)
+    public async Task<IActionResult> Sync(CancellationToken ct)
     {
-        var n = await _discovery.SincronizarModulosAsync(ct);
-        return this.ApiOk(new { sincronizados = n }, "OK");
+        var n = await _discovery.SyncFeaturesAsync(ct);
+        return this.ApiOk(new { synced = n }, "OK");
     }
 
     [HttpGet("arbol")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<AppFeatureTreeDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Arbol(CancellationToken ct)
+    public async Task<IActionResult> GetTree(CancellationToken ct)
     {
-        static string ExtractFunctionalModuleKey(string? ruta, string? permiso, string? nombre)
+        static string ExtractFunctionalModuleKey(string? path, string? permission, string? name)
         {
-            var route = (ruta ?? string.Empty).Trim().ToLowerInvariant();
+            var route = (path ?? string.Empty).Trim().ToLowerInvariant();
             if (route.StartsWith("/"))
             {
                 var first = route.TrimStart('/').Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
@@ -49,14 +49,14 @@ public sealed class SuperAdminAppFeaturesController : ControllerBase
                     return first;
             }
 
-            var perm = (permiso ?? string.Empty).Trim().ToLowerInvariant();
+            var perm = (permission ?? string.Empty).Trim().ToLowerInvariant();
             if (perm.StartsWith("perm:"))
                 perm = perm["perm:".Length..];
             var permModule = perm.Split('.', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(permModule))
                 return permModule;
 
-            var title = (nombre ?? string.Empty).Trim().ToLowerInvariant();
+            var title = (name ?? string.Empty).Trim().ToLowerInvariant();
             return title;
         }
 
