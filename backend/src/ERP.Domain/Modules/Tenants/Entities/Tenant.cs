@@ -31,6 +31,18 @@ public class Tenant : AuditableEntity
     // ── Parámetros globales por empresa (dependen de plan comercial) ──
     public bool ElectronicBillingTrialEnabled { get; private set; }
 
+    // ── Parámetros operativos configurables por la empresa ─────────
+    /// <summary>Código ISO 4217 de la moneda base (p. ej. "USD").</summary>
+    public string Currency { get; private set; } = "USD";
+    /// <summary>Código de idioma (p. ej. "es", "en", "qu").</summary>
+    public string Language { get; private set; } = "es";
+    /// <summary>Zona horaria IANA (p. ej. "America/Guayaquil").</summary>
+    public string Timezone { get; private set; } = "America/Guayaquil";
+    /// <summary>Prefijo de factura (p. ej. "FAC-"). Null = sin prefijo.</summary>
+    public string? InvoicePrefix { get; private set; }
+    /// <summary>Días de crédito por defecto al crear facturas.</summary>
+    public int DefaultCreditDays { get; private set; } = 30;
+
     private Tenant() { }
 
     public static Tenant Create(
@@ -125,6 +137,23 @@ public class Tenant : AuditableEntity
         Guid updatedBy)
     {
         ElectronicBillingTrialEnabled = electronicBillingTrialEnabled;
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>Actualiza los parámetros operativos configurables por el administrador de la empresa.</summary>
+    public void UpdateOperationalSettings(
+        string currency,
+        string language,
+        string timezone,
+        string? invoicePrefix,
+        int defaultCreditDays,
+        Guid updatedBy)
+    {
+        Currency           = string.IsNullOrWhiteSpace(currency)  ? "USD"                 : currency.Trim().ToUpperInvariant();
+        Language           = string.IsNullOrWhiteSpace(language)  ? "es"                  : language.Trim().ToLowerInvariant();
+        Timezone           = string.IsNullOrWhiteSpace(timezone)  ? "America/Guayaquil"   : timezone.Trim();
+        InvoicePrefix      = string.IsNullOrWhiteSpace(invoicePrefix) ? null              : invoicePrefix.Trim();
+        DefaultCreditDays  = defaultCreditDays < 0 ? 0 : defaultCreditDays;
         SetUpdated(updatedBy);
     }
 

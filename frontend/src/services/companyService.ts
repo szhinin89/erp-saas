@@ -98,6 +98,12 @@ export type TenantDetailDto = {
   planCode: string | null;
   enabledModules: string[];
   hasModuleRestrictions: boolean;
+  // Parámetros operativos
+  currency: string;
+  language: string;
+  timezone: string;
+  invoicePrefix: string | null;
+  defaultCreditDays: number;
 };
 
 export const companyService = {
@@ -129,6 +135,21 @@ export const companyService = {
   updateTenantCompany: (tenantId: string, body: UpdateTenantCompanyBody) =>
     api
       .patch<ApiResponse<TenantDetailDto>>(`/api/tenants/${encodeURIComponent(tenantId)}/company`, body)
+      .then((r) => {
+        const o = r.data.responseObject;
+        if (!o) throw new Error('empty');
+        return o;
+      }),
+
+  updateTenantOperationalSettings: (tenantId: string, body: {
+    currency: string;
+    language: string;
+    timezone: string;
+    invoicePrefix?: string | null;
+    defaultCreditDays: number;
+  }) =>
+    api
+      .patch<ApiResponse<TenantDetailDto>>(`/api/tenants/${encodeURIComponent(tenantId)}/operational-settings`, body)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');

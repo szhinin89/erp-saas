@@ -377,6 +377,11 @@ export function buildNavGroups(
       sortOrder: defaultBarRank('configuracion') * 10,
       items: [
         {
+          to: '/configuracion/empresa',
+          label: t('app.nav.config.empresa') || 'Empresa',
+          permissionKey: 'configuracion.empresa.view',
+        },
+        {
           to: '/access',
           label: t('app.nav.access'),
           moduleKey: 'access',

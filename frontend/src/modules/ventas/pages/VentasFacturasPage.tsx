@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../components/PageShell';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../i18n/i18n';
@@ -20,7 +21,8 @@ function getStatusBadge(estado: string): BadgeInfo {
 
 export function VentasFacturasPage() {
   const { t } = useI18n();
-  const hasPerm = usePermissionsStore((s) => s.has);
+  const navigate = useNavigate();
+  const hasPerm  = usePermissionsStore((s) => s.has);
   const canView  = hasPerm('ventas.facturas.view');
 
   const [rows,       setRows]       = useState<VentasFacturaDto[]>([]);
@@ -106,7 +108,11 @@ export function VentasFacturasPage() {
             <span className="material-symbols-outlined">refresh</span>
             {t('ventas.facturas.refresh')}
           </button>
-          <button className="zh-btn zh-btn--primary" type="button">
+          <button
+            className="zh-btn zh-btn--primary"
+            type="button"
+            onClick={() => navigate('/ventas/facturas/nueva')}
+          >
             <span className="material-symbols-outlined">add</span>
             Nueva Factura
           </button>

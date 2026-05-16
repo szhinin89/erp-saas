@@ -1,4 +1,4 @@
-/* ProveedoresPage — prv-* (solo estilos únicos de esta pantalla)
+/* SuppliersPage — prv-* (page-specific classes shared with legacy prv prefix)
    Layout/header  → pg-*              (page-template.css)
    KPIs           → .pg-kpi.pg-kpi--h (page-template.css)
    Tabla          → .table            (zh-ui.css)

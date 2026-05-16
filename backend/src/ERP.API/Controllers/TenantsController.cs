@@ -9,6 +9,7 @@ using ERP.Application.Tenants.UseCases.UpdateTenantGlobalParameters;
 using ERP.Application.Tenants.UseCases.UpdatePasswordResetMode;
 using ERP.Application.Tenants.UseCases.UpdateTenantCompany;
 using ERP.Application.Tenants.UseCases.UpdateTenantSubscription;
+using ERP.Application.Tenants.UseCases.UpdateTenantOperationalSettings;
 using ERP.Application.Tenants.DTOs;
 using ERP.Domain.Tenants.Interfaces;
 
@@ -132,6 +133,35 @@ public class TenantsController : ControllerBase
             : this.ApiBadRequest(result.Error ?? "Error");
     }
 
+    /// <summary>
+    /// Actualiza los parámetros operativos de la empresa: moneda, idioma, zona horaria,
+    /// prefijo de factura y días de crédito por defecto.
+    /// Accesible por el administrador de la propia empresa o por SuperAdmin.
+    /// </summary>
+    [HttpPatch("{id:guid}/operational-settings")]
+    [Authorize(Policy = "Session")]
+    [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<IActionResult> UpdateOperationalSettings(
+        [FromRoute] Guid id,
+        [FromBody] UpdateTenantOperationalSettingsRequest body,
+        CancellationToken ct)
+    {
+        var command = new UpdateTenantOperationalSettingsCommand(
+            id,
+            body.Currency,
+            body.Language,
+            body.Timezone,
+            body.InvoicePrefix,
+            body.DefaultCreditDays);
+
+        var result = await _mediator.Send(command, ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
     /// <summary>Actualiza el código de plan del tenant y los módulos habilitados.</summary>
     [HttpPatch("{id:guid}/subscription")]
     [Authorize(Roles = "SuperAdmin")]
@@ -172,4 +202,13 @@ public sealed class UpdateTenantCompanyRequest
 public sealed class UpdateTenantGlobalParametersBody
 {
     public bool ElectronicBillingTrialEnabled { get; set; }
+}
+
+public sealed class UpdateTenantOperationalSettingsRequest
+{
+    public string Currency          { get; set; } = "USD";
+    public string Language          { get; set; } = "es";
+    public string Timezone          { get; set; } = "America/Guayaquil";
+    public string? InvoicePrefix    { get; set; }
+    public int DefaultCreditDays    { get; set; } = 30;
 }

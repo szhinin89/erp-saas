@@ -19,7 +19,13 @@ public record TenantDto(
     bool ElectronicBillingTrialEnabled,
     string? PlanCode,
     IReadOnlyList<string> EnabledModules,
-    bool HasModuleRestrictions)
+    bool HasModuleRestrictions,
+    // Parámetros operativos configurables por la empresa
+    string Currency,
+    string Language,
+    string Timezone,
+    string? InvoicePrefix,
+    int DefaultCreditDays)
 {
     public static TenantDto FromTenant(Tenant tenant) =>
         new(
@@ -38,5 +44,10 @@ public record TenantDto(
             tenant.ElectronicBillingTrialEnabled,
             tenant.PlanCode,
             TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant),
-            !string.IsNullOrWhiteSpace(tenant.EnabledModulesJson));
+            !string.IsNullOrWhiteSpace(tenant.EnabledModulesJson),
+            tenant.Currency,
+            tenant.Language,
+            tenant.Timezone,
+            tenant.InvoicePrefix,
+            tenant.DefaultCreditDays);
 }

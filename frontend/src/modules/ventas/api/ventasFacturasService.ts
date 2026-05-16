@@ -30,6 +30,36 @@ export interface VentasPagedResult {
   pageSize: number;
 }
 
+export interface CreateSaleItemDto {
+  productId: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface CreateSaleRequest {
+  customerId: string;
+  warehouseId: string;
+  branchId: string;
+  items: CreateSaleItemDto[];
+}
+
+export interface StockDisponibleDto {
+  productId: string;
+  warehouseId: string;
+  availableQty: number;
+  totalQty: number;
+  reservedQty: number;
+}
+
+function readId(body: unknown): string {
+  if (body && typeof body === 'object') {
+    const o = body as Record<string, unknown>;
+    if ('responseObject' in o && typeof o.responseObject === 'string') return o.responseObject;
+    if ('ResponseObject' in o && typeof o.ResponseObject === 'string') return o.ResponseObject;
+  }
+  return body as string;
+}
+
 export const ventasFacturasService = {
   async list(params: { pageNumber?: number; pageSize?: number } = {}): Promise<VentasPagedResult> {
     const pageNumber = params.pageNumber ?? 1;
@@ -37,15 +67,34 @@ export const ventasFacturasService = {
     const q = new URLSearchParams();
     q.set('pageNumber', String(pageNumber));
     q.set('pageSize', String(pageSize));
-
     const res = await api.get<ApiResponse<VentasPagedResult>>(`/api/ventas?${q.toString()}`);
-    return (
-      res.data.responseObject ?? {
-        items: [],
-        totalCount: 0,
-        pageNumber,
-        pageSize,
-      }
+    return res.data.responseObject ?? { items: [], totalCount: 0, pageNumber, pageSize };
+  },
+
+  async create(payload: CreateSaleRequest): Promise<string> {
+    const res = await api.post<ApiResponse<string>>('/api/Ventas', payload);
+    return readId(res.data);
+  },
+
+  async validate(id: string): Promise<string> {
+    const res = await api.patch<ApiResponse<string>>(`/api/Ventas/${id}/validar`, {});
+    return readId(res.data);
+  },
+
+  async issue(id: string): Promise<string> {
+    const res = await api.patch<ApiResponse<string>>(`/api/Ventas/${id}/emitir`, {});
+    return readId(res.data);
+  },
+
+  async void(id: string): Promise<string> {
+    const res = await api.patch<ApiResponse<string>>(`/api/Ventas/${id}/anular`, {});
+    return readId(res.data);
+  },
+
+  async getStock(productId: string, warehouseId: string): Promise<StockDisponibleDto | null> {
+    const res = await api.get<ApiResponse<StockDisponibleDto>>(
+      `/api/Ventas/stock?productoId=${productId}&bodegaId=${warehouseId}`
     );
+    return res.data.responseObject ?? null;
   },
 };
