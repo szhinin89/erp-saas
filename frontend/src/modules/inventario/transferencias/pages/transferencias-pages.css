@@ -1,130 +1,31 @@
-.trf-action-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
+/* Estilos compartidos cubiertos por selectores de atributo en zh-ui.css:
+   list-filters, cell-actions, pagination, pagination-label, field-label,
+   action-row, detail-grid, responsive-table */
 
-.trf-detail-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-}
+.trf-row-clickable { cursor: pointer; }
 
-.trf-detail-items-title {
-  margin-bottom: 8px;
-}
-
-.trf-text-right {
-  text-align: right;
-}
-
-.trf-detail-footer {
-  margin-top: 16px;
-}
-
-.trf-field-label {
-  font-size: 0.75rem;
-  color: var(--color-text-muted, #64748b);
-  margin-bottom: 2px;
-}
-
-.trf-list-filters {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
-
-.trf-row-clickable {
-  cursor: pointer;
-}
-
-.trf-cell-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.trf-pagination {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-  justify-content: flex-end;
-}
-
-.trf-pagination-label {
-  line-height: 32px;
-  color: var(--color-text-muted, #64748b);
-}
+.trf-detail-items-title { margin-bottom: var(--zh-space-2); }
+.trf-text-right { text-align: right; }
+.trf-detail-footer { margin-top: var(--zh-space-4); }
 
 .trf-create-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--zh-space-3);
   justify-content: flex-end;
-  margin-top: 24px;
+  margin-top: var(--zh-space-6);
 }
 
 @media (max-width: 768px) {
-  .trf-detail-grid {
-    grid-template-columns: 1fr;
-  }
-
   .trf-create-actions,
-  .trf-pagination {
-    justify-content: stretch;
-  }
+  .trf-pagination { justify-content: stretch; }
 }
 
 @media (max-width: 640px) {
-  .trf-responsive-table thead {
-    display: none;
-  }
-
-  .trf-responsive-table tbody {
-    display: grid;
-    gap: 12px;
-  }
-
-  .trf-responsive-table tr {
-    display: block;
-    border: 1px solid var(--zh-color-border);
-    border-radius: var(--zh-radius-md, 10px);
-    background: var(--zh-color-surface);
-    padding: 8px 12px;
-  }
-
-  .trf-responsive-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-    border: none;
-    padding: 0.4rem 0;
-    text-align: right;
-    font-size: 0.82rem;
-  }
-
-  .trf-responsive-table td::before {
-    content: attr(data-label);
-    text-align: left;
-    color: var(--color-text-muted, #5b6e8c);
-    font-weight: 600;
-    flex: 0 0 42%;
-  }
-
   .trf-cell-actions {
     flex-direction: column;
     align-items: stretch;
     text-align: left;
   }
-
-  .trf-cell-actions::before {
-    flex: none;
-  }
-
-  .trf-cell-actions .zh-btn {
-    width: 100%;
-    justify-content: center;
-  }
+  .trf-cell-actions::before { flex: none; }
+  .trf-cell-actions .zh-btn { width: 100%; justify-content: center; }
 }

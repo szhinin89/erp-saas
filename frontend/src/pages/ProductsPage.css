@@ -1,36 +1,32 @@
-.products-shell {
-  width: 100%;
-}
+/* search-row, actions-cell cubiertos en zh-ui.css.
+   El bloque responsive usa 768px (más temprano que el global de 640px)
+   por la densidad de columnas de esta tabla. */
+
+.products-shell { width: 100%; }
 
 .products-title {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--zh-space-2);
 }
 
-.products-form-wrap {
-  margin-top: 8px;
-}
-
-.products-search-row {
-  margin-bottom: 12px;
-}
+.products-form-wrap { margin-top: var(--zh-space-2); }
 
 .products-image-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--zh-space-3);
   align-items: flex-start;
-  padding: 12px 0;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  padding: var(--zh-space-3) 0;
+  border-bottom: 1px solid var(--zh-color-border);
 }
 
 .products-image-preview {
   width: 72px;
   height: 72px;
-  border-radius: 8px;
+  border-radius: var(--zh-radius-md);
   object-fit: cover;
-  background: rgba(148, 163, 184, 0.12);
+  background: rgba(79, 123, 166, 0.08);
   flex-shrink: 0;
 }
 
@@ -39,16 +35,15 @@
   min-width: 200px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--zh-space-2);
 }
 
 .products-image-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--zh-space-2);
   align-items: center;
 }
-
 .products-image-actions input[type="file"] {
   max-width: 100%;
   font-size: 0.85rem;
@@ -61,35 +56,23 @@
   align-items: center;
   font-size: 0.9rem;
 }
-
 .products-image-checks label {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--zh-space-2);
   cursor: pointer;
 }
 
 .products-form-card,
-.products-list-card {
-  border-radius: var(--radius-xl, 16px);
-}
-
-.products-form-card .zh-form-section {
-  padding: 14px 0;
-}
-
-.products-form-card .zh-grid {
-  gap: 12px;
-}
-
-.products-form-card .zh-field {
-  gap: 6px;
-}
+.products-list-card { border-radius: var(--zh-radius-xl); }
+.products-form-card .zh-form-section { padding: 14px 0; }
+.products-form-card .zh-grid { gap: var(--zh-space-3); }
+.products-form-card .zh-field { gap: var(--zh-space-2); }
 
 .products-barcodes-wrap {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--zh-space-2);
   align-items: center;
 }
 
@@ -97,55 +80,35 @@
   display: inline-flex;
   align-items: center;
   padding: 4px 8px;
-  border-radius: 999px;
-  background: var(--zh-blue-light, #eff6ff);
-  color: var(--zh-color-text, #0f172a);
+  border-radius: var(--zh-radius-pill);
+  background: var(--zh-blue-light);
+  color: var(--zh-color-text);
   font-size: 12px;
 }
 
-.products-barcodes-more {
-  font-size: 12px;
-  color: var(--color-text-muted, #64748b);
-}
+.products-barcodes-more { font-size: 12px; color: var(--zh-color-text-muted); }
+.products-no-barcodes { font-size: 12px; }
 
-.products-no-barcodes {
-  font-size: 12px;
-}
+/* vertical-align propio de esta tabla */
+.products-responsive-table td { vertical-align: middle; }
 
-.products-actions-cell {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.products-responsive-table td {
-  vertical-align: middle;
-}
-
+/* Responsive a 768px — antes que el breakpoint global de 640px
+   porque esta tabla tiene muchas columnas */
 @media (max-width: 768px) {
   .products-responsive-table {
     width: 100%;
     border-collapse: collapse;
   }
-
-  .products-responsive-table thead {
-    display: none;
-  }
-
-  .products-responsive-table tbody {
-    display: grid;
-    gap: 12px;
-  }
-
+  .products-responsive-table thead { display: none; }
+  .products-responsive-table tbody { display: grid; gap: var(--zh-space-3); }
   .products-responsive-table tr {
     display: block;
-    border: 1px solid var(--zh-color-border, #dbe2ea);
-    border-radius: var(--zh-radius-md, 10px);
-    background: var(--zh-color-surface, #fff);
-    box-shadow: var(--zh-shadow-sm, 0 10px 28px rgba(15, 23, 42, 0.08));
+    border: 1px solid var(--zh-color-border);
+    border-radius: var(--zh-radius-md);
+    background: var(--zh-color-surface);
+    box-shadow: var(--zh-shadow-sm);
     padding: 10px 12px;
   }
-
   .products-responsive-table td {
     display: flex;
     justify-content: space-between;
@@ -154,14 +117,12 @@
     border: 0;
     font-size: 0.92rem;
   }
-
   .products-responsive-table td::before {
     content: attr(data-label);
     font-weight: 600;
-    color: var(--color-text-muted, #64748b);
+    color: var(--zh-color-text-muted);
     min-width: 40%;
   }
-
   .products-actions-cell {
     flex-direction: column;
     align-items: stretch;

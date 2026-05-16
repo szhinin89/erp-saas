@@ -1,61 +1,16 @@
-.vf-refresh-wrap {
-  margin-bottom: 12px;
-}
+/* responsive-table cubierto en zh-ui.css */
+
+.vf-refresh-wrap { margin-bottom: var(--zh-space-3); }
 
 .vf-col-right,
-.vf-cell-right {
-  text-align: right;
-}
+.vf-cell-right { text-align: right; }
 
 @media (max-width: 640px) {
-  .vf-responsive-table thead {
-    display: none;
-  }
-
-  .vf-responsive-table tbody {
-    display: grid;
-    gap: 12px;
-  }
-
-  .vf-responsive-table tr {
-    display: block;
-    border: 1px solid var(--zh-color-border);
-    border-radius: var(--zh-radius-md, 10px);
-    background: var(--zh-color-surface);
-    padding: 8px 12px;
-  }
-
-  .vf-responsive-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-    border: none;
-    padding: 0.4rem 0;
-    text-align: right;
-    font-size: 0.82rem;
-  }
-
-  .vf-responsive-table td::before {
-    content: attr(data-label);
-    text-align: left;
-    color: var(--color-text-muted, #5b6e8c);
-    font-weight: 600;
-    flex: 0 0 42%;
-  }
-
   .vf-cell-actions {
     flex-direction: column;
     align-items: stretch;
     text-align: left;
   }
-
-  .vf-cell-actions::before {
-    flex: none;
-  }
-
-  .vf-cell-actions .zh-btn {
-    width: 100%;
-    justify-content: center;
-  }
+  .vf-cell-actions::before { flex: none; }
+  .vf-cell-actions .zh-btn { width: 100%; justify-content: center; }
 }

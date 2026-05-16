@@ -1,140 +1,83 @@
+/* Estilos compartidos cubiertos por selectores de atributo en zh-ui.css:
+   list-filters, cell-actions, pagination, pagination-label, detail-label,
+   responsive-table */
+
+/* ── Badges de estado ── */
 .oc-status-badge {
   font-weight: 700;
-  border-radius: 999px;
+  border-radius: var(--zh-radius-pill);
   display: inline-flex;
   align-items: center;
 }
-
-.oc-status-badge--md {
-  font-size: 0.875rem;
-  padding: 4px 12px;
-}
-
-.oc-status-badge--sm {
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 2px 8px;
-}
+.oc-status-badge--md { font-size: 0.875rem; padding: 4px 12px; }
+.oc-status-badge--sm { font-size: 0.75rem; font-weight: 600; padding: 2px 8px; }
 
 .oc-status-badge--borrador {
-  background: color-mix(in srgb, var(--color-text-muted, #64748b) 16%, transparent);
-  color: var(--color-text-muted, #64748b);
+  background: rgba(91, 110, 140, 0.16);
+  color: var(--zh-color-text-muted);
 }
-
 .oc-status-badge--enviada {
   background: rgba(79, 123, 166, 0.16);
   color: var(--zh-blue);
 }
-
 .oc-status-badge--aprobada {
   background: rgba(29, 158, 117, 0.16);
   color: var(--zh-success);
 }
-
 .oc-status-badge--recibidaparcial {
   background: rgba(186, 117, 23, 0.16);
   color: var(--zh-warning);
 }
-
 .oc-status-badge--cerrada {
   background: rgba(0, 51, 102, 0.14);
   color: var(--zh-color-primary);
 }
-
 .oc-status-badge--cancelada {
   background: rgba(226, 75, 74, 0.16);
   color: var(--zh-danger);
 }
 
-.oc-list-filters {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-}
+/* ── Layout tabla ── */
+.oc-row-clickable { cursor: pointer; }
+.oc-col-qty { width: 100px; }
+.oc-col-price { width: 120px; }
+.oc-col-tax { width: 80px; }
+.oc-col-total, .oc-col-actions { width: 120px; }
+.oc-col-actions { width: 40px; }
+.oc-cell-right { text-align: right; }
 
-.oc-row-clickable {
-  cursor: pointer;
-}
-
-.oc-pagination {
-  display: flex;
-  gap: 8px;
-  margin-top: 16px;
-  justify-content: flex-end;
-}
-
-.oc-pagination-label {
-  line-height: 32px;
-  color: var(--color-text-muted, #64748b);
-}
-
-.oc-create-lines-table {
-  margin-bottom: 8px;
-}
-
-.oc-col-qty {
-  width: 100px;
-}
-
-.oc-col-price {
-  width: 120px;
-}
-
-.oc-col-tax {
-  width: 80px;
-}
-
-.oc-col-total,
-.oc-col-actions {
-  width: 120px;
-}
-
-.oc-col-actions {
-  width: 40px;
-}
-
-.oc-cell-right {
-  text-align: right;
-}
-
-.oc-cell-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
+.oc-create-lines-table { margin-bottom: var(--zh-space-2); }
 
 .oc-lines-footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-
 .oc-lines-summary {
   text-align: right;
-  color: var(--color-text-muted, #64748b);
+  color: var(--zh-color-text-muted);
   font-size: 0.875rem;
 }
-
 .oc-lines-total {
   font-weight: 700;
   font-size: 1rem;
-  color: var(--zh-color-text, #0f172a);
+  color: var(--zh-color-text);
 }
 
+/* ── Formulario ── */
 .oc-form-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--zh-space-3);
   justify-content: flex-end;
-  margin-top: 16px;
+  margin-top: var(--zh-space-4);
 }
-
 .oc-detail-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--zh-space-2);
   flex-wrap: wrap;
 }
 
+/* ── Modal de recepción ── */
 .oc-modal-overlay {
   position: fixed;
   inset: 0;
@@ -142,137 +85,55 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: var(--zh-z-modal);
 }
-
 .oc-modal-card {
-  background: var(--zh-color-surface, #fff);
-  border-radius: 12px;
-  padding: 24px;
+  background: var(--zh-color-surface);
+  border-radius: var(--zh-radius-xl);
+  padding: var(--zh-space-6);
   width: min(440px, calc(100vw - 32px));
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.24);
+  box-shadow: var(--zh-shadow-lg);
 }
-
-.oc-modal-title {
-  margin-bottom: 16px;
-}
-
+.oc-modal-title { margin-bottom: var(--zh-space-4); }
 .oc-modal-help {
-  color: var(--color-text-muted, #64748b);
-  margin-bottom: 12px;
+  color: var(--zh-color-text-muted);
+  margin-bottom: var(--zh-space-3);
   font-size: 0.875rem;
 }
-
-.oc-modal-input {
-  width: 100%;
-  margin-bottom: 16px;
-}
-
+.oc-modal-input { width: 100%; margin-bottom: var(--zh-space-4); }
 .oc-modal-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--zh-space-2);
   justify-content: flex-end;
 }
 
+/* ── Vista de detalle ── */
 .oc-detail-header {
   display: flex;
-  gap: 32px;
+  gap: var(--zh-space-8);
   flex-wrap: wrap;
-  margin-bottom: 24px;
+  margin-bottom: var(--zh-space-6);
 }
-
-.oc-detail-label {
-  font-size: 0.75rem;
-  color: var(--color-text-muted, #64748b);
-  margin-bottom: 2px;
-}
-
-.oc-detail-strong {
-  font-weight: 600;
-}
-
-.oc-detail-total {
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
+.oc-detail-strong { font-weight: 600; }
+.oc-detail-total { font-size: 1.25rem; font-weight: 700; }
 .oc-detail-observations {
-  margin-bottom: 16px;
-  color: var(--color-text-muted, #64748b);
+  margin-bottom: var(--zh-space-4);
+  color: var(--zh-color-text-muted);
   font-size: 0.875rem;
 }
+.oc-section-title { margin-bottom: var(--zh-space-2); }
+.oc-section-table { margin-bottom: var(--zh-space-6); }
 
-.oc-section-title {
-  margin-bottom: 8px;
-}
-
-.oc-section-table {
-  margin-bottom: 24px;
-}
-
-.oc-pending--warning {
-  color: var(--zh-warning);
-  font-weight: 600;
-}
-
-.oc-pending--ok {
-  color: var(--zh-success);
-  font-weight: 600;
-}
-
-.oc-back-wrap {
-  margin-top: 12px;
-}
+.oc-pending--warning { color: var(--zh-warning); font-weight: 600; }
+.oc-pending--ok { color: var(--zh-success); font-weight: 600; }
+.oc-back-wrap { margin-top: var(--zh-space-3); }
 
 @media (max-width: 640px) {
-  .oc-responsive-table thead {
-    display: none;
-  }
-
-  .oc-responsive-table tbody {
-    display: grid;
-    gap: 12px;
-  }
-
-  .oc-responsive-table tr {
-    display: block;
-    border: 1px solid var(--zh-color-border);
-    border-radius: var(--zh-radius-md, 10px);
-    background: var(--zh-color-surface);
-    padding: 8px 12px;
-  }
-
-  .oc-responsive-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-    border: none;
-    padding: 0.4rem 0;
-    text-align: right;
-    font-size: 0.82rem;
-  }
-
-  .oc-responsive-table td::before {
-    content: attr(data-label);
-    text-align: left;
-    color: var(--color-text-muted, #5b6e8c);
-    font-weight: 600;
-    flex: 0 0 42%;
-  }
-
   .oc-cell-actions {
     flex-direction: column;
     align-items: stretch;
     text-align: left;
   }
-
-  .oc-cell-actions::before {
-    flex: none;
-  }
-
-  .oc-cell-actions .zh-btn {
-    width: 100%;
-    justify-content: center;
-  }
+  .oc-cell-actions::before { flex: none; }
+  .oc-cell-actions .zh-btn { width: 100%; justify-content: center; }
 }

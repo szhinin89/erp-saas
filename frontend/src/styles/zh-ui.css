@@ -693,27 +693,31 @@ h3 { font-size: var(--zh-font-size-lg); margin-bottom: var(--zh-space-2); }
   display: inline-block;
 }
 
-/* ---------- TABLA RESPONSIVE (patrón compartido) ---------- */
+/* ---------- PATRONES COMPARTIDOS VÍA SELECTORES DE ATRIBUTO ---------- */
 /*
-   Uso: agrega clase `zh-responsive-table` a la tabla <table>.
-   Las celdas deben tener el atributo data-label="Columna".
+   Estos selectores se aplican automáticamente a cualquier clase que siga
+   la convención de nombres del proyecto (ej. ".aj-responsive-table",
+   ".products-list-filters", ".trf-pagination", etc.)
+   No se necesita cambiar HTML ni JSX.
 */
+
+/* ── Tabla responsive universal ── */
 @media (max-width: 640px) {
-  :where(.zh-responsive-table) thead {
+  [class*="responsive-table"] thead {
     display: none;
   }
-  :where(.zh-responsive-table) tbody {
+  [class*="responsive-table"] tbody {
     display: grid;
     gap: var(--zh-space-3);
   }
-  :where(.zh-responsive-table) tr {
+  [class*="responsive-table"] tr {
     display: block;
     border: 1px solid var(--zh-color-border);
     border-radius: var(--zh-radius-md);
     background: var(--zh-color-surface);
     padding: var(--zh-space-2) var(--zh-space-3);
   }
-  :where(.zh-responsive-table) td {
+  [class*="responsive-table"] td {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -723,13 +727,77 @@ h3 { font-size: var(--zh-font-size-lg); margin-bottom: var(--zh-space-2); }
     text-align: right;
     font-size: 0.82rem;
   }
-  :where(.zh-responsive-table) td::before {
+  [class*="responsive-table"] td::before {
     content: attr(data-label);
     text-align: left;
     color: var(--zh-color-text-muted);
     font-weight: 600;
     flex: 0 0 42%;
   }
+}
+
+/* ── Barra de filtros ── */
+[class$="-list-filters"] {
+  display: flex;
+  gap: var(--zh-space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--zh-space-4);
+}
+
+/* ── Paginación ── */
+[class$="-pagination"] {
+  display: flex;
+  gap: var(--zh-space-2);
+  margin-top: var(--zh-space-4);
+  justify-content: flex-end;
+  align-items: center;
+}
+
+[class$="-pagination-label"] {
+  line-height: 32px;
+  color: var(--zh-color-text-muted);
+}
+
+/* ── Celdas de acciones ── */
+[class$="-actions-cell"],
+[class$="-cell-actions"] {
+  display: flex;
+  gap: var(--zh-space-2);
+  flex-wrap: wrap;
+}
+
+/* ── Fila de búsqueda ── */
+[class$="-search-row"] {
+  margin-bottom: var(--zh-space-3);
+}
+
+/* ── Etiquetas de campo en vistas de detalle ── */
+[class$="-field-label"],
+[class$="-detail-label"] {
+  font-size: var(--zh-font-size-sm);
+  color: var(--zh-color-text-muted);
+  margin-bottom: 2px;
+}
+
+/* ── Grid de detalle 3 columnas ── */
+[class$="-detail-grid"] {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--zh-space-4);
+  margin-bottom: var(--zh-space-6);
+}
+
+@media (max-width: 768px) {
+  [class$="-detail-grid"] {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Fila de acciones (botones flexibles) ── */
+[class$="-action-row"] {
+  display: flex;
+  gap: var(--zh-space-2);
+  flex-wrap: wrap;
 }
 
 /* ---------- BADGE VARIANTS ---------- */

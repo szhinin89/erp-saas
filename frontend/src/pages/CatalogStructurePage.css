@@ -1,81 +1,32 @@
+/* responsive-table, actions cubiertos en zh-ui.css */
+
 .catalog-structure-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: var(--zh-space-3);
   align-items: flex-end;
   margin-bottom: 14px;
 }
 
-.catalog-structure-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.catalog-structure-actions .btn-sm {
-  padding: 4px 10px;
-  font-size: 0.85rem;
-}
-
 .catalog-structure-activityList {
-  margin: 0 0 12px 0;
+  margin: 0 0 var(--zh-space-3) 0;
   padding-left: 18px;
 }
 
 @media (max-width: 640px) {
-  .catalog-structure-responsive-table thead {
-    display: none;
-  }
-
-  .catalog-structure-responsive-table tbody {
-    display: grid;
-    gap: 12px;
-  }
-
-  .catalog-structure-responsive-table tr {
-    display: block;
-    border: 1px solid var(--zh-color-border);
-    border-radius: var(--zh-radius-md, 10px);
-    background: var(--zh-color-surface);
-    padding: 8px 12px;
-  }
-
-  .catalog-structure-responsive-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 12px;
-    border: none;
-    padding: 0.4rem 0;
-    text-align: right;
-    font-size: 0.82rem;
-  }
-
-  .catalog-structure-responsive-table td::before {
-    content: attr(data-label);
-    text-align: left;
-    color: var(--color-text-muted, #5b6e8c);
-    font-weight: 600;
-    flex: 0 0 42%;
-  }
-
+  /* Celda de acciones: apilado vertical */
   .catalog-structure-responsive-table td[data-label='Acciones'],
   .catalog-structure-responsive-table td[data-label='Actions'] {
     flex-direction: column;
     align-items: stretch;
     text-align: left;
   }
-
   .catalog-structure-responsive-table td[data-label='Acciones']::before,
-  .catalog-structure-responsive-table td[data-label='Actions']::before {
-    flex: none;
-  }
-
+  .catalog-structure-responsive-table td[data-label='Actions']::before { flex: none; }
   .catalog-structure-responsive-table td[data-label='Acciones'] .catalog-structure-actions,
   .catalog-structure-responsive-table td[data-label='Actions'] .catalog-structure-actions {
     width: 100%;
   }
-
   .catalog-structure-responsive-table td[data-label='Acciones'] .catalog-structure-actions .zh-btn,
   .catalog-structure-responsive-table td[data-label='Actions'] .catalog-structure-actions .zh-btn {
     flex: 1 1 100%;
