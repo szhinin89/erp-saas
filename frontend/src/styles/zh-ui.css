@@ -29,7 +29,9 @@
   --zh-color-accent: #00E5FF;
   --zh-color-bg: #F8FAFC;
   --zh-color-text: #1E293B;
+  --zh-color-text-muted: #5B6E8C;
   --zh-color-surface: #FFFFFF;
+  --zh-color-surface-soft: #F0F5FA;
   --zh-color-border: rgba(15, 23, 42, 0.12);
 
   /* Tipografía */
@@ -60,9 +62,58 @@
   --zh-radius-lg: 0.75rem;
   --zh-radius-xl: 1rem;
   --zh-radius-2xl: 1.5rem;
+  --zh-radius-pill: 999px;
 
   /* Transiciones */
   --zh-transition: 0.2s ease;
+
+  /* Tipografía especial */
+  --zh-font-mono: ui-monospace, Consolas, monospace;
+
+  /* Paleta extendida */
+  --zh-color-accent-hover: #00C5DE;
+
+  /* Z-index system */
+  --zh-z-dropdown: 500;
+  --zh-z-modal: 1000;
+  --zh-z-toast: 300;
+
+  /* Tokens de interacción */
+  --zh-focus-ring: 0 0 0 3px rgba(79, 123, 166, 0.2);
+  --zh-focus-ring-danger: 0 0 0 3px rgba(226, 75, 74, 0.2);
+  --zh-focus-ring-accent: 0 0 0 3px rgba(0, 229, 255, 0.25);
+  --zh-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%235B6E8C' d='M0 0h10L5 6z'/%3E%3C/svg%3E");
+
+  /* ── Aliases de compatibilidad (nombres legacy → paleta oficial) ──── */
+  /* Colores de texto */
+  --zh-muted: var(--zh-color-text-muted);
+  --zh-text-muted: var(--zh-color-text-muted);
+  --zh-text-primary: var(--zh-color-text);
+  --color-text-muted: var(--zh-color-text-muted);
+  --color-text-secondary: var(--zh-color-text-muted);
+  --color-text-tertiary: var(--zh-color-text-muted);
+
+  /* Colores de borde */
+  --zh-border: var(--zh-color-border);
+  --color-border: var(--zh-color-border);
+  --color-border-tertiary: var(--zh-color-border);
+
+  /* Colores de superficie */
+  --zh-surface: var(--zh-color-surface);
+  --zh-surface-muted: var(--zh-color-surface-soft);
+  --zh-color-surface-muted: var(--zh-color-surface-soft);
+  --color-bg-primary: var(--zh-color-surface);
+  --color-bg-secondary: var(--zh-color-surface-soft);
+  --color-background-primary: var(--zh-color-surface);
+  --color-background-secondary: var(--zh-color-surface-soft);
+
+  /* Aliases de radio */
+  --zh-radius: var(--zh-radius-md);
+  --radius-xl: var(--zh-radius-xl);
+  --radius-lg: var(--zh-radius-lg);
+
+  /* Alias semántico de error */
+  --zh-color-error: var(--zh-danger);
 }
 
 /* ---------- BASE ---------- */
@@ -88,8 +139,8 @@ h1, h2, h3, h4, h5, h6 {
 h1 { font-size: var(--zh-font-size-2xl); margin-bottom: var(--zh-space-4); }
 h2 { font-size: var(--zh-font-size-xl); margin-bottom: var(--zh-space-3); border-left: 3px solid var(--zh-blue); padding-left: var(--zh-space-3); }
 h3 { font-size: var(--zh-font-size-lg); margin-bottom: var(--zh-space-2); }
-.text-sm { font-size: var(--zh-font-size-sm); color: #5b6e8c; }
-.text-muted { color: #5b6e8c; }
+.text-sm { font-size: var(--zh-font-size-sm); color: var(--zh-color-text-muted); }
+.text-muted { color: var(--zh-color-text-muted); }
 
 /* ---------- CARDS ---------- */
 :where(.card) {
@@ -163,7 +214,7 @@ h3 { font-size: var(--zh-font-size-lg); margin-bottom: var(--zh-space-2); }
   box-shadow: 0 0 0 3px rgba(79,123,166,0.1);
 }
 :where(input:disabled, select:disabled, textarea:disabled) {
-  background: #f1f5f9;
+  background: var(--zh-color-surface-soft);
   cursor: not-allowed;
 }
 :where(input.error, select.error, textarea.error) {
@@ -218,7 +269,7 @@ h3 { font-size: var(--zh-font-size-lg); margin-bottom: var(--zh-space-2); }
   position: absolute;
   cursor: pointer;
   top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #cbd5e1;
+  background-color: var(--zh-blue-mid);
   transition: var(--zh-transition);
   border-radius: 34px;
 }
@@ -313,7 +364,7 @@ h3 { font-size: var(--zh-font-size-lg); margin-bottom: var(--zh-space-2); }
   padding: 0.6rem 1.2rem;
   font-weight: 500;
   cursor: pointer;
-  color: #5b6e8c;
+  color: var(--zh-color-text-muted);
   transition: var(--zh-transition);
 }
 :where(.tab-btn.active) {
@@ -516,7 +567,7 @@ h3 { font-size: var(--zh-font-size-lg); margin-bottom: var(--zh-space-2); }
 
 :where(.subtle) {
   font-size: var(--zh-font-size-sm);
-  color: #5b6e8c;
+  color: var(--zh-color-text-muted);
 }
 
 /* Encabezados de pantalla legacy */
@@ -530,7 +581,7 @@ h3 { font-size: var(--zh-font-size-lg); margin-bottom: var(--zh-space-2); }
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #5b6e8c;
+  color: var(--zh-color-text-muted);
 }
 
 :where(.zh-screen-heading-chip) {
@@ -550,7 +601,7 @@ h3 { font-size: var(--zh-font-size-lg); margin-bottom: var(--zh-space-2); }
 
 :where(.zh-screen-heading-sub) {
   font-size: 0.95rem;
-  color: #5b6e8c;
+  color: var(--zh-color-text-muted);
 }
 
 /* Pestañas del shell */
@@ -567,7 +618,7 @@ h3 { font-size: var(--zh-font-size-lg); margin-bottom: var(--zh-space-2); }
   font-size: 0.92rem;
   padding: 6px 16px;
   text-decoration: none;
-  color: #5b6e8c;
+  color: var(--zh-color-text-muted);
   transition: background var(--zh-transition), color var(--zh-transition);
 }
 
@@ -640,6 +691,104 @@ h3 { font-size: var(--zh-font-size-lg); margin-bottom: var(--zh-space-2); }
   border-radius: var(--zh-radius-sm);
   padding: 4px 8px;
   display: inline-block;
+}
+
+/* ---------- TABLA RESPONSIVE (patrón compartido) ---------- */
+/*
+   Uso: agrega clase `zh-responsive-table` a la tabla <table>.
+   Las celdas deben tener el atributo data-label="Columna".
+*/
+@media (max-width: 640px) {
+  :where(.zh-responsive-table) thead {
+    display: none;
+  }
+  :where(.zh-responsive-table) tbody {
+    display: grid;
+    gap: var(--zh-space-3);
+  }
+  :where(.zh-responsive-table) tr {
+    display: block;
+    border: 1px solid var(--zh-color-border);
+    border-radius: var(--zh-radius-md);
+    background: var(--zh-color-surface);
+    padding: var(--zh-space-2) var(--zh-space-3);
+  }
+  :where(.zh-responsive-table) td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--zh-space-3);
+    border: none;
+    padding: 0.4rem 0;
+    text-align: right;
+    font-size: 0.82rem;
+  }
+  :where(.zh-responsive-table) td::before {
+    content: attr(data-label);
+    text-align: left;
+    color: var(--zh-color-text-muted);
+    font-weight: 600;
+    flex: 0 0 42%;
+  }
+}
+
+/* ---------- BADGE VARIANTS ---------- */
+:where(.badge--success) {
+  background: rgba(29, 158, 117, 0.12);
+  color: #116A50;
+}
+:where(.badge--danger) {
+  background: rgba(226, 75, 74, 0.12);
+  color: #991b1b;
+}
+:where(.badge--warning) {
+  background: rgba(186, 117, 23, 0.12);
+  color: #7A4E0F;
+}
+:where(.badge--info) {
+  background: rgba(79, 123, 166, 0.12);
+  color: var(--zh-blue-dark);
+}
+
+/* ---------- LAYOUT UTILS ---------- */
+.flex-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- SKELETON ---------- */
+:where(.skeleton) {
+  background: linear-gradient(
+    90deg,
+    var(--zh-blue-mid) 25%,
+    var(--zh-color-surface-soft) 50%,
+    var(--zh-blue-mid) 75%
+  );
+  background-size: 200% 100%;
+  animation: zh-skeleton 1.5s infinite;
+  border-radius: var(--zh-radius-sm);
+}
+@keyframes zh-skeleton {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ---------- CHIP ---------- */
+:where(.chip) {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--zh-radius-pill);
+  font-size: var(--zh-font-size-sm);
+  font-weight: 500;
+  background: var(--zh-blue-light);
+  color: var(--zh-blue-dark);
+  border: 1px solid var(--zh-color-border);
 }
 
 /* ============================================

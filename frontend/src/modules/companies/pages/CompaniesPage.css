@@ -15,7 +15,7 @@
 }
 
 .companies-shell-card {
-  border-radius: var(--radius-xl, 16px);
+  border-radius: var(--zh-radius-xl);
 }
 
 .companies-meta-card {
@@ -35,9 +35,9 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  border-radius: 4px;
-  background: var(--zh-color-surface-muted, #e8ecf1);
-  color: var(--zh-color-text-muted, #5a6570);
+  border-radius: var(--zh-radius-sm);
+  background: var(--zh-color-surface-soft);
+  color: var(--zh-color-text-muted);
 }
 
 .companies-actions-row {
@@ -118,15 +118,15 @@
   padding: 0.12rem 0.45rem;
   font-size: 0.72rem;
   font-weight: 700;
-  border-radius: 6px;
+  border-radius: var(--zh-radius-sm);
   background: rgba(0, 51, 102, 0.08);
-  color: #0f172a;
+  color: var(--zh-color-text);
   white-space: nowrap;
 }
 
 .companies-module-chip--all {
-  background: rgba(34, 197, 94, 0.15);
-  color: #14532d;
+  background: rgba(29, 158, 117, 0.15);
+  color: var(--zh-success);
 }
 
 .companies-module-chip--muted {
@@ -205,7 +205,7 @@
   max-width: 360px;
   overflow-wrap: anywhere;
   font-size: 0.8rem;
-  color: #0f172a;
+  color: var(--zh-color-text);
 }
 
 .companies-nav-menu-tab {

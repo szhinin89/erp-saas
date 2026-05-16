@@ -139,9 +139,7 @@
   flex-shrink: 0;
   padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--zh-color-border);
-  /* fallback sólido para navegadores sin color-mix */
-  background: #f4f9ff;
-  background: color-mix(in srgb, var(--zh-blue-light, #ebf2fa) 35%, #fff);
+  background: var(--zh-blue-light);
 }
 
 :where(.menu-builder-panel__title) {
@@ -558,9 +556,9 @@
 }
 
 .menu-builder-crm-type.is-leaf {
-  color: #0f766e;
-  border-color: rgba(15, 118, 110, 0.25);
-  background: rgba(15, 118, 110, 0.08);
+  color: var(--zh-success);
+  border-color: rgba(29, 158, 117, 0.25);
+  background: rgba(29, 158, 117, 0.08);
 }
 
 .menu-builder-crm-route {
@@ -594,7 +592,7 @@
 }
 
 .menu-builder-crm-action--danger {
-  color: #dc2626;
+  color: var(--zh-danger);
 }
 
 /* Toolbar colapsa en estrecho */

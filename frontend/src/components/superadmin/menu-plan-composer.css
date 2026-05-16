@@ -9,27 +9,6 @@
    - Estructura modular por secciones
 ============================================= */
 
-/* ---------- VARIABLES GLOBALES ---------- */
-:root {
-  /* Paleta existente (compatible) */
-  --zh-blue: #2563eb;
-  --zh-blue-dark: #1e3a5f;
-  --zh-blue-light: #ebf2fa;
-  --zh-border: rgba(30, 41, 59, 0.12);
-  --zh-surface-muted: #f3f4f6;
-  --zh-color-surface: #ffffff;
-  --zh-color-text: #0f172a;
-  --color-text-muted: #64748b;
-  --zh-danger: #e24b4a;
-
-  /* Nuevas variables de diseño consistentes */
-  --zh-radius-sm: 0.5rem;    /* 8px */
-  --zh-radius-md: 0.75rem;   /* 12px */
-  --zh-radius-lg: 1rem;      /* 16px */
-  --zh-radius-pill: 999px;
-  --zh-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
-  --zh-shadow-md: 0 4px 12px rgba(15, 23, 42, 0.08);
-}
 
 /* ---------- BLOQUE PRINCIPAL ---------- */
 .menu-plan-composer {
@@ -78,15 +57,15 @@
   font-weight: 700;
   padding: 0.2rem 0.45rem;
   border-radius: var(--zh-radius-sm);
-  background: var(--zh-surface-muted);
-  border: 1px solid var(--zh-border);
-  color: var(--color-text-muted);
+  background: var(--zh-color-bg);
+  border: 1px solid var(--zh-color-border);
+  color: var(--zh-color-text-muted);
 }
 
 .menu-plan-composer__heroSub {
   margin-top: 0.5rem;
   font-size: 0.95rem;
-  color: var(--color-text-muted);
+  color: var(--zh-color-text-muted);
 }
 
 /* ---------- PÍLDORAS (PLANES) ---------- */
@@ -112,14 +91,13 @@
 
 .menu-plan-composer__pill:hover:not(:disabled) {
   border-color: var(--zh-blue);
-  background: #e0edf9; /* fallback sólido */
-  background: color-mix(in srgb, var(--zh-blue-light) 80%, var(--zh-blue));
+  background: var(--zh-blue-mid);
 }
 
 .menu-plan-composer__pill.is-active {
   background: var(--zh-blue-dark);
   border-color: var(--zh-blue-dark);
-  color: #fff;
+  color: var(--zh-color-surface);
   box-shadow: none;
 }
 
@@ -134,7 +112,7 @@
   flex-direction: column;
   gap: 0.75rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--zh-border);
+  border-bottom: 1px solid var(--zh-color-border);
 }
 
 .menu-plan-composer__searchRow {
@@ -160,14 +138,14 @@
   display: grid;
   gap: 0.2rem;
   font-size: 0.74rem;
-  color: var(--color-text-muted);
+  color: var(--zh-color-text-muted);
 }
 
 .menu-plan-composer__advancedFilterTip {
   display: inline-flex;
   align-items: center;
   font-size: 0.78rem;
-  color: var(--color-text-muted);
+  color: var(--zh-color-text-muted);
 }
 
 /* ---------- CALLOUTS (avisos) ---------- */
@@ -274,7 +252,7 @@
 
 /* ---------- TARJETAS DE PLAN (simulación) ---------- */
 .menu-plan-composer__planCard {
-  border: 1px solid var(--zh-border);
+  border: 1px solid var(--zh-color-border);
   border-radius: var(--zh-radius-lg);
   padding: 0.85rem 1rem;
   background: var(--zh-color-surface);
@@ -296,7 +274,7 @@
 
 /* ---------- AUDITORÍA (log de cambios) ---------- */
 .menu-plan-composer__audit {
-  border: 1px solid var(--zh-border);
+  border: 1px solid var(--zh-color-border);
   border-radius: var(--zh-radius-lg);
   background: var(--zh-color-surface);
   padding: 0.65rem 0.85rem;
@@ -336,7 +314,7 @@
   background: var(--zh-color-surface);
   border-radius: var(--zh-radius-lg);
   padding: 1rem;
-  border: 1px solid var(--zh-border);
+  border: 1px solid var(--zh-color-border);
 }
 
 .menu-plan-composer__modalActions {

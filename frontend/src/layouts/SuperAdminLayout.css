@@ -1,22 +1,91 @@
-/* SuperAdmin shell styled to match reference screenshot (visual only). */
+/* ============================================
+   SuperAdmin Shell — versión mejorada
+   - Variables completas con fallbacks y modo oscuro
+   - Layout responsivo (sidebar colapsable en móvil)
+   - Accesibilidad (focus visible)
+   - Transiciones suaves
+   - Eliminación de colores hardcodeados
+============================================ */
+
+/* ---------- VARIABLES (tema claro) ---------- */
 .sa-shell {
-  display: block;
+  /* Override local: shell usa radio-lg mayor y sombra más pronunciada */
+  --zh-radius-lg: 1rem;
+  --zh-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+  /* Sidebar & navegación */
+  --sa-sidebar-bg: var(--zh-color-surface);
+  --sa-sidebar-border: var(--zh-color-border);
+  --sa-nav-bg: var(--zh-color-surface);
+  --sa-nav-hover-bg: var(--zh-blue-light);
+  --sa-nav-active-bg: var(--zh-blue-light);
+  --sa-nav-active-color: var(--zh-color-primary);
+  --sa-nav-active-shadow: var(--zh-blue);
+  --sa-header-gradient-start: var(--zh-blue);
+  --sa-header-gradient-end: var(--zh-blue-dark);
+  --sa-header-text: var(--zh-color-surface);
+  --sa-header-btn-bg: rgba(255, 255, 255, 0.12);
+  --sa-header-btn-hover: rgba(255, 255, 255, 0.22);
+  --sa-tab-bg: var(--zh-color-surface);
+  --sa-tab-color: var(--zh-color-text);
+  --sa-tab-hover-bg: var(--zh-blue-light);
+  --sa-tab-hover-color: var(--zh-blue-dark);
+  --sa-tab-active-border: rgba(79, 123, 166, 0.35);
+}
+
+/* ---------- TEMA OSCURO ---------- */
+@media (prefers-color-scheme: dark) {
+  .sa-shell {
+    --zh-color-bg: #0f172a;
+    --zh-color-text: #e2e8f0;
+    --zh-color-border: #334155;
+    --zh-blue: #3b82f6;
+    --zh-blue-dark: #1e40af;
+    --zh-blue-light: #1e3a5f;
+    --zh-color-surface: #1e293b;
+    --sa-sidebar-bg: #1e293b;
+    --sa-sidebar-border: #334155;
+    --sa-nav-bg: #1e293b;
+    --sa-nav-hover-bg: #2d3a4e;
+    --sa-nav-active-bg: #2d3a4e;
+    --sa-nav-active-color: #93c5fd;
+    --sa-nav-active-shadow: #60a5fa;
+    --sa-header-gradient-start: #1e3a5f;
+    --sa-header-gradient-end: #0f172a;
+    --sa-header-text: #e2e8f0;
+    --sa-header-btn-bg: rgba(255, 255, 255, 0.08);
+    --sa-header-btn-hover: rgba(255, 255, 255, 0.16);
+    --sa-tab-bg: #1e293b;
+    --sa-tab-color: #cbd5e1;
+    --sa-tab-hover-bg: #2d3a4e;
+    --sa-tab-hover-color: #93c5fd;
+    --sa-tab-active-border: #60a5fa;
+  }
+}
+
+/* ---------- CONTENEDOR PRINCIPAL (grid responsivo) ---------- */
+.sa-shell {
+  display: grid;
+  grid-template-columns: auto 1fr;
   min-height: 100vh;
   background: var(--zh-color-bg);
   color: var(--zh-color-text);
 }
 
+/* Sidebar */
 .sa-shell-sidebar {
+  width: 260px;
   padding: 12px;
-  background: #ffffff;
-  border-right: 1px solid #e5e7eb;
+  background: var(--sa-sidebar-bg);
+  border-right: 1px solid var(--sa-sidebar-border);
+  transition: transform 0.2s ease;
 }
 
 .sa-shell-brand {
   padding: 12px;
   border-radius: 14px;
-  background: linear-gradient(180deg, #35557f 0%, #2b466b 100%);
-  color: #fff;
+  background: linear-gradient(180deg, var(--sa-header-gradient-start) 0%, var(--sa-header-gradient-end) 100%);
+  color: var(--sa-header-text);
   font-size: 1.03rem;
   font-weight: 800;
   letter-spacing: 0.01em;
@@ -28,10 +97,10 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  border: 1px solid #e6ebf3;
+  border: 1px solid var(--sa-sidebar-border);
   border-radius: 12px;
   padding: 10px;
-  background: #fff;
+  background: var(--sa-nav-bg);
 }
 
 .sa-shell-nav a {
@@ -39,27 +108,36 @@
   padding: 9px 10px;
   border-radius: 10px;
   text-decoration: none;
-  color: #0f172a;
+  color: var(--zh-color-text);
   font-size: 0.9rem;
   font-weight: 700;
-  transition: background-color 0.14s ease, color 0.14s ease;
+  transition: background-color 0.14s ease, color 0.14s ease, box-shadow 0.14s ease;
 }
 
 .sa-shell-nav a:hover {
-  background: #edf3fb;
-  color: #183a70;
+  background: var(--sa-nav-hover-bg);
+  color: var(--zh-blue-dark);
 }
 
 .sa-shell-nav a.active {
-  background: #edf3fb;
-  color: #15366c;
-  box-shadow: inset 4px 0 0 0 #4f7ba6;
+  background: var(--sa-nav-active-bg);
+  color: var(--sa-nav-active-color);
+  box-shadow: inset 4px 0 0 0 var(--sa-nav-active-shadow);
 }
 
+/* Foco visible para accesibilidad */
+.sa-shell-nav a:focus-visible,
+.sa-shell-tabs a:focus-visible {
+  outline: 2px solid var(--zh-blue);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Main area */
 .sa-shell-main {
-  min-width: 0;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   min-height: 100vh;
 }
 
@@ -71,7 +149,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: linear-gradient(180deg, var(--zh-blue) 0%, var(--zh-blue-dark) 100%);
+  background: linear-gradient(180deg, var(--sa-header-gradient-start) 0%, var(--sa-header-gradient-end) 100%);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: var(--zh-shadow-md);
 }
@@ -80,9 +158,82 @@
   margin: 0;
   font-size: 1.04rem;
   font-weight: 800;
-  color: #f8fbff;
+  color: var(--sa-header-text);
 }
 
+.sa-shell-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sa-shell-header-actions .subtle {
+  color: color-mix(in srgb, var(--sa-header-text) 70%, transparent);
+}
+
+.sa-shell-header-email {
+  font-size: 12px;
+  color: var(--sa-header-text);
+}
+
+.sa-shell-header-actions button {
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: var(--sa-header-btn-bg);
+  color: var(--sa-header-text);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sa-shell-header-actions button:hover {
+  background: var(--sa-header-btn-hover);
+}
+
+.sa-shell-header-actions button:focus-visible {
+  outline: 2px solid var(--zh-blue);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* Tabs */
+.sa-shell-tabs {
+  margin: 10px 10px 0;
+  padding: 8px;
+  border-radius: var(--zh-radius-lg);
+  border: 1px solid var(--zh-color-border);
+  background: var(--sa-tab-bg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sa-shell-tabs a {
+  text-decoration: none;
+  color: var(--sa-tab-color);
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.sa-shell-tabs a:hover {
+  background: var(--sa-tab-hover-bg);
+  color: var(--sa-tab-hover-color);
+}
+
+.sa-shell-tabs a.active {
+  background: var(--sa-tab-hover-bg);
+  color: var(--sa-tab-hover-color);
+  border-color: var(--sa-tab-active-border);
+}
+
+/* Outlet */
 .sa-shell-outlet {
   flex: 1;
   min-height: 0;
@@ -94,81 +245,18 @@
   overflow: auto;
 }
 
-.sa-shell-tabs {
-  margin: 10px 10px 0;
-  padding: 8px;
-  border-radius: var(--zh-radius-lg);
-  border: 1px solid var(--zh-color-border);
-  background: var(--zh-color-surface);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.sa-shell-tabs a {
-  text-decoration: none;
-  color: #334155;
-  font-size: 0.9rem;
-  font-weight: 700;
-  padding: 8px 12px;
-  border-radius: 9px;
-  border: 1px solid transparent;
-  transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
-}
-
-.sa-shell-tabs a:hover {
-  background: var(--zh-blue-light);
-  color: var(--zh-blue-dark);
-}
-
-.sa-shell-tabs a.active {
-  background: var(--zh-blue-light);
-  color: var(--zh-blue-dark);
-  border-color: rgba(79, 123, 166, 0.35);
-}
-
-.sa-shell-header-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sa-shell-header-actions .subtle {
-  color: #dbe8f9;
-}
-
-.sa-shell-header-email {
-  font-size: 12px;
-}
-
-.sa-shell-header-actions button {
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 700;
-  padding: 6px 12px;
-  border-radius: 9px;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-  cursor: pointer;
-}
-
-.sa-shell-header-actions button:hover {
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.sa-shell-header-actions button:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(125, 170, 220, 0.45);
-}
-
-@media (max-width: 960px) {
-  .sa-shell-main {
-    min-height: 100vh;
-  }
-}
-
+/* ---------- RESPONSIVE (sidebar colapsable a bloque en móvil) ---------- */
 @media (max-width: 768px) {
+  .sa-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sa-shell-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--sa-sidebar-border);
+  }
+
   .sa-shell-header {
     flex-direction: column;
     align-items: flex-start;
@@ -193,5 +281,18 @@
 
   .sa-shell-outlet {
     padding: 12px;
+  }
+}
+
+/* Ajuste para pantallas muy pequeñas */
+@media (max-width: 480px) {
+  .sa-shell-header-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sa-shell-header-actions button {
+    flex: 1;
+    text-align: center;
   }
 }

@@ -5,14 +5,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: var(--zh-z-modal);
   padding: 24px;
 }
 
 .modal-card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  background: var(--zh-color-surface);
+  border-radius: var(--zh-radius-xl);
+  box-shadow: var(--zh-shadow-lg);
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -35,31 +35,32 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px 16px;
-  border-bottom: 0.5px solid var(--color-border-tertiary);
+  border-bottom: 0.5px solid var(--zh-color-border);
   flex-shrink: 0;
 }
 
 .modal-title {
   font-size: 16px;
   font-weight: 600;
-  color: #111;
+  color: var(--zh-color-text);
   margin: 0;
 }
 
 .modal-close {
   background: none;
   border: none;
-  color: #9ca3af;
+  color: var(--zh-color-text-muted);
   font-size: 14px;
   cursor: pointer;
   padding: 4px 6px;
-  border-radius: 4px;
+  border-radius: var(--zh-radius-sm);
   line-height: 1;
+  transition: background var(--zh-transition), color var(--zh-transition);
 }
 
 .modal-close:hover {
   background: rgba(30, 41, 59, 0.06);
-  color: rgba(30, 41, 59, 0.75);
+  color: var(--zh-color-text);
 }
 
 .modal-body {

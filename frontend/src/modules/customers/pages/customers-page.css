@@ -76,7 +76,7 @@
 }
 
 .customers-muted {
-  color: #5b6e8c;
+  color: var(--zh-color-text-muted);
 }
 
 @media (min-width: 768px) {
@@ -176,7 +176,7 @@
   .customers-shell .customers-responsive-table td::before {
     content: attr(data-label);
     text-align: left;
-    color: #5b6e8c;
+    color: var(--zh-color-text-muted);
     font-weight: 600;
     flex: 0 0 42%;
   }

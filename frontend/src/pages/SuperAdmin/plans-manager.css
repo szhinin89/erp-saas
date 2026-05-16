@@ -83,7 +83,7 @@
 
 .plans-manager__planCode {
   font-size: 0.7rem;
-  color: #64748b;
+  color: var(--zh-color-text-muted);
   width: 100%;
 }
 
@@ -153,9 +153,9 @@
 .plans-manager__badge {
   font-size: 0.7rem;
   padding: 0.1rem 0.35rem;
-  border-radius: 4px;
-  background: #f3f4f6;
-  color: #4b5563;
+  border-radius: var(--zh-radius-sm);
+  background: var(--zh-color-surface-soft);
+  color: var(--zh-color-text-muted);
 }
 
 .plans-manager__preview {

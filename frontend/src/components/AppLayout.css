@@ -60,10 +60,10 @@
   gap: 10px;
   padding: 6px 10px;
   margin: 0 0 14px 0;
-  border-radius: 12px;
+  border-radius: var(--zh-radius-lg);
   border: 1px solid rgba(0, 229, 255, 0.55);
   background: rgba(0, 229, 255, 0.12);
-  color: #00303a;
+  color: var(--zh-color-primary);
 }
 
 .superadmin-banner.is-open {
@@ -110,7 +110,7 @@
 .superadmin-banner-tenantIdInline {
   font-size: 12px;
   font-weight: 800;
-  color: #003366;
+  color: var(--zh-color-primary);
   background: rgba(255,255,255,0.55);
   border: 1px solid rgba(0, 229, 255, 0.25);
   border-radius: 10px;
@@ -142,7 +142,7 @@
   font-family: ui-monospace, Consolas, monospace;
   font-size: 12px;
   font-weight: 800;
-  color: #003366;
+  color: var(--zh-color-primary);
   background: rgba(255,255,255,0.55);
   border: 1px solid rgba(0, 229, 255, 0.25);
   border-radius: 10px;
@@ -156,7 +156,7 @@
 .superadmin-banner-tenantId {
   font-size: 12px;
   font-weight: 800;
-  color: #003366;
+  color: var(--zh-color-primary);
   background: rgba(255,255,255,0.55);
   border: 1px solid rgba(0, 229, 255, 0.25);
   border-radius: 10px;
@@ -171,15 +171,15 @@
   padding: 7px 10px;
   background: var(--zh-color-accent);
   border: none;
-  border-radius: 10px;
+  border-radius: var(--zh-radius-md);
   font-weight: 800;
-  color: #00303a;
+  color: var(--zh-color-primary);
   cursor: pointer;
   font-size: 12px;
 }
 
 .superadmin-banner-btn:hover {
-  background: #00d5ee;
+  background: var(--zh-color-accent-hover);
 }
 
 .superadmin-banner-btn:disabled {
@@ -237,7 +237,7 @@
   border-radius: 999px;
   border: 2px solid rgba(255, 255, 255, 0.28);
   background: rgba(255, 255, 255, 0.10);
-  color: #ffffff;
+  color: var(--zh-color-surface);
   font-weight: 900;
   display: grid;
   place-items: center;
@@ -302,7 +302,7 @@
 .app-mainmenu-item.is-active {
   background: rgba(255, 255, 255, 0.16);
   border-color: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
+  color: var(--zh-color-surface);
 }
 
 .app-mainmenu-popover {
@@ -422,7 +422,7 @@
   left: 0;
   height: 100vh;
   width: 270px;
-  background: linear-gradient(180deg, var(--zh-color-primary), #002a55);
+  background: linear-gradient(180deg, var(--zh-color-primary), var(--zh-blue-dark));
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -447,9 +447,9 @@
 .brand-logo {
   width: 34px;
   height: 34px;
-  border-radius: 8px;
+  border-radius: var(--zh-radius-sm);
   background: var(--zh-color-accent);
-  color: #00303a;
+  color: var(--zh-color-primary);
   font-weight: 700;
   font-size: 14px;
   display: flex;
@@ -458,7 +458,7 @@
 }
 
 .brand-name {
-  color: #fff;
+  color: var(--zh-color-surface);
   font-weight: 600;
   font-size: 16px;
   letter-spacing: 0.5px;
@@ -598,7 +598,7 @@
 
 .nav-item--active {
   background: rgba(0,229,255,0.18);
-  color: #ffffff;
+  color: var(--zh-color-surface);
   outline: 1px solid rgba(0,229,255,0.35);
 }
 
@@ -630,7 +630,7 @@
   height: 32px;
   border-radius: 50%;
   background: rgba(0,229,255,0.2);
-  color: #ffffff;
+  color: var(--zh-color-surface);
   font-weight: 600;
   font-size: 13px;
   display: flex;
@@ -711,7 +711,7 @@
 }
 
 .zh-app-userMenuName {
-  color: #ffffff;
+  color: var(--zh-color-surface);
   font-weight: 900;
   font-size: 13px;
   white-space: nowrap;

@@ -84,7 +84,7 @@
 
 .sa-tenantAction {
   margin-top: 10px;
-  color: #003366;
+  color: var(--zh-color-primary);
   font-weight: 800;
 }
 
@@ -140,7 +140,7 @@
 
 .sa-overviewHubCard {
   border: 1px solid var(--zh-color-border, #dbe2ea);
-  border-radius: var(--radius-lg, 12px);
+  border-radius: var(--zh-radius-lg);
   padding: 0.95rem;
   background: var(--zh-color-surface, #fff);
   display: flex;

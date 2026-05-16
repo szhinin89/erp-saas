@@ -87,7 +87,7 @@
 }
 
 .tenant-item-name {
-  color: #1e293b;
+  color: var(--zh-color-text);
   font-weight: 700;
   margin-bottom: 4px;
 }
@@ -129,25 +129,25 @@
 .tenant-link {
   background: transparent;
   border: none;
-  color: #003366;
+  color: var(--zh-color-primary);
   cursor: pointer;
   padding: 8px 0;
 }
 
 .tenant-btn {
   margin-top: 12px;
-  background: #00e5ff;
+  background: var(--zh-color-accent);
   border: none;
-  border-radius: 12px;
+  border-radius: var(--zh-radius-lg);
   padding: 10px 14px;
   font-weight: 800;
-  color: #003366;
+  color: var(--zh-color-primary);
   cursor: pointer;
 }
 
 .tenant-error {
   margin: 10px 0 0;
-  color: #b91c1c;
+  color: var(--zh-danger);
   font-size: 13px;
 }
 

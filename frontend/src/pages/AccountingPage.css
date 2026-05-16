@@ -2,8 +2,8 @@
   display: flex;
   gap: 4px;
   margin-bottom: 20px;
-  background: #fff;
-  border-radius: 10px;
+  background: var(--zh-color-surface);
+  border-radius: var(--zh-radius-md);
   padding: 4px;
   box-shadow: var(--zh-shadow-sm);
   border: 1px solid var(--zh-color-border);
@@ -13,28 +13,28 @@
 .tab {
   padding: 8px 18px;
   border: none;
-  border-radius: 7px;
+  border-radius: var(--zh-radius-sm);
   background: transparent;
-  color: #6b7280;
+  color: var(--zh-color-text-muted);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  transition: background var(--zh-transition), color var(--zh-transition), box-shadow var(--zh-transition);
 }
 
 .tab:hover {
-  background: #f3f4f6;
-  color: #111;
+  background: var(--zh-color-surface-soft);
+  color: var(--zh-color-text);
 }
 
 .tab--active {
   background: var(--zh-color-accent);
-  color: #00303a;
-  box-shadow: 0 0 0 3px rgba(0,229,255,0.25);
+  color: var(--zh-color-primary);
+  box-shadow: var(--zh-focus-ring-accent);
 }
 
 .tab--active:hover {
-  background: #00d5ee;
+  background: var(--zh-color-accent-hover);
 }
 
 .accounting-search-row {

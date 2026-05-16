@@ -102,11 +102,11 @@
 .zh-mb-8 { margin-bottom: 8px; }
 
 .zh-text-center { text-align: center; }
-.zh-text-muted { color: var(--color-text-secondary); }
+.zh-text-muted { color: var(--zh-color-text-muted); }
 .zh-text-xs { font-size: 12px; }
 
 .subtle {
-  color: var(--color-text-secondary);
+  color: var(--zh-color-text-muted);
   font-size: 14px;
 }
 
@@ -122,10 +122,10 @@
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--zh-radius-lg);
   background: rgba(0, 229, 255, 0.12);
   border: 1px solid rgba(0, 229, 255, 0.35);
-  color: #00303a;
+  color: var(--zh-color-primary);
   margin-top: 12px;
 }
 
@@ -159,7 +159,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--zh-text-muted, #64748b);
+  color: var(--zh-color-text-muted);
   margin-bottom: 8px;
 }
 
@@ -194,7 +194,7 @@
   flex-shrink: 0;
   margin-top: 2px;
   border-radius: 999px;
-  background: var(--zh-color-primary, #1d4f91);
+  background: var(--zh-color-primary);
   box-shadow: none;
 }
 
@@ -208,7 +208,7 @@
   font-weight: 800;
   letter-spacing: -0.01em;
   text-transform: none;
-  color: var(--zh-text-primary, #0f172a);
+  color: var(--zh-color-text);
   line-height: 1.25;
 }
 
@@ -216,7 +216,7 @@
   margin: 6px 0 0;
   font-size: 0.95rem;
   font-weight: 500;
-  color: var(--zh-text-muted, #64748b);
+  color: var(--zh-color-text-muted);
   line-height: 1.35;
 }
 

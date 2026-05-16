@@ -7,28 +7,6 @@
    - Soporte para tema oscuro (vía prefers-color-scheme)
 ============================================ */
 
-:root {
-  /* Asegurar que exista --zh-radius */
-  --zh-radius: 8px;
-  /* Si no existen, se definen valores por defecto */
-  --zh-color-border: rgba(30, 41, 59, 0.12);
-  --zh-color-surface: #ffffff;
-  --zh-color-text: #0f172a;
-  --zh-blue: #2563eb;
-  --zh-blue-light: #ebf2fa;
-  --zh-blue-dark: #1e3a5f;
-}
-
-/* Tema oscuro automático (opcional, respeta variables del sistema) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --zh-color-border: rgba(255, 255, 255, 0.12);
-    --zh-color-surface: #1e293b;
-    --zh-color-text: #e2e8f0;
-    --zh-blue-light: #1e3a5f;
-    --zh-blue-dark: #3b82f6;
-  }
-}
 
 .sa-growthSection {
   margin-top: 1rem;
@@ -72,7 +50,7 @@
   background: var(--zh-color-surface);
   color: var(--zh-color-text);
   padding: 8px 16px;
-  border-radius: var(--zh-radius);
+  border-radius: var(--zh-radius-md);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -114,18 +92,23 @@
   height: 340px;
   min-height: 280px;
   background: var(--zh-color-surface);
-  border-radius: var(--zh-radius);
+  border-radius: var(--zh-radius-md);
 }
 
 /* Estado de carga para el gráfico (si se necesita) */
 .sag-chart--loading {
-  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background: linear-gradient(
+    90deg,
+    var(--zh-blue-mid) 25%,
+    var(--zh-color-surface-soft) 50%,
+    var(--zh-blue-mid) 75%
+  );
   background-size: 200% 100%;
   animation: skeleton-pulse 1.5s infinite;
 }
 
 @keyframes skeleton-pulse {
-  0% { background-position: 200% 0; }
+  0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
@@ -145,9 +128,3 @@
   }
 }
 
-/* Modo oscuro: ajuste del skeleton */
-@media (prefers-color-scheme: dark) {
-  .sag-chart--loading {
-    background: linear-gradient(90deg, #334155 25%, #475569 50%, #334155 75%);
-  }
-}

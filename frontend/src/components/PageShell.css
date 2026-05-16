@@ -7,56 +7,17 @@
    - Responsive mejorado
 ============================================ */
 
-/* ---------- VARIABLES (tema claro por defecto) ---------- */
+/* ---------- BADGE SEMÁNTICOS (tema claro) ---------- */
 .page-shell,
 .table-card {
-  --zh-color-surface: #ffffff;
-  --zh-color-surface-soft: #f8fafc;
-  --zh-color-text: #0f172a;
-  --zh-color-text-muted: #64748b;
-  --zh-color-border: #e2e8f0;
-  --zh-color-border-soft: #f0f0f0;
-  --zh-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
-  --radius-xl: 16px;
-  --zh-color-danger-bg: #fef2f2;
-  --zh-color-danger-border: #fecaca;
-  --zh-color-danger-text: #dc2626;
-
-  /* Badges (colores semánticos) */
-  --badge-green-bg: #d1fae5;
-  --badge-green-text: #065f46;
-  --badge-gray-bg: #f3f4f6;
-  --badge-gray-text: #6b7280;
-  --badge-red-bg: #fee2e2;
+  --badge-green-bg: rgba(29, 158, 117, 0.12);
+  --badge-green-text: #116A50;
+  --badge-gray-bg: rgba(91, 110, 140, 0.12);
+  --badge-gray-text: var(--zh-color-text-muted);
+  --badge-red-bg: rgba(226, 75, 74, 0.12);
   --badge-red-text: #991b1b;
-  --badge-blue-bg: #dbeafe;
-  --badge-blue-text: #1e40af;
-}
-
-/* ---------- TEMA OSCURO AUTOMÁTICO ---------- */
-@media (prefers-color-scheme: dark) {
-  .page-shell,
-  .table-card {
-    --zh-color-surface: #1e293b;
-    --zh-color-surface-soft: #0f172a;
-    --zh-color-text: #f1f5f9;
-    --zh-color-text-muted: #94a3b8;
-    --zh-color-border: #334155;
-    --zh-color-border-soft: #1e293b;
-    --zh-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-    --zh-color-danger-bg: #451a1a;
-    --zh-color-danger-border: #7f2d2d;
-    --zh-color-danger-text: #f87171;
-
-    --badge-green-bg: #064e3b;
-    --badge-green-text: #a7f3d0;
-    --badge-gray-bg: #374151;
-    --badge-gray-text: #e5e7eb;
-    --badge-red-bg: #7f1a1a;
-    --badge-red-text: #fecaca;
-    --badge-blue-bg: #1e3a8a;
-    --badge-blue-text: #bfdbfe;
-  }
+  --badge-blue-bg: rgba(79, 123, 166, 0.12);
+  --badge-blue-text: var(--zh-blue-dark);
 }
 
 /* ---------- PAGE SHELL ---------- */
@@ -87,17 +48,17 @@
 /* ---------- TABLE CARD ---------- */
 .table-card {
   background: var(--zh-color-surface);
-  border-radius: var(--radius-xl);
+  border-radius: var(--zh-radius-xl);
   box-shadow: var(--zh-shadow-sm);
   overflow-x: auto;
   overflow-y: hidden;
   border: 1px solid var(--zh-color-border);
   width: 100%;
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow var(--zh-transition);
 }
 
 .table-card:hover {
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  box-shadow: var(--zh-shadow-md);
 }
 
 .table-card .table-card-body {
@@ -150,17 +111,17 @@
   color: var(--zh-color-text-muted);
   font-size: 14px;
   background: var(--zh-color-surface);
-  border-radius: 12px;
+  border-radius: var(--zh-radius-lg);
   box-shadow: var(--zh-shadow-sm);
   border: 1px solid var(--zh-color-border);
 }
 
 .error-state {
   padding: 16px 20px;
-  background: var(--zh-color-danger-bg);
-  border: 1px solid var(--zh-color-danger-border);
-  color: var(--zh-color-danger-text);
-  border-radius: 10px;
+  background: rgba(226, 75, 74, 0.08);
+  border: 1px solid rgba(226, 75, 74, 0.3);
+  color: var(--zh-danger);
+  border-radius: var(--zh-radius-md);
   font-size: 13px;
 }
 
@@ -206,9 +167,9 @@
 .page-shell select:focus-visible,
 .table-card button:focus-visible,
 .table-card a:focus-visible {
-  outline: 2px solid var(--zh-color-text);
+  outline: 2px solid var(--zh-color-primary);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--zh-radius-sm);
 }
 
 /* ---------- RESPONSIVE ---------- */

@@ -15,52 +15,27 @@
   box-sizing: border-box;
 }
 
-/* ---------- VARIABLES BASE (tema claro por defecto) ---------- */
+/* ---------- VARIABLES: apuntan a la paleta global ---------- */
 .sap-plansSection {
-  --sap-border: rgba(15, 23, 42, 0.12);
+  --sap-border: var(--zh-color-border);
   --sap-border-strong: rgba(15, 23, 42, 0.2);
-  --sap-surface: #ffffff;
-  --sap-text: #0f172a;
-  --sap-text-muted: #64748b;
-  --sap-text-soft: #94a3b8;
-  --sap-shadow-sm: 0 4px 18px rgba(15, 23, 42, 0.05);
-  --sap-shadow-md: 0 8px 28px rgba(15, 23, 42, 0.08);
-  --sap-blue-light: #ebf2fa;
-  --sap-blue: #2563eb;
-  --sap-blue-dark: #1e3a5f;
-
-  /* Colores semánticos para KPIs */
-  --sap-info: #0369a1;
-  --sap-success: #15803d;
-  --sap-neutral: #475569;
-  --sap-warning: #c2410c;
-
-  /* Radios consistentes */
-  --sap-radius-sm: 8px;
-  --sap-radius-md: 12px;
-  --sap-radius-lg: 16px;
-  --sap-radius-pill: 999px;
-}
-
-/* ---------- TEMA OSCURO AUTOMÁTICO ---------- */
-@media (prefers-color-scheme: dark) {
-  .sap-plansSection {
-    --sap-border: rgba(255, 255, 255, 0.12);
-    --sap-border-strong: rgba(255, 255, 255, 0.2);
-    --sap-surface: #1e293b;
-    --sap-text: #f1f5f9;
-    --sap-text-muted: #94a3b8;
-    --sap-text-soft: #64748b;
-    --sap-shadow-sm: 0 4px 18px rgba(0, 0, 0, 0.25);
-    --sap-shadow-md: 0 8px 28px rgba(0, 0, 0, 0.3);
-    --sap-blue-light: #1e3a5f;
-    --sap-blue: #3b82f6;
-    --sap-blue-dark: #60a5fa;
-    --sap-info: #38bdf8;
-    --sap-success: #4ade80;
-    --sap-neutral: #cbd5e1;
-    --sap-warning: #f97316;
-  }
+  --sap-surface: var(--zh-color-surface);
+  --sap-text: var(--zh-color-text);
+  --sap-text-muted: var(--zh-color-text-muted);
+  --sap-text-soft: var(--zh-color-text-muted);
+  --sap-shadow-sm: var(--zh-shadow-sm);
+  --sap-shadow-md: var(--zh-shadow-md);
+  --sap-blue-light: var(--zh-blue-light);
+  --sap-blue: var(--zh-blue);
+  --sap-blue-dark: var(--zh-blue-dark);
+  --sap-info: var(--zh-blue);
+  --sap-success: var(--zh-success);
+  --sap-neutral: var(--zh-color-text-muted);
+  --sap-warning: var(--zh-danger);
+  --sap-radius-sm: var(--zh-radius-sm);
+  --sap-radius-md: var(--zh-radius-md);
+  --sap-radius-lg: var(--zh-radius-lg);
+  --sap-radius-pill: var(--zh-radius-pill);
 }
 
 /* ---------- SECCIÓN PRINCIPAL ---------- */
@@ -261,25 +236,25 @@
   color: var(--sap-text-muted);
 }
 .sap-tenant-planBadge[data-tier="starter"] {
-  background: rgba(100, 116, 139, 0.18);
-  color: #475569;
+  background: rgba(91, 110, 140, 0.18);
+  color: var(--zh-color-text-muted);
 }
 .sap-tenant-planBadge[data-tier="business"] {
-  background: rgba(126, 34, 206, 0.15);
-  color: #6b21a8;
+  background: rgba(58, 106, 148, 0.15);
+  color: var(--zh-accent);
 }
 .sap-tenant-planBadge[data-tier="professional"] {
-  background: rgba(29, 78, 216, 0.14);
-  color: #1d4ed8;
+  background: rgba(0, 51, 102, 0.14);
+  color: var(--zh-color-primary);
 }
 .sap-tenant-planBadge[data-tier="enterprise"] {
-  background: rgba(21, 128, 61, 0.14);
-  color: #15803d;
+  background: rgba(29, 158, 117, 0.14);
+  color: var(--zh-success);
 }
 /* Fallback */
 .sap-tenant-planBadge[data-tier="default"] {
-  background: rgba(71, 85, 105, 0.16);
-  color: #334155;
+  background: rgba(91, 110, 140, 0.16);
+  color: var(--zh-color-text-muted);
 }
 
 /* Estado de tenant unificado */
@@ -293,12 +268,12 @@
   letter-spacing: 0.04em;
 }
 .sap-tenant-status[data-status="active"] {
-  background: rgba(21, 128, 61, 0.14);
-  color: #15803d;
+  background: rgba(29, 158, 117, 0.14);
+  color: var(--zh-success);
 }
 .sap-tenant-status[data-status="suspended"] {
-  background: rgba(185, 28, 28, 0.12);
-  color: #b91c1c;
+  background: rgba(226, 75, 74, 0.12);
+  color: var(--zh-danger);
 }
 
 .sap-publicHint {
@@ -327,8 +302,8 @@
 }
 
 .sap-pricing-card {
-  --sap-tier-accent: #64748b;
-  --sap-tier-accent-soft: rgba(100, 116, 139, 0.2);
+  --sap-tier-accent: var(--zh-color-text-muted);
+  --sap-tier-accent-soft: rgba(91, 110, 140, 0.2);
   border-radius: var(--sap-radius-lg);
   border: 1px solid var(--sap-border);
   background: var(--sap-surface);
@@ -343,24 +318,24 @@
   opacity: 0.72;
 }
 .sap-pricing-card--tier-starter {
-  --sap-tier-accent: #64748b;
-  --sap-tier-accent-soft: rgba(100, 116, 139, 0.22);
+  --sap-tier-accent: var(--zh-color-text-muted);
+  --sap-tier-accent-soft: rgba(91, 110, 140, 0.22);
 }
 .sap-pricing-card--tier-business {
-  --sap-tier-accent: #7e22ce;
-  --sap-tier-accent-soft: rgba(126, 34, 206, 0.22);
+  --sap-tier-accent: var(--zh-accent);
+  --sap-tier-accent-soft: rgba(58, 106, 148, 0.22);
 }
 .sap-pricing-card--tier-professional {
-  --sap-tier-accent: #1d4ed8;
-  --sap-tier-accent-soft: rgba(29, 78, 216, 0.22);
+  --sap-tier-accent: var(--zh-color-primary);
+  --sap-tier-accent-soft: rgba(0, 51, 102, 0.22);
 }
 .sap-pricing-card--tier-enterprise {
-  --sap-tier-accent: #15803d;
-  --sap-tier-accent-soft: rgba(21, 128, 61, 0.2);
+  --sap-tier-accent: var(--zh-success);
+  --sap-tier-accent-soft: rgba(29, 158, 117, 0.2);
 }
 .sap-pricing-card--tier-default {
-  --sap-tier-accent: #475569;
-  --sap-tier-accent-soft: rgba(71, 85, 105, 0.2);
+  --sap-tier-accent: var(--zh-color-text-muted);
+  --sap-tier-accent-soft: rgba(91, 110, 140, 0.2);
 }
 .sap-pricing-card--popular {
   border-color: var(--sap-tier-accent);
@@ -391,8 +366,8 @@
   text-transform: uppercase;
   padding: 0.25rem 0.625rem;
   border-radius: var(--sap-radius-pill);
-  background: linear-gradient(135deg, #5b21b6, #7c3aed);
-  color: #fff;
+  background: linear-gradient(135deg, var(--zh-blue-dark), var(--zh-blue));
+  color: var(--zh-color-surface);
 }
 .sap-pricing-planBadge {
   font-size: 0.6875rem;
@@ -412,7 +387,7 @@
 }
 .sap-pricing-titleStar {
   margin-left: 0.375rem;
-  color: #eab308;
+  color: var(--zh-warning);
   font-size: 1rem;
   vertical-align: middle;
 }
@@ -505,8 +480,8 @@
   font-weight: 900;
 }
 .sap-pricing-ft--on .sap-pricing-ftIcon {
-  background: rgba(22, 163, 74, 0.18);
-  color: #15803d;
+  background: rgba(29, 158, 117, 0.18);
+  color: var(--zh-success);
 }
 .sap-pricing-ft--off .sap-pricing-ftIcon {
   background: rgba(148, 163, 184, 0.25);
@@ -575,7 +550,7 @@
 .sap-defCode {
   font-size: 0.6875rem;
   font-weight: 800;
-  color: #0e7490;
+  color: var(--zh-accent);
 }
 .sap-defName {
   font-weight: 700;
@@ -590,8 +565,8 @@
   text-transform: uppercase;
   padding: 0.1875rem 0.5rem;
   border-radius: var(--sap-radius-pill);
-  background: rgba(14, 116, 144, 0.15);
-  color: #0e7490;
+  background: rgba(58, 106, 148, 0.15);
+  color: var(--zh-accent);
 }
 .sap-newFeature {
   margin-top: 0.875rem;

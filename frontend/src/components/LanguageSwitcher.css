@@ -35,7 +35,7 @@
   position: fixed;
   min-width: 168px;
   padding: 6px;
-  background: #ffffff;
+  background: var(--zh-color-surface);
   border: 1px solid rgba(15, 23, 42, 0.14);
   border-radius: 12px;
   box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
@@ -52,7 +52,7 @@
   padding: 10px 12px;
   margin: 0;
   background: transparent;
-  color: #0f172a;
+  color: var(--zh-color-text);
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
@@ -60,12 +60,12 @@
 }
 
 .lang-switcher__option:hover {
-  background: #e0fbff;
+  background: var(--zh-blue-light);
 }
 
 .lang-switcher__option[aria-selected='true'] {
   background: rgba(79, 123, 166, 0.14);
-  color: #1e3a5f;
+  color: var(--zh-blue-dark);
 }
 
 .lang-switcher__option:focus-visible {

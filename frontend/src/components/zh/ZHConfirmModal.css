@@ -16,9 +16,9 @@
   font-size: 1.1rem;
   font-weight: 800;
   line-height: 1;
-  color: #b45309;
-  background: #fffbeb;
-  border: 1px solid #fcd34d;
+  color: var(--zh-warning);
+  background: rgba(186, 117, 23, 0.1);
+  border: 1px solid rgba(186, 117, 23, 0.3);
 }
 
 .zh-confirm-modal__body {
@@ -30,14 +30,14 @@
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.55;
-  color: var(--zh-color-text, #1e293b);
+  color: var(--zh-color-text);
 }
 
 .zh-confirm-modal__message strong {
   font-weight: 600;
-  color: var(--zh-color-text, #0f172a);
+  color: var(--zh-color-text);
 }
 
 .zh-confirm-modal--destructive .zh-confirm-modal__message {
-  color: rgba(30, 41, 59, 0.92);
+  color: var(--zh-color-text);
 }

@@ -12,26 +12,8 @@
    8. Eliminación de valores hardcodeados
 ============================================= */
 
-:root {
-  /* Colores principales (manteniendo compatibilidad) */
-  --zh-blue: #4f7ba6;
-  --zh-blue-dark: #2c4e72;
-  --zh-blue-light: #ebf2fa;
-  --zh-danger: #e24b4a;
-  --zh-color-primary: #1d4f91;
-  --zh-color-border: #dbe2ea;
-  --zh-color-text: #0f172a;
-  --zh-color-text-muted: #64748b;
-  --zh-white: #ffffff;
-  --zh-gray-bg-skeleton: #e5e7eb;
-
-  /* Radios coherentes */
-  --zh-radius-sm: 8px;
-  --zh-radius-md: 10px;
-  --zh-radius-lg: 20px;
-  --zh-radius-pill: 999px;
-
-  /* Iconos SVG en variables (unificados) */
+/* Iconos SVG scoped al componente */
+.zh-search-bar {
   --zh-icon-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%236b7280' stroke-width='2' stroke-linecap='round' d='M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm9 2-4-4'/%3E%3C/svg%3E");
   --zh-icon-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236b7280' d='M0 0h10L5 6z'/%3E%3C/svg%3E");
 }
@@ -40,6 +22,7 @@
 .zh-search-bar {
   width: 100%;
 }
+
 
 /* Zona 1: input, select, botón principal */
 .zh-search-bar__zone1 {
@@ -87,7 +70,7 @@
   font-size: 14px;
   font-family: inherit;
   color: var(--zh-color-text);
-  background: var(--zh-white);
+  background: var(--zh-color-surface);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -117,8 +100,8 @@
   border-radius: var(--zh-radius-md);
   padding: 0 28px 0 8px;
   font-family: inherit;
-  color: #111827;
-  background-color: var(--zh-white);
+  color: var(--zh-color-text);
+  background-color: var(--zh-color-surface);
   background-image: var(--zh-icon-chevron);
   background-repeat: no-repeat;
   background-position: right 8px center;
@@ -151,7 +134,7 @@
 /* Botón principal (buscar / aplicar) */
 .zh-search-bar__btnPrimary {
   background: var(--zh-color-primary);
-  color: var(--zh-white);
+  color: var(--zh-color-surface);
   border: none;
   border-radius: var(--zh-radius-pill);
   height: 38px;
@@ -199,7 +182,7 @@
   width: 120px;
   height: 14px;
   border-radius: 4px;
-  background: var(--zh-gray-bg-skeleton);
+  background: var(--zh-color-surface-soft);
   animation: zh-skeleton-pulse 1.2s ease-in-out infinite;
 }
 
@@ -224,9 +207,9 @@
 /* Chip individual */
 .zh-search-bar__chip {
   background: var(--zh-blue-light);
-  color: #185fa5;
+  color: var(--zh-blue-dark);
   border: 0.5px solid rgba(79, 123, 166, 0.3);
-  border-radius: var(--zh-radius-lg);
+  border-radius: var(--zh-radius-pill);
   font-size: 11px;
   font-weight: 500;
   padding: 2px 8px;
@@ -276,8 +259,8 @@
   font-family: inherit;
   border: 1px solid var(--zh-color-border);
   border-radius: var(--zh-radius-sm);
-  background: var(--zh-white);
-  color: #111827;
+  background: var(--zh-color-surface);
+  color: var(--zh-color-text);
   cursor: pointer;
   transition: all 0.2s;
 }

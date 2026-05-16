@@ -22,28 +22,28 @@
 }
 
 .oc-status-badge--enviada {
-  background: color-mix(in srgb, #2563eb 16%, transparent);
-  color: #2563eb;
+  background: rgba(79, 123, 166, 0.16);
+  color: var(--zh-blue);
 }
 
 .oc-status-badge--aprobada {
-  background: color-mix(in srgb, #16a34a 16%, transparent);
-  color: #16a34a;
+  background: rgba(29, 158, 117, 0.16);
+  color: var(--zh-success);
 }
 
 .oc-status-badge--recibidaparcial {
-  background: color-mix(in srgb, #ca8a04 16%, transparent);
-  color: #ca8a04;
+  background: rgba(186, 117, 23, 0.16);
+  color: var(--zh-warning);
 }
 
 .oc-status-badge--cerrada {
-  background: color-mix(in srgb, #6d28d9 16%, transparent);
-  color: #6d28d9;
+  background: rgba(0, 51, 102, 0.14);
+  color: var(--zh-color-primary);
 }
 
 .oc-status-badge--cancelada {
-  background: color-mix(in srgb, #dc2626 16%, transparent);
-  color: #dc2626;
+  background: rgba(226, 75, 74, 0.16);
+  color: var(--zh-danger);
 }
 
 .oc-list-filters {
@@ -211,12 +211,12 @@
 }
 
 .oc-pending--warning {
-  color: #ca8a04;
+  color: var(--zh-warning);
   font-weight: 600;
 }
 
 .oc-pending--ok {
-  color: #16a34a;
+  color: var(--zh-success);
   font-weight: 600;
 }
 
