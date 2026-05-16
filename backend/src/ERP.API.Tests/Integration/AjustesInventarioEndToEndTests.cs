@@ -37,7 +37,7 @@ public sealed class AjustesInventarioEndToEndTests
 
         crear.IsSuccess.Should().BeTrue(crear.Error);
         crear.Value!.Status.Should().Be("Borrador");
-        crear.Value.NumeroAjuste.Should().StartWith("AJ-");
+        crear.Value.AdjustmentNumber.Should().StartWith("AJ-");
 
         // Ejecutar
         var ejecutar = await mediator.Send(

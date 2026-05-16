@@ -31,7 +31,7 @@ public sealed class SriFacturaElectronicaRealService : ISriFacturaElectronicaSer
         SriSettings config)
     {
         _logger.LogWarning(
-            "GenerarXmlFacturaAsync no implementado — factura {FacturaId}, clave {ClaveAcceso}",
+            "GenerarXmlFacturaAsync no implementado — factura {FacturaId}, clave {AccessKey}",
             factura.Id, factura.AccessKey);
 
         // TODO: Implementar generación real de XML según XSD del SRI Ecuador v1.1.0
@@ -40,7 +40,7 @@ public sealed class SriFacturaElectronicaRealService : ISriFacturaElectronicaSer
         //   - Manejar tipos de comprobante (factura, NC, ND, etc.)
         throw new SriCommunicationException(
             "La generación de XML para el SRI real aún no está implementada. " +
-            "Configure el ambiente de pruebas (Ambiente=1) para usar el servicio simulado.");
+            "Configure el ambiente de pruebas (Environment=1) para usar el servicio simulado.");
     }
 
     public Task<string> GenerarXmlNotaCreditoDebitoAsync(

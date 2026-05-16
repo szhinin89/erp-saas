@@ -6,16 +6,16 @@ using ERP.Application.Modules.Cash.Services;
 namespace ERP.Application.Modules.Cash.UseCases;
 
 public sealed record SugerirReconciliationQuery(Guid ExtractoId)
-    : IRequest<Result<IReadOnlyList<SugerenciaReconciliationDto>>>;
+    : IRequest<Result<IReadOnlyList<ReconciliationSuggestionDto>>>;
 
 public sealed class SugerirReconciliationQueryHandler
-    : IRequestHandler<SugerirReconciliationQuery, Result<IReadOnlyList<SugerenciaReconciliationDto>>>
+    : IRequestHandler<SugerirReconciliationQuery, Result<IReadOnlyList<ReconciliationSuggestionDto>>>
 {
     private readonly IReconciliationService _svc;
 
     public SugerirReconciliationQueryHandler(IReconciliationService svc) => _svc = svc;
 
-    public Task<Result<IReadOnlyList<SugerenciaReconciliationDto>>> Handle(
+    public Task<Result<IReadOnlyList<ReconciliationSuggestionDto>>> Handle(
         SugerirReconciliationQuery request,
         CancellationToken ct)
         => _svc.SugerirConciliacionAsync(request.ExtractoId, ct);

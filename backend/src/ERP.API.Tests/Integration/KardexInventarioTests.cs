@@ -31,28 +31,28 @@ public sealed class KardexInventarioTests
 
     private static StockMovement Entrada(
         Guid tenantId, Guid productoId, Guid bodegaId,
-        decimal quantity, decimal cantAnterior, decimal costoUnitario, Guid userId,
+        decimal quantity, decimal cantAnterior, decimal unitCost, Guid userId,
         string? referencia = null,
         DateTime? fecha = null,
         StockMovementType tipo = StockMovementType.PurchaseEntry)
     {
         var m = StockMovement.Create(
             tenantId, productoId, bodegaId, tipo,
-            quantity, cantAnterior, referencia, null, null, userId, costoUnitario);
+            quantity, cantAnterior, referencia, null, null, userId, unitCost);
         if (fecha.HasValue) SetCreatedAt(m, fecha.Value);
         return m;
     }
 
     private static StockMovement Salida(
         Guid tenantId, Guid productoId, Guid bodegaId,
-        decimal quantity, decimal cantAnterior, decimal costoPromedio, Guid userId,
+        decimal quantity, decimal cantAnterior, decimal averageCost, Guid userId,
         string? referencia = null,
         DateTime? fecha = null,
         StockMovementType tipo = StockMovementType.SaleExit)
     {
         var m = StockMovement.Create(
             tenantId, productoId, bodegaId, tipo,
-            -quantity, cantAnterior, referencia, null, null, userId, costoPromedio);
+            -quantity, cantAnterior, referencia, null, null, userId, averageCost);
         if (fecha.HasValue) SetCreatedAt(m, fecha.Value);
         return m;
     }
@@ -119,9 +119,9 @@ public sealed class KardexInventarioTests
         result.IsSuccess.Should().BeTrue();
         var k = result.Value!;
         k.Rows.Should().BeEmpty();
-        k.Resumen.InventarioFinalCantidad.Should().Be(0);
-        k.Resumen.InventarioFinalValor.Should().Be(0);
-        k.Resumen.CostoPromedioFinal.Should().Be(0);
+        k.Resumen.ClosingQuantity.Should().Be(0);
+        k.Resumen.ClosingValue.Should().Be(0);
+        k.Resumen.FinalAverageCost.Should().Be(0);
         k.Producto.Id.Should().Be(seed.ProductId);
         k.Warehouse.Id.Should().Be(seed.WarehouseId);
     }
@@ -151,26 +151,26 @@ public sealed class KardexInventarioTests
         k.Rows.Should().HaveCount(1);
 
         var fila = k.Rows[0];
-        fila.EntradaCantidad.Should().Be(10m);
-        fila.EntradaValor.Should().Be(500m);       // 10 Ã— $50
-        fila.SalidaCantidad.Should().Be(0m);
-        fila.SalidaValor.Should().Be(0m);
-        fila.SaldoCantidad.Should().Be(10m);
-        fila.SaldoValor.Should().Be(500m);
-        fila.CostoUnitarioPromedio.Should().Be(50m);
+        fila.InboundQuantity.Should().Be(10m);
+        fila.InboundValue.Should().Be(500m);       // 10 Ã— $50
+        fila.OutboundQuantity.Should().Be(0m);
+        fila.OutboundValue.Should().Be(0m);
+        fila.BalanceQuantity.Should().Be(10m);
+        fila.BalanceValue.Should().Be(500m);
+        fila.AverageUnitCost.Should().Be(50m);
         fila.Referencia.Should().Be("FAC-001");
         fila.MovementType.Should().Be("Compra");
 
         var r = k.Resumen;
-        r.InventarioInicialCantidad.Should().Be(0m);
-        r.InventarioInicialValor.Should().Be(0m);
-        r.EntradasCantidad.Should().Be(10m);
-        r.EntradasValor.Should().Be(500m);
-        r.SalidasCantidad.Should().Be(0m);
-        r.SalidasValor.Should().Be(0m);
-        r.InventarioFinalCantidad.Should().Be(10m);
-        r.InventarioFinalValor.Should().Be(500m);
-        r.CostoPromedioFinal.Should().Be(50m);
+        r.OpeningQuantity.Should().Be(0m);
+        r.OpeningValue.Should().Be(0m);
+        r.TotalInboundQuantity.Should().Be(10m);
+        r.TotalInboundValue.Should().Be(500m);
+        r.TotalOutboundQuantity.Should().Be(0m);
+        r.TotalOutboundValue.Should().Be(0m);
+        r.ClosingQuantity.Should().Be(10m);
+        r.ClosingValue.Should().Be(500m);
+        r.FinalAverageCost.Should().Be(50m);
     }
 
     // â”€â”€ Escenario 4: Promedio ponderado mÃ³vil completo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -217,57 +217,57 @@ public sealed class KardexInventarioTests
 
         // M1: entrada pura
         var m1 = k.Rows[0];
-        m1.EntradaCantidad.Should().Be(10m);
-        m1.EntradaValor.Should().BeApproximately(500m, 0.001m);
-        m1.SalidaCantidad.Should().Be(0m);
-        m1.SaldoCantidad.Should().Be(10m);
-        m1.SaldoValor.Should().BeApproximately(500m, 0.001m);
-        m1.CostoUnitarioPromedio.Should().BeApproximately(50m, 0.001m);
+        m1.InboundQuantity.Should().Be(10m);
+        m1.InboundValue.Should().BeApproximately(500m, 0.001m);
+        m1.OutboundQuantity.Should().Be(0m);
+        m1.BalanceQuantity.Should().Be(10m);
+        m1.BalanceValue.Should().BeApproximately(500m, 0.001m);
+        m1.AverageUnitCost.Should().BeApproximately(50m, 0.001m);
 
         // M2: nueva entrada recalcula el promedio
         var m2 = k.Rows[1];
-        m2.EntradaCantidad.Should().Be(5m);
-        m2.EntradaValor.Should().BeApproximately(300m, 0.001m);
-        m2.SaldoCantidad.Should().Be(15m);
-        m2.SaldoValor.Should().BeApproximately(800m, 0.001m);
-        m2.CostoUnitarioPromedio.Should().BeApproximately(53.333m, 0.001m);
+        m2.InboundQuantity.Should().Be(5m);
+        m2.InboundValue.Should().BeApproximately(300m, 0.001m);
+        m2.BalanceQuantity.Should().Be(15m);
+        m2.BalanceValue.Should().BeApproximately(800m, 0.001m);
+        m2.AverageUnitCost.Should().BeApproximately(53.333m, 0.001m);
 
         // M3: salida al promedio vigente (el promedio NO cambia)
         var m3 = k.Rows[2];
-        m3.EntradaCantidad.Should().Be(0m);
-        m3.SalidaCantidad.Should().Be(8m);
-        m3.SalidaValor.Should().BeApproximately(426.667m, 0.001m);  // 8 Ã— 53.333
-        m3.SaldoCantidad.Should().Be(7m);
-        m3.SaldoValor.Should().BeApproximately(373.333m, 0.001m);
-        m3.CostoUnitarioPromedio.Should().BeApproximately(53.333m, 0.001m);
+        m3.InboundQuantity.Should().Be(0m);
+        m3.OutboundQuantity.Should().Be(8m);
+        m3.OutboundValue.Should().BeApproximately(426.667m, 0.001m);  // 8 Ã— 53.333
+        m3.BalanceQuantity.Should().Be(7m);
+        m3.BalanceValue.Should().BeApproximately(373.333m, 0.001m);
+        m3.AverageUnitCost.Should().BeApproximately(53.333m, 0.001m);
 
         // M4: nueva entrada recalcula el promedio
         var m4 = k.Rows[3];
-        m4.EntradaCantidad.Should().Be(3m);
-        m4.EntradaValor.Should().BeApproximately(165m, 0.001m);
-        m4.SaldoCantidad.Should().Be(10m);
-        m4.SaldoValor.Should().BeApproximately(538.333m, 0.001m);
-        m4.CostoUnitarioPromedio.Should().BeApproximately(53.833m, 0.001m);
+        m4.InboundQuantity.Should().Be(3m);
+        m4.InboundValue.Should().BeApproximately(165m, 0.001m);
+        m4.BalanceQuantity.Should().Be(10m);
+        m4.BalanceValue.Should().BeApproximately(538.333m, 0.001m);
+        m4.AverageUnitCost.Should().BeApproximately(53.833m, 0.001m);
 
         // M5: salida al nuevo promedio (el promedio permanece igual)
         var m5 = k.Rows[4];
-        m5.SalidaCantidad.Should().Be(3m);
-        m5.SalidaValor.Should().BeApproximately(161.5m, 0.001m);    // 3 Ã— 53.833
-        m5.SaldoCantidad.Should().Be(7m);
-        m5.SaldoValor.Should().BeApproximately(376.833m, 0.001m);
-        m5.CostoUnitarioPromedio.Should().BeApproximately(53.833m, 0.001m);
+        m5.OutboundQuantity.Should().Be(3m);
+        m5.OutboundValue.Should().BeApproximately(161.5m, 0.001m);    // 3 Ã— 53.833
+        m5.BalanceQuantity.Should().Be(7m);
+        m5.BalanceValue.Should().BeApproximately(376.833m, 0.001m);
+        m5.AverageUnitCost.Should().BeApproximately(53.833m, 0.001m);
 
         // Resumen global
         var r = k.Resumen;
-        r.InventarioInicialCantidad.Should().Be(0m);
-        r.InventarioInicialValor.Should().Be(0m);
-        r.EntradasCantidad.Should().Be(18m);                          // 10+5+3
-        r.EntradasValor.Should().BeApproximately(965m, 0.001m);       // 500+300+165
-        r.SalidasCantidad.Should().Be(11m);                           // 8+3
-        r.SalidasValor.Should().BeApproximately(588.167m, 0.001m);    // 426.667+161.5
-        r.InventarioFinalCantidad.Should().Be(7m);
-        r.InventarioFinalValor.Should().BeApproximately(376.833m, 0.001m);
-        r.CostoPromedioFinal.Should().BeApproximately(53.833m, 0.001m);
+        r.OpeningQuantity.Should().Be(0m);
+        r.OpeningValue.Should().Be(0m);
+        r.TotalInboundQuantity.Should().Be(18m);                          // 10+5+3
+        r.TotalInboundValue.Should().BeApproximately(965m, 0.001m);       // 500+300+165
+        r.TotalOutboundQuantity.Should().Be(11m);                           // 8+3
+        r.TotalOutboundValue.Should().BeApproximately(588.167m, 0.001m);    // 426.667+161.5
+        r.ClosingQuantity.Should().Be(7m);
+        r.ClosingValue.Should().BeApproximately(376.833m, 0.001m);
+        r.FinalAverageCost.Should().BeApproximately(53.833m, 0.001m);
     }
 
     // â”€â”€ Escenario 5: Saldo inicial con filtro de fecha â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -321,25 +321,25 @@ public sealed class KardexInventarioTests
         var k = result.Value!;
 
         // Saldo inicial viene de M1+M2 (ayer)
-        k.Resumen.InventarioInicialCantidad.Should().Be(15m);
-        k.Resumen.InventarioInicialValor.Should().BeApproximately(800m, 0.01m);
+        k.Resumen.OpeningQuantity.Should().Be(15m);
+        k.Resumen.OpeningValue.Should().BeApproximately(800m, 0.01m);
 
         // SÃ³lo dos movimientos en el perÃ­odo
         k.Rows.Should().HaveCount(2);
 
         // Fila M3: parte de un saldo inicial de 15@avg=53.333
         var r3 = k.Rows[0];
-        r3.EntradaCantidad.Should().Be(4m);
-        r3.EntradaValor.Should().BeApproximately(280m, 0.01m);   // 4Ã—$70
-        r3.SaldoCantidad.Should().Be(19m);
-        r3.SaldoValor.Should().BeApproximately(1080m, 0.01m);
-        r3.CostoUnitarioPromedio.Should().BeApproximately(1080m / 19m, 0.001m);
+        r3.InboundQuantity.Should().Be(4m);
+        r3.InboundValue.Should().BeApproximately(280m, 0.01m);   // 4Ã—$70
+        r3.BalanceQuantity.Should().Be(19m);
+        r3.BalanceValue.Should().BeApproximately(1080m, 0.01m);
+        r3.AverageUnitCost.Should().BeApproximately(1080m / 19m, 0.001m);
 
         // Fila M4: salida al promedio vigente del perÃ­odo
         var r4 = k.Rows[1];
-        r4.SalidaCantidad.Should().Be(6m);
-        r4.SalidaValor.Should().BeApproximately(6m * (1080m / 19m), 0.01m);
-        r4.SaldoCantidad.Should().Be(13m);
+        r4.OutboundQuantity.Should().Be(6m);
+        r4.OutboundValue.Should().BeApproximately(6m * (1080m / 19m), 0.01m);
+        r4.BalanceQuantity.Should().Be(13m);
     }
 
     // â”€â”€ Escenario 6: Dos bodegas independientes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -384,8 +384,8 @@ public sealed class KardexInventarioTests
         resA.Value!.Rows.Should().HaveCount(2);
         resA.Value!.Rows[0].MovementType.Should().Be("Compra");
         resA.Value!.Rows[1].MovementType.Should().Be("Transferencia salida");
-        resA.Value!.Resumen.InventarioFinalCantidad.Should().Be(15m);
-        resA.Value!.Resumen.InventarioFinalValor.Should().Be(600m); // 15 Ã— $40
+        resA.Value!.Resumen.ClosingQuantity.Should().Be(15m);
+        resA.Value!.Resumen.ClosingValue.Should().Be(600m); // 15 Ã— $40
 
         // Kardex bodega B â€” solo muestra su propia entrada
         var resB = await mediator.Send(
@@ -394,9 +394,9 @@ public sealed class KardexInventarioTests
         resB.IsSuccess.Should().BeTrue();
         resB.Value!.Rows.Should().HaveCount(1);
         resB.Value!.Rows[0].MovementType.Should().Be("Transferencia entrada");
-        resB.Value!.Rows[0].EntradaCantidad.Should().Be(5m);
-        resB.Value!.Resumen.InventarioFinalCantidad.Should().Be(5m);
-        resB.Value!.Resumen.InventarioFinalValor.Should().Be(200m); // 5 Ã— $40
+        resB.Value!.Rows[0].InboundQuantity.Should().Be(5m);
+        resB.Value!.Resumen.ClosingQuantity.Should().Be(5m);
+        resB.Value!.Resumen.ClosingValue.Should().Be(200m); // 5 Ã— $40
     }
 
     // â”€â”€ Escenario 7: Ajuste positivo sin costo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -443,11 +443,11 @@ public sealed class KardexInventarioTests
 
         var m2 = k.Rows[1];
         m2.MovementType.Should().Be("Ajuste (+)");
-        m2.EntradaCantidad.Should().Be(5m);
-        m2.EntradaValor.Should().Be(0m);           // $0 porque no hay costo
-        m2.SaldoCantidad.Should().Be(15m);
-        m2.SaldoValor.Should().BeApproximately(500m, 0.001m); // sin cambio en valor
-        m2.CostoUnitarioPromedio.Should().BeApproximately(500m / 15m, 0.001m); // $33.333
+        m2.InboundQuantity.Should().Be(5m);
+        m2.InboundValue.Should().Be(0m);           // $0 porque no hay costo
+        m2.BalanceQuantity.Should().Be(15m);
+        m2.BalanceValue.Should().BeApproximately(500m, 0.001m); // sin cambio en valor
+        m2.AverageUnitCost.Should().BeApproximately(500m / 15m, 0.001m); // $33.333
     }
 
     // â”€â”€ Escenario 8: Ajuste negativo al costo promedio vigente â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -475,7 +475,7 @@ public sealed class KardexInventarioTests
         await db.SaveChangesAsync();
 
         // El promedio tras las dos entradas es $38
-        const decimal costoPromedio = 38m;
+        const decimal averageCost = 38m;
 
         var ajusteNeg = StockMovement.Create(
             tid, pid, bid,
@@ -484,7 +484,7 @@ public sealed class KardexInventarioTests
             reference: "AJ-002",
             sourceDocId: null, sourceDocType: null,
             createdBy: uid,
-            unitCost: costoPromedio); // valorizado al promedio actual
+            unitCost: averageCost); // valorizado al promedio actual
         db.StockMovements.Add(ajusteNeg);
         await db.SaveChangesAsync();
 
@@ -496,19 +496,19 @@ public sealed class KardexInventarioTests
         k.Rows.Should().HaveCount(3);
 
         // Verificar las dos entradas y el ajuste
-        k.Rows[0].CostoUnitarioPromedio.Should().Be(30m);
-        k.Rows[1].CostoUnitarioPromedio.Should().Be(38m);   // (180+200)/10
+        k.Rows[0].AverageUnitCost.Should().Be(30m);
+        k.Rows[1].AverageUnitCost.Should().Be(38m);   // (180+200)/10
 
         var m3 = k.Rows[2];
         m3.MovementType.Should().Be("Ajuste (-)");
-        m3.SalidaCantidad.Should().Be(3m);
-        m3.SalidaValor.Should().BeApproximately(114m, 0.001m);     // 3 Ã— $38
-        m3.SaldoCantidad.Should().Be(7m);
-        m3.SaldoValor.Should().BeApproximately(266m, 0.001m);      // $380 - $114
-        m3.CostoUnitarioPromedio.Should().BeApproximately(38m, 0.001m); // no cambia
+        m3.OutboundQuantity.Should().Be(3m);
+        m3.OutboundValue.Should().BeApproximately(114m, 0.001m);     // 3 Ã— $38
+        m3.BalanceQuantity.Should().Be(7m);
+        m3.BalanceValue.Should().BeApproximately(266m, 0.001m);      // $380 - $114
+        m3.AverageUnitCost.Should().BeApproximately(38m, 0.001m); // no cambia
 
-        k.Resumen.InventarioFinalCantidad.Should().Be(7m);
-        k.Resumen.InventarioFinalValor.Should().BeApproximately(266m, 0.001m);
+        k.Resumen.ClosingQuantity.Should().Be(7m);
+        k.Resumen.ClosingValue.Should().BeApproximately(266m, 0.001m);
     }
 
     // â”€â”€ Escenario 9: Etiquetas legibles de tipo movimiento â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -599,18 +599,18 @@ public sealed class KardexInventarioTests
             new GetKardexQuery(pidA, bid, null, null), CancellationToken.None);
         resA.IsSuccess.Should().BeTrue();
         resA.Value!.Rows.Should().HaveCount(1);
-        resA.Value!.Resumen.EntradasCantidad.Should().Be(10m);
-        resA.Value!.Resumen.EntradasValor.Should().Be(500m);
-        resA.Value!.Resumen.CostoPromedioFinal.Should().Be(50m);
+        resA.Value!.Resumen.TotalInboundQuantity.Should().Be(10m);
+        resA.Value!.Resumen.TotalInboundValue.Should().Be(500m);
+        resA.Value!.Resumen.FinalAverageCost.Should().Be(50m);
 
         // Kardex de B
         var resB = await mediator.Send(
             new GetKardexQuery(pidB, bid, null, null), CancellationToken.None);
         resB.IsSuccess.Should().BeTrue();
         resB.Value!.Rows.Should().HaveCount(1);
-        resB.Value!.Resumen.EntradasCantidad.Should().Be(20m);
-        resB.Value!.Resumen.EntradasValor.Should().Be(600m);
-        resB.Value!.Resumen.CostoPromedioFinal.Should().Be(30m);
+        resB.Value!.Resumen.TotalInboundQuantity.Should().Be(20m);
+        resB.Value!.Resumen.TotalInboundValue.Should().Be(600m);
+        resB.Value!.Resumen.FinalAverageCost.Should().Be(30m);
     }
 }
 

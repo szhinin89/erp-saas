@@ -7,22 +7,22 @@ using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.ValidarVenta;
 
-public sealed class ValidarSaleCommandHandler : IRequestHandler<ValidarSaleCommand, Result<Guid>>
+public sealed class ValidateSaleCommandHandler : IRequestHandler<ValidateSaleCommand, Result<Guid>>
 {
     private readonly ISalesRepository    _ventasRepository;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _currentTenant;
     private readonly ICurrentUser            _currentUser;
     private readonly IUnitOfWork             _unitOfWork;
-    private readonly ILogger<ValidarSaleCommandHandler> _logger;
+    private readonly ILogger<ValidateSaleCommandHandler> _logger;
 
-    public ValidarSaleCommandHandler(
+    public ValidateSaleCommandHandler(
         ISalesRepository ventasRepository,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
-        ILogger<ValidarSaleCommandHandler> logger)
+        ILogger<ValidateSaleCommandHandler> logger)
     {
         _ventasRepository = ventasRepository;
         _activity         = activity;
@@ -32,7 +32,7 @@ public sealed class ValidarSaleCommandHandler : IRequestHandler<ValidarSaleComma
         _logger           = logger;
     }
 
-    public async Task<Result<Guid>> Handle(ValidarSaleCommand command, CancellationToken ct)
+    public async Task<Result<Guid>> Handle(ValidateSaleCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage, PageShell } from '../../../../components/PageShell';
 import { Card } from '../../../../components/ui/Card';
@@ -89,12 +89,12 @@ export function AjustesListPage() {
               <tbody>
                 {items.map((a) => (
                   <tr key={a.id} className="aj-row-clickable" onClick={() => navigate(`/inventario/ajustes/${a.id}`)}>
-                    <td data-label="Número"><strong>{a.numeroAjuste}</strong></td>
-                    <td data-label="Producto">{a.productoNombre}</td>
-                    <td data-label="Bodega">{a.bodegaNombre}</td>
-                    <td data-label="Cantidad"><AjusteTipoBadge tipo={a.tipoAjuste} cantidad={Math.abs(a.cantidadAjuste)} /></td>
+                    <td data-label="Número"><strong>{a.adjustmentNumber}</strong></td>
+                    <td data-label="Producto">{a.productName}</td>
+                    <td data-label="Bodega">{a.warehouseName}</td>
+                    <td data-label="Cantidad"><AjusteTipoBadge tipo={a.adjustmentType} cantidad={Math.abs(a.adjustmentQuantity)} /></td>
                     <td data-label="Motivo">{a.reason}</td>
-                    <td data-label="Fecha">{new Date(a.fechaAjuste).toLocaleDateString()}</td>
+                    <td data-label="Fecha">{new Date(a.adjustmentDate).toLocaleDateString()}</td>
                     <td data-label="Estado"><AjusteEstadoBadge estado={a.status} /></td>
                     <td data-label="Acciones" className="aj-cell-actions">
                       <ZHBtn variant="ghost" size="sm" onClick={(e) => {

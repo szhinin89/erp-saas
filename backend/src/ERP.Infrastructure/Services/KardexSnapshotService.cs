@@ -103,17 +103,17 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
         var ultimoSnap = await _snapRepo.GetLatestBeforeAsync(
             tenantId, productoId, WarehouseId, ayer, ct);
 
-        decimal saldoCantidad = ultimoSnap?.BalanceQty ?? 0m;
-        decimal saldoValor    = ultimoSnap?.BalanceValue    ?? 0m;
-        decimal costoPromedio = ultimoSnap?.AverageCost ?? 0m;
+        decimal balanceQuantity = ultimoSnap?.BalanceQty ?? 0m;
+        decimal balanceValue    = ultimoSnap?.BalanceValue    ?? 0m;
+        decimal averageCost = ultimoSnap?.AverageCost ?? 0m;
 
-        var desdeUtc  = ultimoSnap is null
+        var fromUtc  = ultimoSnap is null
             ? (DateTime?)null
             : ultimoSnap.SnapshotDate.AddDays(1);
-        var hastaUtc  = ayer.AddDays(1).AddTicks(-1);
+        var toUtc  = ayer.AddDays(1).AddTicks(-1);
 
         var movs = await _movRepo.GetMovementsAsync(
-            tenantId, productoId, WarehouseId, desdeUtc, hastaUtc, ct);
+            tenantId, productoId, WarehouseId, fromUtc, toUtc, ct);
 
         if (movs.Count == 0 && ultimoSnap?.SnapshotDate.Date == ayer)
             return 0; // snapshot de ayer ya existe y sin nuevos movimientos
@@ -129,11 +129,11 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
         foreach (var grupo in porDia)
         {
             foreach (var m in grupo.OrderBy(x => x.CreatedAt).ThenBy(x => x.Id))
-                KardexCalculator.ApplyMovement(m, ref saldoCantidad, ref saldoValor, ref costoPromedio);
+                KardexCalculator.ApplyMovement(m, ref balanceQuantity, ref balanceValue, ref averageCost);
 
             var snap = KardexSnapshot.Create(
                 tenantId, productoId, WarehouseId, grupo.Key,
-                saldoCantidad, saldoValor, costoPromedio);
+                balanceQuantity, balanceValue, averageCost);
 
             await _snapRepo.UpsertAsync(snap, ct);
             ultimoDiaConMovs = grupo.Key;
@@ -145,7 +145,7 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
         {
             var snapAyer = KardexSnapshot.Create(
                 tenantId, productoId, WarehouseId, ayer,
-                saldoCantidad, saldoValor, costoPromedio);
+                balanceQuantity, balanceValue, averageCost);
             await _snapRepo.UpsertAsync(snapAyer, ct);
             snapshotsGuardados++;
         }

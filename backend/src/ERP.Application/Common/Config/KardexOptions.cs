@@ -1,4 +1,4 @@
-namespace ERP.Application.Common.Config;
+﻿namespace ERP.Application.Common.Config;
 
 /// <summary>
 /// Opciones de comportamiento del Kardex. Se configuran en appsettings.json
@@ -28,7 +28,7 @@ public sealed class KardexOptions
     /// Umbral de movimientos para cálculo síncrono. Si el número estimado de movimientos
     /// en el rango supera este valor se redirige a procesamiento asíncrono.
     /// </summary>
-    public int MaxMovimientosSync { get; set; } = 200_000;
+    public int MaxMovementsForSync { get; set; } = 200_000;
 
     /// <summary>
     /// Habilita el modo de reporte asíncrono. Si false, el endpoint siempre responde

@@ -18,7 +18,7 @@ public sealed class UpdateSupplierCommandValidator : AbstractValidator<UpdateSup
         RuleFor(x => x.PersonType)
             .NotEmpty().WithMessage("El tipo de persona es obligatorio.")
             .Must(t => t == Supplier.TypeNatural || t == Supplier.TypeLegal)
-            .WithMessage($"TipoPersona debe ser '{Supplier.TypeNatural}' o '{Supplier.TypeLegal}'.");
+            .WithMessage($"PersonType debe ser '{Supplier.TypeNatural}' o '{Supplier.TypeLegal}'.");
 
         RuleFor(x => x.LegalName)
             .NotEmpty().WithMessage("La razón social es obligatoria.")

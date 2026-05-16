@@ -2,9 +2,9 @@
 
 namespace ERP.Application.Sales.UseCases.GetStockDisponibleParaVenta;
 
-public sealed class GetStockDisponibleParaSaleQueryValidator : AbstractValidator<GetStockDisponibleParaSaleQuery>
+public sealed class GetAvailableStockForSaleQueryValidator : AbstractValidator<GetAvailableStockForSaleQuery>
 {
-    public GetStockDisponibleParaSaleQueryValidator()
+    public GetAvailableStockForSaleQueryValidator()
     {
         RuleFor(x => x.ProductId)
             .NotEmpty().WithMessage("El ID del producto es obligatorio.");

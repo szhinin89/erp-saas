@@ -29,7 +29,7 @@ public static class KardexExcelExporter
         row = WriteHeader(ws, kardex, fechaInicio, fechaFin, row);
 
         // â”€â”€ SALDO INICIAL (solo si hay filtro de fecha) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        if (kardex.Resumen.InventarioInicialCantidad != 0 || fechaInicio.HasValue)
+        if (kardex.Resumen.OpeningQuantity != 0 || fechaInicio.HasValue)
         {
             row = WriteInicialBalance(ws, kardex.Resumen, row);
         }
@@ -98,7 +98,7 @@ public static class KardexExcelExporter
         ws.Range(row, 2, row, 12).Merge();
     }
 
-    private static int WriteInicialBalance(IXLWorksheet ws, ResumenKardexDto r, int startRow)
+    private static int WriteInicialBalance(IXLWorksheet ws, KardexSummaryDto r, int startRow)
     {
         var row = startRow;
         var range = ws.Range(row, 1, row, 12);
@@ -106,10 +106,10 @@ public static class KardexExcelExporter
         range.Style.Font.Bold            = true;
 
         ws.Cell(row, 1).Value  = "SALDO INICIAL (antes del perÃ­odo)";
-        ws.Cell(row, 8).Value  = r.InventarioInicialCantidad;
-        ws.Cell(row, 9).Value  = r.InventarioInicialValor;
-        ws.Cell(row, 10).Value = r.InventarioInicialCantidad > 0
-            ? r.InventarioInicialValor / r.InventarioInicialCantidad
+        ws.Cell(row, 8).Value  = r.OpeningQuantity;
+        ws.Cell(row, 9).Value  = r.OpeningValue;
+        ws.Cell(row, 10).Value = r.OpeningQuantity > 0
+            ? r.OpeningValue / r.OpeningQuantity
             : 0m;
 
         ApplyNumberFormat(ws, row, 4, 12);
@@ -175,7 +175,7 @@ public static class KardexExcelExporter
 
     private static int WriteMovimientos(
         IXLWorksheet ws,
-        IReadOnlyList<MovimientoKardexDto> movimientos,
+        IReadOnlyList<KardexMovementDto> movimientos,
         int startRow,
         int tableHeaderRow)
     {
@@ -189,22 +189,22 @@ public static class KardexExcelExporter
             ws.Cell(row, 1).Value  = m.Fecha.ToLocalTime().ToString("dd/MM/yyyy HH:mm");
             ws.Cell(row, 2).Value  = m.MovementType;
             ws.Cell(row, 3).Value  = m.Referencia ?? "";
-            ws.Cell(row, 4).Value  = m.EntradaCantidad;
-            ws.Cell(row, 5).Value  = m.EntradaValor;
-            ws.Cell(row, 6).Value  = m.SalidaCantidad;
-            ws.Cell(row, 7).Value  = m.SalidaValor;
-            ws.Cell(row, 8).Value  = m.SaldoCantidad;
-            ws.Cell(row, 9).Value  = m.SaldoValor;
-            ws.Cell(row, 10).Value = m.CostoUnitarioPromedio;
+            ws.Cell(row, 4).Value  = m.InboundQuantity;
+            ws.Cell(row, 5).Value  = m.InboundValue;
+            ws.Cell(row, 6).Value  = m.OutboundQuantity;
+            ws.Cell(row, 7).Value  = m.OutboundValue;
+            ws.Cell(row, 8).Value  = m.BalanceQuantity;
+            ws.Cell(row, 9).Value  = m.BalanceValue;
+            ws.Cell(row, 10).Value = m.AverageUnitCost;
 
             // Fondo alternado
             if (alt)
                 ws.Range(row, 1, row, 10).Style.Fill.BackgroundColor = ColAltRow;
 
             // Colorear columnas de entrada/salida/saldo suavemente
-            ws.Range(row, 4, row, 5).Style.Fill.BackgroundColor = m.EntradaCantidad > 0
+            ws.Range(row, 4, row, 5).Style.Fill.BackgroundColor = m.InboundQuantity > 0
                 ? XLColor.FromArgb(0xD6, 0xE8, 0xCE) : (alt ? ColAltRow : XLColor.White);
-            ws.Range(row, 6, row, 7).Style.Fill.BackgroundColor = m.SalidaCantidad > 0
+            ws.Range(row, 6, row, 7).Style.Fill.BackgroundColor = m.OutboundQuantity > 0
                 ? XLColor.FromArgb(0xF4, 0xCC, 0xCC) : (alt ? ColAltRow : XLColor.White);
 
             // Ceros en gris
@@ -227,7 +227,7 @@ public static class KardexExcelExporter
         return row;
     }
 
-    private static int WriteResumen(IXLWorksheet ws, ResumenKardexDto r, int startRow)
+    private static int WriteResumen(IXLWorksheet ws, KardexSummaryDto r, int startRow)
     {
         var row = startRow + 1; // lÃ­nea en blanco
 
@@ -237,13 +237,13 @@ public static class KardexExcelExporter
         range.Style.Border.OutsideBorder = XLBorderStyleValues.Medium;
 
         ws.Cell(row, 1).Value  = "RESUMEN DEL PERÃODO";
-        ws.Cell(row, 4).Value  = r.EntradasCantidad;
-        ws.Cell(row, 5).Value  = r.EntradasValor;
-        ws.Cell(row, 6).Value  = r.SalidasCantidad;
-        ws.Cell(row, 7).Value  = r.SalidasValor;
-        ws.Cell(row, 8).Value  = r.InventarioFinalCantidad;
-        ws.Cell(row, 9).Value  = r.InventarioFinalValor;
-        ws.Cell(row, 10).Value = r.CostoPromedioFinal;
+        ws.Cell(row, 4).Value  = r.TotalInboundQuantity;
+        ws.Cell(row, 5).Value  = r.TotalInboundValue;
+        ws.Cell(row, 6).Value  = r.TotalOutboundQuantity;
+        ws.Cell(row, 7).Value  = r.TotalOutboundValue;
+        ws.Cell(row, 8).Value  = r.ClosingQuantity;
+        ws.Cell(row, 9).Value  = r.ClosingValue;
+        ws.Cell(row, 10).Value = r.FinalAverageCost;
 
         ApplyNumberFormat(ws, row, 4, 10);
         return row + 1;

@@ -1,9 +1,47 @@
-/* ZHSearchBar — paleta alineada a :root (--zh-blue, etc.); valores de layout según especificación */
+/* =============================================
+   ZHSearchBar — versión mejorada
+   =============================================
+   Mejoras aplicadas:
+   1. Variables centralizadas en :root
+   2. SVG icons unificados (sin duplicación)
+   3. Focus visible accesible y contraste mejorado
+   4. Soporte para RTL con propiedades lógicas
+   5. Scroll horizontal en chips para móvil
+   6. Border-radius coherente
+   7. Animación skeleton más eficiente
+   8. Eliminación de valores hardcodeados
+============================================= */
 
+:root {
+  /* Colores principales (manteniendo compatibilidad) */
+  --zh-blue: #4f7ba6;
+  --zh-blue-dark: #2c4e72;
+  --zh-blue-light: #ebf2fa;
+  --zh-danger: #e24b4a;
+  --zh-color-primary: #1d4f91;
+  --zh-color-border: #dbe2ea;
+  --zh-color-text: #0f172a;
+  --zh-color-text-muted: #64748b;
+  --zh-white: #ffffff;
+  --zh-gray-bg-skeleton: #e5e7eb;
+
+  /* Radios coherentes */
+  --zh-radius-sm: 8px;
+  --zh-radius-md: 10px;
+  --zh-radius-lg: 20px;
+  --zh-radius-pill: 999px;
+
+  /* Iconos SVG en variables (unificados) */
+  --zh-icon-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%236b7280' stroke-width='2' stroke-linecap='round' d='M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm9 2-4-4'/%3E%3C/svg%3E");
+  --zh-icon-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236b7280' d='M0 0h10L5 6z'/%3E%3C/svg%3E");
+}
+
+/* Componente principal */
 .zh-search-bar {
   width: 100%;
 }
 
+/* Zona 1: input, select, botón principal */
 .zh-search-bar__zone1 {
   background: transparent;
   border-bottom: 0;
@@ -17,6 +55,7 @@
   align-items: center;
 }
 
+/* Contenedor del input con ícono */
 .zh-search-bar__inputWrap {
   position: relative;
   flex: 1;
@@ -30,28 +69,38 @@
   transform: translateY(-50%);
   width: 16px;
   height: 16px;
-  pointer-events: none;
-  background: no-repeat center / contain;
+  background: var(--zh-icon-search) no-repeat center / contain;
   opacity: 0.55;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%236b7280' stroke-width='2' stroke-linecap='round' d='M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16Zm9 2-4-4'/%3E%3C/svg%3E");
+  pointer-events: none;
+  /* Mejora RTL */
+  inset-inline-start: 10px;
+  inset-inline-end: auto;
 }
 
+/* Input de búsqueda */
 .zh-search-bar__input {
   width: 100%;
-  border: 1px solid var(--zh-color-border, #dbe2ea);
-  border-radius: var(--zh-radius-md, 10px);
+  border: 1px solid var(--zh-color-border);
+  border-radius: var(--zh-radius-md);
   height: 38px;
   padding: 0 12px 0 34px;
   font-size: 14px;
   font-family: inherit;
-  color: var(--zh-color-text, #0f172a);
-  background: #fff;
+  color: var(--zh-color-text);
+  background: var(--zh-white);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .zh-search-bar__input:focus {
   outline: none;
-  border-color: var(--zh-blue, #4f7ba6);
+  border-color: var(--zh-blue);
   box-shadow: 0 0 0 3px rgba(79, 123, 166, 0.12);
+}
+
+/* Focus visible más accesible */
+.zh-search-bar__input:focus-visible {
+  outline: 2px solid var(--zh-blue);
+  outline-offset: 2px;
 }
 
 .zh-search-bar__input:disabled {
@@ -59,41 +108,52 @@
   cursor: not-allowed;
 }
 
-.zh-search-bar__select {
-  height: 38px;
+/* Select unificado (reutilizado en filtro y ordenamiento) */
+.zh-search-bar__select,
+.zh-search-bar__selectSort {
+  height: 38px; /* o 32px para ordenamiento, se ajusta abajo */
   font-size: 14px;
-  border: 1px solid var(--zh-color-border, #dbe2ea);
-  border-radius: var(--zh-radius-md, 10px);
+  border: 1px solid var(--zh-color-border);
+  border-radius: var(--zh-radius-md);
   padding: 0 28px 0 8px;
   font-family: inherit;
   color: #111827;
-  background-color: #fff;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236b7280' d='M0 0h10L5 6z'/%3E%3C/svg%3E");
+  background-color: var(--zh-white);
+  background-image: var(--zh-icon-chevron);
   background-repeat: no-repeat;
   background-position: right 8px center;
   appearance: none;
   cursor: pointer;
   min-width: 120px;
+  transition: border-color 0.2s;
 }
 
-.zh-search-bar__select:focus {
+.zh-search-bar__select:focus,
+.zh-search-bar__selectSort:focus {
   outline: none;
-  border-color: var(--zh-blue, #4f7ba6);
+  border-color: var(--zh-blue);
 }
 
-.zh-search-bar__tail {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
+.zh-search-bar__select:focus-visible,
+.zh-search-bar__selectSort:focus-visible {
+  outline: 2px solid var(--zh-blue);
+  outline-offset: 2px;
 }
 
+/* Ajuste específico para select de ordenamiento (tamaño más pequeño) */
+.zh-search-bar__selectSort {
+  height: 32px;
+  font-size: 12px;
+  border-radius: var(--zh-radius-sm);
+  background-position: right 6px center;
+}
+
+/* Botón principal (buscar / aplicar) */
 .zh-search-bar__btnPrimary {
-  background: var(--zh-color-primary, #1d4f91);
-  color: #fff;
+  background: var(--zh-color-primary);
+  color: var(--zh-white);
   border: none;
-  border-radius: 999px;
+  border-radius: var(--zh-radius-pill);
   height: 38px;
   padding: 0 14px;
   font-size: 12px;
@@ -101,12 +161,19 @@
   font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
+  transition: background 0.2s;
 }
 
 .zh-search-bar__btnPrimary:hover {
-  background: var(--zh-blue-dark, #2c4e72);
+  background: var(--zh-blue-dark);
 }
 
+.zh-search-bar__btnPrimary:focus-visible {
+  outline: 2px solid var(--zh-blue);
+  outline-offset: 2px;
+}
+
+/* Zona 2: contador, chips, acciones */
 .zh-search-bar__zone2 {
   background: transparent;
   border-bottom: 0;
@@ -123,28 +190,30 @@
 .zh-search-bar__count {
   font-size: 13px;
   font-weight: 600;
-  color: var(--color-text-muted, #64748b);
+  color: var(--zh-color-text-muted);
 }
 
+/* Skeleton loader optimizado */
 .zh-search-bar__skeleton {
   display: inline-block;
   width: 120px;
   height: 14px;
   border-radius: 4px;
-  background: #e5e7eb;
-  animation: zh-search-bar-pulse 1.2s ease-in-out infinite;
+  background: var(--zh-gray-bg-skeleton);
+  animation: zh-skeleton-pulse 1.2s ease-in-out infinite;
 }
 
-@keyframes zh-search-bar-pulse {
+@keyframes zh-skeleton-pulse {
   0%,
   100% {
     opacity: 1;
   }
   50% {
-    opacity: 0.45;
+    opacity: 0.5;
   }
 }
 
+/* Contenedor de chips con scroll horizontal en móvil */
 .zh-search-bar__chips {
   display: flex;
   flex-wrap: wrap;
@@ -152,11 +221,12 @@
   align-items: center;
 }
 
+/* Chip individual */
 .zh-search-bar__chip {
-  background: var(--zh-blue-light, #ebf2fa);
+  background: var(--zh-blue-light);
   color: #185fa5;
   border: 0.5px solid rgba(79, 123, 166, 0.3);
-  border-radius: 20px;
+  border-radius: var(--zh-radius-lg);
   font-size: 11px;
   font-weight: 500;
   padding: 2px 8px;
@@ -166,81 +236,143 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition: border-color 0.2s, background 0.2s;
 }
 
 .zh-search-bar__chip:hover {
-  border-color: var(--zh-blue, #4f7ba6);
+  border-color: var(--zh-blue);
+  background: rgba(79, 123, 166, 0.1);
 }
 
+.zh-search-bar__chip:focus-visible {
+  outline: 2px solid var(--zh-blue);
+  outline-offset: 2px;
+}
+
+/* Botón limpiar todo */
 .zh-search-bar__clearAll {
   background: transparent;
-  color: var(--color-text-muted, #64748b);
-  border: 1px solid var(--zh-color-border, #dbe2ea);
-  border-radius: var(--zh-radius-sm, 8px);
+  color: var(--zh-color-text-muted);
+  border: 1px solid var(--zh-color-border);
+  border-radius: var(--zh-radius-sm);
   height: 32px;
   padding: 0 10px;
   font-size: 11px;
   font-family: inherit;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
 .zh-search-bar__clearAll:hover {
-  border-color: var(--zh-danger, #e24b4a);
-  color: var(--zh-danger, #e24b4a);
+  border-color: var(--zh-danger);
+  color: var(--zh-danger);
 }
 
-.zh-search-bar__selectSort {
-  height: 32px;
-  font-size: 12px;
-  border: 1px solid var(--zh-color-border, #dbe2ea);
-  border-radius: var(--zh-radius-sm, 8px);
-  padding: 0 26px 0 8px;
-  font-family: inherit;
-  color: #111827;
-  background-color: #fff;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236b7280' d='M0 0h10L5 6z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 6px center;
-  appearance: none;
-  cursor: pointer;
-}
-
+/* Botón exportar */
 .zh-search-bar__export {
   height: 32px;
   padding: 0 10px;
   font-size: 11px;
   font-family: inherit;
-  border: 1px solid var(--zh-color-border, #dbe2ea);
-  border-radius: var(--zh-radius-sm, 8px);
-  background: #fff;
+  border: 1px solid var(--zh-color-border);
+  border-radius: var(--zh-radius-sm);
+  background: var(--zh-white);
   color: #111827;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
 .zh-search-bar__export:hover {
-  border-color: var(--zh-blue, #4f7ba6);
-  color: var(--zh-blue, #4f7ba6);
+  border-color: var(--zh-blue);
+  color: var(--zh-blue);
 }
 
+/* =============================================
+   RESPONSIVE mejorado
+   ============================================= */
 @media (max-width: 640px) {
   .zh-search-bar__tail {
     margin-left: 0;
     width: 100%;
     order: 10;
-    justify-content: stretch;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .zh-search-bar__btnPrimary {
     flex: 1;
     min-width: 0;
+    text-align: center;
   }
 
+  /* Select de filtro ocupa todo el ancho posible */
   .zh-search-bar__select {
-    flex: 1 1 calc(50% - 4px);
+    flex: 1 1 auto;
     min-width: 0;
   }
 
+  /* Input ocupa toda la fila */
   .zh-search-bar__inputWrap {
     flex: 1 1 100%;
   }
+
+  /* Chips con scroll horizontal para evitar desborde */
+  .zh-search-bar__chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+  }
+
+  .zh-search-bar__chips::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  /* Ajuste de orden en zona2: ordenamiento y export alineados a la izquierda */
+  .zh-search-bar__zone2inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .zh-search-bar__selectSort,
+  .zh-search-bar__export {
+    width: 100%;
+  }
+}
+
+/* =============================================
+   SOPORTE RTL (dirección de derecha a izquierda)
+   ============================================= */
+[dir="rtl"] .zh-search-bar__icon {
+  left: auto;
+  right: 10px;
+}
+
+[dir="rtl"] .zh-search-bar__input {
+  padding: 0 34px 0 12px;
+}
+
+[dir="rtl"] .zh-search-bar__select,
+[dir="rtl"] .zh-search-bar__selectSort {
+  background-position: left 8px center;
+  padding: 0 8px 0 28px;
+}
+
+[dir="rtl"] .zh-search-bar__selectSort {
+  background-position: left 6px center;
+}
+
+/* =============================================
+   UTILITY: ocultar elementos visualmente pero accesibles
+   ============================================= */
+.zh-visually-hidden:not(:focus):not(:active) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  border: 0;
 }

@@ -8,34 +8,34 @@ public record TransferDetailItemDto(
 
 public record TransferDto(
     Guid      Id,
-    string    NumeroTransferencia,
-    Guid      BodegaOrigenId,
-    string    BodegaOrigenNombre,
-    Guid      BodegaDestinoId,
-    string    BodegaDestinoNombre,
-    DateTime  FechaTransferencia,
+    string    TransferNumber,
+    Guid      SourceWarehouseId,
+    string    SourceWarehouseName,
+    Guid      DestinationWarehouseId,
+    string    DestinationWarehouseName,
+    DateTime  TransferDate,
     string    Status,
     string? Reason,
     string? Notes,
-    DateTime? FechaConfirmacion,
-    Guid?     ConfirmadoPor,
+    DateTime? ConfirmationDate,
+    Guid?     ConfirmedBy,
     DateTime  CreatedAt);
 
 public record TransferDetailDto(
     Guid      Id,
-    string    NumeroTransferencia,
-    Guid      BodegaOrigenId,
-    string    BodegaOrigenNombre,
-    Guid      BodegaDestinoId,
-    string    BodegaDestinoNombre,
-    DateTime  FechaTransferencia,
+    string    TransferNumber,
+    Guid      SourceWarehouseId,
+    string    SourceWarehouseName,
+    Guid      DestinationWarehouseId,
+    string    DestinationWarehouseName,
+    DateTime  TransferDate,
     string    Status,
     string? Reason,
     string? Notes,
-    DateTime? FechaConfirmacion,
-    Guid?     ConfirmadoPor,
+    DateTime? ConfirmationDate,
+    Guid?     ConfirmedBy,
     DateTime  CreatedAt,
-    IReadOnlyList<TransferDetailItemDto> Detalles);
+    IReadOnlyList<TransferDetailItemDto> Lines);
 
 public record TransfersPagedResult(
     IReadOnlyList<TransferDto> Items,

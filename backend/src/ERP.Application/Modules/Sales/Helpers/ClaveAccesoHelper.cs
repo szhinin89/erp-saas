@@ -12,13 +12,13 @@ public static class ClaveAccesoHelper
         DateTime issueDate,
         string   docType = "01")
     {
-        var fechaStr       = issueDate.ToString("ddMMyyyy");
+        var dateStr       = issueDate.ToString("ddMMyyyy");
         var rucPadded      = ruc.PadLeft(13, '0');
         var estab          = estabCode.PadLeft(3, '0');
         var pto            = emPointCode.PadLeft(3, '0');
         var codigoNumerico = GenerarCodigoNumerico();
 
-        var clave48 = $"{fechaStr}{docType}{rucPadded}{environment}{estab}{pto}{sequential}{codigoNumerico}{emissionType}";
+        var clave48 = $"{dateStr}{docType}{rucPadded}{environment}{estab}{pto}{sequential}{codigoNumerico}{emissionType}";
 
         var digito = CalcularDigitoVerificador(clave48);
         return $"{clave48}{digito}";

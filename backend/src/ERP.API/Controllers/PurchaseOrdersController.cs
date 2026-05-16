@@ -68,7 +68,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<PurchaseOrderDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPendingBilling(CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetOrdersPendientesPorFacturarQuery(), ct);
+        var result = await _mediator.Send(new GetOrdersPendingBillingQuery(), ct);
         return this.ToOkOrBadRequest(result, "OK");
     }
 
@@ -94,7 +94,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(
-        [FromBody] CrearOrderPurchaseCommand command, CancellationToken ct = default)
+        [FromBody] CreatePurchaseOrderCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
@@ -111,7 +111,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Send(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new EnviarOrderPurchaseCommand(id), ct);
+        var result = await _mediator.Send(new SendOrderPurchaseCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Enviada");
     }
 
@@ -125,7 +125,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Approve(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new AprobarOrderPurchaseCommand(id), ct);
+        var result = await _mediator.Send(new ApproveOrderPurchaseCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Aprobada");
     }
 
@@ -138,7 +138,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new CancelarOrderPurchaseCommand(id), ct);
+        var result = await _mediator.Send(new CancelOrderPurchaseCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Cancelada");
     }
 
@@ -158,7 +158,7 @@ public sealed class PurchaseOrdersController : ControllerBase
         CancellationToken ct = default)
     {
         var result = await _mediator.Send(
-            new VincularFacturaAOrderPurchaseCommand(id, body.PurchaseInvoiceId), ct);
+            new LinkInvoiceToPurchaseOrderCommand(id, body.PurchaseInvoiceId), ct);
         return this.ToOkOrBadRequest(result, "Factura vinculada");
     }
 }

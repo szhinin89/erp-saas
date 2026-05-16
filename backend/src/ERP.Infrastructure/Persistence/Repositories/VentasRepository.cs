@@ -121,9 +121,9 @@ public sealed class SalesRepository : ISalesRepository
             .OrderByDescending(r => r.IssueDate)
             .ToListAsync(ct);
 
-    public Task<bool> ExistsRetentionAccessKeyAsync(Guid tenantId, string claveAcceso, CancellationToken ct = default)
+    public Task<bool> ExistsRetentionAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default)
         => _context.SalesRetentions.AnyAsync(
-            r => r.TenantId == tenantId && r.AccessKey == claveAcceso, ct);
+            r => r.TenantId == tenantId && r.AccessKey == accessKey, ct);
 
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);

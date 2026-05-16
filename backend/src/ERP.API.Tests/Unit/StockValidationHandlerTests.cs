@@ -13,7 +13,7 @@ using ERP.Infrastructure.Persistence;
 namespace ERP.API.Tests.Unit;
 
 /// <summary>
-/// Pruebas de la lÃ³gica de validaciÃ³n de stock en CrearVentaCommandHandler.
+/// Pruebas de la lÃ³gica de validaciÃ³n de stock en CreateSaleCommandHandler.
 /// Usan la misma infraestructura in-memory de IntegrationTestWebAppFactory
 /// pero con datos mÃ­nimos y enfocados en el comportamiento de stock.
 /// </summary>

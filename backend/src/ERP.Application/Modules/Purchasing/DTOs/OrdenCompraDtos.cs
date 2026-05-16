@@ -4,9 +4,9 @@ public record PurchaseOrderLineDto(
     Guid    Id,
     Guid    ProductId,
     string  Description,
-    decimal CantidadPedida,
-    decimal CantidadFacturada,
-    decimal PendienteFacturar,
+    decimal OrderedQuantity,
+    decimal InvoicedQuantity,
+    decimal PendingBillingQuantity,
     decimal UnitPrice,
     decimal Subtotal,
     decimal   VatTotal,
@@ -14,59 +14,59 @@ public record PurchaseOrderLineDto(
 
 public record LinkedPurchaseBillDto(
     Guid     PurchBillId,
-    string   NumeroFactura,
+    string   InvoiceNumber,
     DateTime FechaVinculacion);
 
 public record PurchaseOrderDto(
     Guid      Id,
-    string    NumeroOrden,
+    string    OrderNumber,
     Guid    SupplierId,
-    string    ProveedorNombre,
+    string    SupplierName,
     DateTime  IssueDate,
-    DateTime  FechaRequerida,
+    DateTime  RequiredDate,
     string    Status,
-    string    Moneda,
+    string    Currency,
     decimal   Subtotal,
     decimal   VatTotal,
     decimal   Total,
     string? Notes,
-    string?   DireccionEntrega,
+    string?   DeliveryAddress,
     Guid?     TargetWarehouseId,
-    DateTime? FechaEnvio,
-    DateTime? FechaAprobacion,
-    Guid?     AprobadoPor,
-    DateTime? FechaCierre,
+    DateTime? ShippedDate,
+    DateTime? ApprovalDate,
+    Guid?     ApprovedBy,
+    DateTime? ClosingDate,
     DateTime  CreatedAt)
 {
     /// <summary>
-    /// Advertencias generadas al vincular facturas (ej. discrepancias de precio vs OC).
+    /// Warnings generadas al vincular facturas (ej. discrepancias de precio vs OC).
     /// Null si no hay advertencias o la operación no genera advertencias.
     /// </summary>
-    public IReadOnlyList<string>? Advertencias { get; init; }
+    public IReadOnlyList<string>? Warnings { get; init; }
 };
 
 public record PurchaseOrderDetailDto(
     Guid      Id,
-    string    NumeroOrden,
+    string    OrderNumber,
     Guid    SupplierId,
-    string    ProveedorNombre,
+    string    SupplierName,
     DateTime  IssueDate,
-    DateTime  FechaRequerida,
+    DateTime  RequiredDate,
     string    Status,
-    string    Moneda,
+    string    Currency,
     decimal   Subtotal,
     decimal   VatTotal,
     decimal   Total,
     string? Notes,
-    string?   DireccionEntrega,
+    string?   DeliveryAddress,
     Guid?     TargetWarehouseId,
-    DateTime? FechaEnvio,
-    DateTime? FechaAprobacion,
-    Guid?     AprobadoPor,
-    DateTime? FechaCierre,
+    DateTime? ShippedDate,
+    DateTime? ApprovalDate,
+    Guid?     ApprovedBy,
+    DateTime? ClosingDate,
     DateTime  CreatedAt,
     IReadOnlyList<PurchaseOrderLineDto>          Lines,
-    IReadOnlyList<LinkedPurchaseBillDto>  FacturasVinculadas);
+    IReadOnlyList<LinkedPurchaseBillDto>  LinkedInvoices);
 
 public record PurchaseOrdersPagedResult(
     IReadOnlyList<PurchaseOrderDto> Items,

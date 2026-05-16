@@ -61,7 +61,7 @@ public sealed class VentasEndToEndTests
         db.SalesBills.Find(ventaId)!.Status.Should().Be("Validado");
 
         // 3. Emitir al SRI (simulado)
-        var emitir = await mediator.Send(new EmitirFacturaElectronicaCommand(ventaId), CancellationToken.None);
+        var emitir = await mediator.Send(new IssueElectronicInvoiceCommand(ventaId), CancellationToken.None);
         emitir.IsSuccess.Should().BeTrue(emitir.Error);
 
         db.Entry(db.SalesBills.Find(ventaId)!).Reload();
@@ -119,11 +119,11 @@ public sealed class VentasEndToEndTests
         var ventaId = crear.Value;
 
         await mediator.Send(new ValidarVentaCommand(ventaId), CancellationToken.None);
-        var emitir1 = await mediator.Send(new EmitirFacturaElectronicaCommand(ventaId), CancellationToken.None);
+        var emitir1 = await mediator.Send(new IssueElectronicInvoiceCommand(ventaId), CancellationToken.None);
         emitir1.IsSuccess.Should().BeTrue(emitir1.Error);
 
         // Segunda emisiÃ³n debe fallar (ya estÃ¡ Autorizado)
-        var emitir2 = await mediator.Send(new EmitirFacturaElectronicaCommand(ventaId), CancellationToken.None);
+        var emitir2 = await mediator.Send(new IssueElectronicInvoiceCommand(ventaId), CancellationToken.None);
         emitir2.IsSuccess.Should().BeFalse();
         emitir2.Error.Should().Contain("Validada");
     }
@@ -139,12 +139,12 @@ public sealed class VentasEndToEndTests
             CancellationToken.None);
         crear.IsSuccess.Should().BeTrue(crear.Error);
 
-        var anular = await mediator.Send(new AnularFacturaCommand(crear.Value), CancellationToken.None);
+        var anular = await mediator.Send(new VoidInvoiceCommand(crear.Value), CancellationToken.None);
         anular.IsSuccess.Should().BeTrue(anular.Error);
         db.SalesBills.Find(crear.Value)!.Status.Should().Be("Anulado");
 
         // Doble anulaciÃ³n debe fallar
-        var anular2 = await mediator.Send(new AnularFacturaCommand(crear.Value), CancellationToken.None);
+        var anular2 = await mediator.Send(new VoidInvoiceCommand(crear.Value), CancellationToken.None);
         anular2.IsSuccess.Should().BeFalse();
     }
 }

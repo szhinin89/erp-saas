@@ -4,12 +4,12 @@ namespace ERP.Application.Modules.Expenses.DTOs;
 
 public sealed record ExpenseInvoiceDto(
     Guid         Id,
-    string?      ClaveAcceso,
+    string?      AccessKey,
     DateTime  IssueDate,
     Guid? SupplierId,
-    string?      NumeroFactura,
-    string       Concepto,
-    string       CategoriaGasto,
+    string?      InvoiceNumber,
+    string       Description,
+    string       ExpenseCategory,
     decimal      Subtotal,
     decimal   VatTotal,
     decimal      Total,

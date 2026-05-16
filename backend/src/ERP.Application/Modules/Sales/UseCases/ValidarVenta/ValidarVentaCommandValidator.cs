@@ -2,7 +2,7 @@
 
 namespace ERP.Application.Sales.UseCases.ValidarVenta;
 
-public sealed class ValidarSaleCommandValidator : AbstractValidator<ValidarSaleCommand>
+public sealed class ValidarSaleCommandValidator : AbstractValidator<ValidateSaleCommand>
 {
     public ValidarSaleCommandValidator()
     {

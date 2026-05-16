@@ -5,10 +5,10 @@ namespace ERP.Application.Sales.Services;
 /// <summary>Extracción mínima de datos desde XML de comprobante de retención (SRI / Supplier).</summary>
 public static class RetentionRecibidaXmlParser
 {
-    public static bool TryParse(string xml, out string claveAcceso, out DateTime? fechaEmision, out decimal  totalRetained)
+    public static bool TryParse(string xml, out string accessKey, out DateTime? issueDate, out decimal  totalRetained)
     {
-        claveAcceso   = string.Empty;
-        fechaEmision = null;
+        accessKey   = string.Empty;
+        issueDate = null;
         totalRetained = 0m;
         try
         {
@@ -16,21 +16,21 @@ public static class RetentionRecibidaXmlParser
             var root = doc.Root;
             if (root is null) return false;
 
-            claveAcceso = FindFirstDescendantValue(root, "claveAcceso") ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(claveAcceso) || claveAcceso.Length < 40)
+            accessKey = FindFirstDescendantValue(root, "accessKey") ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(accessKey) || accessKey.Length < 40)
                 return false;
 
-            var fechaStr = FindFirstDescendantValue(root, "fechaEmision");
-            if (DateTime.TryParse(fechaStr, out var fd))
-                fechaEmision = fd;
-            else if (fechaStr?.Length == 10 && fechaStr.Contains('/'))
+            var dateStr = FindFirstDescendantValue(root, "issueDate");
+            if (DateTime.TryParse(dateStr, out var fd))
+                issueDate = fd;
+            else if (dateStr?.Length == 10 && dateStr.Contains('/'))
             {
-                var p = fechaStr.Split('/');
+                var p = dateStr.Split('/');
                 if (p.Length == 3
                     && int.TryParse(p[0], out var d)
                     && int.TryParse(p[1], out var m)
                     && int.TryParse(p[2], out var y))
-                    fechaEmision = new DateTime(y, m, d, 0, 0, 0, DateTimeKind.Utc);
+                    issueDate = new DateTime(y, m, d, 0, 0, 0, DateTimeKind.Utc);
             }
 
             decimal suma = 0m;

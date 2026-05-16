@@ -1,4 +1,4 @@
-import { transferenciaService } from '../api/transferenciaService';
+﻿import { transferenciaService } from '../api/transferenciaService';
 import type { ItemTransferenciaRequest } from '../api/transferenciaService';
 import './items-transferencia-grid.css';
 
@@ -10,7 +10,7 @@ export interface ItemRow {
 }
 
 interface Props {
-  bodegaOrigenId: string;
+  sourceWarehouseId: string;
   items: ItemRow[];
   onChange: (items: ItemRow[]) => void;
   disabled?: boolean;

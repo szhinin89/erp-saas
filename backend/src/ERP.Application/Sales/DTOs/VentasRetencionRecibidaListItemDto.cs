@@ -5,5 +5,5 @@ public sealed record SalesRetentionListItemDto(
     Guid      CustomerId,
     string    AccessKey,
     DateTime  IssueDate,
-    decimal ValorRetenido,
+    decimal RetainedAmount,
     Guid? SalesBillId);

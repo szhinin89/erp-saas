@@ -8,10 +8,10 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 namespace ERP.Application.Modules.Cash.UseCases;
 
 public sealed record GetFlujoEfectivoRealQuery(DateTime DateFrom, DateTime DateTo)
-    : IRequest<Result<IReadOnlyList<FlujoEfectivoDiaDto>>>;
+    : IRequest<Result<IReadOnlyList<DailyCashFlowDto>>>;
 
 public sealed class GetFlujoEfectivoRealQueryHandler
-    : IRequestHandler<GetFlujoEfectivoRealQuery, Result<IReadOnlyList<FlujoEfectivoDiaDto>>>
+    : IRequestHandler<GetFlujoEfectivoRealQuery, Result<IReadOnlyList<DailyCashFlowDto>>>
 {
     private readonly ICashRepository _caja;
     private readonly IAccountingRepository _accounting;
@@ -27,7 +27,7 @@ public sealed class GetFlujoEfectivoRealQueryHandler
         _tenant     = tenant;
     }
 
-    public async Task<Result<IReadOnlyList<FlujoEfectivoDiaDto>>> Handle(
+    public async Task<Result<IReadOnlyList<DailyCashFlowDto>>> Handle(
         GetFlujoEfectivoRealQuery request,
         CancellationToken ct)
     {
@@ -47,8 +47,8 @@ public sealed class GetFlujoEfectivoRealQueryHandler
 
         if (ids.Count == 0)
         {
-            return Result<IReadOnlyList<FlujoEfectivoDiaDto>>.Success(
-                Array.Empty<FlujoEfectivoDiaDto>());
+            return Result<IReadOnlyList<DailyCashFlowDto>>.Success(
+                Array.Empty<DailyCashFlowDto>());
         }
 
         var lines = await _accounting.GetPostedLineAmountsByAccountsAsync(
@@ -66,10 +66,10 @@ public sealed class GetFlujoEfectivoRealQueryHandler
                 var entradas = g.Sum(x => x.Credit);
                 var salidas  = g.Sum(x => x.Debit);
                 var neto     = entradas - salidas;
-                return new FlujoEfectivoDiaDto(g.Key, entradas, salidas, neto);
+                return new DailyCashFlowDto(g.Key, entradas, salidas, neto);
             })
             .ToList();
 
-        return Result<IReadOnlyList<FlujoEfectivoDiaDto>>.Success(porDia);
+        return Result<IReadOnlyList<DailyCashFlowDto>>.Success(porDia);
     }
 }

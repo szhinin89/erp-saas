@@ -13,8 +13,8 @@ using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.EmitirFacturaElectronica;
 
-public sealed class EmitirFacturaElectronicaCommandHandler
-    : IRequestHandler<EmitirFacturaElectronicaCommand, Result<Guid>>
+public sealed class IssueElectronicInvoiceCommandHandler
+    : IRequestHandler<IssueElectronicInvoiceCommand, Result<Guid>>
 {
     private readonly ISalesRepository               _ventasRepository;
     private readonly ISriSettingsRepository     _configSriRepository;
@@ -26,9 +26,9 @@ public sealed class EmitirFacturaElectronicaCommandHandler
     private readonly IUnitOfWork                     _unitOfWork;
     private readonly ICurrentTenant                  _currentTenant;
     private readonly ICurrentUser                    _currentUser;
-    private readonly ILogger<EmitirFacturaElectronicaCommandHandler> _logger;
+    private readonly ILogger<IssueElectronicInvoiceCommandHandler> _logger;
 
-    public EmitirFacturaElectronicaCommandHandler(
+    public IssueElectronicInvoiceCommandHandler(
         ISalesRepository ventasRepository,
         ISriSettingsRepository configSriRepository,
         ISriFacturaElectronicaService sriService,
@@ -39,7 +39,7 @@ public sealed class EmitirFacturaElectronicaCommandHandler
         IUnitOfWork unitOfWork,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
-        ILogger<EmitirFacturaElectronicaCommandHandler> logger)
+        ILogger<IssueElectronicInvoiceCommandHandler> logger)
     {
         _ventasRepository    = ventasRepository;
         _configSriRepository = configSriRepository;
@@ -55,7 +55,7 @@ public sealed class EmitirFacturaElectronicaCommandHandler
     }
 
     public async Task<Result<Guid>> Handle(
-        EmitirFacturaElectronicaCommand command,
+        IssueElectronicInvoiceCommand command,
         CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;

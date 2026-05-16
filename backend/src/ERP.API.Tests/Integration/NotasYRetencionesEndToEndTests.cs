@@ -39,8 +39,8 @@ public sealed class NotasYRetencionesEndToEndTests
         return $"""
             <?xml version="1.0" encoding="UTF-8"?>
             <comprobanteRetencion id="comprobante" version="1.0.0">
-              <infoTributaria><claveAcceso>{clave49}</claveAcceso></infoTributaria>
-              <infoCompRetencion><fechaEmision>10/05/2026</fechaEmision></infoCompRetencion>
+              <infoTributaria><accessKey>{clave49}</accessKey></infoTributaria>
+              <infoCompRetencion><issueDate>10/05/2026</issueDate></infoCompRetencion>
               <impuestos>
                 <vatTotal><valorRetenido>{v}</valorRetenido></vatTotal>
               </impuestos>
@@ -71,13 +71,13 @@ public sealed class NotasYRetencionesEndToEndTests
               <infoTributaria>
                 <razonSocial>PROVEEDOR INTEGRACION S.A.</razonSocial>
                 <ruc>{rucProveedor}</ruc>
-                <claveAcceso>{clave49}</claveAcceso>
+                <accessKey>{clave49}</accessKey>
                 <estab>001</estab>
                 <ptoEmi>001</ptoEmi>
                 <secuencial>{secuencial}</secuencial>
               </infoTributaria>
               <{info}>
-                <fechaEmision>11/05/2026</fechaEmision>
+                <issueDate>11/05/2026</issueDate>
                 <motivo>{motivo}</motivo>
                 <totalSinImpuestos>{subtotal.ToString(CultureInfo.InvariantCulture)}</totalSinImpuestos>
                 <totalConImpuestos>
@@ -126,7 +126,7 @@ public sealed class NotasYRetencionesEndToEndTests
             CancellationToken.None);
         venta.IsSuccess.Should().BeTrue(venta.Error);
         await mediator.Send(new ValidarVentaCommand(venta.Value), CancellationToken.None);
-        var emitir = await mediator.Send(new EmitirFacturaElectronicaCommand(venta.Value), CancellationToken.None);
+        var emitir = await mediator.Send(new IssueElectronicInvoiceCommand(venta.Value), CancellationToken.None);
         emitir.IsSuccess.Should().BeTrue(emitir.Error);
 
         db.CurrentStocks.First(s =>
@@ -134,7 +134,7 @@ public sealed class NotasYRetencionesEndToEndTests
             .Quantity.Should().Be(8m);
 
         var crearNota = await mediator.Send(
-            new CrearSalesNoteCommand(
+            new CreateSalesNoteCommand(
                 venta.Value,
                 "CREDITO",
                 "DevoluciÃ³n parcial",
@@ -181,10 +181,10 @@ public sealed class NotasYRetencionesEndToEndTests
             CancellationToken.None);
         venta.IsSuccess.Should().BeTrue(venta.Error);
         await mediator.Send(new ValidarVentaCommand(venta.Value), CancellationToken.None);
-        await mediator.Send(new EmitirFacturaElectronicaCommand(venta.Value), CancellationToken.None);
+        await mediator.Send(new IssueElectronicInvoiceCommand(venta.Value), CancellationToken.None);
 
         var crearNd = await mediator.Send(
-            new CrearSalesNoteCommand(
+            new CreateSalesNoteCommand(
                 venta.Value,
                 "DEBITO",
                 "Ajuste",
@@ -222,7 +222,7 @@ public sealed class NotasYRetencionesEndToEndTests
             new CrearCompraCommand(
                 ModoCreacionCompra.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xmlCompra),
-                XmlNombreArchivo: "factura.xml",
+                XmlFileName: "factura.xml",
                 SupplierId: null,
                 InvoiceNumber: null,
                 InvoiceDate: null,
@@ -230,7 +230,7 @@ public sealed class NotasYRetencionesEndToEndTests
                 PaymentTerms: null,
                 Notes: null,
                 Lines: null,
-                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.WarehouseId, 2m, seed.ProductId) }),
+                WarehouseAllocations: new[] { new WarehouseAllocationRequest(0, seed.WarehouseId, 2m, seed.ProductId) }),
             CancellationToken.None);
         compraRes.IsSuccess.Should().BeTrue(compraRes.Error);
         await mediator.Send(new ValidarCompraCommand(compraRes.Value!.Id), CancellationToken.None);
@@ -252,7 +252,7 @@ public sealed class NotasYRetencionesEndToEndTests
             vatTotal: 3m);
 
         var importar = await mediator.Send(
-            new ImportarCompraNotaProveedorCommand(
+            new ImportSupplierNoteCommand(
                 Encoding.UTF8.GetBytes(xmlNota),
                 "nota-credito-proveedor.xml",
                 compraRes.Value.Id,
@@ -266,7 +266,7 @@ public sealed class NotasYRetencionesEndToEndTests
         aprobar.IsSuccess.Should().BeTrue(aprobar.Error);
 
         var nota = db.PurchNotes.First(n => n.Id == importar.Value.Id);
-        nota.Status.Should().Be("Aprobado");
+        nota.Status.Should().Be("IsApproved");
         nota.JournalEntryId.Should().NotBeNull();
 
         db.CurrentStocks.First(s =>
@@ -299,7 +299,7 @@ public sealed class NotasYRetencionesEndToEndTests
             new CrearCompraCommand(
                 ModoCreacionCompra.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xmlCompra),
-                XmlNombreArchivo: "factura.xml",
+                XmlFileName: "factura.xml",
                 SupplierId: null,
                 InvoiceNumber: null,
                 InvoiceDate: null,
@@ -307,7 +307,7 @@ public sealed class NotasYRetencionesEndToEndTests
                 PaymentTerms: null,
                 Notes: null,
                 Lines: null,
-                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.WarehouseId, 2m, seed.ProductId) }),
+                WarehouseAllocations: new[] { new WarehouseAllocationRequest(0, seed.WarehouseId, 2m, seed.ProductId) }),
             CancellationToken.None);
         compraRes.IsSuccess.Should().BeTrue(compraRes.Error);
         await mediator.Send(new ValidarCompraCommand(compraRes.Value!.Id), CancellationToken.None);
@@ -325,7 +325,7 @@ public sealed class NotasYRetencionesEndToEndTests
             vatTotal: 3m);
 
         var importar = await mediator.Send(
-            new ImportarCompraNotaProveedorCommand(
+            new ImportSupplierNoteCommand(
                 Encoding.UTF8.GetBytes(xmlNota),
                 "nota-debito-proveedor.xml",
                 compraRes.Value.Id,
@@ -339,7 +339,7 @@ public sealed class NotasYRetencionesEndToEndTests
         aprobar.IsSuccess.Should().BeTrue(aprobar.Error);
 
         var nota = db.PurchNotes.First(n => n.Id == importar.Value.Id);
-        nota.Status.Should().Be("Aprobado");
+        nota.Status.Should().Be("IsApproved");
         nota.JournalEntryId.Should().NotBeNull();
 
         db.CurrentStocks.First(s =>
@@ -374,7 +374,7 @@ public sealed class NotasYRetencionesEndToEndTests
             new CrearCompraCommand(
                 ModoCreacionCompra.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xmlCompra),
-                XmlNombreArchivo: "factura.xml",
+                XmlFileName: "factura.xml",
                 SupplierId: null,
                 InvoiceNumber: null,
                 InvoiceDate: null,
@@ -382,7 +382,7 @@ public sealed class NotasYRetencionesEndToEndTests
                 PaymentTerms: null,
                 Notes: null,
                 Lines: null,
-                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.WarehouseId, 2m, seed.ProductId) }),
+                WarehouseAllocations: new[] { new WarehouseAllocationRequest(0, seed.WarehouseId, 2m, seed.ProductId) }),
             CancellationToken.None);
         compraRes.IsSuccess.Should().BeTrue(compraRes.Error);
         await mediator.Send(new ValidarCompraCommand(compraRes.Value!.Id), CancellationToken.None);
@@ -392,10 +392,10 @@ public sealed class NotasYRetencionesEndToEndTests
         var cuentaPasivo = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "2.1.99");
 
         var gastoRes = await mediator.Send(
-            new CrearGastoCommand(
-                ModoCreacionGasto.Manual,
+            new CreateExpenseCommand(
+                ExpenseCreationMode.Manual,
                 XmlContent: null,
-                XmlNombreArchivo: null,
+                XmlFileName: null,
                 SupplierId: proveedorId,
                 IssueDate: DateTime.UtcNow.Date,
                 Concept: "Servicio de soporte",
@@ -406,8 +406,8 @@ public sealed class NotasYRetencionesEndToEndTests
                 Notes: null),
             CancellationToken.None);
         gastoRes.IsSuccess.Should().BeTrue(gastoRes.Error);
-        await mediator.Send(new ValidarGastoCommand(gastoRes.Value!.Id), CancellationToken.None);
-        await mediator.Send(new AprobarGastoCommand(gastoRes.Value.Id), CancellationToken.None);
+        await mediator.Send(new ValidateExpenseCommand(gastoRes.Value!.Id), CancellationToken.None);
+        await mediator.Send(new ApproveExpenseCommand(gastoRes.Value.Id), CancellationToken.None);
 
         var stockAntes = db.CurrentStocks.First(s =>
             s.TenantId == seed.TenantId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId).Quantity;
@@ -424,7 +424,7 @@ public sealed class NotasYRetencionesEndToEndTests
             vatTotal: 1m);
 
         var importar = await mediator.Send(
-            new ImportarCompraNotaProveedorCommand(
+            new ImportSupplierNoteCommand(
                 Encoding.UTF8.GetBytes(xmlNota),
                 "nota-credito-gasto.xml",
                 PurchBillId: null,
@@ -481,7 +481,7 @@ public sealed class NotasYRetencionesEndToEndTests
             new CrearCompraCommand(
                 ModoCreacionCompra.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xml),
-                XmlNombreArchivo: "factura.xml",
+                XmlFileName: "factura.xml",
                 SupplierId: null,
                 InvoiceNumber: null,
                 InvoiceDate: null,
@@ -489,7 +489,7 @@ public sealed class NotasYRetencionesEndToEndTests
                 PaymentTerms: null,
                 Notes: null,
                 Lines: null,
-                AsignacionesBodega: new[] { new AsignacionBodegaRequest(0, seed.WarehouseId, 2m, seed.ProductId) }),
+                WarehouseAllocations: new[] { new WarehouseAllocationRequest(0, seed.WarehouseId, 2m, seed.ProductId) }),
             CancellationToken.None);
         crear.IsSuccess.Should().BeTrue(crear.Error);
         await mediator.Send(new ValidarCompraCommand(crear.Value!.Id), CancellationToken.None);
@@ -498,10 +498,10 @@ public sealed class NotasYRetencionesEndToEndTests
         var compra = db.PurchBills.First(c => c.Id == crear.Value.Id);
         compra.Subtotal.Should().BeGreaterThan(0m);
 
-        var gen = await mediator.Send(new GenerarIssuedRetentionCommand(compra.Id), CancellationToken.None);
+        var gen = await mediator.Send(new GenerateIssuedRetentionCommand(compra.Id), CancellationToken.None);
         gen.IsSuccess.Should().BeTrue(gen.Error);
 
-        var env = await mediator.Send(new EnviarIssuedRetentionCommand(gen.Value), CancellationToken.None);
+        var env = await mediator.Send(new SendIssuedRetentionCommand(gen.Value), CancellationToken.None);
         env.IsSuccess.Should().BeTrue(env.Error);
 
         var ret = await db.IssuedRetentions.FindAsync(new object[] { gen.Value }, CancellationToken.None);
@@ -544,13 +544,13 @@ public sealed class NotasYRetencionesEndToEndTests
             CancellationToken.None);
         venta.IsSuccess.Should().BeTrue(venta.Error);
         await mediator.Send(new ValidarVentaCommand(venta.Value), CancellationToken.None);
-        await mediator.Send(new EmitirFacturaElectronicaCommand(venta.Value), CancellationToken.None);
+        await mediator.Send(new IssueElectronicInvoiceCommand(venta.Value), CancellationToken.None);
 
         var claveRet = ClaveAcceso49TestFactory.FromPrefix48(new string('8', 48));
         var xml      = BuildRetencionRecibidaXml(claveRet, 3.75m);
 
         var reg = await mediator.Send(
-            new RegistrarSalesRetentionCommand(venta.Value, xml),
+            new RegisterSalesRetentionCommand(venta.Value, xml),
             CancellationToken.None);
         reg.IsSuccess.Should().BeTrue(reg.Error);
 

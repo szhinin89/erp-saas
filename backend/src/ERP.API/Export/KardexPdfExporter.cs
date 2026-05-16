@@ -68,18 +68,18 @@ public static class KardexPdfExporter
                     col.Spacing(6);
 
                     // Saldo inicial
-                    if (kardex.Resumen.InventarioInicialCantidad != 0)
+                    if (kardex.Resumen.OpeningQuantity != 0)
                     {
-                        var cpa = kardex.Resumen.InventarioInicialCantidad > 0
-                            ? kardex.Resumen.InventarioInicialValor / kardex.Resumen.InventarioInicialCantidad
+                        var cpa = kardex.Resumen.OpeningQuantity > 0
+                            ? kardex.Resumen.OpeningValue / kardex.Resumen.OpeningQuantity
                             : 0m;
                         col.Item()
                            .Background("#EBEBEB").Border(1).BorderColor("#AAAAAA").Padding(5)
                            .Row(row =>
                            {
                                row.RelativeItem().Text("SALDO INICIAL (antes del perÃ­odo)").Bold();
-                               row.ConstantItem(105).AlignRight().Text($"Cant: {kardex.Resumen.InventarioInicialCantidad:N4}");
-                               row.ConstantItem(110).AlignRight().Text($"Valor: {kardex.Resumen.InventarioInicialValor:N4}");
+                               row.ConstantItem(105).AlignRight().Text($"Cant: {kardex.Resumen.OpeningQuantity:N4}");
+                               row.ConstantItem(110).AlignRight().Text($"Valor: {kardex.Resumen.OpeningValue:N4}");
                                row.ConstantItem(110).AlignRight().Text($"Promedio: {cpa:N4}");
                            });
                     }
@@ -138,19 +138,19 @@ public static class KardexPdfExporter
                         {
                             var m   = kardex.Rows[i];
                             var alt = i % 2 == 1 ? ColAltRow : ColWhite;
-                            var entBg = m.EntradaCantidad > 0 ? ColEntrada : alt;
-                            var salBg = m.SalidaCantidad  > 0 ? ColSalida  : alt;
+                            var entBg = m.InboundQuantity > 0 ? ColEntrada : alt;
+                            var salBg = m.OutboundQuantity  > 0 ? ColSalida  : alt;
 
                             Cell(table, m.Fecha.ToLocalTime().ToString("dd/MM/yy HH:mm"), alt,   left: true);
                             Cell(table, m.MovementType,               alt,    left: true);
                             Cell(table, m.Referencia ?? "",             alt,    left: true);
-                            Cell(table, Fmt(m.EntradaCantidad), entBg, zero: m.EntradaCantidad == 0);
-                            Cell(table, Fmt(m.EntradaValor),   entBg, zero: m.EntradaValor    == 0);
-                            Cell(table, Fmt(m.SalidaCantidad), salBg, zero: m.SalidaCantidad  == 0);
-                            Cell(table, Fmt(m.SalidaValor),   salBg, zero: m.SalidaValor     == 0);
-                            Cell(table, Fmt(m.SaldoCantidad),  ColSaldo);
-                            Cell(table, Fmt(m.SaldoValor),     ColSaldo);
-                            Cell(table, Fmt(m.CostoUnitarioPromedio), ColSaldo);
+                            Cell(table, Fmt(m.InboundQuantity), entBg, zero: m.InboundQuantity == 0);
+                            Cell(table, Fmt(m.InboundValue),   entBg, zero: m.InboundValue    == 0);
+                            Cell(table, Fmt(m.OutboundQuantity), salBg, zero: m.OutboundQuantity  == 0);
+                            Cell(table, Fmt(m.OutboundValue),   salBg, zero: m.OutboundValue     == 0);
+                            Cell(table, Fmt(m.BalanceQuantity),  ColSaldo);
+                            Cell(table, Fmt(m.BalanceValue),     ColSaldo);
+                            Cell(table, Fmt(m.AverageUnitCost), ColSaldo);
                         }
                     });
 
@@ -162,16 +162,16 @@ public static class KardexPdfExporter
                            resCol.Item().Text("RESUMEN DEL PERÃODO").Bold().FontSize(9).FontColor(ColPrimario);
                            resCol.Item().PaddingTop(4).Row(row =>
                            {
-                               ResumenBox(row, "Inv. Inicial",  kardex.Resumen.InventarioInicialCantidad, kardex.Resumen.InventarioInicialValor, ColPrimario);
-                               ResumenBox(row, "Entradas",       kardex.Resumen.EntradasCantidad,          kardex.Resumen.EntradasValor,          ColPrimario);
-                               ResumenBox(row, "Salidas",        kardex.Resumen.SalidasCantidad,           kardex.Resumen.SalidasValor,           ColPrimario);
-                               ResumenBox(row, "Inv. Final",     kardex.Resumen.InventarioFinalCantidad,   kardex.Resumen.InventarioFinalValor,   ColPrimario);
+                               ResumenBox(row, "Inv. Inicial",  kardex.Resumen.OpeningQuantity, kardex.Resumen.OpeningValue, ColPrimario);
+                               ResumenBox(row, "Inflows",       kardex.Resumen.TotalInboundQuantity,          kardex.Resumen.TotalInboundValue,          ColPrimario);
+                               ResumenBox(row, "Outflows",        kardex.Resumen.TotalOutboundQuantity,           kardex.Resumen.TotalOutboundValue,           ColPrimario);
+                               ResumenBox(row, "Inv. Final",     kardex.Resumen.ClosingQuantity,   kardex.Resumen.ClosingValue,   ColPrimario);
                                row.RelativeItem()
                                   .Border(1).BorderColor("#DDDDDD").Background(ColWhite).Padding(5)
                                   .Column(c2 =>
                                   {
                                       c2.Item().Text("Costo Prom. Final").Bold().FontSize(7).FontColor(ColPrimario);
-                                      c2.Item().Text($"$ {kardex.Resumen.CostoPromedioFinal:N4}").Bold().FontSize(10).FontColor(ColPrimario);
+                                      c2.Item().Text($"$ {kardex.Resumen.FinalAverageCost:N4}").Bold().FontSize(10).FontColor(ColPrimario);
                                   });
                            });
                        });

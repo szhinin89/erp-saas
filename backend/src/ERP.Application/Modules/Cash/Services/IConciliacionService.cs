@@ -5,7 +5,7 @@ namespace ERP.Application.Modules.Cash.Services;
 
 public interface IReconciliationService
 {
-    Task<Result<IReadOnlyList<SugerenciaReconciliationDto>>> SugerirConciliacionAsync(Guid extractoId, CancellationToken ct);
+    Task<Result<IReadOnlyList<ReconciliationSuggestionDto>>> SugerirConciliacionAsync(Guid extractoId, CancellationToken ct);
 
     Task<Result<bool>> ConciliarMovimientoAsync(Guid movimientoId, Guid asientoContableId, CancellationToken ct);
 }

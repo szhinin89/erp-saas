@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage, PageShell } from '../../../../components/PageShell';
 import { Card } from '../../../../components/ui/Card';
@@ -32,7 +32,7 @@ export function TransferenciaDetailPage() {
   return (
     <PageShell
       kicker="Inventario · Transferencias"
-      title={transferencia?.numeroTransferencia ?? 'Cargando…'}
+      title={transferencia?.transferNumber ?? 'Cargando…'}
       action={
         esBorrador ? (
           <div className="trf-action-row">
@@ -73,17 +73,17 @@ export function TransferenciaDetailPage() {
           <>
             {/* Encabezado */}
             <div className="trf-detail-grid">
-              <Dato label="Número"  valor={transferencia.numeroTransferencia} />
+              <Dato label="Número"  valor={transferencia.transferNumber} />
               <Dato label="Estado"  valor={<TransferenciaEstadoBadge estado={transferencia.status} />} />
-              <Dato label="Fecha"   valor={new Date(transferencia.fechaTransferencia).toLocaleString()} />
-              <Dato label="Bodega origen"  valor={transferencia.bodegaOrigenNombre} />
-              <Dato label="Bodega destino" valor={transferencia.bodegaDestinoNombre} />
+              <Dato label="Fecha"   valor={new Date(transferencia.transferDate).toLocaleString()} />
+              <Dato label="Bodega origen"  valor={transferencia.sourceWarehouseName} />
+              <Dato label="Bodega destino" valor={transferencia.destinationWarehouseName} />
               {transferencia.reason && <Dato label="Motivo" valor={transferencia.reason} />}
               {transferencia.notes && <Dato label="Observaciones" valor={transferencia.notes} />}
-              {transferencia.fechaConfirmacion && (
+              {transferencia.confirmationDate && (
                 <Dato
                   label="Confirmado el"
-                  valor={new Date(transferencia.fechaConfirmacion).toLocaleString()}
+                  valor={new Date(transferencia.confirmationDate).toLocaleString()}
                 />
               )}
             </div>

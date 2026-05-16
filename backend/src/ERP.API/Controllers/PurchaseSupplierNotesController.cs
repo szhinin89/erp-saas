@@ -36,7 +36,7 @@ public sealed class PurchaseSupplierNotesController : ControllerBase
         var status = Request.Query.TryGetValue("estado", out var ev) ? ev.ToString() : null;
 
         var result = await _mediator.Send(
-            new GetPurchasesNotesSupplierQuery(proveedorId, compraFacturaId, gastoFacturaId, status), ct);
+            new GetPurchaseSupplierNotesQuery(proveedorId, compraFacturaId, gastoFacturaId, status), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<SupplierPurchaseNoteDto>());
     }
 
@@ -81,7 +81,7 @@ public sealed class PurchaseSupplierNotesController : ControllerBase
                 body?.AuthorizationNumber,
                 body?.AuthorizationDate),
             ct);
-        return this.ToOkOrBadRequest(result, "Aprobado");
+        return this.ToOkOrBadRequest(result, "IsApproved");
     }
 }
 

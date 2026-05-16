@@ -123,10 +123,10 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             var secuencial = CapturarSecuencialComoString(configSri);
             await _configSriRepository.UpdateAsync(configSri, ct);
 
-            var fechaEmision = DateTime.UtcNow;
-            var claveAcceso = ClaveAccesoHelper.Generar(
+            var issueDate = DateTime.UtcNow;
+            var accessKey = ClaveAccesoHelper.Generar(
                 configSri.Ruc, configSri.Environment, configSri.EstabCode,
-                configSri.EmPointCode, configSri.EmissionType, secuencial, fechaEmision);
+                configSri.EmPointCode, configSri.EmissionType, secuencial, issueDate);
 
             // 7. Calcular totales y construir detalles
             decimal subtotal = 0;
@@ -173,8 +173,8 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
                 estabCode:     configSri.EstabCode,
                 emPointCode:   configSri.EmPointCode,
                 sequential:    secuencial,
-                accessKey:     claveAcceso,
-                issueDate:     fechaEmision,
+                accessKey:     accessKey,
+                issueDate:     issueDate,
                 subtotal:      subtotal,
                 vatTotal:      totalVat,
                 total:         total,

@@ -5,13 +5,13 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.GetStockDisponibleParaVenta;
 
-public sealed class GetStockDisponibleParaSaleQueryHandler
-    : IRequestHandler<GetStockDisponibleParaSaleQuery, Result<StockDisponibleDto>>
+public sealed class GetAvailableStockForSaleQueryHandler
+    : IRequestHandler<GetAvailableStockForSaleQuery, Result<StockDisponibleDto>>
 {
     private readonly IStockRepository _stockRepository;
     private readonly ICurrentTenant             _currentTenant;
 
-    public GetStockDisponibleParaSaleQueryHandler(
+    public GetAvailableStockForSaleQueryHandler(
         IStockRepository stockRepository,
         ICurrentTenant currentTenant)
     {
@@ -20,7 +20,7 @@ public sealed class GetStockDisponibleParaSaleQueryHandler
     }
 
     public async Task<Result<StockDisponibleDto>> Handle(
-        GetStockDisponibleParaSaleQuery query, CancellationToken ct)
+        GetAvailableStockForSaleQuery query, CancellationToken ct)
     {
         var stock = await _stockRepository.GetStockAsync(
             _currentTenant.TenantId, query.WarehouseId, query.ProductId, ct);

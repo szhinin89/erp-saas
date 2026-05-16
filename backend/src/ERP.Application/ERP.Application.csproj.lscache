@@ -146,7 +146,7 @@ Modules/Accounting/DTOs/
  ConfiguracionGastoCategoriaDto.cs
  CuentasParaAsiento.cs
  JournalEntryDto.cs
-Modules/Accounting/UseCases/ConfiguracionContable/
+Modules/Accounting/UseCases/AccountingConfiguration/
  CreateConfiguracionGastoCategoriaCommand.cs
  CreateConfiguracionGastoCategoriaCommandHandler.cs
  DeleteConfiguracionGastoCategoriaCommand.cs
@@ -296,41 +296,41 @@ Modules/Common/
 Modules/Configuration/DTOs/
  ConfiguracionFacturacionDto.cs
  ConfiguracionSRIDto.cs
-Modules/Configuration/UseCases/GetConfiguracionFacturacion/
+Modules/Configuration/UseCases/GetBillingSettings/
  GetConfiguracionFacturacionQuery.cs
  GetConfiguracionFacturacionQueryHandler.cs
-Modules/Configuration/UseCases/GetConfiguracionSRI/
+Modules/Configuration/UseCases/GetSriConfiguration/
  GetConfiguracionSRIQuery.cs
  GetConfiguracionSRIQueryHandler.cs
-Modules/Configuration/UseCases/UpsertConfiguracionFacturacion/
+Modules/Configuration/UseCases/UpsertBillingSettings/
  UpsertConfiguracionFacturacionCommand.cs
  UpsertConfiguracionFacturacionCommandHandler.cs
  UpsertConfiguracionFacturacionCommandValidator.cs
-Modules/Configuration/UseCases/UpsertConfiguracionSRI/
+Modules/Configuration/UseCases/UpsertSriConfiguration/
  UpsertConfiguracionSRICommand.cs
  UpsertConfiguracionSRICommandHandler.cs
  UpsertConfiguracionSRICommandValidator.cs
 Modules/Expenses/
  DTOs/GastoDtos.cs
- UseCases/AprobarGasto/
+ UseCases/ApproveExpense/
   AprobarGastoCommand.cs
   AprobarGastoCommandHandler.cs
   AprobarGastoCommandValidator.cs
- UseCases/CrearGasto/
+ UseCases/CreateExpense/
   CrearGastoCommand.cs
   CrearGastoCommandHandler.cs
   CrearGastoCommandValidator.cs
- UseCases/GetGastoById/
+ UseCases/GetExpenseById/
   GetGastoByIdQuery.cs
   GetGastoByIdQueryHandler.cs
- UseCases/GetGastos/
+ UseCases/GetExpenses/
   GetGastosQuery.cs
   GetGastosQueryHandler.cs
- UseCases/RechazarGasto/
+ UseCases/RejectExpense/
   RechazarGastoCommand.cs
   RechazarGastoCommandHandler.cs
   RechazarGastoCommandValidator.cs
- UseCases/ValidarGasto/
+ UseCases/ValidateExpense/
   ValidarGastoCommand.cs
   ValidarGastoCommandHandler.cs
   ValidarGastoCommandValidator.cs
@@ -348,74 +348,74 @@ Modules/Inventory/EventHandlers/
 Modules/Inventory/
  KardexCalculator.cs
  Services/KardexService.cs
- UseCases/ActualizarBodega/
-  UpdateBodegaCommand.cs
-  UpdateBodegaCommandHandler.cs
-  UpdateBodegaCommandValidator.cs
- UseCases/CancelarAjuste/
+ UseCases/CancelAdjustment/
   CancelarAjusteCommand.cs
   CancelarAjusteCommandHandler.cs
   CancelarAjusteCommandValidator.cs
- UseCases/CancelarTransferencia/
+ UseCases/CancelTransfer/
   CancelarTransferenciaCommand.cs
   CancelarTransferenciaCommandHandler.cs
   CancelarTransferenciaCommandValidator.cs
- UseCases/ConfirmarTransferencia/
+ UseCases/ConfirmTransfer/
   ConfirmarTransferenciaCommand.cs
   ConfirmarTransferenciaCommandHandler.cs
   ConfirmarTransferenciaCommandValidator.cs
- UseCases/CrearAjuste/
+ UseCases/CreateAdjustment/
   CrearAjusteCommand.cs
   CrearAjusteCommandHandler.cs
   CrearAjusteCommandValidator.cs
- UseCases/CrearBodega/
-  CreateBodegaCommand.cs
-  CreateBodegaCommandHandler.cs
-  CreateBodegaCommandValidator.cs
- UseCases/CrearTransferencia/
+ UseCases/CreateTransfer/
   CrearTransferenciaCommand.cs
   CrearTransferenciaCommandHandler.cs
   CrearTransferenciaCommandValidator.cs
- UseCases/DeshabilitarBodega/
+ UseCases/CreateWarehouse/
+  CreateBodegaCommand.cs
+  CreateBodegaCommandHandler.cs
+  CreateBodegaCommandValidator.cs
+ UseCases/DisableWarehouse/
   DisableBodegaCommand.cs
   DisableBodegaCommandHandler.cs
   DisableBodegaCommandValidator.cs
- UseCases/EjecutarAjuste/
-  EjecutarAjusteCommand.cs
-  EjecutarAjusteCommandHandler.cs
-  EjecutarAjusteCommandValidator.cs
- UseCases/GetAjusteById/
-  GetAjusteByIdQuery.cs
-  GetAjusteByIdQueryHandler.cs
- UseCases/GetAjustesList/
-  GetAjustesListQuery.cs
-  GetAjustesListQueryHandler.cs
- UseCases/GetKardex/
-  GetKardexQuery.cs
-  GetKardexQueryHandler.cs
- UseCases/GetStockActualPorBodega/
-  GetStockActualPorBodegaQuery.cs
-  GetStockActualPorBodegaQueryHandler.cs
- UseCases/GetTransferenciaById/
-  GetTransferenciaByIdQuery.cs
-  GetTransferenciaByIdQueryHandler.cs
- UseCases/GetTransferenciasList/
-  GetTransferenciasListQuery.cs
-  GetTransferenciasListQueryHandler.cs
- UseCases/HabilitarBodega/
+ UseCases/EnableWarehouse/
   EnableBodegaCommand.cs
   EnableBodegaCommandHandler.cs
   EnableBodegaCommandValidator.cs
- UseCases/ListarBodegas/
-  GetBodegasQuery.cs
-  GetBodegasQueryHandler.cs
- UseCases/ObtenerBodega/
+ UseCases/ExecuteAdjustment/
+  EjecutarAjusteCommand.cs
+  EjecutarAjusteCommandHandler.cs
+  EjecutarAjusteCommandValidator.cs
+ UseCases/GetAdjustmentById/
+  GetAjusteByIdQuery.cs
+  GetAjusteByIdQueryHandler.cs
+ UseCases/GetAdjustmentsList/
+  GetAjustesListQuery.cs
+  GetAjustesListQueryHandler.cs
+ UseCases/GetCurrentStockByWarehouse/
+  GetStockActualPorBodegaQuery.cs
+  GetStockActualPorBodegaQueryHandler.cs
+ UseCases/GetKardex/
+  GetKardexQuery.cs
+  GetKardexQueryHandler.cs
+ UseCases/GetTransferById/
+  GetTransferenciaByIdQuery.cs
+  GetTransferenciaByIdQueryHandler.cs
+ UseCases/GetTransfersList/
+  GetTransferenciasListQuery.cs
+  GetTransferenciasListQueryHandler.cs
+ UseCases/GetWarehouse/
   GetBodegaByIdQuery.cs
   GetBodegaByIdQueryHandler.cs
- UseCases/RecalcularSnapshots/
+ UseCases/ListWarehouses/
+  GetBodegasQuery.cs
+  GetBodegasQueryHandler.cs
+ UseCases/RecalculateSnapshots/
   RecalcularSnapshotsCommand.cs
   RecalcularSnapshotsCommandHandler.cs
   RecalcularSnapshotsCommandValidator.cs
+ UseCases/UpdateWarehouse/
+  UpdateBodegaCommand.cs
+  UpdateBodegaCommandHandler.cs
+  UpdateBodegaCommandValidator.cs
 Modules/Navigation/DTOs/
  AdminNavigationMenuDtos.cs
  SessionMenuDtos.cs
@@ -543,50 +543,46 @@ Modules/Products/UseCases/UpdateProduct/
  UpdateProductCommand.cs
  UpdateProductCommandValidator.cs
  UpdateProductHandler.cs
+Modules/Purchasing/DTOs/
+ CompraDtos.cs
+ CompraRetencionEmitidaListItemDto.cs
+ OrdenCompraDtos.cs
+ ProveedorDtos.cs
 Modules/Purchasing/
- CompraAsignacionBodegasRules.cs
- DTOs/
-  CompraDtos.cs
-  CompraRetencionEmitidaListItemDto.cs
-  OrdenCompraDtos.cs
-  ProveedorDtos.cs
+ PurchaseWarehouseAllocationRules.cs
  Services/CompraRetencionCalculo.cs
  UseCases/ActualizarProveedor/
   UpdateProveedorCommand.cs
   UpdateProveedorCommandHandler.cs
   UpdateProveedorCommandValidator.cs
- UseCases/AprobarCompra/
+ UseCases/ApprovePurchase/
   AprobarCompraCommand.cs
   AprobarCompraCommandHandler.cs
   AprobarCompraCommandValidator.cs
- UseCases/AprobarOrdenCompra/
+ UseCases/ApprovePurchaseOrder/
   AprobarOrdenCompraCommand.cs
   AprobarOrdenCompraCommandHandler.cs
   AprobarOrdenCompraCommandValidator.cs
- UseCases/CancelarOrdenCompra/
+ UseCases/CancelPurchaseOrder/
   CancelarOrdenCompraCommand.cs
   CancelarOrdenCompraCommandHandler.cs
   CancelarOrdenCompraCommandValidator.cs
- UseCases/CrearCompra/
-  CrearCompraCommand.cs
-  CrearCompraCommandHandler.cs
-  CrearCompraCommandValidator.cs
- UseCases/CrearOrdenCompra/
-  CrearOrdenCompraCommand.cs
-  CrearOrdenCompraCommandHandler.cs
-  CrearOrdenCompraCommandValidator.cs
  UseCases/CrearProveedor/
   CreateProveedorCommand.cs
   CreateProveedorCommandHandler.cs
   CreateProveedorCommandValidator.cs
+ UseCases/CreatePurchase/
+  CrearCompraCommand.cs
+  CrearCompraCommandHandler.cs
+  CrearCompraCommandValidator.cs
+ UseCases/CreatePurchaseOrder/
+  CrearOrdenCompraCommand.cs
+  CrearOrdenCompraCommandHandler.cs
+  CrearOrdenCompraCommandValidator.cs
  UseCases/DeshabilitarProveedor/
   DisableProveedorCommand.cs
   DisableProveedorCommandHandler.cs
   DisableProveedorCommandValidator.cs
- UseCases/EnviarOrdenCompra/
-  EnviarOrdenCompraCommand.cs
-  EnviarOrdenCompraCommandHandler.cs
-  EnviarOrdenCompraCommandValidator.cs
  UseCases/GetCompraById/
   GetCompraByIdQuery.cs
   GetCompraByIdQueryHandler.cs
@@ -596,47 +592,51 @@ Modules/Purchasing/
  UseCases/GetOrdenCompraById/
   GetOrdenCompraByIdQuery.cs
   GetOrdenCompraByIdQueryHandler.cs
- UseCases/GetOrdenesCompraList/
-  GetOrdenesCompraListQuery.cs
-  GetOrdenesCompraListQueryHandler.cs
- UseCases/GetOrdenesPendientesPorFacturar/
+ UseCases/GetOrdersPendingBilling/
   GetOrdenesPendientesPorFacturarQuery.cs
   GetOrdenesPendientesPorFacturarQueryHandler.cs
+ UseCases/GetPurchaseOrdersList/
+  GetOrdenesCompraListQuery.cs
+  GetOrdenesCompraListQueryHandler.cs
  UseCases/HabilitarProveedor/
   EnableProveedorCommand.cs
   EnableProveedorCommandHandler.cs
   EnableProveedorCommandValidator.cs
+ UseCases/LinkInvoiceToPurchaseOrder/
+  VincularFacturaAOrdenCompraCommand.cs
+  VincularFacturaAOrdenCompraCommandHandler.cs
+  VincularFacturaAOrdenCompraCommandValidator.cs
  UseCases/ListarProveedores/
   GetProveedoresQuery.cs
   GetProveedoresQueryHandler.cs
- UseCases/NotasProveedor/
+ UseCases/ObtenerProveedor/
+  GetProveedorByIdQuery.cs
+  GetProveedorByIdQueryHandler.cs
+ UseCases/RejectPurchase/
+  RechazarCompraCommand.cs
+  RechazarCompraCommandHandler.cs
+  RechazarCompraCommandValidator.cs
+ UseCases/Retentions/
+  EnviarCompraRetencionEmitidaCommand.cs
+  EnviarCompraRetencionEmitidaCommandHandler.cs
+  GenerarCompraRetencionEmitidaCommand.cs
+  GenerarCompraRetencionEmitidaCommandHandler.cs
+  GetCompraRetencionesEmitidasListQuery.cs
+ UseCases/SendPurchaseOrder/
+  EnviarOrdenCompraCommand.cs
+  EnviarOrdenCompraCommandHandler.cs
+  EnviarOrdenCompraCommandValidator.cs
+ UseCases/SupplierNotes/
   AprobarCompraNotaProveedorCommand.cs
   AprobarCompraNotaProveedorCommandHandler.cs
   GetComprasNotasProveedorQuery.cs
   GetComprasNotasProveedorQueryHandler.cs
   ImportarCompraNotaProveedorCommand.cs
   ImportarCompraNotaProveedorCommandHandler.cs
- UseCases/ObtenerProveedor/
-  GetProveedorByIdQuery.cs
-  GetProveedorByIdQueryHandler.cs
- UseCases/RechazarCompra/
-  RechazarCompraCommand.cs
-  RechazarCompraCommandHandler.cs
-  RechazarCompraCommandValidator.cs
- UseCases/Retenciones/
-  EnviarCompraRetencionEmitidaCommand.cs
-  EnviarCompraRetencionEmitidaCommandHandler.cs
-  GenerarCompraRetencionEmitidaCommand.cs
-  GenerarCompraRetencionEmitidaCommandHandler.cs
-  GetCompraRetencionesEmitidasListQuery.cs
- UseCases/ValidarCompra/
+ UseCases/ValidatePurchase/
   ValidarCompraCommand.cs
   ValidarCompraCommandHandler.cs
   ValidarCompraCommandValidator.cs
- UseCases/VincularFacturaAOrdenCompra/
-  VincularFacturaAOrdenCompraCommand.cs
-  VincularFacturaAOrdenCompraCommandHandler.cs
-  VincularFacturaAOrdenCompraCommandValidator.cs
 Modules/Sales/
  CustomerInputValidation.cs
  DTOs/
@@ -730,7 +730,7 @@ Modules/Tenants/UseCases/UpdateTenantSubscription/
  UpdateTenantSubscriptionCommandValidator.cs
  UpdateTenantSubscriptionHandler.cs
 Navigation/
- DTOs/FuncionalidadArbolDto.cs
+ DTOs/AppFeatureTreeDto.cs
  ITenantMenuAdminService.cs
  ITenantSessionMenuResolver.cs
  SessionMenuJsonParser.cs
@@ -745,16 +745,16 @@ Sales/DTOs/
 Sales/
  Models/FacturaTirillaModel.cs
  Services/RetencionRecibidaXmlParser.cs
- UseCases/Notas/
+ UseCases/ReceivedRetentions/
+  GetVentasRetencionesRecibidasListQuery.cs
+  RegistrarVentasRetencionRecibidaCommand.cs
+  RegistrarVentasRetencionRecibidaCommandHandler.cs
+ UseCases/SalesNotes/
   CrearVentasNotaCreditoDebitoCommand.cs
   CrearVentasNotaCreditoDebitoCommandHandler.cs
   EnviarVentasNotaSriCommand.cs
   EnviarVentasNotaSriCommandHandler.cs
   GetVentasNotasListQuery.cs
- UseCases/RetencionesRecibidas/
-  GetVentasRetencionesRecibidasListQuery.cs
-  RegistrarVentasRetencionRecibidaCommand.cs
-  RegistrarVentasRetencionRecibidaCommandHandler.cs
 Subscriptions/
  ISaasCatalogQuery.cs
  ISaasPlansAdminService.cs

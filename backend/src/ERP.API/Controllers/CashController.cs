@@ -106,7 +106,7 @@ public sealed class CashController : ControllerBase
     public async Task<IActionResult> SuggestReconciliation(Guid extractoId, CancellationToken ct)
     {
         var r = await _mediator.Send(new SugerirReconciliationQuery(extractoId), ct);
-        return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<SugerenciaReconciliationDto>());
+        return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<ReconciliationSuggestionDto>());
     }
 
     public sealed record ConciliarRequest(Guid JournalEntryId);
@@ -116,7 +116,7 @@ public sealed class CashController : ControllerBase
     public async Task<IActionResult> ReconcileTransaction(Guid movimientoId, [FromBody] ConciliarRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(new ConciliarBankTransactionCommand(movimientoId, body.JournalEntryId), ct);
-        return this.ToOkOrBadRequest(r, "Conciliado", () => false);
+        return this.ToOkOrBadRequest(r, "Reconciled", () => false);
     }
 
     [HttpGet("cajas-chicas")]
@@ -168,7 +168,7 @@ public sealed class CashController : ControllerBase
     public async Task<IActionResult> ApproveCashCount(Guid arqueoId, CancellationToken ct)
     {
         var r = await _mediator.Send(new AprobarCashCountCommand(arqueoId), ct);
-        return this.ToOkOrBadRequest(r, "Aprobado");
+        return this.ToOkOrBadRequest(r, "IsApproved");
     }
 
     [HttpPost("caja-chica/reposicion")]
@@ -184,7 +184,7 @@ public sealed class CashController : ControllerBase
     public async Task<IActionResult> GetActualCashFlow([FromQuery] DateTime desde, [FromQuery] DateTime hasta, CancellationToken ct)
     {
         var r = await _mediator.Send(new GetFlujoEfectivoRealQuery(desde, hasta), ct);
-        return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<FlujoEfectivoDiaDto>());
+        return this.ToOkOrBadRequest(r, "OK", () => Array.Empty<DailyCashFlowDto>());
     }
 
     public sealed class ImportStatementForm

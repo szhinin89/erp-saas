@@ -39,13 +39,13 @@ internal static class IntegrationSeedData
           <infoTributaria>
             <razonSocial>PROVEEDOR INTEGRACION S.A.</razonSocial>
             <ruc>{rucEmisor}</ruc>
-            <claveAcceso>{clave49}</claveAcceso>
+            <accessKey>{clave49}</accessKey>
             <estab>001</estab>
             <ptoEmi>001</ptoEmi>
             <secuencial>000000042</secuencial>
           </infoTributaria>
           <infoFactura>
-            <fechaEmision>09/05/2026</fechaEmision>
+            <issueDate>09/05/2026</issueDate>
             <totalSinImpuestos>50.00</totalSinImpuestos>
             <totalConImpuestos>
               <totalImpuesto>

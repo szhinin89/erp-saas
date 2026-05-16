@@ -2,5 +2,5 @@
 
 public sealed record ExpenseCategoryDto(
     Guid Id,
-    string Categoria,
-    Guid CuentaGastoId);
+    string Category,
+    Guid ExpenseAccountId);

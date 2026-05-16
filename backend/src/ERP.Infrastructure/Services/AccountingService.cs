@@ -133,7 +133,7 @@ public sealed class AccountingService : IAccountingService
             if (cuentaCobrar is null || cuentaVentas is null)
                 return Result<Guid>.Failure(
                     "No se encontraron cuentas contables configuradas para registrar ventas. " +
-                    "Configure cuentas en Contabilidad → Configuración de cuentas por empresa, o bien una cuenta de tipo Activo (Débito) " +
+                    "Configure cuentas en Contabilidad → Configuración de cuentas por empresa, o bien una cuenta de tipo IsActive (Débito) " +
                     "y una de tipo Ingreso (Crédito) con movimientos permitidos en el Plan de Cuentas.");
 
             lines =
@@ -213,7 +213,7 @@ public sealed class AccountingService : IAccountingService
             if (cuentaCaja is null)
                 return Result<Guid>.Failure(
                     "No se encontró cuenta de caja/banco para el crédito. Configure Cuenta de efectivo o Banco " +
-                    "en la configuración contable del tenant, o una cuenta de tipo Activo (Deudor) con movimientos permitidos.");
+                    "en la configuración contable del tenant, o una cuenta de tipo IsActive (Deudor) con movimientos permitidos.");
             cuentaCajaId = cuentaCaja.Id;
         }
 

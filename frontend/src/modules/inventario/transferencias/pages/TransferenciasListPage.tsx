@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage, PageShell } from '../../../../components/PageShell';
 import { Card } from '../../../../components/ui/Card';
@@ -112,10 +112,10 @@ export function TransferenciasListPage() {
               <tbody>
                 {items.map((t) => (
                   <tr key={t.id} className="trf-row-clickable" onClick={() => navigate(`/inventario/transferencias/${t.id}`)}>
-                    <td data-label="Número"><strong>{t.numeroTransferencia}</strong></td>
-                    <td data-label="Origen">{t.bodegaOrigenNombre}</td>
-                    <td data-label="Destino">{t.bodegaDestinoNombre}</td>
-                    <td data-label="Fecha">{new Date(t.fechaTransferencia).toLocaleDateString()}</td>
+                    <td data-label="Número"><strong>{t.transferNumber}</strong></td>
+                    <td data-label="Origen">{t.sourceWarehouseName}</td>
+                    <td data-label="Destino">{t.destinationWarehouseName}</td>
+                    <td data-label="Fecha">{new Date(t.transferDate).toLocaleDateString()}</td>
                     <td data-label="Estado"><TransferenciaEstadoBadge estado={t.status} /></td>
                     <td data-label="Acciones" className="trf-cell-actions">
                       <ZHBtn variant="ghost" size="sm" onClick={(e) => {

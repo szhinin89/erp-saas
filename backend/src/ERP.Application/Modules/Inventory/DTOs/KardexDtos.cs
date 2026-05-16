@@ -1,35 +1,35 @@
 ﻿namespace ERP.Application.Inventory.DTOs;
 
 public record KardexResponse(
-    KardexProductoDto                  Producto,
+    KardexProductDto                  Producto,
     KardexWarehouseDto                    Warehouse,
-    IReadOnlyList<MovimientoKardexDto> Rows,
-    ResumenKardexDto                   Resumen);
+    IReadOnlyList<KardexMovementDto> Rows,
+    KardexSummaryDto                   Resumen);
 
-public record KardexProductoDto(Guid Id, string  Name, string Codigo);
+public record KardexProductDto(Guid Id, string  Name, string Codigo);
 
 public record KardexWarehouseDto(Guid Id, string  Name);
 
-public record MovimientoKardexDto(
+public record KardexMovementDto(
     DateTime Fecha,
     string   MovementType,
     string?  Referencia,
-    decimal  EntradaCantidad,
-    decimal  EntradaValor,
-    decimal  SalidaCantidad,
-    decimal  SalidaValor,
-    decimal  SaldoCantidad,
-    decimal  SaldoValor,
-    decimal  CostoUnitarioPromedio);
+    decimal  InboundQuantity,
+    decimal  InboundValue,
+    decimal  OutboundQuantity,
+    decimal  OutboundValue,
+    decimal  BalanceQuantity,
+    decimal  BalanceValue,
+    decimal  AverageUnitCost);
 
-public record ResumenKardexDto(
-    decimal InventarioInicialCantidad,
-    decimal InventarioInicialValor,
-    decimal EntradasCantidad,
-    decimal EntradasValor,
-    decimal SalidasCantidad,
-    decimal SalidasValor,
-    decimal InventarioFinalCantidad,
-    decimal InventarioFinalValor,
-    decimal CostoPromedioFinal);
+public record KardexSummaryDto(
+    decimal OpeningQuantity,
+    decimal OpeningValue,
+    decimal TotalInboundQuantity,
+    decimal TotalInboundValue,
+    decimal TotalOutboundQuantity,
+    decimal TotalOutboundValue,
+    decimal ClosingQuantity,
+    decimal ClosingValue,
+    decimal FinalAverageCost);
 

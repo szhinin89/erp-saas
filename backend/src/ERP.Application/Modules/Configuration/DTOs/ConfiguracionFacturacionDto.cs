@@ -3,14 +3,14 @@
 public sealed record BillingSettingsDto(
     Guid Id,
     Guid TenantId,
-    string RazonSocial,
-    string NombreComercial,
+    string LegalName,
+    string TradeName,
     string Ruc,
-    string DireccionMatriz,
-    string Telefono,
-    string? Correo,
-    bool ObligadoContabilidad,
-    string? ContribuyenteEspecial,
+    string MainAddress,
+    string Phone,
+    string? Email,
+    bool RequiresAccounting,
+    string? SpecialTaxpayer,
     string? LogoBase64,
-    string? LeyendaAdicional,
-    int AnchoTirilla);
+    string? AdditionalNote,
+    int ReceiptWidth);

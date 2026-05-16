@@ -17,9 +17,9 @@ public sealed class ExpenseInvoiceRepository : IExpenseInvoiceRepository
     public Task<ExpenseInvoice?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
         => _context.ExpenseInvoices.FirstOrDefaultAsync(g => g.TenantId == tenantId && g.Id == id, ct);
 
-    public Task<bool> ExistsAccessKeyAsync(Guid tenantId, string claveAcceso, CancellationToken ct = default)
+    public Task<bool> ExistsAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default)
         => _context.ExpenseInvoices.AnyAsync(
-            g => g.TenantId == tenantId && g.AccessKey == claveAcceso, ct);
+            g => g.TenantId == tenantId && g.AccessKey == accessKey, ct);
 
     public async Task<IReadOnlyList<ExpenseInvoice>> GetAsync(
         Guid tenantId,

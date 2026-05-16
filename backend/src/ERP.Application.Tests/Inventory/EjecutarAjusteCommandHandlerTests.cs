@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventory.DTOs;
@@ -30,7 +30,7 @@ public sealed class EjecutarAjusteCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Status.Should().Be("Executed");
-        result.Value.FechaEjecucion.Should().NotBeNull();
+        result.Value.ExecutionDate.Should().NotBeNull();
 
         ctx.Movimientos.Should().HaveCount(1);
         ctx.Movimientos[0].MovementType.Should().Be(StockMovementType.PositiveAdjust);

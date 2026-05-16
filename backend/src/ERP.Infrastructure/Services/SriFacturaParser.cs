@@ -42,7 +42,7 @@ public sealed class SriFacturaParser : IXmlFacturaParser
         var detallesEl = RequireElement(root, "detalles");
 
         // ── infoTributaria ────────────────────────────────────────────────
-        var claveAcceso     = RequireText(infoTrib, "claveAcceso");
+        var accessKey     = RequireText(infoTrib, "accessKey");
         var ruc             = RequireText(infoTrib, "ruc");
         var razonSocial     = RequireText(infoTrib, "razonSocial");
         var estab           = RequireText(infoTrib, "estab");
@@ -50,11 +50,11 @@ public sealed class SriFacturaParser : IXmlFacturaParser
         var secuencial      = RequireText(infoTrib, "secuencial");
         var numeroFactura   = $"{estab}-{ptoEmi}-{secuencial}";
 
-        ValidarClaveAcceso(claveAcceso);
+        ValidarClaveAcceso(accessKey);
 
         // ── infoFactura ───────────────────────────────────────────────────
-        var fechaTexto   = RequireText(infoFact, "fechaEmision");
-        var fechaEmision = ParseFecha(fechaTexto);
+        var fechaTexto   = RequireText(infoFact, "issueDate");
+        var issueDate = ParseFecha(fechaTexto);
 
         var subtotal     = ParseDecimal(infoFact, "totalSinImpuestos");
         var total        = ParseDecimal(infoFact, "importeTotal");
@@ -72,9 +72,9 @@ public sealed class SriFacturaParser : IXmlFacturaParser
             throw new XmlParseException("El comprobante no contiene ningún detalle (<detalle>).");
 
         return Task.FromResult(new FacturaParseResult(
-            AccessKey:         claveAcceso,
+            AccessKey:         accessKey,
             InvoiceNumber:     numeroFactura,
-            IssueDate:         fechaEmision,
+            IssueDate:         issueDate,
             SupplierRuc:       ruc,
             SupplierLegalName: razonSocial,
             Subtotal:          subtotal,
@@ -111,17 +111,17 @@ public sealed class SriFacturaParser : IXmlFacturaParser
         var infoNota   = RequireElement(root, infoNotaName);
         var detallesEl = RequireElement(root, "detalles");
 
-        var claveAcceso = RequireText(infoTrib, "claveAcceso");
+        var accessKey = RequireText(infoTrib, "accessKey");
         var ruc         = RequireText(infoTrib, "ruc");
         var razonSocial = RequireText(infoTrib, "razonSocial");
         var estab       = RequireText(infoTrib, "estab");
         var ptoEmi      = RequireText(infoTrib, "ptoEmi");
         var secuencial  = RequireText(infoTrib, "secuencial");
         var numeroNota  = $"{estab}-{ptoEmi}-{secuencial}";
-        ValidarClaveAcceso(claveAcceso);
+        ValidarClaveAcceso(accessKey);
 
-        var fechaTexto   = RequireText(infoNota, "fechaEmision");
-        var fechaEmision = ParseFecha(fechaTexto);
+        var fechaTexto   = RequireText(infoNota, "issueDate");
+        var issueDate = ParseFecha(fechaTexto);
         var motivo       = infoNota.Element("motivo")?.Value.Trim() ?? string.Empty;
 
         var subtotal = ParseDecimal(infoNota, "totalSinImpuestos");
@@ -144,12 +144,12 @@ public sealed class SriFacturaParser : IXmlFacturaParser
         return Task.FromResult(new SupplierNoteParseResult(
             NoteType:          tipoNota,
             Reason:            motivo,
-            AccessKey:         claveAcceso,
+            AccessKey:         accessKey,
             EstabCode:         estab,
             EmPointCode:       ptoEmi,
             Sequential:        secuencial,
             NoteNumber:        numeroNota,
-            IssueDate:         fechaEmision,
+            IssueDate:         issueDate,
             SupplierRuc:       ruc,
             SupplierLegalName: razonSocial,
             Subtotal:          subtotal,

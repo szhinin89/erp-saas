@@ -35,7 +35,7 @@ public sealed class TransferenciasStockTests
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Status.Should().Be("Borrador");
-        result.Value.NumeroTransferencia.Should().StartWith("TR-");
+        result.Value.TransferNumber.Should().StartWith("TR-");
     }
 
     [Fact]

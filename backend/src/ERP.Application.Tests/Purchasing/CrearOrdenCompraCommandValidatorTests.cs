@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using FluentValidation;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
@@ -31,7 +31,7 @@ public sealed class CrearOrdenCompraCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "ProveedorId");
     }
 
-    // ── FechaRequerida ────────────────────────────────────────────────────
+    // ── RequiredDate ────────────────────────────────────────────────────
 
     [Fact]
     public void FechaRequerida_minvalue_falla()
@@ -39,7 +39,7 @@ public sealed class CrearOrdenCompraCommandValidatorTests
         // NotEmpty() en DateTime considera DateTime.MinValue (default) como vacío
         var result = _v.Validate(ValidCmd(fecha: DateTime.MinValue));
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "FechaRequerida");
+        result.Errors.Should().Contain(e => e.PropertyName == "RequiredDate");
     }
 
     // ── Items ─────────────────────────────────────────────────────────────

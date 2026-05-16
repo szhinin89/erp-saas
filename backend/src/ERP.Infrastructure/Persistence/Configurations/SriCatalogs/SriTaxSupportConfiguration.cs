@@ -17,8 +17,8 @@ public class SriTaxSupportConfiguration : IEntityTypeConfiguration<SriTaxSupport
         builder.HasData(
             new SriTaxSupport { Code = "01", Name = "Crédito Tributario para declaración de IVA",             IsActive = true },
             new SriTaxSupport { Code = "02", Name = "Costo o Gasto para declaración del IR",                  IsActive = true },
-            new SriTaxSupport { Code = "03", Name = "Activo Fijo – Crédito Tributario IVA",                   IsActive = true },
-            new SriTaxSupport { Code = "04", Name = "Activo Fijo – Costo o Gasto IR",                        IsActive = true },
+            new SriTaxSupport { Code = "03", Name = "IsActive Fijo – Crédito Tributario IVA",                   IsActive = true },
+            new SriTaxSupport { Code = "04", Name = "IsActive Fijo – Costo o Gasto IR",                        IsActive = true },
             new SriTaxSupport { Code = "05", Name = "Liquidación Gastos de Viaje, Hospedaje y Alimentación",  IsActive = true },
             new SriTaxSupport { Code = "06", Name = "Retención en la Fuente",                                 IsActive = true },
             new SriTaxSupport { Code = "07", Name = "Distribución de Dividendos, Beneficios o Ganancias",    IsActive = true },

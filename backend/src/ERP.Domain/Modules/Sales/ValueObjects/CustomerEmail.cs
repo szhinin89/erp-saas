@@ -1,8 +1,8 @@
-using System.Net.Mail;
+﻿using System.Net.Mail;
 
 namespace ERP.Domain.Modules.Sales.ValueObjects;
 
-/// <summary>Correo electrónico de cliente opcional con validación de formato.</summary>
+/// <summary>Email electrónico de cliente opcional con validación de formato.</summary>
 public sealed record CustomerEmail
 {
     public const int MaxLen = 120;

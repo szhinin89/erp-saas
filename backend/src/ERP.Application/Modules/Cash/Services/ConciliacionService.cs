@@ -26,18 +26,18 @@ public sealed class ReconciliationService : IReconciliationService
         _user        = user;
     }
 
-    public async Task<Result<IReadOnlyList<SugerenciaReconciliationDto>>> SugerirConciliacionAsync(
+    public async Task<Result<IReadOnlyList<ReconciliationSuggestionDto>>> SugerirConciliacionAsync(
         Guid extractoId,
         CancellationToken ct)
     {
         var extracto = await _caja.GetBankStatementWithTransactionsAsync(extractoId, ct);
         if (extracto is null)
-            return Result<IReadOnlyList<SugerenciaReconciliationDto>>.Failure("Extracto no encontrado.");
+            return Result<IReadOnlyList<ReconciliationSuggestionDto>>.Failure("Extracto no encontrado.");
 
         var cuenta = await _caja.GetBankAccountByIdAsync(extracto.BankAccountId, ct);
         if (cuenta?.LedgerAccountId is not { } glId)
         {
-            return Result<IReadOnlyList<SugerenciaReconciliationDto>>.Failure(
+            return Result<IReadOnlyList<ReconciliationSuggestionDto>>.Failure(
                 "La cuenta bancaria no tiene cuenta contable asociada; no se pueden sugerir coincidencias.");
         }
 
@@ -51,7 +51,7 @@ public sealed class ReconciliationService : IReconciliationService
             hasta,
             ct);
 
-        var sugerencias = new List<SugerenciaReconciliationDto>();
+        var sugerencias = new List<ReconciliationSuggestionDto>();
 
         foreach (var mov in extracto.Transactions.Where(m => m.Status == "Pendiente"))
         {
@@ -85,10 +85,10 @@ public sealed class ReconciliationService : IReconciliationService
                 }
             }
 
-            sugerencias.Add(new SugerenciaReconciliationDto(mov.Id, mejor, motivo));
+            sugerencias.Add(new ReconciliationSuggestionDto(mov.Id, mejor, motivo));
         }
 
-        return Result<IReadOnlyList<SugerenciaReconciliationDto>>.Success(sugerencias);
+        return Result<IReadOnlyList<ReconciliationSuggestionDto>>.Success(sugerencias);
     }
 
     private static bool CoincideTipoMovimiento(string tipoMov, decimal debit, decimal credit)

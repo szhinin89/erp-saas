@@ -1,8 +1,8 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Sales.UseCases.EmitirFacturaElectronica;
 
-public sealed class EmitirFacturaElectronicaCommandValidator : AbstractValidator<EmitirFacturaElectronicaCommand>
+public sealed class EmitirFacturaElectronicaCommandValidator : AbstractValidator<IssueElectronicInvoiceCommand>
 {
     public EmitirFacturaElectronicaCommandValidator()
     {

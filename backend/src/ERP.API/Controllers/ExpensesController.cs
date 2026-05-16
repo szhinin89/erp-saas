@@ -18,7 +18,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>
 /// Facturas de gasto (registro manual o importaciÃ³n XML del SRI Ecuador).
-/// Flujo de estados: Borrador â†’ Validado â†’ Aprobado | Rechazado. Requiere permisos <c>gastos.facturas.*</c> en el perfil (los roles Admin/SuperAdmin los omiten).
+/// Flujo de estados: Borrador â†’ Validado â†’ IsApproved | Rechazado. Requiere permisos <c>gastos.facturas.*</c> en el perfil (los roles Admin/SuperAdmin los omiten).
 /// </summary>
 [AppFeature("Gastos", "perm:gastos.facturas.view", "ðŸ’¸", "/gastos", null, 55)]
 [ApiController]
@@ -64,7 +64,7 @@ public sealed class ExpensesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetGastoByIdQuery(id), ct);
+        var result = await _mediator.Send(new GetExpenseByIdQuery(id), ct);
         return this.ToOkOrNotFound(result);
     }
 
@@ -74,10 +74,10 @@ public sealed class ExpensesController : ControllerBase
     [Authorize(Policy = "perm:gastos.facturas.create")]
     [ProducesResponseType(typeof(ApiResponse<ExpenseInvoiceDto?>), StatusCodes.Status201Created)]
     public async Task<IActionResult> CreateManual(
-        [FromBody] CrearGastoCommand command,
+        [FromBody] CreateExpenseCommand command,
         CancellationToken ct = default)
     {
-        var cmd = command with { Modo = ModoCreacionGasto.Manual };
+        var cmd = command with { Modo = ExpenseCreationMode.Manual };
         var result = await _mediator.Send(cmd, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
     }
@@ -103,10 +103,10 @@ public sealed class ExpensesController : ControllerBase
         await xmlFile.CopyToAsync(ms, ct);
         var content = ms.ToArray();
 
-        var command = new CrearGastoCommand(
-            Modo: ModoCreacionGasto.Xml,
+        var command = new CreateExpenseCommand(
+            Modo: ExpenseCreationMode.Xml,
             XmlContent: content,
-            XmlNombreArchivo: xmlFile.FileName,
+            XmlFileName: xmlFile.FileName,
             SupplierId: null,
             IssueDate: null,
             Concept: null,
@@ -127,7 +127,7 @@ public sealed class ExpensesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Validate(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new ValidarGastoCommand(id), ct);
+        var result = await _mediator.Send(new ValidateExpenseCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Validado");
     }
 
@@ -138,8 +138,8 @@ public sealed class ExpensesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Approve(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new AprobarGastoCommand(id), ct);
-        return this.ToOkOrBadRequest(result, "Aprobado");
+        var result = await _mediator.Send(new ApproveExpenseCommand(id), ct);
+        return this.ToOkOrBadRequest(result, "IsApproved");
     }
 
     /// <summary>Rechaza un gasto con motivo obligatorio.</summary>
@@ -152,7 +152,7 @@ public sealed class ExpensesController : ControllerBase
         [FromBody] RejectExpenseRequest request,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new RechazarGastoCommand(id, request.Reason), ct);
+        var result = await _mediator.Send(new RejectExpenseCommand(id, request.Reason), ct);
         return this.ToOkOrBadRequest(result, "Rechazado");
     }
 }

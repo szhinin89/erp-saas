@@ -1,26 +1,26 @@
-import { api } from '../../../lib/api';
+﻿import { api } from '../../../lib/api';
 import type { ApiResponse } from '../../../../types/api';
 
 // ── Tipos ──────────────────────────────────────────────────────────────────
 
 export type EstadoAjuste = 'Borrador' | 'Ejecutado' | 'Cancelado';
-export type TipoAjuste   = 'Incremento' | 'Disminucion';
+export type AdjustmentTypeEnum   = 'Incremento' | 'Disminucion';
 
 export interface AjusteInventario {
   id: string;
-  numeroAjuste: string;
+  adjustmentNumber: string;
   warehouseId: string;
-  bodegaNombre: string;
+  warehouseName: string;
   productId: string;
-  productoNombre: string;
-  cantidadAjuste: number;
-  tipoAjuste: TipoAjuste;
+  productName: string;
+  adjustmentQuantity: number;
+  adjustmentType: AdjustmentTypeEnum;
   reason: string;
   notes: string | null;
-  fechaAjuste: string;
+  adjustmentDate: string;
   status: EstadoAjuste;
-  fechaEjecucion: string | null;
-  ejecutadoPor: string | null;
+  executionDate: string | null;
+  executedBy: string | null;
   createdAt: string;
 }
 

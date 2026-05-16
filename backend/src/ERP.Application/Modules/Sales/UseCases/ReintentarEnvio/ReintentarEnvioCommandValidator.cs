@@ -1,8 +1,8 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Sales.UseCases.ReintentarEnvio;
 
-public sealed class ReintentarEnvioCommandValidator : AbstractValidator<ReintentarEnvioCommand>
+public sealed class ReintentarEnvioCommandValidator : AbstractValidator<RetrySubmissionCommand>
 {
     public ReintentarEnvioCommandValidator()
     {

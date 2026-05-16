@@ -35,7 +35,7 @@ public sealed class CompraGastoEndToEndTests
             new CrearCompraCommand(
                 ModoCreacionCompra.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xml),
-                XmlNombreArchivo: "factura.xml",
+                XmlFileName: "factura.xml",
                 SupplierId: null,
                 InvoiceNumber: null,
                 InvoiceDate: null,
@@ -43,9 +43,9 @@ public sealed class CompraGastoEndToEndTests
                 PaymentTerms: null,
                 Notes: null,
                 Lines: null,
-                AsignacionesBodega: new[]
+                WarehouseAllocations: new[]
                 {
-                    new AsignacionBodegaRequest(0, seed.WarehouseId, 2m, seed.ProductId),
+                    new WarehouseAllocationRequest(0, seed.WarehouseId, 2m, seed.ProductId),
                 }),
             CancellationToken.None);
 
@@ -79,10 +79,10 @@ public sealed class CompraGastoEndToEndTests
         var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
 
         var crear = await mediator.Send(
-            new CrearGastoCommand(
-                ModoCreacionGasto.Manual,
+            new CreateExpenseCommand(
+                ExpenseCreationMode.Manual,
                 XmlContent: null,
-                XmlNombreArchivo: null,
+                XmlFileName: null,
                 SupplierId: null,
                 IssueDate: DateTime.UtcNow.Date,
                 Concept: "Taxi integraciÃ³n",
@@ -96,10 +96,10 @@ public sealed class CompraGastoEndToEndTests
         crear.IsSuccess.Should().BeTrue(crear.Error);
         crear.Value!.Status.Should().Be(ExpenseStatus.Draft);
 
-        var val = await mediator.Send(new ValidarGastoCommand(crear.Value.Id), CancellationToken.None);
+        var val = await mediator.Send(new ValidateExpenseCommand(crear.Value.Id), CancellationToken.None);
         val.IsSuccess.Should().BeTrue(val.Error);
 
-        var apr = await mediator.Send(new AprobarGastoCommand(crear.Value.Id), CancellationToken.None);
+        var apr = await mediator.Send(new ApproveExpenseCommand(crear.Value.Id), CancellationToken.None);
         apr.IsSuccess.Should().BeTrue(apr.Error);
         apr.Value!.Status.Should().Be(ExpenseStatus.Approved);
         apr.Value.JournalEntryId.Should().NotBeNull();

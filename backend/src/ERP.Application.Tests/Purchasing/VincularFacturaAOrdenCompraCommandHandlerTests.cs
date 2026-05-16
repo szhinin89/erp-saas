@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.VincularFacturaAOrdenCompra;
@@ -103,7 +103,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         var result = await ctx.Handle();
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Aprobado");
+        result.Error.Should().Contain("IsApproved");
     }
 
     // ── Vinculación duplicada ─────────────────────────────────────────────
@@ -147,11 +147,11 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         var result = await ctx.Handle();
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Advertencias.Should().NotBeNullOrEmpty(
+        result.Value!.Warnings.Should().NotBeNullOrEmpty(
             "debe haber advertencia cuando el precio facturado difiere >1% del precio de OC");
-        result.Value.Advertencias!.Should().ContainSingle();
-        result.Value.Advertencias[0].Should().Contain("Discrepancia de precio");
-        result.Value.Advertencias[0].Should().Contain("Producto Test");
+        result.Value.Warnings!.Should().ContainSingle();
+        result.Value.Warnings[0].Should().Contain("Discrepancia de precio");
+        result.Value.Warnings[0].Should().Contain("Producto Test");
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         var result = await ctx.Handle();
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Advertencias.Should().BeNull(
+        result.Value!.Warnings.Should().BeNull(
             "no debe haber advertencias cuando los precios coinciden");
     }
 
@@ -175,7 +175,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         var result = await ctx.Handle();
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Advertencias.Should().BeNull(
+        result.Value!.Warnings.Should().BeNull(
             "diferencia de 0.5% está dentro de la tolerancia del 1%");
     }
 

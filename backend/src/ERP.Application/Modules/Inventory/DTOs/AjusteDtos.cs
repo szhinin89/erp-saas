@@ -2,19 +2,19 @@
 
 public record StockAdjustmentDto(
     Guid      Id,
-    string    NumeroAjuste,
+    string    AdjustmentNumber,
     Guid    WarehouseId,
-    string    BodegaNombre,
+    string    WarehouseName,
     Guid    ProductId,
-    string    ProductoNombre,
-    decimal   CantidadAjuste,
-    string    TipoAjuste,
+    string    ProductName,
+    decimal   AdjustmentQuantity,
+    string    AdjustmentType,
     string  Reason,
     string? Notes,
-    DateTime  FechaAjuste,
+    DateTime  AdjustmentDate,
     string    Status,
-    DateTime? FechaEjecucion,
-    Guid?     EjecutadoPor,
+    DateTime? ExecutionDate,
+    Guid?     ExecutedBy,
     DateTime  CreatedAt);
 
 public record StockAdjustmentsPagedResult(

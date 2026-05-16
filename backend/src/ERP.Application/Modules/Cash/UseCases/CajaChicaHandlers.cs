@@ -79,10 +79,10 @@ public sealed record CrearGastoPettyCashCommand(
     string Concept,
     decimal Amount,
     string VoucherType,
-    string? VoucherNumber) : IRequest<Result<GastoPettyCashDto>>;
+    string? VoucherNumber) : IRequest<Result<PettyCashExpenseDto>>;
 
 public sealed class CrearGastoPettyCashCommandHandler
-    : IRequestHandler<CrearGastoPettyCashCommand, Result<GastoPettyCashDto>>
+    : IRequestHandler<CrearGastoPettyCashCommand, Result<PettyCashExpenseDto>>
 {
     private readonly ICashRepository _caja;
     private readonly ICurrentTenant _tenant;
@@ -101,11 +101,11 @@ public sealed class CrearGastoPettyCashCommandHandler
         _uow    = uow;
     }
 
-    public async Task<Result<GastoPettyCashDto>> Handle(CrearGastoPettyCashCommand cmd, CancellationToken ct)
+    public async Task<Result<PettyCashExpenseDto>> Handle(CrearGastoPettyCashCommand cmd, CancellationToken ct)
     {
         var caja = await _caja.GetPettyCashByIdAsync(cmd.PettyCashId, ct);
         if (caja is null || !caja.IsActive)
-            return Result<GastoPettyCashDto>.Failure("Caja chica no encontrada o inactiva.");
+            return Result<PettyCashExpenseDto>.Failure("Caja chica no encontrada o inactiva.");
 
         try
         {
@@ -113,7 +113,7 @@ public sealed class CrearGastoPettyCashCommandHandler
         }
         catch (InvalidOperationException ex)
         {
-            return Result<GastoPettyCashDto>.Failure(ex.Message);
+            return Result<PettyCashExpenseDto>.Failure(ex.Message);
         }
 
         var gasto = PettyCashExpense.Create(
@@ -129,8 +129,8 @@ public sealed class CrearGastoPettyCashCommandHandler
         await _caja.AddPettyCashExpenseAsync(gasto, ct);
         await _uow.SaveChangesAsync(ct);
 
-        return Result<GastoPettyCashDto>.Success(
-            new GastoPettyCashDto(
+        return Result<PettyCashExpenseDto>.Success(
+            new PettyCashExpenseDto(
                 gasto.Id,
                 gasto.PettyCashId,
                 gasto.ExpenseDate,
@@ -146,9 +146,9 @@ public sealed record CrearCashCountCommand(
     Guid PettyCashId,
     DateTime CountDate,
     decimal PhysicalCash,
-    string? Notes) : IRequest<Result<CashCountDto>>;
+    string? Notes) : IRequest<Result<PettyCashCountDto>>;
 
-public sealed class CrearCashCountCommandHandler : IRequestHandler<CrearCashCountCommand, Result<CashCountDto>>
+public sealed class CrearCashCountCommandHandler : IRequestHandler<CrearCashCountCommand, Result<PettyCashCountDto>>
 {
     private readonly ICashRepository _caja;
     private readonly ICurrentTenant _tenant;
@@ -163,11 +163,11 @@ public sealed class CrearCashCountCommandHandler : IRequestHandler<CrearCashCoun
         _uow    = uow;
     }
 
-    public async Task<Result<CashCountDto>> Handle(CrearCashCountCommand cmd, CancellationToken ct)
+    public async Task<Result<PettyCashCountDto>> Handle(CrearCashCountCommand cmd, CancellationToken ct)
     {
         var caja = await _caja.GetPettyCashByIdAsync(cmd.PettyCashId, ct);
         if (caja is null)
-            return Result<CashCountDto>.Failure("Caja chica no encontrada.");
+            return Result<PettyCashCountDto>.Failure("Caja chica no encontrada.");
 
         var arqueo = CashCount.Create(
             _tenant.TenantId,
@@ -181,8 +181,8 @@ public sealed class CrearCashCountCommandHandler : IRequestHandler<CrearCashCoun
         await _caja.AddCashCountAsync(arqueo, ct);
         await _uow.SaveChangesAsync(ct);
 
-        return Result<CashCountDto>.Success(
-            new CashCountDto(
+        return Result<PettyCashCountDto>.Success(
+            new PettyCashCountDto(
                 arqueo.Id,
                 arqueo.PettyCashId,
                 arqueo.CountDate,
@@ -193,9 +193,9 @@ public sealed class CrearCashCountCommandHandler : IRequestHandler<CrearCashCoun
     }
 }
 
-public sealed record AprobarCashCountCommand(Guid ArqueoId) : IRequest<Result<CashCountDto>>;
+public sealed record AprobarCashCountCommand(Guid ArqueoId) : IRequest<Result<PettyCashCountDto>>;
 
-public sealed class AprobarCashCountCommandHandler : IRequestHandler<AprobarCashCountCommand, Result<CashCountDto>>
+public sealed class AprobarCashCountCommandHandler : IRequestHandler<AprobarCashCountCommand, Result<PettyCashCountDto>>
 {
     private readonly ICashRepository _caja;
     private readonly ICurrentUser _user;
@@ -208,15 +208,15 @@ public sealed class AprobarCashCountCommandHandler : IRequestHandler<AprobarCash
         _uow  = uow;
     }
 
-    public async Task<Result<CashCountDto>> Handle(AprobarCashCountCommand cmd, CancellationToken ct)
+    public async Task<Result<PettyCashCountDto>> Handle(AprobarCashCountCommand cmd, CancellationToken ct)
     {
         var arqueo = await _caja.GetCashCountByIdAsync(cmd.ArqueoId, ct);
         if (arqueo is null)
-            return Result<CashCountDto>.Failure("Arqueo no encontrado.");
+            return Result<PettyCashCountDto>.Failure("Arqueo no encontrado.");
 
         var caja = await _caja.GetPettyCashByIdAsync(arqueo.PettyCashId, ct);
         if (caja is null)
-            return Result<CashCountDto>.Failure("Caja chica no encontrada.");
+            return Result<PettyCashCountDto>.Failure("Caja chica no encontrada.");
 
         try
         {
@@ -225,13 +225,13 @@ public sealed class AprobarCashCountCommandHandler : IRequestHandler<AprobarCash
         }
         catch (InvalidOperationException ex)
         {
-            return Result<CashCountDto>.Failure(ex.Message);
+            return Result<PettyCashCountDto>.Failure(ex.Message);
         }
 
         await _uow.SaveChangesAsync(ct);
 
-        return Result<CashCountDto>.Success(
-            new CashCountDto(
+        return Result<PettyCashCountDto>.Success(
+            new PettyCashCountDto(
                 arqueo.Id,
                 arqueo.PettyCashId,
                 arqueo.CountDate,

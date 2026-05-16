@@ -1,3 +1,65 @@
+/* ============================================
+   Page Shell & Table Card — versión mejorada
+   - Variables con fallbacks y soporte oscuro
+   - Accesibilidad (focus visible)
+   - Transiciones suaves
+   - Badges y estados adaptables a tema
+   - Responsive mejorado
+============================================ */
+
+/* ---------- VARIABLES (tema claro por defecto) ---------- */
+.page-shell,
+.table-card {
+  --zh-color-surface: #ffffff;
+  --zh-color-surface-soft: #f8fafc;
+  --zh-color-text: #0f172a;
+  --zh-color-text-muted: #64748b;
+  --zh-color-border: #e2e8f0;
+  --zh-color-border-soft: #f0f0f0;
+  --zh-shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --radius-xl: 16px;
+  --zh-color-danger-bg: #fef2f2;
+  --zh-color-danger-border: #fecaca;
+  --zh-color-danger-text: #dc2626;
+
+  /* Badges (colores semánticos) */
+  --badge-green-bg: #d1fae5;
+  --badge-green-text: #065f46;
+  --badge-gray-bg: #f3f4f6;
+  --badge-gray-text: #6b7280;
+  --badge-red-bg: #fee2e2;
+  --badge-red-text: #991b1b;
+  --badge-blue-bg: #dbeafe;
+  --badge-blue-text: #1e40af;
+}
+
+/* ---------- TEMA OSCURO AUTOMÁTICO ---------- */
+@media (prefers-color-scheme: dark) {
+  .page-shell,
+  .table-card {
+    --zh-color-surface: #1e293b;
+    --zh-color-surface-soft: #0f172a;
+    --zh-color-text: #f1f5f9;
+    --zh-color-text-muted: #94a3b8;
+    --zh-color-border: #334155;
+    --zh-color-border-soft: #1e293b;
+    --zh-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --zh-color-danger-bg: #451a1a;
+    --zh-color-danger-border: #7f2d2d;
+    --zh-color-danger-text: #f87171;
+
+    --badge-green-bg: #064e3b;
+    --badge-green-text: #a7f3d0;
+    --badge-gray-bg: #374151;
+    --badge-gray-text: #e5e7eb;
+    --badge-red-bg: #7f1a1a;
+    --badge-red-text: #fecaca;
+    --badge-blue-bg: #1e3a8a;
+    --badge-blue-text: #bfdbfe;
+  }
+}
+
+/* ---------- PAGE SHELL ---------- */
 .page-shell {
   max-width: none;
   width: 100%;
@@ -9,8 +71,10 @@
 
 .page-shell-heading {
   margin-bottom: 16px;
+  color: var(--zh-color-text);
 }
 
+/* ---------- TOOLBAR ---------- */
 .zh-page-toolbar {
   display: flex;
   align-items: center;
@@ -20,33 +84,37 @@
   margin-bottom: 12px;
 }
 
-/* Table card */
+/* ---------- TABLE CARD ---------- */
 .table-card {
   background: var(--zh-color-surface);
-  border-radius: var(--radius-xl, 16px);
+  border-radius: var(--radius-xl);
   box-shadow: var(--zh-shadow-sm);
   overflow-x: auto;
   overflow-y: hidden;
-  border: 1px solid var(--zh-color-border, #e2e8f0);
+  border: 1px solid var(--zh-color-border);
   width: 100%;
+  transition: box-shadow 0.2s ease;
+}
+
+.table-card:hover {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
 }
 
 .table-card .table-card-body {
   padding: 0;
 }
 
-.table-card > form {
-  padding: 18px;
-}
-
+.table-card > form,
 .table-card .table-card-body > form {
   padding: 18px;
 }
 
+/* Tabla */
 .table-card table {
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
+  min-width: 500px; /* Evita compresión excesiva en móvil */
 }
 
 .table-card th {
@@ -54,17 +122,16 @@
   padding: 12px 16px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--zh-color-text, #0f172a);
-  text-transform: none;
-  letter-spacing: 0;
-  border-bottom: 1px solid var(--zh-color-border, #f0f0f0);
-  background: var(--zh-color-surface-soft, #f4f8fc);
+  color: var(--zh-color-text);
+  border-bottom: 1px solid var(--zh-color-border-soft);
+  background: var(--zh-color-surface-soft);
 }
 
 .table-card td {
   padding: 13px 16px;
-  color: var(--zh-color-text, #374151);
-  border-bottom: 1px solid var(--zh-color-border, #f5f5f5);
+  color: var(--zh-color-text);
+  border-bottom: 1px solid var(--zh-color-border-soft);
+  transition: background 0.15s ease;
 }
 
 .table-card tr:last-child td {
@@ -72,15 +139,15 @@
 }
 
 .table-card tr:hover td {
-  background: var(--zh-color-surface-soft, #f8fafc);
+  background: var(--zh-color-surface-soft);
 }
 
-/* States */
+/* ---------- ESTADOS ---------- */
 .empty-state,
 .loading-state {
   text-align: center;
   padding: 56px 24px;
-  color: var(--color-text-muted, #9ca3af);
+  color: var(--zh-color-text-muted);
   font-size: 14px;
   background: var(--zh-color-surface);
   border-radius: 12px;
@@ -90,14 +157,14 @@
 
 .error-state {
   padding: 16px 20px;
-  background: var(--zh-color-danger-bg, #fef2f2);
-  border: 1px solid var(--zh-color-danger-border, #fecaca);
-  color: var(--zh-color-danger-text, #dc2626);
+  background: var(--zh-color-danger-bg);
+  border: 1px solid var(--zh-color-danger-border);
+  color: var(--zh-color-danger-text);
   border-radius: 10px;
   font-size: 13px;
 }
 
-/* Badges */
+/* ---------- BADGES (semánticos) ---------- */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -105,24 +172,50 @@
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
+  transition: opacity 0.2s;
 }
 
-.badge--green  { background: #d1fae5; color: #065f46; }
-.badge--gray   { background: #f3f4f6; color: #6b7280; }
-.badge--red    { background: #fee2e2; color: #991b1b; }
-.badge--blue   { background: #dbeafe; color: #1e40af; }
+.badge--green {
+  background: var(--badge-green-bg);
+  color: var(--badge-green-text);
+}
+.badge--gray {
+  background: var(--badge-gray-bg);
+  color: var(--badge-gray-text);
+}
+.badge--red {
+  background: var(--badge-red-bg);
+  color: var(--badge-red-text);
+}
+.badge--blue {
+  background: var(--badge-blue-bg);
+  color: var(--badge-blue-text);
+}
 
-/* Mono text */
+/* ---------- MONO ---------- */
 .mono {
   font-family: ui-monospace, Consolas, monospace;
   font-size: 12px;
+  color: var(--zh-color-text-muted);
 }
 
+/* ---------- FOCUS VISIBLE (accesibilidad) ---------- */
+.page-shell button:focus-visible,
+.page-shell a:focus-visible,
+.page-shell input:focus-visible,
+.page-shell select:focus-visible,
+.table-card button:focus-visible,
+.table-card a:focus-visible {
+  outline: 2px solid var(--zh-color-text);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ---------- RESPONSIVE ---------- */
 @media (max-width: 980px) {
   .page-shell-heading {
     margin-bottom: 12px;
   }
-
   .zh-page-toolbar {
     align-items: stretch;
   }
@@ -131,20 +224,28 @@
 @media (max-width: 768px) {
   .zh-page-toolbar {
     flex-direction: column;
+    align-items: stretch;
+  }
+  .table-card table {
+    font-size: 12px;
+  }
+  .table-card th,
+  .table-card td {
+    padding: 10px 12px;
   }
 }
 
 @media (max-width: 520px) {
-  .table-card > form {
-    padding: 12px;
-  }
-
+  .table-card > form,
   .table-card .table-card-body > form {
     padding: 12px;
   }
-
   .table-card th,
   .table-card td {
-    padding: 10px 12px;
+    padding: 8px 10px;
+  }
+  .empty-state,
+  .loading-state {
+    padding: 32px 16px;
   }
 }

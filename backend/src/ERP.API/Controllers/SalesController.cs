@@ -93,7 +93,7 @@ public sealed class SalesController : ControllerBase
         if (!Request.Query.TryGetValue("bodegaId",   out var bv) || !Guid.TryParse(bv, out var bodegaId))
             return this.ApiBadRequest("El parÃ¡metro bodegaId es requerido y debe ser un GUID vÃ¡lido.");
 
-        var result = await _mediator.Send(new GetStockDisponibleParaSaleQuery(productoId, bodegaId), ct);
+        var result = await _mediator.Send(new GetAvailableStockForSaleQuery(productoId, bodegaId), ct);
         return this.ToOkOrBadRequest(result, "OK");
     }
 
@@ -125,7 +125,7 @@ public sealed class SalesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Validate(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new ValidarSaleCommand(id), ct);
+        var result = await _mediator.Send(new ValidateSaleCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Validado");
     }
 
@@ -140,7 +140,7 @@ public sealed class SalesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Emit(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new EmitirFacturaElectronicaCommand(id), ct);
+        var result = await _mediator.Send(new IssueElectronicInvoiceCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Emitido");
     }
 
@@ -154,7 +154,7 @@ public sealed class SalesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Retry(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new ReintentarEnvioCommand(id), ct);
+        var result = await _mediator.Send(new RetrySubmissionCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Reintentado");
     }
 
@@ -168,7 +168,7 @@ public sealed class SalesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Void(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new AnularFacturaCommand(id), ct);
+        var result = await _mediator.Send(new VoidInvoiceCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Anulado");
     }
 

@@ -50,7 +50,7 @@ public sealed class TransferenciasEndToEndTests
 
         confirmar.IsSuccess.Should().BeTrue(confirmar.Error);
         confirmar.Value!.Status.Should().Be("Confirmado");
-        confirmar.Value.FechaConfirmacion.Should().NotBeNull();
+        confirmar.Value.ConfirmationDate.Should().NotBeNull();
 
         // 3. Verificar stock en bodega origen: 10 - 4 = 6
         var stockOrigenResult = await mediator.Send(

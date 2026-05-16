@@ -7,20 +7,20 @@ using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.AnularFactura;
 
-public sealed class AnularFacturaCommandHandler : IRequestHandler<AnularFacturaCommand, Result<Guid>>
+public sealed class VoidInvoiceCommandHandler : IRequestHandler<VoidInvoiceCommand, Result<Guid>>
 {
     private readonly ISalesRepository    _ventasRepository;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentTenant          _currentTenant;
     private readonly ICurrentUser            _currentUser;
-    private readonly ILogger<AnularFacturaCommandHandler> _logger;
+    private readonly ILogger<VoidInvoiceCommandHandler> _logger;
 
-    public AnularFacturaCommandHandler(
+    public VoidInvoiceCommandHandler(
         ISalesRepository ventasRepository,
         IUserActivityRepository activity,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
-        ILogger<AnularFacturaCommandHandler> logger)
+        ILogger<VoidInvoiceCommandHandler> logger)
     {
         _ventasRepository = ventasRepository;
         _activity         = activity;
@@ -29,7 +29,7 @@ public sealed class AnularFacturaCommandHandler : IRequestHandler<AnularFacturaC
         _logger           = logger;
     }
 
-    public async Task<Result<Guid>> Handle(AnularFacturaCommand command, CancellationToken ct)
+    public async Task<Result<Guid>> Handle(VoidInvoiceCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;

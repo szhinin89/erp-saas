@@ -41,7 +41,7 @@ public sealed class KardexConmutacionTests
     private static StockMovement MovConFecha(
         Guid tenantId, Guid productoId, Guid bodegaId,
         StockMovementType tipo, decimal quantity, decimal cantAnterior,
-        decimal? costoUnitario, Guid userId, DateTime fecha)
+        decimal? unitCost, Guid userId, DateTime fecha)
     {
         var movimientoCantidad = tipo switch
         {
@@ -54,7 +54,7 @@ public sealed class KardexConmutacionTests
 
         var m = StockMovement.Create(
             tenantId, productoId, bodegaId, tipo,
-            movimientoCantidad, cantAnterior, null, null, null, userId, costoUnitario);
+            movimientoCantidad, cantAnterior, null, null, null, userId, unitCost);
         SetCreatedAt(m, fecha);
         return m;
     }
@@ -138,13 +138,13 @@ public sealed class KardexConmutacionTests
 
         // Saldo inicial = movimiento real de ayer (10 uds @ $50 = $500 promedio $50)
         // NO los datos del snapshot falso (999, 99999)
-        k.Resumen.InventarioInicialCantidad.Should().Be(10m,
+        k.Resumen.OpeningQuantity.Should().Be(10m,
             "el modo simple recorre el historial real, no el snapshot");
-        k.Resumen.InventarioInicialValor.Should().BeApproximately(500m, 0.01m);
+        k.Resumen.OpeningValue.Should().BeApproximately(500m, 0.01m);
 
         // Solo 1 movimiento en el perÃ­odo (hoy)
         k.Rows.Should().HaveCount(1);
-        k.Rows[0].EntradaCantidad.Should().Be(5m);
+        k.Rows[0].InboundQuantity.Should().Be(5m);
     }
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -190,21 +190,21 @@ public sealed class KardexConmutacionTests
 
         // Saldo inicial PROVIENE DEL SNAPSHOT (10 uds, $500)
         // Si no se usara el snapshot, serÃ­a 0 porque no hay movimientos previos.
-        k.Resumen.InventarioInicialCantidad.Should().Be(10m,
+        k.Resumen.OpeningQuantity.Should().Be(10m,
             "el modo escalable usa el snapshot como punto de partida");
-        k.Resumen.InventarioInicialValor.Should().BeApproximately(500m, 0.01m);
+        k.Resumen.OpeningValue.Should().BeApproximately(500m, 0.01m);
 
         // Movimiento del perÃ­odo: E=5@$70
         // avg = (500 + 5Ã—70) / 15 = 850/15 = 56.667
         k.Rows.Should().HaveCount(1);
         var fila = k.Rows[0];
-        fila.EntradaCantidad.Should().Be(5m);
-        fila.EntradaValor.Should().BeApproximately(350m, 0.01m);
-        fila.SaldoCantidad.Should().Be(15m);
-        fila.SaldoValor.Should().BeApproximately(850m, 0.01m);
-        fila.CostoUnitarioPromedio.Should().BeApproximately(850m / 15m, 0.001m);
+        fila.InboundQuantity.Should().Be(5m);
+        fila.InboundValue.Should().BeApproximately(350m, 0.01m);
+        fila.BalanceQuantity.Should().Be(15m);
+        fila.BalanceValue.Should().BeApproximately(850m, 0.01m);
+        fila.AverageUnitCost.Should().BeApproximately(850m / 15m, 0.001m);
 
-        k.Resumen.InventarioFinalCantidad.Should().Be(15m);
+        k.Resumen.ClosingQuantity.Should().Be(15m);
     }
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -301,24 +301,24 @@ public sealed class KardexConmutacionTests
         var e = resultScalable.Value!;
 
         // Los dos modos deben producir exactamente el mismo resultado
-        e.Resumen.InventarioInicialCantidad.Should().Be(s.Resumen.InventarioInicialCantidad,
+        e.Resumen.OpeningQuantity.Should().Be(s.Resumen.OpeningQuantity,
             "sin snapshots el modo escalable aplica el mismo fallback que el simple");
-        e.Resumen.InventarioInicialValor.Should().BeApproximately(
-            s.Resumen.InventarioInicialValor, 0.001m);
+        e.Resumen.OpeningValue.Should().BeApproximately(
+            s.Resumen.OpeningValue, 0.001m);
         e.Rows.Should().HaveCount(s.Rows.Count,
             "ambos modos deben producir el mismo nÃºmero de filas");
-        e.Resumen.InventarioFinalCantidad.Should().Be(s.Resumen.InventarioFinalCantidad);
-        e.Resumen.InventarioFinalValor.Should().BeApproximately(
-            s.Resumen.InventarioFinalValor, 0.001m);
-        e.Resumen.CostoPromedioFinal.Should().BeApproximately(
-            s.Resumen.CostoPromedioFinal, 0.001m);
+        e.Resumen.ClosingQuantity.Should().Be(s.Resumen.ClosingQuantity);
+        e.Resumen.ClosingValue.Should().BeApproximately(
+            s.Resumen.ClosingValue, 0.001m);
+        e.Resumen.FinalAverageCost.Should().BeApproximately(
+            s.Resumen.FinalAverageCost, 0.001m);
 
         // Los valores concretos son: saldo inicial=10@$50, perÃ­odo: -4@$50=$200 salida
-        s.Resumen.InventarioInicialCantidad.Should().Be(10m);
-        s.Resumen.InventarioInicialValor.Should().BeApproximately(500m, 0.01m);
+        s.Resumen.OpeningQuantity.Should().Be(10m);
+        s.Resumen.OpeningValue.Should().BeApproximately(500m, 0.01m);
         s.Rows.Should().HaveCount(1);
-        s.Rows[0].SalidaCantidad.Should().Be(4m);
-        s.Resumen.InventarioFinalCantidad.Should().Be(6m);
+        s.Rows[0].OutboundQuantity.Should().Be(4m);
+        s.Resumen.ClosingQuantity.Should().Be(6m);
     }
 
     // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•

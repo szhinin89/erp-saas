@@ -6,20 +6,20 @@ using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.ReintentarEnvio;
 
-public sealed class ReintentarEnvioCommandHandler : IRequestHandler<ReintentarEnvioCommand, Result<Guid>>
+public sealed class RetrySubmissionCommandHandler : IRequestHandler<RetrySubmissionCommand, Result<Guid>>
 {
     private readonly ISalesRepository _ventasRepository;
     private readonly IMediator         _mediator;
     private readonly ICurrentTenant    _currentTenant;
     private readonly ICurrentUser      _currentUser;
-    private readonly ILogger<ReintentarEnvioCommandHandler> _logger;
+    private readonly ILogger<RetrySubmissionCommandHandler> _logger;
 
-    public ReintentarEnvioCommandHandler(
+    public RetrySubmissionCommandHandler(
         ISalesRepository ventasRepository,
         IMediator mediator,
         ICurrentTenant currentTenant,
         ICurrentUser currentUser,
-        ILogger<ReintentarEnvioCommandHandler> logger)
+        ILogger<RetrySubmissionCommandHandler> logger)
     {
         _ventasRepository = ventasRepository;
         _mediator         = mediator;
@@ -28,7 +28,7 @@ public sealed class ReintentarEnvioCommandHandler : IRequestHandler<ReintentarEn
         _logger           = logger;
     }
 
-    public async Task<Result<Guid>> Handle(ReintentarEnvioCommand command, CancellationToken ct)
+    public async Task<Result<Guid>> Handle(RetrySubmissionCommand command, CancellationToken ct)
     {
         var tenantId = _currentTenant.TenantId;
         var userId   = _currentUser.UserId;
@@ -49,6 +49,6 @@ public sealed class ReintentarEnvioCommandHandler : IRequestHandler<ReintentarEn
         factura.PrepareRetry(userId);
         await _ventasRepository.SaveChangesAsync(ct);
 
-        return await _mediator.Send(new EmitirFacturaElectronicaCommand(command.VentaId), ct);
+        return await _mediator.Send(new IssueElectronicInvoiceCommand(command.VentaId), ct);
     }
 }

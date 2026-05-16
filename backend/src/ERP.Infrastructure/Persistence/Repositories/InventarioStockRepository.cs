@@ -47,12 +47,12 @@ public sealed class StockRepository : IStockRepository
         Guid tenantId, Guid WarehouseId, Guid productoId,
         decimal delta, Guid updatedBy,
         CancellationToken ct = default,
-        decimal costoUnitario = 0m)
+        decimal unitCost = 0m)
     {
         if (IsInMemoryProvider())
-            return await DecrementarInMemoryAsync(tenantId, WarehouseId, productoId, delta, updatedBy, ct, costoUnitario);
+            return await DecrementarInMemoryAsync(tenantId, WarehouseId, productoId, delta, updatedBy, ct, unitCost);
 
-        var valorSalida = delta * costoUnitario;
+        var valorSalida = delta * unitCost;
 
         // PostgreSQL: una sola sentencia que verifica disponibilidad y descuenta.
         // También actualiza valor_total_stock para mantener el promedio ponderado.
@@ -98,10 +98,10 @@ public sealed class StockRepository : IStockRepository
         Guid tenantId, Guid WarehouseId, Guid productoId,
         decimal delta, Guid createdBy,
         CancellationToken ct = default,
-        decimal costoUnitario = 0m)
+        decimal unitCost = 0m)
     {
         if (IsInMemoryProvider())
-            return await IncrementarInMemoryAsync(tenantId, WarehouseId, productoId, delta, createdBy, ct, costoUnitario);
+            return await IncrementarInMemoryAsync(tenantId, WarehouseId, productoId, delta, createdBy, ct, unitCost);
 
         var tracked = _context.ChangeTracker.Entries<CurrentStock>()
             .FirstOrDefault(e =>
@@ -113,7 +113,7 @@ public sealed class StockRepository : IStockRepository
         if (tracked is not null)
             tracked.State = EntityState.Detached;
 
-        var valorEntrada = delta * costoUnitario;
+        var valorEntrada = delta * unitCost;
         var newId = Guid.NewGuid();
 
         // UPSERT: crea el registro si no existe, suma cantidad y valor_total_stock si ya existe.
@@ -143,8 +143,8 @@ public sealed class StockRepository : IStockRepository
         Guid      tenantId,
         Guid      productoId,
         Guid      WarehouseId,
-        DateTime? desdeUtc,
-        DateTime? hastaUtc,
+        DateTime? fromUtc,
+        DateTime? toUtc,
         CancellationToken ct = default)
     {
         var q = _context.StockMovements
@@ -152,10 +152,10 @@ public sealed class StockRepository : IStockRepository
                      && m.ProductId == productoId
                      && m.WarehouseId  == WarehouseId);
 
-        if (desdeUtc.HasValue)
-            q = q.Where(m => m.CreatedAt >= desdeUtc.Value);
-        if (hastaUtc.HasValue)
-            q = q.Where(m => m.CreatedAt <= hastaUtc.Value);
+        if (fromUtc.HasValue)
+            q = q.Where(m => m.CreatedAt >= fromUtc.Value);
+        if (toUtc.HasValue)
+            q = q.Where(m => m.CreatedAt <= toUtc.Value);
 
         return await q.OrderBy(m => m.CreatedAt).ThenBy(m => m.Id).ToListAsync(ct);
     }
@@ -170,7 +170,7 @@ public sealed class StockRepository : IStockRepository
 
     private async Task<decimal?> DecrementarInMemoryAsync(
         Guid tenantId, Guid WarehouseId, Guid productoId,
-        decimal delta, Guid updatedBy, CancellationToken ct, decimal costoUnitario = 0m)
+        decimal delta, Guid updatedBy, CancellationToken ct, decimal unitCost = 0m)
     {
         var stock = await _context.CurrentStocks.FirstOrDefaultAsync(
             s => s.TenantId == tenantId && s.WarehouseId == WarehouseId && s.ProductId == productoId, ct);
@@ -179,13 +179,13 @@ public sealed class StockRepository : IStockRepository
             return null;
 
         var anterior = stock.Quantity;
-        stock.ApplyMovement(-delta, updatedBy, costoUnitario);
+        stock.ApplyMovement(-delta, updatedBy, unitCost);
         return anterior;
     }
 
     private async Task<decimal> IncrementarInMemoryAsync(
         Guid tenantId, Guid WarehouseId, Guid productoId,
-        decimal delta, Guid createdBy, CancellationToken ct, decimal costoUnitario = 0m)
+        decimal delta, Guid createdBy, CancellationToken ct, decimal unitCost = 0m)
     {
         var stock = await _context.CurrentStocks.FirstOrDefaultAsync(
             s => s.TenantId == tenantId && s.WarehouseId == WarehouseId && s.ProductId == productoId, ct);
@@ -194,12 +194,12 @@ public sealed class StockRepository : IStockRepository
         {
             stock = CurrentStock.Create(tenantId, productoId, WarehouseId, createdBy);
             await _context.CurrentStocks.AddAsync(stock, ct);
-            stock.ApplyMovement(delta, createdBy, costoUnitario);
+            stock.ApplyMovement(delta, createdBy, unitCost);
             return 0;
         }
 
         var anterior = stock.Quantity;
-        stock.ApplyMovement(delta, createdBy, costoUnitario);
+        stock.ApplyMovement(delta, createdBy, unitCost);
         return anterior;
     }
 }

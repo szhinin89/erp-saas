@@ -5,5 +5,5 @@ public sealed record IssuedRetentionListItemDto(
     Guid    SupplierId,
     string    AccessKey,
     string    Status,
-    decimal TotalRetenido,
+    decimal TotalRetained,
     DateTime  IssueDate);

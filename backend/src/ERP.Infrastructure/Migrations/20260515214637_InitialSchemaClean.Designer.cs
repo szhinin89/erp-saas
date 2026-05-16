@@ -1805,7 +1805,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<bool>("IsReconciled")
+                    b.Property<bool>("Reconciled")
                         .HasColumnType("boolean")
                         .HasColumnName("is_reconciled");
 
@@ -8024,13 +8024,13 @@ namespace ERP.Infrastructure.Migrations
                         {
                             Code = "03",
                             IsActive = true,
-                            Name = "Activo Fijo – Crédito Tributario IVA"
+                            Name = "IsActive Fijo – Crédito Tributario IVA"
                         },
                         new
                         {
                             Code = "04",
                             IsActive = true,
-                            Name = "Activo Fijo – Costo o Gasto IR"
+                            Name = "IsActive Fijo – Costo o Gasto IR"
                         },
                         new
                         {

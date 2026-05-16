@@ -35,7 +35,7 @@ public sealed class SalesNotesController : ControllerBase
     [HttpPost]
     [Authorize(Policy = "perm:ventas.notas.create")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    public async Task<IActionResult> Create([FromBody] CrearSalesNoteCommand command, CancellationToken ct = default)
+    public async Task<IActionResult> Create([FromBody] CreateSalesNoteCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
@@ -46,7 +46,7 @@ public sealed class SalesNotesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Send(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new EnviarSalesNotesriCommand(id), ct);
+        var result = await _mediator.Send(new SendSalesNoteSriCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Enviado");
     }
 }

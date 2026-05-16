@@ -23,7 +23,7 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
     public async Task<string> GenerarXmlFacturaAsync(SalesBill factura, List<SalesBillLine> detalles, SriSettings config)
     {
         _logger.LogDebug(
-            "[SRI-SIM] Generando XML para factura {FacturaId} (clave={ClaveAcceso}, tenant={TenantId})",
+            "[SRI-SIM] Generando XML para factura {FacturaId} (clave={AccessKey}, tenant={TenantId})",
             factura.Id, factura.AccessKey, factura.TenantId);
 
         // Construir XDocument según XSD del SRI (versión simplificada para simulación)
@@ -38,7 +38,7 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
                     new XElement("razonSocial", config.LegalName),
                     new XElement("nombreComercial", config.TradeName ?? config.LegalName),
                     new XElement("ruc", config.Ruc),
-                    new XElement("claveAcceso", factura.AccessKey),
+                    new XElement("accessKey", factura.AccessKey),
                     new XElement("codDoc", factura.DocType),
                     new XElement("estab", factura.EstabCode),
                     new XElement("ptoEmi", factura.EmPointCode),
@@ -46,7 +46,7 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
                     new XElement("dirMatriz", config.MainAddress)
                 ),
                 new XElement("infoFactura",
-                    new XElement("fechaEmision", factura.IssueDate.ToString("dd/MM/yyyy")),
+                    new XElement("issueDate", factura.IssueDate.ToString("dd/MM/yyyy")),
                     new XElement("dirEstablecimiento", config.MainAddress),
                     new XElement("obligadoContabilidad", config.RequiresAccounting ? "SI" : "NO"),
                     new XElement("tipoIdentificacionComprador", "04"), // RUC por defecto
@@ -125,7 +125,7 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
             new XElement("razonSocial", config.LegalName),
             new XElement("nombreComercial", config.TradeName ?? config.LegalName),
             new XElement("ruc", config.Ruc),
-            new XElement("claveAcceso", nota.AccessKey),
+            new XElement("accessKey", nota.AccessKey),
             new XElement("codDoc", nota.DocType),
             new XElement("estab", nota.EstabCode),
             new XElement("ptoEmi", nota.EmPointCode),
@@ -133,7 +133,7 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
             new XElement("dirMatriz", config.MainAddress));
 
         var infoPrincipal = new XElement(infoName,
-            new XElement("fechaEmision", nota.IssueDate.ToString("dd/MM/yyyy")),
+            new XElement("issueDate", nota.IssueDate.ToString("dd/MM/yyyy")),
             new XElement("dirEstablecimiento", config.MainAddress),
             new XElement("tipoIdentificacionComprador", "04"),
             new XElement("razonSocialComprador", facturaOriginal.Cliente.LegalName),

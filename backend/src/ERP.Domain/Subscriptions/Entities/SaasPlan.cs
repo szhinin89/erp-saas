@@ -1,4 +1,4 @@
-using ERP.Domain.Subscriptions;
+﻿using ERP.Domain.Subscriptions;
 
 namespace ERP.Domain.Subscriptions.Entities;
 
@@ -61,7 +61,7 @@ public sealed class SaasPlan
 
         var cur = (currency ?? "USD").Trim().ToUpperInvariant();
         if (cur.Length == 0 || cur.Length > CurrencyMaxLen)
-            throw new ArgumentException("Moneda inválida.", nameof(currency));
+            throw new ArgumentException("Currency inválida.", nameof(currency));
 
         if (priceAmount < 0)
             throw new ArgumentOutOfRangeException(nameof(priceAmount));
@@ -132,7 +132,7 @@ public sealed class SaasPlan
 
         var cur = (currency ?? "USD").Trim().ToUpperInvariant();
         if (cur.Length == 0 || cur.Length > CurrencyMaxLen)
-            throw new ArgumentException("Moneda inválida.", nameof(currency));
+            throw new ArgumentException("Currency inválida.", nameof(currency));
 
         if (priceAmount < 0)
             throw new ArgumentOutOfRangeException(nameof(priceAmount));

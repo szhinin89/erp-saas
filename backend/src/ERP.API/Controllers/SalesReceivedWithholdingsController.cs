@@ -32,7 +32,7 @@ public sealed class SalesReceivedWithholdingsController : ControllerBase
     [HttpPost]
     [Authorize(Policy = "perm:ventas.retenciones-recibidas.create")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    public async Task<IActionResult> Register([FromBody] RegistrarSalesRetentionCommand command, CancellationToken ct = default)
+    public async Task<IActionResult> Register([FromBody] RegisterSalesRetentionCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Registrado");

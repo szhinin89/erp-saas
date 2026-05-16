@@ -1,8 +1,8 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERP.Application.Sales.UseCases.AnularFactura;
 
-public sealed class AnularFacturaCommandValidator : AbstractValidator<AnularFacturaCommand>
+public sealed class AnularFacturaCommandValidator : AbstractValidator<VoidInvoiceCommand>
 {
     public AnularFacturaCommandValidator()
     {

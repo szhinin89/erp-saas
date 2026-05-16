@@ -12,12 +12,12 @@ public sealed class KardexSnapshotRepository : IKardexSnapshotRepository
 
     public Task<KardexSnapshot?> GetLatestBeforeAsync(
         Guid tenantId, Guid productoId, Guid WarehouseId,
-        DateTime hastaUtc, CancellationToken ct = default)
+        DateTime toUtc, CancellationToken ct = default)
         => _context.KardexSnapshots
             .Where(s => s.TenantId   == tenantId
                      && s.ProductId == productoId
                      && s.WarehouseId   == WarehouseId
-                     && s.SnapshotDate <= hastaUtc.Date)
+                     && s.SnapshotDate <= toUtc.Date)
             .OrderByDescending(s => s.SnapshotDate)
             .FirstOrDefaultAsync(ct);
 

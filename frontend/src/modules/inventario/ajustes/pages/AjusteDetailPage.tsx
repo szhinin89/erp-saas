@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage, PageShell } from '../../../../components/PageShell';
 import { Card } from '../../../../components/ui/Card';
@@ -30,7 +30,7 @@ export function AjusteDetailPage() {
   return (
     <PageShell
       kicker="Inventario · Ajustes"
-      title={ajuste?.numeroAjuste ?? 'Cargando…'}
+      title={ajuste?.adjustmentNumber ?? 'Cargando…'}
       action={
         esBorrador ? (
           <div className="aj-action-row">
@@ -66,18 +66,18 @@ export function AjusteDetailPage() {
         ) : (
           <>
             <div className="aj-detail-grid">
-              <Dato label="Número"   valor={ajuste.numeroAjuste} />
+              <Dato label="Número"   valor={ajuste.adjustmentNumber} />
               <Dato label="Estado"   valor={<AjusteEstadoBadge estado={ajuste.status} />} />
               <Dato label="Tipo"     valor={
-                <AjusteTipoBadge tipo={ajuste.tipoAjuste} cantidad={Math.abs(ajuste.cantidadAjuste)} />
+                <AjusteTipoBadge tipo={ajuste.adjustmentType} cantidad={Math.abs(ajuste.adjustmentQuantity)} />
               } />
-              <Dato label="Producto" valor={ajuste.productoNombre} />
-              <Dato label="Bodega"   valor={ajuste.bodegaNombre} />
+              <Dato label="Producto" valor={ajuste.productName} />
+              <Dato label="Bodega"   valor={ajuste.warehouseName} />
               <Dato label="Motivo"   valor={ajuste.reason} />
-              <Dato label="Fecha"    valor={new Date(ajuste.fechaAjuste).toLocaleString()} />
+              <Dato label="Fecha"    valor={new Date(ajuste.adjustmentDate).toLocaleString()} />
               {ajuste.notes && <Dato label="Observaciones" valor={ajuste.notes} />}
-              {ajuste.fechaEjecucion && (
-                <Dato label="Ejecutado el" valor={new Date(ajuste.fechaEjecucion).toLocaleString()} />
+              {ajuste.executionDate && (
+                <Dato label="Ejecutado el" valor={new Date(ajuste.executionDate).toLocaleString()} />
               )}
             </div>
 

@@ -23,9 +23,9 @@ public sealed class PurchBillRepository : IPurchBillRepository
             .Include(c => c.Lines)
             .FirstOrDefaultAsync(c => c.TenantId == tenantId && c.Id == id, ct);
 
-    public Task<bool> ExistsAccessKeyAsync(Guid tenantId, string claveAcceso, CancellationToken ct = default)
+    public Task<bool> ExistsAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default)
         => _context.PurchBills
-            .AnyAsync(c => c.TenantId == tenantId && c.AccessKey == claveAcceso, ct);
+            .AnyAsync(c => c.TenantId == tenantId && c.AccessKey == accessKey, ct);
 
     public async Task<IReadOnlyList<PurchBill>> GetAsync(
         Guid tenantId,
@@ -102,10 +102,10 @@ public sealed class PurchBillRepository : IPurchBillRepository
 
     public Task<bool> ExistsPurchNoteAccessKeyAsync(
         Guid tenantId,
-        string claveAcceso,
+        string accessKey,
         CancellationToken ct = default)
         => _context.PurchNotes.AnyAsync(
-            n => n.TenantId == tenantId && n.AccessKey == claveAcceso, ct);
+            n => n.TenantId == tenantId && n.AccessKey == accessKey, ct);
 
     public async Task<IReadOnlyList<PurchNote>> GetPurchNotesAsync(
         Guid tenantId,

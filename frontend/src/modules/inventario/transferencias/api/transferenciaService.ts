@@ -1,4 +1,4 @@
-import { api } from '../../../lib/api';
+﻿import { api } from '../../../lib/api';
 import type { ApiResponse } from '../../../../types/api';
 
 // ── Tipos de dominio ────────────────────────────────────────────────────────
@@ -14,17 +14,17 @@ export interface TransferenciaDetalle {
 
 export interface Transferencia {
   id: string;
-  numeroTransferencia: string;
-  bodegaOrigenId: string;
-  bodegaOrigenNombre: string;
-  bodegaDestinoId: string;
-  bodegaDestinoNombre: string;
-  fechaTransferencia: string;
+  transferNumber: string;
+  sourceWarehouseId: string;
+  sourceWarehouseName: string;
+  destinationWarehouseId: string;
+  destinationWarehouseName: string;
+  transferDate: string;
   status: EstadoTransferencia;
   reason: string | null;
   notes: string | null;
-  fechaConfirmacion: string | null;
-  confirmadoPor: string | null;
+  confirmationDate: string | null;
+  confirmedBy: string | null;
   createdAt: string;
 }
 

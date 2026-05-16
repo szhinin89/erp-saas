@@ -48,7 +48,7 @@ internal static class VentasEndToEndHelpers
             createdBy:            userId);
         db.Customers.Add(cliente);
 
-        // SriSettings (Ambiente 1 = pruebas)
+        // SriSettings (Environment 1 = pruebas)
         var sri = SriSettings.Create(
             tenantId:              tenantId,
             ruc:            "9999999999999",

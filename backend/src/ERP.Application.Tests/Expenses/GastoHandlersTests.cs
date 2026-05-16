@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Expenses.UseCases.AprobarGasto;
@@ -49,15 +49,15 @@ public sealed class GastoHandlersTests
         var user = new Mock<ICurrentUser>();
         user.SetupGet(x => x.UserId).Returns(userId);
 
-        var handler = new CrearGastoCommandHandler(
+        var handler = new CreateExpenseCommandHandler(
             gastos.Object, prov.Object, parser.Object, storage.Object, activity.Object, tenant.Object, user.Object,
             uow.Object,
-            NullLogger<CrearGastoCommandHandler>.Instance);
+            NullLogger<CreateExpenseCommandHandler>.Instance);
 
-        var cmd = new CrearGastoCommand(
-            ModoCreacionGasto.Manual,
+        var cmd = new CreateExpenseCommand(
+            ExpenseCreationMode.Manual,
             XmlContent: null,
-            XmlNombreArchivo: null,
+            XmlFileName: null,
             SupplierId: null,
             IssueDate: DateTime.UtcNow.Date,
             Concept: "Papelería",
@@ -97,13 +97,13 @@ public sealed class GastoHandlersTests
         uow.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         uow.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
-        var handler = new CrearGastoCommandHandler(
+        var handler = new CreateExpenseCommandHandler(
             gastos.Object, prov.Object, parser.Object, storage.Object, activity.Object, tenant.Object, user.Object,
             uow.Object,
-            NullLogger<CrearGastoCommandHandler>.Instance);
+            NullLogger<CreateExpenseCommandHandler>.Instance);
 
-        var cmd = new CrearGastoCommand(
-            ModoCreacionGasto.Manual,
+        var cmd = new CreateExpenseCommand(
+            ExpenseCreationMode.Manual,
             null, null, null,
             DateTime.UtcNow.Date,
             "Equipo",
@@ -177,14 +177,14 @@ public sealed class GastoHandlersTests
         var user = new Mock<ICurrentUser>();
         user.SetupGet(x => x.UserId).Returns(userId);
 
-        var handler = new CrearGastoCommandHandler(
+        var handler = new CreateExpenseCommandHandler(
             gastos.Object, prov.Object, parser.Object, storage.Object, activity.Object, tenant.Object, user.Object,
             uow.Object,
-            NullLogger<CrearGastoCommandHandler>.Instance);
+            NullLogger<CreateExpenseCommandHandler>.Instance);
 
         var xmlBytes = new byte[] { 60, 63, 120, 109, 108 }; // minimal bytes; parser is mocked
-        var cmd = new CrearGastoCommand(
-            ModoCreacionGasto.Xml,
+        var cmd = new CreateExpenseCommand(
+            ExpenseCreationMode.Xml,
             xmlBytes,
             "factura.xml",
             null, null, null,
@@ -236,9 +236,9 @@ public sealed class GastoHandlersTests
         user.SetupGet(x => x.Email).Returns("u@test");
         user.SetupGet(x => x.FullName).Returns("User");
 
-        var validar = new ValidarGastoCommandHandler(
+        var validar = new ValidateExpenseCommandHandler(
             gastos.Object, provRepo.Object, activity.Object, tenant.Object, user.Object, uowValidar.Object);
-        var valRes = await validar.Handle(new ValidarGastoCommand(gasto.Id), CancellationToken.None);
+        var valRes = await validar.Handle(new ValidateExpenseCommand(gasto.Id), CancellationToken.None);
         valRes.IsSuccess.Should().BeTrue();
         gasto.Status.Should().Be(ExpenseStatus.Validated);
 
@@ -262,16 +262,16 @@ public sealed class GastoHandlersTests
         uow.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         uow.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
-        var aprobar = new AprobarGastoCommandHandler(
+        var aprobar = new ApproveExpenseCommandHandler(
             gastos.Object,
             accounting.Object,
             activity.Object,
             tenant.Object,
             user.Object,
             uow.Object,
-            NullLogger<AprobarGastoCommandHandler>.Instance);
+            NullLogger<ApproveExpenseCommandHandler>.Instance);
 
-        var aprRes = await aprobar.Handle(new AprobarGastoCommand(gasto.Id), CancellationToken.None);
+        var aprRes = await aprobar.Handle(new ApproveExpenseCommand(gasto.Id), CancellationToken.None);
 
         aprRes.IsSuccess.Should().BeTrue();
         gasto.Status.Should().Be(ExpenseStatus.Approved);

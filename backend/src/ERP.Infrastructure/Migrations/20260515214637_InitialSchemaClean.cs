@@ -3775,8 +3775,8 @@ namespace ERP.Infrastructure.Migrations
                 {
                     { "01", true, "Crédito Tributario para declaración de IVA" },
                     { "02", true, "Costo o Gasto para declaración del IR" },
-                    { "03", true, "Activo Fijo – Crédito Tributario IVA" },
-                    { "04", true, "Activo Fijo – Costo o Gasto IR" },
+                    { "03", true, "IsActive Fijo – Crédito Tributario IVA" },
+                    { "04", true, "IsActive Fijo – Costo o Gasto IR" },
                     { "05", true, "Liquidación Gastos de Viaje, Hospedaje y Alimentación" },
                     { "06", true, "Retención en la Fuente" },
                     { "07", true, "Distribución de Dividendos, Beneficios o Ganancias" },

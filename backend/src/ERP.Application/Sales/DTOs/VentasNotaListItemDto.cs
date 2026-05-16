@@ -2,8 +2,8 @@
 
 public record SalesNoteListItemDto(
     Guid Id,
-    Guid FacturaOriginalId,
-    string TipoNota,
+    Guid OriginalInvoiceId,
+    string NoteType,
     string    Status,
     string    AccessKey,
     decimal Total,

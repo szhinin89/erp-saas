@@ -17,7 +17,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>
 /// GestiÃ³n del submÃ³dulo de Compras.
-/// Flujo: Borrador â†’ (Validado) â†’ Aprobado | Rechazado.
+/// Flujo: Borrador â†’ (Validado) â†’ IsApproved | Rechazado.
 /// </summary>
 [AppFeature("Compras", "perm:compras.facturas.view", "ðŸ›’", "/compras", null, 45)]
 [ApiController]
@@ -80,9 +80,9 @@ public sealed class PurchasesController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PurchBillDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CreateManual(
-        [FromBody] CrearPurchaseCommand command, CancellationToken ct = default)
+        [FromBody] CreatePurchaseCommand command, CancellationToken ct = default)
     {
-        var cmd = command with { Modo = ModoCreacionPurchase.Manual };
+        var cmd = command with { Modo = PurchaseCreationMode.Manual };
         var result = await _mediator.Send(cmd, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
     }
@@ -112,14 +112,14 @@ public sealed class PurchasesController : ControllerBase
         await xmlFile.CopyToAsync(ms, ct);
         content = ms.ToArray();
 
-        var command = new CrearPurchaseCommand(
-            Modo: ModoCreacionPurchase.Xml,
+        var command = new CreatePurchaseCommand(
+            Modo: PurchaseCreationMode.Xml,
             XmlContent: content,
-            XmlNombreArchivo: xmlFile.FileName,
+            XmlFileName: xmlFile.FileName,
             SupplierId: null, InvoiceNumber: null, InvoiceDate: null,
             DueDate: null, PaymentTerms: null,
             Notes: null, Lines: null,
-            AsignacionesBodega: null);
+            WarehouseAllocations: null);
 
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
@@ -139,7 +139,7 @@ public sealed class PurchasesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Validate(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new ValidarPurchaseCommand(id), ct);
+        var result = await _mediator.Send(new ValidatePurchaseCommand(id), ct);
         return this.ToOkOrBadRequest(result, "Validado");
     }
 
@@ -155,8 +155,8 @@ public sealed class PurchasesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Approve(Guid id, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new AprobarPurchaseCommand(id), ct);
-        return this.ToOkOrBadRequest(result, "Aprobado");
+        var result = await _mediator.Send(new ApprovePurchaseCommand(id), ct);
+        return this.ToOkOrBadRequest(result, "IsApproved");
     }
 
     /// <summary>Rechaza una compra (Borrador o Validada) con un motivo obligatorio.</summary>
@@ -171,7 +171,7 @@ public sealed class PurchasesController : ControllerBase
         [FromBody] RejectPurchaseRequest request,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new RechazarPurchaseCommand(id, request.Reason), ct);
+        var result = await _mediator.Send(new RejectPurchaseCommand(id, request.Reason), ct);
         return this.ToOkOrBadRequest(result, "Rechazado");
     }
 }

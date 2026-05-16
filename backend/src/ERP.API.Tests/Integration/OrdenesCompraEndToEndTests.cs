@@ -40,7 +40,7 @@ public sealed class OrdenesCompraEndToEndTests
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.NumeroOrden.Should().Be("OC-0001");
+        result.Value!.OrderNumber.Should().Be("OC-0001");
         result.Value.Status.Should().Be("Borrador");
         result.Value.Total.Should().BeGreaterThan(0);
     }

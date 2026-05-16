@@ -62,7 +62,7 @@ public sealed class OrdenCompraFlujoCompletoTests
         crear.IsSuccess.Should().BeTrue(crear.Error);
         var oc = crear.Value!;
         oc.Status.Should().Be("Borrador");
-        oc.NumeroOrden.Should().Be("OC-0001");
+        oc.OrderNumber.Should().Be("OC-0001");
 
         // Subtotal = 10*5 + 5*10 = 100; IVA 15% = 15; Total = 115
         oc.Subtotal.Should().Be(100m);
@@ -97,10 +97,10 @@ public sealed class OrdenCompraFlujoCompletoTests
         var lineaA1  = detalle1.Lines.First(d => d.ProductId == productoAId);
         var lineaB1  = detalle1.Lines.First(d => d.ProductId == productoBId);
 
-        lineaA1.CantidadFacturada.Should().Be(6m,  "se facturaron 6 de A");
-        lineaA1.PendienteFacturar.Should().Be(4m,  "faltan 4 de A");
-        lineaB1.CantidadFacturada.Should().Be(5m,  "se facturaron 5 de B");
-        lineaB1.PendienteFacturar.Should().Be(0m,  "B completamente cubierto");
+        lineaA1.InvoicedQuantity.Should().Be(6m,  "se facturaron 6 de A");
+        lineaA1.PendingBillingQuantity.Should().Be(4m,  "faltan 4 de A");
+        lineaB1.InvoicedQuantity.Should().Be(5m,  "se facturaron 5 de B");
+        lineaB1.PendingBillingQuantity.Should().Be(0m,  "B completamente cubierto");
 
         // â”€â”€ PASO 5: Factura 2 â€” A:4 uds (completa el pedido de A) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         var factura2 = BuildFacturaAprobada(tenantId, proveedor.Id,
@@ -118,11 +118,11 @@ public sealed class OrdenCompraFlujoCompletoTests
         // Verificar cantidades finales
         var detalleFinal = (await mediator.Send(new GetOrdenCompraByIdQuery(oc.Id), CancellationToken.None)).Value!;
         var lineaAFinal  = detalleFinal.Lines.First(d => d.ProductId == productoAId);
-        lineaAFinal.CantidadFacturada.Should().Be(10m);
-        lineaAFinal.PendienteFacturar.Should().Be(0m);
+        lineaAFinal.InvoicedQuantity.Should().Be(10m);
+        lineaAFinal.PendingBillingQuantity.Should().Be(0m);
 
         // Verificar facturas vinculadas
-        detalleFinal.FacturasVinculadas.Should().HaveCount(2);
+        detalleFinal.LinkedInvoices.Should().HaveCount(2);
 
         // â”€â”€ PASO 6: Intentar vincular mÃ¡s cantidad de A â†’ debe fallar â”€â”€â”€â”€â”€â”€â”€â”€â”€
         var facturaExtra = BuildFacturaAprobada(tenantId, proveedor.Id,

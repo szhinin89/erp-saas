@@ -126,7 +126,7 @@ public class AccountsController : ControllerBase
     /// <summary>Crea una nueva cuenta en el plan de cuentas del tenant.</summary>
     /// <remarks>
     /// El código de cuenta debe ser único por tenant.
-    /// Los valores válidos para `type`: 0=Activo, 1=Pasivo, 2=Patrimonio, 3=Ingreso, 4=Gasto.
+    /// Los valores válidos para `type`: 0=IsActive, 1=Pasivo, 2=Patrimonio, 3=Ingreso, 4=Gasto.
     /// Los valores válidos para `nature`: 0=Débito, 1=Crédito.
     /// </remarks>
     /// <response code="201">Cuenta creada correctamente.</response>

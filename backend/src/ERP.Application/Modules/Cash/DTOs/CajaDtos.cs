@@ -3,13 +3,13 @@
 public sealed record BankAccountDto(
     Guid Id,
     string  Name,
-    string NumeroCuenta,
-    string TipoCuenta,
-    string Moneda,
-    decimal SaldoInicial,
-    decimal SaldoActual,
-    bool Activo,
-    Guid? CuentaContableId);
+    string AccountNumber,
+    string AccountType,
+    string Currency,
+    decimal OpeningBalance,
+    decimal CurrentBalance,
+    bool IsActive,
+    Guid? LedgerAccountId);
 
 public sealed record BankStatementDto(
     Guid Id,
@@ -18,9 +18,9 @@ public sealed record BankStatementDto(
     DateTime PeriodTo,
     decimal OpeningBalance,
     decimal ClosingBalance,
-    DateTime FechaCarga,
-    bool Conciliado,
-    int CantidadRows);
+    DateTime LoadedAt,
+    bool IsReconciled,
+    int RowCount);
 
 public sealed record BankTransactionDto(
     Guid Id,
@@ -33,37 +33,37 @@ public sealed record BankTransactionDto(
     Guid?     JournalEntryId,
     string    Status);
 
-public sealed record SugerenciaReconciliationDto(
+public sealed record ReconciliationSuggestionDto(
     Guid BankTransactionId,
-    Guid? AsientoContableSugeridoId,
+    Guid? SuggestedJournalEntryId,
     string? Reason);
 
-public sealed record FlujoEfectivoDiaDto(DateOnly Fecha, decimal Entradas, decimal Salidas, decimal Neto);
+public sealed record DailyCashFlowDto(DateOnly Fecha, decimal Inflows, decimal Outflows, decimal Net);
 
-public sealed record GastoPettyCashDto(
+public sealed record PettyCashExpenseDto(
     Guid Id,
     Guid PettyCashId,
     DateTime Fecha,
-    string Concepto,
+    string Description,
     decimal Monto,
     string TipoComprobante,
     string NumeroComprobante,
     Guid?     JournalEntryId);
 
-public sealed record CashCountDto(
+public sealed record PettyCashCountDto(
     Guid Id,
     Guid PettyCashId,
-    DateTime FechaArqueo,
-    decimal EfectivoFisico,
-    decimal Diferencia,
+    DateTime CountDate,
+    decimal PhysicalCash,
+    decimal Variance,
     string Observaciones,
-    bool Aprobado);
+    bool IsApproved);
 
 public sealed record PettyCashDto(
     Guid Id,
     string  Name,
-    decimal SaldoAsignado,
-    decimal SaldoActual,
-    Guid? BankAccountIdReposicion,
-    Guid? CuentaContableCajaId,
-    bool Activo);
+    decimal AssignedBalance,
+    decimal CurrentBalance,
+    Guid? ReplenishmentBankAccountId,
+    Guid? LedgerCashAccountId,
+    bool IsActive);
