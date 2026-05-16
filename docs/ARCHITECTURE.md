@@ -1,168 +1,373 @@
-# Arquitectura del sistema
+# ARQUITECTURA — ERP SaaS ZH Technologies
 
-## Visión general
-
-> **Monolito modular con Clean Architecture.** El objetivo es que **cada módulo funcional sea independiente** para poder **extraerlo como microservicio** cuando madure, **sin reescribir el dominio**.
-
-Esa frase es el criterio guía del repositorio: el código y la organización de carpetas deben favorecer **límites claros por dominio de negocio** (agregados, repositorios y casos de uso acotados), de modo que un futuro servicio pueda llevarse **principalmente `ERP.Domain` + el slice correspondiente de `ERP.Application`**, con adaptadores nuevos para transporte y persistencia.
-
-**Qué implica en la práctica**
-
-- **Dominio primero:** reglas y entidades viven en `ERP.Domain`; no dependen de API, EF ni MediatR.
-- **Casos de uso por vertical slice** en `ERP.Application` (comandos, consultas, DTOs del módulo), invocando solo abstracciones del dominio del mismo contexto acotado.
-- **Infraestructura sustituible:** `ERP.Infrastructure` implementa repositorios y detalles técnicos; al extraer un microservicio se reimplementan o comparten según el acoplamiento aceptado.
-
-**Decisiones formales:** ver [ADR en `docs/adr/`](adr/README.md) (p. ej. ADR 0001–0003).
-
-**Inventario de stack/herramientas en uso:** ver [`docs/HERRAMIENTAS-ERP-SAAS.md`](HERRAMIENTAS-ERP-SAAS.md).
-
-**SuperAdmin y primera ejecución (token first-run, cambio de contexto empresa):** ver [`docs/SUPERADMIN-Y-FIRST-RUN.md`](SUPERADMIN-Y-FIRST-RUN.md).
-
-**Convergencia de carpetas y namespaces:** plan por sprints en [`docs/ESTADO-PROYECTO.md`](ESTADO-PROYECTO.md#refactor-modular-por-sprints) (sección *Refactor modular por sprints*; `Domain.Modules.*` / `Application.Modules.*`).
-
-## Capas y dependencias
-
-```
-┌─────────────────────────────────────────────┐
-│  ERP.API  (controllers, middleware, host)   │
-├─────────────────────────────────────────────┤
-│  ERP.Application  (handlers, DTOs)          │
-├─────────────────────────────────────────────┤
-│  ERP.Infrastructure  (EF Core, repos)       │
-├─────────────────────────────────────────────┤
-│  ERP.Domain  (entidades, VOs, interfaces)   │
-└─────────────────────────────────────────────┘
-```
-
-**Regla estricta:** cada capa solo puede depender de la capa inferior. El dominio no referencia EF Core, ASP.NET ni ningún framework externo.
-
-## Criterios para cumplir el objetivo (módulo extraíble)
-
-La arquitectura **debe** sostener que, al madurar un módulo, se pueda **levantar un microservicio** llevándose sobre todo **el dominio y los casos de uso de ese contexto**, sin reescribir reglas de negocio. Criterios **obligatorios** para código nuevo y refactors; los desvíos existentes se corrigen de forma incremental.
-
-### 1. Límite del módulo (bounded context)
-
-Un **módulo funcional** es un conjunto coherente de:
-
-- **Dominio:** entidades, VOs, enums, reglas e **interfaces de repositorio y servicios de dominio** que pertenecen al mismo proceso de negocio (p. ej. ventas, compras, inventario).
-- **Aplicación:** comandos, consultas, validadores y DTOs bajo el mismo prefijo de carpetas / namespace del módulo.
-- **API:** controladores (o grupos de endpoints) que solo delegan en casos de uso de ese módulo y traducen HTTP ↔ comandos/consultas.
-
-### 2. Dependencias entre módulos
-
-| Permitido | Evitar / prohibido |
-|-----------|---------------------|
-| Usar **interfaces del dominio** de otro módulo solo si el contrato es estable y mínimo (ej. catálogo leído por ID), o tipos **realmente compartidos** en un núcleo acotado (`ERP.Application.Common`, VOs compartidos acordados). | Handlers o DTOs de un módulo **importando namespaces de `UseCases` de otro** (acoplamiento de aplicación cruzado). |
-| **Integración explícita:** eventos de dominio, colas, o fachada de aplicación dedicada a “orquestación” documentada. | Lógica de negocio de módulo A **copiada** en módulo B. |
-| **Infraestructura** implementando repos definidos en el dominio de cada módulo. | Un repositorio en Infra que **mezcle persistencia** de dos contextos sin dejar claro el límite. |
-
-Objetivo: el grafo de dependencias del **slice** `Domain + Application` de un módulo sea **casi un subárbol**; lo que salga hacia fuera son pocos puntos explícitos.
-
-### 3. Convención física y de namespaces (objetivo de convergencia)
-
-- **Dominio:** puede vivir en `ERP.Domain/{Modulo}/` o `ERP.Domain/Modules/{Modulo}/`; lo importante es que **todo lo del mismo bounded context** quede agrupado y con interfaces de persistencia **en ese árbol**, no dispersas.
-- **Aplicación:** preferir carpeta y namespace alineados, p. ej. `ERP.Application/Modules/{Modulo}/…` y `ERP.Application.Modules.{Modulo}.…`, para que un extract sea un **copy-paste de carpeta + ajuste de referencias**. Corregir gradualmente namespaces que hoy omiten `Modules` en el nombre lógico.
-
-### 4. Infraestructura y datos hoy
-
-Un único `ErpDbContext` y una base compartida **no invalidan** el objetivo: el límite modular es **lógico y de código**. La extracción posterior puede implicar **BD propia**, **vista** o **sincronización** según el módulo; el dominio reutilizable reduce el coste.
-
-### 5. Checklist antes de dar por “cerrado” un feature de módulo
-
-- [ ] Reglas y estados nuevos viven en **entidades o servicios de dominio** del módulo, no en el controller.
-- [ ] El handler solo usa **repos/interfaces del dominio** del módulo (o contratos compartidos explícitos).
-- [ ] No se añaden **dependencias de código** entre casos de uso de dos módulos (imports cruzados de handlers/DTOs ajenos) salvo `ERP.Application.Common` u otros contratos compartidos explícitos.
-- [ ] Pruebas del caso de uso (unitarias o integración) pueden **ubicarse** junto al módulo conceptualmente (p. ej. `ERP.Application.Tests/{Modulo}`).
+Reglas de implementación → `CLAUDE.md` | Estado → `STATUS.md` | Funcionalidades → `FEATURES.md`
 
 ---
 
-## Estructura de archivos por módulo (objetivo)
+## Visión general
 
+**Monolito modular + Clean Architecture.** Límites claros por dominio para poder extraer módulos como microservicios sin reescribir el dominio.
+
+```
+┌──────────────────────────────────────────────┐
+│  ERP.API        Controllers / Middleware      │  HTTP, JWT, Swagger
+├──────────────────────────────────────────────┤
+│  ERP.Application  Handlers / DTOs            │  CQRS, MediatR, FluentValidation
+├──────────────────────────────────────────────┤
+│  ERP.Infrastructure  EF Core / Repos         │  PostgreSQL, Servicios externos
+├──────────────────────────────────────────────┤
+│  ERP.Domain     Entidades / Interfaces       │  Sin dependencias de frameworks
+└──────────────────────────────────────────────┘
+         ▲                     ▲
+    React SPA              PostgreSQL 16
+    (frontend/)            Redis 7
+```
+
+---
+
+## Stack técnico
+
+### Backend
+| Herramienta | Versión / Uso |
+|---|---|
+| .NET SDK | 10.0.201+ (fijado en `backend/src/global.json`) |
+| ASP.NET Core Web API | Host HTTP, controllers, middleware |
+| MediatR | CQRS (commands / queries / handlers) |
+| FluentValidation | Validación + `ValidationBehavior` en pipeline MediatR |
+| EF Core 10 + Npgsql | Persistencia y migraciones (PostgreSQL) |
+| JWT Bearer | Autenticación de sesión |
+| BCrypt.Net-Next | Hash/verify contraseñas (solo en Infrastructure) |
+| Serilog | Logging estructurado (Console + File) |
+| Swashbuckle | Swagger / OpenAPI |
+| Hangfire + Hangfire.PostgreSql | Jobs de background |
+| QuestPDF + RazorLight + ClosedXML | Exportes PDF / Excel |
+
+### Frontend
+| Herramienta | Uso |
+|---|---|
+| React 19 + TypeScript | UI SPA |
+| Vite 8 | Dev server y build |
+| React Router | Ruteo |
+| Zustand | Estado global (auth, permisos) |
+| Axios | Cliente HTTP (interceptor JWT + refresh automático) |
+| React Hook Form + Zod | Formularios y validación |
+| Recharts | Gráficos |
+
+### Infraestructura
+| Herramienta | Uso |
+|---|---|
+| PostgreSQL 16 | Base principal (`dberpsaas`, puerto 5435 en dev) |
+| Redis 7 | Cache distribuida (puerto 6379; fallback `MemoryCache` si cadena vacía) |
+| Docker Compose | Orquestación local (`docker-compose.yml`) |
+| GitHub Actions | CI — `ci.yml`: backend + frontend + Playwright |
+
+---
+
+## Estructura de capas del backend
+
+### Responsabilidades por proyecto
+
+| Proyecto | Qué hace | Qué no hace |
+|----------|----------|-------------|
+| `ERP.Domain` | Entidades, VOs, interfaces de repos, eventos, enums, reglas | Depender de EF Core / ASP.NET |
+| `ERP.Application` | Handlers, Commands/Queries, DTOs, Validators | Acceder a HTTP, BD directo, UI |
+| `ERP.Infrastructure` | Repos concretos, DbContext, servicios técnicos | Reglas de negocio |
+| `ERP.API` | Controllers delgados, Middleware, Swagger | Lógica de negocio; entidades de dominio en contratos |
+
+### Jerarquía de entidades de dominio
+```
+BaseEntity  (Id: Guid)
+└── AuditableEntity  (CreatedAt, UpdatedAt, CreatedBy, UpdatedBy)
+    ├── MasterEntity   ← catálogos maestros
+    └── DocumentEntity ← documentos transaccionales
+        └── AggregateRoot ← con eventos de dominio
+```
+
+### Estructura de carpetas por módulo
 ```
 ERP.Domain/Modules/{Modulo}/
 ├── Entities/        ← Agregados y entidades hijas
-├── ValueObjects/    ← Tipos inmutables con lógica de validación
-├── Interfaces/      ← Contratos de repositorios (implementados en Infrastructure)
+├── ValueObjects/    ← Tipos inmutables con validación
+├── Interfaces/      ← Contratos de repositorios
 ├── Enums/
-├── Events/          ← Domain events (IDomainEvent)
-└── Rules/           ← Reglas de negocio reutilizables
+└── Events/          ← IDomainEvent
 
 ERP.Application/Modules/{Modulo}/
-├── DTOs/            ← Records de salida (response)
+├── DTOs/
 └── UseCases/{Nombre}/
-    ├── {Nombre}Command.cs   ← Datos de entrada (record inmutable)
-    └── {Nombre}CommandHandler.cs / {Nombre}QueryHandler.cs   ← MediatR IRequestHandler
+    ├── {Nombre}Command.cs
+    ├── {Nombre}CommandHandler.cs
+    └── {Nombre}CommandValidator.cs
 
-ERP.Infrastructure/Persistence/
-├── Configurations/  ← IEntityTypeConfiguration<T> por entidad
-├── Repositories/    ← Implementaciones concretas de los repos del dominio
-└── ErpDbContext.cs
+ERP.Infrastructure/
+├── Authentication/
+│   ├── Services/    ← JwtService, AccessTokenService, CurrentUserService
+│   └── Security/    ← BcryptPasswordHasher
+├── SaaS/
+│   └── Services/    ← SubscriptionService, ConfigService
+├── Persistence/
+│   ├── ErpDbContext.cs
+│   ├── Configurations/  ← IEntityTypeConfiguration<T> por entidad
+│   └── Repositories/
+├── Seeding/
+└── Deployment/      ← FirstRunSetupService
+
+ERP.API/
+├── Controllers/
+├── Middleware/      ← ExceptionMiddleware (ValidationException → 422)
+├── Attributes/      ← [AppFeature], [Authorize]
+└── Extensions/      ← ApiResultExtensions, DevDatabaseSeeder
 ```
+
+> **Módulo de referencia:** `Accounting` — copiar estructura vertical para módulos nuevos.
+
+---
 
 ## Multi-tenant
 
-Cada entidad de negocio tiene `TenantId: Guid`. El aislamiento se logra con **query filters globales** en EF Core aplicados en `ErpDbContext.OnModelCreating`.
+### Modelo técnico
 
-El `TenantId` activo se resuelve en cada request desde el claim `tenant_id` del JWT a través de `ICurrentTenant` → `CurrentTenantService`.
+Cada entidad de negocio tiene `TenantId: Guid`. Aislamiento mediante query filters globales evaluados por instancia de DbContext (no capturados al compilar el modelo):
 
-**Importante:** el filtro referencia `CurrentTenantId` como propiedad de instancia del DbContext (no como variable local capturada), lo que garantiza que se evalúa en cada query y no en la compilación del modelo.
-
-Cuando se agregue una nueva entidad con `TenantId`, registrar su filtro en `ErpDbContext.OnModelCreating`.
-
-## Registro de handlers (Application)
-
-MediatR (`AddMediatR`) registra los `IRequestHandler<,>` (p. ej. `*CommandHandler`, `*QueryHandler`). `DependencyInjection.cs` además registra **FluentValidation** y un escaneo complementario de clases `*Handler` bajo `UseCases` que **no** implementan `IRequestHandler` (evitar duplicar el registro MediatR).
-
-## Patrón Result<T>
-
-Los handlers retornan `Result<T>` (en `ERP.Application/Modules/Common/Result.cs`) en lugar de lanzar excepciones para errores de dominio esperados. Los controllers traducen el resultado a la respuesta HTTP apropiada.
-
-## Autenticación
-
-JWT generado por `JwtService` (Infrastructure). El token incluye los claims: `sub`, `email`, `tenant_id`, `full_name`, `role`.
-
-La validación del token ocurre en el middleware de ASP.NET. Los controllers protegidos llevan `[Authorize]`.
-
-## CORS
-
-La política `"Frontend"` permite los orígenes configurados en `appsettings.json` bajo `Cors:AllowedOrigins`. En desarrollo el default es `http://localhost:5173`.
-
-## Módulos actuales
-
-| Módulo     | Dominio (resumen)              | Endpoints (resumen)                    |
-|------------|--------------------------------|----------------------------------------|
-| Auth       | User, Email (VO)               | POST /register, /login                 |
-| Tenants    | Tenant                         | POST /tenants                          |
-| Products   | Product, ProductBarcode        | GET /products, GET /products/{id}, POST |
-| Accounting | Account, JournalEntry, Money, Configuración contable por empresa | `/accounts`, `/journal-entries`, `/configuracion-contable` |
-| Ventas     | Factura, notas crédito/débito, retención recibida | `/ventas`, `/ventas/notas`, `/ventas/retenciones-recibidas` |
-| Compras    | Factura compra, OC, retención emitida | `/compras`, `/compras/ordenes`, `/compras/retenciones` |
-| Caja       | Caja chica, banco, extractos    | `/caja`                                |
-
-> Lista detallada de flujos, permisos y migraciones: [`docs/ESTADO-PROYECTO.md`](ESTADO-PROYECTO.md).
-
-## Migraciones EF Core
-
-```powershell
-cd backend/src/ERP.Infrastructure
-dotnet ef migrations add {Nombre} --startup-project ../ERP.API
-dotnet ef database update --startup-project ../ERP.API
+```csharp
+// ErpDbContext.OnModelCreating
+modelBuilder.Entity<Producto>()
+    .HasQueryFilter(p => p.TenantId == CurrentTenantId);
 ```
 
-## Tests (estructura prevista)
+### Flujo de resolución
+```
+JWT claim tenant_id
+    → CurrentTenantService.TenantId (ICurrentTenant)
+    → ErpDbContext inyectado
+    → query filter en cada SELECT / UPDATE / DELETE
+```
 
-| Proyecto                   | Tipo           | Herramientas sugeridas      |
-|----------------------------|----------------|-----------------------------|
-| ERP.Domain.Tests           | Unitario       | xUnit, FluentAssertions     |
-| ERP.Application.Tests      | Unitario       | xUnit, Moq/NSubstitute      |
-| ERP.Infrastructure.Tests   | Integración    | xUnit, Testcontainers       |
-| ERP.API.Tests              | Integración    | WebApplicationFactory       |
+### Entidades globales (sin TenantId)
+Geografía INEC, tarifas SRI (`sri_vat_rate`), catálogo de planes SaaS — no llevan filtro de tenant.
 
-## Próximos pasos para producción
+---
 
-- ~~Agregar FluentValidation en los Commands~~ (**hecho:** validadores por comando + `ValidationBehavior`)
-- Implementar Serilog para logging estructurado
-- Configurar secrets reales (no hardcodear en appsettings.json)
-- Agregar health checks (`/health`)
-- Implementar refresh tokens
-- CI/CD via GitHub Actions (ver `.github/workflows/`)
+## Autenticación y JWT
+
+### Claims del token
+| Claim | Contenido |
+|-------|-----------|
+| `sub` | IdentityUser.Id |
+| `email` | Email |
+| `tenant_id` | Guid del tenant activo (`00000000-…` = SuperAdmin global) |
+| `full_name` | Nombre completo |
+| `role` | `Admin`, `SuperAdmin`, u otro rol |
+
+### Vida del token
+- **JWT sesión:** `Jwt:ExpirationMinutes` (default 60 min)
+- **Refresh token:** httpOnly cookie; fallback localStorage si cookies bloqueadas
+- **Token first-run:** 15 minutos desde emisión
+
+### Flujo de refresh (Axios interceptor)
+```
+Request → 401
+    → POST /api/auth/refresh  (cookie httpOnly automática)
+    → nuevo accessToken → reintentar original
+    → Si falla → clearSession() → redirect /login
+```
+
+### Flujos de login
+
+**Admin de empresa (multi-empresa):**
+```
+POST /api/access/bootstrap-login   →  lista de empresas
+POST /api/access/switch-tenant     →  JWT con tenant_id elegido  (política Bootstrap)
+```
+
+**SuperAdmin:**
+```
+POST /api/auth/superadmin-login    →  JWT con tenant_id = 00000000-…
+POST /api/auth/switch-tenant       →  JWT con tenant_id real (operar empresa)
+POST /api/auth/switch-tenant       →  { tenantId: "00000000-…" }  volver al panel global
+```
+
+---
+
+## SuperAdmin y first-run
+
+### Tabla `first_run_setup_state`
+| Columna | Uso |
+|---------|-----|
+| `is_first_run` | `true` hasta completar alta del primer SuperAdmin |
+| `setup_token_hash` | SHA-256 del token mostrado en consola (NULL tras completar) |
+| `setup_token_expiry_utc` | 15 minutos desde emisión |
+| `completed_at` | UTC de alta completada |
+
+### Secuencia de instalación
+```
+1. docker compose up -d
+2. dotnet ef database update --project ERP.Infrastructure --startup-project ERP.API
+3. dotnet run --project ERP.API
+   → consola: "FIRST-RUN DETECTADO" + token + curl de ejemplo
+4. POST /api/setup/superadmin  { setupToken, firstName, lastName, email, password }
+5. POST /api/auth/superadmin-login  → JWT global
+6. POST /api/auth/switch-tenant { "tenantId": "<guid>" }  → operar empresa
+```
+
+### Reset en desarrollo (solo `Development`)
+```
+POST /api/dev/reset-first-run  →  elimina SuperAdmins, devuelve nuevo setupToken
+```
+
+### Scripts PowerShell
+| Script | Uso |
+|--------|-----|
+| `scripts/create-superadmin.ps1 -SetupToken "<token>"` | Alta SuperAdmin via API |
+| `Crear-SuperAdmin.ps1` (raíz) | Flujo interactivo en español |
+| `scripts/sql/reset-first-run-state.sql` | Reset manual en PostgreSQL |
+
+### Configuración de instancia
+| Clave | Efecto |
+|-------|--------|
+| `Deployment:SuperAdminPanelEnabled` | `false` en prod → bloquea login y rutas SuperAdmin |
+| `Deployment:MaxActiveTenants` | Vacío / 0 = sin tope |
+| `Deployment:MaxIdentityUsers` | Vacío / 0 = sin tope |
+
+Variables de entorno: `Deployment__SuperAdminPanelEnabled`, etc.
+
+---
+
+## SaaS — Planes, módulos y menú
+
+### Modelo de datos
+```
+Tenant
+└── TenantSubscription
+    ├── planCode          ← plan comercial contratado
+    └── enabledModules[]  ← módulos habilitados (catalog, accounting, saas, access…)
+
+SaasFeatureDefinition
+├── kind: Module | Form | Quota | Integration
+└── resourceRef: permiso o ruta
+
+SaasPlanFeature  (plan ↔ feature)
+├── featureId / isIncluded / limitPerPeriod
+```
+
+### Cadena de control de acceso operativo
+```
+JWT.role
+    → planCode del tenant
+    → enabledModules del tenant
+    → permisos granulares (perm:modulo.recurso.accion)
+    → menú de sesión filtrado (GET /api/me/menu)
+```
+
+### Menú dinámico — endpoints
+```
+GET  /api/superadmin/navigation-menu
+PUT  /api/superadmin/navigation-menu/groups/reorder
+PUT  /api/superadmin/navigation-menu/items/reorder-levels
+POST /api/superadmin/navigation-menu/items
+```
+Frontend: `frontend/src/components/menu-builder/`
+
+### Planes SaaS — endpoints
+```
+GET/POST   /api/superadmin/saas-plans
+PUT/DELETE /api/superadmin/saas-plans/{planId}
+PUT        /api/superadmin/saas-plans/reorder
+PUT        /api/superadmin/saas-plans/{planId}/recommended
+```
+
+### Empresas — endpoints
+```
+GET    /api/access/superadmin/tenants         ← lista
+POST   /api/access/superadmin/tenants         ← alta + admin inicial
+PATCH  /api/tenants/{id}/company              ← datos empresa
+PATCH  /api/tenants/{id}/subscription         ← planCode + enabledModules
+```
+
+---
+
+## Arquitectura frontend
+
+### Estructura de carpetas
+```
+frontend/src/
+├── modules/
+│   ├── lib/api.ts            ← Axios centralizado (interceptor JWT + refresh)
+│   ├── lib/formatApiError.ts
+│   └── {dominio}/
+│       ├── api/              ← service.ts
+│       ├── schemas/          ← schema Zod
+│       ├── hooks/            ← useAsync + estado
+│       ├── pages/            ← página + {prefix}-page.css
+│       └── components/
+├── pages/                    ← páginas simples / legacy
+├── routes/
+│   ├── mainRoutes.tsx
+│   ├── catalogRoutes.tsx
+│   └── superAdminShellRoutes.tsx
+├── components/
+│   ├── zh/ZHForm.tsx         ← ZHBtn, ZHField, ZHFormSection, ZHGrid
+│   ├── zh/ZHPageNotice.tsx
+│   ├── PageShell.tsx         ← LoadingState, EmptyState, NoAccessPage
+│   └── ReportPageTemplate.tsx
+├── styles/
+│   ├── design-tokens.css
+│   ├── zh-ui.css
+│   └── page-template.css
+├── store/
+│   ├── authStore.ts          ← Zustand + persistencia localStorage
+│   └── permissionsStore.ts
+├── i18n/locales/             ← es.json, en.json, qu.json
+└── nav/navConfig.ts          ← menú estático, grupos, aliases
+```
+
+### Sistema de diseño CSS — 3 niveles
+```
+design-tokens.css   → variables CSS (--color-*, --space-*, --radius-*, --text-*)
+zh-ui.css           → componentes (.table, .badge, .zh-btn, .zh-status, .zh-modal*, .zh-input…)
+page-template.css   → layout (.pg-page, .pg-header-row, .pg-kpi, .pg-section, .pg-table-controls…)
+{pagina}-page.css   → SOLO clases únicas de esa pantalla con prefijo propio
+```
+
+---
+
+## Recuperación de contraseña
+
+- `POST /api/auth/forgot-password` `{ email }` → correo con enlace
+- Enlace: `{PublicBaseUrl}/reset-password?token=...&tenantId=...`
+- `POST /api/auth/reset-password` `{ token, newPassword, tenantId? }`
+- Config en `appsettings.json` → `PasswordReset:PublicBaseUrl`, `TokenLifetimeMinutes` (default 60)
+- Migración: `20260512161332_AddPasswordResetTokens`
+
+---
+
+## Decisiones de arquitectura (ADRs)
+
+### ADR 0001 — Monolito modular + Clean Architecture *(Aceptada, 2026-05-02)*
+- Monolito modular en un solo deploy; BD compartida por tenant vía filtros EF.
+- Clean Architecture estricta; módulos en carpetas verticales por capa.
+- `Accounting` como módulo de referencia de estructura.
+- Sin AutoMapper — mapeos manuales en handlers.
+
+### ADR 0002 — Multi-tenant con JWT y filtros EF Core *(Aceptada, 2026-05-02)*
+- `TenantId` en entidades; query filters globales por instancia de DbContext.
+- Tenant desde JWT (`tenant_id`) vía `ICurrentTenant`.
+- Soft delete `IsActive = false` como convención.
+- BCrypt solo en `ERP.Infrastructure` (no en Application).
+
+### ADR 0003 — CI en GitHub Actions *(Aceptada, 2026-05-02)*
+- CI único: `.github/workflows/ci.yml`.
+- Backend: SDK fijado por `global.json` + `dotnet test`.
+- Frontend: Node 22, `npm ci`, ESLint, build, Playwright smoke.
+- Dependabot semanal.
+- Disparos: `main`, `development`, `release/**`, `hotfix/**`, `workflow_dispatch`.
+
+### Riesgos arquitectónicos corregidos *(2026-05-08)*
+| # | Problema | Solución |
+|---|----------|----------|
+| 1 | BCrypt en Application | Movido a Infrastructure (`IPasswordHasher`) |
+| 2 | Infrastructure desorganizada | Estructura por bounded context (Authentication/, SaaS/, Configuration/) |
+| 3 | ErpDbContext (31 DbSets) | Documentado; configuraciones EF por módulo; estrategia futura en comentarios |
+| 4 | Controller con 17 parámetros | DTO `GetProductReportRequest` con `ToFilter()` |
+| 5 | CompaniesPage 782 líneas | Modularizada en `modules/companies/` |
+| 6 | 45+ rutas en App.tsx | Sistema modular en `routes/` (mainRoutes, catalogRoutes, etc.) |

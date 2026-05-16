@@ -95,47 +95,8 @@ export function ProductLinesCatalogPage() {
   );
 }
 
-export function TaxRatesCatalogPage() {
-  const fields = useMemo(
-    () => [
-      { key: 'code', labelKey: 'common.code', placeholderKey: 'common.codePlaceholder', type: 'text' as const },
-      { key: 'name', labelKey: 'common.name', placeholderKey: 'common.namePlaceholder', type: 'text' as const },
-      {
-        key: 'type',
-        labelKey: 'catalog.taxRates.type',
-        placeholderKey: 'catalog.taxRates.type',
-        type: 'select' as const,
-        options: [
-          { value: 'VAT', label: 'IVA' },
-          { value: 'Excise', label: 'ICE' },
-          { value: 'Other', label: 'OTRO' },
-        ],
-      },
-      { key: 'percentage', labelKey: 'catalog.taxRates.percentage', placeholderKey: 'catalog.taxRates.percentagePlaceholder', type: 'number' as const },
-    ],
-    []
-  );
-
-  return (
-    <CatalogSimplePage
-      titleKey="catalog.taxRates.title"
-      listTabLabelKey="catalog.taxRates.tabList"
-      primaryCreateKey="catalog.taxRates.primaryCreate"
-      viewPermissionKey="inventario.taxRates.view"
-      createPermissionKey="inventario.taxRates.create"
-      fields={fields}
-      load={async () => mapBasic(await catalogService.taxRates(false))}
-      create={async (p) =>
-        catalogService.createTaxRate({
-          code: String(p.code ?? ''),
-          name: String(p.name ?? ''),
-          type: (String(p.type ?? 'VAT') as 'VAT' | 'Excise' | 'Other'),
-          percentage: Number(p.percentage ?? 0),
-        })
-      }
-    />
-  );
-}
+// TaxRatesCatalogPage eliminada: las tarifas SRI vienen de sri_vat_rate (datos oficiales pre-cargados,
+// no editables por el tenant). Se configuran en el producto al momento de crearlo/editarlo.
 
 export function CategoriesCatalogPage() {
   const { t } = useI18n();

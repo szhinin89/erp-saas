@@ -86,7 +86,6 @@ const MENU_ROUTE_ALIASES: Record<string, string> = {
   '/catalog/lines': '/inventario/structure',
   '/catalog/categories': '/inventario/structure',
   '/catalog/brands': '/inventario/brands',
-  '/catalog/tax-rates': '/inventario/tax-rates',
   '/catalog/tariffs': '/inventario/tariffs',
   '/catalog/structure': '/inventario/structure',
 };
@@ -326,7 +325,6 @@ export function buildNavGroups(
         { to: '/inventario/brands', label: t('app.nav.catalog.brands'), permissionKey: 'inventario.brands.view' },
         { to: '/inventario/product-types', label: t('app.nav.catalog.productTypes'), permissionKey: 'inventario.productTypes.view' },
         { to: '/inventario/units', label: t('app.nav.catalog.units'), permissionKey: 'inventario.units.view' },
-        { to: '/inventario/tax-rates', label: t('app.nav.catalog.taxRates'), permissionKey: 'inventario.taxRates.view' },
         { to: '/inventario/tariffs', label: t('app.nav.catalog.tariffs'), permissionKey: 'inventario.tariffs.view' },
         { to: '/inventario/structure', label: t('app.nav.catalog.structure'), permissionKey: 'inventario.categories.view' },
       ],

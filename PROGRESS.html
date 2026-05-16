@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ERP SaaS — Estado de Avance · ZH Technologies</title>
+<style>
+  :root {
+    --primary:    #3a5f84;
+    --primary-lt: #e8f0f8;
+    --success:    #1a7a4a;
+    --success-lt: #e6f4ed;
+    --warning:    #ba7517;
+    --warning-lt: #fef3e2;
+    --error:      #c0392b;
+    --error-lt:   #fdecea;
+    --gray:       #64748b;
+    --gray-lt:    #f1f5f9;
+    --border:     #e2e8f0;
+    --text:       #1e293b;
+    --text-muted: #64748b;
+    --radius:     8px;
+    --shadow:     0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui,'Segoe UI',sans-serif; background: #f8fafc; color: var(--text); font-size: 14px; line-height: 1.6; }
+
+  /* ── Layout ── */
+  .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+
+  /* ── Header ── */
+  .header { background: var(--primary); color: #fff; padding: 28px 32px; border-radius: var(--radius); margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  .header-title h1 { font-size: 22px; font-weight: 700; }
+  .header-title p  { font-size: 13px; opacity: .8; margin-top: 2px; }
+  .header-kpi { text-align: center; }
+  .header-kpi .pct  { font-size: 48px; font-weight: 800; line-height: 1; }
+  .header-kpi .label { font-size: 12px; opacity: .8; text-transform: uppercase; letter-spacing: .05em; }
+  .global-bar { margin-top: 10px; background: rgba(255,255,255,.25); border-radius: 99px; height: 10px; width: 280px; overflow: hidden; }
+  .global-bar-fill { height: 100%; background: #fff; border-radius: 99px; transition: width .5s; }
+  .updated { font-size: 12px; opacity: .7; margin-top: 8px; }
+
+  /* ── Next actions panel ── */
+  .next-panel { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 24px; }
+  .next-panel-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .next-panel-header h2 { font-size: 15px; font-weight: 700; }
+  .next-panel-header .badge-count { background: var(--error); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 99px; }
+  .next-list { padding: 8px 0; }
+  .next-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 20px; border-bottom: 1px solid var(--gray-lt); }
+  .next-item:last-child { border-bottom: none; }
+  .next-item .num { font-size: 12px; font-weight: 700; color: var(--primary); min-width: 22px; padding-top: 2px; }
+  .next-item .desc { flex: 1; font-size: 13px; }
+  .next-item .desc strong { display: block; color: var(--text); }
+  .next-item .desc span  { color: var(--text-muted); font-size: 12px; }
+  .prio { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .prio-critico { background: #fdecea; color: var(--error); }
+  .prio-alta    { background: #fef3e2; color: var(--warning); }
+  .prio-media   { background: var(--primary-lt); color: var(--primary); }
+  .prio-baja    { background: var(--gray-lt); color: var(--gray); }
+
+  /* ── Sections ── */
+  .sections { display: grid; gap: 16px; }
+  .section  { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .section-header { padding: 14px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; }
+  .section-header:hover { background: var(--gray-lt); }
+  .section-header h3 { font-size: 14px; font-weight: 700; flex: 1; }
+  .section-pct { font-size: 13px; font-weight: 700; }
+  .section-bar { height: 6px; background: var(--gray-lt); }
+  .section-bar-fill { height: 100%; transition: width .4s; }
+  .chevron { font-size: 18px; color: var(--gray); transition: transform .25s; }
+  .section.open .chevron { transform: rotate(90deg); }
+  .section-body { display: none; padding: 0 20px 12px; }
+  .section.open .section-body { display: block; }
+
+  /* ── Items ── */
+  .item { display: flex; align-items: flex-start; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--gray-lt); }
+  .item:last-child { border-bottom: none; }
+  .item input[type=checkbox] { margin-top: 3px; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; accent-color: var(--success); }
+  .item-text { flex: 1; }
+  .item-text strong { display: block; font-size: 13px; }
+  .item-text .note   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .status-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; white-space: nowrap; flex-shrink: 0; }
+  .s-done    { background: var(--success-lt); color: var(--success); }
+  .s-partial { background: var(--warning-lt); color: var(--warning); }
+  .s-pending { background: var(--error-lt);   color: var(--error); }
+
+  /* ── Risks ── */
+  .risks { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-top: 24px; }
+  .risk-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px; }
+  .risk-card h4 { font-size: 13px; font-weight: 700; color: var(--error); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .risk-card p  { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+  .risk-card .mitigation { font-size: 12px; background: var(--success-lt); color: var(--success); border-radius: 6px; padding: 8px 10px; }
+  .risk-card .mitigation strong { display: block; margin-bottom: 2px; }
+
+  /* ── Footer ── */
+  .footer { text-align: center; color: var(--text-muted); font-size: 11px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+  @media (max-width: 640px) {
+    .header { flex-direction: column; text-align: center; }
+    .global-bar { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ══ HEADER ══ -->
+  <div class="header">
+    <div class="header-title">
+      <h1>ERP SaaS — Estado de Avance</h1>
+      <p>ZH Technologies · Revisión: <span id="last-updated">2026-05-16</span></p>
+      <div class="global-bar"><div class="global-bar-fill" id="global-bar-fill"></div></div>
+    </div>
+    <div class="header-kpi">
+      <div class="pct" id="global-pct">—%</div>
+      <div class="label">avance general</div>
+      <div class="updated" id="items-summary">calculando…</div>
+    </div>
+  </div>
+
+  <!-- ══ PRÓXIMAS ACCIONES (orden de prioridad) ══ -->
+  <div class="next-panel">
+    <div class="next-panel-header">
+      <h2>⚡ Próximas acciones — orden de desarrollo</h2>
+      <span class="badge-count" id="pending-count">—</span>
+    </div>
+    <div class="next-list">
+      <div class="next-item"><span class="num">1</span><div class="desc"><strong>Firma digital XAdES-BES (P12 → XML firmado)</strong><span>Implementar FirmarXmlAsync() con PKCS#12 + canonicalización C14N. Sin esto ningún comprobante se autoriza.</span></div><span class="prio prio-critico">CRÍTICO</span></div>
+      <div class="next-item"><span class="num">2</span><div class="desc"><strong>Generación XML + validación XSD por tipo de doc (01, 04, 05, 06, 07)</strong><span>Prerequisito directo para el envío al SRI.</span></div><span class="prio prio-critico">CRÍTICO</span></div>
+      <div class="next-item"><span class="num">3</span><div class="desc"><strong>Consumo WSDL SRI real — envío + polling de autorización</strong><span>Reemplazar el servicio simulado por el servicio real con manejo de sri_error_code.</span></div><span class="prio prio-critico">CRÍTICO</span></div>
+      <div class="next-item"><span class="num">4</span><div class="desc"><strong>Job Hangfire: envío asíncrono SRI con reintentos</strong><span>Cola de comprobantes pendientes cada 5 min. Sin esto, timeout del SRI bloquea la UI.</span></div><span class="prio prio-critico">CRÍTICO</span></div>
+      <div class="next-item"><span class="num">5</span><div class="desc"><strong>Frontend: formulario de emisión de factura de venta</strong><span>Cabecera, líneas dinámicas, IVA/ICE, formas de pago SRI, validación RUC/cédula.</span></div><span class="prio prio-critico">CRÍTICO</span></div>
+      <div class="next-item"><span class="num">6</span><div class="desc"><strong>RIDE — PDF imprimible del comprobante (QuestPDF)</strong><span>Clientes lo exigen en el momento de emitir. Obligatorio para operación real.</span></div><span class="prio prio-critico">CRÍTICO</span></div>
+      <div class="next-item"><span class="num">7</span><div class="desc"><strong>Frontend: formulario de nota de crédito</strong><span>Referencia a factura original, motivo, líneas. Backend ya implementado.</span></div><span class="prio prio-alta">ALTA</span></div>
+      <div class="next-item"><span class="num">8</span><div class="desc"><strong>Frontend: formulario de comprobante de retención</strong><span>Códigos SRI de retención, porcentajes. Backend ya implementado.</span></div><span class="prio prio-alta">ALTA</span></div>
+      <div class="next-item"><span class="num">9</span><div class="desc"><strong>Frontend: formulario de nota de débito</strong><span>Backend ya implementado.</span></div><span class="prio prio-alta">ALTA</span></div>
+      <div class="next-item"><span class="num">10</span><div class="desc"><strong>Frontend: listado unificado de todos los comprobantes + detalle con XML y RIDE</strong><span>Hoy solo hay listado de facturas. Necesario para gestión operativa.</span></div><span class="prio prio-alta">ALTA</span></div>
+      <div class="next-item"><span class="num">11</span><div class="desc"><strong>Flujo de reenvío para comprobantes no autorizados</strong><span>Endpoint dedicado + pantalla de gestión de errores SRI.</span></div><span class="prio prio-alta">ALTA</span></div>
+      <div class="next-item"><span class="num">12</span><div class="desc"><strong>Frontend: guía de remisión + ABM de transportistas</strong><span>Entidad DeliveryGuide existe en backend; falta pantalla y catálogo de transportistas.</span></div><span class="prio prio-media">MEDIA</span></div>
+      <div class="next-item"><span class="num">13</span><div class="desc"><strong>Liquidación de compra (tipo 03) — backend + frontend</strong><span>No hay entidad ni pantalla. Requerido por la ficha técnica SRI.</span></div><span class="prio prio-media">MEDIA</span></div>
+      <div class="next-item"><span class="num">14</span><div class="desc"><strong>Reportes contables: Mayor General y Balance de Comprobación</strong><span>Asientos ya existen; faltan los reportes de salida.</span></div><span class="prio prio-media">MEDIA</span></div>
+      <div class="next-item"><span class="num">15</span><div class="desc"><strong>Roles predefinidos de negocio (Contador, Bodeguero, Vendedor)</strong><span>Hoy solo Admin y SuperAdmin. Facilita onboarding de clientes.</span></div><span class="prio prio-media">MEDIA</span></div>
+      <div class="next-item"><span class="num">16</span><div class="desc"><strong>Control de stock mínimo y punto de reorden + alertas</strong><span>Agregar campos MinimumStock y ReorderPoint a CurrentStock. Alertas en dashboard.</span></div><span class="prio prio-media">MEDIA</span></div>
+      <div class="next-item"><span class="num">17</span><div class="desc"><strong>Completar traducciones Kichwa (qu.json)</strong><span>Estructura OK; faltan valores de las claves más recientes.</span></div><span class="prio prio-baja">BAJA</span></div>
+      <div class="next-item"><span class="num">18</span><div class="desc"><strong>Índices compuestos optimizados en tablas de alto volumen</strong><span>electronic_doc, stock_movement, journal_entry por (TenantId, fecha).</span></div><span class="prio prio-baja">BAJA</span></div>
+      <div class="next-item"><span class="num">19</span><div class="desc"><strong>Particionamiento de tablas grandes (diferir hasta 1M+ filas)</strong><span>electronic_doc y stock_movement. No urgente en etapa actual.</span></div><span class="prio prio-baja">BAJA</span></div>
+    </div>
+  </div>
+
+  <!-- ══ SECCIONES ══ -->
+  <div class="sections" id="sections">
+
+    <!-- S1 -->
+    <div class="section open" data-section="s1">
+      <div class="section-header" onclick="toggleSection('s1')">
+        <h3>1. Configuración básica y catálogos SRI</h3>
+        <span class="section-pct" id="pct-s1">—</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="section-bar"><div class="section-bar-fill" id="bar-s1" style="background:var(--success)"></div></div>
+      <div class="section-body">
+        <div class="item"><input type="checkbox" data-sec="s1" data-val="1" onchange="recalc()"><div class="item-text"><strong>Configuración de empresa (RUC, razón social, dirección, ambiente, tipo emisión)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s1" data-val="1" onchange="recalc()"><div class="item-text"><strong>Carga de certificado digital (.p12) con vigencia</strong><p class="note">AES-256 cifrado, contraseña protegida</p></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s1" data-val="1" onchange="recalc()"><div class="item-text"><strong>Mantenimiento de establecimientos (código 3 dígitos, dirección)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s1" data-val="1" onchange="recalc()"><div class="item-text"><strong>Mantenimiento de puntos de emisión (código 3 dígitos)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s1" data-val="1" onchange="recalc()"><div class="item-text"><strong>Secuenciales por punto de emisión y tipo de comprobante</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s1" data-val="1" onchange="recalc()"><div class="item-text"><strong>Parámetros generales de facturación (URLs WSDL, reintentos)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s1" data-val="1" onchange="recalc()"><div class="item-text"><strong>Tablas catálogos SRI precargadas</strong><p class="note">sri_vat_rate, sri_environment, sri_doc_type, sri_payment_method, sri_retention_code, sri_error_code, sri_ice_rate, sri_country</p></div><span class="status-badge s-done">Implementado</span></div>
+      </div>
+    </div>
+
+    <!-- S2 -->
+    <div class="section" data-section="s2">
+      <div class="section-header" onclick="toggleSection('s2')">
+        <h3>2. Catálogos maestros</h3>
+        <span class="section-pct" id="pct-s2">—</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="section-bar"><div class="section-bar-fill" id="bar-s2" style="background:var(--success)"></div></div>
+      <div class="section-body">
+        <div class="item"><input type="checkbox" data-sec="s2" data-val="1" onchange="recalc()"><div class="item-text"><strong>ABM de clientes (tipo ID, número, razón social, email, dirección)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s2" data-val="1" onchange="recalc()"><div class="item-text"><strong>ABM de productos (código, nombre, precio, IVA/ICE, unidad de medida)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s2" data-val="1" onchange="recalc()"><div class="item-text"><strong>ABM de proveedores (con validación RUC ecuatoriano)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s2" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>ABM de transportistas (para guías de remisión)</strong><p class="note">Campos en DeliveryGuide. Falta catálogo reutilizable independiente.</p></div><span class="status-badge s-partial">Parcial</span></div>
+        <div class="item"><input type="checkbox" data-sec="s2" data-val="1" onchange="recalc()"><div class="item-text"><strong>ABM de bodegas (código, nombre, dirección, responsable)</strong></div><span class="status-badge s-done">Implementado</span></div>
+      </div>
+    </div>
+
+    <!-- S3 -->
+    <div class="section" data-section="s3">
+      <div class="section-header" onclick="toggleSection('s3')">
+        <h3>3. Formularios de emisión de comprobantes electrónicos</h3>
+        <span class="section-pct" id="pct-s3">—</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="section-bar"><div class="section-bar-fill" id="bar-s3" style="background:var(--error)"></div></div>
+      <div class="section-body">
+        <div class="item"><input type="checkbox" data-sec="s3" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Pantalla de emisión de factura de venta</strong><p class="note">Solo listado. Falta formulario de creación con cabecera, líneas, formas de pago e impuestos.</p></div><span class="status-badge s-partial">Parcial</span></div>
+        <div class="item"><input type="checkbox" data-sec="s3" data-val="0" onchange="recalc()"><div class="item-text"><strong>Pantalla de emisión de nota de crédito</strong><p class="note">Backend OK. Sin frontend.</p></div><span class="status-badge s-pending">Pendiente</span></div>
+        <div class="item"><input type="checkbox" data-sec="s3" data-val="0" onchange="recalc()"><div class="item-text"><strong>Pantalla de emisión de nota de débito</strong><p class="note">Backend OK. Sin frontend.</p></div><span class="status-badge s-pending">Pendiente</span></div>
+        <div class="item"><input type="checkbox" data-sec="s3" data-val="0" onchange="recalc()"><div class="item-text"><strong>Pantalla de emisión de guía de remisión</strong><p class="note">Entidad DeliveryGuide existe. Sin frontend.</p></div><span class="status-badge s-pending">Pendiente</span></div>
+        <div class="item"><input type="checkbox" data-sec="s3" data-val="0" onchange="recalc()"><div class="item-text"><strong>Pantalla de emisión de comprobante de retención</strong><p class="note">Backend OK. Sin frontend.</p></div><span class="status-badge s-pending">Pendiente</span></div>
+        <div class="item"><input type="checkbox" data-sec="s3" data-val="0" onchange="recalc()"><div class="item-text"><strong>Pantalla de emisión de liquidación de compra (tipo 03)</strong><p class="note">No hay entidad ni backend aún.</p></div><span class="status-badge s-pending">Pendiente</span></div>
+      </div>
+    </div>
+
+    <!-- S4 -->
+    <div class="section" data-section="s4">
+      <div class="section-header" onclick="toggleSection('s4')">
+        <h3>4. Consulta y gestión de comprobantes electrónicos</h3>
+        <span class="section-pct" id="pct-s4">—</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="section-bar"><div class="section-bar-fill" id="bar-s4" style="background:var(--warning)"></div></div>
+      <div class="section-body">
+        <div class="item"><input type="checkbox" data-sec="s4" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Listado de comprobantes emitidos (filtros fecha, estado, cliente)</strong><p class="note">Solo facturas de venta. Falta listado unificado para todos los tipos.</p></div><span class="status-badge s-partial">Parcial</span></div>
+        <div class="item"><input type="checkbox" data-sec="s4" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Visualización de detalle (datos, XML, RIDE)</strong><p class="note">Datos API disponibles. Sin generación de RIDE/PDF ni visor de XML en frontend.</p></div><span class="status-badge s-partial">Parcial</span></div>
+        <div class="item"><input type="checkbox" data-sec="s4" data-val="0" onchange="recalc()"><div class="item-text"><strong>Reenvío de comprobante no autorizado (con corrección de errores)</strong></div><span class="status-badge s-pending">Pendiente</span></div>
+        <div class="item"><input type="checkbox" data-sec="s4" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Anulación de comprobante autorizado</strong><p class="note">Backend tiene anulación. Falta XML de baja firmado al SRI (esquema offline).</p></div><span class="status-badge s-partial">Parcial</span></div>
+        <div class="item"><input type="checkbox" data-sec="s4" data-val="0" onchange="recalc()"><div class="item-text"><strong>Reporte de autorizaciones fallidas y reintentos</strong></div><span class="status-badge s-pending">Pendiente</span></div>
+      </div>
+    </div>
+
+    <!-- S5 -->
+    <div class="section" data-section="s5">
+      <div class="section-header" onclick="toggleSection('s5')">
+        <h3>5. Inventario y bodegas</h3>
+        <span class="section-pct" id="pct-s5">—</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="section-bar"><div class="section-bar-fill" id="bar-s5" style="background:var(--success)"></div></div>
+      <div class="section-body">
+        <div class="item"><input type="checkbox" data-sec="s5" data-val="1" onchange="recalc()"><div class="item-text"><strong>ABM de bodegas y asignación de productos</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s5" data-val="1" onchange="recalc()"><div class="item-text"><strong>Transferencias entre bodegas (solicitud, despacho, recepción)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s5" data-val="1" onchange="recalc()"><div class="item-text"><strong>Ajustes de inventario (con motivo y aprobación)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s5" data-val="1" onchange="recalc()"><div class="item-text"><strong>Kardex / historial de movimientos (promedio ponderado, Excel/PDF)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s5" data-val="0" onchange="recalc()"><div class="item-text"><strong>Control de stock mínimo y punto de reorden</strong><p class="note">Campos MinimumStock / ReorderPoint no existen en CurrentStock. Sin alertas.</p></div><span class="status-badge s-pending">Pendiente</span></div>
+      </div>
+    </div>
+
+    <!-- S6 -->
+    <div class="section" data-section="s6">
+      <div class="section-header" onclick="toggleSection('s6')">
+        <h3>6. Compras</h3>
+        <span class="section-pct" id="pct-s6">—</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="section-bar"><div class="section-bar-fill" id="bar-s6" style="background:var(--success)"></div></div>
+      <div class="section-body">
+        <div class="item"><input type="checkbox" data-sec="s6" data-val="1" onchange="recalc()"><div class="item-text"><strong>ABM de órdenes de compra (con líneas dinámicas)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s6" data-val="1" onchange="recalc()"><div class="item-text"><strong>Flujo de aprobación de OC (Borrador → Enviada → Aprobada → Cerrada)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s6" data-val="1" onchange="recalc()"><div class="item-text"><strong>Recepción de facturas de proveedor (vinculación OC, stock)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s6" data-val="1" onchange="recalc()"><div class="item-text"><strong>Trazabilidad OC (aprobación → factura recibida, pago)</strong></div><span class="status-badge s-done">Implementado</span></div>
+      </div>
+    </div>
+
+    <!-- S7 -->
+    <div class="section" data-section="s7">
+      <div class="section-header" onclick="toggleSection('s7')">
+        <h3>7. Contabilidad</h3>
+        <span class="section-pct" id="pct-s7">—</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="section-bar"><div class="section-bar-fill" id="bar-s7" style="background:var(--warning)"></div></div>
+      <div class="section-body">
+        <div class="item"><input type="checkbox" data-sec="s7" data-val="1" onchange="recalc()"><div class="item-text"><strong>Plan de cuentas configurable por empresa</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s7" data-val="1" onchange="recalc()"><div class="item-text"><strong>Asientos automáticos al aprobar operaciones</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s7" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Libro diario</strong><p class="note">Asientos consultables. Sin reporte exportable de libro diario.</p></div><span class="status-badge s-partial">Parcial</span></div>
+        <div class="item"><input type="checkbox" data-sec="s7" data-val="0" onchange="recalc()"><div class="item-text"><strong>Mayor general y balance de comprobación</strong></div><span class="status-badge s-pending">Pendiente</span></div>
+        <div class="item"><input type="checkbox" data-sec="s7" data-val="1" onchange="recalc()"><div class="item-text"><strong>Cuentas bancarias y extractos</strong></div><span class="status-badge s-done">Implementado</span></div>
+      </div>
+    </div>
+
+    <!-- S8 -->
+    <div class="section" data-section="s8">
+      <div class="section-header" onclick="toggleSection('s8')">
+        <h3>8. Multi-tenant y SuperAdmin</h3>
+        <span class="section-pct" id="pct-s8">—</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="section-bar"><div class="section-bar-fill" id="bar-s8" style="background:var(--success)"></div></div>
+      <div class="section-body">
+        <div class="item"><input type="checkbox" data-sec="s8" data-val="1" onchange="recalc()"><div class="item-text"><strong>Panel SuperAdmin para crear empresas (con admin inicial)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s8" data-val="1" onchange="recalc()"><div class="item-text"><strong>Asignación de planes comerciales con módulos específicos</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s8" data-val="1" onchange="recalc()"><div class="item-text"><strong>Configuración de menú de navegación por empresa (Menu Builder)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s8" data-val="1" onchange="recalc()"><div class="item-text"><strong>Gestión de límites de uso (facturas mensuales, usuarios)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s8" data-val="1" onchange="recalc()"><div class="item-text"><strong>Monitoreo de uso por tenant (consumo de recursos)</strong></div><span class="status-badge s-done">Implementado</span></div>
+      </div>
+    </div>
+
+    <!-- S9 -->
+    <div class="section" data-section="s9">
+      <div class="section-header" onclick="toggleSection('s9')">
+        <h3>9. Permisos y roles</h3>
+        <span class="section-pct" id="pct-s9">—</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="section-bar"><div class="section-bar-fill" id="bar-s9" style="background:var(--success)"></div></div>
+      <div class="section-body">
+        <div class="item"><input type="checkbox" data-sec="s9" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Roles predefinidos de negocio</strong><p class="note">Solo Admin y SuperAdmin. Faltan Contador, Bodeguero, Vendedor.</p></div><span class="status-badge s-partial">Parcial</span></div>
+        <div class="item"><input type="checkbox" data-sec="s9" data-val="1" onchange="recalc()"><div class="item-text"><strong>Permisos granulares por módulo, recurso y acción (CRUD)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s9" data-val="1" onchange="recalc()"><div class="item-text"><strong>Asignación de roles a usuarios dentro de cada empresa</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s9" data-val="1" onchange="recalc()"><div class="item-text"><strong>Protección de rutas y APIs basada en permisos</strong></div><span class="status-badge s-done">Implementado</span></div>
+      </div>
+    </div>
+
+    <!-- S10 -->
+    <div class="section" data-section="s10">
+      <div class="section-header" onclick="toggleSection('s10')">
+        <h3>10. Soporte de idiomas</h3>
+        <span class="section-pct" id="pct-s10">—</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="section-bar"><div class="section-bar-fill" id="bar-s10" style="background:var(--warning)"></div></div>
+      <div class="section-body">
+        <div class="item"><input type="checkbox" data-sec="s10" data-val="1" onchange="recalc()"><div class="item-text"><strong>i18n configurado en frontend (es, en, qu)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s10" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Traducciones completas (español completo; inglés y Kichwa parciales)</strong></div><span class="status-badge s-partial">Parcial</span></div>
+        <div class="item"><input type="checkbox" data-sec="s10" data-val="1" onchange="recalc()"><div class="item-text"><strong>Selección de idioma por usuario (LanguageSwitcher)</strong></div><span class="status-badge s-done">Implementado</span></div>
+      </div>
+    </div>
+
+    <!-- S11 -->
+    <div class="section" data-section="s11">
+      <div class="section-header" onclick="toggleSection('s11')">
+        <h3>11. Escalabilidad y rendimiento</h3>
+        <span class="section-pct" id="pct-s11">—</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="section-bar"><div class="section-bar-fill" id="bar-s11" style="background:var(--warning)"></div></div>
+      <div class="section-body">
+        <div class="item"><input type="checkbox" data-sec="s11" data-val="1" onchange="recalc()"><div class="item-text"><strong>Caché Redis para consultas frecuentes</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s11" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Índices en PostgreSQL para consultas de alto volumen</strong><p class="note">Índices básicos OK. Faltan índices compuestos (TenantId + fecha) en tablas grandes.</p></div><span class="status-badge s-partial">Parcial</span></div>
+        <div class="item"><input type="checkbox" data-sec="s11" data-val="0" onchange="recalc()"><div class="item-text"><strong>Particionamiento de tablas grandes (electronic_doc, stock_movement)</strong></div><span class="status-badge s-pending">Pendiente</span></div>
+        <div class="item"><input type="checkbox" data-sec="s11" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Hangfire para procesamiento asíncrono SRI</strong><p class="note">1 job (kardex diario). Falta el job crítico de envío/reintento al SRI.</p></div><span class="status-badge s-partial">Parcial</span></div>
+      </div>
+    </div>
+
+    <!-- S12 -->
+    <div class="section" data-section="s12">
+      <div class="section-header" onclick="toggleSection('s12')">
+        <h3>12. Integración SRI real (firma + WSDL + RIDE)</h3>
+        <span class="section-pct" id="pct-s12">—</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="section-bar"><div class="section-bar-fill" id="bar-s12" style="background:var(--error)"></div></div>
+      <div class="section-body">
+        <div class="item"><input type="checkbox" data-sec="s12" data-val="1" onchange="recalc()"><div class="item-text"><strong>Generación de clave de acceso de 49 dígitos</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s12" data-val="0" onchange="recalc()"><div class="item-text"><strong>Generación XML por tipo de comprobante + validación XSD</strong></div><span class="status-badge s-pending">Pendiente</span></div>
+        <div class="item"><input type="checkbox" data-sec="s12" data-val="0" onchange="recalc()"><div class="item-text"><strong>Firma digital XAdES-BES con certificado P12</strong></div><span class="status-badge s-pending">Pendiente</span></div>
+        <div class="item"><input type="checkbox" data-sec="s12" data-val="0" onchange="recalc()"><div class="item-text"><strong>Consumo WSDL SRI real (recepción + polling autorización)</strong></div><span class="status-badge s-pending">Pendiente</span></div>
+        <div class="item"><input type="checkbox" data-sec="s12" data-val="0" onchange="recalc()"><div class="item-text"><strong>RIDE — Representación Impresa del Documento Electrónico (PDF)</strong></div><span class="status-badge s-pending">Pendiente</span></div>
+      </div>
+    </div>
+
+  </div><!-- /sections -->
+
+  <!-- ══ RIESGOS ══ -->
+  <div class="risks">
+    <div class="risk-card">
+      <h4>⚠ Riesgo 1 — Firma XAdES-BES (crítico)</h4>
+      <p>SriFacturaElectronicaRealService tiene todos los métodos críticos lanzando excepciones TODO. La firma con PKCS#12 + canonicalización C14N es la parte más compleja; un error en los parámetros hace que el SRI rechace todos los documentos.</p>
+      <div class="mitigation"><strong>Mitigación:</strong> Implementar y probar primero en ambiente de pruebas del SRI (celcer.sri.gob.ec). Validar cada XML contra XSD oficial antes de firmar. Crear test de integración con certificado P12 de prueba.</div>
+    </div>
+    <div class="risk-card">
+      <h4>⚠ Riesgo 2 — Frontend de factura sin diseño previo</h4>
+      <p>El formulario de emisión es el más complejo del sistema: líneas dinámicas, IVA/ICE en tiempo real, validación de RUC con dígito verificador, formas de pago. Sin diseño validado con el usuario final puede requerir rediseño completo.</p>
+      <div class="mitigation"><strong>Mitigación:</strong> Definir mockup antes de codificar. Separar lógica de cálculo de impuestos en un hook reutilizable (useTaxCalculation) compartido entre factura, NC, ND y retención.</div>
+    </div>
+    <div class="risk-card">
+      <h4>⚠ Riesgo 3 — Sin job de reintento SRI → facturas huérfanas</h4>
+      <p>Si el WSDL del SRI no responde (timeout, mantenimiento) y el envío es síncrono, los documentos quedan en estado Pendiente indefinidamente sin mecanismo automático de reintento.</p>
+      <div class="mitigation"><strong>Mitigación:</strong> Implementar job Hangfire "sri-reintento-pendientes" cada 5 min. Agregar campos IntentosSri, UltimoIntento, ErrorSri a la entidad. Exponer listado de errores con reintento manual.</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    ERP SaaS — ZH Technologies · Actualizado: <span id="footer-date">2026-05-16</span> ·
+    <em>Regla: al completar cualquier tarea, marcar el ítem y actualizar la fecha en este archivo.</em>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+  // ── Secciones colapsables ──
+  function toggleSection(id) {
+    const el = document.querySelector('[data-section="' + id + '"]');
+    el.classList.toggle('open');
+  }
+
+  // ── Pesos por sección (max puntos posibles) ──
+  function getSectionItems(sec) {
+    return [...document.querySelectorAll('input[data-sec="' + sec + '"]')];
+  }
+
+  function barColor(pct) {
+    if (pct >= 80) return 'var(--success)';
+    if (pct >= 40) return 'var(--warning)';
+    return 'var(--error)';
+  }
+
+  function recalc() {
+    const sections = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12'];
+    let globalScore = 0, globalMax = 0;
+    let pendingCount = 0;
+
+    sections.forEach(sec => {
+      const items = getSectionItems(sec);
+      let score = 0, max = 0;
+      items.forEach(inp => {
+        const baseVal = parseFloat(inp.dataset.val);
+        max += 1;
+        if (inp.checked) {
+          score += 1; // checked = done
+        } else {
+          score += baseVal; // use original partial/done value
+        }
+        if (baseVal === 0 && !inp.checked) pendingCount++;
+      });
+      const pct = max > 0 ? Math.round((score / max) * 100) : 0;
+      globalScore += score;
+      globalMax   += max;
+
+      const pctEl = document.getElementById('pct-' + sec);
+      const barEl = document.getElementById('bar-' + sec);
+      if (pctEl) pctEl.textContent = pct + '%';
+      if (barEl) {
+        barEl.style.width = pct + '%';
+        barEl.style.background = barColor(pct);
+      }
+    });
+
+    const globalPct = globalMax > 0 ? Math.round((globalScore / globalMax) * 100) : 0;
+    document.getElementById('global-pct').textContent = globalPct + '%';
+    document.getElementById('global-bar-fill').style.width = globalPct + '%';
+    document.getElementById('items-summary').textContent =
+      Math.round(globalScore) + ' / ' + globalMax + ' ítems completados';
+    document.getElementById('pending-count').textContent = pendingCount + ' pendientes';
+
+    saveState();
+  }
+
+  // ── Persistencia en localStorage ──
+  function saveState() {
+    const state = {};
+    document.querySelectorAll('input[data-sec]').forEach((inp, i) => {
+      state['cb_' + i] = inp.checked;
+    });
+    localStorage.setItem('erp_progress', JSON.stringify(state));
+  }
+
+  function loadState() {
+    const raw = localStorage.getItem('erp_progress');
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    document.querySelectorAll('input[data-sec]').forEach((inp, i) => {
+      if (state['cb_' + i] !== undefined) inp.checked = state['cb_' + i];
+    });
+  }
+
+  // ── Init ──
+  loadState();
+  recalc();
+</script>
+</body>
+</html>

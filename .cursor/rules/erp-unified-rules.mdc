@@ -46,7 +46,7 @@ Orden lógico para **no** saltarse capas ni contradecir UI:
 
 | Paso | Qué revisar primero | Sección |
 |------|---------------------|---------|
-| 0 | Contexto del repo y archivos existentes | [Antes de actuar](#sec-before) + `CONTEXT.md` + `docs/DESARROLLO.md` |
+| 0 | Contexto del repo y archivos existentes | [Antes de actuar](#sec-before) + `CONTEXT.md` + `CLAUDE.md` |
 | 1 | Dónde vive el código en este monorepo | [Ambito real del monorepo](#sec-scope) |
 | 2 | Límites de capas, tenant, DTOs, soft delete | [Arquitectura](#sec-arch) |
 | 3 | Cómo se organiza un módulo vertical | [Patrón Accounting](#sec-accounting) |
@@ -67,14 +67,14 @@ Orden lógico para **no** saltarse capas ni contradecir UI:
 
 ## Antes de actuar
 
-1. Lee **`CONTEXT.md`** (raíz) y, si vas a arrancar servicios, migrar o depurar entorno local, **`docs/DESARROLLO.md`** (Docker, `dotnet`/`npm`, `curl`, troubleshooting).
+1. Lee **`CLAUDE.md`** (reglas) y **`CONTEXT.md`** (índice). Para arquitectura → `docs/ARCHITECTURE.md`; para estado → `docs/STATUS.md`; para funcionalidades → `docs/FEATURES.md`.
 2. Identifica si el archivo que vas a crear o modificar **ya existe**.
 3. Si ya existe → **no** lo regeneres; cambia solo lo necesario.
 4. Define un **plan breve** antes de escribir código (no bloquear al usuario salvo ambigüedad real).
 
 ### Mapa rápido de temas (todo en este archivo)
 
-- **Arranque local, DB, comandos, API** → `docs/DESARROLLO.md` (detalle fuera de este `.mdc`).
+- **Arranque local, DB, comandos, API** → `CLAUDE.md` (sección "Arranque rápido") y `docs/STATUS.md`.
 - **Validación** → [Validación en 4 capas](#sec-validation).
 - **Formularios / pantallas** → [ZH Form](#sec-zh-form) → [Tabs entidad](#sec-entity-tabs) → [Copy UX](#sec-copy-ux).
 - **Menú** → [Rutas únicas](#sec-nav); copy del menú en [Copy UX](#sec-copy-ux).
@@ -92,7 +92,7 @@ Estructura **real** (prevalece sobre diagramas desactualizados en otros document
 
 - **Backend (.NET 10):** `backend/src/ERP.Domain`, `ERP.Application`, `ERP.Infrastructure`, `ERP.API`. Módulos de negocio bajo `ERP.Domain/Modules/<Nombre>`, `ERP.Application/Modules/<Nombre>`, etc. (p. ej. `Accounting`, `Customers`, `Branches`).
 - **Frontend:** `frontend/` — Vite + React; i18n en `frontend/src/i18n/locales/` (`es`, `en`, `qu`).
-- **Docs humanas:** `CONTEXT.md` (índice); `docs/DESARROLLO.md` (operación y desarrollo); `docs/ARCHITECTURE.md` (capas y tenant).
+- **Docs humanas:** `CLAUDE.md` (reglas); `CONTEXT.md` (índice); `docs/ARCHITECTURE.md` (arquitectura); `docs/STATUS.md` (estado); `docs/FEATURES.md` (funcionalidades).
 - **Reglas Cursor:** `erp-saas/.cursor/rules/erp-unified-rules.mdc` (este archivo) y `saas-navigation-no-sensitive-url.mdc` (IDs de tenant y contexto entre rutas).
 
 ---
@@ -189,7 +189,7 @@ Si la feature es solo frontend o solo API, aplica igualmente las capas que toque
 
 ## ZH Form System (frontend)
 
-**Fuente de verdad visual (solo en el repo unificado `erp-saas`):** `docs/zh-form-template/zh_erp_component_library.html`. No mantener una plantilla ZH paralela fuera del monorepo como autoridad; portar mejoras **a** esta ruta y al CSS. Tokens en `frontend/src/index.css` (`:root`); clases en `frontend/src/components/zh/ZHForm.css`. Cualquier cambio de paleta o pieza base: mantener alineados **tres** sitios: `index.css`, `ZHForm.css` y el `<style>` del HTML de plantilla (`docs/zh-form-template/README.md`).
+**Fuente de verdad visual:** `frontend/src/styles/design-tokens.css` (tokens), `frontend/src/styles/zh-ui.css` (componentes globales), `frontend/src/styles/page-template.css` (layout de página). Los tokens usan `--color-primary`, `--color-surface-*`, `--space-*`, etc. — NO usar variables antiguas `--zh-blue*`. Componentes ZH en `frontend/src/components/zh/ZHForm.tsx` y `ZHForm.css`.
 
 ### Qué significa “basarse en la plantilla”
 
@@ -203,7 +203,7 @@ Si la feature es solo frontend o solo API, aplica igualmente las capas que toque
 
 ### Tokens (extracto)
 
-`--zh-blue*`, `--zh-success`, `--zh-danger`, `--zh-warning`, `--zh-radius`, `--color-background-*`, `--color-text-*`, `--color-border-*`; alias `--B`, `--BD`, etc. si aparecen en la plantilla.
+`--color-primary`, `--color-surface-*`, `--color-text-primary/secondary`, `--color-border`, `--color-error`, `--color-success`, `--color-warning`, `--space-1…6`, `--radius-md/lg`, `--text-body-md-size`, etc. Ver `frontend/src/styles/design-tokens.css` para la lista completa.
 
 ### Implementación
 

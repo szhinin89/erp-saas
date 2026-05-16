@@ -2,7 +2,6 @@ export {
   BrandsCatalogPage,
   ProductTypesCatalogPage,
   UnitsCatalogPage,
-  TaxRatesCatalogPage,
   TariffsCatalogPage,
   ProductLinesCatalogPage,
   CategoriesCatalogPage,
