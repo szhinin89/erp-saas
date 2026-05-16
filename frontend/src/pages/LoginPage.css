@@ -1,0 +1,373 @@
+/* ============================================================
+   LoginPage — ZH Technologies ERP
+   ============================================================ */
+
+/* ── Fondo ────────────────────────────────────────────────── */
+.lp-bg {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background-color: var(--color-background);
+  overflow: hidden;
+}
+
+/* Orbes decorativos */
+.lp-bg-orb {
+  position: fixed;
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+  z-index: 0;
+}
+.lp-bg-orb--tr {
+  top: -10%;
+  right: -5%;
+  width: 400px;
+  height: 400px;
+  background: rgba(173, 210, 255, 0.18);
+  filter: blur(100px);
+}
+.lp-bg-orb--bl {
+  bottom: -10%;
+  left: -5%;
+  width: 400px;
+  height: 400px;
+  background: rgba(83, 119, 158, 0.10);
+  filter: blur(100px);
+}
+.lp-bg-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.03;
+  background-image: radial-gradient(var(--color-primary) 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+}
+
+/* ── Wrapper centrado ──────────────────────────────────────── */
+.lp-wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+/* ── Marca / Brand ─────────────────────────────────────────── */
+.lp-brand {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.lp-brand-icon {
+  width: 44px;
+  height: 44px;
+  background: var(--color-primary);
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-on-primary);
+  margin-bottom: 2px;
+}
+.lp-brand-icon .material-symbols-outlined {
+  font-size: 22px;
+}
+
+.lp-brand-name {
+  font-size: var(--text-headline-lg-size);
+  line-height: var(--text-headline-lg-height);
+  font-weight: var(--text-headline-lg-weight);
+  letter-spacing: var(--text-headline-lg-spacing);
+  color: var(--color-primary);
+}
+
+.lp-brand-sub {
+  font-size: var(--text-body-md-size);
+  color: var(--color-text-secondary);
+}
+
+/* ── Card ───────────────────────────────────────────────────── */
+.lp-card {
+  width: 100%;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.lp-card-body {
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* ── Selector de rol ────────────────────────────────────────── */
+.lp-roles-label {
+  display: block;
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  letter-spacing: var(--text-label-sm-spacing);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.lp-roles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  padding: 4px;
+  background: var(--color-surface-container-low);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.lp-role {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-2) var(--space-1);
+  border-radius: calc(var(--radius-md) - 1px);
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+  font-family: var(--font-family);
+}
+.lp-role:hover {
+  background: var(--color-surface-container-high);
+}
+.lp-role--active {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-xs);
+}
+
+.lp-role-icon {
+  font-size: 20px;
+  color: var(--color-text-secondary);
+}
+.lp-role--active .lp-role-icon {
+  color: var(--color-primary);
+}
+
+.lp-role-label {
+  font-size: 10px;
+  font-weight: var(--text-label-sm-weight);
+  letter-spacing: var(--text-label-sm-spacing);
+  color: var(--color-text-secondary);
+}
+.lp-role--active .lp-role-label {
+  color: var(--color-primary);
+}
+
+/* ── Error notice ─────────────────────────────────────────── */
+.lp-error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.25);
+  color: var(--color-error);
+  font-size: var(--text-body-md-size);
+}
+.lp-error .material-symbols-outlined { font-size: 18px; flex-shrink: 0; }
+
+/* ── Formulario ─────────────────────────────────────────────── */
+.lp-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* Campo */
+.lp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lp-field-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lp-label {
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-on-surface-variant);
+  line-height: var(--text-label-md-height);
+}
+
+/* Input con ícono */
+.lp-input-wrap {
+  position: relative;
+}
+
+.lp-input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: var(--color-outline);
+  pointer-events: none;
+}
+
+.lp-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 var(--space-4) 0 40px;
+  font-family: var(--font-family);
+  font-size: var(--text-body-md-size);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.lp-input::placeholder { color: rgba(115, 119, 127, 0.6); }
+.lp-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(58, 95, 132, 0.15);
+}
+.lp-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.lp-field--error .lp-input {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
+}
+
+.lp-field-error {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-error);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Enlace "olvidé contraseña" */
+.lp-forgot {
+  font-family: var(--font-family);
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  letter-spacing: var(--text-label-sm-spacing);
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: none;
+  transition: text-decoration var(--transition);
+}
+.lp-forgot:hover { text-decoration: underline; }
+
+/* Botón submit */
+.lp-submit {
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4);
+  font-family: var(--font-family);
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition), transform 0.08s ease;
+  margin-top: 4px;
+}
+.lp-submit:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-primary) 85%, #000);
+}
+.lp-submit:active:not(:disabled) { transform: scale(0.98); }
+.lp-submit:disabled { opacity: 0.65; cursor: not-allowed; }
+.lp-submit .material-symbols-outlined { font-size: 18px; }
+
+/* ── Footer del card ───────────────────────────────────────── */
+.lp-card-footer {
+  padding: var(--space-4) var(--space-8);
+  background: var(--color-surface-container-low);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lp-footer-copy {
+  font-size: var(--text-body-md-size);
+  color: var(--color-text-secondary);
+}
+
+.lp-footer-links {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.lp-footer-link {
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  color: var(--color-outline);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.lp-footer-link:hover { color: var(--color-text-primary); }
+
+/* ── Badges de seguridad ───────────────────────────────────── */
+.lp-security {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  opacity: 0.4;
+  filter: grayscale(1);
+  transition: opacity var(--transition-slow), filter var(--transition-slow);
+  color: var(--color-text-primary);
+}
+.lp-security:hover { opacity: 1; filter: grayscale(0); }
+.lp-security .material-symbols-outlined { font-size: 14px; }
+
+.lp-security-text {
+  font-size: 10px;
+  font-weight: var(--text-label-sm-weight);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.lp-security-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-outline-variant);
+  flex-shrink: 0;
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .lp-card-body    { padding: var(--space-6); }
+  .lp-card-footer  { padding: var(--space-4) var(--space-6); }
+  .lp-brand-name   { font-size: 22px; }
+}

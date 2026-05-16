@@ -1,0 +1,103 @@
+/* ============================================================
+   ZH Technologies — Design Tokens (nueva paleta)
+   Fuente: ZH Material Design System
+   ============================================================ */
+:root {
+  /* ── Brand ──────────────────────────────────────────────── */
+  --color-primary:           #3a5f84;
+  --color-primary-dim:       #a5caf4;
+  --color-primary-container: #53779e;
+  --color-on-primary:        #ffffff;
+  --color-secondary:         #3c6188;
+  --color-secondary-container: #add2ff;
+  --color-on-secondary:      #ffffff;
+
+  /* ── Semantic ────────────────────────────────────────────── */
+  --color-error:   #C0392B;
+  --color-success: #1A7A4A;
+  --color-warning: #BA7517;
+  --color-info:    #3a5f84;
+
+  /* ── Surface / Background ────────────────────────────────── */
+  --color-background:           #f8f9fb;
+  --color-surface:              #ffffff;
+  --color-surface-bright:       #f8f9fb;
+  --color-surface-dim:          #d9dadc;
+  --color-surface-container:        #edeef0;
+  --color-surface-container-low:    #f2f4f6;
+  --color-surface-container-high:   #e7e8ea;
+  --color-surface-container-highest:#e1e2e4;
+  --color-surface-variant:      #e1e2e4;
+
+  /* ── Text ────────────────────────────────────────────────── */
+  --color-text-primary:       #1A1D23;
+  --color-text-secondary:     #6B7280;
+  --color-on-surface:         #191c1e;
+  --color-on-surface-variant: #42474e;
+  --color-outline:            #73777f;
+  --color-outline-variant:    #c2c7cf;
+
+  /* ── Border ──────────────────────────────────────────────── */
+  --color-border: rgba(0, 0, 0, 0.10);
+
+  /* ── Border Radius ────────────────────────────────────────── */
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   7px;    /* inputs, buttons */
+  --radius-lg:   9px;    /* cards */
+  --radius-xl:   12px;   /* modals, large panels */
+  --radius-pill: 999px;
+
+  /* ── Spacing (4px grid) ──────────────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* ── Typography ───────────────────────────────────────────── */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --text-headline-lg-size:    28px;
+  --text-headline-lg-height:  36px;
+  --text-headline-lg-weight:  600;
+  --text-headline-lg-spacing: -0.02em;
+
+  --text-headline-md-size:    20px;
+  --text-headline-md-height:  28px;
+  --text-headline-md-weight:  600;
+  --text-headline-md-spacing: -0.01em;
+
+  --text-body-lg-size:   15px;
+  --text-body-lg-height: 24px;
+  --text-body-lg-weight: 400;
+
+  --text-body-md-size:   13px;
+  --text-body-md-height: 20px;
+  --text-body-md-weight: 400;
+
+  --text-label-md-size:   13px;
+  --text-label-md-height: 16px;
+  --text-label-md-weight: 500;
+
+  --text-label-sm-size:    11px;
+  --text-label-sm-height:  14px;
+  --text-label-sm-weight:  600;
+  --text-label-sm-spacing: 0.05em;
+
+  /* ── Shadows ──────────────────────────────────────────────── */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06);
+
+  /* ── Transitions ──────────────────────────────────────────── */
+  --transition: 0.15s ease;
+  --transition-slow: 0.3s ease;
+
+  /* ── Material icon font ───────────────────────────────────── */
+  --icon-font: 'Material Symbols Outlined';
+}

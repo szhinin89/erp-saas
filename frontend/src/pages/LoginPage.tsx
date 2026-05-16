@@ -10,14 +10,14 @@ import type { ApiResponse } from '../types/api';
 import { useI18n } from '../i18n/i18n';
 import { accessService } from '../services/accessService';
 import { useAccessStore } from '../store/accessStore';
-import { ZHFormHeader, ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHFormActions } from '../components/zh/ZHForm';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';
-import { ZHCenteredCard } from '../components/zh/ZHCenteredCard';
 import { loginSchema, type LoginFormValues } from '../schemas/auth/loginSchema';
 import { useDeployment } from '../deployment/DeploymentContext';
 import { GLOBAL_TENANT_ID } from '../constants/tenantIds';
 import { formatApiRequestError } from '../modules/lib/apiError';
 import './LoginPage.css';
+
+/* Quitar imports de ZHForm que ya no se usan en este componente */
 
 function normalizeUuid(uuid: string): string {
   return uuid.replace(/-/g, '').toLowerCase();
@@ -134,54 +134,139 @@ export function LoginPage() {
   };
 
   return (
-    <ZHCenteredCard bgClassName="login-bg" cardClassName="login-card">
-      <form className="login-form" onSubmit={handleSubmit(onValid)} noValidate>
-        <ZHFormHeader title={t('login.title')} subtitle={t('login.subtitle')} />
-        <ZHFormBody>
-          {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
+    <div className="lp-bg">
+      {/* Decoración de fondo */}
+      <div className="lp-bg-orb lp-bg-orb--tr" aria-hidden="true" />
+      <div className="lp-bg-orb lp-bg-orb--bl" aria-hidden="true" />
+      <div className="lp-bg-grid" aria-hidden="true" />
 
-          <ZHFormSection title={t('login.title')}>
-            <ZHGrid cols={1}>
-              <ZHField label={t('login.email.label')} required fieldError={errors.email?.message}>
-                <input
-                  id="email"
-                  type="email"
-                  placeholder={t('login.email.placeholder')}
-                  autoComplete="username"
-                  disabled={loading}
-                  {...register('email')}
-                />
-              </ZHField>
+      <div className="lp-wrapper">
+        {/* Marca */}
+        <header className="lp-brand">
+          <div className="lp-brand-icon" aria-hidden="true">
+            <span className="material-symbols-outlined">dashboard</span>
+          </div>
+          <h1 className="lp-brand-name">ZH Technologies</h1>
+          <p className="lp-brand-sub">Acceso al Portal ERP Corporativo</p>
+        </header>
 
-              <ZHField label={t('login.password.label')} required fieldError={errors.password?.message}>
-                <input
-                  id="password"
-                  type="password"
-                  placeholder={t('login.password.placeholder')}
-                  autoComplete="current-password"
-                  disabled={loading}
-                  {...register('password')}
-                />
-              </ZHField>
-            </ZHGrid>
-          </ZHFormSection>
+        {/* Card */}
+        <div className="lp-card">
+          <div className="lp-card-body">
 
-          <ZHFormActions
-            onCancel={() => navigate('/forgot-password')}
-            onDraft={undefined}
-            onSave={undefined}
-            hideDraft
-            disableDraft
-            disableSave={loading}
-            saveButtonType="submit"
-            labels={{
-              cancel: t('login.forgotPassword'),
-              draft: t('common.saveDraft') ?? 'Guardar borrador',
-              save: loading ? t('login.button.loading') : t('login.button.submit'),
-            }}
-          />
-        </ZHFormBody>
-      </form>
-    </ZHCenteredCard>
+            {/* Selector de rol (visual) */}
+            <div>
+              <span className="lp-roles-label">Seleccionar Rol de Acceso</span>
+              <div className="lp-roles-grid" role="group" aria-label="Tipo de acceso">
+                <button type="button" className="lp-role lp-role--active">
+                  <span className="lp-role-icon material-symbols-outlined">admin_panel_settings</span>
+                  <span className="lp-role-label">SuperAdmin</span>
+                </button>
+                <button type="button" className="lp-role">
+                  <span className="lp-role-icon material-symbols-outlined">domain</span>
+                  <span className="lp-role-label">Admin Empresa</span>
+                </button>
+                <button type="button" className="lp-role">
+                  <span className="lp-role-icon material-symbols-outlined">person</span>
+                  <span className="lp-role-label">Usuario</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Error de autenticación */}
+            {error && (
+              <div className="lp-error" role="alert">
+                <span className="material-symbols-outlined" aria-hidden="true">error</span>
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* Formulario */}
+            <form className="lp-form" onSubmit={handleSubmit(onValid)} noValidate>
+
+              {/* Email */}
+              <div className={`lp-field${errors.email ? ' lp-field--error' : ''}`}>
+                <label className="lp-label" htmlFor="email">
+                  {t('login.email.label')}
+                </label>
+                <div className="lp-input-wrap">
+                  <span className="lp-input-icon material-symbols-outlined" aria-hidden="true">mail</span>
+                  <input
+                    className="lp-input"
+                    id="email"
+                    type="email"
+                    placeholder={t('login.email.placeholder')}
+                    autoComplete="username"
+                    disabled={loading}
+                    {...register('email')}
+                  />
+                </div>
+                {errors.email?.message && (
+                  <span className="lp-field-error">{errors.email.message}</span>
+                )}
+              </div>
+
+              {/* Contraseña */}
+              <div className={`lp-field${errors.password ? ' lp-field--error' : ''}`}>
+                <div className="lp-field-header">
+                  <label className="lp-label" htmlFor="password">
+                    {t('login.password.label')}
+                  </label>
+                  <button
+                    type="button"
+                    className="lp-forgot"
+                    onClick={() => navigate('/forgot-password')}
+                  >
+                    {t('login.forgotPassword')}
+                  </button>
+                </div>
+                <div className="lp-input-wrap">
+                  <span className="lp-input-icon material-symbols-outlined" aria-hidden="true">lock</span>
+                  <input
+                    className="lp-input"
+                    id="password"
+                    type="password"
+                    placeholder={t('login.password.placeholder')}
+                    autoComplete="current-password"
+                    disabled={loading}
+                    {...register('password')}
+                  />
+                </div>
+                {errors.password?.message && (
+                  <span className="lp-field-error">{errors.password.message}</span>
+                )}
+              </div>
+
+              {/* Botón */}
+              <button type="submit" className="lp-submit" disabled={loading}>
+                <span>{loading ? t('login.button.loading') : t('login.button.submit')}</span>
+                {!loading && (
+                  <span className="material-symbols-outlined" aria-hidden="true">login</span>
+                )}
+              </button>
+
+            </form>
+          </div>
+
+          {/* Footer del card */}
+          <div className="lp-card-footer">
+            <span className="lp-footer-copy">© 2024 ZH Technologies</span>
+            <nav className="lp-footer-links" aria-label="Vínculos legales">
+              <a className="lp-footer-link" href="#">Soporte</a>
+              <a className="lp-footer-link" href="#">Legal</a>
+            </nav>
+          </div>
+        </div>
+
+        {/* Badges de seguridad */}
+        <div className="lp-security" aria-label="Certificaciones de seguridad">
+          <span className="material-symbols-outlined" aria-hidden="true">verified_user</span>
+          <span className="lp-security-text">AES-256 Encrypted</span>
+          <span className="lp-security-dot" aria-hidden="true" />
+          <span className="material-symbols-outlined" aria-hidden="true">shield</span>
+          <span className="lp-security-text">SOC2 Compliant</span>
+        </div>
+      </div>
+    </div>
   );
 }
