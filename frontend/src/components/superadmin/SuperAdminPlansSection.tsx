@@ -408,34 +408,42 @@ export function SuperAdminPlansSection() {
         <LoadingState />
       ) : (
         <>
-          <div className="sap-dash-kpiGrid">
-            <div className="sap-dash-kpiCard sap-dash-kpiCard--info">
-              <div className="sap-dash-kpiValue">{totals?.activeTenants ?? tenants.length}</div>
-              <div className="sap-dash-kpiSub">
-                {totals
-                  ? t('superadmin.plansDashboard.kpi.activeTenantsSub').replace('{{total}}', String(totals.totalTenants))
-                  : '—'}
+          <div className="pg-kpis">
+            <div className="pg-kpi sap-kpi--info">
+              <div className="pg-kpi-bottom">
+                <p className="pg-kpi-value">{totals?.activeTenants ?? tenants.length}</p>
+                <p className="pg-kpi-unit">
+                  {totals
+                    ? t('superadmin.plansDashboard.kpi.activeTenantsSub').replace('{{total}}', String(totals.totalTenants))
+                    : '—'}
+                </p>
+                <p className="pg-kpi-label">{t('superadmin.plansDashboard.kpi.activeTenants')}</p>
               </div>
-              <div className="sap-dash-kpiLabel">{t('superadmin.plansDashboard.kpi.activeTenants')}</div>
             </div>
-            <div className="sap-dash-kpiCard sap-dash-kpiCard--success">
-              <div className="sap-dash-kpiValue">{formatMoney(approxMrr, plans.find((p) => p.isActive)?.currency ?? 'USD')}</div>
-              <div className="sap-dash-kpiSub">{t('superadmin.plansDashboard.kpi.mrrSub')}</div>
-              <div className="sap-dash-kpiLabel">{t('superadmin.plansDashboard.kpi.mrr')}</div>
-            </div>
-            <div className="sap-dash-kpiCard sap-dash-kpiCard--neutral">
-              <div className="sap-dash-kpiValue">{activePlansCount}</div>
-              <div className="sap-dash-kpiSub">{activePlanNames || '—'}</div>
-              <div className="sap-dash-kpiLabel">{t('superadmin.plansDashboard.kpi.catalogPlans')}</div>
-            </div>
-            <div className="sap-dash-kpiCard sap-dash-kpiCard--warn">
-              <div className="sap-dash-kpiValue">{inactivePct}%</div>
-              <div className="sap-dash-kpiSub">
-                {totals
-                  ? t('superadmin.plansDashboard.kpi.inactiveSub').replace('{{n}}', String(inactiveTenants))
-                  : '—'}
+            <div className="pg-kpi sap-kpi--success">
+              <div className="pg-kpi-bottom">
+                <p className="pg-kpi-value">{formatMoney(approxMrr, plans.find((p) => p.isActive)?.currency ?? 'USD')}</p>
+                <p className="pg-kpi-unit">{t('superadmin.plansDashboard.kpi.mrrSub')}</p>
+                <p className="pg-kpi-label">{t('superadmin.plansDashboard.kpi.mrr')}</p>
               </div>
-              <div className="sap-dash-kpiLabel">{t('superadmin.plansDashboard.kpi.inactiveRatio')}</div>
+            </div>
+            <div className="pg-kpi sap-kpi--neutral">
+              <div className="pg-kpi-bottom">
+                <p className="pg-kpi-value">{activePlansCount}</p>
+                <p className="pg-kpi-unit">{activePlanNames || '—'}</p>
+                <p className="pg-kpi-label">{t('superadmin.plansDashboard.kpi.catalogPlans')}</p>
+              </div>
+            </div>
+            <div className="pg-kpi sap-kpi--warn">
+              <div className="pg-kpi-bottom">
+                <p className="pg-kpi-value">{inactivePct}%</p>
+                <p className="pg-kpi-unit">
+                  {totals
+                    ? t('superadmin.plansDashboard.kpi.inactiveSub').replace('{{n}}', String(inactiveTenants))
+                    : '—'}
+                </p>
+                <p className="pg-kpi-label">{t('superadmin.plansDashboard.kpi.inactiveRatio')}</p>
+              </div>
             </div>
           </div>
 
@@ -470,7 +478,7 @@ export function SuperAdminPlansSection() {
                     {plan.isRecommended ? (
                       <span className="sap-pricing-ribbon">{t('superadmin.plansCard.mostPopular')}</span>
                     ) : null}
-                    <span className="sap-pricing-planBadge mono">{plan.shortLabel ?? plan.code.toUpperCase()}</span>
+                    <span className="badge badge--upper mono sap-pricing-planBadge">{plan.shortLabel ?? plan.code.toUpperCase()}</span>
                   </div>
                   <h3 className="sap-pricing-title">
                     {plan.name}
@@ -489,6 +497,21 @@ export function SuperAdminPlansSection() {
                       })()}
                     </span>
                   </div>
+                  {plan.features.length > 0 && (
+                    <div className="sap-pricing-features">
+                      {plan.features.map((f) => (
+                        <div key={f.featureId} className="sap-pricing-feature">
+                          <span className={`material-symbols-outlined sap-pricing-feature-icon sap-pricing-feature-icon--${f.isIncluded ? 'check' : 'x'}`}>
+                            {f.isIncluded ? 'check_circle' : 'cancel'}
+                          </span>
+                          <span className={`sap-pricing-feature-text${f.isIncluded ? '' : ' sap-pricing-feature-text--off'}`}>
+                            {f.featureName}
+                            {f.limitPerPeriod != null ? ` (${f.limitPerPeriod})` : ''}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <div className="sap-pricing-usage">
                     <div className="sap-pricing-usageLine">
                       <span>
@@ -552,6 +575,45 @@ export function SuperAdminPlansSection() {
         </div>
       )}
 
+      {!loading && plans.length > 0 && (
+        <div className="sap-plans-summary">
+          <div className="sap-plans-summary-left">
+            <div className="sap-plans-summary-icon">
+              <span className="material-symbols-outlined">loyalty</span>
+            </div>
+            <div>
+              <p className="sap-plans-summary-label">{t('superadmin.plansDashboard.summary.label')}</p>
+              <p className="sap-plans-summary-value">
+                {tenants.length} {t('superadmin.plansDashboard.summary.subscriptions')}
+              </p>
+            </div>
+          </div>
+          <div className="sap-plans-summary-stats">
+            <div className="sap-plans-summary-stat">
+              <p className="sap-plans-summary-stat-label">MRR</p>
+              <p className="sap-plans-summary-stat-value">
+                {formatMoney(approxMrr, plans.find((p) => p.isActive)?.currency ?? 'USD')}
+              </p>
+            </div>
+            <div className="sap-plans-summary-stat">
+              <p className="sap-plans-summary-stat-label">{t('superadmin.plansDashboard.kpi.inactiveRatio')}</p>
+              <p className="sap-plans-summary-stat-value">{inactivePct}%</p>
+            </div>
+            <div className="sap-plans-summary-stat">
+              <p className="sap-plans-summary-stat-label">ARPU</p>
+              <p className="sap-plans-summary-stat-value sap-plans-summary-stat-value--success">
+                {tenants.filter((tn) => tn.isActive).length > 0
+                  ? formatMoney(
+                      approxMrr / tenants.filter((tn) => tn.isActive).length,
+                      plans.find((p) => p.isActive)?.currency ?? 'USD',
+                    )
+                  : '—'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Card>
         <ZHCardSection title={t('superadmin.plansDashboard.tenantsSectionTitle')}>
           <div className="sap-tenant-toolbar">
@@ -591,7 +653,7 @@ export function SuperAdminPlansSection() {
             <EmptyState message={t('superadmin.plansDashboard.tenantsEmpty')} />
           ) : (
             <div className="sap-tenant-tableWrap">
-              <table className="sap-tenant-table">
+              <table className="table">
                 <thead>
                   <tr>
                     <th>{t('superadmin.plansDashboard.col.company')}</th>
@@ -618,7 +680,7 @@ export function SuperAdminPlansSection() {
                           <div className="mono subtle sap-tenant-id">{tn.slug}</div>
                         </td>
                         <td>
-                          <span className={`sap-tenant-planBadge sap-tenant-planBadge--tier-${tier}`}>{planLabel}</span>
+                          <span className={`badge sap-tenant-planBadge--tier-${tier}`}>{planLabel}</span>
                         </td>
                         <td className="mono">
                           {tn.activeUsers}/{tn.totalUsers}
@@ -629,7 +691,7 @@ export function SuperAdminPlansSection() {
                         </td>
                         <td className="mono">{showMrr && p ? formatMoney(mrrVal, p.currency) : '—'}</td>
                         <td>
-                          <span className={tn.isActive ? 'sap-tenant-status sap-tenant-status--active' : 'sap-tenant-status sap-tenant-status--suspended'}>
+                          <span className={tn.isActive ? 'zh-status zh-status--active' : 'zh-status zh-status--suspended'}>
                             {tn.isActive ? t('superadmin.plansDashboard.statusActive') : t('superadmin.plansDashboard.statusSuspended')}
                           </span>
                         </td>
@@ -734,7 +796,7 @@ export function SuperAdminPlansSection() {
               placeholder="price_… (Stripe u otro)"
             />
           </ZHField>
-          <label className="sap-check">
+          <label className="zh-inline-check">
             <input
               type="checkbox"
               checked={planForm.isActive}
@@ -742,7 +804,7 @@ export function SuperAdminPlansSection() {
             />
             {t('superadmin.plansAdmin.field.active')}
           </label>
-          <label className="sap-check">
+          <label className="zh-inline-check">
             <input
               type="checkbox"
               checked={planForm.isPubliclyVisible}
@@ -751,7 +813,7 @@ export function SuperAdminPlansSection() {
             {t('superadmin.plansAdmin.field.public')}
           </label>
           {planModal === 'create' ? (
-            <label className="sap-check">
+            <label className="zh-inline-check">
               <input
                 type="checkbox"
                 checked={planForm.isRecommended}
@@ -760,7 +822,7 @@ export function SuperAdminPlansSection() {
               {t('superadmin.plansAdmin.field.recommendedCreate')}
             </label>
           ) : (
-            <label className="sap-check">
+            <label className="zh-inline-check">
               <input
                 type="checkbox"
                 checked={planForm.isRecommended}

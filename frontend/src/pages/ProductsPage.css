@@ -1,1 +1,92 @@
-/* estilos pendientes */
+/* ProductsPage — prd-* (solo estilos únicos de esta pantalla)
+   Layout/header → pg-*         (page-template.css)
+   Tabla         → .table        (zh-ui.css)
+   Badges/estado → .badge*, .zh-status (zh-ui.css)
+   Botones       → .zh-btn*     (zh-ui.css)
+   Avatar thumb  → .zh-avatar   (zh-ui.css)
+   KPI grid      → .pg-kpi      (page-template.css)          */
+
+/* ── KPI bento grid (3 tarjetas: 1+1+wide) ──────────────── */
+.prd-kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: var(--space-4);
+}
+
+@media (max-width: 900px)  { .prd-kpi-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 580px)  { .prd-kpi-grid { grid-template-columns: 1fr; } }
+
+/* Sparkline placeholder inside valorización KPI */
+.prd-sparkline {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 40px;
+  padding: 4px;
+}
+
+.prd-sparkline span {
+  width: 6px;
+  border-radius: 3px;
+  background: rgba(58, 95, 132, 0.3);
+}
+
+.prd-sparkline span:nth-child(1) { height: 50%; }
+.prd-sparkline span:nth-child(2) { height: 80%; }
+.prd-sparkline span:nth-child(3) { height: 65%; }
+.prd-sparkline span:nth-child(4) { height: 100%; }
+
+/* ── Table scroll wrapper ────────────────────────────────── */
+.prd-table-wrap { overflow-x: auto; }
+
+/* ── Product cell (thumb + name + description) ───────────── */
+.prd-product-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.prd-thumb {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-container-high);
+  border: 1px solid var(--color-border);
+}
+
+.prd-name {
+  font-size: var(--text-body-md-size);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.prd-sku {
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-text-primary);
+}
+
+/* ── Action buttons in row ───────────────────────────────── */
+.prd-actions-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+.prd-btn-mute:not(:disabled)     { color: var(--color-error); }
+.prd-btn-mute:hover:not(:disabled)     { background: rgba(192, 57, 43, 0.08); }
+.prd-btn-activate:not(:disabled)  { color: var(--color-success); }
+.prd-btn-activate:hover:not(:disabled) { background: rgba(26, 122, 74, 0.08); }
+
+/* ── Form wrapper ────────────────────────────────────────── */
+.prd-form-wrap {
+  padding: var(--space-4) var(--space-5);
+}

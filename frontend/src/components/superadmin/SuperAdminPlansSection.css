@@ -1,1 +1,341 @@
-/* estilos pendientes */
+/* SuperAdminPlansSection — Gestión de Planes */
+
+/* ── Section wrapper ─────────────────────────────────────── */
+.sap-plansSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.sap-dash-head { margin-bottom: 0; }
+
+.sap-dash-headRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.sap-dash-headText { flex: 1; min-width: 0; }
+
+.sap-dash-eyebrow {
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  letter-spacing: var(--text-label-sm-spacing);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin: 0 0 4px;
+}
+
+.sap-dash-lead {
+  font-size: var(--text-body-md-size);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.sap-dash-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.sap-publicHint {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-top: var(--space-2);
+}
+
+/* ── KPI grid → pg-kpis (page-template.css), color overrides aquí */
+.sap-kpi--info    .pg-kpi-value { color: var(--color-primary); }
+.sap-kpi--success .pg-kpi-value { color: var(--color-success); }
+.sap-kpi--warn    .pg-kpi-value { color: var(--color-warning); }
+.sap-kpi--neutral .pg-kpi-value { color: var(--color-text-primary); }
+/* pg-kpi-unit used as sub-label under value */
+.sap-kpi--info .pg-kpi-unit, .sap-kpi--success .pg-kpi-unit,
+.sap-kpi--warn .pg-kpi-unit, .sap-kpi--neutral .pg-kpi-unit {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-left: 0;
+}
+
+/* ── Pricing cards grid ──────────────────────────────────── */
+.sap-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+}
+
+@media (max-width: 1024px) { .sap-pricing-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px)  { .sap-pricing-grid { grid-template-columns: 1fr; } }
+
+/* ── Pricing card ────────────────────────────────────────── */
+.sap-pricing-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.sap-pricing-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(58, 95, 132, 0.06);
+}
+
+/* Popular — ring + no hover override needed */
+.sap-pricing-card--popular {
+  border-width: 2px;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 0 transparent;
+}
+.sap-pricing-card--popular:hover {
+  box-shadow: 0 4px 12px rgba(58, 95, 132, 0.10);
+}
+
+.sap-pricing-card--inactive { opacity: 0.6; }
+
+/* "MÁS POPULAR" ribbon */
+.sap-pricing-ribbon {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-bottom-left-radius: var(--radius-md);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  z-index: 1;
+}
+
+.sap-pricing-card-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Top badges row */
+.sap-pricing-topBadges {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+/* Tier badge — base → .badge.badge--upper (zh-ui.css); solo padding extra aquí */
+.sap-pricing-planBadge { padding: 3px 12px; }
+
+/* Tier colors */
+.sap-pricing-card--tier-starter      .sap-pricing-planBadge { background: var(--color-secondary-container); color: var(--color-primary); }
+.sap-pricing-card--tier-business     .sap-pricing-planBadge { background: rgba(26, 122, 74, 0.10); color: var(--color-success); }
+.sap-pricing-card--tier-professional .sap-pricing-planBadge { background: rgba(26, 122, 74, 0.10); color: var(--color-success); }
+.sap-pricing-card--tier-enterprise   .sap-pricing-planBadge { background: var(--color-tertiary-fixed); color: var(--color-tertiary); }
+.sap-pricing-card--tier-default      .sap-pricing-planBadge { background: var(--color-surface-container); color: var(--color-text-secondary); }
+
+/* Tier titles */
+.sap-pricing-titleStar { color: var(--color-warning); }
+
+.sap-pricing-title {
+  font-size: var(--text-headline-md-size);
+  font-weight: var(--text-headline-md-weight);
+  letter-spacing: var(--text-headline-md-spacing);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-2);
+}
+
+.sap-pricing-subtitle {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-3);
+  line-height: 1.5;
+}
+
+/* Price */
+.sap-pricing-priceRow {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: var(--space-6);
+}
+
+.sap-pricing-price {
+  font-size: var(--text-headline-lg-size);
+  font-weight: var(--text-headline-lg-weight);
+  letter-spacing: var(--text-headline-lg-spacing);
+  color: var(--color-text-primary);
+}
+
+.sap-pricing-period {
+  font-size: var(--text-body-md-size);
+  color: var(--color-on-surface-variant);
+}
+
+/* ── Feature list ────────────────────────────────────────── */
+.sap-pricing-features {
+  flex: 1;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.sap-pricing-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.sap-pricing-feature-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.sap-pricing-feature-icon--check { color: var(--color-success); }
+.sap-pricing-feature-icon--x     { color: var(--color-on-surface-variant); }
+
+.sap-pricing-feature-text { font-size: var(--text-body-md-size); color: var(--color-on-surface); }
+.sap-pricing-feature-text--off { color: var(--color-on-surface-variant); }
+
+/* ── Usage bar ───────────────────────────────────────────── */
+.sap-pricing-usage { margin-bottom: var(--space-4); }
+
+.sap-pricing-usageLine {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.sap-pricing-usagePct { font-weight: 600; }
+
+.sap-pricing-barSvg { width: 100%; height: 6px; }
+
+.sap-pricing-barRect { fill: var(--color-primary); border-radius: 3px; }
+
+/* ── Meta row (badges) ───────────────────────────────────── */
+.sap-pricing-metaRow {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+/* ── Card footer ─────────────────────────────────────────── */
+.sap-pricing-footer {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.sap-pricing-footerMain  { display: flex; gap: var(--space-2); }
+.sap-pricing-footerExtra { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+.sap-pricing-linkBtn {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  text-decoration: none;
+}
+
+/* ── Summary footer bar ──────────────────────────────────── */
+.sap-plans-summary {
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  padding: var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.sap-plans-summary-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.sap-plans-summary-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-secondary-container);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.sap-plans-summary-label {
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.sap-plans-summary-value {
+  font-size: var(--text-headline-md-size);
+  font-weight: var(--text-headline-md-weight);
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.sap-plans-summary-stats { display: flex; gap: var(--space-8); flex-wrap: wrap; }
+
+.sap-plans-summary-stat { text-align: center; }
+.sap-plans-summary-stat-label { font-size: 12px; color: var(--color-text-secondary); margin: 0; }
+.sap-plans-summary-stat-value { font-size: var(--text-label-md-size); font-weight: 700; color: var(--color-text-primary); margin: 0; }
+.sap-plans-summary-stat-value--success { color: var(--color-success); }
+
+/* ── Tenant section ──────────────────────────────────────── */
+.sap-tenant-toolbar {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+
+.sap-tenant-search { flex: 1; min-width: 200px; }
+.sap-tenant-select { width: 180px; }
+
+/* tabla → .table (zh-ui.css) — solo clases de celda específicas abajo */
+.sap-tenant-tableWrap { overflow-x: auto; }
+
+.sap-tenant-company { font-weight: 600; }
+.sap-tenant-id      { font-size: 11px; }
+.sap-tenant-dates   { font-size: 12px; }
+
+/* sap-tenant-planBadge base → .badge (zh-ui.css) */
+.sap-tenant-planBadge--tier-starter      { background: var(--color-secondary-container);  color: var(--color-on-secondary-container); }
+.sap-tenant-planBadge--tier-business     { background: rgba(26,122,74,0.10);              color: var(--color-success); }
+.sap-tenant-planBadge--tier-professional { background: rgba(26,122,74,0.10);              color: var(--color-success); }
+.sap-tenant-planBadge--tier-enterprise   { background: var(--color-tertiary-fixed);        color: var(--color-on-tertiary-fixed-variant); }
+.sap-tenant-planBadge--tier-default      { background: var(--color-surface-container);     color: var(--color-text-secondary); }
+
+/* .sap-tenant-status → .zh-status.zh-status--active/suspended (zh-ui.css) */
+
+/* .zh-inline-check (zh-ui.css) handles form checkboxes */

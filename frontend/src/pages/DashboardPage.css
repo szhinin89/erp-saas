@@ -1,0 +1,256 @@
+/* DashboardPage — dsh-* (solo estilos únicos de esta pantalla)
+   KPI grid/cards → pg-kpi*   (page-template.css)
+   Tabla         → .table      (zh-ui.css)
+   Badges        → .badge*     (zh-ui.css)                        */
+
+/* ── Page wrapper ────────────────────────────────────────── */
+.dsh-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding-bottom: var(--space-8);
+}
+
+/* ── Welcome ─────────────────────────────────────────────── */
+.dsh-welcome { margin-bottom: var(--space-2); }
+
+.dsh-welcome-title {
+  font-size: var(--text-headline-lg-size);
+  font-weight: var(--text-headline-lg-weight);
+  letter-spacing: var(--text-headline-lg-spacing);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-1);
+}
+
+.dsh-welcome-date {
+  font-size: var(--text-body-md-size);
+  color: var(--color-text-secondary);
+  margin: 0;
+  text-transform: capitalize;
+}
+
+/* ── KPI unique extensions ───────────────────────────────── */
+/* Trend indicator (trending_up icon + % text) */
+.dsh-kpi-trend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-label-sm-size);
+  font-weight: var(--text-label-sm-weight);
+  margin-top: var(--space-1);
+}
+.dsh-kpi-trend .material-symbols-outlined { font-size: 16px; }
+.dsh-kpi-trend--success { color: var(--color-success); }
+.dsh-kpi-trend--warning { color: var(--color-warning); }
+
+/* Progress bar (monthly revenue %) */
+.dsh-kpi-progress {
+  width: 100%;
+  height: 6px;
+  background: var(--color-surface-container);
+  border-radius: var(--radius-pill);
+  margin-top: var(--space-2);
+  overflow: hidden;
+}
+.dsh-kpi-progress-bar {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+}
+.dsh-kpi-progress-label {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+  text-align: right;
+  margin: var(--space-1) 0 0;
+}
+
+/* ── Body grid ───────────────────────────────────────────── */
+.dsh-body {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: var(--space-4);
+  align-items: start;
+}
+@media (max-width: 1024px) { .dsh-body { grid-template-columns: 1fr; } }
+
+/* ── Activity card ───────────────────────────────────────── */
+.dsh-activity-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.dsh-activity-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dsh-section-title {
+  font-size: var(--text-headline-md-size);
+  font-weight: var(--text-headline-md-weight);
+  letter-spacing: var(--text-headline-md-spacing);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.dsh-link-btn {
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity var(--transition);
+}
+.dsh-link-btn:hover { opacity: 0.75; text-decoration: underline; }
+
+.dsh-activity-table-wrap { overflow-x: auto; }
+
+/* Table cell specifics (coloring beyond .table defaults) */
+.dsh-cell-id {
+  font-family: monospace;
+  font-size: var(--text-label-sm-size);
+}
+.dsh-cell-chevron {
+  text-align: right;
+  color: var(--color-text-secondary);
+}
+.dsh-activity-card table tbody tr:hover .dsh-cell-chevron {
+  color: var(--color-primary);
+}
+
+/* ── Right column cards ──────────────────────────────────── */
+.dsh-right { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.dsh-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.dsh-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dsh-card-body {
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ── Quick access ────────────────────────────────────────── */
+.dsh-quick-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  background: var(--color-surface-container-low);
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition);
+}
+.dsh-quick-btn:hover { background: var(--color-surface-container); }
+.dsh-quick-btn:hover .dsh-quick-icon {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.dsh-quick-icon {
+  font-size: 20px;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: rgba(58, 95, 132, 0.10);
+  color: var(--color-primary);
+  flex-shrink: 0;
+  transition: background var(--transition), color var(--transition);
+}
+
+.dsh-quick-label {
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.dsh-quick-sub {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+/* ── Notifications ───────────────────────────────────────── */
+.dsh-notif-list { gap: var(--space-4); }
+
+.dsh-notif {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+
+.dsh-notif-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+.dsh-notif-dot--error   { background: var(--color-error); }
+.dsh-notif-dot--success { background: var(--color-success); }
+.dsh-notif-dot--warning { background: var(--color-warning); }
+
+.dsh-notif-title {
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+.dsh-notif-body  { font-size: 12px; color: var(--color-text-secondary); margin: 2px 0 0; }
+.dsh-notif-time  { font-size: 10px; color: var(--color-text-secondary); margin: var(--space-1) 0 0; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+.dsh-footer {
+  border-top: 1px solid var(--color-outline-variant, #c2c7cf);
+  padding: var(--space-4) 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-top: var(--space-4);
+}
+
+.dsh-footer-left { display: flex; align-items: center; gap: var(--space-4); }
+
+.dsh-footer-brand {
+  font-size: var(--text-label-md-size);
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.dsh-footer-copy { font-size: 12px; color: var(--color-text-secondary); }
+
+.dsh-footer-links { display: flex; gap: var(--space-5); }
+
+.dsh-footer-links a {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+.dsh-footer-links a:hover { color: var(--color-primary); }

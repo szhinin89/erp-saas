@@ -6,6 +6,8 @@ import { CustomersPage } from '../pages/CustomersPage';
 import { VentasFacturasPage } from '../pages/VentasFacturasPage';
 import { BranchesPage } from '../pages/BranchesPage';
 import { ModulePlaceholderPage } from '../pages/ModulePlaceholderPage';
+import { SalesReportPage } from '../pages/SalesReportPage';
+import { ProveedoresPage } from '../modules/compras/proveedores/pages/ProveedoresPage';
 
 /**
  * Rutas principales de aplicación.
@@ -44,7 +46,11 @@ export const mainRoutes = [
   // Ventas raíz (catálogo API usa /ventas)
   <Route key="ventas-root" path="/ventas" element={<Navigate to="/ventas/facturas" replace />} />,
 
-  // Módulos placeholder
+  // Reportes
+  <Route key="sales-report" path="/reportes/ventas" element={<SalesReportPage />} />,
+
+  // Compras
+  <Route key="proveedores" path="/compras/proveedores" element={<ProveedoresPage />} />,
   <Route key="compras" path="/compras" element={<ModulePlaceholderPage variant="purchases" />} />,
   <Route key="rrhh" path="/rrhh" element={<ModulePlaceholderPage variant="hr" />} />,
 

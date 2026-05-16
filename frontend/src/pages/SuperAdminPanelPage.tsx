@@ -432,7 +432,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                   <article className="sa-overviewHubCard" role="listitem">
                     <div className="sa-overviewHubCardTop">
                       <div className="sa-overviewHubCardTitle">🏢 {t('superadmin.tabCompanies')}</div>
-                      {metrics ? <span className="sa-overviewHubBadge">{metrics.totals.totalTenants} tenants</span> : null}
+                      {metrics ? <span className="badge badge--gray">{metrics.totals.totalTenants} tenants</span> : null}
                     </div>
                     <p className="subtle sa-overviewHubCardBody">Gestiona empresas, suscripciones y acceso a tenant.</p>
                     <Button className="sa-overviewHubCardAction" variant="secondary" size="sm" onClick={() => selectHomeTab('companies')}>
@@ -442,7 +442,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                   <article className="sa-overviewHubCard" role="listitem">
                     <div className="sa-overviewHubCardTop">
                       <div className="sa-overviewHubCardTitle">💳 {t('superadmin.tabPlans')}</div>
-                      {activePlans.length > 0 ? <span className="sa-overviewHubBadge">{activePlans.length} activos</span> : null}
+                      {activePlans.length > 0 ? <span className="badge badge--gray">{activePlans.length} activos</span> : null}
                     </div>
                     <p className="subtle sa-overviewHubCardBody">Configura planes, precios y asignaciones comerciales.</p>
                     <Button className="sa-overviewHubCardAction" variant="secondary" size="sm" onClick={() => selectHomeTab('plans')}>
@@ -452,7 +452,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                   <article className="sa-overviewHubCard" role="listitem">
                     <div className="sa-overviewHubCardTop">
                       <div className="sa-overviewHubCardTitle">🧰 Configuración mínima</div>
-                      <span className="sa-overviewHubBadge">Simplificado</span>
+                      <span className="badge badge--gray">Simplificado</span>
                     </div>
                     <p className="subtle sa-overviewHubCardBody">El sistema usa plan comercial sin configuración granular de features.</p>
                     <Button className="sa-overviewHubCardAction" variant="secondary" size="sm" onClick={() => selectHomeTab('menus')}>
@@ -462,7 +462,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                   <article className="sa-overviewHubCard" role="listitem">
                     <div className="sa-overviewHubCardTop">
                       <div className="sa-overviewHubCardTitle">🧭 {t('superadmin.shell.menuAndPlans')}</div>
-                      {metrics ? <span className="sa-overviewHubBadge">{metrics.totals.activeUsers} usuarios activos</span> : null}
+                      {metrics ? <span className="badge badge--gray">{metrics.totals.activeUsers} usuarios activos</span> : null}
                     </div>
                     <p className="subtle sa-overviewHubCardBody">Define menú maestro, activaciones por plan y vista previa.</p>
                     <Button className="sa-overviewHubCardAction" variant="primary" size="sm" onClick={() => selectHomeTab('menus')}>
@@ -635,7 +635,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
             </ZHField>
             <div />
           </ZHGridRow>
-          <label className="sap-check">
+          <label className="zh-inline-check">
             <input
               type="checkbox"
               checked={createRestrictModules}
@@ -656,7 +656,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
           {createRestrictModules ? (
             <div className="sa-moduleChecks">
               {TENANT_MODULE_KEYS.map((k) => (
-                <label key={k} className="sap-check sa-moduleCheck">
+                <label key={k} className="zh-inline-check sa-moduleCheck">
                   <input
                     type="checkbox"
                     checked={!!createModuleChecks[k]}
@@ -715,7 +715,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
               </select>
             </ZHField>
           </ZHGridRow>
-          <label className="sap-check">
+          <label className="zh-inline-check">
             <input
               type="checkbox"
               checked={!!createForm.linkExistingAdmin}
@@ -780,7 +780,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
             </ZHField>
             <div />
           </ZHGridRow>
-          <label className="sap-check">
+          <label className="zh-inline-check">
             <input
               type="checkbox"
               checked={subRestrict}
@@ -801,7 +801,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
           {subRestrict ? (
             <div className="sa-moduleChecks">
               {TENANT_MODULE_KEYS.map((k) => (
-                <label key={k} className="sap-check sa-moduleCheck">
+                <label key={k} className="zh-inline-check sa-moduleCheck">
                   <input
                     type="checkbox"
                     checked={!!subModuleChecks[k]}

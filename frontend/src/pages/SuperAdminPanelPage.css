@@ -11,74 +11,7 @@
   gap: var(--space-4);
 }
 
-/* KPI bento grid */
-.sa-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-4);
-}
-@media (max-width: 768px) {
-  .sa-kpi-grid { grid-template-columns: 1fr; }
-}
-
-.sa-kpi-card {
-  background: var(--color-surface);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-  padding: var(--space-5);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.sa-kpi-card-left { min-width: 0; }
-
-.sa-kpi-label {
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  letter-spacing: var(--text-label-sm-spacing);
-  text-transform: uppercase;
-  color: var(--color-on-surface-variant);
-  margin: 0 0 4px;
-}
-
-.sa-kpi-value {
-  font-size: var(--text-headline-lg-size);
-  font-weight: var(--text-headline-lg-weight);
-  letter-spacing: var(--text-headline-lg-spacing);
-  color: var(--color-on-surface);
-  margin: 0;
-  line-height: 1.1;
-}
-
-.sa-kpi-trend {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 8px;
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-}
-.sa-kpi-trend--up      { color: var(--color-success); }
-.sa-kpi-trend--warning { color: var(--color-warning); }
-.sa-kpi-trend--neutral { color: var(--color-text-secondary); }
-.sa-kpi-trend .material-symbols-outlined { font-size: 16px; }
-
-.sa-kpi-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius-xl);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.sa-kpi-icon .material-symbols-outlined { font-size: 32px; }
-.sa-kpi-icon--primary   { background: var(--color-primary-fixed);   color: var(--color-primary); }
-.sa-kpi-icon--secondary { background: var(--color-secondary-fixed); color: var(--color-secondary); }
-.sa-kpi-icon--tertiary  { background: var(--color-tertiary-fixed);  color: var(--color-tertiary); }
+/* KPI cards → sa-kpi-h (SuperAdminOverviewPage.css) — no usar sa-kpi-card/grid aquí */
 
 /* ── Welcome note ────────────────────────────────────────── */
 .sa-welcome-note     { margin-bottom: var(--space-4); }
@@ -123,15 +56,7 @@
   color: var(--color-text-primary);
 }
 
-.sa-overviewHubBadge {
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  background: var(--color-surface-container);
-  color: var(--color-text-secondary);
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  white-space: nowrap;
-}
+/* .sa-overviewHubBadge → .badge.badge--gray (zh-ui.css) */
 
 .sa-overviewHubCardBody { font-size: 12px; color: var(--color-text-secondary); }
 
@@ -216,13 +141,5 @@
   .sa-moduleChecks { grid-template-columns: 1fr; }
 }
 
-/* Shared checkbox label */
-.sap-check {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-body-md-size);
-  cursor: pointer;
-  margin-bottom: var(--space-3);
-}
+/* .zh-inline-check (zh-ui.css) handles labeled checkboxes */
 .sa-moduleCheck { margin-bottom: 0; }

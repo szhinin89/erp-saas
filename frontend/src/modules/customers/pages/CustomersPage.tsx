@@ -1,8 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { EmptyState, LoadingState, NoAccessPage, PageShell } from '../../../components/PageShell';
-import { Alert, Badge, Button, Card, Input, Modal, Tabs } from '../../../components/ui';
+import { EmptyState, LoadingState, NoAccessPage } from '../../../components/PageShell';
+import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
+import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { useI18n } from '../../../i18n/i18n';
 import { usePermissionsStore } from '../../../store/permissionsStore';
 import type { Customer } from '../api/customerService';
@@ -35,103 +36,89 @@ type AuditItem = {
   details: string;
 };
 
+function buildId() {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 export function CustomersPage() {
   const { t } = useI18n();
   const hasPerm = usePermissionsStore((s) => s.has);
-  const canView = hasPerm('ventas.customers.view');
+  const canView   = hasPerm('ventas.customers.view');
   const canCreate = hasPerm('ventas.customers.create');
-  const canEdit = hasPerm('ventas.customers.update') || canCreate;
+  const canEdit   = hasPerm('ventas.customers.update') || canCreate;
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [customerModalOpen, setCustomerModalOpen] = useState(false);
-  const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
-  const [customerStatus, setCustomerStatus] = useState<'activo' | 'inactivo'>('activo');
-  const [contacts, setContacts] = useState<ContactItem[]>([]);
-  const [contactModalOpen, setContactModalOpen] = useState(false);
-  const [editingContactId, setEditingContactId] = useState<string | null>(null);
-  const [contactForm, setContactForm] = useState<Omit<ContactItem, 'id'>>({
-    customerId: '',
-    name: '',
-    role: '',
-    email: '',
-    phone: '',
+  /* ── State ── */
+  const [activeTab, setActiveTab]       = useState<TabId>('clientes');
+  const [searchQuery, setSearchQuery]   = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'activo' | 'inactivo'>('all');
+
+  const [customerModalOpen, setCustomerModalOpen]   = useState(false);
+  const [editingCustomerId, setEditingCustomerId]   = useState<string | null>(null);
+  const [customerStatus, setCustomerStatus]         = useState<'activo' | 'inactivo'>('activo');
+
+  const [contacts, setContacts]                     = useState<ContactItem[]>([]);
+  const [contactModalOpen, setContactModalOpen]     = useState(false);
+  const [editingContactId, setEditingContactId]     = useState<string | null>(null);
+  const [contactForm, setContactForm]               = useState<Omit<ContactItem, 'id'>>({
+    customerId: '', name: '', role: '', email: '', phone: '',
   });
+
   const [categorizationByCustomer, setCategorizationByCustomer] = useState<Record<string, Categorization>>({});
   const [selectedCategoryCustomerId, setSelectedCategoryCustomerId] = useState('');
-  const [categoryValue, setCategoryValue] = useState<Categorization['category']>('Regular');
-  const [categoryTags, setCategoryTags] = useState('');
-  const [auditItems, setAuditItems] = useState<AuditItem[]>([]);
-  const {
-    customers,
-    loading,
-    error,
-    creating,
-    createError,
-    createCustomer,
-    updateCustomer,
-    toggleCustomerStatus,
-  } = useCustomers();
+  const [categoryValue, setCategoryValue]           = useState<Categorization['category']>('Regular');
+  const [categoryTags, setCategoryTags]             = useState('');
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    formState: { errors },
-  } = useForm<CustomerFormValues>({
+  const [auditItems, setAuditItems] = useState<AuditItem[]>([]);
+
+  /* ── Data ── */
+  const { customers, loading, error, creating, createError, createCustomer, updateCustomer, toggleCustomerStatus } = useCustomers();
+
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),
     defaultValues: defaultCustomerValues,
   });
 
+  /* ── Derived ── */
   const filteredCustomers = useMemo(() => {
+    let list = customers;
+    if (statusFilter === 'activo')   list = list.filter((c) => c.isActive);
+    if (statusFilter === 'inactivo') list = list.filter((c) => !c.isActive);
     const term = searchQuery.trim().toLowerCase();
-    if (!term) return customers;
-    return customers.filter((customer) => {
-      return (
-        customer.fullName.toLowerCase().includes(term) ||
-        customer.identificationNumber.toLowerCase().includes(term) ||
-        (customer.email ?? '').toLowerCase().includes(term) ||
-        (customer.phone ?? '').toLowerCase().includes(term)
-      );
-    });
-  }, [customers, searchQuery]);
+    if (!term) return list;
+    return list.filter((c) =>
+      c.fullName.toLowerCase().includes(term) ||
+      c.identificationNumber.toLowerCase().includes(term) ||
+      (c.email ?? '').toLowerCase().includes(term)
+    );
+  }, [customers, searchQuery, statusFilter]);
 
-  const contactRows = useMemo(() => {
-    return contacts.map((item) => {
-      const customer = customers.find((c) => c.id === item.customerId);
-      return {
-        ...item,
-        customerName: customer?.fullName ?? '-',
-      };
-    });
-  }, [contacts, customers]);
+  const contactRows = useMemo(() =>
+    contacts.map((item) => ({
+      ...item,
+      customerName: customers.find((c) => c.id === item.customerId)?.fullName ?? '-',
+    })), [contacts, customers]);
 
-  const categorizationRows = useMemo(() => {
-    return customers.map((customer) => {
-      const item = categorizationByCustomer[customer.id];
-      return {
-        customerId: customer.id,
-        customerName: customer.fullName,
-        category: item?.category ?? 'Regular',
-        tags: item?.tags ?? '',
-      };
-    });
-  }, [categorizationByCustomer, customers]);
+  const categorizationRows = useMemo(() =>
+    customers.map((c) => ({
+      customerId: c.id,
+      customerName: c.fullName,
+      category: categorizationByCustomer[c.id]?.category ?? 'Regular',
+      tags: categorizationByCustomer[c.id]?.tags ?? '',
+    })), [categorizationByCustomer, customers]);
 
-  const pushAudit = (action: string, customerName: string, details: string) => {
-    setAuditItems((prev) => [
-      {
-        id: buildId(),
-        at: new Date().toISOString(),
-        user: 'admin@zhtechnologies.com',
-        action,
-        customerName,
-        details,
-      },
-      ...prev,
-    ].slice(0, 50));
-  };
+  const totals = useMemo(() => ({
+    total:      customers.length,
+    activos:    customers.filter((c) => c.isActive).length,
+    inactivos:  customers.filter((c) => !c.isActive).length,
+    sinEmail:   customers.filter((c) => !c.email).length,
+  }), [customers]);
 
+  /* ── Helpers ── */
+  const pushAudit = (action: string, customerName: string, details: string) =>
+    setAuditItems((prev) => [{ id: buildId(), at: new Date().toISOString(), user: 'admin@zhtechnologies.com', action, customerName, details }, ...prev].slice(0, 50));
+
+  /* ── Customer modal ── */
   const openCreateModal = () => {
     setEditingCustomerId(null);
     setCustomerStatus('activo');
@@ -166,99 +153,65 @@ export function CustomersPage() {
       address: values.address ?? null,
       isActive: customerStatus === 'activo',
     };
-
     if (editingCustomerId) {
       if (!canEdit) return;
       const updated = await updateCustomer(editingCustomerId, payload);
       if (!updated) return;
-      pushAudit('Editar cliente', updated.fullName, `Se actualizó ${updated.identificationNumber}`);
+      pushAudit('Editar cliente', updated.fullName, `Actualizado: ${updated.identificationNumber}`);
       closeCustomerModal();
-      return;
+    } else {
+      if (!canCreate) return;
+      const created = await createCustomer(payload);
+      if (!created) return;
+      pushAudit('Crear cliente', created.fullName, `Creado: ${created.identificationNumber}`);
+      closeCustomerModal();
     }
-
-    if (!canCreate) return;
-    const created = await createCustomer(payload);
-    if (!created) return;
-    pushAudit('Crear cliente', created.fullName, `Se creó ${created.identificationNumber}`);
-    closeCustomerModal();
   });
 
   const handleToggleStatus = async (customer: Customer) => {
     if (!canEdit) return;
     const updated = await toggleCustomerStatus(customer.id, !customer.isActive);
     if (!updated) return;
-    pushAudit(
-      updated.isActive ? 'Activar cliente' : 'Inactivar cliente',
-      updated.fullName,
-      `Estado actualizado a ${updated.isActive ? 'activo' : 'inactivo'}`
-    );
+    pushAudit(updated.isActive ? 'Activar' : 'Inactivar', updated.fullName, `Estado → ${updated.isActive ? 'activo' : 'inactivo'}`);
   };
 
+  /* ── Contact modal ── */
   const openContactModal = (contact?: ContactItem) => {
     if (contact) {
       setEditingContactId(contact.id);
-      setContactForm({
-        customerId: contact.customerId,
-        name: contact.name,
-        role: contact.role,
-        email: contact.email,
-        phone: contact.phone,
-      });
+      setContactForm({ customerId: contact.customerId, name: contact.name, role: contact.role, email: contact.email, phone: contact.phone });
     } else {
       setEditingContactId(null);
-      setContactForm({
-        customerId: '',
-        name: '',
-        role: '',
-        email: '',
-        phone: '',
-      });
+      setContactForm({ customerId: '', name: '', role: '', email: '', phone: '' });
     }
     setContactModalOpen(true);
   };
 
-  const closeContactModal = () => {
-    setContactModalOpen(false);
-    setEditingContactId(null);
-  };
+  const closeContactModal = () => { setContactModalOpen(false); setEditingContactId(null); };
 
   const saveContact = () => {
-    const customer = customers.find((item) => item.id === contactForm.customerId);
+    const customer = customers.find((c) => c.id === contactForm.customerId);
     if (!customer || !contactForm.name.trim() || !contactForm.email.trim()) return;
-
     if (editingContactId) {
-      setContacts((prev) =>
-        prev.map((item) =>
-          item.id === editingContactId
-            ? { ...item, ...contactForm, name: contactForm.name.trim(), email: contactForm.email.trim() }
-            : item
-        )
-      );
-      pushAudit('Editar contacto', customer.fullName, `Contacto: ${contactForm.name.trim()}`);
+      setContacts((prev) => prev.map((c) => c.id === editingContactId ? { ...c, ...contactForm } : c));
+      pushAudit('Editar contacto', customer.fullName, contactForm.name.trim());
     } else {
-      setContacts((prev) => [
-        ...prev,
-        {
-          id: buildId(),
-          ...contactForm,
-          name: contactForm.name.trim(),
-          email: contactForm.email.trim(),
-        },
-      ]);
-      pushAudit('Crear contacto', customer.fullName, `Contacto: ${contactForm.name.trim()}`);
+      setContacts((prev) => [...prev, { id: buildId(), ...contactForm }]);
+      pushAudit('Crear contacto', customer.fullName, contactForm.name.trim());
     }
     closeContactModal();
   };
 
   const deleteContact = (contactId: string) => {
-    const contact = contacts.find((item) => item.id === contactId);
+    const contact = contacts.find((c) => c.id === contactId);
     if (!contact) return;
-    const customer = customers.find((item) => item.id === contact.customerId);
-    setContacts((prev) => prev.filter((item) => item.id !== contactId));
-    pushAudit('Eliminar contacto', customer?.fullName ?? '-', `Contacto: ${contact.name}`);
+    const customer = customers.find((c) => c.id === contact.customerId);
+    setContacts((prev) => prev.filter((c) => c.id !== contactId));
+    pushAudit('Eliminar contacto', customer?.fullName ?? '-', contact.name);
     closeContactModal();
   };
 
+  /* ── Categorization ── */
   const onSelectCategoryCustomer = (customerId: string) => {
     setSelectedCategoryCustomerId(customerId);
     const current = categorizationByCustomer[customerId];
@@ -268,401 +221,470 @@ export function CustomersPage() {
 
   const saveCategorization = () => {
     if (!selectedCategoryCustomerId) return;
-    const customer = customers.find((item) => item.id === selectedCategoryCustomerId);
+    const customer = customers.find((c) => c.id === selectedCategoryCustomerId);
     if (!customer) return;
-    setCategorizationByCustomer((prev) => ({
-      ...prev,
-      [selectedCategoryCustomerId]: {
-        category: categoryValue,
-        tags: categoryTags.trim(),
-      },
-    }));
+    setCategorizationByCustomer((prev) => ({ ...prev, [selectedCategoryCustomerId]: { category: categoryValue, tags: categoryTags.trim() } }));
     pushAudit('Categorización', customer.fullName, `Categoría: ${categoryValue}`);
   };
 
-  if (!canView) {
-    return <NoAccessPage title={t('customers.title')} />;
-  }
+  if (!canView) return <NoAccessPage title={t('customers.title')} />;
 
-  const tabs = [
-    {
-      id: 'clientes',
-      label: 'Clientes',
-      content: (
-        <>
-          <div className="customers-search-row">
-            <Input
-              label="Buscar cliente"
-              placeholder="Nombre, RUC o email"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-            />
-          </div>
+  /* ── Tab content ── */
+  const TABS: { id: TabId; label: string }[] = [
+    { id: 'clientes',    label: t('customers.tabs.list')     || 'Clientes'       },
+    { id: 'contactos',   label: t('customers.tabs.contacts') || 'Contactos'      },
+    { id: 'categorias',  label: 'Categorización'                                 },
+    { id: 'auditoria',   label: 'Auditoría'                                      },
+  ];
 
-          {loading ? (
-            <LoadingState />
-          ) : filteredCustomers.length === 0 ? (
-            <EmptyState message={t('common.noData')} />
-          ) : (
-            <div className="table-wrapper">
-              <table className="customers-responsive-table">
-                <thead>
-                  <tr>
-                    <th>RUC / CI</th>
-                    <th>Razón Social</th>
-                    <th>Email</th>
-                    <th>Teléfono</th>
-                    <th>Categoría</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCustomers.map((customer) => (
-                    <tr key={customer.id}>
-                      <td data-label="RUC / CI">{customer.identificationNumber}</td>
-                      <td data-label="Razón Social">{customer.fullName}</td>
-                      <td data-label="Email">{customer.email ?? '-'}</td>
-                      <td data-label="Teléfono">{customer.phone ?? '-'}</td>
-                      <td data-label="Categoría">{categorizationByCustomer[customer.id]?.category ?? 'Regular'}</td>
-                      <td data-label="Estado">
-                        <Badge variant={customer.isActive ? 'success' : 'danger'}>
-                          {customer.isActive ? 'Activo' : 'Inactivo'}
-                        </Badge>
-                      </td>
-                      <td data-label="Acciones">
-                        <div className="customers-actions-cell">
-                          <Button variant="secondary" size="sm" onClick={() => openEditModal(customer)} disabled={!canEdit}>
-                            Editar
-                          </Button>
-                          <Button
-                            variant={customer.isActive ? 'danger' : 'success'}
-                            size="sm"
-                            onClick={() => void handleToggleStatus(customer)}
-                            disabled={!canEdit || creating}
-                          >
-                            {customer.isActive ? 'Inactivar' : 'Activar'}
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+  const tabContent: Record<TabId, ReactNode> = {
+    clientes: (
+      <>
+        {/* Filter bar */}
+        <div className="pg-table-controls">
+          <div className="pg-table-controls-left">
+            <div className="pg-search">
+              <span className="material-symbols-outlined">search</span>
+              <input
+                className="zh-input"
+                type="search"
+                placeholder={t('customers.searchPlaceholder') || 'Filtrar por nombre o RUC…'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Buscar cliente"
+              />
             </div>
-          )}
-        </>
-      ),
-    },
-    {
-      id: 'contactos',
-      label: 'Contactos',
-      content: (
-        <>
-          <div className="customers-pane-head">
-            <h3 className="customers-pane-title">Contactos por cliente</h3>
-            <Button variant="primary" size="sm" onClick={() => openContactModal()}>
-              Nuevo Contacto
-            </Button>
+            <select
+              className="zh-input"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+              aria-label="Filtrar por estado"
+            >
+              <option value="all">Todos</option>
+              <option value="activo">Activos</option>
+              <option value="inactivo">Inactivos</option>
+            </select>
           </div>
-          {contactRows.length === 0 ? (
-            <EmptyState message="No hay contactos registrados todavía." />
-          ) : (
-            <div className="table-wrapper">
-              <table className="customers-responsive-table">
-                <thead>
-                  <tr>
-                    <th>Cliente</th>
-                    <th>Nombre</th>
-                    <th>Cargo</th>
-                    <th>Email</th>
-                    <th>Teléfono</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contactRows.map((contact) => (
-                    <tr key={contact.id}>
-                      <td data-label="Cliente">{contact.customerName}</td>
-                      <td data-label="Nombre">{contact.name}</td>
-                      <td data-label="Cargo">{contact.role || '-'}</td>
-                      <td data-label="Email">{contact.email}</td>
-                      <td data-label="Teléfono">{contact.phone || '-'}</td>
-                      <td data-label="Acciones">
-                        <div className="customers-actions-cell">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => {
-                              const current = contacts.find((item) => item.id === contact.id);
-                              if (current) openContactModal(current);
-                            }}
-                          >
-                            Editar
-                          </Button>
-                          <Button variant="danger" size="sm" onClick={() => deleteContact(contact.id)}>
-                            Eliminar
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
-      ),
-    },
-    {
-      id: 'categorias',
-      label: 'Categorización',
-      content: (
-        <>
-          <div className="customers-category-grid">
-            <div className="form-group">
-              <label>Seleccionar cliente</label>
-              <select
-                value={selectedCategoryCustomerId}
-                onChange={(event) => onSelectCategoryCustomer(event.target.value)}
-              >
-                <option value="">Seleccionar cliente</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.fullName}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Categoría</label>
-              <select
-                value={categoryValue}
-                onChange={(event) => setCategoryValue(event.target.value as Categorization['category'])}
-              >
-                <option value="Premium">Premium</option>
-                <option value="Regular">Regular</option>
-                <option value="Ocasional">Ocasional</option>
-              </select>
-            </div>
+          <div className="pg-table-controls-right">
+            <span>{filteredCustomers.length} de {customers.length} clientes</span>
           </div>
-          <div className="form-group">
-            <label>Etiquetas (separadas por coma)</label>
-            <input
-              type="text"
-              value={categoryTags}
-              onChange={(event) => setCategoryTags(event.target.value)}
-              placeholder="Ej: VIP, Descuento, Mayorista"
-            />
-          </div>
-          <Button variant="primary" onClick={saveCategorization} disabled={!selectedCategoryCustomerId}>
-            Guardar Categorización
-          </Button>
+        </div>
 
-          <div className="table-wrapper customers-table-space">
-            <table className="customers-responsive-table">
+        {/* Table */}
+        {loading ? <LoadingState /> : filteredCustomers.length === 0 ? (
+          <EmptyState message={t('common.noData')} />
+        ) : (
+          <div className="cls-table-wrap">
+            <table className="table">
               <thead>
                 <tr>
-                  <th>Cliente</th>
+                  <th>ID</th>
+                  <th>Nombre / Razón Social</th>
+                  <th>RUC / CI</th>
+                  <th>Email</th>
                   <th>Categoría</th>
-                  <th>Etiquetas</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {categorizationRows.map((row) => (
-                  <tr key={row.customerId}>
-                    <td data-label="Cliente">{row.customerName}</td>
-                    <td data-label="Categoría">{row.category}</td>
-                    <td data-label="Etiquetas">{row.tags || '-'}</td>
+                {filteredCustomers.map((customer) => (
+                  <tr key={customer.id}>
+                    <td className="subtle mono" style={{ whiteSpace: 'nowrap' }}>#{customer.identificationNumber.slice(0, 6)}</td>
+                    <td>
+                      <div className="cls-customer-name">{customer.fullName}</div>
+                    </td>
+                    <td className="mono">{customer.identificationNumber}</td>
+                    <td>
+                      {customer.email
+                        ? <a href={`mailto:${customer.email}`} className="cls-email-link">{customer.email}</a>
+                        : <span className="subtle">—</span>}
+                    </td>
+                    <td>
+                      <span className="badge badge--gray">
+                        {categorizationByCustomer[customer.id]?.category ?? 'Regular'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={customer.isActive ? 'zh-status zh-status--active' : 'zh-status zh-status--inactive'}>
+                        {customer.isActive ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="cls-actions-cell">
+                        <button
+                          type="button"
+                          className="zh-btn zh-btn--ghost zh-btn--sm"
+                          onClick={() => openEditModal(customer)}
+                          disabled={!canEdit}
+                          title="Editar"
+                          aria-label="Editar cliente"
+                        >
+                          <span className="material-symbols-outlined">edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          className={`zh-btn zh-btn--ghost zh-btn--sm ${customer.isActive ? 'cls-btn-danger' : 'cls-btn-success'}`}
+                          onClick={() => void handleToggleStatus(customer)}
+                          disabled={!canEdit || creating}
+                          title={customer.isActive ? 'Inactivar' : 'Activar'}
+                          aria-label={customer.isActive ? 'Inactivar cliente' : 'Activar cliente'}
+                        >
+                          <span className="material-symbols-outlined">{customer.isActive ? 'block' : 'check_circle'}</span>
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </>
-      ),
-    },
-    {
-      id: 'auditoria',
-      label: 'Auditoría',
-      content: (
-        <>
-          {auditItems.length === 0 ? (
-            <EmptyState message="No hay eventos de auditoría en esta sesión." />
-          ) : (
-            <div className="table-wrapper">
-              <table className="customers-responsive-table">
-                <thead>
-                  <tr>
-                    <th>Fecha / Hora</th>
-                    <th>Usuario</th>
-                    <th>Acción</th>
-                    <th>Cliente</th>
-                    <th>Detalles</th>
+        )}
+      </>
+    ),
+
+    contactos: (
+      <>
+        <div className="pg-table-controls">
+          <div className="pg-table-controls-left" />
+          <div className="pg-table-controls-right">
+            <ZHBtn variant="primary" size="md" type="button" onClick={() => openContactModal()}>
+              <span className="material-symbols-outlined">add</span>
+              Nuevo Contacto
+            </ZHBtn>
+          </div>
+        </div>
+        {contactRows.length === 0 ? (
+          <EmptyState message="No hay contactos registrados todavía." />
+        ) : (
+          <div className="cls-table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Nombre</th>
+                  <th>Cargo</th>
+                  <th>Email</th>
+                  <th>Teléfono</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {contactRows.map((contact) => (
+                  <tr key={contact.id}>
+                    <td>{contact.customerName}</td>
+                    <td>{contact.name}</td>
+                    <td>{contact.role || <span className="subtle">—</span>}</td>
+                    <td>{contact.email}</td>
+                    <td>{contact.phone || <span className="subtle">—</span>}</td>
+                    <td>
+                      <div className="cls-actions-cell">
+                        <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm"
+                          onClick={() => { const c = contacts.find((x) => x.id === contact.id); if (c) openContactModal(c); }}>
+                          <span className="material-symbols-outlined">edit</span>
+                        </button>
+                        <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm cls-btn-danger"
+                          onClick={() => deleteContact(contact.id)}>
+                          <span className="material-symbols-outlined">delete</span>
+                        </button>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {auditItems.map((item) => (
-                    <tr key={item.id}>
-                      <td data-label="Fecha / Hora">{new Date(item.at).toLocaleString()}</td>
-                      <td data-label="Usuario">{item.user}</td>
-                      <td data-label="Acción">{item.action}</td>
-                      <td data-label="Cliente">{item.customerName}</td>
-                      <td data-label="Detalles">{item.details}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
-      ),
-    },
-  ] satisfies { id: TabId; label: string; content: ReactNode }[];
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </>
+    ),
+
+    categorias: (
+      <div className="pg-section-body">
+        <div className="pg-form-grid pg-form-grid--2">
+          <ZHField label="Seleccionar cliente">
+            <select className="zh-input" value={selectedCategoryCustomerId}
+              onChange={(e) => onSelectCategoryCustomer(e.target.value)}>
+              <option value="">— seleccionar —</option>
+              {customers.map((c) => <option key={c.id} value={c.id}>{c.fullName}</option>)}
+            </select>
+          </ZHField>
+          <ZHField label="Categoría">
+            <select className="zh-input" value={categoryValue}
+              onChange={(e) => setCategoryValue(e.target.value as Categorization['category'])}
+              disabled={!selectedCategoryCustomerId}>
+              <option value="Premium">Premium</option>
+              <option value="Regular">Regular</option>
+              <option value="Ocasional">Ocasional</option>
+            </select>
+          </ZHField>
+        </div>
+        <ZHField label="Etiquetas (separadas por coma)">
+          <input className="zh-input" type="text" value={categoryTags}
+            onChange={(e) => setCategoryTags(e.target.value)}
+            placeholder="Ej: VIP, Descuento, Mayorista"
+            disabled={!selectedCategoryCustomerId} />
+        </ZHField>
+        <div style={{ marginBottom: 'var(--space-6)' }}>
+          <ZHBtn variant="primary" size="md" type="button"
+            onClick={saveCategorization} disabled={!selectedCategoryCustomerId}>
+            Guardar categorización
+          </ZHBtn>
+        </div>
+        <div className="cls-table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Categoría</th>
+                <th>Etiquetas</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categorizationRows.map((row) => (
+                <tr key={row.customerId}>
+                  <td>{row.customerName}</td>
+                  <td><span className="badge badge--blue">{row.category}</span></td>
+                  <td>{row.tags || <span className="subtle">—</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    ),
+
+    auditoria: (
+      auditItems.length === 0 ? (
+        <EmptyState message="No hay eventos de auditoría en esta sesión." />
+      ) : (
+        <div className="cls-table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Fecha / Hora</th>
+                <th>Usuario</th>
+                <th>Acción</th>
+                <th>Cliente</th>
+                <th>Detalles</th>
+              </tr>
+            </thead>
+            <tbody>
+              {auditItems.map((item) => (
+                <tr key={item.id}>
+                  <td className="mono subtle">{new Date(item.at).toLocaleString()}</td>
+                  <td className="subtle">{item.user}</td>
+                  <td>{item.action}</td>
+                  <td>{item.customerName}</td>
+                  <td className="subtle">{item.details}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )
+    ),
+  };
 
   return (
-    <PageShell kicker={t('app.nav.group.sales')} title={t('customers.title')}>
-      <div className="customers-shell">
-        <Card
-          title={
-            <span className="customers-title">
-              <span>👥</span>
-              <span>Gestión de Clientes</span>
-            </span>
-          }
-          actions={
-            canCreate ? (
-              <Button variant="primary" size="sm" disabled={creating} onClick={openCreateModal}>
-                Nuevo Cliente
-              </Button>
-            ) : null
-          }
-        >
-          {error ? <Alert type="error" message={error} /> : null}
-          {createError ? <Alert type="error" message={createError} /> : null}
+    <div className="pg-page">
 
-          <Tabs tabs={tabs} defaultActiveId="clientes" />
-        </Card>
+      {/* ── Page header ── */}
+      <div className="pg-header-row">
+        <div className="pg-header-left">
+          <nav className="pg-breadcrumb" aria-label="Ruta de navegación">
+            <span className="pg-breadcrumb-item">{t('app.nav.group.sales') || 'Ventas'}</span>
+            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
+            <span className="pg-breadcrumb-item">{t('customers.title') || 'Clientes'}</span>
+          </nav>
+          <h1 className="pg-title">{t('customers.title') || 'Administración de Clientes'}</h1>
+          <p className="pg-subtitle">Gestione la base de datos de clientes corporativos y sus estados.</p>
+        </div>
+        {canCreate && (
+          <div className="pg-header-right">
+            <ZHBtn variant="primary" size="md" type="button" disabled={creating} onClick={openCreateModal}>
+              <span className="material-symbols-outlined">person_add</span>
+              Nuevo Cliente
+            </ZHBtn>
+          </div>
+        )}
       </div>
 
-      <Modal
-        isOpen={customerModalOpen}
-        onClose={closeCustomerModal}
-        title={editingCustomerId ? 'Editar Cliente' : 'Nuevo Cliente'}
-      >
-        <form onSubmit={onSubmit}>
-          <Input
-            label="RUC / Cédula"
-            required
-            placeholder="10 o 13 dígitos"
-            error={errors.identification?.message ? t(String(errors.identification.message)) : undefined}
-            disabled={creating}
-            {...register('identification')}
-          />
-          <Input
-            label="Razón social / Nombre"
-            required
-            placeholder="Nombre completo"
-            error={errors.fullName?.message ? t(String(errors.fullName.message)) : undefined}
-            disabled={creating}
-            {...register('fullName')}
-          />
-          <Input
-            label="Email"
-            required
-            placeholder="cliente@ejemplo.com"
-            error={errors.email?.message ? t(String(errors.email.message)) : undefined}
-            disabled={creating}
-            {...register('email')}
-          />
-          <Input
-            label="Teléfono"
-            placeholder="0999123456"
-            disabled={creating}
-            {...register('phone')}
-          />
-          <div className="form-group">
-            <label>Dirección</label>
-            <textarea rows={2} disabled={creating} {...register('address')} />
-          </div>
-          <div className="form-group">
-            <label>Estado</label>
-            <select value={customerStatus} onChange={(event) => setCustomerStatus(event.target.value as 'activo' | 'inactivo')}>
-              <option value="activo">Activo</option>
-              <option value="inactivo">Inactivo</option>
-            </select>
-          </div>
+      {/* ── Errors ── */}
+      {error      ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error}       /> : null}
+      {createError? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={createError} /> : null}
 
-          <div className="customers-form-actions">
-            <Button variant="secondary" type="button" onClick={closeCustomerModal}>
-              Cancelar
-            </Button>
-            <Button variant="primary" type="submit" disabled={creating || (!canCreate && !editingCustomerId)}>
-              {creating ? t('common.saving') : 'Guardar'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      <Modal isOpen={contactModalOpen} onClose={closeContactModal} title={editingContactId ? 'Editar Contacto' : 'Nuevo Contacto'}>
-        <div className="form-group">
-          <label className="label-required">Cliente</label>
-          <select
-            value={contactForm.customerId}
-            onChange={(event) => setContactForm((prev) => ({ ...prev, customerId: event.target.value }))}
-          >
-            <option value="">Seleccionar cliente</option>
-            {customers.map((customer) => (
-              <option key={customer.id} value={customer.id}>
-                {customer.fullName}
-              </option>
+      {/* ── Main section ── */}
+      <div className="pg-section">
+        {/* Tabs */}
+        <div className="pg-section-header">
+          <div className="zh-form-tabs" role="tablist" aria-label="Secciones de clientes">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                className={activeTab === tab.id ? 'is-active' : ''}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
             ))}
-          </select>
+          </div>
         </div>
-        <Input
-          label="Nombre"
-          required
-          value={contactForm.name}
-          onChange={(event) => setContactForm((prev) => ({ ...prev, name: event.target.value }))}
-        />
-        <Input
-          label="Cargo"
-          value={contactForm.role}
-          onChange={(event) => setContactForm((prev) => ({ ...prev, role: event.target.value }))}
-        />
-        <Input
-          label="Email"
-          required
-          value={contactForm.email}
-          onChange={(event) => setContactForm((prev) => ({ ...prev, email: event.target.value }))}
-        />
-        <Input
-          label="Teléfono"
-          value={contactForm.phone}
-          onChange={(event) => setContactForm((prev) => ({ ...prev, phone: event.target.value }))}
-        />
 
-        <div className="customers-form-actions">
-          {editingContactId ? (
-            <Button variant="danger" type="button" onClick={() => deleteContact(editingContactId)}>
-              Eliminar
-            </Button>
-          ) : null}
-          <Button variant="secondary" type="button" onClick={closeContactModal}>
-            Cancelar
-          </Button>
-          <Button variant="primary" type="button" onClick={saveContact}>
-            Guardar
-          </Button>
+        {/* Tab panel */}
+        <div role="tabpanel">
+          {tabContent[activeTab]}
         </div>
-      </Modal>
-    </PageShell>
+      </div>
+
+      {/* ── KPI summary ── */}
+      <div className="pg-kpis">
+        <div className="pg-kpi pg-kpi--h">
+          <div className="pg-kpi-icon pg-kpi-icon--primary">
+            <span className="material-symbols-outlined">group</span>
+          </div>
+          <div className="pg-kpi-bottom">
+            <p className="pg-kpi-label">Total Clientes</p>
+            <p className="pg-kpi-value">{totals.total}</p>
+          </div>
+        </div>
+        <div className="pg-kpi pg-kpi--h">
+          <div className="pg-kpi-icon pg-kpi-icon--success">
+            <span className="material-symbols-outlined">how_to_reg</span>
+          </div>
+          <div className="pg-kpi-bottom">
+            <p className="pg-kpi-label">Activos</p>
+            <p className="pg-kpi-value">{totals.activos}</p>
+          </div>
+        </div>
+        <div className="pg-kpi pg-kpi--h">
+          <div className="pg-kpi-icon pg-kpi-icon--warning">
+            <span className="material-symbols-outlined">pending</span>
+          </div>
+          <div className="pg-kpi-bottom">
+            <p className="pg-kpi-label">Sin Email</p>
+            <p className="pg-kpi-value">{totals.sinEmail}</p>
+          </div>
+        </div>
+        <div className="pg-kpi pg-kpi--h">
+          <div className="pg-kpi-icon pg-kpi-icon--error">
+            <span className="material-symbols-outlined">person_off</span>
+          </div>
+          <div className="pg-kpi-bottom">
+            <p className="pg-kpi-label">Inactivos</p>
+            <p className="pg-kpi-value">{totals.inactivos}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Customer modal ── */}
+      {customerModalOpen && (
+        <div className="zh-modal-overlay" role="dialog" aria-modal="true"
+          aria-label={editingCustomerId ? 'Editar cliente' : 'Nuevo cliente'}
+          onClick={(e) => { if (e.target === e.currentTarget) closeCustomerModal(); }}>
+          <div className="zh-modal">
+            <div className="zh-modal-header">
+              <h2 className="zh-modal-title">
+                {editingCustomerId ? 'Editar Cliente' : 'Nuevo Cliente'}
+              </h2>
+              <button type="button" className="zh-modal-close" onClick={closeCustomerModal} aria-label="Cerrar">✕</button>
+            </div>
+            <div className="zh-modal-body">
+              <form onSubmit={onSubmit}>
+                <div className="pg-form-grid pg-form-grid--2">
+                  <ZHField label="RUC / Cédula" required
+                    error={errors.identification?.message ? t(String(errors.identification.message)) : undefined}>
+                    <input className="zh-input" placeholder="10 o 13 dígitos" disabled={creating} {...register('identification')} />
+                  </ZHField>
+                  <ZHField label="Razón Social / Nombre" required
+                    error={errors.fullName?.message ? t(String(errors.fullName.message)) : undefined}>
+                    <input className="zh-input" placeholder="Nombre completo" disabled={creating} {...register('fullName')} />
+                  </ZHField>
+                </div>
+                <div className="pg-form-grid pg-form-grid--2">
+                  <ZHField label="Email" required
+                    error={errors.email?.message ? t(String(errors.email.message)) : undefined}>
+                    <input className="zh-input" type="email" placeholder="cliente@ejemplo.com" disabled={creating} {...register('email')} />
+                  </ZHField>
+                  <ZHField label="Teléfono">
+                    <input className="zh-input" placeholder="0999123456" disabled={creating} {...register('phone')} />
+                  </ZHField>
+                </div>
+                <ZHField label="Dirección">
+                  <textarea className="zh-input" rows={2} disabled={creating} {...register('address')} />
+                </ZHField>
+                <ZHField label="Estado">
+                  <select className="zh-input" value={customerStatus}
+                    onChange={(e) => setCustomerStatus(e.target.value as 'activo' | 'inactivo')}>
+                    <option value="activo">Activo</option>
+                    <option value="inactivo">Inactivo</option>
+                  </select>
+                </ZHField>
+                <div className="cls-modal-actions">
+                  <ZHBtn variant="ghost" size="md" type="button" onClick={closeCustomerModal}>Cancelar</ZHBtn>
+                  <ZHBtn variant="primary" size="md" type="submit" disabled={creating || (!canCreate && !editingCustomerId)}>
+                    {creating ? t('common.saving') : 'Guardar'}
+                  </ZHBtn>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Contact modal ── */}
+      {contactModalOpen && (
+        <div className="zh-modal-overlay" role="dialog" aria-modal="true"
+          aria-label={editingContactId ? 'Editar contacto' : 'Nuevo contacto'}
+          onClick={(e) => { if (e.target === e.currentTarget) closeContactModal(); }}>
+          <div className="zh-modal">
+            <div className="zh-modal-header">
+              <h2 className="zh-modal-title">{editingContactId ? 'Editar Contacto' : 'Nuevo Contacto'}</h2>
+              <button type="button" className="zh-modal-close" onClick={closeContactModal} aria-label="Cerrar">✕</button>
+            </div>
+            <div className="zh-modal-body">
+              <ZHField label="Cliente" required>
+                <select className="zh-input" value={contactForm.customerId}
+                  onChange={(e) => setContactForm((p) => ({ ...p, customerId: e.target.value }))}>
+                  <option value="">— seleccionar cliente —</option>
+                  {customers.map((c) => <option key={c.id} value={c.id}>{c.fullName}</option>)}
+                </select>
+              </ZHField>
+              <div className="pg-form-grid pg-form-grid--2">
+                <ZHField label="Nombre" required>
+                  <input className="zh-input" value={contactForm.name}
+                    onChange={(e) => setContactForm((p) => ({ ...p, name: e.target.value }))} />
+                </ZHField>
+                <ZHField label="Cargo">
+                  <input className="zh-input" value={contactForm.role}
+                    onChange={(e) => setContactForm((p) => ({ ...p, role: e.target.value }))} />
+                </ZHField>
+              </div>
+              <div className="pg-form-grid pg-form-grid--2">
+                <ZHField label="Email" required>
+                  <input className="zh-input" type="email" value={contactForm.email}
+                    onChange={(e) => setContactForm((p) => ({ ...p, email: e.target.value }))} />
+                </ZHField>
+                <ZHField label="Teléfono">
+                  <input className="zh-input" value={contactForm.phone}
+                    onChange={(e) => setContactForm((p) => ({ ...p, phone: e.target.value }))} />
+                </ZHField>
+              </div>
+              <div className="cls-modal-actions">
+                {editingContactId && (
+                  <ZHBtn variant="destructive" size="md" type="button" onClick={() => deleteContact(editingContactId)}>
+                    Eliminar
+                  </ZHBtn>
+                )}
+                <ZHBtn variant="ghost" size="md" type="button" onClick={closeContactModal}>Cancelar</ZHBtn>
+                <ZHBtn variant="primary" size="md" type="button" onClick={saveContact}>Guardar</ZHBtn>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
-}
-
-function buildId() {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }

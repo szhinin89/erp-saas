@@ -192,6 +192,15 @@
   margin-left: var(--space-1);
 }
 
+/* Variante horizontal (icon left, text right) */
+.pg-kpi--h {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-4);
+  min-height: auto;
+}
+
 /* ── 4. SECTION CARD ─────────────────────────────────────── */
 .pg-section {
   background: var(--color-surface);

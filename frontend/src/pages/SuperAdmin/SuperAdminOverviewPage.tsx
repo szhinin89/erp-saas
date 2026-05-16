@@ -23,11 +23,11 @@ function initials(name: string) {
 
 function planBadgeClass(planCode: string | null | undefined): string {
   const c = (planCode ?? '').toLowerCase();
-  if (c.includes('ent'))  return 'sa-plan-badge sa-plan-badge--enterprise';
-  if (c.includes('pro'))  return 'sa-plan-badge sa-plan-badge--pro';
-  if (c.includes('bas'))  return 'sa-plan-badge sa-plan-badge--basic';
-  if (c)                  return 'sa-plan-badge sa-plan-badge--default';
-  return                         'sa-plan-badge sa-plan-badge--default';
+  if (c.includes('ent'))  return 'badge sa-plan-badge--enterprise';
+  if (c.includes('pro'))  return 'badge sa-plan-badge--pro';
+  if (c.includes('bas'))  return 'badge sa-plan-badge--basic';
+  if (c)                  return 'badge sa-plan-badge--default';
+  return                         'badge sa-plan-badge--default';
 }
 
 function storeImpersonationTenantName(name: string) {
@@ -233,7 +233,7 @@ export function SuperAdminOverviewPage() {
                     <tr key={tenant.id}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <div className={`sa-company-avatar sa-company-avatar--${avatarVariant(i)}`} aria-hidden="true">
+                          <div className={`zh-avatar zh-avatar--square zh-avatar--${avatarVariant(i)}`} aria-hidden="true">
                             {initials(tenant.name)}
                           </div>
                           <div className="sa-company-info">

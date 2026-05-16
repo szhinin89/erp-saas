@@ -1601,7 +1601,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
         ) : null}
 
         {newPlanModalOpen ? (
-          <div className="menu-plan-composer__modalBackdrop" role="dialog" aria-modal="true" aria-label="Crear nuevo plan">
+          <div className="zh-modal-overlay menu-plan-composer__modalBackdrop" role="dialog" aria-modal="true" aria-label="Crear nuevo plan">
             <div className="menu-plan-composer__modalCard">
               <h3>Crear nuevo plan comercial</h3>
               <ZHField label="Nombre del plan">
@@ -1670,7 +1670,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
           </div>
         ) : null}
         {wizardOpen ? (
-          <div className="menu-plan-composer__modalBackdrop" role="dialog" aria-modal="true" aria-label="Guía rápida de configuración">
+          <div className="zh-modal-overlay menu-plan-composer__modalBackdrop" role="dialog" aria-modal="true" aria-label="Guía rápida de configuración">
             <div className="menu-plan-composer__modalCard menu-plan-composer__wizardCard">
               <h3>{wizardCurrentStep.title}</h3>
               <p className="subtle">{wizardCurrentStep.body}</p>

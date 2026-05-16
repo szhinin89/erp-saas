@@ -28,7 +28,7 @@ export function ZHKpiGrid(props: {
 }) {
   return (
     <ZHSection bottom={16}>
-      <div className="zh-dash-kpiGrid">
+      <div className="pg-kpis">
         {props.items.map((k) => (
           <div key={k.label} className={`zh-dash-kpiCard zh-dash-kpiCard--${k.tone ?? 'neutral'}`}>
             <div className="zh-dash-kpiValue">{k.value}</div>
@@ -47,7 +47,7 @@ export function ZHKpiPanel(props: {
   return (
     <Card>
       <ZHCardSection title={props.title}>
-        <div className="zh-dash-kpiGrid">
+        <div className="pg-kpis">
           {props.items.map((k) => (
             <div key={k.label} className={`zh-dash-kpiCard zh-dash-kpiCard--${k.tone ?? 'neutral'}`}>
               <div className="zh-dash-kpiValue">{k.value}</div>

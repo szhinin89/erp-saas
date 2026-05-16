@@ -665,7 +665,7 @@ export function MenuBuilder({
 
         {previewForm ? (
           <div
-            className="menu-builder-form-preview-backdrop"
+            className="zh-modal-overlay menu-builder-form-preview-backdrop"
             role="dialog"
             aria-modal="true"
             aria-label="Mockup de formulario"

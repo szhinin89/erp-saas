@@ -697,6 +697,19 @@ input[type="date"] { appearance: none; }
 .badge--warning { background: var(--color-warning); color: #ffffff; }
 .badge--info    { background: var(--color-primary);  color: #ffffff; }
 
+/* Shape / text modifiers */
+.badge--md    { border-radius: var(--radius-md); }
+.badge--upper { text-transform: uppercase; letter-spacing: var(--text-label-sm-spacing); }
+
+/* ── Labeled checkbox (label wrapping input) ─────────────── */
+.zh-inline-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-body-md-size);
+  cursor: pointer;
+}
+
 /* ── 12. PAGE SHELL / LAYOUT ────────────────────────────── */
 .page-shell {
   width: 100%;
@@ -1176,8 +1189,9 @@ input[type="date"] { appearance: none; }
   color: var(--color-primary);
   user-select: none;
 }
-.zh-avatar--sm { width: 28px; height: 28px; font-size: 11px; }
-.zh-avatar--lg { width: 52px; height: 52px; font-size: 20px; }
+.zh-avatar--sm     { width: 28px; height: 28px; font-size: 11px; }
+.zh-avatar--lg     { width: 52px; height: 52px; font-size: 20px; }
+.zh-avatar--square { border-radius: var(--radius-md); }
 
 .zh-avatar--primary   { background: rgba(58, 95, 132, 0.14);  color: var(--color-primary); }
 .zh-avatar--secondary { background: rgba(60, 97, 136, 0.14);  color: var(--color-secondary); }

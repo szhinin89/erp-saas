@@ -1,22 +1,7 @@
-/* VentasFacturasPage — estilos específicos de la página */
-/* Clases globales en page-template.css (pg-*) y zh-ui.css (zh-*) */
-
-/* ── Status badges ───────────────────────────────────────── */
-.vf-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 10px;
-  border-radius: var(--radius-md);
-  font-size: var(--text-label-sm-size);
-  font-weight: var(--text-label-sm-weight);
-  letter-spacing: var(--text-label-sm-spacing);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.vf-badge--success { background: rgba(26, 122, 74, 0.10);  color: var(--color-success); }
-.vf-badge--warning { background: rgba(186, 117, 23, 0.10); color: var(--color-warning); }
-.vf-badge--error   { background: rgba(192, 57, 43, 0.10);  color: var(--color-error); }
-.vf-badge--neutral { background: var(--color-surface-container); color: var(--color-text-secondary); }
+/* VentasFacturasPage — estilos específicos de la pantalla
+   Badges   → .badge.badge--md.badge--upper.badge--{color}  (zh-ui.css)
+   Tabla    → .table                                         (zh-ui.css)
+   KPIs     → .pg-kpi*                                       (page-template.css) */
 
 /* ── Column overrides ────────────────────────────────────── */
 .vf-col-numero   { color: var(--color-primary); font-weight: var(--text-label-md-weight); }

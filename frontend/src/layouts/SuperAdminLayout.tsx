@@ -47,6 +47,7 @@ export function SuperAdminLayout() {
   const pageTitle = useMemo(() => {
     const p = location.pathname;
     if (p.includes('/menu-plans')) return t('superadmin.shell.menuAndPlans');
+    if (p.includes('/plans')) return t('superadmin.shell.plans');
     if (p.includes('/companies')) return t('superadmin.tabCompanies');
     if (p.includes('/overview')) return t('superadmin.title');
     return t('superadmin.title');
@@ -117,11 +118,20 @@ export function SuperAdminLayout() {
           </NavLink>
 
           <NavLink
-            to="/superadmin/menu-plans"
+            to="/superadmin/plans"
             className={({ isActive }) => `sa-nav-link${isActive ? ' is-active' : ''}`}
             end={false}
           >
             <span className="sa-nav-icon material-symbols-outlined">loyalty</span>
+            <span>{t('superadmin.shell.plans')}</span>
+          </NavLink>
+
+          <NavLink
+            to="/superadmin/menu-plans"
+            className={({ isActive }) => `sa-nav-link${isActive ? ' is-active' : ''}`}
+            end={false}
+          >
+            <span className="sa-nav-icon material-symbols-outlined">menu_book</span>
             <span>{t('superadmin.shell.menuAndPlans')}</span>
           </NavLink>
         </nav>

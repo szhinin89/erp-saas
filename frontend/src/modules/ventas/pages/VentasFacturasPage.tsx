@@ -11,11 +11,11 @@ type BadgeInfo = { cls: string; label: string };
 
 function getStatusBadge(estado: string): BadgeInfo {
   const e = estado.toLowerCase();
-  if (e === 'autorizado')            return { cls: 'vf-badge vf-badge--success', label: estado };
-  if (e === 'pendiente' || e === 'procesando') return { cls: 'vf-badge vf-badge--warning', label: estado };
-  if (e === 'anulado' || e === 'error' || e === 'rechazado')
-                                     return { cls: 'vf-badge vf-badge--error',   label: estado };
-  return                                    { cls: 'vf-badge vf-badge--neutral', label: estado };
+  const base = 'badge badge--md badge--upper';
+  if (e === 'autorizado')                                      return { cls: `${base} badge--green`,  label: estado };
+  if (e === 'pendiente' || e === 'procesando')                 return { cls: `${base} badge--orange`, label: estado };
+  if (e === 'anulado' || e === 'error' || e === 'rechazado')  return { cls: `${base} badge--red`,    label: estado };
+  return                                                              { cls: `${base} badge--gray`,   label: estado };
 }
 
 export function VentasFacturasPage() {

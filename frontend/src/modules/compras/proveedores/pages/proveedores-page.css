@@ -1,0 +1,126 @@
+/* ProveedoresPage — prv-* (solo estilos únicos de esta pantalla)
+   Layout/header  → pg-*              (page-template.css)
+   KPIs           → .pg-kpi.pg-kpi--h (page-template.css)
+   Tabla          → .table            (zh-ui.css)
+   Badges/estado  → .badge*, .zh-status (zh-ui.css)
+   Botones        → .zh-btn*          (zh-ui.css)
+   Modal          → .zh-modal*        (zh-ui.css)
+   Formularios    → .zh-field, .zh-input (zh-ui.css)  */
+
+/* ── Table scroll wrapper ────────────────────────────────── */
+.prv-table-wrap { overflow-x: auto; }
+
+/* ── Action buttons in row ───────────────────────────────── */
+.prv-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.prv-btn-block:not(:disabled)          { color: var(--color-error); }
+.prv-btn-block:hover:not(:disabled)    { background: rgba(192, 57, 43, 0.08); }
+.prv-btn-activate:not(:disabled)       { color: var(--color-success); }
+.prv-btn-activate:hover:not(:disabled) { background: rgba(26, 122, 74, 0.08); }
+
+/* ── Supplier name + category in cells ──────────────────── */
+.prv-supplier-name {
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-text-primary);
+}
+
+.prv-contact-sub {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+/* ── Notes panel (left-border accent cards) ─────────────── */
+.prv-notes-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.prv-note-card {
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-surface-container);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.prv-note-card--warning {
+  border-left-color: var(--color-warning);
+}
+
+.prv-note-title {
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-1);
+}
+
+.prv-note-body {
+  font-size: var(--text-body-md-size);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.prv-note-meta {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-tertiary);
+  margin-top: var(--space-2);
+}
+
+/* ── Payment summary accent card ────────────────────────── */
+.prv-payment-card {
+  background: var(--color-primary-fixed);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.prv-payment-title {
+  font-size: var(--text-label-md-size);
+  font-weight: var(--text-label-md-weight);
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.prv-payment-amount {
+  font-size: var(--text-display-sm-size, 2rem);
+  font-weight: 700;
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+.prv-payment-sub {
+  font-size: var(--text-body-md-size);
+  color: var(--color-text-secondary);
+  margin: var(--space-1) 0 0;
+}
+
+/* ── Secondary panels grid ──────────────────────────────── */
+.prv-panels-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+@media (max-width: 760px) {
+  .prv-panels-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Modal footer actions ────────────────────────────────── */
+.prv-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding-top: var(--space-4);
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  flex-wrap: wrap;
+}
