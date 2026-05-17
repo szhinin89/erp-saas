@@ -1,1157 +1,657 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { PageShell, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
-import { Card } from '../components/ui/Card';
+import { NoAccessPage } from '../components/PageShell';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';
+import { ZHBtn, ZHField } from '../components/zh/ZHForm';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { useAuthStore } from '../store/authStore';
 import {
   catalogService,
-  type CatalogActiveStatus,
   type CatalogItem,
   type ProductCategoryListItem,
   type ProductSubcategoryListItem,
 } from '../services/catalogService';
-import { activityService, type UserActivityDto } from '../services/activityService';
-import { ZHBtn, ZHField, ZHGrid } from '../components/zh/ZHForm';
-import { ZHActionsRow, ZHGridRow, ZHInlineRow, ZHInlineRowRight, ZHSection } from '../components/zh/ZHLayout';
 import { formatApiError } from '../modules/lib/formatApiError';
-import {
-  catalogLineCodeNameSchema,
-  type CatalogLineCodeNameValues,
-} from '../schemas/catalog/catalogStructureFormsSchema';
-import {
-  catalogCategoryFormSchema,
-  catalogSubcategoryFormSchema,
-  type CatalogCategoryFormValues,
-  type CatalogSubcategoryFormValues,
-} from '../schemas/catalog/catalogPagesFormsSchema';
-import './CatalogStructurePage.css';
 
-type Tab = 'line' | 'category' | 'subcategory';
+/* ── Types ──────────────────────────────────────────────────── */
+type ModalType =
+  | { kind: 'create-line' }
+  | { kind: 'create-category' }
+  | { kind: 'create-subcategory' }
+  | { kind: 'edit-line';         item: CatalogItem }
+  | { kind: 'edit-category';     item: ProductCategoryListItem }
+  | { kind: 'edit-subcategory';  item: ProductSubcategoryListItem };
 
-function errMsg(err: unknown): string {
-  return formatApiError(err);
+type ModalForm = {
+  code: string;
+  name: string;
+  lineId: string;
+  categoryId: string;
+};
+
+/* ── Cascade item component ─────────────────────────────────── */
+type CascadeItemProps = {
+  id: string;
+  icon: string;
+  name: string;
+  subtitle?: string;
+  isSelected: boolean;
+  isActive: boolean;
+  onSelect: () => void;
+  onEdit?: () => void;
+  onToggle?: () => void;
+  canEdit?: boolean;
+  canToggle?: boolean;
+  disabled?: boolean;
+};
+
+function CascadeItem({ id, icon, name, subtitle, isSelected, isActive, onSelect, onEdit, onToggle, canEdit, canToggle, disabled }: CascadeItemProps) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onSelect(); }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '10px 12px', borderRadius: 6, cursor: 'pointer',
+        background: isSelected
+          ? 'var(--color-surface-container-high)'
+          : hovered ? 'var(--color-surface-container-low)' : 'transparent',
+        border: isSelected ? '1px solid rgba(58,95,132,0.2)' : '1px solid transparent',
+        transition: 'background 0.15s',
+        opacity: isActive ? 1 : 0.6,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+        <span
+          className="material-symbols-outlined"
+          style={{
+            fontSize: 20, flexShrink: 0,
+            color: isSelected ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+            fontVariationSettings: isSelected ? "'FILL' 1" : "'FILL' 0",
+          }}
+        >
+          {icon}
+        </span>
+        <div style={{ minWidth: 0 }}>
+          <p style={{
+            margin: 0, fontSize: 13, fontWeight: 500,
+            color: isSelected ? 'var(--color-primary)' : 'var(--color-text)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {name}
+          </p>
+          {subtitle && (
+            <p style={{ margin: 0, fontSize: 10, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              {subtitle}
+            </p>
+          )}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 2, opacity: hovered || isSelected ? 1 : 0, transition: 'opacity 0.15s', flexShrink: 0 }}>
+        {canEdit && (
+          <button
+            type="button"
+            className="zh-btn zh-btn--ghost zh-btn--sm"
+            onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
+            disabled={disabled}
+            aria-label="Editar"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>edit</span>
+          </button>
+        )}
+        {canToggle && (
+          <button
+            type="button"
+            className="zh-btn zh-btn--ghost zh-btn--sm"
+            onClick={(e) => { e.stopPropagation(); onToggle?.(); }}
+            disabled={disabled}
+            aria-label={isActive ? 'Desactivar' : 'Activar'}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+              {isActive ? 'visibility_off' : 'visibility'}
+            </span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
-function activityLabel(action: string): string {
-  const [entityRaw, verbRaw] = action.split('.');
-  const verb = (verbRaw ?? action).toLowerCase();
-  const entity = (entityRaw ?? action).toLowerCase();
-  const verbLabel =
-    verb === 'create' ? 'Creó' :
-    verb === 'update' ? 'Actualizó' :
-    verb === 'enable' ? 'Habilitó' :
-    verb === 'disable' ? 'Deshabilitó' :
-    verb;
+/* ── Column panel ───────────────────────────────────────────── */
+type CascadeColumnProps = {
+  icon: string;
+  title: string;
+  filterLabel?: string;
+  loading: boolean;
+  empty: boolean;
+  children: React.ReactNode;
+  onAdd?: () => void;
+  canCreate?: boolean;
+};
 
-  const entityLabel =
-    entity === 'unitofmeasure' ? 'Unidad de medida' :
-    entity === 'brand' ? 'Marca' :
-    entity === 'producttype' ? 'Tipo de producto' :
-    entity === 'taxrate' ? 'Impuesto' :
-    entity === 'tariff' ? 'Arancel' :
-    entity === 'productline' ? 'Línea' :
-    entity === 'productcategory' ? 'Categoría' :
-    entity === 'productsubcategory' ? 'Subcategoría' :
-    entityRaw ?? action;
+function CascadeColumn({ icon, title, filterLabel, loading, empty, children, onAdd, canCreate }: CascadeColumnProps) {
+  return (
+    <div style={{
+      background: 'var(--color-surface)',
+      border: '1px solid var(--color-border)',
+      borderRadius: 'var(--radius-lg)',
+      display: 'flex', flexDirection: 'column',
+      minHeight: 540, overflow: 'hidden',
+    }}>
+      <div className="pg-section-header" style={{ borderRadius: 0, borderTop: 'none', borderLeft: 'none', borderRight: 'none' }}>
+        <div className="pg-section-header-left">
+          <span className="material-symbols-outlined pg-section-icon" style={{ fontSize: 18 }}>{icon}</span>
+          <span className="pg-section-label">{title}</span>
+        </div>
+        {canCreate && onAdd && (
+          <button type="button" className="zh-btn zh-btn--primary zh-btn--sm" onClick={onAdd}>
+            <span className="material-symbols-outlined" style={{ fontSize: 15 }}>add</span>
+          </button>
+        )}
+      </div>
 
-  return `${verbLabel} ${entityLabel}`;
+      {filterLabel && (
+        <div style={{
+          padding: '6px 16px',
+          background: 'var(--color-primary-lt, #e8f0f8)',
+          borderBottom: '1px solid var(--color-border)',
+          fontSize: 11, color: 'var(--color-primary)', fontWeight: 500,
+        }}>
+          {filterLabel}
+        </div>
+      )}
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 6px' }}>
+        {loading ? (
+          <p className="subtle" style={{ padding: 16, textAlign: 'center', fontSize: 12 }}>Cargando…</p>
+        ) : empty ? (
+          <p className="subtle" style={{ padding: 16, textAlign: 'center', fontSize: 12 }}>Sin registros</p>
+        ) : (
+          children
+        )}
+      </div>
+    </div>
+  );
 }
 
+/* ── Main page ──────────────────────────────────────────────── */
 export function CatalogStructurePage() {
   const { t } = useI18n();
   const role = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin = role === 'Admin' || role === 'SuperAdmin';
   const hasPerm = usePermissionsStore((s) => s.has);
 
-  const canViewLines = isAdmin || hasPerm('inventario.productLines.view');
-  const canViewCategories = isAdmin || hasPerm('inventario.categories.view');
-  const canViewSubcategories = isAdmin || hasPerm('inventario.subcategories.view');
-  const canView = canViewLines && canViewCategories && canViewSubcategories;
-
-  const canCreateLines = isAdmin || hasPerm('inventario.productLines.create');
+  const canViewLines        = isAdmin || hasPerm('inventario.productLines.view');
+  const canViewCategories   = isAdmin || hasPerm('inventario.categories.view');
+  const canViewSubcategories= isAdmin || hasPerm('inventario.subcategories.view');
+  const canView             = canViewLines && canViewCategories && canViewSubcategories;
+  const canCreateLines      = isAdmin || hasPerm('inventario.productLines.create');
   const canCreateCategories = isAdmin || hasPerm('inventario.categories.create');
   const canCreateSubcategories = isAdmin || hasPerm('inventario.subcategories.create');
-  const canUpdateLines = isAdmin || hasPerm('inventario.productLines.update');
-  const canDeleteLines = isAdmin || hasPerm('inventario.productLines.delete');
+  const canUpdateLines      = isAdmin || hasPerm('inventario.productLines.update');
+  const canDeleteLines      = isAdmin || hasPerm('inventario.productLines.delete');
   const canUpdateCategories = isAdmin || hasPerm('inventario.categories.update');
   const canDeleteCategories = isAdmin || hasPerm('inventario.categories.delete');
   const canUpdateSubcategories = isAdmin || hasPerm('inventario.subcategories.update');
   const canDeleteSubcategories = isAdmin || hasPerm('inventario.subcategories.delete');
 
-  const [tab, setTab] = useState<Tab>('line');
-  const [error, setError] = useState('');
-  const [saving, setSaving] = useState(false);
-
-  const [lineStatus, setLineStatus] = useState<CatalogActiveStatus>('active');
-  const [lineSearch, setLineSearch] = useState('');
-  const [lines, setLines] = useState<CatalogItem[]>([]);
-  const [linesLoading, setLinesLoading] = useState(false);
-
-  const [catStatus, setCatStatus] = useState<CatalogActiveStatus>('active');
-  const [catSearch, setCatSearch] = useState('');
-  const [catFilterLineId, setCatFilterLineId] = useState('');
-  const [categories, setCategories] = useState<ProductCategoryListItem[]>([]);
-  const [catsLoading, setCatsLoading] = useState(false);
-
-  const [subStatus, setSubStatus] = useState<CatalogActiveStatus>('active');
-  const [subSearch, setSubSearch] = useState('');
-  const [subFilterLineId, setSubFilterLineId] = useState('');
-  const [subFilterCategoryId, setSubFilterCategoryId] = useState('');
+  /* ── Data state ──────────────────────────────────────────── */
+  const [lines,         setLines]         = useState<CatalogItem[]>([]);
+  const [categories,    setCategories]    = useState<ProductCategoryListItem[]>([]);
   const [subcategories, setSubcategories] = useState<ProductSubcategoryListItem[]>([]);
-  const [subsLoading, setSubsLoading] = useState(false);
+  const [linesLoading,  setLinesLoading]  = useState(false);
+  const [catsLoading,   setCatsLoading]   = useState(false);
+  const [subsLoading,   setSubsLoading]   = useState(false);
 
-  const lineCreate = useForm<CatalogLineCodeNameValues>({
-    resolver: zodResolver(catalogLineCodeNameSchema),
-    defaultValues: { code: '', name: '' },
-    mode: 'onChange',
-  });
-  const lineEdit = useForm<CatalogLineCodeNameValues>({
-    resolver: zodResolver(catalogLineCodeNameSchema),
-    defaultValues: { code: '', name: '' },
-    mode: 'onChange',
-  });
-  const catCreate = useForm<CatalogCategoryFormValues>({
-    resolver: zodResolver(catalogCategoryFormSchema),
-    defaultValues: { code: '', name: '', lineId: '' },
-    mode: 'onChange',
-  });
-  const catEdit = useForm<CatalogCategoryFormValues>({
-    resolver: zodResolver(catalogCategoryFormSchema),
-    defaultValues: { code: '', name: '', lineId: '' },
-    mode: 'onChange',
-  });
-  const subCreate = useForm<CatalogSubcategoryFormValues>({
-    resolver: zodResolver(catalogSubcategoryFormSchema),
+  /* ── Selection ───────────────────────────────────────────── */
+  const [selectedLineId,     setSelectedLineId]     = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+
+  const selectedLine     = lines.find((l) => l.id === selectedLineId) ?? null;
+  const selectedCategory = categories.find((c) => c.id === selectedCategoryId) ?? null;
+
+  /* ── Modal + form ────────────────────────────────────────── */
+  const [modal, setModal] = useState<ModalType | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [modalCats, setModalCats] = useState<ProductCategoryListItem[]>([]);
+
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<ModalForm>({
     defaultValues: { code: '', name: '', lineId: '', categoryId: '' },
-    mode: 'onChange',
-  });
-  const subEdit = useForm<CatalogSubcategoryFormValues>({
-    resolver: zodResolver(catalogSubcategoryFormSchema),
-    defaultValues: { code: '', name: '', lineId: '', categoryId: '' },
-    mode: 'onChange',
   });
 
-  const {
-    register: regLineCreate,
-    handleSubmit: handleLineCreate,
-    reset: resetLineCreate,
-    watch: watchLineCreate,
-    formState: { errors: errLineCreate },
-  } = lineCreate;
-  const {
-    register: regLineEdit,
-    handleSubmit: handleLineEdit,
-    reset: resetLineEdit,
-    formState: { errors: errLineEdit },
-  } = lineEdit;
-  const {
-    register: regCatCreate,
-    handleSubmit: handleCatCreate,
-    reset: resetCatCreate,
-    watch: watchCatCreate,
-    formState: { errors: errCatCreate },
-  } = catCreate;
-  const {
-    register: regCatEdit,
-    handleSubmit: handleCatEdit,
-    reset: resetCatEdit,
-    formState: { errors: errCatEdit },
-  } = catEdit;
-  const {
-    register: regSubCreate,
-    handleSubmit: handleSubCreate,
-    reset: resetSubCreate,
-    watch: watchSubCreate,
-    formState: { errors: errSubCreate },
-  } = subCreate;
-  const {
-    register: regSubEdit,
-    handleSubmit: handleSubEdit,
-    reset: resetSubEdit,
-    watch: watchSubEdit,
-    formState: { errors: errSubEdit },
-  } = subEdit;
+  const watchedLineId = watch('lineId');
 
-  const subCreateLineId = watchSubCreate('lineId');
-  const subEditLineId = watchSubEdit('lineId');
-  const lineCreateWatch = watchLineCreate();
-  const catCreateWatch = watchCatCreate();
-  const subCreateWatch = watchSubCreate();
-
-  const [activity, setActivity] = useState<UserActivityDto[]>([]);
-  const [activityLoading, setActivityLoading] = useState(false);
-
-  const [linesPick, setLinesPick] = useState<CatalogItem[]>([]);
-  const [catsForSubForm, setCatsForSubForm] = useState<ProductCategoryListItem[]>([]);
-  const [subFilterCategories, setSubFilterCategories] = useState<ProductCategoryListItem[]>([]);
-
-  const loadMyActivity = useCallback(async () => {
-    setActivityLoading(true);
-    try {
-      const data = await activityService.my({ module: 'inventario', page: 1, pageSize: 12 });
-      setActivity(data ?? []);
-    } catch {
-      setActivity([]);
-    } finally {
-      setActivityLoading(false);
-    }
-  }, []);
-
-  const loadLinesPick = useCallback(async () => {
-    try {
-      const li = await catalogService.productLines({ activeStatus: 'all' });
-      setLinesPick(li ?? []);
-    } catch {
-      setLinesPick([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!canView) return;
-    const id = window.setTimeout(() => {
-      void loadLinesPick();
-      void loadMyActivity();
-    }, 0);
-    return () => window.clearTimeout(id);
-  }, [canView, loadLinesPick, loadMyActivity]);
-
+  /* ── Load data ───────────────────────────────────────────── */
   const loadLines = useCallback(async () => {
-    setError('');
     setLinesLoading(true);
     try {
-      const data = await catalogService.productLines({
-        activeStatus: lineStatus,
-        search: lineSearch || undefined,
-      });
-      setLines(data ?? []);
-    } catch (err: unknown) {
-      setError(errMsg(err));
+      setLines(await catalogService.productLines({ activeStatus: 'all' }) ?? []);
+    } catch (e) {
+      setError(formatApiError(e));
     } finally {
       setLinesLoading(false);
     }
-  }, [lineStatus, lineSearch]);
+  }, []);
 
-  const loadCategories = useCallback(async () => {
-    setError('');
+  const loadCategories = useCallback(async (lineId: string) => {
     setCatsLoading(true);
     try {
-      const data = await catalogService.categories({
-        activeStatus: catStatus,
-        search: catSearch || undefined,
-        lineId: catFilterLineId || undefined,
-      });
-      setCategories(data ?? []);
-    } catch (err: unknown) {
-      setError(errMsg(err));
+      setCategories(await catalogService.categories({ activeStatus: 'all', lineId }) ?? []);
+    } catch (e) {
+      setError(formatApiError(e));
     } finally {
       setCatsLoading(false);
     }
-  }, [catStatus, catSearch, catFilterLineId]);
+  }, []);
 
-  const loadSubcategories = useCallback(async () => {
-    setError('');
+  const loadSubcategories = useCallback(async (categoryId: string) => {
     setSubsLoading(true);
     try {
-      const data = await catalogService.subcategories({
-        activeStatus: subStatus,
-        search: subSearch || undefined,
-        lineId: subFilterLineId || undefined,
-        categoryId: subFilterCategoryId || undefined,
-      });
-      setSubcategories(data ?? []);
-    } catch (err: unknown) {
-      setError(errMsg(err));
+      setSubcategories(await catalogService.subcategories({ activeStatus: 'all', categoryId }) ?? []);
+    } catch (e) {
+      setError(formatApiError(e));
     } finally {
       setSubsLoading(false);
     }
-  }, [subStatus, subSearch, subFilterLineId, subFilterCategoryId]);
+  }, []);
+
+  useEffect(() => { if (canView) void loadLines(); }, [canView, loadLines]);
 
   useEffect(() => {
-    if (!canView || tab !== 'line') return;
-    const id = window.setTimeout(() => {
-      void loadLines();
-    }, 0);
-    return () => window.clearTimeout(id);
-  }, [canView, tab, loadLines]);
+    if (!selectedLineId) { setCategories([]); setSubcategories([]); return; }
+    setSelectedCategoryId(null);
+    setSubcategories([]);
+    void loadCategories(selectedLineId);
+  }, [selectedLineId, loadCategories]);
 
   useEffect(() => {
-    if (!canView || tab !== 'category') return;
-    const id = window.setTimeout(() => {
-      void loadCategories();
-    }, 0);
-    return () => window.clearTimeout(id);
-  }, [canView, tab, loadCategories]);
+    if (!selectedCategoryId) { setSubcategories([]); return; }
+    void loadSubcategories(selectedCategoryId);
+  }, [selectedCategoryId, loadSubcategories]);
 
+  /* Load categories for subcategory modal when lineId changes */
   useEffect(() => {
-    if (!canView || tab !== 'subcategory') return;
-    const id = window.setTimeout(() => {
-      void loadSubcategories();
-    }, 0);
-    return () => window.clearTimeout(id);
-  }, [canView, tab, loadSubcategories]);
+    if (!modal || (modal.kind !== 'create-subcategory' && modal.kind !== 'edit-subcategory')) return;
+    if (!watchedLineId) { setModalCats([]); return; }
+    catalogService.categories({ activeStatus: 'all', lineId: watchedLineId })
+      .then((d) => setModalCats(d ?? []))
+      .catch(() => setModalCats([]));
+  }, [modal, watchedLineId]);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!subFilterLineId) {
-      const tid = window.setTimeout(() => {
-        if (!cancelled) setSubFilterCategories([]);
-      }, 0);
-      return () => {
-        cancelled = true;
-        window.clearTimeout(tid);
-      };
+  /* ── Selection handlers ──────────────────────────────────── */
+  const selectLine = (id: string) => {
+    setSelectedLineId((prev) => prev === id ? null : id);
+  };
+
+  const selectCategory = (id: string) => {
+    setSelectedCategoryId((prev) => prev === id ? null : id);
+  };
+
+  /* ── Modal helpers ───────────────────────────────────────── */
+  const openCreate = (kind: 'create-line' | 'create-category' | 'create-subcategory') => {
+    setError('');
+    reset({ code: '', name: '', lineId: selectedLineId ?? '', categoryId: selectedCategoryId ?? '' });
+    setModal({ kind });
+  };
+
+  const openEdit = (item: CatalogItem | ProductCategoryListItem | ProductSubcategoryListItem, kind: ModalType['kind']) => {
+    setError('');
+    if (kind === 'edit-line') {
+      const row = item as CatalogItem;
+      reset({ code: row.code, name: row.name, lineId: '', categoryId: '' });
+      setModal({ kind, item: row });
+    } else if (kind === 'edit-category') {
+      const row = item as ProductCategoryListItem;
+      reset({ code: row.code, name: row.name, lineId: row.lineId, categoryId: '' });
+      setModal({ kind, item: row });
+    } else if (kind === 'edit-subcategory') {
+      const row = item as ProductSubcategoryListItem;
+      reset({ code: row.code, name: row.name, lineId: row.lineId, categoryId: row.categoryId });
+      setModal({ kind, item: row });
     }
-    void catalogService
-      .categories({ activeStatus: 'all', lineId: subFilterLineId })
-      .then((c) => {
-        if (!cancelled) setSubFilterCategories(c ?? []);
-      })
-      .catch(() => {
-        if (!cancelled) setSubFilterCategories([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [subFilterLineId]);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!subCreateLineId) {
-      const tid = window.setTimeout(() => {
-        if (!cancelled) setCatsForSubForm([]);
-      }, 0);
-      return () => {
-        cancelled = true;
-        window.clearTimeout(tid);
-      };
-    }
-    void catalogService
-      .categories({ activeStatus: 'all', lineId: subCreateLineId })
-      .then((c) => {
-        if (!cancelled) setCatsForSubForm(c ?? []);
-      })
-      .catch(() => {
-        if (!cancelled) setCatsForSubForm([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [subCreateLineId]);
-
-  const onSubFilterLineChange = (id: string) => {
-    setSubFilterLineId(id);
-    setSubFilterCategoryId('');
   };
 
-  const [editLine, setEditLine] = useState<CatalogItem | null>(null);
-  const [editCat, setEditCat] = useState<ProductCategoryListItem | null>(null);
-  const [editSub, setEditSub] = useState<ProductSubcategoryListItem | null>(null);
-  const [editSubCats, setEditSubCats] = useState<ProductCategoryListItem[]>([]);
+  const closeModal = () => { setModal(null); setError(''); };
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!editSub || !subEditLineId) {
-      const tid = window.setTimeout(() => {
-        if (!cancelled) setEditSubCats([]);
-      }, 0);
-      return () => {
-        cancelled = true;
-        window.clearTimeout(tid);
-      };
-    }
-    void catalogService
-      .categories({ activeStatus: 'all', lineId: subEditLineId })
-      .then((c) => {
-        if (!cancelled) setEditSubCats(c ?? []);
-      })
-      .catch(() => {
-        if (!cancelled) setEditSubCats([]);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [editSub, subEditLineId]);
-
-  const startEditLine = (row: CatalogItem) => {
-    setEditLine(row);
-    resetLineEdit({ code: row.code, name: row.name });
-  };
-
-  const startEditCat = (row: ProductCategoryListItem) => {
-    setEditCat(row);
-    resetCatEdit({ code: row.code, name: row.name, lineId: row.lineId });
-  };
-
-  const startEditSub = (row: ProductSubcategoryListItem) => {
-    setEditSub(row);
-    resetSubEdit({
-      code: row.code,
-      name: row.name,
-      lineId: row.lineId,
-      categoryId: row.categoryId,
-    });
-  };
-
-  const submitLineEdit = handleLineEdit(async (v) => {
-    if (!editLine) return;
+  /* ── Submit modal ────────────────────────────────────────── */
+  const onSubmit = handleSubmit(async (values) => {
+    if (!modal) return;
     setSaving(true);
     setError('');
     try {
-      await catalogService.updateProductLine(editLine.id, {
-        code: v.code.trim(),
-        name: v.name.trim(),
-      });
-      setEditLine(null);
-      resetLineEdit({ code: '', name: '' });
+      const code = values.code.trim();
+      const name = values.name.trim();
+
+      switch (modal.kind) {
+        case 'create-line':
+          await catalogService.createProductLine({ code, name });
+          await loadLines();
+          break;
+        case 'edit-line':
+          await catalogService.updateProductLine(modal.item.id, { code, name });
+          await loadLines();
+          break;
+        case 'create-category':
+          await catalogService.createCategory({ code, name, lineId: values.lineId });
+          if (selectedLineId) await loadCategories(selectedLineId);
+          break;
+        case 'edit-category':
+          await catalogService.updateCategory(modal.item.id, { code, name, lineId: values.lineId });
+          if (selectedLineId) await loadCategories(selectedLineId);
+          break;
+        case 'create-subcategory':
+          await catalogService.createSubcategory({ code, name, categoryId: values.categoryId });
+          if (selectedCategoryId) await loadSubcategories(selectedCategoryId);
+          break;
+        case 'edit-subcategory':
+          await catalogService.updateSubcategory(modal.item.id, { code, name, categoryId: values.categoryId });
+          if (selectedCategoryId) await loadSubcategories(selectedCategoryId);
+          break;
+      }
+      closeModal();
+    } catch (e) {
+      setError(formatApiError(e));
+    } finally {
+      setSaving(false);
+    }
+  });
+
+  /* ── Toggle active/inactive ──────────────────────────────── */
+  const toggleLine = async (item: CatalogItem) => {
+    setSaving(true);
+    try {
+      if (item.isActive) await catalogService.disableProductLine(item.id);
+      else await catalogService.enableProductLine(item.id);
       await loadLines();
-      await loadLinesPick();
-    } catch (err: unknown) {
-      setError(errMsg(err));
-    } finally {
-      setSaving(false);
-    }
-  });
+    } catch (e) { setError(formatApiError(e)); }
+    finally { setSaving(false); }
+  };
 
-  const submitCatEdit = handleCatEdit(async (v) => {
-    if (!editCat) return;
+  const toggleCategory = async (item: ProductCategoryListItem) => {
     setSaving(true);
-    setError('');
     try {
-      await catalogService.updateCategory(editCat.id, {
-        code: v.code.trim(),
-        name: v.name.trim(),
-        lineId: v.lineId,
-      });
-      setEditCat(null);
-      resetCatEdit({ code: '', name: '', lineId: '' });
-      await loadCategories();
-      await loadLinesPick();
-    } catch (err: unknown) {
-      setError(errMsg(err));
-    } finally {
-      setSaving(false);
-    }
-  });
+      if (item.isActive) await catalogService.disableCategory(item.id);
+      else await catalogService.enableCategory(item.id);
+      if (selectedLineId) await loadCategories(selectedLineId);
+    } catch (e) { setError(formatApiError(e)); }
+    finally { setSaving(false); }
+  };
 
-  const submitSubEdit = handleSubEdit(async (v) => {
-    if (!editSub) return;
+  const toggleSubcategory = async (item: ProductSubcategoryListItem) => {
     setSaving(true);
-    setError('');
     try {
-      await catalogService.updateSubcategory(editSub.id, {
-        code: v.code.trim(),
-        name: v.name.trim(),
-        categoryId: v.categoryId,
-      });
-      setEditSub(null);
-      resetSubEdit({ code: '', name: '', lineId: '', categoryId: '' });
-      await loadSubcategories();
-    } catch (err: unknown) {
-      setError(errMsg(err));
-    } finally {
-      setSaving(false);
-    }
-  });
+      if (item.isActive) await catalogService.disableSubcategory(item.id);
+      else await catalogService.enableSubcategory(item.id);
+      if (selectedCategoryId) await loadSubcategories(selectedCategoryId);
+    } catch (e) { setError(formatApiError(e)); }
+    finally { setSaving(false); }
+  };
 
-  const submitLineCreate = handleLineCreate(async (v) => {
-    setSaving(true);
-    setError('');
-    try {
-      await catalogService.createProductLine({ code: v.code.trim(), name: v.name.trim() });
-      resetLineCreate({ code: '', name: '' });
-      await loadLines();
-      await loadLinesPick();
-    } catch (err: unknown) {
-      setError(errMsg(err));
-    } finally {
-      setSaving(false);
-    }
-  });
+  /* ── Modal title ─────────────────────────────────────────── */
+  const modalTitle = () => {
+    if (!modal) return '';
+    const labels: Record<ModalType['kind'], string> = {
+      'create-line':         t('catalog.structure.primaryCreateLine'),
+      'edit-line':           t('catalog.structure.editLine'),
+      'create-category':     t('catalog.structure.primaryCreateCategory'),
+      'edit-category':       t('catalog.structure.editCategory'),
+      'create-subcategory':  t('catalog.structure.primaryCreateSubcategory'),
+      'edit-subcategory':    t('catalog.structure.editSubcategory'),
+    };
+    return labels[modal.kind] ?? '';
+  };
 
-  const submitCatCreate = handleCatCreate(async (v) => {
-    setSaving(true);
-    setError('');
-    try {
-      await catalogService.createCategory({
-        code: v.code.trim(),
-        name: v.name.trim(),
-        lineId: v.lineId,
-      });
-      resetCatCreate({ code: '', name: '', lineId: '' });
-      await loadCategories();
-    } catch (err: unknown) {
-      setError(errMsg(err));
-    } finally {
-      setSaving(false);
-    }
-  });
+  const showLineSelector    = modal?.kind === 'create-category' || modal?.kind === 'edit-category' || modal?.kind === 'create-subcategory' || modal?.kind === 'edit-subcategory';
+  const showCategorySelector= modal?.kind === 'create-subcategory' || modal?.kind === 'edit-subcategory';
 
-  const submitSubCreate = handleSubCreate(async (v) => {
-    setSaving(true);
-    setError('');
-    try {
-      await catalogService.createSubcategory({
-        code: v.code.trim(),
-        name: v.name.trim(),
-        categoryId: v.categoryId,
-      });
-      resetSubCreate({ code: '', name: '', lineId: '', categoryId: '' });
-      await loadSubcategories();
-    } catch (err: unknown) {
-      setError(errMsg(err));
-    } finally {
-      setSaving(false);
-    }
-  });
-
-  const statusSelect = useMemo(
-    () => (
-      <>
-        <option value="active">{t('common.active')}</option>
-        <option value="inactive">{t('common.inactive')}</option>
-        <option value="all">{t('catalog.structure.statusAll')}</option>
-      </>
-    ),
-    [t]
-  );
-
-  if (!canView) {
-    return <NoAccessPage title={t('catalog.structure.title')} />;
-  }
+  if (!canView) return <NoAccessPage title={t('catalog.structure.title')} />;
 
   return (
-    <PageShell kicker={t('app.nav.group.inventario')} title={t('catalog.structure.title')}>
-      <Card>
-        {error && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />}
+    <div className="pg-page">
 
-        <ZHInlineRow className="zh-mb-10">
-          <div className="zh-card-section-title">{t('catalog.structure.activityHistoryTitle')}</div>
-          <ZHInlineRowRight>
-            <ZHBtn variant="ghost" size="sm" type="button" onClick={() => void loadMyActivity()} disabled={activityLoading}>
-              {activityLoading ? t('common.loading') : t('common.refresh')}
-            </ZHBtn>
-          </ZHInlineRowRight>
-        </ZHInlineRow>
-        {activityLoading ? (
-          <LoadingState />
-        ) : activity.length === 0 ? (
-          <div className="empty-state zh-mb-12">{t('common.noData')}</div>
-        ) : (
-          <ul className="catalog-structure-activityList">
-            {activity.map((a) => (
-              <li key={a.id} className="zh-mb-6">
-                {new Date(a.createdAt).toLocaleString()} · {activityLabel(a.action)}
-                {a.description ? ` — ${a.description}` : ''}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="zh-form-tabs" role="tablist">
-          <button type="button" className={tab === 'line' ? 'is-active' : ''} onClick={() => setTab('line')}>
-            {t('catalog.structure.tabLine')}
-          </button>
-          <button type="button" className={tab === 'category' ? 'is-active' : ''} onClick={() => setTab('category')}>
-            {t('catalog.structure.tabCategory')}
-          </button>
-          <button type="button" className={tab === 'subcategory' ? 'is-active' : ''} onClick={() => setTab('subcategory')}>
-            {t('catalog.structure.tabSubcategory')}
-          </button>
+      {/* ── Header ───────────────────────────────────────────── */}
+      <div className="pg-header-row">
+        <div>
+          <p className="pg-kicker">{t('app.nav.group.inventario')}</p>
+          <h1 className="pg-title">{t('catalog.structure.title')}</h1>
+          <p className="pg-subtitle">{t('catalog.structure.subtitle')}</p>
         </div>
+      </div>
 
-        {tab === 'line' && (
-          <>
-            <ZHGridRow cols={2} className="zh-mb-14">
-                <ZHField label={t('catalog.structure.filterStatus')}>
-                  <select value={lineStatus} onChange={(e) => setLineStatus(e.target.value as CatalogActiveStatus)} disabled={linesLoading}>
-                    {statusSelect}
-                  </select>
-                </ZHField>
-                <ZHField label={t('catalog.structure.search')}>
-                  <input value={lineSearch} onChange={(e) => setLineSearch(e.target.value)} disabled={linesLoading} placeholder={t('catalog.structure.searchPlaceholder')} />
-                </ZHField>
-            </ZHGridRow>
+      {/* ── Error ────────────────────────────────────────────── */}
+      {error && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />}
 
-            {canCreateLines && (
-              <ZHSection bottom={14}>
-                <ZHGrid cols={3}>
-                  <ZHField label={t('common.code')} fieldError={errLineCreate.code?.message}>
-                    <input {...regLineCreate('code')} disabled={saving} />
-                  </ZHField>
-                  <ZHField label={t('common.name')} fieldError={errLineCreate.name?.message}>
-                    <input {...regLineCreate('name')} disabled={saving} />
-                  </ZHField>
-                  <ZHActionsRow>
-                    <ZHBtn
-                      variant="primary"
-                      size="md"
-                      type="button"
-                      onClick={() => void submitLineCreate()}
-                      disabled={saving || !lineCreateWatch.code?.trim() || !lineCreateWatch.name?.trim()}
-                    >
-                      {saving ? t('common.saving') : t('catalog.structure.primaryCreateLine')}
-                    </ZHBtn>
-                  </ZHActionsRow>
-                </ZHGrid>
-              </ZHSection>
-            )}
+      {/* ── 3-column cascade grid ─────────────────────────────  */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', alignItems: 'start' }}>
 
-            {editLine && (
-              <div className="table-card zh-mb-14">
-                <div className="zh-card-section-title zh-mb-8">{t('catalog.structure.editLine')}</div>
-                <ZHGrid cols={3}>
-                  <ZHField label={t('common.code')} fieldError={errLineEdit.code?.message}>
-                    <input {...regLineEdit('code')} disabled={saving} />
-                  </ZHField>
-                  <ZHField label={t('common.name')} fieldError={errLineEdit.name?.message}>
-                    <input {...regLineEdit('name')} disabled={saving} />
-                  </ZHField>
-                  <ZHActionsRow>
-                    <ZHBtn
-                      variant="ghost"
-                      size="md"
-                      type="button"
-                      onClick={() => {
-                        setEditLine(null);
-                        resetLineEdit({ code: '', name: '' });
-                      }}
-                      disabled={saving}
-                    >
-                      {t('catalog.structure.cancel')}
-                    </ZHBtn>
-                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void submitLineEdit()} disabled={saving}>
-                      {t('common.saveChanges')}
-                    </ZHBtn>
-                  </ZHActionsRow>
-                </ZHGrid>
+        {/* Level 1: Lines */}
+        <CascadeColumn
+          icon="account_tree"
+          title={t('catalog.structure.level1')}
+          loading={linesLoading}
+          empty={lines.length === 0}
+          canCreate={canCreateLines}
+          onAdd={() => openCreate('create-line')}
+        >
+          {lines.map((line) => (
+            <CascadeItem
+              key={line.id}
+              id={line.id}
+              icon="folder"
+              name={line.name}
+              subtitle={`${line.code}`}
+              isSelected={selectedLineId === line.id}
+              isActive={line.isActive}
+              onSelect={() => selectLine(line.id)}
+              canEdit={canUpdateLines}
+              canToggle={canDeleteLines || canUpdateLines}
+              onEdit={() => openEdit(line, 'edit-line')}
+              onToggle={() => void toggleLine(line)}
+              disabled={saving}
+            />
+          ))}
+        </CascadeColumn>
+
+        {/* Level 2: Categories */}
+        <CascadeColumn
+          icon="category"
+          title={t('catalog.structure.level2')}
+          filterLabel={selectedLine ? `${t('catalog.structure.filteringBy')}: ${selectedLine.name}` : undefined}
+          loading={catsLoading}
+          empty={!selectedLineId ? true : categories.length === 0}
+          canCreate={canCreateCategories && !!selectedLineId}
+          onAdd={() => openCreate('create-category')}
+        >
+          {!selectedLineId ? (
+            <p className="subtle" style={{ padding: 16, textAlign: 'center', fontSize: 12 }}>
+              {t('catalog.structure.selectLineFirst')}
+            </p>
+          ) : categories.map((cat) => (
+            <CascadeItem
+              key={cat.id}
+              id={cat.id}
+              icon="list"
+              name={cat.name}
+              subtitle={`${cat.code}`}
+              isSelected={selectedCategoryId === cat.id}
+              isActive={cat.isActive}
+              onSelect={() => selectCategory(cat.id)}
+              canEdit={canUpdateCategories}
+              canToggle={canDeleteCategories || canUpdateCategories}
+              onEdit={() => openEdit(cat, 'edit-category')}
+              onToggle={() => void toggleCategory(cat)}
+              disabled={saving}
+            />
+          ))}
+        </CascadeColumn>
+
+        {/* Level 3: Subcategories */}
+        <CascadeColumn
+          icon="layers"
+          title={t('catalog.structure.level3')}
+          filterLabel={selectedCategory ? `${t('catalog.structure.filteringBy')}: ${selectedCategory.name}` : undefined}
+          loading={subsLoading}
+          empty={!selectedCategoryId ? true : subcategories.length === 0}
+          canCreate={canCreateSubcategories && !!selectedCategoryId}
+          onAdd={() => openCreate('create-subcategory')}
+        >
+          {!selectedCategoryId ? (
+            <p className="subtle" style={{ padding: 16, textAlign: 'center', fontSize: 12 }}>
+              {t('catalog.structure.selectCategoryFirst')}
+            </p>
+          ) : subcategories.map((sub) => (
+            <CascadeItem
+              key={sub.id}
+              id={sub.id}
+              icon="subdirectory_arrow_right"
+              name={sub.name}
+              subtitle={`${sub.code} · ${sub.isActive ? t('common.active') : t('common.inactive')}`}
+              isSelected={false}
+              isActive={sub.isActive}
+              onSelect={() => {}}
+              canEdit={canUpdateSubcategories}
+              canToggle={canDeleteSubcategories || canUpdateSubcategories}
+              onEdit={() => openEdit(sub, 'edit-subcategory')}
+              onToggle={() => void toggleSubcategory(sub)}
+              disabled={saving}
+            />
+          ))}
+        </CascadeColumn>
+      </div>
+
+      {/* ── Summary bar ──────────────────────────────────────── */}
+      {(selectedLine || selectedCategory) && (
+        <div className="pg-section" style={{ marginTop: 'var(--space-4)' }}>
+          <div className="pg-section-header">
+            <div className="pg-section-header-left">
+              <span className="material-symbols-outlined pg-section-icon">info</span>
+              <span className="pg-section-label">{t('catalog.structure.selectionSummary')}</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-6)', flexWrap: 'wrap', padding: 'var(--space-3) 0 0' }}>
+            <div>
+              <p className="subtle" style={{ margin: '0 0 4px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+                {t('catalog.structure.hierarchyPath')}
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 500 }}>
+                {selectedLine && <span>{selectedLine.name}</span>}
+                {selectedCategory && (
+                  <>
+                    <span className="material-symbols-outlined" style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>arrow_forward</span>
+                    <span style={{ color: 'var(--color-primary)' }}>{selectedCategory.name}</span>
+                  </>
+                )}
               </div>
+            </div>
+            {selectedLineId && (
+              <>
+                <div style={{ width: 1, height: 36, background: 'var(--color-border)' }} />
+                <div>
+                  <p className="subtle" style={{ margin: '0 0 4px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+                    {t('catalog.structure.categoriesCount')}
+                  </p>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>{categories.length}</p>
+                </div>
+              </>
             )}
-
-            {linesLoading ? (
-              <LoadingState />
-            ) : lines.length === 0 ? (
-              <EmptyState message={t('common.noData')} />
-            ) : (
-              <table className="table catalog-structure-responsive-table">
-                <thead>
-                  <tr>
-                    <th>{t('common.code')}</th>
-                    <th>{t('common.name')}</th>
-                    <th>{t('common.status')}</th>
-                    <th>{t('catalog.structure.actions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lines.map((x) => (
-                    <tr key={x.id}>
-                      <td data-label={t('common.code')}>{x.code}</td>
-                      <td data-label={t('common.name')}>{x.name}</td>
-                      <td data-label={t('common.status')}>
-                        <Badge label={x.isActive ? t('common.active') : t('common.inactive')} variant={x.isActive ? 'green' : 'gray'} />
-                      </td>
-                      <td data-label={t('catalog.structure.actions')}>
-                        <div className="catalog-structure-actions">
-                        {canUpdateLines && (
-                          <ZHBtn variant="secondary" size="xs" type="button" onClick={() => startEditLine(x)} disabled={saving}>
-                            {t('catalog.structure.edit')}
-                          </ZHBtn>
-                        )}
-                        {x.isActive && canDeleteLines && (
-                          <ZHBtn
-                            variant="ghost"
-                            size="xs"
-                            type="button"
-                            onClick={() => {
-                              void (async () => {
-                                setSaving(true);
-                                setError('');
-                                try {
-                                  await catalogService.disableProductLine(x.id);
-                                  await loadLines();
-                                  await loadLinesPick();
-                                } catch (err: unknown) {
-                                  setError(errMsg(err));
-                                } finally {
-                                  setSaving(false);
-                                }
-                              })();
-                            }}
-                            disabled={saving}
-                          >
-                            {t('catalog.structure.disable')}
-                          </ZHBtn>
-                        )}
-                        {!x.isActive && canUpdateLines && (
-                          <ZHBtn
-                            variant="secondary"
-                            size="xs"
-                            type="button"
-                            onClick={() => {
-                              void (async () => {
-                                setSaving(true);
-                                setError('');
-                                try {
-                                  await catalogService.enableProductLine(x.id);
-                                  await loadLines();
-                                  await loadLinesPick();
-                                } catch (err: unknown) {
-                                  setError(errMsg(err));
-                                } finally {
-                                  setSaving(false);
-                                }
-                              })();
-                            }}
-                            disabled={saving}
-                          >
-                            {t('catalog.structure.enable')}
-                          </ZHBtn>
-                        )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            {selectedCategoryId && (
+              <>
+                <div style={{ width: 1, height: 36, background: 'var(--color-border)' }} />
+                <div>
+                  <p className="subtle" style={{ margin: '0 0 4px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+                    {t('catalog.structure.subcategoriesCount')}
+                  </p>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>{subcategories.length}</p>
+                </div>
+              </>
             )}
-          </>
-        )}
+          </div>
+        </div>
+      )}
 
-        {tab === 'category' && (
-          <>
-            <ZHGridRow cols={3} className="zh-mb-14">
-                <ZHField label={t('catalog.structure.filterStatus')}>
-                  <select value={catStatus} onChange={(e) => setCatStatus(e.target.value as CatalogActiveStatus)} disabled={catsLoading}>
-                    {statusSelect}
-                  </select>
-                </ZHField>
-                <ZHField label={t('catalog.categories.line')}>
-                  <select value={catFilterLineId} onChange={(e) => setCatFilterLineId(e.target.value)} disabled={catsLoading}>
-                    <option value="">{t('catalog.structure.allLines')}</option>
-                    {linesPick.map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.code} — {l.name}
-                      </option>
-                    ))}
-                  </select>
-                </ZHField>
-                <ZHField label={t('catalog.structure.search')}>
-                  <input value={catSearch} onChange={(e) => setCatSearch(e.target.value)} disabled={catsLoading} placeholder={t('catalog.structure.searchPlaceholder')} />
-                </ZHField>
-            </ZHGridRow>
+      {/* ── Create / Edit modal ───────────────────────────────── */}
+      {modal && (
+        <div
+          className="zh-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
+        >
+          <div className="zh-modal" style={{ maxWidth: 480 }}>
 
-            {canCreateCategories && (
-              <ZHSection bottom={14}>
-                <ZHGrid cols={3}>
-                  <ZHField label={t('common.code')} fieldError={errCatCreate.code?.message}>
-                    <input {...regCatCreate('code')} disabled={saving} />
-                  </ZHField>
-                  <ZHField label={t('common.name')} fieldError={errCatCreate.name?.message}>
-                    <input {...regCatCreate('name')} disabled={saving} />
-                  </ZHField>
-                  <ZHField label={t('catalog.categories.line')} fieldError={errCatCreate.lineId?.message}>
-                    <select {...regCatCreate('lineId')} disabled={saving}>
-                      <option value="">{t('common.select')}</option>
-                      {linesPick.map((l) => (
-                        <option key={l.id} value={l.id}>
-                          {l.code} — {l.name}
-                        </option>
-                      ))}
-                    </select>
-                  </ZHField>
-                  <ZHActionsRow>
-                    <ZHBtn
-                      variant="primary"
-                      size="md"
-                      type="button"
-                      onClick={() => void submitCatCreate()}
-                      disabled={
-                        saving ||
-                        !catCreateWatch.code?.trim() ||
-                        !catCreateWatch.name?.trim() ||
-                        !catCreateWatch.lineId
-                      }
-                    >
-                      {saving ? t('common.saving') : t('catalog.structure.primaryCreateCategory')}
-                    </ZHBtn>
-                  </ZHActionsRow>
-                </ZHGrid>
-              </ZHSection>
-            )}
+            <div className="zh-modal-header">
+              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{modalTitle()}</h2>
+              <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm" onClick={closeModal} aria-label={t('common.close')}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
 
-            {editCat && (
-              <div className="table-card zh-mb-14">
-                <div className="zh-card-section-title zh-mb-8">{t('catalog.structure.editCategory')}</div>
-                <ZHGrid cols={3}>
-                  <ZHField label={t('common.code')} fieldError={errCatEdit.code?.message}>
-                    <input {...regCatEdit('code')} disabled={saving} />
-                  </ZHField>
-                  <ZHField label={t('common.name')} fieldError={errCatEdit.name?.message}>
-                    <input {...regCatEdit('name')} disabled={saving} />
-                  </ZHField>
-                  <ZHField label={t('catalog.categories.line')} fieldError={errCatEdit.lineId?.message}>
-                    <select {...regCatEdit('lineId')} disabled={saving}>
-                      {linesPick.map((l) => (
-                        <option key={l.id} value={l.id}>
-                          {l.code} — {l.name}
-                        </option>
-                      ))}
-                    </select>
-                  </ZHField>
-                  <ZHActionsRow>
-                    <ZHBtn
-                      variant="ghost"
-                      size="md"
-                      type="button"
-                      onClick={() => {
-                        setEditCat(null);
-                        resetCatEdit({ code: '', name: '', lineId: '' });
-                      }}
-                      disabled={saving}
-                    >
-                      {t('catalog.structure.cancel')}
-                    </ZHBtn>
-                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void submitCatEdit()} disabled={saving}>
-                      {t('common.saveChanges')}
-                    </ZHBtn>
-                  </ZHActionsRow>
-                </ZHGrid>
-              </div>
-            )}
+            <form onSubmit={onSubmit}>
+              <div className="zh-modal-body">
+                {error && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />}
 
-            {catsLoading ? (
-              <LoadingState />
-            ) : categories.length === 0 ? (
-              <EmptyState message={t('common.noData')} />
-            ) : (
-              <table className="table catalog-structure-responsive-table">
-                <thead>
-                  <tr>
-                    <th>{t('common.code')}</th>
-                    <th>{t('common.name')}</th>
-                    <th>{t('catalog.structure.lineColumn')}</th>
-                    <th>{t('common.status')}</th>
-                    <th>{t('catalog.structure.actions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {categories.map((x) => (
-                    <tr key={x.id}>
-                      <td data-label={t('common.code')}>{x.code}</td>
-                      <td data-label={t('common.name')}>{x.name}</td>
-                      <td data-label={t('catalog.structure.lineColumn')}>
-                        {x.lineCode} — {x.lineName}
-                      </td>
-                      <td data-label={t('common.status')}>
-                        <Badge label={x.isActive ? t('common.active') : t('common.inactive')} variant={x.isActive ? 'green' : 'gray'} />
-                      </td>
-                      <td data-label={t('catalog.structure.actions')}>
-                        <div className="catalog-structure-actions">
-                        {canUpdateCategories && (
-                          <ZHBtn variant="secondary" size="xs" type="button" onClick={() => startEditCat(x)} disabled={saving}>
-                            {t('catalog.structure.edit')}
-                          </ZHBtn>
-                        )}
-                        {x.isActive && canDeleteCategories && (
-                          <ZHBtn
-                            variant="ghost"
-                            size="xs"
-                            type="button"
-                            onClick={() => {
-                              void (async () => {
-                                setSaving(true);
-                                setError('');
-                                try {
-                                  await catalogService.disableCategory(x.id);
-                                  await loadCategories();
-                                } catch (err: unknown) {
-                                  setError(errMsg(err));
-                                } finally {
-                                  setSaving(false);
-                                }
-                              })();
-                            }}
-                            disabled={saving}
-                          >
-                            {t('catalog.structure.disable')}
-                          </ZHBtn>
-                        )}
-                        {!x.isActive && canUpdateCategories && (
-                          <ZHBtn
-                            variant="secondary"
-                            size="xs"
-                            type="button"
-                            onClick={() => {
-                              void (async () => {
-                                setSaving(true);
-                                setError('');
-                                try {
-                                  await catalogService.enableCategory(x.id);
-                                  await loadCategories();
-                                } catch (err: unknown) {
-                                  setError(errMsg(err));
-                                } finally {
-                                  setSaving(false);
-                                }
-                              })();
-                            }}
-                            disabled={saving}
-                          >
-                            {t('catalog.structure.enable')}
-                          </ZHBtn>
-                        )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </>
-        )}
-
-        {tab === 'subcategory' && (
-          <>
-            <ZHGridRow cols={3} className="zh-mb-14">
-                <ZHField label={t('catalog.structure.filterStatus')}>
-                  <select value={subStatus} onChange={(e) => setSubStatus(e.target.value as CatalogActiveStatus)} disabled={subsLoading}>
-                    {statusSelect}
-                  </select>
-                </ZHField>
-                <ZHField label={t('catalog.categories.line')}>
-                  <select value={subFilterLineId} onChange={(e) => onSubFilterLineChange(e.target.value)} disabled={subsLoading}>
-                    <option value="">{t('catalog.structure.allLines')}</option>
-                    {linesPick.map((l) => (
-                      <option key={l.id} value={l.id}>
-                        {l.code} — {l.name}
-                      </option>
-                    ))}
-                  </select>
-                </ZHField>
-                <ZHField label={t('catalog.subcategories.category')}>
-                  <select value={subFilterCategoryId} onChange={(e) => setSubFilterCategoryId(e.target.value)} disabled={subsLoading || !subFilterLineId}>
-                    <option value="">{t('catalog.structure.allCategories')}</option>
-                    {subFilterCategories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.code} — {c.name}
-                      </option>
-                    ))}
-                  </select>
-                </ZHField>
-            </ZHGridRow>
-            <ZHGridRow cols={1} className="zh-mb-14">
-              <ZHField label={t('catalog.structure.search')}>
-                <input value={subSearch} onChange={(e) => setSubSearch(e.target.value)} disabled={subsLoading} placeholder={t('catalog.structure.searchPlaceholder')} />
-              </ZHField>
-            </ZHGridRow>
-
-            {canCreateSubcategories && (
-              <ZHSection bottom={14}>
-                <ZHGrid cols={3}>
-                  <ZHField label={t('common.code')} fieldError={errSubCreate.code?.message}>
-                    <input {...regSubCreate('code')} disabled={saving} />
+                <div className="pg-form-grid--2">
+                  <ZHField label={t('common.code')} required error={errors.code?.message}>
+                    <input className="zh-input" {...register('code', { required: t('common.required') })} disabled={saving} />
                   </ZHField>
-                  <ZHField label={t('common.name')} fieldError={errSubCreate.name?.message}>
-                    <input {...regSubCreate('name')} disabled={saving} />
+                  <ZHField label={t('common.name')} required error={errors.name?.message}>
+                    <input className="zh-input" {...register('name', { required: t('common.required') })} disabled={saving} />
                   </ZHField>
-                  <ZHField label={t('catalog.categories.line')} fieldError={errSubCreate.lineId?.message}>
+                </div>
+
+                {showLineSelector && (
+                  <ZHField label={t('catalog.categories.line')} required error={errors.lineId?.message}>
                     <select
-                      {...regSubCreate('lineId', {
-                        onChange: () => {
-                          subCreate.setValue('categoryId', '', { shouldValidate: true });
-                        },
-                      })}
+                      className="zh-input"
                       disabled={saving}
+                      {...register('lineId', {
+                        required: t('common.required'),
+                        onChange: () => setValue('categoryId', ''),
+                      })}
                     >
                       <option value="">{t('common.select')}</option>
-                      {linesPick.map((l) => (
-                        <option key={l.id} value={l.id}>
-                          {l.code} — {l.name}
-                        </option>
+                      {lines.map((l) => (
+                        <option key={l.id} value={l.id}>{l.code} — {l.name}</option>
                       ))}
                     </select>
                   </ZHField>
-                  <ZHField label={t('catalog.subcategories.category')} fieldError={errSubCreate.categoryId?.message}>
-                    <select {...regSubCreate('categoryId')} disabled={saving || !subCreateLineId}>
-                      <option value="">{t('common.select')}</option>
-                      {catsForSubForm.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.code} — {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </ZHField>
-                  <ZHActionsRow>
-                    <ZHBtn
-                      variant="primary"
-                      size="md"
-                      type="button"
-                      onClick={() => void submitSubCreate()}
-                      disabled={
-                        saving ||
-                        !subCreateWatch.code?.trim() ||
-                        !subCreateWatch.name?.trim() ||
-                        !subCreateWatch.lineId ||
-                        !subCreateWatch.categoryId
-                      }
-                    >
-                      {saving ? t('common.saving') : t('catalog.structure.primaryCreateSubcategory')}
-                    </ZHBtn>
-                  </ZHActionsRow>
-                </ZHGrid>
-              </ZHSection>
-            )}
+                )}
 
-            {editSub && (
-              <div className="table-card zh-mb-14">
-                <div className="zh-card-section-title zh-mb-8">{t('catalog.structure.editSubcategory')}</div>
-                <ZHGrid cols={3}>
-                  <ZHField label={t('common.code')} fieldError={errSubEdit.code?.message}>
-                    <input {...regSubEdit('code')} disabled={saving} />
-                  </ZHField>
-                  <ZHField label={t('common.name')} fieldError={errSubEdit.name?.message}>
-                    <input {...regSubEdit('name')} disabled={saving} />
-                  </ZHField>
-                  <ZHField label={t('catalog.categories.line')} fieldError={errSubEdit.lineId?.message}>
+                {showCategorySelector && (
+                  <ZHField label={t('catalog.subcategories.category')} required error={errors.categoryId?.message}>
                     <select
-                      {...regSubEdit('lineId', {
-                        onChange: () => {
-                          subEdit.setValue('categoryId', '', { shouldValidate: true });
-                        },
-                      })}
-                      disabled={saving}
+                      className="zh-input"
+                      disabled={saving || !watchedLineId}
+                      {...register('categoryId', { required: t('common.required') })}
                     >
-                      {linesPick.map((l) => (
-                        <option key={l.id} value={l.id}>
-                          {l.code} — {l.name}
-                        </option>
+                      <option value="">{t('common.select')}</option>
+                      {modalCats.map((c) => (
+                        <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
                       ))}
                     </select>
                   </ZHField>
-                  <ZHField label={t('catalog.subcategories.category')} fieldError={errSubEdit.categoryId?.message}>
-                    <select {...regSubEdit('categoryId')} disabled={saving || !subEditLineId}>
-                      {editSubCats.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.code} — {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  </ZHField>
-                  <ZHActionsRow>
-                    <ZHBtn
-                      variant="ghost"
-                      size="md"
-                      type="button"
-                      onClick={() => {
-                        setEditSub(null);
-                        resetSubEdit({ code: '', name: '', lineId: '', categoryId: '' });
-                      }}
-                      disabled={saving}
-                    >
-                      {t('catalog.structure.cancel')}
-                    </ZHBtn>
-                    <ZHBtn variant="primary" size="md" type="button" onClick={() => void submitSubEdit()} disabled={saving}>
-                      {t('common.saveChanges')}
-                    </ZHBtn>
-                  </ZHActionsRow>
-                </ZHGrid>
+                )}
               </div>
-            )}
 
-            {subsLoading ? (
-              <LoadingState />
-            ) : subcategories.length === 0 ? (
-              <EmptyState message={t('common.noData')} />
-            ) : (
-              <table className="table catalog-structure-responsive-table">
-                <thead>
-                  <tr>
-                    <th>{t('common.code')}</th>
-                    <th>{t('common.name')}</th>
-                    <th>{t('catalog.structure.hierarchyColumn')}</th>
-                    <th>{t('common.status')}</th>
-                    <th>{t('catalog.structure.actions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {subcategories.map((x) => (
-                    <tr key={x.id}>
-                      <td data-label={t('common.code')}>{x.code}</td>
-                      <td data-label={t('common.name')}>{x.name}</td>
-                      <td data-label={t('catalog.structure.hierarchyColumn')}>
-                        {x.lineCode} — {x.lineName} → {x.categoryCode} — {x.categoryName}
-                      </td>
-                      <td data-label={t('common.status')}>
-                        <Badge label={x.isActive ? t('common.active') : t('common.inactive')} variant={x.isActive ? 'green' : 'gray'} />
-                      </td>
-                      <td data-label={t('catalog.structure.actions')}>
-                        <div className="catalog-structure-actions">
-                        {canUpdateSubcategories && (
-                          <ZHBtn variant="secondary" size="xs" type="button" onClick={() => startEditSub(x)} disabled={saving}>
-                            {t('catalog.structure.edit')}
-                          </ZHBtn>
-                        )}
-                        {x.isActive && canDeleteSubcategories && (
-                          <ZHBtn
-                            variant="ghost"
-                            size="xs"
-                            type="button"
-                            onClick={() => {
-                              void (async () => {
-                                setSaving(true);
-                                setError('');
-                                try {
-                                  await catalogService.disableSubcategory(x.id);
-                                  await loadSubcategories();
-                                } catch (err: unknown) {
-                                  setError(errMsg(err));
-                                } finally {
-                                  setSaving(false);
-                                }
-                              })();
-                            }}
-                            disabled={saving}
-                          >
-                            {t('catalog.structure.disable')}
-                          </ZHBtn>
-                        )}
-                        {!x.isActive && canUpdateSubcategories && (
-                          <ZHBtn
-                            variant="secondary"
-                            size="xs"
-                            type="button"
-                            onClick={() => {
-                              void (async () => {
-                                setSaving(true);
-                                setError('');
-                                try {
-                                  await catalogService.enableSubcategory(x.id);
-                                  await loadSubcategories();
-                                } catch (err: unknown) {
-                                  setError(errMsg(err));
-                                } finally {
-                                  setSaving(false);
-                                }
-                              })();
-                            }}
-                            disabled={saving}
-                          >
-                            {t('catalog.structure.enable')}
-                          </ZHBtn>
-                        )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </>
-        )}
-      </Card>
-    </PageShell>
+              <div className="pg-actions-bar">
+                <ZHBtn variant="ghost" size="md" type="button" onClick={closeModal} disabled={saving}>
+                  {t('common.cancel')}
+                </ZHBtn>
+                <ZHBtn variant="primary" size="md" type="submit" disabled={saving}>
+                  {saving ? t('common.saving') : t('common.saveChanges')}
+                </ZHBtn>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
