@@ -35,7 +35,7 @@ export function createFolderEditorItem(nombre = 'Nueva carpeta'): EditorMenuItem
   return {
     uid: crypto.randomUUID(),
     nombre,
-    icono: 'fa-folder',
+    icono: '',
     ruta: '',
     permiso: '',
     children: [],
@@ -47,7 +47,7 @@ export function createFormEditorItem(nombre = 'Nuevo formulario'): EditorMenuIte
   return {
     uid: crypto.randomUUID(),
     nombre,
-    icono: 'fa-file',
+    icono: '',
     ruta: '/',
     permiso: 'app.placeholder',
     children: [],

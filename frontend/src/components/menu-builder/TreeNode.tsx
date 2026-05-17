@@ -334,12 +334,16 @@ export function SortableTreeRow({
               onChange={(e) => setEditDraft((prev) => ({ ...prev, nombre: e.target.value }))}
             />
           </ZHField>
-          <ZHField label="Ícono">
+          <ZHField
+            label="Ícono"
+            hint={folder ? 'Ej: fa-folder, fa-box, fa-store, fa-users' : 'Ej: fa-file-alt, fa-receipt, fa-chart-bar'}
+            hintType="info"
+          >
             <input
               className="zh-input"
               value={editDraft.icono}
               onChange={(e) => setEditDraft((prev) => ({ ...prev, icono: e.target.value }))}
-              placeholder="Ej. fa-folder"
+              placeholder={folder ? 'fa-folder' : 'fa-file-alt'}
             />
           </ZHField>
           {!folder ? (
