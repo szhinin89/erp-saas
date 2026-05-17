@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import './Modal.css';
 import { useI18n } from '../i18n/i18n';
 
 interface Props {
@@ -11,39 +10,43 @@ interface Props {
   header?: React.ReactNode;
 }
 
+const SIZE_MAX: Record<string, number> = { sm: 480, md: 640, lg: 900 };
+
 export function Modal({ title, onClose, children, width, size = 'md', header }: Props) {
   const { t } = useI18n();
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  const sizeCls = `modal-card--${size}`;
-  const widthCls =
-    typeof width === 'number'
-      ? width <= 420 ? 'modal-card--w420' :
-        width <= 480 ? 'modal-card--w480' :
-        width <= 560 ? 'modal-card--w560' :
-        width <= 680 ? 'modal-card--w680' :
-        'modal-card--w820'
-      : '';
+  const maxWidth = typeof width === 'number' ? width : (SIZE_MAX[size] ?? 640);
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div
+      className="zh-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
       <div
-        className={['modal-card', sizeCls, widthCls].filter(Boolean).join(' ')}
+        className="zh-modal"
+        style={{ maxWidth: `min(${maxWidth}px, 95vw)`, width: '100%' }}
         onClick={(e) => e.stopPropagation()}
       >
-        {header ? (
-          header
-        ) : (
-          <div className="modal-header">
-            <h2 className="modal-title">{title ?? ''}</h2>
-            <button className="modal-close" onClick={onClose} type="button" aria-label={t('common.close')}>✕</button>
+        {header ?? (
+          <div className="zh-modal-header">
+            <h2 className="zh-modal-title">{title ?? ''}</h2>
+            <button
+              className="zh-modal-close"
+              onClick={onClose}
+              type="button"
+              aria-label={t('common.close')}
+            >✕</button>
           </div>
         )}
-        <div className="modal-body">{children}</div>
+        <div className="zh-modal-body">{children}</div>
       </div>
     </div>
   );
