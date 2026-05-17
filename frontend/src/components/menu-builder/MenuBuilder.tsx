@@ -74,8 +74,10 @@ type Props = {
   crmLibraryStack?: ReactNode;
   /** Pie del panel árbol (acciones y ayuda). */
   crmMasterFooter?: ReactNode;
-  /** Columna central: controles y tarjeta de plan bajo la vista previa. */
+  /** Columna central: controles encima de la vista previa (toggle de layout). */
   crmPreviewExtras?: ReactNode;
+  /** Columna central: contenido debajo de la vista previa (tarjeta de plan, simulación). */
+  crmPreviewExtrasBottom?: ReactNode;
   /** Sustituye el menú simulado en la vista previa (p. ej. menú efectivo de otra empresa). */
   previewItemsOverride?: MenuItem[] | null;
   /** Activaciones por plan para la vista CRM (checkbox por nodo). */
@@ -156,6 +158,7 @@ export function MenuBuilder({
   crmLibraryStack,
   crmMasterFooter,
   crmPreviewExtras,
+  crmPreviewExtrasBottom,
   previewItemsOverride = null,
   activeNodeIds,
   onToggleNodeActive,
@@ -661,6 +664,7 @@ export function MenuBuilder({
               <div className="menu-builder-panel__body">
                 {crmUi && crmPreviewExtras ? <div className="menu-builder-panel__crmPreviewTop">{crmPreviewExtras}</div> : null}
                 <MenuPreview items={previewData} layout={previewLayout} />
+                {crmUi && crmPreviewExtrasBottom ? <div className="menu-builder-panel__crmPreviewBottom">{crmPreviewExtrasBottom}</div> : null}
               </div>
             </aside>
           ) : null}

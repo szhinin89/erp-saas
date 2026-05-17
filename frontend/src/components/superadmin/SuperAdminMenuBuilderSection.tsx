@@ -1409,6 +1409,11 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             ? 'Barra superior — los grupos aparecen como tabs en la cabecera de la aplicación.'
             : 'Panel lateral — los grupos se despliegan en la barra izquierda de navegación.'}
         </div>
+      </>
+    );
+
+    const crmPreviewExtrasBottom: ReactNode = (
+      <>
         <div className="menu-plan-composer__simRow">
           <label className="menu-plan-composer__simLbl" htmlFor="crm-sim-tenant">
             Simular otra empresa:
@@ -1554,6 +1559,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             crmLibraryStack={crmLibraryStack}
             crmMasterFooter={crmMasterFooter}
             crmPreviewExtras={crmPreviewExtras}
+            crmPreviewExtrasBottom={crmPreviewExtrasBottom}
             previewItemsOverride={simPreviewItems}
             activeNodeIds={simPreviewItems ? undefined : previewActiveSet}
             onToggleNodeActive={onToggleNodeActive}
