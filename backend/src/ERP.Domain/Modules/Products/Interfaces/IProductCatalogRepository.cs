@@ -18,6 +18,7 @@ public interface IProductCatalogRepository
     Task<IReadOnlyList<ProductType>> GetProductTypesAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default);
 
     Task AddUnitOfMeasureAsync(UnitOfMeasure unit, CancellationToken ct = default);
+    Task<UnitOfMeasure?> GetUnitOfMeasureByIdAsync(Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<UnitOfMeasure>> GetUnitsOfMeasureAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default);
 
     Task AddTariffAsync(Tariff tariff, CancellationToken ct = default);

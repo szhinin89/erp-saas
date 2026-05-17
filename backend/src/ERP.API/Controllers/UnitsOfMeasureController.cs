@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using ERP.API.Contracts;
@@ -6,12 +6,14 @@ using ERP.API.Extensions;
 using ERP.Application.Products.DTOs;
 using ERP.Application.Products.UseCases.CreateUnitOfMeasure;
 using ERP.Application.Products.UseCases.GetUnitsOfMeasure;
+using ERP.Application.Products.UseCases.UpdateUnitOfMeasure;
+using ERP.Application.Products.UseCases.DisableUnitOfMeasure;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// Catálogo maestro: Unidades de medida (UoM) del tenant autenticado.
+/// Master catalog: units of measure for the authenticated tenant.
 /// </summary>
 [AppFeature("Unidades de medida", "perm:inventario.units.view", "📏", "/inventario/units", "perm:inventario.products.view", 37)]
 [ApiController]
@@ -27,11 +29,7 @@ public class UnitsOfMeasureController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>Lista unidades de medida del tenant.</summary>
-    /// <param name="onlyActive">Si es true, retorna únicamente unidades habilitadas.</param>
-    /// <param name="ct">Token de cancelación.</param>
-    /// <response code="200">Lista de unidades (puede ser vacía).</response>
-    /// <response code="401">Token JWT ausente o inválido.</response>
+    /// <summary>Lists units of measure for the current tenant.</summary>
     [HttpGet]
     [Authorize(Policy = "perm:inventario.units.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<UnitOfMeasureDto>>), StatusCodes.Status200OK)]
@@ -42,11 +40,7 @@ public class UnitsOfMeasureController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<UnitOfMeasureDto>());
     }
 
-    /// <summary>Crea una nueva unidad de medida.</summary>
-    /// <remarks>El código/nombre debe ser único por tenant.</remarks>
-    /// <response code="201">Unidad creada correctamente.</response>
-    /// <response code="400">Error de validación (por ejemplo, duplicado).</response>
-    /// <response code="401">Token JWT ausente o inválido.</response>
+    /// <summary>Creates a new unit of measure.</summary>
     [HttpPost]
     [Authorize(Policy = "perm:inventario.units.create")]
     [ProducesResponseType(typeof(ApiResponse<UnitOfMeasureDto?>), StatusCodes.Status201Created)]
@@ -56,7 +50,43 @@ public class UnitsOfMeasureController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateUnitOfMeasureCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
-        return this.ToCreatedOrBadRequest(result, "Creado");
+        return this.ToCreatedOrBadRequest(result, "Created");
+    }
+
+    /// <summary>Updates an existing unit of measure.</summary>
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = "perm:inventario.units.update")]
+    [ProducesResponseType(typeof(ApiResponse<UnitOfMeasureDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateUnitOfMeasureCommand command, CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(command with { UnitOfMeasureId = id }, ct);
+        return this.ToOkOrBadRequest(result, "Updated");
+    }
+
+    /// <summary>Disables (soft-delete) a unit of measure.</summary>
+    [HttpPatch("{id:guid}/disable")]
+    [Authorize(Policy = "perm:inventario.units.delete")]
+    [ProducesResponseType(typeof(ApiResponse<UnitOfMeasureDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Disable(Guid id, CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new DisableUnitOfMeasureCommand(id), ct);
+        return this.ToOkOrBadRequest(result, "Disabled");
+    }
+
+    /// <summary>Re-enables a disabled unit of measure.</summary>
+    [HttpPatch("{id:guid}/enable")]
+    [Authorize(Policy = "perm:inventario.units.update")]
+    [ProducesResponseType(typeof(ApiResponse<UnitOfMeasureDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Enable(Guid id, CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new EnableUnitOfMeasureCommand(id), ct);
+        return this.ToOkOrBadRequest(result, "Enabled");
     }
 }
-

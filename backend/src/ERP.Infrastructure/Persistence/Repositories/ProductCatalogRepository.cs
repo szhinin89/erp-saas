@@ -57,6 +57,9 @@ public class ProductCatalogRepository : IProductCatalogRepository
     public Task AddUnitOfMeasureAsync(UnitOfMeasure unit, CancellationToken ct = default)
         => _context.UnitsOfMeasure.AddAsync(unit, ct).AsTask();
 
+    public Task<UnitOfMeasure?> GetUnitOfMeasureByIdAsync(Guid id, CancellationToken ct = default)
+        => _context.UnitsOfMeasure.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == id, ct);
+
     public async Task<IReadOnlyList<UnitOfMeasure>> GetUnitsOfMeasureAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default)
     {
         var q = _context.UnitsOfMeasure.AsQueryable().Where(x => x.TenantId == tenantId);

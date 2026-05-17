@@ -3,6 +3,7 @@ import type { ApiResponse } from '../types/api';
 
 export type CatalogItem = { id: string; code: string; name: string; isActive: boolean };
 export type BrandItem = CatalogItem & { manufacturer?: string | null; countryOfOrigin?: string | null };
+export type UnitItem  = CatalogItem & { symbol?: string | null };
 type TariffApiItem = { id: string; code: string; description: string; isActive: boolean };
 
 export type CatalogActiveStatus = 'all' | 'active' | 'inactive';
@@ -56,7 +57,7 @@ function catalogQuery(params: {
 export const catalogService = {
   brands: (onlyActive = true) => getList<BrandItem[]>(`/api/brands?onlyActive=${onlyActive}`),
   productTypes: (onlyActive = true) => getList<CatalogItem[]>(`/api/producttypes?onlyActive=${onlyActive}`),
-  units: (onlyActive = true) => getList<CatalogItem[]>(`/api/unitsofmeasure?onlyActive=${onlyActive}`),
+  units: (onlyActive = true) => getList<UnitItem[]>(`/api/unitsofmeasure?onlyActive=${onlyActive}`),
   taxRates: (onlyActive = true) => getList<CatalogItem[]>(`/api/taxrates?onlyActive=${onlyActive}`),
   tariffs: async (onlyActive = true) => {
     const data = await getList<TariffApiItem[]>(`/api/tariffs?onlyActive=${onlyActive}`);
@@ -111,7 +112,11 @@ export const catalogService = {
     put<CatalogItem>(`/api/producttypes/${encodeURIComponent(id)}`, { productTypeId: id, ...body }),
   disableProductType: (id: string) => patch<CatalogItem>(`/api/producttypes/${encodeURIComponent(id)}/disable`),
   enableProductType:  (id: string) => patch<CatalogItem>(`/api/producttypes/${encodeURIComponent(id)}/enable`),
-  createUnit: (body: { code: string; name: string; symbol?: string | null }) => post<CatalogItem>('/api/unitsofmeasure', body),
+  createUnit: (body: { code: string; name: string; symbol?: string | null }) => post<UnitItem>('/api/unitsofmeasure', body),
+  updateUnit: (id: string, body: { code: string; name: string; symbol?: string | null }) =>
+    put<UnitItem>(`/api/unitsofmeasure/${encodeURIComponent(id)}`, { unitOfMeasureId: id, ...body }),
+  disableUnit: (id: string) => patch<UnitItem>(`/api/unitsofmeasure/${encodeURIComponent(id)}/disable`),
+  enableUnit:  (id: string) => patch<UnitItem>(`/api/unitsofmeasure/${encodeURIComponent(id)}/enable`),
   createTaxRate: (body: { code: string; name: string; type: 'VAT' | 'Excise' | 'Other'; percentage: number }) =>
     post<CatalogItem>('/api/taxrates', body),
   createTariff: async (body: { code: string; name: string }) => {

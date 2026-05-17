@@ -1,11 +1,11 @@
 import { Route, Navigate } from 'react-router-dom';
 import {
-  UnitsCatalogPage,
   TariffsCatalogPage,
   CatalogStructurePage,
 } from '../modules/catalog/pages/CatalogPages';
 import { BrandsPage } from '../pages/BrandsPage';
 import { ProductTypesPage } from '../pages/ProductTypesPage';
+import { UnitsPage } from '../pages/UnitsPage';
 import { TransferenciasListPage }  from '../modules/inventario/transferencias/pages/TransferenciasListPage';
 import { CrearTransferenciaPage }  from '../modules/inventario/transferencias/pages/CrearTransferenciaPage';
 import { TransferenciaDetailPage } from '../modules/inventario/transferencias/pages/TransferenciaDetailPage';
@@ -37,7 +37,7 @@ export const catalogRoutes = [
 
   <Route key="brands" path="/inventario/brands" element={<BrandsPage />} />,
   <Route key="product-types" path="/inventario/product-types" element={<ProductTypesPage />} />,
-  <Route key="units" path="/inventario/units" element={<UnitsCatalogPage />} />,
+  <Route key="units" path="/inventario/units" element={<UnitsPage />} />,
   <Route key="tariffs" path="/inventario/tariffs" element={<TariffsCatalogPage />} />,
   <Route key="structure" path="/inventario/structure" element={<CatalogStructurePage />} />,
   // Legacy catalog/* redirects
