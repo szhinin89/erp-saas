@@ -92,6 +92,7 @@ type PromptRequest = {
   title: string;
   label: string;
   defaultValue: string;
+  placeholder?: string;
 };
 
 function LibraryRow({ node, dense, onPreview }: { node: FuncionalidadArbolDto; dense?: boolean; onPreview?: (node: FuncionalidadArbolDto) => void }) {
@@ -284,7 +285,8 @@ export function MenuBuilder({
           parentUid,
           title: 'Nueva carpeta',
           label: 'Nombre de carpeta',
-          defaultValue: defaultName,
+          defaultValue: '',
+          placeholder: defaultName,
         });
         return;
       }
@@ -309,7 +311,8 @@ export function MenuBuilder({
           parentUid,
           title: 'Nuevo formulario',
           label: 'Nombre de formulario',
-          defaultValue: defaultName,
+          defaultValue: '',
+          placeholder: defaultName,
         });
         return;
       }
@@ -716,6 +719,7 @@ export function MenuBuilder({
             title={promptRequest.title}
             label={promptRequest.label}
             initialValue={promptRequest.defaultValue}
+            placeholder={promptRequest.placeholder}
             confirmLabel="Aceptar"
             cancelLabel="Cancelar"
             onCancel={() => setPromptRequest(null)}
