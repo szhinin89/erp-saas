@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
@@ -141,6 +142,53 @@ internal static class DevDatabaseSeeder
             TaxRate.Create(tenant.Id, "IVA0", "IVA 0%", TaxRateType.VAT, 0m, SeederActorId));
 
         await db.SaveChangesAsync(ct);
+
+        // ── Default access profiles with permissions ──────────────────────────
+        await SeedDefaultProfilesAsync(db, tenant.Id, ct);
+    }
+
+    /// <summary>
+    /// Seeds the default business access profiles (Facturador, Bodeguero, Contador).
+    /// Idempotent: skips profiles that already exist by name.
+    /// </summary>
+    public static async Task SeedDefaultProfilesAsync(
+        ErpDbContext db, Guid tenantId, CancellationToken ct = default)
+    {
+        var profiles = new[]
+        {
+            ("Facturador",  "Billing operator — can create and void invoices.",   Permissions.FacilitadorProfile),
+            ("Bodeguero",   "Warehouse operator — manages stock and transfers.",  Permissions.BodegueroProfile),
+            ("Contador",    "Accountant — read-only access to accounting data.", Permissions.ContadorProfile),
+        };
+
+        foreach (var (name, description, permKeys) in profiles)
+        {
+            var existing = await db.AccessProfiles
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.Name == name, ct);
+
+            if (existing is not null) continue;
+
+            var profile = AccessProfile.Create(
+                tenantId:    tenantId,
+                name:        name,
+                description: description,
+                createdBy:   SeederActorId);
+
+            db.AccessProfiles.Add(profile);
+            await db.SaveChangesAsync(ct);
+
+            var permissions = permKeys.Select(key =>
+                AccessProfilePermission.Create(
+                    tenantId:      tenantId,
+                    profileId:     profile.Id,
+                    permissionKey: key,
+                    isAllowed:     true,
+                    createdBy:     SeederActorId));
+
+            db.AccessProfilePermissions.AddRange(permissions);
+            await db.SaveChangesAsync(ct);
+        }
     }
 }
 
