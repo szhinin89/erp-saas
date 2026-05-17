@@ -6,7 +6,7 @@ import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../zh/ZHLayout';
 import { ZHPageNotice } from '../zh/ZHPageNotice';
 import { useI18n } from '../../i18n/i18n';
 import { MenuBuilder, type MenuBuilderViewMode } from '../menu-builder/MenuBuilder';
-import type { MenuPreviewLayout } from '../menu-builder/MenuPreview';
+import { MenuPreview, type MenuPreviewLayout } from '../menu-builder/MenuPreview';
 import {
   buildFuncionalidadMaps,
   editorToMenuItems,
@@ -946,6 +946,22 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
     return () => window.clearTimeout(tid);
   }, [planId, json, previewLayout, persistCrmPlan]);
 
+  const previewData = useMemo(() => {
+    if (!crmWorkspace) return [];
+    const items = editorToMenuItems(visualTree);
+    const activeSet = new Set(planActiveById[planId] ?? []);
+    if (!activeSet.size) return [];
+    const filter = (nodes: MenuItem[]): MenuItem[] => {
+      const out: MenuItem[] = [];
+      for (const n of nodes) {
+        const children = filter(n.children ?? []);
+        if (activeSet.has(n.id) || children.length > 0) out.push({ ...n, children });
+      }
+      return out;
+    };
+    return filter(items);
+  }, [crmWorkspace, visualTree, planId, planActiveById]);
+
   if (crmWorkspace) {
     const activePlan = crmPlans.find((p) => p.id === planId);
     const activePlanIndex = crmPlans.findIndex((p) => p.id === planId);
@@ -973,6 +989,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
     const priceLabel = activePlan ? formatMoney(showAnnual ? activePlan.priceYearly : activePlan.priceMonthly, 'USD', locTag) : '—';
     const cycleLabel = showAnnual ? '/año' : '/mes';
     const currentActiveSet = new Set(planActiveById[planId] ?? []);
+
     const planCardFeatures = visualTree
       .filter((x) => currentActiveSet.has(x.uid))
       .map((x) => x.nombre)
@@ -1489,6 +1506,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
           <MenuBuilder
             workspaceVariant="crm"
             hideWorkspaceToolbar
+            hideCrmPreview
             catalogArbol={filteredArbol}
             tree={visualTree}
             onTreeChange={handleVisualTreeChange}
@@ -1501,16 +1519,35 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             crmMasterStack={crmMasterStack}
             crmLibraryStack={crmLibraryStack}
             crmMasterFooter={crmMasterFooter}
-            crmPreviewExtrasBottom={crmPreviewExtrasBottom}
-            previewControls={previewControls}
             activeNodeIds={currentActiveSet}
             onToggleNodeActive={onToggleNodeActive}
             panelTitles={{
               canvas: '📁 Árbol maestro',
-              preview: '🖥 Vista empresa (previsualización)',
               library: '📋 Formularios disponibles (arrastra al árbol)',
             }}
           />
+        </div>
+
+        {/* ── Vista empresa — full-width preview section ─────── */}
+        <div className="pg-section">
+          <div className="pg-section-header">
+            <div className="pg-section-header-left">
+              <span className="material-symbols-outlined pg-section-icon">visibility</span>
+              <h3 className="pg-section-label">Vista empresa (previsualización)</h3>
+              <span className="subtle" style={{ fontSize: 12, marginLeft: 'var(--space-2)' }}>
+                Vista aproximada del menú según el plan activo.
+              </span>
+            </div>
+            {previewControls}
+          </div>
+          <div className="pg-section-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-4)' }}>
+            <div style={{ width: '100%', maxWidth: 900 }}>
+              <MenuPreview items={previewData} layout={previewLayout} />
+            </div>
+            <div style={{ width: '100%', maxWidth: 320 }}>
+              {crmPreviewExtrasBottom}
+            </div>
+          </div>
         </div>
 
         <section className="pg-section" aria-labelledby="menu-plan-audit-heading">

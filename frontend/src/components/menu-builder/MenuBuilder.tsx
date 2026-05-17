@@ -80,6 +80,8 @@ type Props = {
   crmPreviewExtrasBottom?: ReactNode;
   /** Controls rendered inside the browser chrome bar of the preview simulation. */
   previewControls?: ReactNode;
+  /** When true in CRM mode, hides the preview column so the caller can render MenuPreview externally. */
+  hideCrmPreview?: boolean;
   /** Sustituye el menú simulado en la vista previa (p. ej. menú efectivo de otra empresa). */
   previewItemsOverride?: MenuItem[] | null;
   /** Activaciones por plan para la vista CRM (checkbox por nodo). */
@@ -162,6 +164,7 @@ export function MenuBuilder({
   crmPreviewExtras,
   crmPreviewExtrasBottom,
   previewControls,
+  hideCrmPreview = false,
   previewItemsOverride = null,
   activeNodeIds,
   onToggleNodeActive,
@@ -470,9 +473,15 @@ export function MenuBuilder({
     return filterTree(base);
   }, [activeNodeIds, previewItems, previewItemsOverride]);
 
+  const showPreviewPanel = showPreview && !(crmUi && hideCrmPreview);
+
   const workspaceMod =
     viewMode === 'split' ? 'menu-builder-workspace--split' : viewMode === 'editor' ? 'menu-builder-workspace--editor' : 'menu-builder-workspace--preview';
-  const crmMod = workspaceVariant === 'crm' && viewMode === 'split' ? ' menu-builder-workspace--split-crm' : '';
+  const crmMod = crmUi && viewMode === 'split'
+    ? hideCrmPreview
+      ? ' menu-builder-workspace--crm-2col'
+      : ' menu-builder-workspace--crm'
+    : '';
 
   const treeEmpty = tree.length === 0;
 
@@ -652,7 +661,7 @@ export function MenuBuilder({
             </>
           ) : null}
 
-          {showPreview ? (
+          {showPreviewPanel ? (
             <aside className="menu-builder-panel menu-builder-panel--preview">
               {!crmUi ? (
                 <header className="menu-builder-panel__head">

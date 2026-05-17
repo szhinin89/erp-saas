@@ -51,14 +51,24 @@
   min-height: 560px;
 }
 
+/* CRM mode without preview column (preview rendered externally) */
+.menu-builder-workspace--crm-2col {
+  grid-template-columns: 260px 1fr;
+  min-height: 560px;
+}
+
 @media (max-width: 1024px) {
   .menu-builder-workspace--crm {
     grid-template-columns: 220px 1fr 240px;
+  }
+  .menu-builder-workspace--crm-2col {
+    grid-template-columns: 220px 1fr;
   }
 }
 
 @media (max-width: 768px) {
   .menu-builder-workspace--crm,
+  .menu-builder-workspace--crm-2col,
   .menu-builder-workspace--split {
     grid-template-columns: 1fr;
   }
