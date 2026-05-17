@@ -145,6 +145,9 @@ internal static class DevDatabaseSeeder
 
         // ── Default access profiles with permissions ──────────────────────────
         await SeedDefaultProfilesAsync(db, tenant.Id, ct);
+        // Note: in production, DefaultProfileSeeder (IDefaultProfileSeeder) is called
+        // automatically by the tenant-creation handlers (SuperAdminCreateTenantWithAdminHandler
+        // and RegisterTenantWithAdminHandler) so profiles are always seeded for every tenant.
     }
 
     /// <summary>

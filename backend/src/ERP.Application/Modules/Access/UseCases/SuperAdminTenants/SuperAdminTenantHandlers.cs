@@ -24,6 +24,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ISaasCatalogQuery _saasCatalogQuery;
+    private readonly IDefaultProfileSeeder _profileSeeder;
 
     public SuperAdminCreateTenantWithAdminHandler(
         ITenantRepository tenantRepository,
@@ -33,7 +34,8 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         ICurrentUser currentUser,
         IDeploymentFeatureFlags deployment,
         IPasswordHasher passwordHasher,
-        ISaasCatalogQuery saasCatalogQuery)
+        ISaasCatalogQuery saasCatalogQuery,
+        IDefaultProfileSeeder profileSeeder)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
@@ -43,6 +45,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         _deployment = deployment;
         _passwordHasher = passwordHasher;
         _saasCatalogQuery = saasCatalogQuery;
+        _profileSeeder = profileSeeder;
     }
 
     public Task<Result<SessionResponseDto>> HandleAsync(SuperAdminCreateTenantWithAdminCommand command, CancellationToken ct = default)
@@ -126,6 +129,9 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
 
         // Un solo SaveChanges (mismo DbContext): evita confusión y persiste tenant + identity + membership en una transacción.
         await _accessRepository.SaveChangesAsync(ct);
+
+        // Seed default profiles (Facturador / Bodeguero / Contador) for the new tenant.
+        await _profileSeeder.SeedForTenantAsync(tenant.Id, _currentUser.UserId, ct);
 
         var sessionToken = _tokenService.GenerateSessionToken(adminUser, tenant.Id, "Admin");
         return Result<SessionResponseDto>.Success(new SessionResponseDto(

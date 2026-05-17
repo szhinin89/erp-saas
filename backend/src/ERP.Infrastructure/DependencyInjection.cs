@@ -34,6 +34,7 @@ using ERP.Infrastructure.Persistence.Saas;
 using ERP.Infrastructure.Security;
 using ERP.Infrastructure.Services;
 using ERP.Infrastructure.Services.Cash;
+using ERP.Infrastructure.Seeding;
 using ERP.Infrastructure.Seeding.InstallData;
 using ERP.Domain.Modules.Cash;
 
@@ -125,6 +126,7 @@ public static class DependencyInjection
         services.AddScoped<ICashRepository, CajaRepository>();
         services.AddScoped<IStatementParser, BankStatementCsvParser>();
         services.AddScoped<ICarrierRepository, CarrierRepository>();
+        services.AddScoped<IDefaultProfileSeeder, DefaultProfileSeeder>();
 
         return services;
     }

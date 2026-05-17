@@ -6,6 +6,7 @@ using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Tenants.Interfaces;
+using ERP.Application.Common.Interfaces;
 
 namespace ERP.Application.Access.UseCases.RegisterTenantWithAdmin;
 
@@ -16,19 +17,22 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
     private readonly IAccessTokenService _tokenService;
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IDefaultProfileSeeder _profileSeeder;
 
     public RegisterTenantWithAdminHandler(
         ITenantRepository tenantRepository,
         IAccessRepository accessRepository,
         IAccessTokenService tokenService,
         IDeploymentFeatureFlags deployment,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        IDefaultProfileSeeder profileSeeder)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
         _tokenService = tokenService;
         _deployment = deployment;
         _passwordHasher = passwordHasher;
+        _profileSeeder = profileSeeder;
     }
 
     public Task<Result<SessionResponseDto>> HandleAsync(RegisterTenantWithAdminCommand command, CancellationToken ct = default)
@@ -93,6 +97,9 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
         await _accessRepository.AddMembershipAsync(membership, ct);
 
         await _accessRepository.SaveChangesAsync(ct);
+
+        // Seed default profiles (Facturador / Bodeguero / Contador) for the new tenant.
+        await _profileSeeder.SeedForTenantAsync(tenant.Id, actorId: identityUser.Id, ct);
 
         var sessionToken = _tokenService.GenerateSessionToken(identityUser, tenant.Id, "Admin");
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
