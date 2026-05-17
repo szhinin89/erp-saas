@@ -13,8 +13,10 @@ public class BrandConfiguration : IEntityTypeConfiguration<Brand>
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
 
-        builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(20).IsRequired();
-        builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
+        builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(Brand.MaxCodeLength).IsRequired();
+        builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(Brand.MaxNameLength).IsRequired();
+        builder.Property(x => x.Manufacturer).HasColumnName("manufacturer").HasMaxLength(Brand.MaxManufacturerLength);
+        builder.Property(x => x.CountryOfOrigin).HasColumnName("country_of_origin").HasMaxLength(Brand.MaxCountryLength);
 
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
         builder.Property(x => x.CreatedAt).HasColumnName("created_at");

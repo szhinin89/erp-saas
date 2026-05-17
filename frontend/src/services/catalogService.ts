@@ -2,6 +2,7 @@ import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
 
 export type CatalogItem = { id: string; code: string; name: string; isActive: boolean };
+export type BrandItem = CatalogItem & { manufacturer?: string | null; countryOfOrigin?: string | null };
 type TariffApiItem = { id: string; code: string; description: string; isActive: boolean };
 
 export type CatalogActiveStatus = 'all' | 'active' | 'inactive';
@@ -53,7 +54,7 @@ function catalogQuery(params: {
 }
 
 export const catalogService = {
-  brands: (onlyActive = true) => getList<CatalogItem[]>(`/api/brands?onlyActive=${onlyActive}`),
+  brands: (onlyActive = true) => getList<BrandItem[]>(`/api/brands?onlyActive=${onlyActive}`),
   productTypes: (onlyActive = true) => getList<CatalogItem[]>(`/api/producttypes?onlyActive=${onlyActive}`),
   units: (onlyActive = true) => getList<CatalogItem[]>(`/api/unitsofmeasure?onlyActive=${onlyActive}`),
   taxRates: (onlyActive = true) => getList<CatalogItem[]>(`/api/taxrates?onlyActive=${onlyActive}`),
@@ -99,7 +100,12 @@ export const catalogService = {
       })}`
     ),
 
-  createBrand: (body: { code: string; name: string }) => post<CatalogItem>('/api/brands', body),
+  createBrand: (body: { code: string; name: string; manufacturer?: string | null; countryOfOrigin?: string | null }) =>
+    post<BrandItem>('/api/brands', body),
+  updateBrand: (id: string, body: { code: string; name: string; manufacturer?: string | null; countryOfOrigin?: string | null }) =>
+    put<BrandItem>(`/api/brands/${encodeURIComponent(id)}`, { brandId: id, ...body }),
+  disableBrand: (id: string) => patch<BrandItem>(`/api/brands/${encodeURIComponent(id)}/disable`),
+  enableBrand:  (id: string) => patch<BrandItem>(`/api/brands/${encodeURIComponent(id)}/enable`),
   createProductType: (body: { code: string; name: string }) => post<CatalogItem>('/api/producttypes', body),
   createUnit: (body: { code: string; name: string; symbol?: string | null }) => post<CatalogItem>('/api/unitsofmeasure', body),
   createTaxRate: (body: { code: string; name: string; type: 'VAT' | 'Excise' | 'Other'; percentage: number }) =>

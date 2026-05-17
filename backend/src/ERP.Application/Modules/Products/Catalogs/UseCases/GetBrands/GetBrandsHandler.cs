@@ -23,7 +23,7 @@ public class GetBrandsHandler : IRequestHandler<GetBrandsQuery, Result<IReadOnly
     {
         var tenantId = _currentTenant.TenantId;
         var items = await _repo.GetBrandsAsync(tenantId, request.OnlyActive, ct);
-        var dtos = items.Select(x => new BrandDto(x.Id, x.Code, x.Name, x.IsActive)).ToList();
+        var dtos = items.Select(x => new BrandDto(x.Id, x.Code, x.Name, x.IsActive, x.Manufacturer, x.CountryOfOrigin)).ToList();
         return Result<IReadOnlyList<BrandDto>>.Success(dtos);
     }
 }

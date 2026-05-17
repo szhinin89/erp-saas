@@ -3,7 +3,7 @@ using ERP.Domain.Products.Entities;
 namespace ERP.Application.Products.Catalogs.DTOs;
 
 public record TaxRateDto(Guid Id, string Code, string Name, TaxRateType Type, decimal Percentage, bool IsActive);
-public record BrandDto(Guid Id, string Code, string Name, bool IsActive);
+public record BrandDto(Guid Id, string Code, string Name, bool IsActive, string? Manufacturer, string? CountryOfOrigin);
 public record ProductTypeDto(Guid Id, string Code, string Name, bool IsActive);
 public record UnitOfMeasureDto(Guid Id, string Code, string Name, string? Symbol, bool IsActive);
 public record TariffDto(Guid Id, string Code, string Description, bool IsActive);

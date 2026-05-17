@@ -2,31 +2,46 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Products.Entities;
 
-/// <summary>Marca del producto.</summary>
+/// <summary>Product brand with optional manufacturer and country of origin.</summary>
 public class Brand : MasterEntity
 {
-    public string Code { get; private set; } = null!;
-    public string Name { get; private set; } = null!;
+    public const int MaxCodeLength         = 20;
+    public const int MaxNameLength         = 120;
+    public const int MaxManufacturerLength = 120;
+    public const int MaxCountryLength      = 80;
+
+    public string  Code             { get; private set; } = null!;
+    public string  Name             { get; private set; } = null!;
+    public string? Manufacturer     { get; private set; }
+    public string? CountryOfOrigin  { get; private set; }
 
     private Brand() { }
 
-    public static Brand Create(Guid tenantId, string code, string name, Guid createdBy)
+    public static Brand Create(
+        Guid tenantId, string code, string name, Guid createdBy,
+        string? manufacturer = null, string? countryOfOrigin = null)
     {
         var brand = new Brand
         {
-            Id       = Guid.NewGuid(),
-            TenantId = tenantId,
-            Code     = code.ToUpperInvariant(),
-            Name     = name,
+            Id              = Guid.NewGuid(),
+            TenantId        = tenantId,
+            Code            = code.Trim().ToUpperInvariant(),
+            Name            = name.Trim(),
+            Manufacturer    = manufacturer?.Trim() is { Length: > 0 } m ? m : null,
+            CountryOfOrigin = countryOfOrigin?.Trim() is { Length: > 0 } c ? c : null,
         };
         brand.SetCreated(createdBy);
         return brand;
     }
 
-    public void Update(string code, string name, Guid updatedBy)
+    public void Update(
+        string code, string name, Guid updatedBy,
+        string? manufacturer = null, string? countryOfOrigin = null)
     {
-        Code = code.ToUpperInvariant();
-        Name = name;
+        Code            = code.Trim().ToUpperInvariant();
+        Name            = name.Trim();
+        Manufacturer    = manufacturer?.Trim() is { Length: > 0 } m ? m : null;
+        CountryOfOrigin = countryOfOrigin?.Trim() is { Length: > 0 } c ? c : null;
         SetUpdated(updatedBy);
     }
 }

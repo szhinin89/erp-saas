@@ -10,6 +10,7 @@ public interface IProductCatalogRepository
 
     // Catalogs
     Task AddBrandAsync(Brand brand, CancellationToken ct = default);
+    Task<Brand?> GetBrandByIdAsync(Guid id, CancellationToken ct = default);
     Task<IReadOnlyList<Brand>> GetBrandsAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default);
 
     Task AddProductTypeAsync(ProductType type, CancellationToken ct = default);

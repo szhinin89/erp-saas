@@ -29,6 +29,9 @@ public class ProductCatalogRepository : IProductCatalogRepository
     public Task AddBrandAsync(Brand brand, CancellationToken ct = default)
         => _context.Brands.AddAsync(brand, ct).AsTask();
 
+    public Task<Brand?> GetBrandByIdAsync(Guid id, CancellationToken ct = default)
+        => _context.Brands.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == id, ct);
+
     public async Task<IReadOnlyList<Brand>> GetBrandsAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default)
     {
         var q = _context.Brands.AsQueryable().Where(x => x.TenantId == tenantId);
