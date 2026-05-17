@@ -114,12 +114,20 @@ internal static class DevDatabaseSeeder
         await db.SaveChangesAsync(ct);
 
         db.Warehouses.Add(Warehouse.Create(
-            tenantId: tenant.Id,
-            branchId: branch.Id,
-            name: "Warehouse Principal",
-            address: null,
-            manager: null,
-            createdBy: SeederActorId));
+            tenantId:          tenant.Id,
+            branchId:          branch.Id,
+            name:              "Warehouse Principal",
+            code:              "WH-SEED-001",
+            storageType:       null,
+            address:           null,
+            phone:             null,
+            email:             null,
+            manager:           null,
+            latitude:          null,
+            longitude:         null,
+            capacity:          null,
+            dailyDispatchGoal: null,
+            createdBy:         SeederActorId));
 
         db.Accounts.AddRange(
             Account.Create(tenant.Id, "1.1.01", "Caja General", AccountType.Asset, AccountNature.Debit, SeederActorId),

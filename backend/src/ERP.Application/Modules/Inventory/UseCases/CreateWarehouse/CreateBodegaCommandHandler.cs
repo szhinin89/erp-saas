@@ -36,9 +36,14 @@ public sealed class CreateWarehouseCommandHandler
         if (await _repo.ExistsNameAsync(tenantId, command.Name, null, ct))
             return Result<WarehouseDto>.Failure($"Ya existe una Warehouse con el nombre '{command.Name}' en este tenant.");
 
+        var code = $"WH-{DateTime.UtcNow.Year}-{Guid.NewGuid():N}"[..13];
+
         var wh = Warehouse.Create(
             tenantId, command.BranchId, command.Name,
-            command.Address, command.Manager, userId);
+            code, command.StorageType,
+            command.Address, command.Phone, command.Email, command.Manager,
+            command.Latitude, command.Longitude,
+            command.Capacity, command.DailyDispatchGoal, userId);
 
         await _repo.AddAsync(wh, ct);
         await _activity.AddAsync(UserActivity.Create(
@@ -51,6 +56,8 @@ public sealed class CreateWarehouseCommandHandler
         return Result<WarehouseDto>.Success(ToDto(wh));
     }
 
-    private static WarehouseDto ToDto(Warehouse b) =>
-        new(b.Id, b.BranchId, b.Name, b.Address, b.Manager, b.IsActive);
+    private static WarehouseDto ToDto(Warehouse w) =>
+        new(w.Id, w.BranchId, w.Name, w.Code, w.StorageType,
+            w.Address, w.Phone, w.Email, w.Manager,
+            w.Latitude, w.Longitude, w.Capacity, w.DailyDispatchGoal, w.IsActive);
 }

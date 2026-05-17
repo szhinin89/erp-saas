@@ -3,28 +3,50 @@ import type { ApiResponse } from '../types/api';
 
 export type CatalogActiveStatus = 'all' | 'active' | 'inactive';
 
-export type BodegaDto = {
+export type WarehouseDto = {
   id: string;
   branchId: string;
   name: string;
+  code: string | null;
+  storageType: string | null;
   address: string | null;
+  phone: string | null;
+  email: string | null;
   manager: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  capacity: number | null;
+  dailyDispatchGoal: number | null;
   isActive: boolean;
 };
 
-export type BodegaDetailDto = BodegaDto & {
+export type WarehouseDetailDto = WarehouseDto & {
   createdAt: string;
   updatedAt: string | null;
   createdBy: string;
   updatedBy: string | null;
 };
 
-export type BodegaPayload = {
+export type WarehousePayload = {
   branchId: string;
   name: string;
+  storageType?: string | null;
   address?: string | null;
+  phone?: string | null;
+  email?: string | null;
   manager?: string | null;
+  latitude?: string | null;
+  longitude?: string | null;
+  capacity?: number | null;
+  dailyDispatchGoal?: number | null;
 };
+
+/** @deprecated Use WarehouseDto */
+export type BodegaDto = WarehouseDto;
+/** @deprecated Use WarehouseDetailDto */
+export type BodegaDetailDto = WarehouseDetailDto;
+/** @deprecated Use WarehousePayload */
+export type BodegaPayload = WarehousePayload;
 
 function get<T>(url: string) {
   return api.get<ApiResponse<T>>(url).then((r) => r.data.responseObject);
@@ -42,27 +64,26 @@ function patch<T>(url: string) {
   return api.patch<ApiResponse<T>>(url, {}).then((r) => r.data.responseObject);
 }
 
-function listQuery(activeStatus: CatalogActiveStatus, search?: string, sucursalId?: string) {
+function listQuery(activeStatus: CatalogActiveStatus, search?: string, branchId?: string) {
   const q = new URLSearchParams();
   q.set('activeStatus', activeStatus);
-  if (search?.trim()) q.set('search', search.trim());
-  if (sucursalId?.trim()) q.set('sucursalId', sucursalId.trim());
+  if (search?.trim())    q.set('search', search.trim());
+  if (branchId?.trim()) q.set('sucursalId', branchId.trim());
   return `?${q.toString()}`;
 }
 
 export const bodegaService = {
-  list: (activeStatus: CatalogActiveStatus = 'all', search?: string, sucursalId?: string) =>
-    get<BodegaDto[]>(`/api/bodegas${listQuery(activeStatus, search, sucursalId)}`),
+  list: (activeStatus: CatalogActiveStatus = 'all', search?: string, branchId?: string) =>
+    get<WarehouseDto[]>(`/api/bodegas${listQuery(activeStatus, search, branchId)}`),
 
-  getById: (id: string) => get<BodegaDetailDto>(`/api/bodegas/${id}`),
+  getById: (id: string) => get<WarehouseDetailDto>(`/api/bodegas/${id}`),
 
-  create: (body: BodegaPayload) =>
-    post<BodegaDto>('/api/bodegas', body),
+  create: (body: WarehousePayload) =>
+    post<WarehouseDto>('/api/bodegas', body),
 
-  update: (id: string, body: BodegaPayload & { id: string }) =>
-    put<BodegaDto>(`/api/bodegas/${id}`, body),
+  update: (id: string, body: WarehousePayload & { id: string }) =>
+    put<WarehouseDto>(`/api/bodegas/${id}`, body),
 
-  disable: (id: string) => patch<BodegaDto>(`/api/bodegas/${id}/disable`),
-  enable: (id: string) => patch<BodegaDto>(`/api/bodegas/${id}/enable`),
+  disable: (id: string) => patch<WarehouseDto>(`/api/bodegas/${id}/disable`),
+  enable:  (id: string) => patch<WarehouseDto>(`/api/bodegas/${id}/enable`),
 };
-

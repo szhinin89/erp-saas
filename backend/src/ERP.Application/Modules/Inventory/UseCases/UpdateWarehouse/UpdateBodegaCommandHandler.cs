@@ -40,7 +40,11 @@ public sealed class UpdateWarehouseCommandHandler
         if (await _repo.ExistsNameAsync(tenantId, command.Name, command.Id, ct))
             return Result<WarehouseDto>.Failure($"Ya existe otra Warehouse con el nombre '{command.Name}' en este tenant.");
 
-        Warehouse.Update(command.BranchId, command.Name, command.Address, command.Manager, userId);
+        Warehouse.Update(
+            command.BranchId, command.Name,
+            command.StorageType, command.Address, command.Phone, command.Email, command.Manager,
+            command.Latitude, command.Longitude,
+            command.Capacity, command.DailyDispatchGoal, userId);
 
         await _activity.AddAsync(UserActivity.Create(
             tenantId, userId, _user.Email, _user.FullName,
@@ -52,6 +56,8 @@ public sealed class UpdateWarehouseCommandHandler
         return Result<WarehouseDto>.Success(ToDto(Warehouse));
     }
 
-    private static WarehouseDto ToDto(Warehouse b) =>
-        new(b.Id, b.BranchId, b.Name, b.Address, b.Manager, b.IsActive);
+    private static WarehouseDto ToDto(Warehouse w) =>
+        new(w.Id, w.BranchId, w.Name, w.Code, w.StorageType,
+            w.Address, w.Phone, w.Email, w.Manager,
+            w.Latitude, w.Longitude, w.Capacity, w.DailyDispatchGoal, w.IsActive);
 }

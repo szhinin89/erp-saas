@@ -24,7 +24,9 @@ public sealed class GetWarehouseByIdQueryHandler
         if (b is null) return Result<WarehouseDetailDto?>.Success(null);
 
         return Result<WarehouseDetailDto?>.Success(new WarehouseDetailDto(
-            b.Id, b.BranchId, b.Name, b.Address, b.Manager,
+            b.Id, b.BranchId, b.Name, b.Code, b.StorageType,
+            b.Address, b.Phone, b.Email, b.Manager,
+            b.Latitude, b.Longitude, b.Capacity, b.DailyDispatchGoal,
             b.IsActive, b.CreatedAt, b.UpdatedAt, b.CreatedBy, b.UpdatedBy));
     }
 }

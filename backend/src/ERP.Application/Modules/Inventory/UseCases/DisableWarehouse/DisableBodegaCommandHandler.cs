@@ -49,6 +49,8 @@ public sealed class DisableWarehouseCommandHandler
         return Result<WarehouseDto>.Success(ToDto(Warehouse));
     }
 
-    private static WarehouseDto ToDto(Warehouse b) =>
-        new(b.Id, b.BranchId, b.Name, b.Address, b.Manager, b.IsActive);
+    private static WarehouseDto ToDto(Warehouse w) =>
+        new(w.Id, w.BranchId, w.Name, w.Code, w.StorageType,
+            w.Address, w.Phone, w.Email, w.Manager,
+            w.Latitude, w.Longitude, w.Capacity, w.DailyDispatchGoal, w.IsActive);
 }

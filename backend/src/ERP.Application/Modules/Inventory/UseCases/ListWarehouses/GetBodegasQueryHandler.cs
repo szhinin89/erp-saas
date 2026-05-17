@@ -24,7 +24,9 @@ public sealed class GetWarehousesQueryHandler
             _tenant.TenantId, query.ActiveFilter, query.Search, query.BranchId, ct);
 
         var dtos = list.Select(b => new WarehouseDto(
-            b.Id, b.BranchId, b.Name, b.Address, b.Manager, b.IsActive))
+            b.Id, b.BranchId, b.Name, b.Code, b.StorageType,
+            b.Address, b.Phone, b.Email, b.Manager,
+            b.Latitude, b.Longitude, b.Capacity, b.DailyDispatchGoal, b.IsActive))
             .ToList();
 
         return Result<IReadOnlyList<WarehouseDto>>.Success(dtos);
