@@ -6,7 +6,7 @@ public sealed class SwitchTenantCommandValidator : AbstractValidator<SwitchTenan
 {
     public SwitchTenantCommandValidator()
     {
-        RuleFor(x => x.TenantId)
-            .NotEmpty().WithMessage("El tenant es obligatorio.");
+        // Guid.Empty is valid: SuperAdmin sends it to return to the global panel.
+        // Business validation (tenant exists, user is SuperAdmin) is handled in the handler.
     }
 }
