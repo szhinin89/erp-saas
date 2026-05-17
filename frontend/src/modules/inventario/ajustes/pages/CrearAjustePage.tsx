@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { NoAccessPage, PageShell } from '../../../../components/PageShell';
-import { Card } from '../../../../components/ui/Card';
-import { ZHBtn, ZHField, ZHFormSection, ZHGrid } from '../../../../components/zh/ZHForm';
+import { NoAccessPage } from '../../../../components/PageShell';
+import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { useAjusteAcciones } from '../hooks/useAjustes';
@@ -11,7 +10,6 @@ import { ajusteService, MOTIVOS_PREDEFINIDOS } from '../api/ajusteService';
 import { useAsync } from '../../../../hooks/useAsync';
 import { api } from '../../../lib/api';
 import type { ApiResponse } from '../../../../types/api';
-import './ajustes-pages.css';
 
 interface ProductoOpcion {
   id: string;
@@ -42,29 +40,25 @@ export function CrearAjustePage() {
   const [stock,      setStock]      = useState<number | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
 
-  const { loading, error, crear } = useAjusteAcciones(
-    () => navigate('/inventario/ajustes')
-  );
+  const { loading, error, crear } = useAjusteAcciones(() => navigate('/inventario/ajustes'));
 
-  // Cargar stock disponible cuando cambian bodega o producto
   useEffect(() => {
     if (!bodegaId || !productoId) { setStock(null); return; }
-    ajusteService.getStockDisponible(bodegaId, productoId)
-      .then(setStock)
-      .catch(() => setStock(null));
+    ajusteService.getStockDisponible(bodegaId, productoId).then(setStock).catch(() => setStock(null));
   }, [bodegaId, productoId]);
 
-  const motivoFinal = motivo === 'Otro' ? motivoOtro : motivo;
-  const cantidadNum = parseFloat(cantidad) || 0;
-  const cantidadConSigno = signo === '-' ? -Math.abs(cantidadNum) : Math.abs(cantidadNum);
+  const motivoFinal       = motivo === 'Otro' ? motivoOtro : motivo;
+  const cantidadNum       = parseFloat(cantidad) || 0;
+  const cantidadConSigno  = signo === '-' ? -Math.abs(cantidadNum) : Math.abs(cantidadNum);
+  const stockInsuficiente = signo === '-' && stock !== null && cantidadNum > stock;
+  const stockLabel        = stock === null ? '—' : `${stock} disponibles`;
 
   const validar = () => {
     if (!bodegaId)   return 'Selecciona la bodega.';
     if (!productoId) return 'Selecciona el producto.';
     if (!cantidadNum || cantidadNum <= 0) return 'La cantidad debe ser mayor a cero.';
     if (!motivoFinal.trim()) return 'El motivo es obligatorio.';
-    if (signo === '-' && stock !== null && cantidadNum > stock)
-      return `Stock insuficiente: disponible ${stock}, solicitado ${cantidadNum}.`;
+    if (stockInsuficiente) return `Stock insuficiente: disponible ${stock}, solicitado ${cantidadNum}.`;
     return null;
   };
 
@@ -73,64 +67,86 @@ export function CrearAjustePage() {
     const err = validar();
     if (err) { setLocalError(err); return; }
     setLocalError(null);
-    await crear({
-      warehouseId: bodegaId,
-      productId: productoId,
-      adjustmentQty: cantidadConSigno,
-      reason: motivoFinal.trim(),
-      notes: obs.trim() || null,
-    });
+    await crear({ warehouseId: bodegaId, productId: productoId,
+      adjustmentQty: cantidadConSigno, reason: motivoFinal.trim(), notes: obs.trim() || null });
   };
 
   if (!canCreate) return <NoAccessPage title="Nuevo Ajuste" />;
 
-  const stockLabel = stock === null ? '—' : `${stock} disponibles`;
-  const stockClassName = signo === '-' && stock !== null && cantidadNum > stock
-    ? 'aj-stock-note--warning'
-    : 'aj-stock-note--normal';
-
   return (
-    <PageShell kicker="Inventario · Ajustes" title="Nuevo ajuste de inventario">
-      <form onSubmit={(e) => void handleSubmit(e)}>
-        <Card>
-          {(error ?? localError) && (
-            <ZHPageNotice variant="error" message="No se pudo crear el ajuste" detail={error ?? localError ?? ''} />
-          )}
+    <div className="pg-page">
 
-          <ZHFormSection title="Producto y bodega">
-            <ZHGrid cols={2}>
+      <div className="pg-header-row">
+        <div className="pg-header-left">
+          <nav className="pg-breadcrumb" aria-label="Navegación">
+            <span className="pg-breadcrumb-item">Inventario</span>
+            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
+            <span className="pg-breadcrumb-item">Ajustes</span>
+            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
+            <span className="pg-breadcrumb-item">Nuevo</span>
+          </nav>
+          <h1 className="pg-title">Nuevo Ajuste de Inventario</h1>
+          <p className="pg-subtitle">Registre una entrada o salida manual de stock.</p>
+        </div>
+      </div>
+
+      {(error || localError) && (
+        <ZHPageNotice variant="error" message="No se pudo crear el ajuste" detail={error ?? localError ?? ''} />
+      )}
+
+      <form onSubmit={(e) => void handleSubmit(e)}>
+
+        <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+          <div className="pg-section-header">
+            <div className="pg-section-header-left">
+              <span className="material-symbols-outlined pg-section-icon">inventory_2</span>
+              <span className="pg-section-label">Producto y Bodega</span>
+            </div>
+          </div>
+          <div className="pg-section-body">
+            <div className="pg-form-grid pg-form-grid--2">
               <ZHField label="Bodega" required>
-                <select value={bodegaId} disabled={loading || loadingBodegas}
+                <select className="zh-input" value={bodegaId}
+                  disabled={loading || loadingBodegas}
                   onChange={(e) => setBodegaId(e.target.value)}>
                   <option value="">— seleccionar —</option>
-                  {(bodegas ?? []).map((b) => (
-                    <option key={b.id} value={b.id}>{b.name}</option>
-                  ))}
+                  {(bodegas ?? []).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
               </ZHField>
 
               <ZHField label="Producto" required>
-                <select value={productoId} disabled={loading}
+                <select className="zh-input" value={productoId} disabled={loading}
                   onChange={(e) => setProductoId(e.target.value)}>
                   <option value="">— seleccionar —</option>
-                  {(productos ?? []).map((p) => (
-                    <option key={p.id} value={p.id}>{p.shortName}</option>
-                  ))}
+                  {(productos ?? []).map((p) => <option key={p.id} value={p.id}>{p.shortName}</option>)}
                 </select>
               </ZHField>
-            </ZHGrid>
+            </div>
 
-            {(bodegaId && productoId) && (
-              <p className={`aj-stock-note ${stockClassName}`}>
+            {bodegaId && productoId && (
+              <div style={{
+                marginTop: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)',
+                background: stockInsuficiente ? 'var(--color-error-surface, #fdecea)' : 'var(--color-surface-container)',
+                borderRadius: 'var(--radius-md)', fontSize: 'var(--text-body-sm-size)',
+                color: stockInsuficiente ? 'var(--color-error)' : 'var(--color-text-secondary)',
+              }}>
                 Stock actual en bodega seleccionada: <strong>{stockLabel}</strong>
-              </p>
+              </div>
             )}
-          </ZHFormSection>
+          </div>
+        </div>
 
-          <ZHFormSection title="Ajuste">
-            <ZHGrid cols={3}>
+        <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+          <div className="pg-section-header">
+            <div className="pg-section-header-left">
+              <span className="material-symbols-outlined pg-section-icon">tune</span>
+              <span className="pg-section-label">Ajuste</span>
+            </div>
+          </div>
+          <div className="pg-section-body">
+            <div className="pg-form-grid pg-form-grid--3">
               <ZHField label="Tipo" required>
-                <select value={signo} disabled={loading}
+                <select className="zh-input" value={signo} disabled={loading}
                   onChange={(e) => setSigno(e.target.value as '+' | '-')}>
                   <option value="+">Incremento (agregar stock)</option>
                   <option value="-">Disminución (quitar stock)</option>
@@ -138,58 +154,51 @@ export function CrearAjustePage() {
               </ZHField>
 
               <ZHField label="Cantidad" required>
-                <input
+                <input className={`zh-input${stockInsuficiente ? ' zh-input--error' : ''}`}
                   type="number" min={0.001} step={0.001}
                   value={cantidad} disabled={loading}
-                  onChange={(e) => setCantidad(e.target.value)}
-                  placeholder="0"
-                  className={signo === '-' && stock !== null && cantidadNum > stock ? 'aj-input-error' : undefined}
-                />
+                  onChange={(e) => setCantidad(e.target.value)} placeholder="0" />
               </ZHField>
 
               <ZHField label="Motivo" required>
-                <select value={motivo} disabled={loading}
+                <select className="zh-input" value={motivo} disabled={loading}
                   onChange={(e) => setMotivo(e.target.value)}>
                   <option value="">— seleccionar —</option>
-                  {MOTIVOS_PREDEFINIDOS.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
+                  {MOTIVOS_PREDEFINIDOS.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
               </ZHField>
 
               {motivo === 'Otro' && (
                 <ZHField label="Especificar motivo" required>
-                  <input
-                    value={motivoOtro} disabled={loading}
+                  <input className="zh-input" value={motivoOtro} disabled={loading}
                     onChange={(e) => setMotivoOtro(e.target.value)}
-                    maxLength={200}
-                    placeholder="Describa el motivo"
-                  />
+                    maxLength={200} placeholder="Describa el motivo" />
                 </ZHField>
               )}
 
               <ZHField label="Observaciones">
-                <input
-                  value={obs} disabled={loading}
+                <input className="zh-input" value={obs} disabled={loading}
                   onChange={(e) => setObs(e.target.value)}
-                  maxLength={1000}
-                  placeholder="Opcional"
-                />
+                  maxLength={1000} placeholder="Opcional" />
               </ZHField>
-            </ZHGrid>
-          </ZHFormSection>
+            </div>
+          </div>
+        </div>
 
-          <div className="aj-create-actions">
+        <div className="pg-actions-bar">
+          <div className="pg-actions-info" />
+          <div className="pg-actions-buttons">
             <ZHBtn variant="ghost" size="md" type="button" disabled={loading}
               onClick={() => navigate('/inventario/ajustes')}>
               Cancelar
             </ZHBtn>
             <ZHBtn variant="primary" size="md" type="submit" disabled={loading}>
-              {loading ? 'Guardando…' : 'Crear ajuste'}
+              <span className="material-symbols-outlined">save</span>
+              {loading ? 'Guardando…' : 'Crear Ajuste'}
             </ZHBtn>
           </div>
-        </Card>
+        </div>
       </form>
-    </PageShell>
+    </div>
   );
 }

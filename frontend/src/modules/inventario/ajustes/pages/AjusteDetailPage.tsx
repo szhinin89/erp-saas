@@ -1,14 +1,21 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { EmptyState, LoadingState, NoAccessPage, PageShell } from '../../../../components/PageShell';
-import { Card } from '../../../../components/ui/Card';
+import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHConfirmModal } from '../../../../components/zh/ZHConfirmModal';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { AjusteEstadoBadge, AjusteTipoBadge } from '../components/AjusteEstadoBadge';
 import { useAjusteDetalle, useAjusteAcciones } from '../hooks/useAjustes';
-import './ajustes-pages.css';
+
+function InfoItem({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="subtle" style={{ fontSize: 'var(--text-label-sm-size)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</p>
+      <div style={{ fontWeight: 500 }}>{children}</div>
+    </div>
+  );
+}
 
 export function AjusteDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,68 +35,74 @@ export function AjusteDetailPage() {
   const esBorrador = ajuste?.status === 'Borrador';
 
   return (
-    <PageShell
-      kicker="Inventario · Ajustes"
-      title={ajuste?.adjustmentNumber ?? 'Cargando…'}
-      action={
-        esBorrador ? (
-          <div className="aj-action-row">
-            {canExecute && (
-              <ZHBtn variant="primary" size="md" disabled={actLoading}
-                onClick={() => {
-                  setPendingAction('execute');
-                }}>
-                {actLoading ? 'Procesando…' : 'Ejecutar'}
-              </ZHBtn>
-            )}
-            {canCancel && (
-              <ZHBtn variant="destructive" size="md" disabled={actLoading}
-                onClick={() => {
-                  setPendingAction('cancel');
-                }}>
-                Cancelar
-              </ZHBtn>
-            )}
-          </div>
-        ) : undefined
-      }
-    >
-      <Card>
-        {(error ?? actError) && (
-          <ZHPageNotice variant="error" message="Error" detail={error ?? actError ?? ''} />
-        )}
+    <div className="pg-page">
 
-        {loading ? (
-          <LoadingState />
-        ) : !ajuste ? (
-          <EmptyState message="Ajuste no encontrado." />
-        ) : (
-          <>
-            <div className="aj-detail-grid">
-              <Dato label="Número"   valor={ajuste.adjustmentNumber} />
-              <Dato label="Estado"   valor={<AjusteEstadoBadge estado={ajuste.status} />} />
-              <Dato label="Tipo"     valor={
+      <div className="pg-header-row">
+        <div className="pg-header-left">
+          <nav className="pg-breadcrumb" aria-label="Navegación">
+            <span className="pg-breadcrumb-item">Inventario</span>
+            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
+            <span className="pg-breadcrumb-item pg-breadcrumb-item--link" style={{ cursor: 'pointer' }}
+              onClick={() => navigate('/inventario/ajustes')}>Ajustes</span>
+            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
+            <span className="pg-breadcrumb-item">{ajuste?.adjustmentNumber ?? '…'}</span>
+          </nav>
+          <h1 className="pg-title">{loading ? 'Cargando…' : (ajuste?.adjustmentNumber ?? 'Ajuste')}</h1>
+        </div>
+        <div className="pg-header-right">
+          {esBorrador && (
+            <>
+              {canExecute && (
+                <ZHBtn variant="primary" size="md" disabled={actLoading}
+                  onClick={() => setPendingAction('execute')}>
+                  {actLoading ? 'Procesando…' : 'Ejecutar'}
+                </ZHBtn>
+              )}
+              {canCancel && (
+                <ZHBtn variant="destructive" size="md" disabled={actLoading}
+                  onClick={() => setPendingAction('cancel')}>
+                  Cancelar
+                </ZHBtn>
+              )}
+            </>
+          )}
+          <ZHBtn variant="ghost" size="md" onClick={() => navigate('/inventario/ajustes')}>← Volver</ZHBtn>
+        </div>
+      </div>
+
+      {(error ?? actError) && (
+        <ZHPageNotice variant="error" message="Error" detail={error ?? actError ?? ''} />
+      )}
+
+      {loading ? (
+        <div style={{ padding: '40px' }}><LoadingState /></div>
+      ) : !ajuste ? (
+        <div style={{ padding: '40px' }}><EmptyState message="Ajuste no encontrado." /></div>
+      ) : (
+        <div className="pg-section">
+          <div className="pg-section-body">
+            <div className="pg-form-grid pg-form-grid--3">
+              <InfoItem label="Número">{ajuste.adjustmentNumber}</InfoItem>
+              <InfoItem label="Estado"><AjusteEstadoBadge estado={ajuste.status} /></InfoItem>
+              <InfoItem label="Tipo">
                 <AjusteTipoBadge tipo={ajuste.adjustmentType} cantidad={Math.abs(ajuste.adjustmentQuantity)} />
-              } />
-              <Dato label="Producto" valor={ajuste.productName} />
-              <Dato label="Bodega"   valor={ajuste.warehouseName} />
-              <Dato label="Motivo"   valor={ajuste.reason} />
-              <Dato label="Fecha"    valor={new Date(ajuste.adjustmentDate).toLocaleString()} />
-              {ajuste.notes && <Dato label="Observaciones" valor={ajuste.notes} />}
+              </InfoItem>
+              <InfoItem label="Producto">{ajuste.productName}</InfoItem>
+              <InfoItem label="Bodega">{ajuste.warehouseName}</InfoItem>
+              <InfoItem label="Motivo">{ajuste.reason}</InfoItem>
+              <InfoItem label="Fecha">{new Date(ajuste.adjustmentDate).toLocaleString('es')}</InfoItem>
+              {ajuste.notes && (
+                <InfoItem label="Observaciones">{ajuste.notes}</InfoItem>
+              )}
               {ajuste.executionDate && (
-                <Dato label="Ejecutado el" valor={new Date(ajuste.executionDate).toLocaleString()} />
+                <InfoItem label="Ejecutado el">{new Date(ajuste.executionDate).toLocaleString('es')}</InfoItem>
               )}
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="aj-detail-footer">
-              <ZHBtn variant="ghost" size="md" onClick={() => navigate('/inventario/ajustes')}>
-                ← Volver al listado
-              </ZHBtn>
-            </div>
-          </>
-        )}
-      </Card>
-      {pendingAction ? (
+      {pendingAction && (
         <ZHConfirmModal
           title={pendingAction === 'execute' ? 'Ejecutar ajuste' : 'Cancelar ajuste'}
           message={
@@ -104,24 +117,12 @@ export function AjusteDetailPage() {
           onCancel={() => setPendingAction(null)}
           onConfirm={async () => {
             if (!id) return;
-            if (pendingAction === 'execute') {
-              await ejecutar(id);
-            } else {
-              await cancelar(id);
-            }
+            if (pendingAction === 'execute') await ejecutar(id);
+            else                             await cancelar(id);
             setPendingAction(null);
           }}
         />
-      ) : null}
-    </PageShell>
-  );
-}
-
-function Dato({ label, valor }: { label: string; valor: React.ReactNode }) {
-  return (
-    <div>
-      <div className="aj-field-label">{label}</div>
-      <div>{valor}</div>
+      )}
     </div>
   );
 }
