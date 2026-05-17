@@ -44,13 +44,23 @@ public sealed class PermissionHandler : AuthorizationHandler<PermissionRequireme
         if (tenant is null)
             return;
 
-        if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
-            string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
+        // SuperAdmin operating inside a tenant: full access to that tenant, plan-filtered.
+        if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
         {
-            context.Succeed(requirement);
+            if (TenantSubscriptionCatalog.TenantAllowsPermission(tenant, requirement.PermissionKey))
+                context.Succeed(requirement);
             return;
         }
 
+        // Admin: full access to everything the tenant's plan allows.
+        if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            if (TenantSubscriptionCatalog.TenantAllowsPermission(tenant, requirement.PermissionKey))
+                context.Succeed(requirement);
+            return;
+        }
+
+        // Regular user: must have the module enabled AND an explicit profile permission.
         if (!TenantSubscriptionCatalog.TenantAllowsPermission(tenant, requirement.PermissionKey))
             return;
 

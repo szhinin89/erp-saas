@@ -16,6 +16,7 @@ public static class TenantSubscriptionCatalog
         "compras",
         "gastos",
         "inventario",
+        "logistica",
         "rrhh",
         "saas",
         "ventas",
