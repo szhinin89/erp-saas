@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using ERP.API.Contracts;
@@ -6,12 +6,14 @@ using ERP.API.Extensions;
 using ERP.Application.Products.DTOs;
 using ERP.Application.Products.UseCases.CreateProductType;
 using ERP.Application.Products.UseCases.GetProductTypes;
+using ERP.Application.Products.UseCases.UpdateProductType;
+using ERP.Application.Products.UseCases.DisableProductType;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// Catálogo maestro: Tipos de producto del tenant autenticado.
+/// Master catalog: product types for the authenticated tenant.
 /// </summary>
 [AppFeature("Tipos de producto", "perm:inventario.productTypes.view", "🔖", "/inventario/product-types", "perm:inventario.products.view", 37)]
 [ApiController]
@@ -27,11 +29,7 @@ public class ProductTypesController : ControllerBase
         _mediator = mediator;
     }
 
-    /// <summary>Lista tipos de producto del tenant.</summary>
-    /// <param name="onlyActive">Si es true, retorna únicamente tipos habilitados.</param>
-    /// <param name="ct">Token de cancelación.</param>
-    /// <response code="200">Lista de tipos (puede ser vacía).</response>
-    /// <response code="401">Token JWT ausente o inválido.</response>
+    /// <summary>Lists product types for the current tenant.</summary>
     [HttpGet]
     [Authorize(Policy = "perm:inventario.productTypes.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ProductTypeDto>>), StatusCodes.Status200OK)]
@@ -42,11 +40,7 @@ public class ProductTypesController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<ProductTypeDto>());
     }
 
-    /// <summary>Crea un nuevo tipo de producto.</summary>
-    /// <remarks>El nombre debe ser único por tenant.</remarks>
-    /// <response code="201">Tipo creado correctamente.</response>
-    /// <response code="400">Error de validación (por ejemplo, duplicado).</response>
-    /// <response code="401">Token JWT ausente o inválido.</response>
+    /// <summary>Creates a new product type.</summary>
     [HttpPost]
     [Authorize(Policy = "perm:inventario.productTypes.create")]
     [ProducesResponseType(typeof(ApiResponse<ProductTypeDto?>), StatusCodes.Status201Created)]
@@ -56,7 +50,43 @@ public class ProductTypesController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateProductTypeCommand command, CancellationToken ct = default)
     {
         var result = await _mediator.Send(command, ct);
-        return this.ToCreatedOrBadRequest(result, "Creado");
+        return this.ToCreatedOrBadRequest(result, "Created");
+    }
+
+    /// <summary>Updates an existing product type.</summary>
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = "perm:inventario.productTypes.update")]
+    [ProducesResponseType(typeof(ApiResponse<ProductTypeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProductTypeCommand command, CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(command with { ProductTypeId = id }, ct);
+        return this.ToOkOrBadRequest(result, "Updated");
+    }
+
+    /// <summary>Disables (soft-delete) a product type.</summary>
+    [HttpPatch("{id:guid}/disable")]
+    [Authorize(Policy = "perm:inventario.productTypes.delete")]
+    [ProducesResponseType(typeof(ApiResponse<ProductTypeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Disable(Guid id, CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new DisableProductTypeCommand(id), ct);
+        return this.ToOkOrBadRequest(result, "Disabled");
+    }
+
+    /// <summary>Re-enables a disabled product type.</summary>
+    [HttpPatch("{id:guid}/enable")]
+    [Authorize(Policy = "perm:inventario.productTypes.update")]
+    [ProducesResponseType(typeof(ApiResponse<ProductTypeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Enable(Guid id, CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new EnableProductTypeCommand(id), ct);
+        return this.ToOkOrBadRequest(result, "Enabled");
     }
 }
-

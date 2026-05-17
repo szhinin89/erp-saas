@@ -107,6 +107,10 @@ export const catalogService = {
   disableBrand: (id: string) => patch<BrandItem>(`/api/brands/${encodeURIComponent(id)}/disable`),
   enableBrand:  (id: string) => patch<BrandItem>(`/api/brands/${encodeURIComponent(id)}/enable`),
   createProductType: (body: { code: string; name: string }) => post<CatalogItem>('/api/producttypes', body),
+  updateProductType: (id: string, body: { code: string; name: string }) =>
+    put<CatalogItem>(`/api/producttypes/${encodeURIComponent(id)}`, { productTypeId: id, ...body }),
+  disableProductType: (id: string) => patch<CatalogItem>(`/api/producttypes/${encodeURIComponent(id)}/disable`),
+  enableProductType:  (id: string) => patch<CatalogItem>(`/api/producttypes/${encodeURIComponent(id)}/enable`),
   createUnit: (body: { code: string; name: string; symbol?: string | null }) => post<CatalogItem>('/api/unitsofmeasure', body),
   createTaxRate: (body: { code: string; name: string; type: 'VAT' | 'Excise' | 'Other'; percentage: number }) =>
     post<CatalogItem>('/api/taxrates', body),

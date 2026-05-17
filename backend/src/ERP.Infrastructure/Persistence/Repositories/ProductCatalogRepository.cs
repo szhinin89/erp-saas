@@ -43,6 +43,9 @@ public class ProductCatalogRepository : IProductCatalogRepository
     public Task AddProductTypeAsync(ProductType type, CancellationToken ct = default)
         => _context.ProductTypes.AddAsync(type, ct).AsTask();
 
+    public Task<ProductType?> GetProductTypeByIdAsync(Guid id, CancellationToken ct = default)
+        => _context.ProductTypes.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == id, ct);
+
     public async Task<IReadOnlyList<ProductType>> GetProductTypesAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default)
     {
         var q = _context.ProductTypes.AsQueryable().Where(x => x.TenantId == tenantId);
