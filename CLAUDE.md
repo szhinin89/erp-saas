@@ -42,11 +42,20 @@ var p = Producto.Create("X", tenantId, actorId);  // ✅
 var p = new Producto { Nombre = "X" };             // ❌
 ```
 
-**Soft delete — nunca DELETE físico:**
+**Soft delete — nunca DELETE físico en entidades de negocio:**
 ```csharp
-producto.Disable();   // IsActive = false  ✅
-db.Remove(producto);  // ❌ (salvo decisión explícita de producto)
+entidad.Disable();    // IsActive = false  ✅
+db.Remove(entidad);   // ❌ prohibido en entidades de negocio
 ```
+- En UI: el botón es siempre "Anular" o "Deshabilitar", nunca "Eliminar".
+- En API: no exponer endpoint DELETE que borre registros de negocio.
+- Aplica a: productos, clientes, proveedores, usuarios, perfiles, órdenes, y cualquier entidad de negocio.
+
+**Excepciones documentadas (DELETE físico permitido):**
+| Entidad | Motivo |
+|---------|--------|
+| `ExpenseCategory` (mapeos gasto→cuenta contable) | Tabla de configuración contable, no documento de negocio |
+| `SaasPlan` | Catálogo de planes del producto; solo si no hay suscripciones activas (validado en `DeletePlanAsync`) |
 
 **Sin AutoMapper — mapeos manuales en handlers.**
 

@@ -10,6 +10,8 @@ import { ModulePlaceholderPage } from '../pages/ModulePlaceholderPage';
 import { SalesReportPage } from '../pages/SalesReportPage';
 import { SuppliersPage } from '../modules/compras/suppliers/pages/SuppliersPage';
 import { CompanyConfigPage } from '../modules/configuracion/empresa/pages/CompanyConfigPage';
+import { SriConfigPage } from '../modules/configuracion/sri/pages/SriConfigPage';
+import { BillingSettingsPage } from '../modules/configuracion/facturacion/pages/BillingSettingsPage';
 
 /**
  * Rutas principales de aplicación.
@@ -58,7 +60,9 @@ export const mainRoutes = [
   <Route key="rrhh" path="/rrhh" element={<ModulePlaceholderPage variant="hr" />} />,
 
   // Configuración
-  <Route key="config-empresa" path="/configuracion/empresa" element={<CompanyConfigPage />} />,
+  <Route key="config-empresa"      path="/configuracion/empresa"      element={<CompanyConfigPage />} />,
+  <Route key="config-sri"          path="/configuracion/sri"           element={<SriConfigPage />} />,
+  <Route key="config-facturacion"  path="/configuracion/facturacion"   element={<BillingSettingsPage />} />,
 
   // SaaS
   <Route key="branches" path="/saas/branches" element={<BranchesPage />} />,

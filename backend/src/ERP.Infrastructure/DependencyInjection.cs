@@ -87,8 +87,27 @@ public static class DependencyInjection
         services.AddScoped<ISupplierRepository, SupplierRepository>();
         services.AddScoped<IXmlFacturaParser, SriFacturaParser>();
         services.AddScoped<IFileStorage, LocalFileStorage>();
-        services.AddScoped<ISriFacturaElectronicaService, SriFacturaElectronicaSimuladoService>();
+
+        // SRI Ecuador — switch Simulado/Real via appsettings.json "Sri:UseRealService"
+        // En desarrollo/pruebas: Sri:UseRealService = false (simulado, sin certificado real)
+        // En producción:         Sri:UseRealService = true  (real, requiere P12 válido)
+        var useSriReal = configuration.GetValue<bool>("Sri:UseRealService");
+        if (useSriReal)
+        {
+            services.AddHttpClient("sri").ConfigureHttpClient(c =>
+            {
+                c.Timeout = TimeSpan.FromSeconds(60);
+            });
+            services.AddScoped<ERP.Infrastructure.Services.Sri.SriSoapClient>();
+            services.AddScoped<ISriFacturaElectronicaService, SriFacturaElectronicaRealService>();
+        }
+        else
+        {
+            services.AddScoped<ISriFacturaElectronicaService, SriFacturaElectronicaSimuladoService>();
+        }
+
         services.AddScoped<ISriComprobanteRetentionService, SriWithholdingSimulatedService>();
+        services.AddScoped<IRideGeneratorService, ERP.Infrastructure.Services.Sri.RideGeneratorService>();
         services.AddScoped<IPurchBillRepository, PurchBillRepository>();
         services.AddScoped<IExpenseInvoiceRepository, ExpenseInvoiceRepository>();
         services.AddScoped<IStockRepository, StockRepository>();
