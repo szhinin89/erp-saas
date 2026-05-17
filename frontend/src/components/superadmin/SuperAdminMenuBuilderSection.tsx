@@ -282,9 +282,6 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
   const [copySourcePlanId, setCopySourcePlanId] = useState('');
   const [copyMenu, setCopyMenu] = useState(true);
   const [savingAuto, setSavingAuto] = useState(false);
-  const [simTenantId, setSimTenantId] = useState('');
-  const [previewPlanId, setPreviewPlanId] = useState('');
-  const [simPreviewItems, setSimPreviewItems] = useState<MenuItem[] | null>(null);
   const [resetPlanConfirmOpen, setResetPlanConfirmOpen] = useState(false);
   const [inheritPlanConfirmOpen, setInheritPlanConfirmOpen] = useState(false);
   const [showAnnual, setShowAnnual] = useState(false);
@@ -913,19 +910,10 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
     return () => window.clearTimeout(tid);
   }, [planId, json, previewLayout, persistCrmPlan]);
 
-  useEffect(() => {
-    setSimPreviewItems(null);
-    setSimTenantId('');
-    setPreviewPlanId('');
-  }, [planId]);
-
   if (crmWorkspace) {
     const activePlan = crmPlans.find((p) => p.id === planId);
     const activePlanIndex = crmPlans.findIndex((p) => p.id === planId);
     const previousPlanForInheritance = activePlanIndex > 0 ? crmPlans[activePlanIndex - 1] : null;
-    const previewPlanKey = (previewPlanId || planId || '').trim().toLowerCase();
-    const previewPlan = crmPlans.find((p) => p.id.trim().toLowerCase() === previewPlanKey || p.code.trim().toLowerCase() === previewPlanKey) ?? activePlan;
-    const selectedSimTenant = tenants.find((x) => x.id === simTenantId) ?? null;
     const wizardSteps = [
       {
         title: '1) Selecciona un plan',
@@ -949,11 +937,6 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
     const priceLabel = activePlan ? formatMoney(showAnnual ? activePlan.priceYearly : activePlan.priceMonthly, 'USD', locTag) : '—';
     const cycleLabel = showAnnual ? '/año' : '/mes';
     const currentActiveSet = new Set(planActiveById[planId] ?? []);
-    const previewActiveSet = new Set(planActiveById[(previewPlan?.id ?? planId)] ?? []);
-    const planCardFeatures = visualTree
-      .filter((x) => currentActiveSet.has(x.uid))
-      .map((x) => x.nombre)
-      .slice(0, 14);
     const onToggleNodeActive = (uid: string, checked: boolean) => {
       const findByUid = (nodes: EditorMenuItem[]): EditorMenuItem | null => {
         for (const n of nodes) {
@@ -1328,7 +1311,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
 
     const crmPreviewExtras: ReactNode = (
       <>
-        {/* Preview header: plan badge + layout toggle */}
+        {/* Preview header: plan badge + price + billing toggle + layout toggle */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: 'var(--space-3) var(--space-4)',
@@ -1336,18 +1319,56 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
           background: 'var(--color-surface)',
           gap: 'var(--space-3)', flexWrap: 'wrap',
         }}>
-          {/* Plan badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          {/* Left: plan badge + price + billing cycle toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
             <span style={{
               fontSize: 'var(--text-label-sm-size)', color: 'var(--color-text-secondary)',
               textTransform: 'uppercase', letterSpacing: '0.05em',
             }}>Plan:</span>
             <span className="badge badge--blue badge--md" style={{ textTransform: 'uppercase' }}>
-              {previewPlan?.code ?? activePlan?.code ?? '—'}
+              {activePlan?.code ?? '—'}
             </span>
+            {activePlan ? (
+              <>
+                <span style={{ fontSize: 'var(--text-label-sm-size)', color: 'var(--color-text-secondary)', minWidth: 64 }}>
+                  {formatMoney(showAnnual ? activePlan.priceYearly : activePlan.priceMonthly, 'USD', locale === 'en' ? 'en-US' : 'es-ES')}
+                  <span style={{ opacity: 0.6 }}>{showAnnual ? '/año' : '/mes'}</span>
+                </span>
+                <div
+                  role="radiogroup"
+                  aria-label="Ciclo de facturación"
+                  style={{ display: 'flex', gap: 1, background: 'var(--color-surface-container)', borderRadius: 'var(--radius-md)', padding: 2 }}
+                >
+                  {(['Mensual', 'Anual'] as const).map((label) => {
+                    const isAnnual = label === 'Anual';
+                    const active = showAnnual === isAnnual;
+                    return (
+                      <button
+                        key={label}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        onClick={() => setShowAnnual(isAnnual)}
+                        style={{
+                          padding: '2px 8px', borderRadius: 'var(--radius-sm)',
+                          border: 'none', cursor: 'pointer', fontSize: 10,
+                          fontWeight: active ? 700 : 400,
+                          background: active ? 'var(--color-surface)' : 'transparent',
+                          color: active ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                          boxShadow: active ? 'var(--shadow-sm)' : 'none',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            ) : null}
           </div>
 
-          {/* Layout toggle buttons */}
+          {/* Right: layout toggle */}
           <div
             role="radiogroup"
             aria-label="Orientación del menú"
@@ -1412,103 +1433,6 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
       </>
     );
 
-    const crmPreviewExtrasBottom: ReactNode = (
-      <>
-        <div className="menu-plan-composer__simRow">
-          <label className="menu-plan-composer__simLbl" htmlFor="crm-sim-tenant">
-            Simular otra empresa:
-          </label>
-          <select
-            id="crm-sim-tenant"
-            className="zh-input menu-plan-composer__simSelect"
-            value={simTenantId}
-            onChange={(e) => setSimTenantId(e.target.value)}
-            disabled={busy || savingAuto}
-            aria-label="Seleccionar empresa para simular su menú efectivo"
-          >
-            <option value="">— Menú del plan actual —</option>
-            {tenants.map((x) => (
-              <option key={x.id} value={x.id}>
-                {x.name} ({(x.planCode ?? 'SIN_PLAN').toUpperCase()})
-              </option>
-            ))}
-          </select>
-          <ZHBtn
-            variant="ghost"
-            size="md"
-            type="button"
-            onClick={async () => {
-              if (!simTenantId) {
-                setSimPreviewItems(null);
-                setPreviewPlanId(planId);
-                appendAudit(`Simulando menú del plan ${((activePlan?.code ?? planId) || 'actual').toUpperCase()}`);
-                return;
-              }
-
-              setBusy(true);
-              setErr('');
-              try {
-                const resolved = await superAdminService.getTenantResolvedMenu(simTenantId);
-                const groups = normalizeParsedMenuGroups(Array.isArray(resolved.menu) ? resolved.menu : []);
-                const resolvedTree = sessionGroupsToEditorTree(groups, byPerm);
-                setSimPreviewItems(editorToMenuItems(resolvedTree));
-
-                const tenantPlanCode = (selectedSimTenant?.planCode ?? '').trim().toLowerCase();
-                const matched = crmPlans.find((p) => p.code.trim().toLowerCase() === tenantPlanCode);
-                setPreviewPlanId((matched?.id ?? tenantPlanCode) || planId);
-                appendAudit(
-                  `Simulando empresa ${selectedSimTenant?.name ?? simTenantId} · ` +
-                  `${resolved.hasCustomMenu ? 'menú personalizado' : resolved.usedPlanMenu ? 'menú del plan' : 'menú global'}`,
-                );
-              } catch (e) {
-                setErr(
-                  formatApiRequestError(e, {
-                    offline: t('common.apiUnreachable'),
-                    generic: t('common.errorGeneric'),
-                  }),
-                );
-              } finally {
-                setBusy(false);
-              }
-            }}
-            disabled={busy || savingAuto}
-            aria-label="Actualizar vista previa con el plan seleccionado"
-          >
-            🔄 Actualizar
-          </ZHBtn>
-          <label className="menu-plan-composer__toggleLbl">
-            <input type="checkbox" checked={showAnnual} onChange={(e) => setShowAnnual(e.target.checked)} disabled={busy || savingAuto} aria-label="Mostrar precio anual estimado" />
-            <span>$ Mostrar anual</span>
-          </label>
-        </div>
-        <div className="menu-plan-composer__planCard">
-          <div className="menu-plan-composer__planCardHead">
-            <span aria-hidden>{planEmoji(activePlan?.code ?? '')}</span>
-            <strong>{activePlan?.code ?? 'PLAN'}</strong>
-          </div>
-          <div className="menu-plan-composer__planCardPrice">
-            {priceLabel}
-            <span className="menu-plan-composer__planCardCycle">{cycleLabel}</span>
-          </div>
-          <p className="menu-plan-composer__planCardSub">{activePlan?.description || 'Ideal para equipos en crecimiento'}</p>
-          <ul className="menu-plan-composer__planCardList">
-            {planCardFeatures.length ? (
-              planCardFeatures.map((name, idx) => (
-                <li key={`${idx}-${name}`}>
-                  <span aria-hidden>✓</span> {name}
-                </li>
-              ))
-            ) : (
-              <li className="subtle">Añade carpetas o formularios al árbol para listarlos aquí.</li>
-            )}
-          </ul>
-          <button type="button" className="zh-btn zh-btn--primary zh-btn--md menu-plan-composer__planCardCta" disabled aria-label="Seleccionar plan (solo demostración visual)">
-            Seleccionar plan →
-          </button>
-        </div>
-      </>
-    );
-
     return (
       <div className="menu-plan-composer">
         <header className="menu-plan-composer__hero">
@@ -1559,9 +1483,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             crmLibraryStack={crmLibraryStack}
             crmMasterFooter={crmMasterFooter}
             crmPreviewExtras={crmPreviewExtras}
-            crmPreviewExtrasBottom={crmPreviewExtrasBottom}
-            previewItemsOverride={simPreviewItems}
-            activeNodeIds={simPreviewItems ? undefined : previewActiveSet}
+            activeNodeIds={currentActiveSet}
             onToggleNodeActive={onToggleNodeActive}
             panelTitles={{
               canvas: '📁 Árbol maestro',
