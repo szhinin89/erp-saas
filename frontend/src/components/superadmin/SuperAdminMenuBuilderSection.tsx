@@ -1370,19 +1370,6 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
           </div>
         </div>
 
-        {/* Layout description hint */}
-        <div style={{
-          padding: 'var(--space-2) var(--space-4)',
-          background: 'var(--color-surface-container)',
-          fontSize: 11, color: 'var(--color-text-secondary)',
-          borderBottom: '1px solid var(--color-border)',
-          display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-        }}>
-          <span className="material-symbols-outlined" style={{ fontSize: 14, color: 'var(--color-primary)' }}>info</span>
-          {previewLayout === 'horizontal'
-            ? 'Barra superior — los grupos aparecen como tabs en la cabecera de la aplicación.'
-            : 'Panel lateral — los grupos se despliegan en la barra izquierda de navegación.'}
-        </div>
       </>
     );
 
