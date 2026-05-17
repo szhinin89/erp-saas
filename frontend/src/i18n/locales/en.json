@@ -1045,6 +1045,7 @@
   "customers.table.contact": "Contact Information",
   "customers.table.category": "Category",
   "customers.table.status": "Status",
+  "customers.table.contacts": "Contacts",
   "customers.status.active": "Active",
   "customers.status.inactive": "Inactive",
   "customers.modal.createTitle": "New Customer",

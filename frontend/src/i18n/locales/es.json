@@ -1070,6 +1070,7 @@
   "customers.table.contact": "Información de Contacto",
   "customers.table.category": "Categoría",
   "customers.table.status": "Estado",
+  "customers.table.contacts": "Contactos",
   "customers.status.active": "Activo",
   "customers.status.inactive": "Inactivo",
   "customers.modal.createTitle": "Nuevo Cliente",

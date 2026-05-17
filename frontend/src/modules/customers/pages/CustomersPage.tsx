@@ -11,7 +11,7 @@ import { useCustomers } from '../hooks/useCustomers';
 import { customerSchema, defaultCustomerValues, type CustomerFormValues } from '../schemas/customerSchema';
 import './customers-page.css';
 
-type TabId = 'clientes' | 'contactos' | 'categorias' | 'auditoria';
+type TabId = 'clientes' | 'categorias' | 'contactos' | 'auditoria';
 
 type ContactItem = {
   id: string;
@@ -132,6 +132,12 @@ export function CustomersPage() {
     inactive: customers.filter((c) => !c.isActive).length,
     noEmail:  customers.filter((c) => !c.email).length,
   }), [customers]);
+
+  const contactCountByCustomer = useMemo(() => {
+    const counts: Record<string, number> = {};
+    contacts.forEach((c) => { counts[c.customerId] = (counts[c.customerId] ?? 0) + 1; });
+    return counts;
+  }, [contacts]);
 
   /* ── Helpers ── */
   const pushAudit = (action: string, customerName: string, details: string) =>
@@ -259,11 +265,11 @@ export function CustomersPage() {
   if (!canView) return <NoAccessPage title={t('customers.title')} />;
 
   /* ── Tab definitions ── */
-  const TABS: { id: TabId; label: string }[] = [
-    { id: 'clientes',   label: t('customers.tabs.list') },
-    { id: 'contactos',  label: t('customers.tabs.contacts') },
-    { id: 'categorias', label: t('customers.tabs.categories') },
-    { id: 'auditoria',  label: t('customers.tabs.audit') },
+  const TABS: { id: TabId; label: string; icon: string }[] = [
+    { id: 'clientes',   label: t('customers.tabs.list'),       icon: 'person'   },
+    { id: 'categorias', label: t('customers.tabs.categories'), icon: 'category' },
+    { id: 'contactos',  label: t('customers.tabs.contacts'),   icon: 'contacts' },
+    { id: 'auditoria',  label: t('customers.tabs.audit'),      icon: 'history'  },
   ];
 
   const tabContent: Record<TabId, ReactNode> = {
@@ -327,7 +333,8 @@ export function CustomersPage() {
                   <th>{t('customers.table.contact')}</th>
                   <th>{t('customers.table.category')}</th>
                   <th>{t('customers.table.status')}</th>
-                  <th>{t('col.actions') || t('customers.col.actions')}</th>
+                  <th>{t('customers.table.contacts')}</th>
+                  <th>{t('customers.col.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -367,6 +374,12 @@ export function CustomersPage() {
                           {customer.isActive ? t('customers.status.active') : t('customers.status.inactive')}
                         </span>
                       </td>
+                      <td className="subtle">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>groups</span>
+                          {contactCountByCustomer[customer.id] ?? 0}
+                        </div>
+                      </td>
                       <td>
                         <div className="cls-actions-cell">
                           <button
@@ -403,15 +416,6 @@ export function CustomersPage() {
 
     contactos: (
       <>
-        <div className="pg-table-controls">
-          <div className="pg-table-controls-left" />
-          <div className="pg-table-controls-right">
-            <ZHBtn variant="primary" size="md" type="button" onClick={() => openContactModal()}>
-              <span className="material-symbols-outlined">add</span>
-              {t('customers.contacts.new')}
-            </ZHBtn>
-          </div>
-        </div>
         {contactRows.length === 0 ? (
           <EmptyState message={t('customers.contacts.empty')} />
         ) : (
@@ -572,14 +576,19 @@ export function CustomersPage() {
           <h1 className="pg-title">{t('customers.title')}</h1>
           <p className="pg-subtitle">{t('customers.subtitle')}</p>
         </div>
-        {canCreate && (
-          <div className="pg-header-right">
+        <div className="pg-header-right">
+          {activeTab === 'contactos' ? (
+            <ZHBtn variant="primary" size="md" type="button" onClick={() => openContactModal()}>
+              <span className="material-symbols-outlined">contacts</span>
+              {t('customers.contacts.new')}
+            </ZHBtn>
+          ) : canCreate ? (
             <ZHBtn variant="primary" size="md" type="button" disabled={creating} onClick={openCreateModal}>
               <span className="material-symbols-outlined">person_add</span>
               {t('customers.list.newAction')}
             </ZHBtn>
-          </div>
-        )}
+          ) : null}
+        </div>
       </div>
 
       {/* ── Errors ── */}
@@ -639,6 +648,7 @@ export function CustomersPage() {
                 className={activeTab === tab.id ? 'is-active' : ''}
                 onClick={() => setActiveTab(tab.id)}
               >
+                <span className="material-symbols-outlined">{tab.icon}</span>
                 {tab.label}
               </button>
             ))}
