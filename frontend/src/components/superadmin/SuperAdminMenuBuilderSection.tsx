@@ -1313,64 +1313,41 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
       </div>
     );
 
-    const crmPreviewExtras: ReactNode = (
-      <>
-        {/* Preview header: layout toggle only */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-          padding: 'var(--space-3) var(--space-4)',
-          borderBottom: '1px solid var(--color-border)',
-          background: 'var(--color-surface)',
-        }}>
-          <div
-            role="radiogroup"
-            aria-label="Orientación del menú"
-            style={{ display: 'flex', gap: 'var(--space-1)', background: 'var(--color-surface-container)', borderRadius: 'var(--radius-md)', padding: 2 }}
-          >
+    const previewControls: ReactNode = (
+      <div
+        role="radiogroup"
+        aria-label="Orientación del menú"
+        style={{ display: 'flex', gap: 2, background: 'rgba(0,0,0,0.08)', borderRadius: 6, padding: 2 }}
+      >
+        {(['horizontal', 'vertical'] as const).map((layout) => {
+          const active = previewLayout === layout;
+          return (
             <button
+              key={layout}
               type="button"
               role="radio"
-              aria-checked={previewLayout === 'horizontal'}
+              aria-checked={active}
               disabled={busy || savingAuto}
-              onClick={() => setPreviewLayout('horizontal')}
+              onClick={() => setPreviewLayout(layout)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 'var(--space-1)',
-                padding: '4px 10px', borderRadius: 'var(--radius-sm)',
-                border: 'none', cursor: 'pointer', fontSize: 'var(--text-label-sm-size)',
-                fontWeight: previewLayout === 'horizontal' ? 700 : 400,
-                background: previewLayout === 'horizontal' ? 'var(--color-surface)' : 'transparent',
-                color: previewLayout === 'horizontal' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                boxShadow: previewLayout === 'horizontal' ? 'var(--shadow-sm)' : 'none',
+                display: 'flex', alignItems: 'center', gap: 3,
+                padding: '2px 7px', borderRadius: 4,
+                border: 'none', cursor: 'pointer', fontSize: 10,
+                fontWeight: active ? 700 : 400,
+                background: active ? '#fff' : 'transparent',
+                color: active ? '#3a5f84' : '#64748b',
+                boxShadow: active ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
                 transition: 'all 0.15s',
               }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>dock_to_right</span>
-              Horizontal
+              <span className="material-symbols-outlined" style={{ fontSize: 11 }}>
+                {layout === 'horizontal' ? 'dock_to_right' : 'view_sidebar'}
+              </span>
+              {layout === 'horizontal' ? 'Horizontal' : 'Vertical'}
             </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={previewLayout === 'vertical'}
-              disabled={busy || savingAuto}
-              onClick={() => setPreviewLayout('vertical')}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 'var(--space-1)',
-                padding: '4px 10px', borderRadius: 'var(--radius-sm)',
-                border: 'none', cursor: 'pointer', fontSize: 'var(--text-label-sm-size)',
-                fontWeight: previewLayout === 'vertical' ? 700 : 400,
-                background: previewLayout === 'vertical' ? 'var(--color-surface)' : 'transparent',
-                color: previewLayout === 'vertical' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                boxShadow: previewLayout === 'vertical' ? 'var(--shadow-sm)' : 'none',
-                transition: 'all 0.15s',
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>view_sidebar</span>
-              Vertical
-            </button>
-          </div>
-        </div>
-
-      </>
+          );
+        })}
+      </div>
     );
 
     const crmPreviewExtrasBottom: ReactNode = (
@@ -1484,8 +1461,8 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             crmMasterStack={crmMasterStack}
             crmLibraryStack={crmLibraryStack}
             crmMasterFooter={crmMasterFooter}
-            crmPreviewExtras={crmPreviewExtras}
             crmPreviewExtrasBottom={crmPreviewExtrasBottom}
+            previewControls={previewControls}
             activeNodeIds={currentActiveSet}
             onToggleNodeActive={onToggleNodeActive}
             panelTitles={{

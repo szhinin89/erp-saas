@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useI18n } from '../../i18n/i18n';
 import type { MenuItem } from './menuBuilderTypes';
 
@@ -8,6 +8,8 @@ type Props = {
   items: MenuItem[];
   layout: MenuPreviewLayout;
   className?: string;
+  /** Optional controls rendered on the right side of the simulated browser chrome bar. */
+  controls?: ReactNode;
 };
 
 function isFolder(item: MenuItem): boolean {
@@ -147,8 +149,30 @@ function PreviewEmpty() {
   );
 }
 
+/* ── Shared chrome bar ───────────────────────────────────── */
+function ChromeBar({ controls }: { controls?: ReactNode }) {
+  return (
+    <div style={{
+      background: '#e2e8f0', padding: '5px 10px',
+      display: 'flex', alignItems: 'center', gap: 6,
+      borderBottom: '1px solid rgba(0,0,0,0.08)',
+    }}>
+      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f87171' }} />
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fbbf24' }} />
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#34d399' }} />
+      </div>
+      <div style={{
+        flex: 1, marginLeft: 4, background: '#fff',
+        borderRadius: 4, padding: '2px 8px', fontSize: 10, color: '#94a3b8',
+      }}>app.empresa.com/dashboard</div>
+      {controls ? <div style={{ flexShrink: 0, marginLeft: 6 }}>{controls}</div> : null}
+    </div>
+  );
+}
+
 /* ── Main export ─────────────────────────────────────────── */
-export function MenuPreview({ items, layout, className = '' }: Props) {
+export function MenuPreview({ items, layout, className = '', controls }: Props) {
   const empty = items.length === 0;
 
   /* ── Horizontal: simulated top-bar app ─────────────────── */
@@ -159,19 +183,7 @@ export function MenuPreview({ items, layout, className = '' }: Props) {
         background: '#f1f5f9', minHeight: 220,
         border: '1px solid rgba(0,0,0,0.08)', borderRadius: 8, overflow: 'hidden',
       }}>
-        {/* Simulated browser chrome */}
-        <div style={{
-          background: '#e2e8f0', padding: '6px 12px',
-          display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid rgba(0,0,0,0.08)',
-        }}>
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f87171' }} />
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fbbf24' }} />
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#34d399' }} />
-          <div style={{
-            flex: 1, marginLeft: 8, background: '#fff',
-            borderRadius: 4, padding: '2px 8px', fontSize: 10, color: '#94a3b8',
-          }}>app.empresa.com/dashboard</div>
-        </div>
+        <ChromeBar controls={controls} />
 
         {/* Simulated top nav bar */}
         <div style={{
@@ -222,17 +234,7 @@ export function MenuPreview({ items, layout, className = '' }: Props) {
       background: '#f1f5f9', minHeight: 280,
       border: '1px solid rgba(0,0,0,0.08)', borderRadius: 8, overflow: 'hidden',
     }}>
-      {/* Simulated browser chrome */}
-      <div style={{
-        background: '#e2e8f0', padding: '6px 12px',
-        display: 'flex', alignItems: 'center', gap: 6, borderBottom: '1px solid rgba(0,0,0,0.08)',
-      }}>
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f87171' }} />
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#fbbf24' }} />
-        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#34d399' }} />
-        <div style={{ flex: 1, marginLeft: 8, background: '#fff', borderRadius: 4,
-          padding: '2px 8px', fontSize: 10, color: '#94a3b8' }}>app.empresa.com/dashboard</div>
-      </div>
+      <ChromeBar controls={controls} />
 
       {/* Top bar (narrow) */}
       <div style={{
