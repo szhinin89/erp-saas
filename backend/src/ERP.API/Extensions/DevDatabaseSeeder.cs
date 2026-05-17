@@ -23,8 +23,9 @@ internal static class DevDatabaseSeeder
     public static async Task SeedMinimumAsync(IServiceProvider services, CancellationToken ct = default)
     {
         await using var scope = services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var db             = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+        var onboarding     = scope.ServiceProvider.GetRequiredService<ITenantOnboardingService>();
 
         const string adminEmail = "admin@erp.com";
         const string adminPassword = "Admin123!";
@@ -143,11 +144,8 @@ internal static class DevDatabaseSeeder
 
         await db.SaveChangesAsync(ct);
 
-        // ── Default access profiles with permissions ──────────────────────────
-        await SeedDefaultProfilesAsync(db, tenant.Id, ct);
-        // Note: in production, DefaultProfileSeeder (IDefaultProfileSeeder) is called
-        // automatically by the tenant-creation handlers (SuperAdminCreateTenantWithAdminHandler
-        // and RegisterTenantWithAdminHandler) so profiles are always seeded for every tenant.
+        // ── Full tenant onboarding (profiles + Consumidor Final + branch + warehouse) ──
+        await onboarding.OnboardAsync(tenant.Id, SeederActorId, ct);
     }
 
     /// <summary>

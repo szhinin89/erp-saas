@@ -127,6 +127,7 @@ public static class DependencyInjection
         services.AddScoped<IStatementParser, BankStatementCsvParser>();
         services.AddScoped<ICarrierRepository, CarrierRepository>();
         services.AddScoped<IDefaultProfileSeeder, DefaultProfileSeeder>();
+        services.AddScoped<ITenantOnboardingService, TenantOnboardingService>();
 
         return services;
     }

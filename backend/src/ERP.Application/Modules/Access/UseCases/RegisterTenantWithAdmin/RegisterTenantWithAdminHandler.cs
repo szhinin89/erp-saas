@@ -6,7 +6,6 @@ using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Tenants.Interfaces;
-using ERP.Application.Common.Interfaces;
 
 namespace ERP.Application.Access.UseCases.RegisterTenantWithAdmin;
 
@@ -17,7 +16,7 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
     private readonly IAccessTokenService _tokenService;
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly IPasswordHasher _passwordHasher;
-    private readonly IDefaultProfileSeeder _profileSeeder;
+    private readonly ITenantOnboardingService _onboarding;
 
     public RegisterTenantWithAdminHandler(
         ITenantRepository tenantRepository,
@@ -25,14 +24,14 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
         IAccessTokenService tokenService,
         IDeploymentFeatureFlags deployment,
         IPasswordHasher passwordHasher,
-        IDefaultProfileSeeder profileSeeder)
+        ITenantOnboardingService onboarding)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
         _tokenService = tokenService;
         _deployment = deployment;
         _passwordHasher = passwordHasher;
-        _profileSeeder = profileSeeder;
+        _onboarding = onboarding;
     }
 
     public Task<Result<SessionResponseDto>> HandleAsync(RegisterTenantWithAdminCommand command, CancellationToken ct = default)
@@ -98,8 +97,8 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
 
         await _accessRepository.SaveChangesAsync(ct);
 
-        // Seed default profiles (Facturador / Bodeguero / Contador) for the new tenant.
-        await _profileSeeder.SeedForTenantAsync(tenant.Id, actorId: identityUser.Id, ct);
+        // Onboard the new tenant: default profiles, Consumidor Final, main branch, main warehouse.
+        await _onboarding.OnboardAsync(tenant.Id, actorId: identityUser.Id, ct);
 
         var sessionToken = _tokenService.GenerateSessionToken(identityUser, tenant.Id, "Admin");
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
