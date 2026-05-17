@@ -1,4 +1,5 @@
 using System.Linq;
+using ERP.Domain.Modules.Logistics.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Accounting.Entities;
@@ -194,6 +195,7 @@ public class ErpDbContext : DbContext
     public DbSet<ProductType> ProductTypes => Set<ProductType>();
     public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
     public DbSet<Tariff> Tariffs => Set<Tariff>();
+    public DbSet<Carrier> Carriers => Set<Carrier>();
     public DbSet<User>         Users         => Set<User>();
     public DbSet<FirstRunSetupState> FirstRunSetupStates => Set<FirstRunSetupState>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Accounting.Interfaces;
+using ERP.Domain.Modules.Logistics.Interfaces;
 using ERP.Domain.Products.Interfaces;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Application.Common.Interfaces;
@@ -123,6 +124,7 @@ public static class DependencyInjection
         services.AddScoped<ITirillaFacturaService, TirillaFacturaService>();
         services.AddScoped<ICashRepository, CajaRepository>();
         services.AddScoped<IStatementParser, BankStatementCsvParser>();
+        services.AddScoped<ICarrierRepository, CarrierRepository>();
 
         return services;
     }

@@ -1,0 +1,18 @@
+/* CarriersPage — crt-* (only styles unique to this screen)
+   Layout/header → pg-*     (page-template.css)
+   Table         → .table    (zh-ui.css)
+   Badges/status → .badge*, .zh-status (zh-ui.css)
+   Buttons       → .zh-btn* (zh-ui.css)
+   Modal         → .zh-modal* (zh-ui.css)
+   Forms         → .zh-field, .zh-input (zh-ui.css) */
+
+.crt-actions-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.crt-btn-danger:not(:disabled)        { color: var(--color-error); }
+.crt-btn-danger:hover:not(:disabled)  { background: rgba(192, 57, 43, 0.08); }
+.crt-btn-success:not(:disabled)       { color: var(--color-success); }
+.crt-btn-success:hover:not(:disabled) { background: rgba(26, 122, 74, 0.08); }

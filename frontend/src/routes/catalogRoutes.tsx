@@ -17,6 +17,7 @@ import { CrearOrdenCompraPage }   from '../modules/compras/ordenes/pages/CrearOr
 import { OrdenCompraDetailPage }  from '../modules/compras/ordenes/pages/OrdenCompraDetailPage';
 import { TenantFeaturePlaceholderPage } from '../pages/TenantFeaturePlaceholderPage';
 import { BodegasPage } from '../pages/BodegasPage';
+import { CarriersPage } from '../modules/logistica/transportistas/pages/CarriersPage';
 
 export const catalogRoutes = [
   // ── Órdenes de Compra ──────────────────────────────────────────────────────
@@ -51,6 +52,7 @@ export const catalogRoutes = [
   <Route key="inv-kardex" path="/inventario/kardex" element={<TenantFeaturePlaceholderPage />} />,
   <Route key="inv-bodegas" path="/inventario/bodegas" element={<BodegasPage />} />,
   <Route key="legacy-logistica-bodegas" path="/logistica/bodegas" element={<Navigate to="/inventario/bodegas" replace />} />,
+  <Route key="logistica-transportistas" path="/logistica/transportistas" element={<CarriersPage />} />,
   <Route key="ventas-notas" path="/ventas/notas" element={<TenantFeaturePlaceholderPage />} />,
   <Route key="ventas-ret-rec" path="/ventas/retenciones-recibidas" element={<TenantFeaturePlaceholderPage />} />,
   /* /compras/proveedores is defined in mainRoutes — SuppliersPage */
