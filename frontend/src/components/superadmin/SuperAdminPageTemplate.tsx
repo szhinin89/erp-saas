@@ -22,6 +22,8 @@ export type SuperAdminPageTemplateProps = {
   accessDeniedKey?: string;
   /** Subtítulo en cabecera si acceso denegado; por defecto igual que `accessDeniedKey`. */
   accessDeniedSubtitleKey?: string;
+  /** When true, renders children without the page header (kicker/title/subtitle). */
+  hideHeader?: boolean;
   children: ReactNode;
 };
 
@@ -37,6 +39,7 @@ export function SuperAdminPageTemplate({
   tenantGuardAction,
   accessDeniedKey = 'superadmin.noAccess',
   accessDeniedSubtitleKey,
+  hideHeader = false,
   children,
 }: SuperAdminPageTemplateProps) {
   const { t } = useI18n();
@@ -65,6 +68,10 @@ export function SuperAdminPageTemplate({
         </Card>
       </PageShell>
     );
+  }
+
+  if (hideHeader) {
+    return <>{children}</>;
   }
 
   return (

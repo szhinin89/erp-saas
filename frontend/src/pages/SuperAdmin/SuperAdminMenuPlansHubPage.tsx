@@ -30,7 +30,7 @@ export function SuperAdminMenuPlansHubPage() {
   );
 
   return (
-    <SuperAdminPageTemplate title={t('superadmin.menuPlansHub.title')} subtitle={t('superadmin.menuPlansHub.subtitle')}>
+    <SuperAdminPageTemplate title={t('superadmin.menuPlansHub.title')} subtitle={t('superadmin.menuPlansHub.subtitle')} hideHeader>
       <div className="menu-plans-hub">
         <div className="menu-plans-hub__tabs" role="tablist" aria-label="Pestañas de panel SuperAdmin">
           <button
