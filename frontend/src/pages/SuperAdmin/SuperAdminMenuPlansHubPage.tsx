@@ -2,15 +2,13 @@ import { useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SuperAdminPageTemplate } from '../../components/superadmin/SuperAdminPageTemplate';
 import { SuperAdminMenuBuilderSection } from '../../components/superadmin/SuperAdminMenuBuilderSection';
-import { SuperAdminPlansSection } from '../../components/superadmin/SuperAdminPlansSection';
 import { useI18n } from '../../i18n/i18n';
 import './menu-plans-hub.css';
 
-type HubTab = 'menuBuilder' | 'planes' | 'auditoriaGlobal';
+type HubTab = 'menuBuilder' | 'auditoriaGlobal';
 
 function parseHubTab(raw: string | null): HubTab {
   const v = (raw ?? '').trim().toLowerCase();
-  if (v === 'planes' || v === 'plans') return 'planes';
   if (v === 'auditoriaglobal' || v === 'auditoria-global' || v === 'audit') return 'auditoriaGlobal';
   return 'menuBuilder';
 }
@@ -48,16 +46,6 @@ export function SuperAdminMenuPlansHubPage() {
           <button
             type="button"
             role="tab"
-            aria-selected={tab === 'planes'}
-            id="menu-plans-tab-planes"
-            className={`menu-plans-hub__tab${tab === 'planes' ? ' is-active' : ''}`}
-            onClick={() => setTab('planes')}
-          >
-            📊 Planes y Suscripciones
-          </button>
-          <button
-            type="button"
-            role="tab"
             aria-selected={tab === 'auditoriaGlobal'}
             id="menu-plans-tab-auditoria-global"
             className={`menu-plans-hub__tab${tab === 'auditoriaGlobal' ? ' is-active' : ''}`}
@@ -73,16 +61,12 @@ export function SuperAdminMenuPlansHubPage() {
           aria-labelledby={
             tab === 'menuBuilder'
               ? 'menu-plans-tab-menu-builder'
-              : tab === 'planes'
-                ? 'menu-plans-tab-planes'
-                : 'menu-plans-tab-auditoria-global'
+              : 'menu-plans-tab-auditoria-global'
           }
         >
           {tab === 'menuBuilder' ? (
             <SuperAdminMenuBuilderSection crmWorkspace />
           ) : null}
-
-          {tab === 'planes' ? <SuperAdminPlansSection /> : null}
 
           {tab === 'auditoriaGlobal' ? (
             <section className="menu-plans-hub__placeholderCard" aria-labelledby="menu-plans-audit-heading">
