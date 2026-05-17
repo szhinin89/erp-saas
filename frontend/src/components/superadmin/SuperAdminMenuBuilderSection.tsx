@@ -1328,33 +1328,86 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
 
     const crmPreviewExtras: ReactNode = (
       <>
-        <div className="menu-plan-composer__previewHead">
-          <span className="menu-plan-composer__previewCode">{activePlan?.code ?? '—'}</span>
-        </div>
-        <div className="menu-plan-composer__layoutPick" role="radiogroup" aria-label="Orientación del menú en la vista previa">
-          <label className="menu-plan-composer__radioLbl">
-            <input
-              type="radio"
-              name="crm-menu-preview-layout"
-              checked={previewLayout === 'horizontal'}
-              onChange={() => setPreviewLayout('horizontal')}
+        {/* Preview header: plan badge + layout toggle */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: 'var(--space-3) var(--space-4)',
+          borderBottom: '1px solid var(--color-border)',
+          background: 'var(--color-surface)',
+          gap: 'var(--space-3)', flexWrap: 'wrap',
+        }}>
+          {/* Plan badge */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <span style={{
+              fontSize: 'var(--text-label-sm-size)', color: 'var(--color-text-secondary)',
+              textTransform: 'uppercase', letterSpacing: '0.05em',
+            }}>Plan:</span>
+            <span className="badge badge--blue badge--md" style={{ textTransform: 'uppercase' }}>
+              {previewPlan?.code ?? activePlan?.code ?? '—'}
+            </span>
+          </div>
+
+          {/* Layout toggle buttons */}
+          <div
+            role="radiogroup"
+            aria-label="Orientación del menú"
+            style={{ display: 'flex', gap: 'var(--space-1)', background: 'var(--color-surface-container)', borderRadius: 'var(--radius-md)', padding: 2 }}
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={previewLayout === 'horizontal'}
               disabled={busy || savingAuto}
-            />
-            Horizontal (por defecto)
-          </label>
-          <label className="menu-plan-composer__radioLbl">
-            <input
-              type="radio"
-              name="crm-menu-preview-layout"
-              checked={previewLayout === 'vertical'}
-              onChange={() => setPreviewLayout('vertical')}
+              onClick={() => setPreviewLayout('horizontal')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 'var(--space-1)',
+                padding: '4px 10px', borderRadius: 'var(--radius-sm)',
+                border: 'none', cursor: 'pointer', fontSize: 'var(--text-label-sm-size)',
+                fontWeight: previewLayout === 'horizontal' ? 700 : 400,
+                background: previewLayout === 'horizontal' ? 'var(--color-surface)' : 'transparent',
+                color: previewLayout === 'horizontal' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                boxShadow: previewLayout === 'horizontal' ? 'var(--shadow-sm)' : 'none',
+                transition: 'all 0.15s',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>dock_to_right</span>
+              Horizontal
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={previewLayout === 'vertical'}
               disabled={busy || savingAuto}
-            />
-            Vertical
-          </label>
+              onClick={() => setPreviewLayout('vertical')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 'var(--space-1)',
+                padding: '4px 10px', borderRadius: 'var(--radius-sm)',
+                border: 'none', cursor: 'pointer', fontSize: 'var(--text-label-sm-size)',
+                fontWeight: previewLayout === 'vertical' ? 700 : 400,
+                background: previewLayout === 'vertical' ? 'var(--color-surface)' : 'transparent',
+                color: previewLayout === 'vertical' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                boxShadow: previewLayout === 'vertical' ? 'var(--shadow-sm)' : 'none',
+                transition: 'all 0.15s',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: 14 }}>view_sidebar</span>
+              Vertical
+            </button>
+          </div>
         </div>
-        <div className="menu-plan-composer__mockTopBar" aria-label="Simulación de barra de menú superior">
-          Menú para {previewPlan?.code ?? activePlan?.code ?? '…'} (barra superior)
+
+        {/* Layout description hint */}
+        <div style={{
+          padding: 'var(--space-2) var(--space-4)',
+          background: 'var(--color-surface-container)',
+          fontSize: 11, color: 'var(--color-text-secondary)',
+          borderBottom: '1px solid var(--color-border)',
+          display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+        }}>
+          <span className="material-symbols-outlined" style={{ fontSize: 14, color: 'var(--color-primary)' }}>info</span>
+          {previewLayout === 'horizontal'
+            ? 'Barra superior — los grupos aparecen como tabs en la cabecera de la aplicación.'
+            : 'Panel lateral — los grupos se despliegan en la barra izquierda de navegación.'}
         </div>
         <div className="menu-plan-composer__simRow">
           <label className="menu-plan-composer__simLbl" htmlFor="crm-sim-tenant">
