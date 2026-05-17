@@ -1571,10 +1571,6 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
           />
         </div>
 
-        <div className="menu-plan-composer__libHint menu-plan-composer__callout menu-plan-composer__callout--soft" role="note">
-          Arrastra cualquier formulario y suéltalo dentro de una carpeta o en la raíz del árbol.
-        </div>
-
         <section className="menu-plan-composer__audit" aria-labelledby="menu-plan-audit-heading">
           <div className="menu-plan-composer__auditHead">
             <h3 id="menu-plan-audit-heading">🕐 Auditoría</h3>
