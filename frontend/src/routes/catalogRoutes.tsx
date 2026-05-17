@@ -59,6 +59,5 @@ export const catalogRoutes = [
   <Route key="gastos-root" path="/gastos" element={<TenantFeaturePlaceholderPage />} />,
   <Route key="caja-root" path="/caja" element={<TenantFeaturePlaceholderPage />} />,
   <Route key="actividad" path="/actividad" element={<TenantFeaturePlaceholderPage />} />,
-  <Route key="geo" path="/configuracion/geografia" element={<TenantFeaturePlaceholderPage />} />,
   <Route key="sri" path="/configuracion/sri" element={<TenantFeaturePlaceholderPage />} />,
 ];
