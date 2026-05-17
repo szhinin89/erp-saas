@@ -937,6 +937,10 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
     const priceLabel = activePlan ? formatMoney(showAnnual ? activePlan.priceYearly : activePlan.priceMonthly, 'USD', locTag) : '—';
     const cycleLabel = showAnnual ? '/año' : '/mes';
     const currentActiveSet = new Set(planActiveById[planId] ?? []);
+    const planCardFeatures = visualTree
+      .filter((x) => currentActiveSet.has(x.uid))
+      .map((x) => x.nombre)
+      .slice(0, 14);
     const onToggleNodeActive = (uid: string, checked: boolean) => {
       const findByUid = (nodes: EditorMenuItem[]): EditorMenuItem | null => {
         for (const n of nodes) {
@@ -1433,6 +1437,34 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
       </>
     );
 
+    const crmPreviewExtrasBottom: ReactNode = (
+      <div className="menu-plan-composer__planCard">
+        <div className="menu-plan-composer__planCardHead">
+          <span aria-hidden>{planEmoji(activePlan?.code ?? '')}</span>
+          <strong>{activePlan?.code ?? 'PLAN'}</strong>
+        </div>
+        <div className="menu-plan-composer__planCardPrice">
+          {priceLabel}
+          <span className="menu-plan-composer__planCardCycle">{cycleLabel}</span>
+        </div>
+        <p className="menu-plan-composer__planCardSub">{activePlan?.description || 'Ideal para equipos en crecimiento'}</p>
+        <ul className="menu-plan-composer__planCardList">
+          {planCardFeatures.length ? (
+            planCardFeatures.map((name, idx) => (
+              <li key={`${idx}-${name}`}>
+                <span aria-hidden>✓</span> {name}
+              </li>
+            ))
+          ) : (
+            <li className="subtle">Añade carpetas o formularios al árbol para listarlos aquí.</li>
+          )}
+        </ul>
+        <button type="button" className="zh-btn zh-btn--primary zh-btn--md menu-plan-composer__planCardCta" disabled aria-label="Seleccionar plan (solo demostración visual)">
+          Seleccionar plan →
+        </button>
+      </div>
+    );
+
     return (
       <div className="menu-plan-composer">
         <header className="menu-plan-composer__hero">
@@ -1483,6 +1515,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             crmLibraryStack={crmLibraryStack}
             crmMasterFooter={crmMasterFooter}
             crmPreviewExtras={crmPreviewExtras}
+            crmPreviewExtrasBottom={crmPreviewExtrasBottom}
             activeNodeIds={currentActiveSet}
             onToggleNodeActive={onToggleNodeActive}
             panelTitles={{
