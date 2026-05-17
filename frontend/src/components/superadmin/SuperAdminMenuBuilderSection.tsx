@@ -114,6 +114,40 @@ const CRM_PLAN_ACTIVE_STORAGE_KEY = 'crmPlanActiveNodeIds';
 const CRM_TREE_STORAGE_KEY = 'crmMenuTree';
 const CRM_AUDIT_STORAGE_KEY = 'crmAuditLog';
 
+/* ── Audit helpers ───────────────────────────────────────── */
+function parseAuditLine(line: string): { timestamp: string; action: string; details: string } {
+  const match = /^\[([^\]]+)\]\s+(.+)$/.exec(line);
+  const details = match ? match[2] : line;
+  return { timestamp: match ? match[1] : '—', action: deriveAuditAction(details), details };
+}
+
+function deriveAuditAction(details: string): string {
+  const d = details.toLowerCase();
+  if (d.includes('guardado') || d.includes('guardó') || d.includes('snapshot')) return 'SAVE';
+  if (d.includes('activado')) return 'TOGGLE';
+  if (d.includes('desactivado')) return 'TOGGLE';
+  if (d.includes('exportad')) return 'EXPORT';
+  if (d.includes('importad')) return 'IMPORT';
+  if (d.includes('heredó')) return 'INHERIT';
+  if (d.includes('reseteado') || d.includes('reset')) return 'RESET';
+  if (d.includes('sincroniz') || d.includes('sync')) return 'SYNC';
+  if (d.includes('eliminado') || d.includes('borrado')) return 'DELETE';
+  return 'UPDATE';
+}
+
+function auditActionBadge(action: string): string {
+  switch (action) {
+    case 'SAVE':    return 'green';
+    case 'TOGGLE':  return 'orange';
+    case 'RESET':
+    case 'DELETE':  return 'red';
+    case 'EXPORT':
+    case 'IMPORT':
+    case 'SYNC':    return 'gray';
+    default:        return 'blue';
+  }
+}
+
 type CrmLocalPlan = {
   id: string;
   code: string;
@@ -1509,15 +1543,41 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
               e.currentTarget.value = '';
             }}
           />
-          <ul className="menu-plan-composer__auditList">
-            {auditLines.length === 0 ? (
-              <li className="subtle">Las acciones (guardado automático, recargas, simulación…) aparecerán aquí.</li>
-            ) : (
-              auditLines.map((line, i) => (
-                <li key={`${i}-${line.slice(0, 24)}`}>{line}</li>
-              ))
-            )}
-          </ul>
+          {auditLines.length === 0 ? (
+            <p className="subtle" style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
+              Las acciones (guardado automático, recargas, simulación…) aparecerán aquí.
+            </p>
+          ) : (
+            <div style={{ overflowX: 'auto', maxHeight: 200, overflowY: 'auto' }}>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th style={{ width: 110 }}>Timestamp</th>
+                    <th style={{ width: 96 }}>Acción</th>
+                    <th>Detalles</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLines.map((line, i) => {
+                    const { timestamp, action, details } = parseAuditLine(line);
+                    return (
+                      <tr key={`${i}-${line.slice(0, 16)}`}>
+                        <td>
+                          <span className="subtle mono" style={{ fontSize: 11 }}>{timestamp}</span>
+                        </td>
+                        <td>
+                          <span className={`badge badge--${auditActionBadge(action)} badge--upper`} style={{ fontSize: 10 }}>
+                            {action}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: 12 }}>{details}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
         {resetPlanConfirmOpen ? (

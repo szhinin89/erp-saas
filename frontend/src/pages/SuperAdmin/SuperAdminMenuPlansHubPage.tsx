@@ -8,6 +8,35 @@ const AUDIT_STORAGE_KEY = 'crmAuditLog';
 
 type HubTab = 'menuBuilder' | 'auditoriaGlobal';
 
+function parseAuditLine(line: string): { timestamp: string; action: string; details: string } {
+  const match = /^\[([^\]]+)\]\s+(.+)$/.exec(line);
+  const details = match ? match[2] : line;
+  const d = details.toLowerCase();
+  let action = 'UPDATE';
+  if (d.includes('guardado') || d.includes('guardó') || d.includes('snapshot')) action = 'SAVE';
+  else if (d.includes('activado') || d.includes('desactivado')) action = 'TOGGLE';
+  else if (d.includes('exportad')) action = 'EXPORT';
+  else if (d.includes('importad')) action = 'IMPORT';
+  else if (d.includes('heredó')) action = 'INHERIT';
+  else if (d.includes('reseteado') || d.includes('reset')) action = 'RESET';
+  else if (d.includes('sincroniz') || d.includes('sync')) action = 'SYNC';
+  else if (d.includes('eliminado')) action = 'DELETE';
+  return { timestamp: match ? match[1] : '—', action, details };
+}
+
+function auditBadge(action: string): string {
+  switch (action) {
+    case 'SAVE':    return 'green';
+    case 'TOGGLE':  return 'orange';
+    case 'RESET':
+    case 'DELETE':  return 'red';
+    case 'EXPORT':
+    case 'IMPORT':
+    case 'SYNC':    return 'gray';
+    default:        return 'blue';
+  }
+}
+
 function parseHubTab(raw: string | null): HubTab {
   const v = (raw ?? '').trim().toLowerCase();
   if (v === 'auditoriaglobal' || v === 'auditoria-global' || v === 'audit') return 'auditoriaGlobal';
@@ -112,25 +141,32 @@ export function SuperAdminMenuPlansHubPage() {
                   {t('superadmin.menuPlansHub.auditEmpty')}
                 </p>
               ) : (
-                <div style={{ overflowX: 'auto' }}>
+                <div style={{ overflowX: 'auto', maxHeight: 400, overflowY: 'auto' }}>
                   <table className="table">
                     <thead>
                       <tr>
-                        <th style={{ width: 56 }}>#</th>
-                        <th>{t('common.actions')}</th>
+                        <th style={{ width: 120 }}>Timestamp</th>
+                        <th style={{ width: 100 }}>Acción</th>
+                        <th>Detalles</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {[...auditLines].reverse().map((line, i) => (
-                        <tr key={auditLines.length - i}>
-                          <td>
-                            <span className="subtle mono" style={{ fontSize: 11 }}>
-                              {auditLines.length - i}
-                            </span>
-                          </td>
-                          <td style={{ fontSize: 13 }}>{line}</td>
-                        </tr>
-                      ))}
+                      {auditLines.map((line, i) => {
+                        const { timestamp, action, details } = parseAuditLine(line);
+                        return (
+                          <tr key={`${i}-${line.slice(0, 16)}`}>
+                            <td>
+                              <span className="subtle mono" style={{ fontSize: 11 }}>{timestamp}</span>
+                            </td>
+                            <td>
+                              <span className={`badge badge--${auditBadge(action)} badge--upper`} style={{ fontSize: 10 }}>
+                                {action}
+                              </span>
+                            </td>
+                            <td style={{ fontSize: 12 }}>{details}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

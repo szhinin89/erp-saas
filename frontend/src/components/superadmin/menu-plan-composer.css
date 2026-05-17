@@ -210,30 +210,6 @@
   justify-content: center;
 }
 
-/* ── Audit log list ──────────────────────────────────────── */
-.menu-plan-composer__auditList {
-  list-style: none;
-  padding: var(--space-3) var(--space-5);
-  margin: 0;
-  max-height: 200px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.menu-plan-composer__auditList li {
-  font-size: 12px;
-  font-family: monospace;
-  color: var(--color-text-secondary);
-  padding: 2px 0;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.menu-plan-composer__auditList li:last-child {
-  border-bottom: none;
-}
-
 /* ── Hidden file input ───────────────────────────────────── */
 .menu-plan-composer__hiddenFileInput {
   display: none;
