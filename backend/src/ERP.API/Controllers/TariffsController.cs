@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Products.Catalogs.DTOs;
-using ERP.Application.Products.Catalogs.UseCases.CreateTariff;
-using ERP.Application.Products.Catalogs.UseCases.GetTariffs;
+using ERP.Application.Products.DTOs;
+using ERP.Application.Products.UseCases.CreateTariff;
+using ERP.Application.Products.UseCases.GetTariffs;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

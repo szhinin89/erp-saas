@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Products.Catalogs.DTOs;
-using ERP.Application.Products.Catalogs.UseCases.CreateBrand;
-using ERP.Application.Products.Catalogs.UseCases.GetBrands;
-using ERP.Application.Products.Catalogs.UseCases.UpdateBrand;
+using ERP.Application.Products.DTOs;
+using ERP.Application.Products.UseCases.CreateBrand;
+using ERP.Application.Products.UseCases.GetBrands;
+using ERP.Application.Products.UseCases.UpdateBrand;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

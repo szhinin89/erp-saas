@@ -3,12 +3,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Products.Catalogs.DTOs;
-using ERP.Application.Products.Catalogs.UseCases.CreateProductLine;
-using ERP.Application.Products.Catalogs.UseCases.DisableProductLine;
-using ERP.Application.Products.Catalogs.UseCases.EnableProductLine;
-using ERP.Application.Products.Catalogs.UseCases.GetProductLines;
-using ERP.Application.Products.Catalogs.UseCases.UpdateProductLine;
+using ERP.Application.Products.DTOs;
+using ERP.Application.Products.UseCases.CreateProductLine;
+using ERP.Application.Products.UseCases.DisableProductLine;
+using ERP.Application.Products.UseCases.EnableProductLine;
+using ERP.Application.Products.UseCases.GetProductLines;
+using ERP.Application.Products.UseCases.UpdateProductLine;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

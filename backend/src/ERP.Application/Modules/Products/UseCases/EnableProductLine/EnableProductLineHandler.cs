@@ -1,0 +1,57 @@
+using ERP.Application.Common;
+using ERP.Application.Products.DTOs;
+using ERP.Domain.Audit.Entities;
+using ERP.Domain.Audit.Interfaces;
+using ERP.Domain.Products.Interfaces;
+
+using MediatR;
+
+namespace ERP.Application.Products.UseCases.EnableProductLine;
+
+public class EnableProductLineHandler : IRequestHandler<EnableProductLineCommand, Result<ProductLineDto>>
+{
+    private readonly IProductCatalogRepository _repo;
+    private readonly IUserActivityRepository _activity;
+    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentUser _currentUser;
+
+    public EnableProductLineHandler(
+        IProductCatalogRepository repo,
+        IUserActivityRepository activity,
+        ICurrentTenant currentTenant,
+        ICurrentUser currentUser)
+    {
+        _repo = repo;
+        _activity = activity;
+        _currentTenant = currentTenant;
+        _currentUser = currentUser;
+    }
+
+    public async Task<Result<ProductLineDto>> Handle(EnableProductLineCommand command, CancellationToken ct)
+    {
+        var tenantId = _currentTenant.TenantId;
+        var userId = _currentUser.UserId;
+
+        var entity = await _repo.GetProductLineByIdAsync(tenantId, command.Id, ct);
+        if (entity is null)
+            return Result<ProductLineDto>.Failure("Línea no encontrada.");
+
+        if (entity.IsActive)
+            return Result<ProductLineDto>.Failure("La línea ya está activa.");
+
+        entity.Enable(userId);
+        await _activity.AddAsync(UserActivity.Create(
+            tenantId,
+            userId,
+            _currentUser.Email,
+            _currentUser.FullName,
+            module: "inventario",
+            action: "productLine.enable",
+            entityType: "ProductLine",
+            entityId: entity.Id,
+            description: $"{entity.Code} — {entity.Name}"), ct);
+        await _repo.SaveChangesAsync(ct);
+
+        return Result<ProductLineDto>.Success(new ProductLineDto(entity.Id, entity.Code, entity.Name, entity.IsActive));
+    }
+}

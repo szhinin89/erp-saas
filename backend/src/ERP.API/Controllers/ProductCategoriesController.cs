@@ -3,12 +3,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Products.Catalogs.DTOs;
-using ERP.Application.Products.Catalogs.UseCases.CreateProductCategory;
-using ERP.Application.Products.Catalogs.UseCases.DisableProductCategory;
-using ERP.Application.Products.Catalogs.UseCases.EnableProductCategory;
-using ERP.Application.Products.Catalogs.UseCases.GetProductCategories;
-using ERP.Application.Products.Catalogs.UseCases.UpdateProductCategory;
+using ERP.Application.Products.DTOs;
+using ERP.Application.Products.UseCases.CreateProductCategory;
+using ERP.Application.Products.UseCases.DisableProductCategory;
+using ERP.Application.Products.UseCases.EnableProductCategory;
+using ERP.Application.Products.UseCases.GetProductCategories;
+using ERP.Application.Products.UseCases.UpdateProductCategory;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

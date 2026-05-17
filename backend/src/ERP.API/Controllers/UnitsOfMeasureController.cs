@@ -3,9 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Products.Catalogs.DTOs;
-using ERP.Application.Products.Catalogs.UseCases.CreateUnitOfMeasure;
-using ERP.Application.Products.Catalogs.UseCases.GetUnitsOfMeasure;
+using ERP.Application.Products.DTOs;
+using ERP.Application.Products.UseCases.CreateUnitOfMeasure;
+using ERP.Application.Products.UseCases.GetUnitsOfMeasure;
 using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;

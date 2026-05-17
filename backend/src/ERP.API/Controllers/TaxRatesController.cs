@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Products.Catalogs.DTOs;
-using ERP.Application.Products.Catalogs.UseCases.GetTaxRates;
+using ERP.Application.Products.DTOs;
+using ERP.Application.Products.UseCases.GetTaxRates;
 using ERP.Domain.Products.Entities;
 
 namespace ERP.API.Controllers;
