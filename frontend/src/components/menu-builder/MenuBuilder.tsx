@@ -651,16 +651,12 @@ export function MenuBuilder({
 
           {showPreview ? (
             <aside className="menu-builder-panel menu-builder-panel--preview">
-              <header className="menu-builder-panel__head">
-                {crmUi ? (
-                  <div className="menu-builder-panel__crmTitleRow">
-                    <h4 className="menu-builder-panel__title">{panelTitles?.preview ?? t('superadmin.menuBuilder.livePreview')}</h4>
-                  </div>
-                ) : (
+              {!crmUi ? (
+                <header className="menu-builder-panel__head">
                   <h4 className="menu-builder-panel__title">{panelTitles?.preview ?? t('superadmin.menuBuilder.livePreview')}</h4>
-                )}
-                <p className="menu-builder-panel__hint">{crmUi ? 'Vista aproximada del menú según el plan activo.' : t('superadmin.menuBuilder.previewHintShort')}</p>
-              </header>
+                  <p className="menu-builder-panel__hint">{t('superadmin.menuBuilder.previewHintShort')}</p>
+                </header>
+              ) : null}
               <div className="menu-builder-panel__body">
                 {crmUi && crmPreviewExtras ? <div className="menu-builder-panel__crmPreviewTop">{crmPreviewExtras}</div> : null}
                 <MenuPreview items={previewData} layout={previewLayout} />
