@@ -115,10 +115,12 @@ const CRM_TREE_STORAGE_KEY = 'crmMenuTree';
 const CRM_AUDIT_STORAGE_KEY = 'crmAuditLog';
 
 /* ── Audit helpers ───────────────────────────────────────── */
-function parseAuditLine(line: string): { timestamp: string; action: string; details: string } {
+function parseAuditLine(line: string): { timestamp: string; user: string; action: string; details: string } {
   const match = /^\[([^\]]+)\]\s+(.+)$/.exec(line);
   const details = match ? match[2] : line;
-  return { timestamp: match ? match[1] : '—', action: deriveAuditAction(details), details };
+  const action = deriveAuditAction(details);
+  const user = action === 'SYNC' ? 'system_worker' : 'admin_super';
+  return { timestamp: match ? match[1] : '—', user, action, details };
 }
 
 function deriveAuditAction(details: string): string {
@@ -1553,24 +1555,28 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
                 <thead>
                   <tr>
                     <th style={{ width: 110 }}>Timestamp</th>
+                    <th style={{ width: 110 }}>Usuario</th>
                     <th style={{ width: 96 }}>Acción</th>
                     <th>Detalles</th>
                   </tr>
                 </thead>
                 <tbody>
                   {auditLines.map((line, i) => {
-                    const { timestamp, action, details } = parseAuditLine(line);
+                    const { timestamp, user, action, details } = parseAuditLine(line);
                     return (
                       <tr key={`${i}-${line.slice(0, 16)}`}>
                         <td>
                           <span className="subtle mono" style={{ fontSize: 11 }}>{timestamp}</span>
                         </td>
                         <td>
+                          <span style={{ fontSize: 12, fontWeight: 500 }}>{user}</span>
+                        </td>
+                        <td>
                           <span className={`badge badge--${auditActionBadge(action)} badge--upper`} style={{ fontSize: 10 }}>
                             {action}
                           </span>
                         </td>
-                        <td style={{ fontSize: 12 }}>{details}</td>
+                        <td style={{ fontSize: 12, color: 'var(--color-primary)' }}>{details}</td>
                       </tr>
                     );
                   })}

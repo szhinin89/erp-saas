@@ -8,7 +8,7 @@ const AUDIT_STORAGE_KEY = 'crmAuditLog';
 
 type HubTab = 'menuBuilder' | 'auditoriaGlobal';
 
-function parseAuditLine(line: string): { timestamp: string; action: string; details: string } {
+function parseAuditLine(line: string): { timestamp: string; user: string; action: string; details: string } {
   const match = /^\[([^\]]+)\]\s+(.+)$/.exec(line);
   const details = match ? match[2] : line;
   const d = details.toLowerCase();
@@ -21,7 +21,8 @@ function parseAuditLine(line: string): { timestamp: string; action: string; deta
   else if (d.includes('reseteado') || d.includes('reset')) action = 'RESET';
   else if (d.includes('sincroniz') || d.includes('sync')) action = 'SYNC';
   else if (d.includes('eliminado')) action = 'DELETE';
-  return { timestamp: match ? match[1] : '—', action, details };
+  const user = action === 'SYNC' ? 'system_worker' : 'admin_super';
+  return { timestamp: match ? match[1] : '—', user, action, details };
 }
 
 function auditBadge(action: string): string {
@@ -146,24 +147,28 @@ export function SuperAdminMenuPlansHubPage() {
                     <thead>
                       <tr>
                         <th style={{ width: 120 }}>Timestamp</th>
+                        <th style={{ width: 110 }}>Usuario</th>
                         <th style={{ width: 100 }}>Acción</th>
                         <th>Detalles</th>
                       </tr>
                     </thead>
                     <tbody>
                       {auditLines.map((line, i) => {
-                        const { timestamp, action, details } = parseAuditLine(line);
+                        const { timestamp, user, action, details } = parseAuditLine(line);
                         return (
                           <tr key={`${i}-${line.slice(0, 16)}`}>
                             <td>
                               <span className="subtle mono" style={{ fontSize: 11 }}>{timestamp}</span>
                             </td>
                             <td>
+                              <span style={{ fontSize: 12, fontWeight: 500 }}>{user}</span>
+                            </td>
+                            <td>
                               <span className={`badge badge--${auditBadge(action)} badge--upper`} style={{ fontSize: 10 }}>
                                 {action}
                               </span>
                             </td>
-                            <td style={{ fontSize: 12 }}>{details}</td>
+                            <td style={{ fontSize: 12, color: 'var(--color-primary)' }}>{details}</td>
                           </tr>
                         );
                       })}
