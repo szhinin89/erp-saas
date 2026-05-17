@@ -1315,64 +1315,13 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
 
     const crmPreviewExtras: ReactNode = (
       <>
-        {/* Preview header: plan badge + price + billing toggle + layout toggle */}
+        {/* Preview header: layout toggle only */}
         <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
           padding: 'var(--space-3) var(--space-4)',
           borderBottom: '1px solid var(--color-border)',
           background: 'var(--color-surface)',
-          gap: 'var(--space-3)', flexWrap: 'wrap',
         }}>
-          {/* Left: plan badge + price + billing cycle toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-            <span style={{
-              fontSize: 'var(--text-label-sm-size)', color: 'var(--color-text-secondary)',
-              textTransform: 'uppercase', letterSpacing: '0.05em',
-            }}>Plan:</span>
-            <span className="badge badge--blue badge--md" style={{ textTransform: 'uppercase' }}>
-              {activePlan?.code ?? '—'}
-            </span>
-            {activePlan ? (
-              <>
-                <span style={{ fontSize: 'var(--text-label-sm-size)', color: 'var(--color-text-secondary)', minWidth: 64 }}>
-                  {formatMoney(showAnnual ? activePlan.priceYearly : activePlan.priceMonthly, 'USD', locale === 'en' ? 'en-US' : 'es-ES')}
-                  <span style={{ opacity: 0.6 }}>{showAnnual ? '/año' : '/mes'}</span>
-                </span>
-                <div
-                  role="radiogroup"
-                  aria-label="Ciclo de facturación"
-                  style={{ display: 'flex', gap: 1, background: 'var(--color-surface-container)', borderRadius: 'var(--radius-md)', padding: 2 }}
-                >
-                  {(['Mensual', 'Anual'] as const).map((label) => {
-                    const isAnnual = label === 'Anual';
-                    const active = showAnnual === isAnnual;
-                    return (
-                      <button
-                        key={label}
-                        type="button"
-                        role="radio"
-                        aria-checked={active}
-                        onClick={() => setShowAnnual(isAnnual)}
-                        style={{
-                          padding: '2px 8px', borderRadius: 'var(--radius-sm)',
-                          border: 'none', cursor: 'pointer', fontSize: 10,
-                          fontWeight: active ? 700 : 400,
-                          background: active ? 'var(--color-surface)' : 'transparent',
-                          color: active ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                          boxShadow: active ? 'var(--shadow-sm)' : 'none',
-                          transition: 'all 0.15s',
-                        }}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            ) : null}
-          </div>
-
-          {/* Right: layout toggle */}
           <div
             role="radiogroup"
             aria-label="Orientación del menú"
@@ -1439,13 +1388,47 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
 
     const crmPreviewExtrasBottom: ReactNode = (
       <div className="menu-plan-composer__planCard">
-        <div className="menu-plan-composer__planCardHead">
-          <span aria-hidden>{planEmoji(activePlan?.code ?? '')}</span>
-          <strong>{activePlan?.code ?? 'PLAN'}</strong>
-        </div>
-        <div className="menu-plan-composer__planCardPrice">
-          {priceLabel}
-          <span className="menu-plan-composer__planCardCycle">{cycleLabel}</span>
+        {/* Card header: plan badge + price + billing toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span aria-hidden style={{ fontSize: 16 }}>{planEmoji(activePlan?.code ?? '')}</span>
+            <span className="badge badge--blue badge--md" style={{ textTransform: 'uppercase' }}>
+              {activePlan?.code ?? 'PLAN'}
+            </span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>
+              {priceLabel}<span style={{ fontSize: 11, fontWeight: 400, color: 'var(--color-text-secondary)', marginLeft: 2 }}>{cycleLabel}</span>
+            </span>
+          </div>
+          <div
+            role="radiogroup"
+            aria-label="Ciclo de facturación"
+            style={{ display: 'flex', gap: 1, background: 'var(--color-surface-container)', borderRadius: 'var(--radius-md)', padding: 2 }}
+          >
+            {(['Mensual', 'Anual'] as const).map((label) => {
+              const isAnnual = label === 'Anual';
+              const active = showAnnual === isAnnual;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => setShowAnnual(isAnnual)}
+                  style={{
+                    padding: '2px 8px', borderRadius: 'var(--radius-sm)',
+                    border: 'none', cursor: 'pointer', fontSize: 10,
+                    fontWeight: active ? 700 : 400,
+                    background: active ? 'var(--color-surface)' : 'transparent',
+                    color: active ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                    boxShadow: active ? 'var(--shadow-sm)' : 'none',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
         <p className="menu-plan-composer__planCardSub">{activePlan?.description || 'Ideal para equipos en crecimiento'}</p>
         <ul className="menu-plan-composer__planCardList">
