@@ -20,13 +20,6 @@ function normalizeUuid(uuid: string): string {
   return uuid.replace(/-/g, '').toLowerCase();
 }
 
-type RoleTab = 'superadmin' | 'admin' | 'user';
-
-const ROLE_TABS: { id: RoleTab; icon: string; label: string }[] = [
-  { id: 'superadmin', icon: 'admin_panel_settings', label: 'SuperAdmin' },
-  { id: 'admin',      icon: 'domain',               label: 'Admin Empresa' },
-  { id: 'user',       icon: 'person',                label: 'Usuario' },
-];
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -50,7 +43,6 @@ export function LoginPage() {
   const [error,        setError]        = useState('');
   const [loading,      setLoading]      = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [activeRole,   setActiveRole]   = useState<RoleTab>('superadmin');
 
   /* ── Auth helpers ─────────────────────────────────────────── */
 
@@ -177,24 +169,6 @@ export function LoginPage() {
         {/* ── Login card ── */}
         <div className="lp-card">
           <div className="lp-card-body">
-
-            {/* Role selector (visual — backend determines actual role) */}
-            <div>
-              <span className="lp-roles-label">Seleccionar Rol de Acceso</span>
-              <div className="lp-roles-grid" role="group" aria-label="Tipo de acceso">
-                {ROLE_TABS.map(({ id, icon, label }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    className={`lp-role${activeRole === id ? ' lp-role--active' : ''}`}
-                    onClick={() => setActiveRole(id)}
-                  >
-                    <span className="lp-role-icon material-symbols-outlined">{icon}</span>
-                    <span className="lp-role-label">{label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
 
             {/* Error alert */}
             {error && (
