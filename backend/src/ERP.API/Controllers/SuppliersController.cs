@@ -20,7 +20,7 @@ namespace ERP.API.Controllers;
 /// </summary>
 [AppFeature("Proveedores", "perm:compras.proveedores.view", "ðŸ­", "/compras/proveedores", "perm:compras.facturas.view", 46)]
 [ApiController]
-[Route("api/Proveedores")]
+[Route("api/suppliers")]
 [Authorize]
 [Produces("application/json")]
 public sealed class SuppliersController : ControllerBase

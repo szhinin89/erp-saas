@@ -53,7 +53,7 @@ export const catalogRoutes = [
   <Route key="legacy-logistica-bodegas" path="/logistica/bodegas" element={<Navigate to="/inventario/bodegas" replace />} />,
   <Route key="ventas-notas" path="/ventas/notas" element={<TenantFeaturePlaceholderPage />} />,
   <Route key="ventas-ret-rec" path="/ventas/retenciones-recibidas" element={<TenantFeaturePlaceholderPage />} />,
-  <Route key="compras-prov" path="/compras/proveedores" element={<TenantFeaturePlaceholderPage />} />,
+  /* /compras/proveedores is defined in mainRoutes — SuppliersPage */
   <Route key="compras-notas-prov" path="/compras/notas-proveedor" element={<TenantFeaturePlaceholderPage />} />,
   <Route key="compras-ret" path="/compras/retenciones" element={<TenantFeaturePlaceholderPage />} />,
   <Route key="gastos-root" path="/gastos" element={<TenantFeaturePlaceholderPage />} />,
