@@ -18,18 +18,10 @@ import './suppliers-page.css';
 
 type TabId = 'list' | 'form';
 
-const CATEGORIES = ['Supplies', 'Technology', 'Services', 'Manufacturing', 'Logistics', 'Other'];
-
 function statusClass(status: Supplier['status']) {
   if (status === 'active')  return 'zh-status zh-status--active';
   if (status === 'pending') return 'zh-status zh-status--pending';
   return 'zh-status zh-status--inactive';
-}
-
-function statusLabel(status: Supplier['status']) {
-  if (status === 'active')  return 'Active';
-  if (status === 'pending') return 'Pending';
-  return 'Inactive';
 }
 
 export function SuppliersPage() {
@@ -37,19 +29,19 @@ export function SuppliersPage() {
   const hasPerm = usePermissionsStore((s) => s.has);
   const role    = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin   = role === 'Admin' || role === 'SuperAdmin';
-  const canView   = isAdmin || hasPerm('compras.suppliers.view');
-  const canCreate = isAdmin || hasPerm('compras.suppliers.create');
-  const canEdit   = isAdmin || hasPerm('compras.suppliers.edit');
+  const canView   = isAdmin || hasPerm('compras.suppliers.view') || hasPerm('compras.proveedores.view');
+  const canCreate = isAdmin || hasPerm('compras.suppliers.create') || hasPerm('compras.proveedores.create');
+  const canEdit   = isAdmin || hasPerm('compras.suppliers.edit') || hasPerm('compras.proveedores.update');
 
   const { suppliers, loading, error, saving, saveError, createSupplier, updateSupplier, setSupplierStatus } =
     useSuppliers();
 
   /* ── UI state ── */
-  const [activeTab,     setActiveTab]     = useState<TabId>('list');
-  const [searchQuery,   setSearchQuery]   = useState('');
-  const [statusFilter,  setStatusFilter]  = useState<'all' | 'active' | 'pending' | 'inactive'>('all');
-  const [modalOpen,     setModalOpen]     = useState(false);
-  const [editingId,     setEditingId]     = useState<string | null>(null);
+  const [activeTab,    setActiveTab]    = useState<TabId>('list');
+  const [searchQuery,  setSearchQuery]  = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending' | 'inactive'>('all');
+  const [modalOpen,    setModalOpen]    = useState(false);
+  const [editingId,    setEditingId]    = useState<string | null>(null);
 
   /* ── Form ── */
   const { register, handleSubmit, reset, setValue, formState: { errors } } =
@@ -141,7 +133,16 @@ export function SuppliersPage() {
     setActiveTab('form');
   };
 
-  if (!canView) return <NoAccessPage title="Suppliers" />;
+  const CATEGORIES = [
+    { value: 'Supplies',      label: t('suppliers.category.supplies') },
+    { value: 'Technology',    label: t('suppliers.category.technology') },
+    { value: 'Services',      label: t('suppliers.category.services') },
+    { value: 'Manufacturing', label: t('suppliers.category.manufacturing') },
+    { value: 'Logistics',     label: t('suppliers.category.logistics') },
+    { value: 'Other',         label: t('suppliers.category.other') },
+  ];
+
+  if (!canView) return <NoAccessPage title={t('suppliers.title')} />;
 
   const anyError = error || saveError;
 
@@ -152,22 +153,22 @@ export function SuppliersPage() {
       <div className="pg-header-row">
         <div className="pg-header-left">
           <nav className="pg-breadcrumb" aria-label="Breadcrumb">
-            <span className="pg-breadcrumb-item">Purchases</span>
+            <span className="pg-breadcrumb-item">{t('suppliers.breadcrumb.purchases')}</span>
             <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Suppliers</span>
+            <span className="pg-breadcrumb-item">{t('suppliers.breadcrumb.suppliers')}</span>
           </nav>
-          <h1 className="pg-title">Supplier Management</h1>
-          <p className="pg-subtitle">Manage the supplier directory, statuses and payment terms.</p>
+          <h1 className="pg-title">{t('suppliers.title')}</h1>
+          <p className="pg-subtitle">{t('suppliers.subtitle')}</p>
         </div>
         <div className="pg-header-right">
           <ZHBtn variant="ghost" size="md" type="button">
             <span className="material-symbols-outlined">download</span>
-            Export
+            {t('suppliers.export')}
           </ZHBtn>
           {canCreate && (
             <ZHBtn variant="primary" size="md" type="button" onClick={openCreateModal}>
               <span className="material-symbols-outlined">add</span>
-              New Supplier
+              {t('suppliers.new')}
             </ZHBtn>
           )}
         </div>
@@ -183,7 +184,7 @@ export function SuppliersPage() {
             <span className="material-symbols-outlined">storefront</span>
           </div>
           <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">Total Suppliers</p>
+            <p className="pg-kpi-label">{t('suppliers.kpi.total')}</p>
             <p className="pg-kpi-value">{totals.total}</p>
           </div>
         </div>
@@ -192,7 +193,7 @@ export function SuppliersPage() {
             <span className="material-symbols-outlined">verified</span>
           </div>
           <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">Active</p>
+            <p className="pg-kpi-label">{t('suppliers.kpi.active')}</p>
             <p className="pg-kpi-value">{totals.active}</p>
           </div>
         </div>
@@ -201,7 +202,7 @@ export function SuppliersPage() {
             <span className="material-symbols-outlined">pending</span>
           </div>
           <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">Pending</p>
+            <p className="pg-kpi-label">{t('suppliers.kpi.pending')}</p>
             <p className="pg-kpi-value">{totals.pending}</p>
           </div>
         </div>
@@ -210,7 +211,7 @@ export function SuppliersPage() {
             <span className="material-symbols-outlined">block</span>
           </div>
           <div className="pg-kpi-bottom">
-            <p className="pg-kpi-label">Inactive</p>
+            <p className="pg-kpi-label">{t('suppliers.kpi.inactive')}</p>
             <p className="pg-kpi-value">{totals.inactive}</p>
           </div>
         </div>
@@ -221,7 +222,7 @@ export function SuppliersPage() {
 
         {/* Tabs */}
         <div className="pg-section-header">
-          <div className="zh-form-tabs" role="tablist" aria-label="Supplier sections">
+          <div className="zh-form-tabs" role="tablist" aria-label={t('suppliers.title')}>
             <button
               type="button" role="tab"
               aria-selected={activeTab === 'list'}
@@ -229,7 +230,7 @@ export function SuppliersPage() {
               onClick={() => setActiveTab('list')}
             >
               <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: 'middle', marginRight: 4 }}>view_list</span>
-              List
+              {t('suppliers.tab.list')}
             </button>
             {canCreate && (
               <button
@@ -239,7 +240,7 @@ export function SuppliersPage() {
                 onClick={handleNewInTab}
               >
                 <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: 'middle', marginRight: 4 }}>add_box</span>
-                New Supplier
+                {t('suppliers.tab.new')}
               </button>
             )}
           </div>
@@ -255,45 +256,46 @@ export function SuppliersPage() {
                   <input
                     className="zh-input"
                     type="search"
-                    placeholder="Search by tax ID or name…"
+                    placeholder={t('suppliers.search.placeholder')}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    aria-label="Search supplier"
+                    aria-label={t('suppliers.search.placeholder')}
                   />
                 </div>
                 <select
                   className="zh-input"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                  aria-label="Filter by status"
+                  aria-label={t('suppliers.form.status')}
+                  style={{ width: 'auto', minWidth: 130 }}
                 >
-                  <option value="all">All</option>
-                  <option value="active">Active</option>
-                  <option value="pending">Pending</option>
-                  <option value="inactive">Inactive</option>
+                  <option value="all">{t('suppliers.filter.all')}</option>
+                  <option value="active">{t('suppliers.filter.active')}</option>
+                  <option value="pending">{t('suppliers.filter.pending')}</option>
+                  <option value="inactive">{t('suppliers.filter.inactive')}</option>
                 </select>
               </div>
               <div className="pg-table-controls-right">
-                <span>{filtered.length} of {suppliers.length} suppliers</span>
+                <span className="pg-result-count">{filtered.length} / {suppliers.length}</span>
               </div>
             </div>
 
             {loading ? (
               <LoadingState />
             ) : filtered.length === 0 ? (
-              <EmptyState message={suppliers.length === 0 ? 'No suppliers registered yet.' : 'No results for the applied filters.'} />
+              <EmptyState message={suppliers.length === 0 ? t('suppliers.empty.noData') : t('suppliers.empty.noResults')} />
             ) : (
               <>
                 <div className="prv-table-wrap">
                   <table className="table">
                     <thead>
                       <tr>
-                        <th>Tax ID</th>
-                        <th>Legal Name</th>
-                        <th>Primary Contact</th>
-                        <th>Phone</th>
-                        <th>Status</th>
-                        {canEdit ? <th style={{ textAlign: 'right' }}>Actions</th> : null}
+                        <th>{t('suppliers.table.taxId')}</th>
+                        <th>{t('suppliers.table.legalName')}</th>
+                        <th>{t('suppliers.table.contact')}</th>
+                        <th>{t('suppliers.table.phone')}</th>
+                        <th style={{ textAlign: 'center' }}>{t('common.status')}</th>
+                        {canEdit ? <th style={{ textAlign: 'right' }}>{t('common.actions')}</th> : null}
                       </tr>
                     </thead>
                     <tbody>
@@ -308,9 +310,9 @@ export function SuppliersPage() {
                           </td>
                           <td>{supplier.primaryContact ?? <span className="subtle">—</span>}</td>
                           <td className="mono">{supplier.phone ?? <span className="subtle">—</span>}</td>
-                          <td>
+                          <td style={{ textAlign: 'center' }}>
                             <span className={statusClass(supplier.status)}>
-                              {statusLabel(supplier.status)}
+                              {t(`suppliers.status.${supplier.status}`)}
                             </span>
                           </td>
                           {canEdit ? (
@@ -319,19 +321,17 @@ export function SuppliersPage() {
                                 <button
                                   type="button"
                                   className="zh-btn zh-btn--ghost zh-btn--sm"
-                                  title="Edit"
+                                  title={t('common.edit')}
                                   onClick={() => openEditModal(supplier)}
-                                  aria-label="Edit supplier"
                                 >
                                   <span className="material-symbols-outlined">edit</span>
                                 </button>
                                 <button
                                   type="button"
                                   className={`zh-btn zh-btn--ghost zh-btn--sm ${supplier.status === 'active' ? 'prv-btn-block' : 'prv-btn-activate'}`}
-                                  title={supplier.status === 'active' ? 'Deactivate' : 'Activate'}
+                                  title={supplier.status === 'active' ? t('suppliers.action.deactivate') : t('suppliers.action.activate')}
                                   disabled={saving}
                                   onClick={() => void handleToggleStatus(supplier)}
-                                  aria-label={supplier.status === 'active' ? 'Deactivate supplier' : 'Activate supplier'}
                                 >
                                   <span className="material-symbols-outlined">
                                     {supplier.status === 'active' ? 'block' : 'check_circle'}
@@ -346,8 +346,8 @@ export function SuppliersPage() {
                   </table>
                 </div>
                 <div className="pg-table-footer">
-                  <p className="subtle" style={{ fontSize: 12, margin: 0 }}>{filtered.length} results</p>
-                  <p className="pg-table-timestamp">Updated this session</p>
+                  <p className="subtle" style={{ fontSize: 12, margin: 0 }}>{filtered.length} {t('common.results') ?? 'resultados'}</p>
+                  <p className="pg-table-timestamp">{t('suppliers.results.updated')}</p>
                 </div>
               </>
             )}
@@ -356,8 +356,8 @@ export function SuppliersPage() {
             <div className="prv-panels-grid">
               <div className="pg-kpi" style={{ flexDirection: 'column', gap: 'var(--space-3)', height: 'auto' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <p className="pg-kpi-label" style={{ margin: 0 }}>Management Notes</p>
-                  <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm" aria-label="Add note">
+                  <p className="pg-kpi-label" style={{ margin: 0 }}>{t('suppliers.notes.title')}</p>
+                  <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm" aria-label={t('suppliers.notes.title')}>
                     <span className="material-symbols-outlined">add</span>
                   </button>
                 </div>
@@ -375,17 +375,17 @@ export function SuppliersPage() {
                 </div>
               </div>
               <div className="prv-payment-card">
-                <p className="prv-payment-title">Payment Summary</p>
+                <p className="prv-payment-title">{t('suppliers.payment.title')}</p>
                 <div>
                   <p className="prv-payment-amount">$0.00</p>
-                  <p className="prv-payment-sub">Total accumulated this session</p>
+                  <p className="prv-payment-sub">{t('suppliers.payment.accumulated')}</p>
                 </div>
                 <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
                   <ZHBtn variant="primary" size="md" type="button">
                     <span className="material-symbols-outlined">receipt_long</span>
-                    View Payments
+                    {t('suppliers.payment.view')}
                   </ZHBtn>
-                  <ZHBtn variant="ghost" size="md" type="button">Generate Report</ZHBtn>
+                  <ZHBtn variant="ghost" size="md" type="button">{t('suppliers.payment.report')}</ZHBtn>
                 </div>
               </div>
             </div>
@@ -397,54 +397,54 @@ export function SuppliersPage() {
           <div style={{ padding: 'var(--space-4) var(--space-5)' }}>
             <form onSubmit={onSubmit}>
               <div className="pg-form-grid pg-form-grid--2">
-                <ZHField label="Tax ID" required error={errors.taxId?.message}>
-                  <input className="zh-input" placeholder="10 or 13 digits" disabled={saving} {...register('taxId')} />
+                <ZHField label={t('suppliers.form.taxId')} required error={errors.taxId?.message}>
+                  <input className="zh-input" placeholder={t('suppliers.form.taxIdPlaceholder')} disabled={saving} {...register('taxId')} />
                 </ZHField>
-                <ZHField label="Legal Name" required error={errors.legalName?.message}>
-                  <input className="zh-input" placeholder="Supplier's registered legal name" disabled={saving} {...register('legalName')} />
-                </ZHField>
-              </div>
-              <div className="pg-form-grid pg-form-grid--2">
-                <ZHField label="Trade Name">
-                  <input className="zh-input" placeholder="Brand or trade name" disabled={saving} {...register('tradeName')} />
-                </ZHField>
-                <ZHField label="Primary Contact">
-                  <input className="zh-input" placeholder="Representative's name" disabled={saving} {...register('primaryContact')} />
+                <ZHField label={t('suppliers.form.legalName')} required error={errors.legalName?.message}>
+                  <input className="zh-input" placeholder={t('suppliers.form.legalNamePlaceholder')} disabled={saving} {...register('legalName')} />
                 </ZHField>
               </div>
               <div className="pg-form-grid pg-form-grid--2">
-                <ZHField label="Email" error={errors.email?.message}>
+                <ZHField label={t('suppliers.form.tradeName')}>
+                  <input className="zh-input" placeholder={t('suppliers.form.tradeNamePlaceholder')} disabled={saving} {...register('tradeName')} />
+                </ZHField>
+                <ZHField label={t('suppliers.form.primaryContact')}>
+                  <input className="zh-input" placeholder={t('suppliers.form.primaryContactPlaceholder')} disabled={saving} {...register('primaryContact')} />
+                </ZHField>
+              </div>
+              <div className="pg-form-grid pg-form-grid--2">
+                <ZHField label={t('suppliers.form.email')} error={errors.email?.message}>
                   <input className="zh-input" type="email" placeholder="supplier@company.com" disabled={saving} {...register('email')} />
                 </ZHField>
-                <ZHField label="Phone">
-                  <input className="zh-input" placeholder="0999123456" disabled={saving} {...register('phone')} />
+                <ZHField label={t('suppliers.form.phone')}>
+                  <input className="zh-input" placeholder={t('suppliers.form.phonePlaceholder')} disabled={saving} {...register('phone')} />
                 </ZHField>
               </div>
               <div className="pg-form-grid pg-form-grid--2">
-                <ZHField label="Category">
+                <ZHField label={t('suppliers.form.category')}>
                   <select className="zh-input" disabled={saving} {...register('category')}>
-                    <option value="">— select —</option>
-                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    <option value="">{t('suppliers.form.categorySelect')}</option>
+                    {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                   </select>
                 </ZHField>
-                <ZHField label="Status">
+                <ZHField label={t('suppliers.form.status')}>
                   <select className="zh-input" disabled={saving} {...register('status')}>
-                    <option value="active">Active</option>
-                    <option value="pending">Pending</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="active">{t('suppliers.status.active')}</option>
+                    <option value="pending">{t('suppliers.status.pending')}</option>
+                    <option value="inactive">{t('suppliers.status.inactive')}</option>
                   </select>
                 </ZHField>
               </div>
-              <ZHField label="Address">
+              <ZHField label={t('suppliers.form.address')}>
                 <textarea className="zh-input" rows={2} disabled={saving} {...register('address')} />
               </ZHField>
-              <ZHField label="Website">
+              <ZHField label={t('suppliers.form.website')}>
                 <input className="zh-input" type="url" placeholder="https://supplier.com" disabled={saving} {...register('website')} />
               </ZHField>
               <div className="prv-modal-actions">
-                <ZHBtn variant="ghost" size="md" type="button" onClick={() => setActiveTab('list')}>Cancel</ZHBtn>
+                <ZHBtn variant="ghost" size="md" type="button" onClick={() => setActiveTab('list')}>{t('common.cancel')}</ZHBtn>
                 <ZHBtn variant="primary" size="md" type="submit" disabled={saving}>
-                  {saving ? t('common.saving') : 'Save Supplier'}
+                  {saving ? t('common.saving') : t('suppliers.save')}
                 </ZHBtn>
               </div>
             </form>
@@ -458,55 +458,65 @@ export function SuppliersPage() {
           className="zh-modal-overlay"
           role="dialog"
           aria-modal="true"
-          aria-label={editingId ? 'Edit supplier' : 'New supplier'}
+          aria-label={editingId ? t('suppliers.modal.edit') : t('suppliers.modal.create')}
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          <div className="zh-modal">
+          <div className="zh-modal" style={{ maxWidth: 600 }}>
             <div className="zh-modal-header">
-              <h2 className="zh-modal-title">{editingId ? 'Edit Supplier' : 'New Supplier'}</h2>
-              <button type="button" className="zh-modal-close" onClick={closeModal} aria-label="Close">✕</button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--color-primary)' }}>storefront</span>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
+                  {editingId ? t('suppliers.modal.edit') : t('suppliers.modal.create')}
+                </h2>
+              </div>
+              <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm" onClick={closeModal} aria-label={t('common.close')}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
             </div>
             <div className="zh-modal-body">
               <form onSubmit={onSubmit}>
                 <div className="pg-form-grid pg-form-grid--2">
-                  <ZHField label="Tax ID" required error={errors.taxId?.message}>
-                    <input className="zh-input" placeholder="10 or 13 digits" disabled={saving} {...register('taxId')} />
+                  <ZHField label={t('suppliers.form.taxId')} required error={errors.taxId?.message}>
+                    <input className="zh-input" placeholder={t('suppliers.form.taxIdPlaceholder')} disabled={saving} {...register('taxId')} />
                   </ZHField>
-                  <ZHField label="Legal Name" required error={errors.legalName?.message}>
-                    <input className="zh-input" placeholder="Legal name" disabled={saving} {...register('legalName')} />
+                  <ZHField label={t('suppliers.form.legalName')} required error={errors.legalName?.message}>
+                    <input className="zh-input" placeholder={t('suppliers.form.legalNamePlaceholder')} disabled={saving} {...register('legalName')} />
                   </ZHField>
                 </div>
                 <div className="pg-form-grid pg-form-grid--2">
-                  <ZHField label="Primary Contact">
+                  <ZHField label={t('suppliers.form.primaryContact')}>
                     <input className="zh-input" disabled={saving} {...register('primaryContact')} />
                   </ZHField>
-                  <ZHField label="Phone">
-                    <input className="zh-input" placeholder="0999123456" disabled={saving} {...register('phone')} />
+                  <ZHField label={t('suppliers.form.phone')}>
+                    <input className="zh-input" placeholder={t('suppliers.form.phonePlaceholder')} disabled={saving} {...register('phone')} />
                   </ZHField>
                 </div>
                 <div className="pg-form-grid pg-form-grid--2">
-                  <ZHField label="Email" error={errors.email?.message}>
+                  <ZHField label={t('suppliers.form.email')} error={errors.email?.message}>
                     <input className="zh-input" type="email" disabled={saving} {...register('email')} />
                   </ZHField>
-                  <ZHField label="Category">
+                  <ZHField label={t('suppliers.form.category')}>
                     <select className="zh-input" disabled={saving} {...register('category')}>
-                      <option value="">— select —</option>
-                      {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                      <option value="">{t('suppliers.form.categorySelect')}</option>
+                      {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
                     </select>
                   </ZHField>
                 </div>
-                <ZHField label="Status">
+                <ZHField label={t('suppliers.form.status')}>
                   <select className="zh-input" disabled={saving} {...register('status')}>
-                    <option value="active">Active</option>
-                    <option value="pending">Pending</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="active">{t('suppliers.status.active')}</option>
+                    <option value="pending">{t('suppliers.status.pending')}</option>
+                    <option value="inactive">{t('suppliers.status.inactive')}</option>
                   </select>
                 </ZHField>
-                <div className="prv-modal-actions">
-                  <ZHBtn variant="ghost" size="md" type="button" onClick={closeModal}>Cancel</ZHBtn>
-                  <ZHBtn variant="primary" size="md" type="submit" disabled={saving}>
-                    {saving ? t('common.saving') : 'Save'}
-                  </ZHBtn>
+                <div className="pg-actions-bar">
+                  <div />
+                  <div className="pg-actions-buttons">
+                    <ZHBtn variant="ghost" size="md" type="button" onClick={closeModal}>{t('common.cancel')}</ZHBtn>
+                    <ZHBtn variant="primary" size="md" type="submit" disabled={saving}>
+                      {saving ? t('common.saving') : t('common.saveChanges')}
+                    </ZHBtn>
+                  </div>
                 </div>
               </form>
             </div>
