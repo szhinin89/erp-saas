@@ -1143,62 +1143,59 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
       <>
         <button
           type="button"
-          className="menu-plan-composer__iconBtn"
+          className="zh-btn zh-btn--ghost zh-btn--sm"
           onClick={() => undoEditorTree()}
           disabled={!canUndoEditorTree}
           aria-label="Deshacer último cambio del árbol"
+          title="Deshacer"
         >
           ↺
         </button>
         <button
           type="button"
-          className="menu-plan-composer__iconBtn"
+          className="zh-btn zh-btn--ghost zh-btn--sm"
           onClick={() => redoEditorTree()}
           disabled={!canRedoEditorTree}
           aria-label="Rehacer cambio deshecho del árbol"
+          title="Rehacer"
         >
           ↻
         </button>
-        <span className="menu-plan-composer__ver" title="Versión del esquema de menú">
+        <span className="subtle mono" style={{ fontSize: 11 }} title="Versión del esquema de menú">
           v{MENU_BUILDER_SCHEMA_VERSION}
         </span>
       </>
     );
 
     const crmMasterStack: ReactNode = (
-      <div className="menu-plan-composer__masterStack">
-        <div className="menu-plan-composer__planPills" role="tablist" aria-label="Planes comerciales">
-          {crmPlans.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              role="tab"
-              aria-selected={planId === p.id}
-              className={`menu-plan-composer__pill${planId === p.id ? ' is-active' : ''}`}
-              onClick={() => {
-                setErr('');
-                setPlanId(p.id);
-                setPreviewLayout(p.layout);
-              }}
-              disabled={busy || savingAuto}
-            >
-              <span className="menu-plan-composer__pillEmoji" aria-hidden>
-                {planEmoji(p.code)}
-              </span>
-              <span>{p.code}</span>
-            </button>
-          ))}
-        </div>
+      <div className="zh-form-tabs" role="tablist" aria-label="Planes comerciales" style={{ padding: 'var(--space-4) var(--space-4) 0' }}>
+        {crmPlans.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            role="tab"
+            aria-selected={planId === p.id}
+            className={planId === p.id ? 'is-active' : ''}
+            onClick={() => {
+              setErr('');
+              setPlanId(p.id);
+              setPreviewLayout(p.layout);
+            }}
+            disabled={busy || savingAuto}
+          >
+            <span aria-hidden style={{ fontSize: 14 }}>{planEmoji(p.code)}</span>
+            {p.code}
+          </button>
+        ))}
       </div>
     );
     const crmLibraryStack: ReactNode = (
       <div className="menu-plan-composer__masterStack">
-        <div className="menu-plan-composer__searchRow">
-          <span className="menu-plan-composer__searchIcon" aria-hidden>
-            🔍
-          </span>
+        <div className="pg-table-controls" style={{ flexWrap: 'wrap' }}>
+          <div className="pg-search" style={{ flex: 1, minWidth: 140 }}>
+            <span className="material-symbols-outlined">search</span>
           <input
-            className="zh-input menu-plan-composer__searchInput"
+            className="zh-input"
             type="search"
             autoComplete="off"
             placeholder="Buscar nodo…"
@@ -1207,31 +1204,34 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             disabled={busy || savingAuto}
             aria-label="Buscar en el catálogo de formularios"
           />
-          <ZHBtn
-            variant="ghost"
-            size="md"
-            type="button"
-            onClick={() => {
-              setCatalogSearch('');
-              setCatalogSearchField('all');
-              setCatalogNodeType('all');
-              setCatalogOnlyWithRoute(false);
-            }}
-            disabled={
-              busy ||
-              savingAuto ||
-              (!catalogSearch.trim() && catalogSearchField === 'all' && catalogNodeType === 'all' && !catalogOnlyWithRoute)
-            }
-            aria-label="Limpiar búsqueda del catálogo"
-          >
-            Limpiar
-          </ZHBtn>
-          <ZHBtn variant="ghost" size="md" type="button" onClick={() => void syncCatalog()} disabled={busy || savingAuto} aria-label="Sincronizar catálogo desde controladores">
-            Sync API
-          </ZHBtn>
-          <ZHBtn variant="ghost" size="md" type="button" onClick={() => void reloadArbol()} disabled={busy || savingAuto} aria-label="Refrescar lista de formularios">
-            Refrescar
-          </ZHBtn>
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
+            <ZHBtn
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={() => {
+                setCatalogSearch('');
+                setCatalogSearchField('all');
+                setCatalogNodeType('all');
+                setCatalogOnlyWithRoute(false);
+              }}
+              disabled={
+                busy ||
+                savingAuto ||
+                (!catalogSearch.trim() && catalogSearchField === 'all' && catalogNodeType === 'all' && !catalogOnlyWithRoute)
+              }
+              aria-label="Limpiar búsqueda del catálogo"
+            >
+              Limpiar
+            </ZHBtn>
+            <ZHBtn variant="ghost" size="sm" type="button" onClick={() => void syncCatalog()} disabled={busy || savingAuto} aria-label="Sincronizar catálogo desde controladores">
+              Sync API
+            </ZHBtn>
+            <ZHBtn variant="ghost" size="sm" type="button" onClick={() => void reloadArbol()} disabled={busy || savingAuto} aria-label="Refrescar lista de formularios">
+              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>refresh</span>
+            </ZHBtn>
+          </div>
         </div>
         <div className="menu-plan-composer__advancedFilters" aria-label="Filtros avanzados del catálogo">
           <label className="menu-plan-composer__advancedFilterItem">
@@ -1263,7 +1263,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
               <option value="forms">Solo formularios</option>
             </select>
           </label>
-          <label className="menu-plan-composer__advancedFilterCheck" title="Muestra solo nodos que tengan ruta configurada.">
+          <label className="zh-inline-check" title="Muestra solo nodos que tengan ruta configurada.">
             <input
               type="checkbox"
               checked={catalogOnlyWithRoute}
@@ -1272,7 +1272,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             />
             <span>Solo con ruta</span>
           </label>
-          <span className="menu-plan-composer__advancedFilterTip" title="Tip: combina búsqueda + tipo para encontrar nodos más rápido.">
+          <span className="subtle" style={{ fontSize: 11, marginLeft: 'auto' }} title="Tip: combina búsqueda + tipo para encontrar nodos más rápido.">
             💡 Filtro avanzado
           </span>
         </div>
@@ -1280,8 +1280,8 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
     );
 
     const crmMasterFooter: ReactNode = (
-      <div className="menu-plan-composer__treeFoot">
-        <div className="menu-plan-composer__treeFootBtns">
+      <div className="pg-actions-bar">
+        <div className="pg-actions-buttons">
           <ZHBtn
             variant="primary"
             size="md"
@@ -1413,11 +1413,17 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
     );
 
     return (
-      <div className="menu-plan-composer">
-        <header className="menu-plan-composer__hero">
-          <div className="menu-plan-composer__heroTop">
-            <h1 className="menu-plan-composer__h1">👑 Panel SuperAdmin</h1>
-            <div className="menu-plan-composer__heroMeta">
+      <div className="pg-page">
+        <div className="pg-section">
+          <div className="pg-section-header">
+            <div className="pg-section-header-left">
+              <span className="material-symbols-outlined pg-section-icon">settings_accessibility</span>
+              <h2 className="pg-section-label">Panel SuperAdmin</h2>
+              <p className="subtle" style={{ margin: 0, marginLeft: 'var(--space-2)' }}>
+                Gestión completa de menús, planes comerciales y configuración global
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
               <ZHBtn
                 variant="ghost"
                 size="md"
@@ -1429,7 +1435,8 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
                 disabled={busy || savingAuto}
                 title="Abrir guía rápida del flujo de configuración"
               >
-                🧭 Guía rápida
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>help</span>
+                Guía rápida
               </ZHBtn>
               {savingAuto ? (
                 <span className="menu-plan-composer__saving" aria-live="polite">
@@ -1438,14 +1445,11 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
               ) : null}
             </div>
           </div>
-          <p className="menu-plan-composer__heroSub">
-            Gestión completa de menús, planes comerciales y configuración global
-          </p>
-        </header>
+        </div>
 
         {err ? <ZHPageNotice variant="error" message="Error" detail={err} /> : null}
 
-        <div className="menu-plan-composer__workspace">
+        <div className="pg-section menu-plan-composer__workspace">
           <MenuBuilder
             workspaceVariant="crm"
             hideWorkspaceToolbar
@@ -1473,20 +1477,23 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
           />
         </div>
 
-        <section className="menu-plan-composer__audit" aria-labelledby="menu-plan-audit-heading">
-          <div className="menu-plan-composer__auditHead">
-            <h3 id="menu-plan-audit-heading">🕐 Auditoría</h3>
-            <div className="menu-plan-composer__auditActions">
-              <ZHBtn variant="ghost" size="md" type="button" onClick={exportAuditSnapshot} disabled={!auditLines.length} aria-label="Exportar auditoría">
+        <section className="pg-section" aria-labelledby="menu-plan-audit-heading">
+          <div className="pg-section-header">
+            <div className="pg-section-header-left">
+              <span className="material-symbols-outlined pg-section-icon">history_edu</span>
+              <h3 id="menu-plan-audit-heading" className="pg-section-label">Auditoría</h3>
+            </div>
+            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+              <ZHBtn variant="ghost" size="sm" type="button" onClick={exportAuditSnapshot} disabled={!auditLines.length} aria-label="Exportar auditoría">
                 Exportar auditoría
               </ZHBtn>
-              <ZHBtn variant="ghost" size="md" type="button" onClick={exportWorkspaceSnapshot} aria-label="Exportar workspace completo">
+              <ZHBtn variant="ghost" size="sm" type="button" onClick={exportWorkspaceSnapshot} aria-label="Exportar workspace completo">
                 Exportar workspace
               </ZHBtn>
-              <ZHBtn variant="ghost" size="md" type="button" onClick={triggerImportWorkspace} aria-label="Importar workspace completo">
+              <ZHBtn variant="ghost" size="sm" type="button" onClick={triggerImportWorkspace} aria-label="Importar workspace completo">
                 Importar workspace
               </ZHBtn>
-              <ZHBtn variant="ghost" size="md" type="button" onClick={() => setAuditLines([])} disabled={!auditLines.length} aria-label="Limpiar historial de auditoría">
+              <ZHBtn variant="ghost" size="sm" type="button" onClick={() => setAuditLines([])} disabled={!auditLines.length} aria-label="Limpiar historial de auditoría">
                 Limpiar
               </ZHBtn>
             </div>
@@ -1558,9 +1565,14 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
         ) : null}
 
         {newPlanModalOpen ? (
-          <div className="zh-modal-overlay menu-plan-composer__modalBackdrop" role="dialog" aria-modal="true" aria-label="Crear nuevo plan">
-            <div className="menu-plan-composer__modalCard">
-              <h3>Crear nuevo plan comercial</h3>
+          <div className="zh-modal-overlay" role="dialog" aria-modal="true" aria-label="Crear nuevo plan">
+            <div className="zh-modal" style={{ maxWidth: 480 }}>
+              <div className="zh-modal-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--color-primary)' }}>add_circle</span>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Crear nuevo plan comercial</h3>
+                </div>
+              </div>
               <ZHField label="Nombre del plan">
                 <input className="zh-input" value={newPlanName} onChange={(e) => setNewPlanName(e.target.value)} placeholder="Ej. Premium" />
               </ZHField>
@@ -1586,8 +1598,8 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
                 <textarea className="zh-input" rows={2} value={newPlanDescription} onChange={(e) => setNewPlanDescription(e.target.value)} placeholder="Características..." />
               </ZHField>
               <ZHField label="Herencia automática (opcional)">
-                <div className="menu-plan-composer__modalInheritWrap">
-                  <label className="zh-inline-check menu-plan-composer__modalInheritToggle">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                  <label className="zh-inline-check">
                     <input type="checkbox" checked={newPlanInheritOnCreate} onChange={(e) => setNewPlanInheritOnCreate(e.target.checked)} />
                     <span>Heredar activaciones desde un plan existente</span>
                   </label>
@@ -1606,35 +1618,45 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
                   </select>
                 </div>
               </ZHField>
-              <div className="menu-plan-composer__modalActions">
-                <ZHBtn
-                  variant="ghost"
-                  size="md"
-                  type="button"
-                  onClick={() => {
-                    setNewPlanModalOpen(false);
-                    setNewPlanInheritOnCreate(false);
-                    setNewPlanInheritSourcePlanId('');
-                  }}
-                >
-                  Cancelar
-                </ZHBtn>
-                <ZHBtn variant="primary" size="md" type="button" onClick={createNewPlan}>
-                  Crear plan
-                </ZHBtn>
+              <div className="pg-actions-bar">
+                <div />
+                <div className="pg-actions-buttons">
+                  <ZHBtn
+                    variant="ghost"
+                    size="md"
+                    type="button"
+                    onClick={() => {
+                      setNewPlanModalOpen(false);
+                      setNewPlanInheritOnCreate(false);
+                      setNewPlanInheritSourcePlanId('');
+                    }}
+                  >
+                    Cancelar
+                  </ZHBtn>
+                  <ZHBtn variant="primary" size="md" type="button" onClick={createNewPlan}>
+                    Crear plan
+                  </ZHBtn>
+                </div>
               </div>
             </div>
           </div>
         ) : null}
         {wizardOpen ? (
-          <div className="zh-modal-overlay menu-plan-composer__modalBackdrop" role="dialog" aria-modal="true" aria-label="Guía rápida de configuración">
-            <div className="menu-plan-composer__modalCard menu-plan-composer__wizardCard">
-              <h3>{wizardCurrentStep.title}</h3>
-              <p className="subtle">{wizardCurrentStep.body}</p>
-              <div className="menu-plan-composer__wizardProgress" role="status" aria-live="polite">
-                Paso {wizardStep + 1} de {wizardSteps.length}
+          <div className="zh-modal-overlay" role="dialog" aria-modal="true" aria-label="Guía rápida de configuración">
+            <div className="zh-modal" style={{ maxWidth: 420 }}>
+              <div className="zh-modal-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--color-primary)' }}>help_center</span>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{wizardCurrentStep.title}</h3>
+                </div>
               </div>
-              <div className="menu-plan-composer__modalActions">
+              <div className="zh-modal-body">
+                <p className="subtle">{wizardCurrentStep.body}</p>
+                <p className="subtle" style={{ textAlign: 'center', fontSize: 12 }}>Paso {wizardStep + 1} de {wizardSteps.length}</p>
+              </div>
+              <div className="pg-actions-bar">
+                <div />
+                <div className="pg-actions-buttons">
                 <ZHBtn
                   variant="ghost"
                   size="md"
@@ -1663,6 +1685,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
                 )}
               </div>
             </div>
+          </div>
           </div>
         ) : null}
       </div>
