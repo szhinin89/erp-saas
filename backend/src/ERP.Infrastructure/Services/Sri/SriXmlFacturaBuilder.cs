@@ -16,8 +16,7 @@ public static class SriXmlFacturaBuilder
 
     private const string FacturaVersion   = "1.1.0";
     private const string NotaVersion      = "1.0.0";
-    private const string DefaultPayMethod = "01"; // efectivo
-    private const string Currency         = "DOLAR";
+    private const string Currency = "DOLAR";
 
     // ── API pública ───────────────────────────────────────────────────────────
 
@@ -53,7 +52,7 @@ public static class SriXmlFacturaBuilder
                     new XElement("identificacionComprador", factura.Cliente.IdentificationNumber),
                     new XElement("direccionComprador",  factura.Cliente.AddressLine ?? ""),
                     new XElement("totalSinImpuestos",   F2(factura.Subtotal)),
-                    new XElement("totalDescuento",      F2(totalDescuento)),
+                    new XElement("totalDescuento",      F2(factura.TotalDiscount)),
                     new XElement("totalConImpuestos",
                         BuildTotalImpuesto(vatCode, factura.Subtotal, factura.VatTotal)),
                     new XElement("propina",  "0.00"),
@@ -61,9 +60,9 @@ public static class SriXmlFacturaBuilder
                     new XElement("moneda", Currency),
                     new XElement("pagos",
                         new XElement("pago",
-                            new XElement("formaPago",   DefaultPayMethod),
+                            new XElement("formaPago",   factura.PaymentMethodCode),
                             new XElement("total",       F2(factura.Total)),
-                            new XElement("plazo",       "0"),
+                            new XElement("plazo",       factura.PaymentDays.ToString()),
                             new XElement("unidadTiempo","dias")))),
 
                 new XElement("detalles", detElements),
@@ -165,13 +164,13 @@ public static class SriXmlFacturaBuilder
         string         vatPct,
         ref decimal    totalDesc)
     {
-        totalDesc += 0m; // descuentos futuros
+        totalDesc += l.DiscountAmount;
         return new XElement("detalle",
             new XElement("codigoPrincipal",          l.ProductCode),
             new XElement("descripcion",              l.Description),
             new XElement("cantidad",                 F6(l.Quantity)),
             new XElement("precioUnitario",           F6(l.UnitPrice)),
-            new XElement("descuento",                "0.00"),
+            new XElement("descuento",                F2(l.DiscountAmount)),
             new XElement("precioTotalSinImpuesto",   F2(l.Subtotal)),
             new XElement("impuestos",
                 BuildImpuestoLinea(vatCode, vatPct, l.Subtotal, l.VatTotal)));

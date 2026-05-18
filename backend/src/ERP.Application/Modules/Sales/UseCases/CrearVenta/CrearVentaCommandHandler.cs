@@ -135,8 +135,10 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
 
             foreach (var item in command.Items)
             {
-                var producto = productos[item.ProductId];
-                var subtotalItem = item.Quantity * item.UnitPrice;
+                var producto      = productos[item.ProductId];
+                var brutoItem     = item.Quantity * item.UnitPrice;
+                var descItem      = item.DiscountAmount < 0 ? 0 : item.DiscountAmount;
+                var subtotalItem  = brutoItem - descItem;
 
                 decimal impuestoItem = 0;
                 if (producto.AppliesVatOnSale && producto.SaleTaxId.HasValue)
@@ -150,14 +152,15 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
                 totalVat += impuestoItem;
 
                 var detalle = SalesBillLine.Create(
-                    tenantId:    tenantId,
-                    productId:   item.ProductId,
-                    productCode: producto.SaleCode,
-                    quantity:    item.Quantity,
-                    unitPrice:   item.UnitPrice,
-                    vatTotal:    impuestoItem,
-                    description: producto.Description,
-                    createdBy:   userId
+                    tenantId:       tenantId,
+                    productId:      item.ProductId,
+                    productCode:    producto.SaleCode,
+                    quantity:       item.Quantity,
+                    unitPrice:      item.UnitPrice,
+                    discountAmount: item.DiscountAmount,
+                    vatTotal:       impuestoItem,
+                    description:    producto.Description,
+                    createdBy:      userId
                 );
                 detalles.Add(detalle);
             }
@@ -165,26 +168,30 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             var total = subtotal + totalVat;
 
             // 8. Crear factura en estado Borrador
+            var totalDiscount = detalles.Sum(d => d.DiscountAmount);
             var factura = SalesBill.Create(
-                tenantId:      tenantId,
-                branchId:      command.BranchId,
-                customerId:    command.CustomerId,
-                warehouseId:   command.WarehouseId,
-                docType:       "01",
-                estabCode:     configSri.EstabCode,
-                emPointCode:   configSri.EmPointCode,
-                sequential:    secuencial,
-                accessKey:     accessKey,
-                issueDate:     issueDate,
-                subtotal:      subtotal,
-                vatTotal:      totalVat,
-                total:         total,
-                xmlSignedPath: null,
-                xmlAuthPath:   null,
-                authNumber: null,
-                authDate: null,
-                errorMessage:  null,
-                createdBy:     userId
+                tenantId:          tenantId,
+                branchId:          command.BranchId,
+                customerId:        command.CustomerId,
+                warehouseId:       command.WarehouseId,
+                docType:           "01",
+                estabCode:         configSri.EstabCode,
+                emPointCode:       configSri.EmPointCode,
+                sequential:        secuencial,
+                accessKey:         accessKey,
+                issueDate:         issueDate,
+                subtotal:          subtotal,
+                vatTotal:          totalVat,
+                total:             total,
+                totalDiscount:     totalDiscount,
+                paymentMethodCode: command.PaymentMethodCode,
+                paymentDays:       command.PaymentDays,
+                xmlSignedPath:     null,
+                xmlAuthPath:       null,
+                authNumber:        null,
+                authDate:          null,
+                errorMessage:      null,
+                createdBy:         userId
             );
 
             foreach (var detalle in detalles)

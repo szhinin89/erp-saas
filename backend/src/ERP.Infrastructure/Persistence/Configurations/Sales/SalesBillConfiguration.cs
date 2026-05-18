@@ -26,6 +26,9 @@ public sealed class SalesBillConfiguration : IEntityTypeConfiguration<SalesBill>
         builder.Property(e => e.Subtotal).HasColumnName("subtotal").HasPrecision(18, 4).IsRequired();
         builder.Property(e => e.VatTotal).HasColumnName("vat_total").HasPrecision(18, 4).IsRequired();
         builder.Property(e => e.Total).HasColumnName("total").HasPrecision(18, 4).IsRequired();
+        builder.Property(e => e.TotalDiscount).HasColumnName("total_discount").HasPrecision(18, 4).IsRequired().HasDefaultValue(0m);
+        builder.Property(e => e.PaymentMethodCode).HasColumnName("payment_method_code").HasMaxLength(SalesBill.PaymentMethodMaxLen).IsRequired().HasDefaultValue("01");
+        builder.Property(e => e.PaymentDays).HasColumnName("payment_days").IsRequired().HasDefaultValue((short)0);
         builder.Property(e => e.Status).HasColumnName("status").HasMaxLength(SalesBill.StatusMaxLen).IsRequired();
         builder.Property(e => e.XmlSignedPath).HasColumnName("xml_signed_path").HasMaxLength(SalesBill.XmlPathMaxLen);
         builder.Property(e => e.XmlAuthPath).HasColumnName("xml_auth_path").HasMaxLength(SalesBill.XmlPathMaxLen);

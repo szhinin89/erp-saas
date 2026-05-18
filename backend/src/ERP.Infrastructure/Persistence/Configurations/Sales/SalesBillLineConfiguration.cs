@@ -18,6 +18,8 @@ public sealed class SalesBillLineConfiguration : IEntityTypeConfiguration<SalesB
         builder.Property(e => e.ProductCode).HasColumnName("product_code")
                .HasMaxLength(SalesBillLine.ProductCodeMaxLen).IsRequired()
                .HasDefaultValue("");
+        builder.Property(e => e.DiscountAmount).HasColumnName("discount_amount")
+               .HasPrecision(18, 4).IsRequired().HasDefaultValue(0m);
         builder.Property(e => e.Quantity).HasColumnName("quantity").HasPrecision(18, 4).IsRequired();
         builder.Property(e => e.UnitPrice).HasColumnName("unit_price").HasPrecision(18, 4).IsRequired();
         builder.Property(e => e.Subtotal).HasColumnName("subtotal").HasPrecision(18, 4).IsRequired();

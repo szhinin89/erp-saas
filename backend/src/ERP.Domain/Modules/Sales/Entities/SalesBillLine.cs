@@ -14,6 +14,7 @@ public sealed class SalesBillLine : AuditableEntity, ITenantEntity
     public string  ProductCode    { get; private set; } = null!;
     public decimal Quantity       { get; private set; }
     public decimal UnitPrice      { get; private set; }
+    public decimal DiscountAmount { get; private set; }
     public decimal Subtotal       { get; private set; }
     public decimal VatTotal       { get; private set; }
     public decimal Total          { get; private set; }
@@ -27,11 +28,12 @@ public sealed class SalesBillLine : AuditableEntity, ITenantEntity
         string  productCode,
         decimal quantity,
         decimal unitPrice,
+        decimal discountAmount,
         decimal vatTotal,
         string  description,
         Guid    createdBy)
     {
-        var subtotal = quantity * unitPrice;
+        var subtotal = quantity * unitPrice - discountAmount;
         var total    = subtotal + vatTotal;
 
         var line = new SalesBillLine
@@ -40,13 +42,14 @@ public sealed class SalesBillLine : AuditableEntity, ITenantEntity
             TenantId    = tenantId,
             SalesBillId = Guid.Empty,
             ProductId   = productId,
-            ProductCode = string.IsNullOrWhiteSpace(productCode)
-                              ? productId.ToString()[..8]
-                              : productCode.Trim(),
-            Quantity    = quantity,
-            UnitPrice   = unitPrice,
-            Subtotal    = subtotal,
-            VatTotal    = vatTotal,
+            ProductCode    = string.IsNullOrWhiteSpace(productCode)
+                               ? productId.ToString()[..8]
+                               : productCode.Trim(),
+            Quantity       = quantity,
+            UnitPrice      = unitPrice,
+            DiscountAmount = discountAmount < 0 ? 0 : discountAmount,
+            Subtotal       = subtotal < 0 ? 0 : subtotal,
+            VatTotal       = vatTotal,
             Total       = total,
             Description = description.Trim(),
         };

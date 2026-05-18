@@ -6,14 +6,15 @@ namespace ERP.Domain.Modules.Sales.Entities;
 
 public sealed class SalesBill : AuditableEntity, ITenantEntity
 {
-    public const int DocTypeMaxLen    = 10;
-    public const int EstabMaxLen      = 3;
-    public const int EmPointMaxLen    = 3;
-    public const int SequentialMaxLen = 9;
-    public const int AccessKeyMaxLen  = 49;
-    public const int StatusMaxLen     = 20;
-    public const int XmlPathMaxLen    = 500;
-    public const int ErrorMaxLen      = 1000;
+    public const int DocTypeMaxLen       = 10;
+    public const int EstabMaxLen         = 3;
+    public const int EmPointMaxLen       = 3;
+    public const int SequentialMaxLen    = 9;
+    public const int AccessKeyMaxLen     = 49;
+    public const int StatusMaxLen        = 20;
+    public const int XmlPathMaxLen       = 500;
+    public const int ErrorMaxLen         = 1000;
+    public const int PaymentMethodMaxLen = 2;
 
     private readonly List<SalesBillLine> _lines = new();
 
@@ -29,6 +30,11 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
     public decimal   Subtotal          { get; private set; }
     public decimal   VatTotal          { get; private set; }
     public decimal   Total             { get; private set; }
+    public decimal   TotalDiscount     { get; private set; }
+    /// <summary>Código SRI forma de pago: "01"=efectivo, "02"=cheque, "03"=crédito, "04"=transferencia...</summary>
+    public string    PaymentMethodCode { get; private set; } = "01";
+    /// <summary>Plazo en días (0 = contado).</summary>
+    public short     PaymentDays       { get; private set; }
     public string    Status            { get; private set; } = "Draft";
     public string?   XmlSignedPath     { get; private set; }
     public string?   XmlAuthPath       { get; private set; }
@@ -44,48 +50,54 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
     private SalesBill() { }
 
     public static SalesBill Create(
-        Guid     tenantId,
-        Guid     branchId,
-        Guid     customerId,
-        Guid     warehouseId,
-        string   docType,
-        string   estabCode,
-        string   emPointCode,
-        string   sequential,
-        string   accessKey,
-        DateTime issueDate,
-        decimal  subtotal,
-        decimal  vatTotal,
-        decimal  total,
-        string?  xmlSignedPath,
-        string?  xmlAuthPath,
-        string?  authNumber,
+        Guid      tenantId,
+        Guid      branchId,
+        Guid      customerId,
+        Guid      warehouseId,
+        string    docType,
+        string    estabCode,
+        string    emPointCode,
+        string    sequential,
+        string    accessKey,
+        DateTime  issueDate,
+        decimal   subtotal,
+        decimal   vatTotal,
+        decimal   total,
+        decimal   totalDiscount,
+        string    paymentMethodCode,
+        short     paymentDays,
+        string?   xmlSignedPath,
+        string?   xmlAuthPath,
+        string?   authNumber,
         DateTime? authDate,
-        string?  errorMessage,
-        Guid     createdBy)
+        string?   errorMessage,
+        Guid      createdBy)
     {
         var b = new SalesBill
         {
-            Id            = Guid.NewGuid(),
-            TenantId      = tenantId,
-            BranchId      = branchId,
-            CustomerId    = customerId,
-            WarehouseId   = warehouseId,
-            DocType       = string.IsNullOrWhiteSpace(docType) ? "01" : docType.Trim(),
-            EstabCode     = estabCode.Trim(),
-            EmPointCode   = emPointCode.Trim(),
-            Sequential    = sequential.Trim(),
-            AccessKey     = accessKey.Trim(),
-            IssueDate     = issueDate,
-            Subtotal      = subtotal,
-            VatTotal      = vatTotal,
-            Total         = total,
-            Status        = "Draft",
-            XmlSignedPath = string.IsNullOrWhiteSpace(xmlSignedPath) ? null : xmlSignedPath.Trim(),
-            XmlAuthPath   = string.IsNullOrWhiteSpace(xmlAuthPath) ? null : xmlAuthPath.Trim(),
-            AuthNumber    = string.IsNullOrWhiteSpace(authNumber) ? null : authNumber.Trim(),
-            AuthDate      = authDate,
-            ErrorMessage  = string.IsNullOrWhiteSpace(errorMessage) ? null : errorMessage.Trim(),
+            Id                = Guid.NewGuid(),
+            TenantId          = tenantId,
+            BranchId          = branchId,
+            CustomerId        = customerId,
+            WarehouseId       = warehouseId,
+            DocType           = string.IsNullOrWhiteSpace(docType) ? "01" : docType.Trim(),
+            EstabCode         = estabCode.Trim(),
+            EmPointCode       = emPointCode.Trim(),
+            Sequential        = sequential.Trim(),
+            AccessKey         = accessKey.Trim(),
+            IssueDate         = issueDate,
+            Subtotal          = subtotal,
+            VatTotal          = vatTotal,
+            Total             = total,
+            TotalDiscount     = totalDiscount,
+            PaymentMethodCode = string.IsNullOrWhiteSpace(paymentMethodCode) ? "01" : paymentMethodCode.Trim(),
+            PaymentDays       = paymentDays < 0 ? (short)0 : paymentDays,
+            Status            = "Draft",
+            XmlSignedPath     = string.IsNullOrWhiteSpace(xmlSignedPath) ? null : xmlSignedPath.Trim(),
+            XmlAuthPath       = string.IsNullOrWhiteSpace(xmlAuthPath) ? null : xmlAuthPath.Trim(),
+            AuthNumber        = string.IsNullOrWhiteSpace(authNumber) ? null : authNumber.Trim(),
+            AuthDate          = authDate,
+            ErrorMessage      = string.IsNullOrWhiteSpace(errorMessage) ? null : errorMessage.Trim(),
         };
         b.SetCreated(createdBy);
         return b;
@@ -166,8 +178,9 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
 
     private void RecalcTotals()
     {
-        Subtotal = _lines.Sum(d => d.Subtotal);
-        VatTotal = _lines.Sum(d => d.VatTotal);
-        Total    = _lines.Sum(d => d.Total);
+        TotalDiscount = _lines.Sum(d => d.DiscountAmount);
+        Subtotal      = _lines.Sum(d => d.Subtotal);
+        VatTotal      = _lines.Sum(d => d.VatTotal);
+        Total         = _lines.Sum(d => d.Total);
     }
 }
