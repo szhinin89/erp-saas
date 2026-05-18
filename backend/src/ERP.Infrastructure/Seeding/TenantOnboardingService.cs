@@ -137,7 +137,7 @@ public sealed class TenantOnboardingService : ITenantOnboardingService
             phones:          null,
             email:           null,
             managerName:     null,
-            countryId:       "EC",
+            countryId:       null,
             provinceId:      null,
             cantonId:        null,
             parishId:        null,
