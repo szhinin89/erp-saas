@@ -13,10 +13,10 @@ type BadgeInfo = { cls: string; label: string };
 function getStatusBadge(estado: string): BadgeInfo {
   const e = estado.toLowerCase();
   const base = 'badge badge--md badge--upper';
-  if (e === 'autorizado')                                      return { cls: `${base} badge--green`,  label: estado };
-  if (e === 'pendiente' || e === 'procesando')                 return { cls: `${base} badge--orange`, label: estado };
-  if (e === 'anulado' || e === 'error' || e === 'rechazado')  return { cls: `${base} badge--red`,    label: estado };
-  return                                                              { cls: `${base} badge--gray`,   label: estado };
+  if (e === 'autorizado')                                                    return { cls: `${base} badge--green`,  label: estado };
+  if (e === 'borrador' || e === 'validado' || e === 'procesando')            return { cls: `${base} badge--orange`, label: estado };
+  if (e === 'anulado' || e === 'rechazado' || e === 'errorenvio')            return { cls: `${base} badge--red`,    label: estado };
+  return                                                                            { cls: `${base} badge--gray`,   label: estado };
 }
 
 export function VentasFacturasPage() {
@@ -28,9 +28,12 @@ export function VentasFacturasPage() {
   const [rows,       setRows]       = useState<VentasFacturaDto[]>([]);
   const [loading,    setLoading]    = useState(true);
   const [error,      setError]      = useState<string | null>(null);
-  const [printError, setPrintError] = useState<string | null>(null);
-  const [printingId, setPrintingId] = useState<string | null>(null);
-  const [q,          setQ]          = useState('');
+  const [printError,  setPrintError]  = useState<string | null>(null);
+  const [printingId,  setPrintingId]  = useState<string | null>(null);
+  const [rideId,      setRideId]      = useState<string | null>(null);
+  const [retryingId,  setRetryingId]  = useState<string | null>(null);
+  const [retryMsg,    setRetryMsg]    = useState<string | null>(null);
+  const [q,           setQ]           = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,7 +65,7 @@ export function VentasFacturasPage() {
     const total       = rows.length;
     const autorizadas = rows.filter((r) => r.estado.toLowerCase() === 'autorizado').length;
     const pendientes  = rows.filter((r) =>
-      !['autorizado', 'anulado', 'rechazado', 'error'].includes(r.estado.toLowerCase()),
+      !['autorizado', 'anulado', 'rechazado', 'errorenvio'].includes(r.estado.toLowerCase()),
     ).length;
     const valorTotal  = rows.reduce((sum, r) => sum + r.total, 0);
     return { total, autorizadas, pendientes, valorTotal };
@@ -79,6 +82,37 @@ export function VentasFacturasPage() {
           ? t('ventas.facturas.printPopupBlocked')
           : (result.message ?? t('ventas.facturas.printFailed')),
       );
+    }
+  };
+
+  const onDownloadRide = async (id: string, numero: string) => {
+    setRideId(id);
+    try {
+      const blob = await ventasFacturasService.downloadRide(id);
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `RIDE-${numero}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setPrintError(e instanceof Error ? e.message : 'Error al descargar RIDE');
+    } finally {
+      setRideId(null);
+    }
+  };
+
+  const onRetry = async (id: string) => {
+    setRetryMsg(null);
+    setRetryingId(id);
+    try {
+      await ventasFacturasService.retry(id);
+      setRetryMsg('Reintento enviado. Actualizando lista...');
+      await load();
+    } catch (e) {
+      setRetryMsg(e instanceof Error ? e.message : 'Error al reintentar');
+    } finally {
+      setRetryingId(null);
     }
   };
 
@@ -120,8 +154,9 @@ export function VentasFacturasPage() {
       </div>
 
       {/* ── Alerts ── */}
-      {error      && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />}
-      {printError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={printError} />}
+      {error      && <ZHPageNotice variant="error"   message={t('common.errorPrefix')} detail={error} />}
+      {printError && <ZHPageNotice variant="error"   message={t('common.errorPrefix')} detail={printError} />}
+      {retryMsg   && <ZHPageNotice variant="success" message={retryMsg} />}
 
       {/* ── KPI Cards ── */}
       {!loading && (
@@ -272,9 +307,11 @@ export function VentasFacturasPage() {
               </thead>
               <tbody>
                 {filtered.map((row) => {
-                  const numero   = `${row.establecimiento}-${row.puntoEmision}-${row.secuencial}`;
-                  const canPrint = row.estado === 'Autorizado';
-                  const badge    = getStatusBadge(row.estado);
+                  const numero      = `${row.establecimiento}-${row.puntoEmision}-${row.secuencial}`;
+                  const estado      = row.estado.toLowerCase();
+                  const isAuth      = estado === 'autorizado';
+                  const isError     = estado === 'errorenvio' || estado === 'rechazado';
+                  const badge       = getStatusBadge(row.estado);
                   return (
                     <tr key={row.id}>
                       <td data-label="Nº Factura" className="vf-col-numero">{numero}</td>
@@ -289,16 +326,49 @@ export function VentasFacturasPage() {
                       </td>
                       <td data-label={t('ventas.facturas.col.status')}>
                         <span className={badge.cls}>{badge.label}</span>
+                        {isError && row.mensajeError && (
+                          <p className="vf-error-hint" title={row.mensajeError}>
+                            {row.mensajeError.length > 60
+                              ? row.mensajeError.slice(0, 60) + '…'
+                              : row.mensajeError}
+                          </p>
+                        )}
                       </td>
                       <td data-label={t('ventas.facturas.col.actions')} className="vf-cell-actions">
-                        <button
-                          className="zh-btn zh-btn--primary zh-btn--sm"
-                          type="button"
-                          disabled={!canPrint || printingId === row.id}
-                          onClick={() => void onPrint(row.id)}
-                        >
-                          {printingId === row.id ? t('common.loading') : t('ventas.facturas.print')}
-                        </button>
+                        {isAuth && (
+                          <>
+                            <button
+                              className="zh-btn zh-btn--ghost zh-btn--sm"
+                              type="button"
+                              disabled={rideId === row.id}
+                              onClick={() => void onDownloadRide(row.id, numero)}
+                              title="Descargar RIDE (PDF oficial)"
+                            >
+                              <span className="material-symbols-outlined">picture_as_pdf</span>
+                              {rideId === row.id ? '...' : 'RIDE'}
+                            </button>
+                            <button
+                              className="zh-btn zh-btn--primary zh-btn--sm"
+                              type="button"
+                              disabled={printingId === row.id}
+                              onClick={() => void onPrint(row.id)}
+                            >
+                              {printingId === row.id ? t('common.loading') : t('ventas.facturas.print')}
+                            </button>
+                          </>
+                        )}
+                        {isError && (
+                          <button
+                            className="zh-btn zh-btn--ghost zh-btn--sm"
+                            type="button"
+                            disabled={retryingId === row.id}
+                            onClick={() => void onRetry(row.id)}
+                            title="Reintentar envío al SRI"
+                          >
+                            <span className="material-symbols-outlined">refresh</span>
+                            {retryingId === row.id ? 'Enviando...' : 'Reintentar'}
+                          </button>
+                        )}
                       </td>
                     </tr>
                   );

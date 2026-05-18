@@ -20,10 +20,15 @@ public class CurrentTenantService : ICurrentTenant
             var claim = _httpContextAccessor.HttpContext?
                 .User.FindFirst("tenant_id")?.Value;
 
-            return Guid.TryParse(claim, out var id) ? id : Guid.Empty;
+            if (Guid.TryParse(claim, out var id))
+                return id;
+
+            // Fallback para jobs de Hangfire (sin HttpContext)
+            return JobTenantContext.Current;
         }
     }
 
     public bool IsAuthenticated
-        => _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false;
+        => _httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated ?? false
+           || JobTenantContext.Current != Guid.Empty;
 }

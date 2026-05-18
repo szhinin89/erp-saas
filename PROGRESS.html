@@ -107,7 +107,7 @@
   <div class="header">
     <div class="header-title">
       <h1>ERP SaaS — Estado de Avance</h1>
-      <p>ZH Technologies · Revisión: <span id="last-updated">2026-05-17 (v5)</span></p>
+      <p>ZH Technologies · Revisión: <span id="last-updated">2026-05-17 (v6)</span></p>
       <div class="global-bar"><div class="global-bar-fill" id="global-bar-fill"></div></div>
     </div>
     <div class="header-kpi">
@@ -124,21 +124,18 @@
       <span class="badge-count" id="pending-count">—</span>
     </div>
     <div class="next-list">
-      <div class="next-item"><span class="num">1</span><div class="desc"><strong>Job Hangfire: cola asíncrona SRI con reintentos automáticos</strong><span>Los servicios XML/firma/SOAP ya están listos. Encolar emisión como background job para no bloquear el request HTTP. Cola de comprobantes ErrorEnvio cada 5 min.</span></div><span class="prio prio-critico">CRÍTICO</span></div>
-      <div class="next-item"><span class="num">2</span><div class="desc"><strong>Validar XML contra XSD oficial SRI antes de firmar</strong><span>SriXmlFacturaBuilder genera XML v1.1.0. Agregar validación XSD en SriFacturaElectronicaRealService antes de llamar a FirmarXmlAsync(). Probar en celcer.sri.gob.ec.</span></div><span class="prio prio-critico">CRÍTICO</span></div>
-      <div class="next-item"><span class="num">3</span><div class="desc"><strong>Frontend: formulario de nota de crédito</strong><span>Referencia a factura original, motivo, líneas. Backend ya implementado.</span></div><span class="prio prio-alta">ALTA</span></div>
-      <div class="next-item"><span class="num">4</span><div class="desc"><strong>Frontend: formulario de comprobante de retención</strong><span>Códigos SRI de retención, porcentajes. Backend ya implementado.</span></div><span class="prio prio-alta">ALTA</span></div>
-      <div class="next-item"><span class="num">5</span><div class="desc"><strong>Frontend: formulario de nota de débito</strong><span>Backend ya implementado.</span></div><span class="prio prio-alta">ALTA</span></div>
-      <div class="next-item"><span class="num">6</span><div class="desc"><strong>Frontend: listado unificado de todos los comprobantes + botón RIDE</strong><span>Hoy solo hay listado de facturas. Necesario para gestión operativa. Botón descarga GET /api/ventas/{id}/ride ya disponible.</span></div><span class="prio prio-alta">ALTA</span></div>
-      <div class="next-item"><span class="num">7</span><div class="desc"><strong>Flujo de reenvío para comprobantes no autorizados</strong><span>Endpoint dedicado + pantalla de gestión de errores SRI.</span></div><span class="prio prio-alta">ALTA</span></div>
-      <div class="next-item"><span class="num">8</span><div class="desc"><strong>Frontend: guía de remisión + ABM de transportistas</strong><span>Entidad DeliveryGuide existe en backend; falta pantalla y catálogo de transportistas.</span></div><span class="prio prio-media">MEDIA</span></div>
-      <div class="next-item"><span class="num">9</span><div class="desc"><strong>Liquidación de compra (tipo 03) — backend + frontend</strong><span>No hay entidad ni pantalla. Requerido por la ficha técnica SRI.</span></div><span class="prio prio-media">MEDIA</span></div>
-      <div class="next-item"><span class="num">10</span><div class="desc"><strong>Reportes contables: Mayor General y Balance de Comprobación</strong><span>Asientos ya existen; faltan los reportes de salida.</span></div><span class="prio prio-media">MEDIA</span></div>
-      <div class="next-item"><span class="num">11</span><div class="desc"><strong>Configuración de tarifas SRI e IVA por empresa al onboarding</strong><span>Agregar al TenantOnboardingService: IVA 15%, IVA 0%, IVA 5% como TaxRates por defecto. También planilla de cuentas contables mínima.</span></div><span class="prio prio-media">MEDIA</span></div>
-      <div class="next-item"><span class="num">12</span><div class="desc"><strong>Control de stock mínimo y punto de reorden + alertas</strong><span>Agregar campos MinimumStock y ReorderPoint a CurrentStock. Alertas en dashboard.</span></div><span class="prio prio-media">MEDIA</span></div>
-      <div class="next-item"><span class="num">13</span><div class="desc"><strong>Completar traducciones Kichwa (qu.json)</strong><span>brands.*, suppliers.*, customers.*, productTypes.*, units.* añadidas. Verificar claves de módulos de ventas (facturas, NC, ND) cuando se implementen.</span></div><span class="prio prio-baja">BAJA</span></div>
-      <div class="next-item"><span class="num">14</span><div class="desc"><strong>Índices compuestos optimizados en tablas de alto volumen</strong><span>electronic_doc, stock_movement, journal_entry por (TenantId, fecha).</span></div><span class="prio prio-baja">BAJA</span></div>
-      <div class="next-item"><span class="num">15</span><div class="desc"><strong>Particionamiento de tablas grandes (diferir hasta 1M+ filas)</strong><span>electronic_doc y stock_movement. No urgente en etapa actual.</span></div><span class="prio prio-baja">BAJA</span></div>
+      <div class="next-item"><span class="num">1</span><div class="desc"><strong>Validar XML contra XSD oficial SRI antes de firmar</strong><span>SriXmlFacturaBuilder genera XML v1.1.0. Agregar validación XSD en SriFacturaElectronicaRealService antes de llamar a FirmarXmlAsync(). Probar en celcer.sri.gob.ec.</span></div><span class="prio prio-critico">CRÍTICO</span></div>
+      <div class="next-item"><span class="num">2</span><div class="desc"><strong>Frontend: formulario de nota de crédito</strong><span>Referencia a factura original, motivo, líneas. Backend ya implementado.</span></div><span class="prio prio-alta">ALTA</span></div>
+      <div class="next-item"><span class="num">3</span><div class="desc"><strong>Frontend: formulario de comprobante de retención</strong><span>Códigos SRI de retención, porcentajes. Backend ya implementado.</span></div><span class="prio prio-alta">ALTA</span></div>
+      <div class="next-item"><span class="num">4</span><div class="desc"><strong>Frontend: formulario de nota de débito</strong><span>Backend ya implementado.</span></div><span class="prio prio-alta">ALTA</span></div>
+      <div class="next-item"><span class="num">5</span><div class="desc"><strong>Frontend: guía de remisión + ABM de transportistas</strong><span>Entidad DeliveryGuide existe en backend; falta pantalla y catálogo de transportistas.</span></div><span class="prio prio-media">MEDIA</span></div>
+      <div class="next-item"><span class="num">6</span><div class="desc"><strong>Liquidación de compra (tipo 03) — backend + frontend</strong><span>No hay entidad ni pantalla. Requerido por la ficha técnica SRI.</span></div><span class="prio prio-media">MEDIA</span></div>
+      <div class="next-item"><span class="num">7</span><div class="desc"><strong>Reportes contables: Mayor General y Balance de Comprobación</strong><span>Asientos ya existen; faltan los reportes de salida.</span></div><span class="prio prio-media">MEDIA</span></div>
+      <div class="next-item"><span class="num">8</span><div class="desc"><strong>Configuración de tarifas SRI e IVA por empresa al onboarding</strong><span>Agregar al TenantOnboardingService: IVA 15%, IVA 0%, IVA 5% como TaxRates por defecto. También planilla de cuentas contables mínima.</span></div><span class="prio prio-media">MEDIA</span></div>
+      <div class="next-item"><span class="num">9</span><div class="desc"><strong>Control de stock mínimo y punto de reorden + alertas</strong><span>Agregar campos MinimumStock y ReorderPoint a CurrentStock. Alertas en dashboard.</span></div><span class="prio prio-media">MEDIA</span></div>
+      <div class="next-item"><span class="num">10</span><div class="desc"><strong>Completar traducciones Kichwa (qu.json)</strong><span>brands.*, suppliers.*, customers.*, productTypes.*, units.* añadidas. Verificar claves de módulos de ventas (facturas, NC, ND) cuando se implementen.</span></div><span class="prio prio-baja">BAJA</span></div>
+      <div class="next-item"><span class="num">11</span><div class="desc"><strong>Índices compuestos optimizados en tablas de alto volumen</strong><span>electronic_doc, stock_movement, journal_entry por (TenantId, fecha).</span></div><span class="prio prio-baja">BAJA</span></div>
+      <div class="next-item"><span class="num">12</span><div class="desc"><strong>Particionamiento de tablas grandes (diferir hasta 1M+ filas)</strong><span>electronic_doc y stock_movement. No urgente en etapa actual.</span></div><span class="prio prio-baja">BAJA</span></div>
     </div>
   </div>
 
@@ -215,8 +212,8 @@
       <div class="section-bar"><div class="section-bar-fill" id="bar-s4" style="background:var(--warning)"></div></div>
       <div class="section-body">
         <div class="item"><input type="checkbox" data-sec="s4" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Listado de comprobantes emitidos (filtros fecha, estado, cliente)</strong><p class="note">Solo facturas de venta. Falta listado unificado para todos los tipos.</p></div><span class="status-badge s-partial">Parcial</span></div>
-        <div class="item"><input type="checkbox" data-sec="s4" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Visualización de detalle (datos, XML, RIDE)</strong><p class="note">Datos API disponibles. Sin generación de RIDE/PDF ni visor de XML en frontend.</p></div><span class="status-badge s-partial">Parcial</span></div>
-        <div class="item"><input type="checkbox" data-sec="s4" data-val="0" onchange="recalc()"><div class="item-text"><strong>Reenvío de comprobante no autorizado (con corrección de errores)</strong></div><span class="status-badge s-pending">Pendiente</span></div>
+        <div class="item"><input type="checkbox" data-sec="s4" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Visualización de detalle (datos, XML, RIDE)</strong><p class="note">Botón RIDE en VentasFacturasPage: GET /api/ventas/{id}/ride → descarga PDF. Para Autorizado. Mensaje de error inline bajo el badge para ErrorEnvio/Rechazado.</p></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s4" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Reenvío de comprobante no autorizado (con corrección de errores)</strong><p class="note">Botón Reintentar en VentasFacturasPage para facturas en ErrorEnvio/Rechazado. PATCH /api/Ventas/{id}/reintentar + recarga automática de la lista.</p></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s4" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Anulación de comprobante autorizado</strong><p class="note">Backend tiene anulación. Falta XML de baja firmado al SRI (esquema offline).</p></div><span class="status-badge s-partial">Parcial</span></div>
         <div class="item"><input type="checkbox" data-sec="s4" data-val="0" onchange="recalc()"><div class="item-text"><strong>Reporte de autorizaciones fallidas y reintentos</strong></div><span class="status-badge s-pending">Pendiente</span></div>
       </div>
@@ -335,7 +332,7 @@
         <div class="item"><input type="checkbox" data-sec="s11" data-val="1" onchange="recalc()"><div class="item-text"><strong>Caché Redis para consultas frecuentes</strong></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s11" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Índices en PostgreSQL para consultas de alto volumen</strong><p class="note">Índices básicos OK. Faltan índices compuestos (TenantId + fecha) en tablas grandes.</p></div><span class="status-badge s-partial">Parcial</span></div>
         <div class="item"><input type="checkbox" data-sec="s11" data-val="0" onchange="recalc()"><div class="item-text"><strong>Particionamiento de tablas grandes (electronic_doc, stock_movement)</strong></div><span class="status-badge s-pending">Pendiente</span></div>
-        <div class="item"><input type="checkbox" data-sec="s11" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Hangfire para procesamiento asíncrono SRI</strong><p class="note">1 job (kardex diario). Falta el job crítico de envío/reintento al SRI.</p></div><span class="status-badge s-partial">Parcial</span></div>
+        <div class="item"><input type="checkbox" data-sec="s11" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Hangfire para procesamiento asíncrono SRI</strong><p class="note">2 jobs: kardex diario + SriRetryJob (reintentos SRI cada 5 min, cross-tenant vía JobTenantContext AsyncLocal).</p></div><span class="status-badge s-done">Implementado</span></div>
       </div>
     </div>
 
@@ -353,7 +350,7 @@
         <div class="item"><input type="checkbox" data-sec="s12" data-val="1" onchange="recalc()"><div class="item-text"><strong>Firma digital XAdES-BES con certificado P12</strong><p class="note">XadesBesSigner — usa X509CertificateLoader + SignedXml (.NET 10 built-in). Sin BouncyCastle. Switch Simulado/Real via Sri:UseRealService en appsettings.</p></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s12" data-val="1" onchange="recalc()"><div class="item-text"><strong>Consumo WSDL SRI real (recepción + polling autorización)</strong><p class="note">SriSoapClient — SOAP puro con HttpClient. RecepcionComprobantesOffline + polling AutorizacionComprobantesOffline con backoff exponencial (2s, 4s, 8s…). URL autorizacion derivada automáticamente del WsdlUrl.</p></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s12" data-val="1" onchange="recalc()"><div class="item-text"><strong>RIDE — Representación Impresa del Documento Electrónico (PDF)</strong><p class="note">RideGeneratorService — QuestPDF A4, logo Base64, tabla de líneas, totales, clave acceso formateada, watermark PRUEBA si ambiente≠1. IRideGeneratorService en Application (reutilizable desde API, jobs, email). Endpoints: GET /api/ventas/{id}/ride y /notas/{id}/ride.</p></div><span class="status-badge s-done">Implementado</span></div>
-        <div class="item"><input type="checkbox" data-sec="s12" data-val="0" onchange="recalc()"><div class="item-text"><strong>Job Hangfire: cola asíncrona SRI con reintentos automáticos</strong><p class="note">Los servicios XML/firma/SOAP están listos — falta encolar la emisión como background job para no bloquear el request HTTP.</p></div><span class="status-badge s-pending">Pendiente</span></div>
+        <div class="item"><input type="checkbox" data-sec="s12" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Job Hangfire: cola asíncrona SRI con reintentos automáticos</strong><p class="note">SriRetryJob — job recurrente cada 5 min. Consulta cross-tenant (IgnoreQueryFilters) bills en ErrorEnvio/Rechazado y reintenta vía RetrySubmissionCommand. JobTenantContext (AsyncLocal) provee el tenant a CurrentTenantService sin HttpContext.</p></div><span class="status-badge s-done">Implementado</span></div>
       </div>
     </div>
 
@@ -379,7 +376,7 @@
   </div>
 
   <div class="footer">
-    ERP SaaS — ZH Technologies · Actualizado: <span id="footer-date">2026-05-17 (v3)</span> ·
+    ERP SaaS — ZH Technologies · Actualizado: <span id="footer-date">2026-05-17 (v6)</span> ·
     <em>Regla: al completar cualquier tarea, marcar el ítem y actualizar la fecha en este archivo.</em>
   </div>
 

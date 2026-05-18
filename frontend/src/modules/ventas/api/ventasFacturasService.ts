@@ -97,4 +97,13 @@ export const ventasFacturasService = {
     );
     return res.data.responseObject ?? null;
   },
+
+  async retry(id: string): Promise<void> {
+    await api.patch(`/api/Ventas/${id}/reintentar`, {});
+  },
+
+  async downloadRide(id: string): Promise<Blob> {
+    const res = await api.get(`/api/ventas/${id}/ride`, { responseType: 'blob' });
+    return res.data as Blob;
+  },
 };

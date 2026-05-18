@@ -38,7 +38,7 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
     public short     PaymentDays       { get; private set; }
     /// <summary>Observaciones libres — se emiten como &lt;campoAdicional&gt; en el XML SRI.</summary>
     public string?   Notes             { get; private set; }
-    public string    Status            { get; private set; } = "Draft";
+    public string    Status            { get; private set; } = "Borrador";
     public string?   XmlSignedPath     { get; private set; }
     public string?   XmlAuthPath       { get; private set; }
     public string?   AuthNumber        { get; private set; }
@@ -97,7 +97,7 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
             PaymentMethodCode = string.IsNullOrWhiteSpace(paymentMethodCode) ? "01" : paymentMethodCode.Trim(),
             PaymentDays       = paymentDays < 0 ? (short)0 : paymentDays,
             Notes             = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
-            Status            = "Draft",
+            Status            = "Borrador",
             XmlSignedPath     = string.IsNullOrWhiteSpace(xmlSignedPath) ? null : xmlSignedPath.Trim(),
             XmlAuthPath       = string.IsNullOrWhiteSpace(xmlAuthPath) ? null : xmlAuthPath.Trim(),
             AuthNumber        = string.IsNullOrWhiteSpace(authNumber) ? null : authNumber.Trim(),
@@ -110,9 +110,9 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
 
     public void Validate(Guid userId)
     {
-        if (Status != "Draft")
-            throw new InvalidOperationException($"Only Draft bills can be validated (current: {Status}).");
-        Status = "Validated";
+        if (Status != "Borrador")
+            throw new InvalidOperationException($"Solo facturas en Borrador pueden validarse (actual: {Status}).");
+        Status = "Validado";
         SetUpdated(userId);
     }
 
@@ -125,9 +125,9 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
         Guid     journalEntryId,
         IReadOnlyList<SalesBillAuthorizedStockLine>? stockLines = null)
     {
-        if (Status != "Validated")
-            throw new InvalidOperationException($"Only Validated bills can be authorized (current: {Status}).");
-        Status         = "Authorized";
+        if (Status != "Validado")
+            throw new InvalidOperationException($"Solo facturas Validadas pueden autorizarse (actual: {Status}).");
+        Status         = "Autorizado";
         AuthNumber     = authNumber;
         AuthDate       = authDate;
         XmlSignedPath  = string.IsNullOrWhiteSpace(xmlSignedPath) ? null : xmlSignedPath;
@@ -145,32 +145,32 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
 
     public void Reject(Guid userId, string errorMessage)
     {
-        Status       = "Rejected";
+        Status       = "Rechazado";
         ErrorMessage = errorMessage?.Trim();
         SetUpdated(userId);
     }
 
     public void MarkSendError(Guid userId, string errorMessage)
     {
-        Status       = "SendError";
+        Status       = "ErrorEnvio";
         ErrorMessage = errorMessage?.Trim();
         SetUpdated(userId);
     }
 
     public void PrepareRetry(Guid userId)
     {
-        if (Status is not ("SendError" or "Rejected"))
-            throw new InvalidOperationException($"Only SendError or Rejected bills can be retried (current: {Status}).");
-        Status       = "Validated";
+        if (Status is not ("ErrorEnvio" or "Rechazado"))
+            throw new InvalidOperationException($"Solo facturas en ErrorEnvio o Rechazado pueden reintentarse (actual: {Status}).");
+        Status       = "Validado";
         ErrorMessage = null;
         SetUpdated(userId);
     }
 
     public void Void(Guid userId)
     {
-        if (Status is "Authorized" or "Voided")
-            throw new InvalidOperationException($"Cannot void a bill in status {Status}.");
-        Status = "Voided";
+        if (Status is "Autorizado" or "Anulado")
+            throw new InvalidOperationException($"No se puede anular una factura en estado {Status}.");
+        Status = "Anulado";
         SetUpdated(userId);
     }
 

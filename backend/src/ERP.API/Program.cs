@@ -129,6 +129,7 @@ if (hangfireEnabled)
         configuration.UsePostgreSqlStorage(options =>
             options.UseNpgsqlConnection(hangfireConn)));
     builder.Services.AddHangfireServer();
+    builder.Services.AddScoped<ISriRetryJob, SriRetryJob>();
 }
 
 // Opciones del Kardex: registrar tanto como IOptions<> (convención .NET)
@@ -282,6 +283,11 @@ if (hangfireEnabled)
         "refresh-mv-saldos-diarios",
         x => x.RefreshDailyBalancesMaterializedViewAsync(CancellationToken.None),
         Cron.Daily(hour: 1));
+
+    RecurringJob.AddOrUpdate<ISriRetryJob>(
+        "sri-emission-retry",
+        x => x.ExecuteAsync(CancellationToken.None),
+        "*/5 * * * *"); // cada 5 minutos
 }
 
 app.UseSerilogRequestLogging();

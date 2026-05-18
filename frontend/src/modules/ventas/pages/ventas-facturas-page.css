@@ -11,6 +11,17 @@
 .vf-cell-right   { text-align: right; }
 .vf-cell-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 
+/* Mensaje de error breve bajo el badge de estado */
+.vf-error-hint {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs, 0.72rem);
+  color: var(--color-error, #d32f2f);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── 2-col support grid (log + accent) ──────────────────── */
 .vf-support-grid {
   display: grid;
