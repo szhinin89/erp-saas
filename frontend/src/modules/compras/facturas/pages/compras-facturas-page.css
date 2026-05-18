@@ -1,0 +1,20 @@
+/* ComprasFacturasPage — estilos específicos (prefijo cf-*) */
+
+.cf-col-numero  { color: var(--color-primary); font-weight: var(--text-label-md-weight); }
+.cf-col-date    { color: var(--color-text-secondary); }
+.cf-col-right   { text-align: right; }
+.cf-cell-right  { text-align: right; }
+.cf-cell-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+/* Formulario de crear compra */
+.cf-line-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); margin-top: var(--space-3); }
+.cf-line-table th { background: var(--color-surface-raised); padding: var(--space-2); text-align: left; font-weight: 600; border-bottom: 1px solid var(--color-border); }
+.cf-line-table td { padding: var(--space-1) var(--space-2); border-bottom: 1px solid var(--color-border-light); vertical-align: middle; }
+.cf-line-table td input { width: 100%; }
+.cf-line-table td.cf-td-num input { text-align: right; }
+.cf-line-table td.cf-td-total { text-align: right; font-weight: 600; color: var(--color-primary); white-space: nowrap; }
+.cf-totals-box { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-1); margin-top: var(--space-4); }
+.cf-totals-row { display: flex; gap: var(--space-6); font-size: var(--text-sm); }
+.cf-totals-row strong { min-width: 120px; text-align: right; }
+.cf-totals-row span { min-width: 100px; text-align: right; }
+.cf-total-final { font-size: var(--text-lg); font-weight: 700; color: var(--color-primary); }

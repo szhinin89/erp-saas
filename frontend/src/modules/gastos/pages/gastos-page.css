@@ -1,0 +1,8 @@
+/* GastosPage — estilos específicos (prefijo gst-*) */
+
+.gst-col-cat    { font-weight: 600; color: var(--color-primary); }
+.gst-col-date   { color: var(--color-text-secondary); }
+.gst-col-right  { text-align: right; }
+.gst-cell-right { text-align: right; }
+.gst-cell-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.gst-cat-badge  { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: var(--text-xs); font-weight: 600; background: var(--color-surface-raised); color: var(--color-text-secondary); }

@@ -12,6 +12,10 @@ import { SuppliersPage } from '../modules/compras/suppliers/pages/SuppliersPage'
 import { CompanyConfigPage } from '../modules/configuracion/empresa/pages/CompanyConfigPage';
 import { SriConfigPage } from '../modules/configuracion/sri/pages/SriConfigPage';
 import { BillingSettingsPage } from '../modules/configuracion/facturacion/pages/BillingSettingsPage';
+import { ComprasListPage } from '../modules/compras/facturas/pages/ComprasListPage';
+import { CrearCompraPage } from '../modules/compras/facturas/pages/CrearCompraPage';
+import { GastosListPage } from '../modules/gastos/pages/GastosListPage';
+import { CrearGastoPage } from '../modules/gastos/pages/CrearGastoPage';
 
 /**
  * Rutas principales de aplicación.
@@ -55,8 +59,15 @@ export const mainRoutes = [
   <Route key="sales-report" path="/reportes/ventas" element={<SalesReportPage />} />,
 
   // Compras
-  <Route key="proveedores" path="/compras/proveedores" element={<SuppliersPage />} />,
-  <Route key="compras" path="/compras" element={<ModulePlaceholderPage variant="purchases" />} />,
+  <Route key="proveedores"          path="/compras/proveedores"      element={<SuppliersPage />} />,
+  <Route key="compras-facturas"     path="/compras/facturas"         element={<ComprasListPage />} />,
+  <Route key="compras-facturas-new" path="/compras/facturas/nueva"   element={<CrearCompraPage />} />,
+  <Route key="compras"              path="/compras"                  element={<Navigate to="/compras/facturas" replace />} />,
+
+  // Gastos
+  <Route key="gastos"     path="/gastos"        element={<GastosListPage />} />,
+  <Route key="gastos-new" path="/gastos/nuevo"  element={<CrearGastoPage />} />,
+
   <Route key="rrhh" path="/rrhh" element={<ModulePlaceholderPage variant="hr" />} />,
 
   // Configuración
