@@ -20,6 +20,10 @@ public sealed class SalesBillLineConfiguration : IEntityTypeConfiguration<SalesB
                .HasDefaultValue("");
         builder.Property(e => e.DiscountAmount).HasColumnName("discount_amount")
                .HasPrecision(18, 4).IsRequired().HasDefaultValue(0m);
+        builder.Property(e => e.VatCode).HasColumnName("vat_code")
+               .HasMaxLength(SalesBillLine.VatCodeMaxLen).IsRequired().HasDefaultValue("0");
+        builder.Property(e => e.VatPercentage).HasColumnName("vat_percentage")
+               .HasPrecision(5, 2).IsRequired().HasDefaultValue(0m);
         builder.Property(e => e.Quantity).HasColumnName("quantity").HasPrecision(18, 4).IsRequired();
         builder.Property(e => e.UnitPrice).HasColumnName("unit_price").HasPrecision(18, 4).IsRequired();
         builder.Property(e => e.Subtotal).HasColumnName("subtotal").HasPrecision(18, 4).IsRequired();

@@ -141,11 +141,18 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
                 var subtotalItem  = brutoItem - descItem;
 
                 decimal impuestoItem = 0;
+                string  vatCode      = "0";
+                decimal vatPct       = 0m;
+
                 if (producto.AppliesVatOnSale && producto.SaleTaxId.HasValue)
                 {
                     var taxRate = await _taxRateRepository.GetByIdAsync(producto.SaleTaxId.Value, tenantId, ct);
                     if (taxRate is not null)
-                        impuestoItem = subtotalItem * taxRate.Percentage / 100;
+                    {
+                        vatPct       = taxRate.Percentage;
+                        vatCode      = SriVatCodeFromPercentage(vatPct);
+                        impuestoItem = subtotalItem * vatPct / 100;
+                    }
                 }
 
                 subtotal += subtotalItem;
@@ -158,6 +165,8 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
                     quantity:       item.Quantity,
                     unitPrice:      item.UnitPrice,
                     discountAmount: item.DiscountAmount,
+                    vatCode:        vatCode,
+                    vatPercentage:  vatPct,
                     vatTotal:       impuestoItem,
                     description:    producto.Description,
                     createdBy:      userId
@@ -238,5 +247,19 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         config.IncrementSequential();
         return secuencial;
     }
+
+    /// <summary>
+    /// Convierte un porcentaje de IVA al código SRI correspondiente.
+    /// Códigos oficiales: "0"=0%, "2"=12%, "3"=14%, "4"=15%, "5"=5%.
+    /// </summary>
+    private static string SriVatCodeFromPercentage(decimal percentage) => percentage switch
+    {
+        0m    => "0",
+        5m    => "5",
+        12m   => "2",
+        14m   => "3",
+        15m   => "4",
+        _     => "4"   // default 15%
+    };
 
 }

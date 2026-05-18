@@ -27,11 +27,17 @@ public static class SriXmlFacturaBuilder
         SriSettings          cfg)
     {
         var totalDescuento = 0m;
-        var vatCode        = ResolveVatCode(lineas);
-        var vatPct         = VatPorcentaje(vatCode);
+        var detElements    = lineas.Select(l =>
+            BuildDetalleFactura(l, ref totalDescuento)).ToList();
 
-        var detElements = lineas.Select(l =>
-            BuildDetalleFactura(l, vatCode, vatPct, ref totalDescuento)).ToList();
+        // totalConImpuestos: un <totalImpuesto> por cada tasa IVA distinta que aparezca
+        var gruposIva = lineas
+            .GroupBy(l => l.VatCode)
+            .Select(g => BuildTotalImpuesto(
+                vatCode: g.Key,
+                baseImp: g.Sum(l => l.Subtotal),
+                valor:   g.Sum(l => l.VatTotal)))
+            .ToList();
 
         var doc = new XDocument(
             new XDeclaration("1.0", "UTF-8", null),
@@ -53,8 +59,7 @@ public static class SriXmlFacturaBuilder
                     new XElement("direccionComprador",  factura.Cliente.AddressLine ?? ""),
                     new XElement("totalSinImpuestos",   F2(factura.Subtotal)),
                     new XElement("totalDescuento",      F2(factura.TotalDiscount)),
-                    new XElement("totalConImpuestos",
-                        BuildTotalImpuesto(vatCode, factura.Subtotal, factura.VatTotal)),
+                    new XElement("totalConImpuestos",   gruposIva),
                     new XElement("propina",  "0.00"),
                     new XElement("importeTotal", F2(factura.Total)),
                     new XElement("moneda", Currency),
@@ -159,21 +164,23 @@ public static class SriXmlFacturaBuilder
             new XElement("valor",            F2(valor)));
 
     private static XElement BuildDetalleFactura(
-        SalesBillLine  l,
-        string         vatCode,
-        string         vatPct,
-        ref decimal    totalDesc)
+        SalesBillLine l,
+        ref decimal   totalDesc)
     {
         totalDesc += l.DiscountAmount;
         return new XElement("detalle",
-            new XElement("codigoPrincipal",          l.ProductCode),
-            new XElement("descripcion",              l.Description),
-            new XElement("cantidad",                 F6(l.Quantity)),
-            new XElement("precioUnitario",           F6(l.UnitPrice)),
-            new XElement("descuento",                F2(l.DiscountAmount)),
-            new XElement("precioTotalSinImpuesto",   F2(l.Subtotal)),
+            new XElement("codigoPrincipal",        l.ProductCode),
+            new XElement("descripcion",            l.Description),
+            new XElement("cantidad",               F6(l.Quantity)),
+            new XElement("precioUnitario",         F6(l.UnitPrice)),
+            new XElement("descuento",              F2(l.DiscountAmount)),
+            new XElement("precioTotalSinImpuesto", F2(l.Subtotal)),
             new XElement("impuestos",
-                BuildImpuestoLinea(vatCode, vatPct, l.Subtotal, l.VatTotal)));
+                BuildImpuestoLinea(
+                    l.VatCode,
+                    l.VatPercentage.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
+                    l.Subtotal,
+                    l.VatTotal)));
     }
 
     private static XElement BuildDetalleNota(
@@ -214,34 +221,26 @@ public static class SriXmlFacturaBuilder
     // ── Helpers IVA ───────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Determina el código SRI de IVA a partir de las líneas.
-    /// Usa el ratio vatTotal/subtotal para identificar la tarifa.
+    /// Para notas de crédito/débito: determina el código SRI de IVA desde las líneas.
+    /// Se mantiene por compatibilidad con SalesNoteLine que aún no tiene VatCode snapshot.
     /// </summary>
-    private static string ResolveVatCode(List<SalesBillLine> lineas)
-    {
-        if (!lineas.Any()) return "4"; // 15% por defecto
-        var totalSub = lineas.Sum(l => l.Subtotal);
-        var totalVat = lineas.Sum(l => l.VatTotal);
-        return totalSub == 0 ? "4" : VatCodeFromRate(totalVat / totalSub);
-    }
-
     private static string ResolveVatCodeNota(List<SalesNoteLine> lineas)
     {
         if (!lineas.Any()) return "4";
         var totalSub = lineas.Sum(l => l.Subtotal);
         var totalVat = lineas.Sum(l => l.VatTotal);
-        return totalSub == 0 ? "4" : VatCodeFromRate(totalVat / totalSub);
+        if (totalSub == 0) return "4";
+        var rate = totalVat / totalSub;
+        return rate switch
+        {
+            0m                         => "0",
+            var r when Near(r, 0.05m) => "5",
+            var r when Near(r, 0.12m) => "2",
+            var r when Near(r, 0.14m) => "3",
+            var r when Near(r, 0.15m) => "4",
+            _                         => "4",
+        };
     }
-
-    private static string VatCodeFromRate(decimal rate) => rate switch
-    {
-        0m                          => "0",   // 0%
-        var r when Near(r, 0.05m)  => "5",   // 5%
-        var r when Near(r, 0.12m)  => "2",   // 12%
-        var r when Near(r, 0.14m)  => "3",   // 14%
-        var r when Near(r, 0.15m)  => "4",   // 15%
-        _                          => "4",   // default 15%
-    };
 
     private static string VatPorcentaje(string code) => code switch
     {
