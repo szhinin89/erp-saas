@@ -158,4 +158,64 @@ public class AccountingRepository : IAccountingRepository
         var rows = await q.ToListAsync(ct);
         return rows.Select(r => (r.Date, r.AccountId, r.Debit, r.Credit)).ToList();
     }
+
+    public async Task<IReadOnlyList<(DateTime Date, string Reference, string Description, decimal Debit, decimal Credit)>>
+        GetMayorGeneralLinesAsync(
+            Guid tenantId,
+            Guid accountId,
+            DateTime desde,
+            DateTime hasta,
+            CancellationToken ct = default)
+    {
+        var q =
+            from line in _context.JournalEntryLines.AsNoTracking()
+            join e in _context.JournalEntries.AsNoTracking() on line.JournalEntryId equals e.Id
+            where e.TenantId == tenantId
+                  && line.TenantId == tenantId
+                  && e.Status == DocumentStatus.Posted
+                  && e.Date >= desde
+                  && e.Date <= hasta
+                  && line.AccountId == accountId
+            orderby e.Date, e.Id
+            select new
+            {
+                e.Date,
+                e.Reference,
+                e.Description,
+                Debit  = line.Debit.Amount,
+                Credit = line.Credit.Amount,
+            };
+
+        var rows = await q.ToListAsync(ct);
+        return rows.Select(r => (r.Date, r.Reference, r.Description, r.Debit, r.Credit)).ToList();
+    }
+
+    public async Task<IReadOnlyList<(Guid AccountId, decimal TotalDebit, decimal TotalCredit)>>
+        GetBalanceComprobacionAsync(
+            Guid tenantId,
+            DateTime desde,
+            DateTime hasta,
+            CancellationToken ct = default)
+    {
+        var q =
+            from line in _context.JournalEntryLines.AsNoTracking()
+            join e in _context.JournalEntries.AsNoTracking() on line.JournalEntryId equals e.Id
+            where e.TenantId == tenantId
+                  && line.TenantId == tenantId
+                  && e.Status == DocumentStatus.Posted
+                  && e.Date >= desde
+                  && e.Date <= hasta
+            group new { Debit = line.Debit.Amount, Credit = line.Credit.Amount }
+                by line.AccountId
+            into g
+            select new
+            {
+                AccountId    = g.Key,
+                TotalDebit   = g.Sum(x => x.Debit),
+                TotalCredit  = g.Sum(x => x.Credit),
+            };
+
+        var rows = await q.ToListAsync(ct);
+        return rows.Select(r => (r.AccountId, r.TotalDebit, r.TotalCredit)).ToList();
+    }
 }

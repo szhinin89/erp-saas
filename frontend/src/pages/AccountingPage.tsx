@@ -1,7 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { accountingService, type CreateAccountRequest } from '../services/accountingService';
+import {
+  accountingService,
+  type CreateAccountRequest,
+  type MayorGeneralLineDto,
+  type BalanceComprobacionLineDto,
+} from '../services/accountingService';
 import {
   accountingConfigService,
   type ConfiguracionContableEmpresaDto,
@@ -20,7 +25,10 @@ import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { createAccountFormSchema, type CreateAccountFormValues } from '../schemas/accounting/accountSchema';
 
-type Tab = 'accounts' | 'journal' | 'config';
+type Tab = 'accounts' | 'journal' | 'mayor' | 'balance' | 'config';
+
+const YEAR_START = `${new Date().getFullYear()}-01-01`;
+const TODAY      = new Date().toISOString().split('T')[0]!;
 
 const EMPTY: CreateAccountFormValues = { code: '', name: '', type: 0, nature: 0, parentId: '' };
 
@@ -47,10 +55,57 @@ export function AccountingPage() {
   const [tab,          setTab]          = useState<Tab>('accounts');
   const [showJournal,  setShowJournal]  = useState(false);
 
+  // Libro diario — filtros
+  const [jDesde,       setJDesde]       = useState(YEAR_START);
+  const [jHasta,       setJHasta]       = useState(TODAY);
+  const [expandedEntry, setExpandedEntry] = useState<string | null>(null);
+
+  // Mayor General
+  const [mayorAccountId, setMayorAccountId] = useState('');
+  const [mayorDesde,     setMayorDesde]     = useState(YEAR_START);
+  const [mayorHasta,     setMayorHasta]     = useState(TODAY);
+  const [mayorData,      setMayorData]      = useState<MayorGeneralLineDto[]>([]);
+  const [mayorLoading,   setMayorLoading]   = useState(false);
+  const [mayorError,     setMayorError]     = useState<string | null>(null);
+
+  // Balance de Comprobación
+  const [balDesde,    setBalDesde]    = useState(YEAR_START);
+  const [balHasta,    setBalHasta]    = useState(TODAY);
+  const [balData,     setBalData]     = useState<BalanceComprobacionLineDto[]>([]);
+  const [balLoading,  setBalLoading]  = useState(false);
+  const [balError,    setBalError]    = useState<string | null>(null);
+
   const accounts      = useAsync(() => accountingService.getAccounts(),     canViewAccounts);
-  const journalEntries= useAsync(() => accountingService.getJournalEntries(),canViewJournal);
+  const journalEntries= useAsync(() => accountingService.getJournalEntries(), canViewJournal);
   const config        = useAsync(() => accountingConfigService.getConfig(),  canViewConfig);
   const gastoMappings = useAsync(() => accountingConfigService.listGastoMappings(), canViewConfig);
+
+  const fetchMayor = useCallback(async () => {
+    if (!mayorAccountId) return;
+    setMayorLoading(true);
+    setMayorError(null);
+    try {
+      const data = await accountingService.getMayorGeneral(mayorAccountId, mayorDesde, mayorHasta);
+      setMayorData(data);
+    } catch (e) {
+      setMayorError(e instanceof Error ? e.message : 'Error al cargar el mayor');
+    } finally {
+      setMayorLoading(false);
+    }
+  }, [mayorAccountId, mayorDesde, mayorHasta]);
+
+  const fetchBalance = useCallback(async () => {
+    setBalLoading(true);
+    setBalError(null);
+    try {
+      const data = await accountingService.getBalanceComprobacion(balDesde, balHasta);
+      setBalData(data);
+    } catch (e) {
+      setBalError(e instanceof Error ? e.message : 'Error al cargar el balance');
+    } finally {
+      setBalLoading(false);
+    }
+  }, [balDesde, balHasta]);
 
   const formRef = useRef<HTMLFormElement>(null);
   const {
@@ -75,6 +130,16 @@ export function AccountingPage() {
     if (!canViewAccounts && !canViewJournal && canViewConfig) return 'config';
     return tab;
   }, [canViewAccounts, canViewJournal, canViewConfig, tab]);
+
+  // Filtro de Libro Diario por fecha
+  const filteredJournal = useMemo(() => {
+    const desde = new Date(jDesde);
+    const hasta  = new Date(jHasta);
+    return (journalEntries.data ?? []).filter((e) => {
+      const d = new Date(e.date);
+      return d >= desde && d <= hasta;
+    });
+  }, [journalEntries.data, jDesde, jHasta]);
 
   const activeAccountSubTab = canCreateAccount ? accountSubTab : 'list';
 
@@ -246,31 +311,43 @@ export function AccountingPage() {
       )}
 
       {/* ── Module tabs ── */}
-      {((canViewAccounts && canViewJournal) || canViewConfig) && (
-        <div className="zh-form-tabs" role="tablist" style={{ marginBottom: 'var(--space-4)' }}>
-          {canViewAccounts && (
-            <button type="button" role="tab" aria-selected={displayTab === 'accounts'}
-              className={displayTab === 'accounts' ? 'is-active' : ''}
-              onClick={() => setTab('accounts')}>
-              {t('accounting.tabs.accounts')}
-            </button>
-          )}
-          {canViewJournal && (
-            <button type="button" role="tab" aria-selected={displayTab === 'journal'}
-              className={displayTab === 'journal' ? 'is-active' : ''}
-              onClick={() => setTab('journal')}>
-              {t('accounting.tabs.journal')}
-            </button>
-          )}
-          {canViewConfig && (
-            <button type="button" role="tab" aria-selected={displayTab === 'config'}
-              className={displayTab === 'config' ? 'is-active' : ''}
-              onClick={() => setTab('config')}>
-              {t('accounting.tabs.config')}
-            </button>
-          )}
-        </div>
-      )}
+      <div className="zh-form-tabs" role="tablist" style={{ marginBottom: 'var(--space-4)' }}>
+        {canViewAccounts && (
+          <button type="button" role="tab" aria-selected={displayTab === 'accounts'}
+            className={displayTab === 'accounts' ? 'is-active' : ''}
+            onClick={() => setTab('accounts')}>
+            {t('accounting.tabs.accounts')}
+          </button>
+        )}
+        {canViewJournal && (
+          <button type="button" role="tab" aria-selected={displayTab === 'journal'}
+            className={displayTab === 'journal' ? 'is-active' : ''}
+            onClick={() => setTab('journal')}>
+            {t('accounting.tabs.journal')}
+          </button>
+        )}
+        {canViewJournal && (
+          <button type="button" role="tab" aria-selected={displayTab === 'mayor'}
+            className={displayTab === 'mayor' ? 'is-active' : ''}
+            onClick={() => setTab('mayor')}>
+            Mayor General
+          </button>
+        )}
+        {canViewJournal && (
+          <button type="button" role="tab" aria-selected={displayTab === 'balance'}
+            className={displayTab === 'balance' ? 'is-active' : ''}
+            onClick={() => { setTab('balance'); void fetchBalance(); }}>
+            Balance de Comprobación
+          </button>
+        )}
+        {canViewConfig && (
+          <button type="button" role="tab" aria-selected={displayTab === 'config'}
+            className={displayTab === 'config' ? 'is-active' : ''}
+            onClick={() => setTab('config')}>
+            {t('accounting.tabs.config')}
+          </button>
+        )}
+      </div>
 
       {/* ── Accounts tab ── */}
       {displayTab === 'accounts' && canViewAccounts && (
@@ -372,6 +449,7 @@ export function AccountingPage() {
                         <th>{t('accounting.accounts.table.type')}</th>
                         <th>{t('accounting.accounts.table.nature')}</th>
                         <th>{t('accounting.accounts.table.status')}</th>
+                        {canCreateAccount && <th></th>}
                       </tr>
                     </thead>
                     <tbody>
@@ -386,6 +464,29 @@ export function AccountingPage() {
                               {a.isActive ? t('common.active') : t('common.inactive')}
                             </span>
                           </td>
+                          {canCreateAccount && (
+                            <td>
+                              {a.isActive ? (
+                                <button
+                                  className="zh-btn zh-btn--ghost zh-btn--sm"
+                                  style={{ color: 'var(--color-error)' }}
+                                  onClick={() => accountingService.disableAccount(a.id).then(() => accounts.refetch())}
+                                  title="Deshabilitar cuenta"
+                                >
+                                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>block</span>
+                                </button>
+                              ) : (
+                                <button
+                                  className="zh-btn zh-btn--ghost zh-btn--sm"
+                                  style={{ color: 'var(--color-success)' }}
+                                  onClick={() => accountingService.enableAccount(a.id).then(() => accounts.refetch())}
+                                  title="Habilitar cuenta"
+                                >
+                                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>check_circle</span>
+                                </button>
+                              )}
+                            </td>
+                          )}
                         </tr>
                       ))}
                     </tbody>
@@ -514,34 +615,252 @@ export function AccountingPage() {
       {/* ── Journal tab ── */}
       {displayTab === 'journal' && canViewJournal && (
         <div className="pg-section">
+          {/* Filtros de fecha */}
+          <div className="pg-section-header">
+            <div className="pg-section-header-left">
+              <span className="material-symbols-outlined pg-section-icon">menu_book</span>
+              <span className="pg-section-label">Libro Diario</span>
+            </div>
+            {canCreateJournal && (
+              <ZHBtn variant="primary" size="sm" onClick={() => setShowJournal(true)}>
+                <span className="material-symbols-outlined">add</span>
+                Asiento manual
+              </ZHBtn>
+            )}
+          </div>
+          <div className="pg-section-body" style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 'var(--space-3)' }}>
+            <ZHField label="Desde">
+              <input className="zh-input" type="date" value={jDesde} onChange={(e) => setJDesde(e.target.value)} />
+            </ZHField>
+            <ZHField label="Hasta">
+              <input className="zh-input" type="date" value={jHasta} onChange={(e) => setJHasta(e.target.value)} />
+            </ZHField>
+            <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', paddingBottom: 2 }}>
+              {filteredJournal.length} asientos
+            </span>
+          </div>
+
           {journalEntries.loading && <div style={{ padding: '40px' }}><LoadingState /></div>}
           {journalEntries.error   && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={journalEntries.error} />}
-          {!journalEntries.loading && !journalEntries.error && (journalEntries.data?.length ?? 0) === 0 && (
+          {!journalEntries.loading && !journalEntries.error && filteredJournal.length === 0 && (
             <div style={{ padding: '40px' }}><EmptyState message={t('accounting.journal.empty')} /></div>
           )}
-          {!journalEntries.loading && !journalEntries.error && (journalEntries.data?.length ?? 0) > 0 && (
+          {!journalEntries.loading && !journalEntries.error && filteredJournal.length > 0 && (
             <div style={{ overflowX: 'auto' }}>
               <table className="table">
                 <thead>
                   <tr>
+                    <th style={{ width: 28 }}></th>
                     <th>{t('accounting.journal.table.reference')}</th>
                     <th>{t('accounting.journal.table.date')}</th>
                     <th>{t('accounting.journal.table.description')}</th>
-                    <th style={{ textAlign: 'center' }}>{t('accounting.journal.table.lines')}</th>
+                    <th style={{ textAlign: 'right' }}>Débito</th>
+                    <th style={{ textAlign: 'right' }}>Crédito</th>
                     <th>{t('accounting.journal.table.status')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {(journalEntries.data ?? []).map((e) => (
-                    <tr key={e.id}>
-                      <td><span className="mono">{e.reference}</span></td>
-                      <td>{new Date(e.date).toLocaleDateString('es-EC')}</td>
-                      <td className="subtle">{e.description}</td>
-                      <td style={{ textAlign: 'center' }}>{e.lines.length}</td>
-                      <td><span className={statusBadgeClass[e.status]}>{documentStatusLabel[e.status]}</span></td>
+                  {filteredJournal.map((e) => {
+                    const isExpanded = expandedEntry === e.id;
+                    const totalDebit  = e.lines.reduce((s, l) => s + l.debitAmount, 0);
+                    const totalCredit = e.lines.reduce((s, l) => s + l.creditAmount, 0);
+                    const accountMap  = accounts.data
+                      ? Object.fromEntries(accounts.data.map((a) => [a.id, `${a.code} ${a.name}`]))
+                      : {};
+                    return [
+                      <tr key={e.id} style={{ cursor: 'pointer' }} onClick={() => setExpandedEntry(isExpanded ? null : e.id)}>
+                        <td style={{ textAlign: 'center', color: 'var(--color-text-secondary)' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                            {isExpanded ? 'expand_less' : 'expand_more'}
+                          </span>
+                        </td>
+                        <td><span className="mono">{e.reference}</span></td>
+                        <td>{new Date(e.date).toLocaleDateString('es-EC')}</td>
+                        <td className="subtle">{e.description}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 600 }}>${totalDebit.toFixed(2)}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 600 }}>${totalCredit.toFixed(2)}</td>
+                        <td><span className={statusBadgeClass[e.status]}>{documentStatusLabel[e.status]}</span></td>
+                      </tr>,
+                      isExpanded && (
+                        <tr key={`${e.id}-lines`}>
+                          <td colSpan={7} style={{ background: 'var(--color-surface-raised)', padding: 0 }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+                              <thead>
+                                <tr style={{ background: 'var(--color-surface)' }}>
+                                  <th style={{ padding: '6px 12px', textAlign: 'left' }}>Cuenta</th>
+                                  <th style={{ padding: '6px 12px', textAlign: 'right' }}>Débito</th>
+                                  <th style={{ padding: '6px 12px', textAlign: 'right' }}>Crédito</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {e.lines.map((l) => (
+                                  <tr key={l.id}>
+                                    <td style={{ padding: '4px 12px' }}>{accountMap[l.accountId] ?? l.accountId.slice(0, 8)}</td>
+                                    <td style={{ padding: '4px 12px', textAlign: 'right' }}>
+                                      {l.debitAmount > 0 ? `$${l.debitAmount.toFixed(2)}` : ''}
+                                    </td>
+                                    <td style={{ padding: '4px 12px', textAlign: 'right' }}>
+                                      {l.creditAmount > 0 ? `$${l.creditAmount.toFixed(2)}` : ''}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      ),
+                    ];
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Mayor General tab ── */}
+      {displayTab === 'mayor' && canViewJournal && (
+        <div className="pg-section">
+          <div className="pg-section-header">
+            <div className="pg-section-header-left">
+              <span className="material-symbols-outlined pg-section-icon">account_balance_wallet</span>
+              <span className="pg-section-label">Mayor General</span>
+            </div>
+          </div>
+          <div className="pg-section-body" style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 'var(--space-4)' }}>
+            <ZHField label="Cuenta" style={{ minWidth: 260 }}>
+              <select
+                className="zh-input"
+                value={mayorAccountId}
+                onChange={(e) => setMayorAccountId(e.target.value)}
+                disabled={accounts.loading}
+              >
+                <option value="">-- Seleccionar cuenta --</option>
+                {(accounts.data ?? []).filter((a) => a.isActive).map((a) => (
+                  <option key={a.id} value={a.id}>{a.code} — {a.name}</option>
+                ))}
+              </select>
+            </ZHField>
+            <ZHField label="Desde">
+              <input className="zh-input" type="date" value={mayorDesde} onChange={(e) => setMayorDesde(e.target.value)} />
+            </ZHField>
+            <ZHField label="Hasta">
+              <input className="zh-input" type="date" value={mayorHasta} onChange={(e) => setMayorHasta(e.target.value)} />
+            </ZHField>
+            <ZHBtn variant="primary" size="md" onClick={() => void fetchMayor()} disabled={!mayorAccountId || mayorLoading}>
+              {mayorLoading ? 'Cargando...' : 'Consultar'}
+            </ZHBtn>
+          </div>
+
+          {mayorError && <ZHPageNotice variant="error" message={mayorError} />}
+          {mayorLoading && <div style={{ padding: 40 }}><LoadingState /></div>}
+          {!mayorLoading && !mayorError && mayorData.length === 0 && mayorAccountId && (
+            <div style={{ padding: 40 }}><EmptyState message="Sin movimientos en el período seleccionado." /></div>
+          )}
+          {!mayorLoading && mayorData.length > 0 && (
+            <>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Referencia</th>
+                      <th>Descripción</th>
+                      <th style={{ textAlign: 'right' }}>Débito</th>
+                      <th style={{ textAlign: 'right' }}>Crédito</th>
+                      <th style={{ textAlign: 'right' }}>Saldo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mayorData.map((l, i) => (
+                      <tr key={i}>
+                        <td style={{ color: 'var(--color-text-secondary)' }}>{new Date(l.date).toLocaleDateString('es-EC')}</td>
+                        <td><span className="mono">{l.reference}</span></td>
+                        <td>{l.description}</td>
+                        <td style={{ textAlign: 'right' }}>{l.debit > 0 ? `$${l.debit.toFixed(2)}` : ''}</td>
+                        <td style={{ textAlign: 'right' }}>{l.credit > 0 ? `$${l.credit.toFixed(2)}` : ''}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 700, color: l.balance >= 0 ? 'var(--color-primary)' : 'var(--color-error)' }}>
+                          ${l.balance.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ background: 'var(--color-surface-raised)', fontWeight: 700 }}>
+                      <td colSpan={3}>TOTALES</td>
+                      <td style={{ textAlign: 'right' }}>${mayorData.reduce((s, l) => s + l.debit, 0).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>${mayorData.reduce((s, l) => s + l.credit, 0).toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>${mayorData[mayorData.length - 1]?.balance.toFixed(2) ?? '0.00'}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── Balance de Comprobación tab ── */}
+      {displayTab === 'balance' && canViewJournal && (
+        <div className="pg-section">
+          <div className="pg-section-header">
+            <div className="pg-section-header-left">
+              <span className="material-symbols-outlined pg-section-icon">balance</span>
+              <span className="pg-section-label">Balance de Comprobación</span>
+            </div>
+          </div>
+          <div className="pg-section-body" style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 'var(--space-4)' }}>
+            <ZHField label="Desde">
+              <input className="zh-input" type="date" value={balDesde} onChange={(e) => setBalDesde(e.target.value)} />
+            </ZHField>
+            <ZHField label="Hasta">
+              <input className="zh-input" type="date" value={balHasta} onChange={(e) => setBalHasta(e.target.value)} />
+            </ZHField>
+            <ZHBtn variant="primary" size="md" onClick={() => void fetchBalance()} disabled={balLoading}>
+              {balLoading ? 'Cargando...' : 'Generar'}
+            </ZHBtn>
+          </div>
+
+          {balError && <ZHPageNotice variant="error" message={balError} />}
+          {balLoading && <div style={{ padding: 40 }}><LoadingState /></div>}
+          {!balLoading && !balError && balData.length === 0 && (
+            <div style={{ padding: 40 }}><EmptyState message="Haz clic en 'Generar' para calcular el balance." /></div>
+          )}
+          {!balLoading && balData.length > 0 && (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Código</th>
+                    <th>Cuenta</th>
+                    <th>Tipo</th>
+                    <th style={{ textAlign: 'right' }}>Total Débito</th>
+                    <th style={{ textAlign: 'right' }}>Total Crédito</th>
+                    <th style={{ textAlign: 'right' }}>Saldo Neto</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {balData.map((l, i) => (
+                    <tr key={i}>
+                      <td><span className="mono">{l.accountCode}</span></td>
+                      <td>{l.accountName}</td>
+                      <td style={{ color: 'var(--color-text-secondary)' }}>{l.accountType}</td>
+                      <td style={{ textAlign: 'right' }}>${l.totalDebit.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right' }}>${l.totalCredit.toFixed(2)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 700, color: l.netBalance >= 0 ? 'var(--color-success)' : 'var(--color-error)' }}>
+                        ${l.netBalance.toFixed(2)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
+                <tfoot>
+                  <tr style={{ background: 'var(--color-surface-raised)', fontWeight: 700 }}>
+                    <td colSpan={3}>TOTALES</td>
+                    <td style={{ textAlign: 'right' }}>${balData.reduce((s, l) => s + l.totalDebit, 0).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right' }}>${balData.reduce((s, l) => s + l.totalCredit, 0).toFixed(2)}</td>
+                    <td style={{ textAlign: 'right' }}>${balData.reduce((s, l) => s + l.netBalance, 0).toFixed(2)}</td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}

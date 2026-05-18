@@ -15,6 +15,8 @@ using ERP.Application.Modules.Accounting.UseCases.GetJournalEntries;
 using ERP.Application.Modules.Accounting.UseCases.GetJournalEntryById;
 using ERP.Application.Modules.Accounting.DTOs;
 using ERP.API.Attributes;
+using ERP.Application.Modules.Accounting.UseCases.GetMayorGeneral;
+using ERP.Application.Modules.Accounting.UseCases.GetBalanceComprobacion;
 
 namespace ERP.API.Controllers;
 
@@ -223,5 +225,50 @@ public class AccountsController : ControllerBase
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
+    }
+
+    // ── Reportes contables ─────────────────────────────────────────
+
+    /// <summary>
+    /// Mayor General de una cuenta — movimientos contabilizados en el rango de fechas
+    /// con saldo acumulado. Parámetros: desde (YYYY-MM-DD), hasta (YYYY-MM-DD).
+    /// </summary>
+    [HttpGet("{id:guid}/mayor")]
+    [Authorize(Policy = "perm:accounting.journal.view")]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<MayorGeneralLineDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetMayorGeneral(
+        Guid   id,
+        [FromQuery] string desde,
+        [FromQuery] string hasta,
+        CancellationToken ct = default)
+    {
+        if (!DateTime.TryParse(desde, out var d) || !DateTime.TryParse(hasta, out var h))
+            return this.ApiBadRequest("Parámetros 'desde' y 'hasta' requeridos en formato YYYY-MM-DD.");
+
+        var result = await _mediator.Send(
+            new GetMayorGeneralQuery(id, d.Date, h.Date.AddDays(1).AddTicks(-1)), ct);
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<MayorGeneralLineDto>());
+    }
+
+    /// <summary>
+    /// Balance de Comprobación — totales débito/crédito por cuenta en el período.
+    /// Parámetros: desde (YYYY-MM-DD), hasta (YYYY-MM-DD).
+    /// </summary>
+    [HttpGet("balance-comprobacion")]
+    [Authorize(Policy = "perm:accounting.journal.view")]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BalanceComprobacionLineDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetBalanceComprobacion(
+        [FromQuery] string desde,
+        [FromQuery] string hasta,
+        CancellationToken ct = default)
+    {
+        if (!DateTime.TryParse(desde, out var d) || !DateTime.TryParse(hasta, out var h))
+            return this.ApiBadRequest("Parámetros 'desde' y 'hasta' requeridos en formato YYYY-MM-DD.");
+
+        var result = await _mediator.Send(
+            new GetBalanceComprobacionQuery(d.Date, h.Date.AddDays(1).AddTicks(-1)), ct);
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<BalanceComprobacionLineDto>());
     }
 }

@@ -33,4 +33,21 @@ public interface IAccountingRepository
         DateTime desde,
         DateTime hasta,
         CancellationToken ct = default);
+
+    /// <summary>Movimientos de una cuenta para el Mayor General, ordenados por fecha.</summary>
+    Task<IReadOnlyList<(DateTime Date, string Reference, string Description, decimal Debit, decimal Credit)>>
+        GetMayorGeneralLinesAsync(
+            Guid tenantId,
+            Guid accountId,
+            DateTime desde,
+            DateTime hasta,
+            CancellationToken ct = default);
+
+    /// <summary>Totales débito/crédito por cuenta para el Balance de Comprobación.</summary>
+    Task<IReadOnlyList<(Guid AccountId, decimal TotalDebit, decimal TotalCredit)>>
+        GetBalanceComprobacionAsync(
+            Guid tenantId,
+            DateTime desde,
+            DateTime hasta,
+            CancellationToken ct = default);
 }
