@@ -107,7 +107,7 @@
   <div class="header">
     <div class="header-title">
       <h1>ERP SaaS — Estado de Avance</h1>
-      <p>ZH Technologies · Revisión: <span id="last-updated">2026-05-17 (v6)</span></p>
+      <p>ZH Technologies · Revisión: <span id="last-updated">2026-05-18 (v7)</span></p>
       <div class="global-bar"><div class="global-bar-fill" id="global-bar-fill"></div></div>
     </div>
     <div class="header-kpi">
@@ -125,15 +125,15 @@
     </div>
     <div class="next-list">
       <div class="next-item"><span class="num">1</span><div class="desc"><strong>Validar XML contra XSD oficial SRI antes de firmar</strong><span>SriXmlFacturaBuilder genera XML v1.1.0. Agregar validación XSD en SriFacturaElectronicaRealService antes de llamar a FirmarXmlAsync(). Probar en celcer.sri.gob.ec.</span></div><span class="prio prio-critico">CRÍTICO</span></div>
-      <div class="next-item"><span class="num">2</span><div class="desc"><strong>Frontend: formulario de nota de crédito</strong><span>Referencia a factura original, motivo, líneas. Backend ya implementado.</span></div><span class="prio prio-alta">ALTA</span></div>
+      <div class="next-item"><span class="num">2</span><div class="desc"><strong>Frontend: formulario de nota de crédito</strong><span>Referencia a factura original, motivo, líneas. Backend ya implementado (CrearSalesNoteCommandHandler).</span></div><span class="prio prio-alta">ALTA</span></div>
       <div class="next-item"><span class="num">3</span><div class="desc"><strong>Frontend: formulario de comprobante de retención</strong><span>Códigos SRI de retención, porcentajes. Backend ya implementado.</span></div><span class="prio prio-alta">ALTA</span></div>
-      <div class="next-item"><span class="num">4</span><div class="desc"><strong>Frontend: formulario de nota de débito</strong><span>Backend ya implementado.</span></div><span class="prio prio-alta">ALTA</span></div>
-      <div class="next-item"><span class="num">5</span><div class="desc"><strong>Frontend: guía de remisión + ABM de transportistas</strong><span>Entidad DeliveryGuide existe en backend; falta pantalla y catálogo de transportistas.</span></div><span class="prio prio-media">MEDIA</span></div>
-      <div class="next-item"><span class="num">6</span><div class="desc"><strong>Liquidación de compra (tipo 03) — backend + frontend</strong><span>No hay entidad ni pantalla. Requerido por la ficha técnica SRI.</span></div><span class="prio prio-media">MEDIA</span></div>
-      <div class="next-item"><span class="num">7</span><div class="desc"><strong>Reportes contables: Mayor General y Balance de Comprobación</strong><span>Asientos ya existen; faltan los reportes de salida.</span></div><span class="prio prio-media">MEDIA</span></div>
+      <div class="next-item"><span class="num">4</span><div class="desc"><strong>Frontend: formulario de nota de débito</strong><span>Backend ya implementado. Reutiliza misma estructura que nota de crédito.</span></div><span class="prio prio-alta">ALTA</span></div>
+      <div class="next-item"><span class="num">5</span><div class="desc"><strong>Configurar menú de plan en SuperAdmin → Planes → Menu Builder</strong><span>Agregar Configuración SRI, RIDE, Empresa, Compras y Gastos al árbol del plan activo. Los items ya existen en el fallback global pero no en el JSON del plan.</span></div><span class="prio prio-alta">ALTA</span></div>
+      <div class="next-item"><span class="num">6</span><div class="desc"><strong>Frontend: guía de remisión</strong><span>Entidad DeliveryGuide existe en backend; falta pantalla y catálogo de transportistas ya implementado.</span></div><span class="prio prio-media">MEDIA</span></div>
+      <div class="next-item"><span class="num">7</span><div class="desc"><strong>Liquidación de compra (tipo 03) — backend + frontend</strong><span>No hay entidad ni backend aún. Requerido por la ficha técnica SRI.</span></div><span class="prio prio-media">MEDIA</span></div>
       <div class="next-item"><span class="num">8</span><div class="desc"><strong>Configuración de tarifas SRI e IVA por empresa al onboarding</strong><span>Agregar al TenantOnboardingService: IVA 15%, IVA 0%, IVA 5% como TaxRates por defecto. También planilla de cuentas contables mínima.</span></div><span class="prio prio-media">MEDIA</span></div>
       <div class="next-item"><span class="num">9</span><div class="desc"><strong>Control de stock mínimo y punto de reorden + alertas</strong><span>Agregar campos MinimumStock y ReorderPoint a CurrentStock. Alertas en dashboard.</span></div><span class="prio prio-media">MEDIA</span></div>
-      <div class="next-item"><span class="num">10</span><div class="desc"><strong>Completar traducciones Kichwa (qu.json)</strong><span>brands.*, suppliers.*, customers.*, productTypes.*, units.* añadidas. Verificar claves de módulos de ventas (facturas, NC, ND) cuando se implementen.</span></div><span class="prio prio-baja">BAJA</span></div>
+      <div class="next-item"><span class="num">10</span><div class="desc"><strong>Completar traducciones Kichwa (qu.json)</strong><span>brands.*, suppliers.*, customers.*, productTypes.*, units.* añadidas. Verificar claves de módulos de ventas, compras y gastos.</span></div><span class="prio prio-baja">BAJA</span></div>
       <div class="next-item"><span class="num">11</span><div class="desc"><strong>Índices compuestos optimizados en tablas de alto volumen</strong><span>electronic_doc, stock_movement, journal_entry por (TenantId, fecha).</span></div><span class="prio prio-baja">BAJA</span></div>
       <div class="next-item"><span class="num">12</span><div class="desc"><strong>Particionamiento de tablas grandes (diferir hasta 1M+ filas)</strong><span>electronic_doc y stock_movement. No urgente en etapa actual.</span></div><span class="prio prio-baja">BAJA</span></div>
     </div>
@@ -249,6 +249,8 @@
         <div class="item"><input type="checkbox" data-sec="s6" data-val="1" onchange="recalc()"><div class="item-text"><strong>Flujo de aprobación de OC (Borrador → Enviada → Aprobada → Cerrada)</strong></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s6" data-val="1" onchange="recalc()"><div class="item-text"><strong>Recepción de facturas de proveedor (vinculación OC, stock)</strong></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s6" data-val="1" onchange="recalc()"><div class="item-text"><strong>Trazabilidad OC (aprobación → factura recibida, pago)</strong></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s6" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Frontend: listado y formulario de facturas de compra</strong><p class="note">ComprasListPage (/compras/facturas): KPIs, tabla con acciones Validar/Aprobar/Rechazar por estado, modal de rechazo. CrearCompraPage (/compras/facturas/nueva): proveedor, nº factura, fechas, líneas dinámicas con cálculo automático subtotal/IVA/total. comprasService con POST manual + PATCH validar/aprobar/rechazar.</p></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s6" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Frontend: registro de gastos (facturas de gasto)</strong><p class="note">GastosListPage (/gastos): KPIs, listado con Validar/Aprobar/Rechazar. CrearGastoPage (/gastos/nuevo): proveedor opcional, categoría contable (desde /api/contabilidad/configuracion/gastos), concepto, subtotal/IVA/total con auto-cálculo. gastosService completo.</p></div><span class="status-badge s-done">Implementado</span></div>
       </div>
     </div>
 
@@ -263,8 +265,8 @@
       <div class="section-body">
         <div class="item"><input type="checkbox" data-sec="s7" data-val="1" onchange="recalc()"><div class="item-text"><strong>Plan de cuentas configurable por empresa</strong></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s7" data-val="1" onchange="recalc()"><div class="item-text"><strong>Asientos automáticos al aprobar operaciones</strong></div><span class="status-badge s-done">Implementado</span></div>
-        <div class="item"><input type="checkbox" data-sec="s7" data-val="0.5" onchange="recalc()"><div class="item-text"><strong>Libro diario</strong><p class="note">Asientos consultables. Sin reporte exportable de libro diario.</p></div><span class="status-badge s-partial">Parcial</span></div>
-        <div class="item"><input type="checkbox" data-sec="s7" data-val="0" onchange="recalc()"><div class="item-text"><strong>Mayor general y balance de comprobación</strong></div><span class="status-badge s-pending">Pendiente</span></div>
+        <div class="item"><input type="checkbox" data-sec="s7" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Libro diario</strong><p class="note">Filtro por rango de fechas. Filas expandibles mostrando líneas de cada asiento (cuenta / débito / crédito). Totales DB/CR por asiento en cabecera. Botón "Asiento manual" integrado.</p></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s7" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Mayor general y balance de comprobación</strong><p class="note">Backend: GetMayorGeneralLinesAsync + GetBalanceComprobacionAsync en repositorio via JOIN EF. Endpoints GET /api/accounts/{id}/mayor y /balance-comprobacion. Frontend: tabs Mayor General (selector cuenta, rango fechas, saldo acumulado, totales) y Balance de Comprobación (código/nombre/tipo/DB/CR/neto, totales globales). Plan de Cuentas: acciones enable/disable directamente en la tabla.</p></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s7" data-val="1" onchange="recalc()"><div class="item-text"><strong>Cuentas bancarias y extractos</strong></div><span class="status-badge s-done">Implementado</span></div>
       </div>
     </div>
@@ -354,6 +356,21 @@
       </div>
     </div>
 
+    <!-- S13 — Correcciones críticas -->
+    <div class="section" data-section="s13">
+      <div class="section-header" onclick="toggleSection('s13')">
+        <h3>13. Correcciones y estabilización (2026-05-18)</h3>
+        <span class="section-pct" id="pct-s13">—</span>
+        <span class="chevron">›</span>
+      </div>
+      <div class="section-bar"><div class="section-bar-fill" id="bar-s13" style="background:var(--success)"></div></div>
+      <div class="section-body">
+        <div class="item"><input type="checkbox" data-sec="s13" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Fix: SalesBill status values — alineación dominio ↔ handlers ↔ frontend</strong><p class="note">El dominio usaba valores en inglés ("Draft"/"Validated"/"Authorized") pero los handlers y el frontend esperaban español ("Borrador"/"Validado"/"Autorizado"). El flujo completo de facturación estaba silenciosamente roto. Corregido en SalesBill.cs con valores canónicos en español.</p></div><span class="status-badge s-done">Corregido</span></div>
+        <div class="item"><input type="checkbox" data-sec="s13" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Fix: migraciones manuales causaban PendingModelChangesWarning al arrancar</strong><p class="note">4 stubs de migración creados manualmente (sin Designer.cs ni snapshot actualizado) bloqueaban el arranque de la API con InvalidOperationException. Eliminados y reemplazados por migración real AddSalesBillFields generada con dotnet ef migrations add. Aplicada a PostgreSQL.</p></div><span class="status-badge s-done">Corregido</span></div>
+        <div class="item"><input type="checkbox" data-sec="s13" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Fix: items de configuración SRI/RIDE no aparecían en el menú</strong><p class="note">Las rutas /configuracion/sri, /configuracion/facturacion y /configuracion/empresa existían en el frontend pero no en ui_nav_items (fallback global del menú). NavigationMenuConfiguracionBootstrap ahora inserta los 3 items con ON CONFLICT DO NOTHING de forma idempotente al arrancar. Para tenants con plan-menu configurado: agregar desde SuperAdmin → Planes → Menu Builder.</p></div><span class="status-badge s-done">Corregido</span></div>
+      </div>
+    </div>
+
   </div><!-- /sections -->
 
   <!-- ══ RIESGOS ══ -->
@@ -376,7 +393,7 @@
   </div>
 
   <div class="footer">
-    ERP SaaS — ZH Technologies · Actualizado: <span id="footer-date">2026-05-17 (v6)</span> ·
+    ERP SaaS — ZH Technologies · Actualizado: <span id="footer-date">2026-05-18 (v7)</span> ·
     <em>Regla: al completar cualquier tarea, marcar el ítem y actualizar la fecha en este archivo.</em>
   </div>
 
