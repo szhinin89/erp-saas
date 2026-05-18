@@ -4,7 +4,7 @@
 
 ---
 
-## Documentación (5 archivos, sin solapamiento)
+## Documentación (6 archivos, sin solapamiento)
 
 | Qué necesito saber | Archivo |
 |--------------------|---------|
@@ -12,7 +12,10 @@
 | **Reglas y convenciones** de código, patrones obligatorios, CSS, i18n, SaaS | **`CLAUDE.md`** (raíz) |
 | **Arquitectura** del sistema — capas, stack, multi-tenant, auth, SuperAdmin, ADRs | **`docs/ARCHITECTURE.md`** |
 | **Estado de desarrollo** — qué está hecho, pendientes MVP, flujos de estado, tests | **`docs/STATUS.md`** |
+| **Checklist de avance** — ítems por sección, % y próximas acciones | **`PROGRESS.html`** (raíz) |
 | **Funcionalidades** — todas las pantallas, módulos backend, endpoints, permisos | **`docs/FEATURES.md`** |
+
+> Al actualizar **`PROGRESS.html`** o **`docs/STATUS.md`**, sincronizar también `PROJECT.md`, `FEATURES.md`, `CONTEXT.md` y `README.md` según `.cursor/rules/docs-progress-status-sync.mdc`.
 
 ---
 
@@ -23,9 +26,10 @@ erp-saas/
 ├── CLAUDE.md                          ← reglas del proyecto (leer siempre)
 ├── CONTEXT.md                         ← este índice
 ├── docker-compose.yml                 ← PostgreSQL (5435) + Redis (6379)
+├── PROGRESS.html                      ← checklist de avance (detalle por ítem)
 ├── docs/
 │   ├── ARCHITECTURE.md               ← arquitectura completa
-│   ├── STATUS.md                     ← estado de desarrollo
+│   ├── STATUS.md                     ← estado de desarrollo consolidado
 │   ├── FEATURES.md                   ← funcionalidades y endpoints
 │   └── adr/                          ← decisiones de arquitectura (referencia histórica)
 ├── .cursor/rules/                     ← reglas para Cursor IDE
@@ -64,6 +68,7 @@ cd ../../frontend && npm run dev                      # http://localhost:5173
 
 1. Leer **`CLAUDE.md`** antes de implementar cualquier cosa.
 2. Para contexto arquitectónico → **`docs/ARCHITECTURE.md`**.
-3. Para saber qué está hecho y qué falta → **`docs/STATUS.md`**.
+3. Para saber qué está hecho y qué falta → **`docs/STATUS.md`** (+ detalle en **`PROGRESS.html`**).
 4. Para rutas, endpoints o permisos → **`docs/FEATURES.md`**.
-5. Nunca generar código sin haber verificado si el archivo ya existe.
+5. Si actualizas avance → regla **`docs-progress-status-sync.mdc`** (sincronizar todos los docs involucrados).
+6. Nunca generar código sin haber verificado si el archivo ya existe.

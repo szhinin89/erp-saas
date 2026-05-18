@@ -53,7 +53,7 @@ El producto está segmentado por plan comercial:
 
 ## Diferenciadores clave
 
-- **Integración nativa SRI Ecuador** — facturación electrónica con esquema offline y (en roadmap) WSDL real con firma P12.
+- **Integración nativa SRI Ecuador** — XML v1.1.0, firma XAdES-BES (P12), envío SOAP offline y RIDE PDF; switch simulado/real vía `Sri:UseRealService` (validación en ambiente SRI de pruebas pendiente).
 - **Multi-idioma desde el inicio** — español, inglés y **Kichwa de Cañar** (`qu`), alineado con la diversidad cultural ecuatoriana.
 - **Arquitectura extractable** — monolito modular con Clean Architecture; cada módulo puede convertirse en microservicio sin reescribir el dominio.
 - **Control granular de acceso** — permisos por módulo, recurso y acción (`perm:modulo.recurso.accion`); menú dinámico configurable por empresa desde el panel SuperAdmin.
@@ -62,20 +62,30 @@ El producto está segmentado por plan comercial:
 
 ## Alcance actual (MVP)
 
+> Avance estimado: **~85–90 %** hacia MVP comercial (actualizado 2026-05-18). Detalle técnico en `docs/STATUS.md` y checklist en `PROGRESS.html`.
+
 | Módulo | Estado |
 |--------|--------|
 | Autenticación multi-empresa + SuperAdmin | ✅ |
-| Catálogo de productos, clientes, proveedores | ✅ |
-| Inventario (stock, ajustes, transferencias, bodegas) | ✅ |
-| Órdenes de compra + facturas de compra | ✅ |
-| Ventas — facturación electrónica SRI (simulada) | ✅ backend / 🚧 frontend |
-| Contabilidad (plan de cuentas, asientos, config por empresa) | ✅ |
-| Caja / bancos | ✅ |
-| Panel SuperAdmin (planes, menú, empresas) | ✅ |
+| Catálogo de productos, clientes, proveedores, transportistas | ✅ |
+| Inventario (stock, ajustes, transferencias, bodegas, kardex backend) | ✅ backend / 🟡 UI kardex pendiente |
+| Órdenes de compra + facturas de compra + gastos | ✅ backend + frontend |
+| Ventas — facturas, notas crédito/débito, RIDE, reintento SRI | ✅ backend + frontend |
+| Integración SRI real (XML, firma P12, SOAP, polling) | ✅ código / 🟡 falta validar en celcer.sri.gob.ec |
+| Contabilidad (plan de cuentas, diario, mayor, balance, asientos automáticos) | ✅ |
+| Config SRI y RIDE (certificado, WSDL, logo, tirilla) | ✅ |
+| Caja / bancos | ✅ backend / 🟡 UI pendiente |
+| Panel SuperAdmin (planes, menú, empresas, onboarding tenant) | ✅ |
+| Retenciones, guía de remisión, liquidación compra (tipo 03) | ⏳ Parcial o pendiente |
 
 **Pendiente para MVP comercial:**
-- WSDL real SRI (firma P12 + envío + polling)
-- Pantallas frontend de facturación y compras/gastos
+
+| Prioridad | Item |
+|-----------|------|
+| Crítico | Validar facturación real contra ambiente de pruebas SRI (XSD + certificado P12) |
+| Alta | Frontend de retenciones emitidas/recibidas; menú por plan en Menu Builder |
+| Alta | Reparar suite de tests tras refactor a convención inglés |
+| Media | Guía de remisión, liquidación de compra, UI kardex/stock, alertas stock mínimo |
 
 ---
 
@@ -87,3 +97,6 @@ El producto está segmentado por plan comercial:
 | `docs/ARCHITECTURE.md` | Arquitectura del sistema |
 | `docs/STATUS.md` | Estado de desarrollo detallado |
 | `docs/FEATURES.md` | Funcionalidades, pantallas y endpoints |
+| `PROGRESS.html` | Checklist de avance por sección |
+| `.cursor/rules/docs-progress-status-sync.mdc` | Sincronizar docs al cambiar avance |
+| `PROGRESS.html` | Checklist de avance por sección (porcentajes) |

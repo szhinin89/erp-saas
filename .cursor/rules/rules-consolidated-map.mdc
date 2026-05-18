@@ -21,6 +21,7 @@ Usar este orden de precedencia cuando varias reglas apliquen al mismo cambio:
 - Frontend dialogs estandar (sin prompt/confirm nativos): `frontend-no-native-dialogs.mdc`
 - Navegacion SaaS sin IDs en URL: `saas-navigation-no-sensitive-url.mdc`
 - Stack permitido y fuente de verdad de herramientas: `stack-tools-source-of-truth.mdc`
+- Sincronizacion docs de avance (PROGRESS + STATUS): `docs-progress-status-sync.mdc`
 
 ## Nota de mantenimiento
 

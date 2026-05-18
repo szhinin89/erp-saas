@@ -4,11 +4,12 @@ Reglas de implementación. Para arquitectura → `docs/ARCHITECTURE.md`. Para es
 
 ## ⚡ Regla obligatoria al terminar cualquier tarea
 
-**Al completar un proceso o funcionalidad, SIEMPRE actualizar `PROGRESS.html`:**
-1. Marcar el ítem correspondiente como completado (checkbox).
-2. Actualizar la fecha `last-updated` en el HTML.
-3. Si el ítem era "Parcial", cambiar su `data-val` a `"1"` y la clase del badge a `s-done`.
-4. Abrir el archivo en el navegador para verificar que el porcentaje general suba correctamente.
+**Al completar un proceso o funcionalidad, actualizar la documentación de avance** (regla completa: `.cursor/rules/docs-progress-status-sync.mdc`):
+
+1. **`PROGRESS.html`:** marcar ítem, actualizar `#last-updated`, badge y `data-val` si aplica.
+2. **`docs/STATUS.md`:** resumen, tablas de módulos, pendientes MVP, tests y fecha.
+3. **Propagar** a `PROJECT.md`, `docs/FEATURES.md`, `CONTEXT.md` y `README.md` si cambió alcance, rutas, endpoints o permisos.
+4. Verificar coherencia (mismo % MVP, mismos pendientes, mismas fechas).
 
 ---
 

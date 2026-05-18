@@ -21,8 +21,11 @@ cd frontend && npm run dev                            # http://localhost:5173
 | [**CLAUDE.md**](./CLAUDE.md) | Reglas y convenciones del proyecto (leer siempre primero) |
 | [**docs/ARCHITECTURE.md**](./docs/ARCHITECTURE.md) | Arquitectura completa — capas, multi-tenant, auth, SuperAdmin, SaaS, ADRs |
 | [**docs/STATUS.md**](./docs/STATUS.md) | Estado de desarrollo — qué está hecho, pendientes MVP, tests |
+| [**PROGRESS.html**](./PROGRESS.html) | Checklist de avance por sección (% y próximas acciones) |
 | [**docs/FEATURES.md**](./docs/FEATURES.md) | Funcionalidades — pantallas, módulos, endpoints, permisos |
 | [**CONTEXT.md**](./CONTEXT.md) | Índice maestro y árbol del monorepo |
+
+> Al editar `STATUS.md` o `PROGRESS.html`, actualizar también `PROJECT.md`, `FEATURES.md`, `CONTEXT.md` y este README (regla `.cursor/rules/docs-progress-status-sync.mdc`).
 
 ## CI
 
