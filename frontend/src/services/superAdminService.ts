@@ -274,7 +274,7 @@ export const superAdminService = {
 
   createTenantWithAdmin: (body: CreateTenantWithAdminBody) =>
     api
-      .post<ApiResponse<SessionResponse>>('/api/access/superadmin/tenants', body)
+      .post<ApiResponse<SessionResponse>>('/api/admin/iam/superadmin/tenants', body)
       .then((r) => r.data.responseObject),
 
   updateTenantSubscription: (tenantId: string, body: UpdateTenantSubscriptionBody) =>

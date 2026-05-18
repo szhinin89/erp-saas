@@ -11,19 +11,19 @@ import type {
 
 export const accessService = {
   async bootstrapLogin(req: BootstrapLoginRequest) {
-    const { data } = await api.post<ApiResponse<BootstrapLoginResponse>>('/api/access/bootstrap-login', req);
+    const { data } = await api.post<ApiResponse<BootstrapLoginResponse>>('/api/admin/iam/bootstrap-login', req);
     return data.responseObject;
   },
 
   async switchTenant(bootstrapToken: string, req: SwitchTenantRequest) {
-    const { data } = await api.post<ApiResponse<SessionResponse>>('/api/access/switch-tenant', req, {
+    const { data } = await api.post<ApiResponse<SessionResponse>>('/api/admin/iam/switch-tenant', req, {
       headers: { Authorization: `Bearer ${bootstrapToken}` },
     });
     return data.responseObject;
   },
 
   async getMyPermissions() {
-    const { data } = await api.get<ApiResponse<MyPermissionsResponse>>('/api/access/me/permissions');
+    const { data } = await api.get<ApiResponse<MyPermissionsResponse>>('/api/admin/iam/me/permissions');
     return data.responseObject;
   },
 

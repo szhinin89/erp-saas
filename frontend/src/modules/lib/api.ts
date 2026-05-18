@@ -99,9 +99,9 @@ const PUBLIC_AUTH_PATHS = [
   '/api/auth/forgot-password',
   '/api/auth/reset-password',
   '/api/auth/refresh',          // evitar loop infinito
-  '/api/access/bootstrap-login',
-  '/api/access/switch-tenant',
-  '/api/access/register-tenant',
+  '/api/admin/iam/bootstrap-login',
+  '/api/admin/iam/switch-tenant',
+  '/api/admin/iam/register-tenant',
 ];
 
 api.interceptors.response.use(

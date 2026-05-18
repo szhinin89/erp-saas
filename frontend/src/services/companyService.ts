@@ -108,7 +108,7 @@ export type TenantDetailDto = {
 
 export const companyService = {
   list: () =>
-    api.get<ApiResponse<{ tenants?: CompanyItem[] } | CompanyItem[]>>('/api/access/superadmin/tenants')
+    api.get<ApiResponse<{ tenants?: CompanyItem[] } | CompanyItem[]>>('/api/admin/iam/superadmin/tenants')
       .then((r) => {
         const responseObject = r.data.responseObject;
         if (Array.isArray(responseObject)) {
@@ -130,7 +130,7 @@ export const companyService = {
       }),
 
   create: (req: CreateCompanyWithAdminRequest) =>
-    api.post<ApiResponse<SessionResponse>>('/api/access/superadmin/tenants', req).then((r) => r.data.responseObject),
+    api.post<ApiResponse<SessionResponse>>('/api/admin/iam/superadmin/tenants', req).then((r) => r.data.responseObject),
 
   updateTenantCompany: (tenantId: string, body: UpdateTenantCompanyBody) =>
     api

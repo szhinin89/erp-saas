@@ -10,15 +10,15 @@ export type Profile = {
 
 export const profileService = {
   list: (onlyActive = true) =>
-    api.get<ApiResponse<Profile[]>>('/api/access/profiles', { params: { onlyActive } })
+    api.get<ApiResponse<Profile[]>>('/api/admin/iam/profiles', { params: { onlyActive } })
       .then((r) => r.data.responseObject),
 
   create: (name: string, description?: string | null) =>
-    api.post<ApiResponse<Profile>>('/api/access/profiles', { name, description: description ?? null })
+    api.post<ApiResponse<Profile>>('/api/admin/iam/profiles', { name, description: description ?? null })
       .then((r) => r.data.responseObject),
 
   update: (p: Profile) =>
-    api.put<ApiResponse<Profile>>(`/api/access/profiles/${p.id}`, {
+    api.put<ApiResponse<Profile>>(`/api/admin/iam/profiles/${p.id}`, {
       profileId: p.id,
       name: p.name,
       description: p.description,
@@ -27,11 +27,11 @@ export const profileService = {
 
   getPermissions: (profileId: string) =>
     api.get<ApiResponse<{ profileId: string; items: { permissionKey: string; isAllowed: boolean }[] }>>(
-      `/api/access/profiles/${profileId}/permissions`
+      `/api/admin/iam/profiles/${profileId}/permissions`
     ).then((r) => r.data.responseObject),
 
   upsertPermissions: (profileId: string, items: { permissionKey: string; isAllowed: boolean }[]) =>
-    api.put<ApiResponse<object>>(`/api/access/profiles/${profileId}/permissions`, {
+    api.put<ApiResponse<object>>(`/api/admin/iam/profiles/${profileId}/permissions`, {
       profileId,
       items,
     }).then((r) => r.data.responseObject),

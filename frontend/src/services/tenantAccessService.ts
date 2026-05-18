@@ -21,15 +21,15 @@ export type TenantUpsertMembershipRequest = {
 
 export const tenantAccessService = {
   listMemberships: (onlyActive = true) =>
-    api.get<ApiResponse<TenantMembershipItem[]>>('/api/access/tenant/memberships', { params: { onlyActive } })
+    api.get<ApiResponse<TenantMembershipItem[]>>('/api/admin/iam/tenant/memberships', { params: { onlyActive } })
       .then((r) => r.data.responseObject),
 
   upsertMembership: (req: TenantUpsertMembershipRequest) =>
-    api.post<ApiResponse<object>>('/api/access/tenant/memberships', req)
+    api.post<ApiResponse<object>>('/api/admin/iam/tenant/memberships', req)
       .then((r) => r.data.responseObject),
 
   revokeMembership: (email: string) =>
-    api.post<ApiResponse<object>>('/api/access/tenant/memberships/revoke', { email })
+    api.post<ApiResponse<object>>('/api/admin/iam/tenant/memberships/revoke', { email })
       .then((r) => r.data.responseObject),
 };
 
