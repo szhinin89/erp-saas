@@ -17,45 +17,12 @@ public static class NavigationMenuConfiguracionBootstrap
         """
         UPDATE ui_nav_groups SET is_active = true WHERE code = 'settings';
 
-        UPDATE ui_nav_items
-        SET group_id = (SELECT "Id" FROM ui_nav_groups WHERE code = 'settings' LIMIT 1),
-            roles_csv = CASE
-                WHEN route_path = '/settings/branches' THEN 'Admin,SuperAdmin'
-                WHEN route_path = '/admin/roles'       THEN NULL
-                WHEN route_path = '/admin/users'       THEN NULL
-                ELSE roles_csv
-            END,
-            permission_key = CASE
-                WHEN route_path = '/admin/roles'  THEN 'admin.roles.view'
-                WHEN route_path = '/admin/users'  THEN 'admin.users.view'
-                ELSE permission_key
-            END
-        WHERE route_path IN ('/settings/branches', '/admin/roles', '/admin/users')
-          AND EXISTS (SELECT 1 FROM ui_nav_groups WHERE code = 'settings')
-          AND group_id IS DISTINCT FROM (SELECT "Id" FROM ui_nav_groups WHERE code = 'settings' LIMIT 1);
-
-        UPDATE ui_nav_items SET sort_order = 0
-        WHERE route_path = '/admin/users'
-          AND group_id = (SELECT "Id" FROM ui_nav_groups WHERE code = 'settings' LIMIT 1);
-        UPDATE ui_nav_items SET sort_order = 1
-        WHERE route_path = '/settings/branches'
-          AND group_id = (SELECT "Id" FROM ui_nav_groups WHERE code = 'settings' LIMIT 1);
-        UPDATE ui_nav_items SET sort_order = 2
-        WHERE route_path = '/admin/roles'
-          AND group_id = (SELECT "Id" FROM ui_nav_groups WHERE code = 'settings' LIMIT 1);
-
-        -- Ítems de configuración (idempotente: UPDATE si existe, INSERT si no)
+        -- Garantiza los 3 ítems de configuración con IDs fijos (idempotente).
+        -- sort_order alineado a la convención 10/20/30 del script 003.
         INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
-        SELECT
-            '00000000-0000-4000-8000-000000000101',
-            g."Id",
-            '/settings/company',
-            'app.nav.item.settings.company',
-            'Datos de Empresa',
-            10,
-            'settings',
-            'settings.company.view',
-            true
+        SELECT '00000000-0000-4000-8000-000000000101', g."Id",
+               '/settings/company', 'app.nav.item.settings.company', 'Datos de Empresa',
+               10, 'settings', 'settings.company.view', true
         FROM ui_nav_groups g WHERE g.code = 'settings'
         ON CONFLICT ("Id") DO UPDATE SET
             route_path     = '/settings/company',
@@ -63,16 +30,9 @@ public static class NavigationMenuConfiguracionBootstrap
             module_key     = 'settings';
 
         INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
-        SELECT
-            '00000000-0000-4000-8000-000000000102',
-            g."Id",
-            '/settings/sri',
-            'app.nav.item.settings.sri',
-            'Configuración SRI',
-            11,
-            'settings',
-            'settings.sri.view',
-            true
+        SELECT '00000000-0000-4000-8000-000000000102', g."Id",
+               '/settings/sri', 'app.nav.item.settings.sri', 'Configuración SRI',
+               20, 'settings', 'settings.sri.view', true
         FROM ui_nav_groups g WHERE g.code = 'settings'
         ON CONFLICT ("Id") DO UPDATE SET
             route_path     = '/settings/sri',
@@ -80,45 +40,14 @@ public static class NavigationMenuConfiguracionBootstrap
             module_key     = 'settings';
 
         INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
-        SELECT
-            '00000000-0000-4000-8000-000000000103',
-            g."Id",
-            '/settings/ride',
-            'app.nav.item.settings.ride',
-            'Configuración RIDE',
-            12,
-            'settings',
-            'settings.ride.view',
-            true
+        SELECT '00000000-0000-4000-8000-000000000103', g."Id",
+               '/settings/ride', 'app.nav.item.settings.ride', 'Configuración RIDE',
+               30, 'settings', 'settings.ride.view', true
         FROM ui_nav_groups g WHERE g.code = 'settings'
         ON CONFLICT ("Id") DO UPDATE SET
             route_path     = '/settings/ride',
             permission_key = 'settings.ride.view',
             module_key     = 'settings';
-
-        DO $$
-        DECLARE
-          inv_so integer;
-          conf_so integer;
-        BEGIN
-          SELECT sort_order INTO inv_so FROM ui_nav_groups WHERE code = 'inventory' LIMIT 1;
-          SELECT sort_order INTO conf_so FROM ui_nav_groups WHERE code = 'settings'  LIMIT 1;
-          IF inv_so IS NULL OR conf_so IS NULL THEN
-            RETURN;
-          END IF;
-          IF conf_so = inv_so + 1 THEN
-            RETURN;
-          END IF;
-
-          UPDATE ui_nav_groups
-          SET sort_order = sort_order + 1
-          WHERE sort_order > inv_so
-            AND code <> 'settings';
-
-          UPDATE ui_nav_groups
-          SET sort_order = inv_so + 1
-          WHERE code = 'settings';
-        END $$;
         """;
 
     // ── JSON de la carpeta "Configuración" que se inyecta en cada plan ──────────────
@@ -203,6 +132,10 @@ public static class NavigationMenuConfiguracionBootstrap
 
             groups = root as JsonArray ?? new JsonArray();
 
+            // Si el plan ya contiene /settings/company en cualquier grupo (estructura
+            // multi-grupo real), no inyectar la carpeta plan-custom de configuración.
+            if (AnyGroupContainsConfigRoute(groups)) continue;
+
             // Buscar o crear el grupo "plan-custom"
             JsonObject? customGroup = null;
             foreach (var g in groups)
@@ -223,7 +156,7 @@ public static class NavigationMenuConfiguracionBootstrap
             var items = customGroup["items"] as JsonArray ?? new JsonArray();
             customGroup["items"] = items;
 
-            // ¿Ya existe la carpeta de configuración?
+            // ¿Ya existe la carpeta de configuración dentro de plan-custom?
             if (HasConfigFolder(items)) continue;
 
             // Eliminar ítems sueltos de configuración para evitar duplicados
@@ -251,6 +184,31 @@ public static class NavigationMenuConfiguracionBootstrap
         }
 
         if (changed) await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// Devuelve true si CUALQUIER grupo del plan ya contiene /settings/company
+    /// (directamente o como hijo de carpeta). Usado para detectar planes con
+    /// estructura multi-grupo real que no deben recibir la carpeta plan-custom.
+    /// </summary>
+    private static bool AnyGroupContainsConfigRoute(JsonArray topLevelGroups)
+    {
+        foreach (var g in topLevelGroups)
+        {
+            if (g is not JsonObject go) continue;
+            var groupItems = go["items"] as JsonArray ?? new JsonArray();
+            if (HasConfigFolder(groupItems)) return true;
+            foreach (var item in groupItems)
+            {
+                if (item is JsonObject io)
+                {
+                    var route = io["routePath"]?.GetValue<string>() ?? "";
+                    if (route == "/settings/company" || route == "/configuracion/empresa")
+                        return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static bool HasConfigFolder(JsonArray items)
