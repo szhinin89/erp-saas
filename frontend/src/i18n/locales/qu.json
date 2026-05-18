@@ -1015,6 +1015,17 @@
   "ventas.facturas.col.total": "Tukuy",
   "ventas.facturas.col.actions": "Ruwanakuna",
 
+  "ventas.notas.title": "Ashtawan / pisiyachiy qillqakuna",
+  "ventas.notas.new": "Muskuy qillqa",
+  "ventas.notas.typeCredit": "Ashtawan qillqa",
+  "ventas.notas.typeDebit": "Pisiyachiy qillqa",
+  "ventas.notas.send": "SRI-man kachay",
+  "ventas.notas.form.title": "Muskuy ashtawan / pisiyachiy qillqa",
+  "ventas.notas.form.invoice": "Ñawpa qillqa (rurasqa)",
+  "ventas.notas.form.noteType": "Qillqa klasi",
+  "ventas.notas.form.reason": "Ima nishpa",
+  "ventas.notas.form.items": "Mirachiy qillqakuna",
+
   "customers.title": "Rantikuna",
   "customers.tabList": "Rantikunata qhaway",
   "customers.primaryCreate": "Ranti ruray",

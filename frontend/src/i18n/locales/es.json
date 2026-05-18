@@ -1017,6 +1017,17 @@
   "ventas.facturas.col.total": "Total",
   "ventas.facturas.col.actions": "Acciones",
 
+  "ventas.notas.title": "Notas de crédito / débito",
+  "ventas.notas.new": "Nueva nota",
+  "ventas.notas.typeCredit": "Nota de crédito",
+  "ventas.notas.typeDebit": "Nota de débito",
+  "ventas.notas.send": "Enviar SRI",
+  "ventas.notas.form.title": "Nueva nota de crédito / débito",
+  "ventas.notas.form.invoice": "Factura original (autorizada)",
+  "ventas.notas.form.noteType": "Tipo de nota",
+  "ventas.notas.form.reason": "Motivo",
+  "ventas.notas.form.items": "Detalle de ítems",
+
   "customers.title": "Clientes",
   "customers.tabList": "Ver clientes",
   "customers.primaryCreate": "Crear cliente",

@@ -18,6 +18,8 @@ import { OrdenCompraDetailPage }  from '../modules/compras/ordenes/pages/OrdenCo
 import { TenantFeaturePlaceholderPage } from '../pages/TenantFeaturePlaceholderPage';
 import { BodegasPage } from '../pages/BodegasPage';
 import { CarriersPage } from '../modules/logistica/transportistas/pages/CarriersPage';
+import { CreditNotesPage }       from '../modules/ventas/pages/CreditNotesPage';
+import { CreateCreditNotePage }  from '../modules/ventas/pages/CreateCreditNotePage';
 
 export const catalogRoutes = [
   // ── Purchases / Órdenes de Compra ─────────────────────────────────────────
@@ -85,7 +87,8 @@ export const catalogRoutes = [
   <Route key="caja-root"  path="/caja"       element={<Navigate to="/cash/bank" replace />} />,
 
   // ── Sales (rutas secundarias) ──────────────────────────────────────────────
-  <Route key="sales-credit-notes"       path="/sales/credit-notes"           element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="sales-credit-notes"        path="/sales/credit-notes"           element={<CreditNotesPage />} />,
+  <Route key="sales-credit-notes-new"   path="/sales/credit-notes/new"        element={<CreateCreditNotePage />} />,
   <Route key="sales-withholding-received" path="/sales/withholding-received"  element={<TenantFeaturePlaceholderPage />} />,
   <Route key="ventas-notas-legacy"      path="/ventas/notas"                  element={<Navigate to="/sales/credit-notes" replace />} />,
   <Route key="ventas-ret-rec-legacy"    path="/ventas/retenciones-recibidas"  element={<Navigate to="/sales/withholding-received" replace />} />,

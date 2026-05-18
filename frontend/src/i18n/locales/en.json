@@ -992,6 +992,17 @@
   "ventas.facturas.col.total": "Total",
   "ventas.facturas.col.actions": "Actions",
 
+  "ventas.notas.title": "Credit / debit notes",
+  "ventas.notas.new": "New note",
+  "ventas.notas.typeCredit": "Credit note",
+  "ventas.notas.typeDebit": "Debit note",
+  "ventas.notas.send": "Send to SRI",
+  "ventas.notas.form.title": "New credit / debit note",
+  "ventas.notas.form.invoice": "Original invoice (authorized)",
+  "ventas.notas.form.noteType": "Note type",
+  "ventas.notas.form.reason": "Reason",
+  "ventas.notas.form.items": "Line items",
+
   "customers.title": "Customers",
   "customers.tabList": "View customers",
   "customers.primaryCreate": "Create customer",

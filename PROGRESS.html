@@ -107,7 +107,7 @@
   <div class="header">
     <div class="header-title">
       <h1>ERP SaaS — Estado de Avance</h1>
-      <p>ZH Technologies · Revisión: <span id="last-updated">2026-05-18 (v7)</span></p>
+      <p>ZH Technologies · Revisión: <span id="last-updated">2026-05-18 (v8)</span></p>
       <div class="global-bar"><div class="global-bar-fill" id="global-bar-fill"></div></div>
     </div>
     <div class="header-kpi">
@@ -194,8 +194,8 @@
       <div class="section-bar"><div class="section-bar-fill" id="bar-s3" style="background:var(--error)"></div></div>
       <div class="section-body">
         <div class="item"><input type="checkbox" data-sec="s3" data-val="1" onchange="recalc()"><div class="item-text"><strong>Pantalla de emisión de factura de venta</strong><p class="note">CreateInvoicePage: cabecera (cliente, bodega, fecha, moneda), líneas dinámicas, IVA 15%, descuentos, totales. Flujo: borrador → validar → emitir. Falta integración SRI real (XML/firma).</p></div><span class="status-badge s-done">Implementado</span></div>
-        <div class="item"><input type="checkbox" data-sec="s3" data-val="0" onchange="recalc()"><div class="item-text"><strong>Pantalla de emisión de nota de crédito</strong><p class="note">Backend OK. Sin frontend.</p></div><span class="status-badge s-pending">Pendiente</span></div>
-        <div class="item"><input type="checkbox" data-sec="s3" data-val="0" onchange="recalc()"><div class="item-text"><strong>Pantalla de emisión de nota de débito</strong><p class="note">Backend OK. Sin frontend.</p></div><span class="status-badge s-pending">Pendiente</span></div>
+        <div class="item"><input type="checkbox" checked data-sec="s3" data-val="1" onchange="recalc()"><div class="item-text"><strong>Pantalla de emisión de nota de crédito</strong><p class="note">CreditNotesPage (lista) + CreateCreditNotePage (form). Ruta /sales/credit-notes y /sales/credit-notes/new. Envío a SRI desde lista.</p></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" checked data-sec="s3" data-val="1" onchange="recalc()"><div class="item-text"><strong>Pantalla de emisión de nota de débito</strong><p class="note">Incluida en CreateCreditNotePage con selector CREDITO/DEBITO. Mismo flujo.</p></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s3" data-val="0" onchange="recalc()"><div class="item-text"><strong>Pantalla de emisión de guía de remisión</strong><p class="note">Entidad DeliveryGuide existe. Sin frontend.</p></div><span class="status-badge s-pending">Pendiente</span></div>
         <div class="item"><input type="checkbox" data-sec="s3" data-val="0" onchange="recalc()"><div class="item-text"><strong>Pantalla de emisión de comprobante de retención</strong><p class="note">Backend OK. Sin frontend.</p></div><span class="status-badge s-pending">Pendiente</span></div>
         <div class="item"><input type="checkbox" data-sec="s3" data-val="0" onchange="recalc()"><div class="item-text"><strong>Pantalla de emisión de liquidación de compra (tipo 03)</strong><p class="note">No hay entidad ni backend aún.</p></div><span class="status-badge s-pending">Pendiente</span></div>
