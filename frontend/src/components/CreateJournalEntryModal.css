@@ -1,1 +1,78 @@
-/* estilos pendientes */
+/* CreateJournalEntryModal — líneas de asiento contable */
+
+/* Grid de líneas de asiento */
+.je-lines {
+  margin: var(--space-3) 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.je-lines-header,
+.je-line {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 80px 32px;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+}
+
+.je-lines-header {
+  background: var(--color-surface-raised);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.je-line {
+  border-bottom: 1px solid var(--color-border-light, var(--color-border));
+}
+.je-line:last-of-type { border-bottom: none; }
+
+.je-line-account { display: flex; flex-direction: column; gap: 2px; }
+.je-line-account select { width: 100%; }
+
+.je-currency { width: 100%; }
+
+/* Botón quitar línea */
+.je-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+.je-remove:hover:not(:disabled) { background: var(--color-error-bg, #fef2f2); color: var(--color-error); border-color: var(--color-error); }
+.je-remove:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Botón agregar línea */
+.je-add-line { margin: var(--space-2) var(--space-3); }
+
+/* Fila de totales */
+.je-totals {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 80px 32px;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface-raised);
+  border-top: 2px solid var(--color-border);
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+.je-balance-label {
+  grid-column: 4 / -1;
+  font-size: var(--text-xs, 0.72rem);
+  color: var(--color-success);
+}
+.je-totals--unbalanced .je-balance-label { color: var(--color-error); }

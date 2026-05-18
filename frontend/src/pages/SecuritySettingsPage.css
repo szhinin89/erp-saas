@@ -1,1 +1,32 @@
-/* estilos pendientes */
+/* SecuritySettingsPage — tabla de permisos por usuario */
+.security-scroll { overflow-x: auto; }
+
+.security-table {
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  min-width: 600px;
+}
+.security-table th,
+.security-table td {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  text-align: center;
+}
+.security-table th { background: var(--color-surface-raised); font-weight: 600; }
+
+.security-table .sticky-col {
+  position: sticky;
+  left: 0;
+  background: var(--color-surface);
+  text-align: left;
+  min-width: 160px;
+  z-index: 1;
+}
+.security-table th.sticky-col { background: var(--color-surface-raised); }
+
+.userCell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+}

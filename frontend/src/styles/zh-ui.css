@@ -70,6 +70,15 @@ a:hover { text-decoration: underline; }
   font-size: 12px;
   color: var(--color-text-secondary);
 }
+.subtle {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* ── 2. BOTONES ───────────────────────────────────────────── */
 .zh-btn {

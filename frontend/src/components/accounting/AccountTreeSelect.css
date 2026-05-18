@@ -1,1 +1,115 @@
-/* estilos pendientes */
+/* AccountTreeSelect — selector de árbol de cuentas contables */
+
+.ats { position: relative; width: 100%; }
+
+/* Botón trigger */
+.ats__control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-body-md-size);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  min-height: 38px;
+  line-height: 1.4;
+}
+.ats__control:hover:not(:disabled) { border-color: var(--color-primary); }
+.ats__control:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+.ats__control:disabled { opacity: 0.55; cursor: not-allowed; background: var(--color-surface-raised); }
+
+.ats__value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ats__value:empty::before {
+  content: 'Seleccionar';
+  color: var(--color-text-tertiary, #aaa);
+}
+
+/* Flecha */
+.ats__chev {
+  flex-shrink: 0;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--color-text-secondary);
+  transition: transform 0.15s;
+}
+.ats__control[aria-expanded="true"] .ats__chev { transform: rotate(180deg); }
+
+/* Popup */
+.ats__popup {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  overflow: hidden;
+}
+
+.ats__searchRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-border-light, var(--color-border));
+}
+
+.ats__search {
+  flex: 1;
+  padding: 6px var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+}
+.ats__search:focus { outline: none; border-color: var(--color-primary); }
+
+/* Lista */
+.ats__list { max-height: 280px; overflow-y: auto; }
+
+.ats__empty {
+  padding: var(--space-4);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.ats__opt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  padding: 7px var(--space-3);
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  transition: background 0.1s;
+}
+.ats__opt:hover:not(:disabled) { background: var(--color-surface-raised); }
+.ats__opt.is-selected { background: color-mix(in srgb, var(--color-primary) 10%, transparent); color: var(--color-primary); font-weight: 600; }
+.ats__opt:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.ats__indent { display: inline-block; flex-shrink: 0; }
+.ats__optLabel { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ats__optMeta { flex-shrink: 0; font-size: 0.72rem; color: var(--color-text-secondary); font-style: italic; }
