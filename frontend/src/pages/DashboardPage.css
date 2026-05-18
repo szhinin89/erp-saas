@@ -73,14 +73,8 @@
 }
 @media (max-width: 1024px) { .dsh-body { grid-template-columns: 1fr; } }
 
-/* ── Activity card ───────────────────────────────────────── */
-.dsh-activity-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
+/* ── Activity card — estructura → .card.card--xl (zh-ui.css) ─ */
+/* .dsh-activity-card eliminado; usa .card.card--xl global      */
 
 .dsh-activity-head {
   display: flex;
@@ -125,24 +119,9 @@
   color: var(--color-primary);
 }
 
-/* ── Right column cards ──────────────────────────────────── */
+/* ── Right column cards — estructura → .card.card--xl (zh-ui.css) ── */
+/* .dsh-card, .dsh-card-head eliminados; usa .card.card--xl + .card-header globals */
 .dsh-right { display: flex; flex-direction: column; gap: var(--space-4); }
-
-.dsh-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.dsh-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-4) var(--space-5);
-  border-bottom: 1px solid var(--color-border);
-}
 
 .dsh-card-body {
   padding: var(--space-4);

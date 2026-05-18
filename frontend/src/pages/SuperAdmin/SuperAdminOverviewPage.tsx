@@ -193,10 +193,10 @@ export function SuperAdminOverviewPage() {
       ) : null}
 
       {/* ── Companies Table Card ── */}
-      <div className="sa-companies-card">
+      <div className="card">
 
         {/* Header */}
-        <div className="sa-companies-header">
+        <div className="card-header">
           <h4 className="sa-companies-title">Empresas Registradas</h4>
           <div className="sa-companies-actions">
             <button className="zh-btn zh-btn--ghost zh-btn--sm" type="button">

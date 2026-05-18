@@ -243,7 +243,7 @@ export function CatalogSimplePage({
 
         {tab === 'list' && (
           <>
-            <div className="catalog-simple-search-row">
+            <div className="pg-table-controls">
               <SearchBar
                 searchQuery={listQuery}
                 onSearch={setListQuery}
@@ -264,7 +264,7 @@ export function CatalogSimplePage({
             ) : listFiltered.length === 0 ? (
               <EmptyState message={t('common.listTab.noMatch')} />
             ) : (
-              <table className="table catalog-simple-responsive-table">
+              <table className="table">
                 <thead>
                   <tr>
                     <th>{t('common.code')}</th>

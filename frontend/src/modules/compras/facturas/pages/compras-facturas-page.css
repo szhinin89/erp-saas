@@ -18,3 +18,6 @@
 .cf-totals-row strong { min-width: 120px; text-align: right; }
 .cf-totals-row span { min-width: 100px; text-align: right; }
 .cf-total-final { font-size: var(--text-lg); font-weight: 700; color: var(--color-primary); }
+
+/* Nota: --text-sm/xs/lg, --color-surface-raised, --color-border-light
+   están definidos como aliases en design-tokens.css */

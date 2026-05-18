@@ -1905,7 +1905,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
               </ZHField>
             </ZHGridRow>
             <ZHGridRow cols={1}>
-              <label className="zh-inline-check menu-plan-composer__legacyInlineCheck">
+              <label className="zh-inline-check">
                 <input
                   type="checkbox"
                   checked={copyMenu}

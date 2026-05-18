@@ -73,23 +73,8 @@
 .sa-kpi-h-icon--secondary { background: var(--color-secondary-fixed); color: var(--color-secondary); }
 .sa-kpi-h-icon--tertiary  { background: var(--color-tertiary-fixed);  color: var(--color-tertiary); }
 
-/* ── Companies table card ────────────────────────────────── */
-.sa-companies-card {
-  background: var(--color-surface);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.sa-companies-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-4) var(--space-6);
-  border-bottom: 1px solid var(--color-border);
-}
+/* ── Companies table card — estructura → .card (zh-ui.css) ──── */
+/* .sa-companies-card, .sa-companies-header eliminados; usar .card + .card-header globals */
 
 .sa-companies-title {
   font-size: var(--text-headline-md-size);

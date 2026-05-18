@@ -116,7 +116,7 @@ export function DashboardPage() {
       <div className="dsh-body">
 
         {/* Activity table — usa .table global */}
-        <div className="dsh-activity-card">
+        <div className="card card--xl">
           <div className="dsh-activity-head">
             <h2 className="dsh-section-title">{t('dashboard.activity.title')}</h2>
             <button type="button" className="dsh-link-btn" onClick={() => navigate('/ventas/facturas')}>
@@ -155,8 +155,8 @@ export function DashboardPage() {
         <div className="dsh-right">
 
           {/* Quick access */}
-          <div className="dsh-card">
-            <div className="dsh-card-head">
+          <div className="card card--xl">
+            <div className="card-header">
               <h2 className="dsh-section-title">{t('dashboard.quickAccess.title')}</h2>
             </div>
             <div className="dsh-card-body">
@@ -185,8 +185,8 @@ export function DashboardPage() {
           </div>
 
           {/* Notifications */}
-          <div className="dsh-card">
-            <div className="dsh-card-head">
+          <div className="card card--xl">
+            <div className="card-header">
               <h2 className="dsh-section-title">{t('dashboard.notifications.title')}</h2>
               <span className="badge badge--blue">{DEMO_NOTIFICATIONS.length}</span>
             </div>

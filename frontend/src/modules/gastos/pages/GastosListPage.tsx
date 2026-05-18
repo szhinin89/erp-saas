@@ -216,7 +216,7 @@ export function GastosListPage() {
                   return (
                     <tr key={row.id}>
                       <td className="gst-col-date">{new Date(row.issueDate).toLocaleDateString('es')}</td>
-                      <td><span className="gst-cat-badge">{row.expenseCategory}</span></td>
+                      <td><span className="badge badge--gray">{row.expenseCategory}</span></td>
                       <td>{row.description}</td>
                       <td style={{ color: 'var(--color-text-secondary)' }}>{prov}</td>
                       <td>${row.subtotal.toFixed(2)}</td>

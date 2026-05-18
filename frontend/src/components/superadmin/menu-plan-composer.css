@@ -237,13 +237,7 @@
   margin: var(--space-4) 0 var(--space-2);
 }
 
-.menu-plan-composer__legacyInlineCheck {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  font-size: var(--text-body-md-size);
-  cursor: pointer;
-}
+/* .menu-plan-composer__legacyInlineCheck eliminado — usar .zh-inline-check (zh-ui.css) */
 
 .menu-plan-composer__legacySubtleHelp {
   font-size: var(--text-body-md-size);

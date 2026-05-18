@@ -26,7 +26,98 @@
 
 .userCell {
   display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.userName {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+}
+
+.userMeta {
+  display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-weight: 500;
+  flex-wrap: wrap;
+}
+
+/* .mono (global) handles font; .security-mono only overrides color */
+.security-mono {
+  color: var(--color-text-secondary);
+}
+
+.security-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+}
+
+.cell-center {
+  text-align: center !important;
+  vertical-align: middle;
+}
+
+.row--inactive {
+  opacity: 0.45;
+}
+
+/* Toggle switch — unique to permission matrix */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  user-select: none;
+}
+
+.toggle input[type='checkbox'] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-ui {
+  display: block;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--color-border);
+  transition: background 0.15s;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.toggle-ui::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+  transition: transform 0.15s;
+}
+
+.toggle input:checked + .toggle-ui {
+  background: var(--color-primary);
+}
+
+.toggle input:checked + .toggle-ui::after {
+  transform: translateX(16px);
+}
+
+.toggle--disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }

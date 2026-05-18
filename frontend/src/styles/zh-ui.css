@@ -637,6 +637,9 @@ input[type="date"] { appearance: none; }
 }
 .card-body { padding: var(--space-6); }
 
+/* Size variant — larger radius (dashboard, overview panels) */
+.card--xl { border-radius: var(--radius-xl); }
+
 /* Table Card (sin padding lateral en tabla) */
 .table-card {
   background: var(--color-surface);
@@ -680,6 +683,10 @@ input[type="date"] { appearance: none; }
 /* Compact variant */
 .table--compact th { padding: 8px var(--space-3); }
 .table--compact td { padding: 8px var(--space-3); }
+
+/* Clickable rows (audit panel, catalog list) */
+.zh-tr-clickable { cursor: pointer; }
+.zh-tr-clickable:hover td { background: var(--color-surface-primary-tint) !important; }
 
 /* ── 11. BADGES ──────────────────────────────────────────── */
 .badge {

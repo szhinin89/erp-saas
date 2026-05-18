@@ -68,7 +68,7 @@
 
 .prv-note-meta {
   font-size: var(--text-label-sm-size);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-tertiary);   /* alias → var(--color-outline) — design-tokens.css */
   margin-top: var(--space-2);
 }
 

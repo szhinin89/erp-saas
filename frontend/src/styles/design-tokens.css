@@ -109,4 +109,25 @@
 
   /* ── Material icon font ───────────────────────────────────── */
   --icon-font: 'Material Symbols Outlined';
+
+  /* ── Token aliases (shorthand + missing refs) ─────────────── */
+  /* Typography shorthands */
+  --text-xs: 11px;        /* = --text-label-sm-size */
+  --text-sm: 13px;        /* = --text-body-md-size  */
+  --text-lg: 15px;        /* slightly larger body   */
+
+  /* Surface aliases */
+  --color-surface-raised:   var(--color-surface-container);         /* subtle elevated surface */
+  --color-border-light:     rgba(0, 0, 0, 0.06);                    /* lighter separator */
+  --color-text-tertiary:    var(--color-outline);                   /* most subtle text */
+
+  /* Color-fixed aliases (Material 3 pattern used in KPI icons, plan badges) */
+  --color-primary-fixed:             rgba(58, 95, 132, 0.10);
+  --color-secondary-fixed:           rgba(60, 97, 136, 0.10);
+  --color-tertiary-fixed:            #dbe3eb;                        /* = --color-surface-tertiary-fixed */
+  --color-on-tertiary-fixed-variant: var(--color-tertiary);
+
+  /* Semantic containers */
+  --color-error-container:         rgba(192, 57, 43, 0.10);
+  --color-primary-subtle:          rgba(58, 95, 132, 0.10);         /* used in permission badges */
 }
