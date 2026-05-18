@@ -22,9 +22,9 @@ namespace ERP.API.Controllers;
 /// Gestión del catálogo de productos del tenant autenticado.
 /// Todos los endpoints filtran automáticamente por el tenant del JWT.
 /// </summary>
-[AppFeature("Productos", "perm:inventory.products.view", "📦", "/inventory/products", null, 38)]
+[AppFeature("Productos", "perm:inventario.products.view", "📦", "/inventario/products", null, 38)]
 [ApiController]
-[Route("api/inventory/products")]
+[Route("api/[controller]")]
 [Authorize]
 [Produces("application/json")]
 public class ProductsController : ControllerBase
@@ -40,7 +40,7 @@ public class ProductsController : ControllerBase
     /// <response code="200">Lista de productos (puede ser vacía).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpGet]
-    [Authorize(Policy = "perm:inventory.products.view")]
+    [Authorize(Policy = "perm:inventario.products.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ProductDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll(CancellationToken ct)
@@ -55,7 +55,7 @@ public class ProductsController : ControllerBase
     /// <response code="200">Producto encontrado.</response>
     /// <response code="404">El producto no existe o no pertenece al tenant.</response>
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = "perm:inventory.products.view")]
+    [Authorize(Policy = "perm:inventario.products.view")]
     [ProducesResponseType(typeof(ApiResponse<ProductDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -69,7 +69,7 @@ public class ProductsController : ControllerBase
     /// <response code="200">Reporte completo del producto.</response>
     /// <response code="404">El producto no existe o no pertenece al tenant.</response>
     [HttpGet("{id:guid}/full-report")]
-    [Authorize(Policy = "perm:inventory.products.view")]
+    [Authorize(Policy = "perm:inventario.products.view")]
     [ProducesResponseType(typeof(ApiResponse<ProductFullReportDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -81,7 +81,7 @@ public class ProductsController : ControllerBase
 
     /// <summary>Listado tipo reporte con filtros.</summary>
     [HttpGet("report")]
-    [Authorize(Policy = "perm:inventory.products.view")]
+    [Authorize(Policy = "perm:inventario.products.view")]
     [ProducesResponseType(typeof(ApiResponse<PagedResponse<ProductReportItemDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetReport(
@@ -142,7 +142,7 @@ public class ProductsController : ControllerBase
     /// <response code="201">Producto creado. La respuesta incluye el ID asignado.</response>
     /// <response code="400">El código de venta ya existe en el tenant.</response>
     [HttpPost]
-    [Authorize(Policy = "perm:inventory.products.create")]
+    [Authorize(Policy = "perm:inventario.products.create")]
     [ProducesResponseType(typeof(ApiResponse<ProductDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -163,7 +163,7 @@ public class ProductsController : ControllerBase
     /// <response code="404">Producto no encontrado.</response>
     /// <response code="422">Datos inválidos.</response>
     [HttpPut("{id:guid}")]
-    [Authorize(Policy = "perm:inventory.products.edit")]
+    [Authorize(Policy = "perm:inventario.products.edit")]
     [ProducesResponseType(typeof(ApiResponse<ProductDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
@@ -187,7 +187,7 @@ public class ProductsController : ControllerBase
     /// <response code="200">Producto deshabilitado.</response>
     /// <response code="400">El producto ya está deshabilitado o no existe.</response>
     [HttpPatch("{id:guid}/disable")]
-    [Authorize(Policy = "perm:inventory.products.edit")]
+    [Authorize(Policy = "perm:inventario.products.edit")]
     [ProducesResponseType(typeof(ApiResponse<ProductDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -202,7 +202,7 @@ public class ProductsController : ControllerBase
     /// <response code="200">Producto habilitado.</response>
     /// <response code="400">El producto ya está activo o no existe.</response>
     [HttpPatch("{id:guid}/enable")]
-    [Authorize(Policy = "perm:inventory.products.edit")]
+    [Authorize(Policy = "perm:inventario.products.edit")]
     [ProducesResponseType(typeof(ApiResponse<ProductDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
