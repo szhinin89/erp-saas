@@ -15,6 +15,7 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
     public const int XmlPathMaxLen       = 500;
     public const int ErrorMaxLen         = 1000;
     public const int PaymentMethodMaxLen = 2;
+    public const int NotesMaxLen         = 500;
 
     private readonly List<SalesBillLine> _lines = new();
 
@@ -35,6 +36,8 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
     public string    PaymentMethodCode { get; private set; } = "01";
     /// <summary>Plazo en días (0 = contado).</summary>
     public short     PaymentDays       { get; private set; }
+    /// <summary>Observaciones libres — se emiten como &lt;campoAdicional&gt; en el XML SRI.</summary>
+    public string?   Notes             { get; private set; }
     public string    Status            { get; private set; } = "Draft";
     public string?   XmlSignedPath     { get; private set; }
     public string?   XmlAuthPath       { get; private set; }
@@ -66,6 +69,7 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
         decimal   totalDiscount,
         string    paymentMethodCode,
         short     paymentDays,
+        string?   notes,
         string?   xmlSignedPath,
         string?   xmlAuthPath,
         string?   authNumber,
@@ -92,6 +96,7 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
             TotalDiscount     = totalDiscount,
             PaymentMethodCode = string.IsNullOrWhiteSpace(paymentMethodCode) ? "01" : paymentMethodCode.Trim(),
             PaymentDays       = paymentDays < 0 ? (short)0 : paymentDays,
+            Notes             = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
             Status            = "Draft",
             XmlSignedPath     = string.IsNullOrWhiteSpace(xmlSignedPath) ? null : xmlSignedPath.Trim(),
             XmlAuthPath       = string.IsNullOrWhiteSpace(xmlAuthPath) ? null : xmlAuthPath.Trim(),

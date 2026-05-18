@@ -72,10 +72,7 @@ public static class SriXmlFacturaBuilder
 
                 new XElement("detalles", detElements),
 
-                new XElement("infoAdicional",
-                    new XElement("campoAdicional",
-                        new XAttribute("nombre", "Email"),
-                        factura.Cliente.Email ?? ""))));
+                BuildInfoAdicional(factura)));
 
         return ToUtf8String(doc);
     }
@@ -87,18 +84,21 @@ public static class SriXmlFacturaBuilder
         List<SalesNoteLine> lineas,
         SriSettings         cfg)
     {
-        var esCredito  = nota.NoteType.Equals("CREDITO", StringComparison.OrdinalIgnoreCase);
-        var rootName   = esCredito ? "notaCredito" : "notaDebito";
-        var infoName   = esCredito ? "infoNotaCredito" : "infoNotaDebito";
-        var vatCode    = ResolveVatCodeNota(lineas);
-        var vatPct     = VatPorcentaje(vatCode);
-        var totalDesc  = 0m;
+        var esCredito = nota.NoteType.Equals("CREDITO", StringComparison.OrdinalIgnoreCase);
+        var rootName  = esCredito ? "notaCredito" : "notaDebito";
+        var infoName  = esCredito ? "infoNotaCredito" : "infoNotaDebito";
+        var totalDesc = 0m;
 
         var numDocSustento =
             $"{factOrig.EstabCode}-{factOrig.EmPointCode}-{Seq(factOrig.Sequential)}";
 
-        var detalles = lineas.Select(l =>
-            BuildDetalleNota(l, vatCode, vatPct, ref totalDesc)).ToList();
+        var detalles = lineas.Select(l => BuildDetalleNota(l, ref totalDesc)).ToList();
+
+        // totalConImpuestos agrupado por código IVA (igual que factura)
+        var gruposIva = lineas
+            .GroupBy(l => l.VatCode)
+            .Select(g => BuildTotalImpuesto(g.Key, g.Sum(l => l.Subtotal), g.Sum(l => l.VatTotal)))
+            .ToList();
 
         var doc = new XDocument(
             new XDeclaration("1.0", "UTF-8", null),
@@ -110,22 +110,21 @@ public static class SriXmlFacturaBuilder
                     nota.EstabCode, nota.EmPointCode, nota.Sequential),
 
                 new XElement(infoName,
-                    new XElement("fechaEmision",           nota.IssueDate.ToString("dd/MM/yyyy")),
-                    new XElement("dirEstablecimiento",     cfg.MainAddress),
+                    new XElement("fechaEmision",            nota.IssueDate.ToString("dd/MM/yyyy")),
+                    new XElement("dirEstablecimiento",      cfg.MainAddress),
                     new XElement("tipoIdentificacionComprador", IdTypeCode(factOrig.Cliente)),
-                    new XElement("razonSocialComprador",   factOrig.Cliente.LegalName),
-                    new XElement("identificacionComprador",factOrig.Cliente.IdentificationNumber),
+                    new XElement("razonSocialComprador",    factOrig.Cliente.LegalName),
+                    new XElement("identificacionComprador", factOrig.Cliente.IdentificationNumber),
                     ContribEspecialElement(cfg),
-                    new XElement("obligadoContabilidad",   cfg.RequiresAccounting ? "SI" : "NO"),
-                    new XElement("codDocModificado",       factOrig.DocType.Trim()),
-                    new XElement("numDocModificado",       numDocSustento),
-                    new XElement("fechaEmisionDocSustento",factOrig.IssueDate.ToString("dd/MM/yyyy")),
-                    new XElement("numAutDocSustento",      factOrig.AuthNumber ?? "0"),
-                    new XElement("motivo",                 nota.Reason),
-                    new XElement("totalSinImpuestos",      F2(nota.Subtotal)),
-                    new XElement("valorModificacion",      F2(nota.Total)),
-                    new XElement("totalConImpuestos",
-                        BuildTotalImpuesto(vatCode, nota.Subtotal, nota.VatTotal)),
+                    new XElement("obligadoContabilidad",    cfg.RequiresAccounting ? "SI" : "NO"),
+                    new XElement("codDocModificado",        factOrig.DocType.Trim()),
+                    new XElement("numDocModificado",        numDocSustento),
+                    new XElement("fechaEmisionDocSustento", factOrig.IssueDate.ToString("dd/MM/yyyy")),
+                    new XElement("numAutDocSustento",       factOrig.AuthNumber ?? "0"),
+                    new XElement("motivo",                  nota.Reason),
+                    new XElement("totalSinImpuestos",       F2(nota.Subtotal)),
+                    new XElement("valorModificacion",       F2(nota.Total)),
+                    new XElement("totalConImpuestos",       gruposIva),
                     new XElement("moneda", Currency)),
 
                 new XElement("detalles", detalles)));
@@ -183,22 +182,22 @@ public static class SriXmlFacturaBuilder
                     l.VatTotal)));
     }
 
-    private static XElement BuildDetalleNota(
-        SalesNoteLine  l,
-        string         vatCode,
-        string         vatPct,
-        ref decimal    totalDesc)
+    private static XElement BuildDetalleNota(SalesNoteLine l, ref decimal totalDesc)
     {
-        totalDesc += 0m;
+        totalDesc += 0m; // notas no tienen descuento por línea aún
         return new XElement("detalle",
-            new XElement("codigoInterno",            l.ProductCode),
-            new XElement("descripcion",              l.Description),
-            new XElement("cantidad",                 F6(l.Quantity)),
-            new XElement("precioUnitario",           F6(l.UnitPrice)),
-            new XElement("descuento",                "0.00"),
-            new XElement("precioTotalSinImpuesto",   F2(l.Subtotal)),
+            new XElement("codigoInterno",          l.ProductCode),
+            new XElement("descripcion",            l.Description),
+            new XElement("cantidad",               F6(l.Quantity)),
+            new XElement("precioUnitario",         F6(l.UnitPrice)),
+            new XElement("descuento",              "0.00"),
+            new XElement("precioTotalSinImpuesto", F2(l.Subtotal)),
             new XElement("impuestos",
-                BuildImpuestoLinea(vatCode, vatPct, l.Subtotal, l.VatTotal)));
+                BuildImpuestoLinea(
+                    l.VatCode,
+                    l.VatPercentage.ToString("F2", System.Globalization.CultureInfo.InvariantCulture),
+                    l.Subtotal,
+                    l.VatTotal)));
     }
 
     private static XElement BuildImpuestoLinea(
@@ -218,39 +217,41 @@ public static class SriXmlFacturaBuilder
             ? null
             : new XElement("contribuyenteEspecial", cfg.SpecialTaxpayer.Trim());
 
-    // ── Helpers IVA ───────────────────────────────────────────────────────────
+    // ── infoAdicional ─────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Para notas de crédito/débito: determina el código SRI de IVA desde las líneas.
-    /// Se mantiene por compatibilidad con SalesNoteLine que aún no tiene VatCode snapshot.
+    /// Construye el bloque &lt;infoAdicional&gt; con los campos disponibles.
+    /// El SRI permite múltiples &lt;campoAdicional&gt;; se omiten los vacíos.
     /// </summary>
-    private static string ResolveVatCodeNota(List<SalesNoteLine> lineas)
+    private static XElement BuildInfoAdicional(SalesBill factura)
     {
-        if (!lineas.Any()) return "4";
-        var totalSub = lineas.Sum(l => l.Subtotal);
-        var totalVat = lineas.Sum(l => l.VatTotal);
-        if (totalSub == 0) return "4";
-        var rate = totalVat / totalSub;
-        return rate switch
-        {
-            0m                         => "0",
-            var r when Near(r, 0.05m) => "5",
-            var r when Near(r, 0.12m) => "2",
-            var r when Near(r, 0.14m) => "3",
-            var r when Near(r, 0.15m) => "4",
-            _                         => "4",
-        };
+        var campos = new List<XElement>();
+
+        if (!string.IsNullOrWhiteSpace(factura.Cliente.Email))
+            campos.Add(CampoAdicional("Email", factura.Cliente.Email));
+
+        if (!string.IsNullOrWhiteSpace(factura.Cliente.Phone))
+            campos.Add(CampoAdicional("Telefono", factura.Cliente.Phone));
+
+        if (!string.IsNullOrWhiteSpace(factura.Cliente.AddressLine))
+            campos.Add(CampoAdicional("DireccionComprador", factura.Cliente.AddressLine));
+
+        if (!string.IsNullOrWhiteSpace(factura.Notes))
+            campos.Add(CampoAdicional("Observaciones", factura.Notes));
+
+        // El SRI requiere al menos un campoAdicional; si no hay datos, emitir uno vacío
+        if (campos.Count == 0)
+            campos.Add(CampoAdicional("Info", "-"));
+
+        return new XElement("infoAdicional", campos);
     }
 
-    private static string VatPorcentaje(string code) => code switch
-    {
-        "0" => "0.00",
-        "2" => "12.00",
-        "3" => "14.00",
-        "4" => "15.00",
-        "5" => "5.00",
-        _   => "15.00",
-    };
+    private static XElement CampoAdicional(string nombre, string valor)
+        => new("campoAdicional", new XAttribute("nombre", nombre), valor);
+
+    // ── Helpers IVA ───────────────────────────────────────────────────────────
+
+    // ResolveVatCodeNota y VatPorcentaje eliminados — se usan snapshots por línea.
 
     // ── Helpers identificación comprador ─────────────────────────────────────
 

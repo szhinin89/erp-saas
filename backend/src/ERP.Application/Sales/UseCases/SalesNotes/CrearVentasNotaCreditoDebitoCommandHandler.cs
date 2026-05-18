@@ -90,19 +90,26 @@ public sealed class CrearSalesNoteCommandHandler
             var detalles = new List<SalesNoteLine>();
             foreach (var item in command.Items)
             {
-                var producto = productos[item.ProductId];
+                var producto     = productos[item.ProductId];
                 var subtotalItem = item.Quantity * item.UnitPrice;
                 decimal impuestoItem = 0;
+                string  vatCode      = "0";
+                decimal vatPct       = 0m;
+
                 if (producto.AppliesVatOnSale && producto.SaleTaxId.HasValue)
                 {
                     var taxRate = await _taxRateRepository.GetByIdAsync(producto.SaleTaxId.Value, tenantId, ct);
                     if (taxRate is not null)
-                        impuestoItem = subtotalItem * taxRate.Percentage / 100;
+                    {
+                        vatPct       = taxRate.Percentage;
+                        vatCode      = SriVatCodeFromPercentage(vatPct);
+                        impuestoItem = subtotalItem * vatPct / 100;
+                    }
                 }
 
                 var det = SalesNoteLine.Create(
                     tenantId, item.ProductId, producto.SaleCode, item.Quantity, item.UnitPrice,
-                    impuestoItem, producto.Description, userId);
+                    vatCode, vatPct, impuestoItem, producto.Description, userId);
                 detalles.Add(det);
             }
 
@@ -153,4 +160,14 @@ public sealed class CrearSalesNoteCommandHandler
         config.IncrementSequential();
         return secuencial;
     }
+
+    private static string SriVatCodeFromPercentage(decimal percentage) => percentage switch
+    {
+        0m  => "0",
+        5m  => "5",
+        12m => "2",
+        14m => "3",
+        15m => "4",
+        _   => "4"
+    };
 }

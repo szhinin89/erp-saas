@@ -195,6 +195,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
                 totalDiscount:     totalDiscount,
                 paymentMethodCode: command.PaymentMethodCode,
                 paymentDays:       command.PaymentDays,
+                notes:             command.Notes,
                 xmlSignedPath:     null,
                 xmlAuthPath:       null,
                 authNumber:        null,
