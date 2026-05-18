@@ -5,9 +5,13 @@ namespace ERP.Domain.Modules.Sales.Entities;
 public sealed class SalesBillLine : AuditableEntity, ITenantEntity
 {
     public const int DescriptionMaxLen = 300;
+    public const int ProductCodeMaxLen = 100;
 
     public Guid    SalesBillId    { get; private set; }
     public Guid    ProductId      { get; private set; }
+    /// <summary>Snapshot del SaleCode del producto al momento de facturar.
+    /// Se usa como &lt;codigoPrincipal&gt; en el XML SRI.</summary>
+    public string  ProductCode    { get; private set; } = null!;
     public decimal Quantity       { get; private set; }
     public decimal UnitPrice      { get; private set; }
     public decimal Subtotal       { get; private set; }
@@ -20,6 +24,7 @@ public sealed class SalesBillLine : AuditableEntity, ITenantEntity
     public static SalesBillLine Create(
         Guid    tenantId,
         Guid    productId,
+        string  productCode,
         decimal quantity,
         decimal unitPrice,
         decimal vatTotal,
@@ -35,6 +40,9 @@ public sealed class SalesBillLine : AuditableEntity, ITenantEntity
             TenantId    = tenantId,
             SalesBillId = Guid.Empty,
             ProductId   = productId,
+            ProductCode = string.IsNullOrWhiteSpace(productCode)
+                              ? productId.ToString()[..8]
+                              : productCode.Trim(),
             Quantity    = quantity,
             UnitPrice   = unitPrice,
             Subtotal    = subtotal,

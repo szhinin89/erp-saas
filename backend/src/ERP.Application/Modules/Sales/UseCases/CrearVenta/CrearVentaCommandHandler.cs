@@ -152,6 +152,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
                 var detalle = SalesBillLine.Create(
                     tenantId:    tenantId,
                     productId:   item.ProductId,
+                    productCode: producto.SaleCode,
                     quantity:    item.Quantity,
                     unitPrice:   item.UnitPrice,
                     vatTotal:    impuestoItem,

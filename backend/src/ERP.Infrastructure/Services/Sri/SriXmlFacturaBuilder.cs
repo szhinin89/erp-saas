@@ -167,7 +167,7 @@ public static class SriXmlFacturaBuilder
     {
         totalDesc += 0m; // descuentos futuros
         return new XElement("detalle",
-            new XElement("codigoPrincipal",          l.ProductId.ToString()),
+            new XElement("codigoPrincipal",          l.ProductCode),
             new XElement("descripcion",              l.Description),
             new XElement("cantidad",                 F6(l.Quantity)),
             new XElement("precioUnitario",           F6(l.UnitPrice)),
@@ -185,7 +185,7 @@ public static class SriXmlFacturaBuilder
     {
         totalDesc += 0m;
         return new XElement("detalle",
-            new XElement("codigoInterno",            l.ProductId.ToString()),
+            new XElement("codigoInterno",            l.ProductCode),
             new XElement("descripcion",              l.Description),
             new XElement("cantidad",                 F6(l.Quantity)),
             new XElement("precioUnitario",           F6(l.UnitPrice)),
@@ -256,13 +256,8 @@ public static class SriXmlFacturaBuilder
 
     // ── Helpers identificación comprador ─────────────────────────────────────
 
-    private static string IdTypeCode(dynamic cliente)
-    {
-        var id = (string)(cliente.IdentificationNumber ?? "");
-        if (id.Length == 13) return "04"; // RUC
-        if (id.Length == 10) return "05"; // Cédula
-        return "06"; // Pasaporte / otro
-    }
+    private static string IdTypeCode(Customer cliente)
+        => cliente.SriIdTypeCode; // "04"=RUC, "05"=CI, "06"=Pasaporte, "08"=Otro
 
     // ── Formato ───────────────────────────────────────────────────────────────
 

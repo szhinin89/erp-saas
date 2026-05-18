@@ -101,8 +101,8 @@ public sealed class CrearSalesNoteCommandHandler
                 }
 
                 var det = SalesNoteLine.Create(
-                    tenantId, item.ProductId, item.Quantity, item.UnitPrice, impuestoItem,
-                    producto.Description, userId);
+                    tenantId, item.ProductId, producto.SaleCode, item.Quantity, item.UnitPrice,
+                    impuestoItem, producto.Description, userId);
                 detalles.Add(det);
             }
 

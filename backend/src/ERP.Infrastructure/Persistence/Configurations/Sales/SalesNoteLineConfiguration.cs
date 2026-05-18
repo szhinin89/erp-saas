@@ -15,6 +15,9 @@ public sealed class SalesNoteLineConfiguration : IEntityTypeConfiguration<SalesN
         builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
         builder.Property(e => e.SalesNoteId).HasColumnName("sales_note_id").IsRequired();
         builder.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
+        builder.Property(e => e.ProductCode).HasColumnName("product_code")
+               .HasMaxLength(SalesNoteLine.ProductCodeMaxLen).IsRequired()
+               .HasDefaultValue("");
         builder.Property(e => e.Quantity).HasColumnName("quantity").HasPrecision(18, 4).IsRequired();
         builder.Property(e => e.UnitPrice).HasColumnName("unit_price").HasPrecision(18, 4).IsRequired();
         builder.Property(e => e.Subtotal).HasColumnName("subtotal").HasPrecision(18, 4).IsRequired();
