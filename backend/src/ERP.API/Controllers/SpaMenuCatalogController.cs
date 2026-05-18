@@ -22,4 +22,15 @@ public sealed class SpaMenuCatalogController : ControllerBase
     [HttpGet("tenant-access")]
     [AppFeature("Acceso usuarios", "perm:access.memberships.view", "🧑‍🤝‍🧑", "/access", null, 87)]
     public IActionResult TenantAccessCatalogMarker() => NotFound();
+
+    // ── Grupo "Configuración" ─────────────────────────────────
+    // Carpeta padre en el catálogo para los 3 formularios de configuración de empresa.
+    // path = null → aparece como carpeta en la biblioteca del plan builder, no como ruta.
+    [HttpGet("configuracion-group")]
+    [AppFeature("Configuración", "perm:configuracion.group", "⚙️", null, null, 28)]
+    public IActionResult ConfiguracionGroupMarker() => NotFound();
+
+    [HttpGet("empresa")]
+    [AppFeature("Datos de Empresa", "perm:ventas.configuracion.view", "🏢", "/configuracion/empresa", "perm:configuracion.group", 29)]
+    public IActionResult EmpresaCatalogMarker() => NotFound();
 }

@@ -14,7 +14,7 @@ namespace ERP.API.Controllers;
 /// Configuración de la representación impresa (RIDE) y datos de facturación por tenant.
 /// Un único registro por tenant: PUT siempre crea o actualiza (upsert).
 /// </summary>
-[AppFeature("Configuración RIDE", "perm:ventas.configuracion.view", "🖨️", "/configuracion/facturacion", "perm:ventas.facturas.view", 36)]
+[AppFeature("Configuración RIDE", "perm:ventas.configuracion.view", "🖨️", "/configuracion/facturacion", "perm:configuracion.group", 32)]
 [ApiController]
 [Route("api/configuracion-facturacion")]
 [Authorize]
