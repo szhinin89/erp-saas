@@ -12,9 +12,9 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>Master catalog: Brands of the authenticated tenant.</summary>
-[AppFeature("Marcas", "perm:inventario.brands.view", "✨", "/inventario/brands", "perm:inventario.products.view", 37)]
+[AppFeature("Marcas", "perm:inventory.brands.view", "✨", "/inventory/brands", "perm:inventory.products.view", 37)]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/inventory/brands")]
 [Authorize]
 [Produces("application/json")]
 public class BrandsController : ControllerBase
@@ -25,7 +25,7 @@ public class BrandsController : ControllerBase
 
     /// <summary>Returns all brands for the tenant.</summary>
     [HttpGet]
-    [Authorize(Policy = "perm:inventario.brands.view")]
+    [Authorize(Policy = "perm:inventory.brands.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BrandDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool onlyActive = true, CancellationToken ct = default)
@@ -36,7 +36,7 @@ public class BrandsController : ControllerBase
 
     /// <summary>Creates a new brand.</summary>
     [HttpPost]
-    [Authorize(Policy = "perm:inventario.brands.create")]
+    [Authorize(Policy = "perm:inventory.brands.create")]
     [ProducesResponseType(typeof(ApiResponse<BrandDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -49,7 +49,7 @@ public class BrandsController : ControllerBase
 
     /// <summary>Updates an existing brand.</summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Policy = "perm:inventario.brands.update")]
+    [Authorize(Policy = "perm:inventory.brands.update")]
     [ProducesResponseType(typeof(ApiResponse<BrandDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -65,7 +65,7 @@ public class BrandsController : ControllerBase
 
     /// <summary>Disables a brand (soft delete).</summary>
     [HttpPatch("{id:guid}/disable")]
-    [Authorize(Policy = "perm:inventario.brands.delete")]
+    [Authorize(Policy = "perm:inventory.brands.delete")]
     [ProducesResponseType(typeof(ApiResponse<BrandDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -77,7 +77,7 @@ public class BrandsController : ControllerBase
 
     /// <summary>Re-enables a disabled brand.</summary>
     [HttpPatch("{id:guid}/enable")]
-    [Authorize(Policy = "perm:inventario.brands.update")]
+    [Authorize(Policy = "perm:inventory.brands.update")]
     [ProducesResponseType(typeof(ApiResponse<BrandDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

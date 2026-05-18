@@ -13,9 +13,9 @@ namespace ERP.API.Controllers;
 /// <summary>
 /// Catálogo maestro: Tarifas / aranceles del tenant autenticado.
 /// </summary>
-[AppFeature("Tarifas", "perm:inventario.tariffs.view", "💲", "/inventario/tariffs", "perm:inventario.products.view", 37)]
+[AppFeature("Tarifas", "perm:inventory.tariffs.view", "💲", "/inventory/tariffs", "perm:inventory.products.view", 37)]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/inventory/tariffs")]
 [Authorize]
 [Produces("application/json")]
 public class TariffsController : ControllerBase
@@ -33,7 +33,7 @@ public class TariffsController : ControllerBase
     /// <response code="200">Lista de tarifas (puede ser vacía).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpGet]
-    [Authorize(Policy = "perm:inventario.tariffs.view")]
+    [Authorize(Policy = "perm:inventory.tariffs.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<TariffDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool onlyActive = true, CancellationToken ct = default)
@@ -48,7 +48,7 @@ public class TariffsController : ControllerBase
     /// <response code="400">Error de validación (por ejemplo, duplicado).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpPost]
-    [Authorize(Policy = "perm:inventario.tariffs.create")]
+    [Authorize(Policy = "perm:inventory.tariffs.create")]
     [ProducesResponseType(typeof(ApiResponse<TariffDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

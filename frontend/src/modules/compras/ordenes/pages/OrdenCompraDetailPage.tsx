@@ -28,7 +28,7 @@ export function OrdenCompraDetailPage() {
   const { id }    = useParams<{ id: string }>();
   const navigate  = useNavigate();
   const hasPerm   = usePermissionsStore((s) => s.has);
-  const canView   = hasPerm('compras.ordenes.view');
+  const canView   = hasPerm('purchases.orders.view');
 
   const { data, loading, error, refetch } = useOrdenCompraDetalle(id ?? null);
   const acciones = useOrdenCompraAcciones(refetch);
@@ -39,10 +39,10 @@ export function OrdenCompraDetailPage() {
   if (!canView) return <NoAccessPage title="Orden de Compra" />;
 
   const isActive    = !['Cerrada', 'Cancelada'].includes(data?.estado ?? '');
-  const canEnviar   = data?.estado === 'Borrador' && hasPerm('compras.ordenes.send');
-  const canAprobar  = ['Borrador', 'Enviada'].includes(data?.estado ?? '') && hasPerm('compras.ordenes.approve');
-  const canCancelar = isActive && hasPerm('compras.ordenes.cancel');
-  const canVincular = ['Aprobada', 'RecibidaParcial'].includes(data?.estado ?? '') && hasPerm('compras.ordenes.link-invoice');
+  const canEnviar   = data?.estado === 'Borrador' && hasPerm('purchases.orders.send');
+  const canAprobar  = ['Borrador', 'Enviada'].includes(data?.estado ?? '') && hasPerm('purchases.orders.approve');
+  const canCancelar = isActive && hasPerm('purchases.orders.cancel');
+  const canVincular = ['Aprobada', 'RecibidaParcial'].includes(data?.estado ?? '') && hasPerm('purchases.orders.link-invoice');
 
   const handleVincular = async () => {
     if (!vincularFacturaId.trim()) return;

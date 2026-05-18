@@ -18,11 +18,11 @@ namespace ERP.API.Controllers;
 
 /// <summary>
 /// Facturas de gasto (registro manual o importaciÃ³n XML del SRI Ecuador).
-/// Flujo de estados: Borrador â†’ Validado â†’ IsApproved | Rechazado. Requiere permisos <c>gastos.facturas.*</c> en el perfil (los roles Admin/SuperAdmin los omiten).
+/// Flujo de estados: Borrador â†’ Validado â†’ IsApproved | Rechazado. Requiere permisos <c>expenses.invoices.*</c> en el perfil (los roles Admin/SuperAdmin los omiten).
 /// </summary>
-[AppFeature("Gastos", "perm:gastos.facturas.view", "ðŸ’¸", "/gastos", null, 55)]
+[AppFeature("Gastos", "perm:expenses.invoices.view", "ðŸ’¸", "/expenses", null, 55)]
 [ApiController]
-[Route("api/Gastos")]
+[Route("api/expenses")]
 [Authorize]
 [Produces("application/json")]
 public sealed class ExpensesController : ControllerBase
@@ -34,7 +34,7 @@ public sealed class ExpensesController : ControllerBase
     /// <summary>Lista gastos con filtros opcionales (estado, proveedor, fechas, texto).</summary>
     /// <remarks>Query: <c>estado</c>, <c>proveedorId</c>, <c>desde</c>, <c>hasta</c>, <c>search</c>.</remarks>
     [HttpGet]
-    [Authorize(Policy = "perm:gastos.facturas.view")]
+    [Authorize(Policy = "perm:expenses.invoices.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ExpenseInvoiceDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
@@ -59,7 +59,7 @@ public sealed class ExpensesController : ControllerBase
 
     /// <summary>Obtiene un gasto por id (tenant actual).</summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = "perm:gastos.facturas.view")]
+    [Authorize(Policy = "perm:expenses.invoices.view")]
     [ProducesResponseType(typeof(ApiResponse<ExpenseInvoiceDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct = default)
@@ -71,7 +71,7 @@ public sealed class ExpensesController : ControllerBase
     /// <summary>Crea un gasto en modo manual (Borrador). Totales altos exigen XML.</summary>
     /// <response code="201">Gasto creado.</response>
     [HttpPost("manual")]
-    [Authorize(Policy = "perm:gastos.facturas.create")]
+    [Authorize(Policy = "perm:expenses.invoices.create")]
     [ProducesResponseType(typeof(ApiResponse<ExpenseInvoiceDto?>), StatusCodes.Status201Created)]
     public async Task<IActionResult> CreateManual(
         [FromBody] CreateExpenseCommand command,
@@ -86,7 +86,7 @@ public sealed class ExpensesController : ControllerBase
     /// <response code="201">Gasto creado en Borrador.</response>
     /// <response code="400">XML invÃ¡lido o clave duplicada.</response>
     [HttpPost("xml")]
-    [Authorize(Policy = "perm:gastos.facturas.create")]
+    [Authorize(Policy = "perm:expenses.invoices.create")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(ApiResponse<ExpenseInvoiceDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -122,7 +122,7 @@ public sealed class ExpensesController : ControllerBase
 
     /// <summary>Valida un gasto en Borrador y pasa a estado Validado.</summary>
     [HttpPatch("{id:guid}/validar")]
-    [Authorize(Policy = "perm:gastos.facturas.validate")]
+    [Authorize(Policy = "perm:expenses.invoices.validate")]
     [ProducesResponseType(typeof(ApiResponse<ExpenseInvoiceDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Validate(Guid id, CancellationToken ct = default)
@@ -133,7 +133,7 @@ public sealed class ExpensesController : ControllerBase
 
     /// <summary>Aprueba un gasto Validado y genera asiento contable si aplica.</summary>
     [HttpPatch("{id:guid}/aprobar")]
-    [Authorize(Policy = "perm:gastos.facturas.approve")]
+    [Authorize(Policy = "perm:expenses.invoices.approve")]
     [ProducesResponseType(typeof(ApiResponse<ExpenseInvoiceDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Approve(Guid id, CancellationToken ct = default)
@@ -144,7 +144,7 @@ public sealed class ExpensesController : ControllerBase
 
     /// <summary>Rechaza un gasto con motivo obligatorio.</summary>
     [HttpPatch("{id:guid}/rechazar")]
-    [Authorize(Policy = "perm:gastos.facturas.reject")]
+    [Authorize(Policy = "perm:expenses.invoices.reject")]
     [ProducesResponseType(typeof(ApiResponse<ExpenseInvoiceDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Reject(

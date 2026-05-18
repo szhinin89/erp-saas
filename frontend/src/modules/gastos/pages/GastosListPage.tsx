@@ -23,8 +23,8 @@ export function GastosListPage() {
   const hasPerm  = usePermissionsStore((s) => s.has);
   const role     = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin  = role === 'Admin' || role === 'SuperAdmin';
-  const canView  = isAdmin || hasPerm('gastos.facturas.view');
-  const canCreate = isAdmin || hasPerm('gastos.facturas.create');
+  const canView  = isAdmin || hasPerm('expenses.invoices.view');
+  const canCreate = isAdmin || hasPerm('expenses.invoices.create');
 
   const [rows,       setRows]       = useState<GastoDto[]>([]);
   const [suppliers,  setSuppliers]  = useState<Supplier[]>([]);

@@ -11,8 +11,8 @@ import type { AjustesFilter, EstadoAjuste } from '../api/ajusteService';
 export function AjustesListPage() {
   const navigate  = useNavigate();
   const hasPerm   = usePermissionsStore((s) => s.has);
-  const canView   = hasPerm('inventario.ajustes.view');
-  const canCreate = hasPerm('inventario.ajustes.create');
+  const canView   = hasPerm('inventory.adjustments.view');
+  const canCreate = hasPerm('inventory.adjustments.create');
 
   const [filter, setFilter] = useState<AjustesFilter>({ pageNumber: 1, pageSize: 20 });
   const { result, loading, error } = useAjustesList(filter);

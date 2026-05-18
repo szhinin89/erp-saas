@@ -27,10 +27,10 @@ export function BrandsPage() {
   const isAdmin  = role === 'Admin' || role === 'SuperAdmin';
   const hasPerm  = usePermissionsStore((s) => s.has);
 
-  const canView   = isAdmin || hasPerm('inventario.brands.view');
-  const canCreate = isAdmin || hasPerm('inventario.brands.create');
-  const canUpdate = isAdmin || hasPerm('inventario.brands.update');
-  const canDelete = isAdmin || hasPerm('inventario.brands.delete');
+  const canView   = isAdmin || hasPerm('inventory.brands.view');
+  const canCreate = isAdmin || hasPerm('inventory.brands.create');
+  const canUpdate = isAdmin || hasPerm('inventory.brands.update');
+  const canDelete = isAdmin || hasPerm('inventory.brands.delete');
 
   /* ── Data state ───────────────────────────────────────────── */
   const [brands,  setBrands]  = useState<BrandItem[]>([]);

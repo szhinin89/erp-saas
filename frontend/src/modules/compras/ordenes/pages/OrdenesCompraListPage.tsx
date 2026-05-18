@@ -18,8 +18,8 @@ function estadoBadgeClass(estado: EstadoOrdenCompra): string {
 export function OrdenesCompraListPage() {
   const navigate  = useNavigate();
   const hasPerm   = usePermissionsStore((s) => s.has);
-  const canView   = hasPerm('compras.ordenes.view');
-  const canCreate = hasPerm('compras.ordenes.create');
+  const canView   = hasPerm('purchases.orders.view');
+  const canCreate = hasPerm('purchases.orders.create');
 
   const [filter, setFilter] = useState<OrdenesCompraFilter>({ pageNumber: 1, pageSize: 20 });
   const { result, loading, error } = useOrdenesCompraList(filter);

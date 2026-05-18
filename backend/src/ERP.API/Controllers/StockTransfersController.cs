@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -17,23 +17,23 @@ namespace ERP.API.Controllers;
 /// Transferencias de stock entre bodegas del mismo tenant.
 /// Flujo: Borrador → Confirmado (stock movido) | Cancelado (sin efecto en stock).
 /// </summary>
-[AppFeature("Transferencias", "perm:inventario.transferencias.view", "↔️", "/inventario/transferencias", "perm:inventario.products.view", 44)]
+[AppFeature("Transferencias", "perm:inventory.transfers.view", "↔️", "/inventory/transfers", "perm:inventory.products.view", 44)]
 [ApiController]
-[Route("api/inventario/transferencias")]
+[Route("api/inventory/transfers")]
 [Authorize]
 [Produces("application/json")]
-public sealed class TransfersController : ControllerBase
+public sealed class StockTransfersController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public TransfersController(IMediator mediator) => _mediator = mediator;
+    public StockTransfersController(IMediator mediator) => _mediator = mediator;
 
-    // ── Queries ───────────────────────────────────────────────────────────
+    // ── Queries ───────────────────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>Lista paginada de transferencias con filtros opcionales.</summary>
     /// <remarks>Query params: pageNumber, pageSize, sourceWarehouseId, destinationWarehouseId, estado, fechaDesde (YYYY-MM-DD), fechaHasta.</remarks>
     [HttpGet]
-    [Authorize(Policy = "perm:inventario.transferencias.view")]
+    [Authorize(Policy = "perm:inventory.transfers.view")]
     [ProducesResponseType(typeof(ApiResponse<TransfersPagedResult>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
@@ -59,7 +59,7 @@ public sealed class TransfersController : ControllerBase
 
     /// <summary>Retorna el detalle completo de una transferencia (con ítems).</summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = "perm:inventario.transferencias.view")]
+    [Authorize(Policy = "perm:inventory.transfers.view")]
     [ProducesResponseType(typeof(ApiResponse<TransferDetailDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct = default)
     {
@@ -67,7 +67,7 @@ public sealed class TransfersController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK");
     }
 
-    // ── Crear ─────────────────────────────────────────────────────────────
+    // ── Crear ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
     /// Crea una transferencia en estado Borrador.
@@ -76,7 +76,7 @@ public sealed class TransfersController : ControllerBase
     /// <response code="201">Transferencia creada en estado Borrador.</response>
     /// <response code="400">Bodegas inválidas o stock insuficiente en la bodega origen.</response>
     [HttpPost]
-    [Authorize(Policy = "perm:inventario.transferencias.create")]
+    [Authorize(Policy = "perm:inventory.transfers.create")]
     [ProducesResponseType(typeof(ApiResponse<TransferDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(
@@ -86,7 +86,7 @@ public sealed class TransfersController : ControllerBase
         return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
-    // ── Transiciones de estado ────────────────────────────────────────────
+    // ── Transiciones de estado ────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
     /// Confirma la transferencia: mueve el stock de la bodega origen a la destino.
@@ -95,7 +95,7 @@ public sealed class TransfersController : ControllerBase
     /// <response code="200">Stock movido y transferencia en estado Confirmado.</response>
     /// <response code="400">Stock insuficiente o estado no válido.</response>
     [HttpPatch("{id:guid}/confirmar")]
-    [Authorize(Policy = "perm:inventario.transferencias.confirm")]
+    [Authorize(Policy = "perm:inventory.transfers.confirm")]
     [ProducesResponseType(typeof(ApiResponse<TransferDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Confirm(Guid id, CancellationToken ct = default)
@@ -109,7 +109,7 @@ public sealed class TransfersController : ControllerBase
     /// No afecta el stock.
     /// </summary>
     [HttpPatch("{id:guid}/cancelar")]
-    [Authorize(Policy = "perm:inventario.transferencias.cancel")]
+    [Authorize(Policy = "perm:inventory.transfers.cancel")]
     [ProducesResponseType(typeof(ApiResponse<TransferDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken ct = default)

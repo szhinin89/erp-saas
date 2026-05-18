@@ -30,8 +30,8 @@ export function BrandsCatalogPage() {
       titleKey="catalog.brands.title"
       listTabLabelKey="catalog.brands.tabList"
       primaryCreateKey="catalog.brands.primaryCreate"
-      viewPermissionKey="inventario.brands.view"
-      createPermissionKey="inventario.brands.create"
+      viewPermissionKey="inventory.brands.view"
+      createPermissionKey="inventory.brands.create"
       auditEntityType="Brand"
       load={async () => mapBasic(await catalogService.brands(false))}
       create={async (p) => catalogService.createBrand({ code: String(p.code ?? ''), name: String(p.name ?? '') })}
@@ -45,8 +45,8 @@ export function ProductTypesCatalogPage() {
       titleKey="catalog.productTypes.title"
       listTabLabelKey="catalog.productTypes.tabList"
       primaryCreateKey="catalog.productTypes.primaryCreate"
-      viewPermissionKey="inventario.productTypes.view"
-      createPermissionKey="inventario.productTypes.create"
+      viewPermissionKey="inventory.product-types.view"
+      createPermissionKey="inventory.product-types.create"
       load={async () => mapBasic(await catalogService.productTypes(false))}
       create={async (p) => catalogService.createProductType({ code: String(p.code ?? ''), name: String(p.name ?? '') })}
     />
@@ -59,8 +59,8 @@ export function UnitsCatalogPage() {
       titleKey="catalog.units.title"
       listTabLabelKey="catalog.units.tabList"
       primaryCreateKey="catalog.units.primaryCreate"
-      viewPermissionKey="inventario.units.view"
-      createPermissionKey="inventario.units.create"
+      viewPermissionKey="inventory.units.view"
+      createPermissionKey="inventory.units.create"
       load={async () => mapBasic(await catalogService.units(false))}
       create={async (p) => catalogService.createUnit({ code: String(p.code ?? ''), name: String(p.name ?? ''), symbol: undefined })}
     />
@@ -73,8 +73,8 @@ export function TariffsCatalogPage() {
       titleKey="catalog.tariffs.title"
       listTabLabelKey="catalog.tariffs.tabList"
       primaryCreateKey="catalog.tariffs.primaryCreate"
-      viewPermissionKey="inventario.tariffs.view"
-      createPermissionKey="inventario.tariffs.create"
+      viewPermissionKey="inventory.tariffs.view"
+      createPermissionKey="inventory.tariffs.create"
       load={async () => mapBasic(await catalogService.tariffs(false))}
       create={async (p) => catalogService.createTariff({ code: String(p.code ?? ''), name: String(p.name ?? '') })}
     />
@@ -87,8 +87,8 @@ export function ProductLinesCatalogPage() {
       titleKey="catalog.productLines.title"
       listTabLabelKey="catalog.productLines.tabList"
       primaryCreateKey="catalog.productLines.primaryCreate"
-      viewPermissionKey="inventario.productLines.view"
-      createPermissionKey="inventario.productLines.create"
+      viewPermissionKey="inventory.product-lines.view"
+      createPermissionKey="inventory.product-lines.create"
       load={async () => mapBasic(await catalogService.productLines({ activeStatus: 'all' }))}
       create={async (p) => catalogService.createProductLine({ code: String(p.code ?? ''), name: String(p.name ?? '') })}
     />
@@ -103,8 +103,8 @@ export function CategoriesCatalogPage() {
   const role = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin = role === 'Admin' || role === 'SuperAdmin';
   const hasPerm = usePermissionsStore((s) => s.has);
-  const canView = isAdmin || hasPerm('inventario.categories.view');
-  const canCreate = isAdmin || hasPerm('inventario.categories.create');
+  const canView = isAdmin || hasPerm('inventory.categories.view');
+  const canCreate = isAdmin || hasPerm('inventory.categories.create');
 
   const [lines, setLines] = useState<{ id: string; code: string; name: string }[]>([]);
   const [items, setItems] = useState<ProductCategoryListItem[]>([]);
@@ -312,8 +312,8 @@ export function SubcategoriesCatalogPage() {
   const role = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin = role === 'Admin' || role === 'SuperAdmin';
   const hasPerm = usePermissionsStore((s) => s.has);
-  const canView = isAdmin || hasPerm('inventario.subcategories.view');
-  const canCreate = isAdmin || hasPerm('inventario.subcategories.create');
+  const canView = isAdmin || hasPerm('inventory.subcategories.view');
+  const canCreate = isAdmin || hasPerm('inventory.subcategories.create');
 
   const [lines, setLines] = useState<{ id: string; code: string; name: string }[]>([]);
   const [categories, setCategories] = useState<ProductCategoryListItem[]>([]);

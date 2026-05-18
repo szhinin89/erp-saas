@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -9,19 +9,19 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-[AppFeature("Retenciones recibidas", "perm:ventas.retenciones-recibidas.list", "ðŸ“‹", "/ventas/retenciones-recibidas", "perm:ventas.facturas.view", 53)]
+[AppFeature("Retenciones recibidas", "perm:sales.withholding-received.view", "📋", "/sales/withholding-received", "perm:sales.invoices.view", 53)]
 [ApiController]
-[Route("api/ventas/retenciones-recibidas")]
+[Route("api/sales/withholding-received")]
 [Authorize]
 [Produces("application/json")]
-public sealed class SalesReceivedWithholdingsController : ControllerBase
+public sealed class WithholdingReceivedController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public SalesReceivedWithholdingsController(IMediator mediator) => _mediator = mediator;
+    public WithholdingReceivedController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
-    [Authorize(Policy = "perm:ventas.retenciones-recibidas.list")]
+    [Authorize(Policy = "perm:sales.withholding-received.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<SalesRetentionListItemDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(CancellationToken ct = default)
     {
@@ -30,7 +30,7 @@ public sealed class SalesReceivedWithholdingsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "perm:ventas.retenciones-recibidas.create")]
+    [Authorize(Policy = "perm:sales.withholding-received.create")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Register([FromBody] RegisterSalesRetentionCommand command, CancellationToken ct = default)
     {
@@ -38,4 +38,3 @@ public sealed class SalesReceivedWithholdingsController : ControllerBase
         return this.ToCreatedOrBadRequest(result, "Registrado");
     }
 }
-

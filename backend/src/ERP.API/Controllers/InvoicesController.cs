@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -18,21 +18,21 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// GestiÃ³n del mÃ³dulo de Ventas â€” FacturaciÃ³n ElectrÃ³nica SRI Ecuador.
-/// Flujo: Borrador â†’ Validado â†’ Autorizado | Rechazado | ErrorEnvio.
+/// Gestión del módulo de Ventas — Facturación Electrónica SRI Ecuador.
+/// Flujo: Borrador → Validado → Autorizado | Rechazado | ErrorEnvio.
 /// </summary>
-[AppFeature("Ventas", "perm:ventas.facturas.view", "ðŸ§¾", "/ventas", null, 50)]
+[AppFeature("Ventas", "perm:sales.invoices.view", "🧾", "/sales/invoices", null, 50)]
 [ApiController]
-[Route("api/Ventas")]
+[Route("api/sales/invoices")]
 [Authorize]
 [Produces("application/json")]
-public sealed class SalesController : ControllerBase
+public sealed class InvoicesController : ControllerBase
 {
     private readonly IMediator              _mediator;
     private readonly ITirillaFacturaService _tirillaFacturaService;
     private readonly IRideGeneratorService  _rideGenerator;
 
-    public SalesController(
+    public InvoicesController(
         IMediator              mediator,
         ITirillaFacturaService tirillaFacturaService,
         IRideGeneratorService  rideGenerator)
@@ -42,12 +42,12 @@ public sealed class SalesController : ControllerBase
         _rideGenerator         = rideGenerator;
     }
 
-    // â”€â”€ Queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Queries ───────────────────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>Lista facturas de venta paginadas con filtros opcionales.</summary>
     /// <remarks>Query params: pageNumber, pageSize, customerId, desde (YYYY-MM-DD), hasta, estado, search.</remarks>
     [HttpGet]
-    [Authorize(Policy = "perm:ventas.facturas.view")]
+    [Authorize(Policy = "perm:sales.invoices.view")]
     [ProducesResponseType(typeof(ApiResponse<SalesPagedResult>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
@@ -71,10 +71,10 @@ public sealed class SalesController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK");
     }
 
-    /// <summary>Retorna el detalle completo de una factura de venta (con lÃ­neas).</summary>
+    /// <summary>Retorna el detalle completo de una factura de venta (con líneas).</summary>
     /// <response code="404">La factura no existe o no pertenece al tenant.</response>
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = "perm:ventas.facturas.view")]
+    [Authorize(Policy = "perm:sales.invoices.view")]
     [ProducesResponseType(typeof(ApiResponse<SalesBillDetailDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct = default)
@@ -92,21 +92,21 @@ public sealed class SalesController : ControllerBase
     public async Task<IActionResult> GetStock(CancellationToken ct = default)
     {
         if (!Request.Query.TryGetValue("productoId", out var pv) || !Guid.TryParse(pv, out var productoId))
-            return this.ApiBadRequest("El parÃ¡metro productoId es requerido y debe ser un GUID vÃ¡lido.");
+            return this.ApiBadRequest("El parámetro productoId es requerido y debe ser un GUID válido.");
         if (!Request.Query.TryGetValue("bodegaId",   out var bv) || !Guid.TryParse(bv, out var bodegaId))
-            return this.ApiBadRequest("El parÃ¡metro bodegaId es requerido y debe ser un GUID vÃ¡lido.");
+            return this.ApiBadRequest("El parámetro bodegaId es requerido y debe ser un GUID válido.");
 
         var result = await _mediator.Send(new GetAvailableStockForSaleQuery(productoId, bodegaId), ct);
         return this.ToOkOrBadRequest(result, "OK");
     }
 
-    // â”€â”€ Crear â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Crear ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>Crea una nueva factura de venta en estado Borrador.</summary>
     /// <response code="201">Factura creada. Retorna el ID.</response>
-    /// <response code="400">Stock insuficiente, cliente o bodega invÃ¡lida.</response>
+    /// <response code="400">Stock insuficiente, cliente o bodega inválida.</response>
     [HttpPost]
-    [Authorize(Policy = "perm:ventas.facturas.create")]
+    [Authorize(Policy = "perm:sales.invoices.create")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(
@@ -116,7 +116,7 @@ public sealed class SalesController : ControllerBase
         return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
-    // â”€â”€ Transiciones de estado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Transiciones de estado ────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
     /// Valida una factura en Borrador: verifica totales y detalles.
@@ -133,7 +133,7 @@ public sealed class SalesController : ControllerBase
     }
 
     /// <summary>
-    /// Emite la factura al SRI Ecuador: genera XML, firma y envÃ­a.
+    /// Emite la factura al SRI Ecuador: genera XML, firma y envía.
     /// Si es autorizada, descuenta inventario y crea asiento contable.
     /// Estado resultante: Autorizado | Rechazado | ErrorEnvio.
     /// </summary>
@@ -148,8 +148,8 @@ public sealed class SalesController : ControllerBase
     }
 
     /// <summary>
-    /// Reintenta el envÃ­o al SRI para facturas en ErrorEnvio o Rechazado.
-    /// Resetea el estado y ejecuta el flujo de emisiÃ³n completo.
+    /// Reintenta el envío al SRI para facturas en ErrorEnvio o Rechazado.
+    /// Resetea el estado y ejecuta el flujo de emisión completo.
     /// </summary>
     [HttpPatch("{id:guid}/reintentar")]
     [Authorize(Policy = "perm:ventas.facturas.emit")]
@@ -176,10 +176,10 @@ public sealed class SalesController : ControllerBase
     }
 
     /// <summary>
-    /// Genera el HTML de impresiÃ³n de la factura en formato de ticket tÃ©rmico 80mm.
+    /// Genera el HTML de impresión de la factura en formato de ticket térmico 80mm.
     /// </summary>
     [HttpGet("{id:guid}/imprimir")]
-    [Authorize(Policy = "perm:ventas.facturas.view")]
+    [Authorize(Policy = "perm:sales.invoices.view")]
     [Produces("text/html")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -201,7 +201,7 @@ public sealed class SalesController : ControllerBase
     /// Reutilizable desde cualquier contexto: el servicio no depende de HTTP.
     /// </summary>
     [HttpGet("{id:guid}/ride")]
-    [Authorize(Policy = "perm:ventas.facturas.view")]
+    [Authorize(Policy = "perm:sales.invoices.view")]
     [Produces("application/pdf")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -222,7 +222,7 @@ public sealed class SalesController : ControllerBase
     /// Genera el RIDE en PDF de una nota de crédito o débito.
     /// </summary>
     [HttpGet("notas/{id:guid}/ride")]
-    [Authorize(Policy = "perm:ventas.facturas.view")]
+    [Authorize(Policy = "perm:sales.invoices.view")]
     [Produces("application/pdf")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

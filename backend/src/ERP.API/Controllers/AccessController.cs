@@ -31,8 +31,8 @@ namespace ERP.API.Controllers;
 /// <c>Roles</c> (membresías globales, perfiles, permisos de perfil). Ver criterio P0 en <c>docs/ESTADO-PROYECTO.md</c> (sección backlog de refactor).
 /// </remarks>
 [ApiController]
-[AppFeature("Access IAM API", "perm:access.iam.api", "🧩", null, null, 983, IsVisibleInMenu = false)]
-[Route("api/[controller]")]
+[AppFeature("Access IAM API", "perm:admin.iam.api", "🧩", null, null, 983, IsVisibleInMenu = false)]
+[Route("api/admin/iam")]
 [Produces("application/json")]
 public class AccessController : ControllerBase
 {

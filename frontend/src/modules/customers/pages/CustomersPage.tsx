@@ -59,9 +59,9 @@ function categoryBadgeClass(category: CustomerCategory): string {
 export function CustomersPage() {
   const { t } = useI18n();
   const hasPerm = usePermissionsStore((s) => s.has);
-  const canView   = hasPerm('ventas.customers.view');
-  const canCreate = hasPerm('ventas.customers.create');
-  const canEdit   = hasPerm('ventas.customers.update') || canCreate;
+  const canView   = hasPerm('sales.customers.view');
+  const canCreate = hasPerm('sales.customers.create');
+  const canEdit   = hasPerm('sales.customers.update') || canCreate;
 
   /* ── State ── */
   const [activeTab, setActiveTab]       = useState<TabId>('clientes');

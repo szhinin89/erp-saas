@@ -24,8 +24,8 @@ export function BillingSettingsPage() {
   const role    = useAuthStore((s) => s.user?.role ?? '');
 
   const isAdmin  = role === 'Admin' || role === 'SuperAdmin';
-  const canView  = isAdmin || hasPerm('ventas.configuracion.view');
-  const canEdit  = isAdmin || hasPerm('ventas.configuracion.edit');
+  const canView  = isAdmin || hasPerm('settings.company.view');
+  const canEdit  = isAdmin || hasPerm('settings.company.edit');
 
   const [saving,    setSaving]    = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);

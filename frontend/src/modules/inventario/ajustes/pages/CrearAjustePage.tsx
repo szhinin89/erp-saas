@@ -22,7 +22,7 @@ interface ProductoOpcion {
 export function CrearAjustePage() {
   const navigate  = useNavigate();
   const hasPerm   = usePermissionsStore((s) => s.has);
-  const canCreate = hasPerm('inventario.ajustes.create');
+  const canCreate = hasPerm('inventory.adjustments.create');
 
   const { data: bodegas, loading: loadingBodegas } = useBodegas();
   const { data: productos } = useAsync<ProductoOpcion[]>(async () => {

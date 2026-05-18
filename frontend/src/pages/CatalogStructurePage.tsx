@@ -187,19 +187,19 @@ export function CatalogStructurePage() {
   const isAdmin = role === 'Admin' || role === 'SuperAdmin';
   const hasPerm = usePermissionsStore((s) => s.has);
 
-  const canViewLines        = isAdmin || hasPerm('inventario.productLines.view');
-  const canViewCategories   = isAdmin || hasPerm('inventario.categories.view');
-  const canViewSubcategories= isAdmin || hasPerm('inventario.subcategories.view');
+  const canViewLines        = isAdmin || hasPerm('inventory.product-lines.view');
+  const canViewCategories   = isAdmin || hasPerm('inventory.categories.view');
+  const canViewSubcategories= isAdmin || hasPerm('inventory.subcategories.view');
   const canView             = canViewLines && canViewCategories && canViewSubcategories;
-  const canCreateLines      = isAdmin || hasPerm('inventario.productLines.create');
-  const canCreateCategories = isAdmin || hasPerm('inventario.categories.create');
-  const canCreateSubcategories = isAdmin || hasPerm('inventario.subcategories.create');
-  const canUpdateLines      = isAdmin || hasPerm('inventario.productLines.update');
-  const canDeleteLines      = isAdmin || hasPerm('inventario.productLines.delete');
-  const canUpdateCategories = isAdmin || hasPerm('inventario.categories.update');
-  const canDeleteCategories = isAdmin || hasPerm('inventario.categories.delete');
-  const canUpdateSubcategories = isAdmin || hasPerm('inventario.subcategories.update');
-  const canDeleteSubcategories = isAdmin || hasPerm('inventario.subcategories.delete');
+  const canCreateLines      = isAdmin || hasPerm('inventory.product-lines.create');
+  const canCreateCategories = isAdmin || hasPerm('inventory.categories.create');
+  const canCreateSubcategories = isAdmin || hasPerm('inventory.subcategories.create');
+  const canUpdateLines      = isAdmin || hasPerm('inventory.product-lines.update');
+  const canDeleteLines      = isAdmin || hasPerm('inventory.product-lines.delete');
+  const canUpdateCategories = isAdmin || hasPerm('inventory.categories.update');
+  const canDeleteCategories = isAdmin || hasPerm('inventory.categories.delete');
+  const canUpdateSubcategories = isAdmin || hasPerm('inventory.subcategories.update');
+  const canDeleteSubcategories = isAdmin || hasPerm('inventory.subcategories.delete');
 
   /* ── Data state ──────────────────────────────────────────── */
   const [lines,         setLines]         = useState<CatalogItem[]>([]);

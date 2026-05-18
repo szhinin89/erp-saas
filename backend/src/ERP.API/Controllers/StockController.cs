@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -10,20 +10,20 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>Consultas de inventario (stock por bodega).</summary>
-[AppFeature("Stock por bodega", "session:inventario.stock", "ðŸ“¦", "/inventario/stock", "perm:inventario.products.view", 41)]
+[AppFeature("Stock por bodega", "perm:inventory.stock.view", "📦", "/inventory/stock", "perm:inventory.products.view", 41)]
 [ApiController]
-[Route("api/Inventario")]
+[Route("api/inventory/stock")]
 [Authorize]
 [Produces("application/json")]
-public sealed class InventoryController : ControllerBase
+public sealed class StockController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public InventoryController(IMediator mediator) => _mediator = mediator;
+    public StockController(IMediator mediator) => _mediator = mediator;
 
     /// <summary>Saldo de stock en una bodega; filtro opcional por producto.</summary>
     [HttpGet("stock-actual")]
-    [Authorize(Policy = "perm:inventario.bodegas.view")]
+    [Authorize(Policy = "perm:inventory.stock.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<CurrentStockListItemDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetCurrentStock(
@@ -35,4 +35,3 @@ public sealed class InventoryController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<CurrentStockListItemDto>());
     }
 }
-

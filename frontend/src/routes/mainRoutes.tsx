@@ -17,65 +17,68 @@ import { CrearCompraPage } from '../modules/compras/facturas/pages/CrearCompraPa
 import { GastosListPage } from '../modules/gastos/pages/GastosListPage';
 import { CrearGastoPage } from '../modules/gastos/pages/CrearGastoPage';
 
-/**
- * Rutas principales de aplicación.
- * Todas están bajo <ProtectedRoute /> y <AppLayout />.
- * 
- * Incluye:
- * - Dashboard
- * - Productos (con redirecciones legacy)
- * - Ventas (Clientes)
- * - Contabilidad
- * - Compras y RRHH (placeholders)
- * - Sucursales (SaaS)
- */
 export const mainRoutes = [
   <Route key="dashboard" path="/dashboard" element={<DashboardPage />} />,
-  
-  // Productos
-  <Route key="products" path="/products" element={<ProductsPage />} />,
-  <Route key="dashboard-products" path="/dashboard/products" element={<Navigate to="/products" replace />} />,
-  <Route key="inventario-products" path="/inventario/products" element={<Navigate to="/products" replace />} />,
-  <Route key="catalog-products" path="/catalog/products" element={<Navigate to="/products" replace />} />,
-  <Route key="product" path="/product" element={<Navigate to="/products" replace />} />,
-  
-  // Ventas
-  <Route key="customers" path="/ventas/customers" element={<CustomersPage />} />,
-  <Route key="ventas-clientes-es" path="/ventas/clientes" element={<Navigate to="/ventas/customers" replace />} />,
-  <Route key="ventas-facturas" path="/ventas/facturas" element={<VentasFacturasPage />} />,
-  <Route key="ventas-facturas-nueva" path="/ventas/facturas/nueva" element={<CreateInvoicePage />} />,
-  <Route key="catalog-customers" path="/catalog/customers" element={<Navigate to="/ventas/customers" replace />} />,
-  <Route key="inventario-customers" path="/inventario/customers" element={<Navigate to="/ventas/customers" replace />} />,
-  
-  // Contabilidad
-  <Route key="accounting" path="/accounting" element={<AccountingPage />} />,
-  <Route key="contabilidad" path="/contabilidad" element={<Navigate to="/accounting" replace />} />,
-  <Route key="contabilidad-config" path="/contabilidad/configuracion" element={<Navigate to="/accounting" replace />} />,
 
-  // Ventas raíz (catálogo API usa /ventas)
-  <Route key="ventas-root" path="/ventas" element={<Navigate to="/ventas/facturas" replace />} />,
+  // ── Inventory / Productos ──────────────────────────────────────────────────
+  <Route key="inventory-products"   path="/inventory/products"  element={<ProductsPage />} />,
+  // Legacy redirects
+  <Route key="products-legacy"      path="/products"            element={<Navigate to="/inventory/products" replace />} />,
+  <Route key="inventario-products"  path="/inventario/products" element={<Navigate to="/inventory/products" replace />} />,
+  <Route key="catalog-products"     path="/catalog/products"    element={<Navigate to="/inventory/products" replace />} />,
+  <Route key="product-legacy"       path="/product"             element={<Navigate to="/inventory/products" replace />} />,
 
-  // Reportes
-  <Route key="sales-report" path="/reportes/ventas" element={<SalesReportPage />} />,
+  // ── Sales / Ventas ─────────────────────────────────────────────────────────
+  <Route key="sales-invoices"       path="/sales/invoices"      element={<VentasFacturasPage />} />,
+  <Route key="sales-invoices-new"   path="/sales/invoices/new"  element={<CreateInvoicePage />} />,
+  <Route key="sales-customers"      path="/sales/customers"     element={<CustomersPage />} />,
+  // Legacy redirects
+  <Route key="ventas-facturas"      path="/ventas/facturas"     element={<Navigate to="/sales/invoices" replace />} />,
+  <Route key="ventas-facturas-nueva"path="/ventas/facturas/nueva" element={<Navigate to="/sales/invoices/new" replace />} />,
+  <Route key="ventas-customers"     path="/ventas/customers"    element={<Navigate to="/sales/customers" replace />} />,
+  <Route key="ventas-clientes"      path="/ventas/clientes"     element={<Navigate to="/sales/customers" replace />} />,
+  <Route key="ventas-root"          path="/ventas"              element={<Navigate to="/sales/invoices" replace />} />,
+  <Route key="catalog-customers"    path="/catalog/customers"   element={<Navigate to="/sales/customers" replace />} />,
 
-  // Compras
-  <Route key="proveedores"          path="/compras/proveedores"      element={<SuppliersPage />} />,
-  <Route key="compras-facturas"     path="/compras/facturas"         element={<ComprasListPage />} />,
-  <Route key="compras-facturas-new" path="/compras/facturas/nueva"   element={<CrearCompraPage />} />,
-  <Route key="compras"              path="/compras"                  element={<Navigate to="/compras/facturas" replace />} />,
+  // ── Finance / Contabilidad ─────────────────────────────────────────────────
+  <Route key="finance-accounts"     path="/finance/accounts"    element={<AccountingPage />} />,
+  <Route key="finance-config"       path="/finance/config"      element={<AccountingPage />} />,
+  // Legacy redirects
+  <Route key="accounting-legacy"    path="/accounting"          element={<Navigate to="/finance/accounts" replace />} />,
+  <Route key="contabilidad-legacy"  path="/contabilidad"        element={<Navigate to="/finance/accounts" replace />} />,
+  <Route key="contabilidad-config"  path="/contabilidad/configuracion" element={<Navigate to="/finance/config" replace />} />,
 
-  // Gastos
-  <Route key="gastos"     path="/gastos"        element={<GastosListPage />} />,
-  <Route key="gastos-new" path="/gastos/nuevo"  element={<CrearGastoPage />} />,
+  // ── Purchases / Compras ────────────────────────────────────────────────────
+  <Route key="purchases-invoices"   path="/purchases/invoices"     element={<ComprasListPage />} />,
+  <Route key="purchases-invoices-new" path="/purchases/invoices/new" element={<CrearCompraPage />} />,
+  <Route key="purchases-suppliers"  path="/purchases/suppliers"    element={<SuppliersPage />} />,
+  // Legacy redirects
+  <Route key="compras-facturas"     path="/compras/facturas"       element={<Navigate to="/purchases/invoices" replace />} />,
+  <Route key="compras-facturas-new" path="/compras/facturas/nueva" element={<Navigate to="/purchases/invoices/new" replace />} />,
+  <Route key="compras-proveedores"  path="/compras/proveedores"    element={<Navigate to="/purchases/suppliers" replace />} />,
+  <Route key="compras-root"         path="/compras"                element={<Navigate to="/purchases/invoices" replace />} />,
+
+  // ── Expenses / Gastos ──────────────────────────────────────────────────────
+  <Route key="expenses"             path="/expenses"          element={<GastosListPage />} />,
+  <Route key="expenses-new"         path="/expenses/new"      element={<CrearGastoPage />} />,
+  // Legacy redirects
+  <Route key="gastos-legacy"        path="/gastos"            element={<Navigate to="/expenses" replace />} />,
+  <Route key="gastos-nuevo-legacy"  path="/gastos/nuevo"      element={<Navigate to="/expenses/new" replace />} />,
+
+  // ── Settings / Configuración ───────────────────────────────────────────────
+  <Route key="settings-company"     path="/settings/company"      element={<CompanyConfigPage />} />,
+  <Route key="settings-sri"         path="/settings/sri"           element={<SriConfigPage />} />,
+  <Route key="settings-ride"        path="/settings/ride"          element={<BillingSettingsPage />} />,
+  <Route key="settings-branches"    path="/settings/branches"      element={<BranchesPage />} />,
+  // Legacy redirects
+  <Route key="config-empresa"       path="/configuracion/empresa"      element={<Navigate to="/settings/company" replace />} />,
+  <Route key="config-sri"           path="/configuracion/sri"           element={<Navigate to="/settings/sri" replace />} />,
+  <Route key="config-facturacion"   path="/configuracion/facturacion"   element={<Navigate to="/settings/ride" replace />} />,
+  <Route key="config-sucursales"    path="/configuracion/sucursales"    element={<Navigate to="/settings/branches" replace />} />,
+  <Route key="saas-branches"        path="/saas/branches"               element={<Navigate to="/settings/branches" replace />} />,
+
+  // ── Reportes ───────────────────────────────────────────────────────────────
+  <Route key="sales-report"         path="/reportes/ventas"     element={<SalesReportPage />} />,
 
   <Route key="rrhh" path="/rrhh" element={<ModulePlaceholderPage variant="hr" />} />,
-
-  // Configuración
-  <Route key="config-empresa"      path="/configuracion/empresa"      element={<CompanyConfigPage />} />,
-  <Route key="config-sri"          path="/configuracion/sri"           element={<SriConfigPage />} />,
-  <Route key="config-facturacion"  path="/configuracion/facturacion"   element={<BillingSettingsPage />} />,
-
-  // SaaS
-  <Route key="branches" path="/saas/branches" element={<BranchesPage />} />,
-  <Route key="config-sucursales" path="/configuracion/sucursales" element={<Navigate to="/saas/branches" replace />} />,
 ];

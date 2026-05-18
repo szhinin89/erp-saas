@@ -15,9 +15,9 @@ namespace ERP.API.Controllers;
 /// <summary>
 /// Master catalog: units of measure for the authenticated tenant.
 /// </summary>
-[AppFeature("Unidades de medida", "perm:inventario.units.view", "📏", "/inventario/units", "perm:inventario.products.view", 37)]
+[AppFeature("Unidades de medida", "perm:inventory.units.view", "📏", "/inventory/units", "perm:inventory.products.view", 37)]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/inventory/units")]
 [Authorize]
 [Produces("application/json")]
 public class UnitsOfMeasureController : ControllerBase
@@ -31,7 +31,7 @@ public class UnitsOfMeasureController : ControllerBase
 
     /// <summary>Lists units of measure for the current tenant.</summary>
     [HttpGet]
-    [Authorize(Policy = "perm:inventario.units.view")]
+    [Authorize(Policy = "perm:inventory.units.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<UnitOfMeasureDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool onlyActive = true, CancellationToken ct = default)
@@ -42,7 +42,7 @@ public class UnitsOfMeasureController : ControllerBase
 
     /// <summary>Creates a new unit of measure.</summary>
     [HttpPost]
-    [Authorize(Policy = "perm:inventario.units.create")]
+    [Authorize(Policy = "perm:inventory.units.create")]
     [ProducesResponseType(typeof(ApiResponse<UnitOfMeasureDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -55,7 +55,7 @@ public class UnitsOfMeasureController : ControllerBase
 
     /// <summary>Updates an existing unit of measure.</summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Policy = "perm:inventario.units.update")]
+    [Authorize(Policy = "perm:inventory.units.update")]
     [ProducesResponseType(typeof(ApiResponse<UnitOfMeasureDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -68,7 +68,7 @@ public class UnitsOfMeasureController : ControllerBase
 
     /// <summary>Disables (soft-delete) a unit of measure.</summary>
     [HttpPatch("{id:guid}/disable")]
-    [Authorize(Policy = "perm:inventario.units.delete")]
+    [Authorize(Policy = "perm:inventory.units.delete")]
     [ProducesResponseType(typeof(ApiResponse<UnitOfMeasureDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -80,7 +80,7 @@ public class UnitsOfMeasureController : ControllerBase
 
     /// <summary>Re-enables a disabled unit of measure.</summary>
     [HttpPatch("{id:guid}/enable")]
-    [Authorize(Policy = "perm:inventario.units.update")]
+    [Authorize(Policy = "perm:inventory.units.update")]
     [ProducesResponseType(typeof(ApiResponse<UnitOfMeasureDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

@@ -20,46 +20,81 @@ import { BodegasPage } from '../pages/BodegasPage';
 import { CarriersPage } from '../modules/logistica/transportistas/pages/CarriersPage';
 
 export const catalogRoutes = [
-  // ── Órdenes de Compra ──────────────────────────────────────────────────────
-  <Route key="ordenes-compra"        path="/compras/ordenes"        element={<OrdenesCompraListPage />} />,
-  <Route key="ordenes-compra-nueva"  path="/compras/ordenes/nueva"  element={<CrearOrdenCompraPage />} />,
-  <Route key="ordenes-compra-detail" path="/compras/ordenes/:id"    element={<OrdenCompraDetailPage />} />,
+  // ── Purchases / Órdenes de Compra ─────────────────────────────────────────
+  <Route key="purchases-orders"        path="/purchases/orders"        element={<OrdenesCompraListPage />} />,
+  <Route key="purchases-orders-new"    path="/purchases/orders/new"    element={<CrearOrdenCompraPage />} />,
+  <Route key="purchases-orders-detail" path="/purchases/orders/:id"    element={<OrdenCompraDetailPage />} />,
+  <Route key="purchases-credit-notes"       path="/purchases/credit-notes"        element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="purchases-withholding-issued" path="/purchases/withholding-issued"  element={<TenantFeaturePlaceholderPage />} />,
+  // Legacy
+  <Route key="compras-ordenes"         path="/compras/ordenes"         element={<Navigate to="/purchases/orders" replace />} />,
+  <Route key="compras-ordenes-nueva"   path="/compras/ordenes/nueva"   element={<Navigate to="/purchases/orders/new" replace />} />,
+  <Route key="compras-ordenes-detail"  path="/compras/ordenes/:id"     element={<Navigate to="/purchases/orders/:id" replace />} />,
+  <Route key="compras-notas-prov"      path="/compras/notas-proveedor" element={<Navigate to="/purchases/credit-notes" replace />} />,
+  <Route key="compras-ret"             path="/compras/retenciones"     element={<Navigate to="/purchases/withholding-issued" replace />} />,
 
+  // ── Inventory / Ajustes ───────────────────────────────────────────────────
+  <Route key="inventory-adjustments"        path="/inventory/adjustments"        element={<AjustesListPage />} />,
+  <Route key="inventory-adjustments-new"    path="/inventory/adjustments/new"    element={<CrearAjustePage />} />,
+  <Route key="inventory-adjustments-detail" path="/inventory/adjustments/:id"    element={<AjusteDetailPage />} />,
+  // Legacy
+  <Route key="ajustes-legacy"        path="/inventario/ajustes"        element={<Navigate to="/inventory/adjustments" replace />} />,
+  <Route key="ajustes-nuevo-legacy"  path="/inventario/ajustes/nuevo"  element={<Navigate to="/inventory/adjustments/new" replace />} />,
+  <Route key="ajustes-detail-legacy" path="/inventario/ajustes/:id"    element={<Navigate to="/inventory/adjustments/:id" replace />} />,
 
-  // ── Ajustes de Inventario ──────────────────────────────────────────────────
-  <Route key="ajustes"        path="/inventario/ajustes"        element={<AjustesListPage />} />,
-  <Route key="ajustes-nuevo"  path="/inventario/ajustes/nuevo"  element={<CrearAjustePage />} />,
-  <Route key="ajustes-detail" path="/inventario/ajustes/:id"    element={<AjusteDetailPage />} />,
+  // ── Inventory / Transferencias ─────────────────────────────────────────────
+  <Route key="inventory-transfers"        path="/inventory/transfers"        element={<TransferenciasListPage />} />,
+  <Route key="inventory-transfers-new"    path="/inventory/transfers/new"    element={<CrearTransferenciaPage />} />,
+  <Route key="inventory-transfers-detail" path="/inventory/transfers/:id"    element={<TransferenciaDetailPage />} />,
+  // Legacy
+  <Route key="transferencias-legacy"        path="/inventario/transferencias"        element={<Navigate to="/inventory/transfers" replace />} />,
+  <Route key="transferencias-nueva-legacy"  path="/inventario/transferencias/nueva"  element={<Navigate to="/inventory/transfers/new" replace />} />,
+  <Route key="transferencias-detail-legacy" path="/inventario/transferencias/:id"    element={<Navigate to="/inventory/transfers/:id" replace />} />,
 
-  // ── Transferencias ─────────────────────────────────────────────────────────
-  <Route key="transferencias"        path="/inventario/transferencias"        element={<TransferenciasListPage />} />,
-  <Route key="transferencias-nueva"  path="/inventario/transferencias/nueva"  element={<CrearTransferenciaPage />} />,
-  <Route key="transferencias-detail" path="/inventario/transferencias/:id"    element={<TransferenciaDetailPage />} />,
+  // ── Inventory / Catálogo ───────────────────────────────────────────────────
+  <Route key="inventory-brands"             path="/inventory/brands"            element={<BrandsPage />} />,
+  <Route key="inventory-product-types"      path="/inventory/product-types"     element={<ProductTypesPage />} />,
+  <Route key="inventory-units"              path="/inventory/units"              element={<UnitsPage />} />,
+  <Route key="inventory-tariffs"            path="/inventory/tariffs"            element={<TariffsCatalogPage />} />,
+  <Route key="inventory-catalog-structure"  path="/inventory/catalog-structure"  element={<CatalogStructurePage />} />,
+  <Route key="inventory-warehouses"         path="/inventory/warehouses"         element={<BodegasPage />} />,
+  <Route key="inventory-kardex"             path="/inventory/kardex"             element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="inventory-stock"              path="/inventory/stock"              element={<TenantFeaturePlaceholderPage />} />,
+  // Legacy
+  <Route key="inventario-brands"        path="/inventario/brands"        element={<Navigate to="/inventory/brands" replace />} />,
+  <Route key="inventario-product-types" path="/inventario/product-types" element={<Navigate to="/inventory/product-types" replace />} />,
+  <Route key="inventario-units"         path="/inventario/units"          element={<Navigate to="/inventory/units" replace />} />,
+  <Route key="inventario-tariffs"       path="/inventario/tariffs"        element={<Navigate to="/inventory/tariffs" replace />} />,
+  <Route key="inventario-structure"     path="/inventario/structure"      element={<Navigate to="/inventory/catalog-structure" replace />} />,
+  <Route key="inventario-bodegas"       path="/inventario/bodegas"        element={<Navigate to="/inventory/warehouses" replace />} />,
+  <Route key="inventario-kardex"        path="/inventario/kardex"         element={<Navigate to="/inventory/kardex" replace />} />,
+  <Route key="logistica-bodegas"        path="/logistica/bodegas"         element={<Navigate to="/inventory/warehouses" replace />} />,
+  <Route key="catalog-brands"           path="/catalog/brands"            element={<Navigate to="/inventory/brands" replace />} />,
+  <Route key="catalog-product-types"    path="/catalog/product-types"     element={<Navigate to="/inventory/product-types" replace />} />,
+  <Route key="catalog-units"            path="/catalog/units"             element={<Navigate to="/inventory/units" replace />} />,
+  <Route key="catalog-tariffs"          path="/catalog/tariffs"           element={<Navigate to="/inventory/tariffs" replace />} />,
+  <Route key="catalog-structure"        path="/catalog/structure"         element={<Navigate to="/inventory/catalog-structure" replace />} />,
 
-  <Route key="brands" path="/inventario/brands" element={<BrandsPage />} />,
-  <Route key="product-types" path="/inventario/product-types" element={<ProductTypesPage />} />,
-  <Route key="units" path="/inventario/units" element={<UnitsPage />} />,
-  <Route key="tariffs" path="/inventario/tariffs" element={<TariffsCatalogPage />} />,
-  <Route key="structure" path="/inventario/structure" element={<CatalogStructurePage />} />,
-  // Legacy catalog/* redirects
-  <Route key="catalog-brands" path="/catalog/brands" element={<Navigate to="/inventario/brands" replace />} />,
-  <Route key="catalog-product-types" path="/catalog/product-types" element={<Navigate to="/inventario/product-types" replace />} />,
-  <Route key="catalog-units" path="/catalog/units" element={<Navigate to="/inventario/units" replace />} />,
-  <Route key="catalog-tariffs" path="/catalog/tariffs" element={<Navigate to="/inventario/tariffs" replace />} />,
-  <Route key="catalog-structure" path="/catalog/structure" element={<Navigate to="/inventario/structure" replace />} />,
+  // ── Logistics / Transportistas ─────────────────────────────────────────────
+  <Route key="logistics-carriers"   path="/logistics/carriers"        element={<CarriersPage />} />,
+  // Legacy
+  <Route key="logistica-transportistas" path="/logistica/transportistas" element={<Navigate to="/logistics/carriers" replace />} />,
 
-  // Rutas referenciadas por el catálogo API sin pantalla dedicada aún (evitan caer en * → /dashboard).
-  <Route key="inv-kardex" path="/inventario/kardex" element={<TenantFeaturePlaceholderPage />} />,
-  <Route key="inv-bodegas" path="/inventario/bodegas" element={<BodegasPage />} />,
-  <Route key="legacy-logistica-bodegas" path="/logistica/bodegas" element={<Navigate to="/inventario/bodegas" replace />} />,
-  <Route key="logistica-transportistas" path="/logistica/transportistas" element={<CarriersPage />} />,
-  <Route key="ventas-notas" path="/ventas/notas" element={<TenantFeaturePlaceholderPage />} />,
-  <Route key="ventas-ret-rec" path="/ventas/retenciones-recibidas" element={<TenantFeaturePlaceholderPage />} />,
-  /* /compras/proveedores is defined in mainRoutes — SuppliersPage */
-  <Route key="compras-notas-prov" path="/compras/notas-proveedor" element={<TenantFeaturePlaceholderPage />} />,
-  <Route key="compras-ret" path="/compras/retenciones" element={<TenantFeaturePlaceholderPage />} />,
-  <Route key="gastos-root" path="/gastos" element={<TenantFeaturePlaceholderPage />} />,
-  <Route key="caja-root" path="/caja" element={<TenantFeaturePlaceholderPage />} />,
-  <Route key="actividad" path="/actividad" element={<TenantFeaturePlaceholderPage />} />,
-  <Route key="sri" path="/configuracion/sri" element={<TenantFeaturePlaceholderPage />} />,
+  // ── Cash / Caja ────────────────────────────────────────────────────────────
+  <Route key="cash-bank"  path="/cash/bank"  element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="caja-root"  path="/caja"       element={<Navigate to="/cash/bank" replace />} />,
+
+  // ── Sales (rutas secundarias) ──────────────────────────────────────────────
+  <Route key="sales-credit-notes"       path="/sales/credit-notes"           element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="sales-withholding-received" path="/sales/withholding-received"  element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="ventas-notas-legacy"      path="/ventas/notas"                  element={<Navigate to="/sales/credit-notes" replace />} />,
+  <Route key="ventas-ret-rec-legacy"    path="/ventas/retenciones-recibidas"  element={<Navigate to="/sales/withholding-received" replace />} />,
+
+  // ── Settings adicionales ───────────────────────────────────────────────────
+  <Route key="settings-geography"  path="/settings/geography"  element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="geo-legacy"          path="/configuracion/geografia" element={<Navigate to="/settings/geography" replace />} />,
+
+  // ── Admin / Activity ───────────────────────────────────────────────────────
+  <Route key="admin-activity" path="/admin/activity" element={<TenantFeaturePlaceholderPage />} />,
+  <Route key="actividad-legacy" path="/actividad"    element={<Navigate to="/admin/activity" replace />} />,
 ];

@@ -23,9 +23,9 @@ namespace ERP.API.Controllers;
 /// Kardex valorizado de inventario por producto y bodega (mÃ©todo: promedio ponderado mÃ³vil).
 /// Soporta modo sÃ­ncrono (respuesta inmediata) y asÃ­ncrono (202 + jobId).
 /// </summary>
-[AppFeature("Kardex", "perm:inventario.kardex.view", "ðŸ“Š", "/inventario/kardex", "perm:inventario.products.view", 42)]
+[AppFeature("Kardex", "perm:inventory.kardex.view", "ðŸ“Š", "/inventory/kardex", "perm:inventory.products.view", 42)]
 [ApiController]
-[Route("api/inventario/kardex")]
+[Route("api/inventory/kardex")]
 [Authorize]
 [Produces("application/json")]
 public sealed class KardexController : ControllerBase
@@ -61,7 +61,7 @@ public sealed class KardexController : ControllerBase
     /// Query params: productoId, bodegaId, fechaInicio (YYYY-MM-DD), fechaFin (YYYY-MM-DD).
     /// </remarks>
     [HttpGet]
-    [Authorize(Policy = "perm:inventario.kardex.view")]
+    [Authorize(Policy = "perm:inventory.kardex.view")]
     [ProducesResponseType(typeof(ApiResponse<KardexResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(object), StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -85,10 +85,10 @@ public sealed class KardexController : ControllerBase
     /// <summary>
     /// Solicita el kardex en modo asÃ­ncrono.
     /// Siempre retorna 202 Accepted con un <c>jobId</c>; el resultado se consulta en
-    /// <c>GET /api/inventario/kardex/resultado/{jobId}</c>.
+    /// <c>GET /api/inventory/kardex/resultado/{jobId}</c>.
     /// </summary>
     [HttpPost("solicitar")]
-    [Authorize(Policy = "perm:inventario.kardex.view")]
+    [Authorize(Policy = "perm:inventory.kardex.view")]
     [ProducesResponseType(typeof(object), StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RequestKardex(CancellationToken ct = default)
@@ -110,7 +110,7 @@ public sealed class KardexController : ControllerBase
     /// <response code="404">Reporte no encontrado.</response>
     /// <response code="400">El reporte terminÃ³ con error.</response>
     [HttpGet("resultado/{jobId:guid}")]
-    [Authorize(Policy = "perm:inventario.kardex.view")]
+    [Authorize(Policy = "perm:inventory.kardex.view")]
     [ProducesResponseType(typeof(ApiResponse<KardexResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -152,7 +152,7 @@ public sealed class KardexController : ControllerBase
 
     /// <summary>Exporta el kardex a Excel (.xlsx) con tabla formateada y resumen.</summary>
     [HttpGet("exportar/excel")]
-    [Authorize(Policy = "perm:inventario.kardex.view")]
+    [Authorize(Policy = "perm:inventory.kardex.view")]
     [Produces("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -178,7 +178,7 @@ public sealed class KardexController : ControllerBase
 
     /// <summary>Exporta el kardex a PDF (A4 horizontal) con tabla y resumen.</summary>
     [HttpGet("exportar/pdf")]
-    [Authorize(Policy = "perm:inventario.kardex.view")]
+    [Authorize(Policy = "perm:inventory.kardex.view")]
     [Produces("application/pdf")]
     [ProducesResponseType(typeof(FileContentResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -206,7 +206,7 @@ public sealed class KardexController : ControllerBase
     /// Requiere rol SuperAdmin o Administrador.
     /// </summary>
     [HttpPost("recalcular")]
-    [Authorize(Policy = "perm:inventario.kardex.view")]
+    [Authorize(Policy = "perm:inventory.kardex.view")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RecalcularSnapshots(
@@ -272,7 +272,7 @@ public sealed class KardexController : ControllerBase
             jobId   = reporte.Id,
             estado  = reporte.Status,
             mensaje = "El reporte estÃ¡ siendo procesado. " +
-                      $"Consulte el resultado en /api/inventario/kardex/resultado/{reporte.Id}",
+                      $"Consulte el resultado en /api/inventory/kardex/resultado/{reporte.Id}",
         });
     }
 

@@ -70,24 +70,24 @@ export function sortNavGroupsForMainBar(groups: NavGroup[]): NavGroup[] {
 /** Alias BD/legacy → rutas definidas en `App.tsx` (<Routes>). Sin coincidencia, `*` envía al dashboard. */
 const MENU_ROUTE_ALIASES: Record<string, string> = {
   '/dashboard/products': '/products',
-  '/inventario/products': '/products',
+  '/inventory/products': '/products',
   '/catalog/products': '/products',
   '/product': '/products',
-  '/contabilidad': '/accounting',
-  '/contabilidad/configuracion': '/accounting',
-  '/configuracion/sucursales': '/saas/branches',
-  '/logistica/bodegas': '/inventario/bodegas',
-  '/inventario/stock': '/products',
-  '/ventas': '/ventas/facturas',
-  '/ventas/clientes': '/ventas/customers',
-  '/catalog/units': '/inventario/units',
-  '/catalog/types': '/inventario/product-types',
-  '/catalog/subcategories': '/inventario/structure',
-  '/catalog/lines': '/inventario/structure',
-  '/catalog/categories': '/inventario/structure',
-  '/catalog/brands': '/inventario/brands',
-  '/catalog/tariffs': '/inventario/tariffs',
-  '/catalog/structure': '/inventario/structure',
+  '/finance/accounts': '/finance/accounts',
+  '/contabilidad/configuracion': '/finance/config',
+  '/settings/branches': '/settings/branches',
+  '/logistica/bodegas': '/inventory/warehouses',
+  '/inventory/stock': '/inventory/stock',
+  '/ventas': '/sales/invoices',
+  '/sales/customers': '/sales/customers',
+  '/catalog/units': '/inventory/units',
+  '/catalog/types': '/inventory/product-types',
+  '/catalog/subcategories': '/inventory/catalog-structure',
+  '/catalog/lines': '/inventory/catalog-structure',
+  '/catalog/categories': '/inventory/catalog-structure',
+  '/catalog/brands': '/inventory/brands',
+  '/catalog/tariffs': '/inventory/tariffs',
+  '/catalog/structure': '/inventory/catalog-structure',
 };
 
 /**
@@ -319,14 +319,14 @@ export function buildNavGroups(
       moduleKey: 'inventario',
       sortOrder: defaultBarRank('inventario') * 10,
       items: [
-        { to: '/products', label: t('app.nav.products'), permissionKey: 'inventario.products.view' },
-        { to: '/inventario/ajustes',         label: t('app.nav.catalog.ajustes'),        permissionKey: 'inventario.ajustes.view' },
-        { to: '/inventario/transferencias', label: t('app.nav.catalog.transferencias'), permissionKey: 'inventario.transferencias.view' },
-        { to: '/inventario/brands', label: t('app.nav.catalog.brands'), permissionKey: 'inventario.brands.view' },
-        { to: '/inventario/product-types', label: t('app.nav.catalog.productTypes'), permissionKey: 'inventario.productTypes.view' },
-        { to: '/inventario/units', label: t('app.nav.catalog.units'), permissionKey: 'inventario.units.view' },
-        { to: '/inventario/tariffs', label: t('app.nav.catalog.tariffs'), permissionKey: 'inventario.tariffs.view' },
-        { to: '/inventario/structure', label: t('app.nav.catalog.structure'), permissionKey: 'inventario.categories.view' },
+        { to: '/products', label: t('app.nav.products'), permissionKey: 'inventory.products.view' },
+        { to: '/inventory/adjustments',         label: t('app.nav.catalog.ajustes'),        permissionKey: 'inventory.adjustments.view' },
+        { to: '/inventory/transfers', label: t('app.nav.catalog.transferencias'), permissionKey: 'inventory.transfers.view' },
+        { to: '/inventory/brands', label: t('app.nav.catalog.brands'), permissionKey: 'inventory.brands.view' },
+        { to: '/inventory/product-types', label: t('app.nav.catalog.productTypes'), permissionKey: 'inventory.product-types.view' },
+        { to: '/inventory/units', label: t('app.nav.catalog.units'), permissionKey: 'inventory.units.view' },
+        { to: '/inventory/tariffs', label: t('app.nav.catalog.tariffs'), permissionKey: 'inventory.tariffs.view' },
+        { to: '/inventory/catalog-structure', label: t('app.nav.catalog.structure'), permissionKey: 'inventory.categories.view' },
       ],
     },
     {
@@ -336,8 +336,8 @@ export function buildNavGroups(
       moduleKey: 'ventas',
       sortOrder: defaultBarRank('sales') * 10,
       items: [
-        { to: '/ventas/customers', label: t('app.nav.catalog.customers'), permissionKey: 'ventas.customers.view' },
-        { to: '/ventas/facturas', label: t('app.nav.sales.invoices'), permissionKey: 'ventas.facturas.view' },
+        { to: '/sales/customers', label: t('app.nav.catalog.customers'), permissionKey: 'sales.customers.view' },
+        { to: '/sales/invoices', label: t('app.nav.sales.invoices'), permissionKey: 'sales.invoices.view' },
       ],
     },
     {
@@ -348,9 +348,9 @@ export function buildNavGroups(
       sortOrder: defaultBarRank('accounting') * 10,
       items: [
         {
-          to: '/accounting',
+          to: '/finance/accounts',
           label: t('app.nav.accounting'),
-          permissionKeysAny: ['accounting.accounts.view', 'accounting.journal.view', 'accounting.config.view'],
+          permissionKeysAny: ['finance.accounts.view', 'finance.journal.view', 'finance.config.view'],
         },
       ],
     },
@@ -377,27 +377,27 @@ export function buildNavGroups(
       sortOrder: defaultBarRank('configuracion') * 10,
       items: [
         {
-          to: '/configuracion/empresa',
+          to: '/settings/company',
           label: t('app.nav.config.empresa') || 'Empresa',
-          permissionKey: 'configuracion.empresa.view',
+          permissionKey: 'settings.company.view',
         },
         {
-          to: '/access',
+          to: '/admin/users',
           label: t('app.nav.access'),
           moduleKey: 'access',
-          permissionKey: 'access.memberships.view',
+          permissionKey: 'admin.users.view',
         },
         {
-          to: '/profiles',
+          to: '/admin/roles',
           label: t('app.nav.profiles'),
           moduleKey: 'access',
-          permissionKey: 'access.profiles.view',
+          permissionKey: 'admin.roles.view',
         },
         {
-          to: '/saas/branches',
+          to: '/settings/branches',
           label: t('app.nav.branches'),
           moduleKey: 'saas',
-          permissionKey: 'saas.branches.view',
+          permissionKey: 'settings.branches.view',
           roles: ['Admin', 'SuperAdmin'],
         },
       ],
@@ -506,7 +506,7 @@ export function ensureSalesNextToInventory(
   const inventory = groups.find((g) => g.id === 'inventario' || g.id === 'catalog');
   if (inventory) {
     const custIdx = inventory.items.findIndex(
-      (it) => it.to === '/ventas/customers' || it.to === '/inventario/customers' || it.to === '/catalog/customers',
+      (it) => it.to === '/sales/customers' || it.to === '/inventario/customers' || it.to === '/catalog/customers',
     );
     if (custIdx >= 0) {
       const customerItem = inventory.items[custIdx]!;
@@ -520,7 +520,7 @@ export function ensureSalesNextToInventory(
         sortOrder: defaultBarRank('sales') * 10,
         items: [
           { ...customerItem, moduleKey: 'ventas' },
-          { to: '/ventas/facturas', label: t('app.nav.sales.invoices'), permissionKey: 'ventas.facturas.view' },
+          { to: '/sales/invoices', label: t('app.nav.sales.invoices'), permissionKey: 'sales.invoices.view' },
         ],
       };
       const withoutInventory = groups.filter((g) => g.id !== inventory.id);

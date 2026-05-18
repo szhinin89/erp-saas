@@ -17,9 +17,9 @@ export function ProductPage() {
   const hasPerm = usePermissionsStore((s) => s.has);
   const role = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin   = role === 'Admin' || role === 'SuperAdmin';
-  const canView   = isAdmin || hasPerm('inventario.products.view');
-  const canCreate = isAdmin || hasPerm('inventario.products.create');
-  const canEdit   = isAdmin || hasPerm('inventario.products.edit');
+  const canView   = isAdmin || hasPerm('inventory.products.view');
+  const canCreate = isAdmin || hasPerm('inventory.products.create');
+  const canEdit   = isAdmin || hasPerm('inventory.products.edit');
 
   const {
     recentProducts, productsLoading, productsError,

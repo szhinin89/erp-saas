@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { usePermissionsStore } from '../store/permissionsStore';
 
 type Props = {
-  /** Permission key to check, e.g. 'ventas.invoice.view' */
+  /** Permission key to check, e.g. 'sales.invoices.view' */
   permission: string;
   /** Rendered when the user HAS the permission. */
   children: ReactNode;
@@ -15,13 +15,13 @@ type Props = {
  * Conditionally renders children based on a single permission key.
  *
  * Usage — hide a section:
- *   <PermissionGuard permission="ventas.invoice.view">
+ *   <PermissionGuard permission="sales.invoices.view">
  *     <InvoiceList />
  *   </PermissionGuard>
  *
  * Usage — show a disabled state instead:
  *   <PermissionGuard
- *     permission="ventas.invoice.create"
+ *     permission="sales.invoices.create"
  *     fallback={<button disabled>Nueva factura</button>}
  *   >
  *     <button onClick={openModal}>Nueva factura</button>
@@ -47,7 +47,7 @@ type MultiProps = {
  * Guards that require multiple permissions simultaneously.
  *
  * Usage — require both view AND create:
- *   <MultiPermissionGuard permissions={['ventas.invoice.view', 'ventas.invoice.create']}>
+ *   <MultiPermissionGuard permissions={['sales.invoices.view', 'sales.invoices.create']}>
  *     ...
  *   </MultiPermissionGuard>
  */

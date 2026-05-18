@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -9,20 +9,20 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-/// <summary>ConfiguraciÃ³n de cuentas por defecto por tenant (compras, ventas, IVA, caja, mapeo de gastos).</summary>
-[AppFeature("Config. contable", "perm:accounting.config.view", "âš™ï¸", "/contabilidad/configuracion", "perm:accounting.accounts.view", 25)]
+/// <summary>Configuración de cuentas por defecto por tenant (compras, ventas, IVA, caja, mapeo de gastos).</summary>
+[AppFeature("Config. contable", "perm:finance.config.view", "⚙️", "/finance/config", "perm:finance.accounts.view", 25)]
 [ApiController]
-[Route("api/contabilidad/configuracion")]
+[Route("api/finance/config")]
 [Authorize]
 [Produces("application/json")]
-public sealed class AccountingConfigurationController : ControllerBase
+public sealed class FinanceConfigController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public AccountingConfigurationController(IMediator mediator) => _mediator = mediator;
+    public FinanceConfigController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
-    [Authorize(Policy = "perm:accounting.config.view")]
+    [Authorize(Policy = "perm:finance.config.view")]
     [ProducesResponseType(typeof(ApiResponse<AccountingSetupDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get(CancellationToken ct = default)
     {
@@ -31,7 +31,7 @@ public sealed class AccountingConfigurationController : ControllerBase
     }
 
     [HttpPut]
-    [Authorize(Policy = "perm:accounting.config.edit")]
+    [Authorize(Policy = "perm:finance.config.edit")]
     [ProducesResponseType(typeof(ApiResponse<AccountingSetupDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Upsert(
         [FromBody] UpsertConfigurationContableCommand command,
@@ -42,7 +42,7 @@ public sealed class AccountingConfigurationController : ControllerBase
     }
 
     [HttpGet("gastos")]
-    [Authorize(Policy = "perm:accounting.config.view")]
+    [Authorize(Policy = "perm:finance.config.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ExpenseCategoryDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetExpenses(CancellationToken ct = default)
     {
@@ -51,7 +51,7 @@ public sealed class AccountingConfigurationController : ControllerBase
     }
 
     [HttpPost("gastos")]
-    [Authorize(Policy = "perm:accounting.config.edit")]
+    [Authorize(Policy = "perm:finance.config.edit")]
     [ProducesResponseType(typeof(ApiResponse<ExpenseCategoryDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> CreateExpenseMapping(
         [FromBody] CreateExpenseCategoryCommand command,
@@ -62,7 +62,7 @@ public sealed class AccountingConfigurationController : ControllerBase
     }
 
     [HttpDelete("gastos/{id:guid}")]
-    [Authorize(Policy = "perm:accounting.config.edit")]
+    [Authorize(Policy = "perm:finance.config.edit")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> DeleteExpenseMapping(Guid id, CancellationToken ct = default)
     {

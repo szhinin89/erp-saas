@@ -24,7 +24,7 @@ const emptyItem = (): ItemRow => ({ productoId: '', cantidad: '', precioUnitario
 export function CrearOrdenCompraPage() {
   const navigate  = useNavigate();
   const hasPerm   = usePermissionsStore((s) => s.has);
-  const canCreate = hasPerm('compras.ordenes.create');
+  const canCreate = hasPerm('purchases.orders.create');
 
   const [proveedores, setProveedores] = useState<ProveedorOpcion[]>([]);
   const [productos,   setProductos]   = useState<ProductoOpcion[]>([]);

@@ -13,10 +13,10 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>Catálogo de ubicación (solo lectura) para combos en cascada.</summary>
-[AppFeature("Geografía", "session:geography", "🌎", "/configuracion/geografia", null, 210)]
+[AppFeature("Geografía", "perm:settings.geography.view", "🌎", "/settings/geography", "perm:settings.group", 210)]
 [ApiController]
-[Route("api/[controller]")]
-[Authorize(Policy = "Session")]
+[Route("api/settings/geography")]
+[Authorize(Policy = "perm:settings.geography.view")]
 [Produces("application/json")]
 public sealed class GeographyController : ControllerBase
 {

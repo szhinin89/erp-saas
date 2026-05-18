@@ -23,7 +23,7 @@ export function VentasFacturasPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const hasPerm  = usePermissionsStore((s) => s.has);
-  const canView  = hasPerm('ventas.facturas.view');
+  const canView  = hasPerm('sales.invoices.view');
 
   const [rows,       setRows]       = useState<VentasFacturaDto[]>([]);
   const [loading,    setLoading]    = useState(true);

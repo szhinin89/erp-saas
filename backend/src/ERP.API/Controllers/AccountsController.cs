@@ -24,9 +24,9 @@ namespace ERP.API.Controllers;
 /// Módulo de contabilidad: plan de cuentas y asientos contables del tenant autenticado.
 /// Todos los endpoints filtran automáticamente por el tenant del JWT.
 /// </summary>
-[AppFeature("Contabilidad", "perm:accounting.accounts.view", "📒", "/contabilidad", null, 20)]
+[AppFeature("Contabilidad", "perm:finance.accounts.view", "📒", "/finance/accounts", null, 20)]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/finance/accounts")]
 [Authorize]
 [Produces("application/json")]
 public class AccountsController : ControllerBase
@@ -44,7 +44,7 @@ public class AccountsController : ControllerBase
     /// <response code="200">Lista de cuentas contables (puede ser vacía).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpGet]
-    [Authorize(Policy = "perm:accounting.accounts.view")]
+    [Authorize(Policy = "perm:finance.accounts.view")]
     [ProducesResponseType(typeof(ApiResponse<PagedResponse<AccountDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
@@ -68,7 +68,7 @@ public class AccountsController : ControllerBase
     /// <response code="200">Cuenta encontrada.</response>
     /// <response code="404">La cuenta no existe o no pertenece al tenant.</response>
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = "perm:accounting.accounts.view")]
+    [Authorize(Policy = "perm:finance.accounts.view")]
     [ProducesResponseType(typeof(ApiResponse<AccountDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -83,7 +83,7 @@ public class AccountsController : ControllerBase
     /// <response code="200">Cuenta actualizada correctamente.</response>
     /// <response code="400">Datos inválidos o cuenta no encontrada.</response>
     [HttpPut("{id:guid}")]
-    [Authorize(Policy = "perm:accounting.accounts.edit")]
+    [Authorize(Policy = "perm:finance.accounts.edit")]
     [ProducesResponseType(typeof(ApiResponse<AccountDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -101,7 +101,7 @@ public class AccountsController : ControllerBase
     /// <response code="200">Cuenta deshabilitada.</response>
     /// <response code="400">La cuenta ya está deshabilitada o no existe.</response>
     [HttpPatch("{id:guid}/disable")]
-    [Authorize(Policy = "perm:accounting.accounts.edit")]
+    [Authorize(Policy = "perm:finance.accounts.edit")]
     [ProducesResponseType(typeof(ApiResponse<AccountDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -115,7 +115,7 @@ public class AccountsController : ControllerBase
     /// <response code="200">Cuenta habilitada.</response>
     /// <response code="400">La cuenta ya está activa o no existe.</response>
     [HttpPatch("{id:guid}/enable")]
-    [Authorize(Policy = "perm:accounting.accounts.edit")]
+    [Authorize(Policy = "perm:finance.accounts.edit")]
     [ProducesResponseType(typeof(ApiResponse<AccountDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -134,7 +134,7 @@ public class AccountsController : ControllerBase
     /// <response code="201">Cuenta creada correctamente.</response>
     /// <response code="400">El código ya existe en el tenant.</response>
     [HttpPost]
-    [Authorize(Policy = "perm:accounting.accounts.create")]
+    [Authorize(Policy = "perm:finance.accounts.create")]
     [ProducesResponseType(typeof(ApiResponse<AccountDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -153,7 +153,7 @@ public class AccountsController : ControllerBase
     /// <response code="200">Lista de asientos contables con sus líneas.</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     [HttpGet("journal-entries")]
-    [Authorize(Policy = "perm:accounting.journal.view")]
+    [Authorize(Policy = "perm:finance.journal.view")]
     [ProducesResponseType(typeof(ApiResponse<PagedResponse<JournalEntryDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetJournalEntries([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 50, CancellationToken ct = default)
@@ -177,7 +177,7 @@ public class AccountsController : ControllerBase
     /// <response code="200">Asiento encontrado con líneas de débito/crédito.</response>
     /// <response code="404">El asiento no existe o no pertenece al tenant.</response>
     [HttpGet("journal-entries/{id:guid}")]
-    [Authorize(Policy = "perm:accounting.journal.view")]
+    [Authorize(Policy = "perm:finance.journal.view")]
     [ProducesResponseType(typeof(ApiResponse<JournalEntryDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -192,7 +192,7 @@ public class AccountsController : ControllerBase
     /// <response code="200">Asiento anulado correctamente.</response>
     /// <response code="400">El asiento ya está anulado, no existe, o motivo vacío.</response>
     [HttpPatch("journal-entries/{id:guid}/void")]
-    [Authorize(Policy = "perm:accounting.journal.edit")]
+    [Authorize(Policy = "perm:finance.journal.edit")]
     [ProducesResponseType(typeof(ApiResponse<JournalEntryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -214,7 +214,7 @@ public class AccountsController : ControllerBase
     /// <response code="201">Asiento creado en estado Borrador.</response>
     /// <response code="400">El asiento no está cuadrado u otro error de validación.</response>
     [HttpPost("journal-entries")]
-    [Authorize(Policy = "perm:accounting.journal.create")]
+    [Authorize(Policy = "perm:finance.journal.create")]
     [ProducesResponseType(typeof(ApiResponse<JournalEntryDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -234,7 +234,7 @@ public class AccountsController : ControllerBase
     /// con saldo acumulado. Parámetros: desde (YYYY-MM-DD), hasta (YYYY-MM-DD).
     /// </summary>
     [HttpGet("{id:guid}/mayor")]
-    [Authorize(Policy = "perm:accounting.journal.view")]
+    [Authorize(Policy = "perm:finance.journal.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<MayorGeneralLineDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetMayorGeneral(
@@ -256,7 +256,7 @@ public class AccountsController : ControllerBase
     /// Parámetros: desde (YYYY-MM-DD), hasta (YYYY-MM-DD).
     /// </summary>
     [HttpGet("balance-comprobacion")]
-    [Authorize(Policy = "perm:accounting.journal.view")]
+    [Authorize(Policy = "perm:finance.journal.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BalanceComprobacionLineDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetBalanceComprobacion(

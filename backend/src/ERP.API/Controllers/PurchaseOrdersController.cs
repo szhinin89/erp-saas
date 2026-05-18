@@ -20,9 +20,9 @@ namespace ERP.API.Controllers;
 /// Ã“rdenes de Compra â€” documento interno que autoriza la compra a un proveedor.
 /// Flujo: Borrador â†’ Enviada â†’ Aprobada â‡„ RecibidaParcial â†’ Cerrada (+ Cancelada).
 /// </summary>
-[AppFeature("Ã“rdenes de compra", "perm:compras.ordenes.view", "ðŸ“", "/compras/ordenes", "perm:compras.facturas.view", 44)]
+[AppFeature("Ã“rdenes de compra", "perm:purchases.orders.view", "ðŸ“", "/purchases/orders", "perm:purchases.invoices.view", 44)]
 [ApiController]
-[Route("api/compras/ordenes")]
+[Route("api/purchases/orders")]
 [Authorize]
 [Produces("application/json")]
 public sealed class PurchaseOrdersController : ControllerBase
@@ -36,7 +36,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     /// <summary>Lista paginada de Ã³rdenes de compra con filtros opcionales.</summary>
     /// <remarks>Query params: pageNumber, pageSize, proveedorId, estado, fechaDesde (YYYY-MM-DD), fechaHasta.</remarks>
     [HttpGet]
-    [Authorize(Policy = "perm:compras.ordenes.view")]
+    [Authorize(Policy = "perm:purchases.orders.view")]
     [ProducesResponseType(typeof(ApiResponse<PurchaseOrdersPagedResult>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
@@ -64,7 +64,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     /// Ãštil para el selector al vincular facturas electrÃ³nicas.
     /// </summary>
     [HttpGet("pendientes-por-facturar")]
-    [Authorize(Policy = "perm:compras.ordenes.view")]
+    [Authorize(Policy = "perm:purchases.orders.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<PurchaseOrderDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPendingBilling(CancellationToken ct = default)
     {
@@ -74,7 +74,7 @@ public sealed class PurchaseOrdersController : ControllerBase
 
     /// <summary>Retorna el detalle completo de una OC (con lÃ­neas y facturas vinculadas).</summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = "perm:compras.ordenes.view")]
+    [Authorize(Policy = "perm:purchases.orders.view")]
     [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDetailDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct = default)
     {
@@ -90,7 +90,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     /// <response code="201">OC creada en estado Borrador.</response>
     /// <response code="400">Datos invÃ¡lidos o proveedor no encontrado.</response>
     [HttpPost]
-    [Authorize(Policy = "perm:compras.ordenes.create")]
+    [Authorize(Policy = "perm:purchases.orders.create")]
     [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(
@@ -106,7 +106,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     /// EnvÃ­a la OC al proveedor (Borrador â†’ Enviada).
     /// </summary>
     [HttpPatch("{id:guid}/enviar")]
-    [Authorize(Policy = "perm:compras.ordenes.send")]
+    [Authorize(Policy = "perm:purchases.orders.send")]
     [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Send(Guid id, CancellationToken ct = default)
@@ -120,7 +120,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     /// Solo una OC aprobada puede recibir facturas vinculadas.
     /// </summary>
     [HttpPatch("{id:guid}/aprobar")]
-    [Authorize(Policy = "perm:compras.ordenes.approve")]
+    [Authorize(Policy = "perm:purchases.orders.approve")]
     [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Approve(Guid id, CancellationToken ct = default)
@@ -133,7 +133,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     /// Cancela la OC. No posible en Cerrada o ya Cancelada.
     /// </summary>
     [HttpPatch("{id:guid}/cancelar")]
-    [Authorize(Policy = "perm:compras.ordenes.cancel")]
+    [Authorize(Policy = "perm:purchases.orders.cancel")]
     [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken ct = default)
@@ -149,7 +149,7 @@ public sealed class PurchaseOrdersController : ControllerBase
     /// <response code="200">Factura vinculada. OC actualizada (estado puede cambiar a RecibidaParcial o Cerrada).</response>
     /// <response code="400">Factura no aprobada, ya vinculada, o cantidades excedidas.</response>
     [HttpPost("{id:guid}/vincular-factura")]
-    [Authorize(Policy = "perm:compras.ordenes.link-invoice")]
+    [Authorize(Policy = "perm:purchases.orders.link-invoice")]
     [ProducesResponseType(typeof(ApiResponse<PurchaseOrderDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> LinkInvoice(

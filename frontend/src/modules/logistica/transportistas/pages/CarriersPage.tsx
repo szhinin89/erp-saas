@@ -16,9 +16,9 @@ const ID_TYPES = ['RUC', 'CI', 'PASSPORT'] as const;
 export function CarriersPage() {
   const { t } = useI18n();
   const hasPerm  = usePermissionsStore(s => s.has);
-  const canView   = hasPerm('logistica.carriers.view');
-  const canCreate = hasPerm('logistica.carriers.create');
-  const canEdit   = hasPerm('logistica.carriers.update') || canCreate;
+  const canView   = hasPerm('logistics.carriers.view');
+  const canCreate = hasPerm('logistics.carriers.create');
+  const canEdit   = hasPerm('logistics.carriers.update') || canCreate;
 
   /* ── State ── */
   const [searchQuery, setSearchQuery]   = useState('');

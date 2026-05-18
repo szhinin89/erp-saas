@@ -20,7 +20,7 @@ interface ProductoOpcion {
 export function CrearTransferenciaPage() {
   const navigate  = useNavigate();
   const hasPerm   = usePermissionsStore((s) => s.has);
-  const canCreate = hasPerm('inventario.transferencias.create');
+  const canCreate = hasPerm('inventory.transfers.create');
 
   const { data: bodegas, loading: loadingBodegas } = useBodegas();
   const { data: productos } = useAsync<ProductoOpcion[]>(async () => {

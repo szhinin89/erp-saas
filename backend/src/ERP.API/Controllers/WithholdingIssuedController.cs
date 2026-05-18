@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -9,19 +9,19 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-[AppFeature("Retenciones compras", "perm:compras.retenciones.list", "ðŸ“‘", "/compras/retenciones", "perm:compras.facturas.view", 48)]
+[AppFeature("Retenciones compras", "perm:purchases.withholding-issued.view", "🔒", "/purchases/withholding-issued", "perm:purchases.invoices.view", 48)]
 [ApiController]
-[Route("api/compras/retenciones")]
+[Route("api/purchases/withholding-issued")]
 [Authorize]
 [Produces("application/json")]
-public sealed class PurchaseWithholdingsController : ControllerBase
+public sealed class WithholdingIssuedController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public PurchaseWithholdingsController(IMediator mediator) => _mediator = mediator;
+    public WithholdingIssuedController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
-    [Authorize(Policy = "perm:compras.retenciones.list")]
+    [Authorize(Policy = "perm:purchases.withholding-issued.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<IssuedRetentionListItemDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List([FromQuery] Guid? proveedorId, CancellationToken ct = default)
     {
@@ -30,7 +30,7 @@ public sealed class PurchaseWithholdingsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "perm:compras.retenciones.create")]
+    [Authorize(Policy = "perm:purchases.withholding-issued.create")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Generate([FromBody] GenerateIssuedRetentionCommand command, CancellationToken ct = default)
     {
@@ -39,7 +39,7 @@ public sealed class PurchaseWithholdingsController : ControllerBase
     }
 
     [HttpPut("{id:guid}/enviar")]
-    [Authorize(Policy = "perm:compras.retenciones.send")]
+    [Authorize(Policy = "perm:purchases.withholding-issued.send")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Send(Guid id, CancellationToken ct = default)
     {
@@ -47,5 +47,3 @@ public sealed class PurchaseWithholdingsController : ControllerBase
         return this.ToOkOrBadRequest(result, "Enviado");
     }
 }
-
-

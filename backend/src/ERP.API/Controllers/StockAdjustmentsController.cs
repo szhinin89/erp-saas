@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -14,26 +14,26 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// Ajustes manuales de stock (incremento o disminuciÃ³n) sobre un producto en una bodega.
-/// Flujo: Borrador â†’ Ejecutado (stock afectado) | Cancelado (sin efecto).
+/// Ajustes manuales de stock (incremento o disminución) sobre un producto en una bodega.
+/// Flujo: Borrador → Ejecutado (stock afectado) | Cancelado (sin efecto).
 /// </summary>
-[AppFeature("Ajustes de inventario", "perm:inventario.ajustes.view", "âš–ï¸", "/inventario/ajustes", "perm:inventario.products.view", 43)]
+[AppFeature("Ajustes de inventario", "perm:inventory.adjustments.view", "⚖️", "/inventory/adjustments", "perm:inventory.products.view", 43)]
 [ApiController]
-[Route("api/inventario/ajustes")]
+[Route("api/inventory/adjustments")]
 [Authorize]
 [Produces("application/json")]
-public sealed class InventoryAdjustmentsController : ControllerBase
+public sealed class StockAdjustmentsController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public InventoryAdjustmentsController(IMediator mediator) => _mediator = mediator;
+    public StockAdjustmentsController(IMediator mediator) => _mediator = mediator;
 
-    // â”€â”€ Queries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Queries ───────────────────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>Lista paginada de ajustes con filtros opcionales.</summary>
     /// <remarks>Query params: pageNumber, pageSize, bodegaId, productoId, estado, fechaDesde (YYYY-MM-DD), fechaHasta.</remarks>
     [HttpGet]
-    [Authorize(Policy = "perm:inventario.ajustes.view")]
+    [Authorize(Policy = "perm:inventory.adjustments.view")]
     [ProducesResponseType(typeof(ApiResponse<StockAdjustmentsPagedResult>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
@@ -59,7 +59,7 @@ public sealed class InventoryAdjustmentsController : ControllerBase
 
     /// <summary>Retorna el detalle de un ajuste.</summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = "perm:inventario.ajustes.view")]
+    [Authorize(Policy = "perm:inventory.adjustments.view")]
     [ProducesResponseType(typeof(ApiResponse<StockAdjustmentDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct = default)
     {
@@ -67,15 +67,15 @@ public sealed class InventoryAdjustmentsController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK");
     }
 
-    // â”€â”€ Crear â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Crear ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
     /// Crea un ajuste en estado Borrador. El stock NO se modifica hasta Ejecutar.
     /// </summary>
     /// <response code="201">Ajuste creado en estado Borrador.</response>
-    /// <response code="400">Bodega/producto invÃ¡lidos, cantidad cero o motivo vacÃ­o.</response>
+    /// <response code="400">Bodega/producto inválidos, cantidad cero o motivo vacío.</response>
     [HttpPost]
-    [Authorize(Policy = "perm:inventario.ajustes.create")]
+    [Authorize(Policy = "perm:inventory.adjustments.create")]
     [ProducesResponseType(typeof(ApiResponse<StockAdjustmentDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Create(
@@ -85,16 +85,16 @@ public sealed class InventoryAdjustmentsController : ControllerBase
         return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
-    // â”€â”€ Transiciones de estado â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Transiciones de estado ────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Ejecuta el ajuste: actualiza el stock inmediatamente (atÃ³mico).
+    /// Ejecuta el ajuste: actualiza el stock inmediatamente (atómico).
     /// Para disminuciones, falla si el stock disponible es insuficiente.
     /// </summary>
     /// <response code="200">Stock actualizado y ajuste en estado Ejecutado.</response>
-    /// <response code="400">Stock insuficiente o estado no vÃ¡lido.</response>
+    /// <response code="400">Stock insuficiente o estado no válido.</response>
     [HttpPatch("{id:guid}/ejecutar")]
-    [Authorize(Policy = "perm:inventario.ajustes.execute")]
+    [Authorize(Policy = "perm:inventory.adjustments.execute")]
     [ProducesResponseType(typeof(ApiResponse<StockAdjustmentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Execute(Guid id, CancellationToken ct = default)
@@ -108,7 +108,7 @@ public sealed class InventoryAdjustmentsController : ControllerBase
     /// No afecta el stock.
     /// </summary>
     [HttpPatch("{id:guid}/cancelar")]
-    [Authorize(Policy = "perm:inventario.ajustes.cancel")]
+    [Authorize(Policy = "perm:inventory.adjustments.cancel")]
     [ProducesResponseType(typeof(ApiResponse<StockAdjustmentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken ct = default)
@@ -117,4 +117,3 @@ public sealed class InventoryAdjustmentsController : ControllerBase
         return this.ToOkOrBadRequest(result, "Cancelado");
     }
 }
-

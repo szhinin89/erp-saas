@@ -76,7 +76,7 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
     } catch (err: unknown) {
       setApiError(
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-          t('accounting.journal.modal.create.error.generic')
+          t('finance.journal.modal.create.error.generic')
       );
     }
   };
@@ -88,8 +88,8 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
       width={680}
       header={
         <ZHModalHeader
-          title={t('accounting.journal.modal.create.title')}
-          subtitle={t('accounting.journal.form.description')}
+          title={t('finance.journal.modal.create.title')}
+          subtitle={t('finance.journal.form.description')}
           onClose={onClose}
           closeLabel={t('common.close')}
           right={
@@ -100,7 +100,7 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
               disabled={isSubmitting || !balanced || anyMissingAccount}
               onClick={() => formRef.current?.requestSubmit()}
             >
-              {isSubmitting ? t('common.saving') : t('accounting.journal.confirmEntry')}
+              {isSubmitting ? t('common.saving') : t('finance.journal.confirmEntry')}
             </ZHBtn>
           }
         />
@@ -115,24 +115,24 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
               <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={errors.lines.message} />
             ) : null}
 
-            <ZHFormSection title={t('accounting.journal.modal.create.title')}>
+            <ZHFormSection title={t('finance.journal.modal.create.title')}>
               <ZHGrid cols={2}>
-                <ZHField label={t('accounting.journal.form.reference')} required fieldError={errors.reference?.message}>
+                <ZHField label={t('finance.journal.form.reference')} required fieldError={errors.reference?.message}>
                   <input
                     id="reference"
-                    placeholder={t('accounting.journal.form.reference.placeholder')}
+                    placeholder={t('finance.journal.form.reference.placeholder')}
                     disabled={isSubmitting}
                     {...register('reference')}
                   />
                 </ZHField>
-                <ZHField label={t('accounting.journal.form.date')} required fieldError={errors.date?.message}>
+                <ZHField label={t('finance.journal.form.date')} required fieldError={errors.date?.message}>
                   <input id="date" type="date" disabled={isSubmitting} {...register('date')} />
                 </ZHField>
                 <ZHColSpan span={2}>
-                  <ZHField label={t('accounting.journal.form.description')} required fieldError={errors.description?.message}>
+                  <ZHField label={t('finance.journal.form.description')} required fieldError={errors.description?.message}>
                     <input
                       id="description"
-                      placeholder={t('accounting.journal.form.description.placeholder')}
+                      placeholder={t('finance.journal.form.description.placeholder')}
                       disabled={isSubmitting}
                       {...register('description')}
                     />
@@ -143,10 +143,10 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
 
             <div className="je-lines">
               <div className="je-lines-header">
-                <span>{t('accounting.journal.lines.account')}</span>
-                <span>{t('accounting.journal.lines.debit')}</span>
-                <span>{t('accounting.journal.lines.credit')}</span>
-                <span>{t('accounting.journal.lines.currency')}</span>
+                <span>{t('finance.journal.lines.account')}</span>
+                <span>{t('finance.journal.lines.debit')}</span>
+                <span>{t('finance.journal.lines.credit')}</span>
+                <span>{t('finance.journal.lines.currency')}</span>
                 <span></span>
               </div>
 
@@ -154,7 +154,7 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
                 <div key={field.id} className="je-line">
                   <div className="je-line-account">
                     <select disabled={isSubmitting} {...register(`lines.${i}.accountId` as const)}>
-                      <option value="">{t('accounting.journal.lines.selectAccount')}</option>
+                      <option value="">{t('finance.journal.lines.selectAccount')}</option>
                       {accounts.map((a) => (
                         <option key={a.id} value={a.id}>
                           {a.code} · {a.name}
@@ -198,15 +198,15 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
               ))}
 
               <ZHBtn variant="secondary" size="md" type="button" className="je-add-line" onClick={() => append(emptyLine())}>
-                {t('accounting.journal.lines.addLine')}
+                {t('finance.journal.lines.addLine')}
               </ZHBtn>
 
               <div className={`je-totals ${!balanced ? 'je-totals--unbalanced' : ''}`}>
-                <span>{t('accounting.journal.lines.totals')}</span>
+                <span>{t('finance.journal.lines.totals')}</span>
                 <span>{totalDebit.toFixed(2)}</span>
                 <span>{totalCredit.toFixed(2)}</span>
                 <span className="je-balance-label">
-                  {balanced ? t('accounting.journal.lines.balanced') : t('accounting.journal.lines.unbalanced')}
+                  {balanced ? t('finance.journal.lines.balanced') : t('finance.journal.lines.unbalanced')}
                 </span>
               </div>
             </div>

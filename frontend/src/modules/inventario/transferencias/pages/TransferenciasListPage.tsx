@@ -11,8 +11,8 @@ import type { EstadoTransferencia, TransferenciasFilter } from '../api/transfere
 export function TransferenciasListPage() {
   const navigate  = useNavigate();
   const hasPerm   = usePermissionsStore((s) => s.has);
-  const canView   = hasPerm('inventario.transferencias.view');
-  const canCreate = hasPerm('inventario.transferencias.create');
+  const canView   = hasPerm('inventory.transfers.view');
+  const canCreate = hasPerm('inventory.transfers.create');
 
   const [filter, setFilter] = useState<TransferenciasFilter>({ pageNumber: 1, pageSize: 20 });
   const { result, loading, error } = useTransferenciasList(filter);

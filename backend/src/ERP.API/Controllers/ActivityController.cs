@@ -11,10 +11,10 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>Auditoría de actividad (ámbito del usuario o de una entidad en el tenant actual).</summary>
-[AppFeature("Actividad", "session:activity", "📜", "/actividad", null, 200)]
+[AppFeature("Actividad", "perm:admin.activity.view", "📜", "/admin/activity", null, 200)]
 [ApiController]
-[Route("api/[controller]")]
-[Authorize(Policy = "Session")]
+[Route("api/admin/activity")]
+[Authorize(Policy = "perm:admin.activity.view")]
 [Produces("application/json")]
 public class ActivityController : ControllerBase
 {

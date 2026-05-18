@@ -45,12 +45,12 @@ export function AccountingPage() {
   const isAdmin  = role === 'Admin' || role === 'SuperAdmin';
   const hasPerm  = usePermissionsStore((s) => s.has);
 
-  const canViewAccounts  = isAdmin || hasPerm('accounting.accounts.view');
-  const canCreateAccount = isAdmin || hasPerm('accounting.accounts.create');
-  const canViewJournal   = isAdmin || hasPerm('accounting.journal.view');
-  const canCreateJournal = isAdmin || hasPerm('accounting.journal.create');
-  const canViewConfig    = isAdmin || hasPerm('accounting.config.view');
-  const canEditConfig    = isAdmin || hasPerm('accounting.config.edit');
+  const canViewAccounts  = isAdmin || hasPerm('finance.accounts.view');
+  const canCreateAccount = isAdmin || hasPerm('finance.accounts.create');
+  const canViewJournal   = isAdmin || hasPerm('finance.journal.view');
+  const canCreateJournal = isAdmin || hasPerm('finance.journal.create');
+  const canViewConfig    = isAdmin || hasPerm('finance.config.view');
+  const canEditConfig    = isAdmin || hasPerm('finance.config.edit');
 
   const [tab,          setTab]          = useState<Tab>('accounts');
   const [showJournal,  setShowJournal]  = useState(false);
@@ -151,16 +151,16 @@ export function AccountingPage() {
   }, [accounts.data, accountListQuery]);
 
   const accountTypes = useMemo(() => [
-    { value: 0, label: t('accounting.accounts.type.asset') },
-    { value: 1, label: t('accounting.accounts.type.liability') },
-    { value: 2, label: t('accounting.accounts.type.equity') },
-    { value: 3, label: t('accounting.accounts.type.income') },
-    { value: 4, label: t('accounting.accounts.type.expense') },
+    { value: 0, label: t('finance.accounts.type.asset') },
+    { value: 1, label: t('finance.accounts.type.liability') },
+    { value: 2, label: t('finance.accounts.type.equity') },
+    { value: 3, label: t('finance.accounts.type.income') },
+    { value: 4, label: t('finance.accounts.type.expense') },
   ], [t]);
 
   const accountNatures = useMemo(() => [
-    { value: 0, label: t('accounting.accounts.nature.debit') },
-    { value: 1, label: t('accounting.accounts.nature.credit') },
+    { value: 0, label: t('finance.accounts.nature.debit') },
+    { value: 1, label: t('finance.accounts.nature.credit') },
   ], [t]);
 
   const submitAccount = handleSubmit(async (form) => {
@@ -177,7 +177,7 @@ export function AccountingPage() {
     } catch (err: unknown) {
       setFormError(
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
-        t('accounting.accounts.modal.create.error')
+        t('finance.accounts.modal.create.error')
       );
     }
   });
@@ -231,8 +231,8 @@ export function AccountingPage() {
     if (!canEditConfig) return;
     setGastoError('');
     const categoria = newGastoCategoria.trim();
-    if (!categoria)      { setGastoError(t('accounting.config.expenses.validation.categoryRequired')); return; }
-    if (!newGastoCuentaId) { setGastoError(t('accounting.config.expenses.validation.accountRequired')); return; }
+    if (!categoria)      { setGastoError(t('finance.config.expenses.validation.categoryRequired')); return; }
+    if (!newGastoCuentaId) { setGastoError(t('finance.config.expenses.validation.accountRequired')); return; }
     setGastoSaving(true);
     try {
       const payload: CreateGastoCategoriaRequest = { categoria, cuentaGastoId: newGastoCuentaId };
@@ -286,12 +286,12 @@ export function AccountingPage() {
           {displayTab === 'accounts' && activeAccountSubTab === 'data' && canCreateAccount && (
             <ZHBtn variant="primary" size="md" type="button" disabled={formLoading}
               onClick={() => formRef.current?.requestSubmit()}>
-              {formLoading ? t('common.saving') : t('accounting.accounts.modal.create.submit')}
+              {formLoading ? t('common.saving') : t('finance.accounts.modal.create.submit')}
             </ZHBtn>
           )}
           {displayTab === 'journal' && canCreateJournal && (
             <ZHBtn variant="primary" size="md" type="button" onClick={() => setShowJournal(true)}>
-              {t('accounting.journal.primaryCreate')}
+              {t('finance.journal.primaryCreate')}
             </ZHBtn>
           )}
           {displayTab === 'config' && canEditConfig && (
@@ -363,7 +363,7 @@ export function AccountingPage() {
             )}
             <button type="button" className={activeAccountSubTab === 'list' ? 'is-active' : ''}
               onClick={() => setAccountSubTab('list')}>
-              {t('accounting.accounts.tabList')}
+              {t('finance.accounts.tabList')}
             </button>
           </div>
 
@@ -372,31 +372,31 @@ export function AccountingPage() {
               <input type="hidden" name="tenantId" value={tenantId} />
               <div className="pg-section-body">
                 <div className="pg-form-grid pg-form-grid--2">
-                  <ZHField label={t('accounting.accounts.form.code')} required error={errors.code?.message}>
+                  <ZHField label={t('finance.accounts.form.code')} required error={errors.code?.message}>
                     <input className="zh-input"
-                      placeholder={t('accounting.accounts.form.code.placeholder')}
+                      placeholder={t('finance.accounts.form.code.placeholder')}
                       disabled={formLoading} {...register('code')} />
                   </ZHField>
 
-                  <ZHField label={t('accounting.accounts.form.name')} required error={errors.name?.message}>
+                  <ZHField label={t('finance.accounts.form.name')} required error={errors.name?.message}>
                     <input className="zh-input"
-                      placeholder={t('accounting.accounts.form.name.placeholder')}
+                      placeholder={t('finance.accounts.form.name.placeholder')}
                       disabled={formLoading} {...register('name')} />
                   </ZHField>
 
-                  <ZHField label={t('accounting.accounts.form.type')} required error={errors.type?.message}>
+                  <ZHField label={t('finance.accounts.form.type')} required error={errors.type?.message}>
                     <select className="zh-input" disabled={formLoading} {...register('type', { valueAsNumber: true })}>
                       {accountTypes.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
                     </select>
                   </ZHField>
 
-                  <ZHField label={t('accounting.accounts.form.nature')} required error={errors.nature?.message}>
+                  <ZHField label={t('finance.accounts.form.nature')} required error={errors.nature?.message}>
                     <select className="zh-input" disabled={formLoading} {...register('nature', { valueAsNumber: true })}>
                       {accountNatures.map((x) => <option key={x.value} value={x.value}>{x.label}</option>)}
                     </select>
                   </ZHField>
 
-                  <ZHField label={t('accounting.accounts.form.parentId')} error={errors.parentId?.message}
+                  <ZHField label={t('finance.accounts.form.parentId')} error={errors.parentId?.message}
                     style={{ gridColumn: '1 / -1' }}>
                     <input className="zh-input"
                       placeholder={t('common.guid.placeholder')}
@@ -422,7 +422,7 @@ export function AccountingPage() {
                   {canCreateAccount && (
                     <ZHBtn variant="ghost" size="sm" type="button"
                       onClick={() => setAccountSubTab('data')}>
-                      {t('accounting.accounts.listNewAction')}
+                      {t('finance.accounts.listNewAction')}
                     </ZHBtn>
                   )}
                 </div>
@@ -434,7 +434,7 @@ export function AccountingPage() {
               {accounts.loading && <div style={{ padding: '40px' }}><LoadingState /></div>}
               {accounts.error  && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={accounts.error} />}
               {!accounts.loading && !accounts.error && (accounts.data?.length ?? 0) === 0 && (
-                <div style={{ padding: '40px' }}><EmptyState message={t('accounting.accounts.empty')} /></div>
+                <div style={{ padding: '40px' }}><EmptyState message={t('finance.accounts.empty')} /></div>
               )}
               {!accounts.loading && !accounts.error && filteredAccounts.length === 0 && (accounts.data?.length ?? 0) > 0 && (
                 <div style={{ padding: '40px' }}><EmptyState message={t('common.listTab.noMatch')} /></div>
@@ -444,11 +444,11 @@ export function AccountingPage() {
                   <table className="table">
                     <thead>
                       <tr>
-                        <th>{t('accounting.accounts.table.code')}</th>
-                        <th>{t('accounting.accounts.table.name')}</th>
-                        <th>{t('accounting.accounts.table.type')}</th>
-                        <th>{t('accounting.accounts.table.nature')}</th>
-                        <th>{t('accounting.accounts.table.status')}</th>
+                        <th>{t('finance.accounts.table.code')}</th>
+                        <th>{t('finance.accounts.table.name')}</th>
+                        <th>{t('finance.accounts.table.type')}</th>
+                        <th>{t('finance.accounts.table.nature')}</th>
+                        <th>{t('finance.accounts.table.status')}</th>
                         {canCreateAccount && <th></th>}
                       </tr>
                     </thead>
@@ -510,20 +510,20 @@ export function AccountingPage() {
               <div className="pg-section-header">
                 <div className="pg-section-header-left">
                   <span className="material-symbols-outlined pg-section-icon">account_balance</span>
-                  <span className="pg-section-label">{t('accounting.config.title')}</span>
+                  <span className="pg-section-label">{t('finance.config.title')}</span>
                 </div>
               </div>
               <div className="pg-section-body">
                 <div className="pg-form-grid pg-form-grid--2">
                   {([
-                    ['cuentaInventarioId', t('accounting.config.fields.cuentaInventario')],
-                    ['cuentaProveedoresId', t('accounting.config.fields.cuentaProveedores')],
-                    ['cuentaVentasId', t('accounting.config.fields.cuentaVentas')],
-                    ['cuentaClientesId', t('accounting.config.fields.cuentaClientes')],
-                    ['cuentaIvaComprasId', t('accounting.config.fields.cuentaIvaCompras')],
-                    ['cuentaIvaVentasId', t('accounting.config.fields.cuentaIvaVentas')],
-                    ['cuentaEfectivoId', t('accounting.config.fields.cuentaEfectivo')],
-                    ['cuentaBancoId', t('accounting.config.fields.cuentaBanco')],
+                    ['cuentaInventarioId', t('finance.config.fields.cuentaInventario')],
+                    ['cuentaProveedoresId', t('finance.config.fields.cuentaProveedores')],
+                    ['cuentaVentasId', t('finance.config.fields.cuentaVentas')],
+                    ['cuentaClientesId', t('finance.config.fields.cuentaClientes')],
+                    ['cuentaIvaComprasId', t('finance.config.fields.cuentaIvaCompras')],
+                    ['cuentaIvaVentasId', t('finance.config.fields.cuentaIvaVentas')],
+                    ['cuentaEfectivoId', t('finance.config.fields.cuentaEfectivo')],
+                    ['cuentaBancoId', t('finance.config.fields.cuentaBanco')],
                   ] as [keyof ConfiguracionContableEmpresaDto, string][]).map(([key, label]) => (
                     <ZHField key={key} label={label}>
                       <AccountTreeSelect
@@ -542,19 +542,19 @@ export function AccountingPage() {
               <div className="pg-section-header" style={{ marginTop: 'var(--space-6)' }}>
                 <div className="pg-section-header-left">
                   <span className="material-symbols-outlined pg-section-icon">category</span>
-                  <span className="pg-section-label">{t('accounting.config.expenses.title')}</span>
+                  <span className="pg-section-label">{t('finance.config.expenses.title')}</span>
                 </div>
               </div>
               <div className="pg-section-body">
                 {gastoError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={gastoError} />}
                 <div className="pg-form-grid pg-form-grid--2" style={{ marginBottom: 'var(--space-3)' }}>
-                  <ZHField label={t('accounting.config.expenses.fields.category')}>
+                  <ZHField label={t('finance.config.expenses.fields.category')}>
                     <input className="zh-input" value={newGastoCategoria}
                       disabled={!canEditConfig || gastoSaving}
                       onChange={(e) => setNewGastoCategoria(e.target.value)}
-                      placeholder={t('accounting.config.expenses.fields.categoryPlaceholder')} />
+                      placeholder={t('finance.config.expenses.fields.categoryPlaceholder')} />
                   </ZHField>
-                  <ZHField label={t('accounting.config.expenses.fields.account')}>
+                  <ZHField label={t('finance.config.expenses.fields.account')}>
                     <AccountTreeSelect
                       value={newGastoCuentaId || null}
                       onChange={(next) => setNewGastoCuentaId(next ?? '')}
@@ -567,21 +567,21 @@ export function AccountingPage() {
                 <ZHBtn variant="secondary" size="md" type="button"
                   disabled={!canEditConfig || gastoSaving}
                   onClick={() => void createGastoMapping()}>
-                  {gastoSaving ? t('common.saving') : t('accounting.config.expenses.actions.add')}
+                  {gastoSaving ? t('common.saving') : t('finance.config.expenses.actions.add')}
                 </ZHBtn>
 
                 {gastoMappings.loading && <div style={{ padding: '24px' }}><LoadingState /></div>}
                 {gastoMappings.error   && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={gastoMappings.error} />}
                 {!gastoMappings.loading && !gastoMappings.error && (gastoMappings.data ?? []).length === 0 && (
-                  <div style={{ padding: '24px' }}><EmptyState message={t('accounting.config.expenses.empty')} /></div>
+                  <div style={{ padding: '24px' }}><EmptyState message={t('finance.config.expenses.empty')} /></div>
                 )}
                 {!gastoMappings.loading && !gastoMappings.error && (gastoMappings.data ?? []).length > 0 && (
                   <div style={{ overflowX: 'auto', marginTop: 'var(--space-4)' }}>
                     <table className="table">
                       <thead>
                         <tr>
-                          <th>{t('accounting.config.expenses.table.category')}</th>
-                          <th>{t('accounting.config.expenses.table.account')}</th>
+                          <th>{t('finance.config.expenses.table.category')}</th>
+                          <th>{t('finance.config.expenses.table.account')}</th>
                           <th style={{ textAlign: 'right' }}>{t('common.actions')}</th>
                         </tr>
                       </thead>
@@ -643,7 +643,7 @@ export function AccountingPage() {
           {journalEntries.loading && <div style={{ padding: '40px' }}><LoadingState /></div>}
           {journalEntries.error   && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={journalEntries.error} />}
           {!journalEntries.loading && !journalEntries.error && filteredJournal.length === 0 && (
-            <div style={{ padding: '40px' }}><EmptyState message={t('accounting.journal.empty')} /></div>
+            <div style={{ padding: '40px' }}><EmptyState message={t('finance.journal.empty')} /></div>
           )}
           {!journalEntries.loading && !journalEntries.error && filteredJournal.length > 0 && (
             <div style={{ overflowX: 'auto' }}>
@@ -651,12 +651,12 @@ export function AccountingPage() {
                 <thead>
                   <tr>
                     <th style={{ width: 28 }}></th>
-                    <th>{t('accounting.journal.table.reference')}</th>
-                    <th>{t('accounting.journal.table.date')}</th>
-                    <th>{t('accounting.journal.table.description')}</th>
+                    <th>{t('finance.journal.table.reference')}</th>
+                    <th>{t('finance.journal.table.date')}</th>
+                    <th>{t('finance.journal.table.description')}</th>
                     <th style={{ textAlign: 'right' }}>Débito</th>
                     <th style={{ textAlign: 'right' }}>Crédito</th>
-                    <th>{t('accounting.journal.table.status')}</th>
+                    <th>{t('finance.journal.table.status')}</th>
                   </tr>
                 </thead>
                 <tbody>

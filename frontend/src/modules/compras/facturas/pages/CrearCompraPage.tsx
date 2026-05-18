@@ -46,7 +46,7 @@ export function CrearCompraPage() {
   const hasPerm   = usePermissionsStore((s) => s.has);
   const role      = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin   = role === 'Admin' || role === 'SuperAdmin';
-  const canCreate = isAdmin || hasPerm('compras.facturas.create');
+  const canCreate = isAdmin || hasPerm('purchases.invoices.create');
 
   const suppliersState = useAsync(() => supplierService.getAll());
 

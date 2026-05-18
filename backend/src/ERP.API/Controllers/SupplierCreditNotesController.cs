@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -9,20 +9,20 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-/// <summary>Notas de crÃ©dito/dÃ©bito recibidas de proveedores (SRI), aplicables a compras o gastos.</summary>
-[AppFeature("Notas proveedor", "perm:compras.notas-proveedor.view", "ðŸ“„", "/compras/notas-proveedor", "perm:compras.facturas.view", 47)]
+/// <summary>Notas de crédito/débito recibidas de proveedores (SRI), aplicables a compras o gastos.</summary>
+[AppFeature("Notas proveedor", "perm:purchases.credit-notes.view", "🔄", "/purchases/credit-notes", "perm:purchases.invoices.view", 47)]
 [ApiController]
-[Route("api/compras/notas-proveedor")]
+[Route("api/purchases/credit-notes")]
 [Authorize]
 [Produces("application/json")]
-public sealed class PurchaseSupplierNotesController : ControllerBase
+public sealed class SupplierCreditNotesController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public PurchaseSupplierNotesController(IMediator mediator) => _mediator = mediator;
+    public SupplierCreditNotesController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
-    [Authorize(Policy = "perm:compras.notas-proveedor.view")]
+    [Authorize(Policy = "perm:purchases.credit-notes.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<SupplierPurchaseNoteDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(CancellationToken ct = default)
     {
@@ -42,7 +42,7 @@ public sealed class PurchaseSupplierNotesController : ControllerBase
 
     /// <summary>Importa XML de nota (multipart campo <c>xmlFile</c>).</summary>
     [HttpPost]
-    [Authorize(Policy = "perm:compras.notas-proveedor.create")]
+    [Authorize(Policy = "perm:purchases.credit-notes.create")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(ApiResponse<SupplierPurchaseNoteDto?>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Import(
@@ -68,7 +68,7 @@ public sealed class PurchaseSupplierNotesController : ControllerBase
     }
 
     [HttpPut("{id:guid}/aprobar")]
-    [Authorize(Policy = "perm:compras.notas-proveedor.approve")]
+    [Authorize(Policy = "perm:purchases.credit-notes.approve")]
     [ProducesResponseType(typeof(ApiResponse<SupplierPurchaseNoteDto?>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Approve(
         Guid id,

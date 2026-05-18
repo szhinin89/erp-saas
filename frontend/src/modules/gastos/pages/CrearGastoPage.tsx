@@ -17,7 +17,7 @@ export function CrearGastoPage() {
   const hasPerm   = usePermissionsStore((s) => s.has);
   const role      = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin   = role === 'Admin' || role === 'SuperAdmin';
-  const canCreate = isAdmin || hasPerm('gastos.facturas.create');
+  const canCreate = isAdmin || hasPerm('expenses.invoices.create');
 
   const suppliersState  = useAsync(() => supplierService.getAll());
   const categoriasState = useAsync(() => gastosService.getCategorias());

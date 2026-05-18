@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -9,19 +9,19 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-[AppFeature("Notas ventas", "perm:ventas.notas.list", "ðŸ“ƒ", "/ventas/notas", "perm:ventas.facturas.view", 51)]
+[AppFeature("Notas ventas", "perm:sales.credit-notes.view", "📃", "/sales/credit-notes", "perm:sales.invoices.view", 51)]
 [ApiController]
-[Route("api/ventas/notas")]
+[Route("api/sales/credit-notes")]
 [Authorize]
 [Produces("application/json")]
-public sealed class SalesNotesController : ControllerBase
+public sealed class CreditNotesController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public SalesNotesController(IMediator mediator) => _mediator = mediator;
+    public CreditNotesController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
-    [Authorize(Policy = "perm:ventas.notas.list")]
+    [Authorize(Policy = "perm:sales.credit-notes.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<SalesNoteListItemDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(
         [FromQuery] Guid? facturaId,
@@ -33,7 +33,7 @@ public sealed class SalesNotesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "perm:ventas.notas.create")]
+    [Authorize(Policy = "perm:sales.credit-notes.create")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] CreateSalesNoteCommand command, CancellationToken ct = default)
     {
@@ -42,7 +42,7 @@ public sealed class SalesNotesController : ControllerBase
     }
 
     [HttpPut("{id:guid}/enviar")]
-    [Authorize(Policy = "perm:ventas.notas.send")]
+    [Authorize(Policy = "perm:sales.credit-notes.send")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Send(Guid id, CancellationToken ct = default)
     {
@@ -50,4 +50,3 @@ public sealed class SalesNotesController : ControllerBase
         return this.ToOkOrBadRequest(result, "Enviado");
     }
 }
-

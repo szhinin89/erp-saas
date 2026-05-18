@@ -54,10 +54,10 @@ export function BranchesPage() {
   const hasPerm   = usePermissionsStore((s) => s.has);
   const role      = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin   = role === 'Admin' || role === 'SuperAdmin';
-  const canView   = isAdmin || hasPerm('saas.branches.view');
-  const canCreate = isAdmin || hasPerm('saas.branches.create');
-  const canUpdate = isAdmin || hasPerm('saas.branches.update');
-  const canDelete = isAdmin || hasPerm('saas.branches.delete');
+  const canView   = isAdmin || hasPerm('settings.branches.view');
+  const canCreate = isAdmin || hasPerm('settings.branches.create');
+  const canUpdate = isAdmin || hasPerm('settings.branches.update');
+  const canDelete = isAdmin || hasPerm('settings.branches.delete');
 
   /* ── List state ── */
   const [items,   setItems]   = useState<BranchDto[]>([]);

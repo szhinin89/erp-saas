@@ -29,9 +29,9 @@ export function SuppliersPage() {
   const hasPerm = usePermissionsStore((s) => s.has);
   const role    = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin   = role === 'Admin' || role === 'SuperAdmin';
-  const canView   = isAdmin || hasPerm('compras.suppliers.view') || hasPerm('compras.proveedores.view');
-  const canCreate = isAdmin || hasPerm('compras.suppliers.create') || hasPerm('compras.proveedores.create');
-  const canEdit   = isAdmin || hasPerm('compras.suppliers.edit') || hasPerm('compras.proveedores.update');
+  const canView   = isAdmin || hasPerm('purchases.suppliers.view') || hasPerm('purchases.suppliers.view');
+  const canCreate = isAdmin || hasPerm('purchases.suppliers.create') || hasPerm('purchases.suppliers.create');
+  const canEdit   = isAdmin || hasPerm('purchases.suppliers.edit') || hasPerm('purchases.suppliers.update');
 
   const { suppliers, loading, error, saving, saveError, createSupplier, updateSupplier, setSupplierStatus } =
     useSuppliers();

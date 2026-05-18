@@ -14,9 +14,9 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>Catálogo maestro: Líneas de producto del tenant autenticado.</summary>
-[AppFeature("Líneas de producto", "perm:inventario.productLines.view", "🏷️", "/inventario/structure", "perm:inventario.products.view", 37)]
+[AppFeature("Líneas de producto", "perm:inventory.product-lines.view", "🏷️", "/inventory/catalog-structure", "perm:inventory.products.view", 37)]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/inventory/product-lines")]
 [Authorize]
 [Produces("application/json")]
 public class ProductLinesController : ControllerBase
@@ -27,7 +27,7 @@ public class ProductLinesController : ControllerBase
 
     /// <summary>Lista líneas de producto del tenant.</summary>
     [HttpGet]
-    [Authorize(Policy = "perm:inventario.productLines.view")]
+    [Authorize(Policy = "perm:inventory.product-lines.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ProductLineDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
@@ -39,7 +39,7 @@ public class ProductLinesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "perm:inventario.productLines.create")]
+    [Authorize(Policy = "perm:inventory.product-lines.create")]
     [ProducesResponseType(typeof(ApiResponse<ProductLineDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -51,7 +51,7 @@ public class ProductLinesController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Policy = "perm:inventario.productLines.update")]
+    [Authorize(Policy = "perm:inventory.product-lines.update")]
     [ProducesResponseType(typeof(ApiResponse<ProductLineDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
@@ -65,7 +65,7 @@ public class ProductLinesController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/disable")]
-    [Authorize(Policy = "perm:inventario.productLines.delete")]
+    [Authorize(Policy = "perm:inventory.product-lines.delete")]
     public async Task<IActionResult> Disable(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new DisableProductLineCommand(id), ct);
@@ -73,7 +73,7 @@ public class ProductLinesController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/enable")]
-    [Authorize(Policy = "perm:inventario.productLines.update")]
+    [Authorize(Policy = "perm:inventory.product-lines.update")]
     public async Task<IActionResult> Enable(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new EnableProductLineCommand(id), ct);

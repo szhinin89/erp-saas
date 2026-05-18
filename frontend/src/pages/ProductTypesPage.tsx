@@ -25,10 +25,10 @@ export function ProductTypesPage() {
   const isAdmin = role === 'Admin' || role === 'SuperAdmin';
   const hasPerm = usePermissionsStore((s) => s.has);
 
-  const canView   = isAdmin || hasPerm('inventario.productTypes.view');
-  const canCreate = isAdmin || hasPerm('inventario.productTypes.create');
-  const canUpdate = isAdmin || hasPerm('inventario.productTypes.update');
-  const canDelete = isAdmin || hasPerm('inventario.productTypes.delete');
+  const canView   = isAdmin || hasPerm('inventory.product-types.view');
+  const canCreate = isAdmin || hasPerm('inventory.product-types.create');
+  const canUpdate = isAdmin || hasPerm('inventory.product-types.update');
+  const canDelete = isAdmin || hasPerm('inventory.product-types.delete');
 
   /* ── Data state ───────────────────────────────────────────── */
   const [items,   setItems]   = useState<CatalogItem[]>([]);

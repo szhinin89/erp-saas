@@ -26,10 +26,10 @@ export function UnitsPage() {
   const isAdmin = role === 'Admin' || role === 'SuperAdmin';
   const hasPerm = usePermissionsStore((s) => s.has);
 
-  const canView   = isAdmin || hasPerm('inventario.units.view');
-  const canCreate = isAdmin || hasPerm('inventario.units.create');
-  const canUpdate = isAdmin || hasPerm('inventario.units.update');
-  const canDelete = isAdmin || hasPerm('inventario.units.delete');
+  const canView   = isAdmin || hasPerm('inventory.units.view');
+  const canCreate = isAdmin || hasPerm('inventory.units.create');
+  const canUpdate = isAdmin || hasPerm('inventory.units.update');
+  const canDelete = isAdmin || hasPerm('inventory.units.delete');
 
   /* ── Data state ───────────────────────────────────────────── */
   const [units,   setUnits]   = useState<UnitItem[]>([]);

@@ -23,45 +23,45 @@ type PermGroup = {
 const MODULE_PERM_GROUPS: PermGroup[] = [
   {
     module: 'Ventas',
-    view:   ['ventas.customers.view', 'ventas.facturas.view'],
-    create: ['ventas.customers.create', 'ventas.facturas.create'],
-    edit:   ['ventas.customers.update'],
-    delete: ['ventas.customers.delete'],
+    view:   ['sales.customers.view', 'sales.invoices.view'],
+    create: ['sales.customers.create', 'sales.invoices.create'],
+    edit:   ['sales.customers.update'],
+    delete: ['sales.customers.delete'],
   },
   {
     module: 'Inventario',
-    view:   ['inventario.products.view', 'inventario.bodegas.view', 'inventario.brands.view', 'inventario.categories.view'],
-    create: ['inventario.products.create', 'inventario.bodegas.create', 'inventario.brands.create', 'inventario.categories.create'],
-    edit:   ['inventario.products.update', 'inventario.bodegas.update', 'inventario.brands.update', 'inventario.categories.update'],
-    delete: ['inventario.products.delete', 'inventario.bodegas.delete', 'inventario.brands.delete', 'inventario.categories.delete'],
+    view:   ['inventory.products.view', 'inventory.warehouses.view', 'inventory.brands.view', 'inventory.categories.view'],
+    create: ['inventory.products.create', 'inventory.warehouses.create', 'inventory.brands.create', 'inventory.categories.create'],
+    edit:   ['inventory.products.update', 'inventory.warehouses.update', 'inventory.brands.update', 'inventory.categories.update'],
+    delete: ['inventory.products.delete', 'inventory.warehouses.delete', 'inventory.brands.delete', 'inventory.categories.delete'],
   },
   {
     module: 'Compras',
-    view:   ['compras.facturas.view', 'compras.proveedores.view', 'compras.notas-proveedor.view'],
-    create: ['compras.facturas.create', 'compras.proveedores.create', 'compras.notas-proveedor.create'],
-    edit:   ['compras.facturas.validate', 'compras.facturas.approve', 'compras.proveedores.update', 'compras.notas-proveedor.approve'],
-    delete: ['compras.facturas.reject', 'compras.proveedores.delete'],
+    view:   ['purchases.invoices.view', 'purchases.suppliers.view', 'purchases.credit-notes.view'],
+    create: ['purchases.invoices.create', 'purchases.suppliers.create', 'compras.notas-proveedor.create'],
+    edit:   ['compras.facturas.validate', 'compras.facturas.approve', 'purchases.suppliers.update', 'compras.notas-proveedor.approve'],
+    delete: ['compras.facturas.reject', 'purchases.suppliers.delete'],
   },
   {
     module: 'Gastos',
-    view:   ['gastos.facturas.view'],
-    create: ['gastos.facturas.create'],
+    view:   ['expenses.invoices.view'],
+    create: ['expenses.invoices.create'],
     edit:   ['gastos.facturas.validate', 'gastos.facturas.approve'],
     delete: ['gastos.facturas.reject'],
   },
   {
     module: 'Contabilidad',
-    view:   ['accounting.accounts.view', 'accounting.journal.view', 'accounting.config.view'],
-    create: ['accounting.accounts.create', 'accounting.journal.create'],
-    edit:   ['accounting.journal.edit', 'accounting.config.edit'],
+    view:   ['finance.accounts.view', 'finance.journal.view', 'finance.config.view'],
+    create: ['finance.accounts.create', 'finance.journal.create'],
+    edit:   ['finance.journal.edit', 'finance.config.edit'],
     delete: [],
   },
   {
     module: 'Configuración',
-    view:   ['saas.branches.view', 'access.profiles.view', 'access.memberships.view'],
-    create: ['saas.branches.create'],
-    edit:   ['saas.branches.update'],
-    delete: ['saas.branches.delete'],
+    view:   ['settings.branches.view', 'admin.roles.view', 'admin.users.view'],
+    create: ['settings.branches.create'],
+    edit:   ['settings.branches.update'],
+    delete: ['settings.branches.delete'],
   },
 ];
 
@@ -111,7 +111,7 @@ function handleColumnToggle(
 export function ProfilesPage() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
-  const canManage = usePermissionsStore((s) => s.has('access.profiles.view'));
+  const canManage = usePermissionsStore((s) => s.has('admin.roles.view'));
   const isAdminOrSuper = user?.role === 'Admin' || user?.role === 'SuperAdmin';
 
   /* list state */

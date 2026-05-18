@@ -10,177 +10,177 @@ namespace ERP.Application.Common;
 ///   - Frontend: usePermissionsStore.has(key)
 ///
 /// Naming convention:
-///   module   = top-level ERP area (ventas, inventario, compras, contabilidad, acceso, logistica)
-///   resource = entity or sub-module (invoice, customer, product, carrier, ...)
-///   action   = view | create | update | delete (maps to HTTP GET | POST | PUT | PATCH/DELETE)
+///   module   = top-level ERP area (sales, inventory, purchases, finance, admin, logistics)
+///   resource = entity or sub-module
+///   action   = view | create | update | delete | void | approve | cancel
 /// </summary>
 public static class Permissions
 {
-    // ── Sales / Ventas ──────────────────────────────────────────────────────────
-    public static class Invoice
+    // ── Sales ───────────────────────────────────────────────────────────────────
+    public static class SalesInvoice
     {
-        public const string View   = "ventas.invoice.view";
-        public const string Create = "ventas.invoice.create";
-        public const string Update = "ventas.invoice.update";
-        public const string Void   = "ventas.invoice.void";
+        public const string View   = "sales.invoices.view";
+        public const string Create = "sales.invoices.create";
+        public const string Update = "sales.invoices.update";
+        public const string Void   = "sales.invoices.void";
 
         public static IReadOnlyList<string> All =>
             [View, Create, Update, Void];
     }
 
-    public static class CreditNote
+    public static class SalesCreditNote
     {
-        public const string View   = "ventas.credit-note.view";
-        public const string Create = "ventas.credit-note.create";
-        public const string Void   = "ventas.credit-note.void";
+        public const string View   = "sales.credit-notes.view";
+        public const string Create = "sales.credit-notes.create";
+        public const string Void   = "sales.credit-notes.void";
     }
 
-    public static class DebitNote
+    public static class SalesDebitNote
     {
-        public const string View   = "ventas.debit-note.view";
-        public const string Create = "ventas.debit-note.create";
+        public const string View   = "sales.debit-notes.view";
+        public const string Create = "sales.debit-notes.create";
     }
 
-    public static class Customer
+    public static class SalesCustomer
     {
-        public const string View   = "ventas.customers.view";
-        public const string Create = "ventas.customers.create";
-        public const string Update = "ventas.customers.update";
-        public const string Delete = "ventas.customers.delete";
+        public const string View   = "sales.customers.view";
+        public const string Create = "sales.customers.create";
+        public const string Update = "sales.customers.update";
+        public const string Delete = "sales.customers.delete";
     }
 
-    // ── Inventory / Inventario ──────────────────────────────────────────────────
-    public static class Product
+    // ── Inventory ───────────────────────────────────────────────────────────────
+    public static class InventoryProduct
     {
-        public const string View   = "inventario.products.view";
-        public const string Create = "inventario.products.create";
-        public const string Update = "inventario.products.update";
-        public const string Delete = "inventario.products.delete";
+        public const string View   = "inventory.products.view";
+        public const string Create = "inventory.products.create";
+        public const string Update = "inventory.products.update";
+        public const string Delete = "inventory.products.delete";
     }
 
-    public static class Brand
+    public static class InventoryBrand
     {
-        public const string View   = "inventario.brands.view";
-        public const string Create = "inventario.brands.create";
-        public const string Update = "inventario.brands.update";
-        public const string Delete = "inventario.brands.delete";
+        public const string View   = "inventory.brands.view";
+        public const string Create = "inventory.brands.create";
+        public const string Update = "inventory.brands.update";
+        public const string Delete = "inventory.brands.delete";
     }
 
-    public static class Warehouse
+    public static class InventoryWarehouse
     {
-        public const string View   = "inventario.warehouses.view";
-        public const string Create = "inventario.warehouses.create";
-        public const string Update = "inventario.warehouses.update";
+        public const string View   = "inventory.warehouses.view";
+        public const string Create = "inventory.warehouses.create";
+        public const string Update = "inventory.warehouses.update";
     }
 
-    public static class StockTransfer
+    public static class InventoryTransfer
     {
-        public const string View    = "inventario.transfers.view";
-        public const string Create  = "inventario.transfers.create";
-        public const string Approve = "inventario.transfers.approve";
+        public const string View    = "inventory.transfers.view";
+        public const string Create  = "inventory.transfers.create";
+        public const string Approve = "inventory.transfers.approve";
     }
 
-    public static class StockAdjustment
+    public static class InventoryAdjustment
     {
-        public const string View    = "inventario.adjustments.view";
-        public const string Create  = "inventario.adjustments.create";
-        public const string Approve = "inventario.adjustments.approve";
+        public const string View    = "inventory.adjustments.view";
+        public const string Create  = "inventory.adjustments.create";
+        public const string Approve = "inventory.adjustments.approve";
     }
 
-    // ── Purchasing / Compras ────────────────────────────────────────────────────
+    // ── Purchases ───────────────────────────────────────────────────────────────
     public static class PurchaseOrder
     {
-        public const string View    = "compras.orders.view";
-        public const string Create  = "compras.orders.create";
-        public const string Approve = "compras.orders.approve";
-        public const string Cancel  = "compras.orders.cancel";
+        public const string View    = "purchases.orders.view";
+        public const string Create  = "purchases.orders.create";
+        public const string Approve = "purchases.orders.approve";
+        public const string Cancel  = "purchases.orders.cancel";
     }
 
-    public static class Supplier
+    public static class PurchaseSupplier
     {
-        public const string View   = "compras.proveedores.view";
-        public const string Create = "compras.proveedores.create";
-        public const string Update = "compras.proveedores.update";
-        public const string Delete = "compras.proveedores.delete";
+        public const string View   = "purchases.suppliers.view";
+        public const string Create = "purchases.suppliers.create";
+        public const string Update = "purchases.suppliers.update";
+        public const string Delete = "purchases.suppliers.delete";
     }
 
-    // ── Logistics / Logística ───────────────────────────────────────────────────
-    public static class Carrier
+    // ── Logistics ───────────────────────────────────────────────────────────────
+    public static class LogisticsCarrier
     {
-        public const string View   = "logistica.carriers.view";
-        public const string Create = "logistica.carriers.create";
-        public const string Update = "logistica.carriers.update";
-        public const string Delete = "logistica.carriers.delete";
+        public const string View   = "logistics.carriers.view";
+        public const string Create = "logistics.carriers.create";
+        public const string Update = "logistics.carriers.update";
+        public const string Delete = "logistics.carriers.delete";
     }
 
-    // ── Accounting / Contabilidad ───────────────────────────────────────────────
-    public static class AccountingConfig
+    // ── Finance ─────────────────────────────────────────────────────────────────
+    public static class FinanceConfig
     {
-        public const string View = "accounting.config.view";
-        public const string Edit = "accounting.config.edit";
+        public const string View = "finance.config.view";
+        public const string Edit = "finance.config.edit";
     }
 
-    public static class Account
+    public static class FinanceAccount
     {
-        public const string View   = "accounting.accounts.view";
-        public const string Create = "accounting.accounts.create";
-        public const string Edit   = "accounting.accounts.edit";
+        public const string View   = "finance.accounts.view";
+        public const string Create = "finance.accounts.create";
+        public const string Edit   = "finance.accounts.edit";
     }
 
-    public static class JournalEntry
+    public static class FinanceJournal
     {
-        public const string View = "accounting.journal.view";
+        public const string View = "finance.journal.view";
     }
 
-    // ── Access / Acceso ─────────────────────────────────────────────────────────
-    public static class AccessProfile
+    // ── Admin ────────────────────────────────────────────────────────────────────
+    public static class AdminRole
     {
-        public const string View = "access.profiles.view";
+        public const string View = "admin.roles.view";
     }
 
-    public static class Membership
+    public static class AdminUser
     {
-        public const string View = "access.memberships.view";
+        public const string View = "admin.users.view";
     }
 
-    // ── Predefined role bundles ─────────────────────────────────────────────────
+    // ── Predefined role bundles ──────────────────────────────────────────────────
 
     /// <summary>All permissions granted to a "Facturador" (billing operator).</summary>
     public static IReadOnlyList<string> FacilitadorProfile =>
     [
-        Invoice.View,
-        Invoice.Create,
-        Invoice.Update,
-        Invoice.Void,
-        CreditNote.View,
-        CreditNote.Create,
-        Customer.View,
-        Customer.Create,
-        Customer.Update,
-        Product.View,
+        SalesInvoice.View,
+        SalesInvoice.Create,
+        SalesInvoice.Update,
+        SalesInvoice.Void,
+        SalesCreditNote.View,
+        SalesCreditNote.Create,
+        SalesCustomer.View,
+        SalesCustomer.Create,
+        SalesCustomer.Update,
+        InventoryProduct.View,
     ];
 
     /// <summary>All permissions granted to a "Bodeguero" (warehouse operator).</summary>
     public static IReadOnlyList<string> BodegueroProfile =>
     [
-        Product.View,
-        Warehouse.View,
-        StockTransfer.View,
-        StockTransfer.Create,
-        StockAdjustment.View,
-        StockAdjustment.Create,
+        InventoryProduct.View,
+        InventoryWarehouse.View,
+        InventoryTransfer.View,
+        InventoryTransfer.Create,
+        InventoryAdjustment.View,
+        InventoryAdjustment.Create,
         PurchaseOrder.View,
     ];
 
     /// <summary>All permissions granted to a "Contador" (accountant).</summary>
     public static IReadOnlyList<string> ContadorProfile =>
     [
-        AccountingConfig.View,
-        Account.View,
-        Account.Create,
-        Account.Edit,
-        JournalEntry.View,
-        Invoice.View,
+        FinanceConfig.View,
+        FinanceAccount.View,
+        FinanceAccount.Create,
+        FinanceAccount.Edit,
+        FinanceJournal.View,
+        SalesInvoice.View,
         PurchaseOrder.View,
     ];
 }

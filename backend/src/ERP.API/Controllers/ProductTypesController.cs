@@ -15,9 +15,9 @@ namespace ERP.API.Controllers;
 /// <summary>
 /// Master catalog: product types for the authenticated tenant.
 /// </summary>
-[AppFeature("Tipos de producto", "perm:inventario.productTypes.view", "🔖", "/inventario/product-types", "perm:inventario.products.view", 37)]
+[AppFeature("Tipos de producto", "perm:inventory.product-types.view", "🔖", "/inventory/product-types", "perm:inventory.products.view", 37)]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/inventory/product-types")]
 [Authorize]
 [Produces("application/json")]
 public class ProductTypesController : ControllerBase
@@ -31,7 +31,7 @@ public class ProductTypesController : ControllerBase
 
     /// <summary>Lists product types for the current tenant.</summary>
     [HttpGet]
-    [Authorize(Policy = "perm:inventario.productTypes.view")]
+    [Authorize(Policy = "perm:inventory.product-types.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ProductTypeDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll([FromQuery] bool onlyActive = true, CancellationToken ct = default)
@@ -42,7 +42,7 @@ public class ProductTypesController : ControllerBase
 
     /// <summary>Creates a new product type.</summary>
     [HttpPost]
-    [Authorize(Policy = "perm:inventario.productTypes.create")]
+    [Authorize(Policy = "perm:inventory.product-types.create")]
     [ProducesResponseType(typeof(ApiResponse<ProductTypeDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -55,7 +55,7 @@ public class ProductTypesController : ControllerBase
 
     /// <summary>Updates an existing product type.</summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Policy = "perm:inventario.productTypes.update")]
+    [Authorize(Policy = "perm:inventory.product-types.update")]
     [ProducesResponseType(typeof(ApiResponse<ProductTypeDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -68,7 +68,7 @@ public class ProductTypesController : ControllerBase
 
     /// <summary>Disables (soft-delete) a product type.</summary>
     [HttpPatch("{id:guid}/disable")]
-    [Authorize(Policy = "perm:inventario.productTypes.delete")]
+    [Authorize(Policy = "perm:inventory.product-types.delete")]
     [ProducesResponseType(typeof(ApiResponse<ProductTypeDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -80,7 +80,7 @@ public class ProductTypesController : ControllerBase
 
     /// <summary>Re-enables a disabled product type.</summary>
     [HttpPatch("{id:guid}/enable")]
-    [Authorize(Policy = "perm:inventario.productTypes.update")]
+    [Authorize(Policy = "perm:inventory.product-types.update")]
     [ProducesResponseType(typeof(ApiResponse<ProductTypeDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

@@ -13,9 +13,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace ERP.API.Controllers;
 
 /// <summary>Master catalog: Authorized transport carriers for delivery guides.</summary>
-[AppFeature("Transportistas", "perm:logistica.carriers.view", "local_shipping", "/logistica/transportistas", null, 60)]
+[AppFeature("Transportistas", "perm:logistics.carriers.view", "local_shipping", "/logistics/carriers", null, 60)]
 [ApiController]
-[Route("api/carriers")]
+[Route("api/logistics/carriers")]
 [Authorize]
 [Produces("application/json")]
 public sealed class CarriersController : ControllerBase
@@ -26,7 +26,7 @@ public sealed class CarriersController : ControllerBase
 
     /// <summary>Returns all carriers for the authenticated tenant.</summary>
     [HttpGet]
-    [Authorize(Policy = "perm:logistica.carriers.view")]
+    [Authorize(Policy = "perm:logistics.carriers.view")]
     [ProducesResponseType(typeof(ApiResponse<List<CarrierDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll(
@@ -46,7 +46,7 @@ public sealed class CarriersController : ControllerBase
 
     /// <summary>Creates a new carrier.</summary>
     [HttpPost]
-    [Authorize(Policy = "perm:logistica.carriers.create")]
+    [Authorize(Policy = "perm:logistics.carriers.create")]
     [ProducesResponseType(typeof(ApiResponse<CarrierDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
@@ -58,7 +58,7 @@ public sealed class CarriersController : ControllerBase
 
     /// <summary>Updates an existing carrier.</summary>
     [HttpPut("{id:guid}")]
-    [Authorize(Policy = "perm:logistica.carriers.update")]
+    [Authorize(Policy = "perm:logistics.carriers.update")]
     [ProducesResponseType(typeof(ApiResponse<CarrierDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -73,7 +73,7 @@ public sealed class CarriersController : ControllerBase
 
     /// <summary>Disables a carrier (soft delete).</summary>
     [HttpPatch("{id:guid}/disable")]
-    [Authorize(Policy = "perm:logistica.carriers.delete")]
+    [Authorize(Policy = "perm:logistics.carriers.delete")]
     [ProducesResponseType(typeof(ApiResponse<CarrierDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Disable(Guid id, CancellationToken ct = default)
@@ -84,7 +84,7 @@ public sealed class CarriersController : ControllerBase
 
     /// <summary>Re-enables a disabled carrier.</summary>
     [HttpPatch("{id:guid}/enable")]
-    [Authorize(Policy = "perm:logistica.carriers.update")]
+    [Authorize(Policy = "perm:logistics.carriers.update")]
     [ProducesResponseType(typeof(ApiResponse<CarrierDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Enable(Guid id, CancellationToken ct = default)

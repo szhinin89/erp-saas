@@ -22,9 +22,9 @@ export function AjusteDetailPage() {
   const navigate = useNavigate();
   const hasPerm  = usePermissionsStore((s) => s.has);
 
-  const canView    = hasPerm('inventario.ajustes.view');
-  const canExecute = hasPerm('inventario.ajustes.execute');
-  const canCancel  = hasPerm('inventario.ajustes.cancel');
+  const canView    = hasPerm('inventory.adjustments.view');
+  const canExecute = hasPerm('inventory.adjustments.execute');
+  const canCancel  = hasPerm('inventory.adjustments.cancel');
 
   const { data: ajuste, loading, error, refetch } = useAjusteDetalle(id ?? null);
   const { loading: actLoading, error: actError, ejecutar, cancelar } = useAjusteAcciones(refetch);

@@ -28,7 +28,7 @@ export function CreateInvoicePage() {
   const hasPerm   = usePermissionsStore((s) => s.has);
   const role      = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin   = role === 'Admin' || role === 'SuperAdmin';
-  const canCreate = isAdmin || hasPerm('ventas.facturas.create');
+  const canCreate = isAdmin || hasPerm('sales.invoices.create');
 
   const [customerId,    setCustomerId]    = useState('');
   const [customerRuc,   setCustomerRuc]   = useState('');

@@ -22,9 +22,9 @@ export function TransferenciaDetailPage() {
   const navigate  = useNavigate();
   const hasPerm   = usePermissionsStore((s) => s.has);
 
-  const canView    = hasPerm('inventario.transferencias.view');
-  const canConfirm = hasPerm('inventario.transferencias.confirm');
-  const canCancel  = hasPerm('inventario.transferencias.cancel');
+  const canView    = hasPerm('inventory.transfers.view');
+  const canConfirm = hasPerm('inventory.transfers.confirm');
+  const canCancel  = hasPerm('inventory.transfers.cancel');
 
   const { data: transferencia, loading, error, refetch } = useTransferenciaDetalle(id ?? null);
   const { loading: actLoading, error: actError, confirmar, cancelar } = useTransferenciaAcciones(refetch);

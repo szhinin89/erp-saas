@@ -39,10 +39,10 @@ export function BodegasPage() {
   const role    = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin = role === 'Admin' || role === 'SuperAdmin';
 
-  const canView   = isAdmin || hasPerm('inventario.bodegas.view');
-  const canCreate = isAdmin || hasPerm('inventario.bodegas.create');
-  const canUpdate = isAdmin || hasPerm('inventario.bodegas.update');
-  const canDelete = isAdmin || hasPerm('inventario.bodegas.delete');
+  const canView   = isAdmin || hasPerm('inventory.warehouses.view');
+  const canCreate = isAdmin || hasPerm('inventory.warehouses.create');
+  const canUpdate = isAdmin || hasPerm('inventory.warehouses.update');
+  const canDelete = isAdmin || hasPerm('inventory.warehouses.delete');
 
   /* ── List state ── */
   const [items,    setItems]    = useState<WarehouseDto[]>([]);

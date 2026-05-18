@@ -21,7 +21,7 @@ export function TenantAccessPage() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
-  const canManageMemberships = usePermissionsStore((s) => s.has('access.memberships.view'));
+  const canManageMemberships = usePermissionsStore((s) => s.has('admin.users.view'));
 
   const [items, setItems] = useState<TenantMembershipItem[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);

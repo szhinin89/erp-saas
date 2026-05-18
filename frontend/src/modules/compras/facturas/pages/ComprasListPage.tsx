@@ -23,8 +23,8 @@ export function ComprasListPage() {
   const hasPerm  = usePermissionsStore((s) => s.has);
   const role     = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin  = role === 'Admin' || role === 'SuperAdmin';
-  const canView  = isAdmin || hasPerm('compras.facturas.view');
-  const canCreate = isAdmin || hasPerm('compras.facturas.create');
+  const canView  = isAdmin || hasPerm('purchases.invoices.view');
+  const canCreate = isAdmin || hasPerm('purchases.invoices.create');
 
   const [rows,        setRows]        = useState<CompraDto[]>([]);
   const [suppliers,   setSuppliers]   = useState<Supplier[]>([]);

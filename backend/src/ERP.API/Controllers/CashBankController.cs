@@ -11,24 +11,24 @@ using ERP.API.Attributes;
 namespace ERP.API.Controllers;
 
 /// <summary>ConciliaciÃ³n bancaria, caja chica y flujo de efectivo (tenant).</summary>
-[AppFeature("Caja y bancos", "perm:caja.extractos.view", "ðŸ¦", "/caja", null, 60)]
+[AppFeature("Caja y bancos", "perm:cash.bank.view", "ðŸ¦", "/cash/bank", null, 60)]
 [ApiController]
-[Route("api/caja")]
+[Route("api/cash/bank")]
 [Authorize]
 [Produces("application/json")]
-public sealed class CashController : ControllerBase
+public sealed class CashBankController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IStatementParser _parser;
 
-    public CashController(IMediator mediator, IStatementParser parser)
+    public CashBankController(IMediator mediator, IStatementParser parser)
     {
         _mediator = mediator;
         _parser   = parser;
     }
 
     [HttpGet("cuentas-bancarias")]
-    [Authorize(Policy = "perm:caja.extractos.view")]
+    [Authorize(Policy = "perm:cash.bank.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BankAccountDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListBankAccounts(CancellationToken ct)
     {
@@ -37,7 +37,7 @@ public sealed class CashController : ControllerBase
     }
 
     [HttpPost("cuentas-bancarias")]
-    [Authorize(Policy = "perm:caja.extractos.create")]
+    [Authorize(Policy = "perm:cash.bank.create")]
     [ProducesResponseType(typeof(ApiResponse<BankAccountDto>), StatusCodes.Status201Created)]
     public async Task<IActionResult> CreateBankAccount([FromBody] CreateBankAccountRequest body, CancellationToken ct)
     {
@@ -54,7 +54,7 @@ public sealed class CashController : ControllerBase
     }
 
     [HttpGet("extractos")]
-    [Authorize(Policy = "perm:caja.extractos.view")]
+    [Authorize(Policy = "perm:cash.bank.view")]
     public async Task<IActionResult> ListStatements([FromQuery] Guid cuentaBancariaId, CancellationToken ct)
     {
         var r = await _mediator.Send(new ListExtractosPorCuentaQuery(cuentaBancariaId), ct);
@@ -62,7 +62,7 @@ public sealed class CashController : ControllerBase
     }
 
     [HttpGet("extractos/{id:guid}")]
-    [Authorize(Policy = "perm:caja.extractos.view")]
+    [Authorize(Policy = "perm:cash.bank.view")]
     public async Task<IActionResult> GetStatement(Guid id, CancellationToken ct)
     {
         var r = await _mediator.Send(new GetExtractoDetalleQuery(id), ct);
@@ -70,7 +70,7 @@ public sealed class CashController : ControllerBase
     }
 
     [HttpPost("extractos/importar")]
-    [Authorize(Policy = "perm:caja.extractos.create")]
+    [Authorize(Policy = "perm:cash.bank.create")]
     [RequestSizeLimit(10_000_000)]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> ImportStatement([FromForm] ImportStatementForm form, CancellationToken ct)
@@ -102,7 +102,7 @@ public sealed class CashController : ControllerBase
     }
 
     [HttpGet("extractos/{extractoId:guid}/sugerencias-conciliacion")]
-    [Authorize(Policy = "perm:caja.extractos.view")]
+    [Authorize(Policy = "perm:cash.bank.view")]
     public async Task<IActionResult> SuggestReconciliation(Guid extractoId, CancellationToken ct)
     {
         var r = await _mediator.Send(new SugerirReconciliationQuery(extractoId), ct);
@@ -112,7 +112,7 @@ public sealed class CashController : ControllerBase
     public sealed record ConciliarRequest(Guid JournalEntryId);
 
     [HttpPost("movimientos/{movimientoId:guid}/conciliar")]
-    [Authorize(Policy = "perm:caja.conciliar")]
+    [Authorize(Policy = "perm:cash.bank.conciliar")]
     public async Task<IActionResult> ReconcileTransaction(Guid movimientoId, [FromBody] ConciliarRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(new ConciliarBankTransactionCommand(movimientoId, body.JournalEntryId), ct);
@@ -120,7 +120,7 @@ public sealed class CashController : ControllerBase
     }
 
     [HttpGet("cajas-chicas")]
-    [Authorize(Policy = "perm:caja.cajachica.view")]
+    [Authorize(Policy = "perm:cash.bank.cajachica.view")]
     public async Task<IActionResult> ListPettyCashes(CancellationToken ct)
     {
         var r = await _mediator.Send(new ListCashesChicasQuery(), ct);
@@ -128,7 +128,7 @@ public sealed class CashController : ControllerBase
     }
 
     [HttpPost("cajas-chicas")]
-    [Authorize(Policy = "perm:caja.cajachica.create")]
+    [Authorize(Policy = "perm:cash.bank.cajachica.create")]
     public async Task<IActionResult> CreatePettyCash([FromBody] CreatePettyCashRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(
@@ -138,7 +138,7 @@ public sealed class CashController : ControllerBase
     }
 
     [HttpPost("caja-chica/gastos")]
-    [Authorize(Policy = "perm:caja.cajachica.edit")]
+    [Authorize(Policy = "perm:cash.bank.cajachica.edit")]
     public async Task<IActionResult> CreatePettyCashExpense([FromBody] CreatePettyCashExpenseRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(
@@ -154,7 +154,7 @@ public sealed class CashController : ControllerBase
     }
 
     [HttpPost("caja-chica/arqueos")]
-    [Authorize(Policy = "perm:caja.arqueos.perform")]
+    [Authorize(Policy = "perm:cash.bank.arqueos.perform")]
     public async Task<IActionResult> CreateCashCount([FromBody] CreateCashCountRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(
@@ -164,7 +164,7 @@ public sealed class CashController : ControllerBase
     }
 
     [HttpPost("caja-chica/arqueos/{arqueoId:guid}/aprobar")]
-    [Authorize(Policy = "perm:caja.arqueos.perform")]
+    [Authorize(Policy = "perm:cash.bank.arqueos.perform")]
     public async Task<IActionResult> ApproveCashCount(Guid arqueoId, CancellationToken ct)
     {
         var r = await _mediator.Send(new AprobarCashCountCommand(arqueoId), ct);
@@ -172,7 +172,7 @@ public sealed class CashController : ControllerBase
     }
 
     [HttpPost("caja-chica/reposicion")]
-    [Authorize(Policy = "perm:caja.cajachica.edit")]
+    [Authorize(Policy = "perm:cash.bank.cajachica.edit")]
     public async Task<IActionResult> Replenish([FromBody] PettyCashReplenishmentRequest body, CancellationToken ct)
     {
         var r = await _mediator.Send(new ReposicionPettyCashCommand(body.PettyCashId, body.Amount), ct);
@@ -180,7 +180,7 @@ public sealed class CashController : ControllerBase
     }
 
     [HttpGet("flujo-efectivo/real")]
-    [Authorize(Policy = "perm:caja.flujo.view")]
+    [Authorize(Policy = "perm:cash.bank.flujo.view")]
     public async Task<IActionResult> GetActualCashFlow([FromQuery] DateTime desde, [FromQuery] DateTime hasta, CancellationToken ct)
     {
         var r = await _mediator.Send(new GetFlujoEfectivoRealQuery(desde, hasta), ct);

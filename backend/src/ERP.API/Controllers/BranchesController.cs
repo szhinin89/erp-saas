@@ -14,9 +14,9 @@ using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
-[AppFeature("Sucursales", "perm:saas.branches.view", "🏢", "/configuracion/sucursales", "session:geography", 30)]
+[AppFeature("Sucursales", "perm:settings.branches.view", "🏢", "/settings/branches", "perm:settings.group", 30)]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/settings/branches")]
 [Authorize]
 [Produces("application/json")]
 public sealed class BranchesController : ControllerBase
@@ -29,7 +29,7 @@ public sealed class BranchesController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize(Policy = "perm:saas.branches.view")]
+    [Authorize(Policy = "perm:settings.branches.view")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BranchDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct = default)
     {
@@ -40,7 +40,7 @@ public sealed class BranchesController : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
-    [Authorize(Policy = "perm:saas.branches.view")]
+    [Authorize(Policy = "perm:settings.branches.view")]
     [ProducesResponseType(typeof(ApiResponse<BranchDetailDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(Guid id, CancellationToken ct = default)
@@ -50,7 +50,7 @@ public sealed class BranchesController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Policy = "perm:saas.branches.create")]
+    [Authorize(Policy = "perm:settings.branches.create")]
     [ProducesResponseType(typeof(ApiResponse<BranchDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateBranchCommand command, CancellationToken ct = default)
@@ -60,7 +60,7 @@ public sealed class BranchesController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    [Authorize(Policy = "perm:saas.branches.update")]
+    [Authorize(Policy = "perm:settings.branches.update")]
     [ProducesResponseType(typeof(ApiResponse<BranchDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateBranchCommand command, CancellationToken ct = default)
@@ -73,7 +73,7 @@ public sealed class BranchesController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/disable")]
-    [Authorize(Policy = "perm:saas.branches.delete")]
+    [Authorize(Policy = "perm:settings.branches.delete")]
     public async Task<IActionResult> Disable(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new DisableBranchCommand(id), ct);
@@ -81,7 +81,7 @@ public sealed class BranchesController : ControllerBase
     }
 
     [HttpPatch("{id:guid}/enable")]
-    [Authorize(Policy = "perm:saas.branches.update")]
+    [Authorize(Policy = "perm:settings.branches.update")]
     public async Task<IActionResult> Enable(Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new EnableBranchCommand(id), ct);
