@@ -205,6 +205,15 @@ KPI icon:  .pg-kpi-icon--primary/success/warning/error
 
 ---
 
+## ICE (Impuesto a Consumos Especiales) — diferido
+
+No implementar hasta que el cliente lo requiera. El dominio ya tiene la base:
+- `Product.AppliesExciseTax` + `Product.ExciseTaxId` existen en entidad
+- `TaxRateType.Excise` existe en el enum
+- Cuando se implemente: agregar `IceCode`, `IcePercentage`, `IceAmount` a `SalesBillLine` y `SalesNoteLine`, y emitir `<impuesto><codigo>3</codigo>` junto al IVA en el XML SRI.
+
+---
+
 ## SaaS — reglas específicas
 
 - **IDs de tenant fuera de la URL:** usar `sessionStorage` con clave `erp.saas.*`, nunca `?tenantId=`.
