@@ -46,6 +46,49 @@ public static class NavigationMenuConfiguracionBootstrap
         WHERE route_path = '/profiles'
           AND group_id = (SELECT "Id" FROM ui_nav_groups WHERE code = 'configuracion' LIMIT 1);
 
+        -- Ítems de configuración SRI/facturación (idempotente: INSERT si no existe)
+        INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
+        SELECT
+            '00000000-0000-4000-8000-000000000101',
+            g."Id",
+            '/configuracion/empresa',
+            'app.nav.item.config.empresa',
+            'Datos de Empresa',
+            10,
+            'ventas',
+            'ventas.configuracion.view',
+            true
+        FROM ui_nav_groups g WHERE g.code = 'configuracion'
+        ON CONFLICT ("Id") DO NOTHING;
+
+        INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
+        SELECT
+            '00000000-0000-4000-8000-000000000102',
+            g."Id",
+            '/configuracion/sri',
+            'app.nav.item.config.sri',
+            'Configuración SRI',
+            11,
+            'ventas',
+            'ventas.configuracion.view',
+            true
+        FROM ui_nav_groups g WHERE g.code = 'configuracion'
+        ON CONFLICT ("Id") DO NOTHING;
+
+        INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
+        SELECT
+            '00000000-0000-4000-8000-000000000103',
+            g."Id",
+            '/configuracion/facturacion',
+            'app.nav.item.config.facturacion',
+            'Configuración RIDE',
+            12,
+            'ventas',
+            'ventas.configuracion.view',
+            true
+        FROM ui_nav_groups g WHERE g.code = 'configuracion'
+        ON CONFLICT ("Id") DO NOTHING;
+
         DO $$
         DECLARE
           inv_so integer;
