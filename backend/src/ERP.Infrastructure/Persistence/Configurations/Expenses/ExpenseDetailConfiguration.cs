@@ -26,6 +26,11 @@ public class ExpenseDetailConfiguration : IEntityTypeConfiguration<ExpenseDetail
             .HasForeignKey(x => x.ExpenseId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // El padre (ExpenseInvoice) tiene query filter por TenantId; declarar
+        // la navigation como opcional para que EF no emita WRN cuando el padre
+        // es filtrado. El FK sigue siendo NOT NULL en BD.
+        builder.Navigation(x => x.Expense).IsRequired(false);
+
         builder.HasIndex(x => x.ExpenseId).HasDatabaseName("ix_expense_detail_expense_id");
         builder.HasIndex(x => new { x.ExpenseId, x.SortOrder }).HasDatabaseName("ix_expense_detail_expense_sort");
     }

@@ -27,6 +27,11 @@ public class StockAdjustmentLineConfiguration : IEntityTypeConfiguration<StockAd
             .HasForeignKey(x => x.StockAdjustmentId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // El padre (StockAdjustment) tiene query filter por TenantId; declarar
+        // la navigation como opcional para que EF no emita WRN cuando el padre
+        // es filtrado. El FK sigue siendo NOT NULL en BD.
+        builder.Navigation(x => x.StockAdjustment).IsRequired(false);
+
         builder.HasIndex(x => x.StockAdjustmentId).HasDatabaseName("ix_stock_adjustment_line_adjustment");
         builder.HasIndex(x => new { x.StockAdjustmentId, x.SortOrder }).HasDatabaseName("ix_stock_adjustment_line_adjustment_sort");
     }
