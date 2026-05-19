@@ -60,7 +60,7 @@ Para checklist ítem por ítem con porcentajes por sección, abrir **`PROGRESS.h
 - Menú dinámico por tenant en BD (`ERP.Application/Modules/Navigation/`)
 - Menu Builder: árbol, operaciones, historial, validación integridad plan-menú
 - Onboarding automático al crear empresa (`ITenantOnboardingService`: perfiles, cliente consumidor final, sucursal y bodega principal)
-- Seed de menú global: 9 grupos × 33 ítems; plan `starter` con `menu_config_json` vía `SaasPlansBootstrap` e install SQL `004_plan_menu_config_backfill.sql`
+- Seed de menú global: 9 grupos × 33 ítems; plan `starter` con `menu_config_json` vía `SaasPlansBootstrap` e install SQL `004_starter_menu_fix.sql`
 - Perfiles de acceso + permisos granulares (`ERP.Application/Modules/Access/`, `Permissions.cs`)
 - Auditoría de usuario (`ERP.Domain/Modules/Audit/`)
 - Config jerárquica global → módulo → feature
