@@ -107,7 +107,8 @@
 /* Plan badge — base → .badge (zh-ui.css), solo colores de tier aquí */
 .sa-plan-badge--enterprise { background: var(--color-secondary-container);   color: var(--color-on-secondary-container); }
 .sa-plan-badge--pro        { background: var(--color-tertiary-fixed);         color: var(--color-on-tertiary-fixed-variant); }
-.sa-plan-badge--basic      { background: var(--color-surface-container-high); color: var(--color-on-surface-variant); }
+.sa-plan-badge--business   { background: var(--color-primary-container);      color: var(--color-on-primary-container); }
+.sa-plan-badge--starter    { background: var(--color-surface-container-high); color: var(--color-on-surface-variant); }
 .sa-plan-badge--default    { background: var(--color-surface-container);      color: var(--color-text-secondary); }
 
 /* Status dot con texto */

@@ -226,7 +226,9 @@ export function expandPlanCustomRootsToBarGroups(groups: NavGroup[]): NavGroup[]
     moduleKey: root.moduleKey ?? plan.moduleKey,
     roles: plan.roles,
     sortOrder: baseOrder * 100 + i,
-    items: [root],
+    // Si la raíz es una carpeta (tiene hijos), exponer los hijos directamente como
+    // ítems del dropdown en lugar de mostrar la carpeta como branch toggle.
+    items: root.children?.length ? root.children : [root],
   }));
 
   return sortNavGroupsForMainBar([...rest, ...expanded]);

@@ -74,24 +74,12 @@ if ([string]::IsNullOrWhiteSpace($saToken)) { throw "No se obtuvo JWT de SuperAd
 
 $auth = @{ Authorization = "Bearer $saToken" }
 
-Write-Host "== 4) Crear plan Básico ==" -ForegroundColor Cyan
-$planBody = @{
-    code                 = "basico"
-    name                 = "Básico"
-    shortLabel           = "BAS"
-    isActive             = $true
-    priceAmount          = 29.99
-    currency             = "USD"
-    billingCycle         = "monthly"
-    isPubliclyVisible    = $true
-    isRecommended        = $false
-    sortOrder            = 0
-    externalBillingRef   = $null
-}
-$planRes = Invoke-ApiJson -Method Post -Path "/api/superadmin/saas-plans" -Body $planBody -Headers $auth
-$planId = $planRes.responseObject.id
-if (-not $planId) { $planId = $planRes.responseObject.Id }
-Write-Host "Plan id: $planId"
+Write-Host "== 4) Obtener plan Starter (creado por bootstrap) ==" -ForegroundColor Cyan
+$plansRes = Invoke-ApiJson -Method Get -Path "/api/superadmin/saas-plans" -Headers $auth
+$starterPlan = $plansRes.responseObject | Where-Object { $_.code -eq 'starter' } | Select-Object -First 1
+$planId = $starterPlan.id
+if (-not $planId) { $planId = $starterPlan.Id }
+Write-Host "Plan Starter id: $planId"
 
 Write-Host "== 5) Crear empresa + admin local (módulos inventario + saas = productos + sucursales) ==" -ForegroundColor Cyan
 $tenantBody = @{
@@ -103,7 +91,7 @@ $tenantBody = @{
     adminPassword       = $TenantAdminPassword
     passwordResetMode   = 2
     linkExistingAdmin   = $false
-    planCode            = "basico"
+    planCode            = "starter"
     enabledModules      = @("inventario", "saas")
 }
 $tenantRes = Invoke-ApiJson -Method Post -Path "/api/access/superadmin/tenants" -Body $tenantBody -Headers $auth

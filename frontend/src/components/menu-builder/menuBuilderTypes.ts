@@ -153,16 +153,45 @@ function sessionItemToEditor(s: SessionMenuItemDto, byPerm: Map<string, Funciona
   };
 }
 
-/** Aplana grupos en una lista de raíces (un solo grupo visual en el editor). */
+/** Nombre de carpeta para el editor a partir de un código de grupo. */
+const GROUP_DISPLAY_NAMES: Record<string, string> = {
+  sales:      'Ventas',
+  purchases:  'Compras',
+  inventory:  'Inventario',
+  logistics:  'Logística',
+  cash:       'Caja y Bancos',
+  finance:    'Contabilidad',
+  expenses:   'Gastos',
+  settings:   'Configuración',
+  admin:      'Administración',
+};
+
+/**
+ * Convierte SessionMenuGroupDto[] al árbol del editor.
+ * - Un solo grupo "plan-custom" → aplana sus ítems (comportamiento legacy).
+ * - Múltiples grupos reales (sales, purchases…) → cada grupo = carpeta raíz
+ *   con sus ítems como hijos directos.
+ */
 export function sessionGroupsToEditorTree(
   groups: SessionMenuGroupDto[],
   byPerm: Map<string, FuncionalidadArbolDto>,
 ): EditorMenuItem[] {
-  const items: SessionMenuItemDto[] = [];
-  for (const g of groups) {
-    for (const it of g.items) items.push(it);
+  const isPlanCustomOnly =
+    groups.length === 1 && groups[0]?.code === 'plan-custom';
+
+  if (isPlanCustomOnly) {
+    return (groups[0]?.items ?? []).map((it) => sessionItemToEditor(it, byPerm));
   }
-  return items.map((it) => sessionItemToEditor(it, byPerm));
+
+  // Multi-grupo: cada grupo → carpeta raíz
+  return groups.map((g): EditorMenuItem => ({
+    uid: `group-${g.code}`,
+    nombre: GROUP_DISPLAY_NAMES[g.code] ?? g.code,
+    icono: g.icon ?? '',
+    ruta: '',
+    permiso: '',
+    children: (g.items ?? []).map((it) => sessionItemToEditor(it, byPerm)),
+  }));
 }
 
 function editorNodeToSessionItem(n: EditorMenuItem, sortOrder: number): SessionMenuItemDto {
@@ -235,11 +264,69 @@ export function normalizeParsedMenuGroups(groups: SessionMenuGroupDto[]): Sessio
   });
 }
 
+/** Código de grupo canónico a partir del uid de carpeta (ej. "group-sales" → "sales"). */
+function groupCodeFromFolderUid(uid: string): string | null {
+  const m = /^group-(.+)$/.exec(uid);
+  return m?.[1] ?? null;
+}
+
+const GROUP_LABEL_KEYS: Record<string, string> = {
+  sales:      'app.nav.group.sales',
+  purchases:  'app.nav.group.purchases',
+  inventory:  'app.nav.group.inventory',
+  logistics:  'app.nav.group.logistics',
+  cash:       'app.nav.group.cash',
+  finance:    'app.nav.group.finance',
+  expenses:   'app.nav.group.expenses',
+  settings:   'app.nav.group.settings',
+  admin:      'app.nav.group.admin',
+};
+
+const GROUP_ICONS: Record<string, string> = {
+  sales:      '🧾',
+  purchases:  '🛒',
+  inventory:  '📦',
+  logistics:  '🚚',
+  cash:       '💳',
+  finance:    '📒',
+  expenses:   '💸',
+  settings:   '⚙',
+  admin:      '🛡️',
+};
+
+/**
+ * Serializa el árbol del editor a SessionMenuGroupDto[].
+ * - Si todas las raíces son carpetas con uid "group-<code>" → emite grupos reales
+ *   (sales, purchases…), compatible con el renderizado agrupado del nav bar.
+ * - En cualquier otro caso → emite un único grupo "plan-custom" (comportamiento legacy).
+ */
 export function editorTreeToSessionGroups(
   items: EditorMenuItem[],
   labelKey: string,
   menuBarLayout: PlanMenuBarLayout = 'horizontal',
 ): SessionMenuGroupDto[] {
+  const allRootsAreGroups =
+    items.length > 0 &&
+    items.every((n) => isEditorFolder(n) && groupCodeFromFolderUid(n.uid) !== null);
+
+  if (allRootsAreGroups) {
+    return items.map((folder, sortIdx): SessionMenuGroupDto => {
+      const code = groupCodeFromFolderUid(folder.uid)!;
+      return {
+        code,
+        icon: folder.icono || GROUP_ICONS[code] || '📋',
+        labelKey: GROUP_LABEL_KEYS[code] ?? `app.nav.group.${code}`,
+        sortOrder: (sortIdx + 1) * 10,
+        moduleKey: code,
+        roles: null,
+        requireSuperAdminPanel: false,
+        items: folder.children.map((n, i) => editorNodeToSessionItem(n, i)),
+        menuBarLayout: null,
+      };
+    });
+  }
+
+  // Legacy: emitir plan-custom
   return [
     {
       code: 'plan-custom',

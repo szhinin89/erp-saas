@@ -23,11 +23,12 @@ function initials(name: string) {
 
 function planBadgeClass(planCode: string | null | undefined): string {
   const c = (planCode ?? '').toLowerCase();
-  if (c.includes('ent'))  return 'badge sa-plan-badge--enterprise';
-  if (c.includes('pro'))  return 'badge sa-plan-badge--pro';
-  if (c.includes('bas'))  return 'badge sa-plan-badge--basic';
-  if (c)                  return 'badge sa-plan-badge--default';
-  return                         'badge sa-plan-badge--default';
+  if (c.includes('ent'))   return 'badge sa-plan-badge--enterprise';
+  if (c.includes('pro'))   return 'badge sa-plan-badge--pro';
+  if (c.includes('bus'))   return 'badge sa-plan-badge--business';
+  if (c.includes('start')) return 'badge sa-plan-badge--starter';
+  if (c)                   return 'badge sa-plan-badge--default';
+  return                          'badge sa-plan-badge--default';
 }
 
 function storeImpersonationTenantName(name: string) {

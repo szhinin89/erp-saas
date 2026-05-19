@@ -60,7 +60,7 @@ Para checklist ítem por ítem con porcentajes por sección, abrir **`PROGRESS.h
 - Menú dinámico por tenant en BD (`ERP.Application/Modules/Navigation/`)
 - Menu Builder: árbol, operaciones, historial, validación integridad plan-menú
 - Onboarding automático al crear empresa (`ITenantOnboardingService`: perfiles, cliente consumidor final, sucursal y bodega principal)
-- Seed de menú global: 9 grupos × 33 ítems + plan `basic` con `menu_config` JSONB (`backend/scripts/seed_menu_basic.sql`)
+- Seed de menú global: 9 grupos × 33 ítems; plan `starter` con `menu_config_json` vía `SaasPlansBootstrap` e install SQL `004_plan_menu_config_backfill.sql`
 - Perfiles de acceso + permisos granulares (`ERP.Application/Modules/Access/`, `Permissions.cs`)
 - Auditoría de usuario (`ERP.Domain/Modules/Audit/`)
 - Config jerárquica global → módulo → feature
@@ -223,7 +223,7 @@ Borrador ──[validar]──► Validado ──[aprobar]──► Aprobado  (s
 
 ### Alta prioridad
 2. **Frontend retenciones:** comprobante de retención emitido y recibido (`/sales/withholding-received`, `/purchases/withholding-issued`)
-3. **Menú por plan:** configurar JSON de menú por plan comercial en SuperAdmin → Planes → Menu Builder (seed `basic` ya existe como referencia)
+3. **Menú por plan:** configurar JSON de menú por plan comercial en SuperAdmin → Planes → Menu Builder (plan `starter` incluye menú de referencia en bootstrap)
 4. **Reparar suite de tests:** actualizar referencias post-refactor (`VentasController` → `InvoicesController`, DTOs renombrados)
 
 ### Media prioridad

@@ -65,10 +65,11 @@ function MainMenuBranchRow({
           aria-expanded={expanded}
           onClick={() => setExpanded((v) => !v)}
         >
+          {it.icon ? <span className="app-mainmenu-itemIcon" aria-hidden="true">{it.icon}</span> : null}
+          <span className="app-mainmenu-branchLabel">{it.label}</span>
           <span className="app-mainmenu-branchCaret" aria-hidden>
             {expanded ? '▾' : '▸'}
           </span>
-          <span className="app-mainmenu-branchLabel">{it.label}</span>
         </button>
         {it.to && showFavoriteStars ? (
           <button
@@ -147,11 +148,13 @@ function MainMenuList({
                     onClose();
                   }}
                 >
-                  {it.label}
+                  {it.icon ? <span className="app-mainmenu-itemIcon" aria-hidden="true">{it.icon}</span> : null}
+                  <span>{it.label}</span>
                 </button>
               ) : (
                 <span className="app-mainmenu-link app-mainmenu-parent" title={t('app.layout.menuMissingRoute')}>
-                  {it.label}
+                  {it.icon ? <span className="app-mainmenu-itemIcon" aria-hidden="true">{it.icon}</span> : null}
+                  <span>{it.label}</span>
                 </span>
               )}
               {it.to && showFavoriteStars ? (
@@ -357,6 +360,13 @@ export function AppLayout() {
 
     const bySubscription = byRole.filter((g) => moduleEntitled(g.moduleKey));
 
+    // SuperAdmin (impersonando) y Admin de empresa ven todos los grupos del plan
+    // sin filtro de módulos ni de permisos por ítem.
+    // La autorización real ocurre en cada endpoint del backend.
+    if (user?.role === 'SuperAdmin' || user?.role === 'Admin') {
+      return byRole.filter((g) => g.items.length > 0);
+    }
+
     if (!permsHydrated) return bySubscription;
 
     if (permissions.includes('*')) return bySubscription;
@@ -406,6 +416,7 @@ export function AppLayout() {
     return allowed.map((g) => ({
       id: g.id,
       label: g.label,
+      icon: g.icon,
       isActive: activeGroupIds.has(g.id),
       items: g.items,
     }));
@@ -418,6 +429,27 @@ export function AppLayout() {
   const [mainMenuPos, setMainMenuPos] = useState<{ top: number; left: number } | null>(null);
   const mainMenuBarRef = useRef<HTMLDivElement | null>(null);
   const mainMenuPopoverRef = useRef<HTMLDivElement | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openGroup = (id: string, rect: DOMRect) => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    setMainMenuOpenId(id);
+    setMainMenuPos({ top: Math.round(rect.bottom + 4), left: Math.round(rect.left) });
+  };
+
+  const scheduleClose = () => {
+    closeTimerRef.current = setTimeout(() => setMainMenuOpenId(null), 150);
+  };
+
+  const cancelClose = () => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!mainMenuOpenId) return;
@@ -427,22 +459,11 @@ export function AppLayout() {
       pop.style.top = `${mainMenuPos.top}px`;
       pop.style.left = `${mainMenuPos.left}px`;
     }
-    const onDown = (e: PointerEvent) => {
-      const target = e.target;
-      if (!(target instanceof Node)) return;
-      const bar = mainMenuBarRef.current;
-      const popEl = mainMenuPopoverRef.current;
-      if (bar?.contains(target)) return;
-      if (popEl?.contains(target)) return;
-      setMainMenuOpenId(null);
-    };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setMainMenuOpenId(null);
     };
-    window.addEventListener('pointerdown', onDown, true);
     window.addEventListener('keydown', onKey);
     return () => {
-      window.removeEventListener('pointerdown', onDown, true);
       window.removeEventListener('keydown', onKey);
     };
   }, [mainMenuOpenId, mainMenuPos]);
@@ -552,21 +573,22 @@ export function AppLayout() {
                       <button
                         key={g.id}
                         type="button"
-                        className={`app-mainmenu-item${g.isActive ? ' is-active' : ''}`}
+                        className={`app-mainmenu-item${g.isActive ? ' is-active' : ''}${mainMenuOpenId === g.id ? ' is-open' : ''}`}
                         aria-haspopup="menu"
                         aria-expanded={mainMenuOpenId === g.id}
+                        onMouseEnter={(e) => openGroup(g.id, e.currentTarget.getBoundingClientRect())}
+                        onMouseLeave={scheduleClose}
                         onClick={(e) => {
-                          const willOpen = mainMenuOpenId !== g.id;
-                          setMainMenuOpenId(willOpen ? g.id : null);
-                          if (willOpen) {
-                            const r = e.currentTarget.getBoundingClientRect();
-                            setMainMenuPos({ top: Math.round(r.bottom + 10), left: Math.round(r.left) });
+                          if (mainMenuOpenId === g.id) {
+                            setMainMenuOpenId(null);
                           } else {
-                            setMainMenuPos(null);
+                            openGroup(g.id, e.currentTarget.getBoundingClientRect());
                           }
                         }}
                       >
-                        {g.label}
+                        {g.icon ? <span className="app-mainmenu-groupIcon" aria-hidden="true">{g.icon}</span> : null}
+                        <span className="app-mainmenu-groupLabel">{g.label}</span>
+                        <span className="app-mainmenu-caret" aria-hidden="true">▾</span>
                       </button>
                     ))}
                   </div>
@@ -585,6 +607,8 @@ export function AppLayout() {
                 aria-label={t('app.layout.groupMenu')}
                 data-top={mainMenuPos.top}
                 data-left={mainMenuPos.left}
+                onMouseEnter={cancelClose}
+                onMouseLeave={scheduleClose}
               >
                 <MainMenuList
                   items={mainMenuGroups.find((g) => g.id === mainMenuOpenId)?.items ?? []}

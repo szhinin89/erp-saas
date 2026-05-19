@@ -159,6 +159,8 @@ type CrmLocalPlan = {
   description: string;
   layout: MenuPreviewLayout;
   highlight: boolean;
+  isPubliclyVisible: boolean;
+  sortOrder: number;
 };
 
 const DEFAULT_CRM_TREE_SEED: EditorMenuItem[] = [
@@ -221,6 +223,8 @@ function mapSaasPlanAdminToCrmPlan(plan: SaasPlanAdmin): CrmLocalPlan {
     description: `${name} (${code || 'N/A'})`,
     layout,
     highlight: !!plan.isRecommended,
+    isPubliclyVisible: !!plan.isPubliclyVisible,
+    sortOrder: plan.sortOrder ?? 0,
   };
 }
 
@@ -450,9 +454,11 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
   useEffect(() => {
     if (!crmWorkspace) return;
     if (planId) return;
-    if (crmPlans[0]) {
-      setPlanId(crmPlans[0].id);
-      setPreviewLayout(crmPlans[0].layout);
+    // Seleccionar el primer plan públicamente visible (ej. Starter); si no hay, el primero de la lista.
+    const defaultPlan = crmPlans.find((p) => p.isPubliclyVisible) ?? crmPlans[0];
+    if (defaultPlan) {
+      setPlanId(defaultPlan.id);
+      setPreviewLayout(defaultPlan.layout);
     }
   }, [crmWorkspace, planId, crmPlans]);
 
@@ -1235,6 +1241,8 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
               setPreviewLayout(p.layout);
             }}
             disabled={busy || savingAuto}
+            title={!p.isPubliclyVisible ? `${p.code} — plan interno (no visible al público)` : p.code}
+            style={!p.isPubliclyVisible ? { opacity: 0.45, fontStyle: 'italic' } : undefined}
           >
             <span aria-hidden style={{ fontSize: 14 }}>{planEmoji(p.code)}</span>
             {p.code}

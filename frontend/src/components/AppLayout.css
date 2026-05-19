@@ -118,7 +118,8 @@
 .app-mainmenu-item {
   display: inline-flex;
   align-items: center;
-  padding: 6px 10px;
+  gap: 5px;
+  padding: 6px 12px;
   border-radius: var(--radius-sm) var(--radius-sm) 0 0;
   border: none;
   border-bottom: 2px solid transparent;
@@ -132,7 +133,8 @@
   transition: color var(--transition), background var(--transition), border-color var(--transition);
   margin-bottom: -1px;
 }
-.app-mainmenu-item:hover {
+.app-mainmenu-item:hover,
+.app-mainmenu-item.is-open {
   color: #ffffff;
   background: rgba(255, 255, 255, 0.10);
 }
@@ -140,6 +142,27 @@
   color: #ffffff;
   border-bottom-color: var(--color-secondary-fixed-dim, #a5caf6);
   font-weight: 700;
+}
+
+.app-mainmenu-groupIcon {
+  font-size: 14px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.app-mainmenu-groupLabel {
+  /* no extra styles needed */
+}
+
+.app-mainmenu-caret {
+  font-size: 9px;
+  opacity: 0.65;
+  margin-left: 1px;
+  transition: opacity var(--transition);
+}
+.app-mainmenu-item:hover .app-mainmenu-caret,
+.app-mainmenu-item.is-open .app-mainmenu-caret {
+  opacity: 1;
 }
 
 /* ── Main menu popover (dropdown) ─────────────────────────── */
@@ -166,7 +189,9 @@
 .app-mainmenu-link {
   flex: 1;
   min-width: 0;
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 9px var(--space-4);
   font-size: var(--text-body-md-size);
   color: var(--color-text-primary);
@@ -174,6 +199,15 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.app-mainmenu-itemIcon {
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.9;
 }
 
 .app-mainmenu-navBtn {

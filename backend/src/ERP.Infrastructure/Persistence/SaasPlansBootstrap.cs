@@ -5,8 +5,9 @@ using Microsoft.EntityFrameworkCore;
 namespace ERP.Infrastructure.Persistence;
 
 /// <summary>
-/// Inserta catálogo mínimo de planes comerciales cuando la BD no tiene planes.
-/// Idempotente: no duplica ni sobreescribe planes existentes.
+/// Inserta y actualiza el catálogo de planes comerciales en el arranque.
+/// Idempotente: no duplica ni sobreescribe JSON personalizado por el SuperAdmin.
+/// Planes: Starter · Business · Professional · Enterprise.
 /// </summary>
 public static class SaasPlansBootstrap
 {
@@ -22,57 +23,73 @@ public static class SaasPlansBootstrap
 
     private static readonly DefaultPlanSeed[] DefaultPlans =
     [
-        new("basic",        "Básico",       "BÁSICO",       0m,   false, false, -1, BasicMenuConfigJson),
-        new("starter",      "Starter",      "STARTER",      49m,  true,  false,  0),
-        new("business",     "Business",     "BUSINESS",     99m,  true,  true,   1),
-        new("professional", "Professional", "PROFESSIONAL", 179m, true,  false,  2),
-        new("enterprise",   "Enterprise",   "ENTERPRISE",   299m, true,  false,  3),
+        new("starter",      "Starter",      "STARTER",      49m,  true, false, 0, StarterMenuConfigJson),
+        new("business",     "Business",     "BUSINESS",     99m,  true, true,  1),
+        new("professional", "Professional", "PROFESSIONAL", 179m, true, false, 2),
+        new("enterprise",   "Enterprise",   "ENTERPRISE",   299m, true, false, 3),
     ];
 
     public static async Task EnsureDefaultsAsync(ErpDbContext db, CancellationToken ct = default)
     {
-        var existingCodes = await db.SaasPlans.AsNoTracking()
-            .Select(p => p.Code)
+        var existingPlans = await db.SaasPlans
+            .Where(p => p.Code != null)
             .ToListAsync(ct);
 
-        var existing = existingCodes
-            .Select(c => (c ?? string.Empty).Trim().ToLowerInvariant())
-            .Where(c => c.Length > 0)
-            .ToHashSet(StringComparer.Ordinal);
+        var existingByCode = existingPlans
+            .Where(p => !string.IsNullOrWhiteSpace(p.Code))
+            .ToDictionary(p => p.Code!.Trim().ToLowerInvariant());
 
         var toInsert = new List<SaasPlan>();
+        var changed = false;
+
         foreach (var seed in DefaultPlans)
         {
-            if (existing.Contains(seed.Code))
+            if (!existingByCode.TryGetValue(seed.Code, out var existing))
+            {
+                var plan = SaasPlan.Create(
+                    code: seed.Code,
+                    name: seed.Name,
+                    shortLabel: seed.ShortLabel,
+                    isActive: true,
+                    priceAmount: seed.PriceAmount,
+                    currency: "USD",
+                    billingCycle: SaasBillingCycle.Monthly,
+                    isPubliclyVisible: seed.IsPubliclyVisible,
+                    isRecommended: seed.IsRecommended,
+                    sortOrder: seed.SortOrder,
+                    externalBillingRef: null);
+
+                if (seed.MenuConfigJson is not null)
+                    plan.SetMenuConfigJson(seed.MenuConfigJson);
+
+                toInsert.Add(plan);
                 continue;
+            }
 
-            var plan = SaasPlan.Create(
-                code: seed.Code,
-                name: seed.Name,
-                shortLabel: seed.ShortLabel,
-                isActive: true,
-                priceAmount: seed.PriceAmount,
-                currency: "USD",
-                billingCycle: SaasBillingCycle.Monthly,
-                isPubliclyVisible: seed.IsPubliclyVisible,
-                isRecommended: seed.IsRecommended,
-                sortOrder: seed.SortOrder,
-                externalBillingRef: null);
-
-            if (seed.MenuConfigJson is not null)
-                plan.SetMenuConfigJson(seed.MenuConfigJson);
-
-            toInsert.Add(plan);
+            // Plan ya existe: inyectar MenuConfigJson si:
+            //   a) está vacío/null, o
+            //   b) tiene estructura "plan-custom" plana (JSON de migración incorrecto).
+            // No sobreescribir JSON personalizado guardado por el SuperAdmin.
+            var hasPlanCustom = existing.MenuConfigJson?.Contains("plan-custom") == true;
+            if (seed.MenuConfigJson is not null &&
+                (string.IsNullOrWhiteSpace(existing.MenuConfigJson) || hasPlanCustom))
+            {
+                existing.SetMenuConfigJson(seed.MenuConfigJson);
+                changed = true;
+            }
         }
 
-        if (toInsert.Count == 0)
-            return;
+        if (toInsert.Count > 0)
+        {
+            db.SaasPlans.AddRange(toInsert);
+            changed = true;
+        }
 
-        db.SaasPlans.AddRange(toInsert);
-        await db.SaveChangesAsync(ct);
+        if (changed)
+            await db.SaveChangesAsync(ct);
     }
 
-    private const string BasicMenuConfigJson = """
+    private const string StarterMenuConfigJson = """
         [
           {
             "code": "sales", "icon": "🧾", "labelKey": "app.nav.group.sales",
@@ -90,11 +107,11 @@ public static class SaasPlansBootstrap
             "sortOrder": 20, "moduleKey": "purchases", "roles": null,
             "requireSuperAdminPanel": false, "menuBarLayout": null,
             "items": [
-              {"routePath": "/purchases/invoices",           "labelKey": "app.nav.item.purchases.invoices",          "displayLabel": "Facturas de compra",      "sortOrder": 10, "moduleKey": "purchases", "permissionKey": "perm:purchases.invoices.view",           "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🧾"},
-              {"routePath": "/purchases/suppliers",          "labelKey": "app.nav.item.purchases.suppliers",         "displayLabel": "Proveedores",             "sortOrder": 20, "moduleKey": "purchases", "permissionKey": "perm:purchases.suppliers.view",          "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🏭"},
-              {"routePath": "/purchases/orders",             "labelKey": "app.nav.item.purchases.orders",            "displayLabel": "Órdenes de compra",       "sortOrder": 30, "moduleKey": "purchases", "permissionKey": "perm:purchases.orders.view",             "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📋"},
-              {"routePath": "/purchases/credit-notes",       "labelKey": "app.nav.item.purchases.credit-notes",      "displayLabel": "Notas crédito proveedor", "sortOrder": 40, "moduleKey": "purchases", "permissionKey": "perm:purchases.credit-notes.view",       "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📄"},
-              {"routePath": "/purchases/withholding-issued", "labelKey": "app.nav.item.purchases.withholding-issued","displayLabel": "Retenciones emitidas",    "sortOrder": 50, "moduleKey": "purchases", "permissionKey": "perm:purchases.withholding-issued.view", "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📋"}
+              {"routePath": "/purchases/invoices",           "labelKey": "app.nav.item.purchases.invoices",           "displayLabel": "Facturas de compra",      "sortOrder": 10, "moduleKey": "purchases", "permissionKey": "perm:purchases.invoices.view",           "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🧾"},
+              {"routePath": "/purchases/suppliers",          "labelKey": "app.nav.item.purchases.suppliers",          "displayLabel": "Proveedores",             "sortOrder": 20, "moduleKey": "purchases", "permissionKey": "perm:purchases.suppliers.view",          "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🏭"},
+              {"routePath": "/purchases/orders",             "labelKey": "app.nav.item.purchases.orders",             "displayLabel": "Órdenes de compra",       "sortOrder": 30, "moduleKey": "purchases", "permissionKey": "perm:purchases.orders.view",             "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📋"},
+              {"routePath": "/purchases/credit-notes",       "labelKey": "app.nav.item.purchases.credit-notes",       "displayLabel": "Notas crédito proveedor", "sortOrder": 40, "moduleKey": "purchases", "permissionKey": "perm:purchases.credit-notes.view",       "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📄"},
+              {"routePath": "/purchases/withholding-issued", "labelKey": "app.nav.item.purchases.withholding-issued", "displayLabel": "Retenciones emitidas",    "sortOrder": 50, "moduleKey": "purchases", "permissionKey": "perm:purchases.withholding-issued.view", "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📋"}
             ]
           },
           {
@@ -173,4 +190,3 @@ public static class SaasPlansBootstrap
         ]
         """;
 }
-
