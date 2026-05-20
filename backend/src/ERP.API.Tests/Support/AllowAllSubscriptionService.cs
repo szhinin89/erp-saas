@@ -10,6 +10,6 @@ internal sealed class AllowAllSubscriptionService : ISubscriptionService
     public Task<bool> CheckLimitAsync(Guid tenantId, string featureCode, long amount = 1, CancellationToken ct = default)
         => Task.FromResult(true);
 
-    public Task IncrementUsageAsync(Guid tenantId, string featureCode, long amount = 1, CancellationToken ct = default)
-        => Task.CompletedTask;
+    public Task<bool> IncrementUsageAsync(Guid tenantId, string featureCode, long amount = 1, CancellationToken ct = default)
+        => Task.FromResult(false);
 }

@@ -15,6 +15,10 @@ public interface ISubscriptionService
     /// </summary>
     Task<bool> CheckLimitAsync(Guid tenantId, string featureCode, long amount = 1, CancellationToken ct = default);
 
-    /// <summary>Incrementa el consumo acumulado para la feature en el periodo actual.</summary>
-    Task IncrementUsageAsync(Guid tenantId, string featureCode, long amount = 1, CancellationToken ct = default);
+    /// <summary>
+    /// Incrementa el consumo acumulado para la feature en el periodo actual.
+    /// Retorna <c>true</c> si el incremento quedó en el change tracker y el caller debe persistir
+    /// (proveedor InMemory en tests). Con PostgreSQL el incremento es atómico vía UPSERT y retorna <c>false</c>.
+    /// </summary>
+    Task<bool> IncrementUsageAsync(Guid tenantId, string featureCode, long amount = 1, CancellationToken ct = default);
 }

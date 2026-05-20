@@ -45,30 +45,18 @@ public sealed class SubscriptionService : ISubscriptionService
         return used + amount <= limit.Value;
     }
 
-    public async Task IncrementUsageAsync(Guid tenantId, string featureCode, long amount = 1, CancellationToken ct = default)
+    public async Task<bool> IncrementUsageAsync(Guid tenantId, string featureCode, long amount = 1, CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty || amount <= 0) return;
+        if (tenantId == Guid.Empty || amount <= 0) return false;
 
         var code = NormalizeFeatureCode(featureCode);
-        var feature = await _db.SaasFeatureDefinitions.FirstOrDefaultAsync(f => f.Code == code, ct);
-        if (feature is null || !feature.IsMetered) return;
+        var feature = await _db.SaasFeatureDefinitions.AsNoTracking()
+            .FirstOrDefaultAsync(f => f.Code == code, ct);
+        if (feature is null || !feature.IsMetered) return false;
 
         var period = MonthlyPeriodKey(DateTime.UtcNow);
-        var row = await _db.TenantSubscriptionUsages
-            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.FeatureId == feature.Id && u.PeriodKey == period, ct);
-
-        if (row is null)
-        {
-            await _db.TenantSubscriptionUsages.AddAsync(
-                TenantSubscriptionUsage.Create(tenantId, feature.Id, period, amount, Guid.Empty),
-                ct);
-        }
-        else
-        {
-            row.AddQuantity(amount, Guid.Empty);
-        }
-
-        await _db.SaveChangesAsync(ct);
+        return await SubscriptionUsageIncrementer.IncrementAsync(
+            _db, tenantId, feature.Id, period, amount, ct);
     }
 
     private async Task<TenantSaasSubscription?> GetActiveSubscriptionRowAsync(Guid tenantId, CancellationToken ct) =>

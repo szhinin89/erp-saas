@@ -17,15 +17,18 @@ public sealed class SubscriptionGateBehavior<TRequest, TResponse> : IPipelineBeh
     private readonly ISubscriptionService _subscriptions;
     private readonly ITenantEntitlementsService _entitlements;
     private readonly ICurrentTenant _tenant;
+    private readonly IUnitOfWork _unitOfWork;
 
     public SubscriptionGateBehavior(
         ISubscriptionService subscriptions,
         ITenantEntitlementsService entitlements,
-        ICurrentTenant tenant)
+        ICurrentTenant tenant,
+        IUnitOfWork unitOfWork)
     {
         _subscriptions = subscriptions;
         _entitlements = entitlements;
         _tenant = tenant;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
@@ -46,7 +49,12 @@ public sealed class SubscriptionGateBehavior<TRequest, TResponse> : IPipelineBeh
         var response = await next();
 
         if (consume is not null && IsSuccessfulResult(response))
-            await _subscriptions.IncrementUsageAsync(tenantId, consume.FeatureCode, consume.Units, ct);
+        {
+            var deferred = await _subscriptions.IncrementUsageAsync(
+                tenantId, consume.FeatureCode, consume.Units, ct);
+            if (deferred)
+                await _unitOfWork.SaveChangesAsync(ct);
+        }
 
         return response;
     }
