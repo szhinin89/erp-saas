@@ -55,6 +55,26 @@ public sealed class TenantSubscriptionCatalogTests
     }
 
     [Fact]
+    public void HasModuleRestrictionsFromModules_empty_list_is_restricted_fail_closed()
+    {
+        TenantSubscriptionCatalog.HasModuleRestrictionsFromModules(Array.Empty<string>()).Should().BeTrue();
+    }
+
+    [Fact]
+    public void HasModuleRestrictionsFromModules_starter_subset_is_restricted()
+    {
+        var starter = new[] { "sales", "inventory", "purchases", "expenses", "accounting", "access" };
+        TenantSubscriptionCatalog.HasModuleRestrictionsFromModules(starter).Should().BeTrue();
+    }
+
+    [Fact]
+    public void HasModuleRestrictionsFromModules_full_canonical_catalog_is_unrestricted()
+    {
+        TenantSubscriptionCatalog.HasModuleRestrictionsFromModules(TenantSubscriptionCatalog.CanonicalModuleKeys)
+            .Should().BeFalse();
+    }
+
+    [Fact]
     public async Task ResolveEnabledModulesAsync_delegates_to_entitlements_service()
     {
         var tenantId = Guid.NewGuid();

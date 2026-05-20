@@ -158,8 +158,8 @@ public class ErpDbContext : DbContext
 
             if (!hasValidPlan)
             {
-                if (existing is not null)
-                    TenantSaasSubscriptions.Remove(existing);
+                if (existing is not null && existing.Status == TenantSubscriptionStatus.Active)
+                    existing.Cancel(Guid.Empty);
                 continue;
             }
 
@@ -174,10 +174,7 @@ public class ErpDbContext : DbContext
             if (existing.PlanId == planId && existing.Status == TenantSubscriptionStatus.Active)
                 continue;
 
-            TenantSaasSubscriptions.Remove(existing);
-            await TenantSaasSubscriptions.AddAsync(
-                TenantSaasSubscription.Create(tenantId, planId, Guid.Empty),
-                cancellationToken);
+            existing.ReassignPlan(planId, Guid.Empty);
         }
     }
 

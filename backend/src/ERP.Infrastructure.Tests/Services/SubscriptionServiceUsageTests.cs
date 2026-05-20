@@ -67,7 +67,7 @@ public sealed class SubscriptionServiceUsageTests
     {
         var platform = new PlatformQueryAccessor(
             NullLogger<PlatformQueryAccessor>.Instance,
-            Options.Create(new SaasEntitlementsOptions()));
+            Microsoft.Extensions.Options.Options.Create(new SaasEntitlementsOptions()));
         var entitlements = new TenantEntitlementsService(ctx, platform);
         return new SubscriptionService(ctx, entitlements, platform);
     }

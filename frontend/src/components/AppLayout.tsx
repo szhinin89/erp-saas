@@ -354,7 +354,7 @@ export function AppLayout() {
       if (!key) return true;
       const mods =
         enabledModules.length > 0 ? enabledModules : (user?.enabledModules ?? []);
-      if (mods.length === 0) return true;
+      if (mods.length === 0) return false;
       return mods.some((m) => m.toLowerCase() === key.toLowerCase());
     };
 

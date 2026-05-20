@@ -231,17 +231,14 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
   const openSubscriptionModal = (tenant: SuperAdminTenant) => {
     setSubModalTenant(tenant);
     setSubPlanCode((tenant.planCode ?? '').trim());
-    const has =
-      !!tenant.hasModuleRestrictions &&
-      !!tenant.enabledModules &&
-      tenant.enabledModules.length > 0;
-    setSubRestrict(has);
+    const restricted = !!tenant.hasModuleRestrictions;
+    setSubRestrict(restricted);
     const checks: Record<string, boolean> = {};
     for (const k of TENANT_MODULE_KEYS) {
-      if (has && tenant.enabledModules?.length) {
-        checks[k] = tenant.enabledModules.some((em) => em.toLowerCase() === k.toLowerCase());
-      } else {
+      if (!restricted) {
         checks[k] = true;
+      } else {
+        checks[k] = (tenant.enabledModules ?? []).some((em) => em.toLowerCase() === k.toLowerCase());
       }
     }
     setSubModuleChecks(checks);

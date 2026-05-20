@@ -37,4 +37,13 @@ public sealed class TenantSaasSubscription : AuditableEntity
         Status = TenantSubscriptionStatus.Cancelled;
         SetUpdated(updatedBy);
     }
+
+    /// <summary>Cambia de plan sin borrar la fila (sync / SuperAdmin).</summary>
+    public void ReassignPlan(Guid planId, Guid updatedBy)
+    {
+        PlanId = planId;
+        if (Status != TenantSubscriptionStatus.Active)
+            Status = TenantSubscriptionStatus.Active;
+        SetUpdated(updatedBy);
+    }
 }

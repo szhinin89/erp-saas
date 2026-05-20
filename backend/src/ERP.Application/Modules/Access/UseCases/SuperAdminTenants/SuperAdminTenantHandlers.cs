@@ -307,7 +307,7 @@ public class GetSuperAdminTenantsHandler : IRequestHandler<GetSuperAdminTenantsQ
                 t.IsActive,
                 t.PlanCode,
                 modules,
-                !string.IsNullOrWhiteSpace(t.EnabledModulesJson),
+                TenantSubscriptionCatalog.HasModuleRestrictionsFromModules(modules),
                 withCustom.Contains(t.Id)));
         }
 

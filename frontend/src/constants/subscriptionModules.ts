@@ -1,13 +1,33 @@
-/** Claves de módulo contratables; deben coincidir con `TenantSubscriptionCatalog.AllModuleKeys` en el backend. */
+/** Claves canónicas (inglés); alineadas con `TenantSubscriptionCatalog.CanonicalModuleKeys` en el backend. */
 export const TENANT_MODULE_KEYS = [
   'access',
   'accounting',
-  'compras',
-  'gastos',
-  'inventario',
-  'rrhh',
+  'expenses',
+  'inventory',
+  'logistics',
+  'payroll',
+  'purchases',
+  'sales',
   'saas',
-  'ventas',
 ] as const;
+
+/** Alias legacy (español) → clave canónica para comparar con API. */
+export const LEGACY_MODULE_KEY_ALIASES: Record<string, TenantModuleKey> = {
+  ventas: 'sales',
+  inventario: 'inventory',
+  compras: 'purchases',
+  gastos: 'expenses',
+  logistica: 'logistics',
+  rrhh: 'payroll',
+};
+
+export function normalizeModuleKey(key: string): string {
+  const k = key.trim().toLowerCase();
+  return LEGACY_MODULE_KEY_ALIASES[k] ?? k;
+}
+
+export function moduleKeysMatch(apiKey: string, canonicalKey: string): boolean {
+  return normalizeModuleKey(apiKey) === normalizeModuleKey(canonicalKey);
+}
 
 export type TenantModuleKey = (typeof TENANT_MODULE_KEYS)[number];

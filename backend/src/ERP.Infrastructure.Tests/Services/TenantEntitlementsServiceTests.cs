@@ -121,7 +121,7 @@ public sealed class TenantEntitlementsServiceTests
     {
         var platform = new PlatformQueryAccessor(
             NullLogger<PlatformQueryAccessor>.Instance,
-            Options.Create(new SaasEntitlementsOptions()));
+            Microsoft.Extensions.Options.Options.Create(new SaasEntitlementsOptions()));
         return new TenantEntitlementsService(ctx, platform);
     }
 

@@ -136,6 +136,7 @@ public class SuperAdminController : ControllerBase
             var users = await _userRepository.GetAllByTenantAsync(t.Id, ct);
             var totalUsers = users.Count;
             var activeUsers = users.Count(u => u.IsActive);
+            var modules = await _sessionModules.GetEnabledModuleKeysAsync(t.Id, t, ct);
             items.Add(new
             {
                 t.Id,
@@ -146,8 +147,8 @@ public class SuperAdminController : ControllerBase
                 totalUsers,
                 activeUsers,
                 planCode = t.PlanCode,
-                enabledModules = await _sessionModules.GetEnabledModuleKeysAsync(t.Id, t, ct),
-                hasModuleRestrictions = !string.IsNullOrWhiteSpace(t.EnabledModulesJson),
+                enabledModules = modules,
+                hasModuleRestrictions = TenantSubscriptionCatalog.HasModuleRestrictionsFromModules(modules),
                 hasCustomMenu = withCustomMenu.Contains(t.Id),
             });
         }

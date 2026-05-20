@@ -27,6 +27,42 @@ public static class TenantSubscriptionCatalog
         "ventas",
     };
 
+    /// <summary>Catálogo comercial canónico (inglés, alineado a <c>ResourceRef</c> / menú).</summary>
+    public static readonly IReadOnlyList<string> CanonicalModuleKeys = new[]
+    {
+        "access",
+        "accounting",
+        "expenses",
+        "inventory",
+        "logistics",
+        "payroll",
+        "purchases",
+        "sales",
+        "saas",
+    };
+
+    /// <summary>
+    /// Indica si el tenant no tiene el catálogo completo (derivado de módulos efectivos, no de JSON legacy).
+    /// Lista vacía = restringido (fail-closed), no “todos los módulos”.
+    /// </summary>
+    public static bool HasModuleRestrictionsFromModules(IReadOnlyCollection<string> enabledModules)
+    {
+        if (enabledModules is null || enabledModules.Count == 0)
+            return true;
+
+        var enabled = new HashSet<string>(
+            enabledModules.Select(NormalizeStoredModuleKey),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (var key in CanonicalModuleKeys)
+        {
+            if (!enabled.Contains(key))
+                return true;
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// Resuelve módulos habilitados desde el modelo de suscripción (fuente única).
     /// Sin suscripción activa → vacío (fail-closed).
