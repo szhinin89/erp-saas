@@ -1,20 +1,10 @@
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Geography.Entities;
+using ERP.Domain.Modules.SriCatalogs.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace ERP.Infrastructure.Persistence.Configurations;
-
-public class GeoCountryConfiguration : IEntityTypeConfiguration<GeoCountry>
-{
-    public void Configure(EntityTypeBuilder<GeoCountry> builder)
-    {
-        builder.ToTable("geo_countries");
-        builder.HasKey(x => x.Id);
-        builder.Property(x => x.Id).HasColumnName("id").HasMaxLength(10);
-        builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
-    }
-}
 
 public class GeoProvinceConfiguration : IEntityTypeConfiguration<GeoProvince>
 {
@@ -28,7 +18,8 @@ public class GeoProvinceConfiguration : IEntityTypeConfiguration<GeoProvince>
 
         builder.HasIndex(x => x.CountryId).HasDatabaseName("ix_geo_provinces_country_id");
 
-        builder.HasOne<GeoCountry>().WithMany().HasForeignKey(x => x.CountryId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne<SriCountry>().WithMany().HasForeignKey(x => x.CountryId)
+            .HasPrincipalKey(c => c.Iso2).OnDelete(DeleteBehavior.Cascade);
     }
 }
 
@@ -102,7 +93,8 @@ public class BranchConfiguration : IEntityTypeConfiguration<Branch>
 
         builder.HasIndex(x => x.TenantId).HasDatabaseName("ix_branches_tenant_id");
 
-        builder.HasOne<GeoCountry>().WithMany().HasForeignKey(x => x.CountryId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<SriCountry>().WithMany().HasForeignKey(x => x.CountryId)
+            .HasPrincipalKey(c => c.Iso2).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<GeoProvince>().WithMany().HasForeignKey(x => x.ProvinceId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<GeoCanton>().WithMany().HasForeignKey(x => x.CantonId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<GeoParish>().WithMany().HasForeignKey(x => x.ParishId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);

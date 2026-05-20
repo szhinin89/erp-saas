@@ -11,7 +11,8 @@ public class SriCountryConfiguration : IEntityTypeConfiguration<SriCountry>
         builder.ToTable("sri_country");
         builder.HasKey(x => x.Code);
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(3).IsFixedLength();
-        builder.Property(x => x.Iso2).HasColumnName("iso2").HasMaxLength(2).IsFixedLength();
+        builder.Property(x => x.Iso2).HasColumnName("iso2").HasMaxLength(2).IsFixedLength().IsRequired();
+        builder.HasAlternateKey(x => x.Iso2);
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
         builder.Property(x => x.PhoneCode).HasColumnName("phone_code").HasMaxLength(10);
         builder.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);

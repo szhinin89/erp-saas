@@ -37,6 +37,7 @@ using ERP.Infrastructure.Services.Cash;
 using ERP.Infrastructure.Seeding;
 using ERP.Infrastructure.Seeding.InstallData;
 using ERP.Domain.Modules.Cash;
+using ERP.Infrastructure.Options;
 
 namespace ERP.Infrastructure;
 
@@ -52,6 +53,7 @@ public static class DependencyInjection
         services.AddSingleton<IDeploymentFeatureFlags, DeploymentFeatureFlags>();
         services.AddScoped<IFirstRunSetupService, FirstRunSetupService>();
         services.Configure<InstallDataOptions>(configuration.GetSection(InstallDataOptions.SectionName));
+        services.Configure<DocumentSchemaOptions>(configuration.GetSection(DocumentSchemaOptions.SectionName));
         services.AddScoped<IInstallDataBootstrapService, InstallDataBootstrapService>();
 
         services.AddDbContext<ErpDbContext>(options =>
@@ -64,6 +66,7 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
         services.AddScoped<IPasswordResetLinkSender, LoggingPasswordResetLinkSender>();
+        services.AddScoped<IUnifiedDocumentSync, UnifiedDocumentSync>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<ICurrentTenant, CurrentTenantService>();
         services.AddScoped<ICurrentUser, CurrentUserService>();

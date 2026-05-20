@@ -32,7 +32,7 @@ internal static class BranchLocationValidation
         if (c is not null)
         {
             var countries = await geo.GetCountriesAsync(ct);
-            if (countries.All(x => x.Id != c))
+            if (countries.All(x => x.Iso2 != c))
                 return "País no válido.";
         }
 

@@ -15,6 +15,6 @@ public sealed class GetGeoCountriesHandler : IRequestHandler<GetGeoCountriesQuer
     {
         var items = await _geo.GetCountriesAsync(ct);
         return Result<IReadOnlyList<GeographyItemDto>>.Success(
-            items.Select(x => new GeographyItemDto(x.Id, x.Name)).ToList());
+            items.Select(x => new GeographyItemDto(x.Iso2!, x.Name)).ToList());
     }
 }

@@ -13,14 +13,7 @@ SET iso2 = EXCLUDED.iso2,
     phone_code = EXCLUDED.phone_code,
     is_active = EXCLUDED.is_active;
 
--- geo_countries is derived from sri_country for geography FK compatibility.
-INSERT INTO geo_countries (id, name)
-SELECT 'EC', sc.name
-FROM sri_country sc
-WHERE sc.code = 'ECU'
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
-
--- INEC hierarchy level 1: provinces.
+-- INEC hierarchy level 1: provinces (country_id = sri_country.iso2).
 -- Used for country-level territorial segmentation in addresses and reporting.
 INSERT INTO geo_provinces (id, country_id, name) VALUES ('01', 'EC', 'AZUAY')
 ON CONFLICT (id) DO UPDATE SET country_id = EXCLUDED.country_id, name = EXCLUDED.name;

@@ -3,6 +3,7 @@ using System;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    partial class ErpDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260520124155_AddPurchaseDocumentReferenceNav")]
+    partial class AddPurchaseDocumentReferenceNav
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -6607,192 +6610,6 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("purchase_order_line", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Modules.Purchasing.Entities.PurchaseWithholding", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("AccessKey")
-                        .IsRequired()
-                        .HasMaxLength(49)
-                        .HasColumnType("character varying(49)")
-                        .HasColumnName("access_key");
-
-                    b.Property<DateTime?>("AuthDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("auth_date");
-
-                    b.Property<string>("AuthNumber")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("auth_number");
-
-                    b.Property<Guid?>("CompanyId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("company_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<string>("Direction")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("direction");
-
-                    b.Property<string>("EmPointCode")
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
-                        .HasColumnName("em_point_code");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("error_message");
-
-                    b.Property<string>("EstabCode")
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
-                        .HasColumnName("estab_code");
-
-                    b.Property<DateTime>("IssueDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("issue_date");
-
-                    b.Property<Guid?>("JournalEntryId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("journal_entry_id");
-
-                    b.Property<Guid?>("PurchaseDocumentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("purchase_document_id");
-
-                    b.Property<string>("Sequential")
-                        .HasMaxLength(9)
-                        .HasColumnType("character varying(9)")
-                        .HasColumnName("sequential");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("status");
-
-                    b.Property<Guid>("SupplierId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("supplier_id");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<decimal>("TotalRetained")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("total_retained");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.Property<string>("VoucherType")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("voucher_type");
-
-                    b.Property<string>("XmlAuthPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("xml_auth_path");
-
-                    b.Property<string>("XmlPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("xml_path");
-
-                    b.Property<string>("XmlSignedPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("xml_signed_path");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PurchaseDocumentId");
-
-                    b.HasIndex("SupplierId");
-
-                    b.HasIndex("TenantId", "AccessKey")
-                        .IsUnique()
-                        .HasDatabaseName("uq_purchase_withholding_tenant_access_key");
-
-                    b.ToTable("purchase_withholding", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Modules.Purchasing.Entities.PurchaseWithholdingLine", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<decimal>("AmountRetained")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("amount_retained");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("PurchaseWithholdingId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("purchase_withholding_id");
-
-                    b.Property<string>("RetentionCode")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("retention_code");
-
-                    b.Property<decimal>("RetentionPct")
-                        .HasPrecision(9, 4)
-                        .HasColumnType("numeric(9,4)")
-                        .HasColumnName("retention_pct");
-
-                    b.Property<string>("TaxType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("tax_type");
-
-                    b.Property<decimal>("TaxableBase")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("taxable_base");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PurchaseWithholdingId");
-
-                    b.ToTable("purchase_withholding_line", (string)null);
-                });
-
             modelBuilder.Entity("ERP.Domain.Modules.Purchasing.Entities.Supplier", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8109,202 +7926,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_sales_retention_line_retention_id");
 
                     b.ToTable("sales_retention_line", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesWithholding", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("AccessKey")
-                        .IsRequired()
-                        .HasMaxLength(49)
-                        .HasColumnType("character varying(49)")
-                        .HasColumnName("access_key");
-
-                    b.Property<DateTime?>("AuthDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("auth_date");
-
-                    b.Property<string>("AuthNumber")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("auth_number");
-
-                    b.Property<Guid?>("CompanyId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("company_id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<Guid?>("CustomerId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("customer_id");
-
-                    b.Property<string>("Direction")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("direction");
-
-                    b.Property<string>("EmPointCode")
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
-                        .HasColumnName("em_point_code");
-
-                    b.Property<string>("ErrorMessage")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("error_message");
-
-                    b.Property<string>("EstabCode")
-                        .HasMaxLength(3)
-                        .HasColumnType("character varying(3)")
-                        .HasColumnName("estab_code");
-
-                    b.Property<DateTime>("IssueDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("issue_date");
-
-                    b.Property<string>("IssuerName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("issuer_name");
-
-                    b.Property<string>("IssuerRuc")
-                        .HasMaxLength(13)
-                        .HasColumnType("character varying(13)")
-                        .HasColumnName("issuer_ruc");
-
-                    b.Property<Guid?>("JournalEntryId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("journal_entry_id");
-
-                    b.Property<Guid?>("SalesDocumentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("sales_document_id");
-
-                    b.Property<string>("Sequential")
-                        .HasMaxLength(9)
-                        .HasColumnType("character varying(9)")
-                        .HasColumnName("sequential");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("status");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<decimal>("TotalRetained")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("total_retained");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.Property<string>("VoucherType")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)")
-                        .HasColumnName("voucher_type");
-
-                    b.Property<string>("XmlAuthPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("xml_auth_path");
-
-                    b.Property<string>("XmlPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("xml_path");
-
-                    b.Property<string>("XmlSignedPath")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("xml_signed_path");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CustomerId");
-
-                    b.HasIndex("SalesDocumentId");
-
-                    b.HasIndex("TenantId", "AccessKey")
-                        .IsUnique()
-                        .HasDatabaseName("uq_sales_withholding_tenant_access_key");
-
-                    b.ToTable("sales_withholding", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesWithholdingLine", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<decimal>("AmountRetained")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("amount_retained");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("RetentionCode")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("retention_code");
-
-                    b.Property<decimal>("RetentionPct")
-                        .HasPrecision(9, 4)
-                        .HasColumnType("numeric(9,4)")
-                        .HasColumnName("retention_pct");
-
-                    b.Property<Guid>("SalesWithholdingId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("sales_withholding_id");
-
-                    b.Property<string>("TaxType")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("tax_type");
-
-                    b.Property<decimal>("TaxableBase")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)")
-                        .HasColumnName("taxable_base");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SalesWithholdingId");
-
-                    b.ToTable("sales_withholding_line", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.SriCatalogs.Entities.SriCountry", b =>
@@ -12021,33 +11642,6 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ERP.Domain.Modules.Purchasing.Entities.PurchaseWithholding", b =>
-                {
-                    b.HasOne("ERP.Domain.Modules.Purchasing.Entities.PurchaseDocument", "PurchaseDocument")
-                        .WithMany()
-                        .HasForeignKey("PurchaseDocumentId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("ERP.Domain.Modules.Purchasing.Entities.Supplier", "Supplier")
-                        .WithMany()
-                        .HasForeignKey("SupplierId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("PurchaseDocument");
-
-                    b.Navigation("Supplier");
-                });
-
-            modelBuilder.Entity("ERP.Domain.Modules.Purchasing.Entities.PurchaseWithholdingLine", b =>
-                {
-                    b.HasOne("ERP.Domain.Modules.Purchasing.Entities.PurchaseWithholding", null)
-                        .WithMany("Lines")
-                        .HasForeignKey("PurchaseWithholdingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesBill", b =>
                 {
                     b.HasOne("ERP.Domain.Modules.Sales.Entities.Customer", "Cliente")
@@ -12170,32 +11764,6 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.Sales.Entities.SalesRetention", null)
                         .WithMany("Lines")
                         .HasForeignKey("SalesRetentionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesWithholding", b =>
-                {
-                    b.HasOne("ERP.Domain.Modules.Sales.Entities.Customer", "Customer")
-                        .WithMany()
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ERP.Domain.Modules.Sales.Entities.SalesDocument", "SalesDocument")
-                        .WithMany()
-                        .HasForeignKey("SalesDocumentId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Customer");
-
-                    b.Navigation("SalesDocument");
-                });
-
-            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesWithholdingLine", b =>
-                {
-                    b.HasOne("ERP.Domain.Modules.Sales.Entities.SalesWithholding", null)
-                        .WithMany("Lines")
-                        .HasForeignKey("SalesWithholdingId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
@@ -12968,11 +12536,6 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("Lines");
                 });
 
-            modelBuilder.Entity("ERP.Domain.Modules.Purchasing.Entities.PurchaseWithholding", b =>
-                {
-                    b.Navigation("Lines");
-                });
-
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesBill", b =>
                 {
                     b.Navigation("Lines");
@@ -12993,11 +12556,6 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesRetention", b =>
-                {
-                    b.Navigation("Lines");
-                });
-
-            modelBuilder.Entity("ERP.Domain.Modules.Sales.Entities.SalesWithholding", b =>
                 {
                     b.Navigation("Lines");
                 });

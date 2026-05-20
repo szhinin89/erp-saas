@@ -4,7 +4,7 @@ Descarga la División Político Administrativa (DPA) de Ecuador desde los
 FeatureServer de ArcGIS publicados como información oficial INEC
 (vía Ecuador en Cifras / geoportal).
 
-Genera SQL compatible con las tablas geo_countries, geo_provinces,
+Genera SQL compatible con sri_country (países), geo_provinces,
 geo_cantons y geo_parishes del ERP (PostgreSQL).
 
 Uso:
@@ -97,8 +97,10 @@ def emit_inserts(out, *, wrap_transaction: bool = False) -> None:
         out.write("BEGIN;\n\n")
 
     out.write(
-        "INSERT INTO geo_countries (id, name) VALUES ('EC', 'Ecuador')\n"
-        "ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;\n\n"
+        "INSERT INTO sri_country (code, iso2, name, phone_code, is_active)\n"
+        "VALUES ('ECU', 'EC', 'Ecuador', '+593', TRUE)\n"
+        "ON CONFLICT (code) DO UPDATE SET iso2 = EXCLUDED.iso2, name = EXCLUDED.name, "
+        "phone_code = EXCLUDED.phone_code, is_active = EXCLUDED.is_active;\n\n"
     )
 
     provinces: list[tuple[str, str]] = []

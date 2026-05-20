@@ -44,7 +44,7 @@ namespace ERP.Infrastructure.Persistence;
 /// - Autenticación: User, IdentityUser, Membership
 /// - Tenants: Tenant
 /// - Seguridad: AccessProfile, AccessProfilePermission, SecurityAdminScopeAssignment
-/// - Geografía: GeoCountry, GeoProvince, GeoCanton, GeoParish
+/// - Geografía: SriCountry (países), GeoProvince, GeoCanton, GeoParish
 /// - Auditoría: UserActivity
 /// - Ventas: Customer
 /// - SaaS: SaasFeatureDefinition, SaasPlan, SaasPlanFeature, TenantSaasSubscription, TenantSubscriptionFeatureOverride, TenantSubscriptionUsage
@@ -206,7 +206,6 @@ public class ErpDbContext : DbContext
     public DbSet<AccessProfilePermission> AccessProfilePermissions => Set<AccessProfilePermission>();
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<SecurityAdminScopeAssignment> SecurityAdminScopeAssignments => Set<SecurityAdminScopeAssignment>();
-    public DbSet<GeoCountry> GeoCountries => Set<GeoCountry>();
     public DbSet<GeoProvince> GeoProvinces => Set<GeoProvince>();
     public DbSet<GeoCanton> GeoCantons => Set<GeoCanton>();
     public DbSet<GeoParish> GeoParishes => Set<GeoParish>();
@@ -216,10 +215,17 @@ public class ErpDbContext : DbContext
     // ── Sales (traditional) ───────────────────────────────────────────────
     public DbSet<SalesBill>           SalesBills          => Set<SalesBill>();
     public DbSet<SalesBillLine>       SalesBillLines      => Set<SalesBillLine>();
+    // ── Sales (unified schema) ────────────────────────────────────────────
+    public DbSet<SalesDocument>       SalesDocuments      => Set<SalesDocument>();
+    public DbSet<SalesDetail>         SalesDetails        => Set<SalesDetail>();
+    public DbSet<SalesPayment>        SalesPayments       => Set<SalesPayment>();
+    public DbSet<SalesElectronicDoc>  SalesElectronicDocs => Set<SalesElectronicDoc>();
     public DbSet<SalesNote>           SalesNotes          => Set<SalesNote>();
     public DbSet<SalesNoteLine>       SalesNoteLines      => Set<SalesNoteLine>();
-    public DbSet<SalesRetention>      SalesRetentions     => Set<SalesRetention>();
-    public DbSet<SalesRetentionLine>  SalesRetentionLines => Set<SalesRetentionLine>();
+    public DbSet<SalesRetention>       SalesRetentions       => Set<SalesRetention>();
+    public DbSet<SalesRetentionLine>   SalesRetentionLines   => Set<SalesRetentionLine>();
+    public DbSet<SalesWithholding>     SalesWithholdings     => Set<SalesWithholding>();
+    public DbSet<SalesWithholdingLine> SalesWithholdingLines => Set<SalesWithholdingLine>();
 
     // ── Configuration ─────────────────────────────────────────────────────
     public DbSet<SriSettings>       SriSettings       => Set<SriSettings>();
@@ -247,6 +253,13 @@ public class ErpDbContext : DbContext
     // ── Expenses ──────────────────────────────────────────────────────────
     public DbSet<ExpenseInvoice> ExpenseInvoices => Set<ExpenseInvoice>();
     public DbSet<ExpenseDetail>  ExpenseDetails  => Set<ExpenseDetail>();
+    public DbSet<ExpenseDocument> ExpenseDocuments => Set<ExpenseDocument>();
+
+    // ── Purchasing (unified schema) ───────────────────────────────────────
+    public DbSet<PurchaseDocument>       PurchaseDocuments       => Set<PurchaseDocument>();
+    public DbSet<PurchaseDetail>         PurchaseDetails         => Set<PurchaseDetail>();
+    public DbSet<PurchaseWithholding>    PurchaseWithholdings    => Set<PurchaseWithholding>();
+    public DbSet<PurchaseWithholdingLine> PurchaseWithholdingLines => Set<PurchaseWithholdingLine>();
 
     // ── Cash / Banking ────────────────────────────────────────────────────
     public DbSet<BankAccount>      BankAccounts      => Set<BankAccount>();

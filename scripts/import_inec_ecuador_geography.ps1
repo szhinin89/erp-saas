@@ -76,8 +76,9 @@ if ($WrapTransaction) {
   [void]$sb.AppendLine("BEGIN;")
   [void]$sb.AppendLine("")
 }
-[void]$sb.AppendLine("INSERT INTO geo_countries (id, name) VALUES ('EC', 'Ecuador')")
-[void]$sb.AppendLine("ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;")
+[void]$sb.AppendLine("INSERT INTO sri_country (code, iso2, name, phone_code, is_active)")
+[void]$sb.AppendLine("VALUES ('ECU', 'EC', 'Ecuador', '+593', TRUE)")
+[void]$sb.AppendLine("ON CONFLICT (code) DO UPDATE SET iso2 = EXCLUDED.iso2, name = EXCLUDED.name, phone_code = EXCLUDED.phone_code, is_active = EXCLUDED.is_active;")
 [void]$sb.AppendLine("")
 
 $provinces = @(Get-AllFeatures -QueryUrl $Urls.Provinces -OutFields "DPA_PROVIN,DPA_DESPRO" -OrderBy "DPA_PROVIN")

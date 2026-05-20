@@ -1,23 +1,61 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Enums;
 using ERP.Domain.Modules.Sales.Interfaces;
+using ERP.Infrastructure.Options;
+using ERP.Infrastructure.Persistence.Mapping;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
 public sealed class SalesRepository : ISalesRepository
 {
     private readonly ErpDbContext _context;
+    private readonly DocumentSchemaOptions _schemaOptions;
+    private readonly IUnifiedDocumentSync _documentSync;
 
-    public SalesRepository(ErpDbContext context) => _context = context;
+    public SalesRepository(
+        ErpDbContext context,
+        IOptions<DocumentSchemaOptions> schemaOptions,
+        IUnifiedDocumentSync documentSync)
+    {
+        _context = context;
+        _schemaOptions = schemaOptions.Value;
+        _documentSync = documentSync;
+    }
+
+    private bool UseUnified => _schemaOptions.UseUnifiedSchema;
 
     public Task AddBillAsync(SalesBill factura, CancellationToken ct = default)
-        => _context.SalesBills.AddAsync(factura, ct).AsTask();
+    {
+        if (UseUnified)
+            return _context.SalesDocuments.AddAsync(SalesDocumentMapper.ToDocument(factura), ct).AsTask();
+        return _context.SalesBills.AddAsync(factura, ct).AsTask();
+    }
 
-    public Task<SalesBill?> GetBillByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.SalesBills
+    public async Task<SalesBill?> GetBillByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+    {
+        if (UseUnified)
+        {
+            var doc = await _context.SalesDocuments
+                .Include(d => d.Cliente)
+                .Include(d => d.Lines)
+                .Include(d => d.Electronic)
+                .Where(d => d.TenantId == tenantId && d.Id == id
+                    && (d.DocType == SalesDocumentType.Invoice || d.DocType == SalesDocumentType.Proforma))
+                .FirstOrDefaultAsync(ct);
+            if (doc is null) return null;
+            var bill = SalesDocumentMapper.ToLegacyBill(doc);
+            if (UseUnified) _documentSync.StageSalesBill(bill);
+            return bill;
+        }
+
+        return await _context.SalesBills
             .Include(f => f.Cliente)
             .Include(f => f.Lines)
             .FirstOrDefaultAsync(f => f.TenantId == tenantId && f.Id == id, ct);
+    }
 
     public async Task<IReadOnlyList<SalesBill>> GetBillsAsync(
         Guid tenantId,
@@ -26,18 +64,32 @@ public sealed class SalesRepository : ISalesRepository
         string? estado,
         CancellationToken ct = default)
     {
-        var query = _context.SalesBills
+        if (UseUnified)
+        {
+            var query = InvoiceDocumentsQuery(tenantId);
+            if (fechaDesde.HasValue)
+                query = query.Where(f => f.IssueDate >= fechaDesde.Value);
+            if (fechaHasta.HasValue)
+                query = query.Where(f => f.IssueDate <= fechaHasta.Value);
+            if (!string.IsNullOrEmpty(estado))
+                query = query.Where(f => f.Status == estado);
+
+            var docs = await query.ToListAsync(ct);
+            return docs.Select(SalesDocumentMapper.ToLegacyBill).ToList();
+        }
+
+        var legacyQuery = _context.SalesBills
             .Include(f => f.Cliente)
             .Where(f => f.TenantId == tenantId);
 
         if (fechaDesde.HasValue)
-            query = query.Where(f => f.IssueDate >= fechaDesde.Value);
+            legacyQuery = legacyQuery.Where(f => f.IssueDate >= fechaDesde.Value);
         if (fechaHasta.HasValue)
-            query = query.Where(f => f.IssueDate <= fechaHasta.Value);
+            legacyQuery = legacyQuery.Where(f => f.IssueDate <= fechaHasta.Value);
         if (!string.IsNullOrEmpty(estado))
-            query = query.Where(f => f.Status == estado);
+            legacyQuery = legacyQuery.Where(f => f.Status == estado);
 
-        return await query.ToListAsync(ct);
+        return await legacyQuery.ToListAsync(ct);
     }
 
     public async Task<(IReadOnlyList<SalesBill> Items, int TotalCount)> GetBillsPagedAsync(
@@ -51,43 +103,98 @@ public sealed class SalesRepository : ISalesRepository
         string? search,
         CancellationToken ct = default)
     {
-        var query = _context.SalesBills
+        if (UseUnified)
+        {
+            var query = InvoiceDocumentsQuery(tenantId);
+
+            if (clienteId.HasValue)
+                query = query.Where(f => f.CustomerId == clienteId.Value);
+            if (fechaDesde.HasValue)
+                query = query.Where(f => f.IssueDate >= fechaDesde.Value);
+            if (fechaHasta.HasValue)
+                query = query.Where(f => f.IssueDate <= fechaHasta.Value);
+            if (!string.IsNullOrEmpty(estado))
+                query = query.Where(f => f.Status == estado);
+            if (!string.IsNullOrEmpty(search))
+                query = query.Where(f =>
+                    (f.Sequential != null && f.Sequential.Contains(search)) ||
+                    (f.AccessKey != null && f.AccessKey.Contains(search)) ||
+                    (f.Electronic != null && f.Electronic.AuthNumber != null && f.Electronic.AuthNumber.Contains(search)));
+
+            var totalCount = await query.CountAsync(ct);
+            var docs = await query
+                .OrderByDescending(f => f.IssueDate)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
+
+            return (docs.Select(SalesDocumentMapper.ToLegacyBill).ToList(), totalCount);
+        }
+
+        var legacyQuery = _context.SalesBills
             .Include(f => f.Cliente)
             .Where(f => f.TenantId == tenantId);
 
         if (clienteId.HasValue)
-            query = query.Where(f => f.CustomerId == clienteId.Value);
+            legacyQuery = legacyQuery.Where(f => f.CustomerId == clienteId.Value);
         if (fechaDesde.HasValue)
-            query = query.Where(f => f.IssueDate >= fechaDesde.Value);
+            legacyQuery = legacyQuery.Where(f => f.IssueDate >= fechaDesde.Value);
         if (fechaHasta.HasValue)
-            query = query.Where(f => f.IssueDate <= fechaHasta.Value);
+            legacyQuery = legacyQuery.Where(f => f.IssueDate <= fechaHasta.Value);
         if (!string.IsNullOrEmpty(estado))
-            query = query.Where(f => f.Status == estado);
+            legacyQuery = legacyQuery.Where(f => f.Status == estado);
         if (!string.IsNullOrEmpty(search))
-            query = query.Where(f =>
+            legacyQuery = legacyQuery.Where(f =>
                 f.Sequential.Contains(search) ||
                 f.AccessKey.Contains(search) ||
                 f.AuthNumber != null && f.AuthNumber.Contains(search));
 
-        var totalCount = await query.CountAsync(ct);
-        var items = await query
+        var legacyTotal = await legacyQuery.CountAsync(ct);
+        var items = await legacyQuery
             .OrderByDescending(f => f.IssueDate)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);
 
-        return (items, totalCount);
+        return (items, legacyTotal);
     }
 
-    public Task AddNoteAsync(SalesNote nota, CancellationToken ct = default)
-        => _context.SalesNotes.AddAsync(nota, ct).AsTask();
+    private IQueryable<SalesDocument> InvoiceDocumentsQuery(Guid tenantId) =>
+        _context.SalesDocuments
+            .Include(f => f.Cliente)
+            .Include(f => f.Electronic)
+            .Where(f => f.TenantId == tenantId
+                && (f.DocType == SalesDocumentType.Invoice || f.DocType == SalesDocumentType.Proforma));
 
-    public Task<SalesNote?> GetNoteByIdWithLinesAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.SalesNotes
+    public Task AddNoteAsync(SalesNote nota, CancellationToken ct = default)
+    {
+        if (UseUnified)
+            return _context.SalesDocuments.AddAsync(SalesDocumentMapper.ToDocument(nota), ct).AsTask();
+        return _context.SalesNotes.AddAsync(nota, ct).AsTask();
+    }
+
+    public async Task<SalesNote?> GetNoteByIdWithLinesAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+    {
+        if (UseUnified)
+        {
+            var doc = await NoteDocumentsQuery(tenantId)
+                .Include(n => n.Lines)
+                .Include(n => n.Electronic)
+                .Include(n => n.Reference)
+                    .ThenInclude(f => f!.Cliente)
+                .FirstOrDefaultAsync(n => n.Id == id, ct);
+            if (doc is null) return null;
+            var note = SalesDocumentMapper.ToLegacyNote(doc);
+            if (UseUnified) _documentSync.StageSalesNote(note);
+            return note;
+        }
+
+        return await _context.SalesNotes
             .Include(n => n.OriginalBill)
-                .ThenInclude(f => f.Cliente)
+                .ThenInclude(f => f!.Cliente)
             .Include(n => n.Lines)
             .FirstOrDefaultAsync(n => n.TenantId == tenantId && n.Id == id, ct);
+    }
 
     public async Task<IReadOnlyList<SalesNote>> GetNotesAsync(
         Guid tenantId,
@@ -95,36 +202,85 @@ public sealed class SalesRepository : ISalesRepository
         string? estado,
         CancellationToken ct = default)
     {
-        var q = _context.SalesNotes
+        if (UseUnified)
+        {
+            IQueryable<SalesDocument> q = _context.SalesDocuments
+                .Where(n => n.TenantId == tenantId
+                    && (n.DocType == SalesDocumentType.CreditNote || n.DocType == SalesDocumentType.DebitNote))
+                .Include(n => n.Reference)
+                    .ThenInclude(f => f!.Cliente);
+
+            if (facturaOriginalId.HasValue)
+                q = q.Where(n => n.ReferenceDocumentId == facturaOriginalId.Value);
+            if (!string.IsNullOrWhiteSpace(estado))
+                q = q.Where(n => n.Status == estado);
+
+            var docs = await q.OrderByDescending(n => n.IssueDate).ToListAsync(ct);
+            return docs.Select(SalesDocumentMapper.ToLegacyNote).ToList();
+        }
+
+        var legacy = _context.SalesNotes
             .Include(n => n.OriginalBill)
-                .ThenInclude(f => f.Cliente)
+                .ThenInclude(f => f!.Cliente)
             .Where(n => n.TenantId == tenantId);
 
         if (facturaOriginalId.HasValue)
-            q = q.Where(n => n.OriginalBillId == facturaOriginalId.Value);
+            legacy = legacy.Where(n => n.OriginalBillId == facturaOriginalId.Value);
         if (!string.IsNullOrWhiteSpace(estado))
-            q = q.Where(n => n.Status == estado);
+            legacy = legacy.Where(n => n.Status == estado);
 
-        return await q.OrderByDescending(n => n.IssueDate).ToListAsync(ct);
+        return await legacy.OrderByDescending(n => n.IssueDate).ToListAsync(ct);
     }
 
+    private IQueryable<SalesDocument> NoteDocumentsQuery(Guid tenantId) =>
+        _context.SalesDocuments
+            .Where(n => n.TenantId == tenantId
+                && (n.DocType == SalesDocumentType.CreditNote || n.DocType == SalesDocumentType.DebitNote));
+
     public Task AddRetentionAsync(SalesRetention retencion, CancellationToken ct = default)
-        => _context.SalesRetentions.AddAsync(retencion, ct).AsTask();
+    {
+        if (UseUnified)
+            return _context.SalesWithholdings.AddAsync(SalesWithholdingMapper.ToWithholding(retencion), ct).AsTask();
+        return _context.SalesRetentions.AddAsync(retencion, ct).AsTask();
+    }
 
     public async Task<IReadOnlyList<SalesRetention>> GetRetentionsAsync(
         Guid tenantId,
         CancellationToken ct = default)
-        => await _context.SalesRetentions
+    {
+        if (UseUnified)
+        {
+            var docs = await _context.SalesWithholdings
+                .Include(r => r.Customer)
+                .Include(r => r.Lines)
+                .Where(r => r.TenantId == tenantId
+                    && r.Direction == ERP.Domain.Common.WithholdingDirection.Received)
+                .OrderByDescending(r => r.IssueDate)
+                .ToListAsync(ct);
+            return docs.Select(SalesWithholdingMapper.ToLegacyRetention).ToList();
+        }
+
+        return await _context.SalesRetentions
             .Include(r => r.Customer)
             .Include(r => r.Lines)
             .Where(r => r.TenantId == tenantId)
             .OrderByDescending(r => r.IssueDate)
             .ToListAsync(ct);
+    }
 
     public Task<bool> ExistsRetentionAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default)
-        => _context.SalesRetentions.AnyAsync(
-            r => r.TenantId == tenantId && r.AccessKey == accessKey, ct);
+    {
+        if (UseUnified)
+            return _context.SalesWithholdings.AnyAsync(
+                r => r.TenantId == tenantId && r.AccessKey == accessKey, ct);
 
-    public Task SaveChangesAsync(CancellationToken ct = default)
-        => _context.SaveChangesAsync(ct);
+        return _context.SalesRetentions.AnyAsync(
+            r => r.TenantId == tenantId && r.AccessKey == accessKey, ct);
+    }
+
+    public async Task SaveChangesAsync(CancellationToken ct = default)
+    {
+        await _documentSync.FlushAsync(ct);
+        await _context.SaveChangesAsync(ct);
+    }
 }
