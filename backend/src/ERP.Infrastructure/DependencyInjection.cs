@@ -22,9 +22,9 @@ using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Cash.Interfaces;
+using ERP.Application.Subscriptions;
 using ERP.Domain.Subscriptions.Interfaces;
 using ERP.Application.Navigation;
-using ERP.Application.Subscriptions;
 using ERP.Application.Admin;
 using ERP.Infrastructure.BackgroundServices;
 using ERP.Infrastructure.Deployment;
@@ -129,6 +129,7 @@ public static class DependencyInjection
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
         services.AddScoped<IAccountingService, AccountingService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
+        services.AddScoped<ITenantEntitlementsService, TenantEntitlementsService>();
         services.AddScoped<SaasCatalogQuery>();
         services.AddScoped<ISaasCatalogQuery>(sp => sp.GetRequiredService<SaasCatalogQuery>());
         services.AddScoped<ISaasPublicPlansQuery>(sp => sp.GetRequiredService<SaasCatalogQuery>());
