@@ -3,7 +3,9 @@ using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.Application.Behaviors;
+using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Subscriptions;
 using ERP.Application.Modules.Inventory.Services;
 using ERP.Application.Modules.Cash.Services;
 
@@ -20,6 +22,7 @@ public static class DependencyInjection
         var assembly = Assembly.GetExecutingAssembly();
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
+        services.AddScoped<ISessionModulesResolver, SessionModulesResolver>();
         services.AddScoped<IKardexService, KardexService>();
         services.AddScoped<IReconciliationService, ReconciliationService>();
         services.AddValidatorsFromAssembly(assembly);

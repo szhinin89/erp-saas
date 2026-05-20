@@ -14,19 +14,22 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
     private readonly ICurrentTenant _currentTenant;
     private readonly ITenantRepository _tenantRepository;
     private readonly ITenantEntitlementsService _entitlements;
+    private readonly ISessionModulesResolver _sessionModules;
 
     public GetMyPermissionsHandler(
         IAccessRepository repo,
         ICurrentUser currentUser,
         ICurrentTenant currentTenant,
         ITenantRepository tenantRepository,
-        ITenantEntitlementsService entitlements)
+        ITenantEntitlementsService entitlements,
+        ISessionModulesResolver sessionModules)
     {
         _repo = repo;
         _currentUser = currentUser;
         _currentTenant = currentTenant;
         _tenantRepository = tenantRepository;
         _entitlements = entitlements;
+        _sessionModules = sessionModules;
     }
 
     public Task<Result<MyPermissionsDto>> HandleAsync(CancellationToken ct = default)
@@ -39,8 +42,8 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
 
         var tenant = await _tenantRepository.GetByIdAsync(_currentTenant.TenantId, ct);
         var plan = tenant?.PlanCode;
-        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(
-            _currentTenant.TenantId, _entitlements, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(
+            _currentTenant.TenantId, tenant, ct);
 
         var role = _currentUser.Role ?? string.Empty;
         if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))

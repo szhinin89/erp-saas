@@ -46,9 +46,10 @@ public static class TenantSubscriptionCatalog
     }
 
     /// <summary>
-    /// Lectura de caché legacy (<c>EnabledModulesJson</c>) solo para compatibilidad de visualización.
-    /// No usar como autoridad: null/vacío/inválido → vacío (nunca <see cref="AllModuleKeys"/>).
+    /// Lectura de caché legacy (<c>EnabledModulesJson</c>). No usar en rutas nuevas;
+    /// preferir <see cref="ISessionModulesResolver"/>.
     /// </summary>
+    [Obsolete("Legacy cache. Use ISessionModulesResolver or ITenantEntitlementsService. Removal planned post Phase A.")]
     public static IReadOnlyList<string> GetEffectiveEnabledModules(Tenant tenant)
     {
         if (string.IsNullOrWhiteSpace(tenant.EnabledModulesJson))
@@ -140,6 +141,7 @@ public static class TenantSubscriptionCatalog
     /// <summary>
     /// Lectura legacy JSON; usa normalización canónica. Preferir <see cref="TenantAllowsPermissionAsync"/>.
     /// </summary>
+    [Obsolete("Sync legacy path. Use TenantAllowsPermissionAsync with ITenantEntitlementsService.")]
     public static bool TenantAllowsPermission(Tenant tenant, string permissionKey)
     {
         if (!TryGetModuleKeyForPermission(permissionKey, out var module))

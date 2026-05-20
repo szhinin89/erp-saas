@@ -139,6 +139,8 @@ var kardexSection = builder.Configuration.GetSection(
 builder.Services.Configure<ERP.Application.Common.Config.KardexOptions>(kardexSection);
 builder.Services.Configure<ERP.Application.Common.Config.PasswordResetOptions>(
     builder.Configuration.GetSection(ERP.Application.Common.Config.PasswordResetOptions.SectionName));
+builder.Services.Configure<ERP.Application.Common.Config.SaasEntitlementsOptions>(
+    builder.Configuration.GetSection(ERP.Application.Common.Config.SaasEntitlementsOptions.Section));
 builder.Services.AddSingleton(sp =>
     kardexSection.Get<ERP.Application.Common.Config.KardexOptions>()
     ?? new ERP.Application.Common.Config.KardexOptions());

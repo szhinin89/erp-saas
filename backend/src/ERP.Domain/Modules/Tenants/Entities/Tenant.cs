@@ -14,7 +14,11 @@ public class Tenant : AuditableEntity
     /// <summary>Código comercial del plan (p. ej. starter, professional). Opcional.</summary>
     public string? PlanCode { get; private set; }
 
-    /// <summary>JSON array de claves de módulo (p. ej. <c>["inventario","accounting"]</c>). Null/vacío = todos los módulos.</summary>
+    /// <summary>
+    /// Caché legacy de módulos (SuperAdmin). No es autoridad de entitlements; ver <c>TenantSaasSubscription</c>.
+    /// Null/vacío ya no implica todos los módulos en runtime (fail-closed en sesión).
+    /// </summary>
+    [Obsolete("Legacy module cache. Authoritative entitlements: TenantSaasSubscription + SaasPlanFeature.")]
     public string? EnabledModulesJson { get; private set; }
 
     // ── Datos legales/comerciales (opcionales) ─────────────────────

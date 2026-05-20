@@ -1,6 +1,8 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Config;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ERP.Infrastructure.Persistence;
 
@@ -8,16 +10,26 @@ namespace ERP.Infrastructure.Persistence;
 public sealed class PlatformQueryAccessor : IPlatformQueryAccessor
 {
     private readonly ILogger<PlatformQueryAccessor> _logger;
+    private readonly SaasEntitlementsOptions _options;
 
-    public PlatformQueryAccessor(ILogger<PlatformQueryAccessor> logger) => _logger = logger;
+    public PlatformQueryAccessor(
+        ILogger<PlatformQueryAccessor> logger,
+        IOptions<SaasEntitlementsOptions> options)
+    {
+        _logger = logger;
+        _options = options.Value;
+    }
 
     public IQueryable<TEntity> Unfiltered<TEntity>(IQueryable<TEntity> query, PlatformQueryReason reason)
         where TEntity : class
     {
-        _logger.LogDebug(
-            "Platform query without tenant filter: {Reason} on {Entity}",
-            reason,
-            typeof(TEntity).Name);
+        if (_options.LogPlatformQueries)
+        {
+            _logger.LogDebug(
+                "Platform query without tenant filter: {Reason} on {Entity}",
+                reason,
+                typeof(TEntity).Name);
+        }
 
         return query.IgnoreQueryFilters();
     }

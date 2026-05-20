@@ -1,6 +1,6 @@
 # ADR-0001: Single source of truth for tenant entitlements
 
-**Estado:** Aceptado (iteración 01 — servicio introducido; consumidores legacy pendientes Fase A)  
+**Estado:** Aceptado (Fase A completada — consumidores migrados; ver [ADR-0006](./ADR-0006-phase-a-closeout.md))  
 **Fecha:** 2026-05-20
 
 ---
@@ -44,7 +44,7 @@ Se introduce `ITenantEntitlementsService` / `TenantEntitlementsService` como API
 
 **Reglas fail-closed:** sin suscripción activa → módulos vacíos, `HasFeature` = false, límite null. No se lee `EnabledModulesJson` ni `TenantSubscriptionCatalog` dentro de este servicio.
 
-**Alcance iteración 01:** el servicio existe y está registrado en DI; **no** reemplaza aún `PermissionHandler`, `SubscriptionService` ni JWT. La migración de consumidores es incremental (iteraciones 02–03).
+**Alcance Fase A (01–06):** el servicio es SoT para gates y sesión (`ISessionModulesResolver`); legacy JSON marcado `[Obsolete]` y solo vía flag de emergencia.
 
 ---
 

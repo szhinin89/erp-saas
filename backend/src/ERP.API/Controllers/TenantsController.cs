@@ -30,16 +30,16 @@ public class TenantsController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly ITenantRepository _tenantRepository;
-    private readonly ITenantEntitlementsService _entitlements;
+    private readonly ISessionModulesResolver _sessionModules;
 
     public TenantsController(
         IMediator mediator,
         ITenantRepository tenantRepository,
-        ITenantEntitlementsService entitlements)
+        ISessionModulesResolver sessionModules)
     {
         _mediator = mediator;
         _tenantRepository = tenantRepository;
-        _entitlements = entitlements;
+        _sessionModules = sessionModules;
     }
 
     /// <summary>Obtiene el detalle de un tenant (SuperAdmin).</summary>
@@ -53,7 +53,7 @@ public class TenantsController : ControllerBase
         if (tenant is null)
             return this.ApiNotFound("Empresa no encontrada.");
 
-        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(id, _entitlements, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(id, tenant, ct);
         return this.ApiOk(TenantDto.FromTenant(tenant, modules));
     }
 

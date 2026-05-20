@@ -15,20 +15,20 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthRespo
     private readonly ITenantRepository _tenantRepository;
     private readonly IJwtService _jwtService;
     private readonly IPasswordHasher _passwordHasher;
-    private readonly ITenantEntitlementsService _entitlements;
+    private readonly ISessionModulesResolver _sessionModules;
 
     public RegisterHandler(
         IUserRepository userRepository,
         ITenantRepository tenantRepository,
         IJwtService jwtService,
         IPasswordHasher passwordHasher,
-        ITenantEntitlementsService entitlements)
+        ISessionModulesResolver sessionModules)
     {
         _userRepository   = userRepository;
         _tenantRepository = tenantRepository;
         _jwtService       = jwtService;
         _passwordHasher   = passwordHasher;
-        _entitlements     = entitlements;
+        _sessionModules   = sessionModules;
     }
 
     public async Task<Result<AuthResponseDto>> Handle(
@@ -73,7 +73,7 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthRespo
 
         var modules = tenantEntity is null
             ? Array.Empty<string>()
-            : await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(user.TenantId, _entitlements, ct);
+            : await _sessionModules.GetEnabledModuleKeysAsync(user.TenantId, tenantEntity, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id,

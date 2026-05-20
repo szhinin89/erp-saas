@@ -24,12 +24,12 @@ public sealed class UpdateTenantSubscriptionHandlerTests
         var user = new Mock<ICurrentUser>(MockBehavior.Strict);
         user.SetupGet(u => u.UserId).Returns(editorId);
 
-        var entitlements = new Mock<ITenantEntitlementsService>(MockBehavior.Strict);
-        entitlements
-            .Setup(e => e.GetEnabledModuleKeysAsync(tenantId, It.IsAny<CancellationToken>()))
+        var sessionModules = new Mock<ISessionModulesResolver>(MockBehavior.Strict);
+        sessionModules
+            .Setup(e => e.GetEnabledModuleKeysAsync(tenantId, tenant, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { "accounting", "saas" });
 
-        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, entitlements.Object);
+        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, sessionModules.Object);
         var cmd = new UpdateTenantSubscriptionCommand(
             tenantId,
             PlanCode: "pro",
@@ -61,12 +61,12 @@ public sealed class UpdateTenantSubscriptionHandlerTests
         var user = new Mock<ICurrentUser>(MockBehavior.Strict);
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
 
-        var entitlements = new Mock<ITenantEntitlementsService>(MockBehavior.Strict);
-        entitlements
-            .Setup(e => e.GetEnabledModuleKeysAsync(tenantId, It.IsAny<CancellationToken>()))
+        var sessionModules = new Mock<ISessionModulesResolver>(MockBehavior.Strict);
+        sessionModules
+            .Setup(e => e.GetEnabledModuleKeysAsync(tenantId, tenant, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<string>());
 
-        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, entitlements.Object);
+        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, sessionModules.Object);
         var result = await handler.Handle(
             new UpdateTenantSubscriptionCommand(tenantId, PlanCode: null, EnabledModules: Array.Empty<string>()), CancellationToken.None);
 
@@ -84,8 +84,8 @@ public sealed class UpdateTenantSubscriptionHandlerTests
         var user = new Mock<ICurrentUser>(MockBehavior.Strict);
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
 
-        var entitlements = new Mock<ITenantEntitlementsService>(MockBehavior.Strict);
-        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, entitlements.Object);
+        var sessionModules = new Mock<ISessionModulesResolver>(MockBehavior.Strict);
+        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, sessionModules.Object);
         var result = await handler.Handle(
             new UpdateTenantSubscriptionCommand(Guid.NewGuid(), "x", new[] { "inventario" }), CancellationToken.None);
 
@@ -104,8 +104,8 @@ public sealed class UpdateTenantSubscriptionHandlerTests
         var user = new Mock<ICurrentUser>(MockBehavior.Strict);
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
 
-        var entitlements = new Mock<ITenantEntitlementsService>(MockBehavior.Strict);
-        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, entitlements.Object);
+        var sessionModules = new Mock<ISessionModulesResolver>(MockBehavior.Strict);
+        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, sessionModules.Object);
         var act = () => handler.Handle(
             new UpdateTenantSubscriptionCommand(tenant.Id, null, new[] { "not-a-module" }), CancellationToken.None);
 

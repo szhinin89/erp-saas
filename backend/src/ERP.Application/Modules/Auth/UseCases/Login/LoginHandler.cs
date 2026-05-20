@@ -21,7 +21,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
     private readonly IAccessTokenService _accessTokenService;
     private readonly IPasswordHasher     _passwordHasher;
     private readonly IRefreshTokenService _refreshTokenService;
-    private readonly ITenantEntitlementsService _entitlements;
+    private readonly ISessionModulesResolver _sessionModules;
 
     public LoginHandler(
         IUserRepository userRepository,
@@ -32,7 +32,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         IAccessTokenService accessTokenService,
         IPasswordHasher passwordHasher,
         IRefreshTokenService refreshTokenService,
-        ITenantEntitlementsService entitlements)
+        ISessionModulesResolver sessionModules)
     {
         _userRepository      = userRepository;
         _tenantRepository    = tenantRepository;
@@ -42,7 +42,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         _accessTokenService  = accessTokenService;
         _passwordHasher      = passwordHasher;
         _refreshTokenService = refreshTokenService;
-        _entitlements        = entitlements;
+        _sessionModules      = sessionModules;
     }
 
     public async Task<Result<AuthResponseDto>> Handle(
@@ -106,8 +106,8 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
             var (identityRefresh, identityRefreshExpiry) = await _refreshTokenService.CreateAsync(
                 identityUser.Id, membership.TenantId, RefreshUserType.Identity, ct);
 
-            var identityModules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(
-                membership.TenantId, _entitlements, ct);
+            var identityModules = await _sessionModules.GetEnabledModuleKeysAsync(
+                membership.TenantId, identityTenant, ct);
 
             return Result<AuthResponseDto>.Success(new AuthResponseDto(
                 identityUser.Id,
@@ -157,7 +157,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
 
         var legacyModules = tenantEntity is null
             ? Array.Empty<string>()
-            : await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(single.TenantId, _entitlements, ct);
+            : await _sessionModules.GetEnabledModuleKeysAsync(single.TenantId, tenantEntity, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             single.Id,

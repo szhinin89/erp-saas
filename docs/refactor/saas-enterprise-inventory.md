@@ -2,7 +2,8 @@
 
 **Branch:** `refactor/saas-enterprise-00-inventory`  
 **Fecha:** 2026-05-20  
-**Alcance:** Solo documentación. Sin cambios de lógica ni comportamiento en runtime.
+**Alcance:** Inventario inicial (iteración 00).  
+**Fase A:** Completada — ver [saas-enterprise-phase-a-closeout.md](./saas-enterprise-phase-a-closeout.md).
 
 ---
 

@@ -18,7 +18,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
     private readonly ITenantRepository    _tenantRepository;
     private readonly IJwtService          _jwtService;
     private readonly IAccessTokenService  _accessTokenService;
-    private readonly ITenantEntitlementsService _entitlements;
+    private readonly ISessionModulesResolver _sessionModules;
 
     public RefreshTokenHandler(
         IRefreshTokenService refreshTokenService,
@@ -27,7 +27,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
         ITenantRepository tenantRepository,
         IJwtService jwtService,
         IAccessTokenService accessTokenService,
-        ITenantEntitlementsService entitlements)
+        ISessionModulesResolver sessionModules)
     {
         _refreshTokenService = refreshTokenService;
         _userRepository      = userRepository;
@@ -35,7 +35,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
         _tenantRepository    = tenantRepository;
         _jwtService          = jwtService;
         _accessTokenService  = accessTokenService;
-        _entitlements        = entitlements;
+        _sessionModules      = sessionModules;
     }
 
     public async Task<Result<AuthResponseDto>> Handle(RefreshTokenCommand command, CancellationToken ct)
@@ -71,7 +71,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
 
         var legacyModules = tenant is null
             ? Array.Empty<string>()
-            : await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(v.TenantId, _entitlements, ct);
+            : await _sessionModules.GetEnabledModuleKeysAsync(v.TenantId, tenant, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id, user.FullName, user.Email.Value,
@@ -104,7 +104,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
 
         var accessToken = _accessTokenService.GenerateSessionToken(user, v.TenantId, membership.Role);
 
-        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(v.TenantId, _entitlements, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(v.TenantId, tenant, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id, user.FullName, user.Email.Value,

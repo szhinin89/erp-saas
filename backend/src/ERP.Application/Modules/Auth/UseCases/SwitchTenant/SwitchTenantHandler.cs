@@ -13,20 +13,20 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<A
     private readonly IUserRepository _userRepository;
     private readonly ITenantRepository _tenantRepository;
     private readonly IJwtService _jwtService;
-    private readonly ITenantEntitlementsService _entitlements;
+    private readonly ISessionModulesResolver _sessionModules;
 
     public SwitchTenantHandler(
         ICurrentUser currentUser,
         IUserRepository userRepository,
         ITenantRepository tenantRepository,
         IJwtService jwtService,
-        ITenantEntitlementsService entitlements)
+        ISessionModulesResolver sessionModules)
     {
         _currentUser = currentUser;
         _userRepository = userRepository;
         _tenantRepository = tenantRepository;
         _jwtService = jwtService;
-        _entitlements = entitlements;
+        _sessionModules = sessionModules;
     }
 
     public async Task<Result<AuthResponseDto>> Handle(SwitchTenantCommand command, CancellationToken ct)
@@ -63,7 +63,7 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<A
 
         var token = _jwtService.GenerateToken(user, tenant.Id);
 
-        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(tenant.Id, _entitlements, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, tenant, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id,

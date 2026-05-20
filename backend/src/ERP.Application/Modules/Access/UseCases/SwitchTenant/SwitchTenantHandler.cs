@@ -15,7 +15,7 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<S
     private readonly ICurrentUser _currentUser;
     private readonly ITenantRepository _tenantRepository;
     private readonly IConfigService _configService;
-    private readonly ITenantEntitlementsService _entitlements;
+    private readonly ISessionModulesResolver _sessionModules;
 
     public SwitchTenantHandler(
         IAccessRepository accessRepository,
@@ -23,14 +23,14 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<S
         ICurrentUser currentUser,
         ITenantRepository tenantRepository,
         IConfigService configService,
-        ITenantEntitlementsService entitlements)
+        ISessionModulesResolver sessionModules)
     {
         _accessRepository = accessRepository;
         _tokenService = tokenService;
         _currentUser = currentUser;
         _tenantRepository = tenantRepository;
         _configService = configService;
-        _entitlements = entitlements;
+        _sessionModules = sessionModules;
     }
 
     public Task<Result<SessionResponseDto>> HandleAsync(SwitchTenantCommand command, CancellationToken ct = default)
@@ -77,8 +77,8 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<S
 
             var superSessionTenant = _tokenService.GenerateSessionToken(userId, email, fullName, command.TenantId, "SuperAdmin");
             await _configService.WarmupTenantAsync(command.TenantId, ct);
-            var superModules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(
-                command.TenantId, _entitlements, ct);
+            var superModules = await _sessionModules.GetEnabledModuleKeysAsync(
+                command.TenantId, tenantSa, ct);
 
             return Result<SessionResponseDto>.Success(new SessionResponseDto(
                 UserId: userId,
@@ -105,7 +105,7 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<S
         var membershipSessionToken = _tokenService.GenerateSessionToken(user, command.TenantId, membership.Role);
         await _configService.WarmupTenantAsync(command.TenantId, ct);
 
-        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(command.TenantId, _entitlements, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(command.TenantId, tenant, ct);
 
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
             UserId: user.Id,

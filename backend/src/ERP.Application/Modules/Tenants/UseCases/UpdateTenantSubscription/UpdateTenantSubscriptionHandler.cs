@@ -11,16 +11,16 @@ public sealed class UpdateTenantSubscriptionHandler : IRequestHandler<UpdateTena
 {
     private readonly ITenantRepository _repository;
     private readonly ICurrentUser _currentUser;
-    private readonly ITenantEntitlementsService _entitlements;
+    private readonly ISessionModulesResolver _sessionModules;
 
     public UpdateTenantSubscriptionHandler(
         ITenantRepository repository,
         ICurrentUser currentUser,
-        ITenantEntitlementsService entitlements)
+        ISessionModulesResolver sessionModules)
     {
         _repository = repository;
         _currentUser = currentUser;
-        _entitlements = entitlements;
+        _sessionModules = sessionModules;
     }
 
     public async Task<Result<TenantDto>> Handle(UpdateTenantSubscriptionCommand command, CancellationToken ct)
@@ -35,7 +35,7 @@ public sealed class UpdateTenantSubscriptionHandler : IRequestHandler<UpdateTena
         tenant.SetSubscription(command.PlanCode, command.EnabledModules, _currentUser.UserId);
         await _repository.SaveChangesAsync(ct);
 
-        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(tenant.Id, _entitlements, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, tenant, ct);
         return Result<TenantDto>.Success(TenantDto.FromTenant(tenant, modules));
     }
 }

@@ -18,7 +18,7 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITenantOnboardingService _onboarding;
-    private readonly ITenantEntitlementsService _entitlements;
+    private readonly ISessionModulesResolver _sessionModules;
 
     public RegisterTenantWithAdminHandler(
         ITenantRepository tenantRepository,
@@ -27,7 +27,7 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
         IDeploymentFeatureFlags deployment,
         IPasswordHasher passwordHasher,
         ITenantOnboardingService onboarding,
-        ITenantEntitlementsService entitlements)
+        ISessionModulesResolver sessionModules)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
@@ -35,7 +35,7 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
         _deployment = deployment;
         _passwordHasher = passwordHasher;
         _onboarding = onboarding;
-        _entitlements = entitlements;
+        _sessionModules = sessionModules;
     }
 
     public Task<Result<SessionResponseDto>> HandleAsync(RegisterTenantWithAdminCommand command, CancellationToken ct = default)
@@ -105,7 +105,7 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
         await _onboarding.OnboardAsync(tenant.Id, actorId: identityUser.Id, ct);
 
         var sessionToken = _tokenService.GenerateSessionToken(identityUser, tenant.Id, "Admin");
-        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(tenant.Id, _entitlements, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, tenant, ct);
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
             UserId: identityUser.Id,
             FullName: identityUser.FullName,
