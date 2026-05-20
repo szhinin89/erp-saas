@@ -76,8 +76,8 @@
     "actions/checkout@v6",
     "actions/setup-dotnet@v5",
     "actions/setup-node@v6",
-    "actions/upload-artifact@v4",
-    "actions/download-artifact@v4",
+    "actions/upload-artifact@v7",
+    "actions/download-artifact@v8",
     "azure/webapps-deploy@v3"
   ],
   "disallowedPatterns": [

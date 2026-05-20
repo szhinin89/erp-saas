@@ -47,7 +47,7 @@ jobs:
           dotnet publish backend/src/ERP.API/ERP.API.csproj -c Release -o "${{ github.workspace }}/publish" --no-self-contained
 
       - name: Upload artifact (API)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: erp-api
           path: publish/
@@ -60,7 +60,7 @@ jobs:
 
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: erp-api
           path: publish
