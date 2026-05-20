@@ -77,7 +77,7 @@ public sealed class SubscriptionServiceUsageTests
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
             .Options;
-        return new ErpDbContext(options, new FixedTenant { TenantId = tenantId }, new FakePublisher());
+        return TestErpDbContextFactory.Create(options, new FixedTenant { TenantId = tenantId }, new FakePublisher());
     }
 
     private static async Task<Guid> SeedMeteredCustomersFeatureAsync(ErpDbContext ctx, Guid tenantId)

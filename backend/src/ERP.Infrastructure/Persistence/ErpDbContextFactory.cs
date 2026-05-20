@@ -1,7 +1,10 @@
+using ERP.Application.Common;
+using ERP.Application.Common.Config;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using ERP.Application.Common;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace ERP.Infrastructure.Persistence;
 
@@ -21,7 +24,10 @@ internal sealed class ErpDbContextFactory : IDesignTimeDbContextFactory<ErpDbCon
             .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning))
             .Options;
 
-        return new ErpDbContext(options, new DesignTimeTenant(), new NoOpPublisher());
+        var platform = new PlatformQueryAccessor(
+            NullLogger<PlatformQueryAccessor>.Instance,
+            Microsoft.Extensions.Options.Options.Create(new SaasEntitlementsOptions()));
+        return new ErpDbContext(options, new DesignTimeTenant(), new NoOpPublisher(), platform);
     }
 
     /// <summary>Tenant vacío para satisfacer ICurrentTenant en diseño.</summary>

@@ -14,12 +14,17 @@ namespace ERP.Infrastructure.Seeding;
 public sealed class DefaultProfileSeeder : IDefaultProfileSeeder
 {
     private readonly ErpDbContext _db;
+    private readonly IPlatformQueryAccessor _platform;
     private readonly ILogger<DefaultProfileSeeder> _logger;
 
-    public DefaultProfileSeeder(ErpDbContext db, ILogger<DefaultProfileSeeder> logger)
+    public DefaultProfileSeeder(
+        ErpDbContext db,
+        IPlatformQueryAccessor platform,
+        ILogger<DefaultProfileSeeder> logger)
     {
-        _db     = db;
-        _logger = logger;
+        _db       = db;
+        _platform = platform;
+        _logger   = logger;
     }
 
     public async Task SeedForTenantAsync(Guid tenantId, Guid actorId, CancellationToken ct = default)
@@ -33,8 +38,8 @@ public sealed class DefaultProfileSeeder : IDefaultProfileSeeder
 
         foreach (var (name, description, permKeys) in bundles)
         {
-            var exists = await _db.AccessProfiles
-                .IgnoreQueryFilters()
+            var exists = await _platform
+                .Unfiltered(_db.AccessProfiles, PlatformQueryReason.Seeding)
                 .AnyAsync(p => p.TenantId == tenantId && p.Name == name, ct);
 
             if (exists)

@@ -72,14 +72,17 @@ public class ErpDbContext : DbContext
 {
     private readonly ICurrentTenant _currentTenant;
     private readonly IPublisher _publisher;
+    private readonly IPlatformQueryAccessor _platform;
 
     public ErpDbContext(
         DbContextOptions<ErpDbContext> options,
         ICurrentTenant currentTenant,
-        IPublisher publisher) : base(options)
+        IPublisher publisher,
+        IPlatformQueryAccessor platform) : base(options)
     {
         _currentTenant = currentTenant;
         _publisher     = publisher;
+        _platform      = platform;
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -153,7 +156,8 @@ public class ErpDbContext : DbContext
             var planId = Guid.Empty;
             var hasValidPlan = normalizedPlanCode.Length > 0 && planByCode.TryGetValue(normalizedPlanCode, out planId);
 
-            var existing = await TenantSaasSubscriptions.IgnoreQueryFilters()
+            var existing = await _platform
+                .Unfiltered(TenantSaasSubscriptions, PlatformQueryReason.DbContextSync)
                 .FirstOrDefaultAsync(s => s.TenantId == tenantId, cancellationToken);
 
             if (!hasValidPlan)

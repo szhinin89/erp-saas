@@ -130,7 +130,7 @@ public sealed class TenantEntitlementsServiceTests
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
             .Options;
-        return new ErpDbContext(options, new FixedTenant { TenantId = currentTenantId }, new FakePublisher());
+        return TestErpDbContextFactory.Create(options, new FixedTenant { TenantId = currentTenantId }, new FakePublisher());
     }
 
     private static async Task<(Guid PlanId, Guid InventoryFeatureId)> SeedPlanWithInventoryModuleAsync(

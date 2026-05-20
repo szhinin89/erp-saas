@@ -36,6 +36,7 @@ internal static class DevDatabaseSeeder
     {
         await using var scope = services.CreateAsyncScope();
         var db             = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var platform       = scope.ServiceProvider.GetRequiredService<IPlatformQueryAccessor>();
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
         var onboarding     = scope.ServiceProvider.GetRequiredService<ITenantOnboardingService>();
 
@@ -43,14 +44,14 @@ internal static class DevDatabaseSeeder
         const string adminPassword = "Admin123!";
         const string tenantSlug = "tenant-demo";
 
-        var existingAdmins = await db.IdentityUsers
-            .IgnoreQueryFilters()
+        var existingAdmins = await platform
+            .Unfiltered(db.IdentityUsers, PlatformQueryReason.DevOnly)
             .ToListAsync(ct);
         var existingAdmin = existingAdmins
             .FirstOrDefault(u => string.Equals(u.Email.Value, adminEmail, StringComparison.OrdinalIgnoreCase));
 
-        var tenant = await db.Tenants
-            .IgnoreQueryFilters()
+        var tenant = await platform
+            .Unfiltered(db.Tenants, PlatformQueryReason.DevOnly)
             .FirstOrDefaultAsync(t => t.Slug == tenantSlug, ct);
 
         if (tenant is not null && existingAdmin is not null)
@@ -61,7 +62,7 @@ internal static class DevDatabaseSeeder
                 await db.SaveChangesAsync(ct);
             }
 
-            await EnsureDemoStarterEntitlementsAsync(db, ct);
+            await EnsureDemoStarterEntitlementsAsync(db, platform, ct);
             return;
         }
 
@@ -93,8 +94,8 @@ internal static class DevDatabaseSeeder
             await db.SaveChangesAsync(ct);
         }
 
-        var hasMembership = await db.Memberships
-            .IgnoreQueryFilters()
+        var hasMembership = await platform
+            .Unfiltered(db.Memberships, PlatformQueryReason.DevOnly)
             .AnyAsync(m => m.TenantId == tenant.Id && m.IdentityUserId == admin.Id && m.IsActive, ct);
         if (!hasMembership)
         {
@@ -168,24 +169,27 @@ internal static class DevDatabaseSeeder
 
         // ── Full tenant onboarding (profiles + Consumidor Final + branch + warehouse) ──
         await onboarding.OnboardAsync(tenant.Id, SeederActorId, ct);
-        await EnsureDemoStarterEntitlementsAsync(db, ct);
+        await EnsureDemoStarterEntitlementsAsync(db, platform, ct);
     }
 
     /// <summary>Features Module en plan starter para probar entitlements (Fase A) en desarrollo.</summary>
-    private static async Task EnsureDemoStarterEntitlementsAsync(ErpDbContext db, CancellationToken ct)
+    private static async Task EnsureDemoStarterEntitlementsAsync(
+        ErpDbContext db,
+        IPlatformQueryAccessor platform,
+        CancellationToken ct)
     {
         const string tenantSlug = "tenant-demo";
         var plan = await db.SaasPlans.FirstOrDefaultAsync(p => p.Code == "starter", ct);
         if (plan is null)
             return;
 
-        var tenant = await db.Tenants
-            .IgnoreQueryFilters()
+        var tenant = await platform
+            .Unfiltered(db.Tenants, PlatformQueryReason.DevOnly)
             .FirstOrDefaultAsync(t => t.Slug == tenantSlug, ct);
         if (tenant is not null)
         {
-            var subscription = await db.TenantSaasSubscriptions
-                .IgnoreQueryFilters()
+            var subscription = await platform
+                .Unfiltered(db.TenantSaasSubscriptions, PlatformQueryReason.DevOnly)
                 .FirstOrDefaultAsync(s => s.TenantId == tenant.Id, ct);
             if (subscription is null)
             {
@@ -224,7 +228,10 @@ internal static class DevDatabaseSeeder
     /// Idempotent: skips profiles that already exist by name.
     /// </summary>
     public static async Task SeedDefaultProfilesAsync(
-        ErpDbContext db, Guid tenantId, CancellationToken ct = default)
+        ErpDbContext db,
+        IPlatformQueryAccessor platform,
+        Guid tenantId,
+        CancellationToken ct = default)
     {
         var profiles = new[]
         {
@@ -235,8 +242,8 @@ internal static class DevDatabaseSeeder
 
         foreach (var (name, description, permKeys) in profiles)
         {
-            var existing = await db.AccessProfiles
-                .IgnoreQueryFilters()
+            var existing = await platform
+                .Unfiltered(db.AccessProfiles, PlatformQueryReason.DevOnly)
                 .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.Name == name, ct);
 
             if (existing is not null) continue;

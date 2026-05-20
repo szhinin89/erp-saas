@@ -10,13 +10,6 @@ public sealed class IgnoreQueryFiltersAuditTests
     private static readonly HashSet<string> AllowedRelativePaths = new(StringComparer.OrdinalIgnoreCase)
     {
         "src/ERP.Infrastructure/Persistence/PlatformQueryAccessor.cs",
-        "src/ERP.Infrastructure/Persistence/ErpDbContext.cs",
-        "src/ERP.Infrastructure/Seeding/TenantOnboardingService.cs",
-        "src/ERP.Infrastructure/Seeding/DefaultProfileSeeder.cs",
-        "src/ERP.Infrastructure/Deployment/FirstRunSetupService.cs",
-        "src/ERP.Infrastructure/BackgroundServices/KardexReporteProcessor.cs",
-        "src/ERP.API/Hangfire/SriRetryJob.cs",
-        "src/ERP.API/Extensions/DevDatabaseSeeder.cs",
     };
 
     [Fact]

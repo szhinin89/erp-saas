@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Entities;
 using ERP.Infrastructure.Persistence;
@@ -11,10 +12,12 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
 {
     private static readonly Guid SystemActorId = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private readonly ErpDbContext _db;
+    private readonly IPlatformQueryAccessor _platform;
 
-    public FirstRunSetupService(ErpDbContext db)
+    public FirstRunSetupService(ErpDbContext db, IPlatformQueryAccessor platform)
     {
         _db = db;
+        _platform = platform;
     }
 
     public async Task<FirstRunTokenIssueResult> EnsureTokenIssuedAsync(CancellationToken ct = default)
@@ -22,8 +25,8 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
         var state = await GetOrCreateStateAsync(ct);
 
         // Si ya existe SuperAdmin, cerramos first-run de forma defensiva.
-        var hasSuperAdmin = await _db.Users
-            .IgnoreQueryFilters()
+        var hasSuperAdmin = await _platform
+            .Unfiltered(_db.Users, PlatformQueryReason.CrossTenantSystem)
             .AnyAsync(u => u.Role == "SuperAdmin", ct);
         if (hasSuperAdmin && state.IsFirstRun)
         {
@@ -81,8 +84,8 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
 
     public async Task<FirstRunResetResult> ResetForDevelopmentAsync(CancellationToken ct = default)
     {
-        var superAdmins = await _db.Users
-            .IgnoreQueryFilters()
+        var superAdmins = await _platform
+            .Unfiltered(_db.Users, PlatformQueryReason.CrossTenantSystem)
             .Where(u => u.Role == "SuperAdmin")
             .ToListAsync(ct);
         var superAdminIds = superAdmins.Select(x => x.Id).ToArray();

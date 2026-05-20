@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventory.UseCases.GetKardex;
 using ERP.Infrastructure.Persistence;
@@ -52,11 +53,10 @@ public sealed class KardexReportProcessor : BackgroundService
     {
         using var scope = _scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var platform = scope.ServiceProvider.GetRequiredService<IPlatformQueryAccessor>();
 
-        // IQF: el DbContext del worker no tiene tenant HTTP; el aislamiento viene de la fila (Id único global)
-        // y luego se impone ManualCurrentTenant(reporte.TenantId) antes de tocar inventario.
-        var reporte = await db.KardexReports
-            .IgnoreQueryFilters()
+        var reporte = await platform
+            .Unfiltered(db.KardexReports, PlatformQueryReason.BackgroundJob)
             .FirstOrDefaultAsync(r => r.Id == reporteId, ct);
 
         if (reporte is null)

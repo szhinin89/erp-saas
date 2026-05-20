@@ -36,7 +36,7 @@ public class ErpDbContextTenantFilterTests
             .Options;
 
         var publisher = new FakePublisher();
-        await using (var seed = new ErpDbContext(options, new FakeTenant { TenantId = tenantA }, publisher))
+        await using (var seed = TestErpDbContextFactory.Create(options, new FakeTenant { TenantId = tenantA }, publisher))
         {
             seed.Products.Add(Product.Create(
                 tenantA,
@@ -81,7 +81,7 @@ public class ErpDbContextTenantFilterTests
             await seed.SaveChangesAsync();
         }
 
-        await using var ctxA = new ErpDbContext(options, new FakeTenant { TenantId = tenantA }, publisher);
+        await using var ctxA = TestErpDbContextFactory.Create(options, new FakeTenant { TenantId = tenantA }, publisher);
         var products = await ctxA.Products.ToListAsync();
 
         products.Should().HaveCount(1);

@@ -1,3 +1,4 @@
+using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -33,15 +34,18 @@ public sealed class TenantOnboardingService : ITenantOnboardingService
 
     private readonly ErpDbContext             _db;
     private readonly IDefaultProfileSeeder    _profileSeeder;
+    private readonly IPlatformQueryAccessor _platform;
     private readonly ILogger<TenantOnboardingService> _logger;
 
     public TenantOnboardingService(
         ErpDbContext db,
         IDefaultProfileSeeder profileSeeder,
+        IPlatformQueryAccessor platform,
         ILogger<TenantOnboardingService> logger)
     {
         _db            = db;
         _profileSeeder = profileSeeder;
+        _platform      = platform;
         _logger        = logger;
     }
 
@@ -80,8 +84,8 @@ public sealed class TenantOnboardingService : ITenantOnboardingService
     /// </summary>
     private async Task SeedConsumidorFinalAsync(Guid tenantId, Guid actorId, CancellationToken ct)
     {
-        var exists = await _db.Customers
-            .IgnoreQueryFilters()
+        var exists = await _platform
+            .Unfiltered(_db.Customers, PlatformQueryReason.Seeding)
             .AnyAsync(c => c.TenantId == tenantId
                         && c.IdentificationNumber == ConsumidorFinalIdNumber, ct);
 
@@ -115,8 +119,8 @@ public sealed class TenantOnboardingService : ITenantOnboardingService
     /// </summary>
     private async Task<Guid> SeedMainBranchAsync(Guid tenantId, Guid actorId, CancellationToken ct)
     {
-        var existing = await _db.Branches
-            .IgnoreQueryFilters()
+        var existing = await _platform
+            .Unfiltered(_db.Branches, PlatformQueryReason.Seeding)
             .Where(b => b.TenantId == tenantId && b.Code == MainBranchCode)
             .Select(b => (Guid?)b.Id)
             .FirstOrDefaultAsync(ct);
@@ -161,8 +165,8 @@ public sealed class TenantOnboardingService : ITenantOnboardingService
     /// </summary>
     private async Task SeedMainWarehouseAsync(Guid tenantId, Guid branchId, Guid actorId, CancellationToken ct)
     {
-        var exists = await _db.Warehouses
-            .IgnoreQueryFilters()
+        var exists = await _platform
+            .Unfiltered(_db.Warehouses, PlatformQueryReason.Seeding)
             .AnyAsync(w => w.TenantId == tenantId && w.Code == MainWarehouseCode, ct);
 
         if (exists)

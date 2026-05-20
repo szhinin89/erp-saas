@@ -1,3 +1,4 @@
+using ERP.Application.Common;
 using ERP.Application.Sales.UseCases.ReintentarEnvio;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Services;
@@ -14,24 +15,26 @@ namespace ERP.API.Hangfire;
 public sealed class SriRetryJob : ISriRetryJob
 {
     private readonly ErpDbContext          _context;
+    private readonly IPlatformQueryAccessor _platform;
     private readonly IServiceScopeFactory  _scopeFactory;
     private readonly ILogger<SriRetryJob>  _logger;
 
     public SriRetryJob(
         ErpDbContext         context,
+        IPlatformQueryAccessor platform,
         IServiceScopeFactory scopeFactory,
         ILogger<SriRetryJob> logger)
     {
         _context      = context;
+        _platform     = platform;
         _scopeFactory = scopeFactory;
         _logger       = logger;
     }
 
     public async Task ExecuteAsync(CancellationToken ct = default)
     {
-        // Consulta cross-tenant: IgnoreQueryFilters bypassa el filtro global de tenant
-        var pendientes = await _context.SalesBills
-            .IgnoreQueryFilters()
+        var pendientes = await _platform
+            .Unfiltered(_context.SalesBills, PlatformQueryReason.BackgroundJob)
             .Where(b => b.Status == "ErrorEnvio" || b.Status == "Rechazado")
             .Select(b => new { b.Id, b.TenantId })
             .ToListAsync(ct);

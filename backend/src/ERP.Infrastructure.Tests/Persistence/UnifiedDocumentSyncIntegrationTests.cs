@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
@@ -45,7 +46,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
     {
         var tenant = new Mock<ICurrentTenant>();
         tenant.Setup(t => t.TenantId).Returns(TenantId);
-        return new ErpDbContext(
+        return TestErpDbContextFactory.Create(
             new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(ConnectionString).Options,
             tenant.Object,
             Mock.Of<IPublisher>());
@@ -59,6 +60,8 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         var services = new ServiceCollection();
         services.AddSingleton<ICurrentTenant>(tenant.Object);
         services.AddSingleton(Mock.Of<IPublisher>());
+        services.Configure<SaasEntitlementsOptions>(_ => { });
+        services.AddScoped<IPlatformQueryAccessor, PlatformQueryAccessor>();
         services.AddDbContext<ErpDbContext>((_, o) =>
             o.UseNpgsql(ConnectionString, b => b.MigrationsAssembly(typeof(ErpDbContext).Assembly.FullName)));
         services.Configure<DocumentSchemaOptions>(o => o.UseUnifiedSchema = useUnified);
