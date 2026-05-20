@@ -1,9 +1,116 @@
--- Seed: grupos y elementos del menú de navegación global (fallback).
--- Ejecutado una sola vez por checksum via InstallDataBootstrapService.
--- Idempotente: ON CONFLICT DO NOTHING en grupos; WHERE NOT EXISTS en ítems.
--- No usar BEGIN/COMMIT: el servicio ya ejecuta dentro de una transacción.
+-- ============================================================================
+-- 002_system_bootstrap.sql
+-- Bootstrap de sistema — ejecutado UNA VEZ por checksum via InstallDataBootstrapService.
+-- Idempotente: CREATE OR REPLACE en funciones; ON CONFLICT DO NOTHING en tablas.
+-- No usar BEGIN/COMMIT: el servicio ya ejecuta dentro de una transacción propia.
+--
+-- Secciones:
+--   § 1  Función erp_seed_tenant_default_profiles()  — perfiles por tenant
+--   § 2  Grupos de navegación global (ui_nav_groups)  — 9 grupos
+--   § 3  Ítems de navegación global  (ui_nav_items)   — 33 ítems
+-- ============================================================================
 
--- ── Grupos ────────────────────────────────────────────────────────────────
+
+-- ============================================================================
+-- § 1  FUNCIÓN: erp_seed_tenant_default_profiles
+-- ----------------------------------------------------------------------------
+-- Crea perfiles Facturador / Bodeguero / Contador para un tenant.
+-- Uso principal: DefaultProfileSeeder.cs (EF Core) llama a SeedForTenantAsync()
+-- en cada onboarding. Esta función existe como herramienta de emergencia/psql.
+--
+-- Claves de permisos: inglés (sales.* / inventory.* / purchases.* / finance.*),
+-- alineadas con Permissions.cs tras el refactor de renombrado de módulos.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION erp_seed_tenant_default_profiles(
+    p_tenant_id UUID,
+    p_actor_id  UUID
+)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_facturador_id UUID;
+    v_bodeguero_id  UUID;
+    v_contador_id   UUID;
+BEGIN
+
+    -- 1a. Crear perfiles (idempotente) ----------------------------------------
+    INSERT INTO access_profiles
+        (id, tenant_id, name, description, is_active, created_at, created_by)
+    VALUES
+        (gen_random_uuid(), p_tenant_id, 'Facturador', 'Billing operator — can create and void invoices.',  TRUE, NOW(), p_actor_id),
+        (gen_random_uuid(), p_tenant_id, 'Bodeguero',  'Warehouse operator — manages stock and transfers.', TRUE, NOW(), p_actor_id),
+        (gen_random_uuid(), p_tenant_id, 'Contador',   'Accountant — read-only access to accounting data.', TRUE, NOW(), p_actor_id)
+    ON CONFLICT (tenant_id, name) DO NOTHING;
+
+    SELECT id INTO v_facturador_id FROM access_profiles WHERE tenant_id = p_tenant_id AND name = 'Facturador';
+    SELECT id INTO v_bodeguero_id  FROM access_profiles WHERE tenant_id = p_tenant_id AND name = 'Bodeguero';
+    SELECT id INTO v_contador_id   FROM access_profiles WHERE tenant_id = p_tenant_id AND name = 'Contador';
+
+    -- 1b. Permisos Facturador -------------------------------------------------
+    INSERT INTO access_profile_permissions
+        (id, tenant_id, profile_id, permission_key, is_allowed, created_at, created_by)
+    SELECT gen_random_uuid(), p_tenant_id, v_facturador_id, key, TRUE, NOW(), p_actor_id
+    FROM unnest(ARRAY[
+        'sales.invoices.view',
+        'sales.invoices.create',
+        'sales.invoices.update',
+        'sales.invoices.void',
+        'sales.credit-notes.view',
+        'sales.credit-notes.create',
+        'sales.customers.view',
+        'sales.customers.create',
+        'sales.customers.update',
+        'inventory.products.view'
+    ]) AS t(key)
+    ON CONFLICT (tenant_id, profile_id, permission_key) DO NOTHING;
+
+    -- 1c. Permisos Bodeguero --------------------------------------------------
+    INSERT INTO access_profile_permissions
+        (id, tenant_id, profile_id, permission_key, is_allowed, created_at, created_by)
+    SELECT gen_random_uuid(), p_tenant_id, v_bodeguero_id, key, TRUE, NOW(), p_actor_id
+    FROM unnest(ARRAY[
+        'inventory.products.view',
+        'inventory.warehouses.view',
+        'inventory.transfers.view',
+        'inventory.transfers.create',
+        'inventory.adjustments.view',
+        'inventory.adjustments.create',
+        'purchases.orders.view'
+    ]) AS t(key)
+    ON CONFLICT (tenant_id, profile_id, permission_key) DO NOTHING;
+
+    -- 1d. Permisos Contador ---------------------------------------------------
+    INSERT INTO access_profile_permissions
+        (id, tenant_id, profile_id, permission_key, is_allowed, created_at, created_by)
+    SELECT gen_random_uuid(), p_tenant_id, v_contador_id, key, TRUE, NOW(), p_actor_id
+    FROM unnest(ARRAY[
+        'finance.config.view',
+        'finance.accounts.view',
+        'finance.accounts.create',
+        'finance.accounts.edit',
+        'finance.journal.view',
+        'sales.invoices.view',
+        'purchases.orders.view'
+    ]) AS t(key)
+    ON CONFLICT (tenant_id, profile_id, permission_key) DO NOTHING;
+
+END;
+$$;
+
+COMMENT ON FUNCTION erp_seed_tenant_default_profiles(UUID, UUID) IS
+    'Seeds Facturador / Bodeguero / Contador access profiles for a given tenant. Idempotent. Emergency/psql tool — primary path: DefaultProfileSeeder.cs.';
+
+
+-- ============================================================================
+-- § 2  GRUPOS DE NAVEGACIÓN GLOBAL  (ui_nav_groups)
+-- ----------------------------------------------------------------------------
+-- Fallback global del menú de navegación: 9 grupos ordenados por sort_order.
+-- Los planes SaaS pueden sobrescribir esta estructura con menu_config_json
+-- personalizado (gestionado desde SuperAdmin → Planes → Menu Builder).
+-- ============================================================================
+
 INSERT INTO ui_nav_groups ("Id", code, icon, label_key, sort_order, module_key, require_superadmin_panel, is_active)
 VALUES
   (gen_random_uuid(), 'sales',     '🧾', 'app.nav.group.sales',     10, 'sales',     false, true),
@@ -17,7 +124,15 @@ VALUES
   (gen_random_uuid(), 'admin',     '🛡️', 'app.nav.group.admin',      90, 'admin',     false, true)
 ON CONFLICT (code) DO NOTHING;
 
--- ── Ventas ────────────────────────────────────────────────────────────────
+
+-- ============================================================================
+-- § 3  ÍTEMS DE NAVEGACIÓN GLOBAL  (ui_nav_items)
+-- ----------------------------------------------------------------------------
+-- 33 ítems distribuidos en los 9 grupos. Cada ítem referencia un group_id
+-- resuelto por código para evitar dependencias de UUID hardcodeados.
+-- ============================================================================
+
+-- ── Ventas (4 ítems) ─────────────────────────────────────────────────────────
 INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
 SELECT gen_random_uuid(), g."Id", v.route_path, v.label_key, v.display_label, v.sort_order::int, v.module_key, v.permission_key, true
 FROM ui_nav_groups g
@@ -30,7 +145,7 @@ CROSS JOIN (VALUES
 WHERE g.code = 'sales'
   AND NOT EXISTS (SELECT 1 FROM ui_nav_items i WHERE i.group_id = g."Id" AND i.route_path = v.route_path);
 
--- ── Compras ───────────────────────────────────────────────────────────────
+-- ── Compras (5 ítems) ────────────────────────────────────────────────────────
 INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
 SELECT gen_random_uuid(), g."Id", v.route_path, v.label_key, v.display_label, v.sort_order::int, v.module_key, v.permission_key, true
 FROM ui_nav_groups g
@@ -44,7 +159,7 @@ CROSS JOIN (VALUES
 WHERE g.code = 'purchases'
   AND NOT EXISTS (SELECT 1 FROM ui_nav_items i WHERE i.group_id = g."Id" AND i.route_path = v.route_path);
 
--- ── Inventario ────────────────────────────────────────────────────────────
+-- ── Inventario (11 ítems) ────────────────────────────────────────────────────
 INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
 SELECT gen_random_uuid(), g."Id", v.route_path, v.label_key, v.display_label, v.sort_order::int, v.module_key, v.permission_key, true
 FROM ui_nav_groups g
@@ -64,7 +179,7 @@ CROSS JOIN (VALUES
 WHERE g.code = 'inventory'
   AND NOT EXISTS (SELECT 1 FROM ui_nav_items i WHERE i.group_id = g."Id" AND i.route_path = v.route_path);
 
--- ── Logística ─────────────────────────────────────────────────────────────
+-- ── Logística (1 ítem) ───────────────────────────────────────────────────────
 INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
 SELECT gen_random_uuid(), g."Id", v.route_path, v.label_key, v.display_label, v.sort_order::int, v.module_key, v.permission_key, true
 FROM ui_nav_groups g
@@ -74,7 +189,7 @@ CROSS JOIN (VALUES
 WHERE g.code = 'logistics'
   AND NOT EXISTS (SELECT 1 FROM ui_nav_items i WHERE i.group_id = g."Id" AND i.route_path = v.route_path);
 
--- ── Caja y Bancos ─────────────────────────────────────────────────────────
+-- ── Caja y Bancos (1 ítem) ───────────────────────────────────────────────────
 INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
 SELECT gen_random_uuid(), g."Id", v.route_path, v.label_key, v.display_label, v.sort_order::int, v.module_key, v.permission_key, true
 FROM ui_nav_groups g
@@ -84,7 +199,7 @@ CROSS JOIN (VALUES
 WHERE g.code = 'cash'
   AND NOT EXISTS (SELECT 1 FROM ui_nav_items i WHERE i.group_id = g."Id" AND i.route_path = v.route_path);
 
--- ── Finanzas ──────────────────────────────────────────────────────────────
+-- ── Finanzas (2 ítems) ───────────────────────────────────────────────────────
 INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
 SELECT gen_random_uuid(), g."Id", v.route_path, v.label_key, v.display_label, v.sort_order::int, v.module_key, v.permission_key, true
 FROM ui_nav_groups g
@@ -95,7 +210,7 @@ CROSS JOIN (VALUES
 WHERE g.code = 'finance'
   AND NOT EXISTS (SELECT 1 FROM ui_nav_items i WHERE i.group_id = g."Id" AND i.route_path = v.route_path);
 
--- ── Gastos ────────────────────────────────────────────────────────────────
+-- ── Gastos (1 ítem) ──────────────────────────────────────────────────────────
 INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
 SELECT gen_random_uuid(), g."Id", v.route_path, v.label_key, v.display_label, v.sort_order::int, v.module_key, v.permission_key, true
 FROM ui_nav_groups g
@@ -105,7 +220,7 @@ CROSS JOIN (VALUES
 WHERE g.code = 'expenses'
   AND NOT EXISTS (SELECT 1 FROM ui_nav_items i WHERE i.group_id = g."Id" AND i.route_path = v.route_path);
 
--- ── Configuración ─────────────────────────────────────────────────────────
+-- ── Configuración (5 ítems) ──────────────────────────────────────────────────
 INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
 SELECT gen_random_uuid(), g."Id", v.route_path, v.label_key, v.display_label, v.sort_order::int, v.module_key, v.permission_key, true
 FROM ui_nav_groups g
@@ -119,7 +234,7 @@ CROSS JOIN (VALUES
 WHERE g.code = 'settings'
   AND NOT EXISTS (SELECT 1 FROM ui_nav_items i WHERE i.group_id = g."Id" AND i.route_path = v.route_path);
 
--- ── Administración ────────────────────────────────────────────────────────
+-- ── Administración (3 ítems) ─────────────────────────────────────────────────
 INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
 SELECT gen_random_uuid(), g."Id", v.route_path, v.label_key, v.display_label, v.sort_order::int, v.module_key, v.permission_key, true
 FROM ui_nav_groups g
