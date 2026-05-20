@@ -5,9 +5,9 @@ namespace ERP.Application.Common;
 
 /// <summary>
 /// Catálogo de claves de módulo y validación. La autoridad de módulos habilitados es
-/// <see cref="ITenantEntitlementsService"/> vía <see cref="ResolveEnabledModulesAsync"/>.
+/// <see cref="ISubscriberEntitlementsService"/> vía <see cref="ResolveEnabledModulesAsync"/>.
 /// </summary>
-public static class TenantSubscriptionCatalog
+public static class SubscriberSubscriptionCatalog
 {
     private static readonly IReadOnlyList<string> EmptyModules = Array.Empty<string>();
 
@@ -66,14 +66,14 @@ public static class TenantSubscriptionCatalog
     /// Sin suscripción activa → vacío (fail-closed).
     /// </summary>
     public static async Task<IReadOnlyList<string>> ResolveEnabledModulesAsync(
-        Guid tenantId,
-        ITenantEntitlementsService entitlements,
+        Guid subscriberId,
+        ISubscriberEntitlementsService entitlements,
         CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty)
+        if (subscriberId == Guid.Empty)
             return EmptyModules;
 
-        var modules = await entitlements.GetEnabledModuleKeysAsync(tenantId, ct);
+        var modules = await entitlements.GetEnabledModuleKeysAsync(subscriberId, ct);
         return modules is IReadOnlyList<string> list
             ? list
             : modules.ToList();
@@ -122,18 +122,18 @@ public static class TenantSubscriptionCatalog
     /// Gating por plan vía entitlements (SoT). Prefijos no comerciales → permitido.
     /// </summary>
     public static async Task<bool> TenantAllowsPermissionAsync(
-        Guid tenantId,
-        ITenantEntitlementsService entitlements,
+        Guid subscriberId,
+        ISubscriberEntitlementsService entitlements,
         string permissionKey,
         CancellationToken ct = default)
     {
         if (!TryGetModuleKeyForPermission(permissionKey, out var module))
             return true;
 
-        if (tenantId == Guid.Empty)
+        if (subscriberId == Guid.Empty)
             return true;
 
-        var enabled = await entitlements.GetEnabledModuleKeysAsync(tenantId, ct);
+        var enabled = await entitlements.GetEnabledModuleKeysAsync(subscriberId, ct);
         return IsModuleEnabled(enabled, module);
     }
 

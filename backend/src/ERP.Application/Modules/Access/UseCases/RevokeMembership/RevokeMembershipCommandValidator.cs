@@ -1,12 +1,12 @@
 using FluentValidation;
 
-namespace ERP.Application.Access.UseCases.RevokeMembership;
+namespace ERP.Application.Access.UseCases.RevokeCompanyUserMembership;
 
-public sealed class RevokeMembershipCommandValidator : AbstractValidator<RevokeMembershipCommand>
+public sealed class RevokeCompanyUserMembershipCommandValidator : AbstractValidator<RevokeCompanyUserMembershipCommand>
 {
-    public RevokeMembershipCommandValidator()
+    public RevokeCompanyUserMembershipCommandValidator()
     {
-        RuleFor(x => x.TenantId)
+        RuleFor(x => x.SubscriberId)
             .NotEmpty().WithMessage("El tenant es obligatorio.");
 
         RuleFor(x => x.UserEmail)

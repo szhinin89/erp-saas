@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.Services;
@@ -19,7 +19,7 @@ public sealed class GenerateIssuedRetentionCommandHandler
     private readonly ISriSettingsRepository        _configSriRepository;
     private readonly IRetentionSettingsRepository  _configRetencionRepository;
     private readonly IUserActivityRepository              _activity;
-    private readonly ICurrentTenant                       _currentTenant;
+    private readonly ICurrentSubscriber                       _currentSubscriber;
     private readonly ICurrentUser                         _currentUser;
     private readonly IUnitOfWork                          _unitOfWork;
     private readonly ILogger<GenerateIssuedRetentionCommandHandler> _logger;
@@ -29,7 +29,7 @@ public sealed class GenerateIssuedRetentionCommandHandler
         ISriSettingsRepository configSriRepository,
         IRetentionSettingsRepository configRetencionRepository,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
         ILogger<GenerateIssuedRetentionCommandHandler> logger)
@@ -38,7 +38,7 @@ public sealed class GenerateIssuedRetentionCommandHandler
         _configSriRepository       = configSriRepository;
         _configRetencionRepository = configRetencionRepository;
         _activity                  = activity;
-        _currentTenant             = currentTenant;
+        _currentSubscriber             = currentSubscriber;
         _currentUser               = currentUser;
         _unitOfWork                = unitOfWork;
         _logger                    = logger;
@@ -46,21 +46,21 @@ public sealed class GenerateIssuedRetentionCommandHandler
 
     public async Task<Result<Guid>> Handle(GenerateIssuedRetentionCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var compra = await _compraRepository.GetByIdAsync(tenantId, command.PurchBillId, ct);
+        var compra = await _compraRepository.GetByIdAsync(subscriberId, command.PurchBillId, ct);
         if (compra is null)
             return Result<Guid>.Failure("Compra no encontrada.");
         if (compra.Status != PurchaseStatus.Approved)
             return Result<Guid>.Failure("Solo se puede generar retención para una compra Aprobada.");
 
-        var configs = await _configRetencionRepository.GetActiveForSupplierAsync(tenantId, ct);
+        var configs = await _configRetencionRepository.GetActiveForSupplierAsync(subscriberId, ct);
         if (configs.Count == 0)
             return Result<Guid>.Failure(
                 "No hay tasas de retención activas para Supplier. Configure en Configuración de retenciones.");
 
-        var configSri = await _configSriRepository.GetByTenantIdAsync(tenantId, ct);
+        var configSri = await _configSriRepository.GetBySubscriberIdAsync(subscriberId, ct);
         if (configSri is null)
             return Result<Guid>.Failure("La configuración SRI no está configurada.");
 
@@ -76,7 +76,7 @@ public sealed class GenerateIssuedRetentionCommandHandler
                 configSri.EmPointCode, configSri.EmissionType, secuencial, fecha, "07");
 
             var ret = IssuedRetention.Create(
-                tenantId, compra.SupplierId, compra.Id, clave, fecha,
+                subscriberId, compra.SupplierId, compra.Id, clave, fecha,
                 configSri.EstabCode, configSri.EmPointCode, secuencial, userId);
 
             foreach (var cfg in configs)
@@ -98,7 +98,7 @@ public sealed class GenerateIssuedRetentionCommandHandler
                 if (valor <= 0) continue;
 
                 var det = PurchRetentionLine.Create(
-                    tenantId, cfg.TaxType, cfg.SriCode, @base, cfg.Percentage, valor,
+                    subscriberId, cfg.TaxType, cfg.SriCode, @base, cfg.Percentage, valor,
                     compra.InvoiceNumber, userId);
                 det.AssignRetentionId(ret.Id);
                 ret.AddLine(det);
@@ -112,7 +112,7 @@ public sealed class GenerateIssuedRetentionCommandHandler
 
             await _compraRepository.AddIssuedRetentionAsync(ret, ct);
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "compras", action: "compras.retencion.generar",
                 entityType: "IssuedRetention", entityId: ret.Id,
                 description: $"Retención borrador clave {clave}"), ct);

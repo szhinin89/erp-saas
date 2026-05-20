@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Branches.Entities;
 
-/// <summary>Sucursal del tenant. <c>id_empresa</c> del modelo legado = <see cref="BaseEntity.TenantId"/>.</summary>
+/// <summary>Sucursal del tenant. <c>id_empresa</c> del modelo legado = <see cref="BaseEntity.SubscriberId"/>.</summary>
 public sealed class Branch : MasterEntity
 {
     public string  Name            { get; private set; } = null!;
@@ -31,7 +31,7 @@ public sealed class Branch : MasterEntity
     private Branch() { }
 
     public static Branch Create(
-        Guid    tenantId,
+        Guid    subscriberId,
         string  name,
         string  address,
         string  code,
@@ -55,7 +55,7 @@ public sealed class Branch : MasterEntity
         var b = new Branch
         {
             Id              = Guid.NewGuid(),
-            TenantId        = tenantId,
+            SubscriberId        = subscriberId,
             Name            = name.Trim(),
             Address         = address.Trim(),
             Code            = code,

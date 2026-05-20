@@ -6,7 +6,7 @@ import type {
   MyPermissionsResponse,
   SessionMenuGroupDto,
   SessionResponse,
-  SwitchTenantRequest,
+  SwitchSubscriberRequest,
 } from '../types/access';
 
 export const accessService = {
@@ -15,8 +15,8 @@ export const accessService = {
     return data.responseObject;
   },
 
-  async switchTenant(bootstrapToken: string, req: SwitchTenantRequest) {
-    const { data } = await api.post<ApiResponse<SessionResponse>>('/api/admin/iam/switch-tenant', req, {
+  async switchTenant(bootstrapToken: string, req: SwitchSubscriberRequest) {
+    const { data } = await api.post<ApiResponse<SessionResponse>>('/api/admin/iam/switch-subscriber', req, {
       headers: { Authorization: `Bearer ${bootstrapToken}` },
     });
     return data.responseObject;

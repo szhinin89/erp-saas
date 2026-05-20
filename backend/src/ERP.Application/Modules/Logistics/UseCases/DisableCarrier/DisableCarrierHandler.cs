@@ -9,18 +9,18 @@ namespace ERP.Application.Modules.Logistics.UseCases.DisableCarrier;
 public class DisableCarrierHandler : IRequestHandler<DisableCarrierCommand, Result<CarrierDto>>
 {
     private readonly ICarrierRepository _repo;
-    private readonly ICurrentTenant     _currentTenant;
+    private readonly ICurrentSubscriber     _currentSubscriber;
     private readonly ICurrentUser       _currentUser;
 
-    public DisableCarrierHandler(ICarrierRepository repo, ICurrentTenant currentTenant, ICurrentUser currentUser)
+    public DisableCarrierHandler(ICarrierRepository repo, ICurrentSubscriber currentSubscriber, ICurrentUser currentUser)
     {
-        _repo = repo; _currentTenant = currentTenant; _currentUser = currentUser;
+        _repo = repo; _currentSubscriber = currentSubscriber; _currentUser = currentUser;
     }
 
     public async Task<Result<CarrierDto>> Handle(DisableCarrierCommand command, CancellationToken ct)
     {
         var carrier = await _repo.GetByIdAsync(command.CarrierId, ct);
-        if (carrier is null || carrier.TenantId != _currentTenant.TenantId)
+        if (carrier is null || carrier.SubscriberId != _currentSubscriber.SubscriberId)
             return Result<CarrierDto>.Failure("Carrier not found.");
 
         carrier.Disable(_currentUser.UserId);
@@ -35,18 +35,18 @@ public class DisableCarrierHandler : IRequestHandler<DisableCarrierCommand, Resu
 public class EnableCarrierHandler : IRequestHandler<EnableCarrierCommand, Result<CarrierDto>>
 {
     private readonly ICarrierRepository _repo;
-    private readonly ICurrentTenant     _currentTenant;
+    private readonly ICurrentSubscriber     _currentSubscriber;
     private readonly ICurrentUser       _currentUser;
 
-    public EnableCarrierHandler(ICarrierRepository repo, ICurrentTenant currentTenant, ICurrentUser currentUser)
+    public EnableCarrierHandler(ICarrierRepository repo, ICurrentSubscriber currentSubscriber, ICurrentUser currentUser)
     {
-        _repo = repo; _currentTenant = currentTenant; _currentUser = currentUser;
+        _repo = repo; _currentSubscriber = currentSubscriber; _currentUser = currentUser;
     }
 
     public async Task<Result<CarrierDto>> Handle(EnableCarrierCommand command, CancellationToken ct)
     {
         var carrier = await _repo.GetByIdAsync(command.CarrierId, ct);
-        if (carrier is null || carrier.TenantId != _currentTenant.TenantId)
+        if (carrier is null || carrier.SubscriberId != _currentSubscriber.SubscriberId)
             return Result<CarrierDto>.Failure("Carrier not found.");
 
         carrier.Enable(_currentUser.UserId);

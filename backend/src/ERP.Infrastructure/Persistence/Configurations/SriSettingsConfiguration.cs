@@ -10,8 +10,8 @@ public sealed class SriSettingsConfiguration : IEntityTypeConfiguration<SriSetti
     {
         builder.ToTable("sri_settings");
 
-        builder.HasKey(e => e.TenantId);
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.HasKey(e => e.SubscriberId);
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.Ruc).HasColumnName("ruc").HasMaxLength(SriSettings.RucMaxLen).IsRequired();
         builder.Property(e => e.LegalName).HasColumnName("legal_name").HasMaxLength(SriSettings.LegalNameMaxLen).IsRequired();
         builder.Property(e => e.TradeName).HasColumnName("trade_name").HasMaxLength(SriSettings.TradeNameMaxLen);

@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Products.DTOs;
 using ERP.Domain.Products.Entities;
@@ -11,48 +11,48 @@ public class UpdateProductHandler : IRequestHandler<UpdateProductCommand, Result
 {
     private readonly IProductRepository _repository;
     private readonly ITaxRateRepository _taxRates;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public UpdateProductHandler(
         IProductRepository repository,
         ITaxRateRepository taxRates,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repository    = repository;
         _taxRates      = taxRates;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
     }
 
     public async Task<Result<ProductDto>> Handle(UpdateProductCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
         if (command.AppliesVatOnSale && command.SaleTaxId is not null)
         {
-            var tax = await _taxRates.GetByIdAsync(command.SaleTaxId.Value, tenantId, ct);
+            var tax = await _taxRates.GetByIdAsync(command.SaleTaxId.Value, subscriberId, ct);
             if (tax is null || !tax.IsActive || tax.Type != TaxRateType.VAT)
                 return Result<ProductDto>.Failure("La tarifa de IVA (venta) no es válida o no está vigente.");
         }
 
         if (command.AppliesVatOnPurchase && command.PurchaseTaxId is not null)
         {
-            var tax = await _taxRates.GetByIdAsync(command.PurchaseTaxId.Value, tenantId, ct);
+            var tax = await _taxRates.GetByIdAsync(command.PurchaseTaxId.Value, subscriberId, ct);
             if (tax is null || !tax.IsActive || tax.Type != TaxRateType.VAT)
                 return Result<ProductDto>.Failure("La tarifa de IVA (compra) no es válida o no está vigente.");
         }
 
         if (command.AppliesExciseTax && command.ExciseTaxId is not null)
         {
-            var tax = await _taxRates.GetByIdAsync(command.ExciseTaxId.Value, tenantId, ct);
+            var tax = await _taxRates.GetByIdAsync(command.ExciseTaxId.Value, subscriberId, ct);
             if (tax is null || !tax.IsActive || tax.Type != TaxRateType.Excise)
                 return Result<ProductDto>.Failure("La tarifa de ICE no es válida o no está vigente.");
         }
 
-        var product = await _repository.GetByIdAsync(command.Id, tenantId, ct);
+        var product = await _repository.GetByIdAsync(command.Id, subscriberId, ct);
         if (product is null)
             return Result<ProductDto>.Failure("Producto no encontrado.");
 

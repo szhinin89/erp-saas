@@ -4,11 +4,11 @@ namespace ERP.Application.Common.Interfaces;
 /// Orchestrates all default data creation when a new tenant/company is registered.
 ///
 /// Called automatically by:
-///   - <c>SuperAdminCreateTenantWithAdminHandler</c>
-///   - <c>RegisterTenantWithAdminHandler</c>
+///   - <c>SuperAdminCreateSubscriberWithAdminHandler</c>
+///   - <c>RegisterSubscriberWithAdminHandler</c>
 ///
 /// Add new onboarding steps by adding a private method to
-/// <c>ERP.Infrastructure.Seeding.TenantOnboardingService</c>
+/// <c>ERP.Infrastructure.Seeding.SubscriberOnboardingService</c>
 /// and calling it from <see cref="OnboardAsync"/>.
 ///
 /// Current steps (in order):
@@ -17,11 +17,11 @@ namespace ERP.Application.Common.Interfaces;
 ///   3. Main branch              — Sucursal Principal
 ///   4. Main warehouse           — Bodega Principal (linked to main branch)
 /// </summary>
-public interface ITenantOnboardingService
+public interface ISubscriberOnboardingService
 {
     /// <summary>
-    /// Runs all onboarding steps for <paramref name="tenantId"/>.
+    /// Runs all onboarding steps for <paramref name="subscriberId"/>.
     /// Every step is idempotent — safe to call on an already-onboarded tenant.
     /// </summary>
-    Task OnboardAsync(Guid tenantId, Guid actorId, CancellationToken ct = default);
+    Task OnboardAsync(Guid subscriberId, Guid actorId, CancellationToken ct = default);
 }

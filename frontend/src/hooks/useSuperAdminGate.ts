@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { GLOBAL_TENANT_ID } from '../constants/tenantIds';
+import { GLOBAL_SUBSCRIBER_ID } from '../constants/subscriberIds';
 
 /** Estado de acceso a rutas / funciones solo SuperAdmin. */
 export function useSuperAdminGate() {
@@ -8,8 +8,8 @@ export function useSuperAdminGate() {
 
   return useMemo(() => {
     const isSuperAdmin = user?.role === 'SuperAdmin';
-    const tenantId = user?.tenantId ?? '';
-    const hasSelectedTenant = Boolean(tenantId && tenantId !== GLOBAL_TENANT_ID);
-    return { user, isSuperAdmin, hasSelectedTenant };
+    const subscriberId = user?.subscriberId ?? '';
+    const hasSelectedSubscriber = Boolean(subscriberId && subscriberId !== GLOBAL_SUBSCRIBER_ID);
+    return { user, isSuperAdmin, hasSelectedSubscriber };
   }, [user]);
 }

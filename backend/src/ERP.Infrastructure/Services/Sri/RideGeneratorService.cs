@@ -49,7 +49,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
             .FirstOrDefaultAsync(f => f.Id == salesBillId, ct)
             ?? throw new KeyNotFoundException($"Factura {salesBillId} no encontrada.");
 
-        var cfg      = await LoadBillingSettings(factura.TenantId, ct);
+        var cfg      = await LoadBillingSettings(factura.SubscriberId, ct);
         var esPrueba = IsAmbientePrueba(factura.AccessKey);
 
         _logger.LogDebug("[RIDE] Generando PDF factura {Id} ({Doc})", factura.Id, factura.AccessKey);
@@ -66,7 +66,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
             .FirstOrDefaultAsync(n => n.Id == salesNoteId, ct)
             ?? throw new KeyNotFoundException($"Nota {salesNoteId} no encontrada.");
 
-        var cfg      = await LoadBillingSettings(nota.TenantId, ct);
+        var cfg      = await LoadBillingSettings(nota.SubscriberId, ct);
         var esPrueba = IsAmbientePrueba(nota.AccessKey);
 
         _logger.LogDebug("[RIDE] Generando PDF nota {Id} ({Doc})", nota.Id, nota.AccessKey);
@@ -495,12 +495,12 @@ public sealed class RideGeneratorService : IRideGeneratorService
             .Select(i => key.Substring(i * 10, Math.Min(10, key.Length - i * 10))));
     }
 
-    private async Task<BillingSettings> LoadBillingSettings(Guid tenantId, CancellationToken ct)
+    private async Task<BillingSettings> LoadBillingSettings(Guid subscriberId, CancellationToken ct)
     {
         var cfg = await _db.Set<BillingSettings>()
             .AsNoTracking()
-            .FirstOrDefaultAsync(c => c.TenantId == tenantId, ct);
+            .FirstOrDefaultAsync(c => c.SubscriberId == subscriberId, ct);
 
-        return cfg ?? BillingSettings.CreateDefault(tenantId, Guid.Empty);
+        return cfg ?? BillingSettings.CreateDefault(subscriberId, Guid.Empty);
     }
 }

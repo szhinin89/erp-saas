@@ -8,12 +8,12 @@ namespace ERP.Application.Modules.Accounting.UseCases.GetAccountById;
 public class GetAccountByIdHandler : IRequestHandler<GetAccountByIdQuery, Result<AccountDto>>
 {
     private readonly IAccountingRepository _repository;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
-    public GetAccountByIdHandler(IAccountingRepository repository, ICurrentTenant currentTenant)
+    public GetAccountByIdHandler(IAccountingRepository repository, ICurrentSubscriber currentSubscriber)
     {
         _repository    = repository;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public Task<Result<AccountDto>> HandleAsync(Guid id, CancellationToken ct = default)
@@ -21,8 +21,8 @@ public class GetAccountByIdHandler : IRequestHandler<GetAccountByIdQuery, Result
 
     public async Task<Result<AccountDto>> Handle(GetAccountByIdQuery request, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
-        var account  = await _repository.GetByIdAsync(request.Id, tenantId, ct);
+        var subscriberId = _currentSubscriber.SubscriberId;
+        var account  = await _repository.GetByIdAsync(request.Id, subscriberId, ct);
 
         if (account is null)
             return Result<AccountDto>.Failure("Cuenta no encontrada.");

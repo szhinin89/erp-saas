@@ -1,7 +1,7 @@
 namespace ERP.Application.Access.DTOs;
 
-public record AccessibleTenantDto(
-    Guid TenantId,
+public record AccessibleSubscriberDto(
+    Guid SubscriberId,
     string Name,
     string Slug,
     string Role
@@ -12,21 +12,23 @@ public record BootstrapLoginResponseDto(
     string FullName,
     string Email,
     string BootstrapToken,
-    IReadOnlyList<AccessibleTenantDto> Tenants
+    IReadOnlyList<AccessibleSubscriberDto> Tenants
 );
 
 public record SessionResponseDto(
     Guid UserId,
     string FullName,
     string Email,
-    Guid TenantId,
+    Guid SubscriberId,
     string Role,
     string Token,
     string? PlanCode,
-    IReadOnlyList<string> EnabledModules
-);
+    IReadOnlyList<string> EnabledModules)
+{
+    public Guid? CompanyId { get; init; }
+}
 
-public record SuperAdminTenantItemDto(
+public record SuperAdminSubscriberItemDto(
     Guid Id,
     string Name,
     string Slug,

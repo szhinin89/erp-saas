@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Application.Common;
@@ -15,12 +15,12 @@ public sealed class GetFlujoEfectivoRealQueryHandler
 {
     private readonly ICashRepository _caja;
     private readonly IAccountingRepository _accounting;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
 
     public GetFlujoEfectivoRealQueryHandler(
         ICashRepository caja,
         IAccountingRepository accounting,
-        ICurrentTenant tenant)
+        ICurrentSubscriber tenant)
     {
         _caja        = caja;
         _accounting = accounting;
@@ -52,7 +52,7 @@ public sealed class GetFlujoEfectivoRealQueryHandler
         }
 
         var lines = await _accounting.GetPostedLineAmountsByAccountsAsync(
-            _tenant.TenantId,
+            _tenant.SubscriberId,
             ids.ToList(),
             request.DateFrom,
             request.DateTo,

@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -13,13 +13,13 @@ public sealed class EnableWarehouseCommandHandler
 {
     private readonly IWarehouseRepository       _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _tenant;
+    private readonly ICurrentSubscriber          _tenant;
     private readonly ICurrentUser            _user;
 
     public EnableWarehouseCommandHandler(
         IWarehouseRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user)
     {
         _repo     = repo;
@@ -30,17 +30,17 @@ public sealed class EnableWarehouseCommandHandler
 
     public async Task<Result<WarehouseDto>> Handle(EnableWarehouseCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
-        var Warehouse = await _repo.GetByIdAsync(tenantId, command.Id, ct);
+        var Warehouse = await _repo.GetByIdAsync(subscriberId, command.Id, ct);
         if (Warehouse is null) return Result<WarehouseDto>.Failure("Warehouse no encontrada.");
         if (Warehouse.IsActive) return Result<WarehouseDto>.Failure("La Warehouse ya está activa.");
 
         Warehouse.Enable(userId);
 
         await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _user.Email, _user.FullName,
+            subscriberId, userId, _user.Email, _user.FullName,
             module: "inventario", action: "Warehouse.enable",
             entityType: "Warehouse", entityId: Warehouse.Id,
             description: Warehouse.Name), ct);

@@ -15,12 +15,12 @@ public sealed class ConfigGlobal : AuditableEntity
 
     private ConfigGlobal() { }
 
-    public static ConfigGlobal Create(Guid tenantId, string key, string value, string dataType, Guid userId)
+    public static ConfigGlobal Create(Guid subscriberId, string key, string value, string dataType, Guid userId)
     {
         var row = new ConfigGlobal
         {
             Id = Guid.NewGuid(),
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             Key = NormalizeKey(key),
             Value = NormalizeValue(value),
             DataType = NormalizeDataType(dataType),

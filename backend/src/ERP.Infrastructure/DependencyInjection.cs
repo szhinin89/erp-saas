@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.Application.Common;
@@ -7,7 +7,8 @@ using ERP.Domain.Modules.Logistics.Interfaces;
 using ERP.Domain.Products.Interfaces;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Application.Common.Interfaces;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Subscribers.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Security.Interfaces;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Branches.Interfaces;
@@ -22,7 +23,10 @@ using ERP.Domain.Configuration.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Cash.Interfaces;
+using ERP.Application.Access.Caching;
 using ERP.Application.Subscriptions;
+using ERP.Application.Subscriptions.Caching;
+using ERP.Infrastructure.Access.Caching;
 using ERP.Domain.Subscriptions.Interfaces;
 using ERP.Application.Navigation;
 using ERP.Application.Admin;
@@ -32,7 +36,17 @@ using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Persistence.Saas;
 using ERP.Infrastructure.Security;
+using ERP.Application.Billing.Governance;
+using ERP.Application.Billing.PaymentProviders;
+using ERP.Application.Common;
+using ERP.Application.Subscriptions.Caching;
+using ERP.Application.Subscriptions.CommercialPlanLimits;
+using ERP.Domain.Billing.Interfaces;
+using ERP.Infrastructure.Persistence.Interceptors;
+using ERP.Infrastructure.Persistence.Repositories;
 using ERP.Infrastructure.Services;
+using ERP.Infrastructure.Services.CommercialLimitUsage;
+using ERP.Infrastructure.Subscriptions.Caching;
 using ERP.Infrastructure.Services.Cash;
 using ERP.Infrastructure.Seeding;
 using ERP.Infrastructure.Seeding.InstallData;
@@ -56,10 +70,12 @@ public static class DependencyInjection
         services.Configure<DocumentSchemaOptions>(configuration.GetSection(DocumentSchemaOptions.SectionName));
         services.AddScoped<IInstallDataBootstrapService, InstallDataBootstrapService>();
 
-        services.AddDbContext<ErpDbContext>(options =>
+        services.AddScoped<PostgreSqlSessionContextInterceptor>();
+        services.AddDbContext<ErpDbContext>((sp, options) =>
             options.UseNpgsql(
-                configuration.GetConnectionString("DefaultConnection"),
-                b => b.MigrationsAssembly(typeof(ErpDbContext).Assembly.FullName)));
+                    configuration.GetConnectionString("DefaultConnection"),
+                    b => b.MigrationsAssembly(typeof(ErpDbContext).Assembly.FullName))
+                .AddInterceptors(sp.GetRequiredService<PostgreSqlSessionContextInterceptor>()));
 
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
@@ -69,8 +85,15 @@ public static class DependencyInjection
         services.AddScoped<IUnifiedDocumentSync, UnifiedDocumentSync>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IPlatformQueryAccessor, PlatformQueryAccessor>();
-        services.AddScoped<ITenantSubscriptionOverridesService, TenantSubscriptionOverridesService>();
-        services.AddScoped<ICurrentTenant, CurrentTenantService>();
+        services.AddScoped<ISubscriptionFeatureOverridesService, SubscriptionFeatureOverridesService>();
+        services.AddScoped<ICurrentSubscriber, CurrentSubscriberService>();
+        services.AddScoped<ISessionContext, HttpSessionContext>();
+        services.AddScoped<IDbSessionContextApplicator, DbSessionContextApplicator>();
+        services.AddScoped<ICurrentCompany, CurrentCompanyService>();
+        services.AddScoped<ICompanyContextResolver, CompanyContextResolver>();
+        services.AddScoped<ICompanyProvisioningService, CompanyProvisioningService>();
+        services.AddScoped<ERP.Application.Modules.Platform.Companies.ICompanyAccessGuard, CompanyAccessGuard>();
+        services.AddScoped<ICompanyRepository, CompanyRepository>();
         services.AddScoped<ICurrentUser, CurrentUserService>();
         services.AddScoped<IAccountingRepository, AccountingRepository>();
         services.AddScoped<IAccountingSetupRepository, ConfiguracionContableRepository>();
@@ -82,7 +105,7 @@ public static class DependencyInjection
         services.AddScoped<IAccessRepository, AccessRepository>();
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IAccessTokenService, AccessTokenService>();
-        services.AddScoped<ITenantRepository, TenantRepository>();
+        services.AddScoped<ISubscriberRepository, SubscriberRepository>();
         services.AddScoped<ISecurityRepository, SecurityRepository>();
         services.AddScoped<IBranchRepository, BranchRepository>();
         services.AddScoped<IGeographyReadRepository, GeographyReadRepository>();
@@ -131,16 +154,31 @@ public static class DependencyInjection
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
         services.AddScoped<IAccountingService, AccountingService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
-        services.AddScoped<ITenantEntitlementsService, TenantEntitlementsService>();
-        services.AddScoped<SaasCatalogQuery>();
-        services.AddScoped<ISaasCatalogQuery>(sp => sp.GetRequiredService<SaasCatalogQuery>());
-        services.AddScoped<ISaasPublicPlansQuery>(sp => sp.GetRequiredService<SaasCatalogQuery>());
-        services.AddScoped<ISaasPlansAdminService, SaasPlansAdminService>();
+        services.AddScoped<ICommercialLimitUsageProvider, MaxCompaniesLimitUsageProvider>();
+        services.AddScoped<ICommercialLimitUsageProvider, MaxUsersLimitUsageProvider>();
+        services.AddScoped<ICommercialLimitUsageProvider, MaxBranchesLimitUsageProvider>();
+        services.AddScoped<ICommercialLimitUsageProvider, MaxWarehousesLimitUsageProvider>();
+        services.AddScoped<ICommercialPlanLimitService, CommercialPlanLimitService>();
+        services.AddScoped<ISubscriberBillingRepository, SubscriberBillingRepository>();
+        services.AddScoped<IBillingGovernanceService, BillingGovernanceService>();
+        services.AddScoped<IPaymentProviderAdapter, NullPaymentProviderAdapter>();
+        services.AddScoped<ISubscriberEntitlementsSnapshotCache, DistributedSubscriberEntitlementsSnapshotCache>();
+        services.AddScoped<ISubscriberEntitlementsCacheInvalidator>(sp =>
+            sp.GetRequiredService<DistributedSubscriberEntitlementsSnapshotCache>());
+        services.AddScoped<IEntitlementsCacheService, EntitlementsCacheService>();
+        services.AddScoped<IPermissionsCacheService, DistributedPermissionsCacheService>();
+        services.Configure<SaasEntitlementsCacheOptions>(
+            configuration.GetSection(SaasEntitlementsCacheOptions.SectionName));
+        services.AddScoped<ISubscriberEntitlementsService, SubscriberEntitlementsService>();
+        services.AddScoped<CommercialCatalogQuery>();
+        services.AddScoped<ICommercialCatalogQuery>(sp => sp.GetRequiredService<CommercialCatalogQuery>());
+        services.AddScoped<ISaasPublicPlansQuery>(sp => sp.GetRequiredService<CommercialCatalogQuery>());
+        services.AddScoped<ICommercialPlansAdminService, CommercialPlansAdminService>();
         services.AddScoped<IConfigService, ConfigService>();
         services.AddScoped<INavigationMenuReader, NavigationMenuReader>();
-        services.AddScoped<TenantMenuService>();
-        services.AddScoped<ITenantSessionMenuResolver>(sp => sp.GetRequiredService<TenantMenuService>());
-        services.AddScoped<ITenantMenuAdminService>(sp => sp.GetRequiredService<TenantMenuService>());
+        services.AddScoped<SubscriberMenuService>();
+        services.AddScoped<ITenantSessionMenuResolver>(sp => sp.GetRequiredService<SubscriberMenuService>());
+        services.AddScoped<ISubscriberMenuAdminService>(sp => sp.GetRequiredService<SubscriberMenuService>());
         services.AddScoped<INavigationMenuAdminService, NavigationMenuAdminService>();
         services.AddScoped<IGrowthAnalyticsReader, GrowthAnalyticsReader>();
         services.AddScoped<IBillingSettingsRepository, BillingSettingsRepository>();
@@ -152,7 +190,7 @@ public static class DependencyInjection
         services.AddScoped<IStatementParser, BankStatementCsvParser>();
         services.AddScoped<ICarrierRepository, CarrierRepository>();
         services.AddScoped<IDefaultProfileSeeder, DefaultProfileSeeder>();
-        services.AddScoped<ITenantOnboardingService, TenantOnboardingService>();
+        services.AddScoped<ISubscriberOnboardingService, SubscriberOnboardingService>();
 
         return services;
     }

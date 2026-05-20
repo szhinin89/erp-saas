@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
@@ -13,25 +13,25 @@ public sealed class StockTransferRepository : IStockTransferRepository
     public Task AddAsync(StockTransfer StockTransfer, CancellationToken ct = default)
         => _context.StockTransfers.AddAsync(StockTransfer, ct).AsTask();
 
-    public Task<StockTransfer?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+    public Task<StockTransfer?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
         => _context.StockTransfers
             .Include(t => t.SourceWarehouse)
             .Include(t => t.TargetWarehouse)
             .Include(t => t.Lines)
-            .FirstOrDefaultAsync(t => t.TenantId == tenantId && t.Id == id, ct);
+            .FirstOrDefaultAsync(t => t.SubscriberId == subscriberId && t.Id == id, ct);
 
-    public async Task<int> GetNextSequentialAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<int> GetNextSequentialAsync(Guid subscriberId, CancellationToken ct = default)
     {
         // MaxAsync on empty sequence throws; use nullable Max then coalesce.
         // Also compatible with EF InMemory (DefaultIfEmpty+MaxAsync not translatable there).
         var max = await _context.StockTransfers
-            .Where(t => t.TenantId == tenantId)
+            .Where(t => t.SubscriberId == subscriberId)
             .MaxAsync(t => (int?)t.Sequential, ct);
         return (max ?? 0) + 1;
     }
 
     public async Task<(IReadOnlyList<StockTransfer> Items, int TotalCount)> GetPagedAsync(
-        Guid      tenantId,
+        Guid      subscriberId,
         int       pageNumber,
         int       pageSize,
         Guid?     WarehouseOrigenId,
@@ -44,7 +44,7 @@ public sealed class StockTransferRepository : IStockTransferRepository
         var query = _context.StockTransfers
             .Include(t => t.SourceWarehouse)
             .Include(t => t.TargetWarehouse)
-            .Where(t => t.TenantId == tenantId);
+            .Where(t => t.SubscriberId == subscriberId);
 
         if (WarehouseOrigenId.HasValue)
             query = query.Where(t => t.SourceWarehouseId == WarehouseOrigenId.Value);

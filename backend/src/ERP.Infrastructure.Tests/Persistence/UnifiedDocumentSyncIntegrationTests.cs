@@ -23,7 +23,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
     private const string ConnectionString =
         "Host=localhost;Port=5435;Database=dberpsaas;Username=postgres;Password=zhin@2024";
 
-    internal static readonly Guid TenantId = Guid.Parse("f69a1f0e-3b1d-4ecd-9bb1-5b3e290bfb83");
+    internal static readonly Guid SubscriberId = Guid.Parse("f69a1f0e-3b1d-4ecd-9bb1-5b3e290bfb83");
     internal static readonly Guid CustomerId = Guid.Parse("d4aea039-787d-4433-9081-16e9108ef11d");
     internal static readonly Guid BranchId = Guid.Parse("e24d1d82-46b9-40bb-a11f-89ac524f9597");
     internal static readonly Guid WarehouseId = Guid.Parse("c2b21669-67f5-4b60-83a2-b27a94f21f2d");
@@ -44,8 +44,8 @@ public sealed class UnifiedDocumentSyncIntegrationTests
 
     private static ErpDbContext CreateContext()
     {
-        var tenant = new Mock<ICurrentTenant>();
-        tenant.Setup(t => t.TenantId).Returns(TenantId);
+        var tenant = new Mock<ICurrentSubscriber>();
+        tenant.Setup(t => t.SubscriberId).Returns(SubscriberId);
         return TestErpDbContextFactory.Create(
             new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(ConnectionString).Options,
             tenant.Object,
@@ -54,11 +54,11 @@ public sealed class UnifiedDocumentSyncIntegrationTests
 
     private static ServiceProvider BuildServices(bool useUnified)
     {
-        var tenant = new Mock<ICurrentTenant>();
-        tenant.Setup(t => t.TenantId).Returns(TenantId);
+        var tenant = new Mock<ICurrentSubscriber>();
+        tenant.Setup(t => t.SubscriberId).Returns(SubscriberId);
 
         var services = new ServiceCollection();
-        services.AddSingleton<ICurrentTenant>(tenant.Object);
+        services.AddSingleton<ICurrentSubscriber>(tenant.Object);
         services.AddSingleton(Mock.Of<IPublisher>());
         services.Configure<SaasEntitlementsOptions>(_ => { });
         services.AddScoped<IPlatformQueryAccessor, PlatformQueryAccessor>();
@@ -84,7 +84,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         var suffix = Guid.NewGuid().ToString("N")[..9];
         var bill = BuildBill(suffix);
         var line = SalesBillLine.Create(
-            TenantId, Guid.NewGuid(), "TEST-001", 1m, 100m, 0m,
+            SubscriberId, Guid.NewGuid(), "TEST-001", 1m, 100m, 0m,
             "4", 15m, 15m, "Línea prueba sync", UserId);
         bill.AddLine(line);
 
@@ -127,7 +127,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         var suffix = Guid.NewGuid().ToString("N")[..9];
         var bill = BuildBill(suffix);
         bill.AddLine(SalesBillLine.Create(
-            TenantId, Guid.NewGuid(), "TEST-002", 2m, 50m, 0m,
+            SubscriberId, Guid.NewGuid(), "TEST-002", 2m, 50m, 0m,
             "0", 0m, 0m, "Línea sin IVA", UserId));
 
         Guid billId = bill.Id;
@@ -136,7 +136,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
             await repo.AddBillAsync(bill);
             await repo.SaveChangesAsync();
 
-            var loaded = await repo.GetBillByIdAsync(TenantId, billId);
+            var loaded = await repo.GetBillByIdAsync(SubscriberId, billId);
             loaded.Should().NotBeNull();
             loaded!.Validate(UserId);
             await repo.SaveChangesAsync();
@@ -166,7 +166,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         var suffix = Guid.NewGuid().ToString("N")[..9];
         var bill = BuildBill(suffix);
         bill.AddLine(SalesBillLine.Create(
-            TenantId, Guid.NewGuid(), "TEST-003", 1m, 10m, 0m,
+            SubscriberId, Guid.NewGuid(), "TEST-003", 1m, 10m, 0m,
             "4", 15m, 1.5m, "Mini", UserId));
 
         Guid billId = bill.Id;
@@ -175,7 +175,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
             await repo.AddBillAsync(bill);
             await repo.SaveChangesAsync();
 
-            var loaded = await repo.GetBillByIdAsync(TenantId, billId);
+            var loaded = await repo.GetBillByIdAsync(SubscriberId, billId);
             loaded!.Validate(UserId);
             loaded.Authorize(
                 UserId,
@@ -218,7 +218,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         var suffix = Guid.NewGuid().ToString("N")[..9];
         var bill = BuildBill(suffix);
         bill.AddLine(SalesBillLine.Create(
-            TenantId, Guid.NewGuid(), "RET-001", 1m, 100m, 0m,
+            SubscriberId, Guid.NewGuid(), "RET-001", 1m, 100m, 0m,
             "4", 15m, 15m, "Base retención", UserId));
 
         Guid billId = bill.Id;
@@ -227,16 +227,16 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         {
             await repo.AddBillAsync(bill);
             await repo.SaveChangesAsync();
-            bill = (await repo.GetBillByIdAsync(TenantId, billId))!;
+            bill = (await repo.GetBillByIdAsync(SubscriberId, billId))!;
             bill.Validate(UserId);
             bill.Authorize(UserId, "999", DateTime.UtcNow, null, null, Guid.NewGuid());
             await repo.SaveChangesAsync();
 
             var clave = new string('8', 49);
             var retention = SalesRetention.Create(
-                TenantId, CustomerId, clave, DateTime.UtcNow.Date, 15m, billId, "/xml/ret.xml", UserId);
+                SubscriberId, CustomerId, clave, DateTime.UtcNow.Date, 15m, billId, "/xml/ret.xml", UserId);
             var line = SalesRetentionLine.Create(
-                TenantId, "IVA", "303", 100m, 15m, 15m, UserId);
+                SubscriberId, "IVA", "303", 100m, 15m, 15m, UserId);
             line.AssignRetentionId(retention.Id);
             retention.AddLine(line);
             retentionId = retention.Id;
@@ -287,7 +287,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         var suffix = Guid.NewGuid().ToString("N")[..9];
         var bill = BuildBill(suffix);
         bill.AddLine(SalesBillLine.Create(
-            TenantId, Guid.NewGuid(), "TEST-004", 1m, 10m, 0m,
+            SubscriberId, Guid.NewGuid(), "TEST-004", 1m, 10m, 0m,
             "0", 0m, 0m, "Rechazo", UserId));
 
         Guid billId = bill.Id;
@@ -296,7 +296,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
             await repo.AddBillAsync(bill);
             await repo.SaveChangesAsync();
 
-            var loaded = await repo.GetBillByIdAsync(TenantId, billId);
+            var loaded = await repo.GetBillByIdAsync(SubscriberId, billId);
             loaded!.Validate(UserId);
             loaded.Reject(UserId, "Error SRI simulado");
             await repo.SaveChangesAsync();
@@ -321,7 +321,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
     {
         var accessKey = new string('9', 49);
         return SalesBill.Create(
-            TenantId,
+            SubscriberId,
             BranchId,
             CustomerId,
             WarehouseId,

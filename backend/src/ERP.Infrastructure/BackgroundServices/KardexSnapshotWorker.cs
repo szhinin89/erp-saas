@@ -6,7 +6,7 @@ using ERP.Infrastructure.Services;
 namespace ERP.Infrastructure.BackgroundServices;
 
 /// <summary>
-/// Worker nocturno que genera snapshots diarios del kardex para todos los tenants.
+/// Worker nocturno que genera snapshots diarios del kardex para todos los subscribers.
 /// Se activa cada día a medianoche UTC y delega el cálculo a <see cref="KardexSnapshotService"/>.
 /// </summary>
 public sealed class KardexSnapshotWorker : BackgroundService

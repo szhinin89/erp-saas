@@ -17,12 +17,12 @@ public sealed class ConfigModule : AuditableEntity
 
     private ConfigModule() { }
 
-    public static ConfigModule Create(Guid tenantId, string module, string key, string value, string dataType, Guid userId)
+    public static ConfigModule Create(Guid subscriberId, string module, string key, string value, string dataType, Guid userId)
     {
         var row = new ConfigModule
         {
             Id = Guid.NewGuid(),
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             Module = NormalizeScope(module),
             Key = NormalizeKey(key),
             Value = NormalizeValue(value),

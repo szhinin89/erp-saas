@@ -16,14 +16,14 @@ public class ProductUnitConversion : BaseEntity
     private ProductUnitConversion() { }
 
     internal static ProductUnitConversion Create(
-        Guid productId, Guid tenantId, Guid alternateUnitId, decimal factor)
+        Guid productId, Guid subscriberId, Guid alternateUnitId, decimal factor)
     {
         if (factor <= 0)
             throw new ArgumentException("El factor de conversión debe ser positivo.");
         return new()
         {
             Id                = Guid.NewGuid(),
-            TenantId          = tenantId,
+            SubscriberId          = subscriberId,
             ProductId         = productId,
             AlternateUnitId   = alternateUnitId,
             ConversionFactor  = factor,

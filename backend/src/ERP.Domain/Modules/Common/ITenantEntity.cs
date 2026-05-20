@@ -1,6 +1,6 @@
 namespace ERP.Domain.Common;
 
-public interface ITenantEntity
+public interface ISubscriberScopedEntity
 {
-    Guid TenantId { get; }
+    Guid SubscriberId { get; }
 }

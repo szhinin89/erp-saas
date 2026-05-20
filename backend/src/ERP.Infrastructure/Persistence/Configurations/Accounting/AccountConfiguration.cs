@@ -17,8 +17,8 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.Property(a => a.Id)
             .HasColumnName("id");
 
-        builder.Property(a => a.TenantId)
-            .HasColumnName("tenant_id")
+        builder.Property(a => a.SubscriberId)
+            .HasColumnName("subscriber_id")
             .IsRequired();
 
         builder.Property(a => a.Code)
@@ -67,8 +67,8 @@ public class AccountConfiguration : IEntityTypeConfiguration<Account>
         builder.Property(a => a.UpdatedBy)
             .HasColumnName("updated_by");
 
-        builder.HasIndex(a => new { a.TenantId, a.Code })
+        builder.HasIndex(a => new { a.SubscriberId, a.Code })
             .IsUnique()
-            .HasDatabaseName("ix_accounts_tenant_code");
+            .HasDatabaseName("ix_accounts_subscriber_code");
     }
 }

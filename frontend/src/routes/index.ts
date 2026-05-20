@@ -2,6 +2,7 @@ import { publicRoutes } from './publicRoutes';
 import { adminRoutes } from './adminRoutes';
 import { catalogRoutes } from './catalogRoutes';
 import { companiesRoutes } from './companiesRoutes';
+import { companyManagementRoutes } from './companyManagementRoutes';
 import { accessRoutes } from './accessRoutes';
 import { mainRoutes } from './mainRoutes';
 
@@ -19,7 +20,7 @@ export interface AppRoutesConfig {
  * 4. Escalable cuando se agregan nuevos módulos
  * 
  * Estructura de rutas:
- * - publicRoutes: Login, TenantSelect (sin autenticación)
+ * - publicRoutes: Login, SubscriberSelect (sin autenticación)
  * - adminRoutes: SuperAdmin panel (configurado)
  * - mainRoutes: Dashboard, Productos, Ventas, Contabilidad, etc.
  * - catalogRoutes: Brands, Product Types, Units, etc.
@@ -45,5 +46,6 @@ export { publicRoutes } from './publicRoutes';
 export { adminRoutes } from './adminRoutes';
 export { catalogRoutes } from './catalogRoutes';
 export { companiesRoutes } from './companiesRoutes';
+export { companyManagementRoutes } from './companyManagementRoutes';
 export { accessRoutes } from './accessRoutes';
 export { mainRoutes } from './mainRoutes';

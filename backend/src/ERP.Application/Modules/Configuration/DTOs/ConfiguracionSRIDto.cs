@@ -1,7 +1,7 @@
-﻿namespace ERP.Application.Configuration.DTOs;
+namespace ERP.Application.Configuration.DTOs;
 
 public record SriConfigurationDto(
-    Guid    TenantId,
+    Guid    SubscriberId,
     string  CompanyRuc,
     string  LegalName,
     string? TradeName,

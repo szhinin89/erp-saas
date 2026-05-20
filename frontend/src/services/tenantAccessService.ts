@@ -1,7 +1,7 @@
 import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
 
-export type TenantMembershipItem = {
+export type SubscriberCompanyUserMembershipItem = {
   identityUserId: string;
   email: string;
   fullName: string;
@@ -10,7 +10,7 @@ export type TenantMembershipItem = {
   isActive: boolean;
 };
 
-export type TenantUpsertMembershipRequest = {
+export type TenantUpsertCompanyUserMembershipRequest = {
   email: string;
   role: string;
   profileId?: string | null;
@@ -19,17 +19,17 @@ export type TenantUpsertMembershipRequest = {
   password?: string | null;
 };
 
-export const tenantAccessService = {
-  listMemberships: (onlyActive = true) =>
-    api.get<ApiResponse<TenantMembershipItem[]>>('/api/admin/iam/tenant/memberships', { params: { onlyActive } })
+export const subscriberAccessService = {
+  listCompanyUserMemberships: (onlyActive = true) =>
+    api.get<ApiResponse<SubscriberCompanyUserMembershipItem[]>>('/api/admin/iam/tenant/company_user_memberships', { params: { onlyActive } })
       .then((r) => r.data.responseObject),
 
-  upsertMembership: (req: TenantUpsertMembershipRequest) =>
-    api.post<ApiResponse<object>>('/api/admin/iam/tenant/memberships', req)
+  upsertCompanyUserMembership: (req: TenantUpsertCompanyUserMembershipRequest) =>
+    api.post<ApiResponse<object>>('/api/admin/iam/tenant/company_user_memberships', req)
       .then((r) => r.data.responseObject),
 
-  revokeMembership: (email: string) =>
-    api.post<ApiResponse<object>>('/api/admin/iam/tenant/memberships/revoke', { email })
+  revokeCompanyUserMembership: (email: string) =>
+    api.post<ApiResponse<object>>('/api/admin/iam/tenant/company_user_memberships/revoke', { email })
       .then((r) => r.data.responseObject),
 };
 

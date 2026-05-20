@@ -11,7 +11,7 @@ namespace ERP.Application.Common.Interfaces;
 public interface IKardexService
 {
     /// <summary>
-    /// Usa el <see cref="ICurrentTenant"/> del scope HTTP (o el registrado en DI).
+    /// Usa el <see cref="ICurrentSubscriber"/> del scope HTTP (o el registrado en DI).
     /// </summary>
     Task<Result<KardexResponse>> GenerarKardexEscalableAsync(
         GetKardexQuery query,
@@ -21,7 +21,7 @@ public interface IKardexService
     /// Fija el tenant explícitamente (workers en segundo plano sin <c>HttpContext</c>).
     /// </summary>
     Task<Result<KardexResponse>> GenerarKardexEscalableAsync(
-        Guid tenantId,
+        Guid subscriberId,
         GetKardexQuery query,
         CancellationToken cancellationToken = default);
 }

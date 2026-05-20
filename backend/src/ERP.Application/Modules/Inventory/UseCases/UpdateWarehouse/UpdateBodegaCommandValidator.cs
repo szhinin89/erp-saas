@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -9,7 +9,7 @@ public sealed class UpdateWarehouseCommandValidator : AbstractValidator<UpdateWa
 {
     public UpdateWarehouseCommandValidator(
         IWarehouseRepository repo,
-        ICurrentTenant tenant)
+        ICurrentSubscriber tenant)
     {
         RuleFor(x => x.Id)
             .NotEmpty().WithMessage("El ID de la Warehouse es obligatorio.");
@@ -22,7 +22,7 @@ public sealed class UpdateWarehouseCommandValidator : AbstractValidator<UpdateWa
             .MaximumLength(Warehouse.NameMaxLen)
             .WithMessage($"El nombre no puede exceder {Warehouse.NameMaxLen} caracteres.")
             .MustAsync(async (command, nombre, ct) =>
-                !await repo.ExistsNameAsync(tenant.TenantId, nombre, command.Id, ct))
+                !await repo.ExistsNameAsync(tenant.SubscriberId, nombre, command.Id, ct))
             .WithMessage("Ya existe otra Warehouse con ese nombre en el tenant.");
 
         RuleFor(x => x.Address)

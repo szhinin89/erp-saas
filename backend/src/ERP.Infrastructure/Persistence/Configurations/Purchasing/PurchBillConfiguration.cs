@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Modules.Purchasing.Entities;
+using ERP.Domain.Modules.Purchasing.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,7 +12,7 @@ public sealed class PurchBillConfiguration : IEntityTypeConfiguration<PurchBill>
 
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).HasColumnName("id");
-        builder.Property(c => c.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(c => c.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(c => c.SupplierId).HasColumnName("supplier_id").IsRequired();
         builder.Property(c => c.InvoiceNumber).HasColumnName("invoice_number").HasMaxLength(PurchBill.InvoiceNumberMaxLen).IsRequired();
         builder.Property(c => c.AccessKey).HasColumnName("access_key").HasMaxLength(PurchBill.AccessKeyLen);
@@ -41,9 +41,9 @@ public sealed class PurchBillConfiguration : IEntityTypeConfiguration<PurchBill>
 
         builder.HasMany(c => c.Lines).WithOne().HasForeignKey(d => d.PurchBillId).OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(c => new { c.TenantId, c.SupplierId, c.InvoiceNumber }).IsUnique().HasDatabaseName("uq_purch_bill_supplier_invoice");
-        builder.HasIndex(c => new { c.TenantId, c.AccessKey }).IsUnique().HasFilter("access_key IS NOT NULL").HasDatabaseName("uq_purch_bill_access_key");
-        builder.HasIndex(c => new { c.TenantId, c.Status }).HasDatabaseName("ix_purch_bill_tenant_status");
-        builder.HasIndex(c => new { c.TenantId, c.SupplierId, c.Status }).HasDatabaseName("ix_purch_bill_tenant_supplier_status");
+        builder.HasIndex(c => new { c.SubscriberId, c.SupplierId, c.InvoiceNumber }).IsUnique().HasDatabaseName("uq_purch_bill_supplier_invoice");
+        builder.HasIndex(c => new { c.SubscriberId, c.AccessKey }).IsUnique().HasFilter("access_key IS NOT NULL").HasDatabaseName("uq_purch_bill_access_key");
+        builder.HasIndex(c => new { c.SubscriberId, c.Status }).HasDatabaseName("ix_purch_bill_subscriber_status");
+        builder.HasIndex(c => new { c.SubscriberId, c.SupplierId, c.Status }).HasDatabaseName("ix_purch_bill_subscriber_supplier_status");
     }
 }

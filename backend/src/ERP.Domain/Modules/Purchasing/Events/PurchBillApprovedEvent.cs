@@ -14,20 +14,20 @@ public sealed class PurchBillApprovedEvent : IDomainEvent
     public Guid     Id              { get; } = Guid.NewGuid();
     public DateTime OccurredOn      { get; } = DateTime.UtcNow;
     public Guid     PurchBillId     { get; }
-    public Guid     TenantId        { get; }
+    public Guid     SubscriberId        { get; }
     public string   InvoiceNumber   { get; }
     public Guid     ApprovedByUserId { get; }
     public IReadOnlyList<PurchBillApprovedStockLine> StockLines { get; }
 
     public PurchBillApprovedEvent(
         Guid    purchBillId,
-        Guid    tenantId,
+        Guid    subscriberId,
         string  invoiceNumber,
         Guid    approvedByUserId,
         IReadOnlyList<PurchBillApprovedStockLine> stockLines)
     {
         PurchBillId      = purchBillId;
-        TenantId         = tenantId;
+        SubscriberId         = subscriberId;
         InvoiceNumber    = invoiceNumber;
         ApprovedByUserId = approvedByUserId;
         StockLines       = stockLines;

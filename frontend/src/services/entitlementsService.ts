@@ -4,7 +4,7 @@ import type { EntitlementsSnapshot } from '../types/entitlements';
 
 export const entitlementsService = {
   async getMe(): Promise<EntitlementsSnapshot> {
-    const { data } = await api.get<ApiResponse<EntitlementsSnapshot>>('/api/saas/entitlements/me');
+    const { data } = await api.get<ApiResponse<EntitlementsSnapshot>>('/api/subscribers/entitlements/me');
     const snap = data.responseObject;
     return {
       planCode: snap?.planCode ?? null,

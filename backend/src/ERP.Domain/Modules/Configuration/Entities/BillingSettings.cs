@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Configuration.Entities;
 
-public sealed class BillingSettings : AuditableEntity, ITenantEntity
+public sealed class BillingSettings : AuditableEntity, ISubscriberScopedEntity
 {
     public const int LegalNameMaxLen       = 200;
     public const int TradeNameMaxLen       = 200;
@@ -29,7 +29,7 @@ public sealed class BillingSettings : AuditableEntity, ITenantEntity
     private BillingSettings() { }
 
     public static BillingSettings Create(
-        Guid     tenantId,
+        Guid     subscriberId,
         string   legalName,
         string   tradeName,
         string   ruc,
@@ -45,7 +45,7 @@ public sealed class BillingSettings : AuditableEntity, ITenantEntity
     {
         var config = new BillingSettings
         {
-            TenantId          = tenantId,
+            SubscriberId          = subscriberId,
             LegalName         = legalName.Trim(),
             TradeName         = tradeName.Trim(),
             Ruc               = ruc.Trim(),
@@ -62,8 +62,8 @@ public sealed class BillingSettings : AuditableEntity, ITenantEntity
         return config;
     }
 
-    public static BillingSettings CreateDefault(Guid tenantId, Guid createdBy)
-        => Create(tenantId, "DEMO COMPANY", "DEMO COMPANY", "9999999999999",
+    public static BillingSettings CreateDefault(Guid subscriberId, Guid createdBy)
+        => Create(subscriberId, "DEMO COMPANY", "DEMO COMPANY", "9999999999999",
                   "Unknown address", "", null, false, null, null,
                   "Thank you for your purchase.", 80, createdBy);
 

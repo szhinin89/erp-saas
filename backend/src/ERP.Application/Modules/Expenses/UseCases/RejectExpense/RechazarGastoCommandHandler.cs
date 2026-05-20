@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -14,14 +14,14 @@ public sealed class RejectExpenseCommandHandler
 {
     private readonly IExpenseInvoiceRepository   _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _tenant;
+    private readonly ICurrentSubscriber          _tenant;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
 
     public RejectExpenseCommandHandler(
         IExpenseInvoiceRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork)
     {
@@ -34,10 +34,10 @@ public sealed class RejectExpenseCommandHandler
 
     public async Task<Result<ExpenseInvoiceDto>> Handle(RejectExpenseCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
-        var gasto = await _repo.GetByIdAsync(tenantId, command.ExpenseInvoiceId, ct);
+        var gasto = await _repo.GetByIdAsync(subscriberId, command.ExpenseInvoiceId, ct);
         if (gasto is null)
             return Result<ExpenseInvoiceDto>.Failure("Gasto no encontrado.");
 
@@ -57,7 +57,7 @@ public sealed class RejectExpenseCommandHandler
         try
         {
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _user.Email, _user.FullName,
+                subscriberId, userId, _user.Email, _user.FullName,
                 module: "gastos", action: "gasto.rechazar",
                 entityType: "ExpenseInvoice", entityId: gasto.Id,
                 description: command.Reason), ct);

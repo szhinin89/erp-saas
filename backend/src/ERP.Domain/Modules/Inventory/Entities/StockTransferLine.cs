@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
-public sealed class StockTransferLine : AuditableEntity, ITenantEntity
+public sealed class StockTransferLine : AuditableEntity, ISubscriberScopedEntity
 {
     public const int DescriptionMaxLen = 300;
 
@@ -14,7 +14,7 @@ public sealed class StockTransferLine : AuditableEntity, ITenantEntity
     private StockTransferLine() { }
 
     public static StockTransferLine Create(
-        Guid    tenantId,
+        Guid    subscriberId,
         Guid    stockTransferId,
         Guid    productId,
         decimal quantity,
@@ -27,7 +27,7 @@ public sealed class StockTransferLine : AuditableEntity, ITenantEntity
         var d = new StockTransferLine
         {
             Id              = Guid.NewGuid(),
-            TenantId        = tenantId,
+            SubscriberId        = subscriberId,
             StockTransferId = stockTransferId,
             ProductId       = productId,
             Quantity        = quantity,

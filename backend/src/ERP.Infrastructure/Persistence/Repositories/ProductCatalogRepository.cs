@@ -19,9 +19,9 @@ public class ProductCatalogRepository : IProductCatalogRepository
     public Task AddTaxRateAsync(TaxRate taxRate, CancellationToken ct = default)
         => _context.TaxRates.AddAsync(taxRate, ct).AsTask();
 
-    public async Task<IReadOnlyList<TaxRate>> GetTaxRatesAsync(Guid tenantId, TaxRateType? type = null, bool onlyActive = true, CancellationToken ct = default)
+    public async Task<IReadOnlyList<TaxRate>> GetTaxRatesAsync(Guid subscriberId, TaxRateType? type = null, bool onlyActive = true, CancellationToken ct = default)
     {
-        var q = _context.TaxRates.AsQueryable().Where(x => x.TenantId == tenantId);
+        var q = _context.TaxRates.AsQueryable().Where(x => x.SubscriberId == subscriberId);
         if (type is not null)
             q = q.Where(x => x.Type == type);
         if (onlyActive)
@@ -36,9 +36,9 @@ public class ProductCatalogRepository : IProductCatalogRepository
         => _platform.Unfiltered(_context.Brands, PlatformQueryReason.TenantScopedExplicit)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public async Task<IReadOnlyList<Brand>> GetBrandsAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Brand>> GetBrandsAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default)
     {
-        var q = _context.Brands.AsQueryable().Where(x => x.TenantId == tenantId);
+        var q = _context.Brands.AsQueryable().Where(x => x.SubscriberId == subscriberId);
         if (onlyActive)
             q = q.Where(x => x.IsActive);
         return await q.OrderBy(x => x.Code).ToListAsync(ct);
@@ -51,9 +51,9 @@ public class ProductCatalogRepository : IProductCatalogRepository
         => _platform.Unfiltered(_context.ProductTypes, PlatformQueryReason.TenantScopedExplicit)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public async Task<IReadOnlyList<ProductType>> GetProductTypesAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ProductType>> GetProductTypesAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default)
     {
-        var q = _context.ProductTypes.AsQueryable().Where(x => x.TenantId == tenantId);
+        var q = _context.ProductTypes.AsQueryable().Where(x => x.SubscriberId == subscriberId);
         if (onlyActive)
             q = q.Where(x => x.IsActive);
         return await q.OrderBy(x => x.Code).ToListAsync(ct);
@@ -66,9 +66,9 @@ public class ProductCatalogRepository : IProductCatalogRepository
         => _platform.Unfiltered(_context.UnitsOfMeasure, PlatformQueryReason.TenantScopedExplicit)
             .FirstOrDefaultAsync(x => x.Id == id, ct);
 
-    public async Task<IReadOnlyList<UnitOfMeasure>> GetUnitsOfMeasureAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default)
+    public async Task<IReadOnlyList<UnitOfMeasure>> GetUnitsOfMeasureAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default)
     {
-        var q = _context.UnitsOfMeasure.AsQueryable().Where(x => x.TenantId == tenantId);
+        var q = _context.UnitsOfMeasure.AsQueryable().Where(x => x.SubscriberId == subscriberId);
         if (onlyActive)
             q = q.Where(x => x.IsActive);
         return await q.OrderBy(x => x.Code).ToListAsync(ct);
@@ -77,9 +77,9 @@ public class ProductCatalogRepository : IProductCatalogRepository
     public Task AddTariffAsync(Tariff tariff, CancellationToken ct = default)
         => _context.Tariffs.AddAsync(tariff, ct).AsTask();
 
-    public async Task<IReadOnlyList<Tariff>> GetTariffsAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Tariff>> GetTariffsAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default)
     {
-        var q = _context.Tariffs.AsQueryable().Where(x => x.TenantId == tenantId);
+        var q = _context.Tariffs.AsQueryable().Where(x => x.SubscriberId == subscriberId);
         if (onlyActive)
             q = q.Where(x => x.IsActive);
         return await q.OrderBy(x => x.Code).ToListAsync(ct);
@@ -88,9 +88,9 @@ public class ProductCatalogRepository : IProductCatalogRepository
     public Task AddProductLineAsync(ProductLine line, CancellationToken ct = default)
         => _context.ProductLines.AddAsync(line, ct).AsTask();
 
-    public async Task<IReadOnlyList<ProductLine>> GetProductLinesAsync(Guid tenantId, bool? activeFilter = true, string? search = null, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ProductLine>> GetProductLinesAsync(Guid subscriberId, bool? activeFilter = true, string? search = null, CancellationToken ct = default)
     {
-        var q = _context.ProductLines.AsQueryable().Where(x => x.TenantId == tenantId);
+        var q = _context.ProductLines.AsQueryable().Where(x => x.SubscriberId == subscriberId);
         if (activeFilter is true)
             q = q.Where(x => x.IsActive);
         else if (activeFilter is false)
@@ -105,32 +105,32 @@ public class ProductCatalogRepository : IProductCatalogRepository
         return await q.OrderBy(x => x.Code).ToListAsync(ct);
     }
 
-    public Task<ProductLine?> GetProductLineByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.ProductLines.FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, ct);
+    public Task<ProductLine?> GetProductLineByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
+        => _context.ProductLines.FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Id == id, ct);
 
-    public Task<bool> ProductLineCodeExistsAsync(Guid tenantId, string code, Guid? excludeId = null, CancellationToken ct = default)
+    public Task<bool> ProductLineCodeExistsAsync(Guid subscriberId, string code, Guid? excludeId = null, CancellationToken ct = default)
     {
         var normalized = code.ToUpperInvariant();
-        var q = _context.ProductLines.Where(x => x.TenantId == tenantId && x.Code == normalized);
+        var q = _context.ProductLines.Where(x => x.SubscriberId == subscriberId && x.Code == normalized);
         if (excludeId is not null)
             q = q.Where(x => x.Id != excludeId);
         return q.AnyAsync(ct);
     }
 
-    public Task<int> CountActiveCategoriesByLineAsync(Guid tenantId, Guid lineId, CancellationToken ct = default)
+    public Task<int> CountActiveCategoriesByLineAsync(Guid subscriberId, Guid lineId, CancellationToken ct = default)
         => _context.ProductCategories.CountAsync(
-            x => x.TenantId == tenantId && x.LineId == lineId && x.IsActive, ct);
+            x => x.SubscriberId == subscriberId && x.LineId == lineId && x.IsActive, ct);
 
     public Task AddProductCategoryAsync(ProductCategory category, CancellationToken ct = default)
         => _context.ProductCategories.AddAsync(category, ct).AsTask();
 
     public async Task<IReadOnlyList<ProductCategoryListRow>> GetProductCategoryListRowsAsync(
-        Guid tenantId, Guid? lineId = null, bool? activeFilter = true, string? search = null, CancellationToken ct = default)
+        Guid subscriberId, Guid? lineId = null, bool? activeFilter = true, string? search = null, CancellationToken ct = default)
     {
         var q =
             from c in _context.ProductCategories
             join l in _context.ProductLines on c.LineId equals l.Id
-            where c.TenantId == tenantId && l.TenantId == tenantId
+            where c.SubscriberId == subscriberId && l.SubscriberId == subscriberId
             select new { c, l };
 
         if (lineId is not null)
@@ -164,34 +164,34 @@ public class ProductCatalogRepository : IProductCatalogRepository
         return list;
     }
 
-    public Task<ProductCategory?> GetProductCategoryByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.ProductCategories.FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, ct);
+    public Task<ProductCategory?> GetProductCategoryByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
+        => _context.ProductCategories.FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Id == id, ct);
 
-    public Task<bool> ProductCategoryCodeExistsAsync(Guid tenantId, Guid lineId, string code, Guid? excludeId = null, CancellationToken ct = default)
+    public Task<bool> ProductCategoryCodeExistsAsync(Guid subscriberId, Guid lineId, string code, Guid? excludeId = null, CancellationToken ct = default)
     {
         var normalized = code.ToUpperInvariant();
         var q = _context.ProductCategories.Where(x =>
-            x.TenantId == tenantId && x.LineId == lineId && x.Code == normalized);
+            x.SubscriberId == subscriberId && x.LineId == lineId && x.Code == normalized);
         if (excludeId is not null)
             q = q.Where(x => x.Id != excludeId);
         return q.AnyAsync(ct);
     }
 
-    public Task<int> CountActiveSubcategoriesByCategoryAsync(Guid tenantId, Guid categoryId, CancellationToken ct = default)
+    public Task<int> CountActiveSubcategoriesByCategoryAsync(Guid subscriberId, Guid categoryId, CancellationToken ct = default)
         => _context.ProductSubcategories.CountAsync(
-            x => x.TenantId == tenantId && x.CategoryId == categoryId && x.IsActive, ct);
+            x => x.SubscriberId == subscriberId && x.CategoryId == categoryId && x.IsActive, ct);
 
     public Task AddProductSubcategoryAsync(ProductSubcategory subcategory, CancellationToken ct = default)
         => _context.ProductSubcategories.AddAsync(subcategory, ct).AsTask();
 
     public async Task<IReadOnlyList<ProductSubcategoryListRow>> GetProductSubcategoryListRowsAsync(
-        Guid tenantId, Guid? lineId = null, Guid? categoryId = null, bool? activeFilter = true, string? search = null, CancellationToken ct = default)
+        Guid subscriberId, Guid? lineId = null, Guid? categoryId = null, bool? activeFilter = true, string? search = null, CancellationToken ct = default)
     {
         var q =
             from s in _context.ProductSubcategories
             join c in _context.ProductCategories on s.CategoryId equals c.Id
             join l in _context.ProductLines on c.LineId equals l.Id
-            where s.TenantId == tenantId && c.TenantId == tenantId && l.TenantId == tenantId
+            where s.SubscriberId == subscriberId && c.SubscriberId == subscriberId && l.SubscriberId == subscriberId
             select new { s, c, l };
 
         if (lineId is not null)
@@ -231,14 +231,14 @@ public class ProductCatalogRepository : IProductCatalogRepository
         return list;
     }
 
-    public Task<ProductSubcategory?> GetProductSubcategoryByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.ProductSubcategories.FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, ct);
+    public Task<ProductSubcategory?> GetProductSubcategoryByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
+        => _context.ProductSubcategories.FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Id == id, ct);
 
-    public Task<bool> ProductSubcategoryCodeExistsAsync(Guid tenantId, Guid categoryId, string code, Guid? excludeId = null, CancellationToken ct = default)
+    public Task<bool> ProductSubcategoryCodeExistsAsync(Guid subscriberId, Guid categoryId, string code, Guid? excludeId = null, CancellationToken ct = default)
     {
         var normalized = code.ToUpperInvariant();
         var q = _context.ProductSubcategories.Where(x =>
-            x.TenantId == tenantId && x.CategoryId == categoryId && x.Code == normalized);
+            x.SubscriberId == subscriberId && x.CategoryId == categoryId && x.Code == normalized);
         if (excludeId is not null)
             q = q.Where(x => x.Id != excludeId);
         return q.AnyAsync(ct);

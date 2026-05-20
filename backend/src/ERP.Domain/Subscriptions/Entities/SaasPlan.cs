@@ -1,9 +1,9 @@
-﻿using ERP.Domain.Subscriptions;
+using ERP.Domain.Subscriptions;
 
 namespace ERP.Domain.Subscriptions.Entities;
 
 /// <summary>Plan comercial global (catálogo). Precios y visibilidad persistidos en BD (sin hardcode en aplicación).</summary>
-public sealed class SaasPlan
+public sealed class CommercialPlan
 {
     public const int CodeMaxLen = 64;
     public const int NameMaxLen = 200;
@@ -24,7 +24,7 @@ public sealed class SaasPlan
     public bool IsActive { get; private set; }
     public decimal PriceAmount { get; private set; }
     public string Currency { get; private set; } = "USD";
-    public string BillingCycle { get; private set; } = SaasBillingCycle.Monthly;
+    public string BillingCycle { get; private set; } = CommercialBillingCycle.Monthly;
     public bool IsPubliclyVisible { get; private set; } = true;
     public bool IsRecommended { get; private set; }
     public int SortOrder { get; private set; }
@@ -37,9 +37,9 @@ public sealed class SaasPlan
     /// <summary>Preferencia de barra lateral para previsualización y SPA (<c>horizontal</c> | <c>vertical</c>).</summary>
     public string MenuSidebarLayout { get; private set; } = MenuSidebarLayoutHorizontal;
 
-    private SaasPlan() { }
+    private CommercialPlan() { }
 
-    public static SaasPlan Create(
+    public static CommercialPlan Create(
         string code,
         string name,
         string? shortLabel,
@@ -56,7 +56,7 @@ public sealed class SaasPlan
         if (c.Length == 0 || c.Length > CodeMaxLen)
             throw new ArgumentException("Código de plan inválido.", nameof(code));
 
-        if (!SaasBillingCycle.IsValid(billingCycle))
+        if (!CommercialBillingCycle.IsValid(billingCycle))
             throw new ArgumentException("Ciclo de facturación inválido.", nameof(billingCycle));
 
         var cur = (currency ?? "USD").Trim().ToUpperInvariant();
@@ -78,7 +78,7 @@ public sealed class SaasPlan
         if (ext is { Length: > ExternalBillingRefMaxLen })
             throw new ArgumentException("ExternalBillingRef demasiado largo.", nameof(externalBillingRef));
 
-        return new SaasPlan
+        return new CommercialPlan
         {
             Id = Guid.NewGuid(),
             Code = c,
@@ -127,7 +127,7 @@ public sealed class SaasPlan
         bool isActive,
         string? externalBillingRef)
     {
-        if (!SaasBillingCycle.IsValid(billingCycle))
+        if (!CommercialBillingCycle.IsValid(billingCycle))
             throw new ArgumentException("Ciclo de facturación inválido.", nameof(billingCycle));
 
         var cur = (currency ?? "USD").Trim().ToUpperInvariant();

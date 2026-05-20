@@ -12,7 +12,9 @@ public sealed class WarehouseConfiguration : IEntityTypeConfiguration<Warehouse>
 
         builder.HasKey(w => w.Id);
         builder.Property(w => w.Id).HasColumnName("id");
-        builder.Property(w => w.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(w => w.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(w => w.CompanyId).HasColumnName("company_id");
+        builder.HasIndex(w => new { w.SubscriberId, w.CompanyId }).HasDatabaseName("ix_warehouse_subscriber_company");
         builder.Property(w => w.BranchId).HasColumnName("establishment_id").IsRequired();
         builder.Property(w => w.Name).HasColumnName("name").HasMaxLength(Warehouse.NameMaxLen).IsRequired();
         builder.Property(w => w.Code).HasColumnName("code").HasMaxLength(Warehouse.CodeMaxLen);
@@ -32,7 +34,7 @@ public sealed class WarehouseConfiguration : IEntityTypeConfiguration<Warehouse>
         builder.Property(w => w.CreatedBy).HasColumnName("created_by");
         builder.Property(w => w.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(w => new { w.TenantId, w.Name }).IsUnique().HasDatabaseName("uq_warehouse_tenant_name");
+        builder.HasIndex(w => new { w.SubscriberId, w.Name }).IsUnique().HasDatabaseName("uq_warehouse_subscriber_name");
         builder.HasIndex(w => w.BranchId).HasDatabaseName("ix_warehouse_establishment_id");
     }
 }

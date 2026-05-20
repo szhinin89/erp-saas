@@ -15,14 +15,14 @@ public sealed class SubscriptionGateBehavior<TRequest, TResponse> : IPipelineBeh
     where TRequest : notnull
 {
     private readonly ISubscriptionService _subscriptions;
-    private readonly ITenantEntitlementsService _entitlements;
-    private readonly ICurrentTenant _tenant;
+    private readonly ISubscriberEntitlementsService _entitlements;
+    private readonly ICurrentSubscriber _tenant;
     private readonly IUnitOfWork _unitOfWork;
 
     public SubscriptionGateBehavior(
         ISubscriptionService subscriptions,
-        ITenantEntitlementsService entitlements,
-        ICurrentTenant tenant,
+        ISubscriberEntitlementsService entitlements,
+        ICurrentSubscriber tenant,
         IUnitOfWork unitOfWork)
     {
         _subscriptions = subscriptions;
@@ -33,17 +33,17 @@ public sealed class SubscriptionGateBehavior<TRequest, TResponse> : IPipelineBeh
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        if (tenantId == Guid.Empty)
+        var subscriberId = _tenant.SubscriberId;
+        if (subscriberId == Guid.Empty)
             return await next();
 
         var type = request.GetType();
         var require = type.GetCustomAttribute<RequireFeatureAttribute>(inherit: true);
-        if (require is not null && !await _entitlements.HasFeatureAsync(tenantId, require.FeatureCode, ct))
+        if (require is not null && !await _entitlements.HasFeatureAsync(subscriberId, require.FeatureCode, ct))
             throw new FeatureNotEntitledException(require.FeatureCode);
 
         var consume = type.GetCustomAttribute<ConsumeSubscriptionUnitsAttribute>(inherit: true);
-        if (consume is not null && !await _subscriptions.CheckLimitAsync(tenantId, consume.FeatureCode, consume.Units, ct))
+        if (consume is not null && !await _subscriptions.CheckLimitAsync(subscriberId, consume.FeatureCode, consume.Units, ct))
             throw new SubscriptionLimitExceededException(consume.FeatureCode, 0, consume.Units);
 
         var response = await next();
@@ -51,7 +51,7 @@ public sealed class SubscriptionGateBehavior<TRequest, TResponse> : IPipelineBeh
         if (consume is not null && IsSuccessfulResult(response))
         {
             var deferred = await _subscriptions.IncrementUsageAsync(
-                tenantId, consume.FeatureCode, consume.Units, ct);
+                subscriberId, consume.FeatureCode, consume.Units, ct);
             if (deferred)
                 await _unitOfWork.SaveChangesAsync(ct);
         }

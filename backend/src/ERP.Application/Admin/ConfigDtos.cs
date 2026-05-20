@@ -2,7 +2,7 @@ namespace ERP.Application.Admin;
 
 public sealed record ConfigEntryDto(
     Guid Id,
-    Guid TenantId,
+    Guid SubscriberId,
     string Scope,
     string? Module,
     string? Feature,
@@ -13,7 +13,7 @@ public sealed record ConfigEntryDto(
     Guid? UpdatedBy);
 
 public sealed record ResolvedConfigValueDto(
-    Guid TenantId,
+    Guid SubscriberId,
     string Key,
     string? Module,
     string? Feature,

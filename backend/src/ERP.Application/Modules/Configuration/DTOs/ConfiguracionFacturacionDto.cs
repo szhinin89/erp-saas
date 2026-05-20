@@ -1,8 +1,8 @@
-﻿namespace ERP.Application.Configuration.DTOs;
+namespace ERP.Application.Configuration.DTOs;
 
 public sealed record BillingSettingsDto(
     Guid Id,
-    Guid TenantId,
+    Guid SubscriberId,
     string LegalName,
     string TradeName,
     string Ruc,

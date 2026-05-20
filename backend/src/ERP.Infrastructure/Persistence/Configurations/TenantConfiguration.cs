@@ -1,16 +1,19 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Subscribers.Entities;
 
 namespace ERP.Infrastructure.Persistence.Configurations;
 
-public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
+public class SubscriberConfiguration : IEntityTypeConfiguration<Subscriber>
 {
-    public void Configure(EntityTypeBuilder<Tenant> builder)
+    public void Configure(EntityTypeBuilder<Subscriber> builder)
     {
-        builder.ToTable("tenants");
+        builder.ToTable("subscribers");
 
-        builder.HasKey(t => t.Id);
+        // Root tenant aggregate: Id is the subscriber key — no subscriber_id column on this table.
+        builder.Ignore(t => t.SubscriberId);
+
+        builder.HasKey(t => t.Id).HasName("PK_subscribers");
         builder.Property(t => t.Id).HasColumnName("id");
         builder.Property(t => t.Name).HasColumnName("name").HasMaxLength(200).IsRequired();
         builder.Property(t => t.Slug).HasColumnName("slug").HasMaxLength(100).IsRequired();
@@ -39,6 +42,6 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
 
         builder.HasIndex(t => t.Slug)
             .IsUnique()
-            .HasDatabaseName("ix_tenants_slug");
+            .HasDatabaseName("ix_subscribers_slug");
     }
 }

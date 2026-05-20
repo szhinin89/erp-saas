@@ -5,7 +5,7 @@ namespace ERP.Domain.Access.Entities;
 
 /// <summary>
 /// Usuario global del sistema (no se duplica por empresa).
-/// El acceso a empresas se define mediante Memberships.
+/// El acceso a empresas se define mediante CompanyUserMemberships.
 /// </summary>
 public class IdentityUser : SystemAuditableEntity
 {

@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class PurchaseOrderLine : AuditableEntity, ITenantEntity
+public sealed class PurchaseOrderLine : AuditableEntity, ISubscriberScopedEntity
 {
     public const int DescriptionMaxLen = 300;
 
@@ -21,7 +21,7 @@ public sealed class PurchaseOrderLine : AuditableEntity, ITenantEntity
     private PurchaseOrderLine() { }
 
     public static PurchaseOrderLine Create(
-        Guid    tenantId,
+        Guid    subscriberId,
         Guid    purchaseOrderId,
         Guid    productId,
         string  description,
@@ -41,7 +41,7 @@ public sealed class PurchaseOrderLine : AuditableEntity, ITenantEntity
         var d = new PurchaseOrderLine
         {
             Id              = Guid.NewGuid(),
-            TenantId        = tenantId,
+            SubscriberId        = subscriberId,
             PurchaseOrderId = purchaseOrderId,
             ProductId       = productId,
             Description     = description.Trim(),

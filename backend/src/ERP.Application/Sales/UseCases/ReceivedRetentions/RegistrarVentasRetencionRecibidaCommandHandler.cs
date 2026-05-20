@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
@@ -19,7 +19,7 @@ public sealed class RegistrarSalesRetentionCommandHandler
     private readonly IAccountingService  _accounting;
     private readonly IUserActivityRepository _activity;
     private readonly IUnitOfWork         _unitOfWork;
-    private readonly ICurrentTenant      _currentTenant;
+    private readonly ICurrentSubscriber      _currentSubscriber;
     private readonly ICurrentUser      _currentUser;
     private readonly ILogger<RegistrarSalesRetentionCommandHandler> _logger;
 
@@ -29,7 +29,7 @@ public sealed class RegistrarSalesRetentionCommandHandler
         IAccountingService accounting,
         IUserActivityRepository activity,
         IUnitOfWork unitOfWork,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<RegistrarSalesRetentionCommandHandler> logger)
     {
@@ -38,14 +38,14 @@ public sealed class RegistrarSalesRetentionCommandHandler
         _accounting       = accounting;
         _activity         = activity;
         _unitOfWork       = unitOfWork;
-        _currentTenant    = currentTenant;
+        _currentSubscriber    = currentSubscriber;
         _currentUser      = currentUser;
         _logger           = logger;
     }
 
     public async Task<Result<Guid>> Handle(RegisterSalesRetentionCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
         if (string.IsNullOrWhiteSpace(command.XmlContent))
@@ -54,11 +54,11 @@ public sealed class RegistrarSalesRetentionCommandHandler
         if (!RetentionRecibidaXmlParser.TryParse(command.XmlContent, out var clave, out var fecha, out var total))
             return Result<Guid>.Failure("No se pudo interpretar el XML de retención (clave / totales).");
 
-        var existe = await _ventasRepository.ExistsRetentionAccessKeyAsync(tenantId, clave, ct);
+        var existe = await _ventasRepository.ExistsRetentionAccessKeyAsync(subscriberId, clave, ct);
         if (existe)
             return Result<Guid>.Failure("Ya existe una retención recibida con la misma clave de acceso.");
 
-        var factura = await _ventasRepository.GetBillByIdAsync(tenantId, command.SalesBillId, ct);
+        var factura = await _ventasRepository.GetBillByIdAsync(subscriberId, command.SalesBillId, ct);
         if (factura is null)
             return Result<Guid>.Failure("Factura de venta no encontrada.");
         if (factura.Status != "Autorizado")
@@ -69,7 +69,7 @@ public sealed class RegistrarSalesRetentionCommandHandler
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var xmlPath = $"ventas/retenciones-recibidas/{tenantId}/{clave}.xml";
+            var xmlPath = $"ventas/retenciones-recibidas/{subscriberId}/{clave}.xml";
             try
             {
                 await _fileStorage.SaveAsync(xmlPath, new MemoryStream(Encoding.UTF8.GetBytes(command.XmlContent)), ct);
@@ -81,7 +81,7 @@ public sealed class RegistrarSalesRetentionCommandHandler
             }
 
             var ret = SalesRetention.Create(
-                tenantId,
+                subscriberId,
                 factura.CustomerId,
                 clave,
                 issueDate,
@@ -91,7 +91,7 @@ public sealed class RegistrarSalesRetentionCommandHandler
                 userId);
 
             var det = SalesRetentionLine.Create(
-                tenantId, "TOTAL", "0", total, 0, total, userId);
+                subscriberId, "TOTAL", "0", total, 0, total, userId);
             det.AssignRetentionId(ret.Id);
             ret.AddLine(det);
 
@@ -108,7 +108,7 @@ public sealed class RegistrarSalesRetentionCommandHandler
 
             await _ventasRepository.AddRetentionAsync(ret, ct);
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "ventas", action: "ventas.retencion-recibida.registrar",
                 entityType: "SalesRetention", entityId: ret.Id,
                 description: clave), ct);

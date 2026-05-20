@@ -46,7 +46,7 @@ export function CompanyConfigPage() {
   const { t } = useI18n();
   const hasPerm  = usePermissionsStore((s) => s.has);
   const role     = useAuthStore((s) => s.user?.role ?? '');
-  const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
+  const subscriberId = useAuthStore((s) => s.user?.subscriberId ?? '');
 
   const isAdmin  = role === 'Admin' || role === 'SuperAdmin';
   const canView  = isAdmin || hasPerm('configuracion.empresa.view');
@@ -57,8 +57,8 @@ export function CompanyConfigPage() {
   const [saved,     setSaved]     = useState(false);
 
   const tenantState = useAsync(
-    () => tenantId ? companyService.getTenant(tenantId) : Promise.resolve(null),
-    !!tenantId,
+    () => subscriberId ? companyService.getTenant(subscriberId) : Promise.resolve(null),
+    !!subscriberId,
   );
 
   const taxState = useAsync(() => catalogService.taxRates(false));
@@ -85,12 +85,12 @@ export function CompanyConfigPage() {
   }, [tenantState.data, reset]);
 
   const onSubmit = handleSubmit(async (values) => {
-    if (!canEdit || !tenantId) return;
+    if (!canEdit || !subscriberId) return;
     setSaveError(null);
     setSaved(false);
     setSaving(true);
     try {
-      await companyService.updateTenantCompany(tenantId, {
+      await companyService.updateTenantCompany(subscriberId, {
         name:         values.companyName,
         slug:         tenantState.data?.slug ?? '',
         ruc:          values.ruc  || null,
@@ -102,7 +102,7 @@ export function CompanyConfigPage() {
         priority:     tenantState.data?.priority     ?? 0,
       });
 
-      await companyService.updateTenantOperationalSettings(tenantId, {
+      await companyService.updateTenantOperationalSettings(subscriberId, {
         currency:          values.currency,
         language:          values.language,
         timezone:          values.timezone,

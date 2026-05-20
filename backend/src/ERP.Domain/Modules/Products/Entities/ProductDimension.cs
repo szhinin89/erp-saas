@@ -17,11 +17,11 @@ public class ProductDimension : BaseEntity
     private ProductDimension() { }
 
     internal static ProductDimension Create(
-        Guid productId, Guid tenantId, string name, string value, string unit)
+        Guid productId, Guid subscriberId, string name, string value, string unit)
         => new()
         {
             Id        = Guid.NewGuid(),
-            TenantId  = tenantId,
+            SubscriberId  = subscriberId,
             ProductId = productId,
             Name      = name.Trim(),
             Value     = value.Trim(),

@@ -27,7 +27,7 @@ public sealed class DefaultProfileSeeder : IDefaultProfileSeeder
         _logger   = logger;
     }
 
-    public async Task SeedForTenantAsync(Guid tenantId, Guid actorId, CancellationToken ct = default)
+    public async Task SeedForTenantAsync(Guid subscriberId, Guid actorId, CancellationToken ct = default)
     {
         var bundles = new[]
         {
@@ -40,16 +40,16 @@ public sealed class DefaultProfileSeeder : IDefaultProfileSeeder
         {
             var exists = await _platform
                 .Unfiltered(_db.AccessProfiles, PlatformQueryReason.Seeding)
-                .AnyAsync(p => p.TenantId == tenantId && p.Name == name, ct);
+                .AnyAsync(p => p.SubscriberId == subscriberId && p.Name == name, ct);
 
             if (exists)
             {
-                _logger.LogDebug("Default profile '{Name}' already exists for tenant {TenantId}. Skipping.", name, tenantId);
+                _logger.LogDebug("Default profile '{Name}' already exists for tenant {SubscriberId}. Skipping.", name, subscriberId);
                 continue;
             }
 
             var profile = AccessProfile.Create(
-                tenantId:    tenantId,
+                subscriberId:    subscriberId,
                 name:        name,
                 description: description,
                 createdBy:   actorId);
@@ -59,7 +59,7 @@ public sealed class DefaultProfileSeeder : IDefaultProfileSeeder
 
             var permissions = permKeys.Select(key =>
                 AccessProfilePermission.Create(
-                    tenantId:      tenantId,
+                    subscriberId:      subscriberId,
                     profileId:     profile.Id,
                     permissionKey: key,
                     isAllowed:     true,
@@ -69,8 +69,8 @@ public sealed class DefaultProfileSeeder : IDefaultProfileSeeder
             await _db.SaveChangesAsync(ct);
 
             _logger.LogInformation(
-                "Default profile '{Name}' seeded for tenant {TenantId} ({Count} permissions).",
-                name, tenantId, permKeys.Count);
+                "Default profile '{Name}' seeded for tenant {SubscriberId} ({Count} permissions).",
+                name, subscriberId, permKeys.Count);
         }
     }
 }

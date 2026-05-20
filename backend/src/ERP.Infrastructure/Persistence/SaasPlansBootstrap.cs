@@ -9,7 +9,7 @@ namespace ERP.Infrastructure.Persistence;
 /// Idempotente: no duplica ni sobreescribe JSON personalizado por el SuperAdmin.
 /// Planes: Starter · Business · Professional · Enterprise.
 /// </summary>
-public static class SaasPlansBootstrap
+public static class CommercialPlansBootstrap
 {
     private sealed record DefaultPlanSeed(
         string Code,
@@ -31,7 +31,7 @@ public static class SaasPlansBootstrap
 
     public static async Task EnsureDefaultsAsync(ErpDbContext db, CancellationToken ct = default)
     {
-        var existingPlans = await db.SaasPlans
+        var existingPlans = await db.CommercialPlans
             .Where(p => p.Code != null)
             .ToListAsync(ct);
 
@@ -39,21 +39,21 @@ public static class SaasPlansBootstrap
             .Where(p => !string.IsNullOrWhiteSpace(p.Code))
             .ToDictionary(p => p.Code!.Trim().ToLowerInvariant());
 
-        var toInsert = new List<SaasPlan>();
+        var toInsert = new List<CommercialPlan>();
         var changed = false;
 
         foreach (var seed in DefaultPlans)
         {
             if (!existingByCode.TryGetValue(seed.Code, out var existing))
             {
-                var plan = SaasPlan.Create(
+                var plan = CommercialPlan.Create(
                     code: seed.Code,
                     name: seed.Name,
                     shortLabel: seed.ShortLabel,
                     isActive: true,
                     priceAmount: seed.PriceAmount,
                     currency: "USD",
-                    billingCycle: SaasBillingCycle.Monthly,
+                    billingCycle: CommercialBillingCycle.Monthly,
                     isPubliclyVisible: seed.IsPubliclyVisible,
                     isRecommended: seed.IsRecommended,
                     sortOrder: seed.SortOrder,
@@ -81,7 +81,7 @@ public static class SaasPlansBootstrap
 
         if (toInsert.Count > 0)
         {
-            db.SaasPlans.AddRange(toInsert);
+            db.CommercialPlans.AddRange(toInsert);
             changed = true;
         }
 

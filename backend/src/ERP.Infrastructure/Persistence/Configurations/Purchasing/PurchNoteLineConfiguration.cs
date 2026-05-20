@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Modules.Purchasing.Entities;
+using ERP.Domain.Modules.Purchasing.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,7 +12,7 @@ public sealed class PurchNoteLineConfiguration : IEntityTypeConfiguration<PurchN
 
         builder.HasKey(d => d.Id);
         builder.Property(d => d.Id).HasColumnName("id");
-        builder.Property(d => d.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(d => d.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(d => d.PurchNoteId).HasColumnName("purch_note_id").IsRequired();
         builder.Property(d => d.ProductId).HasColumnName("product_id");
         builder.Property(d => d.SupplierProductCode).HasColumnName("supplier_product_code").HasMaxLength(PurchNoteLine.SupplierProductCodeMaxLen);

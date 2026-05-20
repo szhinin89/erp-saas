@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -16,7 +16,7 @@ public sealed class ValidateExpenseCommandHandler
     private readonly IExpenseInvoiceRepository   _repo;
     private readonly ISupplierRepository      _proveedorRepo;
     private readonly IUserActivityRepository   _activity;
-    private readonly ICurrentTenant            _tenant;
+    private readonly ICurrentSubscriber            _tenant;
     private readonly ICurrentUser              _user;
     private readonly IUnitOfWork               _unitOfWork;
 
@@ -24,7 +24,7 @@ public sealed class ValidateExpenseCommandHandler
         IExpenseInvoiceRepository repo,
         ISupplierRepository proveedorRepo,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork)
     {
@@ -38,10 +38,10 @@ public sealed class ValidateExpenseCommandHandler
 
     public async Task<Result<ExpenseInvoiceDto>> Handle(ValidateExpenseCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
-        var gasto = await _repo.GetByIdAsync(tenantId, command.ExpenseInvoiceId, ct);
+        var gasto = await _repo.GetByIdAsync(subscriberId, command.ExpenseInvoiceId, ct);
         if (gasto is null)
             return Result<ExpenseInvoiceDto>.Failure("Gasto no encontrado.");
 
@@ -51,7 +51,7 @@ public sealed class ValidateExpenseCommandHandler
 
         if (gasto.SupplierId.HasValue)
         {
-            var Supplier = await _proveedorRepo.GetByIdAsync(tenantId, gasto.SupplierId.Value, ct);
+            var Supplier = await _proveedorRepo.GetByIdAsync(subscriberId, gasto.SupplierId.Value, ct);
             if (Supplier is null || !Supplier.IsActive)
                 return Result<ExpenseInvoiceDto>.Failure("El Supplier del gasto no existe o está deshabilitado.");
         }
@@ -83,7 +83,7 @@ public sealed class ValidateExpenseCommandHandler
         try
         {
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _user.Email, _user.FullName,
+                subscriberId, userId, _user.Email, _user.FullName,
                 module: "gastos", action: "gasto.validar",
                 entityType: "ExpenseInvoice", entityId: gasto.Id,
                 description: gasto.Concept), ct);

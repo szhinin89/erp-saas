@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
@@ -13,36 +13,36 @@ public sealed class SupplierRepository : ISupplierRepository
     public Task AddAsync(Supplier Supplier, CancellationToken ct = default)
         => _context.Suppliers.AddAsync(Supplier, ct).AsTask();
 
-    public Task<Supplier?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.Suppliers.FirstOrDefaultAsync(p => p.TenantId == tenantId && p.Id == id, ct);
+    public Task<Supplier?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
+        => _context.Suppliers.FirstOrDefaultAsync(p => p.SubscriberId == subscriberId && p.Id == id, ct);
 
-    public Task<Supplier?> GetByRucAsync(Guid tenantId, string ruc, CancellationToken ct = default)
+    public Task<Supplier?> GetByRucAsync(Guid subscriberId, string ruc, CancellationToken ct = default)
     {
         var r = (ruc ?? string.Empty).Trim();
-        return _context.Suppliers.FirstOrDefaultAsync(p => p.TenantId == tenantId && p.Ruc == r, ct);
+        return _context.Suppliers.FirstOrDefaultAsync(p => p.SubscriberId == subscriberId && p.Ruc == r, ct);
     }
 
     public async Task<bool> ExistsRucAsync(
-        Guid tenantId,
+        Guid subscriberId,
         string ruc,
         Guid? excludeId,
         CancellationToken ct = default)
     {
         var q = _context.Suppliers
-            .Where(p => p.TenantId == tenantId && p.Ruc == ruc.Trim());
+            .Where(p => p.SubscriberId == subscriberId && p.Ruc == ruc.Trim());
         if (excludeId.HasValue)
             q = q.Where(p => p.Id != excludeId.Value);
         return await q.AnyAsync(ct);
     }
 
     public async Task<IReadOnlyList<Supplier>> GetAsync(
-        Guid tenantId,
+        Guid subscriberId,
         bool? activeFilter,
         string? search,
         string? tipoPersona,
         CancellationToken ct = default)
     {
-        var q = _context.Suppliers.Where(p => p.TenantId == tenantId);
+        var q = _context.Suppliers.Where(p => p.SubscriberId == subscriberId);
 
         if (activeFilter is true)        q = q.Where(p => p.IsActive);
         else if (activeFilter is false)  q = q.Where(p => !p.IsActive);

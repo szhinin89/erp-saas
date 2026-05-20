@@ -20,9 +20,9 @@ public sealed class RefreshTokenServiceTests
         var repo    = new FakeRefreshTokenRepository();
         var service = Build(repo);
         var userId  = Guid.NewGuid();
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
 
-        var (rawToken, expiry) = await service.CreateAsync(userId, tenantId, RefreshUserType.Legacy);
+        var (rawToken, expiry) = await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
 
         rawToken.Should().NotBeNullOrEmpty();
         expiry.Should().BeAfter(DateTime.UtcNow.AddDays(25));
@@ -41,14 +41,14 @@ public sealed class RefreshTokenServiceTests
         var repo     = new FakeRefreshTokenRepository();
         var service  = Build(repo);
         var userId   = Guid.NewGuid();
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
 
-        var (rawToken1, _) = await service.CreateAsync(userId, tenantId, RefreshUserType.Legacy);
+        var (rawToken1, _) = await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
         var result = await service.ValidateAndRotateAsync(rawToken1);
 
         result.IsValid.Should().BeTrue(result.Error);
         result.UserId.Should().Be(userId);
-        result.TenantId.Should().Be(tenantId);
+        result.SubscriberId.Should().Be(subscriberId);
         result.UserType.Should().Be(RefreshUserType.Legacy);
         result.NewToken.Should().NotBeNullOrEmpty().And.NotBe(rawToken1);
 
@@ -73,14 +73,14 @@ public sealed class RefreshTokenServiceTests
         var repo     = new FakeRefreshTokenRepository();
         var service  = Build(repo);
         var userId   = Guid.NewGuid();
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
 
         // Crear 2 tokens activos + 1 revocado que es el que intentamos reusar
-        var revocado = RefreshToken.Create(userId, tenantId, RefreshUserType.Legacy, "hash-revocado");
+        var revocado = RefreshToken.Create(userId, subscriberId, RefreshUserType.Legacy, "hash-revocado");
         revocado.Revoke("Test");
         repo.Stored.Add(revocado);
 
-        var activo = RefreshToken.Create(userId, tenantId, RefreshUserType.Legacy, "hash-activo");
+        var activo = RefreshToken.Create(userId, subscriberId, RefreshUserType.Legacy, "hash-activo");
         repo.Stored.Add(activo);
 
         repo.SetupHash("hash-revocado-raw", revocado);
@@ -102,12 +102,12 @@ public sealed class RefreshTokenServiceTests
         var repo     = new FakeRefreshTokenRepository();
         var service  = Build(repo);
         var userId   = Guid.NewGuid();
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
 
-        await service.CreateAsync(userId, tenantId, RefreshUserType.Legacy);
-        await service.CreateAsync(userId, tenantId, RefreshUserType.Legacy);
+        await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
+        await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
 
-        await service.RevokeAllForUserAsync(userId, tenantId, "Logout");
+        await service.RevokeAllForUserAsync(userId, subscriberId, "Logout");
 
         repo.Stored.All(t => t.IsRevoked).Should().BeTrue();
         repo.Stored.All(t => t.ReasonRevoked == "Logout").Should().BeTrue();
@@ -169,11 +169,11 @@ public sealed class RefreshTokenServiceTests
         }
 
         public Task<IReadOnlyList<RefreshToken>> GetActiveByUserAsync(
-            Guid userId, Guid tenantId, CancellationToken ct = default)
+            Guid userId, Guid subscriberId, CancellationToken ct = default)
         {
             var now    = DateTime.UtcNow;
             var result = (IReadOnlyList<RefreshToken>)Stored
-                .Where(t => t.UserId == userId && t.TenantId == tenantId && !t.IsRevoked && t.ExpiresAt > now)
+                .Where(t => t.UserId == userId && t.SubscriberId == subscriberId && !t.IsRevoked && t.ExpiresAt > now)
                 .ToList();
             return Task.FromResult(result);
         }

@@ -6,7 +6,7 @@ public sealed class DirectPasswordResetCommandValidator : AbstractValidator<Dire
 {
     public DirectPasswordResetCommandValidator()
     {
-        RuleFor(x => x.TenantId)
+        RuleFor(x => x.SubscriberId)
             .NotEmpty().WithMessage("El tenant es obligatorio.");
 
         RuleFor(x => x.Email)

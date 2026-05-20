@@ -3,8 +3,8 @@ import { z } from 'zod';
 /** Alineado a `CreateCompanyWithAdminRequest` — validación cliente en español. */
 export const createCompanyWithAdminSchema = z
   .object({
-    tenantName: z.string().min(1, 'Ingresa el nombre de la empresa.'),
-    tenantSlug: z.string().min(1, 'Ingresa el slug de la empresa.'),
+    subscriberName: z.string().min(1, 'Ingresa el nombre de la empresa.'),
+    subscriberSlug: z.string().min(1, 'Ingresa el slug de la empresa.'),
     ruc: z.string().optional(),
     shortName: z.string().optional(),
     tradeName: z.string().optional(),
@@ -51,8 +51,8 @@ export type CreateCompanyFormValues = z.infer<typeof createCompanyWithAdminSchem
 
 /** Edición de datos de empresa existente (SuperAdmin, sin admin). */
 export const updateTenantCompanySchema = z.object({
-  tenantName: z.string().min(1, 'Ingresa el nombre de la empresa.'),
-  tenantSlug: z.string().min(1, 'Ingresa el slug de la empresa.'),
+  subscriberName: z.string().min(1, 'Ingresa el nombre de la empresa.'),
+  subscriberSlug: z.string().min(1, 'Ingresa el slug de la empresa.'),
   ruc: z.string().optional(),
   shortName: z.string().optional(),
   tradeName: z.string().optional(),
@@ -62,4 +62,4 @@ export const updateTenantCompanySchema = z.object({
   priority: z.coerce.number().int('Ingresa un número entero para la prioridad.'),
 });
 
-export type UpdateTenantCompanyFormValues = z.infer<typeof updateTenantCompanySchema>;
+export type UpdateSubscriberCompanyFormValues = z.infer<typeof updateTenantCompanySchema>;

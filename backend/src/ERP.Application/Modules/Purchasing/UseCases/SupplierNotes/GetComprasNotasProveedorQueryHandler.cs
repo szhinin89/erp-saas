@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Purchasing.DTOs;
@@ -10,9 +10,9 @@ public sealed class GetPurchasesNotesSupplierQueryHandler
     : IRequestHandler<GetPurchaseSupplierNotesQuery, Result<IReadOnlyList<SupplierPurchaseNoteDto>>>
 {
     private readonly IPurchBillRepository _repo;
-    private readonly ICurrentTenant    _tenant;
+    private readonly ICurrentSubscriber    _tenant;
 
-    public GetPurchasesNotesSupplierQueryHandler(IPurchBillRepository repo, ICurrentTenant tenant)
+    public GetPurchasesNotesSupplierQueryHandler(IPurchBillRepository repo, ICurrentSubscriber tenant)
     {
         _repo   = repo;
         _tenant = tenant;
@@ -23,7 +23,7 @@ public sealed class GetPurchasesNotesSupplierQueryHandler
         CancellationToken ct)
     {
         var list = await _repo.GetPurchNotesAsync(
-            _tenant.TenantId,
+            _tenant.SubscriberId,
             query.SupplierId,
             query.PurchBillId,
             query.ExpenseInvoiceId,

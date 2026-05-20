@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -30,28 +30,28 @@ public sealed class KardexInventarioTests
             .SetValue(entity, DateTime.SpecifyKind(utc, DateTimeKind.Utc));
 
     private static StockMovement Entrada(
-        Guid tenantId, Guid productoId, Guid bodegaId,
+        Guid subscriberId, Guid productoId, Guid bodegaId,
         decimal quantity, decimal cantAnterior, decimal unitCost, Guid userId,
         string? referencia = null,
         DateTime? fecha = null,
         StockMovementType tipo = StockMovementType.PurchaseEntry)
     {
         var m = StockMovement.Create(
-            tenantId, productoId, bodegaId, tipo,
+            subscriberId, productoId, bodegaId, tipo,
             quantity, cantAnterior, referencia, null, null, userId, unitCost);
         if (fecha.HasValue) SetCreatedAt(m, fecha.Value);
         return m;
     }
 
     private static StockMovement Salida(
-        Guid tenantId, Guid productoId, Guid bodegaId,
+        Guid subscriberId, Guid productoId, Guid bodegaId,
         decimal quantity, decimal cantAnterior, decimal averageCost, Guid userId,
         string? referencia = null,
         DateTime? fecha = null,
         StockMovementType tipo = StockMovementType.SaleExit)
     {
         var m = StockMovement.Create(
-            tenantId, productoId, bodegaId, tipo,
+            subscriberId, productoId, bodegaId, tipo,
             -quantity, cantAnterior, referencia, null, null, userId, averageCost);
         if (fecha.HasValue) SetCreatedAt(m, fecha.Value);
         return m;
@@ -60,7 +60,7 @@ public sealed class KardexInventarioTests
     private static async Task<IntegrationSeedData.SeedResult> SeedBaseAsync(
         ErpDbContext db, IntegrationTestWebAppFactory factory)
         => await IntegrationSeedData.SeedAsync(
-            db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
 
     // â”€â”€ Escenario 1: Errores bÃ¡sicos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -137,7 +137,7 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, pid, bid, uid) = (seed.TenantId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
 
         db.StockMovements.Add(
             Entrada(tid, pid, bid, 10m, 0m, 50m, uid, referencia: "FAC-001"));
@@ -195,7 +195,7 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, pid, bid, uid) = (seed.TenantId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
 
         const decimal avg2 = 800m  / 15m;   // 53.3333...
         const decimal avg4 = 8075m / 150m;  // 53.8333...
@@ -290,7 +290,7 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, pid, bid, uid) = (seed.TenantId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
 
         // Usar fechas UTC explÃ­citas para evitar problemas de zona horaria.
         // "ayer" = inicio del dÃ­a anterior en UTC, "hoy" = inicio del dÃ­a actual en UTC + 1 hora.
@@ -360,7 +360,7 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, pid, uid) = (seed.TenantId, seed.ProductId, seed.UserId);
+        var (tid, pid, uid) = (seed.SubscriberId, seed.ProductId, seed.UserId);
         var bidA = seed.WarehouseId;
 
         // Crear segunda bodega
@@ -416,7 +416,7 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, pid, bid, uid) = (seed.TenantId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
 
         db.StockMovements.Add(
             Entrada(tid, pid, bid, 10m, 0m, 50m, uid));
@@ -467,7 +467,7 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, pid, bid, uid) = (seed.TenantId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
 
         db.StockMovements.AddRange(
             Entrada(tid, pid, bid, 6m, 0m, 30m, uid),
@@ -522,7 +522,7 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, pid, bid, uid) = (seed.TenantId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
 
         db.StockMovements.AddRange(
             Entrada(tid, pid, bid, 20m, 0m,  50m, uid, tipo: StockMovementType.PurchaseEntry),
@@ -567,7 +567,7 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, uid, bid) = (seed.TenantId, seed.UserId, seed.WarehouseId);
+        var (tid, uid, bid) = (seed.SubscriberId, seed.UserId, seed.WarehouseId);
         var pidA = seed.ProductId;
 
         // Crear segundo producto con los mismos catÃ¡logos del primero

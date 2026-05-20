@@ -5,7 +5,7 @@ using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Subscribers.Interfaces;
 
 using MediatR;
 
@@ -18,7 +18,7 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
     private readonly IPasswordResetTokenRepository _tokenRepository;
     private readonly IUserRepository _userRepository;
     private readonly IAccessRepository _accessRepository;
-    private readonly ITenantRepository _tenantRepository;
+    private readonly ISubscriberRepository _tenantRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IRefreshTokenService _refreshTokenService;
     private readonly IValidator<ResetPasswordWithTokenCommand> _validator;
@@ -27,7 +27,7 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
         IPasswordResetTokenRepository tokenRepository,
         IUserRepository userRepository,
         IAccessRepository accessRepository,
-        ITenantRepository tenantRepository,
+        ISubscriberRepository tenantRepository,
         IPasswordHasher passwordHasher,
         IRefreshTokenService refreshTokenService,
         IValidator<ResetPasswordWithTokenCommand> validator)
@@ -54,10 +54,10 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
 
         if (stored.UserKind != PasswordResetToken.KindSuperAdmin)
         {
-            if (!stored.TenantId.HasValue)
+            if (!stored.SubscriberId.HasValue)
                 return Result<bool>.Failure(InvalidTokenMessage);
 
-            if (!command.TenantId.HasValue || command.TenantId.Value != stored.TenantId.Value)
+            if (!command.SubscriberId.HasValue || command.SubscriberId.Value != stored.SubscriberId.Value)
                 return Result<bool>.Failure("El enlace de recuperación no coincide con la empresa indicada.");
         }
 
@@ -82,22 +82,22 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
                 if (identity is null)
                     return Result<bool>.Failure(InvalidTokenMessage);
 
-                var tenantId = stored.TenantId!.Value;
+                var subscriberId = stored.SubscriberId!.Value;
                 identity.SetPasswordHash(newHash, updatedBy: identity.Id);
                 await _accessRepository.SaveChangesAsync(ct);
-                await _refreshTokenService.RevokeAllForUserAsync(identity.Id, tenantId, "Cambio de contraseña (reset)", ct);
+                await _refreshTokenService.RevokeAllForUserAsync(identity.Id, subscriberId, "Cambio de contraseña (reset)", ct);
                 break;
             }
             case PasswordResetToken.KindLegacy:
             {
-                var tenantId = stored.TenantId!.Value;
-                var legacy = await _userRepository.GetByIdAsync(stored.UserId, tenantId, ct);
+                var subscriberId = stored.SubscriberId!.Value;
+                var legacy = await _userRepository.GetByIdAsync(stored.UserId, subscriberId, ct);
                 if (legacy is null)
                     return Result<bool>.Failure(InvalidTokenMessage);
 
                 legacy.SetPasswordHash(newHash, updatedBy: legacy.Id);
                 await _userRepository.SaveChangesAsync(ct);
-                await _refreshTokenService.RevokeAllForUserAsync(legacy.Id, tenantId, "Cambio de contraseña (reset)", ct);
+                await _refreshTokenService.RevokeAllForUserAsync(legacy.Id, subscriberId, "Cambio de contraseña (reset)", ct);
                 break;
             }
             default:

@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
@@ -19,7 +19,7 @@ public sealed class CreateTransferCommandHandler
     private readonly IProductRepository          _productRepo;
     private readonly IStockRepository  _stockRepo;
     private readonly IUserActivityRepository     _activity;
-    private readonly ICurrentTenant              _currentTenant;
+    private readonly ICurrentSubscriber              _currentSubscriber;
     private readonly ICurrentUser                _currentUser;
     private readonly IUnitOfWork                 _unitOfWork;
     private readonly ILogger<CreateTransferCommandHandler> _logger;
@@ -30,7 +30,7 @@ public sealed class CreateTransferCommandHandler
         IProductRepository productRepo,
         IStockRepository stockRepo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
         ILogger<CreateTransferCommandHandler> logger)
@@ -40,7 +40,7 @@ public sealed class CreateTransferCommandHandler
         _productRepo       = productRepo;
         _stockRepo         = stockRepo;
         _activity          = activity;
-        _currentTenant     = currentTenant;
+        _currentSubscriber     = currentSubscriber;
         _currentUser       = currentUser;
         _unitOfWork        = unitOfWork;
         _logger            = logger;
@@ -49,7 +49,7 @@ public sealed class CreateTransferCommandHandler
     public async Task<Result<TransferDto>> Handle(
         CreateTransferCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
         _logger.LogInformation(
@@ -57,11 +57,11 @@ public sealed class CreateTransferCommandHandler
             command.SourceWarehouseId, command.TargetWarehouseId, command.Items.Count);
 
         // 1. Validar bodegas
-        var origen = await _bodegaRepo.GetByIdAsync(tenantId, command.SourceWarehouseId, ct);
+        var origen = await _bodegaRepo.GetByIdAsync(subscriberId, command.SourceWarehouseId, ct);
         if (origen is null || !origen.IsActive)
             return Result<TransferDto>.Failure("La Warehouse origen no existe o no está activa.");
 
-        var destino = await _bodegaRepo.GetByIdAsync(tenantId, command.TargetWarehouseId, ct);
+        var destino = await _bodegaRepo.GetByIdAsync(subscriberId, command.TargetWarehouseId, ct);
         if (destino is null || !destino.IsActive)
             return Result<TransferDto>.Failure("La Warehouse destino no existe o no está activa.");
 
@@ -70,7 +70,7 @@ public sealed class CreateTransferCommandHandler
         foreach (var item in command.Items)
         {
             if (productos.ContainsKey(item.ProductId)) continue;
-            var producto = await _productRepo.GetByIdAsync(item.ProductId, tenantId, ct);
+            var producto = await _productRepo.GetByIdAsync(item.ProductId, subscriberId, ct);
             if (producto is null || !producto.IsActive)
                 return Result<TransferDto>.Failure(
                     $"El producto {item.ProductId} no existe o no está activo.");
@@ -83,7 +83,7 @@ public sealed class CreateTransferCommandHandler
             if (producto.IsService || !producto.TracksStock) continue;
 
             var stock = await _stockRepo.GetStockAsync(
-                tenantId, command.SourceWarehouseId, item.ProductId, ct);
+                subscriberId, command.SourceWarehouseId, item.ProductId, ct);
 
             if (stock is null || stock.AvailableQuantity < item.Quantity)
             {
@@ -100,12 +100,12 @@ public sealed class CreateTransferCommandHandler
         try
         {
             // 3. Generar número de transfer (dentro de la transacción)
-            var secuencial = await _transferenciaRepo.GetNextSequentialAsync(tenantId, ct);
+            var secuencial = await _transferenciaRepo.GetNextSequentialAsync(subscriberId, ct);
 
             // 4. Crear la transfer en Borrador + sus detalles
             // El Id es client-generated (Guid.NewGuid()), no requiere flush previo.
             var t = StockTransfer.Create(
-                tenantId, secuencial,
+                subscriberId, secuencial,
                 command.SourceWarehouseId, command.TargetWarehouseId,
                 command.Reason, command.Notes, userId);
 
@@ -113,7 +113,7 @@ public sealed class CreateTransferCommandHandler
             {
                 var producto = productos[item.ProductId];
                 var detalle  = StockTransferLine.Create(
-                    tenantId, t.Id, item.ProductId,
+                    subscriberId, t.Id, item.ProductId,
                     item.Quantity, producto.Description, userId);
                 t.AddLine(detalle);
             }
@@ -121,7 +121,7 @@ public sealed class CreateTransferCommandHandler
             await _transferenciaRepo.AddAsync(t, ct);
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "inventario", action: "transfer.crear",
                 entityType: "StockTransfer", entityId: t.Id,
                 description: t.TransferNumber), ct);
@@ -137,7 +137,7 @@ public sealed class CreateTransferCommandHandler
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al crear transfer (tenant {TenantId})", tenantId);
+            _logger.LogError(ex, "Error al crear transfer (tenant {SubscriberId})", subscriberId);
             return Result<TransferDto>.Failure($"No se pudo crear la transfer: {ex.Message}");
         }
     }

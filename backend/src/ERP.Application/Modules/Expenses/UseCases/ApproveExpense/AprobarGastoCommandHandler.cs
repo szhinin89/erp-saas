@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -17,7 +17,7 @@ public sealed class ApproveExpenseCommandHandler
     private readonly IExpenseInvoiceRepository   _repo;
     private readonly IAccountingService      _accounting;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _tenant;
+    private readonly ICurrentSubscriber          _tenant;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<ApproveExpenseCommandHandler> _logger;
@@ -26,7 +26,7 @@ public sealed class ApproveExpenseCommandHandler
         IExpenseInvoiceRepository repo,
         IAccountingService accounting,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
         ILogger<ApproveExpenseCommandHandler> logger)
@@ -42,10 +42,10 @@ public sealed class ApproveExpenseCommandHandler
 
     public async Task<Result<ExpenseInvoiceDto>> Handle(ApproveExpenseCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
-        var gasto = await _repo.GetByIdAsync(tenantId, command.ExpenseInvoiceId, ct);
+        var gasto = await _repo.GetByIdAsync(subscriberId, command.ExpenseInvoiceId, ct);
         if (gasto is null)
             return Result<ExpenseInvoiceDto>.Failure("Gasto no encontrado.");
 
@@ -78,7 +78,7 @@ public sealed class ApproveExpenseCommandHandler
             gasto.Approve(userId, asientoResult.Value);
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _user.Email, _user.FullName,
+                subscriberId, userId, _user.Email, _user.FullName,
                 module: "gastos", action: "gasto.aprobar",
                 entityType: "ExpenseInvoice", entityId: gasto.Id,
                 description: $"{gasto.Concept} — asiento: {asientoResult.Value}"), ct);

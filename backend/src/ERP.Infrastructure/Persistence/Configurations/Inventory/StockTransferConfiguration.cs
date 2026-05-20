@@ -12,7 +12,7 @@ public sealed class StockTransferConfiguration : IEntityTypeConfiguration<StockT
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.Sequential).HasColumnName("sequential").IsRequired();
         builder.Property(e => e.TransferNumber).HasColumnName("transfer_number").HasMaxLength(StockTransfer.NumberMaxLen).IsRequired();
         builder.Property(e => e.SourceWarehouseId).HasColumnName("source_warehouse_id").IsRequired();
@@ -32,7 +32,7 @@ public sealed class StockTransferConfiguration : IEntityTypeConfiguration<StockT
         builder.HasOne(e => e.TargetWarehouse).WithMany().HasForeignKey(e => e.TargetWarehouseId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(e => e.Lines).WithOne().HasForeignKey(d => d.StockTransferId).OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(e => new { e.TenantId, e.TransferNumber }).IsUnique().HasDatabaseName("uq_stock_transfer_number");
-        builder.HasIndex(e => new { e.TenantId, e.Status }).HasDatabaseName("ix_stock_transfer_tenant_status");
+        builder.HasIndex(e => new { e.SubscriberId, e.TransferNumber }).IsUnique().HasDatabaseName("uq_stock_transfer_number");
+        builder.HasIndex(e => new { e.SubscriberId, e.Status }).HasDatabaseName("ix_stock_transfer_subscriber_status");
     }
 }

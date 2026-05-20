@@ -12,7 +12,7 @@ internal static class TestErpDbContextFactory
 {
     internal static ErpDbContext Create(
         DbContextOptions<ErpDbContext> options,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         IPublisher publisher)
     {
         var platform = new PlatformQueryAccessor(

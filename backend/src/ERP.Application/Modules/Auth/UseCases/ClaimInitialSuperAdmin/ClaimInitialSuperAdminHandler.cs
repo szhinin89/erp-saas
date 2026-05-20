@@ -94,6 +94,6 @@ public sealed class ClaimInitialSuperAdminHandler : IRequestHandler<ClaimInitial
             Guid.Empty,
             token,
             PlanCode: null,
-            EnabledModules: TenantSubscriptionCatalog.AllModuleKeys));
+            EnabledModules: SubscriberSubscriptionCatalog.AllModuleKeys));
     }
 }

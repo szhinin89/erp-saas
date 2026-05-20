@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -9,12 +9,12 @@ public sealed class RecalcularSnapshotsCommandHandler
     : IRequestHandler<RecalcularSnapshotsCommand, Result<int>>
 {
     private readonly IKardexSnapshotCalculator                     _calculator;
-    private readonly ICurrentTenant                                _tenant;
+    private readonly ICurrentSubscriber                                _tenant;
     private readonly ILogger<RecalcularSnapshotsCommandHandler>    _logger;
 
     public RecalcularSnapshotsCommandHandler(
         IKardexSnapshotCalculator                    calculator,
-        ICurrentTenant                               tenant,
+        ICurrentSubscriber                               tenant,
         ILogger<RecalcularSnapshotsCommandHandler>   logger)
     {
         _calculator = calculator;
@@ -25,17 +25,17 @@ public sealed class RecalcularSnapshotsCommandHandler
     public async Task<Result<int>> Handle(
         RecalcularSnapshotsCommand command, CancellationToken ct)
     {
-        var tenantId   = _tenant.TenantId;
+        var subscriberId   = _tenant.SubscriberId;
         var untilDate = command.DateTo?.Date ?? DateTime.UtcNow.Date.AddDays(-1);
 
         _logger.LogInformation(
             "RecalcularSnapshots: tenant={T}, productoId={P}, bodegaId={B}, hasta={H:yyyy-MM-dd}",
-            tenantId, command.ProductId, command.WarehouseId, untilDate);
+            subscriberId, command.ProductId, command.WarehouseId, untilDate);
 
         try
         {
             var count = await _calculator.RecalcularTenantAsync(
-                tenantId, command.ProductId, command.WarehouseId, untilDate, ct);
+                subscriberId, command.ProductId, command.WarehouseId, untilDate, ct);
 
             _logger.LogInformation("RecalcularSnapshots: {Count} snapshots generados.", count);
             return Result<int>.Success(count);

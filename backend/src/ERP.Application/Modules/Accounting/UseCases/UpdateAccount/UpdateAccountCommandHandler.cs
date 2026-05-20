@@ -8,25 +8,25 @@ namespace ERP.Application.Modules.Accounting.UseCases.UpdateAccount;
 public sealed class UpdateAccountCommandHandler : IRequestHandler<UpdateAccountCommand, Result<AccountDto>>
 {
     private readonly IAccountingRepository _repository;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public UpdateAccountCommandHandler(
         IAccountingRepository repository,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repository    = repository;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
     }
 
     public async Task<Result<AccountDto>> Handle(UpdateAccountCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var account = await _repository.GetByIdAsync(command.Id, tenantId, ct);
+        var account = await _repository.GetByIdAsync(command.Id, subscriberId, ct);
         if (account is null)
             return Result<AccountDto>.Failure("Cuenta no encontrada.");
 

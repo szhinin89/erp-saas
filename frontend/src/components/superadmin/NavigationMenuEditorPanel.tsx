@@ -48,7 +48,7 @@ export type NavigationMenuEditorPanelProps = {
  */
 export function NavigationMenuEditorPanel({ splitWorkspace = false }: NavigationMenuEditorPanelProps) {
   const { t } = useI18n();
-  const { isSuperAdmin, hasSelectedTenant } = useSuperAdminGate();
+  const { isSuperAdmin, hasSelectedSubscriber } = useSuperAdminGate();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -89,7 +89,7 @@ export function NavigationMenuEditorPanel({ splitWorkspace = false }: Navigation
   }, []);
 
   useEffect(() => {
-    if (!isSuperAdmin || hasSelectedTenant) return;
+    if (!isSuperAdmin || hasSelectedSubscriber) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -104,7 +104,7 @@ export function NavigationMenuEditorPanel({ splitWorkspace = false }: Navigation
     return () => {
       cancelled = true;
     };
-  }, [isSuperAdmin, hasSelectedTenant, load]);
+  }, [isSuperAdmin, hasSelectedSubscriber, load]);
 
   const moveGroup = (index: number, delta: number) => {
     setMenu((prev) => {
@@ -371,7 +371,7 @@ export function NavigationMenuEditorPanel({ splitWorkspace = false }: Navigation
     }
   };
 
-  if (!isSuperAdmin || hasSelectedTenant) {
+  if (!isSuperAdmin || hasSelectedSubscriber) {
     return (
       <p className="zh-help-text subtle">{t('superadmin.sectionLoadHint')}</p>
     );

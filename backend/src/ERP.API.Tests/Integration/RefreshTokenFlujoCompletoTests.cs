@@ -10,7 +10,8 @@ using ERP.Application.Auth.UseCases.RefreshToken;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Auth.Interfaces;
-using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Subscribers.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Services;
 
@@ -34,12 +35,12 @@ public sealed class RefreshTokenFlujoCompletoTests
         var service = scope.ServiceProvider.GetRequiredService<IRefreshTokenService>();
         var handler = scope.ServiceProvider.GetRequiredService<RefreshTokenHandler>();
 
-        // Seed: crear usuario Identity + Tenant + Membership
-        var (identityUser, tenantId) = await SeedIdentityUserAsync(db, factory);
+        // Seed: crear usuario Identity + Subscriber + CompanyUserMembership
+        var (identityUser, subscriberId) = await SeedIdentityUserAsync(db, factory);
 
         // Simular lo que hace LoginHandler: emitir refresh token
         var (rawToken1, expiry1) = await service.CreateAsync(
-            identityUser.Id, tenantId, RefreshUserType.Identity);
+            identityUser.Id, subscriberId, null, RefreshUserType.Identity);
 
         rawToken1.Should().NotBeNullOrEmpty();
         expiry1.Should().BeAfter(DateTime.UtcNow.AddDays(25));
@@ -53,7 +54,7 @@ public sealed class RefreshTokenFlujoCompletoTests
         result.Value.RefreshToken.Should().NotBe(rawToken1, "el refresh token debe rotarse");
         result.Value.RefreshTokenExpiry.Should().BeAfter(DateTime.UtcNow.AddDays(25));
         result.Value.UserId.Should().Be(identityUser.Id);
-        result.Value.TenantId.Should().Be(tenantId);
+        result.Value.SubscriberId.Should().Be(subscriberId);
     }
 
     [Fact]
@@ -65,8 +66,8 @@ public sealed class RefreshTokenFlujoCompletoTests
         var service = scope.ServiceProvider.GetRequiredService<IRefreshTokenService>();
         var handler = scope.ServiceProvider.GetRequiredService<RefreshTokenHandler>();
 
-        var (identityUser, tenantId) = await SeedIdentityUserAsync(db, factory);
-        var (rawToken1, _) = await service.CreateAsync(identityUser.Id, tenantId, RefreshUserType.Identity);
+        var (identityUser, subscriberId) = await SeedIdentityUserAsync(db, factory);
+        var (rawToken1, _) = await service.CreateAsync(identityUser.Id, subscriberId, null, RefreshUserType.Identity);
 
         // Primera rotación → éxito
         var result1 = await handler.HandleAsync(rawToken1);
@@ -87,11 +88,11 @@ public sealed class RefreshTokenFlujoCompletoTests
         var db      = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var service = scope.ServiceProvider.GetRequiredService<IRefreshTokenService>();
 
-        await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
         var userId   = factory.MutableUser.UserId;
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
 
-        var (rawToken, _) = await service.CreateAsync(userId, tenantId, RefreshUserType.Legacy);
+        var (rawToken, _) = await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
 
         var stored = await db.RefreshTokens
             .FirstOrDefaultAsync(t => t.UserId == userId, CancellationToken.None);
@@ -113,13 +114,13 @@ public sealed class RefreshTokenFlujoCompletoTests
         var db      = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var service = scope.ServiceProvider.GetRequiredService<IRefreshTokenService>();
 
-        await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
         var userId   = factory.MutableUser.UserId;
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
 
         // Crear 2 tokens para el mismo usuario (simula 2 dispositivos)
-        var (rawToken1, _) = await service.CreateAsync(userId, tenantId, RefreshUserType.Legacy);
-        await service.CreateAsync(userId, tenantId, RefreshUserType.Legacy); // token de segundo dispositivo
+        var (rawToken1, _) = await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
+        await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy); // token de segundo dispositivo
 
         // Primer uso normal del token1 → rota
         await service.ValidateAndRotateAsync(rawToken1);
@@ -147,12 +148,12 @@ public sealed class RefreshTokenFlujoCompletoTests
         var service = scope.ServiceProvider.GetRequiredService<IRefreshTokenService>();
         var handler = scope.ServiceProvider.GetRequiredService<LogoutHandler>();
 
-        await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
         var userId   = factory.MutableUser.UserId;
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
 
-        var (token1, _) = await service.CreateAsync(userId, tenantId, RefreshUserType.Legacy);
-        var (token2, _) = await service.CreateAsync(userId, tenantId, RefreshUserType.Legacy);
+        var (token1, _) = await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
+        var (token2, _) = await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
 
         var result = await handler.HandleAsync(token1, allDevices: false);
 
@@ -177,10 +178,10 @@ public sealed class RefreshTokenFlujoCompletoTests
         var service = scope.ServiceProvider.GetRequiredService<IRefreshTokenService>();
         var handler = scope.ServiceProvider.GetRequiredService<LogoutHandler>();
 
-        var (identityUser, tenantId) = await SeedIdentityUserAsync(db, factory);
+        var (identityUser, subscriberId) = await SeedIdentityUserAsync(db, factory);
 
-        var (token1, _) = await service.CreateAsync(identityUser.Id, tenantId, RefreshUserType.Identity);
-        await service.CreateAsync(identityUser.Id, tenantId, RefreshUserType.Identity); // token2
+        var (token1, _) = await service.CreateAsync(identityUser.Id, subscriberId, null, RefreshUserType.Identity);
+        await service.CreateAsync(identityUser.Id, subscriberId, null, RefreshUserType.Identity); // token2
 
         var result = await handler.HandleAsync(token1, allDevices: true);
 
@@ -222,26 +223,33 @@ public sealed class RefreshTokenFlujoCompletoTests
 
     // ── Seed helper ───────────────────────────────────────────────────────
 
-    private static async Task<(IdentityUser User, Guid TenantId)> SeedIdentityUserAsync(
+    private static async Task<(IdentityUser User, Guid SubscriberId)> SeedIdentityUserAsync(
         ErpDbContext db, IntegrationTestWebAppFactory factory)
     {
         var seed = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
 
-        var tenantId = seed.TenantId;
+        var subscriberId = seed.SubscriberId;
         var userId   = seed.UserId;
 
-        // Crear IdentityUser + Membership para el path "Identity"
+        // Crear IdentityUser + CompanyUserMembership para el path "Identity"
         var identityUser = IdentityUser.Create("Test", "Refresh", "test.refresh@erp.dev",
             "hashed-password", userId);
         await db.IdentityUsers.AddAsync(identityUser, CancellationToken.None);
 
-        var membership = Membership.Create(tenantId, identityUser.Id, "Admin", null, userId);
-        await db.Memberships.AddAsync(membership, CancellationToken.None);
+        var defaultCompany = await db.Companies.FirstOrDefaultAsync(c => c.SubscriberId == subscriberId);
+        if (defaultCompany is null)
+        {
+            defaultCompany = Company.CreateFromSubscriber(subscriberId, "1799999999001", "Test Company", "Seed Address");
+            await db.Companies.AddAsync(defaultCompany, CancellationToken.None);
+        }
+
+        var membership = CompanyUserMembership.Create(defaultCompany.Id, identityUser.Id, "Admin", null, userId);
+        await db.CompanyUserMemberships.AddAsync(membership, CancellationToken.None);
 
         await db.SaveChangesAsync(CancellationToken.None);
 
         factory.MutableUser.UserId = identityUser.Id;
-        return (identityUser, tenantId);
+        return (identityUser, subscriberId);
     }
 }

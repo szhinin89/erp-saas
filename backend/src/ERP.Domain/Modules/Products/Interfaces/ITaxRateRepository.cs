@@ -4,6 +4,6 @@ namespace ERP.Domain.Products.Interfaces;
 
 public interface ITaxRateRepository
 {
-    Task<TaxRate?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken ct = default);
+    Task<TaxRate?> GetByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default);
 }
 

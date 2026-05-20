@@ -12,7 +12,7 @@ public sealed class KardexSnapshotConfiguration : IEntityTypeConfiguration<Karde
 
         builder.HasKey(s => s.Id);
         builder.Property(s => s.Id).HasColumnName("id");
-        builder.Property(s => s.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(s => s.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(s => s.ProductId).HasColumnName("product_id").IsRequired();
         builder.Property(s => s.WarehouseId).HasColumnName("warehouse_id").IsRequired();
         builder.Property(s => s.SnapshotDate).HasColumnName("snapshot_date").HasColumnType("date").IsRequired();
@@ -21,7 +21,7 @@ public sealed class KardexSnapshotConfiguration : IEntityTypeConfiguration<Karde
         builder.Property(s => s.AverageCost).HasColumnName("average_cost").HasPrecision(18, 6).IsRequired();
         builder.Property(s => s.ComputedAt).HasColumnName("computed_at").IsRequired();
 
-        builder.HasIndex(s => new { s.TenantId, s.ProductId, s.WarehouseId, s.SnapshotDate }).IsUnique().HasDatabaseName("uq_kardex_snapshot_lookup");
-        builder.HasIndex(s => new { s.TenantId, s.SnapshotDate }).HasDatabaseName("ix_kardex_snapshot_tenant_date");
+        builder.HasIndex(s => new { s.SubscriberId, s.ProductId, s.WarehouseId, s.SnapshotDate }).IsUnique().HasDatabaseName("uq_kardex_snapshot_lookup");
+        builder.HasIndex(s => new { s.SubscriberId, s.SnapshotDate }).HasDatabaseName("ix_kardex_snapshot_subscriber_date");
     }
 }

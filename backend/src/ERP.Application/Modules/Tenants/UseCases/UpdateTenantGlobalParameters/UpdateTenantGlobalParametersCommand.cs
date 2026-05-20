@@ -1,9 +1,9 @@
 using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Tenants.DTOs;
+using ERP.Application.Subscribers.DTOs;
 
-namespace ERP.Application.Tenants.UseCases.UpdateTenantGlobalParameters;
+namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberGlobalParameters;
 
-public record UpdateTenantGlobalParametersCommand(
-    Guid TenantId,
-    bool ElectronicBillingTrialEnabled) : IRequest<Result<TenantDto>>;
+public record UpdateSubscriberGlobalParametersCommand(
+    Guid SubscriberId,
+    bool ElectronicBillingTrialEnabled) : IRequest<Result<SubscriberDto>>;

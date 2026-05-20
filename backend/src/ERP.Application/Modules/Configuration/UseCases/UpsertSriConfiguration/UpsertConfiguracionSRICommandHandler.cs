@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Configuration.DTOs;
 using ERP.Domain.Configuration.Entities;
@@ -10,31 +10,31 @@ public sealed class UpsertSriConfigurationCommandHandler
     : IRequestHandler<UpsertSriConfigurationCommand, Result<SriConfigurationDto>>
 {
     private readonly ISriSettingsRepository _repo;
-    private readonly ICurrentTenant              _currentTenant;
+    private readonly ICurrentSubscriber              _currentSubscriber;
     private readonly ICurrentUser                _currentUser;
 
     public UpsertSriConfigurationCommandHandler(
         ISriSettingsRepository repo,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo          = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
     }
 
     public async Task<Result<SriConfigurationDto>> Handle(
         UpsertSriConfigurationCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var existing = await _repo.GetByTenantIdAsync(tenantId, ct);
+        var existing = await _repo.GetBySubscriberIdAsync(subscriberId, ct);
 
         if (existing is null)
         {
             var config = SriSettings.Create(
-                tenantId:          tenantId,
+                subscriberId:          subscriberId,
                 ruc:               command.Ruc,
                 legalName:         command.LegalName,
                 tradeName:         command.TradeName,
@@ -78,7 +78,7 @@ public sealed class UpsertSriConfigurationCommandHandler
     }
 
     private static SriConfigurationDto ToDto(SriSettings c) => new(
-        c.TenantId, c.Ruc, c.LegalName, c.TradeName,
+        c.SubscriberId, c.Ruc, c.LegalName, c.TradeName,
         c.MainAddress, c.RequiresAccounting, c.SpecialTaxpayer,
         c.EstabCode, c.EmPointCode, c.CurrentSequential,
         c.CertP12Path, c.Environment, c.EmissionType, c.WsdlUrl);

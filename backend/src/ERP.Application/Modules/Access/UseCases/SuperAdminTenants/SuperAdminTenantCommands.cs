@@ -1,13 +1,13 @@
 using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Access.DTOs;
-using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Subscribers.Entities;
 
-namespace ERP.Application.Access.UseCases.SuperAdminTenants;
+namespace ERP.Application.Access.UseCases.SuperAdminSubscribers;
 
-public record SuperAdminCreateTenantWithAdminCommand(
-    string TenantName,
-    string TenantSlug,
+public record SuperAdminCreateSubscriberWithAdminCommand(
+    string SubscriberName,
+    string SubscriberSlug,
     string AdminFirstName,
     string AdminLastName,
     string AdminEmail,
@@ -27,5 +27,5 @@ public record SuperAdminCreateTenantWithAdminCommand(
     List<string>? EnabledModules = null
 ) : IRequest<Result<SessionResponseDto>>;
 
-public record GetSuperAdminTenantsQuery : IRequest<Result<IReadOnlyList<SuperAdminTenantItemDto>>>;
+public record GetSuperAdminSubscribersQuery : IRequest<Result<IReadOnlyList<SuperAdminSubscriberItemDto>>>;
 

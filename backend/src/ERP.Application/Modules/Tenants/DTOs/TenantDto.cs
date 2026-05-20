@@ -1,9 +1,9 @@
 using ERP.Application.Common;
-using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Subscribers.Entities;
 
-namespace ERP.Application.Tenants.DTOs;
+namespace ERP.Application.Subscribers.DTOs;
 
-public record TenantDto(
+public record SubscriberDto(
     Guid Id,
     string Name,
     string Slug,
@@ -27,7 +27,7 @@ public record TenantDto(
     string? InvoicePrefix,
     int DefaultCreditDays)
 {
-    public static TenantDto FromTenant(Tenant tenant, IReadOnlyCollection<string>? enabledModules = null) =>
+    public static SubscriberDto FromTenant(Subscriber tenant, IReadOnlyCollection<string>? enabledModules = null) =>
         new(
             tenant.Id,
             tenant.Name,
@@ -44,7 +44,7 @@ public record TenantDto(
             tenant.ElectronicBillingTrialEnabled,
             tenant.PlanCode,
             ToModuleList(enabledModules ?? Array.Empty<string>()),
-            TenantSubscriptionCatalog.HasModuleRestrictionsFromModules(
+            SubscriberSubscriptionCatalog.HasModuleRestrictionsFromModules(
                 enabledModules ?? Array.Empty<string>()),
             tenant.Currency,
             tenant.Language,

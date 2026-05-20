@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
-public sealed class SalesBillLine : AuditableEntity, ITenantEntity
+public sealed class SalesBillLine : AuditableEntity, ISubscriberScopedEntity
 {
     public const int DescriptionMaxLen = 300;
     public const int ProductCodeMaxLen = 100;
@@ -28,7 +28,7 @@ public sealed class SalesBillLine : AuditableEntity, ITenantEntity
     private SalesBillLine() { }
 
     public static SalesBillLine Create(
-        Guid    tenantId,
+        Guid    subscriberId,
         Guid    productId,
         string  productCode,
         decimal quantity,
@@ -46,7 +46,7 @@ public sealed class SalesBillLine : AuditableEntity, ITenantEntity
         var line = new SalesBillLine
         {
             Id          = Guid.NewGuid(),
-            TenantId    = tenantId,
+            SubscriberId    = subscriberId,
             SalesBillId = Guid.Empty,
             ProductId   = productId,
             ProductCode    = string.IsNullOrWhiteSpace(productCode)

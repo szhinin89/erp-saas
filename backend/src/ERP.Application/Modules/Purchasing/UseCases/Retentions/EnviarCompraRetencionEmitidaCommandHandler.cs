@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
@@ -21,7 +21,7 @@ public sealed class SendIssuedRetentionCommandHandler
     private readonly IAccountingService                   _accounting;
     private readonly IUserActivityRepository              _activity;
     private readonly IUnitOfWork                          _unitOfWork;
-    private readonly ICurrentTenant                       _currentTenant;
+    private readonly ICurrentSubscriber                       _currentSubscriber;
     private readonly ICurrentUser                         _currentUser;
     private readonly ILogger<SendIssuedRetentionCommandHandler> _logger;
 
@@ -33,7 +33,7 @@ public sealed class SendIssuedRetentionCommandHandler
         IAccountingService accounting,
         IUserActivityRepository activity,
         IUnitOfWork unitOfWork,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<SendIssuedRetentionCommandHandler> logger)
     {
@@ -44,17 +44,17 @@ public sealed class SendIssuedRetentionCommandHandler
         _accounting            = accounting;
         _activity              = activity;
         _unitOfWork            = unitOfWork;
-        _currentTenant         = currentTenant;
+        _currentSubscriber         = currentSubscriber;
         _currentUser           = currentUser;
         _logger                = logger;
     }
 
     public async Task<Result<Guid>> Handle(SendIssuedRetentionCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var ret = await _compraRepository.GetIssuedRetentionByIdWithLinesAsync(tenantId, command.RetencionId, ct);
+        var ret = await _compraRepository.GetIssuedRetentionByIdWithLinesAsync(subscriberId, command.RetencionId, ct);
         if (ret is null)
             return Result<Guid>.Failure("Retención no encontrada.");
 
@@ -64,7 +64,7 @@ public sealed class SendIssuedRetentionCommandHandler
         if (ret.Status != "Validado")
             return Result<Guid>.Failure($"Estado inválido para enviar: {ret.Status}");
 
-        var configSri = await _configSriRepository.GetByTenantIdAsync(tenantId, ct);
+        var configSri = await _configSriRepository.GetBySubscriberIdAsync(subscriberId, ct);
         if (configSri is null)
             return Result<Guid>.Failure("Configuración SRI ausente.");
 
@@ -108,8 +108,8 @@ public sealed class SendIssuedRetentionCommandHandler
             return Result<Guid>.Failure(resp.ErrorMessage ?? "Rechazada");
         }
 
-        var xmlGen = $"compras/retenciones/{tenantId}/{ret.Id}/generado.xml";
-        var xmlAut = $"compras/retenciones/{tenantId}/{ret.Id}/autorizado.xml";
+        var xmlGen = $"compras/retenciones/{subscriberId}/{ret.Id}/generado.xml";
+        var xmlAut = $"compras/retenciones/{subscriberId}/{ret.Id}/autorizado.xml";
         try
         {
             await _fileStorage.SaveAsync(xmlGen, new MemoryStream(firmado), ct);
@@ -139,7 +139,7 @@ public sealed class SendIssuedRetentionCommandHandler
 
             ret.Authorize(userId, resp.AuthNumber, resp.AuthDate, xmlGen, xmlAut, asiento.Value);
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "compras", action: "compras.retencion.enviar",
                 entityType: "IssuedRetention", entityId: ret.Id,
                 description: refNum), ct);

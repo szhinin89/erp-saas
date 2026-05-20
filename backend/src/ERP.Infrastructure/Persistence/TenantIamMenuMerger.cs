@@ -5,13 +5,13 @@ namespace ERP.Infrastructure.Persistence;
 /// <summary>
 /// Garantiza que cada empresa vea en su menú resuelto (plan / personalizado / global)
 /// las entradas de <b>Acceso usuarios</b> y <b>Perfiles</b>, visibles según permisos de perfil
-/// (<c>access.memberships.view</c>, <c>access.profiles.view</c>) y no solo por rol Admin.
+/// (<c>access.company_user_memberships.view</c>, <c>access.profiles.view</c>) y no solo por rol Admin.
 /// </summary>
-public static class TenantIamMenuMerger
+public static class SubscriberIamMenuMerger
 {
     private const string AccessRoute = "/access";
     private const string ProfilesRoute = "/profiles";
-    private const string MembershipsPerm = "access.memberships.view";
+    private const string CompanyUserMembershipsPerm = "access.company_user_memberships.view";
     private const string ProfilesPerm = "access.profiles.view";
 
     public static IReadOnlyList<SessionMenuGroupDto> EnsureCompanyIamGroup(IReadOnlyList<SessionMenuGroupDto> source)

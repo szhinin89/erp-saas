@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Products.Interfaces;
 
@@ -13,11 +13,11 @@ public class ProductRepository : IProductRepository
         _context = context;
     }
 
-    public async Task<Product?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken ct = default)
+    public async Task<Product?> GetByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
         => await _context.Products
-            .FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId, ct);
+            .FirstOrDefaultAsync(p => p.Id == id && p.SubscriberId == subscriberId, ct);
 
-    public async Task<Product?> GetByIdWithLinesAsync(Guid id, Guid tenantId, CancellationToken ct = default)
+    public async Task<Product?> GetByIdWithLinesAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
         => await _context.Products
             .Include(p => p.Barcodes)
             .Include(p => p.SupplierCodes)
@@ -30,18 +30,18 @@ public class ProductRepository : IProductRepository
             .Include(p => p.TariffDetails)
             .Include(p => p.Substitutes)
             .Include(p => p.CustomFields)
-            .FirstOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId, ct);
+            .FirstOrDefaultAsync(p => p.Id == id && p.SubscriberId == subscriberId, ct);
 
-    public async Task<IReadOnlyList<Product>> GetAllByTenantAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Product>> GetAllByTenantAsync(Guid subscriberId, CancellationToken ct = default)
         => await _context.Products
-            .Where(p => p.TenantId == tenantId && p.IsActive)
+            .Where(p => p.SubscriberId == subscriberId && p.IsActive)
             .OrderBy(p => p.SaleCode)
             .ToListAsync(ct);
 
-    public async Task<IReadOnlyList<Product>> GetReportAsync(Guid tenantId, ProductReportFilter filter, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Product>> GetReportAsync(Guid subscriberId, ProductReportFilter filter, CancellationToken ct = default)
     {
         var query = _context.Products.AsQueryable()
-            .Where(p => p.TenantId == tenantId);
+            .Where(p => p.SubscriberId == subscriberId);
 
         if (filter.IsActive is not null)
             query = query.Where(p => p.IsActive == filter.IsActive);
@@ -102,7 +102,7 @@ public class ProductRepository : IProductRepository
     }
 
     public async Task<(IReadOnlyList<Product> Items, int TotalCount)> GetReportPageAsync(
-        Guid tenantId,
+        Guid subscriberId,
         ProductReportFilter filter,
         int pageNumber,
         int pageSize,
@@ -113,7 +113,7 @@ public class ProductRepository : IProductRepository
         if (pageSize > 200) pageSize = 200;
 
         var query = _context.Products.AsQueryable()
-            .Where(p => p.TenantId == tenantId);
+            .Where(p => p.SubscriberId == subscriberId);
 
         if (filter.IsActive is not null)
             query = query.Where(p => p.IsActive == filter.IsActive);

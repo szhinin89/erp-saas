@@ -12,7 +12,7 @@ public sealed class SalesElectronicDocConfiguration : IEntityTypeConfiguration<S
 
         builder.HasKey(e => e.SalesDocumentId);
         builder.Property(e => e.SalesDocumentId).HasColumnName("sales_document_id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.CompanyId).HasColumnName("company_id");
         builder.Property(e => e.EmissionPointId).HasColumnName("emission_point_id");
         builder.Property(e => e.LegacyElectronicDocId).HasColumnName("legacy_electronic_doc_id");

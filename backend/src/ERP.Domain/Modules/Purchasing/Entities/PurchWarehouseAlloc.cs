@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class PurchWarehouseAlloc : AuditableEntity, ITenantEntity
+public sealed class PurchWarehouseAlloc : AuditableEntity, ISubscriberScopedEntity
 {
     public Guid    PurchBillId     { get; private set; }
     public Guid    PurchBillLineId { get; private set; }
@@ -13,7 +13,7 @@ public sealed class PurchWarehouseAlloc : AuditableEntity, ITenantEntity
     private PurchWarehouseAlloc() { }
 
     public static PurchWarehouseAlloc Create(
-        Guid    tenantId,
+        Guid    subscriberId,
         Guid    purchBillId,
         Guid    purchBillLineId,
         Guid    warehouseId,
@@ -27,7 +27,7 @@ public sealed class PurchWarehouseAlloc : AuditableEntity, ITenantEntity
         var a = new PurchWarehouseAlloc
         {
             Id              = Guid.NewGuid(),
-            TenantId        = tenantId,
+            SubscriberId        = subscriberId,
             PurchBillId     = purchBillId,
             PurchBillLineId = purchBillLineId,
             WarehouseId     = warehouseId,

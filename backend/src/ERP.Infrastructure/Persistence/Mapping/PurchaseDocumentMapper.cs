@@ -10,7 +10,7 @@ public static class PurchaseDocumentMapper
     {
         var doc = PurchaseDocument.Rehydrate();
         Set(doc, nameof(PurchaseDocument.Id), bill.Id);
-        Set(doc, nameof(PurchaseDocument.TenantId), bill.TenantId);
+        Set(doc, nameof(PurchaseDocument.SubscriberId), bill.SubscriberId);
         Set(doc, nameof(PurchaseDocument.SupplierId), bill.SupplierId);
         Set(doc, nameof(PurchaseDocument.DocType), PurchaseDocumentType.Invoice);
         Set(doc, nameof(PurchaseDocument.DocNumber), bill.InvoiceNumber);
@@ -47,7 +47,7 @@ public static class PurchaseDocumentMapper
     public static PurchBill ToLegacyBill(PurchaseDocument doc)
     {
         var bill = PurchBill.Create(
-            doc.TenantId,
+            doc.SubscriberId,
             doc.SupplierId ?? Guid.Empty,
             doc.DocNumber,
             doc.AccessKey,
@@ -85,7 +85,7 @@ public static class PurchaseDocumentMapper
         {
             var legacy = (PurchBillLine)Activator.CreateInstance(typeof(PurchBillLine), true)!;
             Set(legacy, nameof(PurchBillLine.Id), line.Id);
-            Set(legacy, nameof(PurchBillLine.TenantId), line.TenantId);
+            Set(legacy, nameof(PurchBillLine.SubscriberId), line.SubscriberId);
             Set(legacy, nameof(PurchBillLine.PurchBillId), doc.Id);
             Set(legacy, nameof(PurchBillLine.ProductId), line.ProductId);
             Set(legacy, nameof(PurchBillLine.Description), line.Description);
@@ -112,7 +112,7 @@ public static class PurchaseDocumentMapper
         var refId = note.PurchBillId ?? note.ExpenseInvoiceId;
 
         Set(doc, nameof(PurchaseDocument.Id), note.Id);
-        Set(doc, nameof(PurchaseDocument.TenantId), note.TenantId);
+        Set(doc, nameof(PurchaseDocument.SubscriberId), note.SubscriberId);
         Set(doc, nameof(PurchaseDocument.SupplierId), note.SupplierId);
         Set(doc, nameof(PurchaseDocument.DocType), PurchaseDocumentTypeExtensions.FromSupplierNoteType(note.NoteType));
         Set(doc, nameof(PurchaseDocument.DocNumber), $"{note.EstabCode}-{note.EmPointCode}-{note.Sequential}");
@@ -143,7 +143,7 @@ public static class PurchaseDocumentMapper
         Guid? expenseInvoiceId = null)
     {
         var note = PurchNote.Create(
-            doc.TenantId,
+            doc.SubscriberId,
             doc.SupplierId ?? Guid.Empty,
             purchBillId,
             expenseInvoiceId,
@@ -179,7 +179,7 @@ public static class PurchaseDocumentMapper
         {
             var legacy = (PurchNoteLine)Activator.CreateInstance(typeof(PurchNoteLine), true)!;
             Set(legacy, nameof(PurchNoteLine.Id), line.Id);
-            Set(legacy, nameof(PurchNoteLine.TenantId), line.TenantId);
+            Set(legacy, nameof(PurchNoteLine.SubscriberId), line.SubscriberId);
             Set(legacy, nameof(PurchNoteLine.PurchNoteId), doc.Id);
             Set(legacy, nameof(PurchNoteLine.ProductId), line.ProductId);
             Set(legacy, nameof(PurchNoteLine.Description), line.Description);

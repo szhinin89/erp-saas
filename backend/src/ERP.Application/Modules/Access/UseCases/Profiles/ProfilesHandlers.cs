@@ -8,9 +8,9 @@ namespace ERP.Application.Access.UseCases.Profiles;
 public class GetProfilesHandler : IRequestHandler<GetProfilesQuery, Result<IReadOnlyList<ProfileDto>>>
 {
     private readonly IAccessRepository _repo;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
 
-    public GetProfilesHandler(IAccessRepository repo, ICurrentTenant tenant)
+    public GetProfilesHandler(IAccessRepository repo, ICurrentSubscriber tenant)
     {
         _repo = repo;
         _tenant = tenant;
@@ -21,8 +21,8 @@ public class GetProfilesHandler : IRequestHandler<GetProfilesQuery, Result<IRead
 
     public async Task<Result<IReadOnlyList<ProfileDto>>> Handle(GetProfilesQuery request, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        var items = await _repo.GetProfilesByTenantAsync(tenantId, request.OnlyActive, ct);
+        var subscriberId = _tenant.SubscriberId;
+        var items = await _repo.GetProfilesByTenantAsync(subscriberId, request.OnlyActive, ct);
         return Result<IReadOnlyList<ProfileDto>>.Success(items
             .Select(p => new ProfileDto(p.Id, p.Name, p.Description, p.IsActive))
             .ToList());
@@ -32,10 +32,10 @@ public class GetProfilesHandler : IRequestHandler<GetProfilesQuery, Result<IRead
 public class CreateProfileHandler : IRequestHandler<CreateProfileCommand, Result<ProfileDto>>
 {
     private readonly IAccessRepository _repo;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _user;
 
-    public CreateProfileHandler(IAccessRepository repo, ICurrentTenant tenant, ICurrentUser user)
+    public CreateProfileHandler(IAccessRepository repo, ICurrentSubscriber tenant, ICurrentUser user)
     {
         _repo = repo;
         _tenant = tenant;
@@ -50,8 +50,8 @@ public class CreateProfileHandler : IRequestHandler<CreateProfileCommand, Result
         if (string.IsNullOrWhiteSpace(cmd.Name))
             return Result<ProfileDto>.Failure("Nombre requerido.");
 
-        var tenantId = _tenant.TenantId;
-        var profile = AccessProfile.Create(tenantId, cmd.Name, cmd.Description, _user.UserId);
+        var subscriberId = _tenant.SubscriberId;
+        var profile = AccessProfile.Create(subscriberId, cmd.Name, cmd.Description, _user.UserId);
         await _repo.AddProfileAsync(profile, ct);
         await _repo.SaveChangesAsync(ct);
         return Result<ProfileDto>.Success(new ProfileDto(profile.Id, profile.Name, profile.Description, profile.IsActive));
@@ -61,10 +61,10 @@ public class CreateProfileHandler : IRequestHandler<CreateProfileCommand, Result
 public class UpdateProfileHandler : IRequestHandler<UpdateProfileCommand, Result<ProfileDto>>
 {
     private readonly IAccessRepository _repo;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _user;
 
-    public UpdateProfileHandler(IAccessRepository repo, ICurrentTenant tenant, ICurrentUser user)
+    public UpdateProfileHandler(IAccessRepository repo, ICurrentSubscriber tenant, ICurrentUser user)
     {
         _repo = repo;
         _tenant = tenant;
@@ -76,8 +76,8 @@ public class UpdateProfileHandler : IRequestHandler<UpdateProfileCommand, Result
 
     public async Task<Result<ProfileDto>> Handle(UpdateProfileCommand cmd, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        var profile = await _repo.GetProfileByIdAsync(tenantId, cmd.ProfileId, ct);
+        var subscriberId = _tenant.SubscriberId;
+        var profile = await _repo.GetProfileByIdAsync(subscriberId, cmd.ProfileId, ct);
         if (profile is null)
             return Result<ProfileDto>.Failure("Perfil no encontrado.");
 

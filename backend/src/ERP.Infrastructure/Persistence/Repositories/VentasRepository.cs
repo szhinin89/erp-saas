@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
@@ -34,7 +34,7 @@ public sealed class SalesRepository : ISalesRepository
         return _context.SalesBills.AddAsync(factura, ct).AsTask();
     }
 
-    public async Task<SalesBill?> GetBillByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+    public async Task<SalesBill?> GetBillByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
     {
         if (UseUnified)
         {
@@ -42,7 +42,7 @@ public sealed class SalesRepository : ISalesRepository
                 .Include(d => d.Cliente)
                 .Include(d => d.Lines)
                 .Include(d => d.Electronic)
-                .Where(d => d.TenantId == tenantId && d.Id == id
+                .Where(d => d.SubscriberId == subscriberId && d.Id == id
                     && (d.DocType == SalesDocumentType.Invoice || d.DocType == SalesDocumentType.Proforma))
                 .FirstOrDefaultAsync(ct);
             if (doc is null) return null;
@@ -54,11 +54,11 @@ public sealed class SalesRepository : ISalesRepository
         return await _context.SalesBills
             .Include(f => f.Cliente)
             .Include(f => f.Lines)
-            .FirstOrDefaultAsync(f => f.TenantId == tenantId && f.Id == id, ct);
+            .FirstOrDefaultAsync(f => f.SubscriberId == subscriberId && f.Id == id, ct);
     }
 
     public async Task<IReadOnlyList<SalesBill>> GetBillsAsync(
-        Guid tenantId,
+        Guid subscriberId,
         DateTime? fechaDesde,
         DateTime? fechaHasta,
         string? estado,
@@ -66,7 +66,7 @@ public sealed class SalesRepository : ISalesRepository
     {
         if (UseUnified)
         {
-            var query = InvoiceDocumentsQuery(tenantId);
+            var query = InvoiceDocumentsQuery(subscriberId);
             if (fechaDesde.HasValue)
                 query = query.Where(f => f.IssueDate >= fechaDesde.Value);
             if (fechaHasta.HasValue)
@@ -80,7 +80,7 @@ public sealed class SalesRepository : ISalesRepository
 
         var legacyQuery = _context.SalesBills
             .Include(f => f.Cliente)
-            .Where(f => f.TenantId == tenantId);
+            .Where(f => f.SubscriberId == subscriberId);
 
         if (fechaDesde.HasValue)
             legacyQuery = legacyQuery.Where(f => f.IssueDate >= fechaDesde.Value);
@@ -93,7 +93,7 @@ public sealed class SalesRepository : ISalesRepository
     }
 
     public async Task<(IReadOnlyList<SalesBill> Items, int TotalCount)> GetBillsPagedAsync(
-        Guid tenantId,
+        Guid subscriberId,
         int pageNumber,
         int pageSize,
         Guid? clienteId,
@@ -105,7 +105,7 @@ public sealed class SalesRepository : ISalesRepository
     {
         if (UseUnified)
         {
-            var query = InvoiceDocumentsQuery(tenantId);
+            var query = InvoiceDocumentsQuery(subscriberId);
 
             if (clienteId.HasValue)
                 query = query.Where(f => f.CustomerId == clienteId.Value);
@@ -133,7 +133,7 @@ public sealed class SalesRepository : ISalesRepository
 
         var legacyQuery = _context.SalesBills
             .Include(f => f.Cliente)
-            .Where(f => f.TenantId == tenantId);
+            .Where(f => f.SubscriberId == subscriberId);
 
         if (clienteId.HasValue)
             legacyQuery = legacyQuery.Where(f => f.CustomerId == clienteId.Value);
@@ -159,11 +159,11 @@ public sealed class SalesRepository : ISalesRepository
         return (items, legacyTotal);
     }
 
-    private IQueryable<SalesDocument> InvoiceDocumentsQuery(Guid tenantId) =>
+    private IQueryable<SalesDocument> InvoiceDocumentsQuery(Guid subscriberId) =>
         _context.SalesDocuments
             .Include(f => f.Cliente)
             .Include(f => f.Electronic)
-            .Where(f => f.TenantId == tenantId
+            .Where(f => f.SubscriberId == subscriberId
                 && (f.DocType == SalesDocumentType.Invoice || f.DocType == SalesDocumentType.Proforma));
 
     public Task AddNoteAsync(SalesNote nota, CancellationToken ct = default)
@@ -173,11 +173,11 @@ public sealed class SalesRepository : ISalesRepository
         return _context.SalesNotes.AddAsync(nota, ct).AsTask();
     }
 
-    public async Task<SalesNote?> GetNoteByIdWithLinesAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+    public async Task<SalesNote?> GetNoteByIdWithLinesAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
     {
         if (UseUnified)
         {
-            var doc = await NoteDocumentsQuery(tenantId)
+            var doc = await NoteDocumentsQuery(subscriberId)
                 .Include(n => n.Lines)
                 .Include(n => n.Electronic)
                 .Include(n => n.Reference)
@@ -193,11 +193,11 @@ public sealed class SalesRepository : ISalesRepository
             .Include(n => n.OriginalBill)
                 .ThenInclude(f => f!.Cliente)
             .Include(n => n.Lines)
-            .FirstOrDefaultAsync(n => n.TenantId == tenantId && n.Id == id, ct);
+            .FirstOrDefaultAsync(n => n.SubscriberId == subscriberId && n.Id == id, ct);
     }
 
     public async Task<IReadOnlyList<SalesNote>> GetNotesAsync(
-        Guid tenantId,
+        Guid subscriberId,
         Guid? facturaOriginalId,
         string? estado,
         CancellationToken ct = default)
@@ -205,7 +205,7 @@ public sealed class SalesRepository : ISalesRepository
         if (UseUnified)
         {
             IQueryable<SalesDocument> q = _context.SalesDocuments
-                .Where(n => n.TenantId == tenantId
+                .Where(n => n.SubscriberId == subscriberId
                     && (n.DocType == SalesDocumentType.CreditNote || n.DocType == SalesDocumentType.DebitNote))
                 .Include(n => n.Reference)
                     .ThenInclude(f => f!.Cliente);
@@ -222,7 +222,7 @@ public sealed class SalesRepository : ISalesRepository
         var legacy = _context.SalesNotes
             .Include(n => n.OriginalBill)
                 .ThenInclude(f => f!.Cliente)
-            .Where(n => n.TenantId == tenantId);
+            .Where(n => n.SubscriberId == subscriberId);
 
         if (facturaOriginalId.HasValue)
             legacy = legacy.Where(n => n.OriginalBillId == facturaOriginalId.Value);
@@ -232,9 +232,9 @@ public sealed class SalesRepository : ISalesRepository
         return await legacy.OrderByDescending(n => n.IssueDate).ToListAsync(ct);
     }
 
-    private IQueryable<SalesDocument> NoteDocumentsQuery(Guid tenantId) =>
+    private IQueryable<SalesDocument> NoteDocumentsQuery(Guid subscriberId) =>
         _context.SalesDocuments
-            .Where(n => n.TenantId == tenantId
+            .Where(n => n.SubscriberId == subscriberId
                 && (n.DocType == SalesDocumentType.CreditNote || n.DocType == SalesDocumentType.DebitNote));
 
     public Task AddRetentionAsync(SalesRetention retencion, CancellationToken ct = default)
@@ -245,7 +245,7 @@ public sealed class SalesRepository : ISalesRepository
     }
 
     public async Task<IReadOnlyList<SalesRetention>> GetRetentionsAsync(
-        Guid tenantId,
+        Guid subscriberId,
         CancellationToken ct = default)
     {
         if (UseUnified)
@@ -253,7 +253,7 @@ public sealed class SalesRepository : ISalesRepository
             var docs = await _context.SalesWithholdings
                 .Include(r => r.Customer)
                 .Include(r => r.Lines)
-                .Where(r => r.TenantId == tenantId
+                .Where(r => r.SubscriberId == subscriberId
                     && r.Direction == ERP.Domain.Common.WithholdingDirection.Received)
                 .OrderByDescending(r => r.IssueDate)
                 .ToListAsync(ct);
@@ -263,19 +263,19 @@ public sealed class SalesRepository : ISalesRepository
         return await _context.SalesRetentions
             .Include(r => r.Customer)
             .Include(r => r.Lines)
-            .Where(r => r.TenantId == tenantId)
+            .Where(r => r.SubscriberId == subscriberId)
             .OrderByDescending(r => r.IssueDate)
             .ToListAsync(ct);
     }
 
-    public Task<bool> ExistsRetentionAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default)
+    public Task<bool> ExistsRetentionAccessKeyAsync(Guid subscriberId, string accessKey, CancellationToken ct = default)
     {
         if (UseUnified)
             return _context.SalesWithholdings.AnyAsync(
-                r => r.TenantId == tenantId && r.AccessKey == accessKey, ct);
+                r => r.SubscriberId == subscriberId && r.AccessKey == accessKey, ct);
 
         return _context.SalesRetentions.AnyAsync(
-            r => r.TenantId == tenantId && r.AccessKey == accessKey, ct);
+            r => r.SubscriberId == subscriberId && r.AccessKey == accessKey, ct);
     }
 
     public async Task SaveChangesAsync(CancellationToken ct = default)

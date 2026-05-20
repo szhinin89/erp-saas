@@ -8,11 +8,11 @@ public class CustomerTests
     [Fact]
     public void Create_should_set_tenant_and_audit_fields()
     {
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
         var customer = Customer.Create(
-            tenantId,
+            subscriberId,
             "RUC",
             "1234567890001",
             "Cliente Demo",
@@ -23,7 +23,7 @@ public class CustomerTests
             null,
             userId);
 
-        customer.TenantId.Should().Be(tenantId);
+        customer.SubscriberId.Should().Be(subscriberId);
         customer.CreatedBy.Should().Be(userId);
         customer.IsActive.Should().BeTrue();
         customer.Email.Should().Be("demo@email.com");

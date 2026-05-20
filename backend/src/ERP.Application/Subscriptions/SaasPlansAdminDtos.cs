@@ -5,17 +5,17 @@ namespace ERP.Application.Subscriptions;
 /// <summary>Lectura conjunta del menú JSON del plan y preferencia de layout.</summary>
 public sealed record PlanMenuReadDto(string? MenuConfigJson, string MenuSidebarLayout);
 
-public sealed record SaasPlanFeatureAdminDto(
+public sealed record CommercialPlanFeatureAdminDto(
     Guid FeatureId,
     string FeatureCode,
     string FeatureName,
     bool IsMetered,
-    SaasFeatureKind Kind,
+    PlatformFeatureKind Kind,
     string? ResourceRef,
     bool IsIncluded,
     long? LimitPerPeriod);
 
-public sealed record SaasPlanAdminDto(
+public sealed record CommercialPlanAdminDto(
     Guid Id,
     string Code,
     string Name,
@@ -30,9 +30,9 @@ public sealed record SaasPlanAdminDto(
     string? ExternalBillingRef,
     bool HasMenuConfig,
     string MenuSidebarLayout,
-    IReadOnlyList<SaasPlanFeatureAdminDto> Features);
+    IReadOnlyList<CommercialPlanFeatureAdminDto> Features);
 
-public sealed record CreateSaasPlanRequest(
+public sealed record CreateCommercialPlanRequest(
     string Code,
     string Name,
     string? ShortLabel,
@@ -45,7 +45,7 @@ public sealed record CreateSaasPlanRequest(
     int SortOrder,
     string? ExternalBillingRef);
 
-public sealed record UpdateSaasPlanRequest(
+public sealed record UpdateCommercialPlanRequest(
     string Name,
     string? ShortLabel,
     bool IsActive,

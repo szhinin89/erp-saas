@@ -12,7 +12,7 @@ public sealed class PurchWarehouseAllocConfiguration : IEntityTypeConfiguration<
 
         builder.HasKey(a => a.Id);
         builder.Property(a => a.Id).HasColumnName("id");
-        builder.Property(a => a.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(a => a.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(a => a.PurchBillId).HasColumnName("purch_bill_id").IsRequired();
         builder.Property(a => a.PurchBillLineId).HasColumnName("purch_bill_line_id").IsRequired();
         builder.Property(a => a.WarehouseId).HasColumnName("warehouse_id").IsRequired();
@@ -23,6 +23,6 @@ public sealed class PurchWarehouseAllocConfiguration : IEntityTypeConfiguration<
         builder.Property(a => a.CreatedBy).HasColumnName("created_by");
         builder.Property(a => a.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(a => new { a.TenantId, a.PurchBillId }).HasDatabaseName("ix_purch_warehouse_alloc_bill_id");
+        builder.HasIndex(a => new { a.SubscriberId, a.PurchBillId }).HasDatabaseName("ix_purch_warehouse_alloc_bill_id");
     }
 }

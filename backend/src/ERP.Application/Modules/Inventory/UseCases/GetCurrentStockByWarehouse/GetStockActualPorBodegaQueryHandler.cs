@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -11,12 +11,12 @@ public sealed class GetCurrentStockPorWarehouseQueryHandler
 {
     private readonly IStockRepository _stock;
     private readonly IWarehouseRepository          _bodegas;
-    private readonly ICurrentTenant             _tenant;
+    private readonly ICurrentSubscriber             _tenant;
 
     public GetCurrentStockPorWarehouseQueryHandler(
         IStockRepository stock,
         IWarehouseRepository bodegas,
-        ICurrentTenant tenant)
+        ICurrentSubscriber tenant)
     {
         _stock   = stock;
         _bodegas = bodegas;
@@ -27,12 +27,12 @@ public sealed class GetCurrentStockPorWarehouseQueryHandler
         GetCurrentStockPorWarehouseQuery query,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        var Warehouse   = await _bodegas.GetByIdAsync(tenantId, query.WarehouseId, ct);
+        var subscriberId = _tenant.SubscriberId;
+        var Warehouse   = await _bodegas.GetByIdAsync(subscriberId, query.WarehouseId, ct);
         if (Warehouse is null)
             return Result<IReadOnlyList<CurrentStockListItemDto>>.Failure("Warehouse no encontrada.");
 
-        var rows = await _stock.GetStockByWarehouseAsync(tenantId, query.WarehouseId, query.ProductId, ct);
+        var rows = await _stock.GetStockByWarehouseAsync(subscriberId, query.WarehouseId, query.ProductId, ct);
         var dtos = rows.Select(s => new CurrentStockListItemDto(
             s.Id,
             s.ProductId,

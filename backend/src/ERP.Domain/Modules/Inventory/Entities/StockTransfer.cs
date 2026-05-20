@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
-public sealed class StockTransfer : AuditableEntity, ITenantEntity
+public sealed class StockTransfer : AuditableEntity, ISubscriberScopedEntity
 {
     public const int NumberMaxLen = 20;
     public const int StatusMaxLen = 20;
@@ -30,7 +30,7 @@ public sealed class StockTransfer : AuditableEntity, ITenantEntity
     private StockTransfer() { }
 
     public static StockTransfer Create(
-        Guid    tenantId,
+        Guid    subscriberId,
         int     sequential,
         Guid    sourceWarehouseId,
         Guid    targetWarehouseId,
@@ -41,7 +41,7 @@ public sealed class StockTransfer : AuditableEntity, ITenantEntity
         var t = new StockTransfer
         {
             Id                = Guid.NewGuid(),
-            TenantId          = tenantId,
+            SubscriberId          = subscriberId,
             Sequential        = sequential,
             TransferNumber    = $"TR-{sequential:D4}",
             SourceWarehouseId = sourceWarehouseId,

@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -22,14 +22,14 @@ public sealed class SalesBillAuthorizedEventHandler : INotificationHandler<Sales
 
     public async Task Handle(SalesBillAuthorizedEvent notification, CancellationToken ct)
     {
-        var tenantId = notification.TenantId;
+        var subscriberId = notification.SubscriberId;
         var userId   = notification.UserId;
         var bodegaId = notification.WarehouseId;
 
         foreach (var line in notification.StockLines)
         {
             var stock = await _inventario.GetStockAsync(
-                tenantId, bodegaId, line.ProductId, ct);
+                subscriberId, bodegaId, line.ProductId, ct);
 
             if (stock is null)
             {
@@ -44,7 +44,7 @@ public sealed class SalesBillAuthorizedEventHandler : INotificationHandler<Sales
             stock.ApplyMovement(-line.Quantity, userId, costoPromedioVenta);
 
             var movimiento = StockMovement.Create(
-                tenantId,
+                subscriberId,
                 line.ProductId,
                 bodegaId,
                 StockMovementType.SaleExit,

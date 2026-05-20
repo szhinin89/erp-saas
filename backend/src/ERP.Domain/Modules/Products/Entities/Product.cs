@@ -10,8 +10,9 @@ namespace ERP.Domain.Products.Entities;
 /// impuestos por catálogo, flags de canal y comportamiento.
 /// REGLA: Nunca se elimina. Solo se deshabilita con Disable().
 /// </summary>
-public class Product : MasterEntity, ITenantEntity
+public class Product : MasterEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
+    public Guid? CompanyId { get; private set; }
     private readonly List<ProductBarcode> _barcodes = new();
     private readonly List<ProductSupplierCode> _supplierCodes = new();
     private readonly List<ProductUnitConversion> _unitConversions = new();
@@ -108,7 +109,7 @@ public class Product : MasterEntity, ITenantEntity
     private Product() { }
 
     public static Product Create(
-        Guid tenantId,
+        Guid subscriberId,
         string saleCode,
         string shortName,
         string description,
@@ -147,7 +148,8 @@ public class Product : MasterEntity, ITenantEntity
         bool hasSizes = false,
         bool handlesTariff = false,
         bool isForSale = true,
-        string? sriServiceCode = null)
+        string? sriServiceCode = null,
+        Guid? companyId = null)
     {
         var identity = ProductIdentity.Create(saleCode, shortName, description);
 
@@ -166,7 +168,8 @@ public class Product : MasterEntity, ITenantEntity
         var product = new Product
         {
             Id                = Guid.NewGuid(),
-            TenantId          = tenantId,
+            SubscriberId          = subscriberId,
+            CompanyId             = companyId,
             SaleCode          = identity.SaleCode,
             PurchaseCode      = purchaseCode,
             ShortName         = identity.ShortName,
@@ -331,7 +334,7 @@ public class Product : MasterEntity, ITenantEntity
         if (_barcodes.Any(b => b.Code == code))
             throw new InvalidOperationException($"El código de barras '{code}' ya existe.");
 
-        _barcodes.Add(ProductBarcode.Create(Id, TenantId, code, type));
+        _barcodes.Add(ProductBarcode.Create(Id, SubscriberId, code, type));
         SetUpdated(updatedBy);
     }
 
@@ -352,7 +355,7 @@ public class Product : MasterEntity, ITenantEntity
     {
         _supplierCodes.Clear();
         foreach (var s in supplierCodes)
-            _supplierCodes.Add(ProductSupplierCode.Create(Id, TenantId, s.SupplierId, s.Code, s.IsDefault));
+            _supplierCodes.Add(ProductSupplierCode.Create(Id, SubscriberId, s.SupplierId, s.Code, s.IsDefault));
         SetUpdated(updatedBy);
     }
 
@@ -362,7 +365,7 @@ public class Product : MasterEntity, ITenantEntity
     {
         _unitConversions.Clear();
         foreach (var c in conversions)
-            _unitConversions.Add(ProductUnitConversion.Create(Id, TenantId, c.AlternateUnitId, c.ConversionFactor));
+            _unitConversions.Add(ProductUnitConversion.Create(Id, SubscriberId, c.AlternateUnitId, c.ConversionFactor));
         SetUpdated(updatedBy);
     }
 
@@ -370,7 +373,7 @@ public class Product : MasterEntity, ITenantEntity
     {
         _colors.Clear();
         foreach (var c in colors)
-            _colors.Add(ProductColor.Create(Id, TenantId, c.Name, c.HexCode));
+            _colors.Add(ProductColor.Create(Id, SubscriberId, c.Name, c.HexCode));
         SetUpdated(updatedBy);
     }
 
@@ -378,7 +381,7 @@ public class Product : MasterEntity, ITenantEntity
     {
         _sizes.Clear();
         foreach (var s in sizes)
-            _sizes.Add(ProductSize.Create(Id, TenantId, s.Name, s.SortOrder));
+            _sizes.Add(ProductSize.Create(Id, SubscriberId, s.Name, s.SortOrder));
         SetUpdated(updatedBy);
     }
 
@@ -386,7 +389,7 @@ public class Product : MasterEntity, ITenantEntity
     {
         _dimensions.Clear();
         foreach (var d in dimensions)
-            _dimensions.Add(ProductDimension.Create(Id, TenantId, d.Name, d.Value, d.Unit));
+            _dimensions.Add(ProductDimension.Create(Id, SubscriberId, d.Name, d.Value, d.Unit));
         SetUpdated(updatedBy);
     }
 
@@ -394,7 +397,7 @@ public class Product : MasterEntity, ITenantEntity
     {
         _features.Clear();
         foreach (var f in features)
-            _features.Add(ProductFeature.Create(Id, TenantId, f.Name, f.Value));
+            _features.Add(ProductFeature.Create(Id, SubscriberId, f.Name, f.Value));
         SetUpdated(updatedBy);
     }
 
@@ -404,7 +407,7 @@ public class Product : MasterEntity, ITenantEntity
     {
         _tariffDetails.Clear();
         foreach (var t in tariffDetails)
-            _tariffDetails.Add(ProductTariffDetail.Create(Id, TenantId, t.OriginCountry, t.TariffCode, t.Percentage));
+            _tariffDetails.Add(ProductTariffDetail.Create(Id, SubscriberId, t.OriginCountry, t.TariffCode, t.Percentage));
         SetUpdated(updatedBy);
     }
 
@@ -414,7 +417,7 @@ public class Product : MasterEntity, ITenantEntity
     {
         _substitutes.Clear();
         foreach (var s in substitutes)
-            _substitutes.Add(ProductSubstitute.Create(Id, TenantId, s.SubstituteProductId, s.Note));
+            _substitutes.Add(ProductSubstitute.Create(Id, SubscriberId, s.SubstituteProductId, s.Note));
         SetUpdated(updatedBy);
     }
 
@@ -424,7 +427,7 @@ public class Product : MasterEntity, ITenantEntity
     {
         _customFields.Clear();
         foreach (var c in customFields)
-            _customFields.Add(ProductCustomField.Create(Id, TenantId, c.FieldName, c.FieldType, c.FieldValue));
+            _customFields.Add(ProductCustomField.Create(Id, SubscriberId, c.FieldName, c.FieldType, c.FieldValue));
         SetUpdated(updatedBy);
     }
 
@@ -443,7 +446,7 @@ public class Product : MasterEntity, ITenantEntity
 
         _images.Clear();
         foreach (var i in imageList.OrderBy(x => x.SortOrder))
-            _images.Add(ProductImage.Create(Id, TenantId, i.Url, i.AltText, i.IsMain, i.IsEcommerce, i.SortOrder));
+            _images.Add(ProductImage.Create(Id, SubscriberId, i.Url, i.AltText, i.IsMain, i.IsEcommerce, i.SortOrder));
         SetUpdated(updatedBy);
     }
 }

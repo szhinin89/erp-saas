@@ -28,7 +28,7 @@ const emptyLine = (): JournalEntryFormValues['lines'][number] => ({
 
 export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props) {
   const { t } = useI18n();
-  const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
+  const subscriberId = useAuthStore((s) => s.user?.subscriberId ?? '');
   const today = new Date().toISOString().split('T')[0];
 
   const formRef = useRef<HTMLFormElement>(null);
@@ -107,7 +107,7 @@ export function CreateJournalEntryModal({ accounts, onClose, onCreated }: Props)
       }
     >
       <form ref={formRef} onSubmit={handleSubmit(onValid)} noValidate>
-        <input type="hidden" name="tenantId" value={tenantId} />
+        <input type="hidden" name="subscriberId" value={subscriberId} />
         <div className="zh-form">
           <ZHFormBody>
             {apiError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={apiError} /> : null}

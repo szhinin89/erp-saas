@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
@@ -23,9 +23,9 @@ public sealed class CajaHttpIntegrationTests
 
         using var scope = factory.Services.CreateScope();
         var db   = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
 
-        var token  = TestJwtFactory.CreateSessionJwt(seed.TenantId, seed.UserId);
+        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId);
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
@@ -54,7 +54,7 @@ public sealed class CajaHttpIntegrationTests
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
             cuentaGlId = await db.Accounts
-                .Where(a => a.TenantId == seed.TenantId && a.Code.Value == "1.1.99")
+                .Where(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "1.1.99")
                 .Select(a => a.Id)
                 .FirstAsync();
         }
@@ -121,7 +121,7 @@ public sealed class CajaHttpIntegrationTests
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
             cuentaGlId = await db.Accounts
-                .Where(a => a.TenantId == seed.TenantId && a.Code.Value == "1.1.99")
+                .Where(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "1.1.99")
                 .Select(a => a.Id)
                 .FirstAsync();
         }

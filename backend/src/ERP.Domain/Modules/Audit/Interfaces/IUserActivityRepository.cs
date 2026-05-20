@@ -7,7 +7,7 @@ public interface IUserActivityRepository
     Task AddAsync(UserActivity activity, CancellationToken ct = default);
 
     Task<IReadOnlyList<UserActivity>> GetMyRecentAsync(
-        Guid tenantId,
+        Guid subscriberId,
         Guid userId,
         string? module = null,
         int skip = 0,
@@ -18,7 +18,7 @@ public interface IUserActivityRepository
     /// Historial de auditoría de una entidad concreta (todos los usuarios del tenant), más reciente primero.
     /// </summary>
     Task<IReadOnlyList<UserActivity>> GetByEntityAsync(
-        Guid tenantId,
+        Guid subscriberId,
         string entityType,
         Guid entityId,
         int take = 10,

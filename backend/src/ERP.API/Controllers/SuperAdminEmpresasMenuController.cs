@@ -1,4 +1,4 @@
-﻿using ERP.API.Contracts;
+using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Navigation;
@@ -15,9 +15,9 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public sealed class SuperAdminEmpresasMenuController : ControllerBase
 {
-    private readonly ITenantMenuAdminService _tenantMenuAdmin;
+    private readonly ISubscriberMenuAdminService _tenantMenuAdmin;
 
-    public SuperAdminEmpresasMenuController(ITenantMenuAdminService tenantMenuAdmin) =>
+    public SuperAdminEmpresasMenuController(ISubscriberMenuAdminService tenantMenuAdmin) =>
         _tenantMenuAdmin = tenantMenuAdmin;
 
     public sealed record EmpresaMenuPutBody(string MenuConfigJson);
@@ -43,7 +43,7 @@ public sealed class SuperAdminEmpresasMenuController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> PutMenu(Guid empresaId, [FromBody] EmpresaMenuPutBody body, CancellationToken ct)
     {
-        var r = await _tenantMenuAdmin.UpsertTenantCustomMenuAsync(empresaId, body.MenuConfigJson, ct);
+        var r = await _tenantMenuAdmin.UpsertSubscriberCustomMenuAsync(empresaId, body.MenuConfigJson, ct);
         return r.IsSuccess
             ? this.ApiOk(new { }, "Guardado")
             : this.ApiBadRequest(r.Error ?? "Error");
@@ -53,7 +53,7 @@ public sealed class SuperAdminEmpresasMenuController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> DeleteMenu(Guid empresaId, CancellationToken ct)
     {
-        var r = await _tenantMenuAdmin.DeleteTenantCustomMenuAsync(empresaId, ct);
+        var r = await _tenantMenuAdmin.DeleteSubscriberCustomMenuAsync(empresaId, ct);
         return r.IsSuccess
             ? this.ApiOk(new { }, "Restablecido")
             : this.ApiBadRequest(r.Error ?? "Error");

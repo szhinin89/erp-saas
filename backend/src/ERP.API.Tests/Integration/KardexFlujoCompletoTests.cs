@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,19 +40,19 @@ public sealed class KardexFlujoCompletoTests
 
         // Seed base (tenant, product, bodega, cuentas contables)
         var seed = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
 
         // Seed prerrequisitos de ventas (cliente, SRI, cuenta ingresos)
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(
             db, seed, stockInicial: 0m, crearStockActual: false,
             ct: CancellationToken.None);
 
-        var clienteId  = db.Customers.First(c => c.TenantId == seed.TenantId).Id;
-        var sucursalId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
+        var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         // Crear proveedor de prueba
         var proveedor = Supplier.Create(
-            seed.TenantId,
+            seed.SubscriberId,
             Supplier.TypeLegal,
             "Supplier E2E S.A.",
             seed.ProveedorRuc,
@@ -128,7 +128,7 @@ public sealed class KardexFlujoCompletoTests
         await using var factory = new IntegrationTestWebAppFactory();
         var (mediator, db, seed, clienteId, sucursalId, proveedorId) = await SetupAsync(factory);
 
-        var tid = seed.TenantId;
+        var tid = seed.SubscriberId;
         var pid = seed.ProductId;
         var bid = seed.WarehouseId;
 
@@ -141,7 +141,7 @@ public sealed class KardexFlujoCompletoTests
 
         // VerificaciÃ³n intermedia: stock=10, valor=$50
         var stock1 = await db.CurrentStocks.FirstOrDefaultAsync(
-            s => s.TenantId == tid && s.ProductId == pid && s.WarehouseId == bid);
+            s => s.SubscriberId == tid && s.ProductId == pid && s.WarehouseId == bid);
         stock1.Should().NotBeNull();
         stock1!.Quantity.Should().Be(10m);
         stock1.TotalStockValue.Should().Be(50m);

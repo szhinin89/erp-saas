@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -32,14 +32,14 @@ public sealed class KardexController : ControllerBase
 {
     private readonly IMediator              _mediator;
     private readonly KardexOptions          _opts;
-    private readonly ICurrentTenant         _tenant;
+    private readonly ICurrentSubscriber         _tenant;
     private readonly IKardexReportRepository _reporteRepo;
     private readonly KardexReportQueue     _queue;
 
     public KardexController(
         IMediator                  mediator,
         IOptions<KardexOptions>    opts,
-        ICurrentTenant             tenant,
+        ICurrentSubscriber             tenant,
         IKardexReportRepository   reporteRepo,
         KardexReportQueue         queue)
     {
@@ -117,7 +117,7 @@ public sealed class KardexController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetResult(Guid jobId, CancellationToken ct = default)
     {
-        var reporte = await _reporteRepo.GetByIdAsync(_tenant.TenantId, jobId, ct);
+        var reporte = await _reporteRepo.GetByIdAsync(_tenant.SubscriberId, jobId, ct);
 
         if (reporte is null)
             return NotFound(new { mensaje = "Reporte no encontrado." });
@@ -259,7 +259,7 @@ public sealed class KardexController : ControllerBase
         DateTime? startDate, DateTime? endDate,
         CancellationToken ct)
     {
-        var reporte = KardexReport.Create(_tenant.TenantId, productId, warehouseId, startDate, endDate);
+        var reporte = KardexReport.Create(_tenant.SubscriberId, productId, warehouseId, startDate, endDate);
 
         await _reporteRepo.AddAsync(reporte, ct);
         await _reporteRepo.SaveChangesAsync(ct);

@@ -3,7 +3,7 @@ using ERP.Domain.Common;
 namespace ERP.Domain.Subscriptions.Entities;
 
 /// <summary>Auditoría de cambios de plan y overrides de suscripción SaaS.</summary>
-public sealed class TenantSaasSubscriptionEvent : AuditableEntity
+public sealed class SubscriberSubscriptionEvent : AuditableEntity
 {
     public Guid? SubscriptionId { get; private set; }
     public string EventType { get; private set; } = null!;
@@ -12,10 +12,10 @@ public sealed class TenantSaasSubscriptionEvent : AuditableEntity
     public string? MetadataJson { get; private set; }
     public DateTime OccurredAtUtc { get; private set; }
 
-    private TenantSaasSubscriptionEvent() { }
+    private SubscriberSubscriptionEvent() { }
 
-    public static TenantSaasSubscriptionEvent Create(
-        Guid tenantId,
+    public static SubscriberSubscriptionEvent Create(
+        Guid subscriberId,
         string eventType,
         Guid actorId,
         Guid? subscriptionId = null,
@@ -23,10 +23,10 @@ public sealed class TenantSaasSubscriptionEvent : AuditableEntity
         Guid? newPlanId = null,
         string? metadataJson = null)
     {
-        var e = new TenantSaasSubscriptionEvent
+        var e = new SubscriberSubscriptionEvent
         {
             Id = Guid.NewGuid(),
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             SubscriptionId = subscriptionId,
             EventType = eventType.Trim(),
             PreviousPlanId = previousPlanId,

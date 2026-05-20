@@ -13,7 +13,7 @@ public sealed class PurchNoteConfiguration : IEntityTypeConfiguration<PurchNote>
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(x => x.SupplierId).HasColumnName("supplier_id").IsRequired();
         builder.Property(x => x.PurchBillId).HasColumnName("purch_bill_id");
         builder.Property(x => x.ExpenseInvoiceId).HasColumnName("expense_invoice_id");
@@ -37,8 +37,8 @@ public sealed class PurchNoteConfiguration : IEntityTypeConfiguration<PurchNote>
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => new { x.TenantId, x.AccessKey }).IsUnique().HasDatabaseName("uq_purch_note_access_key");
-        builder.HasIndex(x => new { x.TenantId, x.SupplierId, x.Status }).HasDatabaseName("ix_purch_note_tenant_supplier_status");
+        builder.HasIndex(x => new { x.SubscriberId, x.AccessKey }).IsUnique().HasDatabaseName("uq_purch_note_access_key");
+        builder.HasIndex(x => new { x.SubscriberId, x.SupplierId, x.Status }).HasDatabaseName("ix_purch_note_subscriber_supplier_status");
         builder.HasIndex(x => x.PurchBillId).HasDatabaseName("ix_purch_note_bill_id");
         builder.HasIndex(x => x.ExpenseInvoiceId).HasDatabaseName("ix_purch_note_expense_id");
 

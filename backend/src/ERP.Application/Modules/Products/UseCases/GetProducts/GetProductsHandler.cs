@@ -8,12 +8,12 @@ namespace ERP.Application.Products.UseCases.GetProducts;
 public class GetProductsHandler : IRequestHandler<GetProductsQuery, Result<IReadOnlyList<ProductDto>>>
 {
     private readonly IProductRepository _repository;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
-    public GetProductsHandler(IProductRepository repository, ICurrentTenant currentTenant)
+    public GetProductsHandler(IProductRepository repository, ICurrentSubscriber currentSubscriber)
     {
         _repository    = repository;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public Task<Result<IReadOnlyList<ProductDto>>> HandleAsync(CancellationToken ct = default)
@@ -21,8 +21,8 @@ public class GetProductsHandler : IRequestHandler<GetProductsQuery, Result<IRead
 
     public async Task<Result<IReadOnlyList<ProductDto>>> Handle(GetProductsQuery request, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
-        var products = await _repository.GetAllByTenantAsync(tenantId, ct);
+        var subscriberId = _currentSubscriber.SubscriberId;
+        var products = await _repository.GetAllByTenantAsync(subscriberId, ct);
 
         var dtos = products.Select(p => new ProductDto(
             p.Id, p.SaleCode, p.PurchaseCode, p.ShortName, p.Description,

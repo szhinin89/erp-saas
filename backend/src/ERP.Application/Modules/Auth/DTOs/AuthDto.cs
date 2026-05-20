@@ -13,7 +13,7 @@ public record RegisterDto(
     string LastName,
     string Email,
     string Password,
-    Guid TenantId
+    Guid SubscriberId
 );
 
 public record LoginDto(
@@ -26,11 +26,14 @@ public record AuthResponseDto(
     string                FullName,
     string                Email,
     string                Role,
-    Guid                  TenantId,
+    Guid                  SubscriberId,
     string                Token,
     string?               PlanCode,
     IReadOnlyList<string> EnabledModules)
 {
+    /// <summary>Empresa operativa (RUC) activa. Null si el token no incluye contexto company.</summary>
+    public Guid? CompanyId { get; init; }
+
     /// <summary>Token opaco para renovar el access token sin re-autenticarse. Null para SuperAdmin.</summary>
     public string?   RefreshToken       { get; init; }
     public DateTime? RefreshTokenExpiry { get; init; }

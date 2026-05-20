@@ -1,4 +1,4 @@
-﻿using ERP.API.Contracts;
+using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Subscriptions;
@@ -15,9 +15,9 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public sealed class SuperAdminPlanesMenuController : ControllerBase
 {
-    private readonly ISaasPlansAdminService _admin;
+    private readonly ICommercialPlansAdminService _admin;
 
-    public SuperAdminPlanesMenuController(ISaasPlansAdminService admin) => _admin = admin;
+    public SuperAdminPlanesMenuController(ICommercialPlansAdminService admin) => _admin = admin;
 
     public sealed record PlanMenuPutBody(string? MenuConfigJson, string? MenuSidebarLayout);
 
@@ -41,7 +41,7 @@ public sealed class SuperAdminPlanesMenuController : ControllerBase
             : this.ApiBadRequest(r.Error ?? "Error");
     }
 
-    /// <summary>Misma semántica que <c>POST /api/superadmin/saas-plans/{target}/copy-from/{source}</c>.</summary>
+    /// <summary>Misma semántica que <c>POST /api/superadmin/commercial-plans/{target}/copy-from/{source}</c>.</summary>
     [HttpPost("{targetPlanId:guid}/copy-from/{sourcePlanId:guid}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

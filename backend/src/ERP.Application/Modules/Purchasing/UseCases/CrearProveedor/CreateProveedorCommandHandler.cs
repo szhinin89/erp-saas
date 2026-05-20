@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -13,13 +13,13 @@ public sealed class CreateSupplierCommandHandler
 {
     private readonly ISupplierRepository    _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _tenant;
+    private readonly ICurrentSubscriber          _tenant;
     private readonly ICurrentUser            _user;
 
     public CreateSupplierCommandHandler(
         ISupplierRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user)
     {
         _repo     = repo;
@@ -30,17 +30,17 @@ public sealed class CreateSupplierCommandHandler
 
     public async Task<Result<SupplierDto>> Handle(CreateSupplierCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
-        if (await _repo.ExistsRucAsync(tenantId, command.Ruc, null, ct))
+        if (await _repo.ExistsRucAsync(subscriberId, command.Ruc, null, ct))
             return Result<SupplierDto>.Failure($"Ya existe un Supplier con el RUC '{command.Ruc}' en este tenant.");
 
         Supplier Supplier;
         try
         {
             Supplier = Supplier.Create(
-                tenantId, command.PersonType, command.LegalName, command.Ruc,
+                subscriberId, command.PersonType, command.LegalName, command.Ruc,
                 command.Email, command.Phone, command.Address, command.PaymentTerms,
                 userId);
         }
@@ -51,7 +51,7 @@ public sealed class CreateSupplierCommandHandler
 
         await _repo.AddAsync(Supplier, ct);
         await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _user.Email, _user.FullName,
+            subscriberId, userId, _user.Email, _user.FullName,
             module: "compras", action: "Supplier.create",
             entityType: "Supplier", entityId: Supplier.Id,
             description: $"{Supplier.Ruc} — {Supplier.LegalName}"), ct);

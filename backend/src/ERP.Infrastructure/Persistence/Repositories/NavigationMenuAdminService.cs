@@ -212,9 +212,9 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
             .Select(i => (int?)i.SortOrder)
             .MaxAsync(ct) ?? -1;
 
-        if (request.SaasFeatureDefinitionId is { } sfid)
+        if (request.PlatformFeatureId is { } sfid)
         {
-            var featOk = await _db.SaasFeatureDefinitions.AsNoTracking().AnyAsync(f => f.Id == sfid, ct);
+            var featOk = await _db.PlatformFeatures.AsNoTracking().AnyAsync(f => f.Id == sfid, ct);
             if (!featOk)
                 return (false, null, "Definición SaaS no encontrada.");
         }
@@ -234,7 +234,7 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
             true,
             request.ParentItemId,
             label,
-            request.SaasFeatureDefinitionId);
+            request.PlatformFeatureId);
 
         _db.UiNavItems.Add(entity);
         await _db.SaveChangesAsync(ct);
@@ -270,14 +270,14 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
         var permissionKey = string.IsNullOrWhiteSpace(request.PermissionKey) ? null : request.PermissionKey.Trim();
 
         Guid? sfid = null;
-        var rawSf = (request.SaasFeatureDefinitionId ?? string.Empty).Trim();
+        var rawSf = (request.PlatformFeatureId ?? string.Empty).Trim();
         if (rawSf.Length > 0)
         {
             if (!Guid.TryParse(rawSf, out var parsed))
                 return (false, "saasFeatureDefinitionId no es un GUID válido.");
 
             sfid = parsed;
-            var featOk = await _db.SaasFeatureDefinitions.AsNoTracking().AnyAsync(f => f.Id == sfid.Value, ct);
+            var featOk = await _db.PlatformFeatures.AsNoTracking().AnyAsync(f => f.Id == sfid.Value, ct);
             if (!featOk)
                 return (false, "Definición SaaS no encontrada.");
         }
@@ -289,7 +289,7 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
                     .SetProperty(x => x.RoutePath, route)
                     .SetProperty(x => x.ModuleKey, moduleKey)
                     .SetProperty(x => x.PermissionKey, permissionKey)
-                    .SetProperty(x => x.SaasFeatureDefinitionId, sfid),
+                    .SetProperty(x => x.PlatformFeatureId, sfid),
                 ct);
 
         return (true, null);
@@ -372,7 +372,7 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
                 i.PermissionKey,
                 ParseKeysAny(i.PermissionKeysAnyJson),
                 i.IsActive,
-                i.SaasFeatureDefinitionId,
+                i.PlatformFeatureId,
                 nested));
         }
 

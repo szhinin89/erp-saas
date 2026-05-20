@@ -8,16 +8,16 @@ namespace ERP.Application.Audit.UseCases.GetEntityActivity;
 public class GetEntityActivityHandler : IRequestHandler<GetEntityActivityQuery, Result<IReadOnlyList<UserActivityDto>>>
 {
     private readonly IUserActivityRepository _repo;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public GetEntityActivityHandler(
         IUserActivityRepository repo,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
@@ -35,7 +35,7 @@ public class GetEntityActivityHandler : IRequestHandler<GetEntityActivityQuery, 
         var take = query.Take < 1 ? 10 : query.Take > 50 ? 50 : query.Take;
 
         var list = await _repo.GetByEntityAsync(
-            _currentTenant.TenantId,
+            _currentSubscriber.SubscriberId,
             query.EntityType.Trim(),
             query.EntityId,
             take,

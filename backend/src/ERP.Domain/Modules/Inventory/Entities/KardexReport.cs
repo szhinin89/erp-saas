@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
-public sealed class KardexReport : ITenantEntity
+public sealed class KardexReport : ISubscriberScopedEntity
 {
     public const string StatusPending    = "Pending";
     public const string StatusProcessing = "Processing";
@@ -10,7 +10,7 @@ public sealed class KardexReport : ITenantEntity
     public const string StatusError      = "Error";
 
     public Guid      Id          { get; private set; }
-    public Guid      TenantId    { get; private set; }
+    public Guid      SubscriberId    { get; private set; }
     public Guid      ProductId   { get; private set; }
     public Guid      WarehouseId { get; private set; }
     public DateTime? DateFrom    { get; private set; }
@@ -24,12 +24,12 @@ public sealed class KardexReport : ITenantEntity
     private KardexReport() { }
 
     public static KardexReport Create(
-        Guid tenantId, Guid productId, Guid warehouseId,
+        Guid subscriberId, Guid productId, Guid warehouseId,
         DateTime? dateFrom, DateTime? dateTo)
         => new()
         {
             Id          = Guid.NewGuid(),
-            TenantId    = tenantId,
+            SubscriberId    = subscriberId,
             ProductId   = productId,
             WarehouseId = warehouseId,
             DateFrom    = dateFrom,

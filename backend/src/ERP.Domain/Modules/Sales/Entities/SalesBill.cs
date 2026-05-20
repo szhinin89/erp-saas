@@ -4,7 +4,7 @@ using ERP.Domain.Modules.Sales.Events;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
-public sealed class SalesBill : AuditableEntity, ITenantEntity
+public sealed class SalesBill : AuditableEntity, ISubscriberScopedEntity
 {
     public const int DocTypeMaxLen       = 10;
     public const int EstabMaxLen         = 3;
@@ -53,7 +53,7 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
     private SalesBill() { }
 
     public static SalesBill Create(
-        Guid      tenantId,
+        Guid      subscriberId,
         Guid      branchId,
         Guid      customerId,
         Guid      warehouseId,
@@ -80,7 +80,7 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
         var b = new SalesBill
         {
             Id                = Guid.NewGuid(),
-            TenantId          = tenantId,
+            SubscriberId          = subscriberId,
             BranchId          = branchId,
             CustomerId        = customerId,
             WarehouseId       = warehouseId,
@@ -139,7 +139,7 @@ public sealed class SalesBill : AuditableEntity, ITenantEntity
         if (lines.Count > 0)
         {
             var number = $"{EstabCode}-{EmPointCode}-{Sequential}";
-            RaiseDomainEvent(new SalesBillAuthorizedEvent(Id, TenantId, userId, WarehouseId, number, lines));
+            RaiseDomainEvent(new SalesBillAuthorizedEvent(Id, SubscriberId, userId, WarehouseId, number, lines));
         }
     }
 

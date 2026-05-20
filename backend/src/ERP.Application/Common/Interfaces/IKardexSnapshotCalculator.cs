@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Common.Interfaces;
+namespace ERP.Application.Common.Interfaces;
 
 /// <summary>
 /// Contrato para el recálculo de snapshots del kardex.
@@ -8,12 +8,12 @@ public interface IKardexSnapshotCalculator
 {
     /// <summary>Recalcula snapshots para un tenant, con filtros opcionales.</summary>
     Task<int> RecalcularTenantAsync(
-        Guid      tenantId,
+        Guid      subscriberId,
         Guid?     productoId,
         Guid?     bodegaId,
         DateTime  untilDate,
         CancellationToken ct = default);
 
-    /// <summary>Recalcula snapshots para todos los tenants hasta la fecha indicada.</summary>
+    /// <summary>Recalcula snapshots para todos los subscribers hasta la fecha indicada.</summary>
     Task<int> RecalcularTodosAsync(DateTime untilDate, CancellationToken ct = default);
 }

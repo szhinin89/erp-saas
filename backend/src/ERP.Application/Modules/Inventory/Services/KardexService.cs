@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Options;
 using ERP.Application.Common;
 using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
@@ -24,7 +24,7 @@ public sealed class KardexService : IKardexService
     private readonly IKardexSnapshotRepository _snapshots;
     private readonly IProductRepository _productos;
     private readonly IWarehouseRepository _bodegas;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly KardexOptions _opts;
     private readonly IKardexMaterializedDailySummariesReader _mvReader;
 
@@ -33,7 +33,7 @@ public sealed class KardexService : IKardexService
         IKardexSnapshotRepository snapshots,
         IProductRepository productos,
         IWarehouseRepository bodegas,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         IOptions<KardexOptions> options,
         IKardexMaterializedDailySummariesReader mvReader)
     {
@@ -48,20 +48,20 @@ public sealed class KardexService : IKardexService
 
     public Task<Result<KardexResponse>> GenerarKardexEscalableAsync(
         GetKardexQuery query, CancellationToken cancellationToken = default)
-        => GenerarInternalAsync(_tenant.TenantId, query, cancellationToken);
+        => GenerarInternalAsync(_tenant.SubscriberId, query, cancellationToken);
 
     public Task<Result<KardexResponse>> GenerarKardexEscalableAsync(
-        Guid tenantId, GetKardexQuery query, CancellationToken cancellationToken = default)
-        => GenerarInternalAsync(tenantId, query, cancellationToken);
+        Guid subscriberId, GetKardexQuery query, CancellationToken cancellationToken = default)
+        => GenerarInternalAsync(subscriberId, query, cancellationToken);
 
     private async Task<Result<KardexResponse>> GenerarInternalAsync(
-        Guid tenantId, GetKardexQuery query, CancellationToken ct)
+        Guid subscriberId, GetKardexQuery query, CancellationToken ct)
     {
-        var producto = await _productos.GetByIdAsync(query.ProductId, tenantId, ct);
+        var producto = await _productos.GetByIdAsync(query.ProductId, subscriberId, ct);
         if (producto is null)
             return Result<KardexResponse>.Failure("Producto no encontrado.");
 
-        var Warehouse = await _bodegas.GetByIdAsync(tenantId, query.WarehouseId, ct);
+        var Warehouse = await _bodegas.GetByIdAsync(subscriberId, query.WarehouseId, ct);
         if (Warehouse is null)
             return Result<KardexResponse>.Failure("Warehouse no encontrada.");
 
@@ -81,7 +81,7 @@ public sealed class KardexService : IKardexService
             var anteriorAlPeriodo = fromUtc.Value.AddTicks(-1);
             var snapshot = _opts.UseScalableMode
                 ? await _snapshots.GetLatestBeforeAsync(
-                    tenantId, query.ProductId, query.WarehouseId, anteriorAlPeriodo, ct)
+                    subscriberId, query.ProductId, query.WarehouseId, anteriorAlPeriodo, ct)
                 : null;
 
             if (snapshot is not null)
@@ -94,7 +94,7 @@ public sealed class KardexService : IKardexService
                 if (gapDesde < fromUtc.Value)
                 {
                     (balanceQuantity, balanceValue, averageCost) = await AplicarHuecoSnapshotAsync(
-                        tenantId, query.ProductId, query.WarehouseId,
+                        subscriberId, query.ProductId, query.WarehouseId,
                         gapDesde, anteriorAlPeriodo,
                         balanceQuantity, balanceValue, averageCost, ct);
                 }
@@ -102,7 +102,7 @@ public sealed class KardexService : IKardexService
             else
             {
                 var previos = await _inventario.GetMovementsAsync(
-                    tenantId, query.ProductId, query.WarehouseId,
+                    subscriberId, query.ProductId, query.WarehouseId,
                     null, anteriorAlPeriodo, ct);
 
                 foreach (var m in previos)
@@ -114,7 +114,7 @@ public sealed class KardexService : IKardexService
         var inventarioInicialValor    = balanceValue;
 
         var movimientos = await _inventario.GetMovementsAsync(
-            tenantId, query.ProductId, query.WarehouseId, fromUtc, toUtc, ct);
+            subscriberId, query.ProductId, query.WarehouseId, fromUtc, toUtc, ct);
 
         var rows = new List<KardexMovementDto>(movimientos.Count);
 
@@ -181,7 +181,7 @@ public sealed class KardexService : IKardexService
     /// frente al orden real intra-día).
     /// </summary>
     private async Task<(decimal balanceQuantity, decimal balanceValue, decimal averageCost)> AplicarHuecoSnapshotAsync(
-        Guid tenantId, Guid productoId, Guid bodegaId,
+        Guid subscriberId, Guid productoId, Guid bodegaId,
         DateTime gapDesdeUtc, DateTime gapHastaUtc,
         decimal balanceQuantity, decimal balanceValue, decimal averageCost,
         CancellationToken ct)
@@ -195,7 +195,7 @@ public sealed class KardexService : IKardexService
         if (d0 == d1)
         {
             return await AplicarMovimientosRangoAsync(
-                tenantId, productoId, bodegaId, gapDesdeUtc, gapHastaUtc,
+                subscriberId, productoId, bodegaId, gapDesdeUtc, gapHastaUtc,
                 balanceQuantity, balanceValue, averageCost, ct);
         }
 
@@ -204,7 +204,7 @@ public sealed class KardexService : IKardexService
         if (gapDesdeUtc <= endA)
         {
             (balanceQuantity, balanceValue, averageCost) = await AplicarMovimientosRangoAsync(
-                tenantId, productoId, bodegaId, gapDesdeUtc, endA,
+                subscriberId, productoId, bodegaId, gapDesdeUtc, endA,
                 balanceQuantity, balanceValue, averageCost, ct);
         }
 
@@ -216,14 +216,14 @@ public sealed class KardexService : IKardexService
             if (_opts.UseMaterializedDailySummaries)
             {
                 var mvRows = await _mvReader.TryGetDailyAggregatesAsync(
-                    tenantId, productoId, bodegaId, firstFullDay, lastFullDay, ct);
+                    subscriberId, productoId, bodegaId, firstFullDay, lastFullDay, ct);
 
                 if (mvRows is { Count: > 0 })
                 {
                     foreach (var row in mvRows.OrderBy(r => r.Date))
                     {
                         (balanceQuantity, balanceValue, averageCost) = AplicarAgregadoMvDia(
-                            row, tenantId, productoId, bodegaId,
+                            row, subscriberId, productoId, bodegaId,
                             balanceQuantity, balanceValue, averageCost);
                     }
                 }
@@ -232,7 +232,7 @@ public sealed class KardexService : IKardexService
                     var fullStart = StartOfUtcDayFromDateOnly(firstFullDay);
                     var fullEnd   = EndOfUtcDayFromDateOnly(lastFullDay);
                     (balanceQuantity, balanceValue, averageCost) = await AplicarMovimientosRangoAsync(
-                        tenantId, productoId, bodegaId, fullStart, fullEnd,
+                        subscriberId, productoId, bodegaId, fullStart, fullEnd,
                         balanceQuantity, balanceValue, averageCost, ct);
                 }
             }
@@ -241,7 +241,7 @@ public sealed class KardexService : IKardexService
                 var fullStart = StartOfUtcDayFromDateOnly(firstFullDay);
                 var fullEnd   = EndOfUtcDayFromDateOnly(lastFullDay);
                 (balanceQuantity, balanceValue, averageCost) = await AplicarMovimientosRangoAsync(
-                    tenantId, productoId, bodegaId, fullStart, fullEnd,
+                    subscriberId, productoId, bodegaId, fullStart, fullEnd,
                     balanceQuantity, balanceValue, averageCost, ct);
             }
         }
@@ -250,7 +250,7 @@ public sealed class KardexService : IKardexService
         if (gapHastaUtc >= startLastDay && d0 != d1)
         {
             (balanceQuantity, balanceValue, averageCost) = await AplicarMovimientosRangoAsync(
-                tenantId, productoId, bodegaId, startLastDay, gapHastaUtc,
+                subscriberId, productoId, bodegaId, startLastDay, gapHastaUtc,
                 balanceQuantity, balanceValue, averageCost, ct);
         }
 
@@ -267,13 +267,13 @@ public sealed class KardexService : IKardexService
         => DateTime.SpecifyKind(d.ToDateTime(TimeOnly.MaxValue), DateTimeKind.Utc);
 
     private async Task<(decimal balanceQuantity, decimal balanceValue, decimal averageCost)> AplicarMovimientosRangoAsync(
-        Guid tenantId, Guid productoId, Guid bodegaId,
+        Guid subscriberId, Guid productoId, Guid bodegaId,
         DateTime fromUtc, DateTime toUtc,
         decimal balanceQuantity, decimal balanceValue, decimal averageCost,
         CancellationToken ct)
     {
         var movs = await _inventario.GetMovementsAsync(
-            tenantId, productoId, bodegaId, fromUtc, toUtc, ct);
+            subscriberId, productoId, bodegaId, fromUtc, toUtc, ct);
         foreach (var m in movs)
             KardexCalculator.ApplyMovement(m, ref balanceQuantity, ref balanceValue, ref averageCost);
 
@@ -282,14 +282,14 @@ public sealed class KardexService : IKardexService
 
     private static (decimal balanceQuantity, decimal balanceValue, decimal averageCost) AplicarAgregadoMvDia(
         KardexMvDayAggregate row,
-        Guid tenantId, Guid productoId, Guid bodegaId,
+        Guid subscriberId, Guid productoId, Guid bodegaId,
         decimal balanceQuantity, decimal balanceValue, decimal averageCost)
     {
         if (row.EntryQty > 0m)
         {
             var costoUnit = row.EntryValue / row.EntryQty;
             var m = StockMovement.Create(
-                tenantId, productoId, bodegaId,
+                subscriberId, productoId, bodegaId,
                 StockMovementType.PurchaseEntry,
                 row.EntryQty,
                 balanceQuantity,
@@ -303,7 +303,7 @@ public sealed class KardexService : IKardexService
         if (row.ExitQty > 0m)
         {
             var m = StockMovement.Create(
-                tenantId, productoId, bodegaId,
+                subscriberId, productoId, bodegaId,
                 StockMovementType.SaleExit,
                 -row.ExitQty,
                 balanceQuantity,

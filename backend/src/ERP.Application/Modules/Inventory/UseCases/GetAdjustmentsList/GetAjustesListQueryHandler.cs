@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -9,23 +9,23 @@ public sealed class GetStockAdjustmentsListQueryHandler
     : IRequestHandler<GetStockAdjustmentsListQuery, Result<StockAdjustmentsPagedResult>>
 {
     private readonly IStockAdjustmentRepository _repo;
-    private readonly ICurrentTenant              _currentTenant;
+    private readonly ICurrentSubscriber              _currentSubscriber;
 
     public GetStockAdjustmentsListQueryHandler(
         IStockAdjustmentRepository repo,
-        ICurrentTenant currentTenant)
+        ICurrentSubscriber currentSubscriber)
     {
         _repo          = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public async Task<Result<StockAdjustmentsPagedResult>> Handle(
         GetStockAdjustmentsListQuery query, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
 
         var (items, total) = await _repo.GetPagedAsync(
-            tenantId, query.PageNumber, query.PageSize,
+            subscriberId, query.PageNumber, query.PageSize,
             query.WarehouseId, query.ProductId, query.Status,
             query.DateFrom, query.DateTo, ct);
 

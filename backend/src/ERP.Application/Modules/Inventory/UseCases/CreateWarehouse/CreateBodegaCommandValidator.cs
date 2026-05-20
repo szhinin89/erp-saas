@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using ERP.Application.Common;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -9,7 +9,7 @@ public sealed class CreateWarehouseCommandValidator : AbstractValidator<CreateWa
 {
     public CreateWarehouseCommandValidator(
         IWarehouseRepository repo,
-        ICurrentTenant tenant)
+        ICurrentSubscriber tenant)
     {
         RuleFor(x => x.BranchId)
             .NotEmpty().WithMessage("La sucursal es obligatoria.");
@@ -19,7 +19,7 @@ public sealed class CreateWarehouseCommandValidator : AbstractValidator<CreateWa
             .MaximumLength(Warehouse.NameMaxLen)
             .WithMessage($"El nombre no puede exceder {Warehouse.NameMaxLen} caracteres.")
             .MustAsync(async (nombre, ct) =>
-                !await repo.ExistsNameAsync(tenant.TenantId, nombre, null, ct))
+                !await repo.ExistsNameAsync(tenant.SubscriberId, nombre, null, ct))
             .WithMessage("Ya existe una Warehouse con ese nombre en el tenant.");
 
         RuleFor(x => x.Address)

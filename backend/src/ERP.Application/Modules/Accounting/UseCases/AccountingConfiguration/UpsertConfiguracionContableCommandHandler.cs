@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Accounting.DTOs;
@@ -12,13 +12,13 @@ public sealed class UpsertConfigurationContableCommandHandler
 {
     private readonly IAccountingSetupRepository _configRepo;
     private readonly IAccountingRepository      _accounts;
-    private readonly ICurrentTenant             _tenant;
+    private readonly ICurrentSubscriber             _tenant;
     private readonly ICurrentUser               _user;
 
     public UpsertConfigurationContableCommandHandler(
         IAccountingSetupRepository configRepo,
         IAccountingRepository accounts,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user)
     {
         _configRepo = configRepo;
@@ -31,7 +31,7 @@ public sealed class UpsertConfigurationContableCommandHandler
         UpsertConfigurationContableCommand command,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
         foreach (var (role, id) in new (string, Guid?)[]
@@ -49,7 +49,7 @@ public sealed class UpsertConfigurationContableCommandHandler
         {
             if (id is null)
                 continue;
-            var err = await ValidateAccountAsync(id.Value, tenantId, role, ct);
+            var err = await ValidateAccountAsync(id.Value, subscriberId, role, ct);
             if (err is not null)
                 return Result<AccountingSetupDto>.Failure(err);
         }
@@ -57,7 +57,7 @@ public sealed class UpsertConfigurationContableCommandHandler
         var existing = await _configRepo.GetSetupAsync(ct);
         if (existing is null)
         {
-            var created = AccountingSetup.Create(tenantId, userId);
+            var created = AccountingSetup.Create(subscriberId, userId);
             created.UpdateAccounts(
                 command.InventoryAccountId,
                 command.CostOfSalesAccountId,
@@ -104,9 +104,9 @@ public sealed class UpsertConfigurationContableCommandHandler
             saved.BankAccountId));
     }
 
-    private async Task<string?> ValidateAccountAsync(Guid accountId, Guid tenantId, string role, CancellationToken ct)
+    private async Task<string?> ValidateAccountAsync(Guid accountId, Guid subscriberId, string role, CancellationToken ct)
     {
-        var a = await _accounts.GetByIdAsync(accountId, tenantId, ct);
+        var a = await _accounts.GetByIdAsync(accountId, subscriberId, ct);
         if (a is null)
             return $"La cuenta de {role} no existe o no pertenece al tenant.";
         if (!a.IsActive)

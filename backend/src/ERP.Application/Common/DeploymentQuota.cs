@@ -1,5 +1,5 @@
 using ERP.Domain.Access.Interfaces;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Subscribers.Interfaces;
 
 namespace ERP.Application.Common;
 
@@ -9,22 +9,22 @@ namespace ERP.Application.Common;
 /// </summary>
 public static class DeploymentQuota
 {
-    public static async Task<string?> GetBlockingReasonIfAtActiveTenantCapAsync(
+    public static async Task<string?> GetBlockingReasonIfAtActiveSubscriberCapAsync(
         IDeploymentFeatureFlags flags,
-        ITenantRepository tenants,
+        ISubscriberRepository subscribers,
         CancellationToken ct)
     {
-        if (flags.IsDedicatedSingleClientInstance && flags.MaxActiveTenants is null)
+        if (flags.IsDedicatedSingleClientInstance && flags.MaxActiveSubscribers is null)
         {
             return "Instancia dedicada (un cliente / servidor propio): defina un tope de empresas (RUC). " +
-                   "No se permite ilimitado. Use Deployment:MaxActiveTenants o el archivo App_Data/instance-quota.json (maxActiveTenants).";
+                   "No se permite ilimitado. Use Deployment:MaxActiveSubscribers o el archivo App_Data/instance-quota.json (maxActiveTenants).";
         }
 
-        var max = flags.MaxActiveTenants;
+        var max = flags.MaxActiveSubscribers;
         if (max is null)
             return null;
 
-        var all = await tenants.GetAllAsync(ct);
+        var all = await subscribers.GetAllAsync(ct);
         var active = all.Count(t => t.IsActive);
         if (active >= max.Value)
         {
@@ -36,21 +36,21 @@ public static class DeploymentQuota
     }
 
     /// <summary>Tope de usuarios Identity con membresía activa por empresa (tenant).</summary>
-    public static async Task<string?> GetBlockingReasonIfAtTenantMembershipUserCapAsync(
+    public static async Task<string?> GetBlockingReasonIfAtTenantCompanyUserMembershipUserCapAsync(
         IDeploymentFeatureFlags flags,
         IAccessRepository access,
-        Guid tenantId,
+        Guid subscriberId,
         CancellationToken ct)
     {
-        var max = flags.MaxUsersPerTenant;
+        var max = flags.MaxUsersPerSubscriber;
         if (max is null)
             return null;
 
-        var n = await access.CountActiveMembershipsByTenantAsync(tenantId, ct);
+        var n = await access.CountActiveCompanyUserMembershipsBySubscriberAsync(subscriberId, ct);
         if (n >= max.Value)
         {
             return $"Se alcanzó el máximo de usuarios por empresa ({max.Value}). " +
-                   "Aumente el tope (Deployment:MaxUsersPerTenant o App_Data/instance-quota.json) o desactive usuarios.";
+                   "Aumente el tope (Deployment:MaxUsersPerSubscriber o App_Data/instance-quota.json) o desactive usuarios.";
         }
 
         return null;

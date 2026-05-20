@@ -58,6 +58,6 @@ public class SuperAdminLoginHandler : IRequestHandler<SuperAdminLoginCommand, Re
             Guid.Empty,
             token,
             PlanCode: null,
-            EnabledModules: TenantSubscriptionCatalog.AllModuleKeys));
+            EnabledModules: SubscriberSubscriptionCatalog.AllModuleKeys));
     }
 }

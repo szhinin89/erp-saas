@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 
@@ -10,8 +10,8 @@ public sealed class SriSettingsRepository : ISriSettingsRepository
 
     public SriSettingsRepository(ErpDbContext context) => _context = context;
 
-    public Task<SriSettings?> GetByTenantIdAsync(Guid tenantId, CancellationToken ct = default)
-        => _context.SriSettings.FirstOrDefaultAsync(c => c.TenantId == tenantId, ct);
+    public Task<SriSettings?> GetBySubscriberIdAsync(Guid subscriberId, CancellationToken ct = default)
+        => _context.SriSettings.FirstOrDefaultAsync(c => c.SubscriberId == subscriberId, ct);
 
     public Task AddAsync(SriSettings config, CancellationToken ct = default)
         => _context.SriSettings.AddAsync(config, ct).AsTask();

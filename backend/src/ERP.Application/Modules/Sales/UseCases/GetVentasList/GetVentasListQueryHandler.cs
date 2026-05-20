@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Sales.DTOs;
 using ERP.Domain.Modules.Sales.Entities;
@@ -10,12 +10,12 @@ public sealed class GetSalesListQueryHandler
     : IRequestHandler<GetSalesListQuery, Result<SalesPagedResult>>
 {
     private readonly ISalesRepository _ventasRepository;
-    private readonly ICurrentTenant    _currentTenant;
+    private readonly ICurrentSubscriber    _currentSubscriber;
 
-    public GetSalesListQueryHandler(ISalesRepository ventasRepository, ICurrentTenant currentTenant)
+    public GetSalesListQueryHandler(ISalesRepository ventasRepository, ICurrentSubscriber currentSubscriber)
     {
         _ventasRepository = ventasRepository;
-        _currentTenant    = currentTenant;
+        _currentSubscriber    = currentSubscriber;
     }
 
     public async Task<Result<SalesPagedResult>> Handle(GetSalesListQuery query, CancellationToken ct)
@@ -24,7 +24,7 @@ public sealed class GetSalesListQueryHandler
         var pageSize   = Math.Clamp(query.PageSize, 1, 100);
 
         var (items, totalCount) = await _ventasRepository.GetBillsPagedAsync(
-            _currentTenant.TenantId,
+            _currentSubscriber.SubscriberId,
             pageNumber,
             pageSize,
             query.CustomerId,

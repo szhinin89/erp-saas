@@ -19,7 +19,7 @@ public sealed class AprobarCompraCommandHandlerStockTests
     [Fact]
     public async Task PurchBillApprovedEventHandler_crea_stock_y_movimientos()
     {
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
         var userId   = Guid.NewGuid();
         var provId   = Guid.NewGuid();
         var p1       = Guid.NewGuid();
@@ -38,7 +38,7 @@ public sealed class AprobarCompraCommandHandlerStockTests
         var stocks      = new List<CurrentStock>();
 
         var inv = new Mock<IStockRepository>();
-        inv.Setup(x => x.GetStockAsync(tenantId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        inv.Setup(x => x.GetStockAsync(subscriberId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((CurrentStock?)null);
         inv.Setup(x => x.AddCurrentStockAsync(It.IsAny<CurrentStock>(), It.IsAny<CancellationToken>()))
             .Callback<CurrentStock, CancellationToken>((s, _) => stocks.Add(s))
@@ -51,7 +51,7 @@ public sealed class AprobarCompraCommandHandlerStockTests
             inv.Object,
             NullLogger<PurchBillApprovedEventHandler>.Instance);
 
-        var ev = new PurchBillApprovedEvent(Guid.NewGuid(), tenantId, "F-9001", userId, lines);
+        var ev = new PurchBillApprovedEvent(Guid.NewGuid(), subscriberId, "F-9001", userId, lines);
         await handler.Handle(ev, CancellationToken.None);
 
         movimientos.Should().HaveCount(3);
@@ -62,7 +62,7 @@ public sealed class AprobarCompraCommandHandlerStockTests
     [Fact]
     public async Task AprobarCompra_agrega_CompraAprobadaEvent_y_no_llama_inventario_directamente()
     {
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
         var userId   = Guid.NewGuid();
         var provId   = Guid.NewGuid();
         var p1       = Guid.NewGuid();
@@ -71,7 +71,7 @@ public sealed class AprobarCompraCommandHandlerStockTests
         var b2       = Guid.NewGuid();
 
         var compra = PurchBill.Create(
-            tenantId, provId, "F-9001", null, null,
+            subscriberId, provId, "F-9001", null, null,
             DateTime.UtcNow.Date, null, "Contado", null, userId);
         compra.AddLine("P1", null, p1, 10m, 1m, 0m, 0m, userId);
         compra.AddLine("P2", null, p2, 5m, 1m, 0m, 0m, userId);
@@ -82,15 +82,15 @@ public sealed class AprobarCompraCommandHandlerStockTests
 
         IReadOnlyList<PurchWarehouseAlloc> asignaciones =
         [
-            PurchWarehouseAlloc.Create(tenantId, compra.Id, d0, b1, p1, 6m, userId),
-            PurchWarehouseAlloc.Create(tenantId, compra.Id, d0, b2, p1, 4m, userId),
-            PurchWarehouseAlloc.Create(tenantId, compra.Id, d1, b2, p2, 5m, userId),
+            PurchWarehouseAlloc.Create(subscriberId, compra.Id, d0, b1, p1, 6m, userId),
+            PurchWarehouseAlloc.Create(subscriberId, compra.Id, d0, b2, p1, 4m, userId),
+            PurchWarehouseAlloc.Create(subscriberId, compra.Id, d1, b2, p2, 5m, userId),
         ];
 
         var repo = new Mock<IPurchBillRepository>();
-        repo.Setup(x => x.GetByIdWithLinesAsync(tenantId, compra.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(x => x.GetByIdWithLinesAsync(subscriberId, compra.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(compra);
-        repo.Setup(x => x.GetWarehouseAllocsByBillIdAsync(tenantId, compra.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(x => x.GetWarehouseAllocsByBillIdAsync(subscriberId, compra.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(asignaciones);
 
         var accounting = new Mock<ERP.Application.Common.Interfaces.IAccountingService>();
@@ -112,8 +112,8 @@ public sealed class AprobarCompraCommandHandlerStockTests
         uow.Setup(x => x.CommitAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         uow.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
-        var tenant = new Mock<ICurrentTenant>();
-        tenant.SetupGet(x => x.TenantId).Returns(tenantId);
+        var tenant = new Mock<ICurrentSubscriber>();
+        tenant.SetupGet(x => x.SubscriberId).Returns(subscriberId);
         var user = new Mock<ICurrentUser>();
         user.SetupGet(x => x.UserId).Returns(userId);
         user.SetupGet(x => x.Email).Returns("t@test");
@@ -146,20 +146,20 @@ public sealed class AprobarCompraCommandHandlerStockTests
     [Fact]
     public async Task Aprobar_rolls_back_when_accounting_fails()
     {
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
         var userId   = Guid.NewGuid();
         var provId   = Guid.NewGuid();
 
         var compra = PurchBill.Create(
-            tenantId, provId, "F-9002", null, null,
+            subscriberId, provId, "F-9002", null, null,
             DateTime.UtcNow.Date, null, "Contado", null, userId);
         compra.AddLine("X", null, Guid.NewGuid(), 1m, 1m, 0m, 0m, userId);
         compra.Validate(userId);
 
         var repo = new Mock<IPurchBillRepository>();
-        repo.Setup(x => x.GetByIdWithLinesAsync(tenantId, compra.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(x => x.GetByIdWithLinesAsync(subscriberId, compra.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(compra);
-        repo.Setup(x => x.GetWarehouseAllocsByBillIdAsync(tenantId, compra.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(x => x.GetWarehouseAllocsByBillIdAsync(subscriberId, compra.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<PurchWarehouseAlloc>());
 
         var accounting = new Mock<ERP.Application.Common.Interfaces.IAccountingService>();
@@ -176,8 +176,8 @@ public sealed class AprobarCompraCommandHandlerStockTests
         uow.Setup(x => x.BeginTransactionAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         uow.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
-        var tenant = new Mock<ICurrentTenant>();
-        tenant.SetupGet(x => x.TenantId).Returns(tenantId);
+        var tenant = new Mock<ICurrentSubscriber>();
+        tenant.SetupGet(x => x.SubscriberId).Returns(subscriberId);
         var user = new Mock<ICurrentUser>();
         user.SetupGet(x => x.UserId).Returns(userId);
         user.SetupGet(x => x.Email).Returns("t@test");

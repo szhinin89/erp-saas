@@ -1,10 +1,10 @@
 using MediatR;
 using ERP.Application.Common;
 
-namespace ERP.Application.Access.UseCases.UpsertMembership;
+namespace ERP.Application.Access.UseCases.UpsertCompanyUserMembership;
 
-public record UpsertMembershipCommand(
-    Guid TenantId,
+public record UpsertCompanyUserMembershipCommand(
+    Guid SubscriberId,
     string UserEmail,
     string Role,
     Guid? ProfileId = null

@@ -3,4 +3,4 @@ using MediatR;
 
 namespace ERP.Application.Subscriptions.UseCases.GetMyEntitlements;
 
-public sealed record GetMyEntitlementsQuery : IRequest<Result<TenantEntitlementsSnapshot>>;
+public sealed record GetMyEntitlementsQuery : IRequest<Result<SubscriberEntitlementsSnapshot>>;

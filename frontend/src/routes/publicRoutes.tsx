@@ -3,7 +3,8 @@ import { LoginPage } from '../pages/LoginPage';
 import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { PasswordResetPage } from '../pages/PasswordResetPage';
-import { TenantSelectPage } from '../pages/TenantSelectPage';
+import { SubscriberSelectPage } from '../pages/SubscriberSelectPage';
+import { CompanySelectPage } from '../pages/CompanySelectPage';
 
 /**
  * Rutas públicas (sin autenticación requerida).
@@ -14,5 +15,6 @@ export const publicRoutes = [
   <Route key="forgot-password" path="/forgot-password" element={<ForgotPasswordPage />} />,
   <Route key="reset-password" path="/reset-password" element={<ResetPasswordPage />} />,
   <Route key="password-reset" path="/password-reset" element={<PasswordResetPage />} />,
-  <Route key="select-tenant" path="/select-tenant" element={<TenantSelectPage />} />,
+  <Route key="select-subscriber" path="/select-subscriber" element={<SubscriberSelectPage />} />,
+  <Route key="select-company" path="/select-company" element={<CompanySelectPage />} />,
 ];

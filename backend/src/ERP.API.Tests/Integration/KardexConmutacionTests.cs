@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Reflection;
 using FluentAssertions;
@@ -39,7 +39,7 @@ public sealed class KardexConmutacionTests
             .SetValue(entity, DateTime.SpecifyKind(utc, DateTimeKind.Utc));
 
     private static StockMovement MovConFecha(
-        Guid tenantId, Guid productoId, Guid bodegaId,
+        Guid subscriberId, Guid productoId, Guid bodegaId,
         StockMovementType tipo, decimal quantity, decimal cantAnterior,
         decimal? unitCost, Guid userId, DateTime fecha)
     {
@@ -53,7 +53,7 @@ public sealed class KardexConmutacionTests
         };
 
         var m = StockMovement.Create(
-            tenantId, productoId, bodegaId, tipo,
+            subscriberId, productoId, bodegaId, tipo,
             movimientoCantidad, cantAnterior, null, null, null, userId, unitCost);
         SetCreatedAt(m, fecha);
         return m;
@@ -62,20 +62,20 @@ public sealed class KardexConmutacionTests
     // â”€â”€ Helper: instanciar el handler con opciones especÃ­ficas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static GetKardexQueryHandler BuildHandler(
-        IServiceScope scope, Guid tenantId, KardexOptions opts)
+        IServiceScope scope, Guid subscriberId, KardexOptions opts)
     {
         var kardex = new KardexService(
             scope.ServiceProvider.GetRequiredService<IStockRepository>(),
             scope.ServiceProvider.GetRequiredService<IKardexSnapshotRepository>(),
             scope.ServiceProvider.GetRequiredService<IProductRepository>(),
             scope.ServiceProvider.GetRequiredService<IWarehouseRepository>(),
-            new ManualCurrentTenant(tenantId),
+            new ManualCurrentSubscriber(subscriberId),
             Options.Create(opts),
             scope.ServiceProvider.GetRequiredService<IKardexMaterializedDailySummariesReader>());
         return new GetKardexQueryHandler(kardex);
     }
 
-    // â”€â”€ Helper: seed base + ManualCurrentTenant en el scope â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // â”€â”€ Helper: seed base + ManualCurrentSubscriber en el scope â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static async Task<(ErpDbContext Db, IServiceScope Scope, IntegrationSeedData.SeedResult Seed)>
         SeedAsync(IntegrationTestWebAppFactory factory)
@@ -83,9 +83,9 @@ public sealed class KardexConmutacionTests
         var scope = factory.Services.CreateScope();
         var db    = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var seed  = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
 
-        // Registrar un ManualCurrentTenant que el handler pueda resolver directamente.
+        // Registrar un ManualCurrentSubscriber que el handler pueda resolver directamente.
         // (No se pasa por DI convencional â€” se pasa directo al constructor del handler.)
         scope.ServiceProvider.GetRequiredService<IStockRepository>(); // warm up scope
 
@@ -102,7 +102,7 @@ public sealed class KardexConmutacionTests
     {
         await using var factory = new IntegrationTestWebAppFactory();
         var (db, scope, seed) = await SeedAsync(factory);
-        var (tid, pid, bid, uid) = (seed.TenantId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
 
         var ayer = DateTime.UtcNow.AddDays(-1);
         var hoy  = DateTime.UtcNow;
@@ -157,7 +157,7 @@ public sealed class KardexConmutacionTests
     {
         await using var factory = new IntegrationTestWebAppFactory();
         var (db, scope, seed) = await SeedAsync(factory);
-        var (tid, pid, bid, uid) = (seed.TenantId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
 
         var hoyUtc = DateTime.UtcNow.Date;
         var ayer   = hoyUtc.AddDays(-1);
@@ -222,9 +222,9 @@ public sealed class KardexConmutacionTests
         using var scope  = factory.Services.CreateScope();
         var db      = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var seed    = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
 
-        var token  = TestJwtFactory.CreateSessionJwt(seed.TenantId, seed.UserId);
+        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId);
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
@@ -247,7 +247,7 @@ public sealed class KardexConmutacionTests
 
         // Verificar que el reporte fue creado en BD
         var reporteCreado = await db.KardexReports
-            .AnyAsync(r => r.TenantId == seed.TenantId && r.ProductId == seed.ProductId);
+            .AnyAsync(r => r.SubscriberId == seed.SubscriberId && r.ProductId == seed.ProductId);
         reporteCreado.Should().BeTrue("debe haberse persistido el registro del job en BD");
     }
 
@@ -261,7 +261,7 @@ public sealed class KardexConmutacionTests
     {
         await using var factory = new IntegrationTestWebAppFactory();
         var (db, scope, seed) = await SeedAsync(factory);
-        var (tid, pid, bid, uid) = (seed.TenantId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
 
         var ayer = DateTime.UtcNow.Date.AddDays(-1).AddHours(12);
         var hoy  = DateTime.UtcNow.Date.AddHours(1);
@@ -332,9 +332,9 @@ public sealed class KardexConmutacionTests
         using var scope  = factory.Services.CreateScope();
         var db      = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var seed    = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
 
-        var token  = TestJwtFactory.CreateSessionJwt(seed.TenantId, seed.UserId);
+        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId);
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);

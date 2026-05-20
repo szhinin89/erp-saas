@@ -18,9 +18,9 @@ export function ResetPasswordPage() {
   const { t } = useI18n();
 
   const token = useMemo(() => (searchParams.get('token') ?? '').trim(), [searchParams]);
-  const tenantIdRaw = useMemo(() => (searchParams.get('tenantId') ?? '').trim(), [searchParams]);
-  const tenantId =
-    tenantIdRaw.length > 0 && guidRegex.test(tenantIdRaw) ? tenantIdRaw : undefined;
+  const subscriberIdRaw = useMemo(() => (searchParams.get('subscriberId') ?? '').trim(), [searchParams]);
+  const subscriberId =
+    subscriberIdRaw.length > 0 && guidRegex.test(subscriberIdRaw) ? subscriberIdRaw : undefined;
 
   const {
     register,
@@ -44,11 +44,11 @@ export function ResetPasswordPage() {
 
     setLoading(true);
     try {
-      const body: { token: string; newPassword: string; tenantId?: string } = {
+      const body: { token: string; newPassword: string; subscriberId?: string } = {
         token,
         newPassword: form.newPassword,
       };
-      if (tenantId) body.tenantId = tenantId;
+      if (subscriberId) body.subscriberId = subscriberId;
 
       await api.post<ApiResponse<object>>('/api/auth/reset-password', body);
       setSuccess(t('reset.success'));

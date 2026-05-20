@@ -2,8 +2,9 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
-public sealed class CurrentStock : AuditableEntity, ITenantEntity
+public sealed class CurrentStock : AuditableEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
+    public Guid? CompanyId { get; private set; }
     public Guid    ProductId         { get; private set; }
     public Guid    WarehouseId       { get; private set; }
     public decimal Quantity          { get; private set; }
@@ -16,15 +17,17 @@ public sealed class CurrentStock : AuditableEntity, ITenantEntity
     private CurrentStock() { }
 
     public static CurrentStock Create(
-        Guid tenantId,
+        Guid subscriberId,
         Guid productId,
         Guid warehouseId,
-        Guid createdBy)
+        Guid createdBy,
+        Guid? companyId = null)
     {
         var s = new CurrentStock
         {
             Id              = Guid.NewGuid(),
-            TenantId        = tenantId,
+            SubscriberId        = subscriberId,
+            CompanyId           = companyId,
             ProductId       = productId,
             WarehouseId     = warehouseId,
             Quantity        = 0,

@@ -12,7 +12,7 @@ public sealed class PettyCashConfiguration : IEntityTypeConfiguration<PettyCash>
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(PettyCash.NameMaxLen).IsRequired();
         builder.Property(x => x.AssignedBalance).HasColumnName("assigned_balance").HasPrecision(18, 2);
         builder.Property(x => x.CurrentBalance).HasColumnName("current_balance").HasPrecision(18, 2);
@@ -34,8 +34,8 @@ public sealed class PettyCashConfiguration : IEntityTypeConfiguration<PettyCash>
             .HasForeignKey(x => x.LedgerAccountId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        builder.HasIndex(x => new { x.TenantId, x.Name })
+        builder.HasIndex(x => new { x.SubscriberId, x.Name })
             .IsUnique()
-            .HasDatabaseName("uq_petty_cash_tenant_name");
+            .HasDatabaseName("uq_petty_cash_subscriber_name");
     }
 }

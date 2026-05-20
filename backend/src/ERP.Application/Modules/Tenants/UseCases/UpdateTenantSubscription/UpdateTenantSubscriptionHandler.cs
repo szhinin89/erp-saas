@@ -1,24 +1,24 @@
 using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Subscriptions;
-using ERP.Application.Tenants.DTOs;
-using ERP.Domain.Tenants.Entities;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Application.Subscribers.DTOs;
+using ERP.Domain.Subscribers.Entities;
+using ERP.Domain.Subscribers.Interfaces;
 
-namespace ERP.Application.Tenants.UseCases.UpdateTenantSubscription;
+namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberSubscription;
 
-public sealed class UpdateTenantSubscriptionHandler : IRequestHandler<UpdateTenantSubscriptionCommand, Result<TenantDto>>
+public sealed class UpdateSubscriberSubscriptionHandler : IRequestHandler<UpdateSubscriberSubscriptionCommand, Result<SubscriberDto>>
 {
-    private readonly ITenantRepository _repository;
+    private readonly ISubscriberRepository _repository;
     private readonly ICurrentUser _currentUser;
     private readonly ISessionModulesResolver _sessionModules;
-    private readonly ITenantSubscriptionOverridesService _overrides;
+    private readonly ISubscriptionFeatureOverridesService _overrides;
 
-    public UpdateTenantSubscriptionHandler(
-        ITenantRepository repository,
+    public UpdateSubscriberSubscriptionHandler(
+        ISubscriberRepository repository,
         ICurrentUser currentUser,
         ISessionModulesResolver sessionModules,
-        ITenantSubscriptionOverridesService overrides)
+        ISubscriptionFeatureOverridesService overrides)
     {
         _repository = repository;
         _currentUser = currentUser;
@@ -26,14 +26,14 @@ public sealed class UpdateTenantSubscriptionHandler : IRequestHandler<UpdateTena
         _overrides = overrides;
     }
 
-    public async Task<Result<TenantDto>> Handle(UpdateTenantSubscriptionCommand command, CancellationToken ct)
+    public async Task<Result<SubscriberDto>> Handle(UpdateSubscriberSubscriptionCommand command, CancellationToken ct)
     {
         if (command.EnabledModules is { Count: > 0 })
-            TenantSubscriptionCatalog.ValidateModuleKeysOrThrow(command.EnabledModules);
+            SubscriberSubscriptionCatalog.ValidateModuleKeysOrThrow(command.EnabledModules);
 
-        var tenant = await _repository.GetByIdAsync(command.TenantId, ct);
+        var tenant = await _repository.GetByIdAsync(command.SubscriberId, ct);
         if (tenant is null)
-            return Result<TenantDto>.Failure("Empresa no encontrada.");
+            return Result<SubscriberDto>.Failure("Empresa no encontrada.");
 
         tenant.SetPlanCode(command.PlanCode, _currentUser.UserId);
         await _repository.SaveChangesAsync(ct);
@@ -41,13 +41,13 @@ public sealed class UpdateTenantSubscriptionHandler : IRequestHandler<UpdateTena
         await _overrides.ApplyModuleOverridesAsync(
             tenant.Id,
             command.EnabledModules is { Count: > 0 }
-                ? TenantSubscriptionCatalog.NormalizeModuleKeysInput(command.EnabledModules)
+                ? SubscriberSubscriptionCatalog.NormalizeModuleKeysInput(command.EnabledModules)
                 : null,
             _currentUser.UserId,
             ct);
         await _repository.SaveChangesAsync(ct);
 
         var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, ct);
-        return Result<TenantDto>.Success(TenantDto.FromTenant(tenant, modules));
+        return Result<SubscriberDto>.Success(SubscriberDto.FromTenant(tenant, modules));
     }
 }

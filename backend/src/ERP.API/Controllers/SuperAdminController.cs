@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
@@ -9,7 +9,7 @@ using ERP.Application.Navigation.DTOs;
 using ERP.Application.Subscriptions;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Interfaces;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Subscribers.Interfaces;
 using ERP.Infrastructure.Deployment;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -27,27 +27,27 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class SuperAdminController : ControllerBase
 {
-    private readonly ITenantRepository       _tenantRepository;
+    private readonly ISubscriberRepository       _tenantRepository;
     private readonly IUserRepository         _userRepository;
-    private readonly ISaasCatalogQuery       _saasCatalogQuery;
+    private readonly ICommercialCatalogQuery       _saasCatalogQuery;
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly InstanceQuotaFileStore  _instanceQuotaFile;
     private readonly INavigationMenuAdminService _navigationMenuAdmin;
     private readonly IGrowthAnalyticsReader  _growthAnalytics;
     private readonly IRefreshTokenService    _refreshTokenService;
-    private readonly ITenantMenuAdminService   _tenantMenuAdmin;
+    private readonly ISubscriberMenuAdminService   _tenantMenuAdmin;
     private readonly ISessionModulesResolver _sessionModules;
 
     public SuperAdminController(
-        ITenantRepository tenantRepository,
+        ISubscriberRepository tenantRepository,
         IUserRepository userRepository,
-        ISaasCatalogQuery saasCatalogQuery,
+        ICommercialCatalogQuery saasCatalogQuery,
         IDeploymentFeatureFlags deployment,
         InstanceQuotaFileStore instanceQuotaFile,
         INavigationMenuAdminService navigationMenuAdmin,
         IGrowthAnalyticsReader growthAnalytics,
         IRefreshTokenService refreshTokenService,
-        ITenantMenuAdminService tenantMenuAdmin,
+        ISubscriberMenuAdminService tenantMenuAdmin,
         ISessionModulesResolver sessionModules)
     {
         _tenantRepository    = tenantRepository;
@@ -70,9 +70,9 @@ public class SuperAdminController : ControllerBase
         var dto = new InstanceQuotaFileModel
         {
             DedicatedSingleClientInstance = _deployment.IsDedicatedSingleClientInstance,
-            MaxActiveTenants = _deployment.MaxActiveTenants,
+            MaxActiveSubscribers = _deployment.MaxActiveSubscribers,
             MaxIdentityUsers = _deployment.MaxIdentityUsers,
-            MaxUsersPerTenant = _deployment.MaxUsersPerTenant,
+            MaxUsersPerSubscriber = _deployment.MaxUsersPerSubscriber,
         };
         return this.ApiOk(dto);
     }
@@ -88,7 +88,7 @@ public class SuperAdminController : ControllerBase
     public IActionResult PutInstanceQuota([FromBody] InstanceQuotaFileModel body)
     {
         if (body.DedicatedSingleClientInstance == true &&
-            (!body.MaxActiveTenants.HasValue || body.MaxActiveTenants <= 0))
+            (!body.MaxActiveSubscribers.HasValue || body.MaxActiveSubscribers <= 0))
         {
             return this.ApiBadRequest("En instancia dedicada debe indicar maxActiveTenants (máximo de empresas/RUC) mayor que cero.");
         }
@@ -108,30 +108,30 @@ public class SuperAdminController : ControllerBase
         return this.ApiOk(new { plans });
     }
 
-    /// <summary>Lista todas las empresas (tenants), activas e inactivas.</summary>
+    /// <summary>Lista todas las empresas (subscribers), activas e inactivas.</summary>
     /// <remarks>
-    /// Útil para el "Tenant Picker" del Panel Global de SuperAdmin.
+    /// Útil para el "Subscriber Picker" del Panel Global de SuperAdmin.
     /// </remarks>
     /// <response code="200">Lista de empresas (id, name, slug, isActive, plan, módulos).</response>
     /// <response code="401">Token JWT ausente o inválido.</response>
     /// <response code="403">El usuario no tiene rol SuperAdmin.</response>
-    [HttpGet("tenants")]
+    [HttpGet("subscribers")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetTenants(CancellationToken ct)
     {
-        var tenants = (await _tenantRepository.GetAllAsync(ct))
+        var subscribers = (await _tenantRepository.GetAllAsync(ct))
             .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var withCustomMenu = await _tenantMenuAdmin.GetTenantIdsWithCustomMenuAsync(ct);
+        var withCustomMenu = await _tenantMenuAdmin.GetSubscriberIdsWithCustomMenuAsync(ct);
 
         // Métricas por empresa (globales del tenant): usuarios total/activos.
         // Nota: usamos ejecución SECUENCIAL para evitar concurrencia sobre el mismo DbContext scoped.
         // Si este endpoint crece en carga, se optimiza con queries agregadas (COUNT/GROUP BY) a nivel DB.
-        var items = new List<object>(tenants.Count);
-        foreach (var t in tenants)
+        var items = new List<object>(subscribers.Count);
+        foreach (var t in subscribers)
         {
             var users = await _userRepository.GetAllByTenantAsync(t.Id, ct);
             var totalUsers = users.Count;
@@ -148,12 +148,12 @@ public class SuperAdminController : ControllerBase
                 activeUsers,
                 planCode = t.PlanCode,
                 enabledModules = modules,
-                hasModuleRestrictions = TenantSubscriptionCatalog.HasModuleRestrictionsFromModules(modules),
+                hasModuleRestrictions = SubscriberSubscriptionCatalog.HasModuleRestrictionsFromModules(modules),
                 hasCustomMenu = withCustomMenu.Contains(t.Id),
             });
         }
 
-        return this.ApiOk(new { tenants = items });
+        return this.ApiOk(new { subscribers = items });
     }
 
     /// <summary>Métricas globales del sistema (todas las empresas).</summary>
@@ -169,14 +169,14 @@ public class SuperAdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetMetrics(CancellationToken ct)
     {
-        var tenants = await _tenantRepository.GetAllAsync(ct);
-        var activeTenants = tenants.Count(t => t.IsActive);
-        var totalTenants = tenants.Count;
+        var subscribers = await _tenantRepository.GetAllAsync(ct);
+        var activeTenants = subscribers.Count(t => t.IsActive);
+        var totalTenants = subscribers.Count;
 
         var totalUsers = await _userRepository.CountAllSystemAsync(ct);
         var activeUsers = await _userRepository.CountActiveSystemAsync(ct);
 
-        var recentTenants = tenants
+        var recentTenants = subscribers
             .OrderByDescending(t => t.CreatedAt)
             .Take(10)
             .Select(t => new { t.Id, t.Name, t.Slug, t.IsActive, t.CreatedAt })
@@ -227,7 +227,7 @@ public class SuperAdminController : ControllerBase
     }
 
     /// <summary>
-    /// Mismo rango y agrupación que growth-analytics; serie en MRR mensual equivalente (plan actual, tenants activos).
+    /// Mismo rango y agrupación que growth-analytics; serie en MRR mensual equivalente (plan actual, subscribers activos).
     /// </summary>
     [HttpGet("growth-analytics-monetary")]
     [ProducesResponseType(typeof(ApiResponse<GrowthMonetaryResponseDto>), StatusCodes.Status200OK)]
@@ -373,18 +373,18 @@ public class SuperAdminController : ControllerBase
     /// Usar cuando se desactiva un usuario, se detecta compromiso o se cambia de rol.
     /// </summary>
     /// <param name="userId">ID del usuario cuyos tokens serán revocados.</param>
-    /// <param name="tenantId">Tenant del usuario.</param>
+    /// <param name="subscriberId">Subscriber del usuario.</param>
     [HttpDelete("users/{userId:guid}/sessions")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> RevokeUserSessions(
-        Guid userId, [FromQuery] Guid tenantId, CancellationToken ct)
+        Guid userId, [FromQuery] Guid subscriberId, CancellationToken ct)
     {
         var user = await _userRepository.GetByIdSystemAsync(userId, ct);
         if (user is null)
             return this.ApiBadRequest("Usuario no encontrado.");
 
-        await _refreshTokenService.RevokeAllForUserAsync(userId, tenantId, "Revocación administrativa", ct);
+        await _refreshTokenService.RevokeAllForUserAsync(userId, subscriberId, "Revocación administrativa", ct);
         return this.ApiOk($"Sesiones del usuario {userId} revocadas.", "OK");
     }
 }

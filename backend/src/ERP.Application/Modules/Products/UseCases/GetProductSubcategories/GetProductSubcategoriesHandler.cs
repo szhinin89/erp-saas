@@ -9,20 +9,20 @@ namespace ERP.Application.Products.UseCases.GetProductSubcategories;
 public class GetProductSubcategoriesHandler : IRequestHandler<GetProductSubcategoriesQuery, Result<IReadOnlyList<ProductSubcategoryListItemDto>>>
 {
     private readonly IProductCatalogRepository _repo;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
-    public GetProductSubcategoriesHandler(IProductCatalogRepository repo, ICurrentTenant currentTenant)
+    public GetProductSubcategoriesHandler(IProductCatalogRepository repo, ICurrentSubscriber currentSubscriber)
     {
         _repo = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public async Task<Result<IReadOnlyList<ProductSubcategoryListItemDto>>> Handle(
         GetProductSubcategoriesQuery query,
         CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
-        var items = await _repo.GetProductSubcategoryListRowsAsync(tenantId, query.LineId, query.CategoryId, query.ActiveFilter, query.Search, ct);
+        var subscriberId = _currentSubscriber.SubscriberId;
+        var items = await _repo.GetProductSubcategoryListRowsAsync(subscriberId, query.LineId, query.CategoryId, query.ActiveFilter, query.Search, ct);
         var dtos = items
             .Select(x => new ProductSubcategoryListItemDto(
                 x.Id,

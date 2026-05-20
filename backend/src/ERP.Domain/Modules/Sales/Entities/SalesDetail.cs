@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
-public sealed class SalesDetail : AuditableEntity, ITenantEntity
+public sealed class SalesDetail : AuditableEntity, ISubscriberScopedEntity
 {
     public const int DescriptionMaxLen = 500;
     public const int ProductCodeMaxLen = 100;
@@ -28,7 +28,7 @@ public sealed class SalesDetail : AuditableEntity, ITenantEntity
     private SalesDetail() { }
 
     public static SalesDetail Create(
-        Guid tenantId,
+        Guid subscriberId,
         Guid productId,
         string productCode,
         decimal quantity,
@@ -44,7 +44,7 @@ public sealed class SalesDetail : AuditableEntity, ITenantEntity
         var line = new SalesDetail
         {
             Id              = Guid.NewGuid(),
-            TenantId        = tenantId,
+            SubscriberId        = subscriberId,
             SalesDocumentId = Guid.Empty,
             ProductId       = productId,
             ProductCode     = string.IsNullOrWhiteSpace(productCode) ? productId.ToString()[..8] : productCode.Trim(),
@@ -74,7 +74,7 @@ public sealed class SalesDetail : AuditableEntity, ITenantEntity
         var d = new SalesDetail
         {
             Id              = line.Id,
-            TenantId        = line.TenantId,
+            SubscriberId        = line.SubscriberId,
             SalesDocumentId = line.SalesNoteId,
             ProductId       = line.ProductId,
             ProductCode     = line.ProductCode,

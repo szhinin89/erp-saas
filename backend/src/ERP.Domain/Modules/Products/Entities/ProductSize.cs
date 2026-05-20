@@ -12,11 +12,11 @@ public class ProductSize : BaseEntity
 
     private ProductSize() { }
 
-    internal static ProductSize Create(Guid productId, Guid tenantId, string name, int sortOrder = 0)
+    internal static ProductSize Create(Guid productId, Guid subscriberId, string name, int sortOrder = 0)
         => new()
         {
             Id        = Guid.NewGuid(),
-            TenantId  = tenantId,
+            SubscriberId  = subscriberId,
             ProductId = productId,
             Name      = name.Trim(),
             SortOrder = sortOrder,

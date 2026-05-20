@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
-public sealed class SalesWithholdingLine : AuditableEntity, ITenantEntity
+public sealed class SalesWithholdingLine : AuditableEntity, ISubscriberScopedEntity
 {
     public const int TaxTypeMaxLen       = 20;
     public const int RetentionCodeMaxLen = 10;

@@ -9,7 +9,7 @@ public sealed class SalesBillAuthorizedEvent : IDomainEvent
     public Guid     Id            { get; } = Guid.NewGuid();
     public DateTime OccurredOn   { get; } = DateTime.UtcNow;
     public Guid     SalesBillId  { get; }
-    public Guid     TenantId     { get; }
+    public Guid     SubscriberId     { get; }
     public Guid     UserId       { get; }
     public Guid     WarehouseId  { get; }
     public string   BillNumber   { get; }
@@ -17,14 +17,14 @@ public sealed class SalesBillAuthorizedEvent : IDomainEvent
 
     public SalesBillAuthorizedEvent(
         Guid   salesBillId,
-        Guid   tenantId,
+        Guid   subscriberId,
         Guid   userId,
         Guid   warehouseId,
         string billNumber,
         IReadOnlyList<SalesBillAuthorizedStockLine> stockLines)
     {
         SalesBillId = salesBillId;
-        TenantId    = tenantId;
+        SubscriberId    = subscriberId;
         UserId      = userId;
         WarehouseId = warehouseId;
         BillNumber  = billNumber;

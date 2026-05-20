@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
@@ -22,9 +22,9 @@ public sealed class ConfiguracionContableHttpTests
 
         using var scope = factory.Services.CreateScope();
         var db   = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
 
-        var token  = TestJwtFactory.CreateSessionJwt(seed.TenantId, seed.UserId);
+        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId);
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -83,12 +83,12 @@ public sealed class ConfiguracionContableHttpTests
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
-            var inv = Account.Create(seed.TenantId, "1.1.10", "Inventario INT", AccountType.Asset, AccountNature.Debit, seed.UserId);
-            var prov = Account.Create(seed.TenantId, "2.1.10", "Suppliers INT", AccountType.Liability, AccountNature.Credit, seed.UserId);
-            var ventas = Account.Create(seed.TenantId, "4.1.10", "Ventas INT", AccountType.Revenue, AccountNature.Credit, seed.UserId);
-            var clientes = Account.Create(seed.TenantId, "1.1.20", "Clientes INT", AccountType.Asset, AccountNature.Debit, seed.UserId);
-            var ivaV = Account.Create(seed.TenantId, "2.1.20", "IVA ventas INT", AccountType.Liability, AccountNature.Credit, seed.UserId);
-            var gasto = Account.Create(seed.TenantId, "5.1.10", "Luz", AccountType.Expense, AccountNature.Debit, seed.UserId);
+            var inv = Account.Create(seed.SubscriberId, "1.1.10", "Inventario INT", AccountType.Asset, AccountNature.Debit, seed.UserId);
+            var prov = Account.Create(seed.SubscriberId, "2.1.10", "Suppliers INT", AccountType.Liability, AccountNature.Credit, seed.UserId);
+            var ventas = Account.Create(seed.SubscriberId, "4.1.10", "Ventas INT", AccountType.Revenue, AccountNature.Credit, seed.UserId);
+            var clientes = Account.Create(seed.SubscriberId, "1.1.20", "Clientes INT", AccountType.Asset, AccountNature.Debit, seed.UserId);
+            var ivaV = Account.Create(seed.SubscriberId, "2.1.20", "IVA ventas INT", AccountType.Liability, AccountNature.Credit, seed.UserId);
+            var gasto = Account.Create(seed.SubscriberId, "5.1.10", "Luz", AccountType.Expense, AccountNature.Debit, seed.UserId);
 
             db.Accounts.AddRange(inv, prov, ventas, clientes, ivaV, gasto);
             await db.SaveChangesAsync();
@@ -99,12 +99,12 @@ public sealed class ConfiguracionContableHttpTests
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-            invId       = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "1.1.10").Id;
-            provId      = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "2.1.10").Id;
-            ventasId    = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "4.1.10").Id;
-            clientesId  = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "1.1.20").Id;
-            ivaVentasId = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "2.1.20").Id;
-            gastoId     = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "5.1.10").Id;
+            invId       = db.Accounts.First(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "1.1.10").Id;
+            provId      = db.Accounts.First(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "2.1.10").Id;
+            ventasId    = db.Accounts.First(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "4.1.10").Id;
+            clientesId  = db.Accounts.First(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "1.1.20").Id;
+            ivaVentasId = db.Accounts.First(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "2.1.20").Id;
+            gastoId     = db.Accounts.First(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "5.1.10").Id;
         }
 
         // upsert config OK

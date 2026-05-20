@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Sales.UseCases.EmitirFacturaElectronica;
@@ -10,34 +10,34 @@ public sealed class RetrySubmissionCommandHandler : IRequestHandler<RetrySubmiss
 {
     private readonly ISalesRepository _ventasRepository;
     private readonly IMediator         _mediator;
-    private readonly ICurrentTenant    _currentTenant;
+    private readonly ICurrentSubscriber    _currentSubscriber;
     private readonly ICurrentUser      _currentUser;
     private readonly ILogger<RetrySubmissionCommandHandler> _logger;
 
     public RetrySubmissionCommandHandler(
         ISalesRepository ventasRepository,
         IMediator mediator,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<RetrySubmissionCommandHandler> logger)
     {
         _ventasRepository = ventasRepository;
         _mediator         = mediator;
-        _currentTenant    = currentTenant;
+        _currentSubscriber    = currentSubscriber;
         _currentUser      = currentUser;
         _logger           = logger;
     }
 
     public async Task<Result<Guid>> Handle(RetrySubmissionCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
         _logger.LogInformation(
-            "Reintentando envío SRI de factura {FacturaId} (tenant={TenantId})",
-            command.VentaId, tenantId);
+            "Reintentando envío SRI de factura {FacturaId} (tenant={SubscriberId})",
+            command.VentaId, subscriberId);
 
-        var factura = await _ventasRepository.GetBillByIdAsync(tenantId, command.VentaId, ct);
+        var factura = await _ventasRepository.GetBillByIdAsync(subscriberId, command.VentaId, ct);
         if (factura is null)
             return Result<Guid>.Failure("Factura de venta no encontrada.");
 

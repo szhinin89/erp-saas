@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Application.Common;
@@ -38,11 +38,11 @@ public sealed record CrearPettyCashCommand(
 public sealed class CrearPettyCashCommandHandler : IRequestHandler<CrearPettyCashCommand, Result<PettyCashDto>>
 {
     private readonly ICashRepository _caja;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
-    public CrearPettyCashCommandHandler(ICashRepository caja, ICurrentTenant tenant, ICurrentUser user, IUnitOfWork uow)
+    public CrearPettyCashCommandHandler(ICashRepository caja, ICurrentSubscriber tenant, ICurrentUser user, IUnitOfWork uow)
     {
         _caja   = caja;
         _tenant = tenant;
@@ -53,7 +53,7 @@ public sealed class CrearPettyCashCommandHandler : IRequestHandler<CrearPettyCas
     public async Task<Result<PettyCashDto>> Handle(CrearPettyCashCommand cmd, CancellationToken ct)
     {
         var c = PettyCash.Create(
-            _tenant.TenantId,
+            _tenant.SubscriberId,
             cmd.Name,
             cmd.AssignedBalance,
             _user.UserId,
@@ -85,13 +85,13 @@ public sealed class CrearGastoPettyCashCommandHandler
     : IRequestHandler<CrearGastoPettyCashCommand, Result<PettyCashExpenseDto>>
 {
     private readonly ICashRepository _caja;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
     public CrearGastoPettyCashCommandHandler(
         ICashRepository caja,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork uow)
     {
@@ -117,7 +117,7 @@ public sealed class CrearGastoPettyCashCommandHandler
         }
 
         var gasto = PettyCashExpense.Create(
-            _tenant.TenantId,
+            _tenant.SubscriberId,
             cmd.PettyCashId,
             cmd.TransactionDate,
             cmd.Concept,
@@ -151,11 +151,11 @@ public sealed record CrearCashCountCommand(
 public sealed class CrearCashCountCommandHandler : IRequestHandler<CrearCashCountCommand, Result<PettyCashCountDto>>
 {
     private readonly ICashRepository _caja;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
-    public CrearCashCountCommandHandler(ICashRepository caja, ICurrentTenant tenant, ICurrentUser user, IUnitOfWork uow)
+    public CrearCashCountCommandHandler(ICashRepository caja, ICurrentSubscriber tenant, ICurrentUser user, IUnitOfWork uow)
     {
         _caja   = caja;
         _tenant = tenant;
@@ -170,7 +170,7 @@ public sealed class CrearCashCountCommandHandler : IRequestHandler<CrearCashCoun
             return Result<PettyCashCountDto>.Failure("Caja chica no encontrada.");
 
         var arqueo = CashCount.Create(
-            _tenant.TenantId,
+            _tenant.SubscriberId,
             cmd.PettyCashId,
             cmd.CountDate,
             cmd.PhysicalCash,

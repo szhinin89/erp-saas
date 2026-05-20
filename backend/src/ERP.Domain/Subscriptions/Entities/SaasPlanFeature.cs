@@ -1,7 +1,7 @@
 namespace ERP.Domain.Subscriptions.Entities;
 
 /// <summary>Inclusión de una feature en un plan con límite opcional (null = ilimitado).</summary>
-public sealed class SaasPlanFeature
+public sealed class CommercialPlanFeature
 {
     public Guid Id { get; private set; }
     public Guid PlanId { get; private set; }
@@ -10,11 +10,11 @@ public sealed class SaasPlanFeature
     /// <summary>Límite por periodo de facturación/uso; null = sin límite.</summary>
     public long? LimitPerPeriod { get; private set; }
 
-    private SaasPlanFeature() { }
+    private CommercialPlanFeature() { }
 
-    public static SaasPlanFeature Create(Guid planId, Guid featureId, bool isIncluded, long? limitPerPeriod)
+    public static CommercialPlanFeature Create(Guid planId, Guid featureId, bool isIncluded, long? limitPerPeriod)
     {
-        return new SaasPlanFeature
+        return new CommercialPlanFeature
         {
             Id = Guid.NewGuid(),
             PlanId = planId,

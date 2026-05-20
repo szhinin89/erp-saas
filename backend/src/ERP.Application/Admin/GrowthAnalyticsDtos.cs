@@ -6,10 +6,10 @@ public sealed record GrowthAnalyticsBucketDto(
     string PeriodLabel,
     int NewTenants,
     int NewIdentityUsers,
-    int NewMemberships,
+    int NewCompanyUserMemberships,
     int CumulativeTenants,
     int CumulativeIdentityUsers,
-    int CumulativeMemberships);
+    int CumulativeCompanyUserMemberships);
 
 public sealed record GrowthAnalyticsResponseDto(
     string From,
@@ -25,8 +25,8 @@ public sealed record GrowthMonetaryBucketDto(
     decimal CumulativeMrrApprox);
 
 /// <summary>
-/// MRR aproximado por periodo (plan actual del tenant; solo tenants activos con plan de catálogo activo).
-/// CurrencyHint: moneda predominante entre tenants con MRR &gt; 0, o MIXED si hay varias.
+/// MRR aproximado por periodo (plan actual del tenant; solo subscribers activos con plan de catálogo activo).
+/// CurrencyHint: moneda predominante entre subscribers con MRR &gt; 0, o MIXED si hay varias.
 /// </summary>
 public sealed record GrowthMonetaryResponseDto(
     string From,

@@ -20,10 +20,10 @@ export function PasswordResetPage() {
     formState: { errors },
   } = useForm<PasswordResetFormValues>({
     resolver: zodResolver(passwordResetFormSchema),
-    defaultValues: { tenantId: '', email: '', newPassword: '', confirmPassword: '' },
+    defaultValues: { subscriberId: '', email: '', newPassword: '', confirmPassword: '' },
   });
 
-  const tenantIdWatched = watch('tenantId');
+  const subscriberIdWatched = watch('subscriberId');
 
   const [tenantAllowsDirectReset, setTenantAllowsDirectReset] = useState<boolean | null>(null);
   const [tenantCheckError, setTenantCheckError] = useState<string>('');
@@ -32,7 +32,7 @@ export function PasswordResetPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const raw = tenantIdWatched.trim();
+    const raw = subscriberIdWatched.trim();
     if (!raw) {
       setTenantCheckError('');
       setTenantAllowsDirectReset(null);
@@ -50,8 +50,8 @@ export function PasswordResetPage() {
     (async () => {
       try {
         setTenantCheckError('');
-        const { data } = await api.get<ApiResponse<{ tenantId: string; passwordResetMode: number }>>(
-          `/api/tenants/${raw}/public-settings`
+        const { data } = await api.get<ApiResponse<{ subscriberId: string; passwordResetMode: number }>>(
+          `/api/subscribers/${raw}/public-settings`
         );
         if (cancelled) return;
         setTenantAllowsDirectReset(data.responseObject.passwordResetMode === 1);
@@ -63,7 +63,7 @@ export function PasswordResetPage() {
     })();
 
     return () => { cancelled = true; };
-  }, [tenantIdWatched, t]);
+  }, [subscriberIdWatched, t]);
 
   const onValid = async (form: PasswordResetFormValues) => {
     setError('');
@@ -81,7 +81,7 @@ export function PasswordResetPage() {
     setLoading(true);
     try {
       await api.post<ApiResponse<object>>('/api/auth/password-reset', {
-        tenantId: form.tenantId,
+        subscriberId: form.subscriberId,
         email: form.email,
         newPassword: form.newPassword,
       });
@@ -140,25 +140,25 @@ export function PasswordResetPage() {
           {success && <ZHPageNotice variant="success" message={success} />}
 
           <form className="zh-auth-form" onSubmit={handleSubmit(onValid)} noValidate>
-            {/* Tenant ID */}
-            <div className={`zh-auth-field${errors.tenantId ? ' zh-auth-field--error' : ''}`}>
-              <label className="zh-auth-label" htmlFor="tenantId">
-                {t('login.tenantId.label')}
+            {/* Subscriber ID */}
+            <div className={`zh-auth-field${errors.subscriberId ? ' zh-auth-field--error' : ''}`}>
+              <label className="zh-auth-label" htmlFor="subscriberId">
+                {t('login.subscriberId.label')}
               </label>
               <div className="zh-auth-input-wrap">
                 <span className="zh-auth-input-icon material-symbols-outlined" aria-hidden="true">domain</span>
                 <input
                   className="zh-auth-input"
-                  id="tenantId"
+                  id="subscriberId"
                   type="text"
-                  placeholder={t('login.tenantId.placeholder')}
+                  placeholder={t('login.subscriberId.placeholder')}
                   autoComplete="off"
                   disabled={loading}
-                  {...register('tenantId')}
+                  {...register('subscriberId')}
                 />
               </div>
-              {errors.tenantId?.message ? (
-                <span className="zh-auth-field-error">{errors.tenantId.message}</span>
+              {errors.subscriberId?.message ? (
+                <span className="zh-auth-field-error">{errors.subscriberId.message}</span>
               ) : tenantHint ? (
                 <span className={`zh-auth-field-hint${tenantHintType ? ` zh-auth-field-hint--${tenantHintType}` : ''}`}>
                   {tenantHint}

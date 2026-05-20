@@ -12,9 +12,9 @@ public interface IDeploymentFeatureFlags
     bool IsSuperAdminPanelEnabled { get; }
 
     /// <summary>
-    /// Tope de empresas (tenants) activas en la instancia; null = sin límite explícito (ilimitado salvo <see cref="IsDedicatedSingleClientInstance"/>).
+    /// Tope de empresas (subscribers) activas en la instancia; null = sin límite explícito (ilimitado salvo <see cref="IsDedicatedSingleClientInstance"/>).
     /// </summary>
-    int? MaxActiveTenants { get; }
+    int? MaxActiveSubscribers { get; }
 
     /// <summary>
     /// Tope de usuarios globales (<c>identity_users</c>); null = sin límite (<c>Deployment:MaxIdentityUsers</c>).
@@ -23,14 +23,14 @@ public interface IDeploymentFeatureFlags
 
     /// <summary>
     /// Instancia dedicada a un solo cliente / servidor propio: no se permite un número ilimitado de empresas (RUC);
-    /// debe definirse <see cref="MaxActiveTenants"/> (archivo o configuración).
+    /// debe definirse <see cref="MaxActiveSubscribers"/> (archivo o configuración).
     /// </summary>
     bool IsDedicatedSingleClientInstance { get; }
 
     /// <summary>
     /// Tope de usuarios Identity con membresía activa por empresa (tenant). null = sin límite.
     /// </summary>
-    int? MaxUsersPerTenant { get; }
+    int? MaxUsersPerSubscriber { get; }
 
     /// <summary>
     /// Validación alternativa por configuración (<c>Deployment:InitialSuperAdminSetupToken</c>).

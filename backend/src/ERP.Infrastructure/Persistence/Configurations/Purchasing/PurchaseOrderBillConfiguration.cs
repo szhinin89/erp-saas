@@ -12,7 +12,7 @@ public sealed class PurchaseOrderBillConfiguration : IEntityTypeConfiguration<Pu
 
         builder.HasKey(v => v.Id);
         builder.Property(v => v.Id).HasColumnName("id");
-        builder.Property(v => v.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(v => v.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(v => v.PurchaseOrderId).HasColumnName("purchase_order_id").IsRequired();
         builder.Property(v => v.PurchBillId).HasColumnName("purch_bill_id").IsRequired();
         builder.Property(v => v.LinkedAt).HasColumnName("linked_at").IsRequired();

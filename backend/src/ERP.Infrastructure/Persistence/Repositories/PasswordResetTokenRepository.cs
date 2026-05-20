@@ -20,13 +20,13 @@ public sealed class PasswordResetTokenRepository : IPasswordResetTokenRepository
     public Task<PasswordResetToken?> GetByTokenHashAsync(string tokenHash, CancellationToken ct = default)
         => _db.PasswordResetTokens.FirstOrDefaultAsync(t => t.TokenHash == tokenHash, ct);
 
-    public async Task InvalidateActiveForUserAsync(Guid userId, string userKind, Guid? tenantId, CancellationToken ct = default)
+    public async Task InvalidateActiveForUserAsync(Guid userId, string userKind, Guid? subscriberId, CancellationToken ct = default)
     {
         var query = _db.PasswordResetTokens.Where(t => t.UserId == userId && t.UserKind == userKind && !t.Used);
-        if (tenantId.HasValue)
-            query = query.Where(t => t.TenantId == tenantId);
+        if (subscriberId.HasValue)
+            query = query.Where(t => t.SubscriberId == subscriberId);
         else
-            query = query.Where(t => t.TenantId == null);
+            query = query.Where(t => t.SubscriberId == null);
 
         var rows = await query.ToListAsync(ct);
         foreach (var r in rows)

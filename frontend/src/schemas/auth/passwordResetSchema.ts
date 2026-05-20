@@ -4,7 +4,7 @@ const guidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-
 
 export const passwordResetFormSchema = z
   .object({
-    tenantId: z
+    subscriberId: z
       .string()
       .min(1, 'Ingresa el identificador de la empresa.')
       .regex(guidRegex, 'Ingresa un identificador de empresa válido.'),

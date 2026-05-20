@@ -8,29 +8,29 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Services;
 
-public sealed class TenantSubscriptionOverridesService : ITenantSubscriptionOverridesService
+public sealed class SubscriptionFeatureOverridesService : ISubscriptionFeatureOverridesService
 {
     private readonly ErpDbContext _db;
     private readonly IPlatformQueryAccessor _platform;
 
-    public TenantSubscriptionOverridesService(ErpDbContext db, IPlatformQueryAccessor platform)
+    public SubscriptionFeatureOverridesService(ErpDbContext db, IPlatformQueryAccessor platform)
     {
         _db = db;
         _platform = platform;
     }
 
     public async Task ApplyModuleOverridesAsync(
-        Guid tenantId,
+        Guid subscriberId,
         IReadOnlyList<string>? requestedModuleKeys,
         Guid actorId,
         CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty)
+        if (subscriberId == Guid.Empty)
             return;
 
         var subscription = await _platform
-            .Unfiltered(_db.TenantSaasSubscriptions, PlatformQueryReason.TenantScopedExplicit)
-            .Where(s => s.TenantId == tenantId && s.Status == TenantSubscriptionStatus.Active)
+            .Unfiltered(_db.SubscriberSubscriptions, PlatformQueryReason.TenantScopedExplicit)
+            .Where(s => s.SubscriberId == subscriberId && s.Status == SubscriptionStatus.Active)
             .OrderByDescending(s => s.StartedAtUtc)
             .FirstOrDefaultAsync(ct);
 
@@ -38,9 +38,9 @@ public sealed class TenantSubscriptionOverridesService : ITenantSubscriptionOver
             return;
 
         var planModuleRows = await (
-            from pf in _db.SaasPlanFeatures.AsNoTracking()
-            join fd in _db.SaasFeatureDefinitions.AsNoTracking() on pf.FeatureId equals fd.Id
-            where pf.PlanId == subscription.PlanId && fd.Kind == SaasFeatureKind.Module
+            from pf in _db.CommercialPlanFeatures.AsNoTracking()
+            join fd in _db.PlatformFeatures.AsNoTracking() on pf.FeatureId equals fd.Id
+            where pf.PlanId == subscription.PlanId && fd.Kind == PlatformFeatureKind.Module
             select new { fd.Id, fd.ResourceRef, fd.Code, pf.IsIncluded }
         ).ToListAsync(ct);
 
@@ -50,8 +50,8 @@ public sealed class TenantSubscriptionOverridesService : ITenantSubscriptionOver
         var moduleFeatureIds = planModuleRows.Select(r => r.Id).ToHashSet();
 
         var existing = await _platform
-            .Unfiltered(_db.TenantSubscriptionFeatureOverrides, PlatformQueryReason.TenantScopedExplicit)
-            .Where(o => o.TenantId == tenantId && o.SubscriptionId == subscription.Id)
+            .Unfiltered(_db.SubscriptionFeatureOverrides, PlatformQueryReason.TenantScopedExplicit)
+            .Where(o => o.SubscriberId == subscriberId && o.SubscriptionId == subscription.Id)
             .ToListAsync(ct);
 
         var moduleOverrides = existing.Where(o => moduleFeatureIds.Contains(o.FeatureId)).ToList();
@@ -60,11 +60,11 @@ public sealed class TenantSubscriptionOverridesService : ITenantSubscriptionOver
         {
             if (moduleOverrides.Count > 0)
             {
-                _db.TenantSubscriptionFeatureOverrides.RemoveRange(moduleOverrides);
-                await _db.TenantSaasSubscriptionEvents.AddAsync(
-                    TenantSaasSubscriptionEvent.Create(
-                        tenantId,
-                        TenantSaasSubscriptionEvent.Types.ModuleOverridesCleared,
+                _db.SubscriptionFeatureOverrides.RemoveRange(moduleOverrides);
+                await _db.SubscriberSubscriptionEvents.AddAsync(
+                    SubscriberSubscriptionEvent.Create(
+                        subscriberId,
+                        SubscriberSubscriptionEvent.Types.ModuleOverridesCleared,
                         actorId,
                         subscriptionId: subscription.Id),
                     ct);
@@ -74,7 +74,7 @@ public sealed class TenantSubscriptionOverridesService : ITenantSubscriptionOver
         }
 
         var allowed = new HashSet<string>(
-            TenantSubscriptionCatalog.NormalizeModuleKeysInput(requestedModuleKeys),
+            SubscriberSubscriptionCatalog.NormalizeModuleKeysInput(requestedModuleKeys),
             StringComparer.OrdinalIgnoreCase);
 
         foreach (var row in planModuleRows)
@@ -87,15 +87,15 @@ public sealed class TenantSubscriptionOverridesService : ITenantSubscriptionOver
             if (matchesPlanDefault)
             {
                 if (existingOv is not null)
-                    _db.TenantSubscriptionFeatureOverrides.Remove(existingOv);
+                    _db.SubscriptionFeatureOverrides.Remove(existingOv);
                 continue;
             }
 
             if (existingOv is null)
             {
-                await _db.TenantSubscriptionFeatureOverrides.AddAsync(
-                    TenantSubscriptionFeatureOverride.Create(
-                        tenantId,
+                await _db.SubscriptionFeatureOverrides.AddAsync(
+                    SubscriptionFeatureOverride.Create(
+                        subscriberId,
                         subscription.Id,
                         row.Id,
                         shouldEnable,
@@ -110,10 +110,10 @@ public sealed class TenantSubscriptionOverridesService : ITenantSubscriptionOver
         }
 
         var metadata = JsonSerializer.Serialize(new { modules = allowed.OrderBy(x => x).ToArray() });
-        await _db.TenantSaasSubscriptionEvents.AddAsync(
-            TenantSaasSubscriptionEvent.Create(
-                tenantId,
-                TenantSaasSubscriptionEvent.Types.ModuleOverridesApplied,
+        await _db.SubscriberSubscriptionEvents.AddAsync(
+            SubscriberSubscriptionEvent.Create(
+                subscriberId,
+                SubscriberSubscriptionEvent.Types.ModuleOverridesApplied,
                 actorId,
                 subscriptionId: subscription.Id,
                 metadataJson: metadata),
@@ -123,7 +123,7 @@ public sealed class TenantSubscriptionOverridesService : ITenantSubscriptionOver
     private static string ResolveModuleKey(string? resourceRef, string code)
     {
         if (!string.IsNullOrWhiteSpace(resourceRef))
-            return TenantSubscriptionCatalog.NormalizeModuleKey(resourceRef);
-        return TenantSubscriptionCatalog.NormalizeModuleKey(code);
+            return SubscriberSubscriptionCatalog.NormalizeModuleKey(resourceRef);
+        return SubscriberSubscriptionCatalog.NormalizeModuleKey(code);
     }
 }

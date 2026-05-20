@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -23,7 +23,7 @@ public sealed class CreatePurchaseCommandHandler
     private readonly IXmlFacturaParser       _parser;
     private readonly IFileStorage            _storage;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _tenant;
+    private readonly ICurrentSubscriber          _tenant;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<CreatePurchaseCommandHandler> _logger;
@@ -35,7 +35,7 @@ public sealed class CreatePurchaseCommandHandler
         IXmlFacturaParser parser,
         IFileStorage storage,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
         ILogger<CreatePurchaseCommandHandler> logger)
@@ -65,7 +65,7 @@ public sealed class CreatePurchaseCommandHandler
     private async Task<Result<PurchBillDto>> HandleXml(
         CreatePurchaseCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
         // 1. Parsear XML
@@ -79,13 +79,13 @@ public sealed class CreatePurchaseCommandHandler
         {
             _logger.LogWarning(
                 ex,
-                "Fallo al parsear XML de compra (tenant {TenantId}, usuario {UserId}).",
-                tenantId, userId);
+                "Fallo al parsear XML de compra (tenant {SubscriberId}, usuario {UserId}).",
+                subscriberId, userId);
             return Result<PurchBillDto>.Failure($"Error al leer el XML: {ex.Message}");
         }
 
         // 2. Verificar clave acceso única en el tenant
-        if (await _compraRepo.ExistsAccessKeyAsync(tenantId, parsed.AccessKey, ct))
+        if (await _compraRepo.ExistsAccessKeyAsync(subscriberId, parsed.AccessKey, ct))
             return Result<PurchBillDto>.Failure(
                 $"Ya existe una compra registrada con la clave de acceso '{parsed.AccessKey}'.");
 
@@ -94,7 +94,7 @@ public sealed class CreatePurchaseCommandHandler
         {
             // 3. Buscar o crear Supplier por RUC
             var Supplier = await ObtenerOCrearProveedor(
-                tenantId, parsed.SupplierRuc, parsed.SupplierLegalName, userId, ct);
+                subscriberId, parsed.SupplierRuc, parsed.SupplierLegalName, userId, ct);
 
             // 4. Guardar archivo XML (fuera de SQL; si falla el commit, puede quedar huérfano en almacén)
             var xmlPath = $"facturas/compras/{parsed.AccessKey}.xml";
@@ -103,7 +103,7 @@ public sealed class CreatePurchaseCommandHandler
 
             // 5. Crear PurchBill
             var compra = PurchBill.Create(
-                tenantId, Supplier.Id,
+                subscriberId, Supplier.Id,
                 parsed.InvoiceNumber, parsed.AccessKey, xmlPath,
                 parsed.IssueDate, null,
                 "Contado", null, userId);
@@ -125,7 +125,7 @@ public sealed class CreatePurchaseCommandHandler
             {
                 var detalleList = compra.Lines.ToList();
                 var errXml = await PurchaseAsignacionWarehousesRules.ValidateAgainstDetallesAsync(
-                    detalleList, command.WarehouseAllocations, tenantId, _bodegaRepo, ct);
+                    detalleList, command.WarehouseAllocations, subscriberId, _bodegaRepo, ct);
                 if (errXml is not null)
                 {
                     await _unitOfWork.RollbackAsync(ct);
@@ -143,13 +143,13 @@ public sealed class CreatePurchaseCommandHandler
                     var det = detalleList[a.ItemIndex];
                     var productoAsignado = a.ProductId ?? det.ProductId;
                     var row = PurchWarehouseAlloc.Create(
-                        tenantId, compra.Id, det.Id, a.WarehouseId, productoAsignado, a.Quantity, userId);
+                        subscriberId, compra.Id, det.Id, a.WarehouseId, productoAsignado, a.Quantity, userId);
                     await _compraRepo.AddWarehouseAllocAsync(row, ct);
                 }
             }
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _user.Email, _user.FullName,
+                subscriberId, userId, _user.Email, _user.FullName,
                 module: "compras", action: "compra.crear.xml",
                 entityType: "PurchBill", entityId: compra.Id,
                 description: $"{parsed.InvoiceNumber} — {Supplier.LegalName}"), ct);
@@ -158,15 +158,15 @@ public sealed class CreatePurchaseCommandHandler
             await _unitOfWork.CommitAsync(ct);
 
             _logger.LogInformation(
-                "Compra creada desde XML: id {CompraId}, tenant {TenantId}, clave {AccessKey}, número {Numero}.",
-                compra.Id, tenantId, parsed.AccessKey, parsed.InvoiceNumber);
+                "Compra creada desde XML: id {CompraId}, tenant {SubscriberId}, clave {AccessKey}, número {Numero}.",
+                compra.Id, subscriberId, parsed.AccessKey, parsed.InvoiceNumber);
 
             return Result<PurchBillDto>.Success(ToDto(compra));
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al crear compra desde XML (tenant {TenantId})", tenantId);
+            _logger.LogError(ex, "Error al crear compra desde XML (tenant {SubscriberId})", subscriberId);
             return Result<PurchBillDto>.Failure($"No se pudo registrar la compra: {ex.Message}");
         }
     }
@@ -176,17 +176,17 @@ public sealed class CreatePurchaseCommandHandler
     private async Task<Result<PurchBillDto>> HandleManual(
         CreatePurchaseCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
-        var Supplier = await _proveedorRepo.GetByIdAsync(tenantId, command.SupplierId!.Value, ct);
+        var Supplier = await _proveedorRepo.GetByIdAsync(subscriberId, command.SupplierId!.Value, ct);
         if (Supplier is null)
             return Result<PurchBillDto>.Failure("Supplier no encontrado en el tenant.");
         if (!Supplier.IsActive)
             return Result<PurchBillDto>.Failure("El Supplier está deshabilitado.");
 
         var compra = PurchBill.Create(
-            tenantId, Supplier.Id,
+            subscriberId, Supplier.Id,
             command.InvoiceNumber!, null, null,
             command.InvoiceDate!.Value, command.DueDate,
             command.PaymentTerms!, command.Notes, userId);
@@ -202,7 +202,7 @@ public sealed class CreatePurchaseCommandHandler
         if (command.WarehouseAllocations is { Count: > 0 })
         {
             var err = await PurchaseAsignacionWarehousesRules.ValidateAsync(
-                command.Lines!, command.WarehouseAllocations, tenantId, _bodegaRepo, ct);
+                command.Lines!, command.WarehouseAllocations, subscriberId, _bodegaRepo, ct);
             if (err is not null)
                 return Result<PurchBillDto>.Failure(err);
         }
@@ -220,13 +220,13 @@ public sealed class CreatePurchaseCommandHandler
                     var det = detalleList[a.ItemIndex];
                     var productoAsignado = a.ProductId ?? det.ProductId;
                     var row = PurchWarehouseAlloc.Create(
-                        tenantId, compra.Id, det.Id, a.WarehouseId, productoAsignado, a.Quantity, userId);
+                        subscriberId, compra.Id, det.Id, a.WarehouseId, productoAsignado, a.Quantity, userId);
                     await _compraRepo.AddWarehouseAllocAsync(row, ct);
                 }
             }
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _user.Email, _user.FullName,
+                subscriberId, userId, _user.Email, _user.FullName,
                 module: "compras", action: "compra.crear.manual",
                 entityType: "PurchBill", entityId: compra.Id,
                 description: $"{compra.InvoiceNumber} — {Supplier.LegalName}"), ct);
@@ -235,15 +235,15 @@ public sealed class CreatePurchaseCommandHandler
             await _unitOfWork.CommitAsync(ct);
 
             _logger.LogInformation(
-                "Compra creada manual: id {CompraId}, tenant {TenantId}, número {Numero}.",
-                compra.Id, tenantId, compra.InvoiceNumber);
+                "Compra creada manual: id {CompraId}, tenant {SubscriberId}, número {Numero}.",
+                compra.Id, subscriberId, compra.InvoiceNumber);
 
             return Result<PurchBillDto>.Success(ToDto(compra));
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al crear compra manual (tenant {TenantId})", tenantId);
+            _logger.LogError(ex, "Error al crear compra manual (tenant {SubscriberId})", subscriberId);
             return Result<PurchBillDto>.Failure($"No se pudo registrar la compra: {ex.Message}");
         }
     }
@@ -251,10 +251,10 @@ public sealed class CreatePurchaseCommandHandler
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private async Task<Supplier> ObtenerOCrearProveedor(
-        Guid tenantId, string ruc, string razonSocial, Guid userId, CancellationToken ct)
+        Guid subscriberId, string ruc, string razonSocial, Guid userId, CancellationToken ct)
     {
         var existentes = await _proveedorRepo.GetAsync(
-            tenantId, activeFilter: null, search: ruc, personType: null, ct);
+            subscriberId, activeFilter: null, search: ruc, personType: null, ct);
 
         var existente = existentes.FirstOrDefault(p => p.Ruc == ruc);
         if (existente is not null) return existente;
@@ -262,7 +262,7 @@ public sealed class CreatePurchaseCommandHandler
         // Crear Supplier básico (el usuario podrá completar los datos después)
         var tipo = ruc[2] - '0' is >= 0 and <= 5 ? Supplier.TypeNatural : Supplier.TypeLegal;
         var nuevo = Supplier.Create(
-            tenantId, tipo, razonSocial, ruc,
+            subscriberId, tipo, razonSocial, ruc,
             email: null, phone: null, address: null,
             paymentTerms: "Contado", userId);
 

@@ -13,7 +13,7 @@ public class JournalEntryLineConfiguration : IEntityTypeConfiguration<JournalEnt
 
         builder.HasKey(l => l.Id);
         builder.Property(l => l.Id).HasColumnName("id");
-        builder.Property(l => l.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(l => l.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(l => l.JournalEntryId).HasColumnName("journal_entry_id").IsRequired();
         builder.Property(l => l.AccountId).HasColumnName("account_id").IsRequired();
 

@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Application.Products.DTOs;
 using MediatR;
 using ERP.Domain.Products.Interfaces;
@@ -8,12 +8,12 @@ namespace ERP.Application.Products.UseCases.GetProductFullReport;
 public class GetProductFullReportHandler : IRequestHandler<GetProductFullReportQuery, Result<ProductFullReportDto>>
 {
     private readonly IProductRepository _repository;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
-    public GetProductFullReportHandler(IProductRepository repository, ICurrentTenant currentTenant)
+    public GetProductFullReportHandler(IProductRepository repository, ICurrentSubscriber currentSubscriber)
     {
         _repository    = repository;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public Task<Result<ProductFullReportDto>> HandleAsync(Guid id, CancellationToken ct = default)
@@ -21,8 +21,8 @@ public class GetProductFullReportHandler : IRequestHandler<GetProductFullReportQ
 
     public async Task<Result<ProductFullReportDto>> Handle(GetProductFullReportQuery request, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
-        var product  = await _repository.GetByIdAsync(request.Id, tenantId, ct);
+        var subscriberId = _currentSubscriber.SubscriberId;
+        var product  = await _repository.GetByIdAsync(request.Id, subscriberId, ct);
 
         if (product is null)
             return Result<ProductFullReportDto>.Failure("Producto no encontrado.");

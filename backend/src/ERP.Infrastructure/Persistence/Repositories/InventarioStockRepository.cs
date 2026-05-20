@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
@@ -11,22 +11,22 @@ public sealed class StockRepository : IStockRepository
     public StockRepository(ErpDbContext context) => _context = context;
 
     public Task<CurrentStock?> GetStockAsync(
-        Guid tenantId,
+        Guid subscriberId,
         Guid WarehouseId,
         Guid productoId,
         CancellationToken ct = default)
         => _context.CurrentStocks.FirstOrDefaultAsync(
-            s => s.TenantId == tenantId && s.WarehouseId == WarehouseId && s.ProductId == productoId,
+            s => s.SubscriberId == subscriberId && s.WarehouseId == WarehouseId && s.ProductId == productoId,
             ct);
 
     public async Task<IReadOnlyList<CurrentStock>> GetStockByWarehouseAsync(
-        Guid tenantId,
+        Guid subscriberId,
         Guid WarehouseId,
         Guid? productoId,
         CancellationToken ct = default)
     {
         var q = _context.CurrentStocks
-            .Where(s => s.TenantId == tenantId && s.WarehouseId == WarehouseId);
+            .Where(s => s.SubscriberId == subscriberId && s.WarehouseId == WarehouseId);
 
         if (productoId.HasValue)
             q = q.Where(s => s.ProductId == productoId.Value);
@@ -44,13 +44,13 @@ public sealed class StockRepository : IStockRepository
 
     /// <inheritdoc/>
     public async Task<decimal?> DecrementStockAtomicAsync(
-        Guid tenantId, Guid WarehouseId, Guid productoId,
+        Guid subscriberId, Guid WarehouseId, Guid productoId,
         decimal delta, Guid updatedBy,
         CancellationToken ct = default,
         decimal unitCost = 0m)
     {
         if (IsInMemoryProvider())
-            return await DecrementarInMemoryAsync(tenantId, WarehouseId, productoId, delta, updatedBy, ct, unitCost);
+            return await DecrementarInMemoryAsync(subscriberId, WarehouseId, productoId, delta, updatedBy, ct, unitCost);
 
         var valorSalida = delta * unitCost;
 
@@ -64,7 +64,7 @@ public sealed class StockRepository : IStockRepository
                    ultima_actualizacion = NOW(),
                    updated_at           = NOW(),
                    updated_by           = {updatedBy}
-            WHERE  tenant_id   = {tenantId}
+            WHERE  subscriber_id   = {subscriberId}
               AND  Warehouse_id   = {WarehouseId}
               AND  producto_id = {productoId}
               AND  (cantidad - cantidad_reservada) >= {delta}
@@ -75,7 +75,7 @@ public sealed class StockRepository : IStockRepository
 
         var tracked = _context.ChangeTracker.Entries<CurrentStock>()
             .FirstOrDefault(e =>
-                e.Entity.TenantId   == tenantId  &&
+                e.Entity.SubscriberId   == subscriberId  &&
                 e.Entity.WarehouseId   == WarehouseId  &&
                 e.Entity.ProductId == productoId);
 
@@ -95,17 +95,17 @@ public sealed class StockRepository : IStockRepository
 
     /// <inheritdoc/>
     public async Task<decimal> IncrementStockAtomicAsync(
-        Guid tenantId, Guid WarehouseId, Guid productoId,
+        Guid subscriberId, Guid WarehouseId, Guid productoId,
         decimal delta, Guid createdBy,
         CancellationToken ct = default,
         decimal unitCost = 0m)
     {
         if (IsInMemoryProvider())
-            return await IncrementarInMemoryAsync(tenantId, WarehouseId, productoId, delta, createdBy, ct, unitCost);
+            return await IncrementarInMemoryAsync(subscriberId, WarehouseId, productoId, delta, createdBy, ct, unitCost);
 
         var tracked = _context.ChangeTracker.Entries<CurrentStock>()
             .FirstOrDefault(e =>
-                e.Entity.TenantId   == tenantId  &&
+                e.Entity.SubscriberId   == subscriberId  &&
                 e.Entity.WarehouseId   == WarehouseId  &&
                 e.Entity.ProductId == productoId);
 
@@ -120,14 +120,14 @@ public sealed class StockRepository : IStockRepository
         await _context.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO stock_actual
-                (id, tenant_id, producto_id, Warehouse_id,
+                (id, subscriber_id, producto_id, Warehouse_id,
                  cantidad, cantidad_reservada, valor_total_stock, ultima_actualizacion,
                  created_at, created_by, updated_at, updated_by)
             VALUES
-                ({newId}, {tenantId}, {productoId}, {WarehouseId},
+                ({newId}, {subscriberId}, {productoId}, {WarehouseId},
                  {delta}, 0, {valorEntrada}, NOW(),
                  NOW(), {createdBy}, NOW(), {createdBy})
-            ON CONFLICT (tenant_id, producto_id, Warehouse_id)
+            ON CONFLICT (subscriber_id, producto_id, Warehouse_id)
             DO UPDATE SET
                 cantidad             = stock_actual.cantidad + EXCLUDED.cantidad,
                 valor_total_stock    = stock_actual.valor_total_stock + EXCLUDED.valor_total_stock,
@@ -140,7 +140,7 @@ public sealed class StockRepository : IStockRepository
     }
 
     public async Task<IReadOnlyList<StockMovement>> GetMovementsAsync(
-        Guid      tenantId,
+        Guid      subscriberId,
         Guid      productoId,
         Guid      WarehouseId,
         DateTime? fromUtc,
@@ -148,7 +148,7 @@ public sealed class StockRepository : IStockRepository
         CancellationToken ct = default)
     {
         var q = _context.StockMovements
-            .Where(m => m.TenantId == tenantId
+            .Where(m => m.SubscriberId == subscriberId
                      && m.ProductId == productoId
                      && m.WarehouseId  == WarehouseId);
 
@@ -169,11 +169,11 @@ public sealed class StockRepository : IStockRepository
     // ── Fallbacks para EF InMemory (pruebas) ─────────────────────────────────
 
     private async Task<decimal?> DecrementarInMemoryAsync(
-        Guid tenantId, Guid WarehouseId, Guid productoId,
+        Guid subscriberId, Guid WarehouseId, Guid productoId,
         decimal delta, Guid updatedBy, CancellationToken ct, decimal unitCost = 0m)
     {
         var stock = await _context.CurrentStocks.FirstOrDefaultAsync(
-            s => s.TenantId == tenantId && s.WarehouseId == WarehouseId && s.ProductId == productoId, ct);
+            s => s.SubscriberId == subscriberId && s.WarehouseId == WarehouseId && s.ProductId == productoId, ct);
 
         if (stock is null || stock.AvailableQuantity < delta)
             return null;
@@ -184,15 +184,15 @@ public sealed class StockRepository : IStockRepository
     }
 
     private async Task<decimal> IncrementarInMemoryAsync(
-        Guid tenantId, Guid WarehouseId, Guid productoId,
+        Guid subscriberId, Guid WarehouseId, Guid productoId,
         decimal delta, Guid createdBy, CancellationToken ct, decimal unitCost = 0m)
     {
         var stock = await _context.CurrentStocks.FirstOrDefaultAsync(
-            s => s.TenantId == tenantId && s.WarehouseId == WarehouseId && s.ProductId == productoId, ct);
+            s => s.SubscriberId == subscriberId && s.WarehouseId == WarehouseId && s.ProductId == productoId, ct);
 
         if (stock is null)
         {
-            stock = CurrentStock.Create(tenantId, productoId, WarehouseId, createdBy);
+            stock = CurrentStock.Create(subscriberId, productoId, WarehouseId, createdBy);
             await _context.CurrentStocks.AddAsync(stock, ct);
             stock.ApplyMovement(delta, createdBy, unitCost);
             return 0;

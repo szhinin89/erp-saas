@@ -2,9 +2,9 @@ using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Access.DTOs;
 
-namespace ERP.Application.Access.UseCases.TenantAccess;
+namespace ERP.Application.Access.UseCases.SubscriberAccess;
 
-public record TenantUpsertMembershipCommand(
+public record SubscriberUpsertCompanyUserMembershipCommand(
     string Email,
     string Role,
     Guid? ProfileId,
@@ -13,7 +13,7 @@ public record TenantUpsertMembershipCommand(
     string? Password
 ): IRequest<Result<object>>;
 
-public record TenantRevokeMembershipCommand(string Email) : IRequest<Result<object>>;
+public record SubscriberRevokeCompanyUserMembershipCommand(string Email) : IRequest<Result<object>>;
 
-public record GetTenantMembershipsQuery(bool OnlyActive) : IRequest<Result<IReadOnlyList<TenantMembershipItemDto>>>;
+public record GetSubscriberCompanyUserMembershipsQuery(bool OnlyActive) : IRequest<Result<IReadOnlyList<SubscriberCompanyUserMembershipItemDto>>>;
 

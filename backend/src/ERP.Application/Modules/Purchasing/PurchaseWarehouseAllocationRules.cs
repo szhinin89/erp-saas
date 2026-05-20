@@ -1,4 +1,4 @@
-﻿using ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
+using ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing;
@@ -12,7 +12,7 @@ public static class PurchaseAsignacionWarehousesRules
     public static async Task<string?> ValidateAsync(
         IReadOnlyList<PurchaseLineInput> detalles,
         IReadOnlyList<WarehouseAllocationRequest> asignaciones,
-        Guid tenantId,
+        Guid subscriberId,
         IWarehouseRepository bodegas,
         CancellationToken ct)
     {
@@ -27,7 +27,7 @@ public static class PurchaseAsignacionWarehousesRules
             if (a.Quantity <= 0)
                 return $"La cantidad asignada debe ser mayor a cero (ItemIndex {a.ItemIndex}).";
 
-            var Warehouse = await bodegas.GetByIdAsync(tenantId, a.WarehouseId, ct);
+            var Warehouse = await bodegas.GetByIdAsync(subscriberId, a.WarehouseId, ct);
             if (Warehouse is null)
                 return $"Warehouse {a.WarehouseId} no encontrada en el tenant.";
             if (!Warehouse.IsActive)
@@ -53,7 +53,7 @@ public static class PurchaseAsignacionWarehousesRules
     public static async Task<string?> ValidateAgainstDetallesAsync(
         IReadOnlyList<ERP.Domain.Modules.Purchasing.Entities.PurchBillLine> detallesOrdenados,
         IReadOnlyList<WarehouseAllocationRequest> asignaciones,
-        Guid tenantId,
+        Guid subscriberId,
         IWarehouseRepository bodegas,
         CancellationToken ct)
     {
@@ -68,6 +68,6 @@ public static class PurchaseAsignacionWarehousesRules
                 d.VatPct))
             .ToList();
 
-        return await ValidateAsync(inputs, asignaciones, tenantId, bodegas, ct);
+        return await ValidateAsync(inputs, asignaciones, subscriberId, bodegas, ct);
     }
 }

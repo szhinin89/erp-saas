@@ -26,7 +26,7 @@ public sealed record AdminNavItemRowDto(
     string? PermissionKey,
     IReadOnlyList<string>? PermissionKeysAny,
     bool IsActive,
-    Guid? SaasFeatureDefinitionId,
+    Guid? PlatformFeatureId,
     IReadOnlyList<AdminNavItemRowDto> Children);
 
 /// <summary>
@@ -46,7 +46,7 @@ public sealed record CreateNavItemRequest(
     string DisplayLabel,
     string? ModuleKey,
     string? PermissionKey,
-    Guid? SaasFeatureDefinitionId = null);
+    Guid? PlatformFeatureId = null);
 
 /// <summary>Actualización de un ítem existente (texto, ruta, permisos y vínculo opcional a feature SaaS).</summary>
 public sealed record UpdateNavItemRequest(
@@ -55,4 +55,4 @@ public sealed record UpdateNavItemRequest(
     string? ModuleKey,
     string? PermissionKey,
     /// <summary>Guid en texto; vacío o null = quitar vínculo a feature.</summary>
-    string? SaasFeatureDefinitionId);
+    string? PlatformFeatureId);

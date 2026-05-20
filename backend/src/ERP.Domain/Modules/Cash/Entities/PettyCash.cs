@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Cash.Entities;
 
-public sealed class PettyCash : MasterEntity, ITenantEntity
+public sealed class PettyCash : MasterEntity, ISubscriberScopedEntity
 {
     public const int NameMaxLen = 200;
 
@@ -15,7 +15,7 @@ public sealed class PettyCash : MasterEntity, ITenantEntity
     private PettyCash() { }
 
     public static PettyCash Create(
-        Guid     tenantId,
+        Guid     subscriberId,
         string   name,
         decimal  assignedBalance,
         Guid     createdBy,
@@ -30,7 +30,7 @@ public sealed class PettyCash : MasterEntity, ITenantEntity
         var c = new PettyCash
         {
             Id                   = Guid.NewGuid(),
-            TenantId             = tenantId,
+            SubscriberId             = subscriberId,
             Name                 = name.Trim(),
             AssignedBalance      = assignedBalance,
             CurrentBalance       = assignedBalance,

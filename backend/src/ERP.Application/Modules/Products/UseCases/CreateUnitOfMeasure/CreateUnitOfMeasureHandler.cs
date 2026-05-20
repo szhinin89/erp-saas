@@ -12,18 +12,18 @@ public class CreateUnitOfMeasureHandler : IRequestHandler<CreateUnitOfMeasureCom
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public CreateUnitOfMeasureHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
         _activity = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
@@ -32,12 +32,12 @@ public class CreateUnitOfMeasureHandler : IRequestHandler<CreateUnitOfMeasureCom
 
     public async Task<Result<UnitOfMeasureDto>> Handle(CreateUnitOfMeasureCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId = _currentUser.UserId;
-        var entity = UnitOfMeasure.Create(tenantId, command.Code, command.Name, userId, command.Symbol);
+        var entity = UnitOfMeasure.Create(subscriberId, command.Code, command.Name, userId, command.Symbol);
         await _repo.AddUnitOfMeasureAsync(entity, ct);
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _currentUser.Email,
             _currentUser.FullName,

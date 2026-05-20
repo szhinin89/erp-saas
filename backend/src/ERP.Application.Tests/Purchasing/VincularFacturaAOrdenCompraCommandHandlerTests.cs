@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.VincularFacturaAOrdenCompra;
@@ -51,7 +51,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
     {
         var ctx = new TestContext();
         ctx.OrdenRepo.Setup(x => x.GetByIdWithLinesAsync(
-                ctx.TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                ctx.SubscriberId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((PurchaseOrder?)null);
 
         var result = await ctx.Handle();
@@ -66,7 +66,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         var ctx = new TestContext();
         var oc  = ctx.BuildOrdenCompra(aprobar: false); // estado Borrador
         ctx.OrdenRepo.Setup(x => x.GetByIdWithLinesAsync(
-                ctx.TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                ctx.SubscriberId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(oc);
 
         var result = await ctx.Handle();
@@ -82,7 +82,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
     {
         var ctx = new TestContext();
         ctx.CompraRepo.Setup(x => x.GetByIdWithLinesAsync(
-                ctx.TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                ctx.SubscriberId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((PurchBill?)null);
 
         var result = await ctx.Handle();
@@ -97,7 +97,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         var ctx     = new TestContext();
         var factura = ctx.BuildFactura(aprobar: false); // estado Borrador
         ctx.CompraRepo.Setup(x => x.GetByIdWithLinesAsync(
-                ctx.TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                ctx.SubscriberId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(factura);
 
         var result = await ctx.Handle();
@@ -113,7 +113,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
     {
         var ctx = new TestContext();
         ctx.OrdenRepo.Setup(x => x.BillAlreadyLinkedAsync(
-                ctx.TenantId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                ctx.SubscriberId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         var result = await ctx.Handle();
@@ -183,7 +183,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
 
     private sealed class TestContext
     {
-        public Guid TenantId   { get; } = Guid.NewGuid();
+        public Guid SubscriberId   { get; } = Guid.NewGuid();
         public Guid UserId     { get; } = Guid.NewGuid();
         public Guid ProductoId { get; } = Guid.NewGuid();
         public Guid ProveedorId { get; } = Guid.NewGuid();
@@ -199,7 +199,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
 
         private readonly Mock<ISupplierRepository>    _proveedorRepo = new();
         private readonly Mock<IUserActivityRepository> _activity      = new();
-        private readonly Mock<ICurrentTenant>          _tenant        = new();
+        private readonly Mock<ICurrentSubscriber>          _tenant        = new();
         private readonly Mock<ICurrentUser>            _user          = new();
 
         private readonly Guid _ordenId   = Guid.NewGuid();
@@ -216,7 +216,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
             _precioOC        = precioOC;
             _precioFactura   = precioFactura;
 
-            _tenant.SetupGet(x => x.TenantId).Returns(TenantId);
+            _tenant.SetupGet(x => x.SubscriberId).Returns(SubscriberId);
             _user.SetupGet(x => x.UserId).Returns(UserId);
             _user.SetupGet(x => x.Email).Returns("test@erp.dev");
             _user.SetupGet(x => x.FullName).Returns("Test User");
@@ -233,19 +233,19 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
             _ordenId   = orden.Id;
             _facturaId = factura.Id;
 
-            OrdenRepo.Setup(x => x.GetByIdWithLinesAsync(TenantId, orden.Id, It.IsAny<CancellationToken>()))
+            OrdenRepo.Setup(x => x.GetByIdWithLinesAsync(SubscriberId, orden.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(orden);
             OrdenRepo.Setup(x => x.BillAlreadyLinkedAsync(
-                    TenantId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                    SubscriberId, It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(false);
             OrdenRepo.Setup(x => x.AddOrderBillLinkAsync(
                     It.IsAny<PurchaseOrderBill>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
-            CompraRepo.Setup(x => x.GetByIdWithLinesAsync(TenantId, factura.Id, It.IsAny<CancellationToken>()))
+            CompraRepo.Setup(x => x.GetByIdWithLinesAsync(SubscriberId, factura.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(factura);
 
-            _proveedorRepo.Setup(x => x.GetByIdAsync(TenantId, ProveedorId, It.IsAny<CancellationToken>()))
+            _proveedorRepo.Setup(x => x.GetByIdAsync(SubscriberId, ProveedorId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((ERP.Domain.Modules.Purchasing.Entities.Supplier?)null);
 
             _activity.Setup(x => x.AddAsync(
@@ -256,13 +256,13 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         public PurchaseOrder BuildOrdenCompra(bool aprobar)
         {
             var oc = PurchaseOrder.Create(
-                TenantId, sequential: 1, ProveedorId,
+                SubscriberId, sequential: 1, ProveedorId,
                 DateTime.UtcNow.AddDays(30),
                 targetWarehouseId: null, deliveryAddress: null, notes: null,
                 UserId);
 
             var detalle = PurchaseOrderLine.Create(
-                TenantId, oc.Id, ProductoId, "Producto Test",
+                SubscriberId, oc.Id, ProductoId, "Producto Test",
                 _cantidadPedida, unitCost: _precioOC, vatPct: 15m, UserId);
             oc.AddLine(detalle);
 
@@ -273,7 +273,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         public PurchBill BuildFactura(bool aprobar)
         {
             var f = PurchBill.Create(
-                TenantId, ProveedorId, "001-001-000000001",
+                SubscriberId, ProveedorId, "001-001-000000001",
                 accessKey: null, xmlPath: null,
                 DateTime.UtcNow, dueDate: null,
                 "30 dias", notes: null, UserId);

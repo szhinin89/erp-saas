@@ -4,39 +4,46 @@ using ERP.Application.Common;
 using ERP.Application.Subscriptions;
 using MediatR;
 using ERP.Domain.Access.Interfaces;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Subscribers.Interfaces;
 
-namespace ERP.Application.Access.UseCases.SwitchTenant;
+namespace ERP.Application.Access.UseCases.SwitchSubscriber;
 
-public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<SessionResponseDto>>
+public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, Result<SessionResponseDto>>
 {
     private readonly IAccessRepository _accessRepository;
     private readonly IAccessTokenService _tokenService;
     private readonly ICurrentUser _currentUser;
-    private readonly ITenantRepository _tenantRepository;
+    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ICompanyRepository _companyRepository;
     private readonly IConfigService _configService;
     private readonly ISessionModulesResolver _sessionModules;
+    private readonly ICompanyProvisioningService _companyProvisioning;
 
-    public SwitchTenantHandler(
+    public SwitchSubscriberHandler(
         IAccessRepository accessRepository,
         IAccessTokenService tokenService,
         ICurrentUser currentUser,
-        ITenantRepository tenantRepository,
+        ISubscriberRepository tenantRepository,
+        ICompanyRepository companyRepository,
         IConfigService configService,
-        ISessionModulesResolver sessionModules)
+        ISessionModulesResolver sessionModules,
+        ICompanyProvisioningService companyProvisioning)
     {
         _accessRepository = accessRepository;
         _tokenService = tokenService;
         _currentUser = currentUser;
         _tenantRepository = tenantRepository;
+        _companyRepository = companyRepository;
         _configService = configService;
         _sessionModules = sessionModules;
+        _companyProvisioning = companyProvisioning;
     }
 
-    public Task<Result<SessionResponseDto>> HandleAsync(SwitchTenantCommand command, CancellationToken ct = default)
+    public Task<Result<SessionResponseDto>> HandleAsync(SwitchSubscriberCommand command, CancellationToken ct = default)
         => Handle(command, ct);
 
-    public async Task<Result<SessionResponseDto>> Handle(SwitchTenantCommand command, CancellationToken ct)
+    public async Task<Result<SessionResponseDto>> Handle(SwitchSubscriberCommand command, CancellationToken ct)
     {
         if (!_currentUser.IsAuthenticated)
             return Result<SessionResponseDto>.Failure("Unauthorized");
@@ -57,35 +64,35 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<S
                 || string.IsNullOrWhiteSpace(fullName))
                 return Result<SessionResponseDto>.Failure("Unauthorized");
 
-            if (command.TenantId == Guid.Empty)
+            if (command.SubscriberId == Guid.Empty)
             {
                 var superSessionGlobal = _tokenService.GenerateSessionToken(userId, email, fullName, Guid.Empty, "SuperAdmin");
                 return Result<SessionResponseDto>.Success(new SessionResponseDto(
                     UserId: userId,
                     FullName: fullName,
                     Email: email,
-                    TenantId: Guid.Empty,
+                    SubscriberId: Guid.Empty,
                     Role: "SuperAdmin",
                     Token: superSessionGlobal,
                     PlanCode: null,
-                    EnabledModules: TenantSubscriptionCatalog.AllModuleKeys));
+                    EnabledModules: SubscriberSubscriptionCatalog.AllModuleKeys));
             }
 
-            var tenantSa = await _tenantRepository.GetByIdAsync(command.TenantId, ct);
+            var tenantSa = await _tenantRepository.GetByIdAsync(command.SubscriberId, ct);
             if (tenantSa is null || !tenantSa.IsActive)
                 return Result<SessionResponseDto>.Failure("Unauthorized");
 
-            var superSessionTenant = _tokenService.GenerateSessionToken(userId, email, fullName, command.TenantId, "SuperAdmin");
-            await _configService.WarmupTenantAsync(command.TenantId, ct);
-            var superModules = await _sessionModules.GetEnabledModuleKeysAsync(command.TenantId, ct);
+            var superSessionSubscriber = _tokenService.GenerateSessionToken(userId, email, fullName, command.SubscriberId, "SuperAdmin");
+            await _configService.WarmupTenantAsync(command.SubscriberId, ct);
+            var superModules = await _sessionModules.GetEnabledModuleKeysAsync(command.SubscriberId, ct);
 
             return Result<SessionResponseDto>.Success(new SessionResponseDto(
                 UserId: userId,
                 FullName: fullName,
                 Email: email,
-                TenantId: command.TenantId,
+                SubscriberId: command.SubscriberId,
                 Role: "SuperAdmin",
-                Token: superSessionTenant,
+                Token: superSessionSubscriber,
                 tenantSa.PlanCode,
                 superModules));
         }
@@ -93,27 +100,64 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<S
         if (!user.IsActive)
             return Result<SessionResponseDto>.Failure("Unauthorized");
 
-        var membership = await _accessRepository.GetMembershipAsync(command.TenantId, user.Id, ct);
-        if (membership is null || !membership.IsActive)
-            return Result<SessionResponseDto>.Failure("No tienes acceso a esta empresa.");
-
-        var tenant = await _tenantRepository.GetByIdAsync(command.TenantId, ct);
+        var tenant = await _tenantRepository.GetByIdAsync(command.SubscriberId, ct);
         if (tenant is null || !tenant.IsActive)
-            return Result<SessionResponseDto>.Failure("No tienes acceso a esta empresa.");
+            return Result<SessionResponseDto>.Failure("No tienes acceso a este suscriptor.");
 
-        var membershipSessionToken = _tokenService.GenerateSessionToken(user, command.TenantId, membership.Role);
-        await _configService.WarmupTenantAsync(command.TenantId, ct);
+        var memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(user.Id, ct);
+        var companyIds = memberships.Select(m => m.CompanyId).Distinct().ToList();
+        var companies = await _companyRepository.GetByIdsAsync(companyIds, ct);
+        var companiesInSubscriber = companies.Where(c => c.SubscriberId == command.SubscriberId).ToList();
 
-        var modules = await _sessionModules.GetEnabledModuleKeysAsync(command.TenantId, ct);
+        if (companiesInSubscriber.Count == 0)
+            return Result<SessionResponseDto>.Failure("No tienes acceso a empresas en este suscriptor.");
+
+        var membershipByCompany = memberships.ToDictionary(m => m.CompanyId);
+
+        if (companiesInSubscriber.Count > 1)
+        {
+            var first = companiesInSubscriber[0];
+            var m0 = membershipByCompany[first.Id];
+            var tokenPartial = _tokenService.GenerateSessionToken(user, command.SubscriberId, m0.Role);
+            await _configService.WarmupTenantAsync(command.SubscriberId, ct);
+            var modulesPartial = await _sessionModules.GetEnabledModuleKeysAsync(command.SubscriberId, ct);
+
+            return Result<SessionResponseDto>.Success(new SessionResponseDto(
+                UserId: user.Id,
+                FullName: user.FullName,
+                Email: user.Email.Value,
+                SubscriberId: command.SubscriberId,
+                Role: m0.Role,
+                Token: tokenPartial,
+                tenant.PlanCode,
+                modulesPartial)
+            {
+                CompanyId = null,
+            });
+        }
+
+        var company = companiesInSubscriber[0];
+        if (!membershipByCompany.TryGetValue(company.Id, out var membership) || !membership.IsActive)
+            return Result<SessionResponseDto>.Failure("Membresía no activa.");
+
+        await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
+
+        var sessionToken = _tokenService.GenerateSessionToken(
+            user, command.SubscriberId, membership.Role, company.Id);
+        await _configService.WarmupTenantAsync(command.SubscriberId, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(command.SubscriberId, ct);
 
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
             UserId: user.Id,
             FullName: user.FullName,
             Email: user.Email.Value,
-            TenantId: command.TenantId,
+            SubscriberId: command.SubscriberId,
             Role: membership.Role,
-            Token: membershipSessionToken,
+            Token: sessionToken,
             tenant.PlanCode,
-            modules));
+            modules)
+        {
+            CompanyId = company.Id,
+        });
     }
 }

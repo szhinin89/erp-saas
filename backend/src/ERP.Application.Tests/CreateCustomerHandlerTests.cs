@@ -13,11 +13,11 @@ public sealed class CreateCustomerHandlerTests
     [Fact]
     public async Task HandleAsync_persists_customer_and_logs_activity()
     {
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
         var repo = new Mock<ICustomerRepository>(MockBehavior.Strict);
-        repo.Setup(r => r.ExistsIdentificationAsync(tenantId, "RUC", It.IsAny<string>(), null, It.IsAny<CancellationToken>()))
+        repo.Setup(r => r.ExistsIdentificationAsync(subscriberId, "RUC", It.IsAny<string>(), null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
         repo.Setup(r => r.AddAsync(It.IsAny<ERP.Domain.Modules.Sales.Entities.Customer>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
@@ -28,8 +28,8 @@ public sealed class CreateCustomerHandlerTests
         activity.Setup(a => a.AddAsync(It.IsAny<UserActivity>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var tenant = new Mock<ICurrentTenant>(MockBehavior.Strict);
-        tenant.SetupGet(t => t.TenantId).Returns(tenantId);
+        var tenant = new Mock<ICurrentSubscriber>(MockBehavior.Strict);
+        tenant.SetupGet(t => t.SubscriberId).Returns(subscriberId);
         tenant.SetupGet(t => t.IsAuthenticated).Returns(true);
 
         var user = new Mock<ICurrentUser>(MockBehavior.Strict);
@@ -66,15 +66,15 @@ public sealed class CreateCustomerHandlerTests
     [Fact]
     public async Task HandleAsync_fails_when_duplicate_identification()
     {
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
 
         var repo = new Mock<ICustomerRepository>(MockBehavior.Strict);
-        repo.Setup(r => r.ExistsIdentificationAsync(tenantId, "RUC", It.IsAny<string>(), null, It.IsAny<CancellationToken>()))
+        repo.Setup(r => r.ExistsIdentificationAsync(subscriberId, "RUC", It.IsAny<string>(), null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
         var activity = new Mock<IUserActivityRepository>(MockBehavior.Strict);
-        var tenant = new Mock<ICurrentTenant>(MockBehavior.Strict);
-        tenant.SetupGet(t => t.TenantId).Returns(tenantId);
+        var tenant = new Mock<ICurrentSubscriber>(MockBehavior.Strict);
+        tenant.SetupGet(t => t.SubscriberId).Returns(subscriberId);
         tenant.SetupGet(t => t.IsAuthenticated).Returns(true);
         var user = new Mock<ICurrentUser>(MockBehavior.Strict);
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
@@ -95,8 +95,8 @@ public sealed class CreateCustomerHandlerTests
     {
         var repo = new Mock<ICustomerRepository>(MockBehavior.Strict);
         var activity = new Mock<IUserActivityRepository>(MockBehavior.Strict);
-        var tenant = new Mock<ICurrentTenant>(MockBehavior.Strict);
-        tenant.SetupGet(t => t.TenantId).Returns(Guid.NewGuid());
+        var tenant = new Mock<ICurrentSubscriber>(MockBehavior.Strict);
+        tenant.SetupGet(t => t.SubscriberId).Returns(Guid.NewGuid());
         tenant.SetupGet(t => t.IsAuthenticated).Returns(true);
         var user = new Mock<ICurrentUser>(MockBehavior.Strict);
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());

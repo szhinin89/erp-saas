@@ -3,7 +3,7 @@ namespace ERP.Domain.Common;
 /// <summary>
 /// Auditoría estándar para mutaciones con actor de aplicación (<c>CreatedBy</c> / <c>UpdatedBy</c>).
 /// Las entidades multi-tenant puramente técnicas (jobs, snapshots) pueden implementar solo
-/// <see cref="ITenantEntity"/>; ver backlog P4 (auditoría de dominio).
+/// <see cref="ISubscriberScopedEntity"/>; ver backlog P4 (auditoría de dominio).
 /// </summary>
 public abstract class AuditableEntity : AggregateRoot
 {

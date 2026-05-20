@@ -9,12 +9,12 @@ namespace ERP.Application.Modules.Accounting.UseCases.GetJournalEntries;
 public class GetJournalEntriesHandler : IRequestHandler<GetJournalEntriesQuery, Result<PagedResult<JournalEntryDto>>>
 {
     private readonly IAccountingRepository _repository;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
-    public GetJournalEntriesHandler(IAccountingRepository repository, ICurrentTenant currentTenant)
+    public GetJournalEntriesHandler(IAccountingRepository repository, ICurrentSubscriber currentSubscriber)
     {
         _repository    = repository;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public Task<Result<PagedResult<JournalEntryDto>>> HandleAsync(int pageNumber, int pageSize, CancellationToken ct = default)
@@ -22,9 +22,9 @@ public class GetJournalEntriesHandler : IRequestHandler<GetJournalEntriesQuery, 
 
     public async Task<Result<PagedResult<JournalEntryDto>>> Handle(GetJournalEntriesQuery request, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var (entries, totalCount)  = await _repository.GetJournalEntriesPageAsync(
-            tenantId,
+            subscriberId,
             request.PageNumber,
             request.PageSize,
             ct);

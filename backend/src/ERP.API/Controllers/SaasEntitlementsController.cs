@@ -12,18 +12,18 @@ namespace ERP.API.Controllers;
 /// <summary>Entitlements comerciales del tenant en sesión (snapshot único para UI).</summary>
 [ApiController]
 [AppFeature("SaaS Entitlements API", "perm:session.entitlements.api", "🧩", null, null, 986, IsVisibleInMenu = false)]
-[Route("api/saas/entitlements")]
+[Route("api/subscribers/entitlements")]
 [Produces("application/json")]
-public sealed class SaasEntitlementsController : ControllerBase
+public sealed class SubscriberEntitlementsController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    public SaasEntitlementsController(IMediator mediator) => _mediator = mediator;
+    public SubscriberEntitlementsController(IMediator mediator) => _mediator = mediator;
 
     /// <summary>Snapshot de módulos, features y límites del tenant actual (fail-closed sin suscripción activa).</summary>
     [HttpGet("me")]
     [Authorize(Policy = "Session")]
-    [ProducesResponseType(typeof(ApiResponse<TenantEntitlementsSnapshot>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SubscriberEntitlementsSnapshot>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetMe(CancellationToken ct)
     {

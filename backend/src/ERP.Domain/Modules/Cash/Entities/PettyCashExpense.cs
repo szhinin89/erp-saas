@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Cash.Entities;
 
-public sealed class PettyCashExpense : AuditableEntity, ITenantEntity
+public sealed class PettyCashExpense : AuditableEntity, ISubscriberScopedEntity
 {
     public const int DescriptionMaxLen   = 500;
     public const int VoucherTypeMaxLen   = 40;
@@ -19,7 +19,7 @@ public sealed class PettyCashExpense : AuditableEntity, ITenantEntity
     private PettyCashExpense() { }
 
     public static PettyCashExpense Create(
-        Guid     tenantId,
+        Guid     subscriberId,
         Guid     pettyCashId,
         DateTime expenseDate,
         string   description,
@@ -38,7 +38,7 @@ public sealed class PettyCashExpense : AuditableEntity, ITenantEntity
         var g = new PettyCashExpense
         {
             Id             = Guid.NewGuid(),
-            TenantId       = tenantId,
+            SubscriberId       = subscriberId,
             PettyCashId    = pettyCashId,
             ExpenseDate    = expenseDate,
             Description    = description.Trim(),

@@ -13,7 +13,7 @@ public class AccessProfileConfiguration : IEntityTypeConfiguration<AccessProfile
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id).HasColumnName("id");
 
-        builder.Property(p => p.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(p => p.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(p => p.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
         builder.Property(p => p.Description).HasColumnName("description").HasMaxLength(400);
         builder.Property(p => p.IsActive).HasColumnName("is_active").IsRequired();
@@ -23,9 +23,9 @@ public class AccessProfileConfiguration : IEntityTypeConfiguration<AccessProfile
         builder.Property(p => p.CreatedBy).HasColumnName("created_by");
         builder.Property(p => p.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(p => new { p.TenantId, p.Name })
+        builder.HasIndex(p => new { p.SubscriberId, p.Name })
             .IsUnique()
-            .HasDatabaseName("ux_access_profiles_tenant_name");
+            .HasDatabaseName("ux_access_profiles_subscriber_name");
     }
 }
 

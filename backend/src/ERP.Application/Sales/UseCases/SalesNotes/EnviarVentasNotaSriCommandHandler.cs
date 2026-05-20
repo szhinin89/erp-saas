@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
@@ -23,7 +23,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
     private readonly IProductRepository          _productRepository;
     private readonly IUserActivityRepository     _activity;
     private readonly IUnitOfWork                 _unitOfWork;
-    private readonly ICurrentTenant              _currentTenant;
+    private readonly ICurrentSubscriber              _currentSubscriber;
     private readonly ICurrentUser                _currentUser;
     private readonly ILogger<EnviarSalesNotesriCommandHandler> _logger;
 
@@ -36,7 +36,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         IProductRepository productRepository,
         IUserActivityRepository activity,
         IUnitOfWork unitOfWork,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<EnviarSalesNotesriCommandHandler> logger)
     {
@@ -48,17 +48,17 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         _productRepository   = productRepository;
         _activity            = activity;
         _unitOfWork          = unitOfWork;
-        _currentTenant       = currentTenant;
+        _currentSubscriber       = currentSubscriber;
         _currentUser         = currentUser;
         _logger              = logger;
     }
 
     public async Task<Result<Guid>> Handle(SendSalesNoteSriCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var nota = await _ventasRepository.GetNoteByIdWithLinesAsync(tenantId, command.NotaId, ct);
+        var nota = await _ventasRepository.GetNoteByIdWithLinesAsync(subscriberId, command.NotaId, ct);
         if (nota is null)
             return Result<Guid>.Failure("Nota no encontrada.");
 
@@ -72,7 +72,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         if (facturaOriginal.Status != "Autorizado")
             return Result<Guid>.Failure("La factura original debe permanecer autorizada.");
 
-        var configSri = await _configSriRepository.GetByTenantIdAsync(tenantId, ct);
+        var configSri = await _configSriRepository.GetBySubscriberIdAsync(subscriberId, ct);
         if (configSri is null)
             return Result<Guid>.Failure("La configuración SRI no está configurada para este tenant.");
 
@@ -123,8 +123,8 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
             return Result<Guid>.Failure(response.ErrorMessage ?? "El SRI rechazó la nota.");
         }
 
-        var xmlGeneradoPath     = $"ventas/notas/{tenantId}/{nota.Id}/generado.xml";
-        var xmlAutorizacionPath = $"ventas/notas/{tenantId}/{nota.Id}/autorizado.xml";
+        var xmlGeneradoPath     = $"ventas/notas/{subscriberId}/{nota.Id}/generado.xml";
+        var xmlAutorizacionPath = $"ventas/notas/{subscriberId}/{nota.Id}/autorizado.xml";
         try
         {
             await _fileStorage.SaveAsync(xmlGeneradoPath, new MemoryStream(xmlFirmado), ct);
@@ -165,7 +165,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
                 var stockLines = new List<SalesNoteStockLine>();
                 foreach (var detalle in detalles)
                 {
-                    var producto = await _productRepository.GetByIdAsync(detalle.ProductId, tenantId, ct);
+                    var producto = await _productRepository.GetByIdAsync(detalle.ProductId, subscriberId, ct);
                     if (producto is null || producto.IsService || !producto.TracksStock)
                         continue;
                     stockLines.Add(new SalesNoteStockLine(detalle.ProductId, detalle.Quantity));
@@ -193,7 +193,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
             }
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "ventas", action: "ventas.nota.enviar",
                 entityType: "SalesNote", entityId: nota.Id,
                 description: $"{numero} — auth {response.AuthNumber}"), ct);

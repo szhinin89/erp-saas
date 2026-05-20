@@ -12,44 +12,44 @@ public class EnableProductSubcategoryHandler : IRequestHandler<EnableProductSubc
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public EnableProductSubcategoryHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
         _activity = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
     public async Task<Result<ProductSubcategoryDto>> Handle(EnableProductSubcategoryCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId = _currentUser.UserId;
 
-        var entity = await _repo.GetProductSubcategoryByIdAsync(tenantId, command.Id, ct);
+        var entity = await _repo.GetProductSubcategoryByIdAsync(subscriberId, command.Id, ct);
         if (entity is null)
             return Result<ProductSubcategoryDto>.Failure("Subcategoría no encontrada.");
 
         if (entity.IsActive)
             return Result<ProductSubcategoryDto>.Failure("La subcategoría ya está activa.");
 
-        var category = await _repo.GetProductCategoryByIdAsync(tenantId, entity.CategoryId, ct);
+        var category = await _repo.GetProductCategoryByIdAsync(subscriberId, entity.CategoryId, ct);
         if (category is null || !category.IsActive)
             return Result<ProductSubcategoryDto>.Failure("No se puede reactivar: la categoría padre no existe o está deshabilitada.");
 
-        var line = await _repo.GetProductLineByIdAsync(tenantId, category.LineId, ct);
+        var line = await _repo.GetProductLineByIdAsync(subscriberId, category.LineId, ct);
         if (line is null || !line.IsActive)
             return Result<ProductSubcategoryDto>.Failure("No se puede reactivar: la línea padre no existe o está deshabilitada.");
 
         entity.Enable(userId);
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _currentUser.Email,
             _currentUser.FullName,

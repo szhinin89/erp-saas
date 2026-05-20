@@ -13,24 +13,24 @@ public class CreateProductSubcategoryHandler : IRequestHandler<CreateProductSubc
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public CreateProductSubcategoryHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
         _activity = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
     public async Task<Result<ProductSubcategoryDto>> Handle(CreateProductSubcategoryCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId = _currentUser.UserId;
 
         if (command.CategoryId == Guid.Empty)
@@ -39,23 +39,23 @@ public class CreateProductSubcategoryHandler : IRequestHandler<CreateProductSubc
         if (string.IsNullOrWhiteSpace(command.Code) || string.IsNullOrWhiteSpace(command.Name))
             return Result<ProductSubcategoryDto>.Failure("Código y nombre son obligatorios.");
 
-        var category = await _repo.GetProductCategoryByIdAsync(tenantId, command.CategoryId, ct);
+        var category = await _repo.GetProductCategoryByIdAsync(subscriberId, command.CategoryId, ct);
         if (category is null)
             return Result<ProductSubcategoryDto>.Failure("La categoría indicada no existe.");
         if (!category.IsActive)
             return Result<ProductSubcategoryDto>.Failure("No se puede crear una subcategoría bajo una categoría deshabilitada.");
 
-        var line = await _repo.GetProductLineByIdAsync(tenantId, category.LineId, ct);
+        var line = await _repo.GetProductLineByIdAsync(subscriberId, category.LineId, ct);
         if (line is null || !line.IsActive)
             return Result<ProductSubcategoryDto>.Failure("La línea asociada a la categoría no está disponible o está deshabilitada.");
 
-        if (await _repo.ProductSubcategoryCodeExistsAsync(tenantId, command.CategoryId, command.Code.Trim(), null, ct))
+        if (await _repo.ProductSubcategoryCodeExistsAsync(subscriberId, command.CategoryId, command.Code.Trim(), null, ct))
             return Result<ProductSubcategoryDto>.Failure("Ya existe una subcategoría con el mismo código en esta categoría.");
 
-        var entity = ProductSubcategory.Create(tenantId, command.Code.Trim(), command.Name.Trim(), command.CategoryId, userId);
+        var entity = ProductSubcategory.Create(subscriberId, command.Code.Trim(), command.Name.Trim(), command.CategoryId, userId);
         await _repo.AddProductSubcategoryAsync(entity, ct);
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _currentUser.Email,
             _currentUser.FullName,

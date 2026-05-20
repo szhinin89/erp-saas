@@ -12,7 +12,7 @@ public sealed class PurchaseDetailConfiguration : IEntityTypeConfiguration<Purch
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.PurchaseDocumentId).HasColumnName("purchase_document_id").IsRequired();
         builder.Property(e => e.ProductId).HasColumnName("product_id");
         builder.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);

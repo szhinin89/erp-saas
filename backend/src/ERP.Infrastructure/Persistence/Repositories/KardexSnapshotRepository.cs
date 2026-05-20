@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
@@ -11,10 +11,10 @@ public sealed class KardexSnapshotRepository : IKardexSnapshotRepository
     public KardexSnapshotRepository(ErpDbContext context) => _context = context;
 
     public Task<KardexSnapshot?> GetLatestBeforeAsync(
-        Guid tenantId, Guid productoId, Guid WarehouseId,
+        Guid subscriberId, Guid productoId, Guid WarehouseId,
         DateTime toUtc, CancellationToken ct = default)
         => _context.KardexSnapshots
-            .Where(s => s.TenantId   == tenantId
+            .Where(s => s.SubscriberId   == subscriberId
                      && s.ProductId == productoId
                      && s.WarehouseId   == WarehouseId
                      && s.SnapshotDate <= toUtc.Date)
@@ -33,13 +33,13 @@ public sealed class KardexSnapshotRepository : IKardexSnapshotRepository
         await _context.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO kardex_snapshot
-                (id, tenant_id, product_id, warehouse_id, snapshot_date,
+                (id, subscriber_id, product_id, warehouse_id, snapshot_date,
                  balance_qty, balance_value, average_cost, computed_at)
             VALUES
-                ({snapshot.Id}, {snapshot.TenantId}, {snapshot.ProductId}, {snapshot.WarehouseId},
+                ({snapshot.Id}, {snapshot.SubscriberId}, {snapshot.ProductId}, {snapshot.WarehouseId},
                  {snapshot.SnapshotDate.Date}, {snapshot.BalanceQty}, {snapshot.BalanceValue},
                  {snapshot.AverageCost}, {snapshot.ComputedAt})
-            ON CONFLICT (tenant_id, product_id, warehouse_id, snapshot_date)
+            ON CONFLICT (subscriber_id, product_id, warehouse_id, snapshot_date)
             DO UPDATE SET
                 balance_qty   = EXCLUDED.balance_qty,
                 balance_value = EXCLUDED.balance_value,
@@ -49,10 +49,10 @@ public sealed class KardexSnapshotRepository : IKardexSnapshotRepository
     }
 
     public async Task<IReadOnlyList<(Guid ProductId, Guid WarehouseId)>> GetDistinctProductWarehouseAsync(
-        Guid tenantId, CancellationToken ct = default)
+        Guid subscriberId, CancellationToken ct = default)
     {
         var rows = await _context.StockMovements
-            .Where(m => m.TenantId == tenantId)
+            .Where(m => m.SubscriberId == subscriberId)
             .Select(m => new { m.ProductId, m.WarehouseId })
             .Distinct()
             .ToListAsync(ct);
@@ -63,7 +63,7 @@ public sealed class KardexSnapshotRepository : IKardexSnapshotRepository
     public async Task<IReadOnlyList<Guid>> GetTenantsWithMovementsAsync(CancellationToken ct = default)
     {
         return await _context.StockMovements
-            .Select(m => m.TenantId)
+            .Select(m => m.SubscriberId)
             .Distinct()
             .ToListAsync(ct);
     }
@@ -73,7 +73,7 @@ public sealed class KardexSnapshotRepository : IKardexSnapshotRepository
     private async Task UpsertInMemoryAsync(KardexSnapshot snap, CancellationToken ct)
     {
         var existing = await _context.KardexSnapshots.FirstOrDefaultAsync(
-            s => s.TenantId   == snap.TenantId
+            s => s.SubscriberId   == snap.SubscriberId
               && s.ProductId == snap.ProductId
               && s.WarehouseId   == snap.WarehouseId
               && s.SnapshotDate == snap.SnapshotDate.Date, ct);

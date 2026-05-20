@@ -417,7 +417,7 @@ public sealed class UnifiedDocumentSync : IUnifiedDocumentSync
 
     private static readonly string[] SalesDetailScalarProperties =
     [
-        nameof(SalesDetail.TenantId), nameof(SalesDetail.SalesDocumentId), nameof(SalesDetail.ProductId),
+        nameof(SalesDetail.SubscriberId), nameof(SalesDetail.SalesDocumentId), nameof(SalesDetail.ProductId),
         nameof(SalesDetail.ProductCode), nameof(SalesDetail.Description), nameof(SalesDetail.UnitCode),
         nameof(SalesDetail.Quantity), nameof(SalesDetail.UnitPrice), nameof(SalesDetail.DiscountPct),
         nameof(SalesDetail.DiscountAmount), nameof(SalesDetail.VatCode), nameof(SalesDetail.VatPercentage),
@@ -445,7 +445,7 @@ public sealed class UnifiedDocumentSync : IUnifiedDocumentSync
 
     private static readonly string[] PurchaseDetailScalarProperties =
     [
-        nameof(PurchaseDetail.TenantId), nameof(PurchaseDetail.PurchaseDocumentId), nameof(PurchaseDetail.ProductId),
+        nameof(PurchaseDetail.SubscriberId), nameof(PurchaseDetail.PurchaseDocumentId), nameof(PurchaseDetail.ProductId),
         nameof(PurchaseDetail.Description), nameof(PurchaseDetail.Quantity), nameof(PurchaseDetail.QtyReceived),
         nameof(PurchaseDetail.UnitPrice), nameof(PurchaseDetail.DiscountPct), nameof(PurchaseDetail.VatCode),
         nameof(PurchaseDetail.Subtotal), nameof(PurchaseDetail.VatPercentage),

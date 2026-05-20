@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 
@@ -11,10 +11,10 @@ public sealed class RetentionSettingsRepository : IRetentionSettingsRepository
     public RetentionSettingsRepository(ErpDbContext context) => _context = context;
 
     public async Task<IReadOnlyList<RetentionSettings>> GetActiveForSupplierAsync(
-        Guid tenantId,
+        Guid subscriberId,
         CancellationToken ct = default)
         => await _context.RetentionSettings
-            .Where(r => r.TenantId == tenantId && r.IsActive &&
+            .Where(r => r.SubscriberId == subscriberId && r.IsActive &&
                         (r.SubjectType == "Supplier" || r.SubjectType == "AMBOS"))
             .OrderBy(r => r.TaxType)
             .ThenBy(r => r.SriCode)

@@ -24,12 +24,12 @@ public sealed class CreateProveedorCommandValidatorTests
 
     private static CreateProveedorCommandValidator CreateValidator(
         Mock<ISupplierRepository>? repo = null,
-        Guid? tenantId = null)
+        Guid? subscriberId = null)
     {
         var r = repo ?? new Mock<ISupplierRepository>();
-        var tid = tenantId ?? Guid.NewGuid();
-        var tenant = new Mock<ICurrentTenant>();
-        tenant.SetupGet(x => x.TenantId).Returns(tid);
+        var tid = subscriberId ?? Guid.NewGuid();
+        var tenant = new Mock<ICurrentSubscriber>();
+        tenant.SetupGet(x => x.SubscriberId).Returns(tid);
         return new CreateProveedorCommandValidator(r.Object, tenant.Object);
     }
 

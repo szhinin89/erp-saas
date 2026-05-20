@@ -21,7 +21,7 @@ public sealed class UiNavItem
     public string? RolesCsv { get; private set; }
     public bool IsActive { get; private set; }
     /// <summary>Vínculo opcional al catálogo SaaS (qué feature comercial representa este ítem en Plan ↔ menú).</summary>
-    public Guid? SaasFeatureDefinitionId { get; private set; }
+    public Guid? PlatformFeatureId { get; private set; }
 
     private UiNavItem() { }
 
@@ -54,9 +54,9 @@ public sealed class UiNavItem
             PermissionKeysAnyJson = string.IsNullOrWhiteSpace(permissionKeysAnyJson) ? null : permissionKeysAnyJson.Trim(),
             RolesCsv = string.IsNullOrWhiteSpace(rolesCsv) ? null : rolesCsv.Trim(),
             IsActive = isActive,
-            SaasFeatureDefinitionId = saasFeatureDefinitionId,
+            PlatformFeatureId = saasFeatureDefinitionId,
         };
     }
 
-    public void SetSaasFeatureDefinitionId(Guid? saasFeatureDefinitionId) => SaasFeatureDefinitionId = saasFeatureDefinitionId;
+    public void SetPlatformFeatureId(Guid? saasFeatureDefinitionId) => PlatformFeatureId = saasFeatureDefinitionId;
 }

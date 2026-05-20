@@ -5,9 +5,9 @@ namespace ERP.Domain.Audit.Entities;
 /// <summary>
 /// Registro append-only de acciones realizadas por un usuario (auditoría / historial).
 /// </summary>
-public class UserActivity : SystemBaseEntity, IMustHaveTenant
+public class UserActivity : SystemBaseEntity, IMustHaveSubscriber
 {
-    public Guid TenantId { get; private set; }
+    public Guid SubscriberId { get; private set; }
     public Guid UserId { get; private set; }
     public string? UserEmail { get; private set; }
     public string? UserFullName { get; private set; }
@@ -23,7 +23,7 @@ public class UserActivity : SystemBaseEntity, IMustHaveTenant
     private UserActivity() { }
 
     public static UserActivity Create(
-        Guid tenantId,
+        Guid subscriberId,
         Guid userId,
         string? userEmail,
         string? userFullName,
@@ -33,7 +33,7 @@ public class UserActivity : SystemBaseEntity, IMustHaveTenant
         Guid? entityId,
         string? description)
     {
-        if (tenantId == Guid.Empty) throw new ArgumentException("TenantId requerido.", nameof(tenantId));
+        if (subscriberId == Guid.Empty) throw new ArgumentException("SubscriberId requerido.", nameof(subscriberId));
         if (userId == Guid.Empty) throw new ArgumentException("UserId requerido.", nameof(userId));
         if (string.IsNullOrWhiteSpace(module)) throw new ArgumentException("Module requerido.", nameof(module));
         if (string.IsNullOrWhiteSpace(action)) throw new ArgumentException("Action requerida.", nameof(action));
@@ -41,7 +41,7 @@ public class UserActivity : SystemBaseEntity, IMustHaveTenant
         return new UserActivity
         {
             Id = Guid.NewGuid(),
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             UserId = userId,
             UserEmail = string.IsNullOrWhiteSpace(userEmail) ? null : userEmail.Trim(),
             UserFullName = string.IsNullOrWhiteSpace(userFullName) ? null : userFullName.Trim(),

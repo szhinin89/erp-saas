@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -13,13 +13,13 @@ public sealed class DisableSupplierCommandHandler
 {
     private readonly ISupplierRepository    _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _tenant;
+    private readonly ICurrentSubscriber          _tenant;
     private readonly ICurrentUser            _user;
 
     public DisableSupplierCommandHandler(
         ISupplierRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user)
     {
         _repo     = repo;
@@ -30,17 +30,17 @@ public sealed class DisableSupplierCommandHandler
 
     public async Task<Result<SupplierDto>> Handle(DisableSupplierCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
-        var Supplier = await _repo.GetByIdAsync(tenantId, command.Id, ct);
+        var Supplier = await _repo.GetByIdAsync(subscriberId, command.Id, ct);
         if (Supplier is null) return Result<SupplierDto>.Failure("Supplier no encontrado.");
         if (!Supplier.IsActive) return Result<SupplierDto>.Failure("El Supplier ya está deshabilitado.");
 
         Supplier.Disable(userId);
 
         await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _user.Email, _user.FullName,
+            subscriberId, userId, _user.Email, _user.FullName,
             module: "compras", action: "Supplier.disable",
             entityType: "Supplier", entityId: Supplier.Id,
             description: $"{Supplier.Ruc} — {Supplier.LegalName}"), ct);

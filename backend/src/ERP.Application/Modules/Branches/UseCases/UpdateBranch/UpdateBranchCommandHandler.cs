@@ -13,14 +13,14 @@ public sealed class UpdateBranchCommandHandler : IRequestHandler<UpdateBranchCom
     private readonly IBranchRepository _repo;
     private readonly IGeographyReadRepository _geo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _user;
 
     public UpdateBranchCommandHandler(
         IBranchRepository repo,
         IGeographyReadRepository geo,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user)
     {
         _repo = repo;
@@ -32,10 +32,10 @@ public sealed class UpdateBranchCommandHandler : IRequestHandler<UpdateBranchCom
 
     public async Task<Result<BranchDto>> Handle(UpdateBranchCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId = _user.UserId;
 
-        var entity = await _repo.GetByIdAsync(tenantId, command.Id, ct);
+        var entity = await _repo.GetByIdAsync(subscriberId, command.Id, ct);
         if (entity is null)
             return Result<BranchDto>.Failure("Sucursal no encontrada.");
 
@@ -53,7 +53,7 @@ public sealed class UpdateBranchCommandHandler : IRequestHandler<UpdateBranchCom
             return Result<BranchDto>.Failure(locErr);
 
         if (command.IsMainBranch)
-            await _repo.ClearMainBranchExceptAsync(tenantId, command.Id, userId, ct);
+            await _repo.ClearMainBranchExceptAsync(subscriberId, command.Id, userId, ct);
 
         entity.Update(
             command.Name,
@@ -81,7 +81,7 @@ public sealed class UpdateBranchCommandHandler : IRequestHandler<UpdateBranchCom
             entity.Disable(userId);
 
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _user.Email,
             _user.FullName,

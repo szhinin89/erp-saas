@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Application.Common;
@@ -20,13 +20,13 @@ public sealed class ImportarBankStatementCommandHandler
     : IRequestHandler<ImportarBankStatementCommand, Result<BankStatementDto>>
 {
     private readonly ICashRepository _caja;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
     public ImportarBankStatementCommandHandler(
         ICashRepository caja,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork uow)
     {
@@ -64,7 +64,7 @@ public sealed class ImportarBankStatementCommandHandler
         }
 
         var extracto = BankStatement.Create(
-            _tenant.TenantId,
+            _tenant.SubscriberId,
             cmd.BankAccountId,
             cmd.PeriodFrom,
             cmd.PeriodTo,

@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common.Interfaces;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
 namespace ERP.Infrastructure.Services;
@@ -10,9 +10,9 @@ public sealed class CostoPromedioService : ICostoPromedioService
     public CostoPromedioService(IStockRepository stock) => _stock = stock;
 
     public async Task<decimal> ObtenerCostoPromedioAsync(
-        Guid tenantId, Guid productoId, Guid WarehouseId, CancellationToken ct = default)
+        Guid subscriberId, Guid productoId, Guid WarehouseId, CancellationToken ct = default)
     {
-        var stock = await _stock.GetStockAsync(tenantId, WarehouseId, productoId, ct);
+        var stock = await _stock.GetStockAsync(subscriberId, WarehouseId, productoId, ct);
         return stock?.AverageCost ?? 0m;
     }
 }

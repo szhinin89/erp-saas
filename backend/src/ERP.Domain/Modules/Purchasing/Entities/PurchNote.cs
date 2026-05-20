@@ -4,7 +4,7 @@ using ERP.Domain.Modules.Purchasing.Events;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class PurchNote : AuditableEntity, ITenantEntity
+public sealed class PurchNote : AuditableEntity, ISubscriberScopedEntity
 {
     public const int NoteTypeMaxLen     = 20;
     public const int ReasonMaxLen       = 300;
@@ -45,7 +45,7 @@ public sealed class PurchNote : AuditableEntity, ITenantEntity
     private PurchNote() { }
 
     public static PurchNote Create(
-        Guid     tenantId,
+        Guid     subscriberId,
         Guid     supplierId,
         Guid?    purchBillId,
         Guid?    expenseInvoiceId,
@@ -68,7 +68,7 @@ public sealed class PurchNote : AuditableEntity, ITenantEntity
         var n = new PurchNote
         {
             Id               = Guid.NewGuid(),
-            TenantId         = tenantId,
+            SubscriberId         = subscriberId,
             SupplierId       = supplierId,
             PurchBillId      = purchBillId,
             ExpenseInvoiceId = expenseInvoiceId,
@@ -145,7 +145,7 @@ public sealed class PurchNote : AuditableEntity, ITenantEntity
         {
             var number = $"{EstabCode}-{EmPointCode}-{Sequential}";
             RaiseDomainEvent(new PurchNoteApprovedEvent(
-                Id, TenantId, userId, PurchBillId.Value, NoteType, number, lines));
+                Id, SubscriberId, userId, PurchBillId.Value, NoteType, number, lines));
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
@@ -139,26 +139,26 @@ public sealed class TransferenciasStockTests
             bool crearStock = true)
     {
         var seed = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
 
-        var tenantId  = seed.TenantId;
+        var subscriberId  = seed.SubscriberId;
         var userId    = seed.UserId;
         var productoId = seed.ProductId;
 
         // La bodega creada en SeedAsync es la origen; creamos una segunda como destino.
-        var branchId = db.Branches.First(b => b.TenantId == tenantId).Id;
-        var destino  = Warehouse.Create(tenantId, branchId, "Warehouse Destino Test", null, null, userId);
+        var branchId = db.Branches.First(b => b.SubscriberId == subscriberId).Id;
+        var destino  = Warehouse.Create(subscriberId, branchId, "Warehouse Destino Test", null, null, userId);
         db.Warehouses.Add(destino);
         await db.SaveChangesAsync(CancellationToken.None);
 
         if (crearStock && stockOrigen > 0)
         {
-            var stock = CurrentStock.Create(tenantId, productoId, seed.WarehouseId, userId);
+            var stock = CurrentStock.Create(subscriberId, productoId, seed.WarehouseId, userId);
             stock.ApplyMovement(stockOrigen, userId);
             db.CurrentStocks.Add(stock);
 
             var mov = StockMovement.Create(
-                tenantId, productoId, seed.WarehouseId,
+                subscriberId, productoId, seed.WarehouseId,
                 StockMovementType.PositiveAdjust,
                 quantity:            stockOrigen,
                 previousQuantity:    0,

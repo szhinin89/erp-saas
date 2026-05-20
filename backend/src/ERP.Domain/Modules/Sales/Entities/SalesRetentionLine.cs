@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
-public sealed class SalesRetentionLine : AuditableEntity, ITenantEntity
+public sealed class SalesRetentionLine : AuditableEntity, ISubscriberScopedEntity
 {
     public const int TaxTypeMaxLen       = 20;
     public const int RetentionCodeMaxLen = 10;
@@ -17,7 +17,7 @@ public sealed class SalesRetentionLine : AuditableEntity, ITenantEntity
     private SalesRetentionLine() { }
 
     public static SalesRetentionLine Create(
-        Guid    tenantId,
+        Guid    subscriberId,
         string  taxType,
         string  retentionCode,
         decimal taxableBase,
@@ -28,7 +28,7 @@ public sealed class SalesRetentionLine : AuditableEntity, ITenantEntity
         var d = new SalesRetentionLine
         {
             Id                = Guid.NewGuid(),
-            TenantId          = tenantId,
+            SubscriberId          = subscriberId,
             SalesRetentionId  = Guid.Empty,
             TaxType           = (taxType ?? string.Empty).Trim().ToUpperInvariant(),
             RetentionCode     = (retentionCode ?? string.Empty).Trim(),

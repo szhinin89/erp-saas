@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -17,7 +17,7 @@ public sealed class ApprovePurchaseCommandHandler
     private readonly IPurchBillRepository          _repo;
     private readonly IAccountingService         _accounting;
     private readonly IUserActivityRepository    _activity;
-    private readonly ICurrentTenant             _tenant;
+    private readonly ICurrentSubscriber             _tenant;
     private readonly ICurrentUser               _user;
     private readonly IUnitOfWork                _unitOfWork;
     private readonly ILogger<ApprovePurchaseCommandHandler> _logger;
@@ -26,7 +26,7 @@ public sealed class ApprovePurchaseCommandHandler
         IPurchBillRepository repo,
         IAccountingService accounting,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
         ILogger<ApprovePurchaseCommandHandler> logger)
@@ -44,10 +44,10 @@ public sealed class ApprovePurchaseCommandHandler
         ApprovePurchaseCommand command,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
-        var compra = await _repo.GetByIdAsync(tenantId, command.PurchBillId, ct);
+        var compra = await _repo.GetByIdAsync(subscriberId, command.PurchBillId, ct);
         if (compra is null)
             return Result<PurchBillDto>.Failure("Compra no encontrada.");
 
@@ -56,7 +56,7 @@ public sealed class ApprovePurchaseCommandHandler
                 $"Solo se puede aprobar una compra Validada (estado actual: {compra.Status}).");
 
         var asignaciones =
-            await _repo.GetWarehouseAllocsByBillIdAsync(tenantId, command.PurchBillId, ct);
+            await _repo.GetWarehouseAllocsByBillIdAsync(subscriberId, command.PurchBillId, ct);
 
         var stockLines = new List<PurchBillApprovedStockLine>();
         foreach (var asig in asignaciones)
@@ -115,7 +115,7 @@ public sealed class ApprovePurchaseCommandHandler
             compra.Approve(userId, asientoId, stockLines);
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _user.Email, _user.FullName,
+                subscriberId, userId, _user.Email, _user.FullName,
                 module: "compras", action: "compra.aprobar",
                 entityType: "PurchBill", entityId: compra.Id,
                 description: $"{compra.InvoiceNumber} — asiento: {asientoId}"), ct);
@@ -124,8 +124,8 @@ public sealed class ApprovePurchaseCommandHandler
             await _unitOfWork.CommitAsync(ct);
 
             _logger.LogInformation(
-                "Compra aprobada: id {CompraId}, tenant {TenantId}, usuario {UserId}, asiento {JournalEntryId}.",
-                compra.Id, tenantId, userId, asientoId);
+                "Compra aprobada: id {CompraId}, tenant {SubscriberId}, usuario {UserId}, asiento {JournalEntryId}.",
+                compra.Id, subscriberId, userId, asientoId);
 
             return Result<PurchBillDto>.Success(ToDto(compra));
         }

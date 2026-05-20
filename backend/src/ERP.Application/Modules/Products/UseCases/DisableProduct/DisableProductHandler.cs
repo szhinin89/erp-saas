@@ -12,27 +12,27 @@ public class DisableProductHandler : IRequestHandler<DisableProductCommand, Resu
 {
     private readonly IProductRepository _repository;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public DisableProductHandler(
         IProductRepository repository,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repository    = repository;
         _activity      = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
     }
 
     public async Task<Result<ProductDto>> Handle(DisableProductCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var product = await _repository.GetByIdAsync(command.Id, tenantId, ct);
+        var product = await _repository.GetByIdAsync(command.Id, subscriberId, ct);
         if (product is null)
             return Result<ProductDto>.Failure("Producto no encontrado.");
 
@@ -42,7 +42,7 @@ public class DisableProductHandler : IRequestHandler<DisableProductCommand, Resu
         product.Disable(userId);
 
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _currentUser.Email,
             _currentUser.FullName,

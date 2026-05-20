@@ -4,7 +4,7 @@ namespace ERP.Domain.Common;
 /// Clase base para entidades maestras de administración.
 /// Ejemplos: Account, Product, Customer, User, etc.
 ///
-/// Hereda: BaseEntity (Id, TenantId)
+/// Hereda: BaseEntity (Id, SubscriberId)
 ///       → AggregateRoot (DomainEvents)
 ///       → AuditableEntity (CreatedAt, UpdatedAt, CreatedBy, UpdatedBy)
 ///

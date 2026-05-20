@@ -1,45 +1,52 @@
-using ERP.Domain.Common;
-
 namespace ERP.Domain.Access.Entities;
 
 /// <summary>
-/// Relación de acceso entre un usuario global y una empresa (tenant).
-/// Esta entidad es multi-tenant: su TenantId es la empresa a la que otorga acceso.
+/// Acceso de un <see cref="IdentityUser"/> a una empresa operativa (<c>company</c>).
+/// Scope ERP: <c>company_id</c>. No usar <c>subscriber_id</c> en esta entidad.
 /// </summary>
-public class Membership : AuditableEntity
+public sealed class CompanyUserMembership
 {
+    public Guid Id { get; private set; }
+    public Guid CompanyId { get; private set; }
     public Guid IdentityUserId { get; private set; }
     public string Role { get; private set; } = null!;
     public Guid? ProfileId { get; private set; }
     public bool IsActive { get; private set; }
+    public DateTime CreatedAt { get; private set; }
+    public DateTime UpdatedAt { get; private set; }
+    public Guid CreatedBy { get; private set; }
+    public Guid UpdatedBy { get; private set; }
 
-    private Membership() { }
+    private CompanyUserMembership() { }
 
-    public static Membership Create(
-        Guid tenantId,
+    public static CompanyUserMembership Create(
+        Guid companyId,
         Guid identityUserId,
         string role,
         Guid? profileId,
         Guid createdBy)
     {
-        var m = new Membership
+        var now = DateTime.UtcNow;
+        return new CompanyUserMembership
         {
             Id = Guid.NewGuid(),
-            TenantId = tenantId,
+            CompanyId = companyId,
             IdentityUserId = identityUserId,
             Role = role,
             ProfileId = profileId,
-            IsActive = true
+            IsActive = true,
+            CreatedAt = now,
+            UpdatedAt = now,
+            CreatedBy = createdBy,
+            UpdatedBy = createdBy,
         };
-
-        m.SetCreated(createdBy);
-        return m;
     }
 
     public void Deactivate(Guid updatedBy)
     {
         IsActive = false;
-        SetUpdated(updatedBy);
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
     }
 
     public void Activate(string role, Guid? profileId, Guid updatedBy)
@@ -47,7 +54,7 @@ public class Membership : AuditableEntity
         Role = role;
         ProfileId = profileId;
         IsActive = true;
-        SetUpdated(updatedBy);
+        UpdatedAt = DateTime.UtcNow;
+        UpdatedBy = updatedBy;
     }
 }
-

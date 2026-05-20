@@ -43,7 +43,7 @@ export function SuperAdminPageTemplate({
   children,
 }: SuperAdminPageTemplateProps) {
   const { t } = useI18n();
-  const { isSuperAdmin, hasSelectedTenant } = useSuperAdminGate();
+  const { isSuperAdmin, hasSelectedSubscriber } = useSuperAdminGate();
   const k = kicker ?? t('app.nav.group.home');
 
   if (!isSuperAdmin) {
@@ -57,7 +57,7 @@ export function SuperAdminPageTemplate({
     );
   }
 
-  if (requireGlobal && hasSelectedTenant) {
+  if (requireGlobal && hasSelectedSubscriber) {
     const defaultAction = (
       <NavLink to="/superadmin/overview">{t('superadmin.backToGlobal')}</NavLink>
     );

@@ -12,18 +12,18 @@ public class UpdateProductLineHandler : IRequestHandler<UpdateProductLineCommand
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public UpdateProductLineHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo          = repo;
         _activity      = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
     }
 
@@ -31,22 +31,22 @@ public class UpdateProductLineHandler : IRequestHandler<UpdateProductLineCommand
         UpdateProductLineCommand command,
         CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var entity = await _repo.GetProductLineByIdAsync(tenantId, command.Id, ct);
+        var entity = await _repo.GetProductLineByIdAsync(subscriberId, command.Id, ct);
         if (entity is null)
             return Result<ProductLineDto>.Failure("Línea de producto no encontrada.");
 
         if (string.IsNullOrWhiteSpace(command.Code) || string.IsNullOrWhiteSpace(command.Name))
             return Result<ProductLineDto>.Failure("Código y nombre son obligatorios.");
 
-        if (await _repo.ProductLineCodeExistsAsync(tenantId, command.Code.Trim(), command.Id, ct))
+        if (await _repo.ProductLineCodeExistsAsync(subscriberId, command.Code.Trim(), command.Id, ct))
             return Result<ProductLineDto>.Failure("Ya existe otra línea con el mismo código en este tenant.");
 
         entity.Update(command.Code.Trim(), command.Name.Trim(), userId);
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _currentUser.Email,
             _currentUser.FullName,

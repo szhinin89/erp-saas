@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Expenses.UseCases.AprobarGasto;
@@ -22,7 +22,7 @@ public sealed class GastoHandlersTests
     [Fact]
     public async Task Crear_manual_total_menor_umbral_queda_en_borrador()
     {
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
         var userId   = Guid.NewGuid();
 
         ExpenseInvoice? guardado = null;
@@ -44,8 +44,8 @@ public sealed class GastoHandlersTests
         activity.Setup(x => x.AddAsync(It.IsAny<ERP.Domain.Audit.Entities.UserActivity>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var tenant = new Mock<ICurrentTenant>();
-        tenant.SetupGet(x => x.TenantId).Returns(tenantId);
+        var tenant = new Mock<ICurrentSubscriber>();
+        tenant.SetupGet(x => x.SubscriberId).Returns(subscriberId);
         var user = new Mock<ICurrentUser>();
         user.SetupGet(x => x.UserId).Returns(userId);
 
@@ -78,7 +78,7 @@ public sealed class GastoHandlersTests
     [Fact]
     public async Task Crear_manual_total_mayor_umbral_sin_xml_falla()
     {
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
         var userId   = Guid.NewGuid();
 
         var gastos = new Mock<IExpenseInvoiceRepository>();
@@ -86,8 +86,8 @@ public sealed class GastoHandlersTests
         var parser = new Mock<IXmlFacturaParser>();
         var storage = new Mock<IFileStorage>();
         var activity = new Mock<IUserActivityRepository>();
-        var tenant = new Mock<ICurrentTenant>();
-        tenant.SetupGet(x => x.TenantId).Returns(tenantId);
+        var tenant = new Mock<ICurrentSubscriber>();
+        tenant.SetupGet(x => x.SubscriberId).Returns(subscriberId);
         var user = new Mock<ICurrentUser>();
         user.SetupGet(x => x.UserId).Returns(userId);
 
@@ -123,7 +123,7 @@ public sealed class GastoHandlersTests
     [Fact]
     public async Task Crear_xml_parsea_y_guarda_borrador_con_total_sobre_umbral()
     {
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
         var userId   = Guid.NewGuid();
         var clave    = ClaveAcceso49();
         var ruc      = "1790016918001";
@@ -140,7 +140,7 @@ public sealed class GastoHandlersTests
             Items: new[] { new ItemFactura("X", "Servicio cloud", 1m, 400m, 0m, 400m) });
 
         var gastos = new Mock<IExpenseInvoiceRepository>();
-        gastos.Setup(x => x.ExistsAccessKeyAsync(tenantId, clave, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        gastos.Setup(x => x.ExistsAccessKeyAsync(subscriberId, clave, It.IsAny<CancellationToken>())).ReturnsAsync(false);
         ExpenseInvoice? guardado = null;
         gastos.Setup(x => x.AddAsync(It.IsAny<ExpenseInvoice>(), It.IsAny<CancellationToken>()))
             .Callback<ExpenseInvoice, CancellationToken>((g, _) => guardado = g)
@@ -153,7 +153,7 @@ public sealed class GastoHandlersTests
         uow.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var prov = new Mock<ISupplierRepository>();
-        prov.Setup(x => x.GetAsync(tenantId, null, ruc, null, It.IsAny<CancellationToken>()))
+        prov.Setup(x => x.GetAsync(subscriberId, null, ruc, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<Supplier>());
         Supplier? nuevoProv = null;
         prov.Setup(x => x.AddAsync(It.IsAny<Supplier>(), It.IsAny<CancellationToken>()))
@@ -172,8 +172,8 @@ public sealed class GastoHandlersTests
         activity.Setup(x => x.AddAsync(It.IsAny<ERP.Domain.Audit.Entities.UserActivity>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var tenant = new Mock<ICurrentTenant>();
-        tenant.SetupGet(x => x.TenantId).Returns(tenantId);
+        var tenant = new Mock<ICurrentSubscriber>();
+        tenant.SetupGet(x => x.SubscriberId).Returns(subscriberId);
         var user = new Mock<ICurrentUser>();
         user.SetupGet(x => x.UserId).Returns(userId);
 
@@ -206,15 +206,15 @@ public sealed class GastoHandlersTests
     [Fact]
     public async Task Validar_y_aprobar_gasto_llama_contabilidad_y_marca_aprobado()
     {
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
         var userId   = Guid.NewGuid();
 
         var gasto = ExpenseInvoice.CreateManual(
-            tenantId, supplierId: null, DateTime.UtcNow.Date, "Taxi", "Viajes",
+            subscriberId, supplierId: null, DateTime.UtcNow.Date, "Taxi", "Viajes",
             10m, 1.2m, 11.2m, null, userId);
 
         var gastos = new Mock<IExpenseInvoiceRepository>();
-        gastos.Setup(x => x.GetByIdAsync(tenantId, gasto.Id, It.IsAny<CancellationToken>()))
+        gastos.Setup(x => x.GetByIdAsync(subscriberId, gasto.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(gasto);
 
         var uowValidar = new Mock<IUnitOfWork>();
@@ -229,8 +229,8 @@ public sealed class GastoHandlersTests
         activity.Setup(x => x.AddAsync(It.IsAny<ERP.Domain.Audit.Entities.UserActivity>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var tenant = new Mock<ICurrentTenant>();
-        tenant.SetupGet(x => x.TenantId).Returns(tenantId);
+        var tenant = new Mock<ICurrentSubscriber>();
+        tenant.SetupGet(x => x.SubscriberId).Returns(subscriberId);
         var user = new Mock<ICurrentUser>();
         user.SetupGet(x => x.UserId).Returns(userId);
         user.SetupGet(x => x.Email).Returns("u@test");

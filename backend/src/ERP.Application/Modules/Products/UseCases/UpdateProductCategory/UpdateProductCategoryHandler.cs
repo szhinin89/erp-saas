@@ -12,24 +12,24 @@ public class UpdateProductCategoryHandler : IRequestHandler<UpdateProductCategor
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public UpdateProductCategoryHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
         _activity = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
     public async Task<Result<ProductCategoryDto>> Handle(UpdateProductCategoryCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId = _currentUser.UserId;
 
         if (command.LineId == Guid.Empty)
@@ -38,22 +38,22 @@ public class UpdateProductCategoryHandler : IRequestHandler<UpdateProductCategor
         if (string.IsNullOrWhiteSpace(command.Code) || string.IsNullOrWhiteSpace(command.Name))
             return Result<ProductCategoryDto>.Failure("Código y nombre son obligatorios.");
 
-        var entity = await _repo.GetProductCategoryByIdAsync(tenantId, command.Id, ct);
+        var entity = await _repo.GetProductCategoryByIdAsync(subscriberId, command.Id, ct);
         if (entity is null)
             return Result<ProductCategoryDto>.Failure("Categoría no encontrada.");
 
-        var line = await _repo.GetProductLineByIdAsync(tenantId, command.LineId, ct);
+        var line = await _repo.GetProductLineByIdAsync(subscriberId, command.LineId, ct);
         if (line is null)
             return Result<ProductCategoryDto>.Failure("La línea indicada no existe.");
         if (!line.IsActive)
             return Result<ProductCategoryDto>.Failure("No se puede asociar la categoría a una línea deshabilitada.");
 
-        if (await _repo.ProductCategoryCodeExistsAsync(tenantId, command.LineId, command.Code.Trim(), command.Id, ct))
+        if (await _repo.ProductCategoryCodeExistsAsync(subscriberId, command.LineId, command.Code.Trim(), command.Id, ct))
             return Result<ProductCategoryDto>.Failure("Ya existe otra categoría con el mismo código en esta línea.");
 
         entity.Update(command.Code.Trim(), command.Name.Trim(), command.LineId, userId);
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _currentUser.Email,
             _currentUser.FullName,

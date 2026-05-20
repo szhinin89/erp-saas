@@ -1,9 +1,9 @@
 using FluentValidation;
 
-namespace ERP.Application.Tenants.UseCases.UpdateTenantOperationalSettings;
+namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberOperationalSettings;
 
-public sealed class UpdateTenantOperationalSettingsValidator
-    : AbstractValidator<UpdateTenantOperationalSettingsCommand>
+public sealed class UpdateSubscriberOperationalSettingsValidator
+    : AbstractValidator<UpdateSubscriberOperationalSettingsCommand>
 {
     private static readonly HashSet<string> AllowedCurrencies =
         new(StringComparer.OrdinalIgnoreCase) { "USD", "EUR", "MXN", "COP", "PEN" };
@@ -11,7 +11,7 @@ public sealed class UpdateTenantOperationalSettingsValidator
     private static readonly HashSet<string> AllowedLanguages =
         new(StringComparer.OrdinalIgnoreCase) { "es", "en", "qu" };
 
-    public UpdateTenantOperationalSettingsValidator()
+    public UpdateSubscriberOperationalSettingsValidator()
     {
         RuleFor(x => x.Currency)
             .NotEmpty().WithMessage("La moneda es requerida.")

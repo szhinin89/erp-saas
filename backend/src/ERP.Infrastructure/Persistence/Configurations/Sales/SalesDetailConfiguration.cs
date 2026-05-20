@@ -12,7 +12,7 @@ public sealed class SalesDetailConfiguration : IEntityTypeConfiguration<SalesDet
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.SalesDocumentId).HasColumnName("sales_document_id").IsRequired();
         builder.Property(e => e.ProductId).HasColumnName("product_id");
         builder.Property(e => e.ProductCode).HasColumnName("product_code").HasMaxLength(100);

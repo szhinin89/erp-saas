@@ -4,27 +4,31 @@ using ERP.Application.Common.Interfaces;
 using MediatR;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Auth.Interfaces;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Subscribers.Interfaces;
 
 namespace ERP.Application.Access.UseCases.BootstrapLogin;
 
 public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Result<BootstrapLoginResponseDto>>
 {
     private readonly IAccessRepository _accessRepository;
-    private readonly ITenantRepository _tenantRepository;
+    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ICompanyRepository _companyRepository;
     private readonly IAccessTokenService _tokenService;
     private readonly IUserRepository _legacyUserRepository;
     private readonly IPasswordHasher _passwordHasher;
 
     public BootstrapLoginHandler(
         IAccessRepository accessRepository,
-        ITenantRepository tenantRepository,
+        ISubscriberRepository tenantRepository,
+        ICompanyRepository companyRepository,
         IAccessTokenService tokenService,
         IUserRepository legacyUserRepository,
         IPasswordHasher passwordHasher)
     {
         _accessRepository = accessRepository;
         _tenantRepository = tenantRepository;
+        _companyRepository = companyRepository;
         _tokenService = tokenService;
         _legacyUserRepository = legacyUserRepository;
         _passwordHasher = passwordHasher;
@@ -39,7 +43,6 @@ public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Resu
         var user = await _accessRepository.GetUserByEmailAsync(email, ct);
         if (user is null)
         {
-            // Puente de compatibilidad: permitir SuperAdmin legacy usar bootstrap-flow.
             var legacySuper = await _legacyUserRepository.GetSingleSuperAdminByEmailAsync(email, ct);
             if (legacySuper is null || !legacySuper.IsActive)
                 return Result<BootstrapLoginResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
@@ -48,20 +51,20 @@ public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Resu
             if (!superValid)
                 return Result<BootstrapLoginResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
 
-            var tenantsAll = await _tenantRepository.GetAllAsync(ct);
-            var activeTenants = tenantsAll.Where(t => t.IsActive).ToList();
-            var superTenantIds = activeTenants.Select(t => t.Id).ToList();
+            var subscribersAll = await _tenantRepository.GetAllAsync(ct);
+            var activeTenants = subscribersAll.Where(t => t.IsActive).ToList();
+            var superSubscriberIds = activeTenants.Select(t => t.Id).ToList();
 
             var superBootstrapToken = _tokenService.GenerateBootstrapToken(
                 userId: legacySuper.Id,
                 email: legacySuper.Email.Value,
                 fullName: legacySuper.FullName,
                 role: "SuperAdmin",
-                tenantIds: superTenantIds);
+                subscriberIds: superSubscriberIds);
 
             var superAccessible = activeTenants
                 .OrderBy(t => t.Name)
-                .Select(t => new AccessibleTenantDto(t.Id, t.Name, t.Slug, "SuperAdmin"))
+                .Select(t => new AccessibleSubscriberDto(t.Id, t.Name, t.Slug, "SuperAdmin"))
                 .ToList();
 
             return Result<BootstrapLoginResponseDto>.Success(new BootstrapLoginResponseDto(
@@ -79,25 +82,31 @@ public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Resu
         if (!valid)
             return Result<BootstrapLoginResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
 
-        var memberships = await _accessRepository.GetActiveMembershipsForUserSystemAsync(user.Id, ct);
+        var memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(user.Id, ct);
         if (memberships.Count == 0)
             return Result<BootstrapLoginResponseDto>.Failure("No estás registrado a una empresa. Comunícate con el administrador.");
 
-        var membershipTenantIds = memberships.Select(m => m.TenantId).Distinct().ToList();
-        var tenants = await _tenantRepository.GetAllAsync(ct);
+        var companyIds = memberships.Select(m => m.CompanyId).Distinct().ToList();
+        var companies = await _companyRepository.GetByIdsAsync(companyIds, ct);
+        var membershipByCompany = memberships.ToDictionary(m => m.CompanyId);
+        var subscriberIds = companies.Select(c => c.SubscriberId).Distinct().ToList();
+        var subscribers = await _tenantRepository.GetAllAsync(ct);
+        var subscriberById = subscribers.ToDictionary(t => t.Id);
 
-        var membershipAccessible = memberships
-            .Where(m => m.IsActive)
-            .Join(tenants, m => m.TenantId, t => t.Id, (m, t) => new AccessibleTenantDto(
-                TenantId: t.Id,
-                Name: t.Name,
-                Slug: t.Slug,
-                Role: m.Role))
-            .Where(x => !string.IsNullOrWhiteSpace(x.Name))
+        var membershipAccessible = companies
+            .Where(c => subscriberById.TryGetValue(c.SubscriberId, out var t) && t.IsActive)
+            .GroupBy(c => c.SubscriberId)
+            .Select(g =>
+            {
+                var t = subscriberById[g.Key];
+                var company = g.First();
+                var m = membershipByCompany[company.Id];
+                return new AccessibleSubscriberDto(t.Id, t.Name, t.Slug, m.Role);
+            })
             .OrderBy(x => x.Name)
             .ToList();
 
-        var membershipBootstrapToken = _tokenService.GenerateBootstrapToken(user, membershipTenantIds);
+        var membershipBootstrapToken = _tokenService.GenerateBootstrapToken(user, subscriberIds);
 
         return Result<BootstrapLoginResponseDto>.Success(new BootstrapLoginResponseDto(
             UserId: user.Id,
@@ -107,4 +116,3 @@ public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Resu
             Tenants: membershipAccessible));
     }
 }
-

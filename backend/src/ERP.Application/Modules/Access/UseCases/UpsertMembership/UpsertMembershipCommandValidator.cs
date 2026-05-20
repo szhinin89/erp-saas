@@ -1,12 +1,12 @@
 using FluentValidation;
 
-namespace ERP.Application.Access.UseCases.UpsertMembership;
+namespace ERP.Application.Access.UseCases.UpsertCompanyUserMembership;
 
-public sealed class UpsertMembershipCommandValidator : AbstractValidator<UpsertMembershipCommand>
+public sealed class UpsertCompanyUserMembershipCommandValidator : AbstractValidator<UpsertCompanyUserMembershipCommand>
 {
-    public UpsertMembershipCommandValidator()
+    public UpsertCompanyUserMembershipCommandValidator()
     {
-        RuleFor(x => x.TenantId)
+        RuleFor(x => x.SubscriberId)
             .NotEmpty().WithMessage("El tenant es obligatorio.");
 
         RuleFor(x => x.UserEmail)

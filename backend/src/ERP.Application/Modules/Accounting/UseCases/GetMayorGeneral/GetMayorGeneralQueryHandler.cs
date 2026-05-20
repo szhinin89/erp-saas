@@ -8,9 +8,9 @@ public sealed class GetMayorGeneralQueryHandler
     : IRequestHandler<GetMayorGeneralQuery, Result<IReadOnlyList<MayorGeneralLineDto>>>
 {
     private readonly IAccountingRepository _repo;
-    private readonly ICurrentTenant        _tenant;
+    private readonly ICurrentSubscriber        _tenant;
 
-    public GetMayorGeneralQueryHandler(IAccountingRepository repo, ICurrentTenant tenant)
+    public GetMayorGeneralQueryHandler(IAccountingRepository repo, ICurrentSubscriber tenant)
     {
         _repo   = repo;
         _tenant = tenant;
@@ -19,10 +19,10 @@ public sealed class GetMayorGeneralQueryHandler
     public async Task<Result<IReadOnlyList<MayorGeneralLineDto>>> Handle(
         GetMayorGeneralQuery query, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
 
         var lines = await _repo.GetMayorGeneralLinesAsync(
-            tenantId, query.AccountId, query.Desde, query.Hasta, ct);
+            subscriberId, query.AccountId, query.Desde, query.Hasta, ct);
 
         decimal balance = 0m;
         var result = lines.Select(l =>

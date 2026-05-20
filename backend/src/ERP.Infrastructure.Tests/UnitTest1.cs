@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common;
 using ERP.Domain.Products.Entities;
@@ -9,9 +9,9 @@ namespace ERP.Infrastructure.Tests;
 
 public class ErpDbContextTenantFilterTests
 {
-    private sealed class FakeTenant : ICurrentTenant
+    private sealed class FakeSubscriber : ICurrentSubscriber
     {
-        public Guid TenantId { get; init; }
+        public Guid SubscriberId { get; init; }
         public bool IsAuthenticated { get; init; } = true;
     }
 
@@ -36,7 +36,7 @@ public class ErpDbContextTenantFilterTests
             .Options;
 
         var publisher = new FakePublisher();
-        await using (var seed = TestErpDbContextFactory.Create(options, new FakeTenant { TenantId = tenantA }, publisher))
+        await using (var seed = TestErpDbContextFactory.Create(options, new FakeSubscriber { SubscriberId = tenantA }, publisher))
         {
             seed.Products.Add(Product.Create(
                 tenantA,
@@ -81,7 +81,7 @@ public class ErpDbContextTenantFilterTests
             await seed.SaveChangesAsync();
         }
 
-        await using var ctxA = TestErpDbContextFactory.Create(options, new FakeTenant { TenantId = tenantA }, publisher);
+        await using var ctxA = TestErpDbContextFactory.Create(options, new FakeSubscriber { SubscriberId = tenantA }, publisher);
         var products = await ctxA.Products.ToListAsync();
 
         products.Should().HaveCount(1);

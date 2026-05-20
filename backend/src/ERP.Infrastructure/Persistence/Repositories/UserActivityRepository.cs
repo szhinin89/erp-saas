@@ -17,7 +17,7 @@ public class UserActivityRepository : IUserActivityRepository
         => _context.UserActivities.AddAsync(activity, ct).AsTask();
 
     public async Task<IReadOnlyList<UserActivity>> GetMyRecentAsync(
-        Guid tenantId,
+        Guid subscriberId,
         Guid userId,
         string? module = null,
         int skip = 0,
@@ -30,7 +30,7 @@ public class UserActivityRepository : IUserActivityRepository
 
         var q = _context.UserActivities
             .AsNoTracking()
-            .Where(x => x.TenantId == tenantId && x.UserId == userId);
+            .Where(x => x.SubscriberId == subscriberId && x.UserId == userId);
 
         if (!string.IsNullOrWhiteSpace(module))
         {
@@ -46,7 +46,7 @@ public class UserActivityRepository : IUserActivityRepository
     }
 
     public async Task<IReadOnlyList<UserActivity>> GetByEntityAsync(
-        Guid tenantId,
+        Guid subscriberId,
         string entityType,
         Guid entityId,
         int take = 10,
@@ -61,7 +61,7 @@ public class UserActivityRepository : IUserActivityRepository
 
         return await _context.UserActivities
             .AsNoTracking()
-            .Where(x => x.TenantId == tenantId && x.EntityType == et && x.EntityId == entityId)
+            .Where(x => x.SubscriberId == subscriberId && x.EntityType == et && x.EntityId == entityId)
             .OrderByDescending(x => x.CreatedAt)
             .Take(take)
             .ToListAsync(ct);

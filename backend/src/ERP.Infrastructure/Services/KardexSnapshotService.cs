@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventory;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -30,17 +30,17 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
     // ── API pública ──────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Recalcula snapshots para todos los tenants hasta <paramref name="hastaFecha"/>.
+    /// Recalcula snapshots para todos los subscribers hasta <paramref name="hastaFecha"/>.
     /// </summary>
     public async Task<int> RecalcularTodosAsync(DateTime hastaFecha, CancellationToken ct)
     {
-        var tenants = await _snapRepo.GetTenantsWithMovementsAsync(ct);
+        var subscribers = await _snapRepo.GetTenantsWithMovementsAsync(ct);
         var total   = 0;
 
-        foreach (var tenantId in tenants)
+        foreach (var subscriberId in subscribers)
         {
             if (ct.IsCancellationRequested) break;
-            total += await RecalcularTenantAsync(tenantId, null, null, hastaFecha, ct);
+            total += await RecalcularTenantAsync(subscriberId, null, null, hastaFecha, ct);
         }
 
         return total;
@@ -50,7 +50,7 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
     /// Recalcula snapshots para un tenant específico, con filtros opcionales.
     /// </summary>
     public async Task<int> RecalcularTenantAsync(
-        Guid      tenantId,
+        Guid      subscriberId,
         Guid?     productoId,
         Guid?     WarehouseId,
         DateTime  hastaFecha,
@@ -62,7 +62,7 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
             combos = [(productoId.Value, WarehouseId.Value)];
         else
         {
-            var todos = await _snapRepo.GetDistinctProductWarehouseAsync(tenantId, ct);
+            var todos = await _snapRepo.GetDistinctProductWarehouseAsync(subscriberId, ct);
             combos = productoId.HasValue
                 ? todos.Where(c => c.ProductId == productoId.Value).ToList()
                 : WarehouseId.HasValue
@@ -77,14 +77,14 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
             if (ct.IsCancellationRequested) break;
             try
             {
-                var count = await ProcesarComboAsync(tenantId, pid, bid, hastaFecha, ct);
+                var count = await ProcesarComboAsync(subscriberId, pid, bid, hastaFecha, ct);
                 total += count;
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex,
                     "Error al calcular snapshot tenant={T} producto={P} Warehouse={B}",
-                    tenantId, pid, bid);
+                    subscriberId, pid, bid);
             }
         }
 
@@ -94,14 +94,14 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
     // ── Cálculo por combinación (producto × Warehouse) ──────────────────────────
 
     private async Task<int> ProcesarComboAsync(
-        Guid tenantId, Guid productoId, Guid WarehouseId,
+        Guid subscriberId, Guid productoId, Guid WarehouseId,
         DateTime hastaFecha, CancellationToken ct)
     {
         var ayer = hastaFecha.Date;
 
         // Punto de partida: snapshot más reciente disponible
         var ultimoSnap = await _snapRepo.GetLatestBeforeAsync(
-            tenantId, productoId, WarehouseId, ayer, ct);
+            subscriberId, productoId, WarehouseId, ayer, ct);
 
         decimal balanceQuantity = ultimoSnap?.BalanceQty ?? 0m;
         decimal balanceValue    = ultimoSnap?.BalanceValue    ?? 0m;
@@ -113,7 +113,7 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
         var toUtc  = ayer.AddDays(1).AddTicks(-1);
 
         var movs = await _movRepo.GetMovementsAsync(
-            tenantId, productoId, WarehouseId, fromUtc, toUtc, ct);
+            subscriberId, productoId, WarehouseId, fromUtc, toUtc, ct);
 
         if (movs.Count == 0 && ultimoSnap?.SnapshotDate.Date == ayer)
             return 0; // snapshot de ayer ya existe y sin nuevos movimientos
@@ -132,7 +132,7 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
                 KardexCalculator.ApplyMovement(m, ref balanceQuantity, ref balanceValue, ref averageCost);
 
             var snap = KardexSnapshot.Create(
-                tenantId, productoId, WarehouseId, grupo.Key,
+                subscriberId, productoId, WarehouseId, grupo.Key,
                 balanceQuantity, balanceValue, averageCost);
 
             await _snapRepo.UpsertAsync(snap, ct);
@@ -144,7 +144,7 @@ public sealed class KardexSnapshotService : IKardexSnapshotCalculator
         if (ultimoDiaConMovs != ayer)
         {
             var snapAyer = KardexSnapshot.Create(
-                tenantId, productoId, WarehouseId, ayer,
+                subscriberId, productoId, WarehouseId, ayer,
                 balanceQuantity, balanceValue, averageCost);
             await _snapRepo.UpsertAsync(snapAyer, ct);
             snapshotsGuardados++;

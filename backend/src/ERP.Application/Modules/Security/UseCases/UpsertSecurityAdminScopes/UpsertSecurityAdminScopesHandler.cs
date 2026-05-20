@@ -15,24 +15,24 @@ public class UpsertSecurityAdminScopesHandler : IRequestHandler<UpsertSecurityAd
         (int)SecurityAdminScope.ManageProcesses,
     ];
 
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
     private readonly ISecurityRepository _repository;
 
     public UpsertSecurityAdminScopesHandler(
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ISecurityRepository repository)
     {
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
         _repository = repository;
     }
 
     public async Task<Result<bool>> Handle(UpsertSecurityAdminScopesCommand command, CancellationToken ct)
     {
-        if (!_currentTenant.IsAuthenticated || _currentTenant.TenantId == Guid.Empty)
-            return Result<bool>.Failure("Tenant inválido.");
+        if (!_currentSubscriber.IsAuthenticated || _currentSubscriber.SubscriberId == Guid.Empty)
+            return Result<bool>.Failure("Subscriber inválido.");
 
         if (!_currentUser.IsAuthenticated || _currentUser.UserId == Guid.Empty)
             return Result<bool>.Failure("No autenticado.");
@@ -50,11 +50,11 @@ public class UpsertSecurityAdminScopesHandler : IRequestHandler<UpsertSecurityAd
         foreach (var scope in AllScopes)
         {
             var shouldAllow = allowed.Contains(scope);
-            var existing = await _repository.GetAdminScopeAsync(_currentTenant.TenantId, subjectType, subjectKey, scope, ct);
+            var existing = await _repository.GetAdminScopeAsync(_currentSubscriber.SubscriberId, subjectType, subjectKey, scope, ct);
             if (existing is null)
             {
                 var created = SecurityAdminScopeAssignment.Create(
-                    _currentTenant.TenantId,
+                    _currentSubscriber.SubscriberId,
                     subjectType,
                     subjectKey,
                     scope,

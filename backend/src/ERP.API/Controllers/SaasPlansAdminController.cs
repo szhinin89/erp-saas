@@ -1,4 +1,4 @@
-﻿using ERP.API.Contracts;
+using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Common;
@@ -11,14 +11,14 @@ namespace ERP.API.Controllers;
 /// <summary>CRUD de planes SaaS y catálogo de features (solo SuperAdmin).</summary>
 [ApiController]
 [AppFeature("SaaS Plans Admin", "perm:superadmin.saas-plans.admin", "🧩", null, null, 980, IsVisibleInMenu = false, IsSuperAdmin = true)]
-[Route("api/superadmin/saas-plans")]
+[Route("api/superadmin/commercial-plans")]
 [Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]
-public sealed class SaasPlansAdminController : ControllerBase
+public sealed class CommercialPlansAdminController : ControllerBase
 {
-    private readonly ISaasPlansAdminService _admin;
+    private readonly ICommercialPlansAdminService _admin;
 
-    public SaasPlansAdminController(ISaasPlansAdminService admin) => _admin = admin;
+    public CommercialPlansAdminController(ICommercialPlansAdminService admin) => _admin = admin;
 
     /// <summary>Lista planes administrables con sus <c>features</c> (incluidas/límites).</summary>
     [HttpGet]
@@ -38,7 +38,7 @@ public sealed class SaasPlansAdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> CreatePlan([FromBody] CreateSaasPlanRequest body, CancellationToken ct)
+    public async Task<IActionResult> CreatePlan([FromBody] CreateCommercialPlanRequest body, CancellationToken ct)
     {
         var r = await _admin.CreatePlanAsync(body, ct);
         return r.IsSuccess
@@ -96,7 +96,7 @@ public sealed class SaasPlansAdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpdatePlan(Guid planId, [FromBody] UpdateSaasPlanRequest body, CancellationToken ct)
+    public async Task<IActionResult> UpdatePlan(Guid planId, [FromBody] UpdateCommercialPlanRequest body, CancellationToken ct)
     {
         var r = await _admin.UpdatePlanAsync(planId, body, ct);
         return r.IsSuccess

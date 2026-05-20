@@ -100,7 +100,7 @@ const PUBLIC_AUTH_PATHS = [
   '/api/auth/reset-password',
   '/api/auth/refresh',          // evitar loop infinito
   '/api/admin/iam/bootstrap-login',
-  '/api/admin/iam/switch-tenant',
+  '/api/admin/iam/switch-subscriber',
   '/api/admin/iam/register-tenant',
 ];
 

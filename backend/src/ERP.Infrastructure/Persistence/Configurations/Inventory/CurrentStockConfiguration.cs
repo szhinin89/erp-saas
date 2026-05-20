@@ -12,7 +12,8 @@ public sealed class CurrentStockConfiguration : IEntityTypeConfiguration<Current
 
         builder.HasKey(s => s.Id);
         builder.Property(s => s.Id).HasColumnName("id");
-        builder.Property(s => s.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(s => s.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(s => s.CompanyId).HasColumnName("company_id");
         builder.Property(s => s.ProductId).HasColumnName("product_id").IsRequired();
         builder.Property(s => s.WarehouseId).HasColumnName("warehouse_id").IsRequired();
         builder.Property(s => s.Quantity).HasColumnName("quantity").HasPrecision(18, 6).IsRequired();
@@ -26,6 +27,6 @@ public sealed class CurrentStockConfiguration : IEntityTypeConfiguration<Current
         builder.Property(s => s.CreatedBy).HasColumnName("created_by");
         builder.Property(s => s.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(s => new { s.TenantId, s.ProductId, s.WarehouseId }).IsUnique().HasDatabaseName("uq_current_stock_tenant_product_warehouse");
+        builder.HasIndex(s => new { s.SubscriberId, s.ProductId, s.WarehouseId }).IsUnique().HasDatabaseName("uq_current_stock_subscriber_product_warehouse");
     }
 }

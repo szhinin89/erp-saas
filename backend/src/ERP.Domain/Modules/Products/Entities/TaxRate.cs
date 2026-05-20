@@ -17,7 +17,7 @@ public class TaxRate : MasterEntity
     private TaxRate() { }
 
     public static TaxRate Create(
-        Guid tenantId,
+        Guid subscriberId,
         string code,
         string name,
         TaxRateType type,
@@ -30,7 +30,7 @@ public class TaxRate : MasterEntity
         var tax = new TaxRate
         {
             Id         = Guid.NewGuid(),
-            TenantId   = tenantId,
+            SubscriberId   = subscriberId,
             Code       = code,
             Name       = name,
             Type       = type,

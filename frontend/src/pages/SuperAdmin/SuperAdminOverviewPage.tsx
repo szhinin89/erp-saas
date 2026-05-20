@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { usePermissionsStore } from '../../store/permissionsStore';
-import { superAdminService, type SuperAdminTenant } from '../../services/superAdminService';
+import { superAdminService, type SuperAdminSubscriber } from '../../services/superAdminService';
 import { LoadingState, EmptyState } from '../../components/PageShell';
 import { ZHPageNotice } from '../../components/zh/ZHPageNotice';
 import { formatApiRequestError } from '../../modules/lib/apiError';
@@ -31,8 +31,8 @@ function planBadgeClass(planCode: string | null | undefined): string {
   return                          'badge sa-plan-badge--default';
 }
 
-function storeImpersonationTenantName(name: string) {
-  localStorage.setItem('superadmin-impersonation-tenant-name', name);
+function storeImpersonationSubscriberName(name: string) {
+  localStorage.setItem('superadmin-impersonation-subscriber-name', name);
 }
 
 export function SuperAdminOverviewPage() {
@@ -44,7 +44,7 @@ export function SuperAdminOverviewPage() {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState('');
   const [metrics,   setMetrics]   = useState<Metrics | null>(null);
-  const [tenants,   setTenants]   = useState<SuperAdminTenant[]>([]);
+  const [subscribers,   setTenants]   = useState<SuperAdminSubscriber[]>([]);
   const [switching, setSwitching] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -69,15 +69,15 @@ export function SuperAdminOverviewPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const previewTenants = useMemo(() => tenants.slice(0, 5), [tenants]);
+  const previewTenants = useMemo(() => subscribers.slice(0, 5), [subscribers]);
 
-  const handleSwitch = async (tenant: SuperAdminTenant) => {
+  const handleSwitch = async (tenant: SuperAdminSubscriber) => {
     if (!tenant.isActive || switching) return;
     setSwitching(tenant.id);
     setError('');
     try {
       const auth = await superAdminService.switchTenant(tenant.id);
-      storeImpersonationTenantName(tenant.name);
+      storeImpersonationSubscriberName(tenant.name);
       clearPermissions();
       login(auth);
       navigate('/dashboard');
@@ -214,7 +214,7 @@ export function SuperAdminOverviewPage() {
         {/* Table */}
         {loading ? (
           <div style={{ padding: '40px' }}><LoadingState /></div>
-        ) : tenants.length === 0 ? (
+        ) : subscribers.length === 0 ? (
           <div style={{ padding: '40px' }}><EmptyState message={t('common.noData')} /></div>
         ) : (
           <>
@@ -277,7 +277,7 @@ export function SuperAdminOverviewPage() {
             {/* Table footer */}
             <div className="pg-table-footer">
               <span className="pg-table-timestamp">
-                Mostrando {previewTenants.length} de {tenants.length} empresas
+                Mostrando {previewTenants.length} de {subscribers.length} empresas
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div className="sa-page-pagination">
@@ -286,7 +286,7 @@ export function SuperAdminOverviewPage() {
                   </button>
                   <div className="sa-page-nums">
                     <button className="sa-page-num-btn is-active" type="button">1</button>
-                    {tenants.length > 5 && (
+                    {subscribers.length > 5 && (
                       <button
                         className="sa-page-num-btn"
                         type="button"

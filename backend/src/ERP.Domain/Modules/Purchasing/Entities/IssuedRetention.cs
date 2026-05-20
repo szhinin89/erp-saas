@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class IssuedRetention : AuditableEntity, ITenantEntity
+public sealed class IssuedRetention : AuditableEntity, ISubscriberScopedEntity
 {
     public const int AccessKeyLen    = 49;
     public const int EstabMaxLen     = 3;
@@ -37,7 +37,7 @@ public sealed class IssuedRetention : AuditableEntity, ITenantEntity
     private IssuedRetention() { }
 
     public static IssuedRetention Create(
-        Guid     tenantId,
+        Guid     subscriberId,
         Guid     supplierId,
         Guid?    purchBillId,
         string   accessKey,
@@ -50,7 +50,7 @@ public sealed class IssuedRetention : AuditableEntity, ITenantEntity
         var r = new IssuedRetention
         {
             Id                = Guid.NewGuid(),
-            TenantId          = tenantId,
+            SubscriberId          = subscriberId,
             SupplierId        = supplierId,
             PurchBillId       = purchBillId,
             AccessKey         = accessKey.Trim(),

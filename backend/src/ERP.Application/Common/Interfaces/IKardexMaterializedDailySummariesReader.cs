@@ -10,7 +10,7 @@ public sealed record KardexMvDayAggregate(
 public interface IKardexMaterializedDailySummariesReader
 {
     Task<IReadOnlyList<KardexMvDayAggregate>?> TryGetDailyAggregatesAsync(
-        Guid tenantId,
+        Guid subscriberId,
         Guid productId,
         Guid warehouseId,
         DateOnly fromInclusive,

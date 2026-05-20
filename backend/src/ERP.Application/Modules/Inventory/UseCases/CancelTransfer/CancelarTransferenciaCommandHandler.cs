@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
@@ -13,7 +13,7 @@ public sealed class CancelTransferCommandHandler
 {
     private readonly IStockTransferRepository _transferenciaRepo;
     private readonly IUserActivityRepository  _activity;
-    private readonly ICurrentTenant           _currentTenant;
+    private readonly ICurrentSubscriber           _currentSubscriber;
     private readonly ICurrentUser             _currentUser;
     private readonly IUnitOfWork              _unitOfWork;
     private readonly ILogger<CancelTransferCommandHandler> _logger;
@@ -21,14 +21,14 @@ public sealed class CancelTransferCommandHandler
     public CancelTransferCommandHandler(
         IStockTransferRepository transferenciaRepo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
         ILogger<CancelTransferCommandHandler> logger)
     {
         _transferenciaRepo = transferenciaRepo;
         _activity          = activity;
-        _currentTenant     = currentTenant;
+        _currentSubscriber     = currentSubscriber;
         _currentUser       = currentUser;
         _unitOfWork        = unitOfWork;
         _logger            = logger;
@@ -37,10 +37,10 @@ public sealed class CancelTransferCommandHandler
     public async Task<Result<TransferDto>> Handle(
         CancelTransferCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var transfer = await _transferenciaRepo.GetByIdAsync(tenantId, command.TransferId, ct);
+        var transfer = await _transferenciaRepo.GetByIdAsync(subscriberId, command.TransferId, ct);
         if (transfer is null)
             return Result<TransferDto>.Failure("transfer no encontrada.");
 
@@ -54,7 +54,7 @@ public sealed class CancelTransferCommandHandler
         try
         {
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "inventario", action: "transfer.cancelar",
                 entityType: "transfer", entityId: transfer.Id,
                 description: transfer.TransferNumber), ct);

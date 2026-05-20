@@ -4,8 +4,8 @@ import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n/i18n';
 import './ZHForm.css';
 
-function getImpersonationTenantName(): string | null {
-  return localStorage.getItem('superadmin-impersonation-tenant-name');
+function getImpersonationSubscriberName(): string | null {
+  return localStorage.getItem('superadmin-impersonation-subscriber-name');
 }
 
 function initials(name: string) {
@@ -14,7 +14,7 @@ function initials(name: string) {
   return init || 'ZH';
 }
 
-export function ZHAppTenantHeader(props: {
+export function ZHAppSubscriberHeader(props: {
   bottomLeft?: React.ReactNode;
   rightExtra?: React.ReactNode;
   leftExtra?: React.ReactNode;
@@ -29,18 +29,18 @@ export function ZHAppTenantHeader(props: {
 
   const isGlobalSuperAdmin =
     (user?.role ?? '') === 'SuperAdmin' &&
-    (user?.tenantId ?? '') === '00000000-0000-0000-0000-000000000000';
-  const isImpersonatingTenant =
+    (user?.subscriberId ?? '') === '00000000-0000-0000-0000-000000000000';
+  const isImpersonatingSubscriber =
     (user?.role ?? '') === 'SuperAdmin' &&
-    !!user?.tenantId &&
-    user.tenantId !== '00000000-0000-0000-0000-000000000000';
+    !!user?.subscriberId &&
+    user.subscriberId !== '00000000-0000-0000-0000-000000000000';
 
-  const tenantName = useMemo(() => {
+  const subscriberName = useMemo(() => {
     if (!user) return '';
     if (isGlobalSuperAdmin) return user.fullName || t('superadmin.title');
-    if (isImpersonatingTenant) return getImpersonationTenantName() ?? t('superadmin.tenant.unknown');
+    if (isImpersonatingSubscriber) return getImpersonationSubscriberName() ?? t('superadmin.tenant.unknown');
     return t('app.tenant.defaultName');
-  }, [isGlobalSuperAdmin, isImpersonatingTenant, t, user]);
+  }, [isGlobalSuperAdmin, isImpersonatingSubscriber, t, user]);
 
   const subtitle = useMemo(() => {
     if (!user) return '';
@@ -86,12 +86,12 @@ export function ZHAppTenantHeader(props: {
         <div className="zh-app-tenantLeftGroup">
           {props.leftExtra ? <div className="zh-app-tenantLeftExtra">{props.leftExtra}</div> : null}
           <div className="zh-tenant-logo" aria-hidden="true">
-            <span className="zh-tenant-initials">{initials(tenantName || user.fullName || 'ZH')}</span>
+            <span className="zh-tenant-initials">{initials(subscriberName || user.fullName || 'ZH')}</span>
           </div>
         </div>
 
         <div className="zh-tenant-info">
-          <div className="zh-tenant-name">{tenantName}</div>
+          <div className="zh-tenant-name">{subscriberName}</div>
           <div className="zh-tenant-sub">
             <span className="zh-tenant-badge">{user.role}</span>
             <span className="zh-tenant-subtext">{subtitle}</span>

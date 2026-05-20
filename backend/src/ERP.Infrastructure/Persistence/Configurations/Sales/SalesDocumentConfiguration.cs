@@ -13,7 +13,7 @@ public sealed class SalesDocumentConfiguration : IEntityTypeConfiguration<SalesD
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.CompanyId).HasColumnName("company_id");
         builder.Property(e => e.BranchId).HasColumnName("branch_id");
         builder.Property(e => e.CustomerId).HasColumnName("customer_id");
@@ -68,13 +68,13 @@ public sealed class SalesDocumentConfiguration : IEntityTypeConfiguration<SalesD
             .HasForeignKey<SalesElectronicDoc>(e => e.SalesDocumentId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(e => new { e.TenantId, e.IssueDate, e.Status, e.DocType })
-            .HasDatabaseName("ix_sales_document_tenant_date_status_type");
-        builder.HasIndex(e => new { e.TenantId, e.CustomerId, e.IssueDate })
-            .HasDatabaseName("ix_sales_document_tenant_customer_date");
-        builder.HasIndex(e => new { e.TenantId, e.AccessKey })
+        builder.HasIndex(e => new { e.SubscriberId, e.IssueDate, e.Status, e.DocType })
+            .HasDatabaseName("ix_sales_document_subscriber_date_status_type");
+        builder.HasIndex(e => new { e.SubscriberId, e.CustomerId, e.IssueDate })
+            .HasDatabaseName("ix_sales_document_subscriber_customer_date");
+        builder.HasIndex(e => new { e.SubscriberId, e.AccessKey })
             .IsUnique()
             .HasFilter("access_key IS NOT NULL")
-            .HasDatabaseName("uq_sales_document_tenant_access_key");
+            .HasDatabaseName("uq_sales_document_subscriber_access_key");
     }
 }

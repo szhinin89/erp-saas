@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
@@ -18,7 +18,7 @@ public sealed class CreatePurchaseOrderCommandHandler
     private readonly ISupplierRepository    _proveedorRepo;
     private readonly IProductRepository      _productRepo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _currentTenant;
+    private readonly ICurrentSubscriber          _currentSubscriber;
     private readonly ICurrentUser            _currentUser;
     private readonly ILogger<CreatePurchaseOrderCommandHandler> _logger;
 
@@ -27,7 +27,7 @@ public sealed class CreatePurchaseOrderCommandHandler
         ISupplierRepository proveedorRepo,
         IProductRepository productRepo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<CreatePurchaseOrderCommandHandler> logger)
     {
@@ -35,7 +35,7 @@ public sealed class CreatePurchaseOrderCommandHandler
         _proveedorRepo = proveedorRepo;
         _productRepo   = productRepo;
         _activity      = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
         _logger        = logger;
     }
@@ -43,10 +43,10 @@ public sealed class CreatePurchaseOrderCommandHandler
     public async Task<Result<PurchaseOrderDto>> Handle(
         CreatePurchaseOrderCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var Supplier = await _proveedorRepo.GetByIdAsync(tenantId, command.SupplierId, ct);
+        var Supplier = await _proveedorRepo.GetByIdAsync(subscriberId, command.SupplierId, ct);
         if (Supplier is null || !Supplier.IsActive)
             return Result<PurchaseOrderDto>.Failure("El Supplier no existe o no está activo.");
 
@@ -55,17 +55,17 @@ public sealed class CreatePurchaseOrderCommandHandler
         foreach (var item in command.Items)
         {
             if (productosValidados.ContainsKey(item.ProductId)) continue;
-            var producto = await _productRepo.GetByIdAsync(item.ProductId, tenantId, ct);
+            var producto = await _productRepo.GetByIdAsync(item.ProductId, subscriberId, ct);
             if (producto is null || !producto.IsActive)
                 return Result<PurchaseOrderDto>.Failure(
                     $"El producto {item.ProductId} no existe o no está activo.");
             productosValidados[item.ProductId] = producto;
         }
 
-        var secuencial = await _ordenRepo.GetNextSequentialAsync(tenantId, ct);
+        var secuencial = await _ordenRepo.GetNextSequentialAsync(subscriberId, ct);
 
         var orden = PurchaseOrder.Create(
-            tenantId, secuencial,
+            subscriberId, secuencial,
             command.SupplierId, command.RequiredDate,
             command.TargetWarehouseId, command.DeliveryAddress, command.Notes,
             userId);
@@ -74,7 +74,7 @@ public sealed class CreatePurchaseOrderCommandHandler
         {
             var producto = productosValidados[item.ProductId];
             var detalle  = PurchaseOrderLine.Create(
-                tenantId, orden.Id, item.ProductId,
+                subscriberId, orden.Id, item.ProductId,
                 producto.ShortName,
                 item.Quantity, item.UnitPrice, item.VatPct,
                 userId);
@@ -85,7 +85,7 @@ public sealed class CreatePurchaseOrderCommandHandler
         await _ordenRepo.SaveChangesAsync(ct);
 
         await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _currentUser.Email, _currentUser.FullName,
+            subscriberId, userId, _currentUser.Email, _currentUser.FullName,
             module: "compras", action: "orden-compra.crear",
             entityType: "PurchaseOrder", entityId: orden.Id,
             description: orden.OrderNumber), ct);

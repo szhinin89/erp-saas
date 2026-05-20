@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Modules.Inventory.Entities;
+using ERP.Domain.Modules.Inventory.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -27,7 +27,7 @@ public class StockAdjustmentLineConfiguration : IEntityTypeConfiguration<StockAd
             .HasForeignKey(x => x.StockAdjustmentId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // El padre (StockAdjustment) tiene query filter por TenantId; declarar
+        // El padre (StockAdjustment) tiene query filter por SubscriberId; declarar
         // la navigation como opcional para que EF no emita WRN cuando el padre
         // es filtrado. El FK sigue siendo NOT NULL en BD.
         builder.Navigation(x => x.StockAdjustment).IsRequired(false);

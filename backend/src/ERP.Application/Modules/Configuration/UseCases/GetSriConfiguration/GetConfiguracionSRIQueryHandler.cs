@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Configuration.DTOs;
 using ERP.Domain.Configuration.Interfaces;
@@ -9,25 +9,25 @@ public sealed class GetSriConfigurationQueryHandler
     : IRequestHandler<GetSriConfigurationQuery, Result<SriConfigurationDto?>>
 {
     private readonly ISriSettingsRepository _repo;
-    private readonly ICurrentTenant              _currentTenant;
+    private readonly ICurrentSubscriber              _currentSubscriber;
 
     public GetSriConfigurationQueryHandler(
         ISriSettingsRepository repo,
-        ICurrentTenant currentTenant)
+        ICurrentSubscriber currentSubscriber)
     {
         _repo          = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public async Task<Result<SriConfigurationDto?>> Handle(
         GetSriConfigurationQuery query, CancellationToken ct)
     {
-        var config = await _repo.GetByTenantIdAsync(_currentTenant.TenantId, ct);
+        var config = await _repo.GetBySubscriberIdAsync(_currentSubscriber.SubscriberId, ct);
         if (config is null)
             return Result<SriConfigurationDto?>.Success(null);
 
         return Result<SriConfigurationDto?>.Success(new SriConfigurationDto(
-            config.TenantId,
+            config.SubscriberId,
             config.Ruc,
             config.LegalName,
             config.TradeName,

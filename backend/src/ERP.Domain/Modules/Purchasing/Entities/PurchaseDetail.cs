@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class PurchaseDetail : AuditableEntity, ITenantEntity
+public sealed class PurchaseDetail : AuditableEntity, ISubscriberScopedEntity
 {
     public Guid   PurchaseDocumentId { get; private set; }
     public Guid?  ProductId          { get; private set; }
@@ -24,7 +24,7 @@ public sealed class PurchaseDetail : AuditableEntity, ITenantEntity
         var d = new PurchaseDetail
         {
             Id                 = line.Id,
-            TenantId           = line.TenantId,
+            SubscriberId           = line.SubscriberId,
             PurchaseDocumentId = line.PurchBillId,
             ProductId          = line.ProductId,
             Description        = line.Description,
@@ -48,7 +48,7 @@ public sealed class PurchaseDetail : AuditableEntity, ITenantEntity
         var d = new PurchaseDetail
         {
             Id                 = line.Id,
-            TenantId           = line.TenantId,
+            SubscriberId           = line.SubscriberId,
             PurchaseDocumentId = line.PurchNoteId,
             ProductId          = line.ProductId,
             Description        = line.Description,

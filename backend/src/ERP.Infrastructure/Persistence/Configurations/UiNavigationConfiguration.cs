@@ -42,12 +42,12 @@ public sealed class UiNavItemConfiguration : IEntityTypeConfiguration<UiNavItem>
         builder.Property(x => x.PermissionKeysAnyJson).HasColumnName("permission_keys_any_json").HasMaxLength(2000);
         builder.Property(x => x.RolesCsv).HasColumnName("roles_csv").HasMaxLength(200);
         builder.Property(x => x.IsActive).HasColumnName("is_active");
-        builder.Property(x => x.SaasFeatureDefinitionId).HasColumnName("saas_feature_definition_id");
-        builder.HasIndex(x => x.SaasFeatureDefinitionId);
+        builder.Property(x => x.PlatformFeatureId).HasColumnName("saas_feature_definition_id");
+        builder.HasIndex(x => x.PlatformFeatureId);
 
-        builder.HasOne<SaasFeatureDefinition>()
+        builder.HasOne<PlatformFeature>()
             .WithMany()
-            .HasForeignKey(x => x.SaasFeatureDefinitionId)
+            .HasForeignKey(x => x.PlatformFeatureId)
             .OnDelete(DeleteBehavior.SetNull);
 
         builder.HasOne<UiNavGroup>()

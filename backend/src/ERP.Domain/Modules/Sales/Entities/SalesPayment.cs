@@ -3,7 +3,7 @@ namespace ERP.Domain.Modules.Sales.Entities;
 public sealed class SalesPayment
 {
     public Guid     Id                { get; private set; } = Guid.NewGuid();
-    public Guid     TenantId          { get; private set; }
+    public Guid     SubscriberId          { get; private set; }
     public Guid     SalesDocumentId   { get; private set; }
     public string   PaymentMethod     { get; private set; } = "01";
     public decimal? Amount            { get; private set; }
@@ -14,7 +14,7 @@ public sealed class SalesPayment
     private SalesPayment() { }
 
     public static SalesPayment Create(
-        Guid tenantId,
+        Guid subscriberId,
         Guid salesDocumentId,
         string paymentMethod,
         decimal? amount = null,
@@ -22,7 +22,7 @@ public sealed class SalesPayment
     {
         return new SalesPayment
         {
-            TenantId        = tenantId,
+            SubscriberId        = subscriberId,
             SalesDocumentId = salesDocumentId,
             PaymentMethod   = paymentMethod,
             Amount          = amount,

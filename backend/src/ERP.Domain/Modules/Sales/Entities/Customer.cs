@@ -4,7 +4,7 @@ using ERP.Domain.Modules.Sales.ValueObjects;
 namespace ERP.Domain.Modules.Sales.Entities;
 
 /// <summary>Cliente maestro del tenant (persona natural o jurídica). Soft delete vía <see cref="MasterEntity"/>.</summary>
-public sealed class Customer : MasterEntity, ITenantEntity
+public sealed class Customer : MasterEntity, ISubscriberScopedEntity
 {
     public const int IdentificationTypeMaxLen = 20;
     public const int IdentificationNumberMaxLen = 32;
@@ -49,7 +49,7 @@ public sealed class Customer : MasterEntity, ITenantEntity
     private Customer() { }
 
     public static Customer Create(
-        Guid tenantId,
+        Guid subscriberId,
         string identificationType,
         string identificationNumber,
         string legalName,
@@ -72,7 +72,7 @@ public sealed class Customer : MasterEntity, ITenantEntity
         var c = new Customer
         {
             Id                   = Guid.NewGuid(),
-            TenantId             = tenantId,
+            SubscriberId             = subscriberId,
             IdentificationType   = identification.Type,
             IdentificationNumber = identification.Number,
             LegalName            = name,

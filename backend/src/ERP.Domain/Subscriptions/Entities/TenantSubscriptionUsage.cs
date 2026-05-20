@@ -3,17 +3,17 @@ using ERP.Domain.Common;
 namespace ERP.Domain.Subscriptions.Entities;
 
 /// <summary>Consumo acumulado de una feature medida por periodo (p. ej. mes calendario).</summary>
-public sealed class TenantSubscriptionUsage : AuditableEntity
+public sealed class SubscriptionUsage : AuditableEntity
 {
     public Guid FeatureId { get; private set; }
     /// <summary>Clave de periodo estable (ej. <c>2026-05</c> mensual UTC).</summary>
     public string PeriodKey { get; private set; } = null!;
     public long Quantity { get; private set; }
 
-    private TenantSubscriptionUsage() { }
+    private SubscriptionUsage() { }
 
-    public static TenantSubscriptionUsage Create(
-        Guid tenantId,
+    public static SubscriptionUsage Create(
+        Guid subscriberId,
         Guid featureId,
         string periodKey,
         long initialQuantity,
@@ -23,10 +23,10 @@ public sealed class TenantSubscriptionUsage : AuditableEntity
         if (pk.Length == 0 || pk.Length > 32)
             throw new ArgumentException("PeriodKey inválido.", nameof(periodKey));
 
-        var u = new TenantSubscriptionUsage
+        var u = new SubscriptionUsage
         {
             Id = Guid.NewGuid(),
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             FeatureId = featureId,
             PeriodKey = pk,
             Quantity = initialQuantity,

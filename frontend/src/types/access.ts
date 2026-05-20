@@ -1,5 +1,5 @@
-export interface AccessibleTenant {
-  tenantId: string;
+export interface AccessibleSubscriber {
+  subscriberId: string;
   name: string;
   slug: string;
   role: string;
@@ -15,22 +15,32 @@ export interface BootstrapLoginResponse {
   fullName: string;
   email: string;
   bootstrapToken: string;
-  tenants: AccessibleTenant[];
+  subscribers: AccessibleTenant[];
 }
 
-export interface SwitchTenantRequest {
-  tenantId: string;
+export interface SwitchSubscriberRequest {
+  subscriberId: string;
 }
 
 export interface SessionResponse {
   userId: string;
   fullName: string;
   email: string;
-  tenantId: string;
+  subscriberId: string;
+  companyId?: string | null;
   role: string;
   token: string;
   planCode: string | null;
   enabledModules: string[];
+}
+
+export interface AccessibleCompany {
+  companyId: string;
+  subscriberId: string;
+  legalName: string;
+  displayName: string;
+  ruc: string;
+  role: string;
 }
 
 /** Respuesta de `GET /api/access/me/permissions`. */

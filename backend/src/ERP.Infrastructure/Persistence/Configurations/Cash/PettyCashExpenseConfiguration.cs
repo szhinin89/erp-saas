@@ -12,7 +12,7 @@ public sealed class PettyCashExpenseConfiguration : IEntityTypeConfiguration<Pet
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(x => x.PettyCashId).HasColumnName("petty_cash_id").IsRequired();
         builder.Property(x => x.ExpenseDate).HasColumnName("expense_date").IsRequired();
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(PettyCashExpense.DescriptionMaxLen).IsRequired();

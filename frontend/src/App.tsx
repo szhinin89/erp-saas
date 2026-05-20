@@ -9,6 +9,7 @@ import {
   mainRoutes,
   catalogRoutes,
   companiesRoutes,
+  companyManagementRoutes,
   accessRoutes,
 } from './routes';
 import { superAdminShellRoutes } from './routes/superAdminShellRoutes';
@@ -28,6 +29,7 @@ function AppRoutes() {
             {mainRoutes}
             {catalogRoutes}
             {companiesRoutes}
+            {companyManagementRoutes}
             {accessRoutes}
           </Route>
         </Route>

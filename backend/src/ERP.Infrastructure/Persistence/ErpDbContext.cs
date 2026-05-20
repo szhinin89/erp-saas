@@ -7,7 +7,7 @@ using ERP.Domain.Common;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
-using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Subscribers.Entities;
 using ERP.Domain.Security.Entities;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Branches.Entities;
@@ -41,13 +41,13 @@ namespace ERP.Infrastructure.Persistence;
 /// ESTADO ACTUAL (Permitido para monolito modular):
 /// - Contabilidad: Account, JournalEntry, JournalEntryLine
 /// - Productos: Product, ProductLine, ProductCategory, ProductSubcategory, Brand, ProductType, TaxRate, UnitOfMeasure, Tariff
-/// - Autenticación: User, IdentityUser, Membership
+/// - Autenticación: User, IdentityUser, CompanyUserMembership
 /// - Tenants: Tenant
 /// - Seguridad: AccessProfile, AccessProfilePermission, SecurityAdminScopeAssignment
 /// - Geografía: SriCountry (países), GeoProvince, GeoCanton, GeoParish
 /// - Auditoría: UserActivity
 /// - Ventas: Customer
-/// - SaaS: SaasFeatureDefinition, SaasPlan, SaasPlanFeature, TenantSaasSubscription, TenantSubscriptionFeatureOverride, TenantSubscriptionUsage
+/// - SaaS: PlatformFeature, CommercialPlan, CommercialPlanFeature, SubscriberSubscription, SubscriptionFeatureOverride, SubscriptionUsage
 /// - UI/Config: UiNavGroup, UiNavItem, ConfigGlobal, ConfigModule, ConfigFeature
 /// - Sucursales: Branch
 /// 
@@ -64,23 +64,23 @@ namespace ERP.Infrastructure.Persistence;
 /// 4. Considerar Command/Query segregation (CQRS) para reportes
 /// 
 /// MULTI-TENANCY:
-/// - Filtro automático por tenant en QueryFilter para todas las ITenantEntity
-/// - CurrentTenantId retorna Guid.Empty si no autenticado (seguro por defecto)
+/// - Filtro automático por tenant en QueryFilter para todas las ISubscriberScopedEntity
+/// - CurrentSubscriberId retorna Guid.Empty si no autenticado (seguro por defecto)
 /// - Todas las queries se filtran automáticamente, no se olvidan excepciones
 /// </summary>
 public class ErpDbContext : DbContext
 {
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly IPublisher _publisher;
     private readonly IPlatformQueryAccessor _platform;
 
     public ErpDbContext(
         DbContextOptions<ErpDbContext> options,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         IPublisher publisher,
         IPlatformQueryAccessor platform) : base(options)
     {
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _publisher     = publisher;
         _platform      = platform;
     }
@@ -96,7 +96,7 @@ public class ErpDbContext : DbContext
         bool acceptAllChangesOnSuccess,
         CancellationToken cancellationToken = default)
     {
-        await SyncTenantSubscriptionsFromPlanCodeAsync(cancellationToken);
+        await SyncSubscriberSubscriptionsFromPlanCodeAsync(cancellationToken);
 
         var entitiesWithEvents = ChangeTracker.Entries<IHasDomainEvents>()
             .Where(e => e.Entity.DomainEvents.Any())
@@ -118,12 +118,12 @@ public class ErpDbContext : DbContext
         return result;
     }
 
-    private async Task SyncTenantSubscriptionsFromPlanCodeAsync(CancellationToken cancellationToken)
+    private async Task SyncSubscriberSubscriptionsFromPlanCodeAsync(CancellationToken cancellationToken)
     {
-        var tenantEntries = ChangeTracker.Entries<Tenant>()
+        var tenantEntries = ChangeTracker.Entries<Subscriber>()
             .Where(e =>
                 e.State == EntityState.Added ||
-                (e.State == EntityState.Modified && e.Property(nameof(Tenant.PlanCode)).IsModified))
+                (e.State == EntityState.Modified && e.Property(nameof(Subscriber.PlanCode)).IsModified))
             .ToList();
 
         if (tenantEntries.Count == 0)
@@ -137,7 +137,7 @@ public class ErpDbContext : DbContext
 
         var planByCode = planCodeSet.Count == 0
             ? new Dictionary<string, Guid>(StringComparer.Ordinal)
-            : await SaasPlans.AsNoTracking()
+            : await CommercialPlans.AsNoTracking()
                 .Where(p => planCodeSet.Contains((p.Code ?? string.Empty).Trim().ToLower()))
                 .ToDictionaryAsync(
                     p => (p.Code ?? string.Empty).Trim().ToLowerInvariant(),
@@ -148,8 +148,8 @@ public class ErpDbContext : DbContext
         foreach (var entry in tenantEntries)
         {
             var tenant = entry.Entity;
-            var tenantId = tenant.Id;
-            if (tenantId == Guid.Empty)
+            var subscriberId = tenant.Id;
+            if (subscriberId == Guid.Empty)
                 continue;
 
             var normalizedPlanCode = (tenant.PlanCode ?? string.Empty).Trim().ToLowerInvariant();
@@ -157,19 +157,19 @@ public class ErpDbContext : DbContext
             var hasValidPlan = normalizedPlanCode.Length > 0 && planByCode.TryGetValue(normalizedPlanCode, out planId);
 
             var existing = await _platform
-                .Unfiltered(TenantSaasSubscriptions, PlatformQueryReason.DbContextSync)
-                .FirstOrDefaultAsync(s => s.TenantId == tenantId, cancellationToken);
+                .Unfiltered(SubscriberSubscriptions, PlatformQueryReason.DbContextSync)
+                .FirstOrDefaultAsync(s => s.SubscriberId == subscriberId, cancellationToken);
 
             if (!hasValidPlan)
             {
-                if (existing is not null && existing.Status == TenantSubscriptionStatus.Active)
+                if (existing is not null && existing.Status == SubscriptionStatus.Active)
                 {
                     var previousPlanId = existing.PlanId;
                     existing.Cancel(Guid.Empty);
-                    await TenantSaasSubscriptionEvents.AddAsync(
-                        TenantSaasSubscriptionEvent.Create(
-                            tenantId,
-                            TenantSaasSubscriptionEvent.Types.PlanCancelled,
+                    await SubscriberSubscriptionEvents.AddAsync(
+                        SubscriberSubscriptionEvent.Create(
+                            subscriberId,
+                            SubscriberSubscriptionEvent.Types.PlanCancelled,
                             Guid.Empty,
                             subscriptionId: existing.Id,
                             previousPlanId: previousPlanId),
@@ -181,12 +181,12 @@ public class ErpDbContext : DbContext
 
             if (existing is null)
             {
-                var created = TenantSaasSubscription.Create(tenantId, planId, Guid.Empty);
-                await TenantSaasSubscriptions.AddAsync(created, cancellationToken);
-                await TenantSaasSubscriptionEvents.AddAsync(
-                    TenantSaasSubscriptionEvent.Create(
-                        tenantId,
-                        TenantSaasSubscriptionEvent.Types.PlanAssigned,
+                var created = SubscriberSubscription.Create(subscriberId, planId, Guid.Empty);
+                await SubscriberSubscriptions.AddAsync(created, cancellationToken);
+                await SubscriberSubscriptionEvents.AddAsync(
+                    SubscriberSubscriptionEvent.Create(
+                        subscriberId,
+                        SubscriberSubscriptionEvent.Types.PlanAssigned,
                         Guid.Empty,
                         subscriptionId: created.Id,
                         newPlanId: planId),
@@ -194,15 +194,15 @@ public class ErpDbContext : DbContext
                 continue;
             }
 
-            if (existing.PlanId == planId && existing.Status == TenantSubscriptionStatus.Active)
+            if (existing.PlanId == planId && existing.Status == SubscriptionStatus.Active)
                 continue;
 
             var priorPlanId = existing.PlanId;
             existing.ReassignPlan(planId, Guid.Empty);
-            await TenantSaasSubscriptionEvents.AddAsync(
-                TenantSaasSubscriptionEvent.Create(
-                    tenantId,
-                    TenantSaasSubscriptionEvent.Types.PlanChanged,
+            await SubscriberSubscriptionEvents.AddAsync(
+                SubscriberSubscriptionEvent.Create(
+                    subscriberId,
+                    SubscriberSubscriptionEvent.Types.PlanChanged,
                     Guid.Empty,
                     subscriptionId: existing.Id,
                     previousPlanId: priorPlanId,
@@ -231,10 +231,10 @@ public class ErpDbContext : DbContext
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<IdentityUser> IdentityUsers => Set<IdentityUser>();
-    public DbSet<Membership> Memberships => Set<Membership>();
+    public DbSet<CompanyUserMembership> CompanyUserMemberships => Set<CompanyUserMembership>();
     public DbSet<AccessProfile> AccessProfiles => Set<AccessProfile>();
     public DbSet<AccessProfilePermission> AccessProfilePermissions => Set<AccessProfilePermission>();
-    public DbSet<Tenant> Tenants => Set<Tenant>();
+    public DbSet<Subscriber> Subscribers => Set<Subscriber>();
     public DbSet<SecurityAdminScopeAssignment> SecurityAdminScopeAssignments => Set<SecurityAdminScopeAssignment>();
     public DbSet<GeoProvince> GeoProvinces => Set<GeoProvince>();
     public DbSet<GeoCanton> GeoCantons => Set<GeoCanton>();
@@ -309,23 +309,32 @@ public class ErpDbContext : DbContext
     public DbSet<StockAdjustment>     StockAdjustments     => Set<StockAdjustment>();
     public DbSet<StockAdjustmentLine> StockAdjustmentLines => Set<StockAdjustmentLine>();
 
-    public DbSet<SaasFeatureDefinition> SaasFeatureDefinitions => Set<SaasFeatureDefinition>();
-    public DbSet<SaasPlan> SaasPlans => Set<SaasPlan>();
-    public DbSet<SaasPlanFeature> SaasPlanFeatures => Set<SaasPlanFeature>();
-    public DbSet<TenantSaasSubscription> TenantSaasSubscriptions => Set<TenantSaasSubscription>();
-    public DbSet<TenantSaasSubscriptionEvent> TenantSaasSubscriptionEvents => Set<TenantSaasSubscriptionEvent>();
-    public DbSet<TenantSubscriptionFeatureOverride> TenantSubscriptionFeatureOverrides => Set<TenantSubscriptionFeatureOverride>();
-    public DbSet<TenantSubscriptionUsage> TenantSubscriptionUsages => Set<TenantSubscriptionUsage>();
+    public DbSet<PlatformFeature> PlatformFeatures => Set<PlatformFeature>();
+    public DbSet<CommercialPlan> CommercialPlans => Set<CommercialPlan>();
+    public DbSet<CommercialPlanFeature> CommercialPlanFeatures => Set<CommercialPlanFeature>();
+    public DbSet<CommercialPlanLimit> CommercialPlanLimits => Set<CommercialPlanLimit>();
+    public DbSet<SubscriberSubscription> SubscriberSubscriptions => Set<SubscriberSubscription>();
+    public DbSet<SubscriberSubscriptionEvent> SubscriberSubscriptionEvents => Set<SubscriberSubscriptionEvent>();
+    public DbSet<SubscriptionFeatureOverride> SubscriptionFeatureOverrides => Set<SubscriptionFeatureOverride>();
+    public DbSet<SubscriptionUsage> SubscriptionUsages => Set<SubscriptionUsage>();
+
+    // ── SaaS Billing (subscriber-scoped; no ERP sales_invoice) ───────────────
+    public DbSet<ERP.Domain.Billing.Entities.SubscriberBillingAccount> SubscriberBillingAccounts => Set<ERP.Domain.Billing.Entities.SubscriberBillingAccount>();
+    public DbSet<ERP.Domain.Billing.Entities.SaasBillingInvoice> SaasBillingInvoices => Set<ERP.Domain.Billing.Entities.SaasBillingInvoice>();
+    public DbSet<ERP.Domain.Billing.Entities.SaasBillingInvoiceLine> SaasBillingInvoiceLines => Set<ERP.Domain.Billing.Entities.SaasBillingInvoiceLine>();
+    public DbSet<ERP.Domain.Billing.Entities.BillingEvent> BillingEvents => Set<ERP.Domain.Billing.Entities.BillingEvent>();
+    public DbSet<ERP.Domain.Billing.Entities.PaymentProviderCustomer> PaymentProviderCustomers => Set<ERP.Domain.Billing.Entities.PaymentProviderCustomer>();
+    public DbSet<ERP.Domain.Billing.Entities.PaymentProviderSubscription> PaymentProviderSubscriptions => Set<ERP.Domain.Billing.Entities.PaymentProviderSubscription>();
 
     public DbSet<UiNavGroup> UiNavGroups => Set<UiNavGroup>();
     public DbSet<UiNavItem> UiNavItems => Set<UiNavItem>();
-    public DbSet<TenantCustomMenu> TenantCustomMenus => Set<TenantCustomMenu>();
+    public DbSet<SubscriberCustomMenu> SubscriberCustomMenus => Set<SubscriberCustomMenu>();
     public DbSet<AppFeature> AppFeatures => Set<AppFeature>();
     public DbSet<ConfigGlobal> ConfigGlobals => Set<ConfigGlobal>();
     public DbSet<ConfigModule> ConfigModules => Set<ConfigModule>();
     public DbSet<ConfigFeature> ConfigFeatures => Set<ConfigFeature>();
 
-    // ── Catálogos SRI (globales, sin tenant_id) ───────────────────────────
+    // ── Catálogos SRI (globales, sin subscriber_id) ───────────────────────────
     public DbSet<SriEnvironment>    SriEnvironments    => Set<SriEnvironment>();
     public DbSet<SriEmissionType>   SriEmissionTypes   => Set<SriEmissionType>();
     public DbSet<SriDocType>        SriDocTypes        => Set<SriDocType>();
@@ -379,14 +388,14 @@ public class ErpDbContext : DbContext
     /// <summary>
     /// Evaluada en cada query, no al compilar el modelo.
     /// Si el request no está autenticado, retorna Guid.Empty para que el filtro
-    /// global no retorne filas (ya que TenantId nunca debe ser Guid.Empty en
+    /// global no retorne filas (ya que SubscriberId nunca debe ser Guid.Empty en
     /// entidades multi-tenant). Esto permite endpoints anónimos como login/reset.
     /// </summary>
-    private Guid CurrentTenantId
+    private Guid CurrentSubscriberId
     {
         get
         {
-            return _currentTenant.TenantId;
+            return _currentSubscriber.SubscriberId;
         }
     }
 
@@ -395,7 +404,7 @@ public class ErpDbContext : DbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ErpDbContext).Assembly);
 
         // Filtro global multi-tenant automático:
-        // - Aplica a toda entidad NO-OWNED que implemente ITenantEntity.
+        // - Aplica a toda entidad NO-OWNED que implemente ISubscriberScopedEntity.
         // - Evita que al agregar una nueva entidad se nos olvide registrar el filtro.
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
@@ -403,15 +412,15 @@ public class ErpDbContext : DbContext
                 continue;
 
             var clrType = entityType.ClrType;
-            if (clrType == typeof(Tenant))
+            if (clrType == typeof(Subscriber))
                 continue;
-            if (!typeof(ITenantEntity).IsAssignableFrom(clrType))
+            if (!typeof(ISubscriberScopedEntity).IsAssignableFrom(clrType))
                 continue;
 
             var parameter = Expression.Parameter(clrType, "e");
-            var tenantProperty = Expression.Property(parameter, nameof(ITenantEntity.TenantId));
-            var currentTenant = Expression.Property(Expression.Constant(this), nameof(CurrentTenantId));
-            var body = Expression.Equal(tenantProperty, currentTenant);
+            var tenantProperty = Expression.Property(parameter, nameof(ISubscriberScopedEntity.SubscriberId));
+            var currentSubscriber = Expression.Property(Expression.Constant(this), nameof(CurrentSubscriberId));
+            var body = Expression.Equal(tenantProperty, currentSubscriber);
             var lambda = Expression.Lambda(body, parameter);
 
             modelBuilder.Entity(clrType).HasQueryFilter(lambda);

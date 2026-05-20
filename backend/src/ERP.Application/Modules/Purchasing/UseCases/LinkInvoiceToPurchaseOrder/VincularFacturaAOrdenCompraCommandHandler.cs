@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
@@ -19,7 +19,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
     private readonly IPurchBillRepository       _compraRepo;
     private readonly ISupplierRepository    _proveedorRepo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _currentTenant;
+    private readonly ICurrentSubscriber          _currentSubscriber;
     private readonly ICurrentUser            _currentUser;
     private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<LinkInvoiceToPurchaseOrderCommandHandler> _logger;
@@ -29,7 +29,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
         IPurchBillRepository compraRepo,
         ISupplierRepository proveedorRepo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
         ILogger<LinkInvoiceToPurchaseOrderCommandHandler> logger)
@@ -38,7 +38,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
         _compraRepo    = compraRepo;
         _proveedorRepo = proveedorRepo;
         _activity      = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
         _unitOfWork    = unitOfWork;
         _logger        = logger;
@@ -47,11 +47,11 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
     public async Task<Result<PurchaseOrderDto>> Handle(
         LinkInvoiceToPurchaseOrderCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
         // 1. Cargar la OC con sus detalles
-        var orden = await _ordenRepo.GetByIdAsync(tenantId, command.OrdenCompraId, ct);
+        var orden = await _ordenRepo.GetByIdAsync(subscriberId, command.OrdenCompraId, ct);
         if (orden is null)
             return Result<PurchaseOrderDto>.Failure("Orden de compra no encontrada.");
 
@@ -60,7 +60,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
                 $"Solo se puede vincular una factura a OC en Aprobada o RecibidaParcial (estado: {orden.Status}).");
 
         // 2. Cargar la factura con sus detalles
-        var factura = await _compraRepo.GetByIdAsync(tenantId, command.PurchBillId, ct);
+        var factura = await _compraRepo.GetByIdAsync(subscriberId, command.PurchBillId, ct);
         if (factura is null)
             return Result<PurchaseOrderDto>.Failure("Factura de compra no encontrada.");
 
@@ -70,7 +70,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
 
         // 3. Verificar que no esté ya vinculada a esta OC
         var yaVinculada = await _ordenRepo.BillAlreadyLinkedAsync(
-            tenantId, command.OrdenCompraId, command.PurchBillId, ct);
+            subscriberId, command.OrdenCompraId, command.PurchBillId, ct);
         if (yaVinculada)
             return Result<PurchaseOrderDto>.Failure("Esta factura ya está vinculada a la orden de compra.");
 
@@ -128,7 +128,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
             }
 
             // 5. Crear la vinculación
-            var vinculo = PurchaseOrderBill.Create(tenantId, orden.Id, factura.Id, userId);
+            var vinculo = PurchaseOrderBill.Create(subscriberId, orden.Id, factura.Id, userId);
             await _ordenRepo.AddOrderBillLinkAsync(vinculo, ct);
 
             // 6. Actualizar estado de la OC según cobertura
@@ -143,7 +143,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
                 : $"{orden.OrderNumber} ← {factura.InvoiceNumber}";
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "compras", action: "orden-compra.vincular-factura",
                 entityType: "PurchaseOrder", entityId: orden.Id,
                 description: actividadDesc), ct);
@@ -155,7 +155,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
                 "Factura {Factura} vinculada a OC {OC}. Estado: {Estado}. Warnings: {N}",
                 factura.InvoiceNumber, orden.OrderNumber, orden.Status, advertencias.Count);
 
-            var Supplier = await _proveedorRepo.GetByIdAsync(tenantId, orden.SupplierId, ct);
+            var Supplier = await _proveedorRepo.GetByIdAsync(subscriberId, orden.SupplierId, ct);
             return Result<PurchaseOrderDto>.Success(
                 CreatePurchaseOrderCommandHandler.ToDto(
                     orden,

@@ -8,16 +8,16 @@ namespace ERP.Application.Security.UseCases.GetSecurityAdminMatrix;
 
 public class GetSecurityAdminMatrixHandler : IRequestHandler<GetSecurityAdminMatrixQuery, Result<(IReadOnlyList<SecurityUserDto> Users, IReadOnlyList<SecurityAdminScopeAssignmentDto> Assignments)>>
 {
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly IUserRepository _userRepository;
     private readonly ISecurityRepository _securityRepository;
 
     public GetSecurityAdminMatrixHandler(
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         IUserRepository userRepository,
         ISecurityRepository securityRepository)
     {
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _userRepository = userRepository;
         _securityRepository = securityRepository;
     }
@@ -25,11 +25,11 @@ public class GetSecurityAdminMatrixHandler : IRequestHandler<GetSecurityAdminMat
     public async Task<Result<(IReadOnlyList<SecurityUserDto> Users, IReadOnlyList<SecurityAdminScopeAssignmentDto> Assignments)>> Handle(
         GetSecurityAdminMatrixQuery query, CancellationToken ct)
     {
-        if (!_currentTenant.IsAuthenticated || _currentTenant.TenantId == Guid.Empty)
-            return Result<(IReadOnlyList<SecurityUserDto>, IReadOnlyList<SecurityAdminScopeAssignmentDto>)>.Failure("Tenant inválido.");
+        if (!_currentSubscriber.IsAuthenticated || _currentSubscriber.SubscriberId == Guid.Empty)
+            return Result<(IReadOnlyList<SecurityUserDto>, IReadOnlyList<SecurityAdminScopeAssignmentDto>)>.Failure("Subscriber inválido.");
 
-        var users = await _userRepository.GetAllByTenantAsync(_currentTenant.TenantId, ct);
-        var assignments = await _securityRepository.GetAdminScopesAsync(_currentTenant.TenantId, ct);
+        var users = await _userRepository.GetAllByTenantAsync(_currentSubscriber.SubscriberId, ct);
+        var assignments = await _securityRepository.GetAdminScopesAsync(_currentSubscriber.SubscriberId, ct);
 
         var userDtos = users.Select(u => new SecurityUserDto(
             u.Id,

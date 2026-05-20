@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -16,7 +16,7 @@ namespace ERP.API.Tests.Support;
 /// <summary>API real con EF InMemory, suscripciÃ³n ilimitada y tenant/usuario mutables para integraciÃ³n.</summary>
 internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program>
 {
-    public MutableCurrentTenant MutableTenant { get; } = new();
+    public MutableCurrentSubscriber MutableSubscriber { get; } = new();
     public MutableCurrentUser   MutableUser   { get; } = new();
     public bool UseScalableMode { get; set; } = false;
 
@@ -76,13 +76,13 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
                     .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning));
             });
 
-            foreach (var d in services.Where(x => x.ServiceType == typeof(ICurrentTenant)).ToList())
+            foreach (var d in services.Where(x => x.ServiceType == typeof(ICurrentSubscriber)).ToList())
                 services.Remove(d);
             foreach (var d in services.Where(x => x.ServiceType == typeof(ICurrentUser)).ToList())
                 services.Remove(d);
 
-            services.AddSingleton(MutableTenant);
-            services.AddSingleton<ICurrentTenant>(sp => sp.GetRequiredService<MutableCurrentTenant>());
+            services.AddSingleton(MutableSubscriber);
+            services.AddSingleton<ICurrentSubscriber>(sp => sp.GetRequiredService<MutableCurrentSubscriber>());
             services.AddSingleton(MutableUser);
             services.AddSingleton<ICurrentUser>(sp => sp.GetRequiredService<MutableCurrentUser>());
 

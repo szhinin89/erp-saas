@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Domain.Audit.Entities;
@@ -11,30 +11,30 @@ public sealed class VoidInvoiceCommandHandler : IRequestHandler<VoidInvoiceComma
 {
     private readonly ISalesRepository    _ventasRepository;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _currentTenant;
+    private readonly ICurrentSubscriber          _currentSubscriber;
     private readonly ICurrentUser            _currentUser;
     private readonly ILogger<VoidInvoiceCommandHandler> _logger;
 
     public VoidInvoiceCommandHandler(
         ISalesRepository ventasRepository,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<VoidInvoiceCommandHandler> logger)
     {
         _ventasRepository = ventasRepository;
         _activity         = activity;
-        _currentTenant    = currentTenant;
+        _currentSubscriber    = currentSubscriber;
         _currentUser      = currentUser;
         _logger           = logger;
     }
 
     public async Task<Result<Guid>> Handle(VoidInvoiceCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var factura = await _ventasRepository.GetBillByIdAsync(tenantId, command.VentaId, ct);
+        var factura = await _ventasRepository.GetBillByIdAsync(subscriberId, command.VentaId, ct);
         if (factura is null)
             return Result<Guid>.Failure("Factura de venta no encontrada.");
 
@@ -46,13 +46,13 @@ public sealed class VoidInvoiceCommandHandler : IRequestHandler<VoidInvoiceComma
             return Result<Guid>.Failure("La factura ya está anulada.");
 
         _logger.LogInformation(
-            "Anulando factura {FacturaId} (estado previo={Estado}, tenant={TenantId})",
-            factura.Id, factura.Status, tenantId);
+            "Anulando factura {FacturaId} (estado previo={Estado}, tenant={SubscriberId})",
+            factura.Id, factura.Status, subscriberId);
         factura.Void(userId);
 
         var numeroFactura = $"{factura.EstabCode}-{factura.EmPointCode}-{factura.Sequential}";
         await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _currentUser.Email, _currentUser.FullName,
+            subscriberId, userId, _currentUser.Email, _currentUser.FullName,
             module: "ventas", action: "venta.anular",
             entityType: "SalesBill", entityId: factura.Id,
             description: numeroFactura), ct);

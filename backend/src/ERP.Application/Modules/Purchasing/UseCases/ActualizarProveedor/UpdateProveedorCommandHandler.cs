@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -13,13 +13,13 @@ public sealed class UpdateSupplierCommandHandler
 {
     private readonly ISupplierRepository    _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _tenant;
+    private readonly ICurrentSubscriber          _tenant;
     private readonly ICurrentUser            _user;
 
     public UpdateSupplierCommandHandler(
         ISupplierRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user)
     {
         _repo     = repo;
@@ -30,14 +30,14 @@ public sealed class UpdateSupplierCommandHandler
 
     public async Task<Result<SupplierDto>> Handle(UpdateSupplierCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
-        var Supplier = await _repo.GetByIdAsync(tenantId, command.Id, ct);
+        var Supplier = await _repo.GetByIdAsync(subscriberId, command.Id, ct);
         if (Supplier is null)
             return Result<SupplierDto>.Failure("Supplier no encontrado.");
 
-        if (await _repo.ExistsRucAsync(tenantId, command.Ruc, command.Id, ct))
+        if (await _repo.ExistsRucAsync(subscriberId, command.Ruc, command.Id, ct))
             return Result<SupplierDto>.Failure($"Ya existe otro Supplier con el RUC '{command.Ruc}' en este tenant.");
 
         try
@@ -53,7 +53,7 @@ public sealed class UpdateSupplierCommandHandler
         }
 
         await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _user.Email, _user.FullName,
+            subscriberId, userId, _user.Email, _user.FullName,
             module: "compras", action: "Supplier.update",
             entityType: "Supplier", entityId: Supplier.Id,
             description: $"{Supplier.Ruc} — {Supplier.LegalName}"), ct);

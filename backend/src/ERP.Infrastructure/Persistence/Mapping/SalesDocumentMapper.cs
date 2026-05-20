@@ -10,7 +10,7 @@ public static class SalesDocumentMapper
     public static SalesDocument ToDocument(SalesBill bill)
     {
         var doc = SalesDocument.CreateInvoice(
-            bill.TenantId,
+            bill.SubscriberId,
             bill.BranchId,
             bill.CustomerId,
             bill.WarehouseId,
@@ -41,7 +41,7 @@ public static class SalesDocumentMapper
         if (bill.XmlSignedPath is not null || bill.XmlAuthPath is not null
             || bill.AuthNumber is not null || bill.ErrorMessage is not null)
         {
-            var electronic = SalesElectronicDoc.CreateShell(bill.Id, bill.TenantId);
+            var electronic = SalesElectronicDoc.CreateShell(bill.Id, bill.SubscriberId);
             if (bill.AuthNumber is not null)
                 electronic.SetAuthorization(
                     bill.AuthNumber,
@@ -56,7 +56,7 @@ public static class SalesDocumentMapper
         foreach (var line in bill.Lines)
         {
             var detail = SalesDetail.Create(
-                line.TenantId,
+                line.SubscriberId,
                 line.ProductId,
                 line.ProductCode,
                 line.Quantity,
@@ -79,7 +79,7 @@ public static class SalesDocumentMapper
     {
         var electronic = doc.Electronic;
         var bill = SalesBill.Create(
-            doc.TenantId,
+            doc.SubscriberId,
             doc.BranchId ?? Guid.Empty,
             doc.CustomerId ?? Guid.Empty,
             doc.WarehouseId ?? Guid.Empty,
@@ -111,7 +111,7 @@ public static class SalesDocumentMapper
         foreach (var line in doc.Lines)
         {
             var legacyLine = SalesBillLine.Create(
-                line.TenantId,
+                line.SubscriberId,
                 line.ProductId ?? Guid.Empty,
                 line.ProductCode,
                 line.Quantity,
@@ -136,7 +136,7 @@ public static class SalesDocumentMapper
         var docType = SalesDocumentTypeExtensions.FromNoteType(note.NoteType);
 
         Set(doc, nameof(SalesDocument.Id), note.Id);
-        Set(doc, nameof(SalesDocument.TenantId), note.TenantId);
+        Set(doc, nameof(SalesDocument.SubscriberId), note.SubscriberId);
         Set(doc, nameof(SalesDocument.DocType), docType);
         Set(doc, nameof(SalesDocument.ReferenceDocumentId), note.OriginalBillId);
         Set(doc, nameof(SalesDocument.Reason), note.Reason);
@@ -164,7 +164,7 @@ public static class SalesDocumentMapper
 
         if (note.XmlSignedPath is not null || note.XmlAuthPath is not null || note.AuthNumber is not null)
         {
-            var electronic = SalesElectronicDoc.CreateShell(note.Id, note.TenantId);
+            var electronic = SalesElectronicDoc.CreateShell(note.Id, note.SubscriberId);
             electronic.SetAuthorization(
                 note.AuthNumber ?? "",
                 note.AuthDate ?? note.IssueDate,
@@ -187,7 +187,7 @@ public static class SalesDocumentMapper
         var sriCode  = doc.DocType.ToLegacySriCode();
 
         var note = SalesNote.Create(
-            doc.TenantId,
+            doc.SubscriberId,
             doc.ReferenceDocumentId ?? Guid.Empty,
             noteType,
             doc.Reason ?? "",
@@ -231,7 +231,7 @@ public static class SalesDocumentMapper
         {
             var legacy = (SalesNoteLine)Activator.CreateInstance(typeof(SalesNoteLine), true)!;
             Set(legacy, nameof(SalesNoteLine.Id), line.Id);
-            Set(legacy, nameof(SalesNoteLine.TenantId), line.TenantId);
+            Set(legacy, nameof(SalesNoteLine.SubscriberId), line.SubscriberId);
             Set(legacy, nameof(SalesNoteLine.SalesNoteId), doc.Id);
             Set(legacy, nameof(SalesNoteLine.ProductId), line.ProductId ?? Guid.Empty);
             Set(legacy, nameof(SalesNoteLine.ProductCode), line.ProductCode);

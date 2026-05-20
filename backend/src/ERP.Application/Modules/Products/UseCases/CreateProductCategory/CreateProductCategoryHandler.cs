@@ -13,24 +13,24 @@ public class CreateProductCategoryHandler : IRequestHandler<CreateProductCategor
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public CreateProductCategoryHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
         _activity = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
     public async Task<Result<ProductCategoryDto>> Handle(CreateProductCategoryCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId = _currentUser.UserId;
 
         if (command.LineId == Guid.Empty)
@@ -39,19 +39,19 @@ public class CreateProductCategoryHandler : IRequestHandler<CreateProductCategor
         if (string.IsNullOrWhiteSpace(command.Code) || string.IsNullOrWhiteSpace(command.Name))
             return Result<ProductCategoryDto>.Failure("Código y nombre son obligatorios.");
 
-        var line = await _repo.GetProductLineByIdAsync(tenantId, command.LineId, ct);
+        var line = await _repo.GetProductLineByIdAsync(subscriberId, command.LineId, ct);
         if (line is null)
             return Result<ProductCategoryDto>.Failure("La línea indicada no existe.");
         if (!line.IsActive)
             return Result<ProductCategoryDto>.Failure("No se puede crear una categoría bajo una línea deshabilitada.");
 
-        if (await _repo.ProductCategoryCodeExistsAsync(tenantId, command.LineId, command.Code.Trim(), null, ct))
+        if (await _repo.ProductCategoryCodeExistsAsync(subscriberId, command.LineId, command.Code.Trim(), null, ct))
             return Result<ProductCategoryDto>.Failure("Ya existe una categoría con el mismo código en esta línea.");
 
-        var entity = ProductCategory.Create(tenantId, command.Code.Trim(), command.Name.Trim(), command.LineId, userId);
+        var entity = ProductCategory.Create(subscriberId, command.Code.Trim(), command.Name.Trim(), command.LineId, userId);
         await _repo.AddProductCategoryAsync(entity, ct);
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _currentUser.Email,
             _currentUser.FullName,

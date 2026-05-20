@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
@@ -69,9 +69,9 @@ public sealed class TransferenciasEndToEndTests
         itemDestino!.AvailableQuantity.Should().Be(4m);
 
         // 5. Verificar que se crearon exactamente 2 movimientos para esta transferencia
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
         var movimientos = await db.StockMovements
-            .Where(m => m.TenantId == tenantId
+            .Where(m => m.SubscriberId == subscriberId
                      && m.SourceDocId == transferenciaId)
             .ToListAsync(CancellationToken.None);
 
@@ -103,9 +103,9 @@ public sealed class TransferenciasEndToEndTests
         crear.IsSuccess.Should().BeTrue(crear.Error);
 
         // Consumir el stock manualmente para simular una venta concurrente
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
         var userId   = factory.MutableUser.UserId;
-        var stockEntity = db.CurrentStocks.First(s => s.TenantId == tenantId
+        var stockEntity = db.CurrentStocks.First(s => s.SubscriberId == subscriberId
                                                   && s.WarehouseId == origenId
                                                   && s.ProductId == productoId);
         stockEntity.ApplyMovement(-3m, userId); // agota el stock
@@ -120,13 +120,13 @@ public sealed class TransferenciasEndToEndTests
         confirmar.Error.Should().Contain("Stock insuficiente");
 
         // El stock no debe haberse modificado (rollback efectivo)
-        var stockPost = db.CurrentStocks.First(s => s.TenantId == tenantId
+        var stockPost = db.CurrentStocks.First(s => s.SubscriberId == subscriberId
                                                && s.WarehouseId == origenId
                                                && s.ProductId == productoId);
         stockPost.AvailableQuantity.Should().Be(0m);
 
         var movs = db.StockMovements
-            .Where(m => m.TenantId == tenantId && m.SourceDocId == crear.Value.Id)
+            .Where(m => m.SubscriberId == subscriberId && m.SourceDocId == crear.Value.Id)
             .ToList();
         movs.Should().BeEmpty("no se deben registrar movimientos si la confirmaciÃ³n fallÃ³");
     }
@@ -158,8 +158,8 @@ public sealed class TransferenciasEndToEndTests
         cancelar.Value!.Status.Should().Be("Cancelado");
 
         // El stock en la bodega origen debe permanecer intacto
-        var tenantId = factory.MutableTenant.TenantId;
-        var stock = db.CurrentStocks.First(s => s.TenantId == tenantId
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
+        var stock = db.CurrentStocks.First(s => s.SubscriberId == subscriberId
                                            && s.WarehouseId == origenId
                                            && s.ProductId == productoId);
         stock.AvailableQuantity.Should().Be(10m, "cancelar no debe afectar el stock");
@@ -229,25 +229,25 @@ public sealed class TransferenciasEndToEndTests
             decimal stockOrigen)
     {
         var seed = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
 
-        var tenantId   = seed.TenantId;
+        var subscriberId   = seed.SubscriberId;
         var userId     = seed.UserId;
         var productoId = seed.ProductId;
 
-        var branchId = db.Branches.First(b => b.TenantId == tenantId).Id;
-        var destino  = Warehouse.Create(tenantId, branchId, "Warehouse Destino E2E", null, null, userId);
+        var branchId = db.Branches.First(b => b.SubscriberId == subscriberId).Id;
+        var destino  = Warehouse.Create(subscriberId, branchId, "Warehouse Destino E2E", null, null, userId);
         db.Warehouses.Add(destino);
         await db.SaveChangesAsync(CancellationToken.None);
 
         if (stockOrigen > 0)
         {
-            var stock = CurrentStock.Create(tenantId, productoId, seed.WarehouseId, userId);
+            var stock = CurrentStock.Create(subscriberId, productoId, seed.WarehouseId, userId);
             stock.ApplyMovement(stockOrigen, userId);
             db.CurrentStocks.Add(stock);
 
             var mov = StockMovement.Create(
-                tenantId, productoId, seed.WarehouseId,
+                subscriberId, productoId, seed.WarehouseId,
                 StockMovementType.PositiveAdjust,
                 quantity:            stockOrigen,
                 previousQuantity:    0,

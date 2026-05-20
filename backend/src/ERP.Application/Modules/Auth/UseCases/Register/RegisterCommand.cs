@@ -9,6 +9,6 @@ public record RegisterCommand(
     string LastName,
     string Email,
     string Password,
-    Guid TenantId,
+    Guid SubscriberId,
     string Role = "User"
 ) : IRequest<Result<AuthResponseDto>>;

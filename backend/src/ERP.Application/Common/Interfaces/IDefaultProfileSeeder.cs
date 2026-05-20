@@ -8,8 +8,8 @@ namespace ERP.Application.Common.Interfaces;
 public interface IDefaultProfileSeeder
 {
     /// <summary>
-    /// Creates the three default profiles and their permissions for <paramref name="tenantId"/>.
+    /// Creates the three default profiles and their permissions for <paramref name="subscriberId"/>.
     /// Idempotent — safe to call on a tenant that already has the profiles.
     /// </summary>
-    Task SeedForTenantAsync(Guid tenantId, Guid actorId, CancellationToken ct = default);
+    Task SeedForTenantAsync(Guid subscriberId, Guid actorId, CancellationToken ct = default);
 }

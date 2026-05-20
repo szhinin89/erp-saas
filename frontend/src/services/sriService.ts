@@ -2,7 +2,7 @@ import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
 
 export type SriConfigDto = {
-  tenantId: string;
+  subscriberId: string;
   companyRuc: string;
   legalName: string;
   tradeName: string | null;

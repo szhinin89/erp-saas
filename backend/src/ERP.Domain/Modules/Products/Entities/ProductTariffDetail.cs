@@ -17,14 +17,14 @@ public class ProductTariffDetail : BaseEntity
     private ProductTariffDetail() { }
 
     internal static ProductTariffDetail Create(
-        Guid productId, Guid tenantId, string originCountry, string tariffCode, decimal percentage)
+        Guid productId, Guid subscriberId, string originCountry, string tariffCode, decimal percentage)
     {
         if (percentage < 0 || percentage > 100)
             throw new ArgumentException("El porcentaje arancelario debe estar entre 0 y 100.");
         return new()
         {
             Id            = Guid.NewGuid(),
-            TenantId      = tenantId,
+            SubscriberId      = subscriberId,
             ProductId     = productId,
             OriginCountry = originCountry.Trim().ToUpperInvariant(),
             TariffCode    = tariffCode.Trim(),

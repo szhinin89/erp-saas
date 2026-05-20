@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
@@ -27,11 +27,11 @@ public sealed class VentasEndToEndTests
         var scope    = factory.Services.CreateScope();
         var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-        var seed     = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        var seed     = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial, ct: CancellationToken.None);
 
-        var clienteId  = db.Customers.First(c => c.TenantId == seed.TenantId).Id;
-        var sucursalId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
+        var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
         return (mediator, db, seed, clienteId, sucursalId);
     }
 
@@ -79,12 +79,12 @@ public sealed class VentasEndToEndTests
 
         // 5. Stock reducido: 10 - 2 = 8
         var stockFinal = db.CurrentStocks.First(s =>
-            s.TenantId == seed.TenantId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId);
+            s.SubscriberId == seed.SubscriberId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId);
         stockFinal.Quantity.Should().Be(8m);
 
         // 6. Movimiento SalidaVenta registrado
         var movSalida = db.StockMovements
-            .Where(m => m.TenantId == seed.TenantId && m.MovementType == StockMovementType.SaleExit)
+            .Where(m => m.SubscriberId == seed.SubscriberId && m.MovementType == StockMovementType.SaleExit)
             .ToList();
         movSalida.Should().HaveCount(1);
         movSalida[0].Quantity.Should().Be(-2m);

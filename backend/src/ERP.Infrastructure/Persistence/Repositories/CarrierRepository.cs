@@ -16,10 +16,10 @@ public class CarrierRepository : ICarrierRepository
         _platform = platform;
     }
 
-    public async Task<List<Carrier>> GetAllAsync(Guid tenantId, string? search, bool? isActive, CancellationToken ct = default)
+    public async Task<List<Carrier>> GetAllAsync(Guid subscriberId, string? search, bool? isActive, CancellationToken ct = default)
     {
         var query = _platform.Unfiltered(_context.Carriers, PlatformQueryReason.TenantScopedExplicit)
-            .Where(c => c.TenantId == tenantId);
+            .Where(c => c.SubscriberId == subscriberId);
 
         if (isActive.HasValue)
             query = query.Where(c => c.IsActive == isActive.Value);
@@ -40,10 +40,10 @@ public class CarrierRepository : ICarrierRepository
         _platform.Unfiltered(_context.Carriers, PlatformQueryReason.TenantScopedExplicit)
             .FirstOrDefaultAsync(c => c.Id == id, ct);
 
-    public Task<bool> ExistsIdentificationAsync(Guid tenantId, string identificationNumber, Guid? excludeId, CancellationToken ct = default)
+    public Task<bool> ExistsIdentificationAsync(Guid subscriberId, string identificationNumber, Guid? excludeId, CancellationToken ct = default)
     {
         var query = _platform.Unfiltered(_context.Carriers, PlatformQueryReason.TenantScopedExplicit)
-            .Where(c => c.TenantId == tenantId && c.IdentificationNumber == identificationNumber);
+            .Where(c => c.SubscriberId == subscriberId && c.IdentificationNumber == identificationNumber);
 
         if (excludeId.HasValue)
             query = query.Where(c => c.Id != excludeId.Value);

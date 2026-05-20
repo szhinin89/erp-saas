@@ -1,12 +1,12 @@
 using FluentValidation;
 
-namespace ERP.Application.Tenants.UseCases.UpdatePasswordResetMode;
+namespace ERP.Application.Subscribers.UseCases.UpdatePasswordResetMode;
 
-public sealed class UpdateTenantPasswordResetModeCommandValidator : AbstractValidator<UpdateTenantPasswordResetModeCommand>
+public sealed class UpdateSubscriberPasswordResetModeCommandValidator : AbstractValidator<UpdateSubscriberPasswordResetModeCommand>
 {
-    public UpdateTenantPasswordResetModeCommandValidator()
+    public UpdateSubscriberPasswordResetModeCommandValidator()
     {
-        RuleFor(x => x.TenantId)
+        RuleFor(x => x.SubscriberId)
             .NotEmpty().WithMessage("El tenant es obligatorio.");
 
         RuleFor(x => x.PasswordResetMode)

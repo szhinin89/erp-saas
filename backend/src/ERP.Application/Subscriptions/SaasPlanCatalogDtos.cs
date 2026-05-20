@@ -1,7 +1,7 @@
 namespace ERP.Application.Subscriptions;
 
 /// <summary>Vista de solo lectura del catálogo de planes (panel SuperAdmin y consistencia interna).</summary>
-public sealed record SaasPlanFeatureCatalogItem(
+public sealed record CommercialPlanFeatureCatalogItem(
     string FeatureCode,
     string FeatureName,
     string? Description,
@@ -11,7 +11,7 @@ public sealed record SaasPlanFeatureCatalogItem(
     bool IsIncluded,
     long? LimitPerPeriod);
 
-public sealed record SaasPlanCatalogItem(
+public sealed record CommercialPlanCatalogItem(
     Guid Id,
     string Code,
     string Name,
@@ -24,4 +24,4 @@ public sealed record SaasPlanCatalogItem(
     bool IsRecommended,
     int SortOrder,
     string? ExternalBillingRef,
-    IReadOnlyList<SaasPlanFeatureCatalogItem> Features);
+    IReadOnlyList<CommercialPlanFeatureCatalogItem> Features);

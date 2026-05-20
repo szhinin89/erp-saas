@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Sales.Helpers;
@@ -19,7 +19,7 @@ public sealed class CrearSalesNoteCommandHandler
     private readonly IProductRepository          _productRepository;
     private readonly ITaxRateRepository          _taxRateRepository;
     private readonly IUserActivityRepository     _activity;
-    private readonly ICurrentTenant              _currentTenant;
+    private readonly ICurrentSubscriber              _currentSubscriber;
     private readonly ICurrentUser                _currentUser;
     private readonly IUnitOfWork                 _unitOfWork;
     private readonly ILogger<CrearSalesNoteCommandHandler> _logger;
@@ -30,7 +30,7 @@ public sealed class CrearSalesNoteCommandHandler
         IProductRepository productRepository,
         ITaxRateRepository taxRateRepository,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
         ILogger<CrearSalesNoteCommandHandler> logger)
@@ -40,7 +40,7 @@ public sealed class CrearSalesNoteCommandHandler
         _productRepository   = productRepository;
         _taxRateRepository   = taxRateRepository;
         _activity            = activity;
-        _currentTenant       = currentTenant;
+        _currentSubscriber       = currentSubscriber;
         _currentUser         = currentUser;
         _unitOfWork          = unitOfWork;
         _logger              = logger;
@@ -48,20 +48,20 @@ public sealed class CrearSalesNoteCommandHandler
 
     public async Task<Result<Guid>> Handle(CreateSalesNoteCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
         if (command.Items.Count == 0)
             return Result<Guid>.Failure("La nota debe tener al menos un detalle.");
 
-        var factura = await _ventasRepository.GetBillByIdAsync(tenantId, command.OriginalBillId, ct);
+        var factura = await _ventasRepository.GetBillByIdAsync(subscriberId, command.OriginalBillId, ct);
         if (factura is null)
             return Result<Guid>.Failure("Factura original no encontrada.");
         if (factura.Status != "Autorizado")
             return Result<Guid>.Failure(
                 $"La factura original debe estar Autorizada (estado actual: {factura.Status}).");
 
-        var configSri = await _configSriRepository.GetByTenantIdAsync(tenantId, ct);
+        var configSri = await _configSriRepository.GetBySubscriberIdAsync(subscriberId, ct);
         if (configSri is null)
             return Result<Guid>.Failure("La configuración SRI no está configurada para este tenant.");
 
@@ -69,7 +69,7 @@ public sealed class CrearSalesNoteCommandHandler
         foreach (var item in command.Items)
         {
             if (productos.ContainsKey(item.ProductId)) continue;
-            var p = await _productRepository.GetByIdAsync(item.ProductId, tenantId, ct);
+            var p = await _productRepository.GetByIdAsync(item.ProductId, subscriberId, ct);
             if (p is null || !p.IsActive)
                 return Result<Guid>.Failure($"Producto {item.ProductId} no existe o no está activo.");
             productos[item.ProductId] = p;
@@ -98,7 +98,7 @@ public sealed class CrearSalesNoteCommandHandler
 
                 if (producto.AppliesVatOnSale && producto.SaleTaxId.HasValue)
                 {
-                    var taxRate = await _taxRateRepository.GetByIdAsync(producto.SaleTaxId.Value, tenantId, ct);
+                    var taxRate = await _taxRateRepository.GetByIdAsync(producto.SaleTaxId.Value, subscriberId, ct);
                     if (taxRate is not null)
                     {
                         vatPct       = taxRate.Percentage;
@@ -108,13 +108,13 @@ public sealed class CrearSalesNoteCommandHandler
                 }
 
                 var det = SalesNoteLine.Create(
-                    tenantId, item.ProductId, producto.SaleCode, item.Quantity, item.UnitPrice,
+                    subscriberId, item.ProductId, producto.SaleCode, item.Quantity, item.UnitPrice,
                     vatCode, vatPct, impuestoItem, producto.Description, userId);
                 detalles.Add(det);
             }
 
             var nota = SalesNote.Create(
-                tenantId,
+                subscriberId,
                 factura.Id,
                 command.NoteType,
                 command.Reason,
@@ -135,7 +135,7 @@ public sealed class CrearSalesNoteCommandHandler
             await _ventasRepository.AddNoteAsync(nota, ct);
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "ventas", action: "ventas.nota.crear",
                 entityType: "SalesNote", entityId: nota.Id,
                 description: $"{nota.NoteType} {nota.EstabCode}-{nota.EmPointCode}-{nota.Sequential}"), ct);

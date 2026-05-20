@@ -8,12 +8,12 @@ namespace ERP.Application.Modules.Accounting.UseCases.GetAccounts;
 public class GetAccountsHandler : IRequestHandler<GetAccountsQuery, Result<PagedResult<AccountDto>>>
 {
     private readonly IAccountingRepository _repository;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
-    public GetAccountsHandler(IAccountingRepository repository, ICurrentTenant currentTenant)
+    public GetAccountsHandler(IAccountingRepository repository, ICurrentSubscriber currentSubscriber)
     {
         _repository    = repository;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public Task<Result<PagedResult<AccountDto>>> HandleAsync(int pageNumber, int pageSize, CancellationToken ct = default)
@@ -21,9 +21,9 @@ public class GetAccountsHandler : IRequestHandler<GetAccountsQuery, Result<Paged
 
     public async Task<Result<PagedResult<AccountDto>>> Handle(GetAccountsQuery request, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var (accounts, totalCount) = await _repository.GetAccountsPageAsync(
-            tenantId,
+            subscriberId,
             request.PageNumber,
             request.PageSize,
             ct);

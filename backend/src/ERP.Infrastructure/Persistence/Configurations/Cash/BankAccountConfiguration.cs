@@ -12,7 +12,7 @@ public sealed class BankAccountConfiguration : IEntityTypeConfiguration<BankAcco
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(BankAccount.NameMaxLen).IsRequired();
         builder.Property(x => x.AccountNumber).HasColumnName("account_number").HasMaxLength(BankAccount.AccountNumberMaxLen).IsRequired();
         builder.Property(x => x.AccountType).HasColumnName("account_type").HasMaxLength(BankAccount.AccountTypeMaxLen).IsRequired();
@@ -26,9 +26,9 @@ public sealed class BankAccountConfiguration : IEntityTypeConfiguration<BankAcco
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => new { x.TenantId, x.AccountNumber })
+        builder.HasIndex(x => new { x.SubscriberId, x.AccountNumber })
             .IsUnique()
-            .HasDatabaseName("uq_bank_account_tenant_number");
+            .HasDatabaseName("uq_bank_account_subscriber_number");
 
         builder.HasOne<ERP.Domain.Modules.Accounting.Entities.Account>()
             .WithMany()

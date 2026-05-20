@@ -1,11 +1,11 @@
 using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Tenants.DTOs;
+using ERP.Application.Subscribers.DTOs;
 
-namespace ERP.Application.Tenants.UseCases.UpdateTenantSubscription;
+namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberSubscription;
 
-public sealed record UpdateTenantSubscriptionCommand(
-    Guid TenantId,
+public sealed record UpdateSubscriberSubscriptionCommand(
+    Guid SubscriberId,
     string? PlanCode,
     IReadOnlyList<string>? EnabledModules
-) : IRequest<Result<TenantDto>>;
+) : IRequest<Result<SubscriberDto>>;

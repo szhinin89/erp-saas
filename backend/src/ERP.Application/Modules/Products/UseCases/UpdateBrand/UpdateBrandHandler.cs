@@ -11,32 +11,32 @@ public class UpdateBrandHandler : IRequestHandler<UpdateBrandCommand, Result<Bra
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public UpdateBrandHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
         _activity = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
     public async Task<Result<BrandDto>> Handle(UpdateBrandCommand command, CancellationToken ct)
     {
         var entity = await _repo.GetBrandByIdAsync(command.BrandId, ct);
-        if (entity is null || entity.TenantId != _currentTenant.TenantId)
+        if (entity is null || entity.SubscriberId != _currentSubscriber.SubscriberId)
             return Result<BrandDto>.Failure("Brand not found.");
 
         var userId = _currentUser.UserId;
         entity.Update(command.Code, command.Name, userId, command.Manufacturer, command.CountryOfOrigin);
 
         await _activity.AddAsync(UserActivity.Create(
-            _currentTenant.TenantId,
+            _currentSubscriber.SubscriberId,
             userId,
             _currentUser.Email,
             _currentUser.FullName,

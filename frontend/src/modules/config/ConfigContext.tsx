@@ -11,7 +11,7 @@ import type {
 } from './types';
 
 type ConfigState = {
-  tenantId: string | null;
+  subscriberId: string | null;
   status: ConfigLoadStatus;
   error: string | null;
   entries: ConfigEntry[];
@@ -21,15 +21,15 @@ type ConfigState = {
 };
 
 type ConfigAction =
-  | { type: 'load_start'; tenantId: string }
-  | { type: 'load_success'; tenantId: string; entries: ConfigEntry[] }
-  | { type: 'load_error'; tenantId: string; error: string }
+  | { type: 'load_start'; subscriberId: string }
+  | { type: 'load_success'; subscriberId: string; entries: ConfigEntry[] }
+  | { type: 'load_error'; subscriberId: string; error: string }
   | { type: 'upsert_entry'; entry: ConfigEntry }
   | { type: 'delete_entry'; scope: ConfigScope; key: string; module?: string | null; feature?: string | null }
   | { type: 'clear' };
 
 const initialState: ConfigState = {
-  tenantId: null,
+  subscriberId: null,
   status: 'idle',
   error: null,
   entries: [],
@@ -79,12 +79,12 @@ function indexEntries(entries: ConfigEntry[]) {
 function configReducer(state: ConfigState, action: ConfigAction): ConfigState {
   switch (action.type) {
     case 'load_start':
-      return { ...state, tenantId: action.tenantId, status: 'loading', error: null };
+      return { ...state, subscriberId: action.subscriberId, status: 'loading', error: null };
     case 'load_success': {
       const entries = action.entries;
       const indexed = indexEntries(entries);
       return {
-        tenantId: action.tenantId,
+        subscriberId: action.subscriberId,
         status: 'ready',
         error: null,
         entries,
@@ -92,7 +92,7 @@ function configReducer(state: ConfigState, action: ConfigAction): ConfigState {
       };
     }
     case 'load_error':
-      return { ...state, tenantId: action.tenantId, status: 'error', error: action.error };
+      return { ...state, subscriberId: action.subscriberId, status: 'error', error: action.error };
     case 'upsert_entry': {
       const nextEntries = [...state.entries];
       const keyNorm = normalizeKey(action.entry.key);
@@ -162,7 +162,7 @@ function parseByDataType(rawValue: string, dataType: string): unknown {
 type ConfigContextValue = {
   status: ConfigLoadStatus;
   error: string | null;
-  tenantId: string | null;
+  subscriberId: string | null;
   entries: ConfigEntry[];
   refresh: () => Promise<void>;
   getResolved: <T = unknown>(key: string, module?: string | null, feature?: string | null) => ConfigResolvedValue<T> | null;
@@ -178,13 +178,13 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(configReducer, initialState);
   const inFlightRef = useRef<Promise<void> | null>(null);
 
-  const tenantId = (user?.tenantId ?? '').trim();
+  const subscriberId = (user?.subscriberId ?? '').trim();
   const role = (user?.role ?? '').trim().toLowerCase();
   const canReadConfig = role === 'superadmin';
   const shouldLoad =
     canReadConfig &&
-    tenantId.length > 0 &&
-    tenantId !== '00000000-0000-0000-0000-000000000000';
+    subscriberId.length > 0 &&
+    subscriberId !== '00000000-0000-0000-0000-000000000000';
 
   const loadTenantConfig = useCallback(async () => {
     if (!shouldLoad) {
@@ -198,13 +198,13 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     }
 
     const task = (async () => {
-      dispatch({ type: 'load_start', tenantId });
+      dispatch({ type: 'load_start', subscriberId });
       try {
-        const entries = await configService.loadTenantConfig(tenantId);
-        dispatch({ type: 'load_success', tenantId, entries });
+        const entries = await configService.loadTenantConfig(subscriberId);
+        dispatch({ type: 'load_success', subscriberId, entries });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'No se pudo cargar configuración del tenant.';
-        dispatch({ type: 'load_error', tenantId, error: message });
+        dispatch({ type: 'load_error', subscriberId, error: message });
       }
     })();
 
@@ -214,7 +214,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     } finally {
       inFlightRef.current = null;
     }
-  }, [shouldLoad, tenantId]);
+  }, [shouldLoad, subscriberId]);
 
   useEffect(() => {
     void loadTenantConfig();
@@ -273,17 +273,17 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
   const upsertConfig = useCallback(
     async (input: ConfigUpsertInput) => {
       if (!shouldLoad) throw new Error('No hay tenant activo para guardar configuración.');
-      const entry = await configService.upsertConfig(tenantId, input);
+      const entry = await configService.upsertConfig(subscriberId, input);
       dispatch({ type: 'upsert_entry', entry });
       return entry;
     },
-    [shouldLoad, tenantId],
+    [shouldLoad, subscriberId],
   );
 
   const deleteConfig = useCallback(
     async (input: ConfigDeleteInput) => {
       if (!shouldLoad) throw new Error('No hay tenant activo para eliminar configuración.');
-      await configService.deleteConfig(tenantId, input);
+      await configService.deleteConfig(subscriberId, input);
       dispatch({
         type: 'delete_entry',
         scope: input.scope,
@@ -292,14 +292,14 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
         feature: input.feature,
       });
     },
-    [shouldLoad, tenantId],
+    [shouldLoad, subscriberId],
   );
 
   const value = useMemo<ConfigContextValue>(
     () => ({
       status: state.status,
       error: state.error,
-      tenantId: state.tenantId,
+      subscriberId: state.subscriberId,
       entries: state.entries,
       refresh: loadTenantConfig,
       getResolved,

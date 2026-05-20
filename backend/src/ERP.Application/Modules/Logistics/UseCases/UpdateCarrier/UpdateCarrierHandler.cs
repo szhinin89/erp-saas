@@ -9,24 +9,24 @@ namespace ERP.Application.Modules.Logistics.UseCases.UpdateCarrier;
 public class UpdateCarrierHandler : IRequestHandler<UpdateCarrierCommand, Result<CarrierDto>>
 {
     private readonly ICarrierRepository _repo;
-    private readonly ICurrentTenant     _currentTenant;
+    private readonly ICurrentSubscriber     _currentSubscriber;
     private readonly ICurrentUser       _currentUser;
 
-    public UpdateCarrierHandler(ICarrierRepository repo, ICurrentTenant currentTenant, ICurrentUser currentUser)
+    public UpdateCarrierHandler(ICarrierRepository repo, ICurrentSubscriber currentSubscriber, ICurrentUser currentUser)
     {
         _repo          = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
     }
 
     public async Task<Result<CarrierDto>> Handle(UpdateCarrierCommand command, CancellationToken ct)
     {
         var carrier = await _repo.GetByIdAsync(command.CarrierId, ct);
-        if (carrier is null || carrier.TenantId != _currentTenant.TenantId)
+        if (carrier is null || carrier.SubscriberId != _currentSubscriber.SubscriberId)
             return Result<CarrierDto>.Failure("Carrier not found.");
 
         var duplicate = await _repo.ExistsIdentificationAsync(
-            _currentTenant.TenantId, command.IdentificationNumber, excludeId: command.CarrierId, ct);
+            _currentSubscriber.SubscriberId, command.IdentificationNumber, excludeId: command.CarrierId, ct);
         if (duplicate)
             return Result<CarrierDto>.Failure("Another carrier with this identification number already exists.");
 

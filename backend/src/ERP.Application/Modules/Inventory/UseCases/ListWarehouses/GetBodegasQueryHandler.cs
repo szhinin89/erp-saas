@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -9,9 +9,9 @@ public sealed class GetWarehousesQueryHandler
     : IRequestHandler<GetWarehousesQuery, Result<IReadOnlyList<WarehouseDto>>>
 {
     private readonly IWarehouseRepository _repo;
-    private readonly ICurrentTenant    _tenant;
+    private readonly ICurrentSubscriber    _tenant;
 
-    public GetWarehousesQueryHandler(IWarehouseRepository repo, ICurrentTenant tenant)
+    public GetWarehousesQueryHandler(IWarehouseRepository repo, ICurrentSubscriber tenant)
     {
         _repo   = repo;
         _tenant = tenant;
@@ -21,7 +21,7 @@ public sealed class GetWarehousesQueryHandler
         GetWarehousesQuery query, CancellationToken ct)
     {
         var list = await _repo.GetAsync(
-            _tenant.TenantId, query.ActiveFilter, query.Search, query.BranchId, ct);
+            _tenant.SubscriberId, query.ActiveFilter, query.Search, query.BranchId, ct);
 
         var dtos = list.Select(b => new WarehouseDto(
             b.Id, b.BranchId, b.Name, b.Code, b.StorageType,

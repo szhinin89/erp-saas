@@ -9,14 +9,14 @@ using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Subscriptions;
 using ERP.Domain.Subscriptions.Entities;
-using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Subscribers.Entities;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Extensions;
 
 /// <summary>
-/// Seed opcional de desarrollo: tenant-demo + admin identity + datos mÃ­nimos contables.
-/// <b>No se ejecuta por defecto.</b> ActÃ­valo con <c>Development:SeedDemoTenant = true</c> en appsettings.Development.json.
+/// Seed opcional de desarrollo: subscriber-demo + admin identity + datos mÃ­nimos contables.
+/// <b>No se ejecuta por defecto.</b> ActÃ­valo con <c>Development:SeedDemoSubscriber = true</c> en appsettings.Development.json.
 /// </summary>
 internal static class DevDatabaseSeeder
 {
@@ -38,11 +38,12 @@ internal static class DevDatabaseSeeder
         var db             = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var platform       = scope.ServiceProvider.GetRequiredService<IPlatformQueryAccessor>();
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-        var onboarding     = scope.ServiceProvider.GetRequiredService<ITenantOnboardingService>();
+        var onboarding     = scope.ServiceProvider.GetRequiredService<ISubscriberOnboardingService>();
+        var companyProvisioning = scope.ServiceProvider.GetRequiredService<ICompanyProvisioningService>();
 
         const string adminEmail = "admin@erp.com";
         const string adminPassword = "Admin123!";
-        const string tenantSlug = "tenant-demo";
+        const string subscriberSlug = "subscriber-demo";
 
         var existingAdmins = await platform
             .Unfiltered(db.IdentityUsers, PlatformQueryReason.DevOnly)
@@ -51,17 +52,34 @@ internal static class DevDatabaseSeeder
             .FirstOrDefault(u => string.Equals(u.Email.Value, adminEmail, StringComparison.OrdinalIgnoreCase));
 
         var tenant = await platform
-            .Unfiltered(db.Tenants, PlatformQueryReason.DevOnly)
-            .FirstOrDefaultAsync(t => t.Slug == tenantSlug, ct);
+            .Unfiltered(db.Subscribers, PlatformQueryReason.DevOnly)
+            .FirstOrDefaultAsync(t => t.Slug == subscriberSlug, ct);
 
         if (tenant is not null && existingAdmin is not null)
         {
             if (string.IsNullOrWhiteSpace(tenant.PlanCode))
             {
                 tenant.SetPlanCode("starter", SeederActorId);
-                await db.SaveChangesAsync(ct);
             }
 
+            // Dev: restablecer credenciales demo conocidas (p. ej. tras cambio manual de contraseña).
+            existingAdmin.SetPasswordHash(passwordHasher.HashPassword(adminPassword), SeederActorId);
+
+            var defaultCompany = await companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
+            var hasActiveMembership = await platform
+                .Unfiltered(db.CompanyUserMemberships, PlatformQueryReason.DevOnly)
+                .AnyAsync(m => m.CompanyId == defaultCompany.Id && m.IdentityUserId == existingAdmin.Id && m.IsActive, ct);
+            if (!hasActiveMembership)
+            {
+                db.CompanyUserMemberships.Add(CompanyUserMembership.Create(
+                    companyId: defaultCompany.Id,
+                    identityUserId: existingAdmin.Id,
+                    role: "Admin",
+                    profileId: null,
+                    createdBy: SeederActorId));
+            }
+
+            await db.SaveChangesAsync(ct);
             await EnsureDemoStarterEntitlementsAsync(db, platform, ct);
             return;
         }
@@ -69,14 +87,14 @@ internal static class DevDatabaseSeeder
         var tenantJustCreated = false;
         if (tenant is null)
         {
-            tenant = Tenant.Create(
-                name: "Tenant Demo",
-                slug: tenantSlug,
+            tenant = Subscriber.Create(
+                name: "Subscriber Demo",
+                slug: subscriberSlug,
                 createdBy: SeederActorId,
                 passwordResetMode: PasswordResetMode.Direct,
                 planCode: "starter");
 
-            db.Tenants.Add(tenant);
+            db.Subscribers.Add(tenant);
             await db.SaveChangesAsync(ct);
             tenantJustCreated = true;
         }
@@ -94,13 +112,14 @@ internal static class DevDatabaseSeeder
             await db.SaveChangesAsync(ct);
         }
 
-        var hasMembership = await platform
-            .Unfiltered(db.Memberships, PlatformQueryReason.DevOnly)
-            .AnyAsync(m => m.TenantId == tenant.Id && m.IdentityUserId == admin.Id && m.IsActive, ct);
-        if (!hasMembership)
+        var defaultCompanyForSeed = await companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
+        var hasCompanyUserMembership = await platform
+            .Unfiltered(db.CompanyUserMemberships, PlatformQueryReason.DevOnly)
+            .AnyAsync(m => m.CompanyId == defaultCompanyForSeed.Id && m.IdentityUserId == admin.Id && m.IsActive, ct);
+        if (!hasCompanyUserMembership)
         {
-            db.Memberships.Add(Membership.Create(
-                tenantId: tenant.Id,
+            db.CompanyUserMemberships.Add(CompanyUserMembership.Create(
+                companyId: defaultCompanyForSeed.Id,
                 identityUserId: admin.Id,
                 role: "Admin",
                 profileId: null,
@@ -115,7 +134,7 @@ internal static class DevDatabaseSeeder
         }
 
         var branch = Branch.Create(
-            tenantId:        tenant.Id,
+            subscriberId:        tenant.Id,
             name:            "Sucursal Principal",
             address:         "Dirección Principal",
             code:            "SUC-SEED-001",
@@ -139,7 +158,7 @@ internal static class DevDatabaseSeeder
         await db.SaveChangesAsync(ct);
 
         db.Warehouses.Add(Warehouse.Create(
-            tenantId:          tenant.Id,
+            subscriberId:          tenant.Id,
             branchId:          branch.Id,
             name:              "Warehouse Principal",
             code:              "WH-SEED-001",
@@ -178,45 +197,45 @@ internal static class DevDatabaseSeeder
         IPlatformQueryAccessor platform,
         CancellationToken ct)
     {
-        const string tenantSlug = "tenant-demo";
-        var plan = await db.SaasPlans.FirstOrDefaultAsync(p => p.Code == "starter", ct);
+        const string subscriberSlug = "subscriber-demo";
+        var plan = await db.CommercialPlans.FirstOrDefaultAsync(p => p.Code == "starter", ct);
         if (plan is null)
             return;
 
         var tenant = await platform
-            .Unfiltered(db.Tenants, PlatformQueryReason.DevOnly)
-            .FirstOrDefaultAsync(t => t.Slug == tenantSlug, ct);
+            .Unfiltered(db.Subscribers, PlatformQueryReason.DevOnly)
+            .FirstOrDefaultAsync(t => t.Slug == subscriberSlug, ct);
         if (tenant is not null)
         {
             var subscription = await platform
-                .Unfiltered(db.TenantSaasSubscriptions, PlatformQueryReason.DevOnly)
-                .FirstOrDefaultAsync(s => s.TenantId == tenant.Id, ct);
+                .Unfiltered(db.SubscriberSubscriptions, PlatformQueryReason.DevOnly)
+                .FirstOrDefaultAsync(s => s.SubscriberId == tenant.Id, ct);
             if (subscription is null)
             {
-                db.TenantSaasSubscriptions.Add(
-                    TenantSaasSubscription.Create(tenant.Id, plan.Id, SeederActorId));
+                db.SubscriberSubscriptions.Add(
+                    SubscriberSubscription.Create(tenant.Id, plan.Id, SeederActorId));
                 await db.SaveChangesAsync(ct);
             }
         }
 
         foreach (var (code, resourceRef) in DemoStarterModules)
         {
-            var feature = await db.SaasFeatureDefinitions
+            var feature = await db.PlatformFeatures
                 .FirstOrDefaultAsync(f => f.Code == code, ct);
             if (feature is null)
             {
-                feature = SaasFeatureDefinition.Create(
-                    code, code, null, isMetered: false, SaasFeatureKind.Module, resourceRef);
-                db.SaasFeatureDefinitions.Add(feature);
+                feature = PlatformFeature.Create(
+                    code, code, null, isMetered: false, PlatformFeatureKind.Module, resourceRef);
+                db.PlatformFeatures.Add(feature);
                 await db.SaveChangesAsync(ct);
             }
 
-            var linked = await db.SaasPlanFeatures
+            var linked = await db.CommercialPlanFeatures
                 .AnyAsync(pf => pf.PlanId == plan.Id && pf.FeatureId == feature.Id, ct);
             if (!linked)
             {
-                db.SaasPlanFeatures.Add(
-                    SaasPlanFeature.Create(plan.Id, feature.Id, isIncluded: true, limitPerPeriod: null));
+                db.CommercialPlanFeatures.Add(
+                    CommercialPlanFeature.Create(plan.Id, feature.Id, isIncluded: true, limitPerPeriod: null));
             }
         }
 
@@ -230,7 +249,7 @@ internal static class DevDatabaseSeeder
     public static async Task SeedDefaultProfilesAsync(
         ErpDbContext db,
         IPlatformQueryAccessor platform,
-        Guid tenantId,
+        Guid subscriberId,
         CancellationToken ct = default)
     {
         var profiles = new[]
@@ -244,12 +263,12 @@ internal static class DevDatabaseSeeder
         {
             var existing = await platform
                 .Unfiltered(db.AccessProfiles, PlatformQueryReason.DevOnly)
-                .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.Name == name, ct);
+                .FirstOrDefaultAsync(p => p.SubscriberId == subscriberId && p.Name == name, ct);
 
             if (existing is not null) continue;
 
             var profile = AccessProfile.Create(
-                tenantId:    tenantId,
+                subscriberId:    subscriberId,
                 name:        name,
                 description: description,
                 createdBy:   SeederActorId);
@@ -259,7 +278,7 @@ internal static class DevDatabaseSeeder
 
             var permissions = permKeys.Select(key =>
                 AccessProfilePermission.Create(
-                    tenantId:      tenantId,
+                    subscriberId:      subscriberId,
                     profileId:     profile.Id,
                     permissionKey: key,
                     isAllowed:     true,

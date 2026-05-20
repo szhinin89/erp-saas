@@ -52,9 +52,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("name");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -66,9 +66,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Name")
+                    b.HasIndex("SubscriberId", "Name")
                         .IsUnique()
-                        .HasDatabaseName("ux_access_profiles_tenant_name");
+                        .HasDatabaseName("ux_access_profiles_subscriber_name");
 
                     b.ToTable("access_profiles", (string)null);
                 });
@@ -102,9 +102,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("profile_id");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -116,14 +116,68 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "PermissionKey")
-                        .HasDatabaseName("ix_access_profile_permissions_tenant_key");
+                    b.HasIndex("SubscriberId", "PermissionKey")
+                        .HasDatabaseName("ix_access_profile_permissions_subscriber_key");
 
-                    b.HasIndex("TenantId", "ProfileId", "PermissionKey")
+                    b.HasIndex("SubscriberId", "ProfileId", "PermissionKey")
                         .IsUnique()
-                        .HasDatabaseName("ux_access_profile_permissions_tenant_profile_key");
+                        .HasDatabaseName("ux_access_profile_permissions_subscriber_profile_key");
 
                     b.ToTable("access_profile_permissions", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Access.Entities.CompanyUserMembership", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("IdentityUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("identity_user_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<Guid?>("ProfileId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("profile_id");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("role");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompanyId", "IdentityUserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_company_user_memberships_company_identity_user");
+
+                    b.ToTable("company_user_memberships", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Access.Entities.IdentityUser", b =>
@@ -185,60 +239,6 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("identity_users", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Access.Entities.Membership", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<Guid>("IdentityUserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("identity_user_id");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<Guid?>("ProfileId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("profile_id");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("role");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "IdentityUserId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_memberships_tenant_identity_user");
-
-                    b.ToTable("memberships", (string)null);
-                });
-
             modelBuilder.Entity("ERP.Domain.Audit.Entities.UserActivity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -276,9 +276,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("module");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<string>("UserEmail")
                         .HasMaxLength(254)
@@ -296,14 +296,14 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Module", "CreatedAt")
-                        .HasDatabaseName("ix_user_activity_tenant_module_created_at");
+                    b.HasIndex("SubscriberId", "Module", "CreatedAt")
+                        .HasDatabaseName("ix_user_activity_subscriber_module_created_at");
 
-                    b.HasIndex("TenantId", "UserId", "CreatedAt")
-                        .HasDatabaseName("ix_user_activity_tenant_user_created_at");
+                    b.HasIndex("SubscriberId", "UserId", "CreatedAt")
+                        .HasDatabaseName("ix_user_activity_subscriber_user_created_at");
 
-                    b.HasIndex("TenantId", "EntityType", "EntityId", "CreatedAt")
-                        .HasDatabaseName("ix_user_activity_tenant_entity_created_at");
+                    b.HasIndex("SubscriberId", "EntityType", "EntityId", "CreatedAt")
+                        .HasDatabaseName("ix_user_activity_subscriber_entity_created_at");
 
                     b.ToTable("user_activity", (string)null);
                 });
@@ -368,9 +368,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
-                    b.Property<Guid?>("TenantId")
+                    b.Property<Guid?>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<string>("TokenHash")
                         .IsRequired()
@@ -398,7 +398,7 @@ namespace ERP.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_password_reset_tokens_hash");
 
-                    b.HasIndex("UserId", "UserKind", "TenantId")
+                    b.HasIndex("UserId", "UserKind", "SubscriberId")
                         .HasDatabaseName("ix_password_reset_tokens_user");
 
                     b.ToTable("password_reset_tokens", (string)null);
@@ -410,6 +410,10 @@ namespace ERP.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -437,9 +441,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("revoked_at");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<string>("TokenHash")
                         .IsRequired()
@@ -466,8 +470,8 @@ namespace ERP.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_refresh_tokens_hash");
 
-                    b.HasIndex("UserId", "TenantId")
-                        .HasDatabaseName("ix_refresh_tokens_user_tenant");
+                    b.HasIndex("UserId", "SubscriberId")
+                        .HasDatabaseName("ix_refresh_tokens_user_subscriber");
 
                     b.ToTable("refresh_tokens", (string)null);
                 });
@@ -520,9 +524,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("role");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -534,11 +538,442 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Email")
+                    b.HasIndex("SubscriberId", "Email")
                         .IsUnique()
-                        .HasDatabaseName("ix_users_tenant_email");
+                        .HasDatabaseName("ix_users_subscriber_email");
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Billing.Entities.BillingEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("actor_user_id");
+
+                    b.Property<string>("CorrelationId")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("correlation_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("event_type");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc");
+
+                    b.Property<string>("PayloadJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("payload_json");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer")
+                        .HasColumnName("source");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_saas_billing_events_subscriber_occurred");
+
+                    b.ToTable("saas_billing_events", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Billing.Entities.PaymentProviderCustomer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("ExternalCustomerId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("external_customer_id");
+
+                    b.Property<string>("ExternalMetadataJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("external_metadata_json");
+
+                    b.Property<int>("ProviderType")
+                        .HasColumnType("integer")
+                        .HasColumnName("provider_type");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime>("SyncedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("synced_at_utc");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId", "ProviderType")
+                        .IsUnique()
+                        .HasDatabaseName("ux_payment_provider_customers_sub_provider");
+
+                    b.ToTable("payment_provider_customers", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Billing.Entities.PaymentProviderSubscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<bool>("CancelAtPeriodEnd")
+                        .HasColumnType("boolean")
+                        .HasColumnName("cancel_at_period_end");
+
+                    b.Property<Guid?>("CommercialPlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("commercial_plan_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("CurrentPeriodEndUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("current_period_end_utc");
+
+                    b.Property<DateTime?>("CurrentPeriodStartUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("current_period_start_utc");
+
+                    b.Property<string>("ExternalStatus")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("external_status");
+
+                    b.Property<string>("ExternalSubscriptionId")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("external_subscription_id");
+
+                    b.Property<int>("ProviderType")
+                        .HasColumnType("integer")
+                        .HasColumnName("provider_type");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime>("SyncedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("synced_at_utc");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId", "ProviderType")
+                        .IsUnique()
+                        .HasDatabaseName("ux_payment_provider_subscriptions_sub_provider");
+
+                    b.ToTable("payment_provider_subscriptions", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Billing.Entities.SaasBillingInvoice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<DateTime?>("DueAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("due_at_utc");
+
+                    b.Property<string>("ExternalInvoiceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("external_invoice_id");
+
+                    b.Property<string>("InvoiceNumber")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("invoice_number");
+
+                    b.Property<DateTime?>("IssuedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("issued_at_utc");
+
+                    b.Property<DateTime?>("PaidAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paid_at_utc");
+
+                    b.Property<DateTime>("PeriodEndUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("period_end_utc");
+
+                    b.Property<DateTime>("PeriodStartUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("period_start_utc");
+
+                    b.Property<int>("ProviderType")
+                        .HasColumnType("integer")
+                        .HasColumnName("provider_type");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<decimal>("Subtotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("subtotal");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("tax_amount");
+
+                    b.Property<decimal>("Total")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId", "InvoiceNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_saas_billing_invoices_subscriber_number");
+
+                    b.ToTable("saas_billing_invoices", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Billing.Entities.SaasBillingInvoiceLine", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("BillingInvoiceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("billing_invoice_id");
+
+                    b.Property<Guid?>("CommercialPlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("commercial_plan_id");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("description");
+
+                    b.Property<decimal>("LineTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("line_total");
+
+                    b.Property<int>("LineType")
+                        .HasColumnType("integer")
+                        .HasColumnName("line_type");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("quantity");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<decimal>("UnitAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("unit_amount");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BillingInvoiceId")
+                        .HasDatabaseName("ix_saas_billing_invoice_lines_invoice");
+
+                    b.ToTable("saas_billing_invoice_lines", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Billing.Entities.SubscriberBillingAccount", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BillingEmail")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("billing_email");
+
+                    b.Property<string>("CountryCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("country_code");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency_code");
+
+                    b.Property<DateTime?>("CurrentPeriodEndUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("current_period_end_utc");
+
+                    b.Property<string>("DefaultPaymentMethodRef")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("default_payment_method_ref");
+
+                    b.Property<string>("ExternalCustomerId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("external_customer_id");
+
+                    b.Property<DateTime?>("GracePeriodEndsAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("grace_period_ends_at_utc");
+
+                    b.Property<int>("PrimaryProvider")
+                        .HasColumnType("integer")
+                        .HasColumnName("primary_provider");
+
+                    b.Property<int>("RenewalState")
+                        .HasColumnType("integer")
+                        .HasColumnName("renewal_state");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<string>("TaxProfileJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("tax_profile_json");
+
+                    b.Property<DateTime?>("TrialEndsAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("trial_ends_at_utc");
+
+                    b.Property<int>("TrialState")
+                        .HasColumnType("integer")
+                        .HasColumnName("trial_state");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_subscriber_billing_accounts_subscriber");
+
+                    b.ToTable("subscriber_billing_accounts", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Branches.Entities.Branch", b =>
@@ -649,9 +1084,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("decimal(12,2)")
                         .HasColumnName("storage_capacity");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -671,8 +1106,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("ProvinceId");
 
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_branches_tenant_id");
+                    b.HasIndex("SubscriberId")
+                        .HasDatabaseName("ix_branches_subscriber_id");
 
                     b.ToTable("branches", (string)null);
                 });
@@ -744,9 +1179,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("special_taxpayer");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<string>("TradeName")
                         .IsRequired()
@@ -764,9 +1199,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId")
+                    b.HasIndex("SubscriberId")
                         .IsUnique()
-                        .HasDatabaseName("uq_billing_settings_tenant");
+                        .HasDatabaseName("uq_billing_settings_subscriber");
 
                     b.ToTable("billing_settings", (string)null);
                 });
@@ -804,9 +1239,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("key");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -824,9 +1259,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Feature", "Key")
+                    b.HasIndex("SubscriberId", "Feature", "Key")
                         .IsUnique()
-                        .HasDatabaseName("ux_config_feature_tenant_feature_key");
+                        .HasDatabaseName("ux_config_feature_subscriber_feature_key");
 
                     b.ToTable("config_feature", (string)null);
                 });
@@ -858,9 +1293,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("key");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -878,9 +1313,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Key")
+                    b.HasIndex("SubscriberId", "Key")
                         .IsUnique()
-                        .HasDatabaseName("ux_config_global_tenant_key");
+                        .HasDatabaseName("ux_config_global_subscriber_key");
 
                     b.ToTable("config_global", (string)null);
                 });
@@ -918,9 +1353,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("module");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -938,9 +1373,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Module", "Key")
+                    b.HasIndex("SubscriberId", "Module", "Key")
                         .IsUnique()
-                        .HasDatabaseName("ux_config_module_tenant_module_key");
+                        .HasDatabaseName("ux_config_module_subscriber_module_key");
 
                     b.ToTable("config_module", (string)null);
                 });
@@ -981,15 +1416,15 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("subject_type");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<string>("TaxType")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("tax_type");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1001,19 +1436,19 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "TaxType", "SubjectType", "SriCode")
+                    b.HasIndex("SubscriberId", "TaxType", "SubjectType", "SriCode")
                         .IsUnique()
-                        .HasDatabaseName("uq_retention_settings_tenant_tax_subject_code");
+                        .HasDatabaseName("uq_retention_settings_subscriber_tax_subject_code");
 
                     b.ToTable("retention_settings", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Configuration.Entities.SriSettings", b =>
                 {
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<string>("CertP12Path")
                         .IsRequired()
@@ -1108,7 +1543,7 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("wsdl_url");
 
-                    b.HasKey("TenantId");
+                    b.HasKey("SubscriberId");
 
                     b.HasIndex("Ruc")
                         .IsUnique()
@@ -1242,9 +1677,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("parent_id");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -1261,9 +1696,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Code")
+                    b.HasIndex("SubscriberId", "Code")
                         .IsUnique()
-                        .HasDatabaseName("ix_accounts_tenant_code");
+                        .HasDatabaseName("ix_accounts_subscriber_code");
 
                     b.ToTable("accounts", (string)null);
                 });
@@ -1307,13 +1742,13 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("sales_account_id");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<Guid?>("SuppliersAccountId")
                         .HasColumnType("uuid")
                         .HasColumnName("suppliers_account_id");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1345,11 +1780,11 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("SalesAccountId");
 
-                    b.HasIndex("SuppliersAccountId");
-
-                    b.HasIndex("TenantId")
+                    b.HasIndex("SubscriberId")
                         .IsUnique()
-                        .HasDatabaseName("uq_accounting_setup_tenant");
+                        .HasDatabaseName("uq_accounting_setup_subscriber");
+
+                    b.HasIndex("SuppliersAccountId");
 
                     b.HasIndex("VatPurchasesAccountId");
 
@@ -1383,9 +1818,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("expense_account_id");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1399,9 +1834,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("ExpenseAccountId");
 
-                    b.HasIndex("TenantId", "Category")
+                    b.HasIndex("SubscriberId", "Category")
                         .IsUnique()
-                        .HasDatabaseName("uq_expense_category_tenant_cat");
+                        .HasDatabaseName("uq_expense_category_subscriber_cat");
 
                     b.ToTable("expense_category", (string)null);
                 });
@@ -1447,9 +1882,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("is_posted");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1470,9 +1905,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Reference")
+                    b.HasIndex("SubscriberId", "Reference")
                         .IsUnique()
-                        .HasDatabaseName("ix_journal_entries_tenant_reference");
+                        .HasDatabaseName("ix_journal_entries_subscriber_reference");
 
                     b.ToTable("journal_entries", (string)null);
                 });
@@ -1492,9 +1927,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("journal_entry_id");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.HasKey("Id");
 
@@ -1765,9 +2200,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("name");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1781,9 +2216,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("LedgerAccountId");
 
-                    b.HasIndex("TenantId", "AccountNumber")
+                    b.HasIndex("SubscriberId", "AccountNumber")
                         .IsUnique()
-                        .HasDatabaseName("uq_bank_account_tenant_number");
+                        .HasDatabaseName("uq_bank_account_subscriber_number");
 
                     b.ToTable("bank_account", (string)null);
                 });
@@ -1833,9 +2268,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("period_to");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -1849,8 +2284,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("BankAccountId");
 
-                    b.HasIndex("TenantId", "BankAccountId", "PeriodFrom", "PeriodTo")
-                        .HasDatabaseName("ix_bank_statement_tenant_account_period");
+                    b.HasIndex("SubscriberId", "BankAccountId", "PeriodFrom", "PeriodTo")
+                        .HasDatabaseName("ix_bank_statement_subscriber_account_period");
 
                     b.ToTable("bank_statement", (string)null);
                 });
@@ -1893,9 +2328,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime>("TransactionDate")
                         .HasColumnType("timestamp with time zone")
@@ -1913,8 +2348,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("JournalEntryId");
 
-                    b.HasIndex("TenantId", "BankStatementId", "TransactionDate")
-                        .HasDatabaseName("ix_bank_transaction_tenant_statement_date");
+                    b.HasIndex("SubscriberId", "BankStatementId", "TransactionDate")
+                        .HasDatabaseName("ix_bank_transaction_subscriber_statement_date");
 
                     b.ToTable("bank_transaction", (string)null);
                 });
@@ -1962,9 +2397,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("physical_cash");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2024,9 +2459,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("replenish_bank_account_id");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2042,9 +2477,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("ReplenishBankAccountId");
 
-                    b.HasIndex("TenantId", "Name")
+                    b.HasIndex("SubscriberId", "Name")
                         .IsUnique()
-                        .HasDatabaseName("uq_petty_cash_tenant_name");
+                        .HasDatabaseName("uq_petty_cash_subscriber_name");
 
                     b.ToTable("petty_cash", (string)null);
                 });
@@ -2087,9 +2522,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("petty_cash_id");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2128,6 +2563,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
+                    b.Property<string>("BrandingJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("branding_json");
+
                     b.Property<string>("CountryCode")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -2141,6 +2580,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("NOW()");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasDefaultValue("USD")
+                        .HasColumnName("currency_code");
 
                     b.Property<string>("Email")
                         .HasMaxLength(120)
@@ -2192,6 +2639,11 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("logo_base64");
 
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("logo_url");
+
                     b.Property<string>("MainAddress")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -2221,14 +2673,22 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("special_taxpayer_no");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<string>("TaxRegimeCode")
                         .HasMaxLength(5)
                         .HasColumnType("character varying(5)")
                         .HasColumnName("tax_regime_code");
 
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                    b.Property<string>("Timezone")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasDefaultValue("America/Guayaquil")
+                        .HasColumnName("timezone");
 
                     b.Property<string>("TradeName")
                         .HasMaxLength(200)
@@ -2290,11 +2750,10 @@ namespace ERP.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("uq_company_ruc");
 
-                    b.HasIndex("TaxRegimeCode");
+                    b.HasIndex("SubscriberId")
+                        .HasDatabaseName("ix_company_subscriber_id");
 
-                    b.HasIndex("TenantId")
-                        .IsUnique()
-                        .HasDatabaseName("uq_company_tenant");
+                    b.HasIndex("TaxRegimeCode");
 
                     b.ToTable("company", (string)null);
                 });
@@ -3755,6 +4214,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -3768,10 +4231,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("tax_total");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -3890,6 +4349,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -3903,10 +4366,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("tax_total");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -3941,19 +4400,19 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "AccessKey")
+                    b.HasIndex("SubscriberId", "AccessKey")
                         .IsUnique()
                         .HasDatabaseName("uq_expense_invoice_access_key")
                         .HasFilter("access_key IS NOT NULL");
 
-                    b.HasIndex("TenantId", "Category")
-                        .HasDatabaseName("ix_expense_invoice_tenant_category");
+                    b.HasIndex("SubscriberId", "Category")
+                        .HasDatabaseName("ix_expense_invoice_subscriber_category");
 
-                    b.HasIndex("TenantId", "IssueDate")
-                        .HasDatabaseName("ix_expense_invoice_tenant_date");
+                    b.HasIndex("SubscriberId", "IssueDate")
+                        .HasDatabaseName("ix_expense_invoice_subscriber_date");
 
-                    b.HasIndex("TenantId", "Status")
-                        .HasDatabaseName("ix_expense_invoice_tenant_status");
+                    b.HasIndex("SubscriberId", "Status")
+                        .HasDatabaseName("ix_expense_invoice_subscriber_status");
 
                     b.ToTable("expense_invoice", (string)null);
                 });
@@ -3964,6 +4423,10 @@ namespace ERP.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -3991,9 +4454,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,6)")
                         .HasColumnName("reserved_quantity");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<decimal>("TotalStockValue")
                         .HasPrecision(18, 6)
@@ -4014,9 +4477,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "ProductId", "WarehouseId")
+                    b.HasIndex("SubscriberId", "ProductId", "WarehouseId")
                         .IsUnique()
-                        .HasDatabaseName("uq_current_stock_tenant_product_warehouse");
+                        .HasDatabaseName("uq_current_stock_subscriber_product_warehouse");
 
                     b.ToTable("current_stock", (string)null);
                 });
@@ -4063,9 +4526,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<Guid>("WarehouseId")
                         .HasColumnType("uuid")
@@ -4076,8 +4539,8 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("RequestedAt")
                         .HasDatabaseName("ix_kardex_report_requested_at");
 
-                    b.HasIndex("TenantId", "Status")
-                        .HasDatabaseName("ix_kardex_report_tenant_status");
+                    b.HasIndex("SubscriberId", "Status")
+                        .HasDatabaseName("ix_kardex_report_subscriber_status");
 
                     b.ToTable("kardex_report", (string)null);
                 });
@@ -4116,9 +4579,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("date")
                         .HasColumnName("snapshot_date");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<Guid>("WarehouseId")
                         .HasColumnType("uuid")
@@ -4126,10 +4589,10 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "SnapshotDate")
-                        .HasDatabaseName("ix_kardex_snapshot_tenant_date");
+                    b.HasIndex("SubscriberId", "SnapshotDate")
+                        .HasDatabaseName("ix_kardex_snapshot_subscriber_date");
 
-                    b.HasIndex("TenantId", "ProductId", "WarehouseId", "SnapshotDate")
+                    b.HasIndex("SubscriberId", "ProductId", "WarehouseId", "SnapshotDate")
                         .IsUnique()
                         .HasDatabaseName("uq_kardex_snapshot_lookup");
 
@@ -4211,9 +4674,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -4235,15 +4698,15 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "AdjustmentNumber")
+                    b.HasIndex("SubscriberId", "AdjustmentNumber")
                         .IsUnique()
                         .HasDatabaseName("uq_stock_adjustment_number");
 
-                    b.HasIndex("TenantId", "Status")
-                        .HasDatabaseName("ix_stock_adjustment_tenant_status");
+                    b.HasIndex("SubscriberId", "Status")
+                        .HasDatabaseName("ix_stock_adjustment_subscriber_status");
 
-                    b.HasIndex("TenantId", "WarehouseId")
-                        .HasDatabaseName("ix_stock_adjustment_tenant_warehouse");
+                    b.HasIndex("SubscriberId", "WarehouseId")
+                        .HasDatabaseName("ix_stock_adjustment_subscriber_warehouse");
 
                     b.ToTable("stock_adjustment", (string)null);
                 });
@@ -4317,6 +4780,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -4364,9 +4831,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("source_doc_type");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<decimal?>("TotalCost")
                         .HasPrecision(18, 6)
@@ -4395,11 +4862,11 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("SourceDocId")
                         .HasDatabaseName("ix_stock_movement_source_doc");
 
-                    b.HasIndex("TenantId", "MovementType")
-                        .HasDatabaseName("ix_stock_movement_tenant_type");
+                    b.HasIndex("SubscriberId", "MovementType")
+                        .HasDatabaseName("ix_stock_movement_subscriber_type");
 
-                    b.HasIndex("TenantId", "ProductId", "WarehouseId")
-                        .HasDatabaseName("ix_stock_movement_tenant_product_warehouse");
+                    b.HasIndex("SubscriberId", "ProductId", "WarehouseId")
+                        .HasDatabaseName("ix_stock_movement_subscriber_product_warehouse");
 
                     b.ToTable("stock_movement", (string)null);
                 });
@@ -4451,13 +4918,13 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<Guid>("TargetWarehouseId")
                         .HasColumnType("uuid")
                         .HasColumnName("target_warehouse_id");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<DateTime>("TransferDate")
                         .HasColumnType("timestamp with time zone")
@@ -4483,10 +4950,10 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("TargetWarehouseId");
 
-                    b.HasIndex("TenantId", "Status")
-                        .HasDatabaseName("ix_stock_transfer_tenant_status");
+                    b.HasIndex("SubscriberId", "Status")
+                        .HasDatabaseName("ix_stock_transfer_subscriber_status");
 
-                    b.HasIndex("TenantId", "TransferNumber")
+                    b.HasIndex("SubscriberId", "TransferNumber")
                         .IsUnique()
                         .HasDatabaseName("uq_stock_transfer_number");
 
@@ -4527,9 +4994,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("stock_transfer_id");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -4543,8 +5010,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("StockTransferId");
 
-                    b.HasIndex("TenantId", "StockTransferId")
-                        .HasDatabaseName("ix_stock_transfer_line_tenant_transfer");
+                    b.HasIndex("SubscriberId", "StockTransferId")
+                        .HasDatabaseName("ix_stock_transfer_line_subscriber_transfer");
 
                     b.ToTable("stock_transfer_line", (string)null);
                 });
@@ -4573,6 +5040,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("code");
+
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -4630,9 +5101,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("storage_type");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -4647,9 +5118,12 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("BranchId")
                         .HasDatabaseName("ix_warehouse_establishment_id");
 
-                    b.HasIndex("TenantId", "Name")
+                    b.HasIndex("SubscriberId", "CompanyId")
+                        .HasDatabaseName("ix_warehouse_subscriber_company");
+
+                    b.HasIndex("SubscriberId", "Name")
                         .IsUnique()
-                        .HasDatabaseName("uq_warehouse_tenant_name");
+                        .HasDatabaseName("uq_warehouse_subscriber_name");
 
                     b.ToTable("warehouse", (string)null);
                 });
@@ -4707,9 +5181,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("phone");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -4721,12 +5195,12 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_carriers_tenant_id");
+                    b.HasIndex("SubscriberId")
+                        .HasDatabaseName("ix_carriers_subscriber_id");
 
-                    b.HasIndex("TenantId", "IdentificationNumber")
+                    b.HasIndex("SubscriberId", "IdentificationNumber")
                         .IsUnique()
-                        .HasDatabaseName("ux_carriers_tenant_identification");
+                        .HasDatabaseName("ux_carriers_subscriber_identification");
 
                     b.ToTable("carriers", (string)null);
                 });
@@ -5452,13 +5926,13 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid")
                         .HasColumnName("supplier_id");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("TotalRetained")
                         .HasPrecision(18, 4)
@@ -5495,7 +5969,7 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("SupplierId");
 
-                    b.HasIndex("TenantId", "EstablishmentCode", "EmissionPointCode", "Sequential")
+                    b.HasIndex("SubscriberId", "EstablishmentCode", "EmissionPointCode", "Sequential")
                         .IsUnique()
                         .HasDatabaseName("uq_issued_retention_seq");
 
@@ -5578,6 +6052,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -5586,10 +6064,6 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid")
                         .HasColumnName("supplier_id");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -5629,20 +6103,20 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "AccessKey")
+                    b.HasIndex("SubscriberId", "AccessKey")
                         .IsUnique()
                         .HasDatabaseName("uq_purch_bill_access_key")
                         .HasFilter("access_key IS NOT NULL");
 
-                    b.HasIndex("TenantId", "Status")
-                        .HasDatabaseName("ix_purch_bill_tenant_status");
+                    b.HasIndex("SubscriberId", "Status")
+                        .HasDatabaseName("ix_purch_bill_subscriber_status");
 
-                    b.HasIndex("TenantId", "SupplierId", "InvoiceNumber")
+                    b.HasIndex("SubscriberId", "SupplierId", "InvoiceNumber")
                         .IsUnique()
                         .HasDatabaseName("uq_purch_bill_supplier_invoice");
 
-                    b.HasIndex("TenantId", "SupplierId", "Status")
-                        .HasDatabaseName("ix_purch_bill_tenant_supplier_status");
+                    b.HasIndex("SubscriberId", "SupplierId", "Status")
+                        .HasDatabaseName("ix_purch_bill_subscriber_supplier_status");
 
                     b.ToTable("purch_bill", (string)null);
                 });
@@ -5690,6 +6164,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,6)")
                         .HasColumnName("quantity");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -5699,10 +6177,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("supplier_product_code");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -5737,8 +6211,8 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("PurchBillId")
                         .HasDatabaseName("ix_purch_bill_line_bill_id");
 
-                    b.HasIndex("TenantId", "ProductId")
-                        .HasDatabaseName("ix_purch_bill_line_tenant_product");
+                    b.HasIndex("SubscriberId", "ProductId")
+                        .HasDatabaseName("ix_purch_bill_line_subscriber_product");
 
                     b.ToTable("purch_bill_line", (string)null);
                 });
@@ -5825,6 +6299,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -5833,10 +6311,6 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid")
                         .HasColumnName("supplier_id");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -5871,12 +6345,12 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("SupplierId");
 
-                    b.HasIndex("TenantId", "AccessKey")
+                    b.HasIndex("SubscriberId", "AccessKey")
                         .IsUnique()
                         .HasDatabaseName("uq_purch_note_access_key");
 
-                    b.HasIndex("TenantId", "SupplierId", "Status")
-                        .HasDatabaseName("ix_purch_note_tenant_supplier_status");
+                    b.HasIndex("SubscriberId", "SupplierId", "Status")
+                        .HasDatabaseName("ix_purch_note_subscriber_supplier_status");
 
                     b.ToTable("purch_note", (string)null);
                 });
@@ -5915,6 +6389,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,6)")
                         .HasColumnName("quantity");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -5924,10 +6402,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)")
                         .HasColumnName("supplier_product_code");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -6000,6 +6474,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(9,4)")
                         .HasColumnName("retention_pct");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<string>("TaxType")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -6010,10 +6488,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("taxable_base");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -6063,9 +6537,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,6)")
                         .HasColumnName("quantity");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -6081,7 +6555,7 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "PurchBillId")
+                    b.HasIndex("SubscriberId", "PurchBillId")
                         .HasDatabaseName("ix_purch_warehouse_alloc_bill_id");
 
                     b.ToTable("purch_warehouse_alloc", (string)null);
@@ -6127,14 +6601,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("quantity");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("subtotal");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -6270,6 +6744,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -6278,10 +6756,6 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid?>("SupplierId")
                         .HasColumnType("uuid")
                         .HasColumnName("supplier_id");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -6341,9 +6815,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("company_id");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<string>("XmlPath")
                         .HasMaxLength(500)
@@ -6426,6 +6900,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -6444,10 +6922,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("tax_total");
 
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -6463,15 +6937,15 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "OrderNumber")
+                    b.HasIndex("SubscriberId", "OrderNumber")
                         .IsUnique()
                         .HasDatabaseName("uq_purchase_order_number");
 
-                    b.HasIndex("TenantId", "Status")
-                        .HasDatabaseName("ix_purchase_order_tenant_status");
+                    b.HasIndex("SubscriberId", "Status")
+                        .HasDatabaseName("ix_purchase_order_subscriber_status");
 
-                    b.HasIndex("TenantId", "SupplierId")
-                        .HasDatabaseName("ix_purchase_order_tenant_supplier");
+                    b.HasIndex("SubscriberId", "SupplierId")
+                        .HasDatabaseName("ix_purchase_order_subscriber_supplier");
 
                     b.ToTable("purchase_order", (string)null);
                 });
@@ -6507,9 +6981,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("purchase_order_id");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -6567,6 +7041,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("purchase_order_id");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -6576,10 +7054,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("tax_amount");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -6685,13 +7159,13 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid")
                         .HasColumnName("supplier_id");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("TotalRetained")
                         .HasPrecision(18, 4)
@@ -6733,9 +7207,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("SupplierId");
 
-                    b.HasIndex("TenantId", "AccessKey")
+                    b.HasIndex("SubscriberId", "AccessKey")
                         .IsUnique()
-                        .HasDatabaseName("uq_purchase_withholding_tenant_access_key");
+                        .HasDatabaseName("uq_purchase_withholding_subscriber_access_key");
 
                     b.ToTable("purchase_withholding", (string)null);
                 });
@@ -6771,6 +7245,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(9,4)")
                         .HasColumnName("retention_pct");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<string>("TaxType")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -6781,10 +7259,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("taxable_base");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -6868,14 +7342,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(13)")
                         .HasColumnName("ruc");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<string>("TaxSupportCode")
                         .HasMaxLength(5)
                         .HasColumnType("character varying(5)")
                         .HasColumnName("tax_support_code");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -6887,10 +7361,10 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_supplier_tenant_id");
+                    b.HasIndex("SubscriberId")
+                        .HasDatabaseName("ix_supplier_subscriber_id");
 
-                    b.HasIndex("TenantId", "Ruc")
+                    b.HasIndex("SubscriberId", "Ruc")
                         .IsUnique()
                         .HasDatabaseName("uq_supplier_ruc");
 
@@ -6971,9 +7445,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(40)")
                         .HasColumnName("phone");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<string>("TradeName")
                         .HasMaxLength(200)
@@ -6990,12 +7464,12 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_customers_tenant_id");
+                    b.HasIndex("SubscriberId")
+                        .HasDatabaseName("ix_customers_subscriber_id");
 
-                    b.HasIndex("TenantId", "IdentificationType", "IdentificationNumber")
+                    b.HasIndex("SubscriberId", "IdentificationType", "IdentificationNumber")
                         .IsUnique()
-                        .HasDatabaseName("ux_customers_tenant_doc");
+                        .HasDatabaseName("ux_customers_subscriber_doc");
 
                     b.ToTable("customers", (string)null);
                 });
@@ -7100,14 +7574,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("subtotal");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -7154,10 +7628,10 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("WarehouseId");
 
-                    b.HasIndex("TenantId", "IssueDate")
-                        .HasDatabaseName("ix_sales_bill_tenant_date");
+                    b.HasIndex("SubscriberId", "IssueDate")
+                        .HasDatabaseName("ix_sales_bill_subscriber_date");
 
-                    b.HasIndex("TenantId", "EstabCode", "EmPointCode", "Sequential")
+                    b.HasIndex("SubscriberId", "EstabCode", "EmPointCode", "Sequential")
                         .IsUnique()
                         .HasDatabaseName("uq_sales_bill_seq");
 
@@ -7213,14 +7687,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("sales_bill_id");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("subtotal");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -7264,8 +7738,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("SalesBillId");
 
-                    b.HasIndex("TenantId", "SalesBillId")
-                        .HasDatabaseName("ix_sales_bill_line_tenant_bill");
+                    b.HasIndex("SubscriberId", "SalesBillId")
+                        .HasDatabaseName("ix_sales_bill_line_subscriber_bill");
 
                     b.ToTable("sales_bill_line", (string)null);
                 });
@@ -7329,14 +7803,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("sort_order");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("subtotal");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -7509,14 +7983,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("subtotal");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -7558,16 +8032,16 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("WarehouseId");
 
-                    b.HasIndex("TenantId", "AccessKey")
+                    b.HasIndex("SubscriberId", "AccessKey")
                         .IsUnique()
-                        .HasDatabaseName("uq_sales_document_tenant_access_key")
+                        .HasDatabaseName("uq_sales_document_subscriber_access_key")
                         .HasFilter("access_key IS NOT NULL");
 
-                    b.HasIndex("TenantId", "CustomerId", "IssueDate")
-                        .HasDatabaseName("ix_sales_document_tenant_customer_date");
+                    b.HasIndex("SubscriberId", "CustomerId", "IssueDate")
+                        .HasDatabaseName("ix_sales_document_subscriber_customer_date");
 
-                    b.HasIndex("TenantId", "IssueDate", "Status", "DocType")
-                        .HasDatabaseName("ix_sales_document_tenant_date_status_type");
+                    b.HasIndex("SubscriberId", "IssueDate", "Status", "DocType")
+                        .HasDatabaseName("ix_sales_document_subscriber_date_status_type");
 
                     b.ToTable("sales_document", (string)null);
                 });
@@ -7650,9 +8124,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("legacy_electronic_doc_id");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<string>("XmlAuthPath")
                         .HasMaxLength(500)
@@ -7763,14 +8237,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("subtotal");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -7804,10 +8278,10 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("OriginalBillId");
 
-                    b.HasIndex("TenantId", "OriginalBillId")
-                        .HasDatabaseName("ix_sales_note_tenant_bill");
+                    b.HasIndex("SubscriberId", "OriginalBillId")
+                        .HasDatabaseName("ix_sales_note_subscriber_bill");
 
-                    b.HasIndex("TenantId", "EstabCode", "EmPointCode", "Sequential")
+                    b.HasIndex("SubscriberId", "EstabCode", "EmPointCode", "Sequential")
                         .IsUnique()
                         .HasDatabaseName("uq_sales_note_seq");
 
@@ -7856,14 +8330,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("sales_note_id");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("subtotal");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 4)
@@ -7907,8 +8381,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("SalesNoteId");
 
-                    b.HasIndex("TenantId", "SalesNoteId")
-                        .HasDatabaseName("ix_sales_note_line_tenant_note");
+                    b.HasIndex("SubscriberId", "SalesNoteId")
+                        .HasDatabaseName("ix_sales_note_line_subscriber_note");
 
                     b.ToTable("sales_note_line", (string)null);
                 });
@@ -7949,9 +8423,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("sales_document_id");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.HasKey("Id");
 
@@ -8004,9 +8478,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<decimal>("TotalRetained")
                         .HasPrecision(18, 4)
@@ -8038,7 +8512,7 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("SalesBillId");
 
-                    b.HasIndex("TenantId", "AccessKey")
+                    b.HasIndex("SubscriberId", "AccessKey")
                         .IsUnique()
                         .HasDatabaseName("uq_sales_retention_access_key");
 
@@ -8080,6 +8554,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("sales_retention_id");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<string>("TaxType")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -8090,10 +8568,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("taxable_base");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -8203,9 +8677,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<decimal>("TotalRetained")
                         .HasPrecision(18, 4)
@@ -8247,9 +8721,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("SalesDocumentId");
 
-                    b.HasIndex("TenantId", "AccessKey")
+                    b.HasIndex("SubscriberId", "AccessKey")
                         .IsUnique()
-                        .HasDatabaseName("uq_sales_withholding_tenant_access_key");
+                        .HasDatabaseName("uq_sales_withholding_subscriber_access_key");
 
                     b.ToTable("sales_withholding", (string)null);
                 });
@@ -8285,6 +8759,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("sales_withholding_id");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<string>("TaxType")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -8295,10 +8773,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("taxable_base");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.HasKey("Id");
 
@@ -9864,7 +10338,7 @@ namespace ERP.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ERP.Domain.Navigation.Entities.TenantCustomMenu", b =>
+            modelBuilder.Entity("ERP.Domain.Navigation.Entities.SubscriberCustomMenu", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -9880,9 +10354,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("menu_config");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -9890,11 +10364,11 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId")
+                    b.HasIndex("SubscriberId")
                         .IsUnique()
-                        .HasDatabaseName("ux_tenant_custom_menus_tenant");
+                        .HasDatabaseName("ux_subscriber_custom_menus_subscriber");
 
-                    b.ToTable("tenant_custom_menus", (string)null);
+                    b.ToTable("subscriber_custom_menus", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Navigation.Entities.UiNavGroup", b =>
@@ -9995,6 +10469,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("permission_keys_any_json");
 
+                    b.Property<Guid?>("PlatformFeatureId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("saas_feature_definition_id");
+
                     b.Property<string>("RolesCsv")
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
@@ -10006,10 +10484,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(512)")
                         .HasColumnName("route_path");
 
-                    b.Property<Guid?>("SaasFeatureDefinitionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("saas_feature_definition_id");
-
                     b.Property<int>("SortOrder")
                         .HasColumnType("integer")
                         .HasColumnName("sort_order");
@@ -10018,7 +10492,7 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("ParentItemId");
 
-                    b.HasIndex("SaasFeatureDefinitionId");
+                    b.HasIndex("PlatformFeatureId");
 
                     b.HasIndex("GroupId", "RoutePath");
 
@@ -10068,9 +10542,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("name");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -10082,9 +10556,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Code")
+                    b.HasIndex("SubscriberId", "Code")
                         .IsUnique()
-                        .HasDatabaseName("ix_brands_tenant_code");
+                        .HasDatabaseName("ix_brands_subscriber_code");
 
                     b.ToTable("brands", (string)null);
                 });
@@ -10128,6 +10602,10 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid")
                         .HasColumnName("category_id");
+
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -10258,13 +10736,13 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("subcategory_id");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<Guid>("TariffId")
                         .HasColumnType("uuid")
                         .HasColumnName("tariff_id");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<bool>("TracksLot")
                         .HasColumnType("boolean")
@@ -10314,19 +10792,22 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasIndex("SubcategoryId");
 
-                    b.HasIndex("TariffId");
+                    b.HasIndex("SubscriberId")
+                        .HasDatabaseName("ix_products_subscriber_id");
 
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_products_tenant_id");
+                    b.HasIndex("TariffId");
 
                     b.HasIndex("UnitOfMeasureId");
 
-                    b.HasIndex("TenantId", "SaleCode")
-                        .IsUnique()
-                        .HasDatabaseName("ix_products_tenant_sale_code");
+                    b.HasIndex("SubscriberId", "CompanyId")
+                        .HasDatabaseName("ix_products_subscriber_company");
 
-                    b.HasIndex("TenantId", "ShortName")
-                        .HasDatabaseName("ix_products_tenant_short_name");
+                    b.HasIndex("SubscriberId", "SaleCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_products_subscriber_sale_code");
+
+                    b.HasIndex("SubscriberId", "ShortName")
+                        .HasDatabaseName("ix_products_subscriber_short_name");
 
                     b.ToTable("products", (string)null);
                 });
@@ -10366,9 +10847,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("name");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -10380,12 +10861,12 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "LineId")
-                        .HasDatabaseName("ix_product_categories_tenant_line");
+                    b.HasIndex("SubscriberId", "LineId")
+                        .HasDatabaseName("ix_product_categories_subscriber_line");
 
-                    b.HasIndex("TenantId", "LineId", "Code")
+                    b.HasIndex("SubscriberId", "LineId", "Code")
                         .IsUnique()
-                        .HasDatabaseName("ix_product_categories_tenant_line_code");
+                        .HasDatabaseName("ix_product_categories_subscriber_line_code");
 
                     b.ToTable("product_categories", (string)null);
                 });
@@ -10421,9 +10902,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("name");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -10435,9 +10916,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Code")
+                    b.HasIndex("SubscriberId", "Code")
                         .IsUnique()
-                        .HasDatabaseName("ix_product_lines_tenant_code");
+                        .HasDatabaseName("ix_product_lines_subscriber_code");
 
                     b.ToTable("product_lines", (string)null);
                 });
@@ -10477,9 +10958,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("name");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -10491,12 +10972,12 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "CategoryId")
-                        .HasDatabaseName("ix_product_subcategories_tenant_category");
+                    b.HasIndex("SubscriberId", "CategoryId")
+                        .HasDatabaseName("ix_product_subcategories_subscriber_category");
 
-                    b.HasIndex("TenantId", "CategoryId", "Code")
+                    b.HasIndex("SubscriberId", "CategoryId", "Code")
                         .IsUnique()
-                        .HasDatabaseName("ix_product_subcategories_tenant_category_code");
+                        .HasDatabaseName("ix_product_subcategories_subscriber_category_code");
 
                     b.ToTable("product_subcategories", (string)null);
                 });
@@ -10532,9 +11013,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("name");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -10546,9 +11027,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Code")
+                    b.HasIndex("SubscriberId", "Code")
                         .IsUnique()
-                        .HasDatabaseName("ix_product_types_tenant_code");
+                        .HasDatabaseName("ix_product_types_subscriber_code");
 
                     b.ToTable("product_types", (string)null);
                 });
@@ -10584,9 +11065,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -10598,9 +11079,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Code")
+                    b.HasIndex("SubscriberId", "Code")
                         .IsUnique()
-                        .HasDatabaseName("ix_tariffs_tenant_code");
+                        .HasDatabaseName("ix_tariffs_subscriber_code");
 
                     b.ToTable("tariffs", (string)null);
                 });
@@ -10641,9 +11122,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(9,2)")
                         .HasColumnName("percentage");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer")
@@ -10659,12 +11140,12 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId")
-                        .HasDatabaseName("ix_tax_rates_tenant_id");
+                    b.HasIndex("SubscriberId")
+                        .HasDatabaseName("ix_tax_rates_subscriber_id");
 
-                    b.HasIndex("TenantId", "Type", "Code")
+                    b.HasIndex("SubscriberId", "Type", "Code")
                         .IsUnique()
-                        .HasDatabaseName("ix_tax_rates_tenant_type_code");
+                        .HasDatabaseName("ix_tax_rates_subscriber_type_code");
 
                     b.ToTable("tax_rates", (string)null);
                 });
@@ -10700,14 +11181,14 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("name");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<string>("Symbol")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("symbol");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -10719,9 +11200,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "Code")
+                    b.HasIndex("SubscriberId", "Code")
                         .IsUnique()
-                        .HasDatabaseName("ix_units_of_measure_tenant_code");
+                        .HasDatabaseName("ix_units_of_measure_subscriber_code");
 
                     b.ToTable("units_of_measure", (string)null);
                 });
@@ -10761,9 +11242,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("subject_type");
 
-                    b.Property<Guid>("TenantId")
+                    b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
+                        .HasColumnName("subscriber_id");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -10775,390 +11256,14 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TenantId", "SubjectType", "SubjectKey", "Scope")
+                    b.HasIndex("SubscriberId", "SubjectType", "SubjectKey", "Scope")
                         .IsUnique()
                         .HasDatabaseName("ux_security_admin_scopes_subject");
 
                     b.ToTable("security_admin_scope_assignments", (string)null);
                 });
 
-            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.SaasFeatureDefinition", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("code");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("description");
-
-                    b.Property<bool>("IsMetered")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_metered");
-
-                    b.Property<byte>("Kind")
-                        .HasColumnType("smallint")
-                        .HasColumnName("feature_kind");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name");
-
-                    b.Property<string>("ResourceRef")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)")
-                        .HasColumnName("resource_ref");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique()
-                        .HasDatabaseName("ux_saas_feature_definitions_code");
-
-                    b.ToTable("saas_feature_definitions", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.SaasPlan", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("BillingCycle")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("billing_cycle");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("code");
-
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasMaxLength(8)
-                        .HasColumnType("character varying(8)")
-                        .HasColumnName("currency");
-
-                    b.Property<string>("ExternalBillingRef")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)")
-                        .HasColumnName("external_billing_ref");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<bool>("IsPubliclyVisible")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_publicly_visible");
-
-                    b.Property<bool>("IsRecommended")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_recommended");
-
-                    b.Property<string>("MenuConfigJson")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("menu_config");
-
-                    b.Property<string>("MenuSidebarLayout")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasDefaultValue("horizontal")
-                        .HasColumnName("menu_sidebar_layout");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("name");
-
-                    b.Property<decimal>("PriceAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasColumnName("price_amount");
-
-                    b.Property<string>("ShortLabel")
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("short_label");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("integer")
-                        .HasColumnName("sort_order");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique()
-                        .HasDatabaseName("ux_saas_plans_code");
-
-                    b.ToTable("saas_plans", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.SaasPlanFeature", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<Guid>("FeatureId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("feature_id");
-
-                    b.Property<bool>("IsIncluded")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_included");
-
-                    b.Property<long?>("LimitPerPeriod")
-                        .HasColumnType("bigint")
-                        .HasColumnName("limit_per_period");
-
-                    b.Property<Guid>("PlanId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("plan_id");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PlanId", "FeatureId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_saas_plan_features_plan_feature");
-
-                    b.ToTable("saas_plan_features", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.TenantSaasSubscription", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<DateTime?>("CurrentPeriodEndUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("current_period_end_utc");
-
-                    b.Property<Guid>("PlanId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("plan_id");
-
-                    b.Property<DateTime>("StartedAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("started_at_utc");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
-                        .HasColumnName("status");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_tenant_saas_subscriptions_tenant");
-
-                    b.ToTable("tenant_saas_subscriptions", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.TenantSaasSubscriptionEvent", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<string>("EventType")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("event_type");
-
-                    b.Property<string>("MetadataJson")
-                        .HasColumnType("jsonb")
-                        .HasColumnName("metadata_json");
-
-                    b.Property<Guid?>("NewPlanId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("new_plan_id");
-
-                    b.Property<DateTime>("OccurredAtUtc")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("occurred_at_utc");
-
-                    b.Property<Guid?>("PreviousPlanId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("previous_plan_id");
-
-                    b.Property<Guid?>("SubscriptionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("subscription_id");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "OccurredAtUtc")
-                        .HasDatabaseName("ix_tenant_saas_subscription_events_tenant_occurred");
-
-                    b.ToTable("tenant_saas_subscription_events", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.TenantSubscriptionFeatureOverride", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<Guid>("FeatureId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("feature_id");
-
-                    b.Property<bool>("IsEnabled")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_enabled");
-
-                    b.Property<long?>("LimitOverridePerPeriod")
-                        .HasColumnType("bigint")
-                        .HasColumnName("limit_override_per_period");
-
-                    b.Property<Guid>("SubscriptionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("subscription_id");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SubscriptionId", "FeatureId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_tenant_sub_feat_override_sub_feature");
-
-                    b.ToTable("tenant_subscription_feature_overrides", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.TenantSubscriptionUsage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<Guid>("FeatureId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("feature_id");
-
-                    b.Property<string>("PeriodKey")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("period_key");
-
-                    b.Property<long>("Quantity")
-                        .HasColumnType("bigint")
-                        .HasColumnName("quantity");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tenant_id");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId", "FeatureId", "PeriodKey")
-                        .IsUnique()
-                        .HasDatabaseName("ux_tenant_subscription_usages_period");
-
-                    b.ToTable("tenant_subscription_usages", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Tenants.Entities.Tenant", b =>
+            modelBuilder.Entity("ERP.Domain.Subscribers.Entities.Subscriber", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -11259,9 +11364,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("slug");
 
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Timezone")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -11283,13 +11385,451 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
 
-                    b.HasKey("Id");
+                    b.HasKey("Id")
+                        .HasName("PK_subscribers");
 
                     b.HasIndex("Slug")
                         .IsUnique()
-                        .HasDatabaseName("ix_tenants_slug");
+                        .HasDatabaseName("ix_subscribers_slug");
 
-                    b.ToTable("tenants", (string)null);
+                    b.ToTable("subscribers", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.CommercialPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("BillingCycle")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("billing_cycle");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)")
+                        .HasColumnName("currency");
+
+                    b.Property<string>("ExternalBillingRef")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("external_billing_ref");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsPubliclyVisible")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_publicly_visible");
+
+                    b.Property<bool>("IsRecommended")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_recommended");
+
+                    b.Property<string>("MenuConfigJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("menu_config");
+
+                    b.Property<string>("MenuSidebarLayout")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("horizontal")
+                        .HasColumnName("menu_sidebar_layout");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<decimal>("PriceAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("price_amount");
+
+                    b.Property<string>("ShortLabel")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("short_label");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_commercial_plans_code");
+
+                    b.ToTable("commercial_plans", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.CommercialPlanFeature", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("FeatureId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("feature_id");
+
+                    b.Property<bool>("IsIncluded")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_included");
+
+                    b.Property<long?>("LimitPerPeriod")
+                        .HasColumnType("bigint")
+                        .HasColumnName("limit_per_period");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PlanId", "FeatureId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_commercial_plan_features_plan_feature");
+
+                    b.ToTable("commercial_plan_features", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.CommercialPlanLimit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CommercialPlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("commercial_plan_id");
+
+                    b.Property<bool>("IsHardLimit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_hard_limit");
+
+                    b.Property<string>("LimitCode")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("limit_code");
+
+                    b.Property<long>("LimitValue")
+                        .HasColumnType("bigint")
+                        .HasColumnName("limit_value");
+
+                    b.Property<string>("PeriodType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("period_type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CommercialPlanId", "LimitCode")
+                        .IsUnique()
+                        .HasDatabaseName("ux_commercial_plan_limits_plan_code");
+
+                    b.ToTable("commercial_plan_limits", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.PlatformFeature", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("code");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsMetered")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_metered");
+
+                    b.Property<byte>("Kind")
+                        .HasColumnType("smallint")
+                        .HasColumnName("feature_kind");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("ResourceRef")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("resource_ref");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_platform_features_code");
+
+                    b.ToTable("platform_features", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.SubscriberSubscription", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime?>("CurrentPeriodEndUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("current_period_end_utc");
+
+                    b.Property<Guid>("PlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("plan_id");
+
+                    b.Property<DateTime>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at_utc");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_subscriber_subscriptions_subscriber");
+
+                    b.ToTable("subscriber_subscriptions", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.SubscriberSubscriptionEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("event_type");
+
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("metadata_json");
+
+                    b.Property<Guid?>("NewPlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("new_plan_id");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("occurred_at_utc");
+
+                    b.Property<Guid?>("PreviousPlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("previous_plan_id");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<Guid?>("SubscriptionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscription_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId", "OccurredAtUtc")
+                        .HasDatabaseName("ix_subscriber_subscription_events_subscriber_occurred");
+
+                    b.ToTable("subscriber_subscription_events", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.SubscriptionFeatureOverride", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("FeatureId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("feature_id");
+
+                    b.Property<bool>("IsEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_enabled");
+
+                    b.Property<long?>("LimitOverridePerPeriod")
+                        .HasColumnType("bigint")
+                        .HasColumnName("limit_override_per_period");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<Guid>("SubscriptionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscription_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriptionId", "FeatureId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_subscription_feature_override_sub_feature");
+
+                    b.ToTable("subscription_feature_overrides", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.SubscriptionUsage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<Guid>("FeatureId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("feature_id");
+
+                    b.Property<string>("PeriodKey")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("period_key");
+
+                    b.Property<long>("Quantity")
+                        .HasColumnType("bigint")
+                        .HasColumnName("quantity");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId", "FeatureId", "PeriodKey")
+                        .IsUnique()
+                        .HasDatabaseName("ux_subscription_usages_period");
+
+                    b.ToTable("subscription_usages", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Access.Entities.CompanyUserMembership", b =>
+                {
+                    b.HasOne("ERP.Domain.Modules.Company.Entities.Company", null)
+                        .WithMany()
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_company_user_memberships_company_company_id");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Billing.Entities.SaasBillingInvoiceLine", b =>
+                {
+                    b.HasOne("ERP.Domain.Billing.Entities.SaasBillingInvoice", null)
+                        .WithMany("Lines")
+                        .HasForeignKey("BillingInvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ERP.Domain.Branches.Entities.Branch", b =>
@@ -11550,6 +12090,13 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("EnvironmentCode")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("ERP.Domain.Subscribers.Entities.Subscriber", null)
+                        .WithMany()
+                        .HasForeignKey("SubscriberId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_company_subscribers_subscriber_id");
 
                     b.HasOne("ERP.Domain.Modules.SriCatalogs.Entities.SriTaxRegime", "TaxRegime")
                         .WithMany()
@@ -12257,13 +12804,14 @@ namespace ERP.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("ERP.Domain.Navigation.Entities.TenantCustomMenu", b =>
+            modelBuilder.Entity("ERP.Domain.Navigation.Entities.SubscriberCustomMenu", b =>
                 {
-                    b.HasOne("ERP.Domain.Tenants.Entities.Tenant", null)
+                    b.HasOne("ERP.Domain.Subscribers.Entities.Subscriber", null)
                         .WithMany()
-                        .HasForeignKey("TenantId")
+                        .HasForeignKey("SubscriberId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .IsRequired()
+                        .HasConstraintName("fk_subscriber_custom_menus_subscriber_id");
                 });
 
             modelBuilder.Entity("ERP.Domain.Navigation.Entities.UiNavItem", b =>
@@ -12279,9 +12827,9 @@ namespace ERP.Infrastructure.Migrations
                         .HasForeignKey("ParentItemId")
                         .OnDelete(DeleteBehavior.Cascade);
 
-                    b.HasOne("ERP.Domain.Subscriptions.Entities.SaasFeatureDefinition", null)
+                    b.HasOne("ERP.Domain.Subscriptions.Entities.PlatformFeature", null)
                         .WithMany()
-                        .HasForeignKey("SaasFeatureDefinitionId")
+                        .HasForeignKey("PlatformFeatureId")
                         .OnDelete(DeleteBehavior.SetNull);
                 });
 
@@ -12380,9 +12928,9 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("product_id");
 
-                            b1.Property<Guid>("TenantId")
+                            b1.Property<Guid>("SubscriberId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("tenant_id");
+                                .HasColumnName("subscriber_id");
 
                             b1.Property<int>("Type")
                                 .HasColumnType("integer")
@@ -12393,8 +12941,8 @@ namespace ERP.Infrastructure.Migrations
                             b1.HasIndex("ProductId")
                                 .HasDatabaseName("ix_product_barcodes_product_id");
 
-                            b1.HasIndex("TenantId", "Code")
-                                .HasDatabaseName("ix_product_barcodes_tenant_code");
+                            b1.HasIndex("SubscriberId", "Code")
+                                .HasDatabaseName("ix_product_barcodes_subscriber_code");
 
                             b1.ToTable("product_barcodes", (string)null);
 
@@ -12428,17 +12976,17 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("product_id");
 
-                            b1.Property<Guid>("TenantId")
+                            b1.Property<Guid>("SubscriberId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("tenant_id");
+                                .HasColumnName("subscriber_id");
 
                             b1.HasKey("Id");
 
                             b1.HasIndex("ProductId")
                                 .HasDatabaseName("ix_product_colors_product_id");
 
-                            b1.HasIndex("TenantId", "Name")
-                                .HasDatabaseName("ix_product_colors_tenant_name");
+                            b1.HasIndex("SubscriberId", "Name")
+                                .HasDatabaseName("ix_product_colors_subscriber_name");
 
                             b1.ToTable("product_colors", (string)null);
 
@@ -12477,17 +13025,17 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("product_id");
 
-                            b1.Property<Guid>("TenantId")
+                            b1.Property<Guid>("SubscriberId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("tenant_id");
+                                .HasColumnName("subscriber_id");
 
                             b1.HasKey("Id");
 
                             b1.HasIndex("ProductId")
                                 .HasDatabaseName("ix_product_custom_fields_product_id");
 
-                            b1.HasIndex("TenantId", "FieldName")
-                                .HasDatabaseName("ix_product_custom_fields_tenant_field_name");
+                            b1.HasIndex("SubscriberId", "FieldName")
+                                .HasDatabaseName("ix_product_custom_fields_subscriber_field_name");
 
                             b1.ToTable("product_custom_fields", (string)null);
 
@@ -12516,9 +13064,9 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("product_id");
 
-                            b1.Property<Guid>("TenantId")
+                            b1.Property<Guid>("SubscriberId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("tenant_id");
+                                .HasColumnName("subscriber_id");
 
                             b1.Property<string>("Unit")
                                 .IsRequired()
@@ -12537,8 +13085,8 @@ namespace ERP.Infrastructure.Migrations
                             b1.HasIndex("ProductId")
                                 .HasDatabaseName("ix_product_dimensions_product_id");
 
-                            b1.HasIndex("TenantId", "Name")
-                                .HasDatabaseName("ix_product_dimensions_tenant_name");
+                            b1.HasIndex("SubscriberId", "Name")
+                                .HasDatabaseName("ix_product_dimensions_subscriber_name");
 
                             b1.ToTable("product_dimensions", (string)null);
 
@@ -12567,9 +13115,9 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("product_id");
 
-                            b1.Property<Guid>("TenantId")
+                            b1.Property<Guid>("SubscriberId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("tenant_id");
+                                .HasColumnName("subscriber_id");
 
                             b1.Property<string>("Value")
                                 .IsRequired()
@@ -12582,8 +13130,8 @@ namespace ERP.Infrastructure.Migrations
                             b1.HasIndex("ProductId")
                                 .HasDatabaseName("ix_product_features_product_id");
 
-                            b1.HasIndex("TenantId", "Name")
-                                .HasDatabaseName("ix_product_features_tenant_name");
+                            b1.HasIndex("SubscriberId", "Name")
+                                .HasDatabaseName("ix_product_features_subscriber_name");
 
                             b1.ToTable("product_features", (string)null);
 
@@ -12623,9 +13171,9 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnType("integer")
                                 .HasColumnName("sort_order");
 
-                            b1.Property<Guid>("TenantId")
+                            b1.Property<Guid>("SubscriberId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("tenant_id");
+                                .HasColumnName("subscriber_id");
 
                             b1.Property<string>("Url")
                                 .IsRequired()
@@ -12638,11 +13186,11 @@ namespace ERP.Infrastructure.Migrations
                             b1.HasIndex("ProductId")
                                 .HasDatabaseName("ix_product_images_product_id");
 
-                            b1.HasIndex("TenantId", "IsEcommerce")
-                                .HasDatabaseName("ix_product_images_tenant_is_ecommerce");
+                            b1.HasIndex("SubscriberId", "IsEcommerce")
+                                .HasDatabaseName("ix_product_images_subscriber_is_ecommerce");
 
-                            b1.HasIndex("TenantId", "IsMain")
-                                .HasDatabaseName("ix_product_images_tenant_is_main");
+                            b1.HasIndex("SubscriberId", "IsMain")
+                                .HasDatabaseName("ix_product_images_subscriber_is_main");
 
                             b1.ToTable("product_images", (string)null);
 
@@ -12675,17 +13223,17 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnType("integer")
                                 .HasColumnName("sort_order");
 
-                            b1.Property<Guid>("TenantId")
+                            b1.Property<Guid>("SubscriberId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("tenant_id");
+                                .HasColumnName("subscriber_id");
 
                             b1.HasKey("Id");
 
                             b1.HasIndex("ProductId")
                                 .HasDatabaseName("ix_product_sizes_product_id");
 
-                            b1.HasIndex("TenantId", "Name")
-                                .HasDatabaseName("ix_product_sizes_tenant_name");
+                            b1.HasIndex("SubscriberId", "Name")
+                                .HasDatabaseName("ix_product_sizes_subscriber_name");
 
                             b1.ToTable("product_sizes", (string)null);
 
@@ -12713,21 +13261,21 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("product_id");
 
+                            b1.Property<Guid>("SubscriberId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("subscriber_id");
+
                             b1.Property<Guid>("SubstituteProductId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("substitute_product_id");
-
-                            b1.Property<Guid>("TenantId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("tenant_id");
 
                             b1.HasKey("Id");
 
                             b1.HasIndex("ProductId")
                                 .HasDatabaseName("ix_product_substitutes_product_id");
 
-                            b1.HasIndex("TenantId", "SubstituteProductId")
-                                .HasDatabaseName("ix_product_substitutes_tenant_substitute");
+                            b1.HasIndex("SubscriberId", "SubstituteProductId")
+                                .HasDatabaseName("ix_product_substitutes_subscriber_substitute");
 
                             b1.ToTable("product_substitutes", (string)null);
 
@@ -12760,24 +13308,24 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("product_id");
 
+                            b1.Property<Guid>("SubscriberId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("subscriber_id");
+
                             b1.Property<Guid>("SupplierId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("supplier_id");
-
-                            b1.Property<Guid>("TenantId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("tenant_id");
 
                             b1.HasKey("Id");
 
                             b1.HasIndex("ProductId")
                                 .HasDatabaseName("ix_product_supplier_codes_product_id");
 
-                            b1.HasIndex("TenantId", "Code")
-                                .HasDatabaseName("ix_product_supplier_codes_tenant_code");
+                            b1.HasIndex("SubscriberId", "Code")
+                                .HasDatabaseName("ix_product_supplier_codes_subscriber_code");
 
-                            b1.HasIndex("TenantId", "SupplierId")
-                                .HasDatabaseName("ix_product_supplier_codes_tenant_supplier");
+                            b1.HasIndex("SubscriberId", "SupplierId")
+                                .HasDatabaseName("ix_product_supplier_codes_subscriber_supplier");
 
                             b1.ToTable("product_supplier_codes", (string)null);
 
@@ -12811,23 +13359,23 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("product_id");
 
+                            b1.Property<Guid>("SubscriberId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("subscriber_id");
+
                             b1.Property<string>("TariffCode")
                                 .IsRequired()
                                 .HasMaxLength(50)
                                 .HasColumnType("character varying(50)")
                                 .HasColumnName("tariff_code");
 
-                            b1.Property<Guid>("TenantId")
-                                .HasColumnType("uuid")
-                                .HasColumnName("tenant_id");
-
                             b1.HasKey("Id");
 
                             b1.HasIndex("ProductId")
                                 .HasDatabaseName("ix_product_tariff_details_product_id");
 
-                            b1.HasIndex("TenantId", "OriginCountry")
-                                .HasDatabaseName("ix_product_tariff_details_tenant_country");
+                            b1.HasIndex("SubscriberId", "OriginCountry")
+                                .HasDatabaseName("ix_product_tariff_details_subscriber_country");
 
                             b1.ToTable("product_tariff_details", (string)null);
 
@@ -12859,17 +13407,17 @@ namespace ERP.Infrastructure.Migrations
                                 .HasColumnType("uuid")
                                 .HasColumnName("product_id");
 
-                            b1.Property<Guid>("TenantId")
+                            b1.Property<Guid>("SubscriberId")
                                 .HasColumnType("uuid")
-                                .HasColumnName("tenant_id");
+                                .HasColumnName("subscriber_id");
 
                             b1.HasKey("Id");
 
                             b1.HasIndex("ProductId")
                                 .HasDatabaseName("ix_product_unit_conversions_product_id");
 
-                            b1.HasIndex("TenantId", "AlternateUnitId")
-                                .HasDatabaseName("ix_product_unit_conversions_tenant_alt_unit");
+                            b1.HasIndex("SubscriberId", "AlternateUnitId")
+                                .HasDatabaseName("ix_product_unit_conversions_subscriber_alt_unit");
 
                             b1.ToTable("product_unit_conversions", (string)null);
 
@@ -12898,6 +13446,20 @@ namespace ERP.Infrastructure.Migrations
                     b.Navigation("TariffDetails");
 
                     b.Navigation("UnitConversions");
+                });
+
+            modelBuilder.Entity("ERP.Domain.Subscriptions.Entities.CommercialPlanLimit", b =>
+                {
+                    b.HasOne("ERP.Domain.Subscriptions.Entities.CommercialPlan", null)
+                        .WithMany()
+                        .HasForeignKey("CommercialPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERP.Domain.Billing.Entities.SaasBillingInvoice", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.JournalEntry", b =>

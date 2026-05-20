@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
@@ -18,7 +18,7 @@ public sealed class CreateStockAdjustmentCommandHandler
     private readonly IWarehouseRepository           _bodegaRepo;
     private readonly IProductRepository          _productRepo;
     private readonly IUserActivityRepository     _activity;
-    private readonly ICurrentTenant              _currentTenant;
+    private readonly ICurrentSubscriber              _currentSubscriber;
     private readonly ICurrentUser                _currentUser;
     private readonly IUnitOfWork                 _unitOfWork;
     private readonly ILogger<CreateStockAdjustmentCommandHandler> _logger;
@@ -28,7 +28,7 @@ public sealed class CreateStockAdjustmentCommandHandler
         IWarehouseRepository bodegaRepo,
         IProductRepository productRepo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
         ILogger<CreateStockAdjustmentCommandHandler> logger)
@@ -37,7 +37,7 @@ public sealed class CreateStockAdjustmentCommandHandler
         _bodegaRepo    = bodegaRepo;
         _productRepo   = productRepo;
         _activity      = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
         _unitOfWork    = unitOfWork;
         _logger        = logger;
@@ -46,14 +46,14 @@ public sealed class CreateStockAdjustmentCommandHandler
     public async Task<Result<StockAdjustmentDto>> Handle(
         CreateStockAdjustmentCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var Warehouse = await _bodegaRepo.GetByIdAsync(tenantId, command.WarehouseId, ct);
+        var Warehouse = await _bodegaRepo.GetByIdAsync(subscriberId, command.WarehouseId, ct);
         if (Warehouse is null || !Warehouse.IsActive)
             return Result<StockAdjustmentDto>.Failure("La Warehouse no existe o no está activa.");
 
-        var producto = await _productRepo.GetByIdAsync(command.ProductId, tenantId, ct);
+        var producto = await _productRepo.GetByIdAsync(command.ProductId, subscriberId, ct);
         if (producto is null || !producto.IsActive)
             return Result<StockAdjustmentDto>.Failure("El producto no existe o no está activo.");
 
@@ -64,10 +64,10 @@ public sealed class CreateStockAdjustmentCommandHandler
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var secuencial = await _ajusteRepo.GetNextSequentialAsync(tenantId, ct);
+            var secuencial = await _ajusteRepo.GetNextSequentialAsync(subscriberId, ct);
 
             var ajuste = StockAdjustment.Create(
-                tenantId, secuencial,
+                subscriberId, secuencial,
                 command.WarehouseId,   Warehouse.Name,
                 command.ProductId, producto.ShortName,
                 command.AdjustmentQty, command.Reason, command.Notes,
@@ -76,7 +76,7 @@ public sealed class CreateStockAdjustmentCommandHandler
             await _ajusteRepo.AddAsync(ajuste, ct);
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "inventario", action: "ajuste.crear",
                 entityType: "StockAdjustment", entityId: ajuste.Id,
                 description: ajuste.AdjustmentNumber), ct);
@@ -91,7 +91,7 @@ public sealed class CreateStockAdjustmentCommandHandler
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al crear ajuste (tenant {TenantId})", tenantId);
+            _logger.LogError(ex, "Error al crear ajuste (tenant {SubscriberId})", subscriberId);
             return Result<StockAdjustmentDto>.Failure($"No se pudo crear el ajuste: {ex.Message}");
         }
     }

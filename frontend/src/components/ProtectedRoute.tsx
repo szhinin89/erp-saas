@@ -1,6 +1,6 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { GLOBAL_TENANT_ID } from '../constants/tenantIds';
+import { GLOBAL_SUBSCRIBER_ID } from '../constants/subscriberIds';
 import { useDeployment } from '../deployment/DeploymentContext';
 
 export function ProtectedRoute() {
@@ -23,10 +23,24 @@ export function ProtectedRoute() {
   }
 
   // SuperAdmin global: solo panel SuperAdmin y administración de empresas (sin rutas operativas de tenant).
-  if (superAdminPanelEnabled && (user?.role ?? '') === 'SuperAdmin' && (user?.tenantId ?? '') === GLOBAL_TENANT_ID) {
+  if (superAdminPanelEnabled && (user?.role ?? '') === 'SuperAdmin' && (user?.subscriberId ?? '') === GLOBAL_SUBSCRIBER_ID) {
     const path = window.location.pathname;
     const allowed = path.startsWith('/superadmin') || path === '/companies' || path.startsWith('/companies/');
     return allowed ? <Outlet /> : <Navigate to="/superadmin/overview" replace />;
+  }
+
+  const needsCompany =
+    isAuthenticated &&
+    user &&
+    user.role !== 'SuperAdmin' &&
+    user.subscriberId &&
+    !user.companyId;
+
+  if (needsCompany) {
+    const path = window.location.pathname;
+    if (path !== '/select-company') {
+      return <Navigate to="/select-company" replace />;
+    }
   }
 
   return isAuthenticated || token ? <Outlet /> : <Navigate to="/login" replace />;

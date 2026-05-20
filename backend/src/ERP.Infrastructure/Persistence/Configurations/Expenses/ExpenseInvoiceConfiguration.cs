@@ -12,7 +12,7 @@ public sealed class ExpenseInvoiceConfiguration : IEntityTypeConfiguration<Expen
 
         builder.HasKey(g => g.Id);
         builder.Property(g => g.Id).HasColumnName("id");
-        builder.Property(g => g.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(g => g.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(g => g.AccessKey).HasColumnName("access_key").HasMaxLength(ExpenseInvoice.AccessKeyLen);
         builder.Property(g => g.XmlPath).HasColumnName("xml_path").HasMaxLength(ExpenseInvoice.XmlPathMaxLen);
         builder.Property(g => g.SupplierId).HasColumnName("supplier_id");
@@ -40,9 +40,9 @@ public sealed class ExpenseInvoiceConfiguration : IEntityTypeConfiguration<Expen
         builder.Property(g => g.CreatedBy).HasColumnName("created_by");
         builder.Property(g => g.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(g => new { g.TenantId, g.IssueDate }).HasDatabaseName("ix_expense_invoice_tenant_date");
-        builder.HasIndex(g => new { g.TenantId, g.Category }).HasDatabaseName("ix_expense_invoice_tenant_category");
-        builder.HasIndex(g => new { g.TenantId, g.AccessKey }).IsUnique().HasFilter("access_key IS NOT NULL").HasDatabaseName("uq_expense_invoice_access_key");
-        builder.HasIndex(g => new { g.TenantId, g.Status }).HasDatabaseName("ix_expense_invoice_tenant_status");
+        builder.HasIndex(g => new { g.SubscriberId, g.IssueDate }).HasDatabaseName("ix_expense_invoice_subscriber_date");
+        builder.HasIndex(g => new { g.SubscriberId, g.Category }).HasDatabaseName("ix_expense_invoice_subscriber_category");
+        builder.HasIndex(g => new { g.SubscriberId, g.AccessKey }).IsUnique().HasFilter("access_key IS NOT NULL").HasDatabaseName("uq_expense_invoice_access_key");
+        builder.HasIndex(g => new { g.SubscriberId, g.Status }).HasDatabaseName("ix_expense_invoice_subscriber_status");
     }
 }

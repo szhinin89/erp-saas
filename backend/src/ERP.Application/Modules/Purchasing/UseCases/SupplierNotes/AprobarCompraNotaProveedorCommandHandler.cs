@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -21,7 +21,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
     private readonly IExpenseInvoiceRepository _gastoRepo;
     private readonly IAccountingService     _accounting;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _tenant;
+    private readonly ICurrentSubscriber          _tenant;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork           _unitOfWork;
     private readonly ILogger<ApprovePurchaseSupplierNoteCommandHandler> _logger;
@@ -31,7 +31,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
         IExpenseInvoiceRepository gastoRepo,
         IAccountingService accounting,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
         ILogger<ApprovePurchaseSupplierNoteCommandHandler> logger)
@@ -50,10 +50,10 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
         ApprovePurchaseSupplierNoteCommand command,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
-        var nota = await _compraRepo.GetPurchNoteByIdWithLinesAsync(tenantId, command.NotaId, ct);
+        var nota = await _compraRepo.GetPurchNoteByIdWithLinesAsync(subscriberId, command.NotaId, ct);
         if (nota is null)
             return Result<SupplierPurchaseNoteDto>.Failure("Nota de Supplier no encontrada.");
 
@@ -74,7 +74,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
             Result<Guid> asientoResult;
             if (nota.PurchBillId.HasValue)
             {
-                var compra = await _compraRepo.GetByIdAsync(tenantId, nota.PurchBillId.Value, ct);
+                var compra = await _compraRepo.GetByIdAsync(subscriberId, nota.PurchBillId.Value, ct);
                 if (compra is null || compra.Status != PurchaseStatus.Approved)
                 {
                     await _unitOfWork.RollbackAsync(ct);
@@ -106,7 +106,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
             }
             else
             {
-                var gasto = await _gastoRepo.GetByIdAsync(tenantId, nota.ExpenseInvoiceId!.Value, ct);
+                var gasto = await _gastoRepo.GetByIdAsync(subscriberId, nota.ExpenseInvoiceId!.Value, ct);
                 if (gasto is null || gasto.Status != ExpenseStatus.Approved)
                 {
                     await _unitOfWork.RollbackAsync(ct);
@@ -146,10 +146,10 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
             IReadOnlyList<PurchNoteStockLine>? stockLines = null;
             if (nota.PurchBillId.HasValue)
             {
-                var compraFull = await _compraRepo.GetByIdAsync(tenantId, nota.PurchBillId.Value, ct);
+                var compraFull = await _compraRepo.GetByIdAsync(subscriberId, nota.PurchBillId.Value, ct);
                 var asigs =
                     await _compraRepo.GetWarehouseAllocsByBillIdAsync(
-                        tenantId, nota.PurchBillId.Value, ct);
+                        subscriberId, nota.PurchBillId.Value, ct);
                 if (compraFull is not null)
                     stockLines = BuildStockLines(nota, compraFull, asigs);
             }
@@ -162,7 +162,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
                 stockLines);
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _user.Email, _user.FullName,
+                subscriberId, userId, _user.Email, _user.FullName,
                 module: "compras", action: "notas-Supplier.aprobar",
                 entityType: "PurchNote", entityId: nota.Id,
                 description: $"{numeroNota} — asiento {asientoId}"), ct);

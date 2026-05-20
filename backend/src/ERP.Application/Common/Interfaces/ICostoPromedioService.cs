@@ -1,4 +1,4 @@
-﻿namespace ERP.Application.Common.Interfaces;
+namespace ERP.Application.Common.Interfaces;
 
 /// <summary>
 /// Proporciona el costo promedio ponderado actual de un producto en una Warehouse.
@@ -13,7 +13,7 @@ public interface ICostoPromedioService
     /// Retorna 0 si no hay stock registrado o la cantidad es cero.
     /// </summary>
     Task<decimal> ObtenerCostoPromedioAsync(
-        Guid tenantId,
+        Guid subscriberId,
         Guid productoId,
         Guid bodegaId,
         CancellationToken ct = default);

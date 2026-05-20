@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.Modules.Sales.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,7 +12,7 @@ public sealed class SalesNoteLineConfiguration : IEntityTypeConfiguration<SalesN
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.SalesNoteId).HasColumnName("sales_note_id").IsRequired();
         builder.Property(e => e.ProductId).HasColumnName("product_id").IsRequired();
         builder.Property(e => e.ProductCode).HasColumnName("product_code")
@@ -33,6 +33,6 @@ public sealed class SalesNoteLineConfiguration : IEntityTypeConfiguration<SalesN
         builder.Property(e => e.CreatedBy).HasColumnName("created_by");
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(e => new { e.TenantId, e.SalesNoteId }).HasDatabaseName("ix_sales_note_line_tenant_note");
+        builder.HasIndex(e => new { e.SubscriberId, e.SalesNoteId }).HasDatabaseName("ix_sales_note_line_subscriber_note");
     }
 }

@@ -12,11 +12,11 @@ public class ProductColor : BaseEntity
 
     private ProductColor() { }
 
-    internal static ProductColor Create(Guid productId, Guid tenantId, string name, string? hexCode = null)
+    internal static ProductColor Create(Guid productId, Guid subscriberId, string name, string? hexCode = null)
         => new()
         {
             Id        = Guid.NewGuid(),
-            TenantId  = tenantId,
+            SubscriberId  = subscriberId,
             ProductId = productId,
             Name      = name.Trim(),
             HexCode   = hexCode?.Trim().ToUpperInvariant(),

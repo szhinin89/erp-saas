@@ -3,22 +3,22 @@ using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Subscriptions;
 using ERP.Domain.Auth.Interfaces;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Subscribers.Interfaces;
 
-namespace ERP.Application.Auth.UseCases.SwitchTenant;
+namespace ERP.Application.Auth.UseCases.SwitchSubscriber;
 
-public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<AuthResponseDto>>
+public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, Result<AuthResponseDto>>
 {
     private readonly ICurrentUser _currentUser;
     private readonly IUserRepository _userRepository;
-    private readonly ITenantRepository _tenantRepository;
+    private readonly ISubscriberRepository _tenantRepository;
     private readonly IJwtService _jwtService;
     private readonly ISessionModulesResolver _sessionModules;
 
-    public SwitchTenantHandler(
+    public SwitchSubscriberHandler(
         ICurrentUser currentUser,
         IUserRepository userRepository,
-        ITenantRepository tenantRepository,
+        ISubscriberRepository tenantRepository,
         IJwtService jwtService,
         ISessionModulesResolver sessionModules)
     {
@@ -29,7 +29,7 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<A
         _sessionModules = sessionModules;
     }
 
-    public async Task<Result<AuthResponseDto>> Handle(SwitchTenantCommand command, CancellationToken ct)
+    public async Task<Result<AuthResponseDto>> Handle(SwitchSubscriberCommand command, CancellationToken ct)
     {
         if (!_currentUser.IsAuthenticated || _currentUser.UserId == Guid.Empty)
             return Result<AuthResponseDto>.Failure("No autenticado.");
@@ -41,9 +41,9 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<A
         if (!string.Equals(user.Role, "SuperAdmin", StringComparison.Ordinal))
             return Result<AuthResponseDto>.Failure("No autorizado.");
 
-        // Permite "volver al panel global" para SuperAdmin: tenant_id = Guid.Empty.
+        // Permite "volver al panel global" para SuperAdmin: subscriber_id = Guid.Empty.
         // Esto evita una pantalla intermedia cuando el SuperAdmin ya está impersonando una empresa.
-        if (command.TenantId == Guid.Empty)
+        if (command.SubscriberId == Guid.Empty)
         {
             var globalToken = _jwtService.GenerateToken(user, Guid.Empty);
             return Result<AuthResponseDto>.Success(new AuthResponseDto(
@@ -54,10 +54,10 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<A
                 Guid.Empty,
                 globalToken,
                 PlanCode: null,
-                EnabledModules: TenantSubscriptionCatalog.AllModuleKeys));
+                EnabledModules: SubscriberSubscriptionCatalog.AllModuleKeys));
         }
 
-        var tenant = await _tenantRepository.GetByIdAsync(command.TenantId, ct);
+        var tenant = await _tenantRepository.GetByIdAsync(command.SubscriberId, ct);
         if (tenant is null || !tenant.IsActive)
             return Result<AuthResponseDto>.Failure("Empresa no encontrada o inactiva.");
 

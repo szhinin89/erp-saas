@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
@@ -52,9 +52,9 @@ public sealed class AjustesInventarioEndToEndTests
         stockResult.Value!.First(i => i.ProductId == productoId).AvailableQuantity.Should().Be(115m);
 
         // Movimiento registrado
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
         var movs = await db.StockMovements
-            .Where(m => m.TenantId == tenantId && m.SourceDocId == crear.Value.Id)
+            .Where(m => m.SubscriberId == subscriberId && m.SourceDocId == crear.Value.Id)
             .ToListAsync(CancellationToken.None);
 
         movs.Should().HaveCount(1);
@@ -90,9 +90,9 @@ public sealed class AjustesInventarioEndToEndTests
             new GetCurrentStockPorBodegaQuery(bodegaId, productoId), CancellationToken.None);
         stockResult.Value!.First(i => i.ProductId == productoId).AvailableQuantity.Should().Be(40m);
 
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
         var mov = (await db.StockMovements
-            .Where(m => m.TenantId == tenantId && m.SourceDocId == crear.Value.Id)
+            .Where(m => m.SubscriberId == subscriberId && m.SourceDocId == crear.Value.Id)
             .ToListAsync(CancellationToken.None)).Single();
 
         mov.MovementType.Should().Be(StockMovementType.NegativeAdjust);
@@ -116,9 +116,9 @@ public sealed class AjustesInventarioEndToEndTests
         crear.IsSuccess.Should().BeTrue(crear.Error);
 
         // Consumir el stock antes de ejecutar (simula concurrencia)
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
         var userId   = factory.MutableUser.UserId;
-        var stock = db.CurrentStocks.First(s => s.TenantId == tenantId
+        var stock = db.CurrentStocks.First(s => s.SubscriberId == subscriberId
                                            && s.WarehouseId == bodegaId
                                            && s.ProductId == productoId);
         stock.ApplyMovement(-5m, userId); // agota el stock
@@ -132,7 +132,7 @@ public sealed class AjustesInventarioEndToEndTests
 
         // No debe haber movimientos registrados
         var movs = await db.StockMovements
-            .Where(m => m.TenantId == tenantId && m.SourceDocId == crear.Value.Id)
+            .Where(m => m.SubscriberId == subscriberId && m.SourceDocId == crear.Value.Id)
             .ToListAsync(CancellationToken.None);
         movs.Should().BeEmpty("no debe registrar movimientos si fallÃ³ la ejecuciÃ³n");
     }
@@ -158,8 +158,8 @@ public sealed class AjustesInventarioEndToEndTests
         cancelar.Value!.Status.Should().Be("Cancelado");
 
         // Stock intacto
-        var tenantId = factory.MutableTenant.TenantId;
-        var stock = db.CurrentStocks.First(s => s.TenantId == tenantId
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
+        var stock = db.CurrentStocks.First(s => s.SubscriberId == subscriberId
                                            && s.WarehouseId == bodegaId
                                            && s.ProductId == productoId);
         stock.AvailableQuantity.Should().Be(30m);
@@ -233,21 +233,21 @@ public sealed class AjustesInventarioEndToEndTests
         ErpDbContext db, IntegrationTestWebAppFactory factory, decimal stockInicial)
     {
         var seed = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
 
-        var tenantId   = seed.TenantId;
+        var subscriberId   = seed.SubscriberId;
         var userId     = seed.UserId;
         var productoId = seed.ProductId;
         var bodegaId   = seed.WarehouseId;
 
         if (stockInicial > 0)
         {
-            var stock = CurrentStock.Create(tenantId, productoId, bodegaId, userId);
+            var stock = CurrentStock.Create(subscriberId, productoId, bodegaId, userId);
             stock.ApplyMovement(stockInicial, userId);
             db.CurrentStocks.Add(stock);
 
             db.StockMovements.Add(StockMovement.Create(
-                tenantId, productoId, bodegaId,
+                subscriberId, productoId, bodegaId,
                 StockMovementType.PositiveAdjust,
                 quantity:            stockInicial,
                 previousQuantity:    0,

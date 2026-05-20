@@ -1,6 +1,6 @@
-namespace ERP.Application.Access.UseCases.TenantAccess;
+namespace ERP.Application.Access.UseCases.SubscriberAccess;
 
-public record TenantMembershipItemDto(
+public record SubscriberCompanyUserMembershipItemDto(
     Guid IdentityUserId,
     string Email,
     string FullName,

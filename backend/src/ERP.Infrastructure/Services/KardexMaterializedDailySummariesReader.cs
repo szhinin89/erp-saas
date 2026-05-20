@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Npgsql;
@@ -24,7 +24,7 @@ public sealed class KardexMaterializedDailySummariesReader : IKardexMaterialized
     }
 
     public async Task<IReadOnlyList<KardexMvDayAggregate>?> TryGetDailyAggregatesAsync(
-        Guid tenantId,
+        Guid subscriberId,
         Guid productoId,
         Guid WarehouseId,
         DateOnly fromInclusive,
@@ -54,7 +54,7 @@ public sealed class KardexMaterializedDailySummariesReader : IKardexMaterialized
                        salidas_cantidad,
                        salidas_valor
                 FROM mv_saldos_diarios
-                WHERE tenant_id = @t
+                WHERE subscriber_id = @t
                   AND producto_id = @p
                   AND Warehouse_id = @b
                   AND fecha >= @d0
@@ -63,7 +63,7 @@ public sealed class KardexMaterializedDailySummariesReader : IKardexMaterialized
                 """,
                 conn);
 
-            cmd.Parameters.AddWithValue("t",  tenantId);
+            cmd.Parameters.AddWithValue("t",  subscriberId);
             cmd.Parameters.AddWithValue("p",  productoId);
             cmd.Parameters.AddWithValue("b",  WarehouseId);
             cmd.Parameters.AddWithValue("d0", fromInclusive);

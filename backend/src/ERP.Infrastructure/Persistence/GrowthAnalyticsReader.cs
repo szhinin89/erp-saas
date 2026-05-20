@@ -1,9 +1,9 @@
-﻿using System.Globalization;
+using System.Globalization;
 using ERP.Application.Admin;
 using ERP.Application.Common;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Subscriptions;
-using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Subscribers.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence;
@@ -36,7 +36,7 @@ public sealed class GrowthAnalyticsReader : IGrowthAnalyticsReader
 
         var toExclusive = toUtc.AddDays(1);
 
-        var tenantDates = await _db.Tenants.AsNoTracking()
+        var tenantDates = await _db.Subscribers.AsNoTracking()
             .Where(t => t.CreatedAt < toExclusive)
             .Select(t => t.CreatedAt)
             .ToListAsync(cancellationToken);
@@ -47,7 +47,7 @@ public sealed class GrowthAnalyticsReader : IGrowthAnalyticsReader
             .ToListAsync(cancellationToken);
 
         // Métricas de crecimiento: agregados de plataforma (todas las empresas), no del tenant HTTP.
-        var membershipDates = await _platform.Unfiltered(_db.Memberships, PlatformQueryReason.PlatformMetrics).AsNoTracking()
+        var membershipDates = await _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.PlatformMetrics).AsNoTracking()
             .Where(m => m.CreatedAt < toExclusive)
             .Select(m => m.CreatedAt)
             .ToListAsync(cancellationToken);
@@ -71,10 +71,10 @@ public sealed class GrowthAnalyticsReader : IGrowthAnalyticsReader
                 PeriodLabel: label,
                 NewTenants: newT,
                 NewIdentityUsers: newU,
-                NewMemberships: newM,
+                NewCompanyUserMemberships: newM,
                 CumulativeTenants: cumT,
                 CumulativeIdentityUsers: cumU,
-                CumulativeMemberships: cumM));
+                CumulativeCompanyUserMemberships: cumM));
         }
 
         return new GrowthAnalyticsResponseDto(
@@ -101,7 +101,7 @@ public sealed class GrowthAnalyticsReader : IGrowthAnalyticsReader
 
         var toExclusive = toUtc.AddDays(1);
 
-        var plans = await _db.SaasPlans.AsNoTracking()
+        var plans = await _db.CommercialPlans.AsNoTracking()
             .Where(p => p.IsActive)
             .Select(p => new { p.Code, p.PriceAmount, p.Currency, p.BillingCycle })
             .ToListAsync(cancellationToken);
@@ -117,7 +117,7 @@ public sealed class GrowthAnalyticsReader : IGrowthAnalyticsReader
             planMap[code] = (mrr, cur);
         }
 
-        var tenantRows = await _db.Tenants.AsNoTracking()
+        var tenantRows = await _db.Subscribers.AsNoTracking()
             .Where(t => t.CreatedAt < toExclusive)
             .Select(t => new { t.CreatedAt, t.IsActive, t.PlanCode })
             .ToListAsync(cancellationToken);
@@ -220,11 +220,11 @@ public sealed class GrowthAnalyticsReader : IGrowthAnalyticsReader
     private static decimal MonthlyEquivalentMrr(decimal priceAmount, string billingCycle)
     {
         var c = (billingCycle ?? string.Empty).Trim().ToLowerInvariant();
-        if (c == SaasBillingCycle.Yearly)
+        if (c == CommercialBillingCycle.Yearly)
             return priceAmount / 12m;
-        if (c == SaasBillingCycle.Quarterly)
+        if (c == CommercialBillingCycle.Quarterly)
             return priceAmount / 3m;
-        if (c == SaasBillingCycle.OneTime)
+        if (c == CommercialBillingCycle.OneTime)
             return 0m;
 
         return priceAmount;

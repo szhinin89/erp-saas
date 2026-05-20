@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Application.Common;
@@ -47,13 +47,13 @@ public sealed class CrearBankAccountCommandHandler
     : IRequestHandler<CrearBankAccountCommand, Result<BankAccountDto>>
 {
     private readonly ICashRepository _caja;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _user;
     private readonly IUnitOfWork _uow;
 
     public CrearBankAccountCommandHandler(
         ICashRepository caja,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork uow)
     {
@@ -66,7 +66,7 @@ public sealed class CrearBankAccountCommandHandler
     public async Task<Result<BankAccountDto>> Handle(CrearBankAccountCommand cmd, CancellationToken ct)
     {
         var entity = BankAccount.Create(
-            _tenant.TenantId,
+            _tenant.SubscriberId,
             cmd.Name,
             cmd.AccountNumber,
             cmd.AccountType,

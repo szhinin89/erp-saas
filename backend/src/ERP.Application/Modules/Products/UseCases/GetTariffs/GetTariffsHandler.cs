@@ -8,12 +8,12 @@ namespace ERP.Application.Products.UseCases.GetTariffs;
 public class GetTariffsHandler : IRequestHandler<GetTariffsQuery, Result<IReadOnlyList<TariffDto>>>
 {
     private readonly IProductCatalogRepository _repo;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
-    public GetTariffsHandler(IProductCatalogRepository repo, ICurrentTenant currentTenant)
+    public GetTariffsHandler(IProductCatalogRepository repo, ICurrentSubscriber currentSubscriber)
     {
         _repo = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public Task<Result<IReadOnlyList<TariffDto>>> HandleAsync(bool onlyActive, CancellationToken ct = default)
@@ -21,8 +21,8 @@ public class GetTariffsHandler : IRequestHandler<GetTariffsQuery, Result<IReadOn
 
     public async Task<Result<IReadOnlyList<TariffDto>>> Handle(GetTariffsQuery request, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
-        var items = await _repo.GetTariffsAsync(tenantId, request.OnlyActive, ct);
+        var subscriberId = _currentSubscriber.SubscriberId;
+        var items = await _repo.GetTariffsAsync(subscriberId, request.OnlyActive, ct);
         var dtos = items.Select(x => new TariffDto(x.Id, x.Code, x.Description, x.IsActive)).ToList();
         return Result<IReadOnlyList<TariffDto>>.Success(dtos);
     }

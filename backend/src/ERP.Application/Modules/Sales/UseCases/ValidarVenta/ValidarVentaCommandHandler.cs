@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Domain.Audit.Entities;
@@ -11,7 +11,7 @@ public sealed class ValidateSaleCommandHandler : IRequestHandler<ValidateSaleCom
 {
     private readonly ISalesRepository    _ventasRepository;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _currentTenant;
+    private readonly ICurrentSubscriber          _currentSubscriber;
     private readonly ICurrentUser            _currentUser;
     private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<ValidateSaleCommandHandler> _logger;
@@ -19,14 +19,14 @@ public sealed class ValidateSaleCommandHandler : IRequestHandler<ValidateSaleCom
     public ValidateSaleCommandHandler(
         ISalesRepository ventasRepository,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
         ILogger<ValidateSaleCommandHandler> logger)
     {
         _ventasRepository = ventasRepository;
         _activity         = activity;
-        _currentTenant    = currentTenant;
+        _currentSubscriber    = currentSubscriber;
         _currentUser      = currentUser;
         _unitOfWork       = unitOfWork;
         _logger           = logger;
@@ -34,12 +34,12 @@ public sealed class ValidateSaleCommandHandler : IRequestHandler<ValidateSaleCom
 
     public async Task<Result<Guid>> Handle(ValidateSaleCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        _logger.LogInformation("Validando factura {FacturaId} (tenant={TenantId})", command.VentaId, tenantId);
+        _logger.LogInformation("Validando factura {FacturaId} (tenant={SubscriberId})", command.VentaId, subscriberId);
 
-        var factura = await _ventasRepository.GetBillByIdAsync(tenantId, command.VentaId, ct);
+        var factura = await _ventasRepository.GetBillByIdAsync(subscriberId, command.VentaId, ct);
         if (factura is null)
             return Result<Guid>.Failure("Factura de venta no encontrada.");
 
@@ -67,7 +67,7 @@ public sealed class ValidateSaleCommandHandler : IRequestHandler<ValidateSaleCom
                 factura.Id, factura.Sequential, factura.Total);
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "ventas", action: "venta.validar",
                 entityType: "SalesBill", entityId: factura.Id,
                 description: $"{factura.EstabCode}-{factura.EmPointCode}-{factura.Sequential}"), ct);

@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
@@ -24,7 +24,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
     private readonly IProductRepository              _productRepository;
     private readonly IUserActivityRepository         _activity;
     private readonly IUnitOfWork                     _unitOfWork;
-    private readonly ICurrentTenant                  _currentTenant;
+    private readonly ICurrentSubscriber                  _currentSubscriber;
     private readonly ICurrentUser                    _currentUser;
     private readonly ILogger<IssueElectronicInvoiceCommandHandler> _logger;
 
@@ -37,7 +37,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
         IProductRepository productRepository,
         IUserActivityRepository activity,
         IUnitOfWork unitOfWork,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<IssueElectronicInvoiceCommandHandler> logger)
     {
@@ -49,7 +49,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
         _productRepository   = productRepository;
         _activity            = activity;
         _unitOfWork          = unitOfWork;
-        _currentTenant       = currentTenant;
+        _currentSubscriber       = currentSubscriber;
         _currentUser         = currentUser;
         _logger              = logger;
     }
@@ -58,11 +58,11 @@ public sealed class IssueElectronicInvoiceCommandHandler
         IssueElectronicInvoiceCommand command,
         CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
         // 1. Cargar factura con detalles
-        var factura = await _ventasRepository.GetBillByIdAsync(tenantId, command.VentaId, ct);
+        var factura = await _ventasRepository.GetBillByIdAsync(subscriberId, command.VentaId, ct);
         if (factura is null)
             return Result<Guid>.Failure("Factura de venta no encontrada.");
 
@@ -71,7 +71,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
                 $"Solo se puede emitir una factura Validada (estado actual: {factura.Status}).");
 
         // 2. Cargar configuración SRI
-        var configSri = await _configSriRepository.GetByTenantIdAsync(tenantId, ct);
+        var configSri = await _configSriRepository.GetBySubscriberIdAsync(subscriberId, ct);
         if (configSri is null)
             return Result<Guid>.Failure("La configuración SRI no está configurada para este tenant.");
 
@@ -134,8 +134,8 @@ public sealed class IssueElectronicInvoiceCommandHandler
         }
 
         // 6. Guardar archivos XML fuera de la transacción DB
-        var xmlGeneradoPath     = $"ventas/{tenantId}/{factura.Id}/generado.xml";
-        var xmlAutorizacionPath = $"ventas/{tenantId}/{factura.Id}/autorizado.xml";
+        var xmlGeneradoPath     = $"ventas/{subscriberId}/{factura.Id}/generado.xml";
+        var xmlAutorizacionPath = $"ventas/{subscriberId}/{factura.Id}/autorizado.xml";
         try
         {
             await _fileStorage.SaveAsync(xmlGeneradoPath,
@@ -179,7 +179,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
             var stockLines = new List<SalesBillAuthorizedStockLine>();
             foreach (var detalle in detalles)
             {
-                var producto = await _productRepository.GetByIdAsync(detalle.ProductId, tenantId, ct);
+                var producto = await _productRepository.GetByIdAsync(detalle.ProductId, subscriberId, ct);
                 if (producto is null || producto.IsService || !producto.TracksStock)
                     continue;
                 stockLines.Add(new SalesBillAuthorizedStockLine(detalle.ProductId, detalle.Quantity));
@@ -195,7 +195,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
                 stockLines);
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "ventas", action: "venta.emitir",
                 entityType: "SalesBill", entityId: factura.Id,
                 description: $"{numeroFactura} — auth: {response.AuthNumber}"), ct);
@@ -204,8 +204,8 @@ public sealed class IssueElectronicInvoiceCommandHandler
             await _unitOfWork.CommitAsync(ct);
 
             _logger.LogInformation(
-                "Factura emitida: id {FacturaId}, tenant {TenantId}, autorizacion {NumAuth}.",
-                factura.Id, tenantId, response.AuthNumber);
+                "Factura emitida: id {FacturaId}, tenant {SubscriberId}, autorizacion {NumAuth}.",
+                factura.Id, subscriberId, response.AuthNumber);
 
             return Result<Guid>.Success(factura.Id);
         }

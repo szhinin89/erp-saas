@@ -6,10 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Repositories;
 
-/// <summary>
-/// Memberships implementan <c>ITenantEntity</c>; los métodos que cruzan empresas o fijan <c>TenantId</c>
-/// en el predicado usan <see cref="IPlatformQueryAccessor"/> a propósito.
-/// </summary>
 public class AccessRepository : IAccessRepository
 {
     private readonly ErpDbContext _db;
@@ -42,58 +38,80 @@ public class AccessRepository : IAccessRepository
     public Task AddUserAsync(IdentityUser user, CancellationToken ct = default)
         => _db.IdentityUsers.AddAsync(user, ct).AsTask();
 
-    /// <summary>Bootstrap IAM: todas las membresías activas del usuario (IQF + <c>IdentityUserId</c>).</summary>
-    public async Task<IReadOnlyList<Membership>> GetActiveMembershipsForUserSystemAsync(Guid identityUserId, CancellationToken ct = default)
-    {
-        // Necesario para listar todas las empresas del usuario (cross-tenant).
-        return await _platform.Unfiltered(_db.Memberships, PlatformQueryReason.CrossTenantSystem)
+    public async Task<IReadOnlyList<CompanyUserMembership>> GetActiveCompanyUserMembershipsForUserSystemAsync(
+        Guid identityUserId, CancellationToken ct = default)
+        => await _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.CrossTenantSystem)
             .Where(m => m.IdentityUserId == identityUserId && m.IsActive)
             .ToListAsync(ct);
-    }
 
-    /// <summary>Par empresa + usuario; <c>TenantId</c> explícito en el predicado.</summary>
-    public Task<Membership?> GetMembershipAsync(Guid tenantId, Guid identityUserId, CancellationToken ct = default)
-        => _platform.Unfiltered(_db.Memberships, PlatformQueryReason.TenantScopedExplicit)
-            .FirstOrDefaultAsync(m => m.TenantId == tenantId && m.IdentityUserId == identityUserId, ct);
+    public Task<CompanyUserMembership?> GetCompanyUserMembershipAsync(
+        Guid companyId, Guid identityUserId, CancellationToken ct = default)
+        => _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.CrossTenantSystem)
+            .FirstOrDefaultAsync(m => m.CompanyId == companyId && m.IdentityUserId == identityUserId, ct);
 
-    public Task AddMembershipAsync(Membership membership, CancellationToken ct = default)
-        => _db.Memberships.AddAsync(membership, ct).AsTask();
+    public Task AddCompanyUserMembershipAsync(CompanyUserMembership membership, CancellationToken ct = default)
+        => _db.CompanyUserMemberships.AddAsync(membership, ct).AsTask();
 
-    public async Task<IReadOnlyList<Membership>> GetMembershipsByTenantAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default)
+    public async Task<IReadOnlyList<CompanyUserMembership>> GetCompanyUserMembershipsByCompanyAsync(
+        Guid companyId, bool onlyActive = true, CancellationToken ct = default)
     {
-        // Para administración dentro del tenant actual.
-        var q = _db.Memberships.Where(m => m.TenantId == tenantId);
+        var q = _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.TenantScopedExplicit)
+            .Where(m => m.CompanyId == companyId);
         if (onlyActive) q = q.Where(m => m.IsActive);
         return await q.OrderBy(m => m.IdentityUserId).ToListAsync(ct);
     }
 
-    /// <summary>Cupo por empresa: IQF + <c>TenantId</c> explícito (no depender solo del filtro global).</summary>
-    public Task<int> CountActiveMembershipsByTenantAsync(Guid tenantId, CancellationToken ct = default)
-        => _platform.Unfiltered(_db.Memberships, PlatformQueryReason.TenantScopedExplicit)
-            .CountAsync(m => m.TenantId == tenantId && m.IsActive, ct);
-
-    public async Task<IReadOnlyList<AccessProfile>> GetProfilesByTenantAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default)
+    public async Task<IReadOnlyList<CompanyUserMembership>> GetCompanyUserMembershipsBySubscriberAsync(
+        Guid subscriberId, bool onlyActive = true, CancellationToken ct = default)
     {
-        var q = _db.AccessProfiles.Where(p => p.TenantId == tenantId);
+        var q =
+            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.TenantScopedExplicit)
+            join c in _db.Companies on m.CompanyId equals c.Id
+            where c.SubscriberId == subscriberId
+            select m;
+
+        if (onlyActive)
+            q = q.Where(m => m.IsActive);
+
+        return await q.OrderBy(m => m.IdentityUserId).ToListAsync(ct);
+    }
+
+    public Task<int> CountActiveCompanyUserMembershipsByCompanyAsync(Guid companyId, CancellationToken ct = default)
+        => _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.TenantScopedExplicit)
+            .CountAsync(m => m.CompanyId == companyId && m.IsActive, ct);
+
+    public Task<int> CountActiveCompanyUserMembershipsBySubscriberAsync(Guid subscriberId, CancellationToken ct = default)
+        => (
+            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.TenantScopedExplicit)
+            join c in _db.Companies on m.CompanyId equals c.Id
+            where c.SubscriberId == subscriberId && m.IsActive
+            select m
+        ).CountAsync(ct);
+
+    public async Task<IReadOnlyList<AccessProfile>> GetProfilesByTenantAsync(Guid subscriberId, bool onlyActive = true, CancellationToken ct = default)
+    {
+        var q = _db.AccessProfiles.Where(p => p.SubscriberId == subscriberId);
         if (onlyActive) q = q.Where(p => p.IsActive);
         return await q.OrderBy(p => p.Name).ToListAsync(ct);
     }
 
-    public Task<AccessProfile?> GetProfileByIdAsync(Guid tenantId, Guid profileId, CancellationToken ct = default)
-        => _db.AccessProfiles.FirstOrDefaultAsync(p => p.TenantId == tenantId && p.Id == profileId, ct);
+    public Task<AccessProfile?> GetProfileByIdAsync(Guid subscriberId, Guid profileId, CancellationToken ct = default)
+        => _db.AccessProfiles.FirstOrDefaultAsync(p => p.SubscriberId == subscriberId && p.Id == profileId, ct);
 
     public Task AddProfileAsync(AccessProfile profile, CancellationToken ct = default)
         => _db.AccessProfiles.AddAsync(profile, ct).AsTask();
 
-    public async Task<IReadOnlyList<AccessProfilePermission>> GetProfilePermissionsAsync(Guid tenantId, Guid profileId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<AccessProfilePermission>> GetProfilePermissionsAsync(
+        Guid subscriberId, Guid profileId, CancellationToken ct = default)
         => await _db.AccessProfilePermissions
-            .Where(p => p.TenantId == tenantId && p.ProfileId == profileId)
+            .Where(p => p.SubscriberId == subscriberId && p.ProfileId == profileId)
             .OrderBy(p => p.PermissionKey)
             .ToListAsync(ct);
 
-    public Task<AccessProfilePermission?> GetProfilePermissionAsync(Guid tenantId, Guid profileId, string permissionKey, CancellationToken ct = default)
+    public Task<AccessProfilePermission?> GetProfilePermissionAsync(
+        Guid subscriberId, Guid profileId, string permissionKey, CancellationToken ct = default)
         => _db.AccessProfilePermissions
-            .FirstOrDefaultAsync(p => p.TenantId == tenantId && p.ProfileId == profileId && p.PermissionKey == permissionKey, ct);
+            .FirstOrDefaultAsync(p => p.SubscriberId == subscriberId && p.ProfileId == profileId && p.PermissionKey == permissionKey, ct);
 
     public Task AddProfilePermissionAsync(AccessProfilePermission permission, CancellationToken ct = default)
         => _db.AccessProfilePermissions.AddAsync(permission, ct).AsTask();
@@ -101,4 +119,3 @@ public class AccessRepository : IAccessRepository
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _db.SaveChangesAsync(ct);
 }
-

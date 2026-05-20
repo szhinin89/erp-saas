@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using Microsoft.EntityFrameworkCore;
 using ERP.Application.Subscriptions;
 using ERP.Domain.Subscriptions.Entities;
@@ -11,12 +11,12 @@ namespace ERP.Infrastructure.Services;
 public sealed class SubscriptionService : ISubscriptionService
 {
     private readonly ErpDbContext _db;
-    private readonly ITenantEntitlementsService _entitlements;
+    private readonly ISubscriberEntitlementsService _entitlements;
     private readonly IPlatformQueryAccessor _platform;
 
     public SubscriptionService(
         ErpDbContext db,
-        ITenantEntitlementsService entitlements,
+        ISubscriberEntitlementsService entitlements,
         IPlatformQueryAccessor platform)
     {
         _db = db;
@@ -24,86 +24,86 @@ public sealed class SubscriptionService : ISubscriptionService
         _platform = platform;
     }
 
-    public Task<bool> HasFeatureAsync(Guid tenantId, string featureCode, CancellationToken ct = default) =>
-        _entitlements.HasFeatureAsync(tenantId, featureCode, ct);
+    public Task<bool> HasFeatureAsync(Guid subscriberId, string featureCode, CancellationToken ct = default) =>
+        _entitlements.HasFeatureAsync(subscriberId, featureCode, ct);
 
-    public async Task<bool> CheckLimitAsync(Guid tenantId, string featureCode, long amount = 1, CancellationToken ct = default)
+    public async Task<bool> CheckLimitAsync(Guid subscriberId, string featureCode, long amount = 1, CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty) return true;
+        if (subscriberId == Guid.Empty) return true;
         if (amount <= 0) return true;
 
         var code = NormalizeFeatureCode(featureCode);
-        var feature = await _db.SaasFeatureDefinitions.AsNoTracking()
+        var feature = await _db.PlatformFeatures.AsNoTracking()
             .FirstOrDefaultAsync(f => f.Code == code, ct);
         if (feature is null || !feature.IsMetered) return true;
 
-        if (!await HasFeatureAsync(tenantId, code, ct)) return false;
+        if (!await HasFeatureAsync(subscriberId, code, ct)) return false;
 
-        var limit = await GetEffectiveLimitAsync(tenantId, feature.Id, ct);
+        var limit = await GetEffectiveLimitAsync(subscriberId, feature.Id, ct);
         if (limit is null) return true;
 
         var period = MonthlyPeriodKey(DateTime.UtcNow);
         var used = await _platform
-            .Unfiltered(_db.TenantSubscriptionUsages.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
-            .Where(u => u.TenantId == tenantId && u.FeatureId == feature.Id && u.PeriodKey == period)
+            .Unfiltered(_db.SubscriptionUsages.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
+            .Where(u => u.SubscriberId == subscriberId && u.FeatureId == feature.Id && u.PeriodKey == period)
             .Select(u => u.Quantity)
             .FirstOrDefaultAsync(ct);
 
         return used + amount <= limit.Value;
     }
 
-    public async Task<bool> IncrementUsageAsync(Guid tenantId, string featureCode, long amount = 1, CancellationToken ct = default)
+    public async Task<bool> IncrementUsageAsync(Guid subscriberId, string featureCode, long amount = 1, CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty || amount <= 0) return false;
+        if (subscriberId == Guid.Empty || amount <= 0) return false;
 
         var code = NormalizeFeatureCode(featureCode);
-        var feature = await _db.SaasFeatureDefinitions.AsNoTracking()
+        var feature = await _db.PlatformFeatures.AsNoTracking()
             .FirstOrDefaultAsync(f => f.Code == code, ct);
         if (feature is null || !feature.IsMetered) return false;
 
         var period = MonthlyPeriodKey(DateTime.UtcNow);
         return await SubscriptionUsageIncrementer.IncrementAsync(
-            _db, tenantId, feature.Id, period, amount, ct);
+            _db, subscriberId, feature.Id, period, amount, ct);
     }
 
-    private async Task<TenantSaasSubscription?> GetActiveSubscriptionRowAsync(Guid tenantId, CancellationToken ct) =>
+    private async Task<SubscriberSubscription?> GetActiveSubscriptionRowAsync(Guid subscriberId, CancellationToken ct) =>
         await _platform
-            .Unfiltered(_db.TenantSaasSubscriptions.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
-            .Where(s => s.TenantId == tenantId && s.Status == TenantSubscriptionStatus.Active)
+            .Unfiltered(_db.SubscriberSubscriptions.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
+            .Where(s => s.SubscriberId == subscriberId && s.Status == SubscriptionStatus.Active)
             .OrderByDescending(s => s.StartedAtUtc)
             .FirstOrDefaultAsync(ct);
 
-    private async Task<long?> GetEffectiveLimitAsync(Guid tenantId, Guid featureId, CancellationToken ct)
+    private async Task<long?> GetEffectiveLimitAsync(Guid subscriberId, Guid featureId, CancellationToken ct)
     {
-        var (planId, subscriptionId) = await ResolveEffectivePlanAndSubscriptionAsync(tenantId, ct);
+        var (planId, subscriptionId) = await ResolveEffectivePlanAndSubscriptionAsync(subscriberId, ct);
         if (planId is null) return null;
 
         if (subscriptionId is not null)
         {
             var ov = await _platform
-                .Unfiltered(_db.TenantSubscriptionFeatureOverrides.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
+                .Unfiltered(_db.SubscriptionFeatureOverrides.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
                 .FirstOrDefaultAsync(
-                    o => o.TenantId == tenantId && o.SubscriptionId == subscriptionId.Value && o.FeatureId == featureId,
+                    o => o.SubscriberId == subscriberId && o.SubscriptionId == subscriptionId.Value && o.FeatureId == featureId,
                     ct);
             if (ov?.LimitOverridePerPeriod is not null)
                 return ov.LimitOverridePerPeriod;
         }
 
-        var pf = await _db.SaasPlanFeatures.AsNoTracking()
+        var pf = await _db.CommercialPlanFeatures.AsNoTracking()
             .FirstOrDefaultAsync(x => x.PlanId == planId.Value && x.FeatureId == featureId, ct);
         return pf?.LimitPerPeriod;
     }
 
     private async Task<(Guid? PlanId, Guid? SubscriptionId)> ResolveEffectivePlanAndSubscriptionAsync(
-        Guid tenantId,
+        Guid subscriberId,
         CancellationToken ct)
     {
-        var sub = await GetActiveSubscriptionRowAsync(tenantId, ct);
+        var sub = await GetActiveSubscriptionRowAsync(subscriberId, ct);
         if (sub is not null)
             return (sub.PlanId, sub.Id);
 
-        var planCode = await _db.Tenants.AsNoTracking()
-            .Where(t => t.Id == tenantId)
+        var planCode = await _db.Subscribers.AsNoTracking()
+            .Where(t => t.Id == subscriberId)
             .Select(t => t.PlanCode)
             .FirstOrDefaultAsync(ct);
 
@@ -112,7 +112,7 @@ public sealed class SubscriptionService : ISubscriptionService
 
         var normalizedCode = planCode.Trim().ToLowerInvariant();
 
-        var planId = await _db.SaasPlans.AsNoTracking()
+        var planId = await _db.CommercialPlans.AsNoTracking()
             .Where(p => p.Code.ToLower() == normalizedCode)
             .Select(p => (Guid?)p.Id)
             .FirstOrDefaultAsync(ct);

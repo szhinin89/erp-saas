@@ -19,7 +19,7 @@ export function SuperAdminLayout() {
   const { user, logout } = useAuthStore();
 
   const [impersonationName, setImpersonationName] = useState(
-    () => localStorage.getItem('superadmin-impersonation-tenant-name') ?? '',
+    () => localStorage.getItem('superadmin-impersonation-subscriber-name') ?? '',
   );
 
   /* ── Existing redirect logic (unchanged) ── */
@@ -59,7 +59,7 @@ export function SuperAdminLayout() {
   };
 
   const exitImpersonation = () => {
-    localStorage.removeItem('superadmin-impersonation-tenant-name');
+    localStorage.removeItem('superadmin-impersonation-subscriber-name');
     setImpersonationName('');
     navigate('/dashboard');
   };

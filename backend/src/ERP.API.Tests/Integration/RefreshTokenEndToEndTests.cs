@@ -24,11 +24,11 @@ public sealed class RefreshTokenEndToEndTests
         var db      = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var service = scope.ServiceProvider.GetRequiredService<IRefreshTokenService>();
 
-        await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
         var userId   = factory.MutableUser.UserId;
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
 
-        var (rawToken, expiry) = await service.CreateAsync(userId, tenantId, RefreshUserType.Legacy);
+        var (rawToken, expiry) = await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
 
         rawToken.Should().NotBeNullOrEmpty();
         expiry.Should().BeAfter(DateTime.UtcNow.AddDays(25));
@@ -51,12 +51,12 @@ public sealed class RefreshTokenEndToEndTests
         var db      = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var service = scope.ServiceProvider.GetRequiredService<IRefreshTokenService>();
 
-        await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
         var userId   = factory.MutableUser.UserId;
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
 
         // 1. Crear token inicial
-        var (rawToken1, _) = await service.CreateAsync(userId, tenantId, RefreshUserType.Legacy);
+        var (rawToken1, _) = await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
 
         // 2. Rotar
         var result = await service.ValidateAndRotateAsync(rawToken1);
@@ -85,11 +85,11 @@ public sealed class RefreshTokenEndToEndTests
         var db      = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var service = scope.ServiceProvider.GetRequiredService<IRefreshTokenService>();
 
-        await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
         var userId   = factory.MutableUser.UserId;
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
 
-        var (rawToken, _) = await service.CreateAsync(userId, tenantId, RefreshUserType.Legacy);
+        var (rawToken, _) = await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
 
         // Primer uso — válido
         await service.ValidateAndRotateAsync(rawToken);
@@ -109,15 +109,15 @@ public sealed class RefreshTokenEndToEndTests
         var db      = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var service = scope.ServiceProvider.GetRequiredService<IRefreshTokenService>();
 
-        await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
         var userId   = factory.MutableUser.UserId;
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
 
         // Crear 2 tokens (simula 2 dispositivos)
-        await service.CreateAsync(userId, tenantId, RefreshUserType.Legacy);
-        await service.CreateAsync(userId, tenantId, RefreshUserType.Legacy);
+        await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
+        await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
 
-        await service.RevokeAllForUserAsync(userId, tenantId, "Logout");
+        await service.RevokeAllForUserAsync(userId, subscriberId, "Logout");
 
         var activos = await db.RefreshTokens
             .CountAsync(t => t.UserId == userId && !t.IsRevoked, CancellationToken.None);
@@ -134,13 +134,13 @@ public sealed class RefreshTokenEndToEndTests
         var repo    = scope.ServiceProvider.GetRequiredService<IRefreshTokenRepository>();
         var service = scope.ServiceProvider.GetRequiredService<IRefreshTokenService>();
 
-        await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
         var userId   = factory.MutableUser.UserId;
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
 
         // Insertar manualmente un token con fecha pasada
         var rawToken     = "expired-token-raw";
-        var expiredToken = RefreshToken.Create(userId, tenantId, RefreshUserType.Legacy,
+        var expiredToken = RefreshToken.Create(userId, subscriberId, RefreshUserType.Legacy,
                                                RefreshTokenService.Hash(rawToken));
         // Simular expiración: revocar directamente para llegar al path IsActive=false
         expiredToken.Revoke("Expirado");

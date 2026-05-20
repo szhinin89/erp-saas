@@ -3,7 +3,7 @@ using ERP.Domain.Modules.Sales.Events;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
-public sealed class SalesNote : AuditableEntity, ITenantEntity
+public sealed class SalesNote : AuditableEntity, ISubscriberScopedEntity
 {
     public const int NoteTypeMaxLen   = 20;
     public const int ReasonMaxLen     = 300;
@@ -44,7 +44,7 @@ public sealed class SalesNote : AuditableEntity, ITenantEntity
     private SalesNote() { }
 
     public static SalesNote Create(
-        Guid     tenantId,
+        Guid     subscriberId,
         Guid     originalBillId,
         string   noteType,
         string   reason,
@@ -67,7 +67,7 @@ public sealed class SalesNote : AuditableEntity, ITenantEntity
         var note = new SalesNote
         {
             Id             = Guid.NewGuid(),
-            TenantId       = tenantId,
+            SubscriberId       = subscriberId,
             OriginalBillId = originalBillId,
             NoteType       = nt,
             Reason         = (reason ?? string.Empty).Trim(),
@@ -132,7 +132,7 @@ public sealed class SalesNote : AuditableEntity, ITenantEntity
         if (lines.Count > 0)
         {
             var number = $"{EstabCode}-{EmPointCode}-{Sequential}";
-            RaiseDomainEvent(new SalesNoteAuthorizedEvent(Id, TenantId, userId, warehouseId, number, lines));
+            RaiseDomainEvent(new SalesNoteAuthorizedEvent(Id, SubscriberId, userId, warehouseId, number, lines));
         }
     }
 

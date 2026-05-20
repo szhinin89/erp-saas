@@ -12,27 +12,27 @@ public class DisableProductSubcategoryHandler : IRequestHandler<DisableProductSu
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public DisableProductSubcategoryHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
         _activity = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
     public async Task<Result<ProductSubcategoryDto>> Handle(DisableProductSubcategoryCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId = _currentUser.UserId;
 
-        var entity = await _repo.GetProductSubcategoryByIdAsync(tenantId, command.Id, ct);
+        var entity = await _repo.GetProductSubcategoryByIdAsync(subscriberId, command.Id, ct);
         if (entity is null)
             return Result<ProductSubcategoryDto>.Failure("Subcategoría no encontrada.");
 
@@ -41,7 +41,7 @@ public class DisableProductSubcategoryHandler : IRequestHandler<DisableProductSu
 
         entity.Disable(userId);
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _currentUser.Email,
             _currentUser.FullName,

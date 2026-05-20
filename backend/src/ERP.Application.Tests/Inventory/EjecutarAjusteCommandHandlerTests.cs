@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventory.DTOs;
@@ -134,7 +134,7 @@ public sealed class EjecutarAjusteCommandHandlerTests
     {
         var ctx = new TestContext(cantidadAjuste: 5m);
         ctx.AjusteRepo.Setup(x => x.GetByIdAsync(
-                ctx.TenantId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                ctx.SubscriberId, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((StockAdjustment?)null);
 
         var result = await ctx.Handle();
@@ -147,7 +147,7 @@ public sealed class EjecutarAjusteCommandHandlerTests
 
     private sealed class TestContext
     {
-        public Guid TenantId  { get; } = Guid.NewGuid();
+        public Guid SubscriberId  { get; } = Guid.NewGuid();
         public Guid UserId    { get; } = Guid.NewGuid();
         public Guid BodegaId  { get; } = Guid.NewGuid();
         public Guid ProductoId { get; } = Guid.NewGuid();
@@ -162,27 +162,27 @@ public sealed class EjecutarAjusteCommandHandlerTests
 
         private readonly Mock<IUserActivityRepository> _activity = new();
         private readonly Mock<ICostoPromedioService>   _costo    = new();
-        private readonly Mock<ICurrentTenant>          _tenant   = new();
+        private readonly Mock<ICurrentSubscriber>          _tenant   = new();
         private readonly Mock<ICurrentUser>            _user     = new();
 
         public TestContext(decimal cantidadAjuste)
         {
             _costo.Setup(x => x.ObtenerCostoPromedioAsync(
-                    TenantId, ProductoId, BodegaId, It.IsAny<CancellationToken>()))
+                    SubscriberId, ProductoId, BodegaId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(0m);
 
-            _tenant.SetupGet(x => x.TenantId).Returns(TenantId);
+            _tenant.SetupGet(x => x.SubscriberId).Returns(SubscriberId);
             _user.SetupGet(x => x.UserId).Returns(UserId);
             _user.SetupGet(x => x.Email).Returns("test@erp.dev");
             _user.SetupGet(x => x.FullName).Returns("Test User");
 
             Ajuste = StockAdjustment.Create(
-                TenantId, sequential: 1,
+                SubscriberId, sequential: 1,
                 BodegaId, "Bodega Test",
                 ProductoId, "Producto Test",
                 cantidadAjuste, "Ajuste físico", null, UserId);
 
-            AjusteRepo.Setup(x => x.GetByIdAsync(TenantId, Ajuste.Id, It.IsAny<CancellationToken>()))
+            AjusteRepo.Setup(x => x.GetByIdAsync(SubscriberId, Ajuste.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(Ajuste);
             AjusteRepo.Setup(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
@@ -204,17 +204,17 @@ public sealed class EjecutarAjusteCommandHandlerTests
 
         public void WithIncrementoExitoso(decimal cantAnterior)
             => StockRepo.Setup(x => x.IncrementStockAtomicAsync(
-                    TenantId, BodegaId, ProductoId, It.IsAny<decimal>(), UserId, It.IsAny<CancellationToken>()))
+                    SubscriberId, BodegaId, ProductoId, It.IsAny<decimal>(), UserId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(cantAnterior);
 
         public void WithDecrementoExitoso(decimal cantAnterior)
             => StockRepo.Setup(x => x.DecrementStockAtomicAsync(
-                    TenantId, BodegaId, ProductoId, It.IsAny<decimal>(), UserId, It.IsAny<CancellationToken>()))
+                    SubscriberId, BodegaId, ProductoId, It.IsAny<decimal>(), UserId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((decimal?)cantAnterior);
 
         public void WithDecrementoFallido()
             => StockRepo.Setup(x => x.DecrementStockAtomicAsync(
-                    TenantId, BodegaId, ProductoId, It.IsAny<decimal>(), UserId, It.IsAny<CancellationToken>()))
+                    SubscriberId, BodegaId, ProductoId, It.IsAny<decimal>(), UserId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync((decimal?)null);
 
         public Task<Result<StockAdjustmentDto>> Handle()

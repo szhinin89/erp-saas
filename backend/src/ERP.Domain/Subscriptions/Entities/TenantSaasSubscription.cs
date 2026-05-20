@@ -3,26 +3,26 @@ using ERP.Domain.Common;
 namespace ERP.Domain.Subscriptions.Entities;
 
 /// <summary>Suscripción activa de un tenant a un plan comercial.</summary>
-public sealed class TenantSaasSubscription : AuditableEntity
+public sealed class SubscriberSubscription : AuditableEntity
 {
     public Guid PlanId { get; private set; }
-    public TenantSubscriptionStatus Status { get; private set; }
+    public SubscriptionStatus Status { get; private set; }
     public DateTime StartedAtUtc { get; private set; }
     public DateTime? CurrentPeriodEndUtc { get; private set; }
 
-    private TenantSaasSubscription() { }
+    private SubscriberSubscription() { }
 
-    public static TenantSaasSubscription Create(
-        Guid tenantId,
+    public static SubscriberSubscription Create(
+        Guid subscriberId,
         Guid planId,
         Guid createdBy,
-        TenantSubscriptionStatus status = TenantSubscriptionStatus.Active,
+        SubscriptionStatus status = SubscriptionStatus.Active,
         DateTime? currentPeriodEndUtc = null)
     {
-        var s = new TenantSaasSubscription
+        var s = new SubscriberSubscription
         {
             Id = Guid.NewGuid(),
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             PlanId = planId,
             Status = status,
             StartedAtUtc = DateTime.UtcNow,
@@ -34,7 +34,7 @@ public sealed class TenantSaasSubscription : AuditableEntity
 
     public void Cancel(Guid updatedBy)
     {
-        Status = TenantSubscriptionStatus.Cancelled;
+        Status = SubscriptionStatus.Cancelled;
         SetUpdated(updatedBy);
     }
 
@@ -42,8 +42,8 @@ public sealed class TenantSaasSubscription : AuditableEntity
     public void ReassignPlan(Guid planId, Guid updatedBy)
     {
         PlanId = planId;
-        if (Status != TenantSubscriptionStatus.Active)
-            Status = TenantSubscriptionStatus.Active;
+        if (Status != SubscriptionStatus.Active)
+            Status = SubscriptionStatus.Active;
         SetUpdated(updatedBy);
     }
 }

@@ -1,40 +1,40 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Tenants.UseCases.CreateTenant;
-using ERP.Application.Tenants.UseCases.UpdateTenantGlobalParameters;
-using ERP.Application.Tenants.UseCases.UpdatePasswordResetMode;
-using ERP.Application.Tenants.UseCases.UpdateTenantCompany;
-using ERP.Application.Tenants.UseCases.UpdateTenantSubscription;
-using ERP.Application.Tenants.UseCases.UpdateTenantOperationalSettings;
+using ERP.Application.Subscribers.UseCases.CreateSubscriber;
+using ERP.Application.Subscribers.UseCases.UpdateSubscriberGlobalParameters;
+using ERP.Application.Subscribers.UseCases.UpdatePasswordResetMode;
+using ERP.Application.Subscribers.UseCases.UpdateSubscriberCompany;
+using ERP.Application.Subscribers.UseCases.UpdateSubscriberSubscription;
+using ERP.Application.Subscribers.UseCases.UpdateSubscriberOperationalSettings;
 using ERP.Application.Common;
 using ERP.Application.Subscriptions;
-using ERP.Application.Tenants.DTOs;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Application.Subscribers.DTOs;
+using ERP.Domain.Subscribers.Interfaces;
 
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// Gestión de tenants (empresas).
+/// Gestión de subscribers (empresas).
 /// Restringido: solo accesible por administradores del sistema.
 /// </summary>
 [ApiController]
-[AppFeature("Tenants API", "perm:tenants.api", "🧩", null, null, 990, IsVisibleInMenu = false)]
+[AppFeature("Tenants API", "perm:subscribers.api", "🧩", null, null, 990, IsVisibleInMenu = false)]
 [Route("api/[controller]")]
 [Authorize(Policy = "Session")]
 [Produces("application/json")]
-public class TenantsController : ControllerBase
+public class SubscribersController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly ITenantRepository _tenantRepository;
+    private readonly ISubscriberRepository _tenantRepository;
     private readonly ISessionModulesResolver _sessionModules;
 
-    public TenantsController(
+    public SubscribersController(
         IMediator mediator,
-        ITenantRepository tenantRepository,
+        ISubscriberRepository tenantRepository,
         ISessionModulesResolver sessionModules)
     {
         _mediator = mediator;
@@ -45,7 +45,7 @@ public class TenantsController : ControllerBase
     /// <summary>Obtiene el detalle de un tenant (SuperAdmin).</summary>
     [HttpGet("{id:guid}")]
     [Authorize(Roles = "SuperAdmin")]
-    [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct)
     {
@@ -54,21 +54,21 @@ public class TenantsController : ControllerBase
             return this.ApiNotFound("Empresa no encontrada.");
 
         var modules = await _sessionModules.GetEnabledModuleKeysAsync(id, ct);
-        return this.ApiOk(TenantDto.FromTenant(tenant, modules));
+        return this.ApiOk(SubscriberDto.FromTenant(tenant, modules));
     }
 
     /// <summary>Actualiza datos comerciales/legales de la empresa (SuperAdmin).</summary>
     [HttpPatch("{id:guid}/company")]
     [Authorize(Roles = "SuperAdmin")]
-    [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateCompany(
         [FromRoute] Guid id,
-        [FromBody] UpdateTenantCompanyRequest body,
+        [FromBody] UpdateSubscriberCompanyRequest body,
         CancellationToken ct)
     {
-        var command = new UpdateTenantCompanyCommand(
+        var command = new UpdateSubscriberCompanyCommand(
             id, body.Name, body.Slug, body.Ruc, body.ShortName,
             body.TradeName, body.Dinardap, body.LogoUrl, body.DisplayOrder, body.Priority);
 
@@ -79,27 +79,27 @@ public class TenantsController : ControllerBase
     /// <summary>Actualiza parámetros globales de la empresa (SuperAdmin).</summary>
     [HttpPatch("{id:guid}/global-parameters")]
     [Authorize(Roles = "SuperAdmin")]
-    [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateGlobalParameters(
         [FromRoute] Guid id,
-        [FromBody] UpdateTenantGlobalParametersBody body,
+        [FromBody] UpdateSubscriberGlobalParametersBody body,
         CancellationToken ct)
     {
-        var result = await _mediator.Send(new UpdateTenantGlobalParametersCommand(id, body.ElectronicBillingTrialEnabled), ct);
+        var result = await _mediator.Send(new UpdateSubscriberGlobalParametersCommand(id, body.ElectronicBillingTrialEnabled), ct);
         return this.ToOkOrBadRequest(result);
     }
 
     /// <summary>Crea un nuevo tenant (empresa) en el sistema.</summary>
     [HttpPost]
     [Authorize(Roles = "SuperAdmin")]
-    [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Create([FromBody] CreateTenantCommand command, CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody] CreateSubscriberCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
@@ -108,7 +108,7 @@ public class TenantsController : ControllerBase
     /// <summary>Retorna configuración pública mínima del tenant (sin datos sensibles).</summary>
     [HttpGet("{id:guid}/public-settings")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(ApiResponse<TenantPublicSettingsDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SubscriberPublicSettingsDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPublicSettings([FromRoute] Guid id, CancellationToken ct)
     {
@@ -116,7 +116,7 @@ public class TenantsController : ControllerBase
         if (tenant is null || !tenant.IsActive)
             return this.ApiNotFound("Empresa no encontrada.");
 
-        return this.ApiOk(new TenantPublicSettingsDto(tenant.Id, (int)tenant.PasswordResetMode));
+        return this.ApiOk(new SubscriberPublicSettingsDto(tenant.Id, (int)tenant.PasswordResetMode));
     }
 
     /// <summary>Actualiza el modo de recuperación de contraseña del tenant.</summary>
@@ -129,11 +129,11 @@ public class TenantsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdatePasswordResetMode(
         [FromRoute] Guid id,
-        [FromBody] UpdateTenantPasswordResetModeCommand command,
+        [FromBody] UpdateSubscriberPasswordResetModeCommand command,
         CancellationToken ct)
     {
-        if (id != command.TenantId)
-            return this.ApiBadRequest("TenantId no coincide con la ruta.");
+        if (id != command.SubscriberId)
+            return this.ApiBadRequest("SubscriberId no coincide con la ruta.");
 
         var result = await _mediator.Send(command, ct);
         return result.IsSuccess
@@ -148,17 +148,17 @@ public class TenantsController : ControllerBase
     /// </summary>
     [HttpPatch("{id:guid}/operational-settings")]
     [Authorize(Policy = "Session")]
-    [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateOperationalSettings(
         [FromRoute] Guid id,
-        [FromBody] UpdateTenantOperationalSettingsRequest body,
+        [FromBody] UpdateSubscriberOperationalSettingsRequest body,
         CancellationToken ct)
     {
-        var command = new UpdateTenantOperationalSettingsCommand(
+        var command = new UpdateSubscriberOperationalSettingsCommand(
             id,
             body.Currency,
             body.Language,
@@ -173,28 +173,28 @@ public class TenantsController : ControllerBase
     /// <summary>Actualiza el código de plan del tenant y los módulos habilitados.</summary>
     [HttpPatch("{id:guid}/subscription")]
     [Authorize(Roles = "SuperAdmin")]
-    [ProducesResponseType(typeof(ApiResponse<TenantDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateSubscription(
         [FromRoute] Guid id,
-        [FromBody] UpdateTenantSubscriptionBody body,
+        [FromBody] UpdateSubscriberSubscriptionBody body,
         CancellationToken ct)
     {
-        var result = await _mediator.Send(new UpdateTenantSubscriptionCommand(id, body.PlanCode, body.EnabledModules), ct);
+        var result = await _mediator.Send(new UpdateSubscriberSubscriptionCommand(id, body.PlanCode, body.EnabledModules), ct);
         return this.ToOkOrBadRequest(result);
     }
 }
 
-public sealed class UpdateTenantSubscriptionBody
+public sealed class UpdateSubscriberSubscriptionBody
 {
     public string? PlanCode { get; set; }
     public List<string>? EnabledModules { get; set; }
 }
 
-public sealed class UpdateTenantCompanyRequest
+public sealed class UpdateSubscriberCompanyRequest
 {
     public string Name { get; set; } = "";
     public string Slug { get; set; } = "";
@@ -207,12 +207,12 @@ public sealed class UpdateTenantCompanyRequest
     public int Priority { get; set; }
 }
 
-public sealed class UpdateTenantGlobalParametersBody
+public sealed class UpdateSubscriberGlobalParametersBody
 {
     public bool ElectronicBillingTrialEnabled { get; set; }
 }
 
-public sealed class UpdateTenantOperationalSettingsRequest
+public sealed class UpdateSubscriberOperationalSettingsRequest
 {
     public string Currency          { get; set; } = "USD";
     public string Language          { get; set; } = "es";

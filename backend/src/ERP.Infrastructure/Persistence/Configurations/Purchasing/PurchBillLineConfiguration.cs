@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Modules.Purchasing.Entities;
+using ERP.Domain.Modules.Purchasing.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,7 +12,7 @@ public sealed class PurchBillLineConfiguration : IEntityTypeConfiguration<PurchB
 
         builder.HasKey(d => d.Id);
         builder.Property(d => d.Id).HasColumnName("id");
-        builder.Property(d => d.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(d => d.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(d => d.PurchBillId).HasColumnName("purch_bill_id").IsRequired();
         builder.Property(d => d.ProductId).HasColumnName("product_id");
         builder.Property(d => d.PurchaseOrderLineId).HasColumnName("purchase_order_line_id");
@@ -31,6 +31,6 @@ public sealed class PurchBillLineConfiguration : IEntityTypeConfiguration<PurchB
         builder.Property(d => d.UpdatedBy).HasColumnName("updated_by");
 
         builder.HasIndex(d => d.PurchBillId).HasDatabaseName("ix_purch_bill_line_bill_id");
-        builder.HasIndex(d => new { d.TenantId, d.ProductId }).HasDatabaseName("ix_purch_bill_line_tenant_product");
+        builder.HasIndex(d => new { d.SubscriberId, d.ProductId }).HasDatabaseName("ix_purch_bill_line_subscriber_product");
     }
 }

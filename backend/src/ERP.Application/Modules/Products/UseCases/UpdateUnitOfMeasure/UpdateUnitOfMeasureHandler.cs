@@ -11,18 +11,18 @@ public class UpdateUnitOfMeasureHandler : IRequestHandler<UpdateUnitOfMeasureCom
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public UpdateUnitOfMeasureHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
         _activity = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
@@ -39,7 +39,7 @@ public class UpdateUnitOfMeasureHandler : IRequestHandler<UpdateUnitOfMeasureCom
             _currentUser.UserId);
 
         await _activity.AddAsync(UserActivity.Create(
-            _currentTenant.TenantId,
+            _currentSubscriber.SubscriberId,
             _currentUser.UserId,
             _currentUser.Email,
             _currentUser.FullName,

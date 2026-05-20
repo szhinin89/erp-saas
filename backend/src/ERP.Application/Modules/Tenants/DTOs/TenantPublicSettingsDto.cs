@@ -1,7 +1,7 @@
-namespace ERP.Application.Tenants.DTOs;
+namespace ERP.Application.Subscribers.DTOs;
 
-public record TenantPublicSettingsDto(
-    Guid TenantId,
+public record SubscriberPublicSettingsDto(
+    Guid SubscriberId,
     int PasswordResetMode
 );
 

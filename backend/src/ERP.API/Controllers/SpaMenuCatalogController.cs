@@ -1,4 +1,4 @@
-﻿using ERP.API.Attributes;
+using ERP.API.Attributes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,8 +20,8 @@ public sealed class SpaMenuCatalogController : ControllerBase
     public IActionResult ProfilesCatalogMarker() => NotFound();
 
     [HttpGet("tenant-access")]
-    [AppFeature("Acceso usuarios", "perm:access.memberships.view", "🧑‍🤝‍🧑", "/access", null, 87)]
-    public IActionResult TenantAccessCatalogMarker() => NotFound();
+    [AppFeature("Acceso usuarios", "perm:access.company_user_memberships.view", "🧑‍🤝‍🧑", "/access", null, 87)]
+    public IActionResult SubscriberAccessCatalogMarker() => NotFound();
 
     // ── Grupo "Configuración" ─────────────────────────────────
     // Carpeta padre en el catálogo para los 3 formularios de configuración de empresa.

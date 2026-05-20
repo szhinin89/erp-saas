@@ -13,7 +13,7 @@ public class TaxRateRepository : ITaxRateRepository
         _context = context;
     }
 
-    public async Task<TaxRate?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken ct = default)
-        => await _context.TaxRates.FirstOrDefaultAsync(t => t.Id == id && t.TenantId == tenantId, ct);
+    public async Task<TaxRate?> GetByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
+        => await _context.TaxRates.FirstOrDefaultAsync(t => t.Id == id && t.SubscriberId == subscriberId, ct);
 }
 

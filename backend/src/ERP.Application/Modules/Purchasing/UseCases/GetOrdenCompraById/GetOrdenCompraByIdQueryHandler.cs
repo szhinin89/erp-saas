@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
@@ -12,29 +12,29 @@ public sealed class GetPurchaseOrderByIdQueryHandler
 {
     private readonly IPurchaseOrderRepository _repo;
     private readonly ISupplierRepository   _proveedorRepo;
-    private readonly ICurrentTenant         _currentTenant;
+    private readonly ICurrentSubscriber         _currentSubscriber;
 
     public GetPurchaseOrderByIdQueryHandler(
         IPurchaseOrderRepository repo,
         ISupplierRepository proveedorRepo,
-        ICurrentTenant currentTenant)
+        ICurrentSubscriber currentSubscriber)
     {
         _repo          = repo;
         _proveedorRepo = proveedorRepo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public async Task<Result<PurchaseOrderDetailDto?>> Handle(
         GetPurchaseOrderByIdQuery query, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
 
-        var orden = await _repo.GetByIdAsync(tenantId, query.OrderId, ct);
+        var orden = await _repo.GetByIdAsync(subscriberId, query.OrderId, ct);
         if (orden is null)
             return Result<PurchaseOrderDetailDto?>.Success(null);
 
-        var Supplier   = await _proveedorRepo.GetByIdAsync(tenantId, orden.SupplierId, ct);
-        var vinculadas  = await _repo.GetBillLinksAsync(tenantId, orden.Id, ct);
+        var Supplier   = await _proveedorRepo.GetByIdAsync(subscriberId, orden.SupplierId, ct);
+        var vinculadas  = await _repo.GetBillLinksAsync(subscriberId, orden.Id, ct);
 
         var lines = orden.Lines.Select(d => new PurchaseOrderLineDto(
             d.Id, d.ProductId, d.Description,

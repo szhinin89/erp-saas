@@ -7,8 +7,9 @@ using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
-using ERP.Domain.Tenants.Entities;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Subscribers.Entities;
+using ERP.Domain.Subscribers.Interfaces;
 
 using MediatR;
 
@@ -22,7 +23,8 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
 
     private readonly IUserRepository _userRepository;
     private readonly IAccessRepository _accessRepository;
-    private readonly ITenantRepository _tenantRepository;
+    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ICompanyRepository _companyRepository;
     private readonly IPasswordResetTokenRepository _tokenRepository;
     private readonly IPasswordResetLinkSender _linkSender;
     private readonly IDeploymentFeatureFlags _deployment;
@@ -32,7 +34,8 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
     public ForgotPasswordHandler(
         IUserRepository userRepository,
         IAccessRepository accessRepository,
-        ITenantRepository tenantRepository,
+        ISubscriberRepository tenantRepository,
+        ICompanyRepository companyRepository,
         IPasswordResetTokenRepository tokenRepository,
         IPasswordResetLinkSender linkSender,
         IDeploymentFeatureFlags deployment,
@@ -42,6 +45,7 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
         _userRepository = userRepository;
         _accessRepository = accessRepository;
         _tenantRepository = tenantRepository;
+        _companyRepository = companyRepository;
         _tokenRepository = tokenRepository;
         _linkSender = linkSender;
         _deployment = deployment;
@@ -76,21 +80,24 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
             return Result<bool>.Success(true);
         }
 
-        // 2) Identity + memberships
+        // 2) Identity + company_user_memberships
         var identity = await _accessRepository.GetUserByEmailAsync(email, ct);
         if (identity is not null)
         {
             if (!identity.IsActive)
                 return Result<bool>.Failure(NoAccountMessage);
 
-            var memberships = await _accessRepository.GetActiveMembershipsForUserSystemAsync(identity.Id, ct);
-            if (memberships.Count == 0)
+            var company_user_memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(identity.Id, ct);
+            if (company_user_memberships.Count == 0)
                 return Result<bool>.Failure(NoAccountMessage);
 
-            if (memberships.Count > 1)
+            if (company_user_memberships.Count > 1)
                 return Result<bool>.Failure(MultipleAccountsMessage);
 
-            var tenant = await _tenantRepository.GetByIdAsync(memberships[0].TenantId, ct);
+            var companies = await _companyRepository.GetByIdsAsync(
+                new[] { company_user_memberships[0].CompanyId }, ct);
+            var subscriberId = companies.FirstOrDefault()?.SubscriberId ?? Guid.Empty;
+            var tenant = await _tenantRepository.GetByIdAsync(subscriberId, ct);
             if (tenant is null || !tenant.IsActive)
                 return Result<bool>.Failure(NoAccountMessage);
 
@@ -115,16 +122,16 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
             return Result<bool>.Failure(MultipleAccountsMessage);
 
         var legacyUser = legacyMatches[0];
-        var legacyTenant = await _tenantRepository.GetByIdAsync(legacyUser.TenantId, ct);
-        if (legacyTenant is null || !legacyTenant.IsActive)
+        var legacySubscriber = await _tenantRepository.GetByIdAsync(legacyUser.SubscriberId, ct);
+        if (legacySubscriber is null || !legacySubscriber.IsActive)
             return Result<bool>.Failure(NoAccountMessage);
 
-        if (!TenantAllowsTokenReset(legacyTenant.PasswordResetMode))
+        if (!TenantAllowsTokenReset(legacySubscriber.PasswordResetMode))
             return Result<bool>.Failure(TenantResetDisabledMessage);
 
         await IssueTokenAndSendAsync(
             legacyUser.Id,
-            legacyUser.TenantId,
+            legacyUser.SubscriberId,
             PasswordResetToken.KindLegacy,
             legacyUser.Email.Value,
             ct);
@@ -136,27 +143,27 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
 
     private async Task IssueTokenAndSendAsync(
         Guid userId,
-        Guid? tenantId,
+        Guid? subscriberId,
         string userKind,
         string email,
         CancellationToken ct)
     {
-        await _tokenRepository.InvalidateActiveForUserAsync(userId, userKind, tenantId, ct);
+        await _tokenRepository.InvalidateActiveForUserAsync(userId, userKind, subscriberId, ct);
 
         var raw = PasswordResetTokenCrypto.CreateRawToken();
         var hash = PasswordResetTokenCrypto.Hash(raw);
         var minutes = Math.Clamp(_options.Value.TokenLifetimeMinutes, 5, 24 * 60);
         var expires = DateTime.UtcNow.AddMinutes(minutes);
 
-        var entity = PasswordResetToken.Create(hash, userId, userKind, tenantId, expires);
+        var entity = PasswordResetToken.Create(hash, userId, userKind, subscriberId, expires);
         await _tokenRepository.AddAsync(entity, ct);
         await _tokenRepository.SaveChangesAsync(ct);
 
-        var link = BuildResetLink(_options.Value.PublicBaseUrl, raw, tenantId);
+        var link = BuildResetLink(_options.Value.PublicBaseUrl, raw, subscriberId);
         await _linkSender.SendPasswordResetLinkAsync(email, link, ct);
     }
 
-    private static string BuildResetLink(string publicBaseUrl, string rawToken, Guid? tenantId)
+    private static string BuildResetLink(string publicBaseUrl, string rawToken, Guid? subscriberId)
     {
         var baseUrl = (publicBaseUrl ?? string.Empty).Trim().TrimEnd('/');
         if (string.IsNullOrEmpty(baseUrl))
@@ -164,8 +171,8 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
 
         var tokenEnc = Uri.EscapeDataString(rawToken);
         var qs = $"token={tokenEnc}";
-        if (tenantId.HasValue && tenantId.Value != Guid.Empty)
-            qs += $"&tenantId={tenantId.Value}";
+        if (subscriberId.HasValue && subscriberId.Value != Guid.Empty)
+            qs += $"&subscriberId={subscriberId.Value}";
 
         return $"{baseUrl}/reset-password?{qs}";
     }

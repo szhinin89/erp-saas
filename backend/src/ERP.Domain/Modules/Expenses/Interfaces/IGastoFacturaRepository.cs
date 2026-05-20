@@ -6,10 +6,10 @@ namespace ERP.Domain.Modules.Expenses.Interfaces;
 public interface IExpenseInvoiceRepository
 {
     Task AddAsync(ExpenseInvoice expense, CancellationToken ct = default);
-    Task<ExpenseInvoice?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
-    Task<bool> ExistsAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default);
+    Task<ExpenseInvoice?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default);
+    Task<bool> ExistsAccessKeyAsync(Guid subscriberId, string accessKey, CancellationToken ct = default);
     Task<IReadOnlyList<ExpenseInvoice>> GetAsync(
-        Guid          tenantId,
+        Guid          subscriberId,
         ExpenseStatus? status,
         Guid?          supplierId,
         DateTime?      from,

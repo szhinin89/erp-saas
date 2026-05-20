@@ -29,9 +29,9 @@ public sealed class DeploymentFeatureFlags : IDeploymentFeatureFlags
         }
     }
 
-    public int? MaxActiveTenants => MergePositiveInt(
-        _instanceQuotaFile.Read()?.MaxActiveTenants,
-        ReadPositiveCap("Deployment:MaxActiveTenants"));
+    public int? MaxActiveSubscribers => MergePositiveInt(
+        _instanceQuotaFile.Read()?.MaxActiveSubscribers,
+        ReadPositiveCap("Deployment:MaxActiveSubscribers"));
 
     public int? MaxIdentityUsers => MergePositiveInt(
         _instanceQuotaFile.Read()?.MaxIdentityUsers,
@@ -48,8 +48,8 @@ public sealed class DeploymentFeatureFlags : IDeploymentFeatureFlags
         }
     }
 
-    public int? MaxUsersPerTenant => MergePositiveInt(
-        _instanceQuotaFile.Read()?.MaxUsersPerTenant,
+    public int? MaxUsersPerSubscriber => MergePositiveInt(
+        _instanceQuotaFile.Read()?.MaxUsersPerSubscriber,
         ReadPositiveCap("Deployment:MaxUsersPerTenant"));
 
     /// <inheritdoc />

@@ -1,4 +1,4 @@
-﻿using ERP.API.Contracts;
+using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Common;
@@ -29,15 +29,15 @@ public sealed class PublicDeploymentController : ControllerBase
         => this.ApiOk(
             new DeploymentInfoDto(
                 SuperAdminPanelEnabled: _deployment.IsSuperAdminPanelEnabled,
-                MaxActiveTenants: _deployment.MaxActiveTenants,
+                MaxActiveSubscribers: _deployment.MaxActiveSubscribers,
                 MaxIdentityUsers: _deployment.MaxIdentityUsers,
                 DedicatedSingleClientInstance: _deployment.IsDedicatedSingleClientInstance,
-                MaxUsersPerTenant: _deployment.MaxUsersPerTenant));
+                MaxUsersPerSubscriber: _deployment.MaxUsersPerSubscriber));
 }
 
 public sealed record DeploymentInfoDto(
     bool SuperAdminPanelEnabled,
-    int? MaxActiveTenants,
+    int? MaxActiveSubscribers,
     int? MaxIdentityUsers,
     bool DedicatedSingleClientInstance,
-    int? MaxUsersPerTenant);
+    int? MaxUsersPerSubscriber);

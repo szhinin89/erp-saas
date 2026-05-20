@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Configuration.DTOs;
 using ERP.Domain.Configuration.Interfaces;
@@ -9,26 +9,26 @@ public sealed class GetBillingSettingsQueryHandler
     : IRequestHandler<GetBillingSettingsQuery, Result<BillingSettingsDto?>>
 {
     private readonly IBillingSettingsRepository _repo;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
     public GetBillingSettingsQueryHandler(
         IBillingSettingsRepository repo,
-        ICurrentTenant currentTenant)
+        ICurrentSubscriber currentSubscriber)
     {
         _repo = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public async Task<Result<BillingSettingsDto?>> Handle(
         GetBillingSettingsQuery query, CancellationToken ct)
     {
-        var config = await _repo.GetByTenantIdAsync(_currentTenant.TenantId, ct);
+        var config = await _repo.GetBySubscriberIdAsync(_currentSubscriber.SubscriberId, ct);
         if (config is null)
             return Result<BillingSettingsDto?>.Success(null);
 
         return Result<BillingSettingsDto?>.Success(new BillingSettingsDto(
             config.Id,
-            config.TenantId,
+            config.SubscriberId,
             config.LegalName,
             config.TradeName,
             config.Ruc,

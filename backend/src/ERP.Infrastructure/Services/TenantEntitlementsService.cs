@@ -1,37 +1,55 @@
+using ERP.Application.Billing.Governance;
 using ERP.Application.Common;
 using ERP.Application.Subscriptions;
+using ERP.Application.Subscriptions.Caching;
+using ERP.Application.Subscriptions.CommercialPlanLimits;
 using ERP.Domain.Subscriptions;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace ERP.Infrastructure.Services;
 
 /// <summary>
 /// Resuelve entitlements solo desde suscripción activa, plan, features y overrides.
 /// </summary>
-public sealed class TenantEntitlementsService : ITenantEntitlementsService
+public sealed class SubscriberEntitlementsService : ISubscriberEntitlementsService
 {
     private readonly ErpDbContext _db;
     private readonly IPlatformQueryAccessor _platform;
+    private readonly ICommercialPlanLimitService _planLimits;
+    private readonly ISubscriberEntitlementsSnapshotCache? _cache;
+    private readonly IBillingGovernanceService _billingGovernance;
+    private readonly SaasEntitlementsCacheOptions _cacheOptions;
 
-    public TenantEntitlementsService(ErpDbContext db, IPlatformQueryAccessor platform)
+    public SubscriberEntitlementsService(
+        ErpDbContext db,
+        IPlatformQueryAccessor platform,
+        ICommercialPlanLimitService planLimits,
+        IBillingGovernanceService billingGovernance,
+        IOptions<SaasEntitlementsCacheOptions> cacheOptions,
+        ISubscriberEntitlementsSnapshotCache? cache = null)
     {
         _db = db;
         _platform = platform;
+        _planLimits = planLimits;
+        _billingGovernance = billingGovernance;
+        _cacheOptions = cacheOptions.Value;
+        _cache = cache;
     }
 
-    public async Task<IReadOnlyCollection<string>> GetEnabledModuleKeysAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<IReadOnlyCollection<string>> GetEnabledModuleKeysAsync(Guid subscriberId, CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty)
+        if (subscriberId == Guid.Empty)
             return Array.Empty<string>();
 
-        var snapshot = await LoadEntitlementSnapshotAsync(tenantId, ct);
+        var snapshot = await LoadEntitlementSnapshotAsync(subscriberId, ct);
         if (snapshot is null)
             return Array.Empty<string>();
 
         return snapshot.Features
-            .Where(f => f.Kind == SaasFeatureKind.Module && f.IsEntitled)
+            .Where(f => f.Kind == PlatformFeatureKind.Module && f.IsEntitled)
             .Select(f => NormalizeModuleKey(f.ResourceRef, f.Code))
             .Where(k => k.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -39,16 +57,16 @@ public sealed class TenantEntitlementsService : ITenantEntitlementsService
             .ToList();
     }
 
-    public async Task<bool> HasFeatureAsync(Guid tenantId, string featureCode, CancellationToken ct = default)
+    public async Task<bool> HasFeatureAsync(Guid subscriberId, string featureCode, CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty)
+        if (subscriberId == Guid.Empty)
             return true;
 
         var code = NormalizeFeatureCode(featureCode);
         if (code.Length == 0)
             return false;
 
-        var snapshot = await LoadEntitlementSnapshotAsync(tenantId, ct);
+        var snapshot = await LoadEntitlementSnapshotAsync(subscriberId, ct);
         if (snapshot is null)
             return false;
 
@@ -57,16 +75,16 @@ public sealed class TenantEntitlementsService : ITenantEntitlementsService
             ?.IsEntitled ?? false;
     }
 
-    public Task<bool> AllowsPermissionAsync(Guid tenantId, string permissionKey, CancellationToken ct = default) =>
-        TenantSubscriptionCatalog.TenantAllowsPermissionAsync(tenantId, this, permissionKey, ct);
+    public Task<bool> AllowsPermissionAsync(Guid subscriberId, string permissionKey, CancellationToken ct = default) =>
+        SubscriberSubscriptionCatalog.TenantAllowsPermissionAsync(subscriberId, this, permissionKey, ct);
 
-    public async Task<TenantEntitlementsSnapshot> GetEntitlementsSnapshotAsync(
-        Guid tenantId,
+    public async Task<SubscriberEntitlementsSnapshot> GetEntitlementsSnapshotAsync(
+        Guid subscriberId,
         CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty)
+        if (subscriberId == Guid.Empty)
         {
-            return new TenantEntitlementsSnapshot(
+            return new SubscriberEntitlementsSnapshot(
                 null,
                 null,
                 Array.Empty<string>(),
@@ -75,10 +93,37 @@ public sealed class TenantEntitlementsService : ITenantEntitlementsService
                 HasModuleRestrictions: true);
         }
 
-        var snapshot = await LoadEntitlementSnapshotAsync(tenantId, ct);
+        if (_cache is not null && _cacheOptions.Enabled)
+        {
+            var cached = await _cache.GetAsync(subscriberId, ct);
+            if (cached is not null)
+                return cached.Snapshot;
+        }
+
+        var built = await BuildEntitlementsSnapshotAsync(subscriberId, ct);
+
+        if (_cache is not null && _cacheOptions.Enabled)
+        {
+            var version = await _cache.GetCurrentVersionAsync(subscriberId, ct);
+            if (version <= 0)
+                version = 1;
+            await _cache.SetAsync(
+                new CachedSubscriberEntitlements(built, version, DateTime.UtcNow, null),
+                TimeSpan.FromSeconds(_cacheOptions.TtlSeconds),
+                ct);
+        }
+
+        return built;
+    }
+
+    private async Task<SubscriberEntitlementsSnapshot> BuildEntitlementsSnapshotAsync(
+        Guid subscriberId,
+        CancellationToken ct)
+    {
+        var snapshot = await LoadEntitlementSnapshotAsync(subscriberId, ct);
         if (snapshot is null)
         {
-            return new TenantEntitlementsSnapshot(
+            return new SubscriberEntitlementsSnapshot(
                 null,
                 null,
                 Array.Empty<string>(),
@@ -87,12 +132,12 @@ public sealed class TenantEntitlementsService : ITenantEntitlementsService
                 HasModuleRestrictions: true);
         }
 
-        var plan = await _db.SaasPlans.AsNoTracking()
+        var plan = await _db.CommercialPlans.AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == snapshot.PlanId, ct);
 
         var modules = snapshot.Features
-            .Where(f => f.Kind == SaasFeatureKind.Module && f.IsEntitled)
-            .Select(f => TenantSubscriptionCatalog.NormalizeModuleKey(
+            .Where(f => f.Kind == PlatformFeatureKind.Module && f.IsEntitled)
+            .Select(f => SubscriberSubscriptionCatalog.NormalizeModuleKey(
                 NormalizeModuleKey(f.ResourceRef, f.Code)))
             .Where(k => k.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -100,7 +145,7 @@ public sealed class TenantEntitlementsService : ITenantEntitlementsService
             .ToList();
 
         var features = snapshot.Features
-            .Where(f => f.IsEntitled && f.Kind != SaasFeatureKind.Module)
+            .Where(f => f.IsEntitled && f.Kind != PlatformFeatureKind.Module)
             .Select(f => f.Code)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(c => c, StringComparer.Ordinal)
@@ -115,27 +160,40 @@ public sealed class TenantEntitlementsService : ITenantEntitlementsService
             limits[code] = ToIntLimit(f.EffectiveLimitPerPeriod);
         }
 
-        var hasRestrictions = TenantSubscriptionCatalog.HasModuleRestrictionsFromModules(modules);
+        var hasRestrictions = SubscriberSubscriptionCatalog.HasModuleRestrictionsFromModules(modules);
 
-        return new TenantEntitlementsSnapshot(
+        var commercialLimitsSnapshot = await _planLimits.GetEffectiveLimitsSnapshotAsync(subscriberId, ct);
+        var billingState = await _billingGovernance.GetStateAsync(subscriberId, ct);
+        var version = _cache is not null
+            ? await _cache.GetCurrentVersionAsync(subscriberId, ct)
+            : 0L;
+        if (version <= 0)
+            version = 1;
+
+        return new SubscriberEntitlementsSnapshot(
             plan?.Code,
             plan?.Name,
             modules,
             features,
             limits,
-            hasRestrictions);
+            hasRestrictions,
+            commercialLimitsSnapshot.LimitsByCode,
+            subscriberId,
+            billingState.BillingStatus?.ToString(),
+            version,
+            DateTime.UtcNow);
     }
 
-    public async Task<int?> GetLimitPerPeriodAsync(Guid tenantId, string featureCode, CancellationToken ct = default)
+    public async Task<int?> GetLimitPerPeriodAsync(Guid subscriberId, string featureCode, CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty)
+        if (subscriberId == Guid.Empty)
             return null;
 
         var code = NormalizeFeatureCode(featureCode);
         if (code.Length == 0)
             return null;
 
-        var snapshot = await LoadEntitlementSnapshotAsync(tenantId, ct);
+        var snapshot = await LoadEntitlementSnapshotAsync(subscriberId, ct);
         if (snapshot is null)
             return null;
 
@@ -147,26 +205,26 @@ public sealed class TenantEntitlementsService : ITenantEntitlementsService
         return ToIntLimit(feature.EffectiveLimitPerPeriod);
     }
 
-    private async Task<EntitlementSnapshot?> LoadEntitlementSnapshotAsync(Guid tenantId, CancellationToken ct)
+    private async Task<EntitlementSnapshot?> LoadEntitlementSnapshotAsync(Guid subscriberId, CancellationToken ct)
     {
         var subscription = await _platform
-            .Unfiltered(_db.TenantSaasSubscriptions.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
-            .Where(s => s.TenantId == tenantId && s.Status == TenantSubscriptionStatus.Active)
+            .Unfiltered(_db.SubscriberSubscriptions.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
+            .Where(s => s.SubscriberId == subscriberId && s.Status == SubscriptionStatus.Active)
             .OrderByDescending(s => s.StartedAtUtc)
             .FirstOrDefaultAsync(ct);
 
         if (subscription is null)
             return null;
 
-        var planFeatures = await _db.SaasPlanFeatures.AsNoTracking()
+        var planFeatures = await _db.CommercialPlanFeatures.AsNoTracking()
             .Where(pf => pf.PlanId == subscription.PlanId)
             .ToListAsync(ct);
 
         var featureIds = planFeatures.Select(pf => pf.FeatureId).ToList();
 
         var overrides = await _platform
-            .Unfiltered(_db.TenantSubscriptionFeatureOverrides.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
-            .Where(o => o.TenantId == tenantId && o.SubscriptionId == subscription.Id)
+            .Unfiltered(_db.SubscriptionFeatureOverrides.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
+            .Where(o => o.SubscriberId == subscriberId && o.SubscriptionId == subscription.Id)
             .ToListAsync(ct);
 
         featureIds.AddRange(overrides.Select(o => o.FeatureId));
@@ -175,7 +233,7 @@ public sealed class TenantEntitlementsService : ITenantEntitlementsService
         if (featureIds.Count == 0)
             return new EntitlementSnapshot(subscription.Id, subscription.PlanId, Array.Empty<EntitledFeature>());
 
-        var definitions = await _db.SaasFeatureDefinitions.AsNoTracking()
+        var definitions = await _db.PlatformFeatures.AsNoTracking()
             .Where(f => featureIds.Contains(f.Id))
             .ToListAsync(ct);
 
@@ -206,7 +264,7 @@ public sealed class TenantEntitlementsService : ITenantEntitlementsService
         return new EntitlementSnapshot(subscription.Id, subscription.PlanId, entitled);
     }
 
-    private static bool ResolveIsEntitled(SaasPlanFeature? planRow, TenantSubscriptionFeatureOverride? overrideRow)
+    private static bool ResolveIsEntitled(CommercialPlanFeature? planRow, SubscriptionFeatureOverride? overrideRow)
     {
         if (overrideRow is { IsEnabled: false })
             return false;
@@ -239,7 +297,7 @@ public sealed class TenantEntitlementsService : ITenantEntitlementsService
     private sealed record EntitledFeature(
         Guid FeatureId,
         string Code,
-        SaasFeatureKind Kind,
+        PlatformFeatureKind Kind,
         bool IsMetered,
         string? ResourceRef,
         bool IsEntitled,

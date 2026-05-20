@@ -2,6 +2,6 @@ using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Auth.DTOs;
 
-namespace ERP.Application.Auth.UseCases.SwitchTenant;
+namespace ERP.Application.Auth.UseCases.SwitchSubscriber;
 
-public record SwitchTenantCommand(Guid TenantId) : IRequest<Result<AuthResponseDto>>;
+public record SwitchSubscriberCommand(Guid SubscriberId) : IRequest<Result<AuthResponseDto>>;

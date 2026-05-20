@@ -1,13 +1,13 @@
 using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Tenants.DTOs;
+using ERP.Application.Subscribers.DTOs;
 
-namespace ERP.Application.Tenants.UseCases.CreateTenant;
+namespace ERP.Application.Subscribers.UseCases.CreateSubscriber;
 
-public record CreateTenantCommand(
+public record CreateSubscriberCommand(
     string Name,
     string Slug,
-    ERP.Domain.Tenants.Entities.PasswordResetMode PasswordResetMode = ERP.Domain.Tenants.Entities.PasswordResetMode.Disabled,
+    ERP.Domain.Subscribers.Entities.PasswordResetMode PasswordResetMode = ERP.Domain.Subscribers.Entities.PasswordResetMode.Disabled,
     string? Ruc = null,
     string? ShortName = null,
     string? TradeName = null,
@@ -17,4 +17,4 @@ public record CreateTenantCommand(
     int Priority = 0,
     string? PlanCode = null,
     IReadOnlyList<string>? EnabledModules = null
-) : IRequest<Result<TenantDto>>;
+) : IRequest<Result<SubscriberDto>>;

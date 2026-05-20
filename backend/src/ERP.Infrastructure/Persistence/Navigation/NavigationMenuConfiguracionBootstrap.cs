@@ -30,6 +30,16 @@ public static class NavigationMenuConfiguracionBootstrap
             module_key     = 'settings';
 
         INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
+        SELECT '00000000-0000-4000-8000-000000000104', g."Id",
+               '/saas/companies', 'app.nav.item.saas.companies', 'Empresas operativas',
+               5, 'settings', 'saas.companies.view', true
+        FROM ui_nav_groups g WHERE g.code = 'settings'
+        ON CONFLICT ("Id") DO UPDATE SET
+            route_path     = '/saas/companies',
+            permission_key = 'saas.companies.view',
+            module_key     = 'settings';
+
+        INSERT INTO ui_nav_items ("Id", group_id, route_path, label_key, display_label, sort_order, module_key, permission_key, is_active)
         SELECT '00000000-0000-4000-8000-000000000102', g."Id",
                '/settings/sri', 'app.nav.item.settings.sri', 'Configuración SRI',
                20, 'settings', 'settings.sri.view', true
@@ -66,6 +76,7 @@ public static class NavigationMenuConfiguracionBootstrap
 
     private static readonly (string route, string label, string perm, string icon, string leafKey)[] ConfigLeaves =
     [
+        ("/saas/companies",   "Empresas operativas", "perm:saas.companies.view", "apartment",    "nav.planLeaf.saas-companies"),
         ("/settings/company", "Datos de Empresa",   "perm:settings.company.view", "business",     "nav.planLeaf.cfg-empresa"),
         ("/settings/sri",     "Configuración SRI",  "perm:settings.sri.view",     "receipt_long", "nav.planLeaf.cfg-sri"),
         ("/settings/ride",    "Configuración RIDE", "perm:settings.ride.view",    "print",        "nav.planLeaf.cfg-ride"),
@@ -108,7 +119,7 @@ public static class NavigationMenuConfiguracionBootstrap
     /// </summary>
     private static async Task EnsureConfiguracionFolderInPlansAsync(ErpDbContext db, CancellationToken ct)
     {
-        var plans = await db.SaasPlans.Where(p => p.IsActive).ToListAsync(ct);
+        var plans = await db.CommercialPlans.Where(p => p.IsActive).ToListAsync(ct);
         var opts = new JsonSerializerOptions { WriteIndented = true };
         var changed = false;
 

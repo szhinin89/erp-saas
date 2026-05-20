@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
@@ -16,7 +16,7 @@ public sealed class ApproveOrderPurchaseCommandHandler
     private readonly IPurchaseOrderRepository  _ordenRepo;
     private readonly ISupplierRepository    _proveedorRepo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _currentTenant;
+    private readonly ICurrentSubscriber          _currentSubscriber;
     private readonly ICurrentUser            _currentUser;
     private readonly ILogger<ApproveOrderPurchaseCommandHandler> _logger;
 
@@ -24,14 +24,14 @@ public sealed class ApproveOrderPurchaseCommandHandler
         IPurchaseOrderRepository ordenRepo,
         ISupplierRepository proveedorRepo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<ApproveOrderPurchaseCommandHandler> logger)
     {
         _ordenRepo     = ordenRepo;
         _proveedorRepo = proveedorRepo;
         _activity      = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
         _logger        = logger;
     }
@@ -39,10 +39,10 @@ public sealed class ApproveOrderPurchaseCommandHandler
     public async Task<Result<PurchaseOrderDto>> Handle(
         ApproveOrderPurchaseCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var orden = await _ordenRepo.GetByIdAsync(tenantId, command.OrdenId, ct);
+        var orden = await _ordenRepo.GetByIdAsync(subscriberId, command.OrdenId, ct);
         if (orden is null)
             return Result<PurchaseOrderDto>.Failure("Orden de compra no encontrada.");
 
@@ -53,7 +53,7 @@ public sealed class ApproveOrderPurchaseCommandHandler
         orden.Approve(userId);
 
         await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _currentUser.Email, _currentUser.FullName,
+            subscriberId, userId, _currentUser.Email, _currentUser.FullName,
             module: "compras", action: "orden-compra.aprobar",
             entityType: "PurchaseOrder", entityId: orden.Id,
             description: orden.OrderNumber), ct);
@@ -61,7 +61,7 @@ public sealed class ApproveOrderPurchaseCommandHandler
         await _ordenRepo.SaveChangesAsync(ct);
         _logger.LogInformation("OC aprobada: {Numero}", orden.OrderNumber);
 
-        var Supplier = await _proveedorRepo.GetByIdAsync(tenantId, orden.SupplierId, ct);
+        var Supplier = await _proveedorRepo.GetByIdAsync(subscriberId, orden.SupplierId, ct);
         return Result<PurchaseOrderDto>.Success(
             CreatePurchaseOrderCommandHandler.ToDto(orden, Supplier?.LegalName ?? orden.SupplierId.ToString()));
     }

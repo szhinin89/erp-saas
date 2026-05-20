@@ -1,12 +1,12 @@
 using FluentValidation;
 
-namespace ERP.Application.Access.UseCases.SwitchTenant;
+namespace ERP.Application.Access.UseCases.SwitchSubscriber;
 
-public sealed class SwitchTenantCommandValidator : AbstractValidator<SwitchTenantCommand>
+public sealed class SwitchSubscriberCommandValidator : AbstractValidator<SwitchSubscriberCommand>
 {
-    public SwitchTenantCommandValidator()
+    public SwitchSubscriberCommandValidator()
     {
-        RuleFor(x => x.TenantId)
+        RuleFor(x => x.SubscriberId)
             .NotEmpty().WithMessage("El tenant es obligatorio.");
     }
 }

@@ -2,20 +2,20 @@ using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Interfaces;
-using ERP.Domain.Tenants.Entities;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Subscribers.Entities;
+using ERP.Domain.Subscribers.Interfaces;
 
 namespace ERP.Application.Auth.UseCases.PasswordReset;
 
 public sealed class DirectPasswordResetHandler : IRequestHandler<DirectPasswordResetCommand, Result<bool>>
 {
-    private readonly ITenantRepository _tenantRepository;
+    private readonly ISubscriberRepository _tenantRepository;
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IRefreshTokenService _refreshTokenService;
 
     public DirectPasswordResetHandler(
-        ITenantRepository tenantRepository,
+        ISubscriberRepository tenantRepository,
         IUserRepository userRepository,
         IPasswordHasher passwordHasher,
         IRefreshTokenService refreshTokenService)
@@ -28,7 +28,7 @@ public sealed class DirectPasswordResetHandler : IRequestHandler<DirectPasswordR
 
     public async Task<Result<bool>> Handle(DirectPasswordResetCommand command, CancellationToken ct)
     {
-        var tenant = await _tenantRepository.GetByIdAsync(command.TenantId, ct);
+        var tenant = await _tenantRepository.GetByIdAsync(command.SubscriberId, ct);
 
         if (tenant is null || !tenant.IsActive)
             return Result<bool>.Failure("Empresa no encontrada o inactiva.");
@@ -38,7 +38,7 @@ public sealed class DirectPasswordResetHandler : IRequestHandler<DirectPasswordR
 
         var normalizedEmail = command.Email.Trim();
 
-        var user = await _userRepository.GetByEmailSystemAsync(normalizedEmail, command.TenantId, ct);
+        var user = await _userRepository.GetByEmailSystemAsync(normalizedEmail, command.SubscriberId, ct);
 
         if (user is null)
             return Result<bool>.Failure("Usuario no encontrado.");
@@ -48,7 +48,7 @@ public sealed class DirectPasswordResetHandler : IRequestHandler<DirectPasswordR
 
         await _userRepository.SaveChangesAsync(ct);
 
-        await _refreshTokenService.RevokeAllForUserAsync(user.Id, command.TenantId, "Cambio de contraseña", ct);
+        await _refreshTokenService.RevokeAllForUserAsync(user.Id, command.SubscriberId, "Cambio de contraseña", ct);
 
         return Result<bool>.Success(true);
     }

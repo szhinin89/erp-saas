@@ -14,14 +14,14 @@ public sealed class CreateBranchCommandHandler : IRequestHandler<CreateBranchCom
     private readonly IBranchRepository _repo;
     private readonly IGeographyReadRepository _geo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _user;
 
     public CreateBranchCommandHandler(
         IBranchRepository repo,
         IGeographyReadRepository geo,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user)
     {
         _repo = repo;
@@ -43,16 +43,16 @@ public sealed class CreateBranchCommandHandler : IRequestHandler<CreateBranchCom
         if (locErr is not null)
             return Result<BranchDto>.Failure(locErr);
 
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId = _user.UserId;
 
         if (command.IsMainBranch)
-            await _repo.ClearMainBranchExceptAsync(tenantId, null, userId, ct);
+            await _repo.ClearMainBranchExceptAsync(subscriberId, null, userId, ct);
 
         var code = $"SUC-{DateTime.UtcNow.Year}-{Guid.NewGuid():N}"[..14];
 
         var entity = Branch.Create(
-            tenantId,
+            subscriberId,
             command.Name,
             command.Address,
             code,
@@ -78,7 +78,7 @@ public sealed class CreateBranchCommandHandler : IRequestHandler<CreateBranchCom
 
         await _repo.AddAsync(entity, ct);
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _user.Email,
             _user.FullName,

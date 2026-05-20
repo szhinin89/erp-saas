@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Sales.Helpers;
@@ -25,7 +25,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
     private readonly IProductRepository     _productRepository;
     private readonly ITaxRateRepository     _taxRateRepository;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _currentTenant;
+    private readonly ICurrentSubscriber          _currentSubscriber;
     private readonly ICurrentUser            _currentUser;
     private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<CreateSaleCommandHandler> _logger;
@@ -39,7 +39,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         IProductRepository productRepository,
         ITaxRateRepository taxRateRepository,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
         ILogger<CreateSaleCommandHandler> logger)
@@ -52,7 +52,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         _productRepository   = productRepository;
         _taxRateRepository   = taxRateRepository;
         _activity            = activity;
-        _currentTenant       = currentTenant;
+        _currentSubscriber       = currentSubscriber;
         _currentUser         = currentUser;
         _unitOfWork          = unitOfWork;
         _logger              = logger;
@@ -62,20 +62,20 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         CreateSaleCommand command,
         CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
         _logger.LogInformation(
-            "Creando venta: tenant={TenantId}, cliente={ClienteId}, Warehouse={BodegaId}, ítems={ItemCount}",
-            tenantId, command.CustomerId, command.WarehouseId, command.Items.Count);
+            "Creando venta: tenant={SubscriberId}, cliente={ClienteId}, Warehouse={BodegaId}, ítems={ItemCount}",
+            subscriberId, command.CustomerId, command.WarehouseId, command.Items.Count);
 
         // 1. Validar cliente existe y está activo
-        var cliente = await _customerRepository.GetByIdAsync(tenantId, command.CustomerId, ct);
+        var cliente = await _customerRepository.GetByIdAsync(subscriberId, command.CustomerId, ct);
         if (cliente is null || !cliente.IsActive)
             return Result<Guid>.Failure("El cliente no existe o no está activo.");
 
         // 2. Validar Warehouse existe y está activa
-        var Warehouse = await _bodegaRepository.GetByIdAsync(tenantId, command.WarehouseId, ct);
+        var Warehouse = await _bodegaRepository.GetByIdAsync(subscriberId, command.WarehouseId, ct);
         if (Warehouse is null || !Warehouse.IsActive)
             return Result<Guid>.Failure("La Warehouse no existe o no está activa.");
 
@@ -84,7 +84,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         foreach (var item in command.Items)
         {
             if (productos.ContainsKey(item.ProductId)) continue;
-            var producto = await _productRepository.GetByIdAsync(item.ProductId, tenantId, ct);
+            var producto = await _productRepository.GetByIdAsync(item.ProductId, subscriberId, ct);
             if (producto is null || !producto.IsActive)
                 return Result<Guid>.Failure($"El producto con ID {item.ProductId} no existe o no está activo.");
             productos[item.ProductId] = producto;
@@ -97,7 +97,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             if (producto.IsService || !producto.TracksStock) continue;
 
             var stock = await _stockRepository.GetStockAsync(
-                tenantId, command.WarehouseId, item.ProductId, ct);
+                subscriberId, command.WarehouseId, item.ProductId, ct);
 
             if (stock is null || stock.AvailableQuantity < item.Quantity)
             {
@@ -112,7 +112,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         }
 
         // 5. Obtener configuración SRI
-        var configSri = await _configSriRepository.GetByTenantIdAsync(tenantId, ct);
+        var configSri = await _configSriRepository.GetBySubscriberIdAsync(subscriberId, ct);
         if (configSri is null)
             return Result<Guid>.Failure("La configuración SRI no está configurada para este tenant.");
 
@@ -146,7 +146,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
 
                 if (producto.AppliesVatOnSale && producto.SaleTaxId.HasValue)
                 {
-                    var taxRate = await _taxRateRepository.GetByIdAsync(producto.SaleTaxId.Value, tenantId, ct);
+                    var taxRate = await _taxRateRepository.GetByIdAsync(producto.SaleTaxId.Value, subscriberId, ct);
                     if (taxRate is not null)
                     {
                         vatPct       = taxRate.Percentage;
@@ -159,7 +159,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
                 totalVat += impuestoItem;
 
                 var detalle = SalesBillLine.Create(
-                    tenantId:       tenantId,
+                    subscriberId:       subscriberId,
                     productId:      item.ProductId,
                     productCode:    producto.SaleCode,
                     quantity:       item.Quantity,
@@ -179,7 +179,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             // 8. Crear factura en estado Borrador
             var totalDiscount = detalles.Sum(d => d.DiscountAmount);
             var factura = SalesBill.Create(
-                tenantId:          tenantId,
+                subscriberId:          subscriberId,
                 branchId:          command.BranchId,
                 customerId:        command.CustomerId,
                 warehouseId:       command.WarehouseId,
@@ -214,7 +214,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
 
             var numeroFactura = $"{factura.EstabCode}-{factura.EmPointCode}-{factura.Sequential}";
             await _activity.AddAsync(UserActivity.Create(
-                tenantId: tenantId,
+                subscriberId: subscriberId,
                 userId: userId,
                 userEmail: _currentUser.Email,
                 userFullName: _currentUser.FullName,
@@ -229,15 +229,15 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             await _unitOfWork.CommitAsync(ct);
 
             _logger.LogInformation(
-                "Venta creada: factura={FacturaId}, secuencial={Secuencial}, total={Total}, tenant={TenantId}",
-                factura.Id, factura.Sequential, factura.Total, tenantId);
+                "Venta creada: factura={FacturaId}, secuencial={Secuencial}, total={Total}, tenant={SubscriberId}",
+                factura.Id, factura.Sequential, factura.Total, subscriberId);
 
             return Result<Guid>.Success(factura.Id);
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al crear venta tenant={TenantId}", tenantId);
+            _logger.LogError(ex, "Error al crear venta tenant={SubscriberId}", subscriberId);
             return Result<Guid>.Failure($"No se pudo crear la venta: {ex.Message}");
         }
     }

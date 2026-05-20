@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -9,20 +9,20 @@ public sealed class GetTransferByIdQueryHandler
     : IRequestHandler<GetTransferByIdQuery, Result<TransferDetailDto?>>
 {
     private readonly IStockTransferRepository _repo;
-    private readonly ICurrentTenant           _currentTenant;
+    private readonly ICurrentSubscriber           _currentSubscriber;
 
     public GetTransferByIdQueryHandler(
         IStockTransferRepository repo,
-        ICurrentTenant currentTenant)
+        ICurrentSubscriber currentSubscriber)
     {
         _repo          = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public async Task<Result<TransferDetailDto?>> Handle(
         GetTransferByIdQuery query, CancellationToken ct)
     {
-        var t = await _repo.GetByIdAsync(_currentTenant.TenantId, query.Id, ct);
+        var t = await _repo.GetByIdAsync(_currentSubscriber.SubscriberId, query.Id, ct);
         if (t is null)
             return Result<TransferDetailDto?>.Success(null);
 

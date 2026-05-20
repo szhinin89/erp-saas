@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
-public sealed class SalesRetention : AuditableEntity, ITenantEntity
+public sealed class SalesRetention : AuditableEntity, ISubscriberScopedEntity
 {
     public const int VoucherTypeMaxLen = 30;
     public const int AccessKeyMaxLen   = 49;
@@ -27,7 +27,7 @@ public sealed class SalesRetention : AuditableEntity, ITenantEntity
     private SalesRetention() { }
 
     public static SalesRetention Create(
-        Guid     tenantId,
+        Guid     subscriberId,
         Guid     customerId,
         string   accessKey,
         DateTime issueDate,
@@ -39,7 +39,7 @@ public sealed class SalesRetention : AuditableEntity, ITenantEntity
         var r = new SalesRetention
         {
             Id             = Guid.NewGuid(),
-            TenantId       = tenantId,
+            SubscriberId       = subscriberId,
             CustomerId     = customerId,
             AccessKey      = accessKey.Trim(),
             IssueDate      = issueDate,

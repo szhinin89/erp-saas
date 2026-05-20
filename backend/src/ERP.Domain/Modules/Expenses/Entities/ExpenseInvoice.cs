@@ -3,7 +3,7 @@ using ERP.Domain.Modules.Expenses.Enums;
 
 namespace ERP.Domain.Modules.Expenses.Entities;
 
-public sealed class ExpenseInvoice : MasterEntity, ITenantEntity
+public sealed class ExpenseInvoice : MasterEntity, ISubscriberScopedEntity
 {
     public const int AccessKeyLen         = 49;
     public const int XmlPathMaxLen        = 500;
@@ -43,7 +43,7 @@ public sealed class ExpenseInvoice : MasterEntity, ITenantEntity
     private ExpenseInvoice() { }
 
     public static ExpenseInvoice CreateManual(
-        Guid     tenantId,
+        Guid     subscriberId,
         Guid?    supplierId,
         DateTime issueDate,
         string   concept,
@@ -62,7 +62,7 @@ public sealed class ExpenseInvoice : MasterEntity, ITenantEntity
         var g = new ExpenseInvoice
         {
             Id         = Guid.NewGuid(),
-            TenantId   = tenantId,
+            SubscriberId   = subscriberId,
             SupplierId = supplierId,
             IssueDate  = issueDate,
             Concept    = concept.Trim(),
@@ -78,7 +78,7 @@ public sealed class ExpenseInvoice : MasterEntity, ITenantEntity
     }
 
     public static ExpenseInvoice CreateFromXml(
-        Guid     tenantId,
+        Guid     subscriberId,
         Guid     supplierId,
         string   accessKey,
         string?  invoiceNumber,
@@ -98,7 +98,7 @@ public sealed class ExpenseInvoice : MasterEntity, ITenantEntity
         var g = new ExpenseInvoice
         {
             Id            = Guid.NewGuid(),
-            TenantId      = tenantId,
+            SubscriberId      = subscriberId,
             SupplierId    = supplierId,
             AccessKey     = accessKey.Trim(),
             InvoiceNumber = Trim(invoiceNumber),

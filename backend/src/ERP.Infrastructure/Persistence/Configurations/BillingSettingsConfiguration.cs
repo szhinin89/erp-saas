@@ -12,7 +12,7 @@ public sealed class BillingSettingsConfiguration : IEntityTypeConfiguration<Bill
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id").IsRequired();
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.LegalName).HasColumnName("legal_name").HasMaxLength(BillingSettings.LegalNameMaxLen).IsRequired();
         builder.Property(e => e.TradeName).HasColumnName("trade_name").HasMaxLength(BillingSettings.TradeNameMaxLen).IsRequired();
         builder.Property(e => e.Ruc).HasColumnName("ruc").HasMaxLength(BillingSettings.RucMaxLen).IsRequired();
@@ -29,6 +29,6 @@ public sealed class BillingSettingsConfiguration : IEntityTypeConfiguration<Bill
         builder.Property(e => e.CreatedBy).HasColumnName("created_by");
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(e => e.TenantId).IsUnique().HasDatabaseName("uq_billing_settings_tenant");
+        builder.HasIndex(e => e.SubscriberId).IsUnique().HasDatabaseName("uq_billing_settings_subscriber");
     }
 }

@@ -1,7 +1,7 @@
 namespace ERP.Domain.Subscriptions;
 
 /// <summary>Ciclo de facturación del plan (persistido como string en BD para evolución sin migraciones enum).</summary>
-public static class SaasBillingCycle
+public static class CommercialBillingCycle
 {
     public const string Monthly = "monthly";
     public const string Quarterly = "quarterly";

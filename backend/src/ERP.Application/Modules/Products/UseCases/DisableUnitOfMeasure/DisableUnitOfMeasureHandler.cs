@@ -11,18 +11,18 @@ public class DisableUnitOfMeasureHandler : IRequestHandler<DisableUnitOfMeasureC
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public DisableUnitOfMeasureHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
         _activity = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
@@ -35,7 +35,7 @@ public class DisableUnitOfMeasureHandler : IRequestHandler<DisableUnitOfMeasureC
         entity.Disable(_currentUser.UserId);
 
         await _activity.AddAsync(UserActivity.Create(
-            _currentTenant.TenantId,
+            _currentSubscriber.SubscriberId,
             _currentUser.UserId,
             _currentUser.Email,
             _currentUser.FullName,
@@ -55,18 +55,18 @@ public class EnableUnitOfMeasureHandler : IRequestHandler<EnableUnitOfMeasureCom
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public EnableUnitOfMeasureHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
         _activity = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
@@ -79,7 +79,7 @@ public class EnableUnitOfMeasureHandler : IRequestHandler<EnableUnitOfMeasureCom
         entity.Enable(_currentUser.UserId);
 
         await _activity.AddAsync(UserActivity.Create(
-            _currentTenant.TenantId,
+            _currentSubscriber.SubscriberId,
             _currentUser.UserId,
             _currentUser.Email,
             _currentUser.FullName,

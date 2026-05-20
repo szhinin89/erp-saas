@@ -1,13 +1,13 @@
 using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Access.DTOs;
-using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Subscribers.Entities;
 
-namespace ERP.Application.Access.UseCases.RegisterTenantWithAdmin;
+namespace ERP.Application.Access.UseCases.RegisterSubscriberWithAdmin;
 
-public record RegisterTenantWithAdminCommand(
-    string TenantName,
-    string TenantSlug,
+public record RegisterSubscriberWithAdminCommand(
+    string SubscriberName,
+    string SubscriberSlug,
     string AdminFirstName,
     string AdminLastName,
     string AdminEmail,

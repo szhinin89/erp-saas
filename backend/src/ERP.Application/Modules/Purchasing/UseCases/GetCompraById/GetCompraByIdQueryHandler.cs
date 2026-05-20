@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Modules.Purchasing.Interfaces;
@@ -9,9 +9,9 @@ public sealed class GetPurchaseByIdQueryHandler
     : IRequestHandler<GetPurchaseByIdQuery, Result<PurchBillDetailDto?>>
 {
     private readonly IPurchBillRepository _repo;
-    private readonly ICurrentTenant    _tenant;
+    private readonly ICurrentSubscriber    _tenant;
 
-    public GetPurchaseByIdQueryHandler(IPurchBillRepository repo, ICurrentTenant tenant)
+    public GetPurchaseByIdQueryHandler(IPurchBillRepository repo, ICurrentSubscriber tenant)
     {
         _repo   = repo;
         _tenant = tenant;
@@ -20,7 +20,7 @@ public sealed class GetPurchaseByIdQueryHandler
     public async Task<Result<PurchBillDetailDto?>> Handle(
         GetPurchaseByIdQuery query, CancellationToken ct)
     {
-        var c = await _repo.GetByIdAsync(_tenant.TenantId, query.Id, ct);
+        var c = await _repo.GetByIdAsync(_tenant.SubscriberId, query.Id, ct);
         if (c is null) return Result<PurchBillDetailDto?>.Success(null);
 
         var detalles = c.Lines.Select(d => new PurchaseBillLineDto(

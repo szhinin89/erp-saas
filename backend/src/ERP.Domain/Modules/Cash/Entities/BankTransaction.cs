@@ -22,7 +22,7 @@ public sealed class BankTransaction : BaseEntity
 
     internal static BankTransaction Create(
         Guid     bankStatementId,
-        Guid     tenantId,
+        Guid     subscriberId,
         DateTime transactionDate,
         string   description,
         decimal  amount,
@@ -37,7 +37,7 @@ public sealed class BankTransaction : BaseEntity
         return new BankTransaction
         {
             Id              = Guid.NewGuid(),
-            TenantId        = tenantId,
+            SubscriberId        = subscriberId,
             BankStatementId = bankStatementId,
             TransactionDate = transactionDate,
             Description     = description.Trim(),

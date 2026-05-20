@@ -12,40 +12,40 @@ public class DisableProductLineHandler : IRequestHandler<DisableProductLineComma
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public DisableProductLineHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
         _activity = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
     public async Task<Result<ProductLineDto>> Handle(DisableProductLineCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId = _currentUser.UserId;
 
-        var entity = await _repo.GetProductLineByIdAsync(tenantId, command.Id, ct);
+        var entity = await _repo.GetProductLineByIdAsync(subscriberId, command.Id, ct);
         if (entity is null)
             return Result<ProductLineDto>.Failure("Línea no encontrada.");
 
         if (!entity.IsActive)
             return Result<ProductLineDto>.Failure("La línea ya está deshabilitada.");
 
-        var activeChildren = await _repo.CountActiveCategoriesByLineAsync(tenantId, command.Id, ct);
+        var activeChildren = await _repo.CountActiveCategoriesByLineAsync(subscriberId, command.Id, ct);
         if (activeChildren > 0)
             return Result<ProductLineDto>.Failure("No se puede deshabilitar la línea mientras tenga categorías activas.");
 
         entity.Disable(userId);
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _currentUser.Email,
             _currentUser.FullName,

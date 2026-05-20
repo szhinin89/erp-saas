@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using ERP.Application.Common;
 using ERP.Domain.Common.Validators;
 using ERP.Domain.Modules.Purchasing.Entities;
@@ -10,7 +10,7 @@ public sealed class UpdateSupplierCommandValidator : AbstractValidator<UpdateSup
 {
     public UpdateSupplierCommandValidator(
         ISupplierRepository repo,
-        ICurrentTenant tenant)
+        ICurrentSubscriber tenant)
     {
         RuleFor(x => x.Id)
             .NotEmpty().WithMessage("El ID del Supplier es obligatorio.");
@@ -30,7 +30,7 @@ public sealed class UpdateSupplierCommandValidator : AbstractValidator<UpdateSup
             .Must(ruc => RucValidator.EsRucValido(ruc))
             .WithMessage("El RUC no es válido según el algoritmo del SRI (módulo 10/11).")
             .MustAsync(async (command, ruc, ct) =>
-                !await repo.ExistsRucAsync(tenant.TenantId, ruc, command.Id, ct))
+                !await repo.ExistsRucAsync(tenant.SubscriberId, ruc, command.Id, ct))
             .WithMessage("Ya existe otro Supplier con ese RUC en el tenant.");
 
         RuleFor(x => x.Email)

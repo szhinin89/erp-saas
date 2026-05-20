@@ -12,7 +12,7 @@ public class SecurityAdminScopeAssignmentConfiguration : IEntityTypeConfiguratio
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
 
         builder.Property(x => x.SubjectType).HasColumnName("subject_type").HasMaxLength(20).IsRequired();
         builder.Property(x => x.SubjectKey).HasColumnName("subject_key").HasMaxLength(100).IsRequired();
@@ -24,7 +24,7 @@ public class SecurityAdminScopeAssignmentConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => new { x.TenantId, x.SubjectType, x.SubjectKey, x.Scope })
+        builder.HasIndex(x => new { x.SubscriberId, x.SubjectType, x.SubjectKey, x.Scope })
             .IsUnique()
             .HasDatabaseName("ux_security_admin_scopes_subject");
     }

@@ -4,21 +4,22 @@ namespace ERP.Domain.Access.Interfaces;
 
 public interface IAccessTokenService
 {
-    string GenerateBootstrapToken(IdentityUser user, IReadOnlyList<Guid> tenantIds);
-    string GenerateSessionToken(IdentityUser user, Guid tenantId, string role);
+    string GenerateBootstrapToken(IdentityUser user, IReadOnlyList<Guid> subscriberIds);
+    string GenerateSessionToken(IdentityUser user, Guid subscriberId, string role, Guid companyId = default);
 
     string GenerateBootstrapToken(
         Guid userId,
         string email,
         string fullName,
         string role,
-        IReadOnlyList<Guid> tenantIds);
+        IReadOnlyList<Guid> subscriberIds);
 
     string GenerateSessionToken(
         Guid userId,
         string email,
         string fullName,
-        Guid tenantId,
-        string role);
+        Guid subscriberId,
+        string role,
+        Guid companyId = default);
 }
 

@@ -18,7 +18,7 @@ public class JournalEntry : DocumentEntity
     private JournalEntry() { }
 
     public static JournalEntry Create(
-        Guid tenantId,
+        Guid subscriberId,
         string reference,
         DateTime date,
         string description,
@@ -27,7 +27,7 @@ public class JournalEntry : DocumentEntity
         var entry = new JournalEntry
         {
             Id          = Guid.NewGuid(),
-            TenantId    = tenantId,
+            SubscriberId    = subscriberId,
             Reference   = reference,
             Date        = date,
             Description = description,
@@ -43,7 +43,7 @@ public class JournalEntry : DocumentEntity
             throw new InvalidOperationException(
                 "No se puede modificar un asiento contabilizado o anulado.");
 
-        _lines.Add(JournalEntryLine.Create(Id, TenantId, accountId, debit, credit));
+        _lines.Add(JournalEntryLine.Create(Id, SubscriberId, accountId, debit, credit));
     }
 
     /// <summary>
@@ -53,6 +53,6 @@ public class JournalEntry : DocumentEntity
     {
         AccountingRules.ValidateBalance(_lines);
         base.Post(userId);
-        RaiseDomainEvent(new JournalEntryCreatedEvent(Id, TenantId));
+        RaiseDomainEvent(new JournalEntryCreatedEvent(Id, SubscriberId));
     }
 }

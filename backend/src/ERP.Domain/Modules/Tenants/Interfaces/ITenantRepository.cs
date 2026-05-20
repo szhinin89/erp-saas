@@ -1,13 +1,13 @@
-using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Subscribers.Entities;
 
-namespace ERP.Domain.Tenants.Interfaces;
+namespace ERP.Domain.Subscribers.Interfaces;
 
-public interface ITenantRepository
+public interface ISubscriberRepository
 {
-    Task<Tenant?> GetByIdAsync(Guid id, CancellationToken ct = default);
-    Task<Tenant?> GetBySlugAsync(string slug, CancellationToken ct = default);
-    Task<IReadOnlyList<Tenant>> GetAllAsync(CancellationToken ct = default);
+    Task<Subscriber?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<Subscriber?> GetBySlugAsync(string slug, CancellationToken ct = default);
+    Task<IReadOnlyList<Subscriber>> GetAllAsync(CancellationToken ct = default);
     Task<bool> ExistsAsync(Guid id, CancellationToken ct = default);
-    Task AddAsync(Tenant tenant, CancellationToken ct = default);
+    Task AddAsync(Subscriber tenant, CancellationToken ct = default);
     Task SaveChangesAsync(CancellationToken ct = default);
 }

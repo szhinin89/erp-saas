@@ -15,11 +15,11 @@ public class ProductFeature : BaseEntity
 
     private ProductFeature() { }
 
-    internal static ProductFeature Create(Guid productId, Guid tenantId, string name, string value)
+    internal static ProductFeature Create(Guid productId, Guid subscriberId, string name, string value)
         => new()
         {
             Id        = Guid.NewGuid(),
-            TenantId  = tenantId,
+            SubscriberId  = subscriberId,
             ProductId = productId,
             Name      = name.Trim(),
             Value     = value.Trim(),

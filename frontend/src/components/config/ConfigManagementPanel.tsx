@@ -25,7 +25,7 @@ const defaultValues: ConfigFormValues = {
 };
 
 type ConfigManagementPanelProps = {
-  tenantId: string;
+  subscriberId: string;
   canManage: boolean;
   title?: string;
   subtitle?: string;
@@ -79,9 +79,9 @@ function validateValueByType(value: string, dataType: ConfigDataType): string | 
 }
 
 export function ConfigManagementPanel(props: ConfigManagementPanelProps) {
-  const { tenantId, canManage, title = 'Configuración jerárquica', subtitle } = props;
+  const { subscriberId, canManage, title = 'Configuración jerárquica', subtitle } = props;
   const config = useConfig();
-  const sameTenantAsContext = normalize(config.tenantId) === normalize(tenantId);
+  const sameTenantAsContext = normalize(config.subscriberId) === normalize(subscriberId);
 
   const [localEntries, setLocalEntries] = useState<ConfigEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -123,7 +123,7 @@ export function ConfigManagementPanel(props: ConfigManagementPanelProps) {
       if (sameTenantAsContext) {
         await config.refresh();
       } else {
-        const loaded = await configService.loadTenantConfig(tenantId);
+        const loaded = await configService.loadTenantConfig(subscriberId);
         setLocalEntries(loaded);
       }
     } catch (e) {
@@ -172,7 +172,7 @@ export function ConfigManagementPanel(props: ConfigManagementPanelProps) {
       if (sameTenantAsContext) {
         await config.upsertConfig(payload);
       } else {
-        const saved = await configService.upsertConfig(tenantId, payload);
+        const saved = await configService.upsertConfig(subscriberId, payload);
         setLocalEntries((prev) => {
           const idx = prev.findIndex(
             (x) =>
@@ -212,7 +212,7 @@ export function ConfigManagementPanel(props: ConfigManagementPanelProps) {
       if (sameTenantAsContext) {
         await config.deleteConfig(payload);
       } else {
-        await configService.deleteConfig(tenantId, payload);
+        await configService.deleteConfig(subscriberId, payload);
         setLocalEntries((prev) =>
           prev.filter(
             (x) =>

@@ -1,15 +1,15 @@
 namespace ERP.Domain.Common;
 
-public abstract class BaseEntity : IMustHaveTenant
+public abstract class BaseEntity : IMustHaveSubscriber
 {
     public Guid Id { get; protected set; } = Guid.NewGuid();
-    public Guid TenantId { get; protected set; }
+    public Guid SubscriberId { get; protected set; }
 
     protected BaseEntity() { }
 
-    protected BaseEntity(Guid id, Guid tenantId)
+    protected BaseEntity(Guid id, Guid subscriberId)
     {
         Id = id;
-        TenantId = tenantId;
+        SubscriberId = subscriberId;
     }
 }

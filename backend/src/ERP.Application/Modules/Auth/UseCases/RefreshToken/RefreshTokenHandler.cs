@@ -3,116 +3,164 @@ using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Subscriptions;
+using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
-using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Interfaces;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Subscribers.Interfaces;
 
 namespace ERP.Application.Auth.UseCases.RefreshToken;
 
 public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, Result<AuthResponseDto>>
 {
     private readonly IRefreshTokenService _refreshTokenService;
-    private readonly IUserRepository      _userRepository;
-    private readonly IAccessRepository    _accessRepository;
-    private readonly ITenantRepository    _tenantRepository;
-    private readonly IJwtService          _jwtService;
-    private readonly IAccessTokenService  _accessTokenService;
+    private readonly IUserRepository _userRepository;
+    private readonly IAccessRepository _accessRepository;
+    private readonly ISubscriberRepository _tenantRepository;
+    private readonly IJwtService _jwtService;
+    private readonly IAccessTokenService _accessTokenService;
     private readonly ISessionModulesResolver _sessionModules;
+    private readonly ICompanyProvisioningService _companyProvisioning;
+    private readonly ICompanyRepository _companyRepository;
 
     public RefreshTokenHandler(
         IRefreshTokenService refreshTokenService,
         IUserRepository userRepository,
         IAccessRepository accessRepository,
-        ITenantRepository tenantRepository,
+        ISubscriberRepository tenantRepository,
         IJwtService jwtService,
         IAccessTokenService accessTokenService,
-        ISessionModulesResolver sessionModules)
+        ISessionModulesResolver sessionModules,
+        ICompanyProvisioningService companyProvisioning,
+        ICompanyRepository companyRepository)
     {
         _refreshTokenService = refreshTokenService;
-        _userRepository      = userRepository;
-        _accessRepository    = accessRepository;
-        _tenantRepository    = tenantRepository;
-        _jwtService          = jwtService;
-        _accessTokenService  = accessTokenService;
-        _sessionModules      = sessionModules;
+        _userRepository = userRepository;
+        _accessRepository = accessRepository;
+        _tenantRepository = tenantRepository;
+        _jwtService = jwtService;
+        _accessTokenService = accessTokenService;
+        _sessionModules = sessionModules;
+        _companyProvisioning = companyProvisioning;
+        _companyRepository = companyRepository;
     }
 
     public async Task<Result<AuthResponseDto>> Handle(RefreshTokenCommand command, CancellationToken ct)
     {
-        var validation = await _refreshTokenService.ValidateAndRotateAsync(command.RawRefreshToken, ct);
-        if (!validation.IsValid)
-            return Result<AuthResponseDto>.Failure(validation.Error!);
+        var v = await _refreshTokenService.ValidateAndRotateAsync(command.RawRefreshToken, ct);
+        if (!v.IsValid)
+            return Result<AuthResponseDto>.Failure(v.Error ?? "Refresh token inválido.");
 
-        return validation.UserType switch
+        if (v.UserType == RefreshUserType.SuperAdmin)
         {
-            RefreshUserType.Legacy   => await HandleLegacyAsync(validation, ct),
-            RefreshUserType.Identity => await HandleIdentityAsync(validation, ct),
-            _ => Result<AuthResponseDto>.Failure("Tipo de usuario no soportado en refresh."),
-        };
-    }
+            var super = await _userRepository.GetByIdSystemAsync(v.UserId, ct);
+            if (super is null || !super.IsActive)
+                return Result<AuthResponseDto>.Failure("Usuario no válido.");
 
-    // Backward-compatible helper used by integration tests.
-    public Task<Result<AuthResponseDto>> HandleAsync(string rawRefreshToken, CancellationToken ct = default)
-        => Handle(new RefreshTokenCommand(rawRefreshToken), ct);
-
-    private async Task<Result<AuthResponseDto>> HandleLegacyAsync(
-        RefreshTokenValidationResult v, CancellationToken ct)
-    {
-        var user = await _userRepository.GetByIdSystemAsync(v.UserId, ct);
-        if (user is null || !user.IsActive)
-        {
-            await _refreshTokenService.RevokeAllForUserAsync(v.UserId, v.TenantId, "Usuario inactivo", ct);
-            return Result<AuthResponseDto>.Failure("Usuario no encontrado o inactivo.");
+            var superToken = _jwtService.GenerateToken(super, Guid.Empty);
+            return Result<AuthResponseDto>.Success(new AuthResponseDto(
+                super.Id, super.FullName, super.Email.Value,
+                super.Role, Guid.Empty, superToken,
+                PlanCode: null,
+                SubscriberSubscriptionCatalog.AllModuleKeys)
+            {
+                RefreshToken = v.NewToken,
+                RefreshTokenExpiry = v.NewExpiry,
+            });
         }
 
-        var tenant      = await _tenantRepository.GetByIdAsync(v.TenantId, ct);
-        var accessToken = _jwtService.GenerateToken(user);
-
-        var legacyModules = tenant is null
-            ? Array.Empty<string>()
-            : await _sessionModules.GetEnabledModuleKeysAsync(v.TenantId, ct);
-
-        return Result<AuthResponseDto>.Success(new AuthResponseDto(
-            user.Id, user.FullName, user.Email.Value,
-            user.Role, v.TenantId, accessToken,
-            tenant?.PlanCode,
-            legacyModules)
+        if (v.UserType == RefreshUserType.Legacy)
         {
-            RefreshToken       = v.NewToken,
-            RefreshTokenExpiry = v.NewExpiry,
-        });
-    }
+            var legacy = await _userRepository.GetByIdSystemAsync(v.UserId, ct);
+            if (legacy is null || !legacy.IsActive)
+                return Result<AuthResponseDto>.Failure("Usuario no válido.");
 
-    private async Task<Result<AuthResponseDto>> HandleIdentityAsync(
-        RefreshTokenValidationResult v, CancellationToken ct)
-    {
+            var legacyToken = _jwtService.GenerateToken(legacy);
+            var legacyTenant = await _tenantRepository.GetByIdAsync(v.SubscriberId, ct);
+            var legacyModules = legacyTenant is null
+                ? Array.Empty<string>()
+                : await _sessionModules.GetEnabledModuleKeysAsync(v.SubscriberId, ct);
+
+            return Result<AuthResponseDto>.Success(new AuthResponseDto(
+                legacy.Id, legacy.FullName, legacy.Email.Value,
+                legacy.Role, v.SubscriberId, legacyToken,
+                legacyTenant?.PlanCode,
+                legacyModules)
+            {
+                RefreshToken = v.NewToken,
+                RefreshTokenExpiry = v.NewExpiry,
+            });
+        }
+
         var user = await _accessRepository.GetUserByIdAsync(v.UserId, ct);
         if (user is null || !user.IsActive)
+            return Result<AuthResponseDto>.Failure("Usuario no válido.");
+
+        var tenant = await _tenantRepository.GetByIdAsync(v.SubscriberId, ct);
+        if (tenant is null || !tenant.IsActive)
+            return Result<AuthResponseDto>.Failure("Suscriptor no encontrado o inactivo.");
+
+        Guid? companyId = v.CompanyId;
+        CompanyUserMembership? membership = null;
+
+        if (companyId is Guid cid && cid != Guid.Empty)
         {
-            await _refreshTokenService.RevokeAllForUserAsync(v.UserId, v.TenantId, "Usuario inactivo", ct);
-            return Result<AuthResponseDto>.Failure("Usuario no encontrado o inactivo.");
+            var company = await _companyRepository.GetByIdForSubscriberAsync(cid, v.SubscriberId, ct);
+            if (company is null)
+                return Result<AuthResponseDto>.Failure("Empresa no válida para el suscriptor.");
+
+            membership = await _accessRepository.GetCompanyUserMembershipAsync(company.Id, user.Id, ct);
+            if (membership is null || !membership.IsActive)
+                return Result<AuthResponseDto>.Failure("Membresía no activa para la empresa.");
+        }
+        else
+        {
+            var memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(user.Id, ct);
+            var companies = await _companyRepository.GetByIdsAsync(memberships.Select(m => m.CompanyId).ToList(), ct);
+            var inSubscriber = companies.Where(c => c.SubscriberId == v.SubscriberId).ToList();
+            if (inSubscriber.Count == 1)
+            {
+                companyId = inSubscriber[0].Id;
+                membership = memberships.First(m => m.CompanyId == companyId);
+            }
+            else if (inSubscriber.Count == 0)
+            {
+                return Result<AuthResponseDto>.Failure("Sin acceso a empresas en este suscriptor.");
+            }
+            else
+            {
+                membership = memberships.First(m => m.CompanyId == inSubscriber[0].Id);
+                var accessTokenPartial = _accessTokenService.GenerateSessionToken(
+                    user, v.SubscriberId, membership.Role);
+                var modulesPartial = await _sessionModules.GetEnabledModuleKeysAsync(v.SubscriberId, ct);
+                return Result<AuthResponseDto>.Success(new AuthResponseDto(
+                    user.Id, user.FullName, user.Email.Value,
+                    membership.Role, v.SubscriberId, accessTokenPartial,
+                    tenant.PlanCode, modulesPartial)
+                {
+                    CompanyId = null,
+                    RefreshToken = v.NewToken,
+                    RefreshTokenExpiry = v.NewExpiry,
+                });
+            }
         }
 
-        var membership = await _accessRepository.GetMembershipAsync(v.TenantId, v.UserId, ct);
-        if (membership is null)
+        membership ??= await _accessRepository.GetCompanyUserMembershipAsync(companyId!.Value, user.Id, ct);
+        if (membership is null || !membership.IsActive)
             return Result<AuthResponseDto>.Failure("Membresía no encontrada.");
 
-        var tenant      = await _tenantRepository.GetByIdAsync(v.TenantId, ct);
-        if (tenant is null || !tenant.IsActive)
-            return Result<AuthResponseDto>.Failure("Empresa no encontrada o inactiva.");
-
-        var accessToken = _accessTokenService.GenerateSessionToken(user, v.TenantId, membership.Role);
-
-        var modules = await _sessionModules.GetEnabledModuleKeysAsync(v.TenantId, ct);
+        var accessToken = _accessTokenService.GenerateSessionToken(
+            user, v.SubscriberId, membership.Role, companyId!.Value);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(v.SubscriberId, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id, user.FullName, user.Email.Value,
-            membership.Role, v.TenantId, accessToken,
+            membership.Role, v.SubscriberId, accessToken,
             tenant.PlanCode,
             modules)
         {
-            RefreshToken       = v.NewToken,
+            CompanyId = companyId,
+            RefreshToken = v.NewToken,
             RefreshTokenExpiry = v.NewExpiry,
         });
     }

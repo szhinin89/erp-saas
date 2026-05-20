@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class PurchBillLine : AuditableEntity, ITenantEntity
+public sealed class PurchBillLine : AuditableEntity, ISubscriberScopedEntity
 {
     public const int DescriptionMaxLen         = 300;
     public const int SupplierProductCodeMaxLen = 50;
@@ -29,7 +29,7 @@ public sealed class PurchBillLine : AuditableEntity, ITenantEntity
     }
 
     internal static PurchBillLine Create(
-        Guid    tenantId,
+        Guid    subscriberId,
         Guid    purchBillId,
         string  description,
         string? supplierProductCode,
@@ -46,7 +46,7 @@ public sealed class PurchBillLine : AuditableEntity, ITenantEntity
         var d = new PurchBillLine
         {
             Id                  = Guid.NewGuid(),
-            TenantId            = tenantId,
+            SubscriberId            = subscriberId,
             PurchBillId         = purchBillId,
             ProductId           = productId,
             Description         = description.Trim(),

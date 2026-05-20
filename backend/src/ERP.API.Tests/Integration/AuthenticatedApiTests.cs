@@ -17,12 +17,12 @@ public sealed class AuthenticatedApiTests
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-            var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
-            factory.MutableTenant.TenantId = seed.TenantId;
+            var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+            factory.MutableSubscriber.SubscriberId = seed.SubscriberId;
             factory.MutableUser.UserId     = seed.UserId;
         }
 
-        var token = TestJwtFactory.CreateSessionJwt(factory.MutableTenant.TenantId, factory.MutableUser.UserId);
+        var token = TestJwtFactory.CreateSessionJwt(factory.MutableSubscriber.SubscriberId, factory.MutableUser.UserId);
 
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =
@@ -41,12 +41,12 @@ public sealed class AuthenticatedApiTests
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-            var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
-            factory.MutableTenant.TenantId = seed.TenantId;
+            var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+            factory.MutableSubscriber.SubscriberId = seed.SubscriberId;
             factory.MutableUser.UserId     = seed.UserId;
         }
 
-        var token = TestJwtFactory.CreateSessionJwt(factory.MutableTenant.TenantId, factory.MutableUser.UserId);
+        var token = TestJwtFactory.CreateSessionJwt(factory.MutableSubscriber.SubscriberId, factory.MutableUser.UserId);
 
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =

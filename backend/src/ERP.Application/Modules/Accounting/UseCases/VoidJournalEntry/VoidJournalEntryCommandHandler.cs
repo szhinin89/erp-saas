@@ -11,27 +11,27 @@ public sealed class VoidJournalEntryCommandHandler : IRequestHandler<VoidJournal
 {
     private readonly IAccountingRepository _repository;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public VoidJournalEntryCommandHandler(
         IAccountingRepository repository,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repository    = repository;
         _activity      = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
     }
 
     public async Task<Result<JournalEntryDto>> Handle(VoidJournalEntryCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var entry = await _repository.GetJournalEntryByIdAsync(command.Id, tenantId, ct);
+        var entry = await _repository.GetJournalEntryByIdAsync(command.Id, subscriberId, ct);
         if (entry is null)
             return Result<JournalEntryDto>.Failure("Asiento contable no encontrado.");
 
@@ -45,7 +45,7 @@ public sealed class VoidJournalEntryCommandHandler : IRequestHandler<VoidJournal
         }
 
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _currentUser.Email,
             _currentUser.FullName,

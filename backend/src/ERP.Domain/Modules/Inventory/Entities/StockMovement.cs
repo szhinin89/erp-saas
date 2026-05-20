@@ -3,8 +3,9 @@ using ERP.Domain.Modules.Inventory.Enums;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
-public sealed class StockMovement : AuditableEntity, ITenantEntity
+public sealed class StockMovement : AuditableEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
+    public Guid? CompanyId { get; private set; }
     public const int ReferenceMaxLen        = 100;
     public const int SourceDocTypeMaxLen    = 50;
 
@@ -23,7 +24,7 @@ public sealed class StockMovement : AuditableEntity, ITenantEntity
     private StockMovement() { }
 
     public static StockMovement Create(
-        Guid             tenantId,
+        Guid             subscriberId,
         Guid             productId,
         Guid             warehouseId,
         StockMovementType movementType,
@@ -33,12 +34,14 @@ public sealed class StockMovement : AuditableEntity, ITenantEntity
         Guid?            sourceDocId,
         string?          sourceDocType,
         Guid             createdBy,
-        decimal?         unitCost = null)
+        decimal?         unitCost = null,
+        Guid?            companyId = null)
     {
         var m = new StockMovement
         {
             Id               = Guid.NewGuid(),
-            TenantId         = tenantId,
+            SubscriberId         = subscriberId,
+            CompanyId            = companyId,
             ProductId        = productId,
             WarehouseId      = warehouseId,
             MovementType     = movementType,

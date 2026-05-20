@@ -24,7 +24,7 @@ public sealed class PasswordResetTokenConfiguration : IEntityTypeConfiguration<P
             .HasMaxLength(20)
             .IsRequired();
 
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id");
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id");
         builder.Property(e => e.ExpiresAt).HasColumnName("expires_at").IsRequired();
         builder.Property(e => e.Used).HasColumnName("used").IsRequired();
         builder.Property(e => e.CreatedAt).HasColumnName("created_at").IsRequired();
@@ -33,7 +33,7 @@ public sealed class PasswordResetTokenConfiguration : IEntityTypeConfiguration<P
             .IsUnique()
             .HasDatabaseName("ix_password_reset_tokens_hash");
 
-        builder.HasIndex(e => new { e.UserId, e.UserKind, e.TenantId })
+        builder.HasIndex(e => new { e.UserId, e.UserKind, e.SubscriberId })
             .HasDatabaseName("ix_password_reset_tokens_user");
     }
 }

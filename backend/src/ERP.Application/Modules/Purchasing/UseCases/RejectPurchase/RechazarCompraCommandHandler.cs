@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -13,14 +13,14 @@ public sealed class RejectPurchaseCommandHandler
 {
     private readonly IPurchBillRepository       _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _tenant;
+    private readonly ICurrentSubscriber          _tenant;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
 
     public RejectPurchaseCommandHandler(
         IPurchBillRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork)
     {
@@ -34,10 +34,10 @@ public sealed class RejectPurchaseCommandHandler
     public async Task<Result<PurchBillDto>> Handle(
         RejectPurchaseCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
-        var compra = await _repo.GetByIdAsync(tenantId, command.PurchBillId, ct);
+        var compra = await _repo.GetByIdAsync(subscriberId, command.PurchBillId, ct);
         if (compra is null)
             return Result<PurchBillDto>.Failure("Compra no encontrada.");
 
@@ -57,7 +57,7 @@ public sealed class RejectPurchaseCommandHandler
         try
         {
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _user.Email, _user.FullName,
+                subscriberId, userId, _user.Email, _user.FullName,
                 module: "compras", action: "compra.rechazar",
                 entityType: "PurchBill", entityId: compra.Id,
                 description: $"{compra.InvoiceNumber} — motivo: {command.Reason}"), ct);

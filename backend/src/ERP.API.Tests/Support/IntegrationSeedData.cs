@@ -1,10 +1,10 @@
-﻿using ERP.Domain.Modules.Accounting.Entities;
+using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Common.Validators;
 using ERP.Domain.Products.Entities;
-using ERP.Domain.Tenants.Entities;
+using ERP.Domain.Subscribers.Entities;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Support;
@@ -12,7 +12,7 @@ namespace ERP.API.Tests.Support;
 internal static class IntegrationSeedData
 {
     internal sealed record SeedResult(
-        Guid   TenantId,
+        Guid   SubscriberId,
         Guid   UserId,
         Guid   ProductId,
         Guid   WarehouseId,
@@ -69,17 +69,17 @@ internal static class IntegrationSeedData
 
     internal static async Task<SeedResult> SeedAsync(
         ErpDbContext          db,
-        MutableCurrentTenant mt,
+        MutableCurrentSubscriber mt,
         MutableCurrentUser   mu,
         CancellationToken    ct)
     {
         var userId = Guid.NewGuid();
         mu.UserId = userId;
 
-        var tenant = Tenant.Create("Empresa integraciÃ³n", "empresa-int", userId);
-        mt.TenantId = tenant.Id;
+        var tenant = Subscriber.Create("Empresa integraciÃ³n", "empresa-int", userId);
+        mt.SubscriberId = tenant.Id;
         var tid = tenant.Id;
-        db.Tenants.Add(tenant);
+        db.Subscribers.Add(tenant);
         await db.SaveChangesAsync(ct);
 
         var branch = Branch.Create(

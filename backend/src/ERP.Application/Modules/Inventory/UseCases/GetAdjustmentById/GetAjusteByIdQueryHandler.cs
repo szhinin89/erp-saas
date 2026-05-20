@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -9,21 +9,21 @@ public sealed class GetStockAdjustmentByIdQueryHandler
     : IRequestHandler<GetStockAdjustmentByIdQuery, Result<StockAdjustmentDto?>>
 {
     private readonly IStockAdjustmentRepository _repo;
-    private readonly ICurrentTenant              _currentTenant;
+    private readonly ICurrentSubscriber              _currentSubscriber;
 
     public GetStockAdjustmentByIdQueryHandler(
         IStockAdjustmentRepository repo,
-        ICurrentTenant currentTenant)
+        ICurrentSubscriber currentSubscriber)
     {
         _repo          = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public async Task<Result<StockAdjustmentDto?>> Handle(
         GetStockAdjustmentByIdQuery query, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
-        var ajuste   = await _repo.GetByIdAsync(tenantId, query.AdjustmentId, ct);
+        var subscriberId = _currentSubscriber.SubscriberId;
+        var ajuste   = await _repo.GetByIdAsync(subscriberId, query.AdjustmentId, ct);
 
         if (ajuste is null)
             return Result<StockAdjustmentDto?>.Success(null);

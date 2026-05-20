@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
@@ -12,25 +12,25 @@ public sealed class GetPurchaseOrdersListQueryHandler
 {
     private readonly IPurchaseOrderRepository _repo;
     private readonly ISupplierRepository   _proveedorRepo;
-    private readonly ICurrentTenant         _currentTenant;
+    private readonly ICurrentSubscriber         _currentSubscriber;
 
     public GetPurchaseOrdersListQueryHandler(
         IPurchaseOrderRepository repo,
         ISupplierRepository proveedorRepo,
-        ICurrentTenant currentTenant)
+        ICurrentSubscriber currentSubscriber)
     {
         _repo          = repo;
         _proveedorRepo = proveedorRepo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public async Task<Result<PurchaseOrdersPagedResult>> Handle(
         GetPurchaseOrdersListQuery query, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
 
         var (items, total) = await _repo.GetPagedAsync(
-            tenantId, query.PageNumber, query.PageSize,
+            subscriberId, query.PageNumber, query.PageSize,
             query.SupplierId, query.Status, query.DateFrom, query.DateTo, ct);
 
         // Batch de proveedores únicos para evitar N+1
@@ -38,7 +38,7 @@ public sealed class GetPurchaseOrdersListQueryHandler
         var proveedores  = new Dictionary<Guid, string>();
         foreach (var pid in proveedorIds)
         {
-            var p = await _proveedorRepo.GetByIdAsync(tenantId, pid, ct);
+            var p = await _proveedorRepo.GetByIdAsync(subscriberId, pid, ct);
             proveedores[pid] = p?.LegalName ?? pid.ToString();
         }
 

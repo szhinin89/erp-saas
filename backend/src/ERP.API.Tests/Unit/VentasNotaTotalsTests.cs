@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using ERP.API.Tests.Support;
 using ERP.Domain.Modules.Sales.Entities;
 
@@ -9,14 +9,14 @@ public sealed class VentasNotaTotalsTests
     [Fact]
     public void VentasNotaCreditoDebito_totales_coinciden_con_suma_de_detalles()
     {
-        var tenantId  = Guid.NewGuid();
+        var subscriberId  = Guid.NewGuid();
         var userId    = Guid.NewGuid();
         var facturaId = Guid.NewGuid();
         var productId = Guid.NewGuid();
         var clave     = ClaveAcceso49TestFactory.FromPrefix48(new string('7', 48));
 
         var nota = SalesNote.Create(
-            tenantId,
+            subscriberId,
             facturaId,
             "CREDITO",
             "DevoluciÃ³n",
@@ -28,8 +28,8 @@ public sealed class VentasNotaTotalsTests
             DateTime.UtcNow,
             userId);
 
-        var d1 = SalesNoteLine.Create(tenantId, productId, 2m, 10m, 1.20m, "LÃ­nea A", userId);
-        var d2 = SalesNoteLine.Create(tenantId, productId, 1m, 5m, 0m, "LÃ­nea B", userId);
+        var d1 = SalesNoteLine.Create(subscriberId, productId, 2m, 10m, 1.20m, "LÃ­nea A", userId);
+        var d2 = SalesNoteLine.Create(subscriberId, productId, 1m, 5m, 0m, "LÃ­nea B", userId);
         d1.AssignNoteId(nota.Id);
         d2.AssignNoteId(nota.Id);
         nota.AddLine(d1);

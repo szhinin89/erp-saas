@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class Supplier : MasterEntity, ITenantEntity
+public sealed class Supplier : MasterEntity, ISubscriberScopedEntity
 {
     public const string TypeNatural  = "Natural";
     public const string TypeLegal    = "Legal";
@@ -31,7 +31,7 @@ public sealed class Supplier : MasterEntity, ITenantEntity
     private Supplier() { }
 
     public static Supplier Create(
-        Guid    tenantId,
+        Guid    subscriberId,
         string  personType,
         string  legalName,
         string  ruc,
@@ -51,7 +51,7 @@ public sealed class Supplier : MasterEntity, ITenantEntity
         var s = new Supplier
         {
             Id             = Guid.NewGuid(),
-            TenantId       = tenantId,
+            SubscriberId       = subscriberId,
             PersonType     = personType,
             LegalName      = legalName.Trim(),
             Ruc            = ruc.Trim(),

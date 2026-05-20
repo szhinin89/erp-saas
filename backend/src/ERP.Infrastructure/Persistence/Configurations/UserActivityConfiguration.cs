@@ -12,7 +12,7 @@ public class UserActivityConfiguration : IEntityTypeConfiguration<UserActivity>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(x => x.UserId).HasColumnName("user_id").IsRequired();
         builder.Property(x => x.UserEmail).HasColumnName("user_email").HasMaxLength(254);
         builder.Property(x => x.UserFullName).HasColumnName("user_full_name").HasMaxLength(254);
@@ -24,12 +24,12 @@ public class UserActivityConfiguration : IEntityTypeConfiguration<UserActivity>
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(800);
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
 
-        builder.HasIndex(x => new { x.TenantId, x.UserId, x.CreatedAt })
-            .HasDatabaseName("ix_user_activity_tenant_user_created_at");
-        builder.HasIndex(x => new { x.TenantId, x.Module, x.CreatedAt })
-            .HasDatabaseName("ix_user_activity_tenant_module_created_at");
-        builder.HasIndex(x => new { x.TenantId, x.EntityType, x.EntityId, x.CreatedAt })
-            .HasDatabaseName("ix_user_activity_tenant_entity_created_at");
+        builder.HasIndex(x => new { x.SubscriberId, x.UserId, x.CreatedAt })
+            .HasDatabaseName("ix_user_activity_subscriber_user_created_at");
+        builder.HasIndex(x => new { x.SubscriberId, x.Module, x.CreatedAt })
+            .HasDatabaseName("ix_user_activity_subscriber_module_created_at");
+        builder.HasIndex(x => new { x.SubscriberId, x.EntityType, x.EntityId, x.CreatedAt })
+            .HasDatabaseName("ix_user_activity_subscriber_entity_created_at");
     }
 }
 

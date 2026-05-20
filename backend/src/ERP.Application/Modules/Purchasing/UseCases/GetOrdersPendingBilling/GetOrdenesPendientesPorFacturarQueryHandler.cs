@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
@@ -12,29 +12,29 @@ public sealed class GetOrdersPendingBillingQueryHandler
 {
     private readonly IPurchaseOrderRepository _repo;
     private readonly ISupplierRepository   _proveedorRepo;
-    private readonly ICurrentTenant         _currentTenant;
+    private readonly ICurrentSubscriber         _currentSubscriber;
 
     public GetOrdersPendingBillingQueryHandler(
         IPurchaseOrderRepository repo,
         ISupplierRepository proveedorRepo,
-        ICurrentTenant currentTenant)
+        ICurrentSubscriber currentSubscriber)
     {
         _repo          = repo;
         _proveedorRepo = proveedorRepo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public async Task<Result<IReadOnlyList<PurchaseOrderDto>>> Handle(
         GetOrdersPendingBillingQuery query, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
-        var ordenes  = await _repo.GetPendingToInvoiceAsync(tenantId, ct);
+        var subscriberId = _currentSubscriber.SubscriberId;
+        var ordenes  = await _repo.GetPendingToInvoiceAsync(subscriberId, ct);
 
         var proveedorIds = ordenes.Select(o => o.SupplierId).Distinct().ToList();
         var proveedores  = new Dictionary<Guid, string>();
         foreach (var pid in proveedorIds)
         {
-            var p = await _proveedorRepo.GetByIdAsync(tenantId, pid, ct);
+            var p = await _proveedorRepo.GetByIdAsync(subscriberId, pid, ct);
             proveedores[pid] = p?.LegalName ?? pid.ToString();
         }
 

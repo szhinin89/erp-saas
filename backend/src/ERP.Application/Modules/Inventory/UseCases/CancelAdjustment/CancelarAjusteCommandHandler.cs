@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
@@ -14,7 +14,7 @@ public sealed class CancelStockAdjustmentCommandHandler
 {
     private readonly IStockAdjustmentRepository _ajusteRepo;
     private readonly IUserActivityRepository     _activity;
-    private readonly ICurrentTenant              _currentTenant;
+    private readonly ICurrentSubscriber              _currentSubscriber;
     private readonly ICurrentUser                _currentUser;
     private readonly IUnitOfWork                 _unitOfWork;
     private readonly ILogger<CancelStockAdjustmentCommandHandler> _logger;
@@ -22,14 +22,14 @@ public sealed class CancelStockAdjustmentCommandHandler
     public CancelStockAdjustmentCommandHandler(
         IStockAdjustmentRepository ajusteRepo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
         ILogger<CancelStockAdjustmentCommandHandler> logger)
     {
         _ajusteRepo    = ajusteRepo;
         _activity      = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
         _unitOfWork    = unitOfWork;
         _logger        = logger;
@@ -38,10 +38,10 @@ public sealed class CancelStockAdjustmentCommandHandler
     public async Task<Result<StockAdjustmentDto>> Handle(
         CancelStockAdjustmentCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var ajuste = await _ajusteRepo.GetByIdAsync(tenantId, command.AdjustmentId, ct);
+        var ajuste = await _ajusteRepo.GetByIdAsync(subscriberId, command.AdjustmentId, ct);
         if (ajuste is null)
             return Result<StockAdjustmentDto>.Failure("Ajuste no encontrado.");
 
@@ -55,7 +55,7 @@ public sealed class CancelStockAdjustmentCommandHandler
         try
         {
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "inventario", action: "ajuste.cancelar",
                 entityType: "StockAdjustment", entityId: ajuste.Id,
                 description: ajuste.AdjustmentNumber), ct);

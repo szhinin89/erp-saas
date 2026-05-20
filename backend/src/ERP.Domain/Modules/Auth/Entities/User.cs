@@ -15,7 +15,7 @@ public class User : AuditableEntity
     private User() { }
 
     public static User Create(
-        Guid tenantId,
+        Guid subscriberId,
         string firstName,
         string lastName,
         string email,
@@ -26,7 +26,7 @@ public class User : AuditableEntity
         var user = new User
         {
             Id           = Guid.NewGuid(),
-            TenantId     = tenantId,
+            SubscriberId     = subscriberId,
             FirstName    = firstName,
             LastName     = lastName,
             Email        = new Email(email),

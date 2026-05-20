@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
@@ -104,7 +104,7 @@ public sealed class OrdenesCompraEndToEndTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var (proveedorId, productoId) = await SeedAsync(db, factory);
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
         var userId   = factory.MutableUser.UserId;
 
         // Crear y aprobar OC con 5 unidades
@@ -115,7 +115,7 @@ public sealed class OrdenesCompraEndToEndTests
         await mediator.Send(new AprobarOrdenCompraCommand(crear.Value!.Id), CancellationToken.None);
 
         // Crear factura de compra Aprobada con 5 unidades del mismo producto
-        var factura = BuildFacturaAprobada(tenantId, proveedorId, productoId, quantity: 5m, userId, db);
+        var factura = BuildFacturaAprobada(subscriberId, proveedorId, productoId, quantity: 5m, userId, db);
 
         var vincular = await mediator.Send(
             new VincularFacturaAOrdenCompraCommand(crear.Value.Id, factura.Id),
@@ -134,7 +134,7 @@ public sealed class OrdenesCompraEndToEndTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var (proveedorId, productoId) = await SeedAsync(db, factory);
-        var tenantId = factory.MutableTenant.TenantId;
+        var subscriberId = factory.MutableSubscriber.SubscriberId;
         var userId   = factory.MutableUser.UserId;
 
         // OC pide 10 unidades
@@ -145,7 +145,7 @@ public sealed class OrdenesCompraEndToEndTests
         await mediator.Send(new AprobarOrdenCompraCommand(crear.Value!.Id), CancellationToken.None);
 
         // Factura solo trae 4 unidades
-        var factura = BuildFacturaAprobada(tenantId, proveedorId, productoId, quantity: 4m, userId, db);
+        var factura = BuildFacturaAprobada(subscriberId, proveedorId, productoId, quantity: 4m, userId, db);
 
         var vincular = await mediator.Send(
             new VincularFacturaAOrdenCompraCommand(crear.Value.Id, factura.Id),
@@ -161,10 +161,10 @@ public sealed class OrdenesCompraEndToEndTests
         ErpDbContext db, IntegrationTestWebAppFactory factory)
     {
         var seed = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
 
         var proveedor = Supplier.Create(
-            seed.TenantId, "Juridica", "Supplier Test S.A.",
+            seed.SubscriberId, "Juridica", "Supplier Test S.A.",
             seed.ProveedorRuc, email: null, phone: null, address: null,
             "30 dias", seed.UserId);
         db.Suppliers.Add(proveedor);
@@ -174,12 +174,12 @@ public sealed class OrdenesCompraEndToEndTests
     }
 
     private static PurchBill BuildFacturaAprobada(
-        Guid tenantId, Guid proveedorId, Guid productoId, decimal quantity,
+        Guid subscriberId, Guid proveedorId, Guid productoId, decimal quantity,
         Guid userId, ErpDbContext db)
     {
         var numero = $"001-001-{Guid.NewGuid().ToString()[..8]}";
         var f = PurchBill.Create(
-            tenantId, proveedorId, numero,
+            subscriberId, proveedorId, numero,
             accessKey: null, xmlPath: null,
             DateTime.UtcNow, dueDate: null,
             "30 dias", notes: null, userId);

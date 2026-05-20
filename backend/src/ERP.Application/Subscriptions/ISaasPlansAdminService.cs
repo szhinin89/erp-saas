@@ -2,13 +2,13 @@ using ERP.Application.Common;
 
 namespace ERP.Application.Subscriptions;
 
-public interface ISaasPlansAdminService
+public interface ICommercialPlansAdminService
 {
-    Task<IReadOnlyList<SaasPlanAdminDto>> ListPlansAdminAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<CommercialPlanAdminDto>> ListPlansAdminAsync(CancellationToken ct = default);
 
-    Task<Result<Guid>> CreatePlanAsync(CreateSaasPlanRequest request, CancellationToken ct = default);
+    Task<Result<Guid>> CreatePlanAsync(CreateCommercialPlanRequest request, CancellationToken ct = default);
 
-    Task<Result<object?>> UpdatePlanAsync(Guid planId, UpdateSaasPlanRequest request, CancellationToken ct = default);
+    Task<Result<object?>> UpdatePlanAsync(Guid planId, UpdateCommercialPlanRequest request, CancellationToken ct = default);
 
     Task<Result<object?>> DeletePlanAsync(Guid planId, CancellationToken ct = default);
 

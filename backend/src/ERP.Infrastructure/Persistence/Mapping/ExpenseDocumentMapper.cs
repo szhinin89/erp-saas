@@ -9,7 +9,7 @@ public static class ExpenseDocumentMapper
     {
         var doc = ExpenseDocument.Rehydrate();
         Set(doc, nameof(ExpenseDocument.Id), invoice.Id);
-        Set(doc, nameof(ExpenseDocument.TenantId), invoice.TenantId);
+        Set(doc, nameof(ExpenseDocument.SubscriberId), invoice.SubscriberId);
         Set(doc, nameof(ExpenseDocument.SupplierId), invoice.SupplierId);
         Set(doc, nameof(ExpenseDocument.DocType), MapDocType(invoice.Category));
         Set(doc, nameof(ExpenseDocument.DocNumber), invoice.InvoiceNumber);
@@ -49,7 +49,7 @@ public static class ExpenseDocumentMapper
         if (!string.IsNullOrWhiteSpace(doc.AccessKey) && !string.IsNullOrWhiteSpace(doc.XmlPath))
         {
             invoice = ExpenseInvoice.CreateFromXml(
-                doc.TenantId,
+                doc.SubscriberId,
                 doc.SupplierId ?? Guid.Empty,
                 doc.AccessKey!,
                 doc.DocNumber,
@@ -66,7 +66,7 @@ public static class ExpenseDocumentMapper
         else
         {
             invoice = ExpenseInvoice.CreateManual(
-                doc.TenantId,
+                doc.SubscriberId,
                 doc.SupplierId,
                 doc.IssueDate,
                 doc.Concept,

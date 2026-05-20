@@ -12,18 +12,18 @@ public class CreateProductTypeHandler : IRequestHandler<CreateProductTypeCommand
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public CreateProductTypeHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
         _activity = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
@@ -32,12 +32,12 @@ public class CreateProductTypeHandler : IRequestHandler<CreateProductTypeCommand
 
     public async Task<Result<ProductTypeDto>> Handle(CreateProductTypeCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId = _currentUser.UserId;
-        var entity = ProductType.Create(tenantId, command.Code, command.Name, userId);
+        var entity = ProductType.Create(subscriberId, command.Code, command.Name, userId);
         await _repo.AddProductTypeAsync(entity, ct);
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _currentUser.Email,
             _currentUser.FullName,

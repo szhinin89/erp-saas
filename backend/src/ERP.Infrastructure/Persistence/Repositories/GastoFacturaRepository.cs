@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Modules.Expenses.Entities;
@@ -34,34 +34,34 @@ public sealed class ExpenseInvoiceRepository : IExpenseInvoiceRepository
         return _context.ExpenseInvoices.AddAsync(gasto, ct).AsTask();
     }
 
-    public async Task<ExpenseInvoice?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+    public async Task<ExpenseInvoice?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
     {
         if (UseUnified)
         {
             var doc = await _context.ExpenseDocuments
                 .Include(g => g.Details)
-                .FirstOrDefaultAsync(g => g.TenantId == tenantId && g.Id == id, ct);
+                .FirstOrDefaultAsync(g => g.SubscriberId == subscriberId && g.Id == id, ct);
             if (doc is null) return null;
             var invoice = ExpenseDocumentMapper.ToLegacyInvoice(doc);
             if (UseUnified) _documentSync.StageExpenseInvoice(invoice);
             return invoice;
         }
 
-        return await _context.ExpenseInvoices.FirstOrDefaultAsync(g => g.TenantId == tenantId && g.Id == id, ct);
+        return await _context.ExpenseInvoices.FirstOrDefaultAsync(g => g.SubscriberId == subscriberId && g.Id == id, ct);
     }
 
-    public Task<bool> ExistsAccessKeyAsync(Guid tenantId, string accessKey, CancellationToken ct = default)
+    public Task<bool> ExistsAccessKeyAsync(Guid subscriberId, string accessKey, CancellationToken ct = default)
     {
         if (UseUnified)
             return _context.ExpenseDocuments.AnyAsync(
-                g => g.TenantId == tenantId && g.AccessKey == accessKey, ct);
+                g => g.SubscriberId == subscriberId && g.AccessKey == accessKey, ct);
 
         return _context.ExpenseInvoices.AnyAsync(
-            g => g.TenantId == tenantId && g.AccessKey == accessKey, ct);
+            g => g.SubscriberId == subscriberId && g.AccessKey == accessKey, ct);
     }
 
     public async Task<IReadOnlyList<ExpenseInvoice>> GetAsync(
-        Guid tenantId,
+        Guid subscriberId,
         ExpenseStatus? estado,
         Guid? proveedorId,
         DateTime? desde,
@@ -71,7 +71,7 @@ public sealed class ExpenseInvoiceRepository : IExpenseInvoiceRepository
     {
         if (UseUnified)
         {
-            var q = _context.ExpenseDocuments.Where(g => g.TenantId == tenantId);
+            var q = _context.ExpenseDocuments.Where(g => g.SubscriberId == subscriberId);
 
             if (estado.HasValue)
                 q = q.Where(g => g.Status == estado.Value);
@@ -95,7 +95,7 @@ public sealed class ExpenseInvoiceRepository : IExpenseInvoiceRepository
             return docs.Select(ExpenseDocumentMapper.ToLegacyInvoice).ToList();
         }
 
-        var legacy = _context.ExpenseInvoices.Where(g => g.TenantId == tenantId);
+        var legacy = _context.ExpenseInvoices.Where(g => g.SubscriberId == subscriberId);
 
         if (estado.HasValue)       legacy = legacy.Where(g => g.Status == estado.Value);
         if (proveedorId.HasValue) legacy = legacy.Where(g => g.SupplierId == proveedorId.Value);

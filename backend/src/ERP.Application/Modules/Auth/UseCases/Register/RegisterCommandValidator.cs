@@ -23,7 +23,7 @@ public sealed class RegisterCommandValidator : AbstractValidator<RegisterCommand
             .NotEmpty().WithMessage("La contraseña es obligatoria.")
             .MinimumLength(8).WithMessage("La contraseña debe tener al menos 8 caracteres.");
 
-        RuleFor(x => x.TenantId)
+        RuleFor(x => x.SubscriberId)
             .NotEmpty().WithMessage("El tenant es obligatorio.");
 
         RuleFor(x => x.Role)

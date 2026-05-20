@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Cash.Entities;
 
-public sealed class BankStatement : AuditableEntity, ITenantEntity
+public sealed class BankStatement : AuditableEntity, ISubscriberScopedEntity
 {
     private readonly List<BankTransaction> _transactions = new();
 
@@ -19,7 +19,7 @@ public sealed class BankStatement : AuditableEntity, ITenantEntity
     private BankStatement() { }
 
     public static BankStatement Create(
-        Guid     tenantId,
+        Guid     subscriberId,
         Guid     bankAccountId,
         DateTime periodFrom,
         DateTime periodTo,
@@ -33,7 +33,7 @@ public sealed class BankStatement : AuditableEntity, ITenantEntity
         var e = new BankStatement
         {
             Id             = Guid.NewGuid(),
-            TenantId       = tenantId,
+            SubscriberId       = subscriberId,
             BankAccountId  = bankAccountId,
             PeriodFrom     = periodFrom,
             PeriodTo       = periodTo,
@@ -54,7 +54,7 @@ public sealed class BankStatement : AuditableEntity, ITenantEntity
         string?  reference,
         Guid     updatedBy)
     {
-        var t = BankTransaction.Create(Id, TenantId, transactionDate, description, amount, transactionType, reference);
+        var t = BankTransaction.Create(Id, SubscriberId, transactionDate, description, amount, transactionType, reference);
         _transactions.Add(t);
         IsReconciled = false;
         SetUpdated(updatedBy);

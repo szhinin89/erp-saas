@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Cash.Entities;
 
-public sealed class CashCount : AuditableEntity, ITenantEntity
+public sealed class CashCount : AuditableEntity, ISubscriberScopedEntity
 {
     public const int NotesMaxLen = 2000;
 
@@ -16,7 +16,7 @@ public sealed class CashCount : AuditableEntity, ITenantEntity
     private CashCount() { }
 
     public static CashCount Create(
-        Guid     tenantId,
+        Guid     subscriberId,
         Guid     pettyCashId,
         DateTime countDate,
         decimal  physicalCash,
@@ -30,7 +30,7 @@ public sealed class CashCount : AuditableEntity, ITenantEntity
         var a = new CashCount
         {
             Id           = Guid.NewGuid(),
-            TenantId     = tenantId,
+            SubscriberId     = subscriberId,
             PettyCashId  = pettyCashId,
             CountDate    = countDate,
             PhysicalCash = physicalCash,

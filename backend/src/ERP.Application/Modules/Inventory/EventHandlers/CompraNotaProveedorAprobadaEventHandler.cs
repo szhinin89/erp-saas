@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Domain.Modules.Purchasing.Events;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -22,7 +22,7 @@ public sealed class PurchNoteApprovedEventHandler : INotificationHandler<PurchNo
 
     public async Task Handle(PurchNoteApprovedEvent notification, CancellationToken ct)
     {
-        var tenantId = notification.TenantId;
+        var subscriberId = notification.SubscriberId;
         var userId   = notification.UserId;
 
         var tipoMov = notification.NoteType == "CREDITO"
@@ -32,12 +32,12 @@ public sealed class PurchNoteApprovedEventHandler : INotificationHandler<PurchNo
         foreach (var line in notification.StockLines)
         {
             var stock = await _inventario.GetStockAsync(
-                tenantId, line.WarehouseId, line.ProductId, ct);
+                subscriberId, line.WarehouseId, line.ProductId, ct);
             if (stock is null)
             {
                 if (line.QuantityDelta > 0)
                 {
-                    stock = CurrentStock.Create(tenantId, line.ProductId, line.WarehouseId, userId);
+                    stock = CurrentStock.Create(subscriberId, line.ProductId, line.WarehouseId, userId);
                     await _inventario.AddCurrentStockAsync(stock, ct);
                 }
                 else
@@ -57,7 +57,7 @@ public sealed class PurchNoteApprovedEventHandler : INotificationHandler<PurchNo
             stock.ApplyMovement(line.QuantityDelta, userId, costo);
 
             var movimiento = StockMovement.Create(
-                tenantId,
+                subscriberId,
                 line.ProductId,
                 line.WarehouseId,
                 tipoMov,

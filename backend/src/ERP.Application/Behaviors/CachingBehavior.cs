@@ -20,12 +20,12 @@ public sealed class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
     };
 
     private readonly IDistributedCache _cache;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ILogger<CachingBehavior<TRequest, TResponse>> _logger;
 
     public CachingBehavior(
         IDistributedCache cache,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ILogger<CachingBehavior<TRequest, TResponse>> logger)
     {
         _cache = cache;
@@ -41,8 +41,8 @@ public sealed class CachingBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
         if (request is not ICacheable cacheable)
             return await next();
 
-        var tenantId = _tenant.TenantId;
-        var tenantSegment = tenantId == Guid.Empty ? "no-tenant" : tenantId.ToString("N");
+        var subscriberId = _tenant.SubscriberId;
+        var tenantSegment = subscriberId == Guid.Empty ? "no-tenant" : subscriberId.ToString("N");
         var payload = JsonSerializer.Serialize(request, request.GetType(), JsonOptions);
         var cacheKey = $"Query:{typeof(TRequest).FullName}:{tenantSegment}:{payload}";
 

@@ -65,14 +65,14 @@ export async function fetchDeploymentConfig(): Promise<DeploymentInfo> {
       let maxPerTenant: number | null | undefined;
       if (obj && typeof obj === 'object' && 'maxUsersPerTenant' in obj) {
         const p = obj.maxUsersPerTenant;
-        maxPerTenant = typeof p === 'number' && Number.isFinite(p) ? p : null;
+        maxPerSubscriber = typeof p === 'number' && Number.isFinite(p) ? p : null;
       }
       cached = {
         superAdminPanelEnabled: enabled,
         maxActiveTenants: maxTenants ?? null,
         maxIdentityUsers: maxUsers ?? null,
         dedicatedSingleClientInstance: dedicated,
-        maxUsersPerTenant: maxPerTenant ?? null,
+        maxUsersPerTenant: maxPerSubscriber ?? null,
       };
       return cached;
     })();

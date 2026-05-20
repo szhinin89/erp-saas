@@ -18,13 +18,13 @@ public class Brand : MasterEntity
     private Brand() { }
 
     public static Brand Create(
-        Guid tenantId, string code, string name, Guid createdBy,
+        Guid subscriberId, string code, string name, Guid createdBy,
         string? manufacturer = null, string? countryOfOrigin = null)
     {
         var brand = new Brand
         {
             Id              = Guid.NewGuid(),
-            TenantId        = tenantId,
+            SubscriberId        = subscriberId,
             Code            = code.Trim().ToUpperInvariant(),
             Name            = name.Trim(),
             Manufacturer    = manufacturer?.Trim() is { Length: > 0 } m ? m : null,
@@ -54,12 +54,12 @@ public class ProductType : MasterEntity
 
     private ProductType() { }
 
-    public static ProductType Create(Guid tenantId, string code, string name, Guid createdBy)
+    public static ProductType Create(Guid subscriberId, string code, string name, Guid createdBy)
     {
         var type = new ProductType
         {
             Id       = Guid.NewGuid(),
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             Code     = code.ToUpperInvariant(),
             Name     = name,
         };
@@ -85,12 +85,12 @@ public class UnitOfMeasure : MasterEntity
     private UnitOfMeasure() { }
 
     public static UnitOfMeasure Create(
-        Guid tenantId, string code, string name, Guid createdBy, string? symbol = null)
+        Guid subscriberId, string code, string name, Guid createdBy, string? symbol = null)
     {
         var unit = new UnitOfMeasure
         {
             Id       = Guid.NewGuid(),
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             Code     = code.ToUpperInvariant(),
             Name     = name,
             Symbol   = symbol,
@@ -119,12 +119,12 @@ public class Tariff : MasterEntity
 
     private Tariff() { }
 
-    public static Tariff Create(Guid tenantId, string code, string description, Guid createdBy)
+    public static Tariff Create(Guid subscriberId, string code, string description, Guid createdBy)
     {
         var tariff = new Tariff
         {
             Id          = Guid.NewGuid(),
-            TenantId    = tenantId,
+            SubscriberId    = subscriberId,
             Code        = code,
             Description = description,
         };

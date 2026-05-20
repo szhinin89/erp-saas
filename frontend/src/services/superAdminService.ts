@@ -2,7 +2,7 @@ import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
 import type { SessionResponse, SessionMenuGroupDto } from '../types/access';
 
-export type SuperAdminTenant = {
+export type SuperAdminSubscriber = {
   id: string;
   name: string;
   slug: string;
@@ -16,8 +16,8 @@ export type SuperAdminTenant = {
   hasCustomMenu?: boolean;
 };
 
-/** Coincide con SaasFeatureKind en backend (0–3). */
-export type SaasFeatureKind = 0 | 1 | 2 | 3;
+/** Coincide con PlatformFeatureKind en backend (0–3). */
+export type PlatformFeatureKind = 0 | 1 | 2 | 3;
 
 export type SuperAdminPlanFeature = {
   featureCode: string;
@@ -46,18 +46,18 @@ export type SuperAdminPlan = {
   features: SuperAdminPlanFeature[];
 };
 
-export type SaasPlanFeatureAdmin = {
+export type CommercialPlanFeatureAdmin = {
   featureId: string;
   featureCode: string;
   featureName: string;
   isMetered: boolean;
-  kind: SaasFeatureKind;
+  kind: PlatformFeatureKind;
   resourceRef: string | null;
   isIncluded: boolean;
   limitPerPeriod: number | null;
 };
 
-export type SaasPlanAdmin = {
+export type CommercialPlanAdmin = {
   id: string;
   code: string;
   name: string;
@@ -72,7 +72,7 @@ export type SaasPlanAdmin = {
   externalBillingRef: string | null;
   hasMenuConfig?: boolean;
   menuSidebarLayout?: string;
-  features: SaasPlanFeatureAdmin[];
+  features: CommercialPlanFeatureAdmin[];
 };
 
 export type PlanMenuRead = {
@@ -80,7 +80,7 @@ export type PlanMenuRead = {
   menuSidebarLayout: string;
 };
 
-export type CreateSaasPlanBody = {
+export type CreateCommercialPlanBody = {
   code: string;
   name: string;
   shortLabel: string | null;
@@ -94,7 +94,7 @@ export type CreateSaasPlanBody = {
   externalBillingRef: string | null;
 };
 
-export type UpdateSaasPlanBody = {
+export type UpdateCommercialPlanBody = {
   name: string;
   shortLabel: string | null;
   isActive: boolean;
@@ -106,9 +106,9 @@ export type UpdateSaasPlanBody = {
   menuSidebarLayout?: string | null;
 };
 
-export type CreateTenantWithAdminBody = {
-  tenantName: string;
-  tenantSlug: string;
+export type CreateSubscriberWithAdminBody = {
+  subscriberName: string;
+  subscriberSlug: string;
   adminFirstName: string;
   adminLastName: string;
   adminEmail: string;
@@ -123,7 +123,7 @@ export type CreateTenantWithAdminBody = {
   enabledModules?: string[] | null;
 };
 
-export type UpdateTenantSubscriptionBody = {
+export type UpdateSubscriberSubscriptionBody = {
   planCode?: string | null;
   enabledModules?: string[] | null;
 };
@@ -238,10 +238,10 @@ export type GrowthAnalyticsBucket = {
   periodLabel: string;
   newTenants: number;
   newIdentityUsers: number;
-  newMemberships: number;
+  newCompanyUserMemberships: number;
   cumulativeTenants: number;
   cumulativeIdentityUsers: number;
-  cumulativeMemberships: number;
+  cumulativeCompanyUserMemberships: number;
 };
 
 export type GrowthAnalyticsResponse = {
@@ -269,17 +269,17 @@ export type GrowthMonetaryResponse = {
 
 export const superAdminService = {
   getTenants: () =>
-    api.get<ApiResponse<{ tenants: SuperAdminTenant[] }>>('/api/superadmin/tenants')
-      .then((r) => r.data.responseObject.tenants),
+    api.get<ApiResponse<{ subscribers: SuperAdminSubscriber[] }>>('/api/superadmin/subscribers')
+      .then((r) => r.data.responseObject.subscribers),
 
-  createTenantWithAdmin: (body: CreateTenantWithAdminBody) =>
+  createTenantWithAdmin: (body: CreateSubscriberWithAdminBody) =>
     api
-      .post<ApiResponse<SessionResponse>>('/api/admin/iam/superadmin/tenants', body)
+      .post<ApiResponse<SessionResponse>>('/api/admin/iam/superadmin/subscribers', body)
       .then((r) => r.data.responseObject),
 
-  updateTenantSubscription: (tenantId: string, body: UpdateTenantSubscriptionBody) =>
+  updateTenantSubscription: (subscriberId: string, body: UpdateSubscriberSubscriptionBody) =>
     api
-      .patch<ApiResponse<unknown>>(`/api/tenants/${encodeURIComponent(tenantId)}/subscription`, body)
+      .patch<ApiResponse<unknown>>(`/api/subscribers/${encodeURIComponent(subscriberId)}/subscription`, body)
       .then((r) => r.data),
 
   getMetrics: () =>
@@ -307,23 +307,23 @@ export const superAdminService = {
       .then((r) => r.data.responseObject.plans),
 
   /** Catálogo administrable (CRUD); mismo contenido enriquecido que el catálogo de lectura. */
-  listSaasPlansAdmin: () =>
-    api.get<ApiResponse<{ plans: SaasPlanAdmin[] }>>('/api/superadmin/saas-plans').then((r) => r.data.responseObject.plans),
+  listCommercialPlansAdmin: () =>
+    api.get<ApiResponse<{ plans: CommercialPlanAdmin[] }>>('/api/superadmin/commercial-plans').then((r) => r.data.responseObject.plans),
 
-  createSaasPlan: (body: CreateSaasPlanBody) =>
-    api.post<ApiResponse<{ id: string }>>('/api/superadmin/saas-plans', body).then((r) => r.data.responseObject.id),
+  createCommercialPlan: (body: CreateCommercialPlanBody) =>
+    api.post<ApiResponse<{ id: string }>>('/api/superadmin/commercial-plans', body).then((r) => r.data.responseObject.id),
 
-  updateSaasPlan: (planId: string, body: UpdateSaasPlanBody) =>
-    api.put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-plans/${planId}`, body).then((r) => r.data),
+  updateCommercialPlan: (planId: string, body: UpdateCommercialPlanBody) =>
+    api.put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/commercial-plans/${planId}`, body).then((r) => r.data),
 
-  deleteSaasPlan: (planId: string) =>
-    api.delete<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-plans/${planId}`).then((r) => r.data),
+  deleteCommercialPlan: (planId: string) =>
+    api.delete<ApiResponse<Record<string, unknown>>>(`/api/superadmin/commercial-plans/${planId}`).then((r) => r.data),
 
-  reorderSaasPlans: (orderedPlanIds: string[]) =>
-    api.put<ApiResponse<Record<string, unknown>>>('/api/superadmin/saas-plans/reorder', { orderedPlanIds }).then((r) => r.data),
+  reorderCommercialPlans: (orderedPlanIds: string[]) =>
+    api.put<ApiResponse<Record<string, unknown>>>('/api/superadmin/commercial-plans/reorder', { orderedPlanIds }).then((r) => r.data),
 
-  setSaasPlanRecommended: (planId: string) =>
-    api.put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/saas-plans/${planId}/recommended`).then((r) => r.data),
+  setCommercialPlanRecommended: (planId: string) =>
+    api.put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/commercial-plans/${planId}/recommended`).then((r) => r.data),
 
   getPlanMenu: (planId: string) =>
     api
@@ -345,7 +345,7 @@ export const superAdminService = {
   ) =>
     api
       .post<ApiResponse<Record<string, unknown>>>(
-        `/api/superadmin/saas-plans/${encodeURIComponent(targetPlanId)}/copy-from/${encodeURIComponent(sourcePlanId)}`,
+        `/api/superadmin/commercial-plans/${encodeURIComponent(targetPlanId)}/copy-from/${encodeURIComponent(sourcePlanId)}`,
         {
           copyMenu: opts?.copyMenu ?? true,
           copyFeatures: false,
@@ -353,7 +353,7 @@ export const superAdminService = {
       )
       .then((r) => r.data),
 
-  getTenantResolvedMenu: (tenantId: string) =>
+  getTenantResolvedMenu: (subscriberId: string) =>
     api
       .get<
         ApiResponse<{
@@ -362,12 +362,12 @@ export const superAdminService = {
           usedPlanMenu: boolean;
           usedGlobalFallback: boolean;
         }>
-      >(`/api/superadmin/empresas/${encodeURIComponent(tenantId)}/menu`)
+      >(`/api/superadmin/empresas/${encodeURIComponent(subscriberId)}/menu`)
       .then((r) => r.data.responseObject),
 
-  putTenantCustomMenu: (tenantId: string, menuConfigJson: string) =>
+  putSubscriberCustomMenu: (subscriberId: string, menuConfigJson: string) =>
     api
-      .put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/empresas/${encodeURIComponent(tenantId)}/menu`, {
+      .put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/empresas/${encodeURIComponent(subscriberId)}/menu`, {
         menuConfigJson,
       })
       .then((r) => r.data),
@@ -382,10 +382,10 @@ export const superAdminService = {
       .post<ApiResponse<{ sincronizados: number }>>('/api/superadmin/AppFeatures/sincronizar')
       .then((r) => r.data.responseObject),
 
-  deleteTenantCustomMenu: (tenantId: string) =>
+  deleteSubscriberCustomMenu: (subscriberId: string) =>
     api
       .delete<ApiResponse<Record<string, unknown>>>(
-        `/api/superadmin/empresas/${encodeURIComponent(tenantId)}/menu`,
+        `/api/superadmin/empresas/${encodeURIComponent(subscriberId)}/menu`,
       )
       .then((r) => r.data),
 
@@ -393,8 +393,8 @@ export const superAdminService = {
   getPublicPlans: () =>
     api.get<ApiResponse<{ plans: SaasPublicPlan[] }>>('/api/public/plans').then((r) => r.data.responseObject.plans),
 
-  switchTenant: (tenantId: string) =>
-    api.post<ApiResponse<import('../types/auth').AuthResponse>>('/api/auth/switch-tenant', { tenantId })
+  switchTenant: (subscriberId: string) =>
+    api.post<ApiResponse<import('../types/auth').AuthResponse>>('/api/auth/switch-subscriber', { subscriberId })
       .then((r) => r.data.responseObject),
 
   getNavigationMenu: () =>

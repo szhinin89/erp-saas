@@ -22,8 +22,8 @@ import { useEditorTreeHistory } from '../menu-builder/withHistory';
 import {
   superAdminService,
   type FuncionalidadArbolDto,
-  type SaasPlanAdmin,
-  type SuperAdminTenant,
+  type CommercialPlanAdmin,
+  type SuperAdminSubscriber,
 } from '../../services/superAdminService';
 import type { SessionMenuGroupDto } from '../../types/access';
 import { formatApiRequestError } from '../../modules/lib/apiError';
@@ -203,7 +203,7 @@ function cloneDefaultCrmTreeSeed(): EditorMenuItem[] {
   return JSON.parse(JSON.stringify(DEFAULT_CRM_TREE_SEED)) as EditorMenuItem[];
 }
 
-function mapSaasPlanAdminToCrmPlan(plan: SaasPlanAdmin): CrmLocalPlan {
+function mapCommercialPlanAdminToCrmPlan(plan: CommercialPlanAdmin): CrmLocalPlan {
   const code = (plan.code ?? '').trim().toUpperCase();
   const name = (plan.name ?? '').trim() || code || 'PLAN';
   const cycle = (plan.billingCycle ?? '').trim().toLowerCase();
@@ -263,10 +263,10 @@ export { adminNavigationToSessionMenu } from '../../modules/superadmin/adminNavi
 export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdminMenuBuilderSectionProps = {}) {
   const { t, locale } = useI18n();
   const [sub, setSub] = useState<SubMode>('plan');
-  const [plans, setPlans] = useState<SaasPlanAdmin[]>([]);
-  const [tenants, setTenants] = useState<SuperAdminTenant[]>([]);
+  const [plans, setPlans] = useState<CommercialPlanAdmin[]>([]);
+  const [subscribers, setTenants] = useState<SuperAdminSubscriber[]>([]);
   const [planId, setPlanId] = useState('');
-  const [tenantId, setTenantId] = useState('');
+  const [subscriberId, setSubscriberId] = useState('');
   const [catalogSearch, setCatalogSearch] = useState('');
   const [catalogSearchField, setCatalogSearchField] = useState<CatalogSearchField>('all');
   const [catalogNodeType, setCatalogNodeType] = useState<CatalogNodeType>('all');
@@ -334,7 +334,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
   const [newPlanInheritSourcePlanId, setNewPlanInheritSourcePlanId] = useState('');
   const importWorkspaceInputRef = useRef<HTMLInputElement | null>(null);
   const crmPlans = useMemo(
-    () => plans.map(mapSaasPlanAdminToCrmPlan),
+    () => plans.map(mapCommercialPlanAdminToCrmPlan),
     [plans],
   );
   const [planActiveById, setPlanActiveById] = useState<Record<string, string[]>>(() => {
@@ -627,7 +627,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
 
   useEffect(() => {
     void superAdminService
-      .listSaasPlansAdmin()
+      .listCommercialPlansAdmin()
       .then(setPlans)
       .catch(() => setPlans([]));
     void superAdminService
@@ -773,7 +773,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
         trimmed.length === 0 ? null : trimmed,
         previewLayout,
       );
-      const next = await superAdminService.listSaasPlansAdmin();
+      const next = await superAdminService.listCommercialPlansAdmin();
       setPlans(next);
       if (crmWorkspace) appendAudit('Menú guardado en el plan');
     } catch (e) {
@@ -795,7 +795,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
     try {
       await superAdminService.setPlanMenuJson(planId, null, 'horizontal');
       applyMenuJsonString('[]');
-      const next = await superAdminService.listSaasPlansAdmin();
+      const next = await superAdminService.listCommercialPlansAdmin();
       setPlans(next);
       if (crmWorkspace) appendAudit('Menú del plan limpiado');
     } catch (e) {
@@ -811,10 +811,10 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
   };
 
   const loadTenantResolved = async () => {
-    if (!tenantId) return;
+    if (!subscriberId) return;
     setErr('');
     try {
-      const r = await superAdminService.getTenantResolvedMenu(tenantId);
+      const r = await superAdminService.getTenantResolvedMenu(subscriberId);
       applyMenuJsonString(JSON.stringify(r.menu, null, 2));
       setTenantFlags({
         hasCustomMenu: r.hasCustomMenu,
@@ -831,8 +831,8 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
     }
   };
 
-  const saveTenant = async () => {
-    if (!tenantId) return;
+  const saveSubscriber = async () => {
+    if (!subscriberId) return;
     setBusy(true);
     setErr('');
     try {
@@ -845,7 +845,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
           return;
         }
       }
-      await superAdminService.putTenantCustomMenu(tenantId, json);
+      await superAdminService.putSubscriberCustomMenu(subscriberId, json);
       await loadTenantResolved();
     } catch (e) {
       setErr(
@@ -859,12 +859,12 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
     }
   };
 
-  const resetTenant = async () => {
-    if (!tenantId) return;
+  const resetSubscriber = async () => {
+    if (!subscriberId) return;
     setBusy(true);
     setErr('');
     try {
-      await superAdminService.deleteTenantCustomMenu(tenantId);
+      await superAdminService.deleteSubscriberCustomMenu(subscriberId);
       await loadTenantResolved();
     } catch (e) {
       setErr(
@@ -893,7 +893,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
       await superAdminService.copyPlanFrom(planId, copySourcePlanId, {
         copyMenu,
       });
-      const next = await superAdminService.listSaasPlansAdmin();
+      const next = await superAdminService.listCommercialPlansAdmin();
       setPlans(next);
       await loadPlanSaved();
       if (crmWorkspace) appendAudit('Configuración copiada desde otro plan');
@@ -1061,7 +1061,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
       setBusy(true);
       setErr('');
       try {
-        const newPlanId = await superAdminService.createSaasPlan({
+        const newPlanId = await superAdminService.createCommercialPlan({
           code,
           name: normalizedName,
           shortLabel,
@@ -1075,7 +1075,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
           externalBillingRef: null,
         });
 
-        const nextPlans = await superAdminService.listSaasPlansAdmin();
+        const nextPlans = await superAdminService.listCommercialPlansAdmin();
         setPlans(nextPlans);
         const created = nextPlans.find((p) => p.id === newPlanId);
         const createdLabel = created?.name ?? normalizedName;
@@ -1137,7 +1137,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
         setPreviewLayout(nextLayout);
         setPlanActiveById((prev) => ({ ...prev, [planId]: [...(prev[previousPlanId] ?? [])] }));
         await superAdminService.setPlanMenuJson(planId, inheritedPretty, nextLayout);
-        const next = await superAdminService.listSaasPlansAdmin();
+        const next = await superAdminService.listCommercialPlansAdmin();
         setPlans(next);
         appendAudit(`Plan ${activePlan?.name ?? planId} heredó y guardó menú desde ${previousPlan.code}`);
       } catch (e) {
@@ -1938,9 +1938,9 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
         ) : (
           <ZHGridRow cols={1}>
             <ZHField label={t('superadmin.menuBuilder.tenantSelect')}>
-              <select className="zh-input" value={tenantId} onChange={(e) => setTenantId(e.target.value)} disabled={busy}>
+              <select className="zh-input" value={subscriberId} onChange={(e) => setSubscriberId(e.target.value)} disabled={busy}>
                 <option value="">{t('common.select')}</option>
-                {tenants.map((x) => (
+                {subscribers.map((x) => (
                   <option key={x.id} value={x.id}>
                     {x.name} ({x.slug}){x.hasCustomMenu ? ' · menú' : ''}
                   </option>
@@ -1991,13 +1991,13 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
             </>
           ) : (
             <>
-              <ZHBtn variant="ghost" size="md" type="button" onClick={() => void loadTenantResolved()} disabled={busy || !tenantId}>
+              <ZHBtn variant="ghost" size="md" type="button" onClick={() => void loadTenantResolved()} disabled={busy || !subscriberId}>
                 {t('superadmin.menuBuilder.loadResolvedTenant')}
               </ZHBtn>
-              <ZHBtn variant="ghost" size="md" type="button" onClick={() => void resetTenant()} disabled={busy || !tenantId}>
+              <ZHBtn variant="ghost" size="md" type="button" onClick={() => void resetTenant()} disabled={busy || !subscriberId}>
                 {t('superadmin.menuBuilder.resetTenant')}
               </ZHBtn>
-              <ZHBtn variant="primary" size="md" type="button" onClick={() => void saveTenant()} disabled={busy || !tenantId}>
+              <ZHBtn variant="primary" size="md" type="button" onClick={() => void saveTenant()} disabled={busy || !subscriberId}>
                 {t('superadmin.menuBuilder.saveTenant')}
               </ZHBtn>
             </>

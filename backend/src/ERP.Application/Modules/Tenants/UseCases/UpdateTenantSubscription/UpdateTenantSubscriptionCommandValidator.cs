@@ -1,12 +1,12 @@
 using FluentValidation;
 
-namespace ERP.Application.Tenants.UseCases.UpdateTenantSubscription;
+namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberSubscription;
 
-public sealed class UpdateTenantSubscriptionCommandValidator : AbstractValidator<UpdateTenantSubscriptionCommand>
+public sealed class UpdateSubscriberSubscriptionCommandValidator : AbstractValidator<UpdateSubscriberSubscriptionCommand>
 {
-    public UpdateTenantSubscriptionCommandValidator()
+    public UpdateSubscriberSubscriptionCommandValidator()
     {
-        RuleFor(x => x.TenantId)
+        RuleFor(x => x.SubscriberId)
             .NotEmpty().WithMessage("El tenant es obligatorio.");
 
         RuleFor(x => x.PlanCode)

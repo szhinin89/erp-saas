@@ -5,6 +5,7 @@ using ERP.Domain.Subscriptions;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Services;
+using ERP.Infrastructure.Tests.Support;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -13,11 +14,11 @@ using Microsoft.Extensions.Options;
 
 namespace ERP.Infrastructure.Tests.Services;
 
-public sealed class TenantSubscriptionOverridesServiceTests
+public sealed class SubscriptionFeatureOverridesServiceTests
 {
-    private sealed class FixedTenant : ICurrentTenant
+    private sealed class FixedSubscriber : ICurrentSubscriber
     {
-        public Guid TenantId { get; init; }
+        public Guid SubscriberId { get; init; }
         public bool IsAuthenticated { get; init; } = true;
     }
 
@@ -34,16 +35,15 @@ public sealed class TenantSubscriptionOverridesServiceTests
     [Fact]
     public async Task ApplyModuleOverridesAsync_restricts_to_subset_via_override()
     {
-        var tenantId = Guid.NewGuid();
-        await using var ctx = CreateContext(tenantId);
-        await SeedStarterPlanWithModulesAsync(ctx, tenantId);
+        var subscriberId = Guid.NewGuid();
+        await using var ctx = CreateContext(subscriberId);
+        await SeedStarterPlanWithModulesAsync(ctx, subscriberId);
 
         var sut = CreateSut(ctx);
-        await sut.ApplyModuleOverridesAsync(tenantId, new[] { "sales", "inventory" }, Guid.Empty);
+        await sut.ApplyModuleOverridesAsync(subscriberId, new[] { "sales", "inventory" }, Guid.Empty);
         await ctx.SaveChangesAsync();
 
-        var modules = await new TenantEntitlementsService(ctx, CreatePlatform(ctx))
-            .GetEnabledModuleKeysAsync(tenantId);
+        var modules = await CreateEntitlements(ctx).GetEnabledModuleKeysAsync(subscriberId);
 
         modules.Should().Equal("inventory", "sales");
     }
@@ -51,26 +51,25 @@ public sealed class TenantSubscriptionOverridesServiceTests
     [Fact]
     public async Task ApplyModuleOverridesAsync_null_clears_overrides_uses_plan_defaults()
     {
-        var tenantId = Guid.NewGuid();
-        await using var ctx = CreateContext(tenantId);
-        await SeedStarterPlanWithModulesAsync(ctx, tenantId);
+        var subscriberId = Guid.NewGuid();
+        await using var ctx = CreateContext(subscriberId);
+        await SeedStarterPlanWithModulesAsync(ctx, subscriberId);
 
         var sut = CreateSut(ctx);
-        await sut.ApplyModuleOverridesAsync(tenantId, new[] { "sales" }, Guid.Empty);
+        await sut.ApplyModuleOverridesAsync(subscriberId, new[] { "sales" }, Guid.Empty);
         await ctx.SaveChangesAsync();
-        await sut.ApplyModuleOverridesAsync(tenantId, null, Guid.Empty);
+        await sut.ApplyModuleOverridesAsync(subscriberId, null, Guid.Empty);
         await ctx.SaveChangesAsync();
 
-        var modules = await new TenantEntitlementsService(ctx, CreatePlatform(ctx))
-            .GetEnabledModuleKeysAsync(tenantId);
+        var modules = await CreateEntitlements(ctx).GetEnabledModuleKeysAsync(subscriberId);
 
         modules.Should().Contain("sales").And.Contain("inventory").And.Contain("access");
     }
 
-    private static async Task SeedStarterPlanWithModulesAsync(ErpDbContext ctx, Guid tenantId)
+    private static async Task SeedStarterPlanWithModulesAsync(ErpDbContext ctx, Guid subscriberId)
     {
-        var plan = SaasPlan.Create("starter", "Starter", "STARTER", true, 49m, "USD", SaasBillingCycle.Monthly, true, false, 0, null);
-        ctx.SaasPlans.Add(plan);
+        var plan = CommercialPlan.Create("starter", "Starter", "STARTER", true, 49m, "USD", CommercialBillingCycle.Monthly, true, false, 0, null);
+        ctx.CommercialPlans.Add(plan);
 
         foreach (var (code, resourceRef) in new[]
                  {
@@ -79,27 +78,38 @@ public sealed class TenantSubscriptionOverridesServiceTests
                      ("ACCESS", "access"),
                  })
         {
-            var feature = SaasFeatureDefinition.Create(code, code, null, false, SaasFeatureKind.Module, resourceRef);
-            ctx.SaasFeatureDefinitions.Add(feature);
+            var feature = PlatformFeature.Create(code, code, null, false, PlatformFeatureKind.Module, resourceRef);
+            ctx.PlatformFeatures.Add(feature);
             await ctx.SaveChangesAsync();
-            ctx.SaasPlanFeatures.Add(SaasPlanFeature.Create(plan.Id, feature.Id, isIncluded: true, null));
+            ctx.CommercialPlanFeatures.Add(CommercialPlanFeature.Create(plan.Id, feature.Id, isIncluded: true, null));
         }
 
-        ctx.TenantSaasSubscriptions.Add(TenantSaasSubscription.Create(tenantId, plan.Id, Guid.Empty));
+        ctx.SubscriberSubscriptions.Add(SubscriberSubscription.Create(subscriberId, plan.Id, Guid.Empty));
         await ctx.SaveChangesAsync();
     }
 
-    private static TenantSubscriptionOverridesService CreateSut(ErpDbContext ctx) =>
+    private static SubscriptionFeatureOverridesService CreateSut(ErpDbContext ctx) =>
         new(ctx, CreatePlatform(ctx));
 
     private static PlatformQueryAccessor CreatePlatform(ErpDbContext ctx) =>
         new(NullLogger<PlatformQueryAccessor>.Instance, Microsoft.Extensions.Options.Options.Create(new SaasEntitlementsOptions()));
 
-    private static ErpDbContext CreateContext(Guid tenantId)
+    private static SubscriberEntitlementsService CreateEntitlements(ErpDbContext ctx)
+    {
+        var platform = CreatePlatform(ctx);
+        var companyRepo = new ERP.Infrastructure.Persistence.Repositories.CompanyRepository(ctx);
+        var planLimits = new ERP.Infrastructure.Services.CommercialPlanLimitService(
+            ctx,
+            platform,
+            [new ERP.Infrastructure.Services.CommercialLimitUsage.MaxCompaniesLimitUsageProvider(companyRepo)]);
+        return EntitlementsTestFactory.Create(ctx, platform, planLimits);
+    }
+
+    private static ErpDbContext CreateContext(Guid subscriberId)
     {
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
             .Options;
-        return TestErpDbContextFactory.Create(options, new FixedTenant { TenantId = tenantId }, new FakePublisher());
+        return TestErpDbContextFactory.Create(options, new FixedSubscriber { SubscriberId = subscriberId }, new FakePublisher());
     }
 }

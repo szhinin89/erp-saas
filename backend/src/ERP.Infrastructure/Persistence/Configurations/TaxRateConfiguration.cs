@@ -12,7 +12,7 @@ public class TaxRateConfiguration : IEntityTypeConfiguration<TaxRate>
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
 
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(20).IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
@@ -25,10 +25,10 @@ public class TaxRateConfiguration : IEntityTypeConfiguration<TaxRate>
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => x.TenantId).HasDatabaseName("ix_tax_rates_tenant_id");
-        builder.HasIndex(x => new { x.TenantId, x.Type, x.Code })
+        builder.HasIndex(x => x.SubscriberId).HasDatabaseName("ix_tax_rates_subscriber_id");
+        builder.HasIndex(x => new { x.SubscriberId, x.Type, x.Code })
             .IsUnique()
-            .HasDatabaseName("ix_tax_rates_tenant_type_code");
+            .HasDatabaseName("ix_tax_rates_subscriber_type_code");
     }
 }
 

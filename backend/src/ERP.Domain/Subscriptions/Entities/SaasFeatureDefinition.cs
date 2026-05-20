@@ -6,7 +6,7 @@ namespace ERP.Domain.Subscriptions.Entities;
 /// Catálogo global de funcionalidades comercializables (no multi-tenant).
 /// Cada módulo o formulario expuesto en el producto debe tener aquí su definición antes de asociarse a planes.
 /// </summary>
-public sealed class SaasFeatureDefinition
+public sealed class PlatformFeature
 {
     public const int CodeMaxLen = 64;
     public const int NameMaxLen = 200;
@@ -18,20 +18,20 @@ public sealed class SaasFeatureDefinition
     public string Code { get; private set; } = null!;
     public string Name { get; private set; } = null!;
     public string? Description { get; private set; }
-    /// <summary>Si es true, se controla consumo vía <see cref="TenantSubscriptionUsage"/>.</summary>
+    /// <summary>Si es true, se controla consumo vía <see cref="SubscriptionUsage"/>.</summary>
     public bool IsMetered { get; private set; }
-    public SaasFeatureKind Kind { get; private set; }
+    public PlatformFeatureKind Kind { get; private set; }
     /// <summary>Clave de permiso, código de formulario u otro ancla técnica (opcional).</summary>
     public string? ResourceRef { get; private set; }
 
-    private SaasFeatureDefinition() { }
+    private PlatformFeature() { }
 
-    public static SaasFeatureDefinition Create(
+    public static PlatformFeature Create(
         string code,
         string name,
         string? description,
         bool isMetered,
-        SaasFeatureKind kind = SaasFeatureKind.Module,
+        PlatformFeatureKind kind = PlatformFeatureKind.Module,
         string? resourceRef = null)
     {
         var c = (code ?? string.Empty).Trim().ToUpperInvariant();
@@ -46,7 +46,7 @@ public sealed class SaasFeatureDefinition
         if (desc is { Length: > DescriptionMaxLen })
             throw new ArgumentException("Descripción demasiado larga.", nameof(description));
 
-        return new SaasFeatureDefinition
+        return new PlatformFeature
         {
             Id = Guid.NewGuid(),
             Code = c,
@@ -58,7 +58,7 @@ public sealed class SaasFeatureDefinition
         };
     }
 
-    public void Update(string name, string? description, bool isMetered, SaasFeatureKind kind, string? resourceRef)
+    public void Update(string name, string? description, bool isMetered, PlatformFeatureKind kind, string? resourceRef)
     {
         var rr = string.IsNullOrWhiteSpace(resourceRef) ? null : resourceRef.Trim();
         if (rr is { Length: > ResourceRefMaxLen })

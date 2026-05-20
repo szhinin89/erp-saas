@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -20,7 +20,7 @@ public sealed class CreateExpenseCommandHandler
     private readonly IXmlFacturaParser       _parser;
     private readonly IFileStorage            _storage;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _tenant;
+    private readonly ICurrentSubscriber          _tenant;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<CreateExpenseCommandHandler> _logger;
@@ -31,7 +31,7 @@ public sealed class CreateExpenseCommandHandler
         IXmlFacturaParser parser,
         IFileStorage storage,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
         ILogger<CreateExpenseCommandHandler> logger)
@@ -54,7 +54,7 @@ public sealed class CreateExpenseCommandHandler
 
     private async Task<Result<ExpenseInvoiceDto>> HandleXml(CreateExpenseCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
         FacturaParseResult parsed;
@@ -67,12 +67,12 @@ public sealed class CreateExpenseCommandHandler
         {
             _logger.LogWarning(
                 ex,
-                "Fallo al parsear XML de gasto (tenant {TenantId}, usuario {UserId}).",
-                tenantId, userId);
+                "Fallo al parsear XML de gasto (tenant {SubscriberId}, usuario {UserId}).",
+                subscriberId, userId);
             return Result<ExpenseInvoiceDto>.Failure($"Error al leer el XML: {ex.Message}");
         }
 
-        if (await _gastos.ExistsAccessKeyAsync(tenantId, parsed.AccessKey, ct))
+        if (await _gastos.ExistsAccessKeyAsync(subscriberId, parsed.AccessKey, ct))
             return Result<ExpenseInvoiceDto>.Failure(
                 $"Ya existe un gasto registrado con la clave de acceso '{parsed.AccessKey}'.");
 
@@ -80,7 +80,7 @@ public sealed class CreateExpenseCommandHandler
         try
         {
             var Supplier = await ObtenerOCrearProveedor(
-                tenantId, parsed.SupplierRuc, parsed.SupplierLegalName, userId, ct);
+                subscriberId, parsed.SupplierRuc, parsed.SupplierLegalName, userId, ct);
 
             var xmlPath = $"facturas/gastos/{parsed.AccessKey}.xml";
             using (var xmlStream = new MemoryStream(command.XmlContent!))
@@ -94,7 +94,7 @@ public sealed class CreateExpenseCommandHandler
             try
             {
                 gasto = ExpenseInvoice.CreateFromXml(
-                    tenantId,
+                    subscriberId,
                     Supplier.Id,
                     parsed.AccessKey,
                     parsed.InvoiceNumber,
@@ -113,15 +113,15 @@ public sealed class CreateExpenseCommandHandler
                 await _unitOfWork.RollbackAsync(ct);
                 _logger.LogWarning(
                     ex,
-                    "Fallo al construir gasto desde XML parseado (tenant {TenantId}, clave {Clave}).",
-                    tenantId, parsed.AccessKey);
+                    "Fallo al construir gasto desde XML parseado (tenant {SubscriberId}, clave {Clave}).",
+                    subscriberId, parsed.AccessKey);
                 return Result<ExpenseInvoiceDto>.Failure(ex.Message);
             }
 
             await _gastos.AddAsync(gasto, ct);
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _user.Email, _user.FullName,
+                subscriberId, userId, _user.Email, _user.FullName,
                 module: "gastos", action: "gasto.crear.xml",
                 entityType: "ExpenseInvoice", entityId: gasto.Id,
                 description: $"{parsed.InvoiceNumber} — {Supplier.LegalName}"), ct);
@@ -130,22 +130,22 @@ public sealed class CreateExpenseCommandHandler
             await _unitOfWork.CommitAsync(ct);
 
             _logger.LogInformation(
-                "Gasto creado desde XML: id {GastoId}, tenant {TenantId}, clave {AccessKey}.",
-                gasto.Id, tenantId, parsed.AccessKey);
+                "Gasto creado desde XML: id {GastoId}, tenant {SubscriberId}, clave {AccessKey}.",
+                gasto.Id, subscriberId, parsed.AccessKey);
 
             return Result<ExpenseInvoiceDto>.Success(ToDto(gasto));
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al crear gasto desde XML (tenant {TenantId})", tenantId);
+            _logger.LogError(ex, "Error al crear gasto desde XML (tenant {SubscriberId})", subscriberId);
             return Result<ExpenseInvoiceDto>.Failure($"No se pudo registrar el gasto: {ex.Message}");
         }
     }
 
     private async Task<Result<ExpenseInvoiceDto>> HandleManual(CreateExpenseCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
         if (command.Total!.Value > ExpenseInvoice.RequiresXmlThreshold)
@@ -155,7 +155,7 @@ public sealed class CreateExpenseCommandHandler
         Guid? proveedorId = command.SupplierId;
         if (proveedorId.HasValue)
         {
-            var p = await _proveedorRepo.GetByIdAsync(tenantId, proveedorId.Value, ct);
+            var p = await _proveedorRepo.GetByIdAsync(subscriberId, proveedorId.Value, ct);
             if (p is null)
                 return Result<ExpenseInvoiceDto>.Failure("Supplier no encontrado en el tenant.");
             if (!p.IsActive)
@@ -166,7 +166,7 @@ public sealed class CreateExpenseCommandHandler
         try
         {
             gasto = ExpenseInvoice.CreateManual(
-                tenantId,
+                subscriberId,
                 proveedorId,
                 command.IssueDate!.Value,
                 command.Concept!,
@@ -188,7 +188,7 @@ public sealed class CreateExpenseCommandHandler
             await _gastos.AddAsync(gasto, ct);
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _user.Email, _user.FullName,
+                subscriberId, userId, _user.Email, _user.FullName,
                 module: "gastos", action: "gasto.crear.manual",
                 entityType: "ExpenseInvoice", entityId: gasto.Id,
                 description: gasto.Concept), ct);
@@ -197,31 +197,31 @@ public sealed class CreateExpenseCommandHandler
             await _unitOfWork.CommitAsync(ct);
 
             _logger.LogInformation(
-                "Gasto creado manual: id {GastoId}, tenant {TenantId}, concepto {Description}.",
-                gasto.Id, tenantId, gasto.Concept);
+                "Gasto creado manual: id {GastoId}, tenant {SubscriberId}, concepto {Description}.",
+                gasto.Id, subscriberId, gasto.Concept);
 
             return Result<ExpenseInvoiceDto>.Success(ToDto(gasto));
         }
         catch (Exception ex)
         {
             await _unitOfWork.RollbackAsync(ct);
-            _logger.LogError(ex, "Error al crear gasto manual (tenant {TenantId})", tenantId);
+            _logger.LogError(ex, "Error al crear gasto manual (tenant {SubscriberId})", subscriberId);
             return Result<ExpenseInvoiceDto>.Failure($"No se pudo registrar el gasto: {ex.Message}");
         }
     }
 
     private async Task<Supplier> ObtenerOCrearProveedor(
-        Guid tenantId, string ruc, string razonSocial, Guid userId, CancellationToken ct)
+        Guid subscriberId, string ruc, string razonSocial, Guid userId, CancellationToken ct)
     {
         var existentes = await _proveedorRepo.GetAsync(
-            tenantId, activeFilter: null, search: ruc, personType: null, ct);
+            subscriberId, activeFilter: null, search: ruc, personType: null, ct);
 
         var existente = existentes.FirstOrDefault(p => p.Ruc == ruc);
         if (existente is not null) return existente;
 
         var tipo = ruc[2] - '0' is >= 0 and <= 5 ? Supplier.TypeNatural : Supplier.TypeLegal;
         var nuevo = Supplier.Create(
-            tenantId, tipo, razonSocial, ruc,
+            subscriberId, tipo, razonSocial, ruc,
             email: null, phone: null, address: null,
             paymentTerms: "Contado", userId);
 

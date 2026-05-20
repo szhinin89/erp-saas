@@ -1,11 +1,11 @@
 using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Tenants.DTOs;
+using ERP.Application.Subscribers.DTOs;
 
-namespace ERP.Application.Tenants.UseCases.UpdateTenantCompany;
+namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberCompany;
 
-public record UpdateTenantCompanyCommand(
-    Guid TenantId,
+public record UpdateSubscriberCompanyCommand(
+    Guid SubscriberId,
     string Name,
     string Slug,
     string? Ruc,
@@ -14,4 +14,4 @@ public record UpdateTenantCompanyCommand(
     string? Dinardap,
     string? LogoUrl,
     int DisplayOrder,
-    int Priority) : IRequest<Result<TenantDto>>;
+    int Priority) : IRequest<Result<SubscriberDto>>;

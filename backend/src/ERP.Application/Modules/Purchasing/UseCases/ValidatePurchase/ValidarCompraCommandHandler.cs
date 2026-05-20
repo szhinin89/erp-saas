@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -16,7 +16,7 @@ public sealed class ValidatePurchaseCommandHandler
     private readonly IPurchBillRepository       _repo;
     private readonly ISupplierRepository    _proveedorRepo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _tenant;
+    private readonly ICurrentSubscriber          _tenant;
     private readonly ICurrentUser            _user;
     private readonly IUnitOfWork             _unitOfWork;
 
@@ -24,7 +24,7 @@ public sealed class ValidatePurchaseCommandHandler
         IPurchBillRepository repo,
         ISupplierRepository proveedorRepo,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork)
     {
@@ -39,10 +39,10 @@ public sealed class ValidatePurchaseCommandHandler
     public async Task<Result<PurchBillDto>> Handle(
         ValidatePurchaseCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
-        var compra = await _repo.GetByIdAsync(tenantId, command.PurchBillId, ct);
+        var compra = await _repo.GetByIdAsync(subscriberId, command.PurchBillId, ct);
         if (compra is null)
             return Result<PurchBillDto>.Failure("Compra no encontrada.");
 
@@ -51,7 +51,7 @@ public sealed class ValidatePurchaseCommandHandler
                 $"Solo se puede validar una compra en Borrador (estado actual: {compra.Status}).");
 
         // 1. Verificar Supplier activo
-        var Supplier = await _proveedorRepo.GetByIdAsync(tenantId, compra.SupplierId, ct);
+        var Supplier = await _proveedorRepo.GetByIdAsync(subscriberId, compra.SupplierId, ct);
         if (Supplier is null || !Supplier.IsActive)
             return Result<PurchBillDto>.Failure("El Supplier de la compra no existe o está deshabilitado.");
 
@@ -81,7 +81,7 @@ public sealed class ValidatePurchaseCommandHandler
             compra.Validate(userId);
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _user.Email, _user.FullName,
+                subscriberId, userId, _user.Email, _user.FullName,
                 module: "compras", action: "compra.validar",
                 entityType: "PurchBill", entityId: compra.Id,
                 description: compra.InvoiceNumber), ct);

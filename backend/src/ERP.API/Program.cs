@@ -1,4 +1,4 @@
-﻿using Hangfire;
+using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using ERP.API.Hangfire;
@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using QuestPDF.Infrastructure;
+using System.Threading.RateLimiting;
 using Serilog;
 
 // Licencia Community: libre para proyectos con ingresos anuales < 1 M USD.
@@ -66,6 +67,24 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddJwtAuthentication(builder.Configuration);
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("per-subscriber", httpContext =>
+    {
+        var subscriberId = httpContext.User.FindFirst("subscriber_id")?.Value ?? "anonymous";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            subscriberId,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 600,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+            });
+    });
+});
 
 // IDistributedCache: Redis si Redis:ConnectionString o ConnectionStrings:Redis está definida;
 // en tests y producción sin Redis, memoria (no comparte entre instancias).
@@ -175,7 +194,7 @@ builder.Services.AddAuthorization(options =>
 var app = builder.Build();
 
 // Ensure schema is up to date before any startup queries
-// (e.g., SaasPlansBootstrap reading saas_plans).
+// (e.g., CommercialPlansBootstrap reading commercial_plans).
 using (var migrationScope = app.Services.CreateScope())
 {
     var db = migrationScope.ServiceProvider.GetRequiredService<ErpDbContext>();
@@ -193,10 +212,11 @@ if (app.Environment.IsDevelopment() &&
 using (var plansScope = app.Services.CreateScope())
 {
     var db = plansScope.ServiceProvider.GetRequiredService<ErpDbContext>();
-    await SaasPlansBootstrap.EnsureDefaultsAsync(db);
+    await CommercialPlansBootstrap.EnsureDefaultsAsync(db);
+    await CommercialPlanLimitsBootstrap.EnsureDefaultsAsync(db);
 }
 
-// Datos demo (tenant-demo + admin) solo si se activa explícitamente — ver appsettings.Development → Development:SeedDemoTenant.
+// Datos demo (subscriber-demo + admin) solo si se activa explícitamente — ver appsettings.Development → Development:SeedDemoSubscriber.
 if (app.Environment.IsDevelopment() &&
     app.Configuration.GetValue("Development:SeedDemoTenant", false))
 {
@@ -266,8 +286,11 @@ if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"
     app.UseHttpsRedirection();
 
 app.UseAuthentication();
+app.UseMiddleware<EnterpriseDiagnosticMiddleware>();
 app.UseMiddleware<SuperAdminPanelLockMiddleware>();
 app.UseAuthorization();
+app.UseRateLimiter();
+app.UseMiddleware<ForbiddenAccessLoggingMiddleware>();
 
 if (hangfireEnabled)
 {

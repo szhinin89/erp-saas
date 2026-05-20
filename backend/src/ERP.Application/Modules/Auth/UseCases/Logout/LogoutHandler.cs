@@ -23,7 +23,7 @@ public sealed class LogoutHandler : IRequestHandler<LogoutCommand, Result<string
                 return Result<string>.Failure(validation.Error ?? "Refresh token inválido.");
 
             await _refreshTokenService.RevokeAllForUserAsync(
-                validation.UserId, validation.TenantId, "Logout global", ct);
+                validation.UserId, validation.SubscriberId, "Logout global", ct);
 
             return Result<string>.Success("Sesión cerrada en todos los dispositivos.");
         }

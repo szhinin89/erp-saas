@@ -1,10 +1,10 @@
 using FluentValidation;
 
-namespace ERP.Application.Tenants.UseCases.CreateTenant;
+namespace ERP.Application.Subscribers.UseCases.CreateSubscriber;
 
-public sealed class CreateTenantCommandValidator : AbstractValidator<CreateTenantCommand>
+public sealed class CreateSubscriberCommandValidator : AbstractValidator<CreateSubscriberCommand>
 {
-    public CreateTenantCommandValidator()
+    public CreateSubscriberCommandValidator()
     {
         RuleFor(x => x.Name)
             .NotEmpty().WithMessage("El nombre de la empresa es obligatorio.")

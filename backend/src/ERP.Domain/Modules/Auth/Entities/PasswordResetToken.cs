@@ -16,7 +16,7 @@ public sealed class PasswordResetToken
     /// <summary>Tipo de cuenta: <see cref="KindSuperAdmin"/>, <see cref="KindIdentity"/>, <see cref="KindLegacy"/>.</summary>
     public string UserKind { get; private set; } = null!;
     /// <summary>Empresa asociada; null solo para SuperAdmin global.</summary>
-    public Guid? TenantId { get; private set; }
+    public Guid? SubscriberId { get; private set; }
     public DateTime ExpiresAt { get; private set; }
     public bool Used { get; private set; }
     public DateTime CreatedAt { get; private set; }
@@ -27,7 +27,7 @@ public sealed class PasswordResetToken
         string tokenHash,
         Guid userId,
         string userKind,
-        Guid? tenantId,
+        Guid? subscriberId,
         DateTime expiresAtUtc)
     {
         return new PasswordResetToken
@@ -36,7 +36,7 @@ public sealed class PasswordResetToken
             TokenHash = tokenHash,
             UserId = userId,
             UserKind = userKind,
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             ExpiresAt = expiresAtUtc,
             Used = false,
             CreatedAt = DateTime.UtcNow,

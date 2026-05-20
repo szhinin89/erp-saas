@@ -40,7 +40,7 @@ const statusBadgeClass: Record<DocumentStatus, string> = {
 
 export function AccountingPage() {
   const { t } = useI18n();
-  const tenantId = useAuthStore((s) => s.user?.tenantId ?? '');
+  const subscriberId = useAuthStore((s) => s.user?.subscriberId ?? '');
   const role     = useAuthStore((s) => s.user?.role ?? '');
   const isAdmin  = role === 'Admin' || role === 'SuperAdmin';
   const hasPerm  = usePermissionsStore((s) => s.has);
@@ -369,7 +369,7 @@ export function AccountingPage() {
 
           {activeAccountSubTab === 'data' && canCreateAccount && (
             <form ref={formRef} onSubmit={submitAccount} noValidate>
-              <input type="hidden" name="tenantId" value={tenantId} />
+              <input type="hidden" name="subscriberId" value={subscriberId} />
               <div className="pg-section-body">
                 <div className="pg-form-grid pg-form-grid--2">
                   <ZHField label={t('finance.accounts.form.code')} required error={errors.code?.message}>

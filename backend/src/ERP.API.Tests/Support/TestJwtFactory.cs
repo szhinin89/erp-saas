@@ -7,14 +7,14 @@ namespace ERP.API.Tests.Support;
 
 internal static class TestJwtFactory
 {
-    public static string CreateSessionJwt(Guid tenantId, Guid userId, string role = "Admin")
+    public static string CreateSessionJwt(Guid subscriberId, Guid userId, string role = "Admin")
     {
         var claims = new[]
         {
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, "integration@test.local"),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("tenant_id", tenantId.ToString()),
+            new Claim("subscriber_id", subscriberId.ToString()),
             new Claim("full_name", "Integration User"),
             new Claim(ClaimTypes.Role, role),
             new Claim("token_type", "session"),

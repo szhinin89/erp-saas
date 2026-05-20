@@ -8,16 +8,16 @@ namespace ERP.Application.Access.UseCases.Permissions;
 public class UpsertProfilePermissionsHandler : IRequestHandler<UpsertProfilePermissionsCommand, Result<object>>
 {
     private readonly IAccessRepository _repo;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public UpsertProfilePermissionsHandler(
         IAccessRepository repo,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
@@ -26,13 +26,13 @@ public class UpsertProfilePermissionsHandler : IRequestHandler<UpsertProfilePerm
 
     public async Task<Result<object>> Handle(UpsertProfilePermissionsCommand command, CancellationToken ct)
     {
-        if (!_currentTenant.IsAuthenticated || !_currentUser.IsAuthenticated)
+        if (!_currentSubscriber.IsAuthenticated || !_currentUser.IsAuthenticated)
             return Result<object>.Failure("No autenticado.");
 
         if (command.Items is null || command.Items.Count == 0)
             return Result<object>.Failure("Debe enviar al menos 1 permiso.");
 
-        var profile = await _repo.GetProfileByIdAsync(_currentTenant.TenantId, command.ProfileId, ct);
+        var profile = await _repo.GetProfileByIdAsync(_currentSubscriber.SubscriberId, command.ProfileId, ct);
         if (profile is null)
             return Result<object>.Failure("Perfil no existe.");
 
@@ -44,11 +44,11 @@ public class UpsertProfilePermissionsHandler : IRequestHandler<UpsertProfilePerm
                 continue;
 
             var key = item.PermissionKey.Trim();
-            var existing = await _repo.GetProfilePermissionAsync(_currentTenant.TenantId, command.ProfileId, key, ct);
+            var existing = await _repo.GetProfilePermissionAsync(_currentSubscriber.SubscriberId, command.ProfileId, key, ct);
             if (existing is null)
             {
                 var created = AccessProfilePermission.Create(
-                    tenantId: _currentTenant.TenantId,
+                    subscriberId: _currentSubscriber.SubscriberId,
                     profileId: command.ProfileId,
                     permissionKey: key,
                     isAllowed: item.IsAllowed,

@@ -8,9 +8,9 @@ public sealed class GetBalanceComprobacionQueryHandler
     : IRequestHandler<GetBalanceComprobacionQuery, Result<IReadOnlyList<BalanceComprobacionLineDto>>>
 {
     private readonly IAccountingRepository _repo;
-    private readonly ICurrentTenant        _tenant;
+    private readonly ICurrentSubscriber        _tenant;
 
-    public GetBalanceComprobacionQueryHandler(IAccountingRepository repo, ICurrentTenant tenant)
+    public GetBalanceComprobacionQueryHandler(IAccountingRepository repo, ICurrentSubscriber tenant)
     {
         _repo   = repo;
         _tenant = tenant;
@@ -19,10 +19,10 @@ public sealed class GetBalanceComprobacionQueryHandler
     public async Task<Result<IReadOnlyList<BalanceComprobacionLineDto>>> Handle(
         GetBalanceComprobacionQuery query, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
 
-        var accounts = await _repo.GetAllByTenantAsync(tenantId, ct);
-        var totals   = await _repo.GetBalanceComprobacionAsync(tenantId, query.Desde, query.Hasta, ct);
+        var accounts = await _repo.GetAllByTenantAsync(subscriberId, ct);
+        var totals   = await _repo.GetBalanceComprobacionAsync(subscriberId, query.Desde, query.Hasta, ct);
 
         var accountMap = accounts.ToDictionary(a => a.Id);
         var totalsMap  = totals.ToDictionary(t => t.AccountId);

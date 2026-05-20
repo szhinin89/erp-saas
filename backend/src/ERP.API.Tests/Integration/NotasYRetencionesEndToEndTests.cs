@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text;
 using FluentAssertions;
 using MediatR;
@@ -115,11 +115,11 @@ public sealed class NotasYRetencionesEndToEndTests
         var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 10m, ct: CancellationToken.None);
 
-        var clienteId  = db.Customers.First(c => c.TenantId == seed.TenantId).Id;
-        var sucursalId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
+        var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         var venta = await mediator.Send(
             BuildCrearVenta(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 2m),
@@ -130,7 +130,7 @@ public sealed class NotasYRetencionesEndToEndTests
         emitir.IsSuccess.Should().BeTrue(emitir.Error);
 
         db.CurrentStocks.First(s =>
-                s.TenantId == seed.TenantId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
+                s.SubscriberId == seed.SubscriberId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
             .Quantity.Should().Be(8m);
 
         var crearNota = await mediator.Send(
@@ -151,11 +151,11 @@ public sealed class NotasYRetencionesEndToEndTests
         nota.XmlSignedPath.Should().NotBeNullOrEmpty();
 
         db.CurrentStocks.First(s =>
-                s.TenantId == seed.TenantId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
+                s.SubscriberId == seed.SubscriberId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
             .Quantity.Should().Be(9m);
 
         db.StockMovements.Count(m =>
-                m.TenantId == seed.TenantId
+                m.SubscriberId == seed.SubscriberId
                 && m.MovementType == StockMovementType.SaleReturn
                 && m.SourceDocId == nota.Id)
             .Should().Be(1);
@@ -169,12 +169,12 @@ public sealed class NotasYRetencionesEndToEndTests
         var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 10m, ct: CancellationToken.None);
 
-        var clienteId  = db.Customers.First(c => c.TenantId == seed.TenantId).Id;
-        var sucursalId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
-        var cuentaVentas = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "4.1.99");
+        var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
+        var cuentaVentas = db.Accounts.First(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "4.1.99");
 
         var venta = await mediator.Send(
             BuildCrearVenta(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 1m),
@@ -214,8 +214,8 @@ public sealed class NotasYRetencionesEndToEndTests
         var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
-        var cuentaPasivo = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "2.1.99");
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+        var cuentaPasivo = db.Accounts.First(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "2.1.99");
 
         var xmlCompra = IntegrationSeedData.BuildFacturaXml(seed.ClaveAcceso49, seed.ProveedorRuc);
         var compraRes = await mediator.Send(
@@ -270,11 +270,11 @@ public sealed class NotasYRetencionesEndToEndTests
         nota.JournalEntryId.Should().NotBeNull();
 
         db.CurrentStocks.First(s =>
-                s.TenantId == seed.TenantId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
+                s.SubscriberId == seed.SubscriberId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
             .Quantity.Should().Be(3m);
 
         db.StockMovements.Count(m =>
-                m.TenantId == seed.TenantId
+                m.SubscriberId == seed.SubscriberId
                 && m.MovementType == StockMovementType.SupplierCreditNote
                 && m.SourceDocId == nota.Id)
             .Should().Be(1);
@@ -291,8 +291,8 @@ public sealed class NotasYRetencionesEndToEndTests
         var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
-        var cuentaPasivo = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "2.1.99");
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+        var cuentaPasivo = db.Accounts.First(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "2.1.99");
 
         var xmlCompra = IntegrationSeedData.BuildFacturaXml(seed.ClaveAcceso49, seed.ProveedorRuc);
         var compraRes = await mediator.Send(
@@ -343,11 +343,11 @@ public sealed class NotasYRetencionesEndToEndTests
         nota.JournalEntryId.Should().NotBeNull();
 
         db.CurrentStocks.First(s =>
-                s.TenantId == seed.TenantId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
+                s.SubscriberId == seed.SubscriberId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
             .Quantity.Should().Be(1m);
 
         db.StockMovements.Count(m =>
-                m.TenantId == seed.TenantId
+                m.SubscriberId == seed.SubscriberId
                 && m.MovementType == StockMovementType.SupplierDebitNote
                 && m.SourceDocId == nota.Id)
             .Should().Be(1);
@@ -367,7 +367,7 @@ public sealed class NotasYRetencionesEndToEndTests
         var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
 
         var xmlCompra = IntegrationSeedData.BuildFacturaXml(seed.ClaveAcceso49, seed.ProveedorRuc);
         var compraRes = await mediator.Send(
@@ -389,7 +389,7 @@ public sealed class NotasYRetencionesEndToEndTests
         await mediator.Send(new AprobarCompraCommand(compraRes.Value.Id), CancellationToken.None);
 
         var proveedorId = db.PurchBills.First(c => c.Id == compraRes.Value.Id).SupplierId;
-        var cuentaPasivo = db.Accounts.First(a => a.TenantId == seed.TenantId && a.Code.Value == "2.1.99");
+        var cuentaPasivo = db.Accounts.First(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "2.1.99");
 
         var gastoRes = await mediator.Send(
             new CreateExpenseCommand(
@@ -410,7 +410,7 @@ public sealed class NotasYRetencionesEndToEndTests
         await mediator.Send(new ApproveExpenseCommand(gastoRes.Value.Id), CancellationToken.None);
 
         var stockAntes = db.CurrentStocks.First(s =>
-            s.TenantId == seed.TenantId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId).Quantity;
+            s.SubscriberId == seed.SubscriberId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId).Quantity;
 
         var claveNota = ClaveAcceso49TestFactory.FromPrefix48(new string('3', 48));
         var xmlNota = BuildNotaProveedorXml(
@@ -442,11 +442,11 @@ public sealed class NotasYRetencionesEndToEndTests
 
         gasto.TotalNotesApplied.Should().Be(nota.Total);
         db.CurrentStocks.First(s =>
-                s.TenantId == seed.TenantId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
+                s.SubscriberId == seed.SubscriberId && s.ProductId == seed.ProductId && s.WarehouseId == seed.WarehouseId)
             .Quantity.Should().Be(stockAntes);
 
         db.StockMovements.Count(m =>
-                m.TenantId == seed.TenantId
+                m.SubscriberId == seed.SubscriberId
                 && m.SourceDocType == "CompraNotaProveedor"
                 && m.SourceDocId == nota.Id)
             .Should().Be(0);
@@ -463,11 +463,11 @@ public sealed class NotasYRetencionesEndToEndTests
         var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 0m, crearStockActual: false, ct: CancellationToken.None);
 
         var userId = seed.UserId;
-        var tid    = seed.TenantId;
+        var tid    = seed.SubscriberId;
         db.Accounts.Add(Account.Create(
             tid, "2.1.88", "PROVEEDORES cuenta CxP", AccountType.Liability, AccountNature.Credit, userId));
         db.Accounts.Add(Account.Create(
@@ -525,19 +525,19 @@ public sealed class NotasYRetencionesEndToEndTests
         var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 10m, ct: CancellationToken.None);
 
         var userId = seed.UserId;
-        var tid    = seed.TenantId;
+        var tid    = seed.SubscriberId;
         db.Accounts.Add(Account.Create(
             tid, "2.3.01", "IVA por pagar pruebas", AccountType.Liability, AccountNature.Credit, userId));
         db.Accounts.Add(Account.Create(
             tid, "1.2.01", "Clientes por COBRAR integraciÃ³n", AccountType.Asset, AccountNature.Debit, userId));
         await db.SaveChangesAsync(CancellationToken.None);
 
-        var clienteId  = db.Customers.First(c => c.TenantId == seed.TenantId).Id;
-        var sucursalId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
+        var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         var venta = await mediator.Send(
             BuildCrearVenta(clienteId, seed.WarehouseId, sucursalId, seed.ProductId, 1m),

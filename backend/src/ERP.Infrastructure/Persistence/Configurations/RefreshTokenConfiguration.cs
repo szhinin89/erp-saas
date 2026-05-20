@@ -14,7 +14,8 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
         builder.Property(e => e.Id).HasColumnName("id");
 
         builder.Property(e => e.UserId).HasColumnName("user_id").IsRequired();
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(e => e.CompanyId).HasColumnName("company_id");
 
         builder.Property(e => e.UserType)
             .HasColumnName("user_type")
@@ -46,8 +47,8 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
             .HasDatabaseName("ix_refresh_tokens_hash");
 
         // Índice para revocación masiva por usuario/tenant
-        builder.HasIndex(e => new { e.UserId, e.TenantId })
-            .HasDatabaseName("ix_refresh_tokens_user_tenant");
+        builder.HasIndex(e => new { e.UserId, e.SubscriberId })
+            .HasDatabaseName("ix_refresh_tokens_user_subscriber");
 
         // Índice para limpieza de tokens expirados
         builder.HasIndex(e => e.ExpiresAt)

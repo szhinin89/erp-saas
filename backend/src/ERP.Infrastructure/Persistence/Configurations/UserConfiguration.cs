@@ -13,7 +13,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         builder.HasKey(u => u.Id);
         builder.Property(u => u.Id).HasColumnName("id");
-        builder.Property(u => u.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(u => u.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(u => u.FirstName).HasColumnName("first_name").HasMaxLength(100).IsRequired();
         builder.Property(u => u.LastName).HasColumnName("last_name").HasMaxLength(100).IsRequired();
         builder.Property(u => u.Email)
@@ -29,9 +29,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.CreatedBy).HasColumnName("created_by");
         builder.Property(u => u.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(u => new { u.TenantId, u.Email })
+        builder.HasIndex(u => new { u.SubscriberId, u.Email })
             .IsUnique()
-            .HasDatabaseName("ix_users_tenant_email");
+            .HasDatabaseName("ix_users_subscriber_email");
 
         
     }

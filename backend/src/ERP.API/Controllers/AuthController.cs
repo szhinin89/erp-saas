@@ -1,8 +1,9 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
+using AccessibleCompanyDto = ERP.Application.Auth.DTOs.AccessibleCompanyDto;
 using ERP.API.Extensions;
 using ERP.Application.Auth.UseCases.Register;
 using ERP.Application.Auth.UseCases.Login;
@@ -10,7 +11,9 @@ using ERP.Application.Auth.UseCases.Logout;
 using ERP.Application.Auth.UseCases.PasswordReset;
 using ERP.Application.Auth.UseCases.RefreshToken;
 using ERP.Application.Auth.UseCases.SuperAdminLogin;
-using ERP.Application.Auth.UseCases.SwitchTenant;
+using ERP.Application.Auth.UseCases.SwitchSubscriber;
+using ERP.Application.Auth.UseCases.SwitchCompany;
+using ERP.Application.Auth.UseCases.ListMyCompanies;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 
@@ -126,7 +129,7 @@ public class AuthController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Login global de SuperAdmin: email + password (sin TenantId).</summary>
+    /// <summary>Login global de SuperAdmin: email + password (sin SubscriberId).</summary>
     [HttpPost("superadmin-login")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -177,13 +180,42 @@ public class AuthController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Cambia el tenant_id del JWT para el SuperAdmin.</summary>
-    [HttpPost("switch-tenant")]
+    /// <summary>Lista empresas operativas accesibles en el suscriptor activo.</summary>
+    [HttpGet("my-companies")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<AccessibleCompanyDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListMyCompanies(CancellationToken ct)
+    {
+        var result = await _mediator.Send(new ListMyCompaniesQuery(), ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    /// <summary>Cambia la empresa operativa (company_id) en el JWT.</summary>
+    [HttpPost("switch-company")]
+    [Authorize]
+    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SwitchCompany([FromBody] SwitchCompanyRequest request, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new SwitchCompanyCommand(request.CompanyId), ct);
+        if (result.IsSuccess)
+        {
+            if (result.Value?.RefreshToken is not null && result.Value.RefreshTokenExpiry is not null)
+                SetRefreshCookie(result.Value.RefreshToken, result.Value.RefreshTokenExpiry.Value);
+
+            return this.ApiOk(result.Value);
+        }
+
+        return this.ToOkOrBadRequest(result);
+    }
+
+    /// <summary>Cambia el subscriber_id del JWT para el SuperAdmin.</summary>
+    [HttpPost("switch-subscriber")]
     [Microsoft.AspNetCore.Authorization.Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> SwitchTenant([FromBody] SwitchTenantCommand command, CancellationToken ct)
+    public async Task<IActionResult> SwitchSubscriber([FromBody] SwitchSubscriberCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result);

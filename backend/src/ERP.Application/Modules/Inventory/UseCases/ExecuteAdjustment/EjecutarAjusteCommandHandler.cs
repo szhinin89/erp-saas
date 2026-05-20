@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -19,7 +19,7 @@ public sealed class ExecuteStockAdjustmentCommandHandler
     private readonly ICostoPromedioService       _costoServicio;
     private readonly IUserActivityRepository     _activity;
     private readonly IUnitOfWork                 _unitOfWork;
-    private readonly ICurrentTenant              _currentTenant;
+    private readonly ICurrentSubscriber              _currentSubscriber;
     private readonly ICurrentUser                _currentUser;
     private readonly ILogger<ExecuteStockAdjustmentCommandHandler> _logger;
 
@@ -29,7 +29,7 @@ public sealed class ExecuteStockAdjustmentCommandHandler
         ICostoPromedioService costoServicio,
         IUserActivityRepository activity,
         IUnitOfWork unitOfWork,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<ExecuteStockAdjustmentCommandHandler> logger)
     {
@@ -38,7 +38,7 @@ public sealed class ExecuteStockAdjustmentCommandHandler
         _costoServicio = costoServicio;
         _activity      = activity;
         _unitOfWork    = unitOfWork;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
         _logger        = logger;
     }
@@ -46,10 +46,10 @@ public sealed class ExecuteStockAdjustmentCommandHandler
     public async Task<Result<StockAdjustmentDto>> Handle(
         ExecuteStockAdjustmentCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var ajuste = await _ajusteRepo.GetByIdAsync(tenantId, command.AdjustmentId, ct);
+        var ajuste = await _ajusteRepo.GetByIdAsync(subscriberId, command.AdjustmentId, ct);
         if (ajuste is null)
             return Result<StockAdjustmentDto>.Failure("Ajuste no encontrado.");
 
@@ -73,7 +73,7 @@ public sealed class ExecuteStockAdjustmentCommandHandler
                 // Incremento: UPSERT atómico — siempre tiene éxito.
                 // Los ajustes de entrada no tienen costo de compra conocido.
                 cantidadAnterior = await _inventario.IncrementStockAtomicAsync(
-                    tenantId, ajuste.WarehouseId, ajuste.ProductId,
+                    subscriberId, ajuste.WarehouseId, ajuste.ProductId,
                     ajuste.AdjustmentQty, userId, ct, unitCost: 0m);
                 tipoMovimiento       = StockMovementType.PositiveAdjust;
                 costoUnitarioMovimiento = null; // sin valorización para entrada manual
@@ -82,10 +82,10 @@ public sealed class ExecuteStockAdjustmentCommandHandler
             {
                 // Disminución: obtener costo promedio actual ANTES de decrementar.
                 var averageCost = await _costoServicio.ObtenerCostoPromedioAsync(
-                    tenantId, ajuste.ProductId, ajuste.WarehouseId, ct);
+                    subscriberId, ajuste.ProductId, ajuste.WarehouseId, ct);
 
                 var cantAnteriorNullable = await _inventario.DecrementStockAtomicAsync(
-                    tenantId, ajuste.WarehouseId, ajuste.ProductId,
+                    subscriberId, ajuste.WarehouseId, ajuste.ProductId,
                     Math.Abs(ajuste.AdjustmentQty), userId, ct, averageCost);
 
                 if (cantAnteriorNullable is null)
@@ -106,7 +106,7 @@ public sealed class ExecuteStockAdjustmentCommandHandler
 
             await _inventario.AddMovementAsync(
                 StockMovement.Create(
-                    tenantId, ajuste.ProductId, ajuste.WarehouseId,
+                    subscriberId, ajuste.ProductId, ajuste.WarehouseId,
                     tipoMovimiento,
                     quantity:            ajuste.AdjustmentQty,
                     previousQuantity:    cantidadAnterior,
@@ -120,7 +120,7 @@ public sealed class ExecuteStockAdjustmentCommandHandler
             ajuste.Execute(userId);
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "inventario", action: "ajuste.ejecutar",
                 entityType: "StockAdjustment", entityId: ajuste.Id,
                 description: ajuste.AdjustmentNumber), ct);

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
@@ -13,9 +13,9 @@ public sealed class KardexReportRepository : IKardexReportRepository
     public Task AddAsync(KardexReport reporte, CancellationToken ct = default)
         => _context.KardexReports.AddAsync(reporte, ct).AsTask();
 
-    public Task<KardexReport?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+    public Task<KardexReport?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
         => _context.KardexReports
-            .FirstOrDefaultAsync(r => r.TenantId == tenantId && r.Id == id, ct);
+            .FirstOrDefaultAsync(r => r.SubscriberId == subscriberId && r.Id == id, ct);
 
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);

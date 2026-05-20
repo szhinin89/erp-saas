@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class PurchaseOrderBill : AuditableEntity, ITenantEntity
+public sealed class PurchaseOrderBill : AuditableEntity, ISubscriberScopedEntity
 {
     public Guid     PurchaseOrderId { get; private set; }
     public Guid     PurchBillId     { get; private set; }
@@ -12,7 +12,7 @@ public sealed class PurchaseOrderBill : AuditableEntity, ITenantEntity
     private PurchaseOrderBill() { }
 
     public static PurchaseOrderBill Create(
-        Guid tenantId,
+        Guid subscriberId,
         Guid purchaseOrderId,
         Guid purchBillId,
         Guid linkedBy)
@@ -20,7 +20,7 @@ public sealed class PurchaseOrderBill : AuditableEntity, ITenantEntity
         var v = new PurchaseOrderBill
         {
             Id              = Guid.NewGuid(),
-            TenantId        = tenantId,
+            SubscriberId        = subscriberId,
             PurchaseOrderId = purchaseOrderId,
             PurchBillId     = purchBillId,
             LinkedAt        = DateTime.UtcNow,

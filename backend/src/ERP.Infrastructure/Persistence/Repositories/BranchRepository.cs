@@ -17,12 +17,12 @@ public sealed class BranchRepository : IBranchRepository
         => _context.Branches.AddAsync(branch, ct).AsTask();
 
     public async Task<IReadOnlyList<Branch>> GetAsync(
-        Guid tenantId,
+        Guid subscriberId,
         bool? activeFilter = true,
         string? search = null,
         CancellationToken ct = default)
     {
-        var q = _context.Branches.AsQueryable().Where(x => x.TenantId == tenantId);
+        var q = _context.Branches.AsQueryable().Where(x => x.SubscriberId == subscriberId);
         if (activeFilter is true)
             q = q.Where(x => x.IsActive);
         else if (activeFilter is false)
@@ -40,12 +40,12 @@ public sealed class BranchRepository : IBranchRepository
         return await q.OrderBy(x => x.Name).ToListAsync(ct);
     }
 
-    public Task<Branch?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.Branches.FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, ct);
+    public Task<Branch?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
+        => _context.Branches.FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Id == id, ct);
 
-    public async Task ClearMainBranchExceptAsync(Guid tenantId, Guid? exceptBranchId, Guid updatedBy, CancellationToken ct = default)
+    public async Task ClearMainBranchExceptAsync(Guid subscriberId, Guid? exceptBranchId, Guid updatedBy, CancellationToken ct = default)
     {
-        var q = _context.Branches.Where(b => b.TenantId == tenantId && b.IsMainBranch);
+        var q = _context.Branches.Where(b => b.SubscriberId == subscriberId && b.IsMainBranch);
         if (exceptBranchId is not null)
             q = q.Where(b => b.Id != exceptBranchId.Value);
 

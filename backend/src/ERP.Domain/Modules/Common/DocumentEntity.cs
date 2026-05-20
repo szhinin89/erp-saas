@@ -4,7 +4,7 @@ namespace ERP.Domain.Common;
 /// Clase base para documentos transaccionales.
 /// Ejemplos: JournalEntry, Invoice, Order, Payment, etc.
 ///
-/// Hereda: BaseEntity (Id, TenantId)
+/// Hereda: BaseEntity (Id, SubscriberId)
 ///       → AggregateRoot (DomainEvents)
 ///       → AuditableEntity (CreatedAt, UpdatedAt, CreatedBy, UpdatedBy)
 ///

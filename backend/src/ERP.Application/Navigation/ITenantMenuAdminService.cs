@@ -3,16 +3,16 @@ using ERP.Application.Navigation.DTOs;
 
 namespace ERP.Application.Navigation;
 
-/// <summary>SuperAdmin: menú efectivo por empresa y CRUD de <c>tenant_custom_menus</c>.</summary>
-public interface ITenantMenuAdminService
+/// <summary>SuperAdmin: menú efectivo por empresa y CRUD de <c>subscriber_custom_menus</c>.</summary>
+public interface ISubscriberMenuAdminService
 {
-    Task<Result<TenantMenuResolvedDto>> GetResolvedMenuForTenantAsync(Guid tenantId, CancellationToken ct = default);
+    Task<Result<TenantMenuResolvedDto>> GetResolvedMenuForTenantAsync(Guid subscriberId, CancellationToken ct = default);
 
-    Task<Result<object?>> UpsertTenantCustomMenuAsync(Guid tenantId, string menuConfigJson, CancellationToken ct = default);
+    Task<Result<object?>> UpsertSubscriberCustomMenuAsync(Guid subscriberId, string menuConfigJson, CancellationToken ct = default);
 
-    Task<Result<object?>> DeleteTenantCustomMenuAsync(Guid tenantId, CancellationToken ct = default);
+    Task<Result<object?>> DeleteSubscriberCustomMenuAsync(Guid subscriberId, CancellationToken ct = default);
 
-    Task<IReadOnlySet<Guid>> GetTenantIdsWithCustomMenuAsync(CancellationToken ct = default);
+    Task<IReadOnlySet<Guid>> GetSubscriberIdsWithCustomMenuAsync(CancellationToken ct = default);
 }
 
 public sealed record TenantMenuResolvedDto(

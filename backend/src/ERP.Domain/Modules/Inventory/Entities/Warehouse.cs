@@ -2,8 +2,9 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
-public sealed class Warehouse : MasterEntity, ITenantEntity
+public sealed class Warehouse : MasterEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
+    public Guid? CompanyId { get; private set; }
     public const int NameMaxLen            = 100;
     public const int AddressMaxLen         = 300;
     public const int ManagerMaxLen         = 100;
@@ -30,7 +31,7 @@ public sealed class Warehouse : MasterEntity, ITenantEntity
     private Warehouse() { }
 
     public static Warehouse Create(
-        Guid     tenantId,
+        Guid     subscriberId,
         Guid     branchId,
         string   name,
         string   code,
@@ -44,7 +45,8 @@ public sealed class Warehouse : MasterEntity, ITenantEntity
         decimal? capacity,
         decimal? dailyDispatchGoal,
         Guid     createdBy,
-        Guid?    establishmentId = null)
+        Guid?    establishmentId = null,
+        Guid?    companyId = null)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Warehouse name is required.", nameof(name));
@@ -52,7 +54,7 @@ public sealed class Warehouse : MasterEntity, ITenantEntity
         var w = new Warehouse
         {
             Id               = Guid.NewGuid(),
-            TenantId         = tenantId,
+            SubscriberId         = subscriberId,
             BranchId         = branchId,
             Name             = name.Trim(),
             Code             = code,
@@ -66,6 +68,7 @@ public sealed class Warehouse : MasterEntity, ITenantEntity
             Capacity         = capacity,
             DailyDispatchGoal = dailyDispatchGoal,
             EstablishmentId  = establishmentId,
+            CompanyId        = companyId,
         };
         w.SetCreated(createdBy);
         return w;

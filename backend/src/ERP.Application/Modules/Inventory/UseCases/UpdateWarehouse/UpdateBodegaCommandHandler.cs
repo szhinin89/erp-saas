@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.DTOs;
 using ERP.Domain.Audit.Entities;
@@ -13,13 +13,13 @@ public sealed class UpdateWarehouseCommandHandler
 {
     private readonly IWarehouseRepository       _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant          _tenant;
+    private readonly ICurrentSubscriber          _tenant;
     private readonly ICurrentUser            _user;
 
     public UpdateWarehouseCommandHandler(
         IWarehouseRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user)
     {
         _repo     = repo;
@@ -30,14 +30,14 @@ public sealed class UpdateWarehouseCommandHandler
 
     public async Task<Result<WarehouseDto>> Handle(UpdateWarehouseCommand command, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
-        var Warehouse = await _repo.GetByIdAsync(tenantId, command.Id, ct);
+        var Warehouse = await _repo.GetByIdAsync(subscriberId, command.Id, ct);
         if (Warehouse is null)
             return Result<WarehouseDto>.Failure("Warehouse no encontrada.");
 
-        if (await _repo.ExistsNameAsync(tenantId, command.Name, command.Id, ct))
+        if (await _repo.ExistsNameAsync(subscriberId, command.Name, command.Id, ct))
             return Result<WarehouseDto>.Failure($"Ya existe otra Warehouse con el nombre '{command.Name}' en este tenant.");
 
         Warehouse.Update(
@@ -47,7 +47,7 @@ public sealed class UpdateWarehouseCommandHandler
             command.Capacity, command.DailyDispatchGoal, userId);
 
         await _activity.AddAsync(UserActivity.Create(
-            tenantId, userId, _user.Email, _user.FullName,
+            subscriberId, userId, _user.Email, _user.FullName,
             module: "inventario", action: "Warehouse.update",
             entityType: "Warehouse", entityId: Warehouse.Id,
             description: Warehouse.Name), ct);

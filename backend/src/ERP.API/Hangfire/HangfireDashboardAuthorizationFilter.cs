@@ -40,7 +40,7 @@ public sealed class HangfireDashboardAuthorizationFilter : IDashboardAuthorizati
                 return false;
 
             var role = user.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
-            var tenantClaim = user.FindFirst("tenant_id")?.Value ?? string.Empty;
+            var tenantClaim = user.FindFirst("subscriber_id")?.Value ?? string.Empty;
             var tenantEmpty = !Guid.TryParse(tenantClaim, out var tid) || tid == Guid.Empty;
 
             return string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase)

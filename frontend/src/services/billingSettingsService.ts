@@ -3,7 +3,7 @@ import type { ApiResponse } from '../types/api';
 
 export type BillingSettingsDto = {
   id: string;
-  tenantId: string;
+  subscriberId: string;
   legalName: string;
   tradeName: string;
   ruc: string;

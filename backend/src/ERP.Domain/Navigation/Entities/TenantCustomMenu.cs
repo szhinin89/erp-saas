@@ -1,28 +1,28 @@
 namespace ERP.Domain.Navigation.Entities;
 
 /// <summary>Menú lateral JSON por empresa; si existe, tiene prioridad sobre el menú del plan y el menú global <c>ui_nav_*</c>.</summary>
-public sealed class TenantCustomMenu
+public sealed class SubscriberCustomMenu
 {
     public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public Guid SubscriberId { get; private set; }
     public string MenuConfigJson { get; private set; } = null!;
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime UpdatedAtUtc { get; private set; }
 
-    private TenantCustomMenu() { }
+    private SubscriberCustomMenu() { }
 
-    public static TenantCustomMenu Create(Guid tenantId, string menuConfigJson, DateTime utcNow)
+    public static SubscriberCustomMenu Create(Guid subscriberId, string menuConfigJson, DateTime utcNow)
     {
-        if (tenantId == Guid.Empty)
-            throw new ArgumentException("TenantId inválido.", nameof(tenantId));
+        if (subscriberId == Guid.Empty)
+            throw new ArgumentException("SubscriberId inválido.", nameof(subscriberId));
         var json = (menuConfigJson ?? string.Empty).Trim();
         if (json.Length == 0)
             throw new ArgumentException("Menú vacío.", nameof(menuConfigJson));
 
-        return new TenantCustomMenu
+        return new SubscriberCustomMenu
         {
             Id = Guid.NewGuid(),
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             MenuConfigJson = json,
             CreatedAtUtc = utcNow,
             UpdatedAtUtc = utcNow,

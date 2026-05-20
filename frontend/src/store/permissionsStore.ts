@@ -21,7 +21,7 @@ interface PermissionsState {
     planCode?: string | null;
     enabledModules?: string[];
   }) => void;
-  /** Snapshot SaaS desde `GET /api/saas/entitlements/me` (F1). */
+  /** Snapshot SaaS desde `GET /api/subscribers/entitlements/me` (F1). */
   setEntitlementsSnapshot: (payload: {
     permissions: string[];
     planCode?: string | null;

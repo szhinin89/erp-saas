@@ -14,7 +14,7 @@ namespace ERP.Infrastructure.Seeding;
 /// Add new steps by adding a private method and calling it from <see cref="OnboardAsync"/>.
 /// Every step is idempotent (checks existence before inserting).
 /// </summary>
-public sealed class TenantOnboardingService : ITenantOnboardingService
+public sealed class SubscriberOnboardingService : ISubscriberOnboardingService
 {
     // ── Constants ─────────────────────────────────────────────────────────────
 
@@ -35,13 +35,13 @@ public sealed class TenantOnboardingService : ITenantOnboardingService
     private readonly ErpDbContext             _db;
     private readonly IDefaultProfileSeeder    _profileSeeder;
     private readonly IPlatformQueryAccessor _platform;
-    private readonly ILogger<TenantOnboardingService> _logger;
+    private readonly ILogger<SubscriberOnboardingService> _logger;
 
-    public TenantOnboardingService(
+    public SubscriberOnboardingService(
         ErpDbContext db,
         IDefaultProfileSeeder profileSeeder,
         IPlatformQueryAccessor platform,
-        ILogger<TenantOnboardingService> logger)
+        ILogger<SubscriberOnboardingService> logger)
     {
         _db            = db;
         _profileSeeder = profileSeeder;
@@ -52,28 +52,28 @@ public sealed class TenantOnboardingService : ITenantOnboardingService
     // ── Entry point ───────────────────────────────────────────────────────────
 
     /// <inheritdoc/>
-    public async Task OnboardAsync(Guid tenantId, Guid actorId, CancellationToken ct = default)
+    public async Task OnboardAsync(Guid subscriberId, Guid actorId, CancellationToken ct = default)
     {
-        _logger.LogInformation("Onboarding tenant {TenantId}…", tenantId);
+        _logger.LogInformation("Onboarding tenant {SubscriberId}…", subscriberId);
 
         // ── Step 1: access profiles ──────────────────────────────────────────
-        await _profileSeeder.SeedForTenantAsync(tenantId, actorId, ct);
+        await _profileSeeder.SeedForTenantAsync(subscriberId, actorId, ct);
 
         // ── Step 2: Consumidor Final customer ────────────────────────────────
-        await SeedConsumidorFinalAsync(tenantId, actorId, ct);
+        await SeedConsumidorFinalAsync(subscriberId, actorId, ct);
 
         // ── Step 3: main branch (must exist before warehouse) ────────────────
-        var branchId = await SeedMainBranchAsync(tenantId, actorId, ct);
+        var branchId = await SeedMainBranchAsync(subscriberId, actorId, ct);
 
         // ── Step 4: main warehouse linked to the branch ──────────────────────
-        await SeedMainWarehouseAsync(tenantId, branchId, actorId, ct);
+        await SeedMainWarehouseAsync(subscriberId, branchId, actorId, ct);
 
         // ────────────────────────────────────────────────────────────────────
         // Add new onboarding steps here ↓
-        // await SeedDefaultTaxSettingsAsync(tenantId, actorId, ct);
+        // await SeedDefaultTaxSettingsAsync(subscriberId, actorId, ct);
         // ────────────────────────────────────────────────────────────────────
 
-        _logger.LogInformation("Tenant {TenantId} onboarding complete.", tenantId);
+        _logger.LogInformation("Subscriber {SubscriberId} onboarding complete.", subscriberId);
     }
 
     // ── Step implementations ─────────────────────────────────────────────────
@@ -82,21 +82,21 @@ public sealed class TenantOnboardingService : ITenantOnboardingService
     /// Creates the "CONSUMIDOR FINAL" customer (CI 9999999999).
     /// Required for SRI invoicing when the buyer is unidentified.
     /// </summary>
-    private async Task SeedConsumidorFinalAsync(Guid tenantId, Guid actorId, CancellationToken ct)
+    private async Task SeedConsumidorFinalAsync(Guid subscriberId, Guid actorId, CancellationToken ct)
     {
         var exists = await _platform
             .Unfiltered(_db.Customers, PlatformQueryReason.Seeding)
-            .AnyAsync(c => c.TenantId == tenantId
+            .AnyAsync(c => c.SubscriberId == subscriberId
                         && c.IdentificationNumber == ConsumidorFinalIdNumber, ct);
 
         if (exists)
         {
-            _logger.LogDebug("Consumidor Final already exists for tenant {TenantId}. Skipping.", tenantId);
+            _logger.LogDebug("Consumidor Final already exists for tenant {SubscriberId}. Skipping.", subscriberId);
             return;
         }
 
         var customer = Customer.Create(
-            tenantId:            tenantId,
+            subscriberId:            subscriberId,
             identificationType:  ConsumidorFinalIdType,
             identificationNumber: ConsumidorFinalIdNumber,
             legalName:           ConsumidorFinalName,
@@ -110,29 +110,29 @@ public sealed class TenantOnboardingService : ITenantOnboardingService
         _db.Customers.Add(customer);
         await _db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Consumidor Final customer seeded for tenant {TenantId}.", tenantId);
+        _logger.LogInformation("Consumidor Final customer seeded for tenant {SubscriberId}.", subscriberId);
     }
 
     /// <summary>
     /// Creates the main branch (Sucursal Principal).
     /// Returns the branch Id so the warehouse can link to it.
     /// </summary>
-    private async Task<Guid> SeedMainBranchAsync(Guid tenantId, Guid actorId, CancellationToken ct)
+    private async Task<Guid> SeedMainBranchAsync(Guid subscriberId, Guid actorId, CancellationToken ct)
     {
         var existing = await _platform
             .Unfiltered(_db.Branches, PlatformQueryReason.Seeding)
-            .Where(b => b.TenantId == tenantId && b.Code == MainBranchCode)
+            .Where(b => b.SubscriberId == subscriberId && b.Code == MainBranchCode)
             .Select(b => (Guid?)b.Id)
             .FirstOrDefaultAsync(ct);
 
         if (existing.HasValue)
         {
-            _logger.LogDebug("Main branch already exists for tenant {TenantId}. Skipping.", tenantId);
+            _logger.LogDebug("Main branch already exists for tenant {SubscriberId}. Skipping.", subscriberId);
             return existing.Value;
         }
 
         var branch = Branch.Create(
-            tenantId:        tenantId,
+            subscriberId:        subscriberId,
             name:            MainBranchName,
             address:         MainBranchAddr,
             code:            MainBranchCode,
@@ -156,27 +156,27 @@ public sealed class TenantOnboardingService : ITenantOnboardingService
         _db.Branches.Add(branch);
         await _db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Main branch seeded for tenant {TenantId} (id={BranchId}).", tenantId, branch.Id);
+        _logger.LogInformation("Main branch seeded for tenant {SubscriberId} (id={BranchId}).", subscriberId, branch.Id);
         return branch.Id;
     }
 
     /// <summary>
     /// Creates the main warehouse (Bodega Principal) linked to <paramref name="branchId"/>.
     /// </summary>
-    private async Task SeedMainWarehouseAsync(Guid tenantId, Guid branchId, Guid actorId, CancellationToken ct)
+    private async Task SeedMainWarehouseAsync(Guid subscriberId, Guid branchId, Guid actorId, CancellationToken ct)
     {
         var exists = await _platform
             .Unfiltered(_db.Warehouses, PlatformQueryReason.Seeding)
-            .AnyAsync(w => w.TenantId == tenantId && w.Code == MainWarehouseCode, ct);
+            .AnyAsync(w => w.SubscriberId == subscriberId && w.Code == MainWarehouseCode, ct);
 
         if (exists)
         {
-            _logger.LogDebug("Main warehouse already exists for tenant {TenantId}. Skipping.", tenantId);
+            _logger.LogDebug("Main warehouse already exists for tenant {SubscriberId}. Skipping.", subscriberId);
             return;
         }
 
         var warehouse = Warehouse.Create(
-            tenantId:          tenantId,
+            subscriberId:          subscriberId,
             branchId:          branchId,
             name:              MainWarehouseName,
             code:              MainWarehouseCode,
@@ -194,6 +194,6 @@ public sealed class TenantOnboardingService : ITenantOnboardingService
         _db.Warehouses.Add(warehouse);
         await _db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Main warehouse seeded for tenant {TenantId} (id={WarehouseId}).", tenantId, warehouse.Id);
+        _logger.LogInformation("Main warehouse seeded for tenant {SubscriberId} (id={WarehouseId}).", subscriberId, warehouse.Id);
     }
 }

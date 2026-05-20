@@ -1,4 +1,4 @@
-/** Snapshot de `GET /api/saas/entitlements/me` — única fuente para gating de módulos en UI. */
+/** Snapshot de `GET /api/subscribers/entitlements/me` — única fuente para gating de módulos en UI. */
 export interface EntitlementsSnapshot {
   planCode: string | null;
   planName: string | null;

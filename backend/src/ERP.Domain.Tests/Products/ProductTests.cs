@@ -9,12 +9,12 @@ public class ProductTests
     [Fact]
     public void Create_should_set_tenant_and_audit_fields()
     {
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
         var userId = Guid.NewGuid();
 
-        var product = BuildProduct(tenantId, userId);
+        var product = BuildProduct(subscriberId, userId);
 
-        product.TenantId.Should().Be(tenantId);
+        product.SubscriberId.Should().Be(subscriberId);
         product.CreatedBy.Should().Be(userId);
         product.CreatedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
         product.IsActive.Should().BeTrue();
@@ -42,10 +42,10 @@ public class ProductTests
             .WithMessage("*ya existe*");
     }
 
-    private static Product BuildProduct(Guid tenantId, Guid userId, decimal maxItemDiscountPercent = 0m)
+    private static Product BuildProduct(Guid subscriberId, Guid userId, decimal maxItemDiscountPercent = 0m)
     {
         return Product.Create(
-            tenantId: tenantId,
+            subscriberId: subscriberId,
             saleCode: "P-100",
             shortName: "Producto base",
             description: "Producto de pruebas",

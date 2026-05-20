@@ -12,7 +12,7 @@ public sealed class SalesNoteConfiguration : IEntityTypeConfiguration<SalesNote>
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.OriginalBillId).HasColumnName("original_bill_id").IsRequired();
         builder.Property(e => e.NoteType).HasColumnName("note_type").HasMaxLength(SalesNote.NoteTypeMaxLen).IsRequired();
         builder.Property(e => e.Reason).HasColumnName("reason").HasMaxLength(SalesNote.ReasonMaxLen).IsRequired();
@@ -40,7 +40,7 @@ public sealed class SalesNoteConfiguration : IEntityTypeConfiguration<SalesNote>
         builder.HasOne(e => e.OriginalBill).WithMany().HasForeignKey(e => e.OriginalBillId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(e => e.Lines).WithOne().HasForeignKey(d => d.SalesNoteId).OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(e => new { e.TenantId, e.EstabCode, e.EmPointCode, e.Sequential }).IsUnique().HasDatabaseName("uq_sales_note_seq");
-        builder.HasIndex(e => new { e.TenantId, e.OriginalBillId }).HasDatabaseName("ix_sales_note_tenant_bill");
+        builder.HasIndex(e => new { e.SubscriberId, e.EstabCode, e.EmPointCode, e.Sequential }).IsUnique().HasDatabaseName("uq_sales_note_seq");
+        builder.HasIndex(e => new { e.SubscriberId, e.OriginalBillId }).HasDatabaseName("ix_sales_note_subscriber_bill");
     }
 }

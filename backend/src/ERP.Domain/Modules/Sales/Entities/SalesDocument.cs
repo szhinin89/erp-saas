@@ -5,7 +5,7 @@ using ERP.Domain.Modules.Sales.Events;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
-public sealed class SalesDocument : AuditableEntity, ITenantEntity
+public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity
 {
     public const int EstabMaxLen         = 3;
     public const int EmPointMaxLen       = 3;
@@ -60,7 +60,7 @@ public sealed class SalesDocument : AuditableEntity, ITenantEntity
     public static SalesDocument Rehydrate() => new();
 
     public static SalesDocument CreateInvoice(
-        Guid tenantId,
+        Guid subscriberId,
         Guid branchId,
         Guid customerId,
         Guid warehouseId,
@@ -81,7 +81,7 @@ public sealed class SalesDocument : AuditableEntity, ITenantEntity
         var doc = new SalesDocument
         {
             Id                = Guid.NewGuid(),
-            TenantId          = tenantId,
+            SubscriberId          = subscriberId,
             BranchId          = branchId,
             CustomerId        = customerId,
             WarehouseId       = warehouseId,
@@ -134,7 +134,7 @@ public sealed class SalesDocument : AuditableEntity, ITenantEntity
             && stockLines is { Count: > 0 })
         {
             var number = $"{EstabCode}-{EmPointCode}-{Sequential}";
-            RaiseDomainEvent(new SalesBillAuthorizedEvent(Id, TenantId, userId, WarehouseId.Value, number, stockLines));
+            RaiseDomainEvent(new SalesBillAuthorizedEvent(Id, SubscriberId, userId, WarehouseId.Value, number, stockLines));
         }
     }
 
@@ -185,7 +185,7 @@ public sealed class SalesDocument : AuditableEntity, ITenantEntity
     private void EnsureElectronic()
     {
         if (Electronic is not null) return;
-        Electronic = SalesElectronicDoc.CreateShell(Id, TenantId);
+        Electronic = SalesElectronicDoc.CreateShell(Id, SubscriberId);
     }
 
     private void RecalcTotals()

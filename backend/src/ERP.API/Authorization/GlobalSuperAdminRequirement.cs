@@ -8,11 +8,11 @@ public sealed class GlobalSuperAdminRequirement : IAuthorizationRequirement;
 
 public sealed class GlobalSuperAdminHandler : AuthorizationHandler<GlobalSuperAdminRequirement>
 {
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
-    public GlobalSuperAdminHandler(ICurrentTenant currentTenant)
+    public GlobalSuperAdminHandler(ICurrentSubscriber currentSubscriber)
     {
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     protected override Task HandleRequirementAsync(
@@ -21,7 +21,7 @@ public sealed class GlobalSuperAdminHandler : AuthorizationHandler<GlobalSuperAd
     {
         var role = context.User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
         if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase) &&
-            _currentTenant.TenantId == Guid.Empty)
+            _currentSubscriber.SubscriberId == Guid.Empty)
         {
             context.Succeed(requirement);
         }

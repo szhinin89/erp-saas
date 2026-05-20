@@ -11,7 +11,7 @@ public class BrandConfiguration : IEntityTypeConfiguration<Brand>
         builder.ToTable("brands");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
 
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(Brand.MaxCodeLength).IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(Brand.MaxNameLength).IsRequired();
@@ -24,9 +24,9 @@ public class BrandConfiguration : IEntityTypeConfiguration<Brand>
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => new { x.TenantId, x.Code })
+        builder.HasIndex(x => new { x.SubscriberId, x.Code })
             .IsUnique()
-            .HasDatabaseName("ix_brands_tenant_code");
+            .HasDatabaseName("ix_brands_subscriber_code");
     }
 }
 
@@ -37,7 +37,7 @@ public class ProductTypeConfiguration : IEntityTypeConfiguration<ProductType>
         builder.ToTable("product_types");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
 
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(20).IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
@@ -48,9 +48,9 @@ public class ProductTypeConfiguration : IEntityTypeConfiguration<ProductType>
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => new { x.TenantId, x.Code })
+        builder.HasIndex(x => new { x.SubscriberId, x.Code })
             .IsUnique()
-            .HasDatabaseName("ix_product_types_tenant_code");
+            .HasDatabaseName("ix_product_types_subscriber_code");
     }
 }
 
@@ -61,7 +61,7 @@ public class UnitOfMeasureConfiguration : IEntityTypeConfiguration<UnitOfMeasure
         builder.ToTable("units_of_measure");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
 
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(20).IsRequired();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
@@ -73,9 +73,9 @@ public class UnitOfMeasureConfiguration : IEntityTypeConfiguration<UnitOfMeasure
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => new { x.TenantId, x.Code })
+        builder.HasIndex(x => new { x.SubscriberId, x.Code })
             .IsUnique()
-            .HasDatabaseName("ix_units_of_measure_tenant_code");
+            .HasDatabaseName("ix_units_of_measure_subscriber_code");
     }
 }
 
@@ -86,7 +86,7 @@ public class TariffConfiguration : IEntityTypeConfiguration<Tariff>
         builder.ToTable("tariffs");
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
 
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(50).IsRequired();
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(254).IsRequired();
@@ -97,9 +97,9 @@ public class TariffConfiguration : IEntityTypeConfiguration<Tariff>
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => new { x.TenantId, x.Code })
+        builder.HasIndex(x => new { x.SubscriberId, x.Code })
             .IsUnique()
-            .HasDatabaseName("ix_tariffs_tenant_code");
+            .HasDatabaseName("ix_tariffs_subscriber_code");
     }
 }
 

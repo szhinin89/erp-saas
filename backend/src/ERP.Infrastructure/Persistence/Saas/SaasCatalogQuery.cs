@@ -4,36 +4,36 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence.Saas;
 
-public sealed class SaasCatalogQuery : ISaasCatalogQuery, ISaasPublicPlansQuery
+public sealed class CommercialCatalogQuery : ICommercialCatalogQuery, ISaasPublicPlansQuery
 {
     private readonly ErpDbContext _db;
 
-    public SaasCatalogQuery(ErpDbContext db)
+    public CommercialCatalogQuery(ErpDbContext db)
     {
         _db = db;
     }
 
-    public async Task<IReadOnlyList<SaasPlanCatalogItem>> GetPlansWithFeaturesAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<CommercialPlanCatalogItem>> GetPlansWithFeaturesAsync(CancellationToken ct = default)
     {
-        var plans = await _db.SaasPlans.AsNoTracking()
+        var plans = await _db.CommercialPlans.AsNoTracking()
             .OrderBy(p => p.SortOrder)
             .ThenBy(p => p.Code)
             .ToListAsync(ct);
 
         if (plans.Count == 0)
-            return Array.Empty<SaasPlanCatalogItem>();
+            return Array.Empty<CommercialPlanCatalogItem>();
 
         var planIds = plans.Select(p => p.Id).ToList();
-        var links = await _db.SaasPlanFeatures.AsNoTracking()
+        var links = await _db.CommercialPlanFeatures.AsNoTracking()
             .Where(pf => planIds.Contains(pf.PlanId))
             .ToListAsync(ct);
 
         var featureIds = links.Select(l => l.FeatureId).Distinct().ToList();
-        var features = await _db.SaasFeatureDefinitions.AsNoTracking()
+        var features = await _db.PlatformFeatures.AsNoTracking()
             .Where(f => featureIds.Contains(f.Id))
             .ToDictionaryAsync(f => f.Id, f => f, ct);
 
-        var result = new List<SaasPlanCatalogItem>(plans.Count);
+        var result = new List<CommercialPlanCatalogItem>(plans.Count);
         foreach (var plan in plans)
         {
             var items = links
@@ -41,7 +41,7 @@ public sealed class SaasCatalogQuery : ISaasCatalogQuery, ISaasPublicPlansQuery
                 .Select(l =>
                 {
                     var def = features[l.FeatureId];
-                    return new SaasPlanFeatureCatalogItem(
+                    return new CommercialPlanFeatureCatalogItem(
                         def.Code,
                         def.Name,
                         def.Description,
@@ -54,7 +54,7 @@ public sealed class SaasCatalogQuery : ISaasCatalogQuery, ISaasPublicPlansQuery
                 .OrderBy(x => x.FeatureCode)
                 .ToList();
 
-            result.Add(new SaasPlanCatalogItem(
+            result.Add(new CommercialPlanCatalogItem(
                 plan.Id,
                 plan.Code,
                 plan.Name,
@@ -75,7 +75,7 @@ public sealed class SaasCatalogQuery : ISaasCatalogQuery, ISaasPublicPlansQuery
 
     public async Task<IReadOnlyList<SaasPublicPlanDto>> GetVisiblePlansAsync(CancellationToken ct = default)
     {
-        var plans = await _db.SaasPlans.AsNoTracking()
+        var plans = await _db.CommercialPlans.AsNoTracking()
             .Where(p => p.IsActive && p.IsPubliclyVisible)
             .OrderBy(p => p.SortOrder)
             .ThenBy(p => p.Code)
@@ -85,12 +85,12 @@ public sealed class SaasCatalogQuery : ISaasCatalogQuery, ISaasPublicPlansQuery
             return Array.Empty<SaasPublicPlanDto>();
 
         var planIds = plans.Select(p => p.Id).ToList();
-        var links = await _db.SaasPlanFeatures.AsNoTracking()
+        var links = await _db.CommercialPlanFeatures.AsNoTracking()
             .Where(pf => planIds.Contains(pf.PlanId) && pf.IsIncluded)
             .ToListAsync(ct);
 
         var featureIds = links.Select(l => l.FeatureId).Distinct().ToList();
-        var defs = await _db.SaasFeatureDefinitions.AsNoTracking()
+        var defs = await _db.PlatformFeatures.AsNoTracking()
             .Where(f => featureIds.Contains(f.Id))
             .ToDictionaryAsync(f => f.Id, f => f, ct);
 
@@ -131,6 +131,6 @@ public sealed class SaasCatalogQuery : ISaasCatalogQuery, ISaasPublicPlansQuery
         return list;
     }
 
-    private static string FeatureKindToApi(SaasFeatureKind kind) =>
+    private static string FeatureKindToApi(PlatformFeatureKind kind) =>
         kind.ToString().ToLowerInvariant();
 }

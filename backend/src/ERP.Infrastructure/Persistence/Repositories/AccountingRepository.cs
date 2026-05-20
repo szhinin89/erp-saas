@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Common;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Interfaces;
@@ -15,22 +15,22 @@ public class AccountingRepository : IAccountingRepository
         _context = context;
     }
 
-    public async Task<Account?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken ct = default)
+    public async Task<Account?> GetByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
         => await _context.Accounts
             .FirstOrDefaultAsync(a => a.Id == id, ct);
 
-    public async Task<Account?> GetByCodeAsync(string code, Guid tenantId, CancellationToken ct = default)
+    public async Task<Account?> GetByCodeAsync(string code, Guid subscriberId, CancellationToken ct = default)
         => await _context.Accounts
             .FirstOrDefaultAsync(a => a.Code == new AccountCode(code), ct);
 
-    public async Task<IReadOnlyList<Account>> GetAllByTenantAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Account>> GetAllByTenantAsync(Guid subscriberId, CancellationToken ct = default)
         => await _context.Accounts
             .OrderBy(a => a.CreatedAt)
             .ThenBy(a => a.Id)
             .ToListAsync(ct);
 
     public async Task<(IReadOnlyList<Account> Items, int TotalCount)> GetAccountsPageAsync(
-        Guid tenantId,
+        Guid subscriberId,
         int pageNumber,
         int pageSize,
         CancellationToken ct = default)
@@ -52,7 +52,7 @@ public class AccountingRepository : IAccountingRepository
         return (items, total);
     }
 
-    public async Task<bool> ExistsAsync(string code, Guid tenantId, CancellationToken ct = default)
+    public async Task<bool> ExistsAsync(string code, Guid subscriberId, CancellationToken ct = default)
         => await _context.Accounts
             .AnyAsync(a => a.Code == new AccountCode(code), ct);
 
@@ -68,19 +68,19 @@ public class AccountingRepository : IAccountingRepository
     public async Task AddJournalEntryAsync(JournalEntry entry, CancellationToken ct = default)
         => await _context.JournalEntries.AddAsync(entry, ct);
 
-    public async Task<JournalEntry?> GetJournalEntryByIdAsync(Guid id, Guid tenantId, CancellationToken ct = default)
+    public async Task<JournalEntry?> GetJournalEntryByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
         => await _context.JournalEntries
             .Include(e => e.Lines)
             .FirstOrDefaultAsync(e => e.Id == id, ct);
 
-    public async Task<IReadOnlyList<JournalEntry>> GetAllJournalEntriesAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<JournalEntry>> GetAllJournalEntriesAsync(Guid subscriberId, CancellationToken ct = default)
         => await _context.JournalEntries
             .Include(e => e.Lines)
             .OrderByDescending(e => e.Date)
             .ToListAsync(ct);
 
     public async Task<(IReadOnlyList<JournalEntry> Items, int TotalCount)> GetJournalEntriesPageAsync(
-        Guid tenantId,
+        Guid subscriberId,
         int pageNumber,
         int pageSize,
         CancellationToken ct = default)
@@ -108,7 +108,7 @@ public class AccountingRepository : IAccountingRepository
         => await _context.SaveChangesAsync(ct);
 
     public async Task<IReadOnlyList<JournalEntry>> GetPostedJournalEntriesWithAccountAsync(
-        Guid tenantId,
+        Guid subscriberId,
         Guid accountId,
         DateTime desde,
         DateTime hasta,
@@ -117,7 +117,7 @@ public class AccountingRepository : IAccountingRepository
             .AsNoTracking()
             .Include(e => e.Lines)
             .Where(e =>
-                e.TenantId == tenantId
+                e.SubscriberId == subscriberId
                 && e.Status == DocumentStatus.Posted
                 && e.Date >= desde
                 && e.Date <= hasta
@@ -127,7 +127,7 @@ public class AccountingRepository : IAccountingRepository
 
     public async Task<IReadOnlyList<(DateTime EntryDate, Guid AccountId, decimal Debit, decimal Credit)>>
         GetPostedLineAmountsByAccountsAsync(
-            Guid tenantId,
+            Guid subscriberId,
             IReadOnlyList<Guid> accountIds,
             DateTime desde,
             DateTime hasta,
@@ -141,8 +141,8 @@ public class AccountingRepository : IAccountingRepository
         var q =
             from line in _context.JournalEntryLines.AsNoTracking()
             join e in _context.JournalEntries.AsNoTracking() on line.JournalEntryId equals e.Id
-            where e.TenantId == tenantId
-                  && line.TenantId == tenantId
+            where e.SubscriberId == subscriberId
+                  && line.SubscriberId == subscriberId
                   && e.Status == DocumentStatus.Posted
                   && e.Date >= desde
                   && e.Date <= hasta
@@ -161,7 +161,7 @@ public class AccountingRepository : IAccountingRepository
 
     public async Task<IReadOnlyList<(DateTime Date, string Reference, string Description, decimal Debit, decimal Credit)>>
         GetMayorGeneralLinesAsync(
-            Guid tenantId,
+            Guid subscriberId,
             Guid accountId,
             DateTime desde,
             DateTime hasta,
@@ -170,8 +170,8 @@ public class AccountingRepository : IAccountingRepository
         var q =
             from line in _context.JournalEntryLines.AsNoTracking()
             join e in _context.JournalEntries.AsNoTracking() on line.JournalEntryId equals e.Id
-            where e.TenantId == tenantId
-                  && line.TenantId == tenantId
+            where e.SubscriberId == subscriberId
+                  && line.SubscriberId == subscriberId
                   && e.Status == DocumentStatus.Posted
                   && e.Date >= desde
                   && e.Date <= hasta
@@ -192,7 +192,7 @@ public class AccountingRepository : IAccountingRepository
 
     public async Task<IReadOnlyList<(Guid AccountId, decimal TotalDebit, decimal TotalCredit)>>
         GetBalanceComprobacionAsync(
-            Guid tenantId,
+            Guid subscriberId,
             DateTime desde,
             DateTime hasta,
             CancellationToken ct = default)
@@ -200,8 +200,8 @@ public class AccountingRepository : IAccountingRepository
         var q =
             from line in _context.JournalEntryLines.AsNoTracking()
             join e in _context.JournalEntries.AsNoTracking() on line.JournalEntryId equals e.Id
-            where e.TenantId == tenantId
-                  && line.TenantId == tenantId
+            where e.SubscriberId == subscriberId
+                  && line.SubscriberId == subscriberId
                   && e.Status == DocumentStatus.Posted
                   && e.Date >= desde
                   && e.Date <= hasta

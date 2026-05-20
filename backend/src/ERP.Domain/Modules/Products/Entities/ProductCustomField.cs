@@ -18,11 +18,11 @@ public class ProductCustomField : BaseEntity
     private ProductCustomField() { }
 
     internal static ProductCustomField Create(
-        Guid productId, Guid tenantId, string fieldName, CustomFieldType fieldType, string fieldValue)
+        Guid productId, Guid subscriberId, string fieldName, CustomFieldType fieldType, string fieldValue)
         => new()
         {
             Id         = Guid.NewGuid(),
-            TenantId   = tenantId,
+            SubscriberId   = subscriberId,
             ProductId  = productId,
             FieldName  = fieldName.Trim(),
             FieldType  = fieldType,

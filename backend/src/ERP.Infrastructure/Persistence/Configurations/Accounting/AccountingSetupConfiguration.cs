@@ -12,7 +12,7 @@ public sealed class AccountingSetupConfiguration : IEntityTypeConfiguration<Acco
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.InventoryAccountId).HasColumnName("inventory_account_id");
         builder.Property(e => e.CostOfSalesAccountId).HasColumnName("cost_of_sales_account_id");
         builder.Property(e => e.SuppliersAccountId).HasColumnName("suppliers_account_id");
@@ -27,7 +27,7 @@ public sealed class AccountingSetupConfiguration : IEntityTypeConfiguration<Acco
         builder.Property(e => e.CreatedBy).HasColumnName("created_by");
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(e => e.TenantId).IsUnique().HasDatabaseName("uq_accounting_setup_tenant");
+        builder.HasIndex(e => e.SubscriberId).IsUnique().HasDatabaseName("uq_accounting_setup_subscriber");
 
         builder.HasOne<Account>().WithMany().HasForeignKey(e => e.InventoryAccountId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Account>().WithMany().HasForeignKey(e => e.CostOfSalesAccountId).OnDelete(DeleteBehavior.Restrict);

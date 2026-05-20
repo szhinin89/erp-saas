@@ -13,8 +13,8 @@ public class CarrierConfiguration : IEntityTypeConfiguration<Carrier>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
 
-        builder.Property(x => x.TenantId)
-            .HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriberId)
+            .HasColumnName("subscriber_id").IsRequired();
 
         builder.Property(x => x.IdentificationType)
             .HasColumnName("identification_type")
@@ -51,11 +51,11 @@ public class CarrierConfiguration : IEntityTypeConfiguration<Carrier>
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => new { x.TenantId, x.IdentificationNumber })
+        builder.HasIndex(x => new { x.SubscriberId, x.IdentificationNumber })
             .IsUnique()
-            .HasDatabaseName("ux_carriers_tenant_identification");
+            .HasDatabaseName("ux_carriers_subscriber_identification");
 
-        builder.HasIndex(x => x.TenantId)
-            .HasDatabaseName("ix_carriers_tenant_id");
+        builder.HasIndex(x => x.SubscriberId)
+            .HasDatabaseName("ix_carriers_subscriber_id");
     }
 }

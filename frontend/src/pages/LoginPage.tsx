@@ -13,7 +13,7 @@ import { syncSessionEntitlements } from '../lib/syncSessionEntitlements';
 import { useAccessStore } from '../store/accessStore';
 import { loginSchema, type LoginFormValues } from '../schemas/auth/loginSchema';
 import { useDeployment } from '../deployment/DeploymentContext';
-import { GLOBAL_TENANT_ID } from '../constants/tenantIds';
+import { GLOBAL_SUBSCRIBER_ID } from '../constants/subscriberIds';
 import { formatApiRequestError } from '../modules/lib/apiError';
 import './LoginPage.css';
 
@@ -80,13 +80,21 @@ export function LoginPage() {
         if (payload?.token) {
           const isGlobalSuperAdmin =
             payload.role === 'SuperAdmin' &&
-            normalizeUuid(payload.tenantId) === normalizeUuid(GLOBAL_TENANT_ID);
+            normalizeUuid(payload.subscriberId) === normalizeUuid(GLOBAL_SUBSCRIBER_ID);
 
           if (superAdminPanelEnabled && isGlobalSuperAdmin) {
             clearBootstrap();
             clearPermissions();
             login(payload);
             navigate('/superadmin/overview', { replace: true });
+            return;
+          }
+
+          if (!payload.companyId && payload.role !== 'SuperAdmin') {
+            clearBootstrap();
+            clearPermissions();
+            login(payload);
+            navigate('/select-company', { replace: true });
             return;
           }
 
@@ -101,32 +109,40 @@ export function LoginPage() {
       const bootstrap = await accessService.bootstrapLogin(credentials);
       setBootstrap(bootstrap);
 
-      if (bootstrap.tenants.length === 0) {
+      if (bootstrap.subscribers.length === 0) {
         setError(t('login.error.default'));
         return;
       }
 
       /* Single tenant → enter directly */
-      if (bootstrap.tenants.length === 1) {
+      if (bootstrap.subscribers.length === 1) {
         const session = await accessService.switchTenant(bootstrap.bootstrapToken, {
-          tenantId: bootstrap.tenants[0].tenantId,
+          subscriberId: bootstrap.subscribers[0].subscriberId,
         });
         const auth: AuthResponse = {
           userId:         session.userId,
           fullName:       session.fullName,
           email:          session.email,
           role:           session.role,
-          tenantId:       session.tenantId,
+          subscriberId:   session.subscriberId,
+          companyId:      session.companyId,
           token:          session.token,
           planCode:       session.planCode,
           enabledModules: session.enabledModules ?? [],
         };
+        if (!auth.companyId) {
+          clearBootstrap();
+          clearPermissions();
+          login(auth);
+          navigate('/select-company', { replace: true });
+          return;
+        }
         await enterTenantDashboard(auth);
         return;
       }
 
-      /* Multiple tenants → tenant selector */
-      navigate('/select-tenant', { replace: true });
+      /* Multiple subscribers → tenant selector */
+      navigate('/select-subscriber', { replace: true });
 
     } catch (err: unknown) {
       setError(

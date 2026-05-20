@@ -8,16 +8,16 @@ namespace ERP.Application.Audit.UseCases.GetMyActivity;
 public class GetMyActivityHandler : IRequestHandler<GetMyActivityQuery, Result<IReadOnlyList<UserActivityDto>>>
 {
     private readonly IUserActivityRepository _repo;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public GetMyActivityHandler(
         IUserActivityRepository repo,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
@@ -31,7 +31,7 @@ public class GetMyActivityHandler : IRequestHandler<GetMyActivityQuery, Result<I
         var skip = (page - 1) * pageSize;
 
         var list = await _repo.GetMyRecentAsync(
-            _currentTenant.TenantId,
+            _currentSubscriber.SubscriberId,
             _currentUser.UserId,
             query.Module,
             skip,

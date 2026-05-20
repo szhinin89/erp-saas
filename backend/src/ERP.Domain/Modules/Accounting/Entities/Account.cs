@@ -18,7 +18,7 @@ public class Account : MasterEntity
     private Account() { }
 
     public static Account Create(
-        Guid tenantId,
+        Guid subscriberId,
         string code,
         string name,
         AccountType type,
@@ -33,7 +33,7 @@ public class Account : MasterEntity
         var account = new Account
         {
             Id                = Guid.NewGuid(),
-            TenantId          = tenantId,
+            SubscriberId          = subscriberId,
             Code              = new AccountCode(code),
             Name              = name,
             Type              = type,

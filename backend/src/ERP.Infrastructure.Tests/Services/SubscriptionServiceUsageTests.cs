@@ -4,6 +4,7 @@ using ERP.Domain.Subscriptions;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Services;
+using ERP.Infrastructure.Tests.Support;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -14,9 +15,9 @@ namespace ERP.Infrastructure.Tests.Services;
 
 public sealed class SubscriptionServiceUsageTests
 {
-    private sealed class FixedTenant : ICurrentTenant
+    private sealed class FixedSubscriber : ICurrentSubscriber
     {
-        public Guid TenantId { get; init; }
+        public Guid SubscriberId { get; init; }
         public bool IsAuthenticated { get; init; } = true;
     }
 
@@ -33,20 +34,20 @@ public sealed class SubscriptionServiceUsageTests
     [Fact]
     public async Task IncrementUsageAsync_in_memory_accumulates_quantity()
     {
-        var tenantId = Guid.NewGuid();
-        await using var ctx = CreateContext(tenantId);
-        var featureId = await SeedMeteredCustomersFeatureAsync(ctx, tenantId);
+        var subscriberId = Guid.NewGuid();
+        await using var ctx = CreateContext(subscriberId);
+        var featureId = await SeedMeteredCustomersFeatureAsync(ctx, subscriberId);
         var sut = CreateSut(ctx);
         var period = DateTime.UtcNow.ToString("yyyy-MM");
 
-        (await sut.IncrementUsageAsync(tenantId, "CUSTOMERS", 2)).Should().BeTrue();
+        (await sut.IncrementUsageAsync(subscriberId, "CUSTOMERS", 2)).Should().BeTrue();
         await ctx.SaveChangesAsync();
 
-        (await sut.IncrementUsageAsync(tenantId, "CUSTOMERS", 3)).Should().BeTrue();
+        (await sut.IncrementUsageAsync(subscriberId, "CUSTOMERS", 3)).Should().BeTrue();
         await ctx.SaveChangesAsync();
 
-        var qty = await ctx.TenantSubscriptionUsages.AsNoTracking()
-            .Where(u => u.TenantId == tenantId && u.FeatureId == featureId && u.PeriodKey == period)
+        var qty = await ctx.SubscriptionUsages.AsNoTracking()
+            .Where(u => u.SubscriberId == subscriberId && u.FeatureId == featureId && u.PeriodKey == period)
             .Select(u => u.Quantity)
             .SingleAsync();
 
@@ -56,11 +57,11 @@ public sealed class SubscriptionServiceUsageTests
     [Fact]
     public async Task IncrementUsageAsync_returns_false_for_unknown_or_non_metered_feature()
     {
-        var tenantId = Guid.NewGuid();
-        await using var ctx = CreateContext(tenantId);
+        var subscriberId = Guid.NewGuid();
+        await using var ctx = CreateContext(subscriberId);
         var sut = CreateSut(ctx);
 
-        (await sut.IncrementUsageAsync(tenantId, "UNKNOWN", 1)).Should().BeFalse();
+        (await sut.IncrementUsageAsync(subscriberId, "UNKNOWN", 1)).Should().BeFalse();
     }
 
     private static SubscriptionService CreateSut(ErpDbContext ctx)
@@ -68,34 +69,39 @@ public sealed class SubscriptionServiceUsageTests
         var platform = new PlatformQueryAccessor(
             NullLogger<PlatformQueryAccessor>.Instance,
             Microsoft.Extensions.Options.Options.Create(new SaasEntitlementsOptions()));
-        var entitlements = new TenantEntitlementsService(ctx, platform);
+        var companyRepo = new ERP.Infrastructure.Persistence.Repositories.CompanyRepository(ctx);
+        var planLimits = new CommercialPlanLimitService(
+            ctx,
+            platform,
+            [new ERP.Infrastructure.Services.CommercialLimitUsage.MaxCompaniesLimitUsageProvider(companyRepo)]);
+        var entitlements = EntitlementsTestFactory.Create(ctx, platform, planLimits);
         return new SubscriptionService(ctx, entitlements, platform);
     }
 
-    private static ErpDbContext CreateContext(Guid tenantId)
+    private static ErpDbContext CreateContext(Guid subscriberId)
     {
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
             .Options;
-        return TestErpDbContextFactory.Create(options, new FixedTenant { TenantId = tenantId }, new FakePublisher());
+        return TestErpDbContextFactory.Create(options, new FixedSubscriber { SubscriberId = subscriberId }, new FakePublisher());
     }
 
-    private static async Task<Guid> SeedMeteredCustomersFeatureAsync(ErpDbContext ctx, Guid tenantId)
+    private static async Task<Guid> SeedMeteredCustomersFeatureAsync(ErpDbContext ctx, Guid subscriberId)
     {
-        var plan = SaasPlan.Create("pro", "Pro", "PRO", true, 99m, "USD", SaasBillingCycle.Monthly, true, false, 0, null);
-        ctx.SaasPlans.Add(plan);
+        var plan = CommercialPlan.Create("pro", "Pro", "PRO", true, 99m, "USD", CommercialBillingCycle.Monthly, true, false, 0, null);
+        ctx.CommercialPlans.Add(plan);
 
-        var customers = SaasFeatureDefinition.Create(
+        var customers = PlatformFeature.Create(
             "CUSTOMERS",
             "Clientes",
             null,
             isMetered: true,
-            SaasFeatureKind.Quota,
+            PlatformFeatureKind.Quota,
             resourceRef: null);
-        ctx.SaasFeatureDefinitions.Add(customers);
-        ctx.SaasPlanFeatures.Add(SaasPlanFeature.Create(plan.Id, customers.Id, isIncluded: true, limitPerPeriod: 100));
+        ctx.PlatformFeatures.Add(customers);
+        ctx.CommercialPlanFeatures.Add(CommercialPlanFeature.Create(plan.Id, customers.Id, isIncluded: true, limitPerPeriod: 100));
 
-        ctx.TenantSaasSubscriptions.Add(TenantSaasSubscription.Create(tenantId, plan.Id, Guid.Empty));
+        ctx.SubscriberSubscriptions.Add(SubscriberSubscription.Create(subscriberId, plan.Id, Guid.Empty));
         await ctx.SaveChangesAsync();
         return customers.Id;
     }

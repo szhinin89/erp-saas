@@ -10,7 +10,7 @@ public static class PurchaseWithholdingMapper
     {
         var w = PurchaseWithholding.Rehydrate();
         Set(w, nameof(PurchaseWithholding.Id), retention.Id);
-        Set(w, nameof(PurchaseWithholding.TenantId), retention.TenantId);
+        Set(w, nameof(PurchaseWithholding.SubscriberId), retention.SubscriberId);
         Set(w, nameof(PurchaseWithholding.SupplierId), retention.SupplierId);
         Set(w, nameof(PurchaseWithholding.Direction), WithholdingDirection.Issued);
         Set(w, nameof(PurchaseWithholding.PurchaseDocumentId), retention.PurchBillId);
@@ -37,7 +37,7 @@ public static class PurchaseWithholdingMapper
         {
             var wl = PurchaseWithholdingLine.Rehydrate();
             Set(wl, nameof(PurchaseWithholdingLine.Id), line.Id);
-            Set(wl, nameof(PurchaseWithholdingLine.TenantId), line.TenantId);
+            Set(wl, nameof(PurchaseWithholdingLine.SubscriberId), line.SubscriberId);
             Set(wl, nameof(PurchaseWithholdingLine.PurchaseWithholdingId), retention.Id);
             Set(wl, nameof(PurchaseWithholdingLine.TaxType), line.TaxType);
             Set(wl, nameof(PurchaseWithholdingLine.RetentionCode), line.RetentionCode);
@@ -54,7 +54,7 @@ public static class PurchaseWithholdingMapper
     public static IssuedRetention ToLegacyRetention(PurchaseWithholding w)
     {
         var retention = IssuedRetention.Create(
-            w.TenantId,
+            w.SubscriberId,
             w.SupplierId,
             w.PurchaseDocumentId,
             w.AccessKey,
@@ -85,7 +85,7 @@ public static class PurchaseWithholdingMapper
         foreach (var line in w.Lines)
         {
             var legacy = PurchRetentionLine.Create(
-                line.TenantId,
+                line.SubscriberId,
                 line.TaxType,
                 line.RetentionCode,
                 line.TaxableBase,

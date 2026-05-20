@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Domain.Modules.Purchasing.Events;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -22,7 +22,7 @@ public sealed class PurchBillApprovedEventHandler : INotificationHandler<PurchBi
 
     public async Task Handle(PurchBillApprovedEvent notification, CancellationToken ct)
     {
-        var tenantId = notification.TenantId;
+        var subscriberId = notification.SubscriberId;
         var userId   = notification.ApprovedByUserId;
 
         foreach (var line in notification.StockLines)
@@ -38,10 +38,10 @@ public sealed class PurchBillApprovedEventHandler : INotificationHandler<PurchBi
             var productoId = line.ProductId.Value;
 
             var stock = await _inventario.GetStockAsync(
-                tenantId, line.WarehouseId, productoId, ct);
+                subscriberId, line.WarehouseId, productoId, ct);
             if (stock is null)
             {
-                stock = CurrentStock.Create(tenantId, productoId, line.WarehouseId, userId);
+                stock = CurrentStock.Create(subscriberId, productoId, line.WarehouseId, userId);
                 await _inventario.AddCurrentStockAsync(stock, ct);
             }
 
@@ -49,7 +49,7 @@ public sealed class PurchBillApprovedEventHandler : INotificationHandler<PurchBi
             stock.ApplyMovement(line.Quantity, userId, line.NetUnitCost);
 
             var movimiento = StockMovement.Create(
-                tenantId,
+                subscriberId,
                 productoId,
                 line.WarehouseId,
                 StockMovementType.PurchaseEntry,

@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Configuration.Entities;
 
-public sealed class RetentionSettings : AuditableEntity, ITenantEntity
+public sealed class RetentionSettings : AuditableEntity, ISubscriberScopedEntity
 {
     public const int TaxTypeMaxLen      = 20;
     public const int SubjectTypeMaxLen  = 20;
@@ -17,7 +17,7 @@ public sealed class RetentionSettings : AuditableEntity, ITenantEntity
     private RetentionSettings() { }
 
     public static RetentionSettings Create(
-        Guid    tenantId,
+        Guid    subscriberId,
         string  taxType,
         string  subjectType,
         string  sriCode,
@@ -27,7 +27,7 @@ public sealed class RetentionSettings : AuditableEntity, ITenantEntity
         var c = new RetentionSettings
         {
             Id          = Guid.NewGuid(),
-            TenantId    = tenantId,
+            SubscriberId    = subscriberId,
             TaxType     = (taxType ?? string.Empty).Trim().ToUpperInvariant(),
             SubjectType = (subjectType ?? string.Empty).Trim().ToUpperInvariant(),
             SriCode     = (sriCode ?? string.Empty).Trim(),

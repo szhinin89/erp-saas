@@ -8,12 +8,12 @@ namespace ERP.Application.Products.UseCases.GetProductById;
 public class GetProductByIdHandler : IRequestHandler<GetProductByIdQuery, Result<ProductDto>>
 {
     private readonly IProductRepository _repository;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
-    public GetProductByIdHandler(IProductRepository repository, ICurrentTenant currentTenant)
+    public GetProductByIdHandler(IProductRepository repository, ICurrentSubscriber currentSubscriber)
     {
         _repository    = repository;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public Task<Result<ProductDto>> HandleAsync(Guid id, CancellationToken ct = default)
@@ -21,8 +21,8 @@ public class GetProductByIdHandler : IRequestHandler<GetProductByIdQuery, Result
 
     public async Task<Result<ProductDto>> Handle(GetProductByIdQuery request, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
-        var product  = await _repository.GetByIdAsync(request.Id, tenantId, ct);
+        var subscriberId = _currentSubscriber.SubscriberId;
+        var product  = await _repository.GetByIdAsync(request.Id, subscriberId, ct);
 
         if (product is null)
             return Result<ProductDto>.Failure("Producto no encontrado.");

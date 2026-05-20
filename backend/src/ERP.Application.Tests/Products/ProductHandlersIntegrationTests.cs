@@ -14,19 +14,19 @@ public class ProductHandlersIntegrationTests
     [Fact]
     public async Task CreateProductHandler_should_create_product_for_current_tenant()
     {
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var productRepo = new InMemoryProductRepository();
         var taxRepo = new InMemoryTaxRateRepository();
         var activityRepo = new InMemoryUserActivityRepository();
-        var currentTenant = new TestCurrentTenant(tenantId);
+        var currentSubscriber = new TestCurrentSubscriber(subscriberId);
         var currentUser = new TestCurrentUser(userId);
 
         var handler = new CreateProductCommandHandler(
             productRepo,
             taxRepo,
             activityRepo,
-            currentTenant,
+            currentSubscriber,
             currentUser);
 
         var command = new CreateProductCommand(
@@ -53,9 +53,9 @@ public class ProductHandlersIntegrationTests
         result.Value.Should().NotBeNull();
         result.Value!.SaleCode.Should().Be("P-001");
 
-        var persisted = await productRepo.GetAllByTenantAsync(tenantId, CancellationToken.None);
+        var persisted = await productRepo.GetAllByTenantAsync(subscriberId, CancellationToken.None);
         persisted.Should().HaveCount(1);
-        persisted[0].TenantId.Should().Be(tenantId);
+        persisted[0].SubscriberId.Should().Be(subscriberId);
         persisted[0].CreatedBy.Should().Be(userId);
         activityRepo.Activities.Should().ContainSingle();
     }
@@ -72,7 +72,7 @@ public class ProductHandlersIntegrationTests
         await repo.AddAsync(BuildProduct(tenantB, userId, "B-001"), CancellationToken.None);
         await repo.SaveChangesAsync(CancellationToken.None);
 
-        var handler = new GetProductsHandler(repo, new TestCurrentTenant(tenantA));
+        var handler = new GetProductsHandler(repo, new TestCurrentSubscriber(tenantA));
         var result = await handler.Handle(new GetProductsQuery(), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -81,10 +81,10 @@ public class ProductHandlersIntegrationTests
         result.Value[0].SaleCode.Should().Be("A-001");
     }
 
-    private static Product BuildProduct(Guid tenantId, Guid userId, string saleCode)
+    private static Product BuildProduct(Guid subscriberId, Guid userId, string saleCode)
     {
         return Product.Create(
-            tenantId: tenantId,
+            subscriberId: subscriberId,
             saleCode: saleCode,
             shortName: $"Producto {saleCode}",
             description: "Producto de integración",
@@ -104,10 +104,10 @@ public class ProductHandlersIntegrationTests
             createdBy: userId);
     }
 
-    private sealed class TestCurrentTenant : ICurrentTenant
+    private sealed class TestCurrentSubscriber : ICurrentSubscriber
     {
-        public TestCurrentTenant(Guid tenantId) => TenantId = tenantId;
-        public Guid TenantId { get; }
+        public TestCurrentSubscriber(Guid subscriberId) => SubscriberId = subscriberId;
+        public Guid SubscriberId { get; }
         public bool IsAuthenticated => true;
     }
 
@@ -129,7 +129,7 @@ public class ProductHandlersIntegrationTests
 
     private sealed class InMemoryTaxRateRepository : ITaxRateRepository
     {
-        public Task<TaxRate?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken ct = default)
+        public Task<TaxRate?> GetByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
             => Task.FromResult<TaxRate?>(null);
     }
 
@@ -144,7 +144,7 @@ public class ProductHandlersIntegrationTests
         }
 
         public Task<IReadOnlyList<UserActivity>> GetMyRecentAsync(
-            Guid tenantId,
+            Guid subscriberId,
             Guid userId,
             string? module = null,
             int skip = 0,
@@ -155,7 +155,7 @@ public class ProductHandlersIntegrationTests
         }
 
         public Task<IReadOnlyList<UserActivity>> GetByEntityAsync(
-            Guid tenantId,
+            Guid subscriberId,
             string entityType,
             Guid entityId,
             int take = 10,
@@ -169,28 +169,28 @@ public class ProductHandlersIntegrationTests
     {
         private readonly List<Product> _products = new();
 
-        public Task<Product?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken ct = default)
-            => Task.FromResult(_products.FirstOrDefault(p => p.Id == id && p.TenantId == tenantId));
+        public Task<Product?> GetByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
+            => Task.FromResult(_products.FirstOrDefault(p => p.Id == id && p.SubscriberId == subscriberId));
 
-        public Task<Product?> GetByIdWithDetailsAsync(Guid id, Guid tenantId, CancellationToken ct = default)
-            => Task.FromResult(_products.FirstOrDefault(p => p.Id == id && p.TenantId == tenantId));
+        public Task<Product?> GetByIdWithDetailsAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
+            => Task.FromResult(_products.FirstOrDefault(p => p.Id == id && p.SubscriberId == subscriberId));
 
-        public Task<IReadOnlyList<Product>> GetAllByTenantAsync(Guid tenantId, CancellationToken ct = default)
+        public Task<IReadOnlyList<Product>> GetAllByTenantAsync(Guid subscriberId, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<Product>>(
-                _products.Where(p => p.TenantId == tenantId && p.IsActive).ToList());
+                _products.Where(p => p.SubscriberId == subscriberId && p.IsActive).ToList());
 
-        public Task<IReadOnlyList<Product>> GetReportAsync(Guid tenantId, ProductReportFilter filter, CancellationToken ct = default)
+        public Task<IReadOnlyList<Product>> GetReportAsync(Guid subscriberId, ProductReportFilter filter, CancellationToken ct = default)
             => Task.FromResult<IReadOnlyList<Product>>(
-                _products.Where(p => p.TenantId == tenantId).ToList());
+                _products.Where(p => p.SubscriberId == subscriberId).ToList());
 
         public Task<(IReadOnlyList<Product> Items, int TotalCount)> GetReportPageAsync(
-            Guid tenantId,
+            Guid subscriberId,
             ProductReportFilter filter,
             int pageNumber,
             int pageSize,
             CancellationToken ct = default)
         {
-            var items = _products.Where(p => p.TenantId == tenantId).ToList();
+            var items = _products.Where(p => p.SubscriberId == subscriberId).ToList();
             return Task.FromResult<(IReadOnlyList<Product>, int)>((items, items.Count));
         }
 

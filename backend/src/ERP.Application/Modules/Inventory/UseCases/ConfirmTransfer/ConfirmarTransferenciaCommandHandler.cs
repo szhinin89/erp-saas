@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -21,7 +21,7 @@ public sealed class ConfirmTransferCommandHandler
     private readonly IProductRepository         _productRepo;
     private readonly IUserActivityRepository    _activity;
     private readonly IUnitOfWork                _unitOfWork;
-    private readonly ICurrentTenant             _currentTenant;
+    private readonly ICurrentSubscriber             _currentSubscriber;
     private readonly ICurrentUser               _currentUser;
     private readonly ILogger<ConfirmTransferCommandHandler> _logger;
 
@@ -32,7 +32,7 @@ public sealed class ConfirmTransferCommandHandler
         IProductRepository productRepo,
         IUserActivityRepository activity,
         IUnitOfWork unitOfWork,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<ConfirmTransferCommandHandler> logger)
     {
@@ -42,7 +42,7 @@ public sealed class ConfirmTransferCommandHandler
         _productRepo       = productRepo;
         _activity          = activity;
         _unitOfWork        = unitOfWork;
-        _currentTenant     = currentTenant;
+        _currentSubscriber     = currentSubscriber;
         _currentUser       = currentUser;
         _logger            = logger;
     }
@@ -50,10 +50,10 @@ public sealed class ConfirmTransferCommandHandler
     public async Task<Result<TransferDto>> Handle(
         ConfirmTransferCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var transfer = await _transferenciaRepo.GetByIdAsync(tenantId, command.TransferId, ct);
+        var transfer = await _transferenciaRepo.GetByIdAsync(subscriberId, command.TransferId, ct);
         if (transfer is null)
             return Result<TransferDto>.Failure("transfer no encontrada.");
 
@@ -73,18 +73,18 @@ public sealed class ConfirmTransferCommandHandler
         {
             foreach (var detalle in transfer.Lines)
             {
-                var producto = await _productRepo.GetByIdAsync(detalle.ProductId, tenantId, ct);
+                var producto = await _productRepo.GetByIdAsync(detalle.ProductId, subscriberId, ct);
                 if (producto is not null && (producto.IsService || !producto.TracksStock))
                     continue;
 
                 // Obtener el costo promedio actual de la Warehouse ORIGEN antes del decremento.
                 // Se usa para valorizar la salida y la entrada en destino con el mismo costo.
                 var averageCost = await _costoServicio.ObtenerCostoPromedioAsync(
-                    tenantId, detalle.ProductId, transfer.SourceWarehouseId, ct);
+                    subscriberId, detalle.ProductId, transfer.SourceWarehouseId, ct);
 
                 // ── Decremento atómico en Warehouse ORIGEN ───────────────────────
                 var cantAnteriorOrigen = await _inventario.DecrementStockAtomicAsync(
-                    tenantId, transfer.SourceWarehouseId, detalle.ProductId,
+                    subscriberId, transfer.SourceWarehouseId, detalle.ProductId,
                     detalle.Quantity, userId, ct, averageCost);
 
                 if (cantAnteriorOrigen is null)
@@ -100,7 +100,7 @@ public sealed class ConfirmTransferCommandHandler
 
                 await _inventario.AddMovementAsync(
                     StockMovement.Create(
-                        tenantId, detalle.ProductId, transfer.SourceWarehouseId,
+                        subscriberId, detalle.ProductId, transfer.SourceWarehouseId,
                         StockMovementType.TransferExit,
                         quantity:            -detalle.Quantity,
                         previousQuantity:    cantAnteriorOrigen.Value,
@@ -113,12 +113,12 @@ public sealed class ConfirmTransferCommandHandler
 
                 // ── Incremento atómico en Warehouse DESTINO ──────────────────────
                 var cantAnteriorDestino = await _inventario.IncrementStockAtomicAsync(
-                    tenantId, transfer.TargetWarehouseId, detalle.ProductId,
+                    subscriberId, transfer.TargetWarehouseId, detalle.ProductId,
                     detalle.Quantity, userId, ct, averageCost);
 
                 await _inventario.AddMovementAsync(
                     StockMovement.Create(
-                        tenantId, detalle.ProductId, transfer.TargetWarehouseId,
+                        subscriberId, detalle.ProductId, transfer.TargetWarehouseId,
                         StockMovementType.TransferEntry,
                         quantity:            +detalle.Quantity,
                         previousQuantity:    cantAnteriorDestino,
@@ -133,7 +133,7 @@ public sealed class ConfirmTransferCommandHandler
             transfer.Confirm(userId);
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _currentUser.Email, _currentUser.FullName,
+                subscriberId, userId, _currentUser.Email, _currentUser.FullName,
                 module: "inventario", action: "transfer.confirmar",
                 entityType: "transfer", entityId: transfer.Id,
                 description: transfer.TransferNumber), ct);

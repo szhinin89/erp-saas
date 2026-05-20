@@ -15,7 +15,7 @@ public interface IRefreshTokenService
     /// Devuelve el token en texto plano (para enviar al cliente) y su fecha de expiración.
     /// </summary>
     Task<(string RawToken, DateTime Expiry)> CreateAsync(
-        Guid userId, Guid tenantId, string userType, CancellationToken ct = default);
+        Guid userId, Guid subscriberId, Guid? companyId, string userType, CancellationToken ct = default);
 
     /// <summary>
     /// Valida el token recibido del cliente, lo rota (revoca el actual, emite uno nuevo)
@@ -26,7 +26,7 @@ public interface IRefreshTokenService
 
     /// <summary>Revoca todos los refresh tokens activos del usuario (logout).</summary>
     Task RevokeAllForUserAsync(
-        Guid userId, Guid tenantId, string reason, CancellationToken ct = default);
+        Guid userId, Guid subscriberId, string reason, CancellationToken ct = default);
 
     /// <summary>Revoca un token específico por su valor en texto plano (logout de dispositivo).</summary>
     Task RevokeAsync(
@@ -37,7 +37,8 @@ public sealed class RefreshTokenValidationResult
 {
     public bool     IsValid   { get; init; }
     public Guid     UserId    { get; init; }
-    public Guid     TenantId  { get; init; }
+    public Guid     SubscriberId  { get; init; }
+    public Guid?    CompanyId   { get; init; }
     public string?  UserType  { get; init; }
     public string?  NewToken  { get; init; }
     public DateTime? NewExpiry { get; init; }
@@ -47,13 +48,14 @@ public sealed class RefreshTokenValidationResult
         => new() { IsValid = false, Error = error };
 
     public static RefreshTokenValidationResult Ok(
-        Guid userId, Guid tenantId, string userType,
+        Guid userId, Guid subscriberId, Guid? companyId, string userType,
         string newToken, DateTime newExpiry)
         => new()
         {
             IsValid  = true,
             UserId   = userId,
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
+            CompanyId = companyId,
             UserType = userType,
             NewToken = newToken,
             NewExpiry = newExpiry,

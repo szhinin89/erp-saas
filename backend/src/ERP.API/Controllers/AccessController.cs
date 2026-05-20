@@ -4,12 +4,12 @@ using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.BootstrapLogin;
-using ERP.Application.Access.UseCases.SwitchTenant;
-using ERP.Application.Access.UseCases.UpsertMembership;
-using ERP.Application.Access.UseCases.RevokeMembership;
+using ERP.Application.Access.UseCases.SwitchSubscriber;
+using ERP.Application.Access.UseCases.UpsertCompanyUserMembership;
+using ERP.Application.Access.UseCases.RevokeCompanyUserMembership;
 using ERP.Application.Access.UseCases.Profiles;
-using ERP.Application.Access.UseCases.TenantAccess;
-using ERP.Application.Access.UseCases.SuperAdminTenants;
+using ERP.Application.Access.UseCases.SubscriberAccess;
+using ERP.Application.Access.UseCases.SuperAdminSubscribers;
 using ERP.Application.Access.UseCases.Permissions;
 using ERP.Application.Navigation;
 using ERP.Application.Navigation.DTOs;
@@ -27,7 +27,7 @@ namespace ERP.API.Controllers;
 /// </summary>
 /// <remarks>
 /// Políticas mezcladas a propósito: <c>AllowAnonymous</c> (bootstrap / registro empresa),
-/// <c>Bootstrap</c> (<c>switch-tenant</c>), <c>Session</c> (<c>me/menu</c>, <c>me/permissions</c>),
+/// <c>Bootstrap</c> (<c>switch-subscriber</c>), <c>Session</c> (<c>me/menu</c>, <c>me/permissions</c>),
 /// <c>Roles</c> (membresías globales, perfiles, permisos de perfil). Ver criterio P0 en <c>docs/ESTADO-PROYECTO.md</c> (sección backlog de refactor).
 /// </remarks>
 [ApiController]
@@ -37,12 +37,12 @@ namespace ERP.API.Controllers;
 public class AccessController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly ITenantMenuAdminService _tenantMenuAdmin;
+    private readonly ISubscriberMenuAdminService _tenantMenuAdmin;
     private readonly IAuthorizationService _authorization;
 
     public AccessController(
         IMediator mediator,
-        ITenantMenuAdminService tenantMenuAdmin,
+        ISubscriberMenuAdminService tenantMenuAdmin,
         IAuthorizationService authorization)
     {
         _mediator = mediator;
@@ -53,7 +53,7 @@ public class AccessController : ControllerBase
     /// <summary>Login (paso 1): retorna bootstrap token + empresas accesibles.</summary>
     /// <remarks>
     /// El bootstrap token es de corta duración y NO permite acceder a endpoints de negocio.
-    /// Solo se usa para ejecutar el paso 2 (`switch-tenant`).
+    /// Solo se usa para ejecutar el paso 2 (`switch-subscriber`).
     /// </remarks>
     /// <response code="200">Bootstrap token y lista de empresas.</response>
     /// <response code="401">Credenciales inválidas o usuario inactivo.</response>
@@ -71,18 +71,18 @@ public class AccessController : ControllerBase
     /// <summary>Switch tenant (paso 2): emite session token para la empresa seleccionada.</summary>
     /// <remarks>
     /// Requiere bootstrap token (Authorization: Bearer).
-    /// Valida membresía activa y retorna un token de sesión con `tenant_id` y `role`.
+    /// Valida membresía activa y retorna un token de sesión con `subscriber_id` y `role`.
     /// </remarks>
     /// <response code="200">Session token listo para usar en el ERP.</response>
     /// <response code="400">No tiene acceso al tenant seleccionado.</response>
     /// <response code="401">Bootstrap token ausente o inválido.</response>
-    [HttpPost("switch-tenant")]
+    [HttpPost("switch-subscriber")]
     [Authorize(Policy = "Bootstrap")]
     [ProducesResponseType(typeof(ApiResponse<SessionResponseDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> SwitchTenant([FromBody] SwitchTenantCommand command, CancellationToken ct)
+    public async Task<IActionResult> SwitchSubscriber([FromBody] SwitchSubscriberCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result);
@@ -90,13 +90,13 @@ public class AccessController : ControllerBase
 
     /// <summary>
     /// Alias legacy de alta de empresa.
-    /// Ruta oficial: <c>POST /api/access/superadmin/tenants</c>.
+    /// Ruta oficial: <c>POST /api/access/superadmin/subscribers</c>.
     /// </summary>
     /// <remarks>
     /// Crea el tenant, crea el usuario global (email único en el sistema) y le asigna una membresía Admin
     /// solo en esa empresa.
     /// </remarks>
-    /// <response code="201">Tenant creado + session token del admin.</response>
+    /// <response code="201">Subscriber creado + session token del admin.</response>
     /// <response code="400">Slug duplicado o email ya registrado.</response>
     [HttpPost("register-tenant")]
     [Authorize(Roles = "SuperAdmin")]
@@ -106,7 +106,7 @@ public class AccessController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> RegisterTenant([FromBody] SuperAdminCreateTenantWithAdminCommand command, CancellationToken ct)
+    public async Task<IActionResult> RegisterTenant([FromBody] SuperAdminCreateSubscriberWithAdminCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
@@ -114,18 +114,18 @@ public class AccessController : ControllerBase
 
     /// <summary>Otorga o actualiza acceso (membership) de un usuario a una empresa.</summary>
     /// <remarks>Solo SuperAdmin puede gestionar membresías cruzadas.</remarks>
-    /// <response code="200">Membership creada/actualizada.</response>
+    /// <response code="200">CompanyUserMembership creada/actualizada.</response>
     /// <response code="400">Usuario no existe o payload inválido.</response>
     /// <response code="401">Token ausente o inválido.</response>
     /// <response code="403">No es SuperAdmin.</response>
-    [HttpPost("memberships/grant")]
+    [HttpPost("company_user_memberships/grant")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> GrantMembership([FromBody] UpsertMembershipCommand command, CancellationToken ct)
+    public async Task<IActionResult> GrantCompanyUserMembership([FromBody] UpsertCompanyUserMembershipCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result, "OK", () => new { });
@@ -133,18 +133,18 @@ public class AccessController : ControllerBase
 
     /// <summary>Revoca acceso (desactiva membership) de un usuario a una empresa.</summary>
     /// <remarks>Solo SuperAdmin puede revocar membresías cruzadas.</remarks>
-    /// <response code="200">Membership revocada (idempotente).</response>
+    /// <response code="200">CompanyUserMembership revocada (idempotente).</response>
     /// <response code="400">Usuario no existe o payload inválido.</response>
     /// <response code="401">Token ausente o inválido.</response>
     /// <response code="403">No es SuperAdmin.</response>
-    [HttpPost("memberships/revoke")]
+    [HttpPost("company_user_memberships/revoke")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> RevokeMembership([FromBody] RevokeMembershipCommand command, CancellationToken ct)
+    public async Task<IActionResult> RevokeCompanyUserMembership([FromBody] RevokeCompanyUserMembershipCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result, "OK", () => new { });
@@ -154,26 +154,26 @@ public class AccessController : ControllerBase
 
     /// <summary>SuperAdmin: lista empresas activas para administración.</summary>
     /// <remarks>Incluye <c>planCode</c>, <c>enabledModules</c> efectivos y <c>hasModuleRestrictions</c>.</remarks>
-    [HttpGet("superadmin/tenants")]
+    [HttpGet("superadmin/subscribers")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> SuperAdminTenants(CancellationToken ct)
+    public async Task<IActionResult> SuperAdminSubscribers(CancellationToken ct)
     {
-        var result = await _mediator.Send(new GetSuperAdminTenantsQuery(), ct);
-        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<SuperAdminTenantItemDto>());
+        var result = await _mediator.Send(new GetSuperAdminSubscribersQuery(), ct);
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<SuperAdminSubscriberItemDto>());
     }
 
     /// <summary>SuperAdmin: crea empresa + Admin inicial (solo para esa empresa).</summary>
-    [HttpPost("superadmin/tenants")]
+    [HttpPost("superadmin/subscribers")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<SessionResponseDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> SuperAdminCreateTenant([FromBody] SuperAdminCreateTenantWithAdminCommand command, CancellationToken ct)
+    public async Task<IActionResult> SuperAdminCreateSubscriber([FromBody] SuperAdminCreateSubscriberWithAdminCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
@@ -182,13 +182,13 @@ public class AccessController : ControllerBase
     public sealed record TenantMenuPutBody(string MenuConfigJson);
 
     /// <summary>SuperAdmin: menú efectivo de la empresa (personalizado, del plan o global).</summary>
-    [HttpGet("superadmin/tenants/{tenantId:guid}/menu")]
+    [HttpGet("superadmin/subscribers/{subscriberId:guid}/menu")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SuperAdminGetTenantMenu(Guid tenantId, CancellationToken ct)
+    public async Task<IActionResult> SuperAdminGetTenantMenu(Guid subscriberId, CancellationToken ct)
     {
-        var r = await _tenantMenuAdmin.GetResolvedMenuForTenantAsync(tenantId, ct);
+        var r = await _tenantMenuAdmin.GetResolvedMenuForTenantAsync(subscriberId, ct);
         if (!r.IsSuccess)
             return this.ApiBadRequest(r.Error ?? "Error");
         var v = r.Value!;
@@ -202,25 +202,25 @@ public class AccessController : ControllerBase
     }
 
     /// <summary>SuperAdmin: guarda menú personalizado por empresa (JSON = <c>SessionMenuGroupDto[]</c>).</summary>
-    [HttpPut("superadmin/tenants/{tenantId:guid}/menu")]
+    [HttpPut("superadmin/subscribers/{subscriberId:guid}/menu")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SuperAdminPutTenantMenu(Guid tenantId, [FromBody] TenantMenuPutBody body, CancellationToken ct)
+    public async Task<IActionResult> SuperAdminPutTenantMenu(Guid subscriberId, [FromBody] TenantMenuPutBody body, CancellationToken ct)
     {
-        var r = await _tenantMenuAdmin.UpsertTenantCustomMenuAsync(tenantId, body.MenuConfigJson, ct);
+        var r = await _tenantMenuAdmin.UpsertSubscriberCustomMenuAsync(subscriberId, body.MenuConfigJson, ct);
         return r.IsSuccess
             ? this.ApiOk(new { }, "Guardado")
             : this.ApiBadRequest(r.Error ?? "Error");
     }
 
     /// <summary>SuperAdmin: elimina menú personalizado; la empresa vuelve al menú del plan o global.</summary>
-    [HttpDelete("superadmin/tenants/{tenantId:guid}/menu")]
+    [HttpDelete("superadmin/subscribers/{subscriberId:guid}/menu")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> SuperAdminDeleteTenantMenu(Guid tenantId, CancellationToken ct)
+    public async Task<IActionResult> SuperAdminDeleteTenantMenu(Guid subscriberId, CancellationToken ct)
     {
-        var r = await _tenantMenuAdmin.DeleteTenantCustomMenuAsync(tenantId, ct);
+        var r = await _tenantMenuAdmin.DeleteSubscriberCustomMenuAsync(subscriberId, ct);
         return r.IsSuccess
             ? this.ApiOk(new { }, "Restablecido")
             : this.ApiBadRequest(r.Error ?? "Error");
@@ -228,37 +228,37 @@ public class AccessController : ControllerBase
 
     // ── Admin del tenant: accesos ───────────────────────────────────
 
-    /// <summary>Admin: lista accesos (memberships) del tenant actual.</summary>
-    [HttpGet("tenant/memberships")]
+    /// <summary>Admin: lista accesos (company_user_memberships) del tenant actual.</summary>
+    [HttpGet("tenant/company_user_memberships")]
     [Authorize(Policy = "Session")]
-    [Authorize(Policy = "perm:access.memberships.view")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<TenantMembershipItemDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetTenantMemberships([FromQuery] bool onlyActive = true, CancellationToken ct = default)
+    [Authorize(Policy = "perm:access.company_user_memberships.view")]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<SubscriberCompanyUserMembershipItemDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSubscriberCompanyUserMemberships([FromQuery] bool onlyActive = true, CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new GetTenantMembershipsQuery(onlyActive), ct);
-        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<TenantMembershipItemDto>());
+        var result = await _mediator.Send(new GetSubscriberCompanyUserMembershipsQuery(onlyActive), ct);
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<SubscriberCompanyUserMembershipItemDto>());
     }
 
     /// <summary>Admin: crea/actualiza acceso de un usuario a este tenant.</summary>
-    [HttpPost("tenant/memberships")]
+    [HttpPost("tenant/company_user_memberships")]
     [Authorize(Policy = "Session")]
-    [Authorize(Policy = "perm:access.memberships.view")]
+    [Authorize(Policy = "perm:access.company_user_memberships.view")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpsertTenantMembership([FromBody] TenantUpsertMembershipCommand command, CancellationToken ct)
+    public async Task<IActionResult> UpsertTenantCompanyUserMembership([FromBody] SubscriberUpsertCompanyUserMembershipCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result, "OK", () => new { });
     }
 
     /// <summary>Admin: revoca acceso (desactiva membership) de un usuario en este tenant.</summary>
-    [HttpPost("tenant/memberships/revoke")]
+    [HttpPost("tenant/company_user_memberships/revoke")]
     [Authorize(Policy = "Session")]
-    [Authorize(Policy = "perm:access.memberships.view")]
+    [Authorize(Policy = "perm:access.company_user_memberships.view")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> RevokeTenantMembership([FromBody] TenantRevokeMembershipCommand command, CancellationToken ct)
+    public async Task<IActionResult> RevokeTenantCompanyUserMembership([FromBody] SubscriberRevokeCompanyUserMembershipCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result, "OK", () => new { });
@@ -274,7 +274,7 @@ public class AccessController : ControllerBase
     {
         var pfx = PermissionPolicyProvider.Prefix;
         var canProfiles = await _authorization.AuthorizeAsync(User, resource: null, policyName: $"{pfx}access.profiles.view");
-        var canMembers = await _authorization.AuthorizeAsync(User, resource: null, policyName: $"{pfx}access.memberships.view");
+        var canMembers = await _authorization.AuthorizeAsync(User, resource: null, policyName: $"{pfx}access.company_user_memberships.view");
         if (!canProfiles.Succeeded && !canMembers.Succeeded)
             return Forbid();
 

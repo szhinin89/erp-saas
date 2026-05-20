@@ -1,11 +1,11 @@
-﻿using ERP.Domain.Modules.Inventory.Entities;
+using ERP.Domain.Modules.Inventory.Entities;
 
 namespace ERP.Domain.Modules.Inventory.Interfaces;
 
 public interface IKardexSnapshotRepository
 {
     Task<KardexSnapshot?> GetLatestBeforeAsync(
-        Guid     tenantId,
+        Guid     subscriberId,
         Guid     productId,
         Guid     warehouseId,
         DateTime toUtc,
@@ -14,7 +14,7 @@ public interface IKardexSnapshotRepository
     Task UpsertAsync(KardexSnapshot snapshot, CancellationToken ct = default);
 
     Task<IReadOnlyList<(Guid ProductId, Guid WarehouseId)>> GetDistinctProductWarehouseAsync(
-        Guid tenantId, CancellationToken ct = default);
+        Guid subscriberId, CancellationToken ct = default);
 
     Task<IReadOnlyList<Guid>> GetTenantsWithMovementsAsync(CancellationToken ct = default);
 }

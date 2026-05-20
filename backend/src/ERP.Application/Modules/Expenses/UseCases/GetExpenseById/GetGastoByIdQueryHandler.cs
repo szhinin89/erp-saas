@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Expenses.DTOs;
 using ERP.Domain.Modules.Expenses.Entities;
@@ -10,9 +10,9 @@ public sealed class GetExpenseByIdQueryHandler
     : IRequestHandler<GetExpenseByIdQuery, Result<ExpenseInvoiceDto?>>
 {
     private readonly IExpenseInvoiceRepository _repo;
-    private readonly ICurrentTenant        _tenant;
+    private readonly ICurrentSubscriber        _tenant;
 
-    public GetExpenseByIdQueryHandler(IExpenseInvoiceRepository repo, ICurrentTenant tenant)
+    public GetExpenseByIdQueryHandler(IExpenseInvoiceRepository repo, ICurrentSubscriber tenant)
     {
         _repo   = repo;
         _tenant = tenant;
@@ -20,7 +20,7 @@ public sealed class GetExpenseByIdQueryHandler
 
     public async Task<Result<ExpenseInvoiceDto?>> Handle(GetExpenseByIdQuery query, CancellationToken ct)
     {
-        var g = await _repo.GetByIdAsync(_tenant.TenantId, query.Id, ct);
+        var g = await _repo.GetByIdAsync(_tenant.SubscriberId, query.Id, ct);
         if (g is null)
             return Result<ExpenseInvoiceDto?>.Success(null);
 

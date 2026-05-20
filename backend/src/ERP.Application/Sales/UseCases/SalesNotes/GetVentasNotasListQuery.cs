@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Sales.DTOs;
 using ERP.Domain.Modules.Sales.Interfaces;
@@ -13,12 +13,12 @@ public sealed class GetSalesNotesListQueryHandler
     : IRequestHandler<GetSalesNotesListQuery, Result<IReadOnlyList<SalesNoteListItemDto>>>
 {
     private readonly ISalesRepository _ventasRepository;
-    private readonly ICurrentTenant  _currentTenant;
+    private readonly ICurrentSubscriber  _currentSubscriber;
 
-    public GetSalesNotesListQueryHandler(ISalesRepository ventasRepository, ICurrentTenant currentTenant)
+    public GetSalesNotesListQueryHandler(ISalesRepository ventasRepository, ICurrentSubscriber currentSubscriber)
     {
         _ventasRepository = ventasRepository;
-        _currentTenant    = currentTenant;
+        _currentSubscriber    = currentSubscriber;
     }
 
     public async Task<Result<IReadOnlyList<SalesNoteListItemDto>>> Handle(
@@ -26,7 +26,7 @@ public sealed class GetSalesNotesListQueryHandler
         CancellationToken ct)
     {
         var items = await _ventasRepository.GetNotesAsync(
-            _currentTenant.TenantId, request.OriginalBillId, request.Status, ct);
+            _currentSubscriber.SubscriberId, request.OriginalBillId, request.Status, ct);
 
         var dto = items.Select(n => new SalesNoteListItemDto(
             n.Id,

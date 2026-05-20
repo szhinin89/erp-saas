@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
@@ -13,25 +13,25 @@ public sealed class PurchaseOrderRepository : IPurchaseOrderRepository
     public Task AddAsync(PurchaseOrder orden, CancellationToken ct = default)
         => _context.PurchaseOrders.AddAsync(orden, ct).AsTask();
 
-    public Task<PurchaseOrder?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+    public Task<PurchaseOrder?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
         => _context.PurchaseOrders
-            .FirstOrDefaultAsync(o => o.TenantId == tenantId && o.Id == id, ct);
+            .FirstOrDefaultAsync(o => o.SubscriberId == subscriberId && o.Id == id, ct);
 
-    public Task<PurchaseOrder?> GetByIdWithLinesAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+    public Task<PurchaseOrder?> GetByIdWithLinesAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
         => _context.PurchaseOrders
             .Include(o => o.Lines)
-            .FirstOrDefaultAsync(o => o.TenantId == tenantId && o.Id == id, ct);
+            .FirstOrDefaultAsync(o => o.SubscriberId == subscriberId && o.Id == id, ct);
 
-    public async Task<int> GetNextSequentialAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<int> GetNextSequentialAsync(Guid subscriberId, CancellationToken ct = default)
     {
         var max = await _context.PurchaseOrders
-            .Where(o => o.TenantId == tenantId)
+            .Where(o => o.SubscriberId == subscriberId)
             .MaxAsync(o => (int?)o.Sequential, ct);
         return (max ?? 0) + 1;
     }
 
     public async Task<(IReadOnlyList<PurchaseOrder> Items, int TotalCount)> GetPagedAsync(
-        Guid      tenantId,
+        Guid      subscriberId,
         int       pageNumber,
         int       pageSize,
         Guid?     proveedorId,
@@ -41,7 +41,7 @@ public sealed class PurchaseOrderRepository : IPurchaseOrderRepository
         CancellationToken ct = default)
     {
         var query = _context.PurchaseOrders
-            .Where(o => o.TenantId == tenantId);
+            .Where(o => o.SubscriberId == subscriberId);
 
         if (proveedorId.HasValue)
             query = query.Where(o => o.SupplierId == proveedorId.Value);
@@ -63,9 +63,9 @@ public sealed class PurchaseOrderRepository : IPurchaseOrderRepository
     }
 
     public Task<IReadOnlyList<PurchaseOrder>> GetPendingToInvoiceAsync(
-        Guid tenantId, CancellationToken ct = default)
+        Guid subscriberId, CancellationToken ct = default)
         => _context.PurchaseOrders
-            .Where(o => o.TenantId == tenantId
+            .Where(o => o.SubscriberId == subscriberId
                 && (o.Status == "Aprobada" || o.Status == "RecibidaParcial")
                 && o.Lines.Any(d => d.InvoicedQty < d.OrderedQty))
             .OrderBy(o => o.IssueDate)
@@ -73,17 +73,17 @@ public sealed class PurchaseOrderRepository : IPurchaseOrderRepository
             .ContinueWith(t => (IReadOnlyList<PurchaseOrder>)t.Result, TaskContinuationOptions.ExecuteSynchronously);
 
     public Task<bool> BillAlreadyLinkedAsync(
-        Guid tenantId, Guid ordenId, Guid facturaId, CancellationToken ct = default)
+        Guid subscriberId, Guid ordenId, Guid facturaId, CancellationToken ct = default)
         => _context.PurchaseOrderBills
-            .AnyAsync(v => v.TenantId == tenantId
+            .AnyAsync(v => v.SubscriberId == subscriberId
                 && v.PurchaseOrderId == ordenId
                 && v.PurchBillId == facturaId, ct);
 
     public async Task<IReadOnlyList<(Guid PurchBillId, string InvoiceNumber, DateTime LinkedAt)>>
-        GetBillLinksAsync(Guid tenantId, Guid ordenId, CancellationToken ct = default)
+        GetBillLinksAsync(Guid subscriberId, Guid ordenId, CancellationToken ct = default)
     {
         var results = await _context.PurchaseOrderBills
-            .Where(v => v.TenantId == tenantId && v.PurchaseOrderId == ordenId)
+            .Where(v => v.SubscriberId == subscriberId && v.PurchaseOrderId == ordenId)
             .Join(_context.PurchBills,
                   v => v.PurchBillId,
                   f => f.Id,

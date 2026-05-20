@@ -18,12 +18,12 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
             .FirstOrDefaultAsync(t => t.TokenHash == tokenHash, ct);
 
     public async Task<IReadOnlyList<RefreshToken>> GetActiveByUserAsync(
-        Guid userId, Guid tenantId, CancellationToken ct = default)
+        Guid userId, Guid subscriberId, CancellationToken ct = default)
     {
         var now = DateTime.UtcNow;
         return await _context.RefreshTokens
             .Where(t => t.UserId == userId
-                     && t.TenantId == tenantId
+                     && t.SubscriberId == subscriberId
                      && !t.IsRevoked
                      && t.ExpiresAt > now)
             .ToListAsync(ct);

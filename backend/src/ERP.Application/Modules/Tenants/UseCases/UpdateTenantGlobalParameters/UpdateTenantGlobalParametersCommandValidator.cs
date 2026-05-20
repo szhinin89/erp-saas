@@ -1,12 +1,12 @@
 using FluentValidation;
 
-namespace ERP.Application.Tenants.UseCases.UpdateTenantGlobalParameters;
+namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberGlobalParameters;
 
-public sealed class UpdateTenantGlobalParametersCommandValidator : AbstractValidator<UpdateTenantGlobalParametersCommand>
+public sealed class UpdateSubscriberGlobalParametersCommandValidator : AbstractValidator<UpdateSubscriberGlobalParametersCommand>
 {
-    public UpdateTenantGlobalParametersCommandValidator()
+    public UpdateSubscriberGlobalParametersCommandValidator()
     {
-        RuleFor(x => x.TenantId)
+        RuleFor(x => x.SubscriberId)
             .NotEmpty().WithMessage("El tenant es obligatorio.");
     }
 }

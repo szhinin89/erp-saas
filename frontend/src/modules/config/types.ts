@@ -3,7 +3,7 @@ export type ConfigDataType = 'string' | 'number' | 'boolean' | 'json';
 
 export type ConfigEntry = {
   id: string;
-  tenantId: string;
+  subscriberId: string;
   scope: ConfigScope;
   module: string | null;
   feature: string | null;

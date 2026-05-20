@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -13,7 +13,7 @@ namespace ERP.Infrastructure.BackgroundServices;
 /// <summary>
 /// Procesa en segundo plano los reportes de Kardex encolados de forma asíncrona.
 /// Lee IDs desde <see cref="KardexReportQueue"/>, instancia el handler con
-/// <see cref="ManualCurrentTenant"/> (sin depender de HttpContext) y almacena
+/// <see cref="ManualCurrentSubscriber"/> (sin depender de HttpContext) y almacena
 /// el resultado serializado en <c>kardex_reportes.resultado_json</c>.
 /// </summary>
 public sealed class KardexReportProcessor : BackgroundService
@@ -67,7 +67,7 @@ public sealed class KardexReportProcessor : BackgroundService
 
         _logger.LogInformation(
             "Procesando reporte {Id} (tenant={T}, prod={P}, Warehouse={B})",
-            reporteId, reporte.TenantId, reporte.ProductId, reporte.WarehouseId);
+            reporteId, reporte.SubscriberId, reporte.ProductId, reporte.WarehouseId);
 
         reporte.MarkProcessing();
         await db.SaveChangesAsync(ct);
@@ -76,7 +76,7 @@ public sealed class KardexReportProcessor : BackgroundService
         {
             var kardex = scope.ServiceProvider.GetRequiredService<IKardexService>();
             var result = await kardex.GenerarKardexEscalableAsync(
-                reporte.TenantId,
+                reporte.SubscriberId,
                 new GetKardexQuery(reporte.ProductId, reporte.WarehouseId, reporte.DateFrom, reporte.DateTo),
                 ct);
 

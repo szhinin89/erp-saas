@@ -14,7 +14,7 @@ public class JournalEntryLine : BaseEntity
 
     internal static JournalEntryLine Create(
         Guid journalEntryId,
-        Guid tenantId,
+        Guid subscriberId,
         Guid accountId,
         Money debit,
         Money credit)
@@ -22,7 +22,7 @@ public class JournalEntryLine : BaseEntity
         return new JournalEntryLine
         {
             Id             = Guid.NewGuid(),
-            TenantId       = tenantId,
+            SubscriberId       = subscriberId,
             JournalEntryId = journalEntryId,
             AccountId      = accountId,
             Debit          = debit,

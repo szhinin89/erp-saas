@@ -540,7 +540,7 @@ export function ensureSalesNextToInventory(
 /** Grupos solo en menú estático (p. ej. Compras / RRHH) que la API de sesión aún no define. */
 const GROUPS_FILL_FROM_STATIC: readonly string[] = ['purchases', 'hr', 'configuracion'];
 
-/** @deprecated Tenant sidebar uses only GET /api/me/menu; do not merge static groups into session nav. Kept for legacy callers until removed. */
+/** @deprecated Subscriber sidebar uses only GET /api/me/menu; do not merge static groups into session nav. Kept for legacy callers until removed. */
 export function mergeMissingStaticNavGroups(
   groups: NavGroup[],
   t: TranslateFn,

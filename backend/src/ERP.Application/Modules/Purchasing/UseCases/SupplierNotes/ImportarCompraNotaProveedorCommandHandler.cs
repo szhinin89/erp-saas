@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
@@ -22,7 +22,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
     private readonly IXmlFacturaParser       _parser;
     private readonly IFileStorage             _storage;
     private readonly IUserActivityRepository  _activity;
-    private readonly ICurrentTenant             _tenant;
+    private readonly ICurrentSubscriber             _tenant;
     private readonly ICurrentUser             _user;
     private readonly IUnitOfWork              _unitOfWork;
     private readonly ILogger<ImportPurchaseSupplierNoteCommandHandler> _logger;
@@ -34,7 +34,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
         IXmlFacturaParser parser,
         IFileStorage storage,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork,
         ILogger<ImportPurchaseSupplierNoteCommandHandler> logger)
@@ -55,7 +55,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
         ImportPurchaseSupplierNoteCommand command,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
         if (command.PurchBillId.HasValue && command.ExpenseInvoiceId.HasValue)
@@ -70,15 +70,15 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Fallo al parsear XML de nota Supplier (tenant {TenantId}).", tenantId);
+            _logger.LogWarning(ex, "Fallo al parsear XML de nota Supplier (tenant {SubscriberId}).", subscriberId);
             return Result<SupplierPurchaseNoteDto>.Failure($"Error al leer el XML: {ex.Message}");
         }
 
-        if (await _compraRepo.ExistsPurchNoteAccessKeyAsync(tenantId, parsed.AccessKey, ct))
+        if (await _compraRepo.ExistsPurchNoteAccessKeyAsync(subscriberId, parsed.AccessKey, ct))
             return Result<SupplierPurchaseNoteDto>.Failure(
                 $"Ya existe una nota de Supplier con la clave de acceso '{parsed.AccessKey}'.");
 
-        var Supplier = await _proveedorRepo.GetByRucAsync(tenantId, parsed.SupplierRuc, ct);
+        var Supplier = await _proveedorRepo.GetByRucAsync(subscriberId, parsed.SupplierRuc, ct);
         if (Supplier is null)
             return Result<SupplierPurchaseNoteDto>.Failure(
                 $"No hay Supplier registrado con RUC '{parsed.SupplierRuc}'. Cree el Supplier antes de importar la nota.");
@@ -87,7 +87,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
         IReadOnlyList<PurchWarehouseAlloc> compraAsignaciones = Array.Empty<PurchWarehouseAlloc>();
         if (command.PurchBillId.HasValue)
         {
-            compra = await _compraRepo.GetByIdAsync(tenantId, command.PurchBillId.Value, ct);
+            compra = await _compraRepo.GetByIdAsync(subscriberId, command.PurchBillId.Value, ct);
             if (compra is null)
                 return Result<SupplierPurchaseNoteDto>.Failure("Factura de compra no encontrada.");
             if (compra.SupplierId != Supplier.Id)
@@ -98,12 +98,12 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
                     "Solo se pueden vincular notas a una compra en estado IsApproved.");
 
             compraAsignaciones = await _compraRepo.GetWarehouseAllocsByBillIdAsync(
-                tenantId, compra.Id, ct);
+                subscriberId, compra.Id, ct);
         }
 
         if (command.ExpenseInvoiceId.HasValue)
         {
-            var gasto = await _gastoRepo.GetByIdAsync(tenantId, command.ExpenseInvoiceId.Value, ct);
+            var gasto = await _gastoRepo.GetByIdAsync(subscriberId, command.ExpenseInvoiceId.Value, ct);
             if (gasto is null)
                 return Result<SupplierPurchaseNoteDto>.Failure("Factura de gasto no encontrada.");
             if (gasto.SupplierId != Supplier.Id)
@@ -125,7 +125,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
                 await _storage.SaveAsync(xmlPath, xmlStream, ct);
 
             var nota = PurchNote.Create(
-                tenantId,
+                subscriberId,
                 Supplier.Id,
                 command.PurchBillId,
                 command.ExpenseInvoiceId,
@@ -156,7 +156,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
                 }
 
                 var linea = PurchNoteLine.Create(
-                    tenantId,
+                    subscriberId,
                     productoId,
                     string.IsNullOrEmpty(item.ProductCode) ? null : item.ProductCode,
                     item.Description,
@@ -172,7 +172,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
             await _compraRepo.AddPurchNoteAsync(nota, ct);
 
             await _activity.AddAsync(UserActivity.Create(
-                tenantId, userId, _user.Email, _user.FullName,
+                subscriberId, userId, _user.Email, _user.FullName,
                 module: "compras", action: "notas-Supplier.importar",
                 entityType: "PurchNote", entityId: nota.Id,
                 description: $"{parsed.NoteType} {parsed.Sequential} — clave {parsed.AccessKey}"), ct);
@@ -181,8 +181,8 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
             await _unitOfWork.CommitAsync(ct);
 
             _logger.LogInformation(
-                "Nota Supplier importada: id {NotaId}, tenant {TenantId}, tipo {Tipo}.",
-                nota.Id, tenantId, parsed.NoteType);
+                "Nota Supplier importada: id {NotaId}, tenant {SubscriberId}, tipo {Tipo}.",
+                nota.Id, subscriberId, parsed.NoteType);
 
             return Result<SupplierPurchaseNoteDto>.Success(ToDto(nota));
         }

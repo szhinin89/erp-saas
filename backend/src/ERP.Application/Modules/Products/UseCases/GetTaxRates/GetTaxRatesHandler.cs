@@ -9,12 +9,12 @@ namespace ERP.Application.Products.UseCases.GetTaxRates;
 public class GetTaxRatesHandler : IRequestHandler<GetTaxRatesQuery, Result<IReadOnlyList<TaxRateDto>>>
 {
     private readonly IProductCatalogRepository _repo;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
-    public GetTaxRatesHandler(IProductCatalogRepository repo, ICurrentTenant currentTenant)
+    public GetTaxRatesHandler(IProductCatalogRepository repo, ICurrentSubscriber currentSubscriber)
     {
         _repo = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public Task<Result<IReadOnlyList<TaxRateDto>>> HandleAsync(TaxRateType? type, bool onlyActive, CancellationToken ct = default)
@@ -22,8 +22,8 @@ public class GetTaxRatesHandler : IRequestHandler<GetTaxRatesQuery, Result<IRead
 
     public async Task<Result<IReadOnlyList<TaxRateDto>>> Handle(GetTaxRatesQuery request, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
-        var items = await _repo.GetTaxRatesAsync(tenantId, request.Type, request.OnlyActive, ct);
+        var subscriberId = _currentSubscriber.SubscriberId;
+        var items = await _repo.GetTaxRatesAsync(subscriberId, request.Type, request.OnlyActive, ct);
         var dtos = items.Select(x => new TaxRateDto(x.Id, x.Code, x.Name, x.Type, x.Percentage, x.IsActive)).ToList();
         return Result<IReadOnlyList<TaxRateDto>>.Success(dtos);
     }

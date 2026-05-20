@@ -2,10 +2,10 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
-public sealed class KardexSnapshot : ITenantEntity
+public sealed class KardexSnapshot : ISubscriberScopedEntity
 {
     public Guid     Id           { get; private set; }
-    public Guid     TenantId     { get; private set; }
+    public Guid     SubscriberId     { get; private set; }
     public Guid     ProductId    { get; private set; }
     public Guid     WarehouseId  { get; private set; }
     public DateTime SnapshotDate { get; private set; }
@@ -17,7 +17,7 @@ public sealed class KardexSnapshot : ITenantEntity
     private KardexSnapshot() { }
 
     public static KardexSnapshot Create(
-        Guid     tenantId,
+        Guid     subscriberId,
         Guid     productId,
         Guid     warehouseId,
         DateTime snapshotDate,
@@ -27,7 +27,7 @@ public sealed class KardexSnapshot : ITenantEntity
         => new()
         {
             Id           = Guid.NewGuid(),
-            TenantId     = tenantId,
+            SubscriberId     = subscriberId,
             ProductId    = productId,
             WarehouseId  = warehouseId,
             SnapshotDate = DateTime.SpecifyKind(snapshotDate.Date, DateTimeKind.Utc),

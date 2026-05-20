@@ -1,11 +1,11 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AccessibleTenant, BootstrapLoginResponse } from '../types/access';
+import type { AccessibleSubscriber, BootstrapLoginResponse } from '../types/access';
 
 interface AccessState {
   bootstrapToken: string | null;
   bootstrapUser: { userId: string; fullName: string; email: string } | null;
-  tenants: AccessibleTenant[];
+  subscribers: AccessibleTenant[];
   setBootstrap: (r: BootstrapLoginResponse) => void;
   clearBootstrap: () => void;
 }
@@ -15,18 +15,18 @@ export const useAccessStore = create<AccessState>()(
     (set) => ({
       bootstrapToken: null,
       bootstrapUser: null,
-      tenants: [],
+      subscribers: [],
       setBootstrap: (r) =>
         set({
           bootstrapToken: r.bootstrapToken,
           bootstrapUser: { userId: r.userId, fullName: r.fullName, email: r.email },
-          tenants: r.tenants ?? [],
+          subscribers: r.subscribers ?? [],
         }),
       clearBootstrap: () =>
         set({
           bootstrapToken: null,
           bootstrapUser: null,
-          tenants: [],
+          subscribers: [],
         }),
     }),
     { name: 'access-bootstrap' }

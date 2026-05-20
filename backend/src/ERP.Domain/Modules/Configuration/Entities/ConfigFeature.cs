@@ -17,12 +17,12 @@ public sealed class ConfigFeature : AuditableEntity
 
     private ConfigFeature() { }
 
-    public static ConfigFeature Create(Guid tenantId, string feature, string key, string value, string dataType, Guid userId)
+    public static ConfigFeature Create(Guid subscriberId, string feature, string key, string value, string dataType, Guid userId)
     {
         var row = new ConfigFeature
         {
             Id = Guid.NewGuid(),
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             Feature = NormalizeScope(feature),
             Key = NormalizeKey(key),
             Value = NormalizeValue(value),

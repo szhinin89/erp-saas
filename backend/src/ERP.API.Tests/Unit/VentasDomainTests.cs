@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using ERP.Application.Sales.Helpers;
 using ERP.Domain.Modules.Sales.Entities;
 
@@ -7,7 +7,7 @@ namespace ERP.API.Tests.Unit;
 /// <summary>Pruebas unitarias puras: entidad de dominio y algoritmo de clave de acceso.</summary>
 public sealed class VentasDomainTests
 {
-    private static readonly Guid TenantId = Guid.NewGuid();
+    private static readonly Guid SubscriberId = Guid.NewGuid();
     private static readonly Guid UserId   = Guid.NewGuid();
 
     // â”€â”€ RecalcularTotales â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -17,8 +17,8 @@ public sealed class VentasDomainTests
     {
         var factura = BuildFactura();
 
-        var d1 = SalesBillLine.Create(TenantId, Guid.NewGuid(), quantity: 2m, unitPrice: 10m, vatTotal: 2.4m, "Prod A", UserId);
-        var d2 = SalesBillLine.Create(TenantId, Guid.NewGuid(), quantity: 1m, unitPrice: 50m, vatTotal: 7.5m, "Prod B", UserId);
+        var d1 = SalesBillLine.Create(SubscriberId, Guid.NewGuid(), quantity: 2m, unitPrice: 10m, vatTotal: 2.4m, "Prod A", UserId);
+        var d2 = SalesBillLine.Create(SubscriberId, Guid.NewGuid(), quantity: 1m, unitPrice: 50m, vatTotal: 7.5m, "Prod B", UserId);
 
         d1.AssignBillId(factura.Id);
         d2.AssignBillId(factura.Id);
@@ -38,7 +38,7 @@ public sealed class VentasDomainTests
 
         for (var i = 1; i <= 3; i++)
         {
-            var d = SalesBillLine.Create(TenantId, productoId, quantity: i, unitPrice: 10m, vatTotal: 0m, $"Prod {i}", UserId);
+            var d = SalesBillLine.Create(SubscriberId, productoId, quantity: i, unitPrice: 10m, vatTotal: 0m, $"Prod {i}", UserId);
             d.AssignBillId(factura.Id);
             factura.AddLine(d);
         }
@@ -155,7 +155,7 @@ public sealed class VentasDomainTests
     // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     private static SalesBill BuildFactura() => SalesBill.Create(
-        tenantId:          TenantId,
+        subscriberId:          SubscriberId,
         branchId:        Guid.NewGuid(),
         customerId:         Guid.NewGuid(),
         warehouseId:          Guid.NewGuid(),

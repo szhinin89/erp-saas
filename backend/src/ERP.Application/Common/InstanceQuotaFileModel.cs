@@ -7,7 +7,7 @@ namespace ERP.Application.Common;
 public sealed class InstanceQuotaFileModel
 {
     public bool? DedicatedSingleClientInstance { get; set; }
-    public int? MaxActiveTenants { get; set; }
+    public int? MaxActiveSubscribers { get; set; }
     public int? MaxIdentityUsers { get; set; }
-    public int? MaxUsersPerTenant { get; set; }
+    public int? MaxUsersPerSubscriber { get; set; }
 }

@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Application.Common;
 using ERP.Domain.Common;
@@ -45,7 +45,7 @@ public sealed class ReconciliationService : IReconciliationService
         var hasta = extracto.PeriodTo.AddDays(5);
 
         var asientos = await _accounting.GetPostedJournalEntriesWithAccountAsync(
-            extracto.TenantId,
+            extracto.SubscriberId,
             glId,
             desde,
             hasta,
@@ -114,7 +114,7 @@ public sealed class ReconciliationService : IReconciliationService
         if (m is null)
             return Result<bool>.Failure("Movimiento no encontrado en el extracto.");
 
-        var asiento = await _accounting.GetJournalEntryByIdAsync(asientoContableId, extracto.TenantId, ct);
+        var asiento = await _accounting.GetJournalEntryByIdAsync(asientoContableId, extracto.SubscriberId, ct);
         if (asiento is null || asiento.Status != DocumentStatus.Posted)
             return Result<bool>.Failure("Asiento contable no encontrado o no está contabilizado.");
 

@@ -5,20 +5,20 @@ using Microsoft.EntityFrameworkCore;
 namespace ERP.Infrastructure.Services;
 
 /// <summary>
-/// Incremento atómico de <c>tenant_subscription_usages</c> (PostgreSQL UPSERT).
+/// Incremento atómico de <c>subscription_usages</c> (PostgreSQL UPSERT).
 /// </summary>
 internal static class SubscriptionUsageIncrementer
 {
     public static async Task<bool> IncrementAsync(
         ErpDbContext db,
-        Guid tenantId,
+        Guid subscriberId,
         Guid featureId,
         string periodKey,
         long amount,
         CancellationToken ct)
     {
         if (IsInMemoryProvider(db))
-            return await IncrementInMemoryAsync(db, tenantId, featureId, periodKey, amount, ct);
+            return await IncrementInMemoryAsync(db, subscriberId, featureId, periodKey, amount, ct);
 
         var newId = Guid.NewGuid();
         var now = DateTime.UtcNow;
@@ -26,15 +26,15 @@ internal static class SubscriptionUsageIncrementer
 
         await db.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO tenant_subscription_usages
-                (id, tenant_id, feature_id, period_key, quantity,
+            INSERT INTO subscription_usages
+                (id, subscriber_id, feature_id, period_key, quantity,
                  created_at, created_by, updated_at, updated_by)
             VALUES
-                ({newId}, {tenantId}, {featureId}, {periodKey}, {amount},
+                ({newId}, {subscriberId}, {featureId}, {periodKey}, {amount},
                  {now}, {emptyUser}, {now}, {emptyUser})
-            ON CONFLICT (tenant_id, feature_id, period_key)
+            ON CONFLICT (subscriber_id, feature_id, period_key)
             DO UPDATE SET
-                quantity   = tenant_subscription_usages.quantity + {amount},
+                quantity   = subscription_usages.quantity + {amount},
                 updated_at = {now},
                 updated_by = {emptyUser}
             """,
@@ -48,21 +48,21 @@ internal static class SubscriptionUsageIncrementer
 
     private static async Task<bool> IncrementInMemoryAsync(
         ErpDbContext db,
-        Guid tenantId,
+        Guid subscriberId,
         Guid featureId,
         string periodKey,
         long amount,
         CancellationToken ct)
     {
-        var row = await db.TenantSubscriptionUsages
+        var row = await db.SubscriptionUsages
             .FirstOrDefaultAsync(
-                u => u.TenantId == tenantId && u.FeatureId == featureId && u.PeriodKey == periodKey,
+                u => u.SubscriberId == subscriberId && u.FeatureId == featureId && u.PeriodKey == periodKey,
                 ct);
 
         if (row is null)
         {
-            await db.TenantSubscriptionUsages.AddAsync(
-                TenantSubscriptionUsage.Create(tenantId, featureId, periodKey, amount, Guid.Empty),
+            await db.SubscriptionUsages.AddAsync(
+                SubscriptionUsage.Create(subscriberId, featureId, periodKey, amount, Guid.Empty),
                 ct);
         }
         else

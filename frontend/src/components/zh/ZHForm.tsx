@@ -53,7 +53,7 @@ export function ZHFormHeader(props: {
 export type ZHTenantHeaderModuleCrumb = { label: string; icon?: React.ReactNode; active?: boolean };
 
 export function ZHMultiTenantHeader(props: {
-  tenantName: string;
+  subscriberName: string;
   tenantMeta?: string[]; // e.g. ["Quito, Ecuador", "RUC 179001...", "Plan Empresarial"]
   tenantBadge?: string | null; // e.g. Plan
   tenantInitials?: string; // fallback when no logo
@@ -61,12 +61,12 @@ export function ZHMultiTenantHeader(props: {
   tenantColor?: string | null; // used when no logo image
   fiscalYear?: string | number | null;
   modules?: ZHTenantHeaderModuleCrumb[];
-  statusText?: string | null; // e.g. "Sistema operativo · Tenant #TEN-0014"
+  statusText?: string | null; // e.g. "Sistema operativo · Subscriber #TEN-0014"
   zhLogoSrc?: string | null; // defaults to /zh-logo.svg (public)
   right?: React.ReactNode;
 }) {
   const {
-    tenantName,
+    subscriberName,
     tenantMeta,
     tenantBadge,
     tenantInitials,
@@ -81,7 +81,7 @@ export function ZHMultiTenantHeader(props: {
 
   const { t } = useI18n();
 
-  const initials = (tenantInitials ?? tenantName)
+  const initials = (tenantInitials ?? subscriberName)
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
@@ -99,7 +99,7 @@ export function ZHMultiTenantHeader(props: {
         </div>
 
         <div className="zh-tenant-info">
-          <div className="zh-tenant-name">{tenantName}</div>
+          <div className="zh-tenant-name">{subscriberName}</div>
           {(tenantMeta?.length ?? 0) > 0 ? (
             <div className="zh-tenant-sub">
               {tenantMeta!.map((x, idx) => (

@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Accounting.Entities;
 
-public sealed class ExpenseCategory : AuditableEntity, ITenantEntity
+public sealed class ExpenseCategory : AuditableEntity, ISubscriberScopedEntity
 {
     public const int CategoryMaxLen = 120;
 
@@ -12,7 +12,7 @@ public sealed class ExpenseCategory : AuditableEntity, ITenantEntity
     private ExpenseCategory() { }
 
     public static ExpenseCategory Create(
-        Guid   tenantId,
+        Guid   subscriberId,
         string category,
         Guid   expenseAccountId,
         Guid   createdBy)
@@ -23,7 +23,7 @@ public sealed class ExpenseCategory : AuditableEntity, ITenantEntity
 
         var e = new ExpenseCategory
         {
-            TenantId        = tenantId,
+            SubscriberId        = subscriberId,
             Category        = cat,
             ExpenseAccountId = expenseAccountId,
         };

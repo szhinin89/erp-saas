@@ -1,33 +1,38 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Billing.Governance;
 using ERP.Application.Subscriptions;
 using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
-using ERP.Domain.Tenants.Entities;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Subscribers.Entities;
+using ERP.Domain.Subscribers.Interfaces;
 
-namespace ERP.Application.Access.UseCases.RegisterTenantWithAdmin;
+namespace ERP.Application.Access.UseCases.RegisterSubscriberWithAdmin;
 
-public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWithAdminCommand, Result<SessionResponseDto>>
+public class RegisterSubscriberWithAdminHandler : IRequestHandler<RegisterSubscriberWithAdminCommand, Result<SessionResponseDto>>
 {
-    private readonly ITenantRepository _tenantRepository;
+    private readonly ISubscriberRepository _tenantRepository;
     private readonly IAccessRepository _accessRepository;
     private readonly IAccessTokenService _tokenService;
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly IPasswordHasher _passwordHasher;
-    private readonly ITenantOnboardingService _onboarding;
+    private readonly ISubscriberOnboardingService _onboarding;
     private readonly ISessionModulesResolver _sessionModules;
+    private readonly ICompanyProvisioningService _companyProvisioning;
+    private readonly IBillingGovernanceService _billingGovernance;
 
-    public RegisterTenantWithAdminHandler(
-        ITenantRepository tenantRepository,
+    public RegisterSubscriberWithAdminHandler(
+        ISubscriberRepository tenantRepository,
         IAccessRepository accessRepository,
         IAccessTokenService tokenService,
         IDeploymentFeatureFlags deployment,
         IPasswordHasher passwordHasher,
-        ITenantOnboardingService onboarding,
-        ISessionModulesResolver sessionModules)
+        ISubscriberOnboardingService onboarding,
+        ISessionModulesResolver sessionModules,
+        ICompanyProvisioningService companyProvisioning,
+        IBillingGovernanceService billingGovernance)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
@@ -36,22 +41,24 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
         _passwordHasher = passwordHasher;
         _onboarding = onboarding;
         _sessionModules = sessionModules;
+        _companyProvisioning = companyProvisioning;
+        _billingGovernance = billingGovernance;
     }
 
-    public Task<Result<SessionResponseDto>> HandleAsync(RegisterTenantWithAdminCommand command, CancellationToken ct = default)
+    public Task<Result<SessionResponseDto>> HandleAsync(RegisterSubscriberWithAdminCommand command, CancellationToken ct = default)
         => Handle(command, ct);
 
-    public async Task<Result<SessionResponseDto>> Handle(RegisterTenantWithAdminCommand command, CancellationToken ct)
+    public async Task<Result<SessionResponseDto>> Handle(RegisterSubscriberWithAdminCommand command, CancellationToken ct)
     {
-        var slug = command.TenantSlug.Trim().ToLowerInvariant();
+        var slug = command.SubscriberSlug.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(slug))
             return Result<SessionResponseDto>.Failure("Slug inválido.");
 
-        var existingTenant = await _tenantRepository.GetBySlugAsync(slug, ct);
-        if (existingTenant is not null)
+        var existingSubscriber = await _tenantRepository.GetBySlugAsync(slug, ct);
+        if (existingSubscriber is not null)
             return Result<SessionResponseDto>.Failure("El slug ya está en uso.");
 
-        var tenantQuota = await DeploymentQuota.GetBlockingReasonIfAtActiveTenantCapAsync(_deployment, _tenantRepository, ct);
+        var tenantQuota = await DeploymentQuota.GetBlockingReasonIfAtActiveSubscriberCapAsync(_deployment, _tenantRepository, ct);
         if (tenantQuota is not null)
             return Result<SessionResponseDto>.Failure(tenantQuota);
 
@@ -63,8 +70,8 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
         if (userQuota is not null)
             return Result<SessionResponseDto>.Failure(userQuota);
 
-        var tenant = Tenant.Create(
-            command.TenantName,
+        var tenant = Subscriber.Create(
+            command.SubscriberName,
             slug,
             createdBy: Guid.Empty,
             passwordResetMode: command.PasswordResetMode,
@@ -76,6 +83,9 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
             displayOrder: command.DisplayOrder,
             priority: command.Priority);
         await _tenantRepository.AddAsync(tenant, ct);
+        await _tenantRepository.SaveChangesAsync(ct);
+
+        await _billingGovernance.EnsureBillingAccountAsync(tenant.Id, email, Guid.Empty, ct);
 
         var passwordHash = _passwordHasher.HashPassword(command.AdminPassword);
         var identityUser = IdentityUser.Create(
@@ -86,31 +96,35 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
             createdBy: Guid.Empty);
         await _accessRepository.AddUserAsync(identityUser, ct);
 
-        var membershipCap = await DeploymentQuota.GetBlockingReasonIfAtTenantMembershipUserCapAsync(
+        await _accessRepository.SaveChangesAsync(ct);
+
+        var defaultCompany = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
+
+        var membershipCap = await DeploymentQuota.GetBlockingReasonIfAtTenantCompanyUserMembershipUserCapAsync(
             _deployment, _accessRepository, tenant.Id, ct);
         if (membershipCap is not null)
             return Result<SessionResponseDto>.Failure(membershipCap);
 
-        var membership = Membership.Create(
-            tenantId: tenant.Id,
+        var membership = CompanyUserMembership.Create(
+            companyId: defaultCompany.Id,
             identityUserId: identityUser.Id,
             role: "Admin",
             profileId: null,
             createdBy: Guid.Empty);
-        await _accessRepository.AddMembershipAsync(membership, ct);
+        await _accessRepository.AddCompanyUserMembershipAsync(membership, ct);
 
         await _accessRepository.SaveChangesAsync(ct);
 
         // Onboard the new tenant: default profiles, Consumidor Final, main branch, main warehouse.
         await _onboarding.OnboardAsync(tenant.Id, actorId: identityUser.Id, ct);
 
-        var sessionToken = _tokenService.GenerateSessionToken(identityUser, tenant.Id, "Admin");
+        var sessionToken = _tokenService.GenerateSessionToken(identityUser, tenant.Id, "Admin", defaultCompany.Id);
         var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, ct);
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
             UserId: identityUser.Id,
             FullName: identityUser.FullName,
             Email: identityUser.Email.Value,
-            TenantId: tenant.Id,
+            SubscriberId: tenant.Id,
             Role: "Admin",
             Token: sessionToken,
             tenant.PlanCode,

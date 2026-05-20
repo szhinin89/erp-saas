@@ -1,15 +1,15 @@
 using ERP.Domain.Common;
 
-namespace ERP.Domain.Tenants.Entities;
+namespace ERP.Domain.Subscribers.Entities;
 
-public class Tenant : AuditableEntity
+public class Subscriber : AuditableEntity
 {
     public string Name { get; private set; } = null!;
     public string Slug { get; private set; } = null!;
     public bool IsActive { get; private set; }
     public PasswordResetMode PasswordResetMode { get; private set; } = PasswordResetMode.Disabled;
 
-    /// <summary>Código comercial del plan (p. ej. starter). Entitlements en <c>TenantSaasSubscription</c>.</summary>
+    /// <summary>Código comercial del plan (p. ej. starter). Entitlements en <c>SubscriberSubscription</c>.</summary>
     public string? PlanCode { get; private set; }
 
     public string? Ruc { get; private set; }
@@ -29,9 +29,9 @@ public class Tenant : AuditableEntity
     public string? InvoicePrefix { get; private set; }
     public int DefaultCreditDays { get; private set; } = 30;
 
-    private Tenant() { }
+    private Subscriber() { }
 
-    public static Tenant Create(
+    public static Subscriber Create(
         string name,
         string slug,
         Guid createdBy,
@@ -45,10 +45,10 @@ public class Tenant : AuditableEntity
         int priority = 0,
         string? planCode = null)
     {
-        var tenant = new Tenant
+        var tenant = new Subscriber
         {
             Id       = Guid.NewGuid(),
-            TenantId = Guid.Empty,
+            SubscriberId = Guid.Empty,
             Name     = name,
             Slug     = slug.ToLowerInvariant(),
             IsActive = true,

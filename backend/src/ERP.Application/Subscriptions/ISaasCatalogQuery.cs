@@ -1,6 +1,6 @@
 namespace ERP.Application.Subscriptions;
 
-public interface ISaasCatalogQuery
+public interface ICommercialCatalogQuery
 {
-    Task<IReadOnlyList<SaasPlanCatalogItem>> GetPlansWithFeaturesAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<CommercialPlanCatalogItem>> GetPlansWithFeaturesAsync(CancellationToken ct = default);
 }

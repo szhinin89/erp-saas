@@ -13,7 +13,7 @@ public sealed class PurchNoteApprovedEvent : IDomainEvent
     public Guid     Id          { get; } = Guid.NewGuid();
     public DateTime OccurredOn  { get; } = DateTime.UtcNow;
     public Guid     NoteId      { get; }
-    public Guid     TenantId    { get; }
+    public Guid     SubscriberId    { get; }
     public Guid     UserId      { get; }
     public Guid     PurchBillId { get; }
     public string   NoteType    { get; }
@@ -22,7 +22,7 @@ public sealed class PurchNoteApprovedEvent : IDomainEvent
 
     public PurchNoteApprovedEvent(
         Guid   noteId,
-        Guid   tenantId,
+        Guid   subscriberId,
         Guid   userId,
         Guid   purchBillId,
         string noteType,
@@ -30,7 +30,7 @@ public sealed class PurchNoteApprovedEvent : IDomainEvent
         IReadOnlyList<PurchNoteStockLine> stockLines)
     {
         NoteId      = noteId;
-        TenantId    = tenantId;
+        SubscriberId    = subscriberId;
         UserId      = userId;
         PurchBillId = purchBillId;
         NoteType    = noteType;

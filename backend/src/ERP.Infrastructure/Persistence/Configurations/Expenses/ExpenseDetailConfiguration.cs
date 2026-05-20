@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Modules.Expenses.Entities;
+using ERP.Domain.Modules.Expenses.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -26,7 +26,7 @@ public class ExpenseDetailConfiguration : IEntityTypeConfiguration<ExpenseDetail
             .HasForeignKey(x => x.ExpenseId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // El padre (ExpenseInvoice) tiene query filter por TenantId; declarar
+        // El padre (ExpenseInvoice) tiene query filter por SubscriberId; declarar
         // la navigation como opcional para que EF no emita WRN cuando el padre
         // es filtrado. El FK sigue siendo NOT NULL en BD.
         builder.Navigation(x => x.Expense).IsRequired(false);

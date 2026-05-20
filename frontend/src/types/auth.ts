@@ -8,7 +8,9 @@ export interface AuthResponse {
   fullName: string;
   email: string;
   role: string;
-  tenantId: string;
+  subscriberId: string;
+  /** Empresa operativa (RUC) activa en la sesión. */
+  companyId?: string | null;
   token: string;
   /** Código comercial del plan del tenant (p. ej. starter). */
   planCode?: string | null;

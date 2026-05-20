@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Cash.Entities;
 
-public sealed class BankAccount : MasterEntity, ITenantEntity
+public sealed class BankAccount : MasterEntity, ISubscriberScopedEntity
 {
     public const int NameMaxLen          = 200;
     public const int AccountNumberMaxLen = 40;
@@ -20,7 +20,7 @@ public sealed class BankAccount : MasterEntity, ITenantEntity
     private BankAccount() { }
 
     public static BankAccount Create(
-        Guid     tenantId,
+        Guid     subscriberId,
         string   name,
         string   accountNumber,
         string   accountType,
@@ -43,7 +43,7 @@ public sealed class BankAccount : MasterEntity, ITenantEntity
         var c = new BankAccount
         {
             Id              = Guid.NewGuid(),
-            TenantId        = tenantId,
+            SubscriberId        = subscriberId,
             Name            = name.Trim(),
             AccountNumber   = accountNumber.Trim(),
             AccountType     = accountType.Trim(),

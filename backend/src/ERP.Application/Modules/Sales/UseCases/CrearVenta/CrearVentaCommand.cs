@@ -16,7 +16,7 @@ public record CreateSaleCommand(
     short            PaymentDays       = 0,
     /// <summary>Observaciones libres que se emiten en &lt;infoAdicional&gt; del XML SRI.</summary>
     string?          Notes             = null
-) : IRequest<Result<Guid>>;
+) : IRequest<Result<Guid>>, ICompanyScopedRequest;
 
 public record SaleItemDto(
     Guid    ProductId,

@@ -12,7 +12,7 @@ public sealed class SalesPaymentConfiguration : IEntityTypeConfiguration<SalesPa
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.SalesDocumentId).HasColumnName("sales_document_id").IsRequired();
         builder.Property(e => e.PaymentMethod).HasColumnName("payment_method").HasMaxLength(5);
         builder.Property(e => e.Amount).HasColumnName("amount").HasPrecision(18, 4);

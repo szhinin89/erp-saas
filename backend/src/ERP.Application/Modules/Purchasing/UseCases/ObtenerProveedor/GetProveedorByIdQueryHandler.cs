@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Modules.Purchasing.Interfaces;
@@ -9,9 +9,9 @@ public sealed class GetSupplierByIdQueryHandler
     : IRequestHandler<GetSupplierByIdQuery, Result<SupplierDetailDto?>>
 {
     private readonly ISupplierRepository _repo;
-    private readonly ICurrentTenant       _tenant;
+    private readonly ICurrentSubscriber       _tenant;
 
-    public GetSupplierByIdQueryHandler(ISupplierRepository repo, ICurrentTenant tenant)
+    public GetSupplierByIdQueryHandler(ISupplierRepository repo, ICurrentSubscriber tenant)
     {
         _repo   = repo;
         _tenant = tenant;
@@ -20,7 +20,7 @@ public sealed class GetSupplierByIdQueryHandler
     public async Task<Result<SupplierDetailDto?>> Handle(
         GetSupplierByIdQuery query, CancellationToken ct)
     {
-        var p = await _repo.GetByIdAsync(_tenant.TenantId, query.Id, ct);
+        var p = await _repo.GetByIdAsync(_tenant.SubscriberId, query.Id, ct);
         if (p is null) return Result<SupplierDetailDto?>.Success(null);
 
         return Result<SupplierDetailDto?>.Success(new SupplierDetailDto(

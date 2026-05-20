@@ -26,7 +26,7 @@ export function DeploymentProvider({ children }: { children: ReactNode }) {
           maxActiveTenants: info.maxActiveTenants ?? null,
           maxIdentityUsers: info.maxIdentityUsers ?? null,
           dedicatedSingleClientInstance: info.dedicatedSingleClientInstance ?? false,
-          maxUsersPerTenant: info.maxUsersPerTenant ?? null,
+          maxUsersPerTenant: info.maxUsersPerSubscriber ?? null,
         });
       }
     });

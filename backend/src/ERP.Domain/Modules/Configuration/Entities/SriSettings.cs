@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Configuration.Entities;
 
-public sealed class SriSettings : AuditableEntity, ITenantEntity
+public sealed class SriSettings : AuditableEntity, ISubscriberScopedEntity
 {
     public const int RucMaxLen           = 13;
     public const int LegalNameMaxLen     = 200;
@@ -33,7 +33,7 @@ public sealed class SriSettings : AuditableEntity, ITenantEntity
     private SriSettings() { }
 
     public static SriSettings Create(
-        Guid     tenantId,
+        Guid     subscriberId,
         string   ruc,
         string   legalName,
         string?  tradeName,
@@ -52,7 +52,7 @@ public sealed class SriSettings : AuditableEntity, ITenantEntity
     {
         var s = new SriSettings
         {
-            TenantId           = tenantId,
+            SubscriberId           = subscriberId,
             Ruc                = ruc.Trim(),
             LegalName          = legalName.Trim(),
             TradeName          = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim(),

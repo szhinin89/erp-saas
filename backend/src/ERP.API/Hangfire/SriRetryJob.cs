@@ -36,7 +36,7 @@ public sealed class SriRetryJob : ISriRetryJob
         var pendientes = await _platform
             .Unfiltered(_context.SalesBills, PlatformQueryReason.BackgroundJob)
             .Where(b => b.Status == "ErrorEnvio" || b.Status == "Rechazado")
-            .Select(b => new { b.Id, b.TenantId })
+            .Select(b => new { b.Id, b.SubscriberId })
             .ToListAsync(ct);
 
         if (pendientes.Count == 0)
@@ -50,15 +50,15 @@ public sealed class SriRetryJob : ISriRetryJob
             pendientes.Count);
 
         // Agrupar por tenant para procesar en lote y minimizar cambios de contexto
-        var porTenant = pendientes.GroupBy(b => b.TenantId);
+        var porSubscriber = pendientes.GroupBy(b => b.SubscriberId);
 
-        foreach (var grupo in porTenant)
+        foreach (var grupo in porSubscriber)
         {
-            var tenantId = grupo.Key;
+            var subscriberId = grupo.Key;
 
-            // Establecer el contexto de tenant para que CurrentTenantService lo use
+            // Establecer el contexto de tenant para que CurrentSubscriberService lo use
             // como fallback (AsyncLocal fluye a través de await)
-            JobTenantContext.Current = tenantId;
+            JobSubscriberContext.Current = subscriberId;
             try
             {
                 foreach (var bill in grupo)
@@ -73,24 +73,24 @@ public sealed class SriRetryJob : ISriRetryJob
 
                         if (result.IsSuccess)
                             _logger.LogInformation(
-                                "SriRetryJob: factura {BillId} (tenant {TenantId}) reintentada con éxito.",
-                                bill.Id, tenantId);
+                                "SriRetryJob: factura {BillId} (tenant {SubscriberId}) reintentada con éxito.",
+                                bill.Id, subscriberId);
                         else
                             _logger.LogWarning(
-                                "SriRetryJob: factura {BillId} (tenant {TenantId}) falló: {Error}",
-                                bill.Id, tenantId, result.Error);
+                                "SriRetryJob: factura {BillId} (tenant {SubscriberId}) falló: {Error}",
+                                bill.Id, subscriberId, result.Error);
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex,
-                            "SriRetryJob: error inesperado al reintentar factura {BillId} (tenant {TenantId}).",
-                            bill.Id, tenantId);
+                            "SriRetryJob: error inesperado al reintentar factura {BillId} (tenant {SubscriberId}).",
+                            bill.Id, subscriberId);
                     }
                 }
             }
             finally
             {
-                JobTenantContext.Current = Guid.Empty;
+                JobSubscriberContext.Current = Guid.Empty;
             }
         }
     }

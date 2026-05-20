@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Modules.Accounting.Entities;
+using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Modules.Sales.Entities;
@@ -24,19 +24,19 @@ internal static class VentasEndToEndHelpers
         bool crearStockActual = true,
         CancellationToken ct = default)
     {
-        var tenantId = seed.TenantId;
+        var subscriberId = seed.SubscriberId;
         var userId   = seed.UserId;
         var productId = seed.ProductId;
         var bodegaId  = seed.WarehouseId;
 
         // Cuenta de ingresos (Revenue) para el asiento contable de venta
         var revenue = Account.Create(
-            tenantId, "4.1.99", "Ventas pruebas", AccountType.Revenue, AccountNature.Credit, userId);
+            subscriberId, "4.1.99", "Ventas pruebas", AccountType.Revenue, AccountNature.Credit, userId);
         db.Accounts.Add(revenue);
 
         // Cliente activo
         var cliente = Customer.Create(
-            tenantId,
+            subscriberId,
             identificationType:   "RUC",
             identificationNumber: "9999999999001",
             legalName:            "Cliente Test S.A.",
@@ -50,7 +50,7 @@ internal static class VentasEndToEndHelpers
 
         // SriSettings (Environment 1 = pruebas)
         var sri = SriSettings.Create(
-            tenantId:              tenantId,
+            subscriberId:              subscriberId,
             ruc:            "9999999999999",
             legalName:           "Empresa Test SRL",
             tradeName:       null,
@@ -72,12 +72,12 @@ internal static class VentasEndToEndHelpers
 
         if (crearStockActual && stockInicial > 0)
         {
-            var stock = CurrentStock.Create(tenantId, productId, bodegaId, userId);
+            var stock = CurrentStock.Create(subscriberId, productId, bodegaId, userId);
             stock.ApplyMovement(stockInicial, userId);
             db.CurrentStocks.Add(stock);
 
             var movInicial = StockMovement.Create(
-                tenantId, productId, bodegaId,
+                subscriberId, productId, bodegaId,
                 StockMovementType.PositiveAdjust,
                 quantity:         stockInicial,
                 previousQuantity: 0,

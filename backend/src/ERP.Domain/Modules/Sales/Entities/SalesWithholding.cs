@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
-public sealed class SalesWithholding : AuditableEntity, ITenantEntity
+public sealed class SalesWithholding : AuditableEntity, ISubscriberScopedEntity
 {
     public const int VoucherTypeMaxLen = 30;
     public const int AccessKeyMaxLen   = 49;

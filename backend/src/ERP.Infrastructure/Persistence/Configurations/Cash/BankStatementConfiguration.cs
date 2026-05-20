@@ -12,7 +12,7 @@ public sealed class BankStatementConfiguration : IEntityTypeConfiguration<BankSt
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(x => x.BankAccountId).HasColumnName("bank_account_id").IsRequired();
         builder.Property(x => x.PeriodFrom).HasColumnName("period_from").IsRequired();
         builder.Property(x => x.PeriodTo).HasColumnName("period_to").IsRequired();
@@ -35,7 +35,7 @@ public sealed class BankStatementConfiguration : IEntityTypeConfiguration<BankSt
             .HasForeignKey(m => m.BankStatementId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(x => new { x.TenantId, x.BankAccountId, x.PeriodFrom, x.PeriodTo })
-            .HasDatabaseName("ix_bank_statement_tenant_account_period");
+        builder.HasIndex(x => new { x.SubscriberId, x.BankAccountId, x.PeriodFrom, x.PeriodTo })
+            .HasDatabaseName("ix_bank_statement_subscriber_account_period");
     }
 }

@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using Moq;
 using ERP.Application.Common;
 using ERP.Application.Products.UseCases.CreateProduct;
@@ -12,7 +12,7 @@ public class CreateProductHandlerTests
     [Fact]
     public async Task HandleAsync_should_persist_product_for_current_tenant()
     {
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
 
         var repo = new Mock<IProductRepository>(MockBehavior.Strict);
         repo.Setup(r => r.AddAsync(It.IsAny<ERP.Domain.Products.Entities.Product>(), It.IsAny<CancellationToken>()))
@@ -20,8 +20,8 @@ public class CreateProductHandlerTests
         repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var currentTenant = new Mock<ICurrentTenant>(MockBehavior.Strict);
-        currentTenant.SetupGet(t => t.TenantId).Returns(tenantId);
+        var currentSubscriber = new Mock<ICurrentSubscriber>(MockBehavior.Strict);
+        currentSubscriber.SetupGet(t => t.SubscriberId).Returns(subscriberId);
 
         var currentUser = new Mock<ICurrentUser>(MockBehavior.Strict);
         currentUser.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
@@ -34,7 +34,7 @@ public class CreateProductHandlerTests
         activity.Setup(a => a.AddAsync(It.IsAny<ERP.Domain.Audit.Entities.UserActivity>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var handler = new CreateProductCommandHandler(repo.Object, taxRates.Object, activity.Object, currentTenant.Object, currentUser.Object);
+        var handler = new CreateProductCommandHandler(repo.Object, taxRates.Object, activity.Object, currentSubscriber.Object, currentUser.Object);
 
         var cmd = new CreateProductCommand(
             SaleCode: "S-001",

@@ -22,7 +22,7 @@ public sealed class Carrier : MasterEntity
     private Carrier() { }
 
     public static Carrier Create(
-        Guid   tenantId,
+        Guid   subscriberId,
         string identificationType,
         string identificationNumber,
         string legalName,
@@ -34,7 +34,7 @@ public sealed class Carrier : MasterEntity
         var carrier = new Carrier
         {
             Id                  = Guid.NewGuid(),
-            TenantId            = tenantId,
+            SubscriberId            = subscriberId,
             IdentificationType  = identificationType.Trim().ToUpperInvariant(),
             IdentificationNumber = identificationNumber.Trim(),
             LegalName           = legalName.Trim(),

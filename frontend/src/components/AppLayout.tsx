@@ -10,7 +10,8 @@ import { syncSessionEntitlements } from '../lib/syncSessionEntitlements';
 import { accessService } from '../services/accessService';
 import { superAdminService } from '../services/superAdminService';
 import { LoadingState } from './PageShell';
-import { ZHAppTenantHeader } from './zh/ZHAppTenantHeader';
+import { ZHAppSubscriberHeader } from './zh/ZHAppSubscriberHeader';
+import { CompanySwitcher } from './CompanySwitcher';
 import {
   buildGlobalSuperAdminNavGroups,
   ensureSalesNextToInventory,
@@ -23,7 +24,7 @@ import {
   sortNavGroupsForMainBar,
   type NavItem,
 } from '../nav/navConfig';
-import { GLOBAL_TENANT_ID } from '../constants/tenantIds';
+import { GLOBAL_SUBSCRIBER_ID } from '../constants/subscriberIds';
 import { useDeployment } from '../deployment/DeploymentContext';
 import type { SessionMenuGroupDto } from '../types/access';
 import { readPlanCustomMenuBarLayout } from './menu-builder/menuBuilderTypes';
@@ -181,8 +182,8 @@ function MainMenuList({
   );
 }
 
-function getImpersonationTenantName(): string | null {
-  return localStorage.getItem('superadmin-impersonation-tenant-name');
+function getImpersonationSubscriberName(): string | null {
+  return localStorage.getItem('superadmin-impersonation-subscriber-name');
 }
 
 export function AppLayout() {
@@ -199,8 +200,8 @@ export function AppLayout() {
   const [sessionMenuResolved, setSessionMenuResolved] = useState(false);
 
   const isGlobalSuperAdmin = useMemo(
-    () => (user?.role ?? '') === 'SuperAdmin' && (user?.tenantId ?? '') === GLOBAL_TENANT_ID,
-    [user?.role, user?.tenantId],
+    () => (user?.role ?? '') === 'SuperAdmin' && (user?.subscriberId ?? '') === GLOBAL_SUBSCRIBER_ID,
+    [user?.role, user?.subscriberId],
   );
 
   useEffect(() => {
@@ -237,7 +238,7 @@ export function AppLayout() {
     return () => {
       cancelled = true;
     };
-  }, [user, isGlobalSuperAdmin, user?.tenantId]);
+  }, [user, isGlobalSuperAdmin, user?.subscriberId]);
 
   const restrictedPlanMenu = useMemo(
     () => isPlanBuilderSessionMenu(sessionMenuDto),
@@ -286,8 +287,8 @@ export function AppLayout() {
   // Auto-recupera permisos después de refresh/hidratación.
   useEffect(() => {
     let cancelled = false;
-    const tenantId = user?.tenantId ?? '';
-    const globalSa = (user?.role ?? '') === 'SuperAdmin' && tenantId === GLOBAL_TENANT_ID;
+    const subscriberId = user?.subscriberId ?? '';
+    const globalSa = (user?.role ?? '') === 'SuperAdmin' && subscriberId === GLOBAL_SUBSCRIBER_ID;
 
     if (!user || globalSa) return;
     if (permissions.length > 0 && enabledModules.length > 0) return;
@@ -479,8 +480,8 @@ export function AppLayout() {
     if (superadminReturningGlobal) return;
     setSuperadminReturningGlobal(true);
     try {
-      const auth = await superAdminService.switchTenant(GLOBAL_TENANT_ID);
-      localStorage.removeItem('superadmin-impersonation-tenant-name');
+      const auth = await superAdminService.switchTenant(GLOBAL_SUBSCRIBER_ID);
+      localStorage.removeItem('superadmin-impersonation-subscriber-name');
       login(auth);
       clearPermissions();
       navigate('/superadmin/overview');
@@ -494,7 +495,7 @@ export function AppLayout() {
   return (
     <div className="layout">
       <main className="content">
-        {user?.role === 'SuperAdmin' && user.tenantId && user.tenantId !== GLOBAL_TENANT_ID && (
+        {user?.role === 'SuperAdmin' && user.subscriberId && user.subscriberId !== GLOBAL_SUBSCRIBER_ID && (
           <div className={`superadmin-banner${superadminBannerOpen ? ' is-open' : ''}`}>
             <button
               type="button"
@@ -505,10 +506,10 @@ export function AppLayout() {
               <span className="superadmin-banner-dot" aria-hidden="true" />
               <strong className="superadmin-banner-title">{t('superadmin.banner')}</strong>
               <span className="superadmin-banner-tenantInline" title={t('superadmin.tenant.title')}>
-                {getImpersonationTenantName() ?? t('superadmin.tenant.unknown')}
+                {getImpersonationSubscriberName() ?? t('superadmin.tenant.unknown')}
               </span>
-              <span className="superadmin-banner-tenantIdInline mono" title={t('superadmin.tenant.idTitle')}>
-                {user.tenantId}
+              <span className="superadmin-banner-subscriberIdInline mono" title={t('superadmin.tenant.idTitle')}>
+                {user.subscriberId}
               </span>
               <span className="superadmin-banner-caret" aria-hidden="true">{superadminBannerOpen ? '▾' : '▸'}</span>
             </button>
@@ -516,10 +517,10 @@ export function AppLayout() {
             {superadminBannerOpen ? (
               <div className="superadmin-banner-details">
                 <div className="superadmin-banner-tenant" title={t('superadmin.tenant.title')}>
-                  {getImpersonationTenantName() ?? t('superadmin.tenant.unknown')}
+                  {getImpersonationSubscriberName() ?? t('superadmin.tenant.unknown')}
                 </div>
-                <div className="superadmin-banner-tenantId mono" title={t('superadmin.tenant.idTitle')}>
-                  {user.tenantId}
+                <div className="superadmin-banner-subscriberId mono" title={t('superadmin.tenant.idTitle')}>
+                  {user.subscriberId}
                 </div>
                 <button className="superadmin-banner-btn" onClick={() => void returnToGlobal()} type="button" disabled={superadminReturningGlobal}>
                   {t('superadmin.backToGlobal')}
@@ -529,8 +530,9 @@ export function AppLayout() {
           </div>
         )}
         <div className="app-tenantHeaderWrap">
-          <ZHAppTenantHeader
+          <ZHAppSubscriberHeader
             onLogout={handleLogout}
+            leftExtra={!isGlobalSuperAdmin ? <CompanySwitcher /> : null}
             rightExtra={<LanguageSwitcher />}
             bottomLeft={
               !isGlobalSuperAdmin && user && !sessionMenuResolved ? (

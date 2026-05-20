@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -9,9 +9,9 @@ public sealed class GetWarehouseByIdQueryHandler
     : IRequestHandler<GetWarehouseByIdQuery, Result<WarehouseDetailDto?>>
 {
     private readonly IWarehouseRepository _repo;
-    private readonly ICurrentTenant    _tenant;
+    private readonly ICurrentSubscriber    _tenant;
 
-    public GetWarehouseByIdQueryHandler(IWarehouseRepository repo, ICurrentTenant tenant)
+    public GetWarehouseByIdQueryHandler(IWarehouseRepository repo, ICurrentSubscriber tenant)
     {
         _repo   = repo;
         _tenant = tenant;
@@ -20,7 +20,7 @@ public sealed class GetWarehouseByIdQueryHandler
     public async Task<Result<WarehouseDetailDto?>> Handle(
         GetWarehouseByIdQuery query, CancellationToken ct)
     {
-        var b = await _repo.GetByIdAsync(_tenant.TenantId, query.Id, ct);
+        var b = await _repo.GetByIdAsync(_tenant.SubscriberId, query.Id, ct);
         if (b is null) return Result<WarehouseDetailDto?>.Success(null);
 
         return Result<WarehouseDetailDto?>.Success(new WarehouseDetailDto(

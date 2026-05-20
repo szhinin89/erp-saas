@@ -12,18 +12,18 @@ public class CreateTaxRateHandler : IRequestHandler<CreateTaxRateCommand, Result
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public CreateTaxRateHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
         _activity = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
@@ -32,13 +32,13 @@ public class CreateTaxRateHandler : IRequestHandler<CreateTaxRateCommand, Result
 
     public async Task<Result<TaxRateDto>> Handle(CreateTaxRateCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId = _currentUser.UserId;
 
-        var entity = TaxRate.Create(tenantId, command.Code, command.Name, command.Type, command.Percentage, userId);
+        var entity = TaxRate.Create(subscriberId, command.Code, command.Name, command.Type, command.Percentage, userId);
         await _repo.AddTaxRateAsync(entity, ct);
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _currentUser.Email,
             _currentUser.FullName,

@@ -6,6 +6,6 @@ namespace ERP.Application.Subscriptions;
 public interface ISessionModulesResolver
 {
     Task<IReadOnlyList<string>> GetEnabledModuleKeysAsync(
-        Guid tenantId,
+        Guid subscriberId,
         CancellationToken ct = default);
 }

@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Modules.Cash.Entities;
+using ERP.Domain.Modules.Cash.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,7 +12,7 @@ public sealed class BankTransactionConfiguration : IEntityTypeConfiguration<Bank
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
-        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(x => x.BankStatementId).HasColumnName("bank_statement_id").IsRequired();
         builder.Property(x => x.TransactionDate).HasColumnName("transaction_date").IsRequired();
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(BankTransaction.DescriptionMaxLen).IsRequired();
@@ -22,8 +22,8 @@ public sealed class BankTransactionConfiguration : IEntityTypeConfiguration<Bank
         builder.Property(x => x.JournalEntryId).HasColumnName("journal_entry_id");
         builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(BankTransaction.StatusMaxLen).IsRequired();
 
-        builder.HasIndex(x => new { x.TenantId, x.BankStatementId, x.TransactionDate })
-            .HasDatabaseName("ix_bank_transaction_tenant_statement_date");
+        builder.HasIndex(x => new { x.SubscriberId, x.BankStatementId, x.TransactionDate })
+            .HasDatabaseName("ix_bank_transaction_subscriber_statement_date");
 
         builder.HasOne<ERP.Domain.Modules.Accounting.Entities.JournalEntry>()
             .WithMany()

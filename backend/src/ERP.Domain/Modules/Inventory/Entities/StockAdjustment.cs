@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Inventory.Entities;
 
-public sealed class StockAdjustment : AuditableEntity, ITenantEntity
+public sealed class StockAdjustment : AuditableEntity, ISubscriberScopedEntity
 {
     public const int NumberMaxLen          = 20;
     public const int AdjustmentTypeMaxLen  = 20;
@@ -30,7 +30,7 @@ public sealed class StockAdjustment : AuditableEntity, ITenantEntity
     private StockAdjustment() { }
 
     public static StockAdjustment Create(
-        Guid    tenantId,
+        Guid    subscriberId,
         int     sequential,
         Guid    warehouseId,
         string  warehouseName,
@@ -49,7 +49,7 @@ public sealed class StockAdjustment : AuditableEntity, ITenantEntity
         var a = new StockAdjustment
         {
             Id               = Guid.NewGuid(),
-            TenantId         = tenantId,
+            SubscriberId         = subscriberId,
             Sequential       = sequential,
             AdjustmentNumber = $"ADJ-{sequential:D4}",
             WarehouseId      = warehouseId,

@@ -12,18 +12,18 @@ public class CreateTariffHandler : IRequestHandler<CreateTariffCommand, Result<T
 {
     private readonly IProductCatalogRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public CreateTariffHandler(
         IProductCatalogRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
         _activity = activity;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
@@ -32,12 +32,12 @@ public class CreateTariffHandler : IRequestHandler<CreateTariffCommand, Result<T
 
     public async Task<Result<TariffDto>> Handle(CreateTariffCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId = _currentUser.UserId;
-        var entity = Tariff.Create(tenantId, command.Code, command.Description, userId);
+        var entity = Tariff.Create(subscriberId, command.Code, command.Description, userId);
         await _repo.AddTariffAsync(entity, ct);
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _currentUser.Email,
             _currentUser.FullName,

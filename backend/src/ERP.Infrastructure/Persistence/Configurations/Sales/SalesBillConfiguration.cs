@@ -13,7 +13,7 @@ public sealed class SalesBillConfiguration : IEntityTypeConfiguration<SalesBill>
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.BranchId).HasColumnName("branch_id").IsRequired();
         builder.Property(e => e.CustomerId).HasColumnName("customer_id").IsRequired();
         builder.Property(e => e.WarehouseId).HasColumnName("warehouse_id").IsRequired();
@@ -46,7 +46,7 @@ public sealed class SalesBillConfiguration : IEntityTypeConfiguration<SalesBill>
         builder.HasOne(e => e.Warehouse).WithMany().HasForeignKey(e => e.WarehouseId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(e => e.Lines).WithOne().HasForeignKey(d => d.SalesBillId).OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(e => new { e.TenantId, e.EstabCode, e.EmPointCode, e.Sequential }).IsUnique().HasDatabaseName("uq_sales_bill_seq");
-        builder.HasIndex(e => new { e.TenantId, e.IssueDate }).HasDatabaseName("ix_sales_bill_tenant_date");
+        builder.HasIndex(e => new { e.SubscriberId, e.EstabCode, e.EmPointCode, e.Sequential }).IsUnique().HasDatabaseName("uq_sales_bill_seq");
+        builder.HasIndex(e => new { e.SubscriberId, e.IssueDate }).HasDatabaseName("ix_sales_bill_subscriber_date");
     }
 }

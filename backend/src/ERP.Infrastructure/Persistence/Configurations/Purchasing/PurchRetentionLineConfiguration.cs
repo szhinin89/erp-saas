@@ -12,7 +12,7 @@ public sealed class PurchRetentionLineConfiguration : IEntityTypeConfiguration<P
 
         builder.HasKey(d => d.Id);
         builder.Property(d => d.Id).HasColumnName("id");
-        builder.Property(d => d.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(d => d.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(d => d.IssuedRetentionId).HasColumnName("issued_retention_id").IsRequired();
         builder.Property(d => d.TaxType).HasColumnName("tax_type").HasMaxLength(PurchRetentionLine.TaxTypeMaxLen).IsRequired();
         builder.Property(d => d.RetentionCode).HasColumnName("retention_code").HasMaxLength(PurchRetentionLine.RetentionCodeMaxLen).IsRequired();

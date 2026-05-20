@@ -16,14 +16,14 @@ public class ProductSubstitute : BaseEntity
     private ProductSubstitute() { }
 
     internal static ProductSubstitute Create(
-        Guid productId, Guid tenantId, Guid substituteProductId, string? note = null)
+        Guid productId, Guid subscriberId, Guid substituteProductId, string? note = null)
     {
         if (productId == substituteProductId)
             throw new ArgumentException("Un producto no puede ser sustituto de sí mismo.");
         return new()
         {
             Id                  = Guid.NewGuid(),
-            TenantId            = tenantId,
+            SubscriberId            = subscriberId,
             ProductId           = productId,
             SubstituteProductId = substituteProductId,
             Note                = note,

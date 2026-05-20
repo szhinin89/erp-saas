@@ -12,7 +12,7 @@ public sealed class KardexReportConfiguration : IEntityTypeConfiguration<KardexR
 
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).HasColumnName("id");
-        builder.Property(r => r.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(r => r.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(r => r.ProductId).HasColumnName("product_id").IsRequired();
         builder.Property(r => r.WarehouseId).HasColumnName("warehouse_id").IsRequired();
         builder.Property(r => r.DateFrom).HasColumnName("date_from");
@@ -23,7 +23,7 @@ public sealed class KardexReportConfiguration : IEntityTypeConfiguration<KardexR
         builder.Property(r => r.RequestedAt).HasColumnName("requested_at").IsRequired();
         builder.Property(r => r.CompletedAt).HasColumnName("completed_at");
 
-        builder.HasIndex(r => new { r.TenantId, r.Status }).HasDatabaseName("ix_kardex_report_tenant_status");
+        builder.HasIndex(r => new { r.SubscriberId, r.Status }).HasDatabaseName("ix_kardex_report_subscriber_status");
         builder.HasIndex(r => r.RequestedAt).HasDatabaseName("ix_kardex_report_requested_at");
     }
 }

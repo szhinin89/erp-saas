@@ -6,17 +6,17 @@ public interface ICustomerRepository
 {
     Task AddAsync(Customer customer, CancellationToken ct = default);
 
-    Task<Customer?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default);
+    Task<Customer?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default);
 
     Task<bool> ExistsIdentificationAsync(
-        Guid tenantId,
+        Guid subscriberId,
         string identificationType,
         string identificationNumber,
         Guid? excludeCustomerId,
         CancellationToken ct = default);
 
     Task<IReadOnlyList<Customer>> GetAsync(
-        Guid tenantId,
+        Guid subscriberId,
         bool? activeFilter,
         string? search,
         CancellationToken ct = default);

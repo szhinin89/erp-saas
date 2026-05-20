@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
@@ -13,21 +13,21 @@ public sealed class StockAdjustmentRepository : IStockAdjustmentRepository
     public Task AddAsync(StockAdjustment ajuste, CancellationToken ct = default)
         => _context.StockAdjustments.AddAsync(ajuste, ct).AsTask();
 
-    public Task<StockAdjustment?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+    public Task<StockAdjustment?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
         => _context.StockAdjustments
-            .FirstOrDefaultAsync(a => a.TenantId == tenantId && a.Id == id, ct);
+            .FirstOrDefaultAsync(a => a.SubscriberId == subscriberId && a.Id == id, ct);
 
-    public async Task<int> GetNextSequentialAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<int> GetNextSequentialAsync(Guid subscriberId, CancellationToken ct = default)
     {
         // MaxAsync nullable — compatible con PostgreSQL e InMemory
         var max = await _context.StockAdjustments
-            .Where(a => a.TenantId == tenantId)
+            .Where(a => a.SubscriberId == subscriberId)
             .MaxAsync(a => (int?)a.Sequential, ct);
         return (max ?? 0) + 1;
     }
 
     public async Task<(IReadOnlyList<StockAdjustment> Items, int TotalCount)> GetPagedAsync(
-        Guid      tenantId,
+        Guid      subscriberId,
         int       pageNumber,
         int       pageSize,
         Guid?     WarehouseId,
@@ -38,7 +38,7 @@ public sealed class StockAdjustmentRepository : IStockAdjustmentRepository
         CancellationToken ct = default)
     {
         var query = _context.StockAdjustments
-            .Where(a => a.TenantId == tenantId);
+            .Where(a => a.SubscriberId == subscriberId);
 
         if (WarehouseId.HasValue)
             query = query.Where(a => a.WarehouseId == WarehouseId.Value);

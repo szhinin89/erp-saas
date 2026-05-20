@@ -9,26 +9,26 @@ namespace ERP.Application.Modules.Logistics.UseCases.CreateCarrier;
 public class CreateCarrierHandler : IRequestHandler<CreateCarrierCommand, Result<CarrierDto>>
 {
     private readonly ICarrierRepository _repo;
-    private readonly ICurrentTenant     _currentTenant;
+    private readonly ICurrentSubscriber     _currentSubscriber;
     private readonly ICurrentUser       _currentUser;
 
-    public CreateCarrierHandler(ICarrierRepository repo, ICurrentTenant currentTenant, ICurrentUser currentUser)
+    public CreateCarrierHandler(ICarrierRepository repo, ICurrentSubscriber currentSubscriber, ICurrentUser currentUser)
     {
         _repo          = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
     }
 
     public async Task<Result<CarrierDto>> Handle(CreateCarrierCommand command, CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
 
-        var duplicate = await _repo.ExistsIdentificationAsync(tenantId, command.IdentificationNumber, excludeId: null, ct);
+        var duplicate = await _repo.ExistsIdentificationAsync(subscriberId, command.IdentificationNumber, excludeId: null, ct);
         if (duplicate)
             return Result<CarrierDto>.Failure("A carrier with this identification number already exists.");
 
         var carrier = Carrier.Create(
-            tenantId,
+            subscriberId,
             command.IdentificationType,
             command.IdentificationNumber,
             command.LegalName,

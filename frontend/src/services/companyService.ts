@@ -15,8 +15,8 @@ export type CompanyItem = {
 };
 
 export type CreateCompanyWithAdminRequest = {
-  tenantName: string;
-  tenantSlug: string;
+  subscriberName: string;
+  subscriberSlug: string;
   ruc?: string | null;
   shortName?: string | null;
   tradeName?: string | null;
@@ -35,7 +35,7 @@ export type CreateCompanyWithAdminRequest = {
   enabledModules?: string[] | null;
 };
 
-export type UpdateTenantCompanyBody = {
+export type UpdateSubscriberCompanyBody = {
   name: string;
   slug: string;
   ruc?: string | null;
@@ -47,13 +47,13 @@ export type UpdateTenantCompanyBody = {
   priority: number;
 };
 
-export type UpdateTenantGlobalParametersBody = {
+export type UpdateSubscriberGlobalParametersBody = {
   electronicBillingTrialEnabled: boolean;
 };
 
 export type ConfigEntryDto = {
   id: string;
-  tenantId: string;
+  subscriberId: string;
   scope: 'global' | 'module' | 'feature' | string;
   module: string | null;
   feature: string | null;
@@ -65,7 +65,7 @@ export type ConfigEntryDto = {
 };
 
 export type ResolvedConfigValueDto = {
-  tenantId: string;
+  subscriberId: string;
   key: string;
   module: string | null;
   feature: string | null;
@@ -80,7 +80,7 @@ export type UpsertConfigBody = {
   dataType: string;
 };
 
-/** Detalle de empresa (`GET /api/tenants/{id}`), alineado con `TenantDto` del backend. */
+/** Detalle de empresa (`GET /api/subscribers/{id}`), alineado con `SubscriberDto` del backend. */
 export type TenantDetailDto = {
   id: string;
   name: string;
@@ -108,21 +108,21 @@ export type TenantDetailDto = {
 
 export const companyService = {
   list: () =>
-    api.get<ApiResponse<{ tenants?: CompanyItem[] } | CompanyItem[]>>('/api/admin/iam/superadmin/tenants')
+    api.get<ApiResponse<{ subscribers?: CompanyItem[] } | CompanyItem[]>>('/api/admin/iam/superadmin/subscribers')
       .then((r) => {
         const responseObject = r.data.responseObject;
         if (Array.isArray(responseObject)) {
           return responseObject;
         }
-        if (responseObject && Array.isArray(responseObject.tenants)) {
-          return responseObject.tenants;
+        if (responseObject && Array.isArray(responseObject.subscribers)) {
+          return responseObject.subscribers;
         }
         return [];
       }),
 
-  getTenant: (tenantId: string) =>
+  getTenant: (subscriberId: string) =>
     api
-      .get<ApiResponse<TenantDetailDto>>(`/api/tenants/${encodeURIComponent(tenantId)}`)
+      .get<ApiResponse<TenantDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}`)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');
@@ -130,18 +130,18 @@ export const companyService = {
       }),
 
   create: (req: CreateCompanyWithAdminRequest) =>
-    api.post<ApiResponse<SessionResponse>>('/api/admin/iam/superadmin/tenants', req).then((r) => r.data.responseObject),
+    api.post<ApiResponse<SessionResponse>>('/api/admin/iam/superadmin/subscribers', req).then((r) => r.data.responseObject),
 
-  updateTenantCompany: (tenantId: string, body: UpdateTenantCompanyBody) =>
+  updateTenantCompany: (subscriberId: string, body: UpdateSubscriberCompanyBody) =>
     api
-      .patch<ApiResponse<TenantDetailDto>>(`/api/tenants/${encodeURIComponent(tenantId)}/company`, body)
+      .patch<ApiResponse<TenantDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}/company`, body)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');
         return o;
       }),
 
-  updateTenantOperationalSettings: (tenantId: string, body: {
+  updateTenantOperationalSettings: (subscriberId: string, body: {
     currency: string;
     language: string;
     timezone: string;
@@ -149,37 +149,37 @@ export const companyService = {
     defaultCreditDays: number;
   }) =>
     api
-      .patch<ApiResponse<TenantDetailDto>>(`/api/tenants/${encodeURIComponent(tenantId)}/operational-settings`, body)
+      .patch<ApiResponse<TenantDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}/operational-settings`, body)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');
         return o;
       }),
 
-  updateTenantGlobalParameters: (tenantId: string, body: UpdateTenantGlobalParametersBody) =>
+  updateTenantGlobalParameters: (subscriberId: string, body: UpdateSubscriberGlobalParametersBody) =>
     api
-      .patch<ApiResponse<TenantDetailDto>>(`/api/tenants/${encodeURIComponent(tenantId)}/global-parameters`, body)
+      .patch<ApiResponse<TenantDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}/global-parameters`, body)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');
         return o;
       }),
 
-  resolveTenantConfig: (tenantId: string, key: string, module?: string | null, feature?: string | null) =>
+  resolveTenantConfig: (subscriberId: string, key: string, module?: string | null, feature?: string | null) =>
     api
-      .get<ApiResponse<ResolvedConfigValueDto | null>>(`/api/superadmin/config/${encodeURIComponent(tenantId)}/resolve`, {
+      .get<ApiResponse<ResolvedConfigValueDto | null>>(`/api/superadmin/config/${encodeURIComponent(subscriberId)}/resolve`, {
         params: { key, module: module ?? undefined, feature: feature ?? undefined },
       })
       .then((r) => r.data.responseObject),
 
-  listTenantGlobalConfig: (tenantId: string) =>
+  listTenantGlobalConfig: (subscriberId: string) =>
     api
-      .get<ApiResponse<ConfigEntryDto[]>>(`/api/superadmin/config/${encodeURIComponent(tenantId)}/global`)
+      .get<ApiResponse<ConfigEntryDto[]>>(`/api/superadmin/config/${encodeURIComponent(subscriberId)}/global`)
       .then((r) => r.data.responseObject ?? []),
 
-  upsertTenantGlobalConfig: (tenantId: string, body: UpsertConfigBody) =>
+  upsertTenantGlobalConfig: (subscriberId: string, body: UpsertConfigBody) =>
     api
-      .put<ApiResponse<ConfigEntryDto>>(`/api/superadmin/config/${encodeURIComponent(tenantId)}/global`, body)
+      .put<ApiResponse<ConfigEntryDto>>(`/api/superadmin/config/${encodeURIComponent(subscriberId)}/global`, body)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');

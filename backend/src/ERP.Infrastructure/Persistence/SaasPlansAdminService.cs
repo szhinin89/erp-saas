@@ -7,30 +7,30 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence;
 
-public sealed class SaasPlansAdminService : ISaasPlansAdminService
+public sealed class CommercialPlansAdminService : ICommercialPlansAdminService
 {
     private readonly ErpDbContext _db;
 
-    public SaasPlansAdminService(ErpDbContext db) => _db = db;
+    public CommercialPlansAdminService(ErpDbContext db) => _db = db;
 
-    public async Task<IReadOnlyList<SaasPlanAdminDto>> ListPlansAdminAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<CommercialPlanAdminDto>> ListPlansAdminAsync(CancellationToken ct = default)
     {
-        var plans = await _db.SaasPlans.AsNoTracking()
+        var plans = await _db.CommercialPlans.AsNoTracking()
             .OrderBy(p => p.SortOrder)
             .ThenBy(p => p.Code)
             .ToListAsync(ct);
-        if (plans.Count == 0) return Array.Empty<SaasPlanAdminDto>();
+        if (plans.Count == 0) return Array.Empty<CommercialPlanAdminDto>();
 
         var planIds = plans.Select(p => p.Id).ToList();
-        var links = await _db.SaasPlanFeatures.AsNoTracking()
+        var links = await _db.CommercialPlanFeatures.AsNoTracking()
             .Where(pf => planIds.Contains(pf.PlanId))
             .ToListAsync(ct);
         var featureIds = links.Select(l => l.FeatureId).Distinct().ToList();
-        var defs = await _db.SaasFeatureDefinitions.AsNoTracking()
+        var defs = await _db.PlatformFeatures.AsNoTracking()
             .Where(f => featureIds.Contains(f.Id))
             .ToDictionaryAsync(f => f.Id, f => f, ct);
 
-        var result = new List<SaasPlanAdminDto>(plans.Count);
+        var result = new List<CommercialPlanAdminDto>(plans.Count);
         foreach (var plan in plans)
         {
             var feats = links
@@ -38,7 +38,7 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
                 .Select(l =>
                 {
                     var d = defs[l.FeatureId];
-                    return new SaasPlanFeatureAdminDto(
+                    return new CommercialPlanFeatureAdminDto(
                         d.Id,
                         d.Code,
                         d.Name,
@@ -51,7 +51,7 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
                 .OrderBy(x => x.FeatureCode)
                 .ToList();
 
-            result.Add(new SaasPlanAdminDto(
+            result.Add(new CommercialPlanAdminDto(
                 plan.Id,
                 plan.Code,
                 plan.Name,
@@ -66,7 +66,7 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
                 plan.ExternalBillingRef,
                 !string.IsNullOrWhiteSpace(plan.MenuConfigJson),
                 string.IsNullOrWhiteSpace(plan.MenuSidebarLayout)
-                    ? SaasPlan.MenuSidebarLayoutHorizontal
+                    ? CommercialPlan.MenuSidebarLayoutHorizontal
                     : plan.MenuSidebarLayout,
                 feats));
         }
@@ -74,15 +74,15 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
         return result;
     }
 
-    public async Task<Result<Guid>> CreatePlanAsync(CreateSaasPlanRequest request, CancellationToken ct = default)
+    public async Task<Result<Guid>> CreatePlanAsync(CreateCommercialPlanRequest request, CancellationToken ct = default)
     {
         try
         {
             var code = request.Code.Trim().ToLowerInvariant();
-            if (await _db.SaasPlans.AnyAsync(p => p.Code == code, ct))
+            if (await _db.CommercialPlans.AnyAsync(p => p.Code == code, ct))
                 return Result<Guid>.Failure("Ya existe un plan con ese código.");
 
-            var plan = SaasPlan.Create(
+            var plan = CommercialPlan.Create(
                 request.Code,
                 request.Name,
                 request.ShortLabel,
@@ -98,7 +98,7 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
             if (request.IsRecommended)
                 await ClearRecommendedExceptAsync(plan.Id, ct);
 
-            _db.SaasPlans.Add(plan);
+            _db.CommercialPlans.Add(plan);
             await _db.SaveChangesAsync(ct);
             return Result<Guid>.Success(plan.Id);
         }
@@ -108,9 +108,9 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
         }
     }
 
-    public async Task<Result<object?>> UpdatePlanAsync(Guid planId, UpdateSaasPlanRequest request, CancellationToken ct = default)
+    public async Task<Result<object?>> UpdatePlanAsync(Guid planId, UpdateCommercialPlanRequest request, CancellationToken ct = default)
     {
-        var plan = await _db.SaasPlans.FirstOrDefaultAsync(p => p.Id == planId, ct);
+        var plan = await _db.CommercialPlans.FirstOrDefaultAsync(p => p.Id == planId, ct);
         if (plan is null)
             return Result<object?>.Failure("Plan no encontrado.");
 
@@ -149,18 +149,18 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
 
     public async Task<Result<object?>> DeletePlanAsync(Guid planId, CancellationToken ct = default)
     {
-        var used = await _db.TenantSaasSubscriptions.AsNoTracking().AnyAsync(s => s.PlanId == planId, ct);
+        var used = await _db.SubscriberSubscriptions.AsNoTracking().AnyAsync(s => s.PlanId == planId, ct);
         if (used)
             return Result<object?>.Failure("No se puede eliminar: hay suscripciones de tenant usando este plan.");
 
-        var links = await _db.SaasPlanFeatures.Where(pf => pf.PlanId == planId).ToListAsync(ct);
-        _db.SaasPlanFeatures.RemoveRange(links);
+        var links = await _db.CommercialPlanFeatures.Where(pf => pf.PlanId == planId).ToListAsync(ct);
+        _db.CommercialPlanFeatures.RemoveRange(links);
 
-        var plan = await _db.SaasPlans.FirstOrDefaultAsync(p => p.Id == planId, ct);
+        var plan = await _db.CommercialPlans.FirstOrDefaultAsync(p => p.Id == planId, ct);
         if (plan is null)
             return Result<object?>.Failure("Plan no encontrado.");
 
-        _db.SaasPlans.Remove(plan);
+        _db.CommercialPlans.Remove(plan);
         await _db.SaveChangesAsync(ct);
         return Result<object?>.Success(null);
     }
@@ -174,7 +174,7 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
         var order = 0;
         foreach (var id in orderedPlanIds)
         {
-            var plan = await _db.SaasPlans.FirstOrDefaultAsync(p => p.Id == id, ct);
+            var plan = await _db.CommercialPlans.FirstOrDefaultAsync(p => p.Id == id, ct);
             if (plan is null)
             {
                 await tx.RollbackAsync(ct);
@@ -191,7 +191,7 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
 
     public async Task<Result<object?>> SetRecommendedPlanAsync(Guid planId, CancellationToken ct = default)
     {
-        var plan = await _db.SaasPlans.FirstOrDefaultAsync(p => p.Id == planId, ct);
+        var plan = await _db.CommercialPlans.FirstOrDefaultAsync(p => p.Id == planId, ct);
         if (plan is null)
             return Result<object?>.Failure("Plan no encontrado.");
 
@@ -203,11 +203,11 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
 
     public async Task<Result<PlanMenuReadDto>> GetPlanMenuAsync(Guid planId, CancellationToken ct = default)
     {
-        var plan = await _db.SaasPlans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == planId, ct);
+        var plan = await _db.CommercialPlans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == planId, ct);
         if (plan is null)
             return Result<PlanMenuReadDto>.Failure("Plan no encontrado.");
         var layout = string.IsNullOrWhiteSpace(plan.MenuSidebarLayout)
-            ? SaasPlan.MenuSidebarLayoutHorizontal
+            ? CommercialPlan.MenuSidebarLayoutHorizontal
             : plan.MenuSidebarLayout;
         return Result<PlanMenuReadDto>.Success(new PlanMenuReadDto(plan.MenuConfigJson, layout));
     }
@@ -218,7 +218,7 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
         string? menuSidebarLayout = null,
         CancellationToken ct = default)
     {
-        var plan = await _db.SaasPlans.FirstOrDefaultAsync(p => p.Id == planId, ct);
+        var plan = await _db.CommercialPlans.FirstOrDefaultAsync(p => p.Id == planId, ct);
         if (plan is null)
             return Result<object?>.Failure("Plan no encontrado.");
 
@@ -283,11 +283,11 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
         if (!copyMenu)
             return Result<object?>.Failure("Seleccione al menos copiar menú.");
 
-        var target = await _db.SaasPlans.FirstOrDefaultAsync(p => p.Id == targetPlanId, ct);
+        var target = await _db.CommercialPlans.FirstOrDefaultAsync(p => p.Id == targetPlanId, ct);
         if (target is null)
             return Result<object?>.Failure("Plan destino no encontrado.");
 
-        var source = await _db.SaasPlans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == sourcePlanId, ct);
+        var source = await _db.CommercialPlans.AsNoTracking().FirstOrDefaultAsync(p => p.Id == sourcePlanId, ct);
         if (source is null)
             return Result<object?>.Failure("Plan origen no encontrado.");
 
@@ -303,7 +303,7 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
                 }
                 catch (ArgumentException)
                 {
-                    target.SetMenuSidebarLayout(SaasPlan.MenuSidebarLayoutHorizontal);
+                    target.SetMenuSidebarLayout(CommercialPlan.MenuSidebarLayoutHorizontal);
                 }
             }
 
@@ -320,7 +320,7 @@ public sealed class SaasPlansAdminService : ISaasPlansAdminService
 
     private async Task ClearRecommendedExceptAsync(Guid? exceptPlanId, CancellationToken ct)
     {
-        var recommended = await _db.SaasPlans.Where(p => p.IsRecommended && (exceptPlanId == null || p.Id != exceptPlanId)).ToListAsync(ct);
+        var recommended = await _db.CommercialPlans.Where(p => p.IsRecommended && (exceptPlanId == null || p.Id != exceptPlanId)).ToListAsync(ct);
         foreach (var p in recommended)
             p.SetRecommended(false);
     }

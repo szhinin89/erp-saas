@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Sales.DTOs;
 using ERP.Domain.Modules.Sales.Interfaces;
@@ -12,21 +12,21 @@ public sealed class GetSalesRetentionsReceivedListQueryHandler
     : IRequestHandler<GetSalesRetentionsReceivedListQuery, Result<IReadOnlyList<SalesRetentionListItemDto>>>
 {
     private readonly ISalesRepository _ventasRepository;
-    private readonly ICurrentTenant  _currentTenant;
+    private readonly ICurrentSubscriber  _currentSubscriber;
 
     public GetSalesRetentionsReceivedListQueryHandler(
         ISalesRepository ventasRepository,
-        ICurrentTenant currentTenant)
+        ICurrentSubscriber currentSubscriber)
     {
         _ventasRepository = ventasRepository;
-        _currentTenant    = currentTenant;
+        _currentSubscriber    = currentSubscriber;
     }
 
     public async Task<Result<IReadOnlyList<SalesRetentionListItemDto>>> Handle(
         GetSalesRetentionsReceivedListQuery request,
         CancellationToken ct)
     {
-        var list = await _ventasRepository.GetRetentionsAsync(_currentTenant.TenantId, ct);
+        var list = await _ventasRepository.GetRetentionsAsync(_currentSubscriber.SubscriberId, ct);
         var dto = list.Select(r => new SalesRetentionListItemDto(
             r.Id, r.CustomerId, r.AccessKey, r.IssueDate, r.TotalRetained, r.SalesBillId)).ToList();
         return Result<IReadOnlyList<SalesRetentionListItemDto>>.Success(dto);

@@ -1,4 +1,4 @@
-﻿using ERP.API.Contracts;
+using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Admin;
@@ -24,31 +24,31 @@ public sealed class SuperAdminConfigController : ControllerBase
         _currentUser = currentUser;
     }
 
-    [HttpGet("{tenantId:guid}/resolve")]
+    [HttpGet("{subscriberId:guid}/resolve")]
     [ProducesResponseType(typeof(ApiResponse<ResolvedConfigValueDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Resolve([FromRoute] Guid tenantId, [FromQuery] string key, [FromQuery] string? module, [FromQuery] string? feature, CancellationToken ct)
+    public async Task<IActionResult> Resolve([FromRoute] Guid subscriberId, [FromQuery] string key, [FromQuery] string? module, [FromQuery] string? feature, CancellationToken ct)
     {
-        var value = await _configService.GetValueAsync(tenantId, key, module, feature, null, ct);
+        var value = await _configService.GetValueAsync(subscriberId, key, module, feature, null, ct);
         return this.ApiOk(value);
     }
 
-    [HttpGet("{tenantId:guid}/global")]
+    [HttpGet("{subscriberId:guid}/global")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ConfigEntryDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ListGlobal([FromRoute] Guid tenantId, CancellationToken ct)
+    public async Task<IActionResult> ListGlobal([FromRoute] Guid subscriberId, CancellationToken ct)
     {
-        var rows = await _configService.ListGlobalAsync(tenantId, ct);
+        var rows = await _configService.ListGlobalAsync(subscriberId, ct);
         return this.ApiOk(rows);
     }
 
-    [HttpPut("{tenantId:guid}/global")]
+    [HttpPut("{subscriberId:guid}/global")]
     [ProducesResponseType(typeof(ApiResponse<ConfigEntryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpsertGlobal([FromRoute] Guid tenantId, [FromBody] UpsertGlobalConfigBody body, CancellationToken ct)
+    public async Task<IActionResult> UpsertGlobal([FromRoute] Guid subscriberId, [FromBody] UpsertGlobalConfigBody body, CancellationToken ct)
     {
         try
         {
-            var row = await _configService.UpsertGlobalAsync(tenantId, body.Key, body.Value, body.DataType, CurrentUserIdOrEmpty(), ct);
+            var row = await _configService.UpsertGlobalAsync(subscriberId, body.Key, body.Value, body.DataType, CurrentUserIdOrEmpty(), ct);
             return this.ApiOk(row);
         }
         catch (ArgumentException ex)
@@ -57,31 +57,31 @@ public sealed class SuperAdminConfigController : ControllerBase
         }
     }
 
-    [HttpDelete("{tenantId:guid}/global/{key}")]
+    [HttpDelete("{subscriberId:guid}/global/{key}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> DeleteGlobal([FromRoute] Guid tenantId, [FromRoute] string key, CancellationToken ct)
+    public async Task<IActionResult> DeleteGlobal([FromRoute] Guid subscriberId, [FromRoute] string key, CancellationToken ct)
     {
-        _ = await _configService.DeleteGlobalAsync(tenantId, key, ct);
+        _ = await _configService.DeleteGlobalAsync(subscriberId, key, ct);
         return this.ApiOk(new { });
     }
 
-    [HttpGet("{tenantId:guid}/module/{module}")]
+    [HttpGet("{subscriberId:guid}/module/{module}")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ConfigEntryDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ListModule([FromRoute] Guid tenantId, [FromRoute] string module, CancellationToken ct)
+    public async Task<IActionResult> ListModule([FromRoute] Guid subscriberId, [FromRoute] string module, CancellationToken ct)
     {
-        var rows = await _configService.ListModuleAsync(tenantId, module, ct);
+        var rows = await _configService.ListModuleAsync(subscriberId, module, ct);
         return this.ApiOk(rows);
     }
 
-    [HttpPut("{tenantId:guid}/module/{module}")]
+    [HttpPut("{subscriberId:guid}/module/{module}")]
     [ProducesResponseType(typeof(ApiResponse<ConfigEntryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpsertModule([FromRoute] Guid tenantId, [FromRoute] string module, [FromBody] UpsertScopedConfigBody body, CancellationToken ct)
+    public async Task<IActionResult> UpsertModule([FromRoute] Guid subscriberId, [FromRoute] string module, [FromBody] UpsertScopedConfigBody body, CancellationToken ct)
     {
         try
         {
-            var row = await _configService.UpsertModuleAsync(tenantId, module, body.Key, body.Value, body.DataType, CurrentUserIdOrEmpty(), ct);
+            var row = await _configService.UpsertModuleAsync(subscriberId, module, body.Key, body.Value, body.DataType, CurrentUserIdOrEmpty(), ct);
             return this.ApiOk(row);
         }
         catch (ArgumentException ex)
@@ -90,31 +90,31 @@ public sealed class SuperAdminConfigController : ControllerBase
         }
     }
 
-    [HttpDelete("{tenantId:guid}/module/{module}/{key}")]
+    [HttpDelete("{subscriberId:guid}/module/{module}/{key}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> DeleteModule([FromRoute] Guid tenantId, [FromRoute] string module, [FromRoute] string key, CancellationToken ct)
+    public async Task<IActionResult> DeleteModule([FromRoute] Guid subscriberId, [FromRoute] string module, [FromRoute] string key, CancellationToken ct)
     {
-        _ = await _configService.DeleteModuleAsync(tenantId, module, key, ct);
+        _ = await _configService.DeleteModuleAsync(subscriberId, module, key, ct);
         return this.ApiOk(new { });
     }
 
-    [HttpGet("{tenantId:guid}/feature/{feature}")]
+    [HttpGet("{subscriberId:guid}/feature/{feature}")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ConfigEntryDto>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> ListFeature([FromRoute] Guid tenantId, [FromRoute] string feature, CancellationToken ct)
+    public async Task<IActionResult> ListFeature([FromRoute] Guid subscriberId, [FromRoute] string feature, CancellationToken ct)
     {
-        var rows = await _configService.ListFeatureAsync(tenantId, feature, ct);
+        var rows = await _configService.ListFeatureAsync(subscriberId, feature, ct);
         return this.ApiOk(rows);
     }
 
-    [HttpPut("{tenantId:guid}/feature/{feature}")]
+    [HttpPut("{subscriberId:guid}/feature/{feature}")]
     [ProducesResponseType(typeof(ApiResponse<ConfigEntryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpsertFeature([FromRoute] Guid tenantId, [FromRoute] string feature, [FromBody] UpsertScopedConfigBody body, CancellationToken ct)
+    public async Task<IActionResult> UpsertFeature([FromRoute] Guid subscriberId, [FromRoute] string feature, [FromBody] UpsertScopedConfigBody body, CancellationToken ct)
     {
         try
         {
-            var row = await _configService.UpsertFeatureAsync(tenantId, feature, body.Key, body.Value, body.DataType, CurrentUserIdOrEmpty(), ct);
+            var row = await _configService.UpsertFeatureAsync(subscriberId, feature, body.Key, body.Value, body.DataType, CurrentUserIdOrEmpty(), ct);
             return this.ApiOk(row);
         }
         catch (ArgumentException ex)
@@ -123,11 +123,11 @@ public sealed class SuperAdminConfigController : ControllerBase
         }
     }
 
-    [HttpDelete("{tenantId:guid}/feature/{feature}/{key}")]
+    [HttpDelete("{subscriberId:guid}/feature/{feature}/{key}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> DeleteFeature([FromRoute] Guid tenantId, [FromRoute] string feature, [FromRoute] string key, CancellationToken ct)
+    public async Task<IActionResult> DeleteFeature([FromRoute] Guid subscriberId, [FromRoute] string feature, [FromRoute] string key, CancellationToken ct)
     {
-        _ = await _configService.DeleteFeatureAsync(tenantId, feature, key, ct);
+        _ = await _configService.DeleteFeatureAsync(subscriberId, feature, key, ct);
         return this.ApiOk(new { });
     }
 

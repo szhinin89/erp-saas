@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common.Interfaces;
@@ -23,8 +23,8 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
     public async Task<string> GenerarXmlFacturaAsync(SalesBill factura, List<SalesBillLine> detalles, SriSettings config)
     {
         _logger.LogDebug(
-            "[SRI-SIM] Generando XML para factura {FacturaId} (clave={AccessKey}, tenant={TenantId})",
-            factura.Id, factura.AccessKey, factura.TenantId);
+            "[SRI-SIM] Generando XML para factura {FacturaId} (clave={AccessKey}, tenant={SubscriberId})",
+            factura.Id, factura.AccessKey, factura.SubscriberId);
 
         // Construir XDocument según XSD del SRI (versión simplificada para simulación)
         var xmlDoc = new XDocument(

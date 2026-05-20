@@ -12,7 +12,7 @@ public sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
 
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id).HasColumnName("id");
-        builder.Property(p => p.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(p => p.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(p => p.PersonType).HasColumnName("person_type").HasMaxLength(10).IsRequired();
         builder.Property(p => p.LegalName).HasColumnName("legal_name").HasMaxLength(Supplier.LegalNameMaxLen).IsRequired();
         builder.Property(p => p.Ruc).HasColumnName("ruc").HasMaxLength(Supplier.RucMaxLen).IsRequired();
@@ -31,7 +31,7 @@ public sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
         builder.Property(p => p.CreatedBy).HasColumnName("created_by");
         builder.Property(p => p.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(p => new { p.TenantId, p.Ruc }).IsUnique().HasDatabaseName("uq_supplier_ruc");
-        builder.HasIndex(p => p.TenantId).HasDatabaseName("ix_supplier_tenant_id");
+        builder.HasIndex(p => new { p.SubscriberId, p.Ruc }).IsUnique().HasDatabaseName("uq_supplier_ruc");
+        builder.HasIndex(p => p.SubscriberId).HasDatabaseName("ix_supplier_subscriber_id");
     }
 }

@@ -5,21 +5,21 @@ using ERP.Application.Common.Interfaces;
 using ERP.Application.Subscriptions;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Subscribers.Interfaces;
 
 namespace ERP.Application.Auth.UseCases.Register;
 
 public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthResponseDto>>
 {
     private readonly IUserRepository _userRepository;
-    private readonly ITenantRepository _tenantRepository;
+    private readonly ISubscriberRepository _tenantRepository;
     private readonly IJwtService _jwtService;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ISessionModulesResolver _sessionModules;
 
     public RegisterHandler(
         IUserRepository userRepository,
-        ITenantRepository tenantRepository,
+        ISubscriberRepository tenantRepository,
         IJwtService jwtService,
         IPasswordHasher passwordHasher,
         ISessionModulesResolver sessionModules)
@@ -42,11 +42,11 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthRespo
                 return Result<AuthResponseDto>.Failure("Ya existe un SuperAdmin en el sistema.");
         }
 
-        var tenantExists = await _tenantRepository.ExistsAsync(command.TenantId, ct);
+        var tenantExists = await _tenantRepository.ExistsAsync(command.SubscriberId, ct);
         if (!tenantExists)
             return Result<AuthResponseDto>.Failure("El tenant no existe.");
 
-        var emailExists = await _userRepository.ExistsAsync(command.Email, command.TenantId, ct);
+        var emailExists = await _userRepository.ExistsAsync(command.Email, command.SubscriberId, ct);
         if (emailExists)
             return Result<AuthResponseDto>.Failure("Ya existe un usuario con ese email.");
 
@@ -56,7 +56,7 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthRespo
         // para usarlo como createdBy antes de persistir.
         var newId = Guid.NewGuid();
         var user  = User.Create(
-            command.TenantId,
+            command.SubscriberId,
             command.FirstName,
             command.LastName,
             command.Email,
@@ -69,18 +69,18 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthRespo
 
         var token = _jwtService.GenerateToken(user);
 
-        var tenantEntity = await _tenantRepository.GetByIdAsync(user.TenantId, ct);
+        var tenantEntity = await _tenantRepository.GetByIdAsync(user.SubscriberId, ct);
 
         var modules = tenantEntity is null
             ? Array.Empty<string>()
-            : await _sessionModules.GetEnabledModuleKeysAsync(user.TenantId, ct);
+            : await _sessionModules.GetEnabledModuleKeysAsync(user.SubscriberId, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id,
             user.FullName,
             user.Email.Value,
             user.Role,
-            user.TenantId,
+            user.SubscriberId,
             token,
             tenantEntity?.PlanCode,
             modules));

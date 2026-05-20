@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Sales.DTOs;
 using ERP.Domain.Modules.Sales.Interfaces;
@@ -9,17 +9,17 @@ public sealed class GetSaleByIdQueryHandler
     : IRequestHandler<GetSaleByIdQuery, Result<SalesBillDetailDto?>>
 {
     private readonly ISalesRepository _ventasRepository;
-    private readonly ICurrentTenant    _currentTenant;
+    private readonly ICurrentSubscriber    _currentSubscriber;
 
-    public GetSaleByIdQueryHandler(ISalesRepository ventasRepository, ICurrentTenant currentTenant)
+    public GetSaleByIdQueryHandler(ISalesRepository ventasRepository, ICurrentSubscriber currentSubscriber)
     {
         _ventasRepository = ventasRepository;
-        _currentTenant    = currentTenant;
+        _currentSubscriber    = currentSubscriber;
     }
 
     public async Task<Result<SalesBillDetailDto?>> Handle(GetSaleByIdQuery query, CancellationToken ct)
     {
-        var factura = await _ventasRepository.GetBillByIdAsync(_currentTenant.TenantId, query.Id, ct);
+        var factura = await _ventasRepository.GetBillByIdAsync(_currentSubscriber.SubscriberId, query.Id, ct);
         if (factura is null)
             return Result<SalesBillDetailDto?>.Success(null);
 

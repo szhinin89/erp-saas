@@ -15,7 +15,7 @@ public class AccessProfilePermission : AuditableEntity
     private AccessProfilePermission() { }
 
     public static AccessProfilePermission Create(
-        Guid tenantId,
+        Guid subscriberId,
         Guid profileId,
         string permissionKey,
         bool isAllowed,
@@ -27,7 +27,7 @@ public class AccessProfilePermission : AuditableEntity
         var p = new AccessProfilePermission
         {
             Id = Guid.NewGuid(),
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             ProfileId = profileId,
             PermissionKey = permissionKey.Trim(),
             IsAllowed = isAllowed,

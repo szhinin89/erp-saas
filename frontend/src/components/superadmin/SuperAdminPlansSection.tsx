@@ -9,18 +9,18 @@ import { ZHConfirmModal } from '../zh/ZHConfirmModal';
 import { ZHModalHeader } from '../zh/ZHModalHeader';
 import {
   superAdminService,
-  type CreateSaasPlanBody,
-  type SaasPlanAdmin,
+  type CreateCommercialPlanBody,
+  type CommercialPlanAdmin,
   type SaasPublicPlan,
   type SuperAdminMetrics,
-  type SuperAdminTenant,
-  type UpdateSaasPlanBody,
+  type SuperAdminSubscriber,
+  type UpdateCommercialPlanBody,
 } from '../../services/superAdminService';
 import { useI18n } from '../../i18n/i18n';
 import { ZHBtn, ZHField } from '../zh/ZHForm';
 import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../zh/ZHLayout';
 import { formatApiRequestError } from '../../modules/lib/apiError';
-import { goToCompaniesTenantDetail } from '../../navigation/companiesTenantDetailNav';
+import { goToCompaniesTenantDetail } from '../../navigation/companiesSubscriberDetailNav';
 import './SuperAdminPlansSection.css';
 
 const POLL_MS = 20_000;
@@ -36,7 +36,7 @@ function planVisualTier(code: string): 'starter' | 'business' | 'professional' |
 }
 
 /** Precio mensual equivalente para estimar MRR (planes con ciclo distinto a mensual). */
-function monthlyEquivalentPrice(plan: SaasPlanAdmin): number {
+function monthlyEquivalentPrice(plan: CommercialPlanAdmin): number {
   const c = (plan.billingCycle ?? 'monthly').toLowerCase();
   if (c === 'yearly') return plan.priceAmount / 12;
   if (c === 'quarterly') return plan.priceAmount / 3;
@@ -80,7 +80,7 @@ function emptyPlanForm(): PlanFormState {
   };
 }
 
-function planToForm(p: SaasPlanAdmin): PlanFormState {
+function planToForm(p: CommercialPlanAdmin): PlanFormState {
   return {
     code: p.code,
     name: p.name,
@@ -96,15 +96,15 @@ function planToForm(p: SaasPlanAdmin): PlanFormState {
   };
 }
 
-/** Panel de planes SaaS y tenants; el catálogo menú ↔ plan se administra en Empresas → Plan ↔ menú. */
+/** Panel de planes SaaS y subscribers; el catálogo menú ↔ plan se administra en Empresas → Plan ↔ menú. */
 export function SuperAdminPlansSection() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { isSuperAdmin } = useSuperAdminGate();
 
-  const [plans, setPlans] = useState<SaasPlanAdmin[]>([]);
+  const [plans, setPlans] = useState<CommercialPlanAdmin[]>([]);
   const [publicPlans, setPublicPlans] = useState<SaasPublicPlan[]>([]);
-  const [tenants, setTenants] = useState<SuperAdminTenant[]>([]);
+  const [subscribers, setTenants] = useState<SuperAdminSubscriber[]>([]);
   const [metrics, setMetrics] = useState<SuperAdminMetrics | null>(null);
   const [tenantSearch, setTenantSearch] = useState('');
   const [tenantPlanFilter, setTenantPlanFilter] = useState('');
@@ -121,9 +121,9 @@ export function SuperAdminPlansSection() {
 
   const loadAll = useCallback(async () => {
     const [p, pub, tns, met] = await Promise.all([
-      superAdminService.listSaasPlansAdmin(),
+      superAdminService.listCommercialPlansAdmin(),
       superAdminService.getPublicPlans().catch(() => [] as SaasPublicPlan[]),
-      superAdminService.getTenants().catch(() => [] as SuperAdminTenant[]),
+      superAdminService.getTenants().catch(() => [] as SuperAdminSubscriber[]),
       superAdminService.getMetrics().catch(() => null),
     ]);
     const sorted = [...p].sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code));
@@ -135,7 +135,7 @@ export function SuperAdminPlansSection() {
 
   const planTenantStats = useMemo(() => {
     const counts = new Map<string, number>();
-    for (const tn of tenants) {
+    for (const tn of subscribers) {
       const c = (tn.planCode ?? '').trim().toLowerCase();
       if (!c) continue;
       counts.set(c, (counts.get(c) ?? 0) + 1);
@@ -143,17 +143,17 @@ export function SuperAdminPlansSection() {
     let max = 0;
     for (const v of counts.values()) max = Math.max(max, v);
     return { counts, max };
-  }, [tenants]);
+  }, [subscribers]);
 
   const planByCode = useMemo(() => {
-    const m = new Map<string, SaasPlanAdmin>();
+    const m = new Map<string, CommercialPlanAdmin>();
     for (const p of plans) m.set(p.code.trim().toLowerCase(), p);
     return m;
   }, [plans]);
 
   const approxMrr = useMemo(() => {
     let sum = 0;
-    for (const tn of tenants) {
+    for (const tn of subscribers) {
       if (!tn.isActive) continue;
       const pc = (tn.planCode ?? '').trim().toLowerCase();
       if (!pc) continue;
@@ -162,10 +162,10 @@ export function SuperAdminPlansSection() {
       sum += monthlyEquivalentPrice(p);
     }
     return sum;
-  }, [tenants, planByCode]);
+  }, [subscribers, planByCode]);
 
   const filteredTenantsForTable = useMemo(() => {
-    let r = tenants;
+    let r = subscribers;
     const pf = tenantPlanFilter.trim().toLowerCase();
     if (pf) r = r.filter((tn) => (tn.planCode ?? '').trim().toLowerCase() === pf);
     if (tenantStatusFilter === 'active') r = r.filter((tn) => tn.isActive);
@@ -173,7 +173,7 @@ export function SuperAdminPlansSection() {
     const q = tenantSearch.trim().toLowerCase();
     if (q) r = r.filter((tn) => `${tn.name} ${tn.slug} ${tn.id}`.toLowerCase().includes(q));
     return r;
-  }, [tenants, tenantPlanFilter, tenantSearch, tenantStatusFilter]);
+  }, [subscribers, tenantPlanFilter, tenantSearch, tenantStatusFilter]);
 
   const exportTenantsCsv = () => {
     const headers = [
@@ -208,7 +208,7 @@ export function SuperAdminPlansSection() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `saas-tenants-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `saas-subscribers-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -255,7 +255,7 @@ export function SuperAdminPlansSection() {
     setPlanModal('create');
   };
 
-  const openEditPlan = (p: SaasPlanAdmin) => {
+  const openEditPlan = (p: CommercialPlanAdmin) => {
     setPlanForm(planToForm(p));
     setEditingPlanId(p.id);
     setPlanModal('edit');
@@ -272,7 +272,7 @@ export function SuperAdminPlansSection() {
       const shortLabel = planForm.shortLabel.trim() || null;
 
       if (planModal === 'create') {
-        const body: CreateSaasPlanBody = {
+        const body: CreateCommercialPlanBody = {
           code: planForm.code.trim(),
           name: planForm.name.trim(),
           shortLabel,
@@ -285,9 +285,9 @@ export function SuperAdminPlansSection() {
           sortOrder: sort,
           externalBillingRef: ext,
         };
-        await superAdminService.createSaasPlan(body);
+        await superAdminService.createCommercialPlan(body);
       } else if (editingPlanId) {
-        const body: UpdateSaasPlanBody = {
+        const body: UpdateCommercialPlanBody = {
           name: planForm.name.trim(),
           shortLabel,
           isActive: planForm.isActive,
@@ -297,9 +297,9 @@ export function SuperAdminPlansSection() {
           isPubliclyVisible: planForm.isPubliclyVisible,
           externalBillingRef: ext,
         };
-        await superAdminService.updateSaasPlan(editingPlanId, body);
+        await superAdminService.updateCommercialPlan(editingPlanId, body);
         if (planForm.isRecommended) {
-          await superAdminService.setSaasPlanRecommended(editingPlanId);
+          await superAdminService.setCommercialPlanRecommended(editingPlanId);
         }
       }
       setPlanModal('closed');
@@ -316,7 +316,7 @@ export function SuperAdminPlansSection() {
     setBusy(true);
     setError('');
     try {
-      await superAdminService.deleteSaasPlan(deletePlanId);
+      await superAdminService.deleteCommercialPlan(deletePlanId);
       setDeletePlanId(null);
       await loadAll();
     } catch (e) {
@@ -337,7 +337,7 @@ export function SuperAdminPlansSection() {
     setBusy(true);
     setError('');
     try {
-      await superAdminService.reorderSaasPlans(next.map((p) => p.id));
+      await superAdminService.reorderCommercialPlans(next.map((p) => p.id));
       await loadAll();
     } catch (e) {
       setError(formatApiRequestError(e, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
@@ -351,7 +351,7 @@ export function SuperAdminPlansSection() {
     setBusy(true);
     setError('');
     try {
-      await superAdminService.setSaasPlanRecommended(planId);
+      await superAdminService.setCommercialPlanRecommended(planId);
       await loadAll();
     } catch (e) {
       setError(formatApiRequestError(e, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
@@ -411,7 +411,7 @@ export function SuperAdminPlansSection() {
           <div className="pg-kpis">
             <div className="pg-kpi sap-kpi--info">
               <div className="pg-kpi-bottom">
-                <p className="pg-kpi-value">{totals?.activeTenants ?? tenants.length}</p>
+                <p className="pg-kpi-value">{totals?.activeTenants ?? subscribers.length}</p>
                 <p className="pg-kpi-unit">
                   {totals
                     ? t('superadmin.plansDashboard.kpi.activeTenantsSub').replace('{{total}}', String(totals.totalTenants))
@@ -515,7 +515,7 @@ export function SuperAdminPlansSection() {
                   <div className="sap-pricing-usage">
                     <div className="sap-pricing-usageLine">
                       <span>
-                        {tenantCount} {t('superadmin.plansCard.tenantsUnit')}
+                        {tenantCount} {t('superadmin.plansCard.subscribersUnit')}
                       </span>
                       <span className="sap-pricing-usagePct">{usagePct}%</span>
                     </div>
@@ -584,7 +584,7 @@ export function SuperAdminPlansSection() {
             <div>
               <p className="sap-plans-summary-label">{t('superadmin.plansDashboard.summary.label')}</p>
               <p className="sap-plans-summary-value">
-                {tenants.length} {t('superadmin.plansDashboard.summary.subscriptions')}
+                {subscribers.length} {t('superadmin.plansDashboard.summary.subscriptions')}
               </p>
             </div>
           </div>
@@ -602,9 +602,9 @@ export function SuperAdminPlansSection() {
             <div className="sap-plans-summary-stat">
               <p className="sap-plans-summary-stat-label">ARPU</p>
               <p className="sap-plans-summary-stat-value sap-plans-summary-stat-value--success">
-                {tenants.filter((tn) => tn.isActive).length > 0
+                {subscribers.filter((tn) => tn.isActive).length > 0
                   ? formatMoney(
-                      approxMrr / tenants.filter((tn) => tn.isActive).length,
+                      approxMrr / subscribers.filter((tn) => tn.isActive).length,
                       plans.find((p) => p.isActive)?.currency ?? 'USD',
                     )
                   : '—'}
@@ -615,7 +615,7 @@ export function SuperAdminPlansSection() {
       )}
 
       <Card>
-        <ZHCardSection title={t('superadmin.plansDashboard.tenantsSectionTitle')}>
+        <ZHCardSection title={t('superadmin.plansDashboard.subscribersSectionTitle')}>
           <div className="sap-tenant-toolbar">
             <input
               type="search"
@@ -650,7 +650,7 @@ export function SuperAdminPlansSection() {
             </select>
           </div>
           {filteredTenantsForTable.length === 0 ? (
-            <EmptyState message={t('superadmin.plansDashboard.tenantsEmpty')} />
+            <EmptyState message={t('superadmin.plansDashboard.subscribersEmpty')} />
           ) : (
             <div className="sap-tenant-tableWrap">
               <table className="table">

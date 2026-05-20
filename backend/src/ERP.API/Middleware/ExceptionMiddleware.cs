@@ -87,6 +87,21 @@ public class ExceptionMiddleware
             SubscriptionLimitExceededException lim =>
                 (HttpStatusCode.Conflict,
                  string.IsNullOrWhiteSpace(lim.Message) ? "Límite de suscripción alcanzado." : lim.Message.Trim()),
+            CommercialPlanLimitExceededException planLim =>
+                (HttpStatusCode.Forbidden,
+                 string.IsNullOrWhiteSpace(planLim.Message)
+                     ? "Commercial plan limit reached."
+                     : planLim.Message.Trim()),
+            ERP.Domain.Billing.Exceptions.BillingAccessDeniedException billingDenied =>
+                (HttpStatusCode.Forbidden,
+                 string.IsNullOrWhiteSpace(billingDenied.Message)
+                     ? "Acceso restringido por estado de facturación."
+                     : billingDenied.Message.Trim()),
+            ERP.Domain.Exceptions.CompanyScopeException companyScope =>
+                (HttpStatusCode.Forbidden,
+                 string.IsNullOrWhiteSpace(companyScope.Message)
+                     ? "Acceso denegado por contexto de empresa."
+                     : companyScope.Message.Trim()),
             UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "No autorizado."),
             _ => (HttpStatusCode.InternalServerError, "Error interno del servidor."),
         };

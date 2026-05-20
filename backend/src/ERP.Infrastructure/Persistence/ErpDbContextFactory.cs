@@ -27,13 +27,13 @@ internal sealed class ErpDbContextFactory : IDesignTimeDbContextFactory<ErpDbCon
         var platform = new PlatformQueryAccessor(
             NullLogger<PlatformQueryAccessor>.Instance,
             Microsoft.Extensions.Options.Options.Create(new SaasEntitlementsOptions()));
-        return new ErpDbContext(options, new DesignTimeTenant(), new NoOpPublisher(), platform);
+        return new ErpDbContext(options, new DesignTimeSubscriber(), new NoOpPublisher(), platform);
     }
 
-    /// <summary>Tenant vacío para satisfacer ICurrentTenant en diseño.</summary>
-    private sealed class DesignTimeTenant : ICurrentTenant
+    /// <summary>Subscriber vacío para satisfacer ICurrentSubscriber en diseño.</summary>
+    private sealed class DesignTimeSubscriber : ICurrentSubscriber
     {
-        public Guid TenantId        => Guid.Empty;
+        public Guid SubscriberId        => Guid.Empty;
         public bool IsAuthenticated => false;
     }
 }

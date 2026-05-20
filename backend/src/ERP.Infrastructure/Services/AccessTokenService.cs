@@ -17,25 +17,26 @@ public class AccessTokenService : IAccessTokenService
         _configuration = configuration;
     }
 
-    public string GenerateBootstrapToken(IdentityUser user, IReadOnlyList<Guid> tenantIds)
+    public string GenerateBootstrapToken(IdentityUser user, IReadOnlyList<Guid> subscriberIds)
     {
         return GenerateBootstrapToken(
             userId: user.Id,
             email: user.Email.Value,
             fullName: user.FullName,
             role: "Bootstrap",
-            tenantIds: tenantIds);
+            subscriberIds: subscriberIds);
     }
 
-    public string GenerateSessionToken(IdentityUser user, Guid tenantId, string role)
+    public string GenerateSessionToken(IdentityUser user, Guid subscriberId, string role, Guid companyId = default)
     {
         var expMinutes = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "60");
         return GenerateSessionToken(
             userId: user.Id,
             email: user.Email.Value,
             fullName: user.FullName,
-            tenantId: tenantId,
-            role: role);
+            subscriberId: subscriberId,
+            role: role,
+            companyId: companyId);
     }
 
     public string GenerateBootstrapToken(
@@ -43,20 +44,20 @@ public class AccessTokenService : IAccessTokenService
         string email,
         string fullName,
         string role,
-        IReadOnlyList<Guid> tenantIds)
+        IReadOnlyList<Guid> subscriberIds)
     {
         var expMinutes = int.Parse(_configuration["Jwt:BootstrapExpirationMinutes"] ?? "5");
 
         var extra = new[]
         {
-            new Claim("tenant_ids", string.Join(',', tenantIds.Select(t => t.ToString())))
+            new Claim("subscriber_ids", string.Join(',', subscriberIds.Select(t => t.ToString())))
         };
 
         return GenerateToken(
             userId: userId,
             email: email,
             fullName: fullName,
-            tenantId: Guid.Empty,
+            subscriberId: Guid.Empty,
             role: role,
             tokenType: "bootstrap",
             expiresAtUtc: DateTime.UtcNow.AddMinutes(expMinutes),
@@ -67,27 +68,35 @@ public class AccessTokenService : IAccessTokenService
         Guid userId,
         string email,
         string fullName,
-        Guid tenantId,
-        string role)
+        Guid subscriberId,
+        string role,
+        Guid companyId = default)
     {
         var expMinutes = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "60");
+
+        var extra = new List<Claim>();
+        if (companyId != Guid.Empty)
+        {
+            extra.Add(new Claim("company_id", companyId.ToString()));
+            extra.Add(new Claim("company_role", role));
+        }
 
         return GenerateToken(
             userId: userId,
             email: email,
             fullName: fullName,
-            tenantId: tenantId,
+            subscriberId: subscriberId,
             role: role,
             tokenType: "session",
             expiresAtUtc: DateTime.UtcNow.AddMinutes(expMinutes),
-            extraClaims: Array.Empty<Claim>());
+            extraClaims: extra);
     }
 
     private string GenerateToken(
         Guid userId,
         string email,
         string fullName,
-        Guid tenantId,
+        Guid subscriberId,
         string role,
         string tokenType,
         DateTime expiresAtUtc,
@@ -102,7 +111,7 @@ public class AccessTokenService : IAccessTokenService
             new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("tenant_id", tenantId.ToString()),
+            new Claim("subscriber_id", subscriberId.ToString()),
             new Claim("full_name", fullName),
             new Claim(ClaimTypes.Role, role),
             new Claim("token_type", tokenType)

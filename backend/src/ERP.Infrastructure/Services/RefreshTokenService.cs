@@ -21,12 +21,12 @@ public sealed class RefreshTokenService : IRefreshTokenService
     }
 
     public async Task<(string RawToken, DateTime Expiry)> CreateAsync(
-        Guid userId, Guid tenantId, string userType, CancellationToken ct = default)
+        Guid userId, Guid subscriberId, Guid? companyId, string userType, CancellationToken ct = default)
     {
         var rawToken  = GenerateRaw();
         var tokenHash = Hash(rawToken);
 
-        var entity = RefreshToken.Create(userId, tenantId, userType, tokenHash);
+        var entity = RefreshToken.Create(userId, subscriberId, companyId, userType, tokenHash);
         await _repo.AddAsync(entity, ct);
         await _repo.SaveChangesAsync(ct);
 
@@ -52,7 +52,7 @@ public sealed class RefreshTokenService : IRefreshTokenService
             _logger.LogWarning(
                 "Intento de reutilizar refresh token revocado para usuario {UserId}. " +
                 "Revocando todos los tokens activos.", stored.UserId);
-            await RevokeAllForUserAsync(stored.UserId, stored.TenantId, "Reutilización detectada", ct);
+            await RevokeAllForUserAsync(stored.UserId, stored.SubscriberId, "Reutilización detectada", ct);
             return RefreshTokenValidationResult.Fail("Refresh token revocado. Inicia sesión nuevamente.");
         }
 
@@ -60,18 +60,18 @@ public sealed class RefreshTokenService : IRefreshTokenService
             return RefreshTokenValidationResult.Fail("Refresh token expirado. Inicia sesión nuevamente.");
 
         // Rotación: revocar el actual y generar uno nuevo
-        var (newRaw, newExpiry) = await CreateAsync(stored.UserId, stored.TenantId, stored.UserType, ct);
+        var (newRaw, newExpiry) = await CreateAsync(stored.UserId, stored.SubscriberId, stored.CompanyId, stored.UserType, ct);
         stored.Revoke("Rotación", Hash(newRaw));
         await _repo.SaveChangesAsync(ct);
 
         return RefreshTokenValidationResult.Ok(
-            stored.UserId, stored.TenantId, stored.UserType, newRaw, newExpiry);
+            stored.UserId, stored.SubscriberId, stored.CompanyId, stored.UserType, newRaw, newExpiry);
     }
 
     public async Task RevokeAllForUserAsync(
-        Guid userId, Guid tenantId, string reason, CancellationToken ct = default)
+        Guid userId, Guid subscriberId, string reason, CancellationToken ct = default)
     {
-        var tokens = await _repo.GetActiveByUserAsync(userId, tenantId, ct);
+        var tokens = await _repo.GetActiveByUserAsync(userId, subscriberId, ct);
         foreach (var t in tokens)
             t.Revoke(reason);
 

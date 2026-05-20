@@ -4,11 +4,11 @@ import type { ConfigDeleteInput, ConfigEntry, ConfigScope, ConfigUpsertInput } f
 
 function normalizeEntry(raw: Partial<ConfigEntry>): ConfigEntry | null {
   const scope = (raw.scope ?? '').toString().trim().toLowerCase() as ConfigScope;
-  if (!raw.id || !raw.tenantId || !raw.key || !raw.value || !scope) return null;
+  if (!raw.id || !raw.subscriberId || !raw.key || !raw.value || !scope) return null;
   if (scope !== 'global' && scope !== 'module' && scope !== 'feature') return null;
   return {
     id: raw.id,
-    tenantId: raw.tenantId,
+    subscriberId: raw.subscriberId,
     scope,
     module: raw.module ?? null,
     feature: raw.feature ?? null,
@@ -35,19 +35,19 @@ async function safeGet<T>(url: string, params?: Record<string, string | undefine
 }
 
 export const configService = {
-  async loadTenantConfig(tenantId: string): Promise<ConfigEntry[]> {
+  async loadTenantConfig(subscriberId: string): Promise<ConfigEntry[]> {
     // Backend actual: solo existe la API administrativa bajo /api/superadmin/config/*.
-    const fallbackGlobal = await safeGet<unknown[]>(`/api/superadmin/config/${encodeURIComponent(tenantId)}/global`);
+    const fallbackGlobal = await safeGet<unknown[]>(`/api/superadmin/config/${encodeURIComponent(subscriberId)}/global`);
     return normalizeList(fallbackGlobal ?? []);
   },
 
-  async upsertConfig(tenantId: string, input: ConfigUpsertInput): Promise<ConfigEntry> {
+  async upsertConfig(subscriberId: string, input: ConfigUpsertInput): Promise<ConfigEntry> {
     const key = input.key.trim();
     const payload = { key, value: input.value, dataType: input.dataType };
 
     if (input.scope === 'global') {
       const res = await api.put<ApiResponse<ConfigEntry>>(
-        `/api/superadmin/config/${encodeURIComponent(tenantId)}/global`,
+        `/api/superadmin/config/${encodeURIComponent(subscriberId)}/global`,
         payload,
       );
       const normalized = normalizeEntry(res.data.responseObject ?? undefined);
@@ -57,7 +57,7 @@ export const configService = {
     if (input.scope === 'module') {
       const moduleName = (input.module ?? '').trim();
       const res = await api.put<ApiResponse<ConfigEntry>>(
-        `/api/superadmin/config/${encodeURIComponent(tenantId)}/module/${encodeURIComponent(moduleName)}`,
+        `/api/superadmin/config/${encodeURIComponent(subscriberId)}/module/${encodeURIComponent(moduleName)}`,
         payload,
       );
       const normalized = normalizeEntry(res.data.responseObject ?? undefined);
@@ -66,7 +66,7 @@ export const configService = {
     }
     const featureName = (input.feature ?? '').trim();
     const res = await api.put<ApiResponse<ConfigEntry>>(
-      `/api/superadmin/config/${encodeURIComponent(tenantId)}/feature/${encodeURIComponent(featureName)}`,
+      `/api/superadmin/config/${encodeURIComponent(subscriberId)}/feature/${encodeURIComponent(featureName)}`,
       payload,
     );
     const normalized = normalizeEntry(res.data.responseObject ?? undefined);
@@ -74,22 +74,22 @@ export const configService = {
     return normalized;
   },
 
-  async deleteConfig(tenantId: string, input: ConfigDeleteInput): Promise<void> {
+  async deleteConfig(subscriberId: string, input: ConfigDeleteInput): Promise<void> {
     const key = input.key.trim();
     if (input.scope === 'global') {
-      await api.delete(`/api/superadmin/config/${encodeURIComponent(tenantId)}/global/${encodeURIComponent(key)}`);
+      await api.delete(`/api/superadmin/config/${encodeURIComponent(subscriberId)}/global/${encodeURIComponent(key)}`);
       return;
     }
     if (input.scope === 'module') {
       const moduleName = (input.module ?? '').trim();
       await api.delete(
-        `/api/superadmin/config/${encodeURIComponent(tenantId)}/module/${encodeURIComponent(moduleName)}/${encodeURIComponent(key)}`,
+        `/api/superadmin/config/${encodeURIComponent(subscriberId)}/module/${encodeURIComponent(moduleName)}/${encodeURIComponent(key)}`,
       );
       return;
     }
     const featureName = (input.feature ?? '').trim();
     await api.delete(
-      `/api/superadmin/config/${encodeURIComponent(tenantId)}/feature/${encodeURIComponent(featureName)}/${encodeURIComponent(key)}`,
+      `/api/superadmin/config/${encodeURIComponent(subscriberId)}/feature/${encodeURIComponent(featureName)}/${encodeURIComponent(key)}`,
     );
   },
 };

@@ -13,7 +13,7 @@ public sealed class SalesWithholdingConfiguration : IEntityTypeConfiguration<Sal
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.CompanyId).HasColumnName("company_id");
         builder.Property(e => e.CustomerId).HasColumnName("customer_id");
         builder.Property(e => e.Direction)
@@ -50,8 +50,8 @@ public sealed class SalesWithholdingConfiguration : IEntityTypeConfiguration<Sal
         builder.HasOne(e => e.SalesDocument).WithMany().HasForeignKey(e => e.SalesDocumentId).OnDelete(DeleteBehavior.SetNull);
         builder.HasMany(e => e.Lines).WithOne().HasForeignKey(d => d.SalesWithholdingId).OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(e => new { e.TenantId, e.AccessKey })
+        builder.HasIndex(e => new { e.SubscriberId, e.AccessKey })
             .IsUnique()
-            .HasDatabaseName("uq_sales_withholding_tenant_access_key");
+            .HasDatabaseName("uq_sales_withholding_subscriber_access_key");
     }
 }

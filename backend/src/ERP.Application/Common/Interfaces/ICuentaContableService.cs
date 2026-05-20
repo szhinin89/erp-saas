@@ -1,4 +1,4 @@
-﻿using ERP.Application.Common;
+using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.DTOs;
 
 namespace ERP.Application.Common.Interfaces;
@@ -13,21 +13,21 @@ public interface ICuentaContableService
     /// <param name="subtotalInventario">Base imponible de inventario (sin IVA).</param>
     /// <param name="iva">Monto de IVA de la compra.</param>
     Task<Result<CuentasParaAsiento?>> ObtenerCuentasParaCompraAsync(
-        Guid tenantId,
+        Guid subscriberId,
         decimal subtotalInventario,
         decimal  vatTotal,
         CancellationToken ct);
 
     /// <param name="subtotalVentas">Base imponible de ventas (sin IVA).</param>
     Task<Result<CuentasParaAsiento?>> ObtenerCuentasParaVentaAsync(
-        Guid tenantId,
+        Guid subscriberId,
         decimal subtotalVentas,
         decimal  vatTotal,
         CancellationToken ct);
 
     /// <summary>Cuenta de gasto mapeada por categoría; null si no hay mapeo (usar heurística legacy).</summary>
-    Task<Result<Guid?>> ObtenerCuentaParaGastoAsync(Guid tenantId, string   category, CancellationToken ct);
+    Task<Result<Guid?>> ObtenerCuentaParaGastoAsync(Guid subscriberId, string   category, CancellationToken ct);
 
     /// <summary>Caja o banco preferido para el crédito del asiento de gasto; null si no está configurado.</summary>
-    Task<Result<Guid?>> ObtenerCuentaCajaParaGastoAsync(Guid tenantId, CancellationToken ct);
+    Task<Result<Guid?>> ObtenerCuentaCajaParaGastoAsync(Guid subscriberId, CancellationToken ct);
 }

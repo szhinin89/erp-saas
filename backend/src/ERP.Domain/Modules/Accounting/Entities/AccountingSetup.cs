@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Accounting.Entities;
 
-public sealed class AccountingSetup : AuditableEntity, ITenantEntity
+public sealed class AccountingSetup : AuditableEntity, ISubscriberScopedEntity
 {
     public Guid? InventoryAccountId    { get; private set; }
     public Guid? CostOfSalesAccountId  { get; private set; }
@@ -16,9 +16,9 @@ public sealed class AccountingSetup : AuditableEntity, ITenantEntity
 
     private AccountingSetup() { }
 
-    public static AccountingSetup Create(Guid tenantId, Guid createdBy)
+    public static AccountingSetup Create(Guid subscriberId, Guid createdBy)
     {
-        var e = new AccountingSetup { TenantId = tenantId };
+        var e = new AccountingSetup { SubscriberId = subscriberId };
         e.SetCreated(createdBy);
         return e;
     }

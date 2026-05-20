@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
 using ERP.Infrastructure.Persistence;
@@ -11,8 +11,8 @@ public sealed class BillingSettingsRepository : IBillingSettingsRepository
 
     public BillingSettingsRepository(ErpDbContext context) => _context = context;
 
-    public Task<BillingSettings?> GetByTenantIdAsync(Guid tenantId, CancellationToken ct = default)
-        => _context.BillingSettings.FirstOrDefaultAsync(c => c.TenantId == tenantId, ct);
+    public Task<BillingSettings?> GetBySubscriberIdAsync(Guid subscriberId, CancellationToken ct = default)
+        => _context.BillingSettings.FirstOrDefaultAsync(c => c.SubscriberId == subscriberId, ct);
 
     public Task AddAsync(BillingSettings config, CancellationToken ct = default)
         => _context.BillingSettings.AddAsync(config, ct).AsTask();

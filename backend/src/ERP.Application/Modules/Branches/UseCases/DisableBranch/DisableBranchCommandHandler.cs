@@ -11,13 +11,13 @@ public sealed class DisableBranchCommandHandler : IRequestHandler<DisableBranchC
 {
     private readonly IBranchRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _user;
 
     public DisableBranchCommandHandler(
         IBranchRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user)
     {
         _repo = repo;
@@ -28,13 +28,13 @@ public sealed class DisableBranchCommandHandler : IRequestHandler<DisableBranchC
 
     public async Task<Result<BranchDto>> Handle(DisableBranchCommand request, CancellationToken ct)
     {
-        var entity = await _repo.GetByIdAsync(_tenant.TenantId, request.Id, ct);
+        var entity = await _repo.GetByIdAsync(_tenant.SubscriberId, request.Id, ct);
         if (entity is null)
             return Result<BranchDto>.Failure("Sucursal no encontrada.");
 
         entity.Disable(_user.UserId);
         await _activity.AddAsync(UserActivity.Create(
-            _tenant.TenantId,
+            _tenant.SubscriberId,
             _user.UserId,
             _user.Email,
             _user.FullName,

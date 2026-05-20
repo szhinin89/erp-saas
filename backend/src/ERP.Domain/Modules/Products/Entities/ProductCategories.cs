@@ -10,12 +10,12 @@ public class ProductLine : MasterEntity
 
     private ProductLine() { }
 
-    public static ProductLine Create(Guid tenantId, string code, string name, Guid createdBy)
+    public static ProductLine Create(Guid subscriberId, string code, string name, Guid createdBy)
     {
         var line = new ProductLine
         {
             Id       = Guid.NewGuid(),
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             Code     = code.ToUpperInvariant(),
             Name     = name,
         };
@@ -41,12 +41,12 @@ public class ProductCategory : MasterEntity
     private ProductCategory() { }
 
     public static ProductCategory Create(
-        Guid tenantId, string code, string name, Guid lineId, Guid createdBy)
+        Guid subscriberId, string code, string name, Guid lineId, Guid createdBy)
     {
         var category = new ProductCategory
         {
             Id       = Guid.NewGuid(),
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             Code     = code.ToUpperInvariant(),
             Name     = name,
             LineId   = lineId,
@@ -74,12 +74,12 @@ public class ProductSubcategory : MasterEntity
     private ProductSubcategory() { }
 
     public static ProductSubcategory Create(
-        Guid tenantId, string code, string name, Guid categoryId, Guid createdBy)
+        Guid subscriberId, string code, string name, Guid categoryId, Guid createdBy)
     {
         var sub = new ProductSubcategory
         {
             Id         = Guid.NewGuid(),
-            TenantId   = tenantId,
+            SubscriberId   = subscriberId,
             Code       = code.ToUpperInvariant(),
             Name       = name,
             CategoryId = categoryId,

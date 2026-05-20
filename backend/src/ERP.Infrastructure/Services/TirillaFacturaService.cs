@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -46,12 +46,12 @@ public sealed class TirillaFacturaService : ITirillaFacturaService
             throw new KeyNotFoundException("Factura no encontrada o no autorizada.");
 
         var config = await _dbContext.Set<BillingSettings>()
-            .FirstOrDefaultAsync(c => c.TenantId == venta.TenantId, ct);
+            .FirstOrDefaultAsync(c => c.SubscriberId == venta.SubscriberId, ct);
 
         if (config is null)
         {
-            _logger.LogWarning("No existe configuración de facturación para el tenant {TenantId}. Usando valores por defecto.", venta.TenantId);
-            config = BillingSettings.CreateDefault(venta.TenantId, Guid.Empty);
+            _logger.LogWarning("No existe configuración de facturación para el tenant {SubscriberId}. Usando valores por defecto.", venta.SubscriberId);
+            config = BillingSettings.CreateDefault(venta.SubscriberId, Guid.Empty);
         }
 
         var model = new FacturaTirillaModel

@@ -1,16 +1,16 @@
 using FluentValidation;
 
-namespace ERP.Application.Access.UseCases.RegisterTenantWithAdmin;
+namespace ERP.Application.Access.UseCases.RegisterSubscriberWithAdmin;
 
-public sealed class RegisterTenantWithAdminCommandValidator : AbstractValidator<RegisterTenantWithAdminCommand>
+public sealed class RegisterSubscriberWithAdminCommandValidator : AbstractValidator<RegisterSubscriberWithAdminCommand>
 {
-    public RegisterTenantWithAdminCommandValidator()
+    public RegisterSubscriberWithAdminCommandValidator()
     {
-        RuleFor(x => x.TenantName)
+        RuleFor(x => x.SubscriberName)
             .NotEmpty().WithMessage("El nombre de la empresa es obligatorio.")
             .MaximumLength(200).WithMessage("El nombre no puede exceder 200 caracteres.");
 
-        RuleFor(x => x.TenantSlug)
+        RuleFor(x => x.SubscriberSlug)
             .NotEmpty().WithMessage("El slug es obligatorio.")
             .MaximumLength(100).WithMessage("El slug no puede exceder 100 caracteres.");
 

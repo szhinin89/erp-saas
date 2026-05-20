@@ -12,7 +12,7 @@ public sealed class PurchaseElectronicDocConfiguration : IEntityTypeConfiguratio
 
         builder.HasKey(e => e.PurchaseDocumentId);
         builder.Property(e => e.PurchaseDocumentId).HasColumnName("purchase_document_id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.CompanyId).HasColumnName("company_id").IsRequired();
         builder.Property(e => e.AccessKey).HasColumnName("access_key").HasMaxLength(49);
         builder.Property(e => e.XmlPath).HasColumnName("xml_path").HasMaxLength(500);

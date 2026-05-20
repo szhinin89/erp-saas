@@ -9,9 +9,9 @@ public sealed class GetCustomersQueryHandler
     : IRequestHandler<GetCustomersQuery, Result<IReadOnlyList<CustomerDto>>>
 {
     private readonly ICustomerRepository _repo;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
 
-    public GetCustomersQueryHandler(ICustomerRepository repo, ICurrentTenant tenant)
+    public GetCustomersQueryHandler(ICustomerRepository repo, ICurrentSubscriber tenant)
     {
         _repo = repo;
         _tenant = tenant;
@@ -19,10 +19,10 @@ public sealed class GetCustomersQueryHandler
 
     public async Task<Result<IReadOnlyList<CustomerDto>>> Handle(GetCustomersQuery request, CancellationToken ct)
     {
-        if (!_tenant.IsAuthenticated || _tenant.TenantId == Guid.Empty)
-            return Result<IReadOnlyList<CustomerDto>>.Failure("Tenant no autenticado.");
+        if (!_tenant.IsAuthenticated || _tenant.SubscriberId == Guid.Empty)
+            return Result<IReadOnlyList<CustomerDto>>.Failure("Subscriber no autenticado.");
 
-        var items = await _repo.GetAsync(_tenant.TenantId, request.ActiveFilter, request.Search, ct);
+        var items = await _repo.GetAsync(_tenant.SubscriberId, request.ActiveFilter, request.Search, ct);
         var dtos = items.Select(x => new CustomerDto(
             x.Id,
             x.IdentificationType,

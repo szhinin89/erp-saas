@@ -11,18 +11,18 @@ namespace ERP.Application.Modules.Accounting.UseCases.CreateJournalEntry;
 public sealed class CreateJournalEntryCommandHandler : IRequestHandler<CreateJournalEntryCommand, Result<JournalEntryDto>>
 {
     private readonly IAccountingRepository _repository;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
     private readonly IUnitOfWork _unitOfWork;
 
     public CreateJournalEntryCommandHandler(
         IAccountingRepository repository,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork)
     {
         _repository    = repository;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
         _unitOfWork    = unitOfWork;
     }
@@ -31,11 +31,11 @@ public sealed class CreateJournalEntryCommandHandler : IRequestHandler<CreateJou
         CreateJournalEntryCommand command,
         CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
         var entry = JournalEntry.Create(
-            tenantId,
+            subscriberId,
             command.Reference,
             command.Date,
             command.Description,
@@ -43,7 +43,7 @@ public sealed class CreateJournalEntryCommandHandler : IRequestHandler<CreateJou
 
         foreach (var accountId in command.Lines.Select(l => l.AccountId).Distinct())
         {
-            var acc = await _repository.GetByIdAsync(accountId, tenantId, ct);
+            var acc = await _repository.GetByIdAsync(accountId, subscriberId, ct);
             if (acc is null)
                 return Result<JournalEntryDto>.Failure($"La cuenta {accountId} no existe o no pertenece al tenant.");
             if (!acc.IsActive)

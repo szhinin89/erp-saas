@@ -1,6 +1,6 @@
 namespace ERP.Domain.Subscriptions.Entities;
 
-public enum TenantSubscriptionStatus
+public enum SubscriptionStatus
 {
     Active = 0,
     PastDue = 1,

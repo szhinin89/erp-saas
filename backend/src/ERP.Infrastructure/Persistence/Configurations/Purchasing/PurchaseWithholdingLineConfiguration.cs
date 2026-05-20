@@ -12,7 +12,7 @@ public sealed class PurchaseWithholdingLineConfiguration : IEntityTypeConfigurat
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.PurchaseWithholdingId).HasColumnName("purchase_withholding_id").IsRequired();
         builder.Property(e => e.TaxType).HasColumnName("tax_type").HasMaxLength(PurchaseWithholdingLine.TaxTypeMaxLen).IsRequired();
         builder.Property(e => e.RetentionCode).HasColumnName("retention_code").HasMaxLength(PurchaseWithholdingLine.RetentionCodeMaxLen).IsRequired();

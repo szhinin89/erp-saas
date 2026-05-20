@@ -8,12 +8,12 @@ namespace ERP.Application.Products.UseCases.GetProductReport;
 public class GetProductReportHandler : IRequestHandler<GetProductReportQuery, Result<PagedResult<ProductReportItemDto>>>
 {
     private readonly IProductRepository _repository;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
-    public GetProductReportHandler(IProductRepository repository, ICurrentTenant currentTenant)
+    public GetProductReportHandler(IProductRepository repository, ICurrentSubscriber currentSubscriber)
     {
         _repository    = repository;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public Task<Result<PagedResult<ProductReportItemDto>>> HandleAsync(
@@ -27,9 +27,9 @@ public class GetProductReportHandler : IRequestHandler<GetProductReportQuery, Re
         GetProductReportQuery request,
         CancellationToken ct)
     {
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
         var (products, totalCount) = await _repository.GetReportPageAsync(
-            tenantId,
+            subscriberId,
             request.Filter,
             request.PageNumber,
             request.PageSize,

@@ -4,7 +4,7 @@ namespace ERP.Domain.Modules.Sales.Entities;
 public sealed class SalesElectronicDoc
 {
     public Guid     SalesDocumentId       { get; private set; }
-    public Guid     TenantId              { get; private set; }
+    public Guid     SubscriberId              { get; private set; }
     public Guid?    CompanyId             { get; private set; }
     public Guid?    EmissionPointId        { get; private set; }
     public Guid?    LegacyElectronicDocId { get; private set; }
@@ -27,8 +27,8 @@ public sealed class SalesElectronicDoc
 
     private SalesElectronicDoc() { }
 
-    public static SalesElectronicDoc CreateShell(Guid salesDocumentId, Guid tenantId) =>
-        new() { SalesDocumentId = salesDocumentId, TenantId = tenantId, DocTypeCode = "01" };
+    public static SalesElectronicDoc CreateShell(Guid salesDocumentId, Guid subscriberId) =>
+        new() { SalesDocumentId = salesDocumentId, SubscriberId = subscriberId, DocTypeCode = "01" };
 
     public void SetAuthorization(string authNumber, DateTime authDate, string? xmlSigned, string? xmlAuth)
     {

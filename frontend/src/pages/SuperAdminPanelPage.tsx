@@ -7,7 +7,7 @@ import { useSuperAdminGate } from '../hooks/useSuperAdminGate';
 import { Modal } from '../components/Modal';
 import { ZHModalHeader } from '../components/zh/ZHModalHeader';
 import { TENANT_MODULE_KEYS } from '../constants/subscriptionModules';
-import { superAdminService, type CreateTenantWithAdminBody, type SuperAdminPlan, type SuperAdminTenant } from '../services/superAdminService';
+import { superAdminService, type CreateSubscriberWithAdminBody, type SuperAdminPlan, type SuperAdminSubscriber } from '../services/superAdminService';
 import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
 import { CompanyModuleChips } from '../components/saas/CompanyModuleChips';
@@ -20,7 +20,7 @@ import { SuperAdminPlansSection } from '../components/superadmin/SuperAdminPlans
 import { SuperAdminMenuBuilderSection } from '../components/superadmin/SuperAdminMenuBuilderSection';
 import { Button, Card, Input } from '../components/ui';
 import { formatApiRequestError } from '../modules/lib/apiError';
-import { goToCompaniesTenantDetail } from '../navigation/companiesTenantDetailNav';
+import { goToCompaniesTenantDetail } from '../navigation/companiesSubscriberDetailNav';
 import type { SessionResponse } from '../types/access';
 import '../components/zh/ZHFormTabs.css';
 import './SuperAdminPanelPage.css';
@@ -51,8 +51,8 @@ function normalizeEnabledModulesForApi(
   return [...selected];
 }
 
-function storeImpersonationTenantName(name: string) {
-  localStorage.setItem('superadmin-impersonation-tenant-name', name);
+function storeImpersonationSubscriberName(name: string) {
+  localStorage.setItem('superadmin-impersonation-subscriber-name', name);
 }
 
 export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPanelPageProps = {}) {
@@ -60,7 +60,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
   const [searchParams, setSearchParams] = useSearchParams();
   const { login } = useAuthStore();
   const clearPermissions = usePermissionsStore((s) => s.clearPermissions);
-  const { isSuperAdmin, hasSelectedTenant } = useSuperAdminGate();
+  const { isSuperAdmin, hasSelectedSubscriber } = useSuperAdminGate();
   const { t } = useI18n();
 
   const tabParam = searchParams.get('tab');
@@ -85,17 +85,17 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [metrics, setMetrics] = useState<Awaited<ReturnType<typeof superAdminService.getMetrics>> | null>(null);
-  const [tenants, setTenants] = useState<SuperAdminTenant[]>([]);
+  const [subscribers, setTenants] = useState<SuperAdminSubscriber[]>([]);
   const [q, setQ] = useState('');
   const [switching, setSwitching] = useState<string | null>(null);
   const [plans, setPlans] = useState<SuperAdminPlan[]>([]);
 
-  const [createTenantOpen, setCreateTenantOpen] = useState(false);
+  const [createTenantOpen, setCreateSubscriberOpen] = useState(false);
   const [createBusy, setCreateBusy] = useState(false);
   const [createError, setCreateError] = useState('');
-  const [createForm, setCreateForm] = useState<CreateTenantWithAdminBody>({
-    tenantName: '',
-    tenantSlug: '',
+  const [createForm, setCreateForm] = useState<CreateSubscriberWithAdminBody>({
+    subscriberName: '',
+    subscriberSlug: '',
     adminFirstName: '',
     adminLastName: '',
     adminEmail: '',
@@ -108,7 +108,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
   const [createModuleChecks, setCreateModuleChecks] = useState<Record<string, boolean>>(defaultModuleChecksAllOn);
 
   const [subModalOpen, setSubModalOpen] = useState(false);
-  const [subModalTenant, setSubModalTenant] = useState<SuperAdminTenant | null>(null);
+  const [subModalSubscriber, setSubModalTenant] = useState<SuperAdminSubscriber | null>(null);
   const [subPlanCode, setSubPlanCode] = useState('');
   const [subRestrict, setSubRestrict] = useState(false);
   const [subModuleChecks, setSubModuleChecks] = useState<Record<string, boolean>>(defaultModuleChecksAllOn);
@@ -165,13 +165,13 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
 
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
-    if (!query) return tenants;
-    return tenants.filter((t) =>
+    if (!query) return subscribers;
+    return subscribers.filter((t) =>
       t.name.toLowerCase().includes(query) || t.slug.toLowerCase().includes(query) || t.id.toLowerCase().includes(query)
     );
-  }, [tenants, q]);
+  }, [subscribers, q]);
 
-  const planLabelForTenant = useMemo(() => {
+  const planLabelForSubscriber = useMemo(() => {
     const map = new Map<string, string>();
     for (const p of plans) {
       map.set(p.code.trim().toLowerCase(), p.name.trim() ? `${p.name} (${p.code})` : p.code);
@@ -193,13 +193,13 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
     [t],
   );
 
-  const handleSwitch = async (tenant: SuperAdminTenant) => {
+  const handleSwitch = async (tenant: SuperAdminSubscriber) => {
     if (!tenant.isActive) return;
     setSwitching(tenant.id);
     setError('');
     try {
       const auth = await superAdminService.switchTenant(tenant.id);
-      storeImpersonationTenantName(tenant.name);
+      storeImpersonationSubscriberName(tenant.name);
       clearPermissions();
       login(auth);
       navigate('/dashboard');
@@ -210,14 +210,14 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
     }
   };
 
-  const openCreateTenant = () => {
+  const openCreateSubscriber = () => {
     setCreateError('');
     setCreatePlanCode('');
     setCreateRestrictModules(false);
     setCreateModuleChecks(defaultModuleChecksAllOn());
     setCreateForm({
-      tenantName: '',
-      tenantSlug: '',
+      subscriberName: '',
+      subscriberSlug: '',
       adminFirstName: '',
       adminLastName: '',
       adminEmail: '',
@@ -225,10 +225,10 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
       passwordResetMode: 0,
       linkExistingAdmin: false,
     });
-    setCreateTenantOpen(true);
+    setCreateSubscriberOpen(true);
   };
 
-  const openSubscriptionModal = (tenant: SuperAdminTenant) => {
+  const openSubscriptionModal = (tenant: SuperAdminSubscriber) => {
     setSubModalTenant(tenant);
     setSubPlanCode((tenant.planCode ?? '').trim());
     const restricted = !!tenant.hasModuleRestrictions;
@@ -246,27 +246,27 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
     setSubModalOpen(true);
   };
 
-  const saveCreateTenant = async () => {
+  const saveCreateSubscriber = async () => {
     setCreateBusy(true);
     setCreateError('');
     try {
-      const tenantName = createForm.tenantName.trim();
-      const tenantSlug = (createForm.tenantSlug.trim() || slugify(tenantName)).toLowerCase();
+      const subscriberName = createForm.subscriberName.trim();
+      const subscriberSlug = (createForm.subscriberSlug.trim() || slugify(subscriberName)).toLowerCase();
       const adminEmail = createForm.adminEmail.trim().toLowerCase();
 
       if (activePlans.length === 0) {
-        setCreateError(t('superadmin.createTenant.error.noPlans'));
+        setCreateError(t('superadmin.createSubscriber.error.noPlans'));
         return;
       }
       if (!createPlanCode.trim()) {
-        setCreateError(t('superadmin.createTenant.error.planRequired'));
+        setCreateError(t('superadmin.createSubscriber.error.planRequired'));
         return;
       }
 
       if (createRestrictModules) {
         const n = TENANT_MODULE_KEYS.filter((k) => createModuleChecks[k]).length;
         if (n === 0) {
-          setCreateError(t('superadmin.createTenant.error.noModulesSelected'));
+          setCreateError(t('superadmin.createSubscriber.error.noModulesSelected'));
           return;
         }
       }
@@ -276,8 +276,8 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
 
       const session: SessionResponse = await superAdminService.createTenantWithAdmin({
         ...createForm,
-        tenantName,
-        tenantSlug,
+        subscriberName,
+        subscriberSlug,
         adminEmail,
         adminPassword: createForm.linkExistingAdmin ? '' : createForm.adminPassword,
         planCode: planCodeNorm,
@@ -285,8 +285,8 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
       });
 
       setError('');
-      setCreateTenantOpen(false);
-      goToCompaniesTenantDetail(navigate, session.tenantId);
+      setCreateSubscriberOpen(false);
+      goToCompaniesTenantDetail(navigate, session.subscriberId);
     } catch (e) {
       setCreateError(formatApiRequestError(e, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
     } finally {
@@ -295,7 +295,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
   };
 
   const saveSubscriptionModal = async () => {
-    if (!subModalTenant) return;
+    if (!subModalSubscriber) return;
     setSubBusy(true);
     setSubError('');
     try {
@@ -309,7 +309,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
       const planCode = subPlanCode.trim() || null;
       const enabledModulesNorm = normalizeEnabledModulesForApi(subRestrict, subModuleChecks);
 
-      await superAdminService.updateTenantSubscription(subModalTenant.id, {
+      await superAdminService.updateTenantSubscription(subModalSubscriber.id, {
         planCode,
         enabledModules: enabledModulesNorm === undefined ? null : enabledModulesNorm,
       });
@@ -326,7 +326,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
   return (
     <SuperAdminPageTemplate
       title={t('superadmin.title')}
-      subtitle={isSuperAdmin && !hasSelectedTenant ? t('superadmin.subtitle') : undefined}
+      subtitle={isSuperAdmin && !hasSelectedSubscriber ? t('superadmin.subtitle') : undefined}
       tenantGuardAction={
         <Button variant="primary" size="sm" onClick={() => navigate('/dashboard')}>
           {t('superadmin.goToTenant')}
@@ -381,7 +381,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
 
         {homeTab === 'overview' ? (
           <div className="sa-overviewKpi">
-            {!loading && tenants.length === 0 && isSuperAdmin ? (
+            {!loading && subscribers.length === 0 && isSuperAdmin ? (
               <Card title={t('superadmin.welcomeNoTenantsTitle')}>
                   <p className="subtle sa-welcome-note">
                     {t('superadmin.welcomeNoTenantsBody')}
@@ -395,10 +395,10 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                       size="sm"
                       onClick={() => {
                         selectHomeTab('companies');
-                        openCreateTenant();
+                        openCreateSubscriber();
                       }}
                       disabled={activePlans.length === 0}
-                      title={activePlans.length === 0 ? t('superadmin.createTenant.error.noPlans') : undefined}
+                      title={activePlans.length === 0 ? t('superadmin.createSubscriber.error.noPlans') : undefined}
                     >
                       {t('superadmin.welcomeCreateFirstCompany')}
                     </Button>
@@ -429,7 +429,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                   <article className="sa-overviewHubCard" role="listitem">
                     <div className="sa-overviewHubCardTop">
                       <div className="sa-overviewHubCardTitle">🏢 {t('superadmin.tabCompanies')}</div>
-                      {metrics ? <span className="badge badge--gray">{metrics.totals.totalTenants} tenants</span> : null}
+                      {metrics ? <span className="badge badge--gray">{metrics.totals.totalTenants} subscribers</span> : null}
                     </div>
                     <p className="subtle sa-overviewHubCardBody">Gestiona empresas, suscripciones y acceso a tenant.</p>
                     <Button className="sa-overviewHubCardAction" variant="secondary" size="sm" onClick={() => selectHomeTab('companies')}>
@@ -473,7 +473,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
           <Card
             title={t('superadmin.tenantPicker')}
             actions={
-              <Button variant="primary" size="sm" onClick={openCreateTenant} disabled={loading || switching !== null}>
+              <Button variant="primary" size="sm" onClick={openCreateSubscriber} disabled={loading || switching !== null}>
                 {t('superadmin.createTenant')}
               </Button>
             }
@@ -490,7 +490,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
 
               {loading ? (
                 <LoadingState />
-              ) : error && tenants.length === 0 ? (
+              ) : error && subscribers.length === 0 ? (
                 <EmptyState message={t('superadmin.sectionLoadHint')} />
               ) : filtered.length === 0 ? (
                 <EmptyState message={t('common.noData')} />
@@ -498,7 +498,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                 <div className="sa-tenantList">
                   {filtered.map((tenant) => (
                     <div key={tenant.id} className="sa-tenantRow">
-                      <div className="sa-tenantName">{tenant.name}</div>
+                      <div className="sa-subscriberName">{tenant.name}</div>
                       <div className="sa-tenantMeta">
                         <span className="mono">{tenant.slug}</span>
                         <span className="mono">{tenant.id}</span>
@@ -574,43 +574,43 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
 
       {createTenantOpen ? (
         <Modal
-          onClose={() => (createBusy ? undefined : setCreateTenantOpen(false))}
+          onClose={() => (createBusy ? undefined : setCreateSubscriberOpen(false))}
           size="lg"
           header={
             <ZHModalHeader
               title={t('superadmin.createTenant')}
               subtitle={t('superadmin.createTenantSubtitle')}
-              onClose={() => (createBusy ? undefined : setCreateTenantOpen(false))}
+              onClose={() => (createBusy ? undefined : setCreateSubscriberOpen(false))}
             />
           }
         >
           {createError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={createError} /> : null}
           <ZHGridRow cols={2}>
-            <ZHField label={t('superadmin.createTenant.field.name')}>
+            <ZHField label={t('superadmin.createSubscriber.field.name')}>
               <input
                 className="zh-input"
-                value={createForm.tenantName}
+                value={createForm.subscriberName}
                 onChange={(e) =>
                   setCreateForm((s) => {
                     const name = e.target.value;
-                    const nextSlug = s.tenantSlug.trim() ? s.tenantSlug : slugify(name);
-                    return { ...s, tenantName: name, tenantSlug: nextSlug };
+                    const nextSlug = s.subscriberSlug.trim() ? s.subscriberSlug : slugify(name);
+                    return { ...s, subscriberName: name, subscriberSlug: nextSlug };
                   })
                 }
                 disabled={createBusy}
               />
             </ZHField>
-            <ZHField label={t('superadmin.createTenant.field.slug')}>
+            <ZHField label={t('superadmin.createSubscriber.field.slug')}>
               <input
                 className="zh-input"
-                value={createForm.tenantSlug}
-                onChange={(e) => setCreateForm((s) => ({ ...s, tenantSlug: e.target.value }))}
+                value={createForm.subscriberSlug}
+                onChange={(e) => setCreateForm((s) => ({ ...s, subscriberSlug: e.target.value }))}
                 disabled={createBusy}
               />
             </ZHField>
           </ZHGridRow>
           <ZHGridRow cols={2}>
-            <ZHField label={t('superadmin.createTenant.field.planCode')}>
+            <ZHField label={t('superadmin.createSubscriber.field.planCode')}>
               <select
                 className="zh-input"
                 value={createPlanCode}
@@ -620,8 +620,8 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
               >
                 <option value="">
                   {activePlans.length === 0
-                    ? t('superadmin.createTenant.planSelectNoPlans')
-                    : t('superadmin.createTenant.planSelectPlaceholder')}
+                    ? t('superadmin.createSubscriber.planSelectNoPlans')
+                    : t('superadmin.createSubscriber.planSelectPlaceholder')}
                 </option>
                 {activePlans.map((p) => (
                   <option key={p.id} value={p.code}>
@@ -643,11 +643,11 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
               }}
               disabled={createBusy}
             />
-            {t('superadmin.createTenant.field.restrictModules')}
+            {t('superadmin.createSubscriber.field.restrictModules')}
           </label>
           {createRestrictModules ? (
             <p className="subtle sa-modules-hint">
-              {t('superadmin.createTenant.modulesHint')}
+              {t('superadmin.createSubscriber.modulesHint')}
             </p>
           ) : null}
           {createRestrictModules ? (
@@ -671,7 +671,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
             </div>
           ) : null}
           <ZHGridRow cols={2}>
-            <ZHField label={t('superadmin.createTenant.field.adminFirstName')}>
+            <ZHField label={t('superadmin.createSubscriber.field.adminFirstName')}>
               <input
                 className="zh-input"
                 value={createForm.adminFirstName}
@@ -679,7 +679,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                 disabled={createBusy}
               />
             </ZHField>
-            <ZHField label={t('superadmin.createTenant.field.adminLastName')}>
+            <ZHField label={t('superadmin.createSubscriber.field.adminLastName')}>
               <input
                 className="zh-input"
                 value={createForm.adminLastName}
@@ -689,7 +689,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
             </ZHField>
           </ZHGridRow>
           <ZHGridRow cols={2}>
-            <ZHField label={t('superadmin.createTenant.field.adminEmail')}>
+            <ZHField label={t('superadmin.createSubscriber.field.adminEmail')}>
               <input
                 className="zh-input"
                 value={createForm.adminEmail}
@@ -697,7 +697,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                 disabled={createBusy}
               />
             </ZHField>
-            <ZHField label={t('superadmin.createTenant.field.passwordResetMode')}>
+            <ZHField label={t('superadmin.createSubscriber.field.passwordResetMode')}>
               <select
                 className="zh-input"
                 value={String(createForm.passwordResetMode ?? 0)}
@@ -706,9 +706,9 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                 }
                 disabled={createBusy}
               >
-                <option value={0}>{t('superadmin.createTenant.passwordResetMode.disabled')}</option>
-                <option value={2}>{t('superadmin.createTenant.passwordResetMode.email')}</option>
-                <option value={1}>{t('superadmin.createTenant.passwordResetMode.admin')}</option>
+                <option value={0}>{t('superadmin.createSubscriber.passwordResetMode.disabled')}</option>
+                <option value={2}>{t('superadmin.createSubscriber.passwordResetMode.email')}</option>
+                <option value={1}>{t('superadmin.createSubscriber.passwordResetMode.admin')}</option>
               </select>
             </ZHField>
           </ZHGridRow>
@@ -719,10 +719,10 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
               onChange={(e) => setCreateForm((s) => ({ ...s, linkExistingAdmin: e.target.checked }))}
               disabled={createBusy}
             />
-            {t('superadmin.createTenant.field.linkExistingAdmin')}
+            {t('superadmin.createSubscriber.field.linkExistingAdmin')}
           </label>
           {!createForm.linkExistingAdmin ? (
-            <ZHField label={t('superadmin.createTenant.field.adminPassword')}>
+            <ZHField label={t('superadmin.createSubscriber.field.adminPassword')}>
               <input
                 className="zh-input"
                 type="password"
@@ -733,17 +733,17 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
             </ZHField>
           ) : null}
           <ZHInlineRowRight>
-            <Button variant="secondary" size="sm" onClick={() => setCreateTenantOpen(false)} disabled={createBusy}>
+            <Button variant="secondary" size="sm" onClick={() => setCreateSubscriberOpen(false)} disabled={createBusy}>
               {t('common.cancel')}
             </Button>
-            <Button variant="primary" size="sm" onClick={() => void saveCreateTenant()} disabled={createBusy}>
+            <Button variant="primary" size="sm" onClick={() => void saveCreateSubscriber()} disabled={createBusy}>
               {t('common.save')}
             </Button>
           </ZHInlineRowRight>
         </Modal>
       ) : null}
 
-      {subModalOpen && subModalTenant ? (
+      {subModalOpen && subModalSubscriber ? (
         <Modal
           onClose={() => (subBusy ? undefined : setSubModalOpen(false))}
           size="lg"
@@ -752,7 +752,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
               title={t('superadmin.changeSubscription.title')}
               subtitle={t('superadmin.changeSubscription.subtitle').replace(
                 '{name}',
-                subModalTenant.name,
+                subModalSubscriber.name,
               )}
               onClose={() => (subBusy ? undefined : setSubModalOpen(false))}
             />
@@ -760,14 +760,14 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
         >
           {subError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={subError} /> : null}
           <ZHGridRow cols={2}>
-            <ZHField label={t('superadmin.createTenant.field.planCode')}>
+            <ZHField label={t('superadmin.createSubscriber.field.planCode')}>
               <select
                 className="zh-input"
                 value={subPlanCode}
                 onChange={(e) => setSubPlanCode(e.target.value)}
                 disabled={subBusy}
               >
-                <option value="">{t('superadmin.createTenant.planOptional')}</option>
+                <option value="">{t('superadmin.createSubscriber.planOptional')}</option>
                 {activePlans.map((p) => (
                   <option key={p.id} value={p.code}>
                     {p.name.trim() ? `${p.name} (${p.code})` : p.code}
@@ -788,11 +788,11 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
               }}
               disabled={subBusy}
             />
-            {t('superadmin.createTenant.field.restrictModules')}
+            {t('superadmin.createSubscriber.field.restrictModules')}
           </label>
           {subRestrict ? (
             <p className="subtle sa-modules-hint">
-              {t('superadmin.createTenant.modulesHint')}
+              {t('superadmin.createSubscriber.modulesHint')}
             </p>
           ) : null}
           {subRestrict ? (

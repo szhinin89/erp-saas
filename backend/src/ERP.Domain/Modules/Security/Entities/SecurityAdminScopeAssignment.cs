@@ -12,7 +12,7 @@ public class SecurityAdminScopeAssignment : AuditableEntity
     private SecurityAdminScopeAssignment() { }
 
     public static SecurityAdminScopeAssignment Create(
-        Guid tenantId,
+        Guid subscriberId,
         string subjectType,
         string subjectKey,
         int scope,
@@ -22,7 +22,7 @@ public class SecurityAdminScopeAssignment : AuditableEntity
         var entity = new SecurityAdminScopeAssignment
         {
             Id = Guid.NewGuid(),
-            TenantId = tenantId,
+            SubscriberId = subscriberId,
             SubjectType = subjectType,
             SubjectKey = subjectKey,
             Scope = scope,

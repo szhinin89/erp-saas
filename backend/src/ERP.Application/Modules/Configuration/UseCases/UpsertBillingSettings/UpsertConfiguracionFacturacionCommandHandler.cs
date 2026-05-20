@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Configuration.DTOs;
 using ERP.Domain.Configuration.Entities;
@@ -11,16 +11,16 @@ public sealed class UpsertBillingSettingsCommandHandler
     : IRequestHandler<UpsertBillingSettingsCommand, Result<BillingSettingsDto>>
 {
     private readonly IBillingSettingsRepository _repo;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
 
     public UpsertBillingSettingsCommandHandler(
         IBillingSettingsRepository repo,
-        ICurrentTenant currentTenant,
+        ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser)
     {
         _repo = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
     }
 
@@ -28,11 +28,11 @@ public sealed class UpsertBillingSettingsCommandHandler
         UpsertBillingSettingsCommand command,
         CancellationToken ct)
     {
-        var config = await _repo.GetByTenantIdAsync(_currentTenant.TenantId, ct);
+        var config = await _repo.GetBySubscriberIdAsync(_currentSubscriber.SubscriberId, ct);
         if (config is null)
         {
             config = BillingSettings.Create(
-                _currentTenant.TenantId,
+                _currentSubscriber.SubscriberId,
                 command.LegalName,
                 command.TradeName,
                 command.Ruc,
@@ -71,7 +71,7 @@ public sealed class UpsertBillingSettingsCommandHandler
 
         return Result<BillingSettingsDto>.Success(new BillingSettingsDto(
             config.Id,
-            config.TenantId,
+            config.SubscriberId,
             config.LegalName,
             config.TradeName,
             config.Ruc,

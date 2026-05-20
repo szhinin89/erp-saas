@@ -8,8 +8,10 @@ using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
-using ERP.Domain.Tenants.Entities;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Subscribers.Entities;
+using ERP.Domain.Subscribers.Interfaces;
 
 namespace ERP.Application.Tests;
 
@@ -21,56 +23,66 @@ public class LoginHandlerTests
         var email = "test@company.local";
         var password = "Secret123!";
         var passwordHash = "hashed-password";
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
+        var companyId = Guid.NewGuid();
         var role = "Admin";
 
         var identityUser = IdentityUser.Create("Test", "User", email, passwordHash, Guid.NewGuid());
-        var membership = Membership.Create(tenantId, identityUser.Id, role, null, Guid.NewGuid());
-        var tenant = Tenant.Create("Tenant Name", "tenant-slug", Guid.NewGuid(), planCode: "starter");
+        var membership = CompanyUserMembership.Create(companyId, identityUser.Id, role, null, Guid.NewGuid());
+        var tenant = Subscriber.Create("Subscriber Name", "tenant-slug", Guid.NewGuid(), planCode: "starter");
+        var company = Company.CreateFromSubscriber(subscriberId, "1999999999001", "Test Company", "Main St");
+        company.Id = companyId;
 
         var userRepo = new Mock<IUserRepository>(MockBehavior.Strict);
-        var tenantRepo = new Mock<ITenantRepository>(MockBehavior.Strict);
+        var tenantRepo = new Mock<ISubscriberRepository>(MockBehavior.Strict);
+        var companyRepo = new Mock<ICompanyRepository>(MockBehavior.Strict);
         var jwtService = new Mock<IJwtService>(MockBehavior.Strict);
         var deployment = new Mock<IDeploymentFeatureFlags>(MockBehavior.Strict);
         var accessRepo = new Mock<IAccessRepository>(MockBehavior.Strict);
         var accessTokenService = new Mock<IAccessTokenService>(MockBehavior.Strict);
         var passwordHasher = new Mock<IPasswordHasher>(MockBehavior.Strict);
+        var companyProvisioning = new Mock<ICompanyProvisioningService>(MockBehavior.Strict);
 
         deployment.SetupGet(d => d.IsSuperAdminPanelEnabled).Returns(true);
         userRepo.Setup(r => r.GetSingleSuperAdminByEmailAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
         accessRepo.Setup(r => r.GetUserByEmailAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(identityUser);
         passwordHasher.Setup(h => h.VerifyPassword(password, passwordHash)).Returns(true);
-        accessRepo.Setup(r => r.GetActiveMembershipsForUserSystemAsync(identityUser.Id, It.IsAny<CancellationToken>())).ReturnsAsync(new[] { membership });
-        tenantRepo.Setup(r => r.GetByIdAsync(tenantId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
-        accessTokenService.Setup(s => s.GenerateSessionToken(identityUser, tenantId, role)).Returns("session-token");
+        accessRepo.Setup(r => r.GetActiveCompanyUserMembershipsForUserSystemAsync(identityUser.Id, It.IsAny<CancellationToken>())).ReturnsAsync(new[] { membership });
+        companyRepo.Setup(r => r.GetByIdsAsync(It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>())).ReturnsAsync(new[] { company });
+        tenantRepo.Setup(r => r.GetByIdAsync(subscriberId, It.IsAny<CancellationToken>())).ReturnsAsync(tenant);
+        companyProvisioning.Setup(s => s.EnsureDefaultCompanyAsync(tenant, It.IsAny<CancellationToken>())).ReturnsAsync(company);
+        accessTokenService.Setup(s => s.GenerateSessionToken(identityUser, subscriberId, role, companyId)).Returns("session-token");
 
         var refreshTokenService = new Mock<IRefreshTokenService>();
         refreshTokenService
-            .Setup(s => s.CreateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(s => s.CreateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(("fake-refresh-token", DateTime.UtcNow.AddDays(30)));
 
         var sessionModules = new Mock<ISessionModulesResolver>(MockBehavior.Strict);
         sessionModules
-            .Setup(s => s.GetEnabledModuleKeysAsync(tenantId, It.IsAny<CancellationToken>()))
+            .Setup(s => s.GetEnabledModuleKeysAsync(subscriberId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { "inventory" });
 
         var handler = new LoginHandler(
             userRepo.Object,
             tenantRepo.Object,
+            companyRepo.Object,
             jwtService.Object,
             deployment.Object,
             accessRepo.Object,
             accessTokenService.Object,
             passwordHasher.Object,
             refreshTokenService.Object,
-            sessionModules.Object);
+            sessionModules.Object,
+            companyProvisioning.Object);
 
         var result = await handler.Handle(new LoginCommand(email, password), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
         result.Value!.Token.Should().Be("session-token");
-        result.Value.TenantId.Should().Be(tenantId);
+        result.Value.SubscriberId.Should().Be(subscriberId);
+        result.Value.CompanyId.Should().Be(companyId);
         result.Value.Role.Should().Be(role);
         result.Value.Email.Should().Be(email);
     }

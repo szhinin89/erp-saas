@@ -1,25 +1,25 @@
 using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Subscriptions;
-using ERP.Application.Tenants.DTOs;
-using ERP.Domain.Tenants.Entities;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Application.Subscribers.DTOs;
+using ERP.Domain.Subscribers.Entities;
+using ERP.Domain.Subscribers.Interfaces;
 
-namespace ERP.Application.Tenants.UseCases.CreateTenant;
+namespace ERP.Application.Subscribers.UseCases.CreateSubscriber;
 
-public class CreateTenantHandler : IRequestHandler<CreateTenantCommand, Result<TenantDto>>
+public class CreateSubscriberHandler : IRequestHandler<CreateSubscriberCommand, Result<SubscriberDto>>
 {
-    private readonly ITenantRepository _repository;
+    private readonly ISubscriberRepository _repository;
     private readonly ICurrentUser _currentUser;
     private readonly IDeploymentFeatureFlags _deployment;
-    private readonly ITenantSubscriptionOverridesService _overrides;
+    private readonly ISubscriptionFeatureOverridesService _overrides;
     private readonly ISessionModulesResolver _sessionModules;
 
-    public CreateTenantHandler(
-        ITenantRepository repository,
+    public CreateSubscriberHandler(
+        ISubscriberRepository repository,
         ICurrentUser currentUser,
         IDeploymentFeatureFlags deployment,
-        ITenantSubscriptionOverridesService overrides,
+        ISubscriptionFeatureOverridesService overrides,
         ISessionModulesResolver sessionModules)
     {
         _repository = repository;
@@ -29,22 +29,22 @@ public class CreateTenantHandler : IRequestHandler<CreateTenantCommand, Result<T
         _sessionModules = sessionModules;
     }
 
-    public async Task<Result<TenantDto>> Handle(
-        CreateTenantCommand command,
+    public async Task<Result<SubscriberDto>> Handle(
+        CreateSubscriberCommand command,
         CancellationToken ct)
     {
         var exists = await _repository.GetBySlugAsync(command.Slug, ct);
         if (exists is not null)
-            return Result<TenantDto>.Failure($"Ya existe un tenant con el slug '{command.Slug}'.");
+            return Result<SubscriberDto>.Failure($"Ya existe un tenant con el slug '{command.Slug}'.");
 
-        var quotaMsg = await DeploymentQuota.GetBlockingReasonIfAtActiveTenantCapAsync(_deployment, _repository, ct);
+        var quotaMsg = await DeploymentQuota.GetBlockingReasonIfAtActiveSubscriberCapAsync(_deployment, _repository, ct);
         if (quotaMsg is not null)
-            return Result<TenantDto>.Failure(quotaMsg);
+            return Result<SubscriberDto>.Failure(quotaMsg);
 
         if (command.EnabledModules is { Count: > 0 })
-            TenantSubscriptionCatalog.ValidateModuleKeysOrThrow(command.EnabledModules);
+            SubscriberSubscriptionCatalog.ValidateModuleKeysOrThrow(command.EnabledModules);
 
-        var tenant = Tenant.Create(
+        var tenant = Subscriber.Create(
             command.Name,
             command.Slug,
             _currentUser.UserId,
@@ -65,13 +65,13 @@ public class CreateTenantHandler : IRequestHandler<CreateTenantCommand, Result<T
         {
             await _overrides.ApplyModuleOverridesAsync(
                 tenant.Id,
-                TenantSubscriptionCatalog.NormalizeModuleKeysInput(command.EnabledModules),
+                SubscriberSubscriptionCatalog.NormalizeModuleKeysInput(command.EnabledModules),
                 _currentUser.UserId,
                 ct);
             await _repository.SaveChangesAsync(ct);
         }
 
         var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, ct);
-        return Result<TenantDto>.Success(TenantDto.FromTenant(tenant, modules));
+        return Result<SubscriberDto>.Success(SubscriberDto.FromTenant(tenant, modules));
     }
 }

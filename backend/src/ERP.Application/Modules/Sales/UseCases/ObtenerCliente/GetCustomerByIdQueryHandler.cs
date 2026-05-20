@@ -9,9 +9,9 @@ public sealed class GetCustomerByIdQueryHandler
     : IRequestHandler<GetCustomerByIdQuery, Result<CustomerDetailDto>>
 {
     private readonly ICustomerRepository _repo;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
 
-    public GetCustomerByIdQueryHandler(ICustomerRepository repo, ICurrentTenant tenant)
+    public GetCustomerByIdQueryHandler(ICustomerRepository repo, ICurrentSubscriber tenant)
     {
         _repo = repo;
         _tenant = tenant;
@@ -19,7 +19,7 @@ public sealed class GetCustomerByIdQueryHandler
 
     public async Task<Result<CustomerDetailDto>> Handle(GetCustomerByIdQuery request, CancellationToken ct)
     {
-        var x = await _repo.GetByIdAsync(_tenant.TenantId, request.Id, ct);
+        var x = await _repo.GetByIdAsync(_tenant.SubscriberId, request.Id, ct);
         if (x is null)
             return Result<CustomerDetailDto>.Failure("Cliente no encontrado.");
 

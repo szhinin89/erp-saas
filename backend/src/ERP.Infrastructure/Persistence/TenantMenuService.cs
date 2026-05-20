@@ -6,90 +6,90 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence;
 
-public sealed class TenantMenuService : ITenantSessionMenuResolver, ITenantMenuAdminService
+public sealed class SubscriberMenuService : ITenantSessionMenuResolver, ISubscriberMenuAdminService
 {
     private readonly ErpDbContext _db;
     private readonly INavigationMenuReader _reader;
 
-    public TenantMenuService(ErpDbContext db, INavigationMenuReader reader)
+    public SubscriberMenuService(ErpDbContext db, INavigationMenuReader reader)
     {
         _db = db;
         _reader = reader;
     }
 
-    public async Task<IReadOnlyList<SessionMenuGroupDto>> ResolveForTenantAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<SessionMenuGroupDto>> ResolveForTenantAsync(Guid subscriberId, CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty)
+        if (subscriberId == Guid.Empty)
         {
             var m = await _reader.GetActiveMenuAsync(ct);
-            return TenantIamMenuMerger.EnsureCompanyIamGroup(m);
+            return SubscriberIamMenuMerger.EnsureCompanyIamGroup(m);
         }
 
-        var custom = await _db.TenantCustomMenus.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.TenantId == tenantId, ct);
+        var custom = await _db.SubscriberCustomMenus.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId, ct);
         if (custom is not null &&
             SessionMenuJsonParser.TryDeserialize(custom.MenuConfigJson, out var customMenu) &&
             customMenu is { Count: > 0 })
-            return TenantIamMenuMerger.EnsureCompanyIamGroup(customMenu);
+            return SubscriberIamMenuMerger.EnsureCompanyIamGroup(customMenu);
 
-        var tenant = await _db.Tenants.AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Id == tenantId, ct);
+        var tenant = await _db.Subscribers.AsNoTracking()
+            .FirstOrDefaultAsync(t => t.Id == subscriberId, ct);
         if (tenant?.PlanCode is { Length: > 0 } pc)
         {
-            var plan = await _db.SaasPlans.AsNoTracking()
+            var plan = await _db.CommercialPlans.AsNoTracking()
                 .FirstOrDefaultAsync(p => p.Code == pc, ct);
             if (plan?.MenuConfigJson is { Length: > 0 } pj &&
                 SessionMenuJsonParser.TryDeserialize(pj, out var planMenu) &&
                 planMenu is { Count: > 0 })
-                return TenantIamMenuMerger.EnsureCompanyIamGroup(planMenu);
+                return SubscriberIamMenuMerger.EnsureCompanyIamGroup(planMenu);
         }
 
         var global = await _reader.GetActiveMenuAsync(ct);
-        return TenantIamMenuMerger.EnsureCompanyIamGroup(global);
+        return SubscriberIamMenuMerger.EnsureCompanyIamGroup(global);
     }
 
-    public async Task<Result<TenantMenuResolvedDto>> GetResolvedMenuForTenantAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<Result<TenantMenuResolvedDto>> GetResolvedMenuForTenantAsync(Guid subscriberId, CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty)
-            return Result<TenantMenuResolvedDto>.Failure("Tenant inválido.");
+        if (subscriberId == Guid.Empty)
+            return Result<TenantMenuResolvedDto>.Failure("Subscriber inválido.");
 
-        var exists = await _db.Tenants.AsNoTracking().AnyAsync(t => t.Id == tenantId, ct);
+        var exists = await _db.Subscribers.AsNoTracking().AnyAsync(t => t.Id == subscriberId, ct);
         if (!exists)
             return Result<TenantMenuResolvedDto>.Failure("Empresa no encontrada.");
 
-        var custom = await _db.TenantCustomMenus.AsNoTracking()
-            .FirstOrDefaultAsync(x => x.TenantId == tenantId, ct);
+        var custom = await _db.SubscriberCustomMenus.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId, ct);
         if (custom is not null &&
             SessionMenuJsonParser.TryDeserialize(custom.MenuConfigJson, out var customMenu) &&
             customMenu is { Count: > 0 })
         {
             return Result<TenantMenuResolvedDto>.Success(new TenantMenuResolvedDto(
-                TenantIamMenuMerger.EnsureCompanyIamGroup(customMenu), HasCustomMenu: true, UsedPlanMenu: false, UsedGlobalFallback: false));
+                SubscriberIamMenuMerger.EnsureCompanyIamGroup(customMenu), HasCustomMenu: true, UsedPlanMenu: false, UsedGlobalFallback: false));
         }
 
-        var tenant = await _db.Tenants.AsNoTracking().FirstAsync(t => t.Id == tenantId, ct);
+        var tenant = await _db.Subscribers.AsNoTracking().FirstAsync(t => t.Id == subscriberId, ct);
         if (tenant.PlanCode is { Length: > 0 } pc)
         {
-            var plan = await _db.SaasPlans.AsNoTracking()
+            var plan = await _db.CommercialPlans.AsNoTracking()
                 .FirstOrDefaultAsync(p => p.Code == pc, ct);
             if (plan?.MenuConfigJson is { Length: > 0 } pj &&
                 SessionMenuJsonParser.TryDeserialize(pj, out var planMenu) &&
                 planMenu is { Count: > 0 })
             {
                 return Result<TenantMenuResolvedDto>.Success(new TenantMenuResolvedDto(
-                    TenantIamMenuMerger.EnsureCompanyIamGroup(planMenu), HasCustomMenu: false, UsedPlanMenu: true, UsedGlobalFallback: false));
+                    SubscriberIamMenuMerger.EnsureCompanyIamGroup(planMenu), HasCustomMenu: false, UsedPlanMenu: true, UsedGlobalFallback: false));
             }
         }
 
         var global = await _reader.GetActiveMenuAsync(ct);
         return Result<TenantMenuResolvedDto>.Success(new TenantMenuResolvedDto(
-            TenantIamMenuMerger.EnsureCompanyIamGroup(global), HasCustomMenu: false, UsedPlanMenu: false, UsedGlobalFallback: true));
+            SubscriberIamMenuMerger.EnsureCompanyIamGroup(global), HasCustomMenu: false, UsedPlanMenu: false, UsedGlobalFallback: true));
     }
 
-    public async Task<Result<object?>> UpsertTenantCustomMenuAsync(Guid tenantId, string menuConfigJson, CancellationToken ct = default)
+    public async Task<Result<object?>> UpsertSubscriberCustomMenuAsync(Guid subscriberId, string menuConfigJson, CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty)
-            return Result<object?>.Failure("Tenant inválido.");
+        if (subscriberId == Guid.Empty)
+            return Result<object?>.Failure("Subscriber inválido.");
 
         if (!SessionMenuJsonParser.TryDeserialize(menuConfigJson, out var parsed) || parsed is null || parsed.Count == 0)
             return Result<object?>.Failure("JSON de menú inválido o vacío.");
@@ -103,16 +103,16 @@ public sealed class TenantMenuService : ITenantSessionMenuResolver, ITenantMenuA
             return Result<object?>.Failure(ex.Message);
         }
 
-        var tenantExists = await _db.Tenants.AnyAsync(t => t.Id == tenantId, ct);
+        var tenantExists = await _db.Subscribers.AnyAsync(t => t.Id == subscriberId, ct);
         if (!tenantExists)
             return Result<object?>.Failure("Empresa no encontrada.");
 
         var normalized = SessionMenuJsonParser.Serialize(parsed);
         var utc = DateTime.UtcNow;
-        var row = await _db.TenantCustomMenus.FirstOrDefaultAsync(x => x.TenantId == tenantId, ct);
+        var row = await _db.SubscriberCustomMenus.FirstOrDefaultAsync(x => x.SubscriberId == subscriberId, ct);
         if (row is null)
         {
-            _db.TenantCustomMenus.Add(TenantCustomMenu.Create(tenantId, normalized, utc));
+            _db.SubscriberCustomMenus.Add(SubscriberCustomMenu.Create(subscriberId, normalized, utc));
         }
         else
         {
@@ -123,24 +123,24 @@ public sealed class TenantMenuService : ITenantSessionMenuResolver, ITenantMenuA
         return Result<object?>.Success(null);
     }
 
-    public async Task<Result<object?>> DeleteTenantCustomMenuAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<Result<object?>> DeleteSubscriberCustomMenuAsync(Guid subscriberId, CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty)
-            return Result<object?>.Failure("Tenant inválido.");
+        if (subscriberId == Guid.Empty)
+            return Result<object?>.Failure("Subscriber inválido.");
 
-        var row = await _db.TenantCustomMenus.FirstOrDefaultAsync(x => x.TenantId == tenantId, ct);
+        var row = await _db.SubscriberCustomMenus.FirstOrDefaultAsync(x => x.SubscriberId == subscriberId, ct);
         if (row is null)
             return Result<object?>.Success(null);
 
-        _db.TenantCustomMenus.Remove(row);
+        _db.SubscriberCustomMenus.Remove(row);
         await _db.SaveChangesAsync(ct);
         return Result<object?>.Success(null);
     }
 
-    public async Task<IReadOnlySet<Guid>> GetTenantIdsWithCustomMenuAsync(CancellationToken ct = default)
+    public async Task<IReadOnlySet<Guid>> GetSubscriberIdsWithCustomMenuAsync(CancellationToken ct = default)
     {
-        var ids = await _db.TenantCustomMenus.AsNoTracking()
-            .Select(x => x.TenantId)
+        var ids = await _db.SubscriberCustomMenus.AsNoTracking()
+            .Select(x => x.SubscriberId)
             .ToListAsync(ct);
         return ids.ToHashSet();
     }

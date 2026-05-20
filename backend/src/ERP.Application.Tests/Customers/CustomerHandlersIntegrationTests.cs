@@ -14,11 +14,11 @@ public class CustomerHandlersIntegrationTests
     [Fact]
     public async Task CreateCustomerHandler_should_create_customer_for_current_tenant()
     {
-        var tenantId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         var repo = new InMemoryCustomerRepository();
         var activity = new InMemoryUserActivityRepository();
-        var tenant = new TestCurrentTenant(tenantId);
+        var tenant = new TestCurrentSubscriber(subscriberId);
         var user = new TestCurrentUser(userId);
 
         var handler = new CreateCustomerCommandHandler(repo, activity, tenant, user);
@@ -39,9 +39,9 @@ public class CustomerHandlersIntegrationTests
         result.Value!.IdentificationType.Should().Be("RUC");
         result.Value.LegalName.Should().Be("Cliente Integración");
 
-        var tenantCustomers = await repo.GetAsync(tenantId, null, null, CancellationToken.None);
+        var tenantCustomers = await repo.GetAsync(subscriberId, null, null, CancellationToken.None);
         tenantCustomers.Should().HaveCount(1);
-        tenantCustomers[0].TenantId.Should().Be(tenantId);
+        tenantCustomers[0].SubscriberId.Should().Be(subscriberId);
         activity.Activities.Should().ContainSingle();
     }
 
@@ -79,7 +79,7 @@ public class CustomerHandlersIntegrationTests
 
         await repo.SaveChangesAsync(CancellationToken.None);
 
-        var handler = new GetCustomersQueryHandler(repo, new TestCurrentTenant(tenantA));
+        var handler = new GetCustomersQueryHandler(repo, new TestCurrentSubscriber(tenantA));
         var result = await handler.Handle(new GetCustomersQuery(null, null), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -88,10 +88,10 @@ public class CustomerHandlersIntegrationTests
         result.Value[0].LegalName.Should().Be("Cliente A");
     }
 
-    private sealed class TestCurrentTenant : ICurrentTenant
+    private sealed class TestCurrentSubscriber : ICurrentSubscriber
     {
-        public TestCurrentTenant(Guid tenantId) => TenantId = tenantId;
-        public Guid TenantId { get; }
+        public TestCurrentSubscriber(Guid subscriberId) => SubscriberId = subscriberId;
+        public Guid SubscriberId { get; }
         public bool IsAuthenticated => true;
     }
 
@@ -122,7 +122,7 @@ public class CustomerHandlersIntegrationTests
         }
 
         public Task<IReadOnlyList<UserActivity>> GetMyRecentAsync(
-            Guid tenantId,
+            Guid subscriberId,
             Guid userId,
             string? module = null,
             int skip = 0,
@@ -133,7 +133,7 @@ public class CustomerHandlersIntegrationTests
         }
 
         public Task<IReadOnlyList<UserActivity>> GetByEntityAsync(
-            Guid tenantId,
+            Guid subscriberId,
             string entityType,
             Guid entityId,
             int take = 10,
@@ -153,14 +153,14 @@ public class CustomerHandlersIntegrationTests
             return Task.CompletedTask;
         }
 
-        public Task<Customer?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
+        public Task<Customer?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
         {
-            var item = _customers.FirstOrDefault(x => x.TenantId == tenantId && x.Id == id);
+            var item = _customers.FirstOrDefault(x => x.SubscriberId == subscriberId && x.Id == id);
             return Task.FromResult(item);
         }
 
         public Task<bool> ExistsIdentificationAsync(
-            Guid tenantId,
+            Guid subscriberId,
             string identificationType,
             string identificationNumber,
             Guid? excludeCustomerId,
@@ -170,7 +170,7 @@ public class CustomerHandlersIntegrationTests
             var number = Customer.NormalizeIdentificationNumber(identificationNumber);
 
             var query = _customers.Where(x =>
-                x.TenantId == tenantId &&
+                x.SubscriberId == subscriberId &&
                 x.IdentificationType == type &&
                 x.IdentificationNumber == number);
 
@@ -181,12 +181,12 @@ public class CustomerHandlersIntegrationTests
         }
 
         public Task<IReadOnlyList<Customer>> GetAsync(
-            Guid tenantId,
+            Guid subscriberId,
             bool? activeFilter,
             string? search,
             CancellationToken ct = default)
         {
-            var query = _customers.Where(x => x.TenantId == tenantId);
+            var query = _customers.Where(x => x.SubscriberId == subscriberId);
             if (activeFilter is true) query = query.Where(x => x.IsActive);
             if (activeFilter is false) query = query.Where(x => !x.IsActive);
 

@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using FluentAssertions;
@@ -26,10 +26,10 @@ public sealed class VentasHttpTests
 
         using var scope = factory.Services.CreateScope();
         var db   = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial, ct: CancellationToken.None);
 
-        var token  = TestJwtFactory.CreateSessionJwt(seed.TenantId, seed.UserId);
+        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId);
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -104,8 +104,8 @@ public sealed class VentasHttpTests
 
         using var scope = factory.Services.CreateScope();
         var db        = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var clienteId  = db.Customers.First(c => c.TenantId == seed.TenantId).Id;
-        var sucursalId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
+        var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         var payload = new
         {
@@ -192,8 +192,8 @@ public sealed class VentasHttpTests
         using var scope    = factory.Services.CreateScope();
         var db             = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator       = scope.ServiceProvider.GetRequiredService<MediatR.IMediator>();
-        var clienteId      = db.Customers.First(c => c.TenantId == seed.TenantId).Id;
-        var sucursalId     = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
+        var clienteId      = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var sucursalId     = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         var crear = await mediator.Send(
             new ERP.Application.Sales.UseCases.CrearVenta.CrearVentaCommand(
@@ -235,11 +235,11 @@ public sealed class VentasHttpTests
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
-        var clienteId = db.Customers.First(c => c.TenantId == seed.TenantId).Id;
-        var branchId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
+        var clienteId = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var branchId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         var config = BillingSettings.Create(
-            tenantId: seed.TenantId,
+            subscriberId: seed.SubscriberId,
             legalName: "Razon Social Test",
             tradeName: "Comercial Test",
             ruc: "1790016910001",
@@ -256,7 +256,7 @@ public sealed class VentasHttpTests
         db.BillingSettings.Add(config);
 
         var factura = SalesBill.Create(
-            seed.TenantId,
+            seed.SubscriberId,
             branchId,
             clienteId,
             seed.WarehouseId,
@@ -277,7 +277,7 @@ public sealed class VentasHttpTests
             createdBy: seed.UserId);
 
         var detalle = SalesBillLine.Create(
-            seed.TenantId,
+            seed.SubscriberId,
             seed.ProductId,
             quantity: 1m,
             unitPrice: 100m,
@@ -321,11 +321,11 @@ public sealed class VentasHttpTests
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
-        var clienteId = db.Customers.First(c => c.TenantId == seed.TenantId).Id;
-        var branchId = db.Branches.First(b => b.TenantId == seed.TenantId).Id;
+        var clienteId = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var branchId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         var factura = SalesBill.Create(
-            seed.TenantId,
+            seed.SubscriberId,
             branchId,
             clienteId,
             seed.WarehouseId,
@@ -346,7 +346,7 @@ public sealed class VentasHttpTests
             createdBy: seed.UserId);
 
         var detalle = SalesBillLine.Create(
-            seed.TenantId,
+            seed.SubscriberId,
             seed.ProductId,
             quantity: 1m,
             unitPrice: 50m,

@@ -2,7 +2,8 @@ using ERP.Application.Common;
 using ERP.Application.Subscriptions;
 using Microsoft.AspNetCore.Http;
 using ERP.Domain.Access.Interfaces;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Domain.Modules.Company.Interfaces;
+using ERP.Domain.Subscribers.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 
@@ -11,43 +12,49 @@ namespace ERP.API.Authorization;
 public sealed class PermissionHandler : AuthorizationHandler<PermissionRequirement>
 {
     private readonly IAccessRepository _repo;
-    private readonly ICurrentTenant _currentTenant;
-    private readonly ITenantRepository _tenantRepository;
-    private readonly ITenantEntitlementsService _entitlements;
+    private readonly ICurrentSubscriber _currentSubscriber;
+    private readonly ICurrentCompany _currentCompany;
+    private readonly ICompanyRepository _companyRepository;
+    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberEntitlementsService _entitlements;
 
     public PermissionHandler(
         IAccessRepository repo,
-        ICurrentTenant currentTenant,
-        ITenantRepository tenantRepository,
-        ITenantEntitlementsService entitlements)
+        ICurrentSubscriber currentSubscriber,
+        ICurrentCompany currentCompany,
+        ICompanyRepository companyRepository,
+        ISubscriberRepository tenantRepository,
+        ISubscriberEntitlementsService entitlements)
     {
         _repo = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
+        _currentCompany = currentCompany;
+        _companyRepository = companyRepository;
         _tenantRepository = tenantRepository;
         _entitlements = entitlements;
     }
 
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirement requirement)
     {
-        if (!_currentTenant.IsAuthenticated)
+        if (!_currentSubscriber.IsAuthenticated)
             return;
 
         var http = context.Resource as HttpContext;
         var ct = http?.RequestAborted ?? CancellationToken.None;
 
         var role = context.User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
-        var tenantId = _currentTenant.TenantId;
+        var subscriberId = _currentSubscriber.SubscriberId;
 
-        if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase) && tenantId == Guid.Empty)
+        if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase) && subscriberId == Guid.Empty)
         {
             context.Succeed(requirement);
             return;
         }
 
-        if (await _tenantRepository.GetByIdAsync(tenantId, ct) is null)
+        if (await _tenantRepository.GetByIdAsync(subscriberId, ct) is null)
             return;
 
-        var planAllows = await _entitlements.AllowsPermissionAsync(tenantId, requirement.PermissionKey, ct);
+        var planAllows = await _entitlements.AllowsPermissionAsync(subscriberId, requirement.PermissionKey, ct);
 
         // SuperAdmin operating inside a tenant: full access to that tenant, plan-filtered.
         if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
@@ -73,12 +80,27 @@ public sealed class PermissionHandler : AuthorizationHandler<PermissionRequireme
         if (!Guid.TryParse(sub, out var userId) || userId == Guid.Empty)
             return;
 
-        var membership = await _repo.GetMembershipAsync(_currentTenant.TenantId, userId, ct);
+        var companyId = await ResolveCompanyIdForUserAsync(userId, ct);
+        if (companyId == Guid.Empty)
+            return;
+
+        var membership = await _repo.GetCompanyUserMembershipAsync(companyId, userId, ct);
         if (membership is null || !membership.IsActive || membership.ProfileId is null)
             return;
 
-        var perm = await _repo.GetProfilePermissionAsync(_currentTenant.TenantId, membership.ProfileId.Value, requirement.PermissionKey);
+        var perm = await _repo.GetProfilePermissionAsync(_currentSubscriber.SubscriberId, membership.ProfileId.Value, requirement.PermissionKey);
         if (perm is not null && perm.IsAllowed)
             context.Succeed(requirement);
+    }
+
+    private async Task<Guid> ResolveCompanyIdForUserAsync(Guid userId, CancellationToken ct)
+    {
+        if (_currentCompany.HasCompanyContext && _currentCompany.CompanyId != Guid.Empty)
+            return _currentCompany.CompanyId;
+
+        var memberships = await _repo.GetActiveCompanyUserMembershipsForUserSystemAsync(userId, ct);
+        var companies = await _companyRepository.GetByIdsAsync(memberships.Select(m => m.CompanyId).ToList(), ct);
+        var inSubscriber = companies.Where(c => c.SubscriberId == _currentSubscriber.SubscriberId).ToList();
+        return inSubscriber.Count == 1 ? inSubscriber[0].Id : Guid.Empty;
     }
 }

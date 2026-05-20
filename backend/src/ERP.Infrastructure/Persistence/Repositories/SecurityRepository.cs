@@ -13,23 +13,23 @@ public class SecurityRepository : ISecurityRepository
         _context = context;
     }
 
-    public async Task<IReadOnlyList<SecurityAdminScopeAssignment>> GetAdminScopesAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<SecurityAdminScopeAssignment>> GetAdminScopesAsync(Guid subscriberId, CancellationToken ct = default)
         => await _context.SecurityAdminScopeAssignments
-            .Where(x => x.TenantId == tenantId)
+            .Where(x => x.SubscriberId == subscriberId)
             .OrderBy(x => x.SubjectType)
             .ThenBy(x => x.SubjectKey)
             .ThenBy(x => x.Scope)
             .ToListAsync(ct);
 
     public async Task<SecurityAdminScopeAssignment?> GetAdminScopeAsync(
-        Guid tenantId,
+        Guid subscriberId,
         string subjectType,
         string subjectKey,
         int scope,
         CancellationToken ct = default)
         => await _context.SecurityAdminScopeAssignments
             .FirstOrDefaultAsync(
-                x => x.TenantId == tenantId
+                x => x.SubscriberId == subscriberId
                      && x.SubjectType == subjectType
                      && x.SubjectKey == subjectKey
                      && x.Scope == scope,

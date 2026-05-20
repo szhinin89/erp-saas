@@ -15,13 +15,13 @@ namespace ERP.Infrastructure.Persistence.Configurations;
 ///     │   ├── ProductCategoryConfiguration.cs
 ///     │   └── ...
 ///     ├── SaaS/
-///     │   ├── SaasPlanConfiguration.cs
+///     │   ├── CommercialPlanConfiguration.cs
 ///     │   └── ...
 ///     ├── Accounting/
 ///     │   ├── AccountConfiguration.cs
 ///     │   └── ...
 ///     └── Common/
-///         ├── TenantConfiguration.cs
+///         ├── SubscriberConfiguration.cs
 ///         ├── BranchConfiguration.cs
 ///         └── ...
 /// ```
@@ -36,7 +36,7 @@ namespace ERP.Infrastructure.Persistence.Configurations;
 ///    - Crear EntityConfiguration en Persistence/Configurations/[ModuleName]/
 ///    - NO necesita registro manual en DbContext (automático)
 /// 5. Aprovecha multi-tenant:
-///    - Si ITenantEntity, el filtro global en OnModelCreating() la protege
-///    - Si NOT, documentar por qué (ej: Tenant, Config global, Geografia)
+///    - Si ISubscriberScopedEntity, el filtro global en OnModelCreating() la protege
+///    - Si NOT, documentar por qué (ej: Subscriber, Config global, Geografia)
 /// </summary>
 public abstract class ConfigurationsModularConventions { }

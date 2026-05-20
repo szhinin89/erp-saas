@@ -1,4 +1,4 @@
-﻿using ERP.Domain.Modules.Inventory.Entities;
+using ERP.Domain.Modules.Inventory.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -12,7 +12,8 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
 
         builder.HasKey(m => m.Id);
         builder.Property(m => m.Id).HasColumnName("id");
-        builder.Property(m => m.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(m => m.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(m => m.CompanyId).HasColumnName("company_id");
         builder.Property(m => m.ProductId).HasColumnName("product_id").IsRequired();
         builder.Property(m => m.WarehouseId).HasColumnName("warehouse_id").IsRequired();
         builder.Property(m => m.MovementType).HasColumnName("movement_type").HasConversion<string>().HasMaxLength(30).IsRequired();
@@ -29,8 +30,8 @@ public sealed class StockMovementConfiguration : IEntityTypeConfiguration<StockM
         builder.Property(m => m.CreatedBy).HasColumnName("created_by");
         builder.Property(m => m.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(m => new { m.TenantId, m.ProductId, m.WarehouseId }).HasDatabaseName("ix_stock_movement_tenant_product_warehouse");
-        builder.HasIndex(m => new { m.TenantId, m.MovementType }).HasDatabaseName("ix_stock_movement_tenant_type");
+        builder.HasIndex(m => new { m.SubscriberId, m.ProductId, m.WarehouseId }).HasDatabaseName("ix_stock_movement_subscriber_product_warehouse");
+        builder.HasIndex(m => new { m.SubscriberId, m.MovementType }).HasDatabaseName("ix_stock_movement_subscriber_type");
         builder.HasIndex(m => m.SourceDocId).HasDatabaseName("ix_stock_movement_source_doc");
     }
 }

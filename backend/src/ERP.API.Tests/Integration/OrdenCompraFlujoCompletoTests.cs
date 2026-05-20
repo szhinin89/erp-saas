@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,15 +33,15 @@ public sealed class OrdenCompraFlujoCompletoTests
 
         // â”€â”€ Seed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         var seed = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableTenant, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
 
-        var tenantId   = seed.TenantId;
+        var subscriberId   = seed.SubscriberId;
         var userId     = seed.UserId;
         var productoAId = seed.ProductId; // Producto A (ya en seed)
         var productoBId = await SeedSegundoProductoAsync(db, seed); // Producto B
 
         var proveedor = Supplier.Create(
-            tenantId, "Juridica", "Supplier Test S.A.",
+            subscriberId, "Juridica", "Supplier Test S.A.",
             seed.ProveedorRuc, null, null, null, "30 dias", userId);
         db.Suppliers.Add(proveedor);
         await db.SaveChangesAsync(CancellationToken.None);
@@ -80,7 +80,7 @@ public sealed class OrdenCompraFlujoCompletoTests
         aprobar.Value!.Status.Should().Be("Aprobada");
 
         // â”€â”€ PASO 4: Factura 1 â€” A:6 uds, B:5 uds (parcial en A, total en B) â”€â”€
-        var factura1 = BuildFacturaAprobada(tenantId, proveedor.Id,
+        var factura1 = BuildFacturaAprobada(subscriberId, proveedor.Id,
             productoAId, cantidadA: 6m,
             productoBId, cantidadB: 5m,
             userId, db, "001-001-000000001");
@@ -103,7 +103,7 @@ public sealed class OrdenCompraFlujoCompletoTests
         lineaB1.PendingBillingQuantity.Should().Be(0m,  "B completamente cubierto");
 
         // â”€â”€ PASO 5: Factura 2 â€” A:4 uds (completa el pedido de A) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        var factura2 = BuildFacturaAprobada(tenantId, proveedor.Id,
+        var factura2 = BuildFacturaAprobada(subscriberId, proveedor.Id,
             productoAId, cantidadA: 4m,
             productoBId: null, cantidadB: 0m, // solo producto A
             userId, db, "001-001-000000002");
@@ -125,7 +125,7 @@ public sealed class OrdenCompraFlujoCompletoTests
         detalleFinal.LinkedInvoices.Should().HaveCount(2);
 
         // â”€â”€ PASO 6: Intentar vincular mÃ¡s cantidad de A â†’ debe fallar â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        var facturaExtra = BuildFacturaAprobada(tenantId, proveedor.Id,
+        var facturaExtra = BuildFacturaAprobada(subscriberId, proveedor.Id,
             productoAId, cantidadA: 1m,
             productoBId: null, cantidadB: 0m,
             userId, db, "001-001-000000003");
@@ -145,16 +145,16 @@ public sealed class OrdenCompraFlujoCompletoTests
         ErpDbContext db, IntegrationSeedData.SeedResult seed)
     {
         // Reusar las mismas taxonomÃ­as del primer producto
-        var line     = db.ProductLines.First(l => l.TenantId == seed.TenantId);
-        var category = db.ProductCategories.First(c => c.TenantId == seed.TenantId);
-        var sub      = db.ProductSubcategories.First(s => s.TenantId == seed.TenantId);
-        var uom      = db.UnitsOfMeasure.First(u => u.TenantId == seed.TenantId);
-        var brand    = db.Brands.First(b => b.TenantId == seed.TenantId);
-        var ptype    = db.ProductTypes.First(t => t.TenantId == seed.TenantId);
-        var tariff   = db.Tariffs.First(t => t.TenantId == seed.TenantId);
+        var line     = db.ProductLines.First(l => l.SubscriberId == seed.SubscriberId);
+        var category = db.ProductCategories.First(c => c.SubscriberId == seed.SubscriberId);
+        var sub      = db.ProductSubcategories.First(s => s.SubscriberId == seed.SubscriberId);
+        var uom      = db.UnitsOfMeasure.First(u => u.SubscriberId == seed.SubscriberId);
+        var brand    = db.Brands.First(b => b.SubscriberId == seed.SubscriberId);
+        var ptype    = db.ProductTypes.First(t => t.SubscriberId == seed.SubscriberId);
+        var tariff   = db.Tariffs.First(t => t.SubscriberId == seed.SubscriberId);
 
         var productoB = Product.Create(
-            seed.TenantId,
+            seed.SubscriberId,
             "SKU-INT-02", "Prod INT-B", "Producto B para prueba",
             line.Id, category.Id, sub.Id, uom.Id, brand.Id, ptype.Id, tariff.Id,
             appliesVatOnSale: false, saleTaxId: null, saleVatAccountId: null,
@@ -170,14 +170,14 @@ public sealed class OrdenCompraFlujoCompletoTests
     }
 
     private static PurchBill BuildFacturaAprobada(
-        Guid tenantId, Guid proveedorId,
+        Guid subscriberId, Guid proveedorId,
         Guid productoAId, decimal cantidadA,
         Guid? productoBId, decimal cantidadB,
         Guid userId, ErpDbContext db,
         string numero)
     {
         var f = PurchBill.Create(
-            tenantId, proveedorId, numero,
+            subscriberId, proveedorId, numero,
             accessKey: null, xmlPath: null,
             DateTime.UtcNow, dueDate: null,
             "30 dias", notes: null, userId);

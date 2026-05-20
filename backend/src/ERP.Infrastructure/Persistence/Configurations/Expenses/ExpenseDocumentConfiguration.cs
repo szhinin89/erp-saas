@@ -13,7 +13,7 @@ public sealed class ExpenseDocumentConfiguration : IEntityTypeConfiguration<Expe
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.SupplierId).HasColumnName("supplier_id");
         builder.Property(e => e.DocType)
             .HasColumnName("doc_type")

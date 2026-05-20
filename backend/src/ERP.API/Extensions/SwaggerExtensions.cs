@@ -29,7 +29,7 @@ public static class SwaggerExtensions
                     **Autenticación:** todos los endpoints marcados con 🔒 requieren un JWT Bearer.
                     Obtén el token con `POST /api/auth/login` y pégalo en el botón **Authorize**.
 
-                    **Multi-tenant:** el tenant se identifica mediante el claim `tenant_id` dentro del JWT.
+                    **Multi-tenant:** el tenant se identifica mediante el claim `subscriber_id` dentro del JWT.
                     Cada request filtra automáticamente los datos del tenant autenticado.
 
                     **Base de datos (producción):** aplicar migraciones de EF Core solo en ventana controlada,

@@ -1,38 +1,38 @@
 using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Tenants.DTOs;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Application.Subscribers.DTOs;
+using ERP.Domain.Subscribers.Interfaces;
 
-namespace ERP.Application.Tenants.UseCases.UpdateTenantOperationalSettings;
+namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberOperationalSettings;
 
-public sealed class UpdateTenantOperationalSettingsHandler
-    : IRequestHandler<UpdateTenantOperationalSettingsCommand, Result<TenantDto>>
+public sealed class UpdateSubscriberOperationalSettingsHandler
+    : IRequestHandler<UpdateSubscriberOperationalSettingsCommand, Result<SubscriberDto>>
 {
-    private readonly ITenantRepository _repository;
+    private readonly ISubscriberRepository _repository;
     private readonly ICurrentUser _currentUser;
-    private readonly ICurrentTenant _currentTenant;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
-    public UpdateTenantOperationalSettingsHandler(
-        ITenantRepository repository,
+    public UpdateSubscriberOperationalSettingsHandler(
+        ISubscriberRepository repository,
         ICurrentUser currentUser,
-        ICurrentTenant currentTenant)
+        ICurrentSubscriber currentSubscriber)
     {
         _repository    = repository;
         _currentUser   = currentUser;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
-    public async Task<Result<TenantDto>> Handle(
-        UpdateTenantOperationalSettingsCommand command,
+    public async Task<Result<SubscriberDto>> Handle(
+        UpdateSubscriberOperationalSettingsCommand command,
         CancellationToken ct)
     {
-        var tenant = await _repository.GetByIdAsync(command.TenantId, ct);
+        var tenant = await _repository.GetByIdAsync(command.SubscriberId, ct);
         if (tenant is null)
-            return Result<TenantDto>.Failure("Empresa no encontrada.");
+            return Result<SubscriberDto>.Failure("Empresa no encontrada.");
 
         // Un Admin solo puede editar su propia empresa
-        if (_currentUser.Role == "Admin" && _currentTenant.TenantId != command.TenantId)
-            return Result<TenantDto>.Failure("No tiene permiso para modificar esta empresa.");
+        if (_currentUser.Role == "Admin" && _currentSubscriber.SubscriberId != command.SubscriberId)
+            return Result<SubscriberDto>.Failure("No tiene permiso para modificar esta empresa.");
 
         tenant.UpdateOperationalSettings(
             command.Currency,
@@ -44,6 +44,6 @@ public sealed class UpdateTenantOperationalSettingsHandler
 
         await _repository.SaveChangesAsync(ct);
 
-        return Result<TenantDto>.Success(TenantDto.FromTenant(tenant));
+        return Result<SubscriberDto>.Success(SubscriberDto.FromTenant(tenant));
     }
 }

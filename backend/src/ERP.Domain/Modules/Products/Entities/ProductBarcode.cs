@@ -17,14 +17,14 @@ public class ProductBarcode : BaseEntity
 
     internal static ProductBarcode Create(
         Guid productId,
-        Guid tenantId,
+        Guid subscriberId,
         string code,
         BarcodeType type)
     {
         return new ProductBarcode
         {
             Id        = Guid.NewGuid(),
-            TenantId  = tenantId,
+            SubscriberId  = subscriberId,
             ProductId = productId,
             Code      = code,
             Type      = type,

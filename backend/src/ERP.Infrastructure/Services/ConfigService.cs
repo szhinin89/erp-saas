@@ -11,7 +11,7 @@ namespace ERP.Infrastructure.Services;
 
 /// <summary>
 /// Config por tenant: consultas sin filtro global vía <see cref="IPlatformQueryAccessor"/> y filtran por
-/// <c>tenantId</c> en el predicado para ser correctas con JWT SuperAdmin (<c>tenant_id</c> ambiente vacío).
+/// <c>subscriberId</c> en el predicado para ser correctas con JWT SuperAdmin (<c>subscriber_id</c> ambiente vacío).
 /// </summary>
 public sealed class ConfigService : IConfigService
 {
@@ -31,43 +31,43 @@ public sealed class ConfigService : IConfigService
         _platform = platform;
     }
 
-    public async Task WarmupTenantAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task WarmupTenantAsync(Guid subscriberId, CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty) return;
-        _ = await GetSnapshotAsync(tenantId, ct);
+        if (subscriberId == Guid.Empty) return;
+        _ = await GetSnapshotAsync(subscriberId, ct);
     }
 
     public async Task<ResolvedConfigValueDto?> GetValueAsync(
-        Guid tenantId,
+        Guid subscriberId,
         string key,
         string? module = null,
         string? feature = null,
         Guid? userId = null,
         CancellationToken ct = default)
     {
-        if (tenantId == Guid.Empty) return null;
+        if (subscriberId == Guid.Empty) return null;
         var normalizedKey = NormalizeKey(key);
         if (normalizedKey.Length == 0) return null;
 
-        var snapshot = await GetSnapshotAsync(tenantId, ct);
+        var snapshot = await GetSnapshotAsync(subscriberId, ct);
 
         var normalizedFeature = NormalizeScope(feature);
         if (normalizedFeature.Length > 0 &&
             snapshot.Feature.TryGetValue((normalizedFeature, normalizedKey), out var featureRow))
         {
-            return new ResolvedConfigValueDto(tenantId, normalizedKey, NormalizeScopeOrNull(module), normalizedFeature, "feature", featureRow.Value, featureRow.DataType);
+            return new ResolvedConfigValueDto(subscriberId, normalizedKey, NormalizeScopeOrNull(module), normalizedFeature, "feature", featureRow.Value, featureRow.DataType);
         }
 
         var normalizedModule = NormalizeScope(module);
         if (normalizedModule.Length > 0 &&
             snapshot.Module.TryGetValue((normalizedModule, normalizedKey), out var moduleRow))
         {
-            return new ResolvedConfigValueDto(tenantId, normalizedKey, normalizedModule, NormalizeScopeOrNull(feature), "module", moduleRow.Value, moduleRow.DataType);
+            return new ResolvedConfigValueDto(subscriberId, normalizedKey, normalizedModule, NormalizeScopeOrNull(feature), "module", moduleRow.Value, moduleRow.DataType);
         }
 
         if (snapshot.Global.TryGetValue(normalizedKey, out var globalRow))
         {
-            return new ResolvedConfigValueDto(tenantId, normalizedKey, NormalizeScopeOrNull(module), NormalizeScopeOrNull(feature), "global", globalRow.Value, globalRow.DataType);
+            return new ResolvedConfigValueDto(subscriberId, normalizedKey, NormalizeScopeOrNull(module), NormalizeScopeOrNull(feature), "global", globalRow.Value, globalRow.DataType);
         }
 
         _ = userId; // reservado para alcance usuario en siguiente etapa.
@@ -75,14 +75,14 @@ public sealed class ConfigService : IConfigService
     }
 
     public async Task<T?> GetValueTypedAsync<T>(
-        Guid tenantId,
+        Guid subscriberId,
         string key,
         string? module = null,
         string? feature = null,
         Guid? userId = null,
         CancellationToken ct = default)
     {
-        var resolved = await GetValueAsync(tenantId, key, module, feature, userId, ct);
+        var resolved = await GetValueAsync(subscriberId, key, module, feature, userId, ct);
         if (resolved is null) return default;
 
         var parsed = ParseByDataType(resolved.Value, resolved.DataType);
@@ -117,46 +117,46 @@ public sealed class ConfigService : IConfigService
         }
     }
 
-    public async Task<IReadOnlyList<ConfigEntryDto>> ListGlobalAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ConfigEntryDto>> ListGlobalAsync(Guid subscriberId, CancellationToken ct = default)
     {
         var rows = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
-            .Where(x => x.TenantId == tenantId)
+            .Where(x => x.SubscriberId == subscriberId)
             .OrderBy(x => x.Key)
             .ToListAsync(ct);
         return rows.Select(MapGlobal).ToList();
     }
 
-    public async Task<IReadOnlyList<ConfigEntryDto>> ListModuleAsync(Guid tenantId, string module, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ConfigEntryDto>> ListModuleAsync(Guid subscriberId, string module, CancellationToken ct = default)
     {
         var normalizedModule = NormalizeScope(module);
         var rows = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
-            .Where(x => x.TenantId == tenantId && x.Module == normalizedModule)
+            .Where(x => x.SubscriberId == subscriberId && x.Module == normalizedModule)
             .OrderBy(x => x.Key)
             .ToListAsync(ct);
         return rows.Select(MapModule).ToList();
     }
 
-    public async Task<IReadOnlyList<ConfigEntryDto>> ListFeatureAsync(Guid tenantId, string feature, CancellationToken ct = default)
+    public async Task<IReadOnlyList<ConfigEntryDto>> ListFeatureAsync(Guid subscriberId, string feature, CancellationToken ct = default)
     {
         var normalizedFeature = NormalizeScope(feature);
         var rows = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
-            .Where(x => x.TenantId == tenantId && x.Feature == normalizedFeature)
+            .Where(x => x.SubscriberId == subscriberId && x.Feature == normalizedFeature)
             .OrderBy(x => x.Key)
             .ToListAsync(ct);
         return rows.Select(MapFeature).ToList();
     }
 
-    public async Task<ConfigEntryDto> UpsertGlobalAsync(Guid tenantId, string key, string value, string dataType, Guid updatedBy, CancellationToken ct = default)
+    public async Task<ConfigEntryDto> UpsertGlobalAsync(Guid subscriberId, string key, string value, string dataType, Guid updatedBy, CancellationToken ct = default)
     {
         var normalizedKey = NormalizeKey(key);
         var normalizedType = NormalizeDataType(dataType);
         ValidateDataType(value, normalizedType);
 
         var row = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.TenantScopedExplicit)
-            .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Key == normalizedKey, ct);
+            .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Key == normalizedKey, ct);
         if (row is null)
         {
-            row = ConfigGlobal.Create(tenantId, normalizedKey, value, normalizedType, updatedBy);
+            row = ConfigGlobal.Create(subscriberId, normalizedKey, value, normalizedType, updatedBy);
             await _db.ConfigGlobals.AddAsync(row, ct);
         }
         else
@@ -165,11 +165,11 @@ public sealed class ConfigService : IConfigService
         }
 
         await _db.SaveChangesAsync(ct);
-        InvalidateCache(tenantId);
+        InvalidateCache(subscriberId);
         return MapGlobal(row);
     }
 
-    public async Task<ConfigEntryDto> UpsertModuleAsync(Guid tenantId, string module, string key, string value, string dataType, Guid updatedBy, CancellationToken ct = default)
+    public async Task<ConfigEntryDto> UpsertModuleAsync(Guid subscriberId, string module, string key, string value, string dataType, Guid updatedBy, CancellationToken ct = default)
     {
         var normalizedModule = NormalizeScope(module);
         var normalizedKey = NormalizeKey(key);
@@ -177,10 +177,10 @@ public sealed class ConfigService : IConfigService
         ValidateDataType(value, normalizedType);
 
         var row = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.TenantScopedExplicit)
-            .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Module == normalizedModule && x.Key == normalizedKey, ct);
+            .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Module == normalizedModule && x.Key == normalizedKey, ct);
         if (row is null)
         {
-            row = ConfigModule.Create(tenantId, normalizedModule, normalizedKey, value, normalizedType, updatedBy);
+            row = ConfigModule.Create(subscriberId, normalizedModule, normalizedKey, value, normalizedType, updatedBy);
             await _db.ConfigModules.AddAsync(row, ct);
         }
         else
@@ -189,11 +189,11 @@ public sealed class ConfigService : IConfigService
         }
 
         await _db.SaveChangesAsync(ct);
-        InvalidateCache(tenantId);
+        InvalidateCache(subscriberId);
         return MapModule(row);
     }
 
-    public async Task<ConfigEntryDto> UpsertFeatureAsync(Guid tenantId, string feature, string key, string value, string dataType, Guid updatedBy, CancellationToken ct = default)
+    public async Task<ConfigEntryDto> UpsertFeatureAsync(Guid subscriberId, string feature, string key, string value, string dataType, Guid updatedBy, CancellationToken ct = default)
     {
         var normalizedFeature = NormalizeScope(feature);
         var normalizedKey = NormalizeKey(key);
@@ -201,10 +201,10 @@ public sealed class ConfigService : IConfigService
         ValidateDataType(value, normalizedType);
 
         var row = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.TenantScopedExplicit)
-            .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Feature == normalizedFeature && x.Key == normalizedKey, ct);
+            .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Feature == normalizedFeature && x.Key == normalizedKey, ct);
         if (row is null)
         {
-            row = ConfigFeature.Create(tenantId, normalizedFeature, normalizedKey, value, normalizedType, updatedBy);
+            row = ConfigFeature.Create(subscriberId, normalizedFeature, normalizedKey, value, normalizedType, updatedBy);
             await _db.ConfigFeatures.AddAsync(row, ct);
         }
         else
@@ -213,68 +213,68 @@ public sealed class ConfigService : IConfigService
         }
 
         await _db.SaveChangesAsync(ct);
-        InvalidateCache(tenantId);
+        InvalidateCache(subscriberId);
         return MapFeature(row);
     }
 
-    public async Task<bool> DeleteGlobalAsync(Guid tenantId, string key, CancellationToken ct = default)
+    public async Task<bool> DeleteGlobalAsync(Guid subscriberId, string key, CancellationToken ct = default)
     {
         var normalizedKey = NormalizeKey(key);
         var row = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.TenantScopedExplicit)
-            .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Key == normalizedKey, ct);
+            .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Key == normalizedKey, ct);
         if (row is null) return false;
 
         _db.ConfigGlobals.Remove(row);
         await _db.SaveChangesAsync(ct);
-        InvalidateCache(tenantId);
+        InvalidateCache(subscriberId);
         return true;
     }
 
-    public async Task<bool> DeleteModuleAsync(Guid tenantId, string module, string key, CancellationToken ct = default)
+    public async Task<bool> DeleteModuleAsync(Guid subscriberId, string module, string key, CancellationToken ct = default)
     {
         var normalizedModule = NormalizeScope(module);
         var normalizedKey = NormalizeKey(key);
         var row = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.TenantScopedExplicit)
-            .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Module == normalizedModule && x.Key == normalizedKey, ct);
+            .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Module == normalizedModule && x.Key == normalizedKey, ct);
         if (row is null) return false;
 
         _db.ConfigModules.Remove(row);
         await _db.SaveChangesAsync(ct);
-        InvalidateCache(tenantId);
+        InvalidateCache(subscriberId);
         return true;
     }
 
-    public async Task<bool> DeleteFeatureAsync(Guid tenantId, string feature, string key, CancellationToken ct = default)
+    public async Task<bool> DeleteFeatureAsync(Guid subscriberId, string feature, string key, CancellationToken ct = default)
     {
         var normalizedFeature = NormalizeScope(feature);
         var normalizedKey = NormalizeKey(key);
         var row = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.TenantScopedExplicit)
-            .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Feature == normalizedFeature && x.Key == normalizedKey, ct);
+            .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Feature == normalizedFeature && x.Key == normalizedKey, ct);
         if (row is null) return false;
 
         _db.ConfigFeatures.Remove(row);
         await _db.SaveChangesAsync(ct);
-        InvalidateCache(tenantId);
+        InvalidateCache(subscriberId);
         return true;
     }
 
-    private async Task<TenantConfigSnapshot> GetSnapshotAsync(Guid tenantId, CancellationToken ct)
+    private async Task<SubscriberConfigSnapshot> GetSnapshotAsync(Guid subscriberId, CancellationToken ct)
     {
-        var cacheKey = CacheKey(tenantId);
-        if (_cache.TryGetValue<TenantConfigSnapshot>(cacheKey, out var hit) && hit is not null)
+        var cacheKey = CacheKey(subscriberId);
+        if (_cache.TryGetValue<SubscriberConfigSnapshot>(cacheKey, out var hit) && hit is not null)
             return hit;
 
         var globals = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
-            .Where(x => x.TenantId == tenantId)
+            .Where(x => x.SubscriberId == subscriberId)
             .ToListAsync(ct);
         var modules = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
-            .Where(x => x.TenantId == tenantId)
+            .Where(x => x.SubscriberId == subscriberId)
             .ToListAsync(ct);
         var features = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
-            .Where(x => x.TenantId == tenantId)
+            .Where(x => x.SubscriberId == subscriberId)
             .ToListAsync(ct);
 
-        var snapshot = new TenantConfigSnapshot
+        var snapshot = new SubscriberConfigSnapshot
         {
             Global = globals.ToDictionary(x => x.Key, x => new CacheValue(x.Value, x.DataType), StringComparer.OrdinalIgnoreCase),
             Module = modules.ToDictionary(x => (x.Module, x.Key), x => new CacheValue(x.Value, x.DataType)),
@@ -285,8 +285,8 @@ public sealed class ConfigService : IConfigService
         return snapshot;
     }
 
-    private void InvalidateCache(Guid tenantId) => _cache.Remove(CacheKey(tenantId));
-    private static string CacheKey(Guid tenantId) => $"cfg:{tenantId:N}";
+    private void InvalidateCache(Guid subscriberId) => _cache.Remove(CacheKey(subscriberId));
+    private static string CacheKey(Guid subscriberId) => $"cfg:{subscriberId:N}";
 
     private static string NormalizeKey(string key) => (key ?? string.Empty).Trim().ToLowerInvariant();
     private static string NormalizeScope(string? scope) => (scope ?? string.Empty).Trim().ToLowerInvariant();
@@ -329,15 +329,15 @@ public sealed class ConfigService : IConfigService
     }
 
     private static ConfigEntryDto MapGlobal(ConfigGlobal x) =>
-        new(x.Id, x.TenantId, "global", null, null, x.Key, x.Value, x.DataType, x.UpdatedAt, x.UpdatedBy);
+        new(x.Id, x.SubscriberId, "global", null, null, x.Key, x.Value, x.DataType, x.UpdatedAt, x.UpdatedBy);
 
     private static ConfigEntryDto MapModule(ConfigModule x) =>
-        new(x.Id, x.TenantId, "module", x.Module, null, x.Key, x.Value, x.DataType, x.UpdatedAt, x.UpdatedBy);
+        new(x.Id, x.SubscriberId, "module", x.Module, null, x.Key, x.Value, x.DataType, x.UpdatedAt, x.UpdatedBy);
 
     private static ConfigEntryDto MapFeature(ConfigFeature x) =>
-        new(x.Id, x.TenantId, "feature", null, x.Feature, x.Key, x.Value, x.DataType, x.UpdatedAt, x.UpdatedBy);
+        new(x.Id, x.SubscriberId, "feature", null, x.Feature, x.Key, x.Value, x.DataType, x.UpdatedAt, x.UpdatedBy);
 
-    private sealed class TenantConfigSnapshot
+    private sealed class SubscriberConfigSnapshot
     {
         public Dictionary<string, CacheValue> Global { get; init; } = new(StringComparer.OrdinalIgnoreCase);
         public Dictionary<(string Module, string Key), CacheValue> Module { get; init; } = new();

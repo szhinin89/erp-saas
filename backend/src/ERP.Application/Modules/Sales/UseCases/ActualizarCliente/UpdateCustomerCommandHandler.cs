@@ -11,13 +11,13 @@ public sealed class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustome
 {
     private readonly ICustomerRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _user;
 
     public UpdateCustomerCommandHandler(
         ICustomerRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user)
     {
         _repo = repo;
@@ -28,8 +28,8 @@ public sealed class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustome
 
     public async Task<Result<CustomerDto>> Handle(UpdateCustomerCommand command, CancellationToken ct)
     {
-        if (!_tenant.IsAuthenticated || _tenant.TenantId == Guid.Empty)
-            return Result<CustomerDto>.Failure("Tenant no autenticado.");
+        if (!_tenant.IsAuthenticated || _tenant.SubscriberId == Guid.Empty)
+            return Result<CustomerDto>.Failure("Subscriber no autenticado.");
 
         if (!_user.IsAuthenticated || _user.UserId == Guid.Empty)
             return Result<CustomerDto>.Failure("Usuario no autenticado.");
@@ -38,10 +38,10 @@ public sealed class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustome
         if (emailErr is not null)
             return Result<CustomerDto>.Failure(emailErr);
 
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId = _user.UserId;
 
-        var entity = await _repo.GetByIdAsync(tenantId, command.Id, ct);
+        var entity = await _repo.GetByIdAsync(subscriberId, command.Id, ct);
         if (entity is null)
             return Result<CustomerDto>.Failure("Cliente no encontrado.");
 
@@ -64,7 +64,7 @@ public sealed class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustome
         }
 
         if (await _repo.ExistsIdentificationAsync(
-                tenantId,
+                subscriberId,
                 entity.IdentificationType,
                 entity.IdentificationNumber,
                 entity.Id,
@@ -77,7 +77,7 @@ public sealed class UpdateCustomerCommandHandler : IRequestHandler<UpdateCustome
             entity.Disable(userId);
 
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _user.Email,
             _user.FullName,

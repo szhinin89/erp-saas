@@ -12,13 +12,13 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
 {
     private readonly ICustomerRepository _repo;
     private readonly IUserActivityRepository _activity;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _user;
 
     public CreateCustomerCommandHandler(
         ICustomerRepository repo,
         IUserActivityRepository activity,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser user)
     {
         _repo = repo;
@@ -29,20 +29,20 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
 
     public async Task<Result<CustomerDto>> Handle(CreateCustomerCommand command, CancellationToken ct)
     {
-        if (!_tenant.IsAuthenticated || _tenant.TenantId == Guid.Empty)
-            return Result<CustomerDto>.Failure("Tenant no autenticado.");
+        if (!_tenant.IsAuthenticated || _tenant.SubscriberId == Guid.Empty)
+            return Result<CustomerDto>.Failure("Subscriber no autenticado.");
 
         if (!_user.IsAuthenticated || _user.UserId == Guid.Empty)
             return Result<CustomerDto>.Failure("Usuario no autenticado.");
 
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var userId = _user.UserId;
 
         Customer entity;
         try
         {
             entity = Customer.Create(
-                tenantId,
+                subscriberId,
                 command.IdentificationType,
                 command.IdentificationNumber,
                 command.LegalName,
@@ -58,7 +58,7 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
             return Result<CustomerDto>.Failure(ex.Message);
         }
 
-        if (await _repo.ExistsIdentificationAsync(tenantId, entity.IdentificationType, entity.IdentificationNumber, null, ct))
+        if (await _repo.ExistsIdentificationAsync(subscriberId, entity.IdentificationType, entity.IdentificationNumber, null, ct))
             return Result<CustomerDto>.Failure("Ya existe un cliente con el mismo tipo y número de identificación.");
 
         if (!command.IsActive)
@@ -66,7 +66,7 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
 
         await _repo.AddAsync(entity, ct);
         await _activity.AddAsync(UserActivity.Create(
-            tenantId,
+            subscriberId,
             userId,
             _user.Email,
             _user.FullName,

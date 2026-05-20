@@ -4,7 +4,7 @@ using ERP.Domain.Modules.Purchasing.Events;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class PurchBill : AuditableEntity, ITenantEntity
+public sealed class PurchBill : AuditableEntity, ISubscriberScopedEntity
 {
     public const int InvoiceNumberMaxLen = 50;
     public const int AccessKeyLen        = 49;
@@ -43,7 +43,7 @@ public sealed class PurchBill : AuditableEntity, ITenantEntity
     private PurchBill() { }
 
     public static PurchBill Create(
-        Guid      tenantId,
+        Guid      subscriberId,
         Guid      supplierId,
         string    invoiceNumber,
         string?   accessKey,
@@ -57,7 +57,7 @@ public sealed class PurchBill : AuditableEntity, ITenantEntity
         var b = new PurchBill
         {
             Id            = Guid.NewGuid(),
-            TenantId      = tenantId,
+            SubscriberId      = subscriberId,
             SupplierId    = supplierId,
             InvoiceNumber = invoiceNumber.Trim(),
             AccessKey     = string.IsNullOrWhiteSpace(accessKey) ? null : accessKey.Trim(),
@@ -86,7 +86,7 @@ public sealed class PurchBill : AuditableEntity, ITenantEntity
             throw new InvalidOperationException("Lines can only be added to a Draft bill.");
 
         _lines.Add(PurchBillLine.Create(
-            TenantId, Id, description, supplierProductCode, productId,
+            SubscriberId, Id, description, supplierProductCode, productId,
             quantity, unitPrice, discountPct, vatPct, createdBy));
 
         RecalculateTotals();
@@ -119,7 +119,7 @@ public sealed class PurchBill : AuditableEntity, ITenantEntity
         JournalEntryId = journalEntryId;
         SetUpdated(userId);
 
-        RaiseDomainEvent(new PurchBillApprovedEvent(Id, TenantId, InvoiceNumber, userId, stockLines));
+        RaiseDomainEvent(new PurchBillApprovedEvent(Id, SubscriberId, InvoiceNumber, userId, stockLines));
     }
 
     public void RegisterAppliedNote(string noteType, decimal noteTotalAmount, Guid userId)

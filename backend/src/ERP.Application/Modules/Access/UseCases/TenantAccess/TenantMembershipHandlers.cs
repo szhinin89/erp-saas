@@ -3,42 +3,43 @@ using ERP.Application.Common.Interfaces;
 using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Subscribers.Interfaces;
 
-namespace ERP.Application.Access.UseCases.TenantAccess;
+namespace ERP.Application.Access.UseCases.SubscriberAccess;
 
-public class GetTenantMembershipsHandler : IRequestHandler<GetTenantMembershipsQuery, Result<IReadOnlyList<TenantMembershipItemDto>>>
+public class GetSubscriberCompanyUserMembershipsHandler : IRequestHandler<GetSubscriberCompanyUserMembershipsQuery, Result<IReadOnlyList<SubscriberCompanyUserMembershipItemDto>>>
 {
     private readonly IAccessRepository _repo;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
 
-    public GetTenantMembershipsHandler(IAccessRepository repo, ICurrentTenant tenant)
+    public GetSubscriberCompanyUserMembershipsHandler(IAccessRepository repo, ICurrentSubscriber tenant)
     {
         _repo = repo;
         _tenant = tenant;
     }
 
-    public Task<Result<IReadOnlyList<TenantMembershipItemDto>>> HandleAsync(bool onlyActive, CancellationToken ct = default)
-        => Handle(new GetTenantMembershipsQuery(onlyActive), ct);
+    public Task<Result<IReadOnlyList<SubscriberCompanyUserMembershipItemDto>>> HandleAsync(bool onlyActive, CancellationToken ct = default)
+        => Handle(new GetSubscriberCompanyUserMembershipsQuery(onlyActive), ct);
 
-    public async Task<Result<IReadOnlyList<TenantMembershipItemDto>>> Handle(GetTenantMembershipsQuery request, CancellationToken ct)
+    public async Task<Result<IReadOnlyList<SubscriberCompanyUserMembershipItemDto>>> Handle(GetSubscriberCompanyUserMembershipsQuery request, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        var memberships = await _repo.GetMembershipsByTenantAsync(tenantId, request.OnlyActive, ct);
+        var subscriberId = _tenant.SubscriberId;
+        var company_user_memberships = await _repo.GetCompanyUserMembershipsBySubscriberAsync(subscriberId, request.OnlyActive, ct);
 
-        // En este MVP, solo retornamos memberships. Los detalles del usuario se leen por Id (sin joins complejos).
+        // En este MVP, solo retornamos company_user_memberships. Los detalles del usuario se leen por Id (sin joins complejos).
         // Para UX, hacemos lookup por email/nombre desde IdentityUsers.
         var users = new Dictionary<Guid, IdentityUser>();
-        foreach (var m in memberships)
+        foreach (var m in company_user_memberships)
         {
             if (users.ContainsKey(m.IdentityUserId)) continue;
             var u = await _repo.GetUserByIdAsync(m.IdentityUserId, ct);
             if (u is not null) users[m.IdentityUserId] = u;
         }
 
-        var items = memberships.Select(m =>
+        var items = company_user_memberships.Select(m =>
         {
             users.TryGetValue(m.IdentityUserId, out var u);
-            return new TenantMembershipItemDto(
+            return new SubscriberCompanyUserMembershipItemDto(
                 IdentityUserId: m.IdentityUserId,
                 Email: u?.Email.Value ?? "",
                 FullName: u?.FullName ?? "",
@@ -48,40 +49,46 @@ public class GetTenantMembershipsHandler : IRequestHandler<GetTenantMembershipsQ
             );
         }).ToList();
 
-        return Result<IReadOnlyList<TenantMembershipItemDto>>.Success(items);
+        return Result<IReadOnlyList<SubscriberCompanyUserMembershipItemDto>>.Success(items);
     }
 }
 
-public class TenantUpsertMembershipHandler : IRequestHandler<TenantUpsertMembershipCommand, Result<object>>
+public class SubscriberUpsertCompanyUserMembershipHandler : IRequestHandler<SubscriberUpsertCompanyUserMembershipCommand, Result<object>>
 {
     private readonly IAccessRepository _repo;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _currentUser;
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ICompanyProvisioningService _companyProvisioning;
+    private readonly ISubscriberRepository _subscriberRepository;
 
-    public TenantUpsertMembershipHandler(
+    public SubscriberUpsertCompanyUserMembershipHandler(
         IAccessRepository repo,
-        ICurrentTenant tenant,
+        ICurrentSubscriber tenant,
         ICurrentUser currentUser,
         IDeploymentFeatureFlags deployment,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        ICompanyProvisioningService companyProvisioning,
+        ISubscriberRepository subscriberRepository)
     {
         _repo = repo;
         _tenant = tenant;
         _currentUser = currentUser;
         _deployment = deployment;
         _passwordHasher = passwordHasher;
+        _companyProvisioning = companyProvisioning;
+        _subscriberRepository = subscriberRepository;
     }
 
-    public Task<Result<object>> HandleAsync(TenantUpsertMembershipCommand cmd, CancellationToken ct = default)
+    public Task<Result<object>> HandleAsync(SubscriberUpsertCompanyUserMembershipCommand cmd, CancellationToken ct = default)
         => Handle(cmd, ct);
 
-    public async Task<Result<object>> Handle(TenantUpsertMembershipCommand cmd, CancellationToken ct)
+    public async Task<Result<object>> Handle(SubscriberUpsertCompanyUserMembershipCommand cmd, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        if (tenantId == Guid.Empty)
-            return Result<object>.Failure("Tenant inválido.");
+        var subscriberId = _tenant.SubscriberId;
+        if (subscriberId == Guid.Empty)
+            return Result<object>.Failure("Subscriber inválido.");
 
         if (string.Equals(cmd.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
         {
@@ -110,21 +117,27 @@ public class TenantUpsertMembershipHandler : IRequestHandler<TenantUpsertMembers
             await _repo.AddUserAsync(user, ct);
         }
 
-        var membership = await _repo.GetMembershipAsync(tenantId, user.Id, ct);
+        var tenant = await _subscriberRepository.GetByIdAsync(subscriberId, ct);
+        if (tenant is null)
+            return Result<object>.Failure("Subscriber inválido.");
+
+        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
+
+        var membership = await _repo.GetCompanyUserMembershipAsync(company.Id, user.Id, ct);
         if (membership is null)
         {
-            var cap = await DeploymentQuota.GetBlockingReasonIfAtTenantMembershipUserCapAsync(_deployment, _repo, tenantId, ct);
+            var cap = await DeploymentQuota.GetBlockingReasonIfAtTenantCompanyUserMembershipUserCapAsync(_deployment, _repo, subscriberId, ct);
             if (cap is not null)
                 return Result<object>.Failure(cap);
 
-            membership = Membership.Create(tenantId, user.Id, cmd.Role, cmd.ProfileId, _currentUser.UserId);
-            await _repo.AddMembershipAsync(membership, ct);
+            membership = CompanyUserMembership.Create(company.Id, user.Id, cmd.Role, cmd.ProfileId, _currentUser.UserId);
+            await _repo.AddCompanyUserMembershipAsync(membership, ct);
         }
         else
         {
             if (!membership.IsActive)
             {
-                var capRe = await DeploymentQuota.GetBlockingReasonIfAtTenantMembershipUserCapAsync(_deployment, _repo, tenantId, ct);
+                var capRe = await DeploymentQuota.GetBlockingReasonIfAtTenantCompanyUserMembershipUserCapAsync(_deployment, _repo, subscriberId, ct);
                 if (capRe is not null)
                     return Result<object>.Failure(capRe);
             }
@@ -137,31 +150,45 @@ public class TenantUpsertMembershipHandler : IRequestHandler<TenantUpsertMembers
     }
 }
 
-public class TenantRevokeMembershipHandler : IRequestHandler<TenantRevokeMembershipCommand, Result<object>>
+public class SubscriberRevokeCompanyUserMembershipHandler : IRequestHandler<SubscriberRevokeCompanyUserMembershipCommand, Result<object>>
 {
     private readonly IAccessRepository _repo;
-    private readonly ICurrentTenant _tenant;
+    private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _currentUser;
+    private readonly ICompanyProvisioningService _companyProvisioning;
+    private readonly ISubscriberRepository _subscriberRepository;
 
-    public TenantRevokeMembershipHandler(IAccessRepository repo, ICurrentTenant tenant, ICurrentUser currentUser)
+    public SubscriberRevokeCompanyUserMembershipHandler(
+        IAccessRepository repo,
+        ICurrentSubscriber tenant,
+        ICurrentUser currentUser,
+        ICompanyProvisioningService companyProvisioning,
+        ISubscriberRepository subscriberRepository)
     {
         _repo = repo;
         _tenant = tenant;
         _currentUser = currentUser;
+        _companyProvisioning = companyProvisioning;
+        _subscriberRepository = subscriberRepository;
     }
 
-    public Task<Result<object>> HandleAsync(TenantRevokeMembershipCommand cmd, CancellationToken ct = default)
+    public Task<Result<object>> HandleAsync(SubscriberRevokeCompanyUserMembershipCommand cmd, CancellationToken ct = default)
         => Handle(cmd, ct);
 
-    public async Task<Result<object>> Handle(TenantRevokeMembershipCommand cmd, CancellationToken ct)
+    public async Task<Result<object>> Handle(SubscriberRevokeCompanyUserMembershipCommand cmd, CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
         var email = cmd.Email.Trim().ToLowerInvariant();
         var user = await _repo.GetUserByEmailAsync(email, ct);
         if (user is null)
             return Result<object>.Success(new { });
 
-        var membership = await _repo.GetMembershipAsync(tenantId, user.Id, ct);
+        var tenant = await _subscriberRepository.GetByIdAsync(subscriberId, ct);
+        if (tenant is null)
+            return Result<object>.Success(new { });
+
+        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
+        var membership = await _repo.GetCompanyUserMembershipAsync(company.Id, user.Id, ct);
         if (membership is null || !membership.IsActive)
             return Result<object>.Success(new { });
 

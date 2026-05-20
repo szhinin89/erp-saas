@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Sales.DTOs;
 using ERP.Domain.Modules.Inventory.Interfaces;
@@ -9,21 +9,21 @@ public sealed class GetAvailableStockForSaleQueryHandler
     : IRequestHandler<GetAvailableStockForSaleQuery, Result<StockDisponibleDto>>
 {
     private readonly IStockRepository _stockRepository;
-    private readonly ICurrentTenant             _currentTenant;
+    private readonly ICurrentSubscriber             _currentSubscriber;
 
     public GetAvailableStockForSaleQueryHandler(
         IStockRepository stockRepository,
-        ICurrentTenant currentTenant)
+        ICurrentSubscriber currentSubscriber)
     {
         _stockRepository = stockRepository;
-        _currentTenant   = currentTenant;
+        _currentSubscriber   = currentSubscriber;
     }
 
     public async Task<Result<StockDisponibleDto>> Handle(
         GetAvailableStockForSaleQuery query, CancellationToken ct)
     {
         var stock = await _stockRepository.GetStockAsync(
-            _currentTenant.TenantId, query.WarehouseId, query.ProductId, ct);
+            _currentSubscriber.SubscriberId, query.WarehouseId, query.ProductId, ct);
 
         if (stock is null)
             return Result<StockDisponibleDto>.Success(

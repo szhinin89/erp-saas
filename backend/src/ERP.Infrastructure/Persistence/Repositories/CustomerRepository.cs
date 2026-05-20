@@ -16,11 +16,11 @@ public sealed class CustomerRepository : ICustomerRepository
     public Task AddAsync(Customer customer, CancellationToken ct = default)
         => _context.Customers.AddAsync(customer, ct).AsTask();
 
-    public Task<Customer?> GetByIdAsync(Guid tenantId, Guid id, CancellationToken ct = default)
-        => _context.Customers.FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Id == id, ct);
+    public Task<Customer?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
+        => _context.Customers.FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Id == id, ct);
 
     public async Task<bool> ExistsIdentificationAsync(
-        Guid tenantId,
+        Guid subscriberId,
         string identificationType,
         string identificationNumber,
         Guid? excludeCustomerId,
@@ -29,7 +29,7 @@ public sealed class CustomerRepository : ICustomerRepository
         var type = Customer.NormalizeIdentificationType(identificationType);
         var number = Customer.NormalizeIdentificationNumber(identificationNumber);
         var q = _context.Customers.Where(x =>
-            x.TenantId == tenantId &&
+            x.SubscriberId == subscriberId &&
             x.IdentificationType == type &&
             x.IdentificationNumber == number);
         if (excludeCustomerId is not null)
@@ -38,12 +38,12 @@ public sealed class CustomerRepository : ICustomerRepository
     }
 
     public async Task<IReadOnlyList<Customer>> GetAsync(
-        Guid tenantId,
+        Guid subscriberId,
         bool? activeFilter,
         string? search,
         CancellationToken ct = default)
     {
-        var q = _context.Customers.AsQueryable().Where(x => x.TenantId == tenantId);
+        var q = _context.Customers.AsQueryable().Where(x => x.SubscriberId == subscriberId);
         if (activeFilter is true)
             q = q.Where(x => x.IsActive);
         else if (activeFilter is false)

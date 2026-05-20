@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Modules.Accounting.UseCases.CreateJournalEntry;
@@ -16,13 +16,13 @@ public sealed class AccountingService : IAccountingService
     private readonly IMediator              _mediator;
     private readonly IAccountingRepository  _accountingRepo;
     private readonly ICuentaContableService _cuentaContable;
-    private readonly ICurrentTenant         _tenant;
+    private readonly ICurrentSubscriber         _tenant;
 
     public AccountingService(
         IMediator mediator,
         IAccountingRepository accountingRepo,
         ICuentaContableService cuentaContable,
-        ICurrentTenant tenant)
+        ICurrentSubscriber tenant)
     {
         _mediator       = mediator;
         _accountingRepo = accountingRepo;
@@ -40,9 +40,9 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
 
-        var mapping = await _cuentaContable.ObtenerCuentasParaCompraAsync(tenantId, subtotal, vatTotal, ct);
+        var mapping = await _cuentaContable.ObtenerCuentasParaCompraAsync(subscriberId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas de compra.");
 
@@ -61,7 +61,7 @@ public sealed class AccountingService : IAccountingService
         }
         else
         {
-            var cuentas = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+            var cuentas = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
             var cuentaGasto = cuentas.FirstOrDefault(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Expense && c.Nature == AccountNature.Debit);
             var cuentaPagar = cuentas.FirstOrDefault(c =>
@@ -103,9 +103,9 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
+        var subscriberId = _tenant.SubscriberId;
 
-        var mapping = await _cuentaContable.ObtenerCuentasParaVentaAsync(tenantId, subtotal, vatTotal, ct);
+        var mapping = await _cuentaContable.ObtenerCuentasParaVentaAsync(subscriberId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas de venta.");
 
@@ -124,7 +124,7 @@ public sealed class AccountingService : IAccountingService
         }
         else
         {
-            var cuentas = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+            var cuentas = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
             var cuentaCobrar = cuentas.FirstOrDefault(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Asset && c.Nature == AccountNature.Debit);
             var cuentaVentas = cuentas.FirstOrDefault(c =>
@@ -167,10 +167,10 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        var cuentas  = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+        var subscriberId = _tenant.SubscriberId;
+        var cuentas  = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
 
-        var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(tenantId, category, ct);
+        var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(subscriberId, category, ct);
         if (!debitoGasto.IsSuccess)
             return Result<Guid>.Failure(debitoGasto.Error ?? "Error al resolver cuenta de gasto.");
 
@@ -199,7 +199,7 @@ public sealed class AccountingService : IAccountingService
             cuentaGastoId = cuentaGasto.Id;
         }
 
-        var creditoCaja = await _cuentaContable.ObtenerCuentaCajaParaGastoAsync(tenantId, ct);
+        var creditoCaja = await _cuentaContable.ObtenerCuentaCajaParaGastoAsync(subscriberId, ct);
         if (!creditoCaja.IsSuccess)
             return Result<Guid>.Failure(creditoCaja.Error ?? "Error al resolver cuenta de caja/banco.");
 
@@ -244,8 +244,8 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        var mapping    = await _cuentaContable.ObtenerCuentasParaVentaAsync(tenantId, subtotal, vatTotal, ct);
+        var subscriberId = _tenant.SubscriberId;
+        var mapping    = await _cuentaContable.ObtenerCuentasParaVentaAsync(subscriberId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas.");
 
@@ -264,7 +264,7 @@ public sealed class AccountingService : IAccountingService
         }
         else
         {
-            var cuentas = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+            var cuentas = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
             var cuentaCobrar = cuentas.FirstOrDefault(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Asset && c.Nature == AccountNature.Debit);
             var cuentaVentas = cuentas.FirstOrDefault(c =>
@@ -296,8 +296,8 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        var mapping    = await _cuentaContable.ObtenerCuentasParaVentaAsync(tenantId, subtotal, vatTotal, ct);
+        var subscriberId = _tenant.SubscriberId;
+        var mapping    = await _cuentaContable.ObtenerCuentasParaVentaAsync(subscriberId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas.");
 
@@ -316,7 +316,7 @@ public sealed class AccountingService : IAccountingService
         }
         else
         {
-            var cuentas = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+            var cuentas = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
             var cuentaCobrar = cuentas.FirstOrDefault(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Asset && c.Nature == AccountNature.Debit);
             var cuentaVentas = cuentas.FirstOrDefault(c =>
@@ -346,8 +346,8 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        var cuentas  = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+        var subscriberId = _tenant.SubscriberId;
+        var cuentas  = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
         var pasivos = cuentas.Where(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit)
             .ToList();
@@ -387,8 +387,8 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        var cuentas  = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+        var subscriberId = _tenant.SubscriberId;
+        var cuentas  = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
 
         var ivaPasivo = cuentas.FirstOrDefault(c =>
             c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit
@@ -430,8 +430,8 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        var mapping  = await _cuentaContable.ObtenerCuentasParaCompraAsync(tenantId, subtotal, vatTotal, ct);
+        var subscriberId = _tenant.SubscriberId;
+        var mapping  = await _cuentaContable.ObtenerCuentasParaCompraAsync(subscriberId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas de compra.");
 
@@ -450,7 +450,7 @@ public sealed class AccountingService : IAccountingService
         }
         else
         {
-            var cuentas = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+            var cuentas = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
             var cuentaGasto = cuentas.FirstOrDefault(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Expense && c.Nature == AccountNature.Debit);
             var cuentaPagar = cuentas.FirstOrDefault(c =>
@@ -483,8 +483,8 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        var mapping  = await _cuentaContable.ObtenerCuentasParaCompraAsync(tenantId, subtotal, vatTotal, ct);
+        var subscriberId = _tenant.SubscriberId;
+        var mapping  = await _cuentaContable.ObtenerCuentasParaCompraAsync(subscriberId, subtotal, vatTotal, ct);
         if (!mapping.IsSuccess)
             return Result<Guid>.Failure(mapping.Error ?? "Error al resolver cuentas de compra.");
 
@@ -503,7 +503,7 @@ public sealed class AccountingService : IAccountingService
         }
         else
         {
-            var cuentas = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+            var cuentas = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
             var cuentaGasto = cuentas.FirstOrDefault(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Expense && c.Nature == AccountNature.Debit);
             var cuentaPagar = cuentas.FirstOrDefault(c =>
@@ -535,8 +535,8 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        var cuentas  = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+        var subscriberId = _tenant.SubscriberId;
+        var cuentas  = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
 
         var pasivos = cuentas.Where(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit)
@@ -547,7 +547,7 @@ public sealed class AccountingService : IAccountingService
         if (cuentaSupplier is null)
             return Result<Guid>.Failure("No se encontró cuenta de proveedores (pasivo) para la nota de crédito de gasto.");
 
-        var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(tenantId, category, ct);
+        var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(subscriberId, category, ct);
         if (!debitoGasto.IsSuccess)
             return Result<Guid>.Failure(debitoGasto.Error ?? "Error al resolver cuenta de gasto.");
 
@@ -593,8 +593,8 @@ public sealed class AccountingService : IAccountingService
         string   description,
         CancellationToken ct)
     {
-        var tenantId = _tenant.TenantId;
-        var cuentas  = await _accountingRepo.GetAllByTenantAsync(tenantId, ct);
+        var subscriberId = _tenant.SubscriberId;
+        var cuentas  = await _accountingRepo.GetAllByTenantAsync(subscriberId, ct);
 
         var pasivos = cuentas.Where(c =>
                 c.IsActive && c.AllowsMovements && c.Type == AccountType.Liability && c.Nature == AccountNature.Credit)
@@ -605,7 +605,7 @@ public sealed class AccountingService : IAccountingService
         if (cuentaSupplier is null)
             return Result<Guid>.Failure("No se encontró cuenta de proveedores (pasivo) para la nota de débito de gasto.");
 
-        var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(tenantId, category, ct);
+        var debitoGasto = await _cuentaContable.ObtenerCuentaParaGastoAsync(subscriberId, category, ct);
         if (!debitoGasto.IsSuccess)
             return Result<Guid>.Failure(debitoGasto.Error ?? "Error al resolver cuenta de gasto.");
 

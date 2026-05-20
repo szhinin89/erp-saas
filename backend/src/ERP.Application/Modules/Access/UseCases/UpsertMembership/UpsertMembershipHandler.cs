@@ -2,29 +2,36 @@ using ERP.Application.Common;
 using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Subscribers.Interfaces;
 
-namespace ERP.Application.Access.UseCases.UpsertMembership;
+namespace ERP.Application.Access.UseCases.UpsertCompanyUserMembership;
 
-public class UpsertMembershipHandler : IRequestHandler<UpsertMembershipCommand, Result<object>>
+public class UpsertCompanyUserMembershipHandler : IRequestHandler<UpsertCompanyUserMembershipCommand, Result<object>>
 {
     private readonly IAccessRepository _accessRepository;
     private readonly ICurrentUser _currentUser;
     private readonly IDeploymentFeatureFlags _deployment;
+    private readonly ISubscriberRepository _subscriberRepository;
+    private readonly ICompanyProvisioningService _companyProvisioning;
 
-    public UpsertMembershipHandler(
+    public UpsertCompanyUserMembershipHandler(
         IAccessRepository accessRepository,
         ICurrentUser currentUser,
-        IDeploymentFeatureFlags deployment)
+        IDeploymentFeatureFlags deployment,
+        ISubscriberRepository subscriberRepository,
+        ICompanyProvisioningService companyProvisioning)
     {
         _accessRepository = accessRepository;
         _currentUser = currentUser;
         _deployment = deployment;
+        _subscriberRepository = subscriberRepository;
+        _companyProvisioning = companyProvisioning;
     }
 
-    public Task<Result<object>> HandleAsync(UpsertMembershipCommand command, CancellationToken ct = default)
+    public Task<Result<object>> HandleAsync(UpsertCompanyUserMembershipCommand command, CancellationToken ct = default)
         => Handle(command, ct);
 
-    public async Task<Result<object>> Handle(UpsertMembershipCommand command, CancellationToken ct)
+    public async Task<Result<object>> Handle(UpsertCompanyUserMembershipCommand command, CancellationToken ct)
     {
         if (string.Equals(command.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
         {
@@ -32,28 +39,34 @@ public class UpsertMembershipHandler : IRequestHandler<UpsertMembershipCommand, 
                 "Solo puede existir un SuperAdmin por servidor (tabla users). No se asigna por membresía IAM.");
         }
 
+        var tenant = await _subscriberRepository.GetByIdAsync(command.SubscriberId, ct);
+        if (tenant is null)
+            return Result<object>.Failure("Subscriber no encontrado.");
+
+        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
+
         var email = command.UserEmail.Trim().ToLowerInvariant();
         var user = await _accessRepository.GetUserByEmailAsync(email, ct);
         if (user is null)
             return Result<object>.Failure("Usuario no existe.");
 
-        var existing = await _accessRepository.GetMembershipAsync(command.TenantId, user.Id, ct);
+        var existing = await _accessRepository.GetCompanyUserMembershipAsync(company.Id, user.Id, ct);
         if (existing is null)
         {
-            var cap = await DeploymentQuota.GetBlockingReasonIfAtTenantMembershipUserCapAsync(
-                _deployment, _accessRepository, command.TenantId, ct);
+            var cap = await DeploymentQuota.GetBlockingReasonIfAtTenantCompanyUserMembershipUserCapAsync(
+                _deployment, _accessRepository, command.SubscriberId, ct);
             if (cap is not null)
                 return Result<object>.Failure(cap);
 
-            var membership = Membership.Create(command.TenantId, user.Id, command.Role, command.ProfileId, createdBy: _currentUser.UserId);
-            await _accessRepository.AddMembershipAsync(membership, ct);
+            var membership = CompanyUserMembership.Create(company.Id, user.Id, command.Role, command.ProfileId, createdBy: _currentUser.UserId);
+            await _accessRepository.AddCompanyUserMembershipAsync(membership, ct);
         }
         else
         {
             if (!existing.IsActive)
             {
-                var capRe = await DeploymentQuota.GetBlockingReasonIfAtTenantMembershipUserCapAsync(
-                    _deployment, _accessRepository, command.TenantId, ct);
+                var capRe = await DeploymentQuota.GetBlockingReasonIfAtTenantCompanyUserMembershipUserCapAsync(
+                    _deployment, _accessRepository, command.SubscriberId, ct);
                 if (capRe is not null)
                     return Result<object>.Failure(capRe);
             }
@@ -65,4 +78,3 @@ public class UpsertMembershipHandler : IRequestHandler<UpsertMembershipCommand, 
         return Result<object>.Success(new { });
     }
 }
-

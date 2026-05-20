@@ -19,12 +19,12 @@ public class UserRepository : IUserRepository
     }
 
     /// <summary>
-    /// Usuario legacy por id y empresa. Consulta sin filtro global y filtra por <c>TenantId</c>
+    /// Usuario legacy por id y empresa. Consulta sin filtro global y filtra por <c>SubscriberId</c>
     /// para no depender del tenant ambiente del <see cref="ErpDbContext"/> (p. ej. requests anónimos).
     /// </summary>
-    public async Task<User?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken ct = default)
+    public async Task<User?> GetByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
         => await _platform.Unfiltered(_context.Users, PlatformQueryReason.TenantScopedExplicit)
-            .FirstOrDefaultAsync(u => u.Id == id && u.TenantId == tenantId, ct);
+            .FirstOrDefaultAsync(u => u.Id == id && u.SubscriberId == subscriberId, ct);
 
     /// <summary>Lectura cross-tenant por id (operador / diagnóstico). No filtra por empresa.</summary>
     public async Task<User?> GetByIdSystemAsync(Guid id, CancellationToken ct = default)
@@ -32,22 +32,22 @@ public class UserRepository : IUserRepository
             .FirstOrDefaultAsync(u => u.Id == id, ct);
 
     /// <summary>Usuario legacy por email y empresa (tenant explícito, sin depender del filtro global).</summary>
-    public async Task<User?> GetByEmailAsync(string email, Guid tenantId, CancellationToken ct = default)
+    public async Task<User?> GetByEmailAsync(string email, Guid subscriberId, CancellationToken ct = default)
     {
         var normalized = new Email(email);
         return await _platform.Unfiltered(_context.Users, PlatformQueryReason.TenantScopedExplicit)
-            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Email == normalized, ct);
+            .FirstOrDefaultAsync(u => u.SubscriberId == subscriberId && u.Email == normalized, ct);
     }
 
     /// <summary>Email + tenant explícitos sin depender del filtro global del DbContext.</summary>
-    public async Task<User?> GetByEmailSystemAsync(string email, Guid tenantId, CancellationToken ct = default)
+    public async Task<User?> GetByEmailSystemAsync(string email, Guid subscriberId, CancellationToken ct = default)
     {
         var normalized = new Email(email);
         return await _platform.Unfiltered(_context.Users, PlatformQueryReason.TenantScopedExplicit)
-            .FirstOrDefaultAsync(u => u.TenantId == tenantId && u.Email == normalized, ct);
+            .FirstOrDefaultAsync(u => u.SubscriberId == subscriberId && u.Email == normalized, ct);
     }
 
-    /// <summary>SuperAdmin vive en <c>tenant_id = Guid.Empty</c>; consulta de plataforma y el rol acota la fila.</summary>
+    /// <summary>SuperAdmin vive en <c>subscriber_id = Guid.Empty</c>; consulta de plataforma y el rol acota la fila.</summary>
     public async Task<User?> GetSingleSuperAdminByEmailAsync(string email, CancellationToken ct = default)
     {
         var normalized = new Email(email);
@@ -61,9 +61,9 @@ public class UserRepository : IUserRepository
             .AnyAsync(u => u.Role == "SuperAdmin", ct);
 
     /// <summary>Usuarios del tenant indicado; consulta sin filtro global para SuperAdmin con JWT sin empresa.</summary>
-    public async Task<IReadOnlyList<User>> GetAllByTenantAsync(Guid tenantId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<User>> GetAllByTenantAsync(Guid subscriberId, CancellationToken ct = default)
         => await _platform.Unfiltered(_context.Users, PlatformQueryReason.TenantScopedExplicit)
-            .Where(u => u.TenantId == tenantId)
+            .Where(u => u.SubscriberId == subscriberId)
             .OrderBy(u => u.LastName)
             .ThenBy(u => u.FirstName)
             .ToListAsync(ct);
@@ -78,11 +78,11 @@ public class UserRepository : IUserRepository
         => await _platform.Unfiltered(_context.Users, PlatformQueryReason.PlatformMetrics)
             .CountAsync(u => u.IsActive, ct);
 
-    public async Task<bool> ExistsAsync(string email, Guid tenantId, CancellationToken ct = default)
+    public async Task<bool> ExistsAsync(string email, Guid subscriberId, CancellationToken ct = default)
     {
         var normalized = new Email(email);
         return await _platform.Unfiltered(_context.Users, PlatformQueryReason.TenantScopedExplicit)
-            .AnyAsync(u => u.TenantId == tenantId && u.Email == normalized, ct);
+            .AnyAsync(u => u.SubscriberId == subscriberId && u.Email == normalized, ct);
     }
 
     /// <summary>Índice único global por email en <c>users</c>; consulta cross-tenant intencional.</summary>

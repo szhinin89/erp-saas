@@ -1,34 +1,34 @@
 using MediatR;
 using ERP.Application.Common;
-using ERP.Application.Tenants.DTOs;
-using ERP.Domain.Tenants.Interfaces;
+using ERP.Application.Subscribers.DTOs;
+using ERP.Domain.Subscribers.Interfaces;
 
-namespace ERP.Application.Tenants.UseCases.UpdateTenantGlobalParameters;
+namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberGlobalParameters;
 
-public sealed class UpdateTenantGlobalParametersHandler : IRequestHandler<UpdateTenantGlobalParametersCommand, Result<TenantDto>>
+public sealed class UpdateSubscriberGlobalParametersHandler : IRequestHandler<UpdateSubscriberGlobalParametersCommand, Result<SubscriberDto>>
 {
-    private readonly ITenantRepository _repository;
+    private readonly ISubscriberRepository _repository;
     private readonly ICurrentUser _currentUser;
 
-    public UpdateTenantGlobalParametersHandler(ITenantRepository repository, ICurrentUser currentUser)
+    public UpdateSubscriberGlobalParametersHandler(ISubscriberRepository repository, ICurrentUser currentUser)
     {
         _repository = repository;
         _currentUser = currentUser;
     }
 
-    public async Task<Result<TenantDto>> Handle(UpdateTenantGlobalParametersCommand command, CancellationToken ct)
+    public async Task<Result<SubscriberDto>> Handle(UpdateSubscriberGlobalParametersCommand command, CancellationToken ct)
     {
-        var tenant = await _repository.GetByIdAsync(command.TenantId, ct);
+        var tenant = await _repository.GetByIdAsync(command.SubscriberId, ct);
         if (tenant is null)
-            return Result<TenantDto>.Failure("Empresa no encontrada.");
+            return Result<SubscriberDto>.Failure("Empresa no encontrada.");
 
         if (string.IsNullOrWhiteSpace(tenant.PlanCode))
-            return Result<TenantDto>.Failure("La empresa no tiene un plan comercial asignado.");
+            return Result<SubscriberDto>.Failure("La empresa no tiene un plan comercial asignado.");
 
         tenant.UpdateGlobalParameters(command.ElectronicBillingTrialEnabled, _currentUser.UserId);
         await _repository.SaveChangesAsync(ct);
 
-        return Result<TenantDto>.Success(TenantDto.FromTenant(tenant));
+        return Result<SubscriberDto>.Success(SubscriberDto.FromTenant(tenant));
     }
 }
 

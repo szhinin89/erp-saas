@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Modules.Purchasing.Interfaces;
@@ -9,9 +9,9 @@ public sealed class GetPurchasesQueryHandler
     : IRequestHandler<GetPurchasesQuery, Result<IReadOnlyList<PurchBillDto>>>
 {
     private readonly IPurchBillRepository _repo;
-    private readonly ICurrentTenant    _tenant;
+    private readonly ICurrentSubscriber    _tenant;
 
-    public GetPurchasesQueryHandler(IPurchBillRepository repo, ICurrentTenant tenant)
+    public GetPurchasesQueryHandler(IPurchBillRepository repo, ICurrentSubscriber tenant)
     {
         _repo   = repo;
         _tenant = tenant;
@@ -21,7 +21,7 @@ public sealed class GetPurchasesQueryHandler
         GetPurchasesQuery query, CancellationToken ct)
     {
         var list = await _repo.GetAsync(
-            _tenant.TenantId, query.Status, query.SupplierId,
+            _tenant.SubscriberId, query.Status, query.SupplierId,
             query.DateFrom, query.DateTo, query.Search, ct);
 
         var dtos = list.Select(ToDto).ToList();

@@ -13,7 +13,7 @@ public class JournalEntryConfiguration : IEntityTypeConfiguration<JournalEntry>
 
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
-        builder.Property(e => e.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.Reference).HasColumnName("reference").HasMaxLength(50).IsRequired();
         builder.Property(e => e.Date).HasColumnName("date").IsRequired();
         builder.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
@@ -28,8 +28,8 @@ public class JournalEntryConfiguration : IEntityTypeConfiguration<JournalEntry>
             .HasForeignKey(l => l.JournalEntryId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasIndex(e => new { e.TenantId, e.Reference })
+        builder.HasIndex(e => new { e.SubscriberId, e.Reference })
             .IsUnique()
-            .HasDatabaseName("ix_journal_entries_tenant_reference");
+            .HasDatabaseName("ix_journal_entries_subscriber_reference");
     }
 }

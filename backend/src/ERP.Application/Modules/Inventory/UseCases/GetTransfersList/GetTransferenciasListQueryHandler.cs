@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -10,14 +10,14 @@ public sealed class GetTransfersListQueryHandler
     : IRequestHandler<GetTransfersListQuery, Result<TransfersPagedResult>>
 {
     private readonly IStockTransferRepository _repo;
-    private readonly ICurrentTenant           _currentTenant;
+    private readonly ICurrentSubscriber           _currentSubscriber;
 
     public GetTransfersListQueryHandler(
         IStockTransferRepository repo,
-        ICurrentTenant currentTenant)
+        ICurrentSubscriber currentSubscriber)
     {
         _repo          = repo;
-        _currentTenant = currentTenant;
+        _currentSubscriber = currentSubscriber;
     }
 
     public async Task<Result<TransfersPagedResult>> Handle(
@@ -27,7 +27,7 @@ public sealed class GetTransfersListQueryHandler
         var pageSize   = Math.Clamp(query.PageSize, 1, 100);
 
         var (items, total) = await _repo.GetPagedAsync(
-            _currentTenant.TenantId,
+            _currentSubscriber.SubscriberId,
             pageNumber, pageSize,
             query.SourceWarehouseId, query.TargetWarehouseId,
             query.Status, query.DateFrom, query.DateTo,

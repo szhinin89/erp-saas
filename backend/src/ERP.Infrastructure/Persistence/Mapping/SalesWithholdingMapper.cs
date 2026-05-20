@@ -10,7 +10,7 @@ public static class SalesWithholdingMapper
     {
         var w = SalesWithholding.Rehydrate();
         Set(w, nameof(SalesWithholding.Id), retention.Id);
-        Set(w, nameof(SalesWithholding.TenantId), retention.TenantId);
+        Set(w, nameof(SalesWithholding.SubscriberId), retention.SubscriberId);
         Set(w, nameof(SalesWithholding.CustomerId), retention.CustomerId);
         Set(w, nameof(SalesWithholding.Direction), WithholdingDirection.Received);
         Set(w, nameof(SalesWithholding.SalesDocumentId), retention.SalesBillId);
@@ -30,7 +30,7 @@ public static class SalesWithholdingMapper
         {
             var wl = SalesWithholdingLine.Rehydrate();
             Set(wl, nameof(SalesWithholdingLine.Id), line.Id);
-            Set(wl, nameof(SalesWithholdingLine.TenantId), line.TenantId);
+            Set(wl, nameof(SalesWithholdingLine.SubscriberId), line.SubscriberId);
             Set(wl, nameof(SalesWithholdingLine.SalesWithholdingId), retention.Id);
             Set(wl, nameof(SalesWithholdingLine.TaxType), line.TaxType);
             Set(wl, nameof(SalesWithholdingLine.RetentionCode), line.RetentionCode);
@@ -47,7 +47,7 @@ public static class SalesWithholdingMapper
     public static SalesRetention ToLegacyRetention(SalesWithholding w)
     {
         var retention = SalesRetention.Create(
-            w.TenantId,
+            w.SubscriberId,
             w.CustomerId ?? Guid.Empty,
             w.AccessKey,
             w.IssueDate,
@@ -70,7 +70,7 @@ public static class SalesWithholdingMapper
         foreach (var line in w.Lines)
         {
             var legacy = SalesRetentionLine.Create(
-                line.TenantId,
+                line.SubscriberId,
                 line.TaxType,
                 line.RetentionCode,
                 line.TaxableBase,

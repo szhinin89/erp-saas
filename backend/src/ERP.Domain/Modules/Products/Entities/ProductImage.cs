@@ -18,7 +18,7 @@ public class ProductImage : BaseEntity
     private ProductImage() { }
 
     internal static ProductImage Create(
-        Guid productId, Guid tenantId, string url, string? altText,
+        Guid productId, Guid subscriberId, string url, string? altText,
         bool isMain, bool isEcommerce, int sortOrder)
     {
         var ext = Path.GetExtension(url).ToLowerInvariant();
@@ -28,7 +28,7 @@ public class ProductImage : BaseEntity
         return new()
         {
             Id           = Guid.NewGuid(),
-            TenantId     = tenantId,
+            SubscriberId     = subscriberId,
             ProductId    = productId,
             Url          = url,
             AltText      = altText,

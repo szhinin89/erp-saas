@@ -14,11 +14,11 @@ public class ProductSupplierCode : BaseEntity
     private ProductSupplierCode() { }
 
     internal static ProductSupplierCode Create(
-        Guid productId, Guid tenantId, Guid supplierId, string code, bool isDefault = false)
+        Guid productId, Guid subscriberId, Guid supplierId, string code, bool isDefault = false)
         => new()
         {
             Id         = Guid.NewGuid(),
-            TenantId   = tenantId,
+            SubscriberId   = subscriberId,
             ProductId  = productId,
             SupplierId = supplierId,
             Code       = code.Trim(),
