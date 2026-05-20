@@ -1,3 +1,4 @@
+using ERP.Application.Common;
 using ERP.Domain.Modules.Logistics.Entities;
 using ERP.Domain.Modules.Logistics.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -7,13 +8,17 @@ namespace ERP.Infrastructure.Persistence.Repositories;
 public class CarrierRepository : ICarrierRepository
 {
     private readonly ErpDbContext _context;
+    private readonly IPlatformQueryAccessor _platform;
 
-    public CarrierRepository(ErpDbContext context) => _context = context;
+    public CarrierRepository(ErpDbContext context, IPlatformQueryAccessor platform)
+    {
+        _context = context;
+        _platform = platform;
+    }
 
     public async Task<List<Carrier>> GetAllAsync(Guid tenantId, string? search, bool? isActive, CancellationToken ct = default)
     {
-        var query = _context.Carriers
-            .IgnoreQueryFilters()
+        var query = _platform.Unfiltered(_context.Carriers, PlatformQueryReason.TenantScopedExplicit)
             .Where(c => c.TenantId == tenantId);
 
         if (isActive.HasValue)
@@ -32,12 +37,12 @@ public class CarrierRepository : ICarrierRepository
     }
 
     public Task<Carrier?> GetByIdAsync(Guid id, CancellationToken ct = default) =>
-        _context.Carriers.IgnoreQueryFilters().FirstOrDefaultAsync(c => c.Id == id, ct);
+        _platform.Unfiltered(_context.Carriers, PlatformQueryReason.TenantScopedExplicit)
+            .FirstOrDefaultAsync(c => c.Id == id, ct);
 
     public Task<bool> ExistsIdentificationAsync(Guid tenantId, string identificationNumber, Guid? excludeId, CancellationToken ct = default)
     {
-        var query = _context.Carriers
-            .IgnoreQueryFilters()
+        var query = _platform.Unfiltered(_context.Carriers, PlatformQueryReason.TenantScopedExplicit)
             .Where(c => c.TenantId == tenantId && c.IdentificationNumber == identificationNumber);
 
         if (excludeId.HasValue)

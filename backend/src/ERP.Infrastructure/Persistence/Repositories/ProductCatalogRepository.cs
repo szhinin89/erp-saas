@@ -1,3 +1,4 @@
+using ERP.Application.Common;
 using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Products.Interfaces;
@@ -7,10 +8,12 @@ namespace ERP.Infrastructure.Persistence.Repositories;
 public class ProductCatalogRepository : IProductCatalogRepository
 {
     private readonly ErpDbContext _context;
+    private readonly IPlatformQueryAccessor _platform;
 
-    public ProductCatalogRepository(ErpDbContext context)
+    public ProductCatalogRepository(ErpDbContext context, IPlatformQueryAccessor platform)
     {
         _context = context;
+        _platform = platform;
     }
 
     public Task AddTaxRateAsync(TaxRate taxRate, CancellationToken ct = default)
@@ -30,7 +33,8 @@ public class ProductCatalogRepository : IProductCatalogRepository
         => _context.Brands.AddAsync(brand, ct).AsTask();
 
     public Task<Brand?> GetBrandByIdAsync(Guid id, CancellationToken ct = default)
-        => _context.Brands.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == id, ct);
+        => _platform.Unfiltered(_context.Brands, PlatformQueryReason.TenantScopedExplicit)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public async Task<IReadOnlyList<Brand>> GetBrandsAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default)
     {
@@ -44,7 +48,8 @@ public class ProductCatalogRepository : IProductCatalogRepository
         => _context.ProductTypes.AddAsync(type, ct).AsTask();
 
     public Task<ProductType?> GetProductTypeByIdAsync(Guid id, CancellationToken ct = default)
-        => _context.ProductTypes.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == id, ct);
+        => _platform.Unfiltered(_context.ProductTypes, PlatformQueryReason.TenantScopedExplicit)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public async Task<IReadOnlyList<ProductType>> GetProductTypesAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default)
     {
@@ -58,7 +63,8 @@ public class ProductCatalogRepository : IProductCatalogRepository
         => _context.UnitsOfMeasure.AddAsync(unit, ct).AsTask();
 
     public Task<UnitOfMeasure?> GetUnitOfMeasureByIdAsync(Guid id, CancellationToken ct = default)
-        => _context.UnitsOfMeasure.IgnoreQueryFilters().FirstOrDefaultAsync(x => x.Id == id, ct);
+        => _platform.Unfiltered(_context.UnitsOfMeasure, PlatformQueryReason.TenantScopedExplicit)
+            .FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public async Task<IReadOnlyList<UnitOfMeasure>> GetUnitsOfMeasureAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default)
     {

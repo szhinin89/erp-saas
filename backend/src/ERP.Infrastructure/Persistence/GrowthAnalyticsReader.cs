@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using ERP.Application.Admin;
+using ERP.Application.Common;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Subscriptions;
 using ERP.Domain.Tenants.Entities;
@@ -10,8 +11,13 @@ namespace ERP.Infrastructure.Persistence;
 public sealed class GrowthAnalyticsReader : IGrowthAnalyticsReader
 {
     private readonly ErpDbContext _db;
+    private readonly IPlatformQueryAccessor _platform;
 
-    public GrowthAnalyticsReader(ErpDbContext db) => _db = db;
+    public GrowthAnalyticsReader(ErpDbContext db, IPlatformQueryAccessor platform)
+    {
+        _db = db;
+        _platform = platform;
+    }
 
     public async Task<GrowthAnalyticsResponseDto> GetSeriesAsync(
         DateTime fromUtc,
@@ -40,8 +46,8 @@ public sealed class GrowthAnalyticsReader : IGrowthAnalyticsReader
             .Select(u => u.CreatedAt)
             .ToListAsync(cancellationToken);
 
-        // IQF: métricas de crecimiento son agregados de plataforma (todas las empresas), no del tenant HTTP.
-        var membershipDates = await _db.Memberships.IgnoreQueryFilters().AsNoTracking()
+        // Métricas de crecimiento: agregados de plataforma (todas las empresas), no del tenant HTTP.
+        var membershipDates = await _platform.Unfiltered(_db.Memberships, PlatformQueryReason.PlatformMetrics).AsNoTracking()
             .Where(m => m.CreatedAt < toExclusive)
             .Select(m => m.CreatedAt)
             .ToListAsync(cancellationToken);

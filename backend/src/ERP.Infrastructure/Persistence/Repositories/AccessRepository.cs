@@ -1,3 +1,4 @@
+using ERP.Application.Common;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Auth.ValueObjects;
@@ -7,15 +8,17 @@ namespace ERP.Infrastructure.Persistence.Repositories;
 
 /// <summary>
 /// Memberships implementan <c>ITenantEntity</c>; los métodos que cruzan empresas o fijan <c>TenantId</c>
-/// en el predicado usan <c>IgnoreQueryFilters()</c> (EF Core) a propósito.
+/// en el predicado usan <see cref="IPlatformQueryAccessor"/> a propósito.
 /// </summary>
 public class AccessRepository : IAccessRepository
 {
     private readonly ErpDbContext _db;
+    private readonly IPlatformQueryAccessor _platform;
 
-    public AccessRepository(ErpDbContext db)
+    public AccessRepository(ErpDbContext db, IPlatformQueryAccessor platform)
     {
         _db = db;
+        _platform = platform;
     }
 
     public Task<IdentityUser?> GetUserByIdAsync(Guid userId, CancellationToken ct = default)
@@ -43,16 +46,14 @@ public class AccessRepository : IAccessRepository
     public async Task<IReadOnlyList<Membership>> GetActiveMembershipsForUserSystemAsync(Guid identityUserId, CancellationToken ct = default)
     {
         // Necesario para listar todas las empresas del usuario (cross-tenant).
-        return await _db.Memberships
-            .IgnoreQueryFilters()
+        return await _platform.Unfiltered(_db.Memberships, PlatformQueryReason.CrossTenantSystem)
             .Where(m => m.IdentityUserId == identityUserId && m.IsActive)
             .ToListAsync(ct);
     }
 
     /// <summary>Par empresa + usuario; <c>TenantId</c> explícito en el predicado.</summary>
     public Task<Membership?> GetMembershipAsync(Guid tenantId, Guid identityUserId, CancellationToken ct = default)
-        => _db.Memberships
-            .IgnoreQueryFilters()
+        => _platform.Unfiltered(_db.Memberships, PlatformQueryReason.TenantScopedExplicit)
             .FirstOrDefaultAsync(m => m.TenantId == tenantId && m.IdentityUserId == identityUserId, ct);
 
     public Task AddMembershipAsync(Membership membership, CancellationToken ct = default)
@@ -68,7 +69,7 @@ public class AccessRepository : IAccessRepository
 
     /// <summary>Cupo por empresa: IQF + <c>TenantId</c> explícito (no depender solo del filtro global).</summary>
     public Task<int> CountActiveMembershipsByTenantAsync(Guid tenantId, CancellationToken ct = default)
-        => _db.Memberships.IgnoreQueryFilters()
+        => _platform.Unfiltered(_db.Memberships, PlatformQueryReason.TenantScopedExplicit)
             .CountAsync(m => m.TenantId == tenantId && m.IsActive, ct);
 
     public async Task<IReadOnlyList<AccessProfile>> GetProfilesByTenantAsync(Guid tenantId, bool onlyActive = true, CancellationToken ct = default)

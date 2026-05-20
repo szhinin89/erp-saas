@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using ERP.Application.Admin;
+using ERP.Application.Common;
 using ERP.Domain.Configuration.Entities;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -9,23 +10,25 @@ using Microsoft.Extensions.Caching.Memory;
 namespace ERP.Infrastructure.Services;
 
 /// <summary>
-/// Config por tenant: todas las consultas a <c>Config*</c> usan <c>IgnoreQueryFilters</c> y filtran por
+/// Config por tenant: consultas sin filtro global vía <see cref="IPlatformQueryAccessor"/> y filtran por
 /// <c>tenantId</c> en el predicado para ser correctas con JWT SuperAdmin (<c>tenant_id</c> ambiente vacío).
 /// </summary>
 public sealed class ConfigService : IConfigService
 {
     private readonly ErpDbContext _db;
     private readonly IMemoryCache _cache;
+    private readonly IPlatformQueryAccessor _platform;
     private static readonly MemoryCacheEntryOptions CacheOptions = new()
     {
         SlidingExpiration = TimeSpan.FromMinutes(20),
         AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2),
     };
 
-    public ConfigService(ErpDbContext db, IMemoryCache cache)
+    public ConfigService(ErpDbContext db, IMemoryCache cache, IPlatformQueryAccessor platform)
     {
         _db = db;
         _cache = cache;
+        _platform = platform;
     }
 
     public async Task WarmupTenantAsync(Guid tenantId, CancellationToken ct = default)
@@ -116,7 +119,7 @@ public sealed class ConfigService : IConfigService
 
     public async Task<IReadOnlyList<ConfigEntryDto>> ListGlobalAsync(Guid tenantId, CancellationToken ct = default)
     {
-        var rows = await _db.ConfigGlobals.IgnoreQueryFilters().AsNoTracking()
+        var rows = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
             .Where(x => x.TenantId == tenantId)
             .OrderBy(x => x.Key)
             .ToListAsync(ct);
@@ -126,7 +129,7 @@ public sealed class ConfigService : IConfigService
     public async Task<IReadOnlyList<ConfigEntryDto>> ListModuleAsync(Guid tenantId, string module, CancellationToken ct = default)
     {
         var normalizedModule = NormalizeScope(module);
-        var rows = await _db.ConfigModules.IgnoreQueryFilters().AsNoTracking()
+        var rows = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
             .Where(x => x.TenantId == tenantId && x.Module == normalizedModule)
             .OrderBy(x => x.Key)
             .ToListAsync(ct);
@@ -136,7 +139,7 @@ public sealed class ConfigService : IConfigService
     public async Task<IReadOnlyList<ConfigEntryDto>> ListFeatureAsync(Guid tenantId, string feature, CancellationToken ct = default)
     {
         var normalizedFeature = NormalizeScope(feature);
-        var rows = await _db.ConfigFeatures.IgnoreQueryFilters().AsNoTracking()
+        var rows = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
             .Where(x => x.TenantId == tenantId && x.Feature == normalizedFeature)
             .OrderBy(x => x.Key)
             .ToListAsync(ct);
@@ -149,7 +152,7 @@ public sealed class ConfigService : IConfigService
         var normalizedType = NormalizeDataType(dataType);
         ValidateDataType(value, normalizedType);
 
-        var row = await _db.ConfigGlobals.IgnoreQueryFilters()
+        var row = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.TenantScopedExplicit)
             .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Key == normalizedKey, ct);
         if (row is null)
         {
@@ -173,7 +176,7 @@ public sealed class ConfigService : IConfigService
         var normalizedType = NormalizeDataType(dataType);
         ValidateDataType(value, normalizedType);
 
-        var row = await _db.ConfigModules.IgnoreQueryFilters()
+        var row = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.TenantScopedExplicit)
             .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Module == normalizedModule && x.Key == normalizedKey, ct);
         if (row is null)
         {
@@ -197,7 +200,7 @@ public sealed class ConfigService : IConfigService
         var normalizedType = NormalizeDataType(dataType);
         ValidateDataType(value, normalizedType);
 
-        var row = await _db.ConfigFeatures.IgnoreQueryFilters()
+        var row = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.TenantScopedExplicit)
             .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Feature == normalizedFeature && x.Key == normalizedKey, ct);
         if (row is null)
         {
@@ -217,7 +220,7 @@ public sealed class ConfigService : IConfigService
     public async Task<bool> DeleteGlobalAsync(Guid tenantId, string key, CancellationToken ct = default)
     {
         var normalizedKey = NormalizeKey(key);
-        var row = await _db.ConfigGlobals.IgnoreQueryFilters()
+        var row = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.TenantScopedExplicit)
             .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Key == normalizedKey, ct);
         if (row is null) return false;
 
@@ -231,7 +234,7 @@ public sealed class ConfigService : IConfigService
     {
         var normalizedModule = NormalizeScope(module);
         var normalizedKey = NormalizeKey(key);
-        var row = await _db.ConfigModules.IgnoreQueryFilters()
+        var row = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.TenantScopedExplicit)
             .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Module == normalizedModule && x.Key == normalizedKey, ct);
         if (row is null) return false;
 
@@ -245,7 +248,7 @@ public sealed class ConfigService : IConfigService
     {
         var normalizedFeature = NormalizeScope(feature);
         var normalizedKey = NormalizeKey(key);
-        var row = await _db.ConfigFeatures.IgnoreQueryFilters()
+        var row = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.TenantScopedExplicit)
             .FirstOrDefaultAsync(x => x.TenantId == tenantId && x.Feature == normalizedFeature && x.Key == normalizedKey, ct);
         if (row is null) return false;
 
@@ -261,13 +264,13 @@ public sealed class ConfigService : IConfigService
         if (_cache.TryGetValue<TenantConfigSnapshot>(cacheKey, out var hit) && hit is not null)
             return hit;
 
-        var globals = await _db.ConfigGlobals.IgnoreQueryFilters().AsNoTracking()
+        var globals = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
             .Where(x => x.TenantId == tenantId)
             .ToListAsync(ct);
-        var modules = await _db.ConfigModules.IgnoreQueryFilters().AsNoTracking()
+        var modules = await _platform.Unfiltered(_db.ConfigModules, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
             .Where(x => x.TenantId == tenantId)
             .ToListAsync(ct);
-        var features = await _db.ConfigFeatures.IgnoreQueryFilters().AsNoTracking()
+        var features = await _platform.Unfiltered(_db.ConfigFeatures, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
             .Where(x => x.TenantId == tenantId)
             .ToListAsync(ct);
 
