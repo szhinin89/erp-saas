@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using ERP.Application.Common;
+using Microsoft.EntityFrameworkCore;
 using ERP.Application.Subscriptions;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Domain.Subscriptions.Interfaces;
@@ -11,11 +12,16 @@ public sealed class SubscriptionService : ISubscriptionService
 {
     private readonly ErpDbContext _db;
     private readonly ITenantEntitlementsService _entitlements;
+    private readonly IPlatformQueryAccessor _platform;
 
-    public SubscriptionService(ErpDbContext db, ITenantEntitlementsService entitlements)
+    public SubscriptionService(
+        ErpDbContext db,
+        ITenantEntitlementsService entitlements,
+        IPlatformQueryAccessor platform)
     {
         _db = db;
         _entitlements = entitlements;
+        _platform = platform;
     }
 
     public Task<bool> HasFeatureAsync(Guid tenantId, string featureCode, CancellationToken ct = default) =>
@@ -37,7 +43,8 @@ public sealed class SubscriptionService : ISubscriptionService
         if (limit is null) return true;
 
         var period = MonthlyPeriodKey(DateTime.UtcNow);
-        var used = await _db.TenantSubscriptionUsages.AsNoTracking()
+        var used = await _platform
+            .Unfiltered(_db.TenantSubscriptionUsages.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
             .Where(u => u.TenantId == tenantId && u.FeatureId == feature.Id && u.PeriodKey == period)
             .Select(u => u.Quantity)
             .FirstOrDefaultAsync(ct);
@@ -60,7 +67,8 @@ public sealed class SubscriptionService : ISubscriptionService
     }
 
     private async Task<TenantSaasSubscription?> GetActiveSubscriptionRowAsync(Guid tenantId, CancellationToken ct) =>
-        await _db.TenantSaasSubscriptions.AsNoTracking()
+        await _platform
+            .Unfiltered(_db.TenantSaasSubscriptions.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
             .Where(s => s.TenantId == tenantId && s.Status == TenantSubscriptionStatus.Active)
             .OrderByDescending(s => s.StartedAtUtc)
             .FirstOrDefaultAsync(ct);
@@ -72,8 +80,11 @@ public sealed class SubscriptionService : ISubscriptionService
 
         if (subscriptionId is not null)
         {
-            var ov = await _db.TenantSubscriptionFeatureOverrides.AsNoTracking()
-                .FirstOrDefaultAsync(o => o.SubscriptionId == subscriptionId.Value && o.FeatureId == featureId, ct);
+            var ov = await _platform
+                .Unfiltered(_db.TenantSubscriptionFeatureOverrides.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
+                .FirstOrDefaultAsync(
+                    o => o.TenantId == tenantId && o.SubscriptionId == subscriptionId.Value && o.FeatureId == featureId,
+                    ct);
             if (ov?.LimitOverridePerPeriod is not null)
                 return ov.LimitOverridePerPeriod;
         }

@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Config;
 using ERP.Domain.Subscriptions;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Infrastructure.Persistence;
@@ -6,6 +7,8 @@ using ERP.Infrastructure.Services;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace ERP.Infrastructure.Tests.Services;
 
@@ -33,7 +36,7 @@ public sealed class SubscriptionServiceUsageTests
         var tenantId = Guid.NewGuid();
         await using var ctx = CreateContext(tenantId);
         var featureId = await SeedMeteredCustomersFeatureAsync(ctx, tenantId);
-        var sut = new SubscriptionService(ctx, new TenantEntitlementsService(ctx));
+        var sut = CreateSut(ctx);
         var period = DateTime.UtcNow.ToString("yyyy-MM");
 
         (await sut.IncrementUsageAsync(tenantId, "CUSTOMERS", 2)).Should().BeTrue();
@@ -55,9 +58,18 @@ public sealed class SubscriptionServiceUsageTests
     {
         var tenantId = Guid.NewGuid();
         await using var ctx = CreateContext(tenantId);
-        var sut = new SubscriptionService(ctx, new TenantEntitlementsService(ctx));
+        var sut = CreateSut(ctx);
 
         (await sut.IncrementUsageAsync(tenantId, "UNKNOWN", 1)).Should().BeFalse();
+    }
+
+    private static SubscriptionService CreateSut(ErpDbContext ctx)
+    {
+        var platform = new PlatformQueryAccessor(
+            NullLogger<PlatformQueryAccessor>.Instance,
+            Options.Create(new SaasEntitlementsOptions()));
+        var entitlements = new TenantEntitlementsService(ctx, platform);
+        return new SubscriptionService(ctx, entitlements, platform);
     }
 
     private static ErpDbContext CreateContext(Guid tenantId)

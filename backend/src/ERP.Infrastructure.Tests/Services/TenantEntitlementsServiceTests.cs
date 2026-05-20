@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Config;
 using ERP.Application.Subscriptions;
 using ERP.Domain.Subscriptions;
 using ERP.Domain.Subscriptions.Entities;
@@ -7,6 +8,8 @@ using ERP.Infrastructure.Services;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
 namespace ERP.Infrastructure.Tests.Services;
 
@@ -29,12 +32,25 @@ public sealed class TenantEntitlementsServiceTests
     }
 
     [Fact]
+    public async Task GetEnabledModuleKeysAsync_without_http_tenant_context_still_resolves_by_tenant_id()
+    {
+        var tenantId = Guid.NewGuid();
+        await using var ctx = CreateContext(Guid.Empty);
+        await SeedPlanWithInventoryModuleAsync(ctx, tenantId);
+        var sut = CreateSut(ctx);
+
+        var keys = await sut.GetEnabledModuleKeysAsync(tenantId);
+
+        keys.Should().Contain("inventory");
+    }
+
+    [Fact]
     public async Task GetEnabledModuleKeysAsync_plan_includes_module_returns_resource_ref_key()
     {
         var tenantId = Guid.NewGuid();
         await using var ctx = CreateContext(tenantId);
         var (planId, _) = await SeedPlanWithInventoryModuleAsync(ctx, tenantId);
-        var sut = new TenantEntitlementsService(ctx);
+        var sut = CreateSut(ctx);
 
         var keys = await sut.GetEnabledModuleKeysAsync(tenantId);
 
@@ -58,7 +74,7 @@ public sealed class TenantEntitlementsServiceTests
                 Guid.Empty));
         await ctx.SaveChangesAsync();
 
-        var sut = new TenantEntitlementsService(ctx);
+        var sut = CreateSut(ctx);
         (await sut.HasFeatureAsync(tenantId, "INVENTORY")).Should().BeFalse();
         (await sut.GetEnabledModuleKeysAsync(tenantId)).Should().BeEmpty();
     }
@@ -68,7 +84,7 @@ public sealed class TenantEntitlementsServiceTests
     {
         var tenantId = Guid.NewGuid();
         await using var ctx = CreateContext(tenantId);
-        var sut = new TenantEntitlementsService(ctx);
+        var sut = CreateSut(ctx);
 
         (await sut.GetEnabledModuleKeysAsync(tenantId)).Should().BeEmpty();
         (await sut.HasFeatureAsync(tenantId, "INVENTORY")).Should().BeFalse();
@@ -97,16 +113,24 @@ public sealed class TenantEntitlementsServiceTests
         ctx.TenantSaasSubscriptions.Add(sub);
         await ctx.SaveChangesAsync();
 
-        var sut = new TenantEntitlementsService(ctx);
+        var sut = CreateSut(ctx);
         (await sut.GetLimitPerPeriodAsync(tenantId, "CUSTOMERS")).Should().Be(500);
     }
 
-    private static ErpDbContext CreateContext(Guid tenantId)
+    private static TenantEntitlementsService CreateSut(ErpDbContext ctx)
+    {
+        var platform = new PlatformQueryAccessor(
+            NullLogger<PlatformQueryAccessor>.Instance,
+            Options.Create(new SaasEntitlementsOptions()));
+        return new TenantEntitlementsService(ctx, platform);
+    }
+
+    private static ErpDbContext CreateContext(Guid currentTenantId)
     {
         var options = new DbContextOptionsBuilder<ErpDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
             .Options;
-        return new ErpDbContext(options, new FixedTenant { TenantId = tenantId }, new FakePublisher());
+        return new ErpDbContext(options, new FixedTenant { TenantId = currentTenantId }, new FakePublisher());
     }
 
     private static async Task<(Guid PlanId, Guid InventoryFeatureId)> SeedPlanWithInventoryModuleAsync(

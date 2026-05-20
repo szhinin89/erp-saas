@@ -182,13 +182,6 @@ using (var migrationScope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
 }
 
-// Datos demo (tenant-demo + admin) solo si se activa explícitamente — ver appsettings.Development → Development:SeedDemoTenant.
-if (app.Environment.IsDevelopment() &&
-    app.Configuration.GetValue("Development:SeedDemoTenant", false))
-{
-    await DevDatabaseSeeder.SeedMinimumAsync(app.Services);
-}
-
 if (app.Environment.IsDevelopment() &&
     app.Configuration.GetValue("Development:SyncFuncionalidadesOnStartup", false))
 {
@@ -196,11 +189,18 @@ if (app.Environment.IsDevelopment() &&
     await syncScope.ServiceProvider.GetRequiredService<AppFeatureDiscoveryService>().SyncFeaturesAsync();
 }
 
-// Catálogo mínimo de planes SaaS en BD (idempotente).
+// Catálogo mínimo de planes SaaS en BD (idempotente) — antes del seed demo (entitlements).
 using (var plansScope = app.Services.CreateScope())
 {
     var db = plansScope.ServiceProvider.GetRequiredService<ErpDbContext>();
     await SaasPlansBootstrap.EnsureDefaultsAsync(db);
+}
+
+// Datos demo (tenant-demo + admin) solo si se activa explícitamente — ver appsettings.Development → Development:SeedDemoTenant.
+if (app.Environment.IsDevelopment() &&
+    app.Configuration.GetValue("Development:SeedDemoTenant", false))
+{
+    await DevDatabaseSeeder.SeedMinimumAsync(app.Services);
 }
 
 // InstallData: carga automática de datos base (idempotente por script/checksum).

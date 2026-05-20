@@ -7,6 +7,8 @@ using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Products.Entities;
+using ERP.Domain.Subscriptions;
+using ERP.Domain.Subscriptions.Entities;
 using ERP.Domain.Tenants.Entities;
 using ERP.Infrastructure.Persistence;
 
@@ -19,6 +21,16 @@ namespace ERP.API.Extensions;
 internal static class DevDatabaseSeeder
 {
     private static readonly Guid SeederActorId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+
+    private static readonly (string Code, string ResourceRef)[] DemoStarterModules =
+    [
+        ("SALES", "sales"),
+        ("INVENTORY", "inventory"),
+        ("PURCHASES", "purchases"),
+        ("EXPENSES", "expenses"),
+        ("ACCOUNTING", "accounting"),
+        ("ACCESS", "access"),
+    ];
 
     public static async Task SeedMinimumAsync(IServiceProvider services, CancellationToken ct = default)
     {
@@ -42,7 +54,16 @@ internal static class DevDatabaseSeeder
             .FirstOrDefaultAsync(t => t.Slug == tenantSlug, ct);
 
         if (tenant is not null && existingAdmin is not null)
+        {
+            if (string.IsNullOrWhiteSpace(tenant.PlanCode))
+            {
+                tenant.SetSubscription("starter", null, SeederActorId);
+                await db.SaveChangesAsync(ct);
+            }
+
+            await EnsureDemoStarterEntitlementsAsync(db, ct);
             return;
+        }
 
         var tenantJustCreated = false;
         if (tenant is null)
@@ -51,7 +72,8 @@ internal static class DevDatabaseSeeder
                 name: "Tenant Demo",
                 slug: tenantSlug,
                 createdBy: SeederActorId,
-                passwordResetMode: PasswordResetMode.Direct);
+                passwordResetMode: PasswordResetMode.Direct,
+                planCode: "starter");
 
             db.Tenants.Add(tenant);
             await db.SaveChangesAsync(ct);
@@ -146,6 +168,55 @@ internal static class DevDatabaseSeeder
 
         // ── Full tenant onboarding (profiles + Consumidor Final + branch + warehouse) ──
         await onboarding.OnboardAsync(tenant.Id, SeederActorId, ct);
+        await EnsureDemoStarterEntitlementsAsync(db, ct);
+    }
+
+    /// <summary>Features Module en plan starter para probar entitlements (Fase A) en desarrollo.</summary>
+    private static async Task EnsureDemoStarterEntitlementsAsync(ErpDbContext db, CancellationToken ct)
+    {
+        const string tenantSlug = "tenant-demo";
+        var plan = await db.SaasPlans.FirstOrDefaultAsync(p => p.Code == "starter", ct);
+        if (plan is null)
+            return;
+
+        var tenant = await db.Tenants
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(t => t.Slug == tenantSlug, ct);
+        if (tenant is not null)
+        {
+            var subscription = await db.TenantSaasSubscriptions
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(s => s.TenantId == tenant.Id, ct);
+            if (subscription is null)
+            {
+                db.TenantSaasSubscriptions.Add(
+                    TenantSaasSubscription.Create(tenant.Id, plan.Id, SeederActorId));
+                await db.SaveChangesAsync(ct);
+            }
+        }
+
+        foreach (var (code, resourceRef) in DemoStarterModules)
+        {
+            var feature = await db.SaasFeatureDefinitions
+                .FirstOrDefaultAsync(f => f.Code == code, ct);
+            if (feature is null)
+            {
+                feature = SaasFeatureDefinition.Create(
+                    code, code, null, isMetered: false, SaasFeatureKind.Module, resourceRef);
+                db.SaasFeatureDefinitions.Add(feature);
+                await db.SaveChangesAsync(ct);
+            }
+
+            var linked = await db.SaasPlanFeatures
+                .AnyAsync(pf => pf.PlanId == plan.Id && pf.FeatureId == feature.Id, ct);
+            if (!linked)
+            {
+                db.SaasPlanFeatures.Add(
+                    SaasPlanFeature.Create(plan.Id, feature.Id, isIncluded: true, limitPerPeriod: null));
+            }
+        }
+
+        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>

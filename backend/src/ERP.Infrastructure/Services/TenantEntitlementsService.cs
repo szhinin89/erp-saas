@@ -13,8 +13,13 @@ namespace ERP.Infrastructure.Services;
 public sealed class TenantEntitlementsService : ITenantEntitlementsService
 {
     private readonly ErpDbContext _db;
+    private readonly IPlatformQueryAccessor _platform;
 
-    public TenantEntitlementsService(ErpDbContext db) => _db = db;
+    public TenantEntitlementsService(ErpDbContext db, IPlatformQueryAccessor platform)
+    {
+        _db = db;
+        _platform = platform;
+    }
 
     public async Task<IReadOnlyCollection<string>> GetEnabledModuleKeysAsync(Guid tenantId, CancellationToken ct = default)
     {
@@ -78,7 +83,8 @@ public sealed class TenantEntitlementsService : ITenantEntitlementsService
 
     private async Task<EntitlementSnapshot?> LoadEntitlementSnapshotAsync(Guid tenantId, CancellationToken ct)
     {
-        var subscription = await _db.TenantSaasSubscriptions.AsNoTracking()
+        var subscription = await _platform
+            .Unfiltered(_db.TenantSaasSubscriptions.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
             .Where(s => s.TenantId == tenantId && s.Status == TenantSubscriptionStatus.Active)
             .OrderByDescending(s => s.StartedAtUtc)
             .FirstOrDefaultAsync(ct);
@@ -92,8 +98,9 @@ public sealed class TenantEntitlementsService : ITenantEntitlementsService
 
         var featureIds = planFeatures.Select(pf => pf.FeatureId).ToList();
 
-        var overrides = await _db.TenantSubscriptionFeatureOverrides.AsNoTracking()
-            .Where(o => o.SubscriptionId == subscription.Id)
+        var overrides = await _platform
+            .Unfiltered(_db.TenantSubscriptionFeatureOverrides.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
+            .Where(o => o.TenantId == tenantId && o.SubscriptionId == subscription.Id)
             .ToListAsync(ct);
 
         featureIds.AddRange(overrides.Select(o => o.FeatureId));
