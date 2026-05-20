@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ERP.Application.Common;
+using ERP.Application.Subscriptions;
 using ERP.Domain.Subscriptions.Entities;
 using ERP.Domain.Subscriptions.Interfaces;
 using ERP.Infrastructure.Persistence;
@@ -10,8 +11,13 @@ namespace ERP.Infrastructure.Services;
 public sealed class SubscriptionService : ISubscriptionService
 {
     private readonly ErpDbContext _db;
+    private readonly ITenantEntitlementsService _entitlements;
 
-    public SubscriptionService(ErpDbContext db) => _db = db;
+    public SubscriptionService(ErpDbContext db, ITenantEntitlementsService entitlements)
+    {
+        _db = db;
+        _entitlements = entitlements;
+    }
 
     public async Task<bool> HasFeatureAsync(Guid tenantId, string featureCode, CancellationToken ct = default)
     {
@@ -156,11 +162,7 @@ public sealed class SubscriptionService : ISubscriptionService
         if (!TryMapFeatureToModule(featureCode, out var moduleKey))
             return false;
 
-        var tenant = await _db.Tenants.AsNoTracking().FirstOrDefaultAsync(t => t.Id == tenantId, ct);
-        if (tenant is null)
-            return false;
-
-        var enabled = TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant);
+        var enabled = await _entitlements.GetEnabledModuleKeysAsync(tenantId, ct);
         return enabled.Contains(moduleKey, StringComparer.OrdinalIgnoreCase);
     }
 

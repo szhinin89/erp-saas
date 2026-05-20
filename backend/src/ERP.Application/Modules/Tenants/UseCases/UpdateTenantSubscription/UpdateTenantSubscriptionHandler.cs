@@ -1,5 +1,6 @@
 using MediatR;
 using ERP.Application.Common;
+using ERP.Application.Subscriptions;
 using ERP.Application.Tenants.DTOs;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Tenants.Interfaces;
@@ -10,11 +11,16 @@ public sealed class UpdateTenantSubscriptionHandler : IRequestHandler<UpdateTena
 {
     private readonly ITenantRepository _repository;
     private readonly ICurrentUser _currentUser;
+    private readonly ITenantEntitlementsService _entitlements;
 
-    public UpdateTenantSubscriptionHandler(ITenantRepository repository, ICurrentUser currentUser)
+    public UpdateTenantSubscriptionHandler(
+        ITenantRepository repository,
+        ICurrentUser currentUser,
+        ITenantEntitlementsService entitlements)
     {
         _repository = repository;
         _currentUser = currentUser;
+        _entitlements = entitlements;
     }
 
     public async Task<Result<TenantDto>> Handle(UpdateTenantSubscriptionCommand command, CancellationToken ct)
@@ -29,6 +35,7 @@ public sealed class UpdateTenantSubscriptionHandler : IRequestHandler<UpdateTena
         tenant.SetSubscription(command.PlanCode, command.EnabledModules, _currentUser.UserId);
         await _repository.SaveChangesAsync(ct);
 
-        return Result<TenantDto>.Success(TenantDto.FromTenant(tenant));
+        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(tenant.Id, _entitlements, ct);
+        return Result<TenantDto>.Success(TenantDto.FromTenant(tenant, modules));
     }
 }

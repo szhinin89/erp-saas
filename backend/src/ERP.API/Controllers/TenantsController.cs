@@ -10,6 +10,8 @@ using ERP.Application.Tenants.UseCases.UpdatePasswordResetMode;
 using ERP.Application.Tenants.UseCases.UpdateTenantCompany;
 using ERP.Application.Tenants.UseCases.UpdateTenantSubscription;
 using ERP.Application.Tenants.UseCases.UpdateTenantOperationalSettings;
+using ERP.Application.Common;
+using ERP.Application.Subscriptions;
 using ERP.Application.Tenants.DTOs;
 using ERP.Domain.Tenants.Interfaces;
 
@@ -28,11 +30,16 @@ public class TenantsController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly ITenantRepository _tenantRepository;
+    private readonly ITenantEntitlementsService _entitlements;
 
-    public TenantsController(IMediator mediator, ITenantRepository tenantRepository)
+    public TenantsController(
+        IMediator mediator,
+        ITenantRepository tenantRepository,
+        ITenantEntitlementsService entitlements)
     {
         _mediator = mediator;
         _tenantRepository = tenantRepository;
+        _entitlements = entitlements;
     }
 
     /// <summary>Obtiene el detalle de un tenant (SuperAdmin).</summary>
@@ -46,7 +53,8 @@ public class TenantsController : ControllerBase
         if (tenant is null)
             return this.ApiNotFound("Empresa no encontrada.");
 
-        return this.ApiOk(TenantDto.FromTenant(tenant));
+        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(id, _entitlements, ct);
+        return this.ApiOk(TenantDto.FromTenant(tenant, modules));
     }
 
     /// <summary>Actualiza datos comerciales/legales de la empresa (SuperAdmin).</summary>

@@ -1,21 +1,21 @@
 using FluentAssertions;
 using ERP.Application.Common;
+using ERP.Application.Subscriptions;
 using ERP.Domain.Tenants.Entities;
+using Moq;
 
 namespace ERP.Application.Tests;
 
 public sealed class TenantSubscriptionCatalogTests
 {
     [Fact]
-    public void GetEffectiveEnabledModules_returns_all_when_json_null_or_whitespace()
+    public void GetEffectiveEnabledModules_returns_empty_when_json_null_or_whitespace()
     {
         var a = Tenant.Create("A", "a", Guid.NewGuid());
-        TenantSubscriptionCatalog.GetEffectiveEnabledModules(a)
-            .Should().BeEquivalentTo(TenantSubscriptionCatalog.AllModuleKeys, o => o.WithStrictOrdering());
+        TenantSubscriptionCatalog.GetEffectiveEnabledModules(a).Should().BeEmpty();
 
         var b = Tenant.Create("B", "b", Guid.NewGuid(), enabledModuleKeys: Array.Empty<string>());
-        TenantSubscriptionCatalog.GetEffectiveEnabledModules(b)
-            .Should().BeEquivalentTo(TenantSubscriptionCatalog.AllModuleKeys, o => o.WithStrictOrdering());
+        TenantSubscriptionCatalog.GetEffectiveEnabledModules(b).Should().BeEmpty();
     }
 
     [Fact]
@@ -39,21 +39,42 @@ public sealed class TenantSubscriptionCatalogTests
     }
 
     [Fact]
-    public void GetEffectiveEnabledModules_ignores_unknown_keys_and_falls_back_to_all_when_none_valid()
+    public void GetEffectiveEnabledModules_returns_empty_when_only_unknown_keys()
     {
         var onlyUnknown = Tenant.Create("X", "x", Guid.NewGuid(), enabledModuleKeys: new[] { "unknown", "legacy" });
-        TenantSubscriptionCatalog.GetEffectiveEnabledModules(onlyUnknown)
-            .Should().BeEquivalentTo(TenantSubscriptionCatalog.AllModuleKeys, o => o.WithStrictOrdering());
+        TenantSubscriptionCatalog.GetEffectiveEnabledModules(onlyUnknown).Should().BeEmpty();
     }
 
     [Fact]
-    public void GetEffectiveEnabledModules_invalid_json_falls_back_to_all()
+    public void GetEffectiveEnabledModules_returns_empty_on_invalid_json()
     {
         var tenant = Tenant.Create("Y", "y", Guid.NewGuid());
         typeof(Tenant).GetProperty(nameof(Tenant.EnabledModulesJson))!
             .SetValue(tenant, "{ not json");
-        TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)
-            .Should().BeEquivalentTo(TenantSubscriptionCatalog.AllModuleKeys, o => o.WithStrictOrdering());
+        TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ResolveEnabledModulesAsync_delegates_to_entitlements_service()
+    {
+        var tenantId = Guid.NewGuid();
+        var entitlements = new Mock<ITenantEntitlementsService>(MockBehavior.Strict);
+        entitlements
+            .Setup(e => e.GetEnabledModuleKeysAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { "inventory", "sales" });
+
+        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(tenantId, entitlements.Object);
+
+        modules.Should().Equal("inventory", "sales");
+        entitlements.Verify(e => e.GetEnabledModuleKeysAsync(tenantId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ResolveEnabledModulesAsync_returns_empty_for_empty_tenant_id()
+    {
+        var entitlements = new Mock<ITenantEntitlementsService>(MockBehavior.Strict);
+        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(Guid.Empty, entitlements.Object);
+        modules.Should().BeEmpty();
     }
 
     [Fact]

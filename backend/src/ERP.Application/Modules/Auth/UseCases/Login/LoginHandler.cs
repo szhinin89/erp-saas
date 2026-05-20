@@ -1,6 +1,7 @@
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Subscriptions;
 using ERP.Domain.Access.Interfaces;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Interfaces;
@@ -20,6 +21,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
     private readonly IAccessTokenService _accessTokenService;
     private readonly IPasswordHasher     _passwordHasher;
     private readonly IRefreshTokenService _refreshTokenService;
+    private readonly ITenantEntitlementsService _entitlements;
 
     public LoginHandler(
         IUserRepository userRepository,
@@ -29,7 +31,8 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         IAccessRepository accessRepository,
         IAccessTokenService accessTokenService,
         IPasswordHasher passwordHasher,
-        IRefreshTokenService refreshTokenService)
+        IRefreshTokenService refreshTokenService,
+        ITenantEntitlementsService entitlements)
     {
         _userRepository      = userRepository;
         _tenantRepository    = tenantRepository;
@@ -39,6 +42,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         _accessTokenService  = accessTokenService;
         _passwordHasher      = passwordHasher;
         _refreshTokenService = refreshTokenService;
+        _entitlements        = entitlements;
     }
 
     public async Task<Result<AuthResponseDto>> Handle(
@@ -102,6 +106,9 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
             var (identityRefresh, identityRefreshExpiry) = await _refreshTokenService.CreateAsync(
                 identityUser.Id, membership.TenantId, RefreshUserType.Identity, ct);
 
+            var identityModules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(
+                membership.TenantId, _entitlements, ct);
+
             return Result<AuthResponseDto>.Success(new AuthResponseDto(
                 identityUser.Id,
                 identityUser.FullName,
@@ -110,7 +117,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
                 membership.TenantId,
                 identityToken,
                 identityTenant.PlanCode,
-                TenantSubscriptionCatalog.GetEffectiveEnabledModules(identityTenant))
+                identityModules)
             {
                 RefreshToken       = identityRefresh,
                 RefreshTokenExpiry = identityRefreshExpiry,
@@ -148,6 +155,10 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         var (legacyRefresh, legacyRefreshExpiry) = await _refreshTokenService.CreateAsync(
             single.Id, single.TenantId, RefreshUserType.Legacy, ct);
 
+        var legacyModules = tenantEntity is null
+            ? Array.Empty<string>()
+            : await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(single.TenantId, _entitlements, ct);
+
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             single.Id,
             single.FullName,
@@ -156,9 +167,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
             single.TenantId,
             token,
             tenantEntity?.PlanCode,
-            tenantEntity is null
-                ? TenantSubscriptionCatalog.AllModuleKeys
-                : TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenantEntity))
+            legacyModules)
         {
             RefreshToken       = legacyRefresh,
             RefreshTokenExpiry = legacyRefreshExpiry,

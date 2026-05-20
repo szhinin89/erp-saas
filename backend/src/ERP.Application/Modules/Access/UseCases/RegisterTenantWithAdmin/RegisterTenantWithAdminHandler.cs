@@ -1,6 +1,7 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Subscriptions;
 using MediatR;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
@@ -17,6 +18,7 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITenantOnboardingService _onboarding;
+    private readonly ITenantEntitlementsService _entitlements;
 
     public RegisterTenantWithAdminHandler(
         ITenantRepository tenantRepository,
@@ -24,7 +26,8 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
         IAccessTokenService tokenService,
         IDeploymentFeatureFlags deployment,
         IPasswordHasher passwordHasher,
-        ITenantOnboardingService onboarding)
+        ITenantOnboardingService onboarding,
+        ITenantEntitlementsService entitlements)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
@@ -32,6 +35,7 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
         _deployment = deployment;
         _passwordHasher = passwordHasher;
         _onboarding = onboarding;
+        _entitlements = entitlements;
     }
 
     public Task<Result<SessionResponseDto>> HandleAsync(RegisterTenantWithAdminCommand command, CancellationToken ct = default)
@@ -101,6 +105,7 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
         await _onboarding.OnboardAsync(tenant.Id, actorId: identityUser.Id, ct);
 
         var sessionToken = _tokenService.GenerateSessionToken(identityUser, tenant.Id, "Admin");
+        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(tenant.Id, _entitlements, ct);
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
             UserId: identityUser.Id,
             FullName: identityUser.FullName,
@@ -109,7 +114,7 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
             Role: "Admin",
             Token: sessionToken,
             tenant.PlanCode,
-            TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)));
+            modules));
     }
 }
 

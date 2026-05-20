@@ -1,5 +1,6 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
+using ERP.Application.Subscriptions;
 using MediatR;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
@@ -12,17 +13,20 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
     private readonly ICurrentUser _currentUser;
     private readonly ICurrentTenant _currentTenant;
     private readonly ITenantRepository _tenantRepository;
+    private readonly ITenantEntitlementsService _entitlements;
 
     public GetMyPermissionsHandler(
         IAccessRepository repo,
         ICurrentUser currentUser,
         ICurrentTenant currentTenant,
-        ITenantRepository tenantRepository)
+        ITenantRepository tenantRepository,
+        ITenantEntitlementsService entitlements)
     {
         _repo = repo;
         _currentUser = currentUser;
         _currentTenant = currentTenant;
         _tenantRepository = tenantRepository;
+        _entitlements = entitlements;
     }
 
     public Task<Result<MyPermissionsDto>> HandleAsync(CancellationToken ct = default)
@@ -35,9 +39,8 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
 
         var tenant = await _tenantRepository.GetByIdAsync(_currentTenant.TenantId, ct);
         var plan = tenant?.PlanCode;
-        var modules = tenant is null
-            ? TenantSubscriptionCatalog.AllModuleKeys
-            : TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant);
+        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(
+            _currentTenant.TenantId, _entitlements, ct);
 
         var role = _currentUser.Role ?? string.Empty;
         if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))

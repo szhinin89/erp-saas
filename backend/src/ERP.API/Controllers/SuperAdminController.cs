@@ -36,6 +36,7 @@ public class SuperAdminController : ControllerBase
     private readonly IGrowthAnalyticsReader  _growthAnalytics;
     private readonly IRefreshTokenService    _refreshTokenService;
     private readonly ITenantMenuAdminService   _tenantMenuAdmin;
+    private readonly ITenantEntitlementsService _entitlements;
 
     public SuperAdminController(
         ITenantRepository tenantRepository,
@@ -46,7 +47,8 @@ public class SuperAdminController : ControllerBase
         INavigationMenuAdminService navigationMenuAdmin,
         IGrowthAnalyticsReader growthAnalytics,
         IRefreshTokenService refreshTokenService,
-        ITenantMenuAdminService tenantMenuAdmin)
+        ITenantMenuAdminService tenantMenuAdmin,
+        ITenantEntitlementsService entitlements)
     {
         _tenantRepository    = tenantRepository;
         _userRepository      = userRepository;
@@ -57,6 +59,7 @@ public class SuperAdminController : ControllerBase
         _growthAnalytics     = growthAnalytics;
         _refreshTokenService = refreshTokenService;
         _tenantMenuAdmin     = tenantMenuAdmin;
+        _entitlements        = entitlements;
     }
 
     /// <summary>Cuotas efectivas de la instancia (config + archivo <c>App_Data/instance-quota.json</c> si existe).</summary>
@@ -143,7 +146,7 @@ public class SuperAdminController : ControllerBase
                 totalUsers,
                 activeUsers,
                 planCode = t.PlanCode,
-                enabledModules = TenantSubscriptionCatalog.GetEffectiveEnabledModules(t),
+                enabledModules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(t.Id, _entitlements, ct),
                 hasModuleRestrictions = !string.IsNullOrWhiteSpace(t.EnabledModulesJson),
                 hasCustomMenu = withCustomMenu.Contains(t.Id),
             });

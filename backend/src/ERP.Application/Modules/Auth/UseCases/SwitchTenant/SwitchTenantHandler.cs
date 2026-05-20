@@ -1,6 +1,7 @@
 using MediatR;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
+using ERP.Application.Subscriptions;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
 
@@ -12,17 +13,20 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<A
     private readonly IUserRepository _userRepository;
     private readonly ITenantRepository _tenantRepository;
     private readonly IJwtService _jwtService;
+    private readonly ITenantEntitlementsService _entitlements;
 
     public SwitchTenantHandler(
         ICurrentUser currentUser,
         IUserRepository userRepository,
         ITenantRepository tenantRepository,
-        IJwtService jwtService)
+        IJwtService jwtService,
+        ITenantEntitlementsService entitlements)
     {
         _currentUser = currentUser;
         _userRepository = userRepository;
         _tenantRepository = tenantRepository;
         _jwtService = jwtService;
+        _entitlements = entitlements;
     }
 
     public async Task<Result<AuthResponseDto>> Handle(SwitchTenantCommand command, CancellationToken ct)
@@ -59,6 +63,8 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<A
 
         var token = _jwtService.GenerateToken(user, tenant.Id);
 
+        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(tenant.Id, _entitlements, ct);
+
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id,
             user.FullName,
@@ -67,7 +73,7 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<A
             tenant.Id,
             token,
             tenant.PlanCode,
-            TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)));
+            modules));
     }
 }
 

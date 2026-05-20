@@ -1,14 +1,19 @@
 using System.Linq;
 using System.Text.Json;
+using ERP.Application.Subscriptions;
 using ERP.Domain.Tenants.Entities;
 
 namespace ERP.Application.Common;
 
 /// <summary>
-/// Claves de módulo contratables por tenant. Deben coincidir con el primer segmento de <c>permissionKey</c> (p. ej. <c>inventario.brands.view</c> → <c>inventario</c>, <c>ventas.customers.view</c> → <c>ventas</c>).
+/// Catálogo legacy de claves de módulo y validación. La autoridad de módulos habilitados es
+/// <see cref="ITenantEntitlementsService"/> vía <see cref="ResolveEnabledModulesAsync"/>.
 /// </summary>
 public static class TenantSubscriptionCatalog
 {
+    private static readonly IReadOnlyList<string> EmptyModules = Array.Empty<string>();
+
+    /// <summary>Claves conocidas para validación de entrada SuperAdmin (legacy español).</summary>
     public static readonly IReadOnlyList<string> AllModuleKeys = new[]
     {
         "access",
@@ -22,17 +27,38 @@ public static class TenantSubscriptionCatalog
         "ventas",
     };
 
-    /// <summary>JSON <c>null</c> o vacío en el tenant = todos los módulos (compatibilidad).</summary>
+    /// <summary>
+    /// Resuelve módulos habilitados desde el modelo de suscripción (fuente única).
+    /// Sin suscripción activa → vacío (fail-closed).
+    /// </summary>
+    public static async Task<IReadOnlyList<string>> ResolveEnabledModulesAsync(
+        Guid tenantId,
+        ITenantEntitlementsService entitlements,
+        CancellationToken ct = default)
+    {
+        if (tenantId == Guid.Empty)
+            return EmptyModules;
+
+        var modules = await entitlements.GetEnabledModuleKeysAsync(tenantId, ct);
+        return modules is IReadOnlyList<string> list
+            ? list
+            : modules.ToList();
+    }
+
+    /// <summary>
+    /// Lectura de caché legacy (<c>EnabledModulesJson</c>) solo para compatibilidad de visualización.
+    /// No usar como autoridad: null/vacío/inválido → vacío (nunca <see cref="AllModuleKeys"/>).
+    /// </summary>
     public static IReadOnlyList<string> GetEffectiveEnabledModules(Tenant tenant)
     {
         if (string.IsNullOrWhiteSpace(tenant.EnabledModulesJson))
-            return AllModuleKeys;
+            return EmptyModules;
 
         try
         {
             var parsed = JsonSerializer.Deserialize<List<string>>(tenant.EnabledModulesJson);
             if (parsed is null || parsed.Count == 0)
-                return AllModuleKeys;
+                return EmptyModules;
 
             var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var s in parsed)
@@ -43,13 +69,13 @@ public static class TenantSubscriptionCatalog
             }
 
             if (set.Count == 0)
-                return AllModuleKeys;
+                return EmptyModules;
 
             return set.OrderBy(x => x, StringComparer.Ordinal).ToList();
         }
         catch (JsonException)
         {
-            return AllModuleKeys;
+            return EmptyModules;
         }
     }
 

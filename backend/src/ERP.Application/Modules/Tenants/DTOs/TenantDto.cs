@@ -27,7 +27,7 @@ public record TenantDto(
     string? InvoicePrefix,
     int DefaultCreditDays)
 {
-    public static TenantDto FromTenant(Tenant tenant) =>
+    public static TenantDto FromTenant(Tenant tenant, IReadOnlyCollection<string>? enabledModules = null) =>
         new(
             tenant.Id,
             tenant.Name,
@@ -43,11 +43,14 @@ public record TenantDto(
             tenant.Priority,
             tenant.ElectronicBillingTrialEnabled,
             tenant.PlanCode,
-            TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant),
+            ToModuleList(enabledModules ?? TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)),
             !string.IsNullOrWhiteSpace(tenant.EnabledModulesJson),
             tenant.Currency,
             tenant.Language,
             tenant.Timezone,
             tenant.InvoicePrefix,
             tenant.DefaultCreditDays);
+
+    private static IReadOnlyList<string> ToModuleList(IReadOnlyCollection<string> modules) =>
+        modules is IReadOnlyList<string> list ? list : modules.ToList();
 }

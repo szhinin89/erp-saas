@@ -2,6 +2,7 @@ using MediatR;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Subscriptions;
 using ERP.Domain.Access.Interfaces;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Interfaces;
@@ -17,6 +18,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
     private readonly ITenantRepository    _tenantRepository;
     private readonly IJwtService          _jwtService;
     private readonly IAccessTokenService  _accessTokenService;
+    private readonly ITenantEntitlementsService _entitlements;
 
     public RefreshTokenHandler(
         IRefreshTokenService refreshTokenService,
@@ -24,7 +26,8 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
         IAccessRepository accessRepository,
         ITenantRepository tenantRepository,
         IJwtService jwtService,
-        IAccessTokenService accessTokenService)
+        IAccessTokenService accessTokenService,
+        ITenantEntitlementsService entitlements)
     {
         _refreshTokenService = refreshTokenService;
         _userRepository      = userRepository;
@@ -32,6 +35,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
         _tenantRepository    = tenantRepository;
         _jwtService          = jwtService;
         _accessTokenService  = accessTokenService;
+        _entitlements        = entitlements;
     }
 
     public async Task<Result<AuthResponseDto>> Handle(RefreshTokenCommand command, CancellationToken ct)
@@ -65,13 +69,15 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
         var tenant      = await _tenantRepository.GetByIdAsync(v.TenantId, ct);
         var accessToken = _jwtService.GenerateToken(user);
 
+        var legacyModules = tenant is null
+            ? Array.Empty<string>()
+            : await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(v.TenantId, _entitlements, ct);
+
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id, user.FullName, user.Email.Value,
             user.Role, v.TenantId, accessToken,
             tenant?.PlanCode,
-            tenant is null
-                ? TenantSubscriptionCatalog.AllModuleKeys
-                : TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant))
+            legacyModules)
         {
             RefreshToken       = v.NewToken,
             RefreshTokenExpiry = v.NewExpiry,
@@ -98,11 +104,13 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
 
         var accessToken = _accessTokenService.GenerateSessionToken(user, v.TenantId, membership.Role);
 
+        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(v.TenantId, _entitlements, ct);
+
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id, user.FullName, user.Email.Value,
             membership.Role, v.TenantId, accessToken,
             tenant.PlanCode,
-            TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant))
+            modules)
         {
             RefreshToken       = v.NewToken,
             RefreshTokenExpiry = v.NewExpiry,

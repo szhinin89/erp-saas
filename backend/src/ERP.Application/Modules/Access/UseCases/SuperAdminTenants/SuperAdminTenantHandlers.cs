@@ -25,6 +25,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
     private readonly IPasswordHasher _passwordHasher;
     private readonly ISaasCatalogQuery _saasCatalogQuery;
     private readonly ITenantOnboardingService _onboarding;
+    private readonly ITenantEntitlementsService _entitlements;
 
     public SuperAdminCreateTenantWithAdminHandler(
         ITenantRepository tenantRepository,
@@ -35,7 +36,8 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         IDeploymentFeatureFlags deployment,
         IPasswordHasher passwordHasher,
         ISaasCatalogQuery saasCatalogQuery,
-        ITenantOnboardingService onboarding)
+        ITenantOnboardingService onboarding,
+        ITenantEntitlementsService entitlements)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
@@ -46,6 +48,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         _passwordHasher = passwordHasher;
         _saasCatalogQuery = saasCatalogQuery;
         _onboarding = onboarding;
+        _entitlements = entitlements;
     }
 
     public Task<Result<SessionResponseDto>> HandleAsync(SuperAdminCreateTenantWithAdminCommand command, CancellationToken ct = default)
@@ -134,6 +137,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         await _onboarding.OnboardAsync(tenant.Id, _currentUser.UserId, ct);
 
         var sessionToken = _tokenService.GenerateSessionToken(adminUser, tenant.Id, "Admin");
+        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(tenant.Id, _entitlements, ct);
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
             UserId: adminUser.Id,
             FullName: adminUser.FullName,
@@ -142,7 +146,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
             Role: "Admin",
             Token: sessionToken,
             tenant.PlanCode,
-            TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)));
+            modules));
     }
 
     private async Task<Result<SessionResponseDto>> HandleLinkExistingAdminAsync(
@@ -208,6 +212,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         await _accessRepository.SaveChangesAsync(ct);
 
         var sessionToken = _tokenService.GenerateSessionToken(existingUser, tenant.Id, "Admin");
+        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(tenant.Id, _entitlements, ct);
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
             UserId: existingUser.Id,
             FullName: existingUser.FullName,
@@ -216,7 +221,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
             Role: "Admin",
             Token: sessionToken,
             tenant.PlanCode,
-            TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)));
+            modules));
     }
 
     /// <summary>Devuelve mensaje de error o null si OK. Exige al menos un plan en catálogo y un plan activo elegido.</summary>
@@ -272,28 +277,39 @@ public class GetSuperAdminTenantsHandler : IRequestHandler<GetSuperAdminTenantsQ
 {
     private readonly ITenantRepository _tenantRepository;
     private readonly ITenantMenuAdminService _tenantMenuAdmin;
+    private readonly ITenantEntitlementsService _entitlements;
 
-    public GetSuperAdminTenantsHandler(ITenantRepository tenantRepository, ITenantMenuAdminService tenantMenuAdmin)
+    public GetSuperAdminTenantsHandler(
+        ITenantRepository tenantRepository,
+        ITenantMenuAdminService tenantMenuAdmin,
+        ITenantEntitlementsService entitlements)
     {
         _tenantRepository = tenantRepository;
         _tenantMenuAdmin = tenantMenuAdmin;
+        _entitlements = entitlements;
     }
 
     public async Task<Result<IReadOnlyList<SuperAdminTenantItemDto>>> Handle(GetSuperAdminTenantsQuery request, CancellationToken ct)
     {
         var withCustom = await _tenantMenuAdmin.GetTenantIdsWithCustomMenuAsync(ct);
-        var tenants = (await _tenantRepository.GetAllAsync(ct))
+        var ordered = (await _tenantRepository.GetAllAsync(ct))
             .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(t => new SuperAdminTenantItemDto(
+            .ToList();
+
+        var tenants = new List<SuperAdminTenantItemDto>(ordered.Count);
+        foreach (var t in ordered)
+        {
+            var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(t.Id, _entitlements, ct);
+            tenants.Add(new SuperAdminTenantItemDto(
                 t.Id,
                 t.Name,
                 t.Slug,
                 t.IsActive,
                 t.PlanCode,
-                TenantSubscriptionCatalog.GetEffectiveEnabledModules(t),
+                modules,
                 !string.IsNullOrWhiteSpace(t.EnabledModulesJson),
-                withCustom.Contains(t.Id)))
-            .ToList();
+                withCustom.Contains(t.Id)));
+        }
 
         return Result<IReadOnlyList<SuperAdminTenantItemDto>>.Success(tenants);
     }

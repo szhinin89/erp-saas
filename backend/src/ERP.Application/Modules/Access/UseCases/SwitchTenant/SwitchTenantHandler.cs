@@ -1,6 +1,7 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Admin;
 using ERP.Application.Common;
+using ERP.Application.Subscriptions;
 using MediatR;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
@@ -14,19 +15,22 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<S
     private readonly ICurrentUser _currentUser;
     private readonly ITenantRepository _tenantRepository;
     private readonly IConfigService _configService;
+    private readonly ITenantEntitlementsService _entitlements;
 
     public SwitchTenantHandler(
         IAccessRepository accessRepository,
         IAccessTokenService tokenService,
         ICurrentUser currentUser,
         ITenantRepository tenantRepository,
-        IConfigService configService)
+        IConfigService configService,
+        ITenantEntitlementsService entitlements)
     {
         _accessRepository = accessRepository;
         _tokenService = tokenService;
         _currentUser = currentUser;
         _tenantRepository = tenantRepository;
         _configService = configService;
+        _entitlements = entitlements;
     }
 
     public Task<Result<SessionResponseDto>> HandleAsync(SwitchTenantCommand command, CancellationToken ct = default)
@@ -73,6 +77,9 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<S
 
             var superSessionTenant = _tokenService.GenerateSessionToken(userId, email, fullName, command.TenantId, "SuperAdmin");
             await _configService.WarmupTenantAsync(command.TenantId, ct);
+            var superModules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(
+                command.TenantId, _entitlements, ct);
+
             return Result<SessionResponseDto>.Success(new SessionResponseDto(
                 UserId: userId,
                 FullName: fullName,
@@ -81,7 +88,7 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<S
                 Role: "SuperAdmin",
                 Token: superSessionTenant,
                 tenantSa.PlanCode,
-                TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenantSa)));
+                superModules));
         }
 
         if (!user.IsActive)
@@ -98,6 +105,8 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<S
         var membershipSessionToken = _tokenService.GenerateSessionToken(user, command.TenantId, membership.Role);
         await _configService.WarmupTenantAsync(command.TenantId, ct);
 
+        var modules = await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(command.TenantId, _entitlements, ct);
+
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
             UserId: user.Id,
             FullName: user.FullName,
@@ -106,6 +115,6 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<S
             Role: membership.Role,
             Token: membershipSessionToken,
             tenant.PlanCode,
-            TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)));
+            modules));
     }
 }

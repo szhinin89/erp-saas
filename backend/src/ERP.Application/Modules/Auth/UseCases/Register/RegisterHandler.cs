@@ -2,6 +2,7 @@ using MediatR;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Subscriptions;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
@@ -14,17 +15,20 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthRespo
     private readonly ITenantRepository _tenantRepository;
     private readonly IJwtService _jwtService;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly ITenantEntitlementsService _entitlements;
 
     public RegisterHandler(
         IUserRepository userRepository,
         ITenantRepository tenantRepository,
         IJwtService jwtService,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        ITenantEntitlementsService entitlements)
     {
         _userRepository   = userRepository;
         _tenantRepository = tenantRepository;
         _jwtService       = jwtService;
         _passwordHasher   = passwordHasher;
+        _entitlements     = entitlements;
     }
 
     public async Task<Result<AuthResponseDto>> Handle(
@@ -67,6 +71,10 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthRespo
 
         var tenantEntity = await _tenantRepository.GetByIdAsync(user.TenantId, ct);
 
+        var modules = tenantEntity is null
+            ? Array.Empty<string>()
+            : await TenantSubscriptionCatalog.ResolveEnabledModulesAsync(user.TenantId, _entitlements, ct);
+
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id,
             user.FullName,
@@ -75,8 +83,6 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthRespo
             user.TenantId,
             token,
             tenantEntity?.PlanCode,
-            tenantEntity is null
-                ? TenantSubscriptionCatalog.AllModuleKeys
-                : TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenantEntity)));
+            modules));
     }
 }
