@@ -5,6 +5,8 @@ import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n/i18n';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { usePermissionsStore } from '../store/permissionsStore';
+import { normalizeModuleKey } from '../constants/subscriptionModules';
+import { syncSessionEntitlements } from '../lib/syncSessionEntitlements';
 import { accessService } from '../services/accessService';
 import { superAdminService } from '../services/superAdminService';
 import { LoadingState } from './PageShell';
@@ -288,17 +290,11 @@ export function AppLayout() {
     const globalSa = (user?.role ?? '') === 'SuperAdmin' && tenantId === GLOBAL_TENANT_ID;
 
     if (!user || globalSa) return;
-    if (permissions.length > 0) return;
+    if (permissions.length > 0 && enabledModules.length > 0) return;
 
     void Promise.resolve().then(async () => {
       try {
-        const res = await accessService.getMyPermissions();
-        if (!cancelled)
-          usePermissionsStore.getState().setPermissionSnapshot({
-            permissions: res?.permissions ?? [],
-            planCode: res?.planCode ?? null,
-            enabledModules: res?.enabledModules ?? [],
-          });
+        if (!cancelled) await syncSessionEntitlements();
       } catch {
         // si falla, el menú seguirá ocultando items hasta re-login/switch tenant
       }
@@ -307,7 +303,7 @@ export function AppLayout() {
     return () => {
       cancelled = true;
     };
-  }, [permissions.length, user]);
+  }, [permissions.length, enabledModules.length, user]);
 
   const [favorites, setFavorites] = useState<NavItem[]>(() => {
     try {
@@ -352,10 +348,9 @@ export function AppLayout() {
 
     const moduleEntitled = (key?: string) => {
       if (!key) return true;
-      const mods =
-        enabledModules.length > 0 ? enabledModules : (user?.enabledModules ?? []);
-      if (mods.length === 0) return false;
-      return mods.some((m) => m.toLowerCase() === key.toLowerCase());
+      if (enabledModules.length === 0) return false;
+      const want = normalizeModuleKey(key);
+      return enabledModules.some((m) => normalizeModuleKey(m) === want);
     };
 
     const bySubscription = byRole.filter((g) => moduleEntitled(g.moduleKey));

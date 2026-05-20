@@ -60,6 +60,72 @@ public sealed class TenantEntitlementsService : ITenantEntitlementsService
     public Task<bool> AllowsPermissionAsync(Guid tenantId, string permissionKey, CancellationToken ct = default) =>
         TenantSubscriptionCatalog.TenantAllowsPermissionAsync(tenantId, this, permissionKey, ct);
 
+    public async Task<TenantEntitlementsSnapshot> GetEntitlementsSnapshotAsync(
+        Guid tenantId,
+        CancellationToken ct = default)
+    {
+        if (tenantId == Guid.Empty)
+        {
+            return new TenantEntitlementsSnapshot(
+                null,
+                null,
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                new Dictionary<string, int?>(StringComparer.Ordinal),
+                HasModuleRestrictions: true);
+        }
+
+        var snapshot = await LoadEntitlementSnapshotAsync(tenantId, ct);
+        if (snapshot is null)
+        {
+            return new TenantEntitlementsSnapshot(
+                null,
+                null,
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                new Dictionary<string, int?>(StringComparer.Ordinal),
+                HasModuleRestrictions: true);
+        }
+
+        var plan = await _db.SaasPlans.AsNoTracking()
+            .FirstOrDefaultAsync(p => p.Id == snapshot.PlanId, ct);
+
+        var modules = snapshot.Features
+            .Where(f => f.Kind == SaasFeatureKind.Module && f.IsEntitled)
+            .Select(f => TenantSubscriptionCatalog.NormalizeModuleKey(
+                NormalizeModuleKey(f.ResourceRef, f.Code)))
+            .Where(k => k.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(k => k, StringComparer.Ordinal)
+            .ToList();
+
+        var features = snapshot.Features
+            .Where(f => f.IsEntitled && f.Kind != SaasFeatureKind.Module)
+            .Select(f => f.Code)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(c => c, StringComparer.Ordinal)
+            .ToList();
+
+        var limits = new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var f in snapshot.Features.Where(f => f.IsEntitled && f.IsMetered))
+        {
+            var code = NormalizeFeatureCode(f.Code);
+            if (code.Length == 0)
+                continue;
+            limits[code] = ToIntLimit(f.EffectiveLimitPerPeriod);
+        }
+
+        var hasRestrictions = TenantSubscriptionCatalog.HasModuleRestrictionsFromModules(modules);
+
+        return new TenantEntitlementsSnapshot(
+            plan?.Code,
+            plan?.Name,
+            modules,
+            features,
+            limits,
+            hasRestrictions);
+    }
+
     public async Task<int?> GetLimitPerPeriodAsync(Guid tenantId, string featureCode, CancellationToken ct = default)
     {
         if (tenantId == Guid.Empty)

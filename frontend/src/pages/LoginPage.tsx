@@ -9,6 +9,7 @@ import type { AuthResponse } from '../types/auth';
 import type { ApiResponse } from '../types/api';
 import { useI18n } from '../i18n/i18n';
 import { accessService } from '../services/accessService';
+import { syncSessionEntitlements } from '../lib/syncSessionEntitlements';
 import { useAccessStore } from '../store/accessStore';
 import { loginSchema, type LoginFormValues } from '../schemas/auth/loginSchema';
 import { useDeployment } from '../deployment/DeploymentContext';
@@ -51,14 +52,9 @@ export function LoginPage() {
     clearPermissions();
     login(auth);
     try {
-      const perms = await accessService.getMyPermissions();
-      setPermissionSnapshot({
-        permissions:    perms?.permissions    ?? [],
-        planCode:       perms?.planCode       ?? null,
-        enabledModules: perms?.enabledModules ?? [],
-      });
+      await syncSessionEntitlements();
     } catch {
-      // AppLayout re-fetches permissions if empty after redirect.
+      // AppLayout re-fetches entitlements if empty after redirect.
     }
     navigate('/dashboard', { replace: true });
   };

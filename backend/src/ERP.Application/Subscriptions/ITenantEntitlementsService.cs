@@ -30,4 +30,10 @@ public interface ITenantEntitlementsService
     /// Prefijos no asociados a un módulo comercial → <c>true</c> (no gated por suscripción).
     /// </summary>
     Task<bool> AllowsPermissionAsync(Guid tenantId, string permissionKey, CancellationToken ct = default);
+
+    /// <summary>
+    /// Snapshot único para UI: módulos, features comerciales y límites medidos.
+    /// Sin suscripción activa → listas vacías y <see cref="TenantEntitlementsSnapshot.HasModuleRestrictions"/> = true.
+    /// </summary>
+    Task<TenantEntitlementsSnapshot> GetEntitlementsSnapshotAsync(Guid tenantId, CancellationToken ct = default);
 }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { accessService } from '../services/accessService';
+import { syncSessionEntitlements } from '../lib/syncSessionEntitlements';
 import { useAccessStore } from '../store/accessStore';
 import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
@@ -19,7 +20,6 @@ export function TenantSelectPage() {
   const tenants = useAccessStore((s) => s.tenants);
   const clearBootstrap = useAccessStore((s) => s.clearBootstrap);
   const login = useAuthStore((s) => s.login);
-  const setPermissionSnapshot = usePermissionsStore((s) => s.setPermissionSnapshot);
 
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,12 +72,7 @@ export function TenantSelectPage() {
         enabledModules: session.enabledModules ?? [],
       };
       login(auth);
-      const perms = await accessService.getMyPermissions();
-      setPermissionSnapshot({
-        permissions: perms?.permissions ?? [],
-        planCode: perms?.planCode ?? null,
-        enabledModules: perms?.enabledModules ?? [],
-      });
+      await syncSessionEntitlements();
       clearBootstrap();
       navigate('/dashboard');
     } catch (err: unknown) {

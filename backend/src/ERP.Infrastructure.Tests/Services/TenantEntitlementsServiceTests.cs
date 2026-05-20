@@ -80,6 +80,33 @@ public sealed class TenantEntitlementsServiceTests
     }
 
     [Fact]
+    public async Task GetEntitlementsSnapshotAsync_returns_modules_features_and_limits()
+    {
+        var tenantId = Guid.NewGuid();
+        await using var ctx = CreateContext(tenantId);
+        var plan = SaasPlan.Create("pro", "Pro Plan", "PRO", true, 99m, "USD", SaasBillingCycle.Monthly, true, false, 0, null);
+        ctx.SaasPlans.Add(plan);
+        var sales = SaasFeatureDefinition.Create("SALES", "Ventas", null, false, SaasFeatureKind.Module, "sales");
+        var customers = SaasFeatureDefinition.Create("CUSTOMERS", "Clientes", null, true, SaasFeatureKind.Quota);
+        ctx.SaasFeatureDefinitions.AddRange(sales, customers);
+        ctx.SaasPlanFeatures.Add(SaasPlanFeature.Create(plan.Id, sales.Id, true, null));
+        ctx.SaasPlanFeatures.Add(SaasPlanFeature.Create(plan.Id, customers.Id, true, 50));
+        ctx.TenantSaasSubscriptions.Add(TenantSaasSubscription.Create(tenantId, plan.Id, Guid.Empty));
+        await ctx.SaveChangesAsync();
+
+        var sut = CreateSut(ctx);
+        var snap = await sut.GetEntitlementsSnapshotAsync(tenantId);
+
+        snap.PlanCode.Should().Be("pro");
+        snap.PlanName.Should().Be("Pro Plan");
+        snap.EnabledModules.Should().Contain("sales");
+        snap.EnabledFeatures.Should().Contain("CUSTOMERS");
+        snap.Limits.Should().ContainKey("CUSTOMERS");
+        snap.Limits["CUSTOMERS"].Should().Be(50);
+        snap.HasModuleRestrictions.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Without_active_subscription_fail_closed()
     {
         var tenantId = Guid.NewGuid();

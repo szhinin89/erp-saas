@@ -11,11 +11,25 @@ export function normalizePolicyPermissionKey(key: string): string {
 interface PermissionsState {
   permissions: string[];
   planCode: string | null;
+  planName: string | null;
   enabledModules: string[];
+  enabledFeatures: string[];
+  limits: Record<string, number | null>;
+  hasModuleRestrictions: boolean;
   setPermissionSnapshot: (payload: {
     permissions: string[];
     planCode?: string | null;
     enabledModules?: string[];
+  }) => void;
+  /** Snapshot SaaS desde `GET /api/saas/entitlements/me` (F1). */
+  setEntitlementsSnapshot: (payload: {
+    permissions: string[];
+    planCode?: string | null;
+    planName?: string | null;
+    enabledModules: string[];
+    enabledFeatures?: string[];
+    limits?: Record<string, number | null>;
+    hasModuleRestrictions: boolean;
   }) => void;
   clearPermissions: () => void;
   has: (permissionKey: string) => boolean;
@@ -27,7 +41,11 @@ export const usePermissionsStore = create<PermissionsState>()(
     (set, get) => ({
       permissions: [],
       planCode: null,
+      planName: null,
       enabledModules: [],
+      enabledFeatures: [],
+      limits: {},
+      hasModuleRestrictions: true,
       hasHydrated: false,
       setPermissionSnapshot: ({ permissions, planCode = null, enabledModules = [] }) =>
         set({
@@ -35,7 +53,34 @@ export const usePermissionsStore = create<PermissionsState>()(
           planCode: planCode ?? null,
           enabledModules: enabledModules ?? [],
         }),
-      clearPermissions: () => set({ permissions: [], planCode: null, enabledModules: [] }),
+      setEntitlementsSnapshot: ({
+        permissions,
+        planCode = null,
+        planName = null,
+        enabledModules,
+        enabledFeatures = [],
+        limits = {},
+        hasModuleRestrictions,
+      }) =>
+        set({
+          permissions: permissions ?? [],
+          planCode: planCode ?? null,
+          planName: planName ?? null,
+          enabledModules: enabledModules ?? [],
+          enabledFeatures: enabledFeatures ?? [],
+          limits: limits ?? {},
+          hasModuleRestrictions,
+        }),
+      clearPermissions: () =>
+        set({
+          permissions: [],
+          planCode: null,
+          planName: null,
+          enabledModules: [],
+          enabledFeatures: [],
+          limits: {},
+          hasModuleRestrictions: true,
+        }),
       has: (permissionKey) => {
         if (permissionKey.startsWith('session:')) return true;
         const perms = get().permissions;

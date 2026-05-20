@@ -250,7 +250,7 @@ sequenceDiagram
 | 08 | `refactor/saas-enterprise-08-stop-legacy-json` | B8 | Overrides relacionales | Implementado |
 | 09 | `refactor/saas-enterprise-09-platform-query-migration` | B9 | Migración IQF | Implementado |
 | 10 | `refactor/saas-enterprise-10-legacy-cleanup` | B10 | Drop JSON + eventos | Implementado |
-| **11** | `refactor/saas-enterprise-11-entitlements-snapshot-e2e` | FRONT+BACK | `GET /api/saas/entitlements/me` + consumo FE + test | **Pendiente** (extensión alcance) |
+| **11** | `refactor/saas-enterprise-11-entitlements-snapshot-e2e` | FRONT+BACK | `GET /api/saas/entitlements/me` + consumo FE + test | **Implementado** |
 
 **Nota operativa:** `main` ya contiene 01–10. Iteración **11** es el primer entregable de la extensión FRONT+BACK (F1–F3). Iteraciones 01–10: verificación + gap mínimo sin reimplementar.
 
