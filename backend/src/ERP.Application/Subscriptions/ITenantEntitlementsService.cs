@@ -24,4 +24,10 @@ public interface ITenantEntitlementsService
     /// Límite efectivo por periodo para una feature medida; <c>null</c> si ilimitado o no aplica.
     /// </summary>
     Task<int?> GetLimitPerPeriodAsync(Guid tenantId, string featureCode, CancellationToken ct = default);
+
+    /// <summary>
+    /// Indica si el permiso RBAC (<c>{module}.{resource}.{action}</c>) está permitido por el plan del tenant.
+    /// Prefijos no asociados a un módulo comercial → <c>true</c> (no gated por suscripción).
+    /// </summary>
+    Task<bool> AllowsPermissionAsync(Guid tenantId, string permissionKey, CancellationToken ct = default);
 }

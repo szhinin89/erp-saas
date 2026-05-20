@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Subscriptions;
 using Microsoft.AspNetCore.Http;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Tenants.Interfaces;
@@ -12,15 +13,18 @@ public sealed class PermissionHandler : AuthorizationHandler<PermissionRequireme
     private readonly IAccessRepository _repo;
     private readonly ICurrentTenant _currentTenant;
     private readonly ITenantRepository _tenantRepository;
+    private readonly ITenantEntitlementsService _entitlements;
 
     public PermissionHandler(
         IAccessRepository repo,
         ICurrentTenant currentTenant,
-        ITenantRepository tenantRepository)
+        ITenantRepository tenantRepository,
+        ITenantEntitlementsService entitlements)
     {
         _repo = repo;
         _currentTenant = currentTenant;
         _tenantRepository = tenantRepository;
+        _entitlements = entitlements;
     }
 
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, PermissionRequirement requirement)
@@ -40,14 +44,15 @@ public sealed class PermissionHandler : AuthorizationHandler<PermissionRequireme
             return;
         }
 
-        var tenant = await _tenantRepository.GetByIdAsync(tenantId, ct);
-        if (tenant is null)
+        if (await _tenantRepository.GetByIdAsync(tenantId, ct) is null)
             return;
+
+        var planAllows = await _entitlements.AllowsPermissionAsync(tenantId, requirement.PermissionKey, ct);
 
         // SuperAdmin operating inside a tenant: full access to that tenant, plan-filtered.
         if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
         {
-            if (TenantSubscriptionCatalog.TenantAllowsPermission(tenant, requirement.PermissionKey))
+            if (planAllows)
                 context.Succeed(requirement);
             return;
         }
@@ -55,13 +60,13 @@ public sealed class PermissionHandler : AuthorizationHandler<PermissionRequireme
         // Admin: full access to everything the tenant's plan allows.
         if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
         {
-            if (TenantSubscriptionCatalog.TenantAllowsPermission(tenant, requirement.PermissionKey))
+            if (planAllows)
                 context.Succeed(requirement);
             return;
         }
 
         // Regular user: must have the module enabled AND an explicit profile permission.
-        if (!TenantSubscriptionCatalog.TenantAllowsPermission(tenant, requirement.PermissionKey))
+        if (!planAllows)
             return;
 
         var sub = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? context.User.FindFirst("sub")?.Value;

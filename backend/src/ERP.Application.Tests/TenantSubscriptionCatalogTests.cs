@@ -115,7 +115,55 @@ public sealed class TenantSubscriptionCatalogTests
     public void TenantAllowsPermission_gastos_when_gastos_enabled()
     {
         var t = Tenant.Create("T", "t", Guid.NewGuid(), enabledModuleKeys: new[] { "gastos" });
-        TenantSubscriptionCatalog.TenantAllowsPermission(t, "gastos.facturas.create").Should().BeTrue();
+        TenantSubscriptionCatalog.TenantAllowsPermission(t, "expenses.invoices.create").Should().BeTrue();
+    }
+
+    [Fact]
+    public void TryGetModuleKeyForPermission_maps_english_api_prefixes()
+    {
+        TenantSubscriptionCatalog.TryGetModuleKeyForPermission("sales.invoices.view", out var sales)
+            .Should().BeTrue();
+        sales.Should().Be("sales");
+
+        TenantSubscriptionCatalog.TryGetModuleKeyForPermission("inventory.products.view", out var inv)
+            .Should().BeTrue();
+        inv.Should().Be("inventory");
+
+        TenantSubscriptionCatalog.TryGetModuleKeyForPermission("purchases.orders.view", out var pur)
+            .Should().BeTrue();
+        pur.Should().Be("purchases");
+    }
+
+    [Fact]
+    public void TenantAllowsPermission_english_sales_when_legacy_ventas_enabled()
+    {
+        var t = Tenant.Create("T", "t", Guid.NewGuid(), enabledModuleKeys: new[] { "ventas" });
+        TenantSubscriptionCatalog.TenantAllowsPermission(t, "sales.customers.view").Should().BeTrue();
+    }
+
+    [Fact]
+    public void TenantAllowsPermission_english_inventory_denied_without_module()
+    {
+        var t = Tenant.Create("T", "t", Guid.NewGuid(), enabledModuleKeys: new[] { "ventas" });
+        TenantSubscriptionCatalog.TenantAllowsPermission(t, "inventory.products.view").Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task TenantAllowsPermissionAsync_delegates_to_entitlements()
+    {
+        var tenantId = Guid.NewGuid();
+        var entitlements = new Mock<ITenantEntitlementsService>(MockBehavior.Strict);
+        entitlements
+            .Setup(e => e.GetEnabledModuleKeysAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { "sales" });
+
+        (await TenantSubscriptionCatalog.TenantAllowsPermissionAsync(
+            tenantId, entitlements.Object, "sales.invoices.view")).Should().BeTrue();
+
+        (await TenantSubscriptionCatalog.TenantAllowsPermissionAsync(
+            tenantId, entitlements.Object, "inventory.products.view")).Should().BeFalse();
+
+        entitlements.Verify(e => e.GetEnabledModuleKeysAsync(tenantId, It.IsAny<CancellationToken>()), Times.Exactly(2));
     }
 
     [Fact]

@@ -1,6 +1,7 @@
 using System.Reflection;
 using MediatR;
 using ERP.Application.Common;
+using ERP.Application.Subscriptions;
 using ERP.Domain.Subscriptions.Exceptions;
 using ERP.Domain.Subscriptions.Interfaces;
 
@@ -14,11 +15,16 @@ public sealed class SubscriptionGateBehavior<TRequest, TResponse> : IPipelineBeh
     where TRequest : notnull
 {
     private readonly ISubscriptionService _subscriptions;
+    private readonly ITenantEntitlementsService _entitlements;
     private readonly ICurrentTenant _tenant;
 
-    public SubscriptionGateBehavior(ISubscriptionService subscriptions, ICurrentTenant tenant)
+    public SubscriptionGateBehavior(
+        ISubscriptionService subscriptions,
+        ITenantEntitlementsService entitlements,
+        ICurrentTenant tenant)
     {
         _subscriptions = subscriptions;
+        _entitlements = entitlements;
         _tenant = tenant;
     }
 
@@ -30,7 +36,7 @@ public sealed class SubscriptionGateBehavior<TRequest, TResponse> : IPipelineBeh
 
         var type = request.GetType();
         var require = type.GetCustomAttribute<RequireFeatureAttribute>(inherit: true);
-        if (require is not null && !await _subscriptions.HasFeatureAsync(tenantId, require.FeatureCode, ct))
+        if (require is not null && !await _entitlements.HasFeatureAsync(tenantId, require.FeatureCode, ct))
             throw new FeatureNotEntitledException(require.FeatureCode);
 
         var consume = type.GetCustomAttribute<ConsumeSubscriptionUnitsAttribute>(inherit: true);

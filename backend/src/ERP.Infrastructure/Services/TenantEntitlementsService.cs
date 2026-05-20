@@ -1,3 +1,4 @@
+using ERP.Application.Common;
 using ERP.Application.Subscriptions;
 using ERP.Domain.Subscriptions;
 using ERP.Domain.Subscriptions.Entities;
@@ -50,6 +51,9 @@ public sealed class TenantEntitlementsService : ITenantEntitlementsService
             .FirstOrDefault(f => string.Equals(f.Code, code, StringComparison.Ordinal))
             ?.IsEntitled ?? false;
     }
+
+    public Task<bool> AllowsPermissionAsync(Guid tenantId, string permissionKey, CancellationToken ct = default) =>
+        TenantSubscriptionCatalog.TenantAllowsPermissionAsync(tenantId, this, permissionKey, ct);
 
     public async Task<int?> GetLimitPerPeriodAsync(Guid tenantId, string featureCode, CancellationToken ct = default)
     {

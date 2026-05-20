@@ -57,14 +57,21 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
             return Result<MyPermissionsDto>.Success(new MyPermissionsDto(Array.Empty<string>(), plan, modules));
 
         var items = await _repo.GetProfilePermissionsAsync(_currentTenant.TenantId, membership.ProfileId.Value, ct);
-        var allowed = items
+        var candidateKeys = items
             .Where(p => p.IsAllowed)
             .Select(p => p.PermissionKey)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Where(p => tenant is null || TenantSubscriptionCatalog.TenantAllowsPermission(tenant, p))
-            .OrderBy(x => x)
-            .ToList();
+            .Distinct(StringComparer.OrdinalIgnoreCase);
 
+        var allowed = new List<string>();
+        foreach (var key in candidateKeys)
+        {
+            if (tenant is null ||
+                await TenantSubscriptionCatalog.TenantAllowsPermissionAsync(
+                    _currentTenant.TenantId, _entitlements, key, ct))
+                allowed.Add(key);
+        }
+
+        allowed.Sort(StringComparer.OrdinalIgnoreCase);
         return Result<MyPermissionsDto>.Success(new MyPermissionsDto(allowed, plan, modules));
     }
 }
