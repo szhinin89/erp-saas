@@ -68,6 +68,20 @@ public sealed class TenantSubscriptionCatalogTests
     }
 
     [Fact]
+    public void ValidateModuleKeysOrThrow_accepts_legacy_spanish_alias()
+    {
+        var act = () => TenantSubscriptionCatalog.ValidateModuleKeysOrThrow(new[] { "ventas", "inventario" });
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void NormalizeModuleKeysInput_maps_spanish_to_canonical()
+    {
+        TenantSubscriptionCatalog.NormalizeModuleKeysInput(new[] { "ventas", "INVENTORY" })
+            .Should().Equal("inventory", "sales");
+    }
+
+    [Fact]
     public void HasModuleRestrictionsFromModules_full_canonical_catalog_is_unrestricted()
     {
         TenantSubscriptionCatalog.HasModuleRestrictionsFromModules(TenantSubscriptionCatalog.CanonicalModuleKeys)

@@ -43,9 +43,9 @@ public record TenantDto(
             tenant.Priority,
             tenant.ElectronicBillingTrialEnabled,
             tenant.PlanCode,
-            ToModuleList(enabledModules ?? TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)),
+            ToModuleList(enabledModules ?? Array.Empty<string>()),
             TenantSubscriptionCatalog.HasModuleRestrictionsFromModules(
-                enabledModules ?? TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant)),
+                enabledModules ?? Array.Empty<string>()),
             tenant.Currency,
             tenant.Language,
             tenant.Timezone,

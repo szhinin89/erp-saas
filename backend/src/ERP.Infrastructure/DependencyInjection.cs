@@ -69,6 +69,7 @@ public static class DependencyInjection
         services.AddScoped<IUnifiedDocumentSync, UnifiedDocumentSync>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IPlatformQueryAccessor, PlatformQueryAccessor>();
+        services.AddScoped<ITenantSubscriptionOverridesService, TenantSubscriptionOverridesService>();
         services.AddScoped<ICurrentTenant, CurrentTenantService>();
         services.AddScoped<ICurrentUser, CurrentUserService>();
         services.AddScoped<IAccountingRepository, AccountingRepository>();

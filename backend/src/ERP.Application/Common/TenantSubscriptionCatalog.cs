@@ -201,6 +201,23 @@ public static class TenantSubscriptionCatalog
         return false;
     }
 
+    /// <summary>Normaliza clave de entrada (español legacy o inglés) a módulo canónico.</summary>
+    public static string NormalizeModuleKey(string key) => NormalizeStoredModuleKey(key);
+
+    /// <summary>Lista normalizada, sin duplicados, ordenada.</summary>
+    public static IReadOnlyList<string> NormalizeModuleKeysInput(IReadOnlyList<string> keys)
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var k in keys)
+        {
+            var n = NormalizeModuleKey(k);
+            if (n.Length > 0)
+                set.Add(n);
+        }
+
+        return set.OrderBy(x => x, StringComparer.Ordinal).ToList();
+    }
+
     private static string NormalizeStoredModuleKey(string key)
     {
         var trimmed = (key ?? string.Empty).Trim().ToLowerInvariant();
@@ -209,15 +226,25 @@ public static class TenantSubscriptionCatalog
             : trimmed;
     }
 
+    public static bool IsKnownModuleKey(string key)
+    {
+        var n = NormalizeModuleKey(key);
+        if (n.Length == 0)
+            return false;
+        return CanonicalModuleKeys.Contains(n, StringComparer.OrdinalIgnoreCase);
+    }
+
     public static void ValidateModuleKeysOrThrow(IReadOnlyList<string> keys)
     {
         foreach (var k in keys)
         {
-            var n = (k ?? string.Empty).Trim().ToLowerInvariant();
+            var n = NormalizeModuleKey(k);
             if (n.Length == 0)
                 throw new ArgumentException("Módulo vacío no permitido.", nameof(keys));
-            if (!AllModuleKeys.Contains(n, StringComparer.OrdinalIgnoreCase))
-                throw new ArgumentException($"Módulo desconocido: '{k}'. Válidos: {string.Join(", ", AllModuleKeys)}.", nameof(keys));
+            if (!CanonicalModuleKeys.Contains(n, StringComparer.OrdinalIgnoreCase))
+                throw new ArgumentException(
+                    $"Módulo desconocido: '{k}'. Válidos: {string.Join(", ", CanonicalModuleKeys)}.",
+                    nameof(keys));
         }
     }
 }

@@ -12,15 +12,18 @@ public sealed class UpdateTenantSubscriptionHandler : IRequestHandler<UpdateTena
     private readonly ITenantRepository _repository;
     private readonly ICurrentUser _currentUser;
     private readonly ISessionModulesResolver _sessionModules;
+    private readonly ITenantSubscriptionOverridesService _overrides;
 
     public UpdateTenantSubscriptionHandler(
         ITenantRepository repository,
         ICurrentUser currentUser,
-        ISessionModulesResolver sessionModules)
+        ISessionModulesResolver sessionModules,
+        ITenantSubscriptionOverridesService overrides)
     {
         _repository = repository;
         _currentUser = currentUser;
         _sessionModules = sessionModules;
+        _overrides = overrides;
     }
 
     public async Task<Result<TenantDto>> Handle(UpdateTenantSubscriptionCommand command, CancellationToken ct)
@@ -32,7 +35,16 @@ public sealed class UpdateTenantSubscriptionHandler : IRequestHandler<UpdateTena
         if (tenant is null)
             return Result<TenantDto>.Failure("Empresa no encontrada.");
 
-        tenant.SetSubscription(command.PlanCode, command.EnabledModules, _currentUser.UserId);
+        tenant.SetPlanCode(command.PlanCode, _currentUser.UserId);
+        await _repository.SaveChangesAsync(ct);
+
+        await _overrides.ApplyModuleOverridesAsync(
+            tenant.Id,
+            command.EnabledModules is { Count: > 0 }
+                ? TenantSubscriptionCatalog.NormalizeModuleKeysInput(command.EnabledModules)
+                : null,
+            _currentUser.UserId,
+            ct);
         await _repository.SaveChangesAsync(ct);
 
         var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, tenant, ct);

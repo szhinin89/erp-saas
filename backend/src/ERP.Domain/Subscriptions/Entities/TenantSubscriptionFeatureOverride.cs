@@ -35,4 +35,10 @@ public sealed class TenantSubscriptionFeatureOverride : AuditableEntity
         o.SetCreated(createdBy);
         return o;
     }
+
+    public void SetEnabled(bool isEnabled, Guid updatedBy)
+    {
+        IsEnabled = isEnabled;
+        SetUpdated(updatedBy);
+    }
 }

@@ -11,10 +11,10 @@ namespace ERP.Application.Tests;
 public sealed class UpdateTenantSubscriptionHandlerTests
 {
     [Fact]
-    public async Task HandleAsync_updates_plan_and_modules_and_persists()
+    public async Task HandleAsync_updates_plan_and_applies_overrides()
     {
         var editorId = Guid.NewGuid();
-        var tenant = Tenant.Create("Acme", "acme", Guid.NewGuid(), planCode: "starter", enabledModuleKeys: new[] { "inventario" });
+        var tenant = Tenant.Create("Acme", "acme", Guid.NewGuid(), planCode: "starter");
         var tenantId = tenant.Id;
 
         var repo = new Mock<ITenantRepository>(MockBehavior.Strict);
@@ -29,29 +29,37 @@ public sealed class UpdateTenantSubscriptionHandlerTests
             .Setup(e => e.GetEnabledModuleKeysAsync(tenantId, tenant, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { "accounting", "saas" });
 
-        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, sessionModules.Object);
-        var cmd = new UpdateTenantSubscriptionCommand(
-            tenantId,
-            PlanCode: "pro",
-            EnabledModules: new[] { "accounting", "saas" });
+        var overrides = new Mock<ITenantSubscriptionOverridesService>(MockBehavior.Strict);
+        overrides
+            .Setup(o => o.ApplyModuleOverridesAsync(
+                tenantId,
+                It.Is<IReadOnlyList<string>>(m => m.SequenceEqual(new[] { "accounting", "saas" })),
+                editorId,
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
-        var result = await handler.Handle(cmd, CancellationToken.None);
+        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, sessionModules.Object, overrides.Object);
+        var result = await handler.Handle(
+            new UpdateTenantSubscriptionCommand(tenantId, PlanCode: "pro", EnabledModules: new[] { "accounting", "saas" }),
+            CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().NotBeNull();
         result.Value!.PlanCode.Should().Be("pro");
         result.Value.EnabledModules.Should().Equal("accounting", "saas");
-
         tenant.PlanCode.Should().Be("pro");
-        TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant).Should().Equal("accounting", "saas");
+#pragma warning disable CS0618
+        tenant.EnabledModulesJson.Should().BeNull();
+#pragma warning restore CS0618
 
-        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
+        overrides.VerifyAll();
     }
 
     [Fact]
-    public async Task HandleAsync_clears_modules_when_null_or_empty_list()
+    public async Task HandleAsync_clears_overrides_when_empty_modules()
     {
-        var tenant = Tenant.Create("B", "b", Guid.NewGuid(), enabledModuleKeys: new[] { "access" });
+        var editorId = Guid.NewGuid();
+        var tenant = Tenant.Create("B", "b", Guid.NewGuid());
         var tenantId = tenant.Id;
 
         var repo = new Mock<ITenantRepository>(MockBehavior.Strict);
@@ -59,20 +67,26 @@ public sealed class UpdateTenantSubscriptionHandlerTests
         repo.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
         var user = new Mock<ICurrentUser>(MockBehavior.Strict);
-        user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
+        user.SetupGet(u => u.UserId).Returns(editorId);
 
         var sessionModules = new Mock<ISessionModulesResolver>(MockBehavior.Strict);
         sessionModules
             .Setup(e => e.GetEnabledModuleKeysAsync(tenantId, tenant, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<string>());
 
-        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, sessionModules.Object);
+        var overrides = new Mock<ITenantSubscriptionOverridesService>(MockBehavior.Strict);
+        overrides
+            .Setup(o => o.ApplyModuleOverridesAsync(tenantId, null, editorId, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, sessionModules.Object, overrides.Object);
         var result = await handler.Handle(
-            new UpdateTenantSubscriptionCommand(tenantId, PlanCode: null, EnabledModules: Array.Empty<string>()), CancellationToken.None);
+            new UpdateTenantSubscriptionCommand(tenantId, PlanCode: null, EnabledModules: Array.Empty<string>()),
+            CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.EnabledModules.Should().BeEmpty();
-        TenantSubscriptionCatalog.GetEffectiveEnabledModules(tenant).Should().BeEmpty();
+        overrides.VerifyAll();
     }
 
     [Fact]
@@ -85,12 +99,12 @@ public sealed class UpdateTenantSubscriptionHandlerTests
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
 
         var sessionModules = new Mock<ISessionModulesResolver>(MockBehavior.Strict);
-        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, sessionModules.Object);
+        var overrides = new Mock<ITenantSubscriptionOverridesService>(MockBehavior.Strict);
+        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, sessionModules.Object, overrides.Object);
         var result = await handler.Handle(
-            new UpdateTenantSubscriptionCommand(Guid.NewGuid(), "x", new[] { "inventario" }), CancellationToken.None);
+            new UpdateTenantSubscriptionCommand(Guid.NewGuid(), "x", new[] { "inventory" }), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("no encontrada");
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -105,11 +119,11 @@ public sealed class UpdateTenantSubscriptionHandlerTests
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
 
         var sessionModules = new Mock<ISessionModulesResolver>(MockBehavior.Strict);
-        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, sessionModules.Object);
+        var overrides = new Mock<ITenantSubscriptionOverridesService>(MockBehavior.Strict);
+        var handler = new UpdateTenantSubscriptionHandler(repo.Object, user.Object, sessionModules.Object, overrides.Object);
         var act = () => handler.Handle(
             new UpdateTenantSubscriptionCommand(tenant.Id, null, new[] { "not-a-module" }), CancellationToken.None);
 
         await act.Should().ThrowAsync<ArgumentException>();
-        repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 }

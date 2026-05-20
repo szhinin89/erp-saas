@@ -26,6 +26,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
     private readonly ISaasCatalogQuery _saasCatalogQuery;
     private readonly ITenantOnboardingService _onboarding;
     private readonly ISessionModulesResolver _sessionModules;
+    private readonly ITenantSubscriptionOverridesService _overrides;
 
     public SuperAdminCreateTenantWithAdminHandler(
         ITenantRepository tenantRepository,
@@ -37,7 +38,8 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         IPasswordHasher passwordHasher,
         ISaasCatalogQuery saasCatalogQuery,
         ITenantOnboardingService onboarding,
-        ISessionModulesResolver sessionModules)
+        ISessionModulesResolver sessionModules,
+        ITenantSubscriptionOverridesService overrides)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
@@ -49,6 +51,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         _saasCatalogQuery = saasCatalogQuery;
         _onboarding = onboarding;
         _sessionModules = sessionModules;
+        _overrides = overrides;
     }
 
     public Task<Result<SessionResponseDto>> HandleAsync(SuperAdminCreateTenantWithAdminCommand command, CancellationToken ct = default)
@@ -133,6 +136,16 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         // Un solo SaveChanges (mismo DbContext): evita confusión y persiste tenant + identity + membership en una transacción.
         await _accessRepository.SaveChangesAsync(ct);
 
+        if (moduleKeys is { Count: > 0 })
+        {
+            await _overrides.ApplyModuleOverridesAsync(
+                tenant.Id,
+                TenantSubscriptionCatalog.NormalizeModuleKeysInput(moduleKeys),
+                _currentUser.UserId,
+                ct);
+            await _accessRepository.SaveChangesAsync(ct);
+        }
+
         // Onboard the new tenant: default profiles, Consumidor Final, main branch, main warehouse.
         await _onboarding.OnboardAsync(tenant.Id, _currentUser.UserId, ct);
 
@@ -211,6 +224,16 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
 
         await _accessRepository.SaveChangesAsync(ct);
 
+        if (moduleKeys is { Count: > 0 })
+        {
+            await _overrides.ApplyModuleOverridesAsync(
+                tenant.Id,
+                TenantSubscriptionCatalog.NormalizeModuleKeysInput(moduleKeys),
+                _currentUser.UserId,
+                ct);
+            await _accessRepository.SaveChangesAsync(ct);
+        }
+
         var sessionToken = _tokenService.GenerateSessionToken(existingUser, tenant.Id, "Admin");
         var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, tenant, ct);
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
@@ -264,11 +287,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         if (enabledModules is null || enabledModules.Count == 0)
             return (pc, null);
 
-        var cleaned = enabledModules
-            .Select(x => (x ?? string.Empty).Trim().ToLowerInvariant())
-            .Where(x => x.Length > 0)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var cleaned = TenantSubscriptionCatalog.NormalizeModuleKeysInput(enabledModules);
         return cleaned.Count == 0 ? (pc, null) : (pc, cleaned);
     }
 }

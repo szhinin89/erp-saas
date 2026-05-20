@@ -1,5 +1,3 @@
-using System.Linq;
-using System.Text.Json;
 using ERP.Domain.Common;
 
 namespace ERP.Domain.Tenants.Entities;
@@ -86,30 +84,33 @@ public class Tenant : AuditableEntity
         return tenant;
     }
 
-    /// <summary>Actualiza plan y módulos contratados (JSON interno).</summary>
+    /// <summary>Actualiza el plan comercial. Los módulos efectivos viven en suscripción + overrides (Fase B).</summary>
+    public void SetPlanCode(string? planCode, Guid updatedBy)
+    {
+        PlanCode = string.IsNullOrWhiteSpace(planCode) ? null : planCode.Trim();
+#pragma warning disable CS0618
+        EnabledModulesJson = null;
+#pragma warning restore CS0618
+        SetUpdated(updatedBy);
+    }
+
+    /// <summary>
+    /// Compat API: solo persiste <see cref="PlanCode"/>. <paramref name="enabledModuleKeys"/> lo aplica
+    /// <c>ITenantSubscriptionOverridesService</c> tras <c>SaveChanges</c>.
+    /// </summary>
     public void SetSubscription(string? planCode, IReadOnlyList<string>? enabledModuleKeys, Guid updatedBy)
     {
-        ApplySubscription(planCode, enabledModuleKeys);
-        SetUpdated(updatedBy);
+        _ = enabledModuleKeys;
+        SetPlanCode(planCode, updatedBy);
     }
 
     private void ApplySubscription(string? planCode, IReadOnlyList<string>? enabledModuleKeys)
     {
+        _ = enabledModuleKeys;
         PlanCode = string.IsNullOrWhiteSpace(planCode) ? null : planCode.Trim();
-        if (enabledModuleKeys is null || enabledModuleKeys.Count == 0)
-        {
-            EnabledModulesJson = null;
-            return;
-        }
-
-        var normalized = enabledModuleKeys
-            .Select(k => (k ?? string.Empty).Trim().ToLowerInvariant())
-            .Where(k => k.Length > 0)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(k => k, StringComparer.Ordinal)
-            .ToList();
-
-        EnabledModulesJson = normalized.Count == 0 ? null : JsonSerializer.Serialize(normalized);
+#pragma warning disable CS0618
+        EnabledModulesJson = null;
+#pragma warning restore CS0618
     }
 
     public void UpdateCompanyData(

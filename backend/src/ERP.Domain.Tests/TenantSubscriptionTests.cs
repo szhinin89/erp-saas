@@ -1,4 +1,3 @@
-using System.Text.Json;
 using FluentAssertions;
 using ERP.Domain.Tenants.Entities;
 
@@ -7,7 +6,7 @@ namespace ERP.Domain.Tests;
 public sealed class TenantSubscriptionTests
 {
     [Fact]
-    public void Create_trims_plan_code_and_normalizes_module_json()
+    public void Create_trims_plan_code_and_does_not_persist_module_json()
     {
         var tenant = Tenant.Create(
             "Demo",
@@ -17,39 +16,47 @@ public sealed class TenantSubscriptionTests
             enabledModuleKeys: new[] { "ACCESS", "Inventario", "access" });
 
         tenant.PlanCode.Should().Be("enterprise");
-        tenant.EnabledModulesJson.Should().NotBeNull();
-        JsonSerializer.Deserialize<List<string>>(tenant.EnabledModulesJson!)!
-            .Should().Equal("access", "inventario");
+#pragma warning disable CS0618
+        tenant.EnabledModulesJson.Should().BeNull();
+#pragma warning restore CS0618
     }
 
     [Fact]
     public void Create_without_modules_leaves_json_null()
     {
         var tenant = Tenant.Create("X", "x", Guid.NewGuid(), planCode: null, enabledModuleKeys: null);
+#pragma warning disable CS0618
         tenant.EnabledModulesJson.Should().BeNull();
+#pragma warning restore CS0618
         tenant.PlanCode.Should().BeNull();
     }
 
     [Fact]
-    public void SetSubscription_clears_restrictions_when_empty_modules()
+    public void SetPlanCode_clears_legacy_json()
     {
-        var tenant = Tenant.Create("Y", "y", Guid.NewGuid(), enabledModuleKeys: new[] { "saas" });
-        tenant.EnabledModulesJson.Should().NotBeNull();
+        var tenant = Tenant.Create("Y", "y", Guid.NewGuid());
+#pragma warning disable CS0618
+        typeof(Tenant).GetProperty(nameof(Tenant.EnabledModulesJson))!
+            .SetValue(tenant, "[\"saas\"]");
+#pragma warning restore CS0618
 
-        var editor = Guid.NewGuid();
-        tenant.SetSubscription(planCode: "lite", enabledModuleKeys: null, updatedBy: editor);
+        tenant.SetPlanCode("lite", Guid.NewGuid());
 
         tenant.PlanCode.Should().Be("lite");
+#pragma warning disable CS0618
         tenant.EnabledModulesJson.Should().BeNull();
+#pragma warning restore CS0618
     }
 
     [Fact]
-    public void SetSubscription_replaces_modules()
+    public void SetSubscription_only_updates_plan_code()
     {
-        var tenant = Tenant.Create("Z", "z", Guid.NewGuid(), enabledModuleKeys: new[] { "inventario" });
-        tenant.SetSubscription("p", new[] { "accounting" }, Guid.NewGuid());
+        var tenant = Tenant.Create("Z", "z", Guid.NewGuid(), planCode: "starter");
+        tenant.SetSubscription("pro", new[] { "inventario" }, Guid.NewGuid());
 
-        tenant.PlanCode.Should().Be("p");
-        JsonSerializer.Deserialize<List<string>>(tenant.EnabledModulesJson!)!.Should().Equal("accounting");
+        tenant.PlanCode.Should().Be("pro");
+#pragma warning disable CS0618
+        tenant.EnabledModulesJson.Should().BeNull();
+#pragma warning restore CS0618
     }
 }

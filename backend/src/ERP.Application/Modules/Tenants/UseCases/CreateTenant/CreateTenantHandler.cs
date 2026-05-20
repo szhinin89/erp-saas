@@ -1,5 +1,6 @@
 using MediatR;
 using ERP.Application.Common;
+using ERP.Application.Subscriptions;
 using ERP.Application.Tenants.DTOs;
 using ERP.Domain.Tenants.Entities;
 using ERP.Domain.Tenants.Interfaces;
@@ -11,15 +12,21 @@ public class CreateTenantHandler : IRequestHandler<CreateTenantCommand, Result<T
     private readonly ITenantRepository _repository;
     private readonly ICurrentUser _currentUser;
     private readonly IDeploymentFeatureFlags _deployment;
+    private readonly ITenantSubscriptionOverridesService _overrides;
+    private readonly ISessionModulesResolver _sessionModules;
 
     public CreateTenantHandler(
         ITenantRepository repository,
         ICurrentUser currentUser,
-        IDeploymentFeatureFlags deployment)
+        IDeploymentFeatureFlags deployment,
+        ITenantSubscriptionOverridesService overrides,
+        ISessionModulesResolver sessionModules)
     {
         _repository = repository;
         _currentUser = currentUser;
         _deployment = deployment;
+        _overrides = overrides;
+        _sessionModules = sessionModules;
     }
 
     public async Task<Result<TenantDto>> Handle(
@@ -55,6 +62,17 @@ public class CreateTenantHandler : IRequestHandler<CreateTenantCommand, Result<T
         await _repository.AddAsync(tenant, ct);
         await _repository.SaveChangesAsync(ct);
 
-        return Result<TenantDto>.Success(TenantDto.FromTenant(tenant));
+        if (command.EnabledModules is { Count: > 0 })
+        {
+            await _overrides.ApplyModuleOverridesAsync(
+                tenant.Id,
+                TenantSubscriptionCatalog.NormalizeModuleKeysInput(command.EnabledModules),
+                _currentUser.UserId,
+                ct);
+            await _repository.SaveChangesAsync(ct);
+        }
+
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, tenant, ct);
+        return Result<TenantDto>.Success(TenantDto.FromTenant(tenant, modules));
     }
 }
