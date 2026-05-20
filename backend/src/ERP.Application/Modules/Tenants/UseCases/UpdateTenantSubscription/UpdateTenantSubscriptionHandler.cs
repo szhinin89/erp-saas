@@ -47,7 +47,7 @@ public sealed class UpdateTenantSubscriptionHandler : IRequestHandler<UpdateTena
             ct);
         await _repository.SaveChangesAsync(ct);
 
-        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, tenant, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, ct);
         return Result<TenantDto>.Success(TenantDto.FromTenant(tenant, modules));
     }
 }

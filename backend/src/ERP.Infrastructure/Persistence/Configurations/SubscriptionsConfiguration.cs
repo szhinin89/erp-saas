@@ -104,6 +104,29 @@ public sealed class TenantSubscriptionFeatureOverrideConfiguration : IEntityType
     }
 }
 
+public sealed class TenantSaasSubscriptionEventConfiguration : IEntityTypeConfiguration<TenantSaasSubscriptionEvent>
+{
+    public void Configure(EntityTypeBuilder<TenantSaasSubscriptionEvent> builder)
+    {
+        builder.ToTable("tenant_saas_subscription_events");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasColumnName("id");
+        builder.Property(x => x.TenantId).HasColumnName("tenant_id").IsRequired();
+        builder.Property(x => x.SubscriptionId).HasColumnName("subscription_id");
+        builder.Property(x => x.EventType).HasColumnName("event_type").HasMaxLength(64).IsRequired();
+        builder.Property(x => x.PreviousPlanId).HasColumnName("previous_plan_id");
+        builder.Property(x => x.NewPlanId).HasColumnName("new_plan_id");
+        builder.Property(x => x.MetadataJson).HasColumnName("metadata_json").HasColumnType("jsonb");
+        builder.Property(x => x.OccurredAtUtc).HasColumnName("occurred_at_utc").IsRequired();
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(x => x.CreatedBy).HasColumnName("created_by");
+        builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
+        builder.HasIndex(x => new { x.TenantId, x.OccurredAtUtc })
+            .HasDatabaseName("ix_tenant_saas_subscription_events_tenant_occurred");
+    }
+}
+
 public sealed class TenantSubscriptionUsageConfiguration : IEntityTypeConfiguration<TenantSubscriptionUsage>
 {
     public void Configure(EntityTypeBuilder<TenantSubscriptionUsage> builder)

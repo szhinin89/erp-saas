@@ -71,7 +71,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
 
         var legacyModules = tenant is null
             ? Array.Empty<string>()
-            : await _sessionModules.GetEnabledModuleKeysAsync(v.TenantId, tenant, ct);
+            : await _sessionModules.GetEnabledModuleKeysAsync(v.TenantId, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id, user.FullName, user.Email.Value,
@@ -104,7 +104,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
 
         var accessToken = _accessTokenService.GenerateSessionToken(user, v.TenantId, membership.Role);
 
-        var modules = await _sessionModules.GetEnabledModuleKeysAsync(v.TenantId, tenant, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(v.TenantId, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id, user.FullName, user.Email.Value,

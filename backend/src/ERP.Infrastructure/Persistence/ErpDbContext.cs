@@ -163,14 +163,33 @@ public class ErpDbContext : DbContext
             if (!hasValidPlan)
             {
                 if (existing is not null && existing.Status == TenantSubscriptionStatus.Active)
+                {
+                    var previousPlanId = existing.PlanId;
                     existing.Cancel(Guid.Empty);
+                    await TenantSaasSubscriptionEvents.AddAsync(
+                        TenantSaasSubscriptionEvent.Create(
+                            tenantId,
+                            TenantSaasSubscriptionEvent.Types.PlanCancelled,
+                            Guid.Empty,
+                            subscriptionId: existing.Id,
+                            previousPlanId: previousPlanId),
+                        cancellationToken);
+                }
+
                 continue;
             }
 
             if (existing is null)
             {
-                await TenantSaasSubscriptions.AddAsync(
-                    TenantSaasSubscription.Create(tenantId, planId, Guid.Empty),
+                var created = TenantSaasSubscription.Create(tenantId, planId, Guid.Empty);
+                await TenantSaasSubscriptions.AddAsync(created, cancellationToken);
+                await TenantSaasSubscriptionEvents.AddAsync(
+                    TenantSaasSubscriptionEvent.Create(
+                        tenantId,
+                        TenantSaasSubscriptionEvent.Types.PlanAssigned,
+                        Guid.Empty,
+                        subscriptionId: created.Id,
+                        newPlanId: planId),
                     cancellationToken);
                 continue;
             }
@@ -178,7 +197,17 @@ public class ErpDbContext : DbContext
             if (existing.PlanId == planId && existing.Status == TenantSubscriptionStatus.Active)
                 continue;
 
+            var priorPlanId = existing.PlanId;
             existing.ReassignPlan(planId, Guid.Empty);
+            await TenantSaasSubscriptionEvents.AddAsync(
+                TenantSaasSubscriptionEvent.Create(
+                    tenantId,
+                    TenantSaasSubscriptionEvent.Types.PlanChanged,
+                    Guid.Empty,
+                    subscriptionId: existing.Id,
+                    previousPlanId: priorPlanId,
+                    newPlanId: planId),
+                cancellationToken);
         }
     }
 
@@ -284,6 +313,7 @@ public class ErpDbContext : DbContext
     public DbSet<SaasPlan> SaasPlans => Set<SaasPlan>();
     public DbSet<SaasPlanFeature> SaasPlanFeatures => Set<SaasPlanFeature>();
     public DbSet<TenantSaasSubscription> TenantSaasSubscriptions => Set<TenantSaasSubscription>();
+    public DbSet<TenantSaasSubscriptionEvent> TenantSaasSubscriptionEvents => Set<TenantSaasSubscriptionEvent>();
     public DbSet<TenantSubscriptionFeatureOverride> TenantSubscriptionFeatureOverrides => Set<TenantSubscriptionFeatureOverride>();
     public DbSet<TenantSubscriptionUsage> TenantSubscriptionUsages => Set<TenantSubscriptionUsage>();
 

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ERP.Application.Common;
 using ERP.Application.Subscriptions;
 using ERP.Domain.Subscriptions;
@@ -58,7 +59,17 @@ public sealed class TenantSubscriptionOverridesService : ITenantSubscriptionOver
         if (requestedModuleKeys is null || requestedModuleKeys.Count == 0)
         {
             if (moduleOverrides.Count > 0)
+            {
                 _db.TenantSubscriptionFeatureOverrides.RemoveRange(moduleOverrides);
+                await _db.TenantSaasSubscriptionEvents.AddAsync(
+                    TenantSaasSubscriptionEvent.Create(
+                        tenantId,
+                        TenantSaasSubscriptionEvent.Types.ModuleOverridesCleared,
+                        actorId,
+                        subscriptionId: subscription.Id),
+                    ct);
+            }
+
             return;
         }
 
@@ -97,6 +108,16 @@ public sealed class TenantSubscriptionOverridesService : ITenantSubscriptionOver
                 existingOv.SetEnabled(shouldEnable, actorId);
             }
         }
+
+        var metadata = JsonSerializer.Serialize(new { modules = allowed.OrderBy(x => x).ToArray() });
+        await _db.TenantSaasSubscriptionEvents.AddAsync(
+            TenantSaasSubscriptionEvent.Create(
+                tenantId,
+                TenantSaasSubscriptionEvent.Types.ModuleOverridesApplied,
+                actorId,
+                subscriptionId: subscription.Id,
+                metadataJson: metadata),
+            ct);
     }
 
     private static string ResolveModuleKey(string? resourceRef, string code)

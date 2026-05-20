@@ -73,7 +73,7 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthRespo
 
         var modules = tenantEntity is null
             ? Array.Empty<string>()
-            : await _sessionModules.GetEnabledModuleKeysAsync(user.TenantId, tenantEntity, ct);
+            : await _sessionModules.GetEnabledModuleKeysAsync(user.TenantId, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id,

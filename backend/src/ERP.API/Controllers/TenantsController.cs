@@ -53,7 +53,7 @@ public class TenantsController : ControllerBase
         if (tenant is null)
             return this.ApiNotFound("Empresa no encontrada.");
 
-        var modules = await _sessionModules.GetEnabledModuleKeysAsync(id, tenant, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(id, ct);
         return this.ApiOk(TenantDto.FromTenant(tenant, modules));
     }
 

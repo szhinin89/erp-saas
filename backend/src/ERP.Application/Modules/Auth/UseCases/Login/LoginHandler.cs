@@ -106,8 +106,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
             var (identityRefresh, identityRefreshExpiry) = await _refreshTokenService.CreateAsync(
                 identityUser.Id, membership.TenantId, RefreshUserType.Identity, ct);
 
-            var identityModules = await _sessionModules.GetEnabledModuleKeysAsync(
-                membership.TenantId, identityTenant, ct);
+            var identityModules = await _sessionModules.GetEnabledModuleKeysAsync(membership.TenantId, ct);
 
             return Result<AuthResponseDto>.Success(new AuthResponseDto(
                 identityUser.Id,
@@ -157,7 +156,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
 
         var legacyModules = tenantEntity is null
             ? Array.Empty<string>()
-            : await _sessionModules.GetEnabledModuleKeysAsync(single.TenantId, tenantEntity, ct);
+            : await _sessionModules.GetEnabledModuleKeysAsync(single.TenantId, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             single.Id,

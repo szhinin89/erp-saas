@@ -42,8 +42,7 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
 
         var tenant = await _tenantRepository.GetByIdAsync(_currentTenant.TenantId, ct);
         var plan = tenant?.PlanCode;
-        var modules = await _sessionModules.GetEnabledModuleKeysAsync(
-            _currentTenant.TenantId, tenant, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(_currentTenant.TenantId, ct);
 
         var role = _currentUser.Role ?? string.Empty;
         if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))

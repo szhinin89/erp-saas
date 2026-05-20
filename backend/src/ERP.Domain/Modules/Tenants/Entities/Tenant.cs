@@ -9,40 +9,24 @@ public class Tenant : AuditableEntity
     public bool IsActive { get; private set; }
     public PasswordResetMode PasswordResetMode { get; private set; } = PasswordResetMode.Disabled;
 
-    /// <summary>Código comercial del plan (p. ej. starter, professional). Opcional.</summary>
+    /// <summary>Código comercial del plan (p. ej. starter). Entitlements en <c>TenantSaasSubscription</c>.</summary>
     public string? PlanCode { get; private set; }
 
-    /// <summary>
-    /// Caché legacy de módulos (SuperAdmin). No es autoridad de entitlements; ver <c>TenantSaasSubscription</c>.
-    /// Null/vacío ya no implica todos los módulos en runtime (fail-closed en sesión).
-    /// </summary>
-    [Obsolete("Legacy module cache. Authoritative entitlements: TenantSaasSubscription + SaasPlanFeature.")]
-    public string? EnabledModulesJson { get; private set; }
-
-    // ── Datos legales/comerciales (opcionales) ─────────────────────
     public string? Ruc { get; private set; }
-    public string? ShortName { get; private set; }          // abreviado
-    public string? TradeName { get; private set; }          // nombre comercial
-    public string? Dinardap { get; private set; }           // identificador/flag (según necesidad)
-    public string? LogoUrl { get; private set; }            // url/path logo
+    public string? ShortName { get; private set; }
+    public string? TradeName { get; private set; }
+    public string? Dinardap { get; private set; }
+    public string? LogoUrl { get; private set; }
 
-    // ── Orden / prioridad (para listados) ─────────────────────────
     public int DisplayOrder { get; private set; }
     public int Priority { get; private set; }
 
-    // ── Parámetros globales por empresa (dependen de plan comercial) ──
     public bool ElectronicBillingTrialEnabled { get; private set; }
 
-    // ── Parámetros operativos configurables por la empresa ─────────
-    /// <summary>Código ISO 4217 de la moneda base (p. ej. "USD").</summary>
     public string Currency { get; private set; } = "USD";
-    /// <summary>Código de idioma (p. ej. "es", "en", "qu").</summary>
     public string Language { get; private set; } = "es";
-    /// <summary>Zona horaria IANA (p. ej. "America/Guayaquil").</summary>
     public string Timezone { get; private set; } = "America/Guayaquil";
-    /// <summary>Prefijo de factura (p. ej. "FAC-"). Null = sin prefijo.</summary>
     public string? InvoicePrefix { get; private set; }
-    /// <summary>Días de crédito por defecto al crear facturas.</summary>
     public int DefaultCreditDays { get; private set; } = 30;
 
     private Tenant() { }
@@ -59,8 +43,7 @@ public class Tenant : AuditableEntity
         string? logoUrl = null,
         int displayOrder = 0,
         int priority = 0,
-        string? planCode = null,
-        IReadOnlyList<string>? enabledModuleKeys = null)
+        string? planCode = null)
     {
         var tenant = new Tenant
         {
@@ -78,39 +61,16 @@ public class Tenant : AuditableEntity
             DisplayOrder = displayOrder,
             Priority = priority,
             ElectronicBillingTrialEnabled = false,
+            PlanCode = string.IsNullOrWhiteSpace(planCode) ? null : planCode.Trim(),
         };
-        tenant.ApplySubscription(planCode, enabledModuleKeys);
         tenant.SetCreated(createdBy);
         return tenant;
     }
 
-    /// <summary>Actualiza el plan comercial. Los módulos efectivos viven en suscripción + overrides (Fase B).</summary>
     public void SetPlanCode(string? planCode, Guid updatedBy)
     {
         PlanCode = string.IsNullOrWhiteSpace(planCode) ? null : planCode.Trim();
-#pragma warning disable CS0618
-        EnabledModulesJson = null;
-#pragma warning restore CS0618
         SetUpdated(updatedBy);
-    }
-
-    /// <summary>
-    /// Compat API: solo persiste <see cref="PlanCode"/>. <paramref name="enabledModuleKeys"/> lo aplica
-    /// <c>ITenantSubscriptionOverridesService</c> tras <c>SaveChanges</c>.
-    /// </summary>
-    public void SetSubscription(string? planCode, IReadOnlyList<string>? enabledModuleKeys, Guid updatedBy)
-    {
-        _ = enabledModuleKeys;
-        SetPlanCode(planCode, updatedBy);
-    }
-
-    private void ApplySubscription(string? planCode, IReadOnlyList<string>? enabledModuleKeys)
-    {
-        _ = enabledModuleKeys;
-        PlanCode = string.IsNullOrWhiteSpace(planCode) ? null : planCode.Trim();
-#pragma warning disable CS0618
-        EnabledModulesJson = null;
-#pragma warning restore CS0618
     }
 
     public void UpdateCompanyData(
@@ -137,15 +97,12 @@ public class Tenant : AuditableEntity
         SetUpdated(updatedBy);
     }
 
-    public void UpdateGlobalParameters(
-        bool electronicBillingTrialEnabled,
-        Guid updatedBy)
+    public void UpdateGlobalParameters(bool electronicBillingTrialEnabled, Guid updatedBy)
     {
         ElectronicBillingTrialEnabled = electronicBillingTrialEnabled;
         SetUpdated(updatedBy);
     }
 
-    /// <summary>Actualiza los parámetros operativos configurables por el administrador de la empresa.</summary>
     public void UpdateOperationalSettings(
         string currency,
         string language,
@@ -154,11 +111,11 @@ public class Tenant : AuditableEntity
         int defaultCreditDays,
         Guid updatedBy)
     {
-        Currency           = string.IsNullOrWhiteSpace(currency)  ? "USD"                 : currency.Trim().ToUpperInvariant();
-        Language           = string.IsNullOrWhiteSpace(language)  ? "es"                  : language.Trim().ToLowerInvariant();
-        Timezone           = string.IsNullOrWhiteSpace(timezone)  ? "America/Guayaquil"   : timezone.Trim();
-        InvoicePrefix      = string.IsNullOrWhiteSpace(invoicePrefix) ? null              : invoicePrefix.Trim();
-        DefaultCreditDays  = defaultCreditDays < 0 ? 0 : defaultCreditDays;
+        Currency = string.IsNullOrWhiteSpace(currency) ? "USD" : currency.Trim().ToUpperInvariant();
+        Language = string.IsNullOrWhiteSpace(language) ? "es" : language.Trim().ToLowerInvariant();
+        Timezone = string.IsNullOrWhiteSpace(timezone) ? "America/Guayaquil" : timezone.Trim();
+        InvoicePrefix = string.IsNullOrWhiteSpace(invoicePrefix) ? null : invoicePrefix.Trim();
+        DefaultCreditDays = defaultCreditDays < 0 ? 0 : defaultCreditDays;
         SetUpdated(updatedBy);
     }
 

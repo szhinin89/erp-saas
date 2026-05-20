@@ -1,12 +1,10 @@
 using System.Linq;
-using System.Text.Json;
 using ERP.Application.Subscriptions;
-using ERP.Domain.Tenants.Entities;
 
 namespace ERP.Application.Common;
 
 /// <summary>
-/// Catálogo legacy de claves de módulo y validación. La autoridad de módulos habilitados es
+/// Catálogo de claves de módulo y validación. La autoridad de módulos habilitados es
 /// <see cref="ITenantEntitlementsService"/> vía <see cref="ResolveEnabledModulesAsync"/>.
 /// </summary>
 public static class TenantSubscriptionCatalog
@@ -82,41 +80,6 @@ public static class TenantSubscriptionCatalog
     }
 
     /// <summary>
-    /// Lectura de caché legacy (<c>EnabledModulesJson</c>). No usar en rutas nuevas;
-    /// preferir <see cref="ISessionModulesResolver"/>.
-    /// </summary>
-    [Obsolete("Legacy cache. Use ISessionModulesResolver or ITenantEntitlementsService. Removal planned post Phase A.")]
-    public static IReadOnlyList<string> GetEffectiveEnabledModules(Tenant tenant)
-    {
-        if (string.IsNullOrWhiteSpace(tenant.EnabledModulesJson))
-            return EmptyModules;
-
-        try
-        {
-            var parsed = JsonSerializer.Deserialize<List<string>>(tenant.EnabledModulesJson);
-            if (parsed is null || parsed.Count == 0)
-                return EmptyModules;
-
-            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var s in parsed)
-            {
-                var t = (s ?? string.Empty).Trim().ToLowerInvariant();
-                if (t.Length > 0 && AllModuleKeys.Any(x => string.Equals(x, t, StringComparison.OrdinalIgnoreCase)))
-                    set.Add(t);
-            }
-
-            if (set.Count == 0)
-                return EmptyModules;
-
-            return set.OrderBy(x => x, StringComparer.Ordinal).ToList();
-        }
-        catch (JsonException)
-        {
-            return EmptyModules;
-        }
-    }
-
-    /// <summary>
     /// Prefijos de permiso (inglés API + español legacy) → clave canónica de módulo (<c>ResourceRef</c> / menú).
     /// </summary>
     private static readonly IReadOnlyDictionary<string, string> PermissionPrefixToCanonicalModule =
@@ -171,19 +134,6 @@ public static class TenantSubscriptionCatalog
             return true;
 
         var enabled = await entitlements.GetEnabledModuleKeysAsync(tenantId, ct);
-        return IsModuleEnabled(enabled, module);
-    }
-
-    /// <summary>
-    /// Lectura legacy JSON; usa normalización canónica. Preferir <see cref="TenantAllowsPermissionAsync"/>.
-    /// </summary>
-    [Obsolete("Sync legacy path. Use TenantAllowsPermissionAsync with ITenantEntitlementsService.")]
-    public static bool TenantAllowsPermission(Tenant tenant, string permissionKey)
-    {
-        if (!TryGetModuleKeyForPermission(permissionKey, out var module))
-            return true;
-
-        var enabled = GetEffectiveEnabledModules(tenant);
         return IsModuleEnabled(enabled, module);
     }
 

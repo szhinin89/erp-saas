@@ -26,7 +26,7 @@ public sealed class UpdateTenantSubscriptionHandlerTests
 
         var sessionModules = new Mock<ISessionModulesResolver>(MockBehavior.Strict);
         sessionModules
-            .Setup(e => e.GetEnabledModuleKeysAsync(tenantId, tenant, It.IsAny<CancellationToken>()))
+            .Setup(e => e.GetEnabledModuleKeysAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { "accounting", "saas" });
 
         var overrides = new Mock<ITenantSubscriptionOverridesService>(MockBehavior.Strict);
@@ -47,9 +47,6 @@ public sealed class UpdateTenantSubscriptionHandlerTests
         result.Value!.PlanCode.Should().Be("pro");
         result.Value.EnabledModules.Should().Equal("accounting", "saas");
         tenant.PlanCode.Should().Be("pro");
-#pragma warning disable CS0618
-        tenant.EnabledModulesJson.Should().BeNull();
-#pragma warning restore CS0618
 
         repo.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Exactly(2));
         overrides.VerifyAll();
@@ -71,7 +68,7 @@ public sealed class UpdateTenantSubscriptionHandlerTests
 
         var sessionModules = new Mock<ISessionModulesResolver>(MockBehavior.Strict);
         sessionModules
-            .Setup(e => e.GetEnabledModuleKeysAsync(tenantId, tenant, It.IsAny<CancellationToken>()))
+            .Setup(e => e.GetEnabledModuleKeysAsync(tenantId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<string>());
 
         var overrides = new Mock<ITenantSubscriptionOverridesService>(MockBehavior.Strict);

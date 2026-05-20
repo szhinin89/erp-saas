@@ -32,7 +32,6 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         builder.Property(t => t.Timezone).HasColumnName("timezone").HasMaxLength(100).IsRequired().HasDefaultValue("America/Guayaquil");
         builder.Property(t => t.InvoicePrefix).HasColumnName("invoice_prefix").HasMaxLength(20);
         builder.Property(t => t.DefaultCreditDays).HasColumnName("default_credit_days").IsRequired().HasDefaultValue(30);
-        builder.Property(t => t.EnabledModulesJson).HasColumnName("enabled_modules").HasColumnType("text");
         builder.Property(t => t.CreatedAt).HasColumnName("created_at");
         builder.Property(t => t.UpdatedAt).HasColumnName("updated_at");
         builder.Property(t => t.CreatedBy).HasColumnName("created_by");

@@ -63,7 +63,7 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<A
 
         var token = _jwtService.GenerateToken(user, tenant.Id);
 
-        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, tenant, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id,

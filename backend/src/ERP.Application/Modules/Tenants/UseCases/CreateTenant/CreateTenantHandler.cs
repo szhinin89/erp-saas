@@ -56,8 +56,7 @@ public class CreateTenantHandler : IRequestHandler<CreateTenantCommand, Result<T
             logoUrl: command.LogoUrl,
             displayOrder: command.DisplayOrder,
             priority: command.Priority,
-            planCode: command.PlanCode,
-            enabledModuleKeys: command.EnabledModules);
+            planCode: command.PlanCode);
 
         await _repository.AddAsync(tenant, ct);
         await _repository.SaveChangesAsync(ct);
@@ -72,7 +71,7 @@ public class CreateTenantHandler : IRequestHandler<CreateTenantCommand, Result<T
             await _repository.SaveChangesAsync(ct);
         }
 
-        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, tenant, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, ct);
         return Result<TenantDto>.Success(TenantDto.FromTenant(tenant, modules));
     }
 }

@@ -106,8 +106,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
             logoUrl: command.LogoUrl,
             displayOrder: command.DisplayOrder,
             priority: command.Priority,
-            planCode: planCode,
-            enabledModuleKeys: moduleKeys);
+            planCode: planCode);
         await _tenantRepository.AddAsync(tenant, ct);
 
         var hash = _passwordHasher.HashPassword(command.AdminPassword);
@@ -150,7 +149,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         await _onboarding.OnboardAsync(tenant.Id, _currentUser.UserId, ct);
 
         var sessionToken = _tokenService.GenerateSessionToken(adminUser, tenant.Id, "Admin");
-        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, tenant, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, ct);
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
             UserId: adminUser.Id,
             FullName: adminUser.FullName,
@@ -191,8 +190,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
             logoUrl: command.LogoUrl,
             displayOrder: command.DisplayOrder,
             priority: command.Priority,
-            planCode: planCode,
-            enabledModuleKeys: moduleKeys);
+            planCode: planCode);
         await _tenantRepository.AddAsync(tenant, ct);
 
         var existingMembership = await _accessRepository.GetMembershipAsync(tenant.Id, existingUser.Id, ct);
@@ -235,7 +233,7 @@ public class SuperAdminCreateTenantWithAdminHandler : IRequestHandler<SuperAdmin
         }
 
         var sessionToken = _tokenService.GenerateSessionToken(existingUser, tenant.Id, "Admin");
-        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, tenant, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, ct);
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
             UserId: existingUser.Id,
             FullName: existingUser.FullName,
@@ -318,7 +316,7 @@ public class GetSuperAdminTenantsHandler : IRequestHandler<GetSuperAdminTenantsQ
         var tenants = new List<SuperAdminTenantItemDto>(ordered.Count);
         foreach (var t in ordered)
         {
-            var modules = await _sessionModules.GetEnabledModuleKeysAsync(t.Id, t, ct);
+            var modules = await _sessionModules.GetEnabledModuleKeysAsync(t.Id, ct);
             tenants.Add(new SuperAdminTenantItemDto(
                 t.Id,
                 t.Name,

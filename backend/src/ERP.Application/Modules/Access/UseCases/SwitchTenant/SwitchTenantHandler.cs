@@ -77,8 +77,7 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<S
 
             var superSessionTenant = _tokenService.GenerateSessionToken(userId, email, fullName, command.TenantId, "SuperAdmin");
             await _configService.WarmupTenantAsync(command.TenantId, ct);
-            var superModules = await _sessionModules.GetEnabledModuleKeysAsync(
-                command.TenantId, tenantSa, ct);
+            var superModules = await _sessionModules.GetEnabledModuleKeysAsync(command.TenantId, ct);
 
             return Result<SessionResponseDto>.Success(new SessionResponseDto(
                 UserId: userId,
@@ -105,7 +104,7 @@ public class SwitchTenantHandler : IRequestHandler<SwitchTenantCommand, Result<S
         var membershipSessionToken = _tokenService.GenerateSessionToken(user, command.TenantId, membership.Role);
         await _configService.WarmupTenantAsync(command.TenantId, ct);
 
-        var modules = await _sessionModules.GetEnabledModuleKeysAsync(command.TenantId, tenant, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(command.TenantId, ct);
 
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
             UserId: user.Id,

@@ -105,7 +105,7 @@ public class RegisterTenantWithAdminHandler : IRequestHandler<RegisterTenantWith
         await _onboarding.OnboardAsync(tenant.Id, actorId: identityUser.Id, ct);
 
         var sessionToken = _tokenService.GenerateSessionToken(identityUser, tenant.Id, "Admin");
-        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, tenant, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, ct);
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
             UserId: identityUser.Id,
             FullName: identityUser.FullName,

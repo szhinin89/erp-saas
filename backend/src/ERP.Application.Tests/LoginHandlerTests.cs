@@ -3,6 +3,7 @@ using Moq;
 using ERP.Application.Auth.UseCases.Login;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Subscriptions;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Auth.Entities;
@@ -25,7 +26,7 @@ public class LoginHandlerTests
 
         var identityUser = IdentityUser.Create("Test", "User", email, passwordHash, Guid.NewGuid());
         var membership = Membership.Create(tenantId, identityUser.Id, role, null, Guid.NewGuid());
-        var tenant = Tenant.Create("Tenant Name", "tenant-slug", Guid.NewGuid(), planCode: "starter", enabledModuleKeys: new[] { "inventario" });
+        var tenant = Tenant.Create("Tenant Name", "tenant-slug", Guid.NewGuid(), planCode: "starter");
 
         var userRepo = new Mock<IUserRepository>(MockBehavior.Strict);
         var tenantRepo = new Mock<ITenantRepository>(MockBehavior.Strict);
@@ -48,6 +49,11 @@ public class LoginHandlerTests
             .Setup(s => s.CreateAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(("fake-refresh-token", DateTime.UtcNow.AddDays(30)));
 
+        var sessionModules = new Mock<ISessionModulesResolver>(MockBehavior.Strict);
+        sessionModules
+            .Setup(s => s.GetEnabledModuleKeysAsync(tenantId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { "inventory" });
+
         var handler = new LoginHandler(
             userRepo.Object,
             tenantRepo.Object,
@@ -56,7 +62,8 @@ public class LoginHandlerTests
             accessRepo.Object,
             accessTokenService.Object,
             passwordHasher.Object,
-            refreshTokenService.Object);
+            refreshTokenService.Object,
+            sessionModules.Object);
 
         var result = await handler.Handle(new LoginCommand(email, password), CancellationToken.None);
 

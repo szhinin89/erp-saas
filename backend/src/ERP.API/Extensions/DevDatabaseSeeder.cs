@@ -58,7 +58,7 @@ internal static class DevDatabaseSeeder
         {
             if (string.IsNullOrWhiteSpace(tenant.PlanCode))
             {
-                tenant.SetSubscription("starter", null, SeederActorId);
+                tenant.SetPlanCode("starter", SeederActorId);
                 await db.SaveChangesAsync(ct);
             }
 

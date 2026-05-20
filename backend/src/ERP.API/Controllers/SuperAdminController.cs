@@ -136,7 +136,7 @@ public class SuperAdminController : ControllerBase
             var users = await _userRepository.GetAllByTenantAsync(t.Id, ct);
             var totalUsers = users.Count;
             var activeUsers = users.Count(u => u.IsActive);
-            var modules = await _sessionModules.GetEnabledModuleKeysAsync(t.Id, t, ct);
+            var modules = await _sessionModules.GetEnabledModuleKeysAsync(t.Id, ct);
             items.Add(new
             {
                 t.Id,
