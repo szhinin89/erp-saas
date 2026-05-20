@@ -96,7 +96,8 @@ El producto está segmentado por plan comercial:
 | `CLAUDE.md` | Reglas y convenciones de código |
 | `docs/ARCHITECTURE.md` | Arquitectura del sistema |
 | `docs/STATUS.md` | Estado de desarrollo detallado |
-| `docs/FEATURES.md` | Funcionalidades, pantallas y endpoints |
+| `docs/STATUS.md` | Estado de entrega (módulos, tests, MVP) |
+| `docs/ROADMAP.md` | Prioridades y fases pendientes |
 | `PROGRESS.html` | Checklist de avance por sección |
 | `.cursor/rules/docs-progress-status-sync.mdc` | Sincronizar docs al cambiar avance |
 | `PROGRESS.html` | Checklist de avance por sección (porcentajes) |

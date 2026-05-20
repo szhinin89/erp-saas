@@ -1,6 +1,6 @@
 # REGLAS DEL PROYECTO — ERP SaaS ZH Technologies
 
-Reglas de implementación. Para arquitectura → `docs/ARCHITECTURE.md`. Para estado → `docs/STATUS.md`. Para funcionalidades → `docs/FEATURES.md`.
+Reglas de implementación. Para arquitectura → `docs/ARCHITECTURE.md`. Para estado → `docs/STATUS.md`. Para reglas de desarrollo → `docs/DEVELOPMENT-RULES.md`.
 
 ## ⚡ Regla obligatoria al terminar cualquier tarea
 
@@ -8,7 +8,7 @@ Reglas de implementación. Para arquitectura → `docs/ARCHITECTURE.md`. Para es
 
 1. **`PROGRESS.html`:** marcar ítem, actualizar `#last-updated`, badge y `data-val` si aplica.
 2. **`docs/STATUS.md`:** resumen, tablas de módulos, pendientes MVP, tests y fecha.
-3. **Propagar** a `PROJECT.md`, `docs/FEATURES.md`, `CONTEXT.md` y `README.md` si cambió alcance, rutas, endpoints o permisos.
+3. **Propagar** a `docs/STATUS.md`, `docs/ROADMAP.md` y `README.md` si cambió alcance, rutas, endpoints o permisos.
 4. Verificar coherencia (mismo % MVP, mismos pendientes, mismas fechas).
 
 ---

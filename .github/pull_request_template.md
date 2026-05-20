@@ -4,7 +4,7 @@
 
 ### Decisiones de arquitectura (si aplica)
 
-- [ ] Si esta PR introduce o cambia una decisión estable (stack, tenant, límites de módulo, CI, etc.), agregá o actualizá un **ADR** en [`docs/adr/`](docs/adr/) y el índice en [`docs/adr/README.md`](docs/adr/README.md).
+- [ ] Si esta PR cambia arquitectura, scopes o política de BD, actualizá el doc oficial correspondiente en [`docs/`](docs/) (`ARCHITECTURE.md`, `DATABASE/`, `SECURITY.md`, etc.) y [`docs/STATUS.md`](docs/STATUS.md) si afecta el estado de entrega.
 
 ## Checklist (definición de hecho sugerida)
 

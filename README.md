@@ -13,19 +13,20 @@ cd frontend && npm run dev                            # http://localhost:5173
 
 > Copiar `backend/src/ERP.API/appsettings.Development.json.example` → `appsettings.Development.json` y ajustar cadena + JWT.
 
-## Documentación
+## Documentación oficial (`docs/`)
 
 | Documento | Contenido |
 |-----------|-----------|
-| [**PROJECT.md**](./PROJECT.md) | Objetivo, modelo de negocio, segmentos y alcance del producto |
-| [**CLAUDE.md**](./CLAUDE.md) | Reglas y convenciones del proyecto (leer siempre primero) |
-| [**docs/ARCHITECTURE.md**](./docs/ARCHITECTURE.md) | Arquitectura completa — capas, multi-tenant, auth, SuperAdmin, SaaS, ADRs |
-| [**docs/STATUS.md**](./docs/STATUS.md) | Estado de desarrollo — qué está hecho, pendientes MVP, tests |
-| [**PROGRESS.html**](./PROGRESS.html) | Checklist de avance por sección (% y próximas acciones) |
-| [**docs/FEATURES.md**](./docs/FEATURES.md) | Funcionalidades — pantallas, módulos, endpoints, permisos |
-| [**CONTEXT.md**](./CONTEXT.md) | Índice maestro y árbol del monorepo |
+| [**docs/STATUS.md**](./docs/STATUS.md) | **Estado actual** — única fuente de verdad de delivery |
+| [**docs/ARCHITECTURE.md**](./docs/ARCHITECTURE.md) | Arquitectura oficial (Clean + CQRS, scopes) |
+| [**docs/ROADMAP.md**](./docs/ROADMAP.md) | Prioridades y fases pendientes |
+| [**docs/DEVELOPMENT-RULES.md**](./docs/DEVELOPMENT-RULES.md) | Reglas de desarrollo y verificación |
+| [**docs/DATABASE/**](./docs/DATABASE/) | Migraciones, RLS, tablas |
+| [**PROJECT.md**](./PROJECT.md) | Modelo de negocio y alcance producto |
+| [**CLAUDE.md**](./CLAUDE.md) | Convenciones para agentes |
+| [**CONTEXT.md**](./CONTEXT.md) | Índice del monorepo |
 
-> Al editar `STATUS.md` o `PROGRESS.html`, actualizar también `PROJECT.md`, `FEATURES.md`, `CONTEXT.md` y este README (regla `.cursor/rules/docs-progress-status-sync.mdc`).
+> Al cambiar arquitectura o estado de entrega, actualizar `docs/STATUS.md` y `docs/ROADMAP.md` primero.
 
 ## CI
 

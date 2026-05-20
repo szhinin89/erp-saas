@@ -1,56 +1,32 @@
 ---
-description: Al actualizar PROGRESS.html o docs/STATUS.md, sincronizar toda la documentación de producto involucrada
-globs: "{PROGRESS.html,docs/STATUS.md}"
+description: Al actualizar docs/STATUS.md, sincronizar documentación de producto involucrada
+globs: "{docs/STATUS.md}"
 alwaysApply: false
 ---
 
 # Sincronización de documentación de avance
 
-Si editas **`PROGRESS.html`** o **`docs/STATUS.md`**, no dejes el resto de docs desalineados. Trata el cambio como **actualización de estado del producto**, no como edición aislada.
+Si editas **`docs/STATUS.md`**, trata el cambio como **actualización de estado del producto**, no como edición aislada.
 
-## Fuente de verdad (jerarquía)
+## Fuente de verdad
 
-1. **`PROGRESS.html`** — checklist ítem por ítem (más granular)
-2. **`docs/STATUS.md`** — estado operativo consolidado (arranque, tests, pendientes MVP)
-3. **`PROJECT.md`** — resumen de negocio / alcance MVP (sin detalle técnico)
-4. **`docs/FEATURES.md`** — inventario de rutas, pantallas, endpoints y permisos
-
-`STATUS.md` y `PROGRESS.html` deben **decir lo mismo** en avance global, pendientes críticos y fecha de actualización.
+1. **`docs/STATUS.md`** — estado operativo consolidado (única fuente oficial)
+2. **`docs/ROADMAP.md`** — prioridades y fases pendientes
+3. **`PROJECT.md`** — resumen de negocio / alcance MVP
 
 ## Checklist obligatorio (misma sesión de cambio)
 
 | Documento | Actualizar cuando… |
 |-----------|-------------------|
-| **`docs/STATUS.md`** | Cambias `PROGRESS.html` (resumen, tablas, pendientes, tests, fecha) |
-| **`PROGRESS.html`** | Cambias `STATUS.md` (ítems/secciones/checkboxes afectados) |
-| **`PROJECT.md`** | Cambia alcance MVP, % avance, diferenciadores SRI o pendientes comerciales |
-| **`docs/FEATURES.md`** | Nueva ruta, pantalla, endpoint, permiso o módulo; rename de rutas/controladores |
-| **`CONTEXT.md`** | Cambia el mapa de docs, archivos nuevos o roles entre documentos |
-| **`README.md`** | Cambia la tabla de documentación o enlaces de arranque |
-| **`docs/ARCHITECTURE.md`** | Solo si el cambio de estado implica decisión arquitectónica nueva |
+| **`docs/ROADMAP.md`** | Cambian prioridades, fases o ítems diferidos |
+| **`PROJECT.md`** | Cambia alcance MVP o pendientes comerciales |
+| **`README.md`** | Cambia la tabla de documentación o arranque |
+| **`CONTEXT.md`** | Cambia el mapa de docs |
+| **`docs/ARCHITECTURE.md`** | Decisión arquitectónica nueva |
+| **`docs/DATABASE/*`** | Schema, RLS o política de migraciones |
 
-No crear índices paralelos; el mapa único sigue en **`CONTEXT.md`**.
+No crear documentos fuera de la estructura oficial en `docs/`.
 
-## Qué alinear en cada doc
+## Estados de módulo
 
-- **Fecha** `Última actualización` en `STATUS.md` y `#last-updated` en `PROGRESS.html` (misma sesión).
-- **Avance global** (~% MVP): coherente entre `PROGRESS.html`, `STATUS.md` y sección *Alcance actual* de `PROJECT.md`.
-- **Pendientes MVP**: mismos ítems y prioridades (crítico / alta / media / baja).
-- **Estados de módulo**: usar `✅` completo, `🟡` parcial/validación pendiente, `⏳` pendiente, `🚧` en progreso.
-- **Tests**: conteos y estado de la suite iguales en `STATUS.md`; reflejar en `PROGRESS.html` si hay sección de calidad.
-
-## Flujo recomendado
-
-1. Identificar qué cambió (módulo completado, pendiente nuevo, tests, SRI, rutas).
-2. Actualizar **`PROGRESS.html`** (ítems + próximas acciones) **y** **`docs/STATUS.md`** (resumen + tablas).
-3. Propagar a **`PROJECT.md`**, **`docs/FEATURES.md`**, **`CONTEXT.md`**, **`README.md`** según la tabla.
-4. Verificar que no queden contradicciones (ej. “frontend pendiente” en un doc y “✅ completo” en otro).
-
-## Ejemplo
-
-Completaste pantallas de retenciones:
-
-- `PROGRESS.html`: marcar ítem, bajar prioridad en próximas acciones
-- `STATUS.md`: mover retenciones de placeholder a completado; actualizar fecha
-- `PROJECT.md`: quitar retenciones de pendientes MVP
-- `FEATURES.md`: rutas `/sales/withholding-received`, permisos y endpoints
+Usar: `✅` completo, `🟡` parcial, `⏳` pendiente, `🚧` en progreso.

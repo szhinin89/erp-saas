@@ -67,7 +67,7 @@ Orden lógico para **no** saltarse capas ni contradecir UI:
 
 ## Antes de actuar
 
-1. Lee **`CLAUDE.md`** (reglas) y **`CONTEXT.md`** (índice). Para arquitectura → `docs/ARCHITECTURE.md`; para estado → `docs/STATUS.md`; para funcionalidades → `docs/FEATURES.md`.
+1. Lee **`CLAUDE.md`** (reglas) y **`CONTEXT.md`** (índice). Para arquitectura → `docs/ARCHITECTURE.md`; para estado → `docs/STATUS.md`; para reglas → `docs/DEVELOPMENT-RULES.md`.
 2. Identifica si el archivo que vas a crear o modificar **ya existe**.
 3. Si ya existe → **no** lo regeneres; cambia solo lo necesario.
 4. Define un **plan breve** antes de escribir código (no bloquear al usuario salvo ambigüedad real).
@@ -92,7 +92,7 @@ Estructura **real** (prevalece sobre diagramas desactualizados en otros document
 
 - **Backend (.NET 10):** `backend/src/ERP.Domain`, `ERP.Application`, `ERP.Infrastructure`, `ERP.API`. Módulos de negocio bajo `ERP.Domain/Modules/<Nombre>`, `ERP.Application/Modules/<Nombre>`, etc. (p. ej. `Accounting`, `Customers`, `Branches`).
 - **Frontend:** `frontend/` — Vite + React; i18n en `frontend/src/i18n/locales/` (`es`, `en`, `qu`).
-- **Docs humanas:** `CLAUDE.md` (reglas); `CONTEXT.md` (índice); `docs/ARCHITECTURE.md` (arquitectura); `docs/STATUS.md` (estado); `docs/FEATURES.md` (funcionalidades).
+- **Docs humanas:** `CLAUDE.md` (reglas); `CONTEXT.md` (índice); `docs/ARCHITECTURE.md`; `docs/STATUS.md`; `docs/DEVELOPMENT-RULES.md`; `docs/DATABASE/`.
 - **Reglas Cursor:** `erp-saas/.cursor/rules/erp-unified-rules.mdc` (este archivo) y `saas-navigation-no-sensitive-url.mdc` (IDs de tenant y contexto entre rutas).
 
 ---

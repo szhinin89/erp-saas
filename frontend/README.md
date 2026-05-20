@@ -5,8 +5,8 @@ Cliente web del monorepo: **React 19**, **TypeScript**, **Vite**, i18n (`es`, `e
 ## Documentación
 
 - Índice del repo: [`../CONTEXT.md`](../CONTEXT.md)
-- Arranque, scripts y troubleshooting: [`../docs/DESARROLLO.md`](../docs/DESARROLLO.md)
-- Rutas y pantallas: [`../docs/FRONTEND-PANTALLAS.md`](../docs/FRONTEND-PANTALLAS.md)
+- Arranque y reglas: [`../docs/DEVELOPMENT-RULES.md`](../docs/DEVELOPMENT-RULES.md)
+- Estado del frontend: [`../docs/STATUS.md`](../docs/STATUS.md)
 
 ## Comandos frecuentes
 
@@ -18,4 +18,4 @@ npm run lint
 npm run test:e2e
 ```
 
-El detalle de puertos, variables y Playwright está en **`docs/DESARROLLO.md`**.
+El detalle de puertos, variables y Playwright está en **`docs/DEVELOPMENT-RULES.md`**.
