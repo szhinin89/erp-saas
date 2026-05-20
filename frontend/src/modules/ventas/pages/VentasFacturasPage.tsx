@@ -292,7 +292,7 @@ export function VentasFacturasPage() {
           <div style={{ padding: '40px' }}><EmptyState message="No se encontraron resultados para la búsqueda." /></div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table className="table vf-responsive-table">
+            <table className="table responsive-table vf-responsive-table">
               <thead>
                 <tr>
                   <th>Nº Factura</th>

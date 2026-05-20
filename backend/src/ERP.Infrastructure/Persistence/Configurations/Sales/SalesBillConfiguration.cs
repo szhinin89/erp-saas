@@ -14,6 +14,7 @@ public sealed class SalesBillConfiguration : IEntityTypeConfiguration<SalesBill>
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(e => e.CompanyId).HasColumnName("company_id");
         builder.Property(e => e.BranchId).HasColumnName("branch_id").IsRequired();
         builder.Property(e => e.CustomerId).HasColumnName("customer_id").IsRequired();
         builder.Property(e => e.WarehouseId).HasColumnName("warehouse_id").IsRequired();
@@ -48,5 +49,6 @@ public sealed class SalesBillConfiguration : IEntityTypeConfiguration<SalesBill>
 
         builder.HasIndex(e => new { e.SubscriberId, e.EstabCode, e.EmPointCode, e.Sequential }).IsUnique().HasDatabaseName("uq_sales_bill_seq");
         builder.HasIndex(e => new { e.SubscriberId, e.IssueDate }).HasDatabaseName("ix_sales_bill_subscriber_date");
+        builder.HasIndex(e => new { e.SubscriberId, e.CompanyId }).HasDatabaseName("ix_sales_bill_subscriber_company");
     }
 }

@@ -14,17 +14,20 @@ public sealed class CreateWarehouseCommandHandler
     private readonly IWarehouseRepository       _repo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentSubscriber          _tenant;
+    private readonly ICurrentCompany           _company;
     private readonly ICurrentUser            _user;
 
     public CreateWarehouseCommandHandler(
         IWarehouseRepository repo,
         IUserActivityRepository activity,
         ICurrentSubscriber tenant,
+        ICurrentCompany company,
         ICurrentUser user)
     {
         _repo     = repo;
         _activity = activity;
         _tenant   = tenant;
+        _company  = company;
         _user     = user;
     }
 
@@ -38,12 +41,15 @@ public sealed class CreateWarehouseCommandHandler
 
         var code = $"WH-{DateTime.UtcNow.Year}-{Guid.NewGuid():N}"[..13];
 
+        var companyId = _company.HasCompanyContext ? _company.CompanyId : (Guid?)null;
         var wh = Warehouse.Create(
             subscriberId, command.BranchId, command.Name,
             code, command.StorageType,
             command.Address, command.Phone, command.Email, command.Manager,
             command.Latitude, command.Longitude,
-            command.Capacity, command.DailyDispatchGoal, userId);
+            command.Capacity, command.DailyDispatchGoal, userId,
+            establishmentId: null,
+            companyId: companyId);
 
         await _repo.AddAsync(wh, ct);
         await _activity.AddAsync(UserActivity.Create(

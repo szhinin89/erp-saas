@@ -12,6 +12,7 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(x => x.CompanyId).HasColumnName("company_id");
 
         builder.Property(x => x.IdentificationType)
             .HasColumnName("identification_type")
@@ -61,11 +62,11 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasIndex(x => new { x.SubscriberId, x.IdentificationType, x.IdentificationNumber })
+        builder.HasIndex(x => new { x.SubscriberId, x.CompanyId, x.IdentificationType, x.IdentificationNumber })
             .IsUnique()
-            .HasDatabaseName("ux_customers_subscriber_doc");
+            .HasDatabaseName("ux_customers_subscriber_company_doc");
 
-        builder.HasIndex(x => x.SubscriberId)
-            .HasDatabaseName("ix_customers_subscriber_id");
+        builder.HasIndex(x => new { x.SubscriberId, x.CompanyId })
+            .HasDatabaseName("ix_customers_subscriber_company");
     }
 }

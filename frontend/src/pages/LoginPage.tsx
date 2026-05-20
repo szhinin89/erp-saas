@@ -27,7 +27,6 @@ export function LoginPage() {
   const { superAdminPanelEnabled } = useDeployment();
   const login              = useAuthStore((s) => s.login);
   const clearPermissions   = usePermissionsStore((s) => s.clearPermissions);
-  const setPermissionSnapshot = usePermissionsStore((s) => s.setPermissionSnapshot);
   const setBootstrap       = useAccessStore((s) => s.setBootstrap);
   const clearBootstrap     = useAccessStore((s) => s.clearBootstrap);
   const { t } = useI18n();

@@ -14,7 +14,6 @@ export function CompanySwitcher() {
   const login = useAuthStore((s) => s.login);
   const clearPermissions = usePermissionsStore((s) => s.clearPermissions);
   const [companies, setCompanies] = useState<AccessibleCompany[]>([]);
-  const [loading, setLoading] = useState(false);
   const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
@@ -74,7 +73,7 @@ export function CompanySwitcher() {
       <select
         className="company-switcher-select"
         value={user.companyId ?? ''}
-        disabled={switching || loading}
+        disabled={switching}
         onChange={(e) => void onChange(e.target.value)}
         aria-label="Cambiar empresa operativa"
       >

@@ -15,7 +15,7 @@ export interface BootstrapLoginResponse {
   fullName: string;
   email: string;
   bootstrapToken: string;
-  subscribers: AccessibleTenant[];
+  subscribers: AccessibleSubscriber[];
 }
 
 export interface SwitchSubscriberRequest {

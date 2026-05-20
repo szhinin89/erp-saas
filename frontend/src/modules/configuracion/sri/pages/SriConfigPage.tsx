@@ -79,7 +79,7 @@ export function SriConfigPage() {
       emPointCode:        d.emPointCode ?? '001',
       certP12Path:        d.certificateP12Path ?? '',
       certPassword:       '',
-      environment:        d.environment ?? 2,
+      environment:        d.environment === 1 ? 1 : 2,
       emissionType:       d.emissionType ?? 1,
       wsdlUrl:            d.sriAuthorizationUrl ?? SRI_WSDL_DEFAULTS.pruebas,
     });
@@ -144,7 +144,7 @@ export function SriConfigPage() {
         emPointCode:        d.emPointCode ?? '001',
         certP12Path:        d.certificateP12Path ?? '',
         certPassword:       '',
-        environment:        d.environment ?? 2,
+        environment:        d.environment === 1 ? 1 : 2,
         emissionType:       d.emissionType ?? 1,
         wsdlUrl:            d.sriAuthorizationUrl ?? SRI_WSDL_DEFAULTS.pruebas,
       });

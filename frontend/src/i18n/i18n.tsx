@@ -5,7 +5,9 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { dictionaries, defaultLocale, safeGetStoredLocale, storageKey, type Locale } from './dictionaries';
 
-type TFunction = (key: string, fallback?: string) => string;
+type TParams = Record<string, string | number>;
+
+type TFunction = (key: string, fallbackOrParams?: string | TParams) => string;
 
 type I18nContextValue = {
   locale: Locale;
@@ -24,9 +26,15 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const t = useCallback<TFunction>(
-    (key, fallback) => {
+    (key, fallbackOrParams) => {
       const dict = dictionaries[locale] ?? dictionaries[defaultLocale];
-      return dict[key] ?? fallback ?? key;
+      let text = dict[key] ?? (typeof fallbackOrParams === 'string' ? fallbackOrParams : undefined) ?? key;
+      if (fallbackOrParams && typeof fallbackOrParams === 'object') {
+        for (const [param, value] of Object.entries(fallbackOrParams)) {
+          text = text.replaceAll(`{{${param}}}`, String(value));
+        }
+      }
+      return text;
     },
     [locale],
   );

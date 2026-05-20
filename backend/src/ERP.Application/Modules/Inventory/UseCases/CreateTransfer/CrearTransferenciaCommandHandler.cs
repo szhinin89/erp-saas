@@ -20,6 +20,7 @@ public sealed class CreateTransferCommandHandler
     private readonly IStockRepository  _stockRepo;
     private readonly IUserActivityRepository     _activity;
     private readonly ICurrentSubscriber              _currentSubscriber;
+    private readonly ICurrentCompany               _currentCompany;
     private readonly ICurrentUser                _currentUser;
     private readonly IUnitOfWork                 _unitOfWork;
     private readonly ILogger<CreateTransferCommandHandler> _logger;
@@ -31,6 +32,7 @@ public sealed class CreateTransferCommandHandler
         IStockRepository stockRepo,
         IUserActivityRepository activity,
         ICurrentSubscriber currentSubscriber,
+        ICurrentCompany currentCompany,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
         ILogger<CreateTransferCommandHandler> logger)
@@ -41,6 +43,7 @@ public sealed class CreateTransferCommandHandler
         _stockRepo         = stockRepo;
         _activity          = activity;
         _currentSubscriber     = currentSubscriber;
+        _currentCompany    = currentCompany;
         _currentUser       = currentUser;
         _unitOfWork        = unitOfWork;
         _logger            = logger;
@@ -64,6 +67,13 @@ public sealed class CreateTransferCommandHandler
         var destino = await _bodegaRepo.GetByIdAsync(subscriberId, command.TargetWarehouseId, ct);
         if (destino is null || !destino.IsActive)
             return Result<TransferDto>.Failure("La Warehouse destino no existe o no está activa.");
+
+        if (_currentCompany.HasCompanyContext)
+        {
+            var companyId = _currentCompany.CompanyId;
+            if (origen.CompanyId != companyId || destino.CompanyId != companyId)
+                return Result<TransferDto>.Failure("Las bodegas deben pertenecer a la empresa operativa activa.");
+        }
 
         // 2. Validar productos + stock (de-duplication por ProductoId)
         var productos = new Dictionary<Guid, ERP.Domain.Products.Entities.Product>();
@@ -104,10 +114,12 @@ public sealed class CreateTransferCommandHandler
 
             // 4. Crear la transfer en Borrador + sus detalles
             // El Id es client-generated (Guid.NewGuid()), no requiere flush previo.
+            var companyIdOp = _currentCompany.HasCompanyContext ? _currentCompany.CompanyId : (Guid?)null;
             var t = StockTransfer.Create(
                 subscriberId, secuencial,
                 command.SourceWarehouseId, command.TargetWarehouseId,
-                command.Reason, command.Notes, userId);
+                command.Reason, command.Notes, userId,
+                companyId: companyIdOp);
 
             foreach (var item in command.Items)
             {

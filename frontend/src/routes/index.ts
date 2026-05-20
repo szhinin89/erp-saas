@@ -37,6 +37,7 @@ export function getAppRoutes(config: AppRoutesConfig) {
     ...mainRoutes,
     ...catalogRoutes,
     ...companiesRoutes,
+    ...companyManagementRoutes,
     ...accessRoutes,
   ];
 }

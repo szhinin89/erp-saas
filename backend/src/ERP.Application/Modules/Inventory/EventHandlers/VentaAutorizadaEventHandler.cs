@@ -1,62 +1,37 @@
-using MediatR;
-using Microsoft.Extensions.Logging;
-using ERP.Domain.Modules.Inventory.Entities;
-using ERP.Domain.Modules.Inventory.Enums;
-using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Application.Common.Inventory;
 using ERP.Domain.Modules.Sales.Events;
+using MediatR;
 
 namespace ERP.Application.Modules.Inventory.EventHandlers;
 
 public sealed class SalesBillAuthorizedEventHandler : INotificationHandler<SalesBillAuthorizedEvent>
 {
-    private readonly IStockRepository _inventario;
-    private readonly ILogger<SalesBillAuthorizedEventHandler> _logger;
+    private readonly IInventoryPostingService _posting;
 
-    public SalesBillAuthorizedEventHandler(
-        IStockRepository inventario,
-        ILogger<SalesBillAuthorizedEventHandler> logger)
-    {
-        _inventario = inventario;
-        _logger     = logger;
-    }
+    public SalesBillAuthorizedEventHandler(IInventoryPostingService posting) => _posting = posting;
 
     public async Task Handle(SalesBillAuthorizedEvent notification, CancellationToken ct)
     {
-        var subscriberId = notification.SubscriberId;
-        var userId   = notification.UserId;
-        var bodegaId = notification.WarehouseId;
+        if (notification.CompanyId == Guid.Empty || notification.StockLines.Count == 0)
+            return;
 
-        foreach (var line in notification.StockLines)
-        {
-            var stock = await _inventario.GetStockAsync(
-                subscriberId, bodegaId, line.ProductId, ct);
+        var lines = notification.StockLines
+            .Select(l => new InventoryPostingLine(l.ProductId, l.Quantity))
+            .ToList();
 
-            if (stock is null)
-            {
-                _logger.LogWarning(
-                    "Venta {FacturaId}: sin stock registrado para producto {ProductoId} en Warehouse {BodegaId}; se omite descuento.",
-                    notification.SalesBillId, line.ProductId, bodegaId);
-                continue;
-            }
+        var result = await _posting.PostSaleExitAsync(
+            new InventoryPostingRequest(
+                notification.SubscriberId,
+                notification.CompanyId,
+                notification.WarehouseId,
+                lines,
+                notification.BillNumber,
+                notification.SalesBillId,
+                "SalesBill",
+                notification.UserId),
+            ct);
 
-            var cantidadAnterior = stock.Quantity;
-            var costoPromedioVenta = stock.AverageCost;
-            stock.ApplyMovement(-line.Quantity, userId, costoPromedioVenta);
-
-            var movimiento = StockMovement.Create(
-                subscriberId,
-                line.ProductId,
-                bodegaId,
-                StockMovementType.SaleExit,
-                quantity:            -line.Quantity,
-                previousQuantity:    cantidadAnterior,
-                reference:          notification.BillNumber,
-                sourceDocId:   notification.SalesBillId,
-                sourceDocType: "SalesBill",
-                createdBy: userId,
-                unitCost:       costoPromedioVenta);
-
-            await _inventario.AddMovementAsync(movimiento, ct);
-        }
+        if (!result.IsSuccess)
+            throw new InvalidOperationException(result.Error ?? "Error al registrar salida de inventario por venta.");
     }
 }

@@ -28,5 +28,6 @@ public sealed class CurrentStockConfiguration : IEntityTypeConfiguration<Current
         builder.Property(s => s.UpdatedBy).HasColumnName("updated_by");
 
         builder.HasIndex(s => new { s.SubscriberId, s.ProductId, s.WarehouseId }).IsUnique().HasDatabaseName("uq_current_stock_subscriber_product_warehouse");
+        builder.HasIndex(s => new { s.SubscriberId, s.CompanyId }).HasDatabaseName("ix_current_stock_subscriber_company");
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ERP.Application.Common;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
@@ -7,22 +8,26 @@ namespace ERP.Infrastructure.Persistence.Repositories;
 public sealed class StockAdjustmentRepository : IStockAdjustmentRepository
 {
     private readonly ErpDbContext _context;
+    private readonly ICurrentCompany _company;
 
-    public StockAdjustmentRepository(ErpDbContext context) => _context = context;
+    public StockAdjustmentRepository(ErpDbContext context, ICurrentCompany company)
+    {
+        _context = context;
+        _company = company;
+    }
+
+    private IQueryable<StockAdjustment> Scoped(Guid subscriberId)
+        => _context.StockAdjustments.ForOperationalScope(subscriberId, _company);
 
     public Task AddAsync(StockAdjustment ajuste, CancellationToken ct = default)
         => _context.StockAdjustments.AddAsync(ajuste, ct).AsTask();
 
     public Task<StockAdjustment?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
-        => _context.StockAdjustments
-            .FirstOrDefaultAsync(a => a.SubscriberId == subscriberId && a.Id == id, ct);
+        => Scoped(subscriberId).FirstOrDefaultAsync(a => a.Id == id, ct);
 
     public async Task<int> GetNextSequentialAsync(Guid subscriberId, CancellationToken ct = default)
     {
-        // MaxAsync nullable — compatible con PostgreSQL e InMemory
-        var max = await _context.StockAdjustments
-            .Where(a => a.SubscriberId == subscriberId)
-            .MaxAsync(a => (int?)a.Sequential, ct);
+        var max = await Scoped(subscriberId).MaxAsync(a => (int?)a.Sequential, ct);
         return (max ?? 0) + 1;
     }
 
@@ -37,8 +42,7 @@ public sealed class StockAdjustmentRepository : IStockAdjustmentRepository
         DateTime? fechaHasta,
         CancellationToken ct = default)
     {
-        var query = _context.StockAdjustments
-            .Where(a => a.SubscriberId == subscriberId);
+        var query = Scoped(subscriberId);
 
         if (WarehouseId.HasValue)
             query = query.Where(a => a.WarehouseId == WarehouseId.Value);

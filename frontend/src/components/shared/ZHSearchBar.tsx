@@ -1,4 +1,4 @@
-import type { ReactNode, RefObject } from 'react';
+import type { ReactNode } from 'react';
 import { useMemo, useCallback, forwardRef, useImperativeHandle, useRef } from 'react';
 import { useI18n } from '../../i18n/i18n';
 import './ZHSearchBar.css';

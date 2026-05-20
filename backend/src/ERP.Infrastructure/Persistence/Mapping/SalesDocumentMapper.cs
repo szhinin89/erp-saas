@@ -26,7 +26,8 @@ public static class SalesDocumentMapper
             bill.PaymentMethodCode,
             bill.PaymentDays,
             bill.Notes,
-            bill.CreatedBy);
+            bill.CreatedBy,
+            bill.CompanyId);
 
         // Preservar id y auditoría
         Set(doc, nameof(SalesDocument.Id), bill.Id);
@@ -101,7 +102,8 @@ public static class SalesDocumentMapper
             electronic?.AuthNumber,
             electronic?.AuthDate,
             electronic?.ErrorMessage,
-            doc.CreatedBy);
+            doc.CreatedBy,
+            doc.CompanyId);
 
         typeof(SalesBill).GetProperty(nameof(SalesBill.Id))!.SetValue(bill, doc.Id);
         typeof(SalesBill).GetProperty(nameof(SalesBill.Status))!.SetValue(bill, doc.Status);

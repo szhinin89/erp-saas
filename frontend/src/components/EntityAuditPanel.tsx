@@ -73,7 +73,7 @@ export function EntityAuditPanel({ entityType, entityId, take = 10, refreshKey =
   return (
     <div className="entity-audit-panel">
       <p className="subtle zh-mb-12">{t('audit.hint')}</p>
-      <table className="table entity-audit-responsive-table">
+      <table className="table responsive-table entity-audit-responsive-table">
         <thead>
           <tr>
             <th>{t('audit.column.when')}</th>

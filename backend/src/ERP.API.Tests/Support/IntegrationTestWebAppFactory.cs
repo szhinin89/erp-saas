@@ -18,6 +18,7 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
 {
     public MutableCurrentSubscriber MutableSubscriber { get; } = new();
     public MutableCurrentUser   MutableUser   { get; } = new();
+    public MutableCurrentCompany MutableCompany { get; } = new();
     public bool UseScalableMode { get; set; } = false;
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -80,11 +81,15 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
                 services.Remove(d);
             foreach (var d in services.Where(x => x.ServiceType == typeof(ICurrentUser)).ToList())
                 services.Remove(d);
+            foreach (var d in services.Where(x => x.ServiceType == typeof(ICurrentCompany)).ToList())
+                services.Remove(d);
 
             services.AddSingleton(MutableSubscriber);
             services.AddSingleton<ICurrentSubscriber>(sp => sp.GetRequiredService<MutableCurrentSubscriber>());
             services.AddSingleton(MutableUser);
             services.AddSingleton<ICurrentUser>(sp => sp.GetRequiredService<MutableCurrentUser>());
+            services.AddSingleton(MutableCompany);
+            services.AddSingleton<ICurrentCompany>(sp => sp.GetRequiredService<MutableCurrentCompany>());
 
             foreach (var d in services.Where(x => x.ServiceType == typeof(IFileStorage)).ToList())
                 services.Remove(d);

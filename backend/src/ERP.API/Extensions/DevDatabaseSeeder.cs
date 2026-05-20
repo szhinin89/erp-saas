@@ -171,7 +171,9 @@ internal static class DevDatabaseSeeder
             longitude:         null,
             capacity:          null,
             dailyDispatchGoal: null,
-            createdBy:         SeederActorId));
+            createdBy:         SeederActorId,
+            establishmentId:   null,
+            companyId:         defaultCompanyForSeed.Id));
 
         db.Accounts.AddRange(
             Account.Create(tenant.Id, "1.1.01", "Caja General", AccountType.Asset, AccountNature.Debit, SeederActorId),

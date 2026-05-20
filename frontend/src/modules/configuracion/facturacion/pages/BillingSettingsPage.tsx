@@ -72,7 +72,7 @@ export function BillingSettingsPage() {
       requiresAccounting: d.requiresAccounting ?? false,
       specialTaxpayer:    d.specialTaxpayer ?? '',
       footerText:         d.additionalNote ?? '',
-      receiptWidth:       d.receiptWidth ?? 80,
+      receiptWidth:       d.receiptWidth === 58 ? 58 : 80,
       logoBase64:         d.logoBase64 ?? null,
     });
     setLogoPreview(d.logoBase64 ?? null);
@@ -143,7 +143,7 @@ export function BillingSettingsPage() {
         requiresAccounting: d.requiresAccounting ?? false,
         specialTaxpayer:    d.specialTaxpayer ?? '',
         footerText:         d.additionalNote ?? '',
-        receiptWidth:       d.receiptWidth ?? 80,
+        receiptWidth:       d.receiptWidth === 58 ? 58 : 80,
         logoBase64:         d.logoBase64 ?? null,
       });
       setLogoPreview(d.logoBase64 ?? null);

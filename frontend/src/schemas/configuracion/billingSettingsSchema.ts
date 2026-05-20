@@ -10,7 +10,7 @@ export const billingSettingsSchema = z.object({
   requiresAccounting: z.boolean(),
   specialTaxpayer:    z.string().max(50).optional(),
   footerText:         z.string().max(500).optional(),
-  receiptWidth:       z.number().int().refine((v) => v === 58 || v === 80, 'El ancho debe ser 58 o 80 mm'),
+  receiptWidth:       z.union([z.literal(58), z.literal(80)]),
   logoBase64:         z.string().max(100000).optional().nullable(),
 });
 

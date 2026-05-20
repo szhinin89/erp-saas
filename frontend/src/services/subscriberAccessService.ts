@@ -10,7 +10,7 @@ export type SubscriberCompanyUserMembershipItem = {
   isActive: boolean;
 };
 
-export type TenantUpsertCompanyUserMembershipRequest = {
+export type SubscriberUpsertCompanyUserMembershipRequest = {
   email: string;
   role: string;
   profileId?: string | null;
@@ -21,15 +21,19 @@ export type TenantUpsertCompanyUserMembershipRequest = {
 
 export const subscriberAccessService = {
   listCompanyUserMemberships: (onlyActive = true) =>
-    api.get<ApiResponse<SubscriberCompanyUserMembershipItem[]>>('/api/admin/iam/tenant/company_user_memberships', { params: { onlyActive } })
+    api
+      .get<ApiResponse<SubscriberCompanyUserMembershipItem[]>>('/api/admin/iam/tenant/company_user_memberships', {
+        params: { onlyActive },
+      })
       .then((r) => r.data.responseObject),
 
-  upsertCompanyUserMembership: (req: TenantUpsertCompanyUserMembershipRequest) =>
-    api.post<ApiResponse<object>>('/api/admin/iam/tenant/company_user_memberships', req)
+  upsertCompanyUserMembership: (req: SubscriberUpsertCompanyUserMembershipRequest) =>
+    api
+      .post<ApiResponse<object>>('/api/admin/iam/tenant/company_user_memberships', req)
       .then((r) => r.data.responseObject),
 
   revokeCompanyUserMembership: (email: string) =>
-    api.post<ApiResponse<object>>('/api/admin/iam/tenant/company_user_memberships/revoke', { email })
+    api
+      .post<ApiResponse<object>>('/api/admin/iam/tenant/company_user_memberships/revoke', { email })
       .then((r) => r.data.responseObject),
 };
-

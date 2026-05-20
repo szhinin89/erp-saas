@@ -45,7 +45,8 @@ internal static class VentasEndToEndHelpers
             phone:                null,
             email:                null,
             notes:                null,
-            createdBy:            userId);
+            createdBy:            userId,
+            companyId:            seed.CompanyId);
         db.Customers.Add(cliente);
 
         // SriSettings (Environment 1 = pruebas)
@@ -72,7 +73,7 @@ internal static class VentasEndToEndHelpers
 
         if (crearStockActual && stockInicial > 0)
         {
-            var stock = CurrentStock.Create(subscriberId, productId, bodegaId, userId);
+            var stock = CurrentStock.Create(subscriberId, productId, bodegaId, userId, companyId: seed.CompanyId);
             stock.ApplyMovement(stockInicial, userId);
             db.CurrentStocks.Add(stock);
 
@@ -84,7 +85,8 @@ internal static class VentasEndToEndHelpers
                 reference:       "Stock inicial prueba",
                 sourceDocId:   null,
                 sourceDocType: null,
-                createdBy:           userId);
+                createdBy:           userId,
+                companyId:           seed.CompanyId);
             db.StockMovements.Add(movInicial);
 
             await db.SaveChangesAsync(ct);

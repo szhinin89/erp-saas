@@ -1,11 +1,14 @@
+using ERP.Domain.Access.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
+using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Common.Validators;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Subscribers.Entities;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Services;
 
 namespace ERP.API.Tests.Support;
 
@@ -14,6 +17,7 @@ internal static class IntegrationSeedData
     internal sealed record SeedResult(
         Guid   SubscriberId,
         Guid   UserId,
+        Guid   CompanyId,
         Guid   ProductId,
         Guid   WarehouseId,
         string ProveedorRuc,
@@ -71,7 +75,8 @@ internal static class IntegrationSeedData
         ErpDbContext          db,
         MutableCurrentSubscriber mt,
         MutableCurrentUser   mu,
-        CancellationToken    ct)
+        CancellationToken    ct,
+        MutableCurrentCompany? mc = null)
     {
         var userId = Guid.NewGuid();
         mu.UserId = userId;
@@ -80,6 +85,16 @@ internal static class IntegrationSeedData
         mt.SubscriberId = tenant.Id;
         var tid = tenant.Id;
         db.Subscribers.Add(tenant);
+        await db.SaveChangesAsync(ct);
+
+        var company = Company.CreateFromSubscriber(
+            tid, "1790016919001", "Empresa operativa INT", "Av. Test 001");
+        db.Companies.Add(company);
+        db.CompanyUserMemberships.Add(CompanyUserMembership.Create(
+            company.Id, userId, "Admin", profileId: null, createdBy: userId));
+        if (mc is not null)
+            mc.CompanyId = company.Id;
+        JobCompanyContext.Current = company.Id;
         await db.SaveChangesAsync(ct);
 
         var branch = Branch.Create(
@@ -126,7 +141,9 @@ internal static class IntegrationSeedData
 
         await db.SaveChangesAsync(ct);
 
-        var bodega = Warehouse.Create(tid, branch.Id, "Warehouse Central", null, null, userId);
+        var bodega = Warehouse.Create(
+            tid, branch.Id, "Warehouse Central", "WH-INT", null, null, null, null, null, null, null, null, userId,
+            companyId: company.Id);
         db.Warehouses.Add(bodega);
 
         var product = Product.Create(
@@ -150,7 +167,8 @@ internal static class IntegrationSeedData
             userId,
             purchaseCode: "SKU-INT-01",
             isService: false,
-            tracksStock: true);
+            tracksStock: true,
+            companyId: company.Id);
 
         db.Products.Add(product);
 
@@ -159,7 +177,7 @@ internal static class IntegrationSeedData
         var ruc   = ValidSociedadPrivadaRuc();
         var clave = ClaveAcceso49TestFactory.FromPrefix48(new string('6', 48));
 
-        return new SeedResult(tid, userId, product.Id, bodega.Id, ruc, clave);
+        return new SeedResult(tid, userId, company.Id, product.Id, bodega.Id, ruc, clave);
     }
 }
 

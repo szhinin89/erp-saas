@@ -60,12 +60,15 @@ export function readApiErrorMessage(err: unknown): string | null {
 }
 
 /** Mensaje para mostrar en UI: cuerpo de error, red sin respuesta, o texto genérico. */
-export function formatApiRequestError(err: unknown, labels: { offline: string; generic: string }): string {
+export function formatApiRequestError(
+  err: unknown,
+  labels: { offline?: string; generic: string },
+): string {
   const fromApi = readApiErrorMessage(err);
   if (fromApi) return fromApi;
 
   if (axios.isAxiosError(err) && !err.response) {
-    return labels.offline;
+    return labels.offline ?? labels.generic;
   }
 
   return labels.generic;

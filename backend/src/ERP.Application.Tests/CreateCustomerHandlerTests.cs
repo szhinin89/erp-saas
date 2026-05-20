@@ -38,7 +38,13 @@ public sealed class CreateCustomerHandlerTests
         user.SetupGet(u => u.FullName).Returns("Test User");
         user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
-        var handler = new CreateCustomerCommandHandler(repo.Object, activity.Object, tenant.Object, user.Object);
+        var company = new Mock<ICurrentCompany>(MockBehavior.Strict);
+        company.SetupGet(c => c.CompanyId).Returns(Guid.NewGuid());
+        company.SetupGet(c => c.HasCompanyContext).Returns(true);
+        company.SetupGet(c => c.IsAuthenticated).Returns(true);
+
+        var handler = new CreateCustomerCommandHandler(
+            repo.Object, activity.Object, tenant.Object, company.Object, user.Object);
 
         var cmd = new CreateCustomerCommand(
             IdentificationType: "RUC",
@@ -80,7 +86,11 @@ public sealed class CreateCustomerHandlerTests
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
         user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
-        var handler = new CreateCustomerCommandHandler(repo.Object, activity.Object, tenant.Object, user.Object);
+        var company = new Mock<ICurrentCompany>(MockBehavior.Strict);
+        company.SetupGet(c => c.HasCompanyContext).Returns(false);
+
+        var handler = new CreateCustomerCommandHandler(
+            repo.Object, activity.Object, tenant.Object, company.Object, user.Object);
 
         var result = await handler.Handle(new CreateCustomerCommand(
             "RUC", "1234567890001", "Dup", null, null, null, null, null, true), CancellationToken.None);
@@ -102,7 +112,11 @@ public sealed class CreateCustomerHandlerTests
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());
         user.SetupGet(u => u.IsAuthenticated).Returns(true);
 
-        var handler = new CreateCustomerCommandHandler(repo.Object, activity.Object, tenant.Object, user.Object);
+        var company = new Mock<ICurrentCompany>(MockBehavior.Strict);
+        company.SetupGet(c => c.HasCompanyContext).Returns(false);
+
+        var handler = new CreateCustomerCommandHandler(
+            repo.Object, activity.Object, tenant.Object, company.Object, user.Object);
 
         var result = await handler.Handle(new CreateCustomerCommand(
             "RUC", "1234567890001", "X", null, null, null, "not-an-email", null, true), CancellationToken.None);

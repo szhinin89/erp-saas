@@ -179,7 +179,8 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
                     xmlGeneradoPath,
                     xmlAutorizacionPath,
                     asientoResult.Value,
-                    stockLines);
+                    stockLines,
+                    facturaOriginal.CompanyId);
             }
             else
             {

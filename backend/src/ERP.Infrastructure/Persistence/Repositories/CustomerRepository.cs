@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ERP.Application.Common;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 
@@ -7,17 +8,22 @@ namespace ERP.Infrastructure.Persistence.Repositories;
 public sealed class CustomerRepository : ICustomerRepository
 {
     private readonly ErpDbContext _context;
+    private readonly ICurrentCompany _company;
 
-    public CustomerRepository(ErpDbContext context)
+    public CustomerRepository(ErpDbContext context, ICurrentCompany company)
     {
         _context = context;
+        _company = company;
     }
+
+    private IQueryable<Customer> Scoped(Guid subscriberId) =>
+        _context.Customers.ForOperationalScope(subscriberId, _company);
 
     public Task AddAsync(Customer customer, CancellationToken ct = default)
         => _context.Customers.AddAsync(customer, ct).AsTask();
 
     public Task<Customer?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
-        => _context.Customers.FirstOrDefaultAsync(x => x.SubscriberId == subscriberId && x.Id == id, ct);
+        => Scoped(subscriberId).FirstOrDefaultAsync(x => x.Id == id, ct);
 
     public async Task<bool> ExistsIdentificationAsync(
         Guid subscriberId,
@@ -28,8 +34,7 @@ public sealed class CustomerRepository : ICustomerRepository
     {
         var type = Customer.NormalizeIdentificationType(identificationType);
         var number = Customer.NormalizeIdentificationNumber(identificationNumber);
-        var q = _context.Customers.Where(x =>
-            x.SubscriberId == subscriberId &&
+        var q = Scoped(subscriberId).Where(x =>
             x.IdentificationType == type &&
             x.IdentificationNumber == number);
         if (excludeCustomerId is not null)
@@ -43,7 +48,7 @@ public sealed class CustomerRepository : ICustomerRepository
         string? search,
         CancellationToken ct = default)
     {
-        var q = _context.Customers.AsQueryable().Where(x => x.SubscriberId == subscriberId);
+        var q = Scoped(subscriberId);
         if (activeFilter is true)
             q = q.Where(x => x.IsActive);
         else if (activeFilter is false)

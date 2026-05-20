@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LoadingState, NoAccessPage } from '../../../../components/PageShell';
@@ -35,7 +35,7 @@ const TIMEZONES = [
   { value: 'America/New_York',  label: '(GMT-05:00) Eastern Time' },
 ];
 
-function taxTypeBadge(type: string): JSX.Element {
+function taxTypeBadge(type: string): React.ReactElement {
   const upper = type.toUpperCase();
   if (upper === 'VAT')    return <span className="badge badge--green">IVA</span>;
   if (upper === 'EXCISE') return <span className="badge badge--red">ICE</span>;

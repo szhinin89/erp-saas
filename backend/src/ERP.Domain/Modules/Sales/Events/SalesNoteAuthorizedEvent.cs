@@ -12,6 +12,7 @@ public sealed class SalesNoteAuthorizedEvent : IDomainEvent
     public Guid     SubscriberId    { get; }
     public Guid     UserId      { get; }
     public Guid     WarehouseId { get; }
+    public Guid     CompanyId   { get; }
     public string   NoteNumber  { get; }
     public IReadOnlyList<SalesNoteStockLine> StockLines { get; }
 
@@ -20,6 +21,7 @@ public sealed class SalesNoteAuthorizedEvent : IDomainEvent
         Guid   subscriberId,
         Guid   userId,
         Guid   warehouseId,
+        Guid   companyId,
         string noteNumber,
         IReadOnlyList<SalesNoteStockLine> stockLines)
     {
@@ -27,6 +29,7 @@ public sealed class SalesNoteAuthorizedEvent : IDomainEvent
         SubscriberId    = subscriberId;
         UserId      = userId;
         WarehouseId = warehouseId;
+        CompanyId   = companyId;
         NoteNumber  = noteNumber;
         StockLines  = stockLines;
     }

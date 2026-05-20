@@ -2,8 +2,8 @@ import { useLocation } from 'react-router-dom';
 import { PageShell, EmptyState } from '../components/PageShell';
 import { useI18n } from '../i18n/i18n';
 
-/** Pantalla temporal para rutas del catálogo de menú que aún no tienen UI en el SPA. */
-export function TenantFeaturePlaceholderPage() {
+/** Placeholder for menu routes without a dedicated screen yet. */
+export function FeaturePlaceholderPage() {
   const { pathname } = useLocation();
   const { t } = useI18n();
   return (

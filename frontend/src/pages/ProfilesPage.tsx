@@ -131,7 +131,7 @@ export function ProfilesPage() {
   const [permLoading, setPermLoading] = useState(false);
 
   /* form */
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<ProfileCreateFormValues>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<ProfileCreateFormValues>({
     resolver: zodResolver(profileCreateSchema),
     defaultValues: { name: '', description: '', isActive: true },
   });

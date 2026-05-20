@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useI18n } from '../i18n/i18n';
 import {
   ReportPage,
   ReportKpiCard,
@@ -32,7 +31,6 @@ const DEMO_ROWS = [
 ];
 
 export function SalesReportPage() {
-  const { t } = useI18n();
   const [period, setPeriod] = useState<RptPeriod>('day');
   const [search, setSearch] = useState('');
 

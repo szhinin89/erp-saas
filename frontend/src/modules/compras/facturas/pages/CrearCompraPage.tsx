@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../../components/PageShell';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';

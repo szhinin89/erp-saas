@@ -17,7 +17,7 @@ namespace ERP.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.7")
+                .HasAnnotation("ProductVersion", "10.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -4477,6 +4477,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("SubscriberId", "CompanyId")
+                        .HasDatabaseName("ix_current_stock_subscriber_company");
+
                     b.HasIndex("SubscriberId", "ProductId", "WarehouseId")
                         .IsUnique()
                         .HasDatabaseName("uq_current_stock_subscriber_product_warehouse");
@@ -4627,6 +4630,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("adjustment_type");
 
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -4701,6 +4708,9 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("SubscriberId", "AdjustmentNumber")
                         .IsUnique()
                         .HasDatabaseName("uq_stock_adjustment_number");
+
+                    b.HasIndex("SubscriberId", "CompanyId")
+                        .HasDatabaseName("ix_stock_adjustment_subscriber_company");
 
                     b.HasIndex("SubscriberId", "Status")
                         .HasDatabaseName("ix_stock_adjustment_subscriber_status");
@@ -4878,6 +4888,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<DateTime?>("ConfirmedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("confirmed_at");
@@ -4949,6 +4963,9 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("SourceWarehouseId");
 
                     b.HasIndex("TargetWarehouseId");
+
+                    b.HasIndex("SubscriberId", "CompanyId")
+                        .HasDatabaseName("ix_stock_transfer_subscriber_company");
 
                     b.HasIndex("SubscriberId", "Status")
                         .HasDatabaseName("ix_stock_transfer_subscriber_status");
@@ -7383,6 +7400,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("address_line");
 
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<string>("CountryCode")
                         .HasMaxLength(3)
                         .HasColumnType("character(3)")
@@ -7464,12 +7485,12 @@ namespace ERP.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SubscriberId")
-                        .HasDatabaseName("ix_customers_subscriber_id");
+                    b.HasIndex("SubscriberId", "CompanyId")
+                        .HasDatabaseName("ix_customers_subscriber_company");
 
-                    b.HasIndex("SubscriberId", "IdentificationType", "IdentificationNumber")
+                    b.HasIndex("SubscriberId", "CompanyId", "IdentificationType", "IdentificationNumber")
                         .IsUnique()
-                        .HasDatabaseName("ux_customers_subscriber_doc");
+                        .HasDatabaseName("ux_customers_subscriber_company_doc");
 
                     b.ToTable("customers", (string)null);
                 });
@@ -7499,6 +7520,10 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("BranchId")
                         .HasColumnType("uuid")
                         .HasColumnName("branch_id");
+
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -7627,6 +7652,9 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("CustomerId");
 
                     b.HasIndex("WarehouseId");
+
+                    b.HasIndex("SubscriberId", "CompanyId")
+                        .HasDatabaseName("ix_sales_bill_subscriber_company");
 
                     b.HasIndex("SubscriberId", "IssueDate")
                         .HasDatabaseName("ix_sales_bill_subscriber_date");
@@ -8036,6 +8064,9 @@ namespace ERP.Infrastructure.Migrations
                         .IsUnique()
                         .HasDatabaseName("uq_sales_document_subscriber_access_key")
                         .HasFilter("access_key IS NOT NULL");
+
+                    b.HasIndex("SubscriberId", "CompanyId")
+                        .HasDatabaseName("ix_sales_document_subscriber_company");
 
                     b.HasIndex("SubscriberId", "CustomerId", "IssueDate")
                         .HasDatabaseName("ix_sales_document_subscriber_customer_date");

@@ -17,7 +17,7 @@ interface Props {
   productos: Array<{ id: string; shortName: string; tracksStock: boolean }>;
 }
 
-export function ItemsTransferenciaGrid({ bodegaOrigenId, items, onChange, disabled, productos }: Props) {
+export function ItemsTransferenciaGrid({ sourceWarehouseId, items, onChange, disabled, productos }: Props) {
   const addRow = () => {
     onChange([...items, { productoId: '', descripcion: '', cantidad: 1, stockDisponible: null }]);
   };
@@ -29,7 +29,7 @@ export function ItemsTransferenciaGrid({ bodegaOrigenId, items, onChange, disabl
   const updateRow = async (idx: number, field: keyof ItemRow, value: string | number) => {
     const next = items.map((row, i) => (i === idx ? { ...row, [field]: value } : row));
 
-    if (field === 'productoId' && value && bodegaOrigenId) {
+    if (field === 'productoId' && value && sourceWarehouseId) {
       const prod = productos.find((p) => p.id === value);
       next[idx] = {
         ...next[idx],
@@ -39,7 +39,7 @@ export function ItemsTransferenciaGrid({ bodegaOrigenId, items, onChange, disabl
       onChange(next);
 
       if (prod?.tracksStock) {
-        const disponible = await transferenciaService.getStockDisponible(bodegaOrigenId, String(value));
+        const disponible = await transferenciaService.getStockDisponible(sourceWarehouseId, String(value));
         onChange(
           next.map((row, i) => (i === idx ? { ...row, stockDisponible: disponible } : row))
         );

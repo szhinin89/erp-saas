@@ -15,7 +15,6 @@ import {
   calcLineAmounts,
   calcInvoiceTotals,
   emptyInvoiceLine,
-  newInvoiceLineId,
   type InvoiceLineValues,
 } from '../schemas/createInvoiceSchema';
 

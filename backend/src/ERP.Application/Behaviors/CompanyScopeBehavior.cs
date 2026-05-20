@@ -16,6 +16,8 @@ public sealed class CompanyScopeBehavior<TRequest, TResponse> : IPipelineBehavio
         "ERP.Application.Sales",
         "ERP.Application.Modules.Inventory",
         "ERP.Application.Inventory",
+        "ERP.Application.Products",
+        "ERP.Application.Modules.Products",
         "ERP.Application.Modules.Purchasing",
         "ERP.Application.Purchasing",
         "ERP.Application.Modules.Accounting",

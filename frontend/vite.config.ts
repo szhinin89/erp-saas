@@ -11,6 +11,10 @@ const apiProxy = {
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    // Rolldown + lightningcss minify breaks on legacy attribute selectors in zh-ui.css.
+    cssMinify: false,
+  },
   test: {
     include: ['src/**/*.test.{ts,tsx}'],
     exclude: ['e2e/**', 'node_modules/**'],

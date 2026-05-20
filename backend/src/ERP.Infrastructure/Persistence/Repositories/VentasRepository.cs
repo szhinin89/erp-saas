@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Enums;
@@ -14,18 +15,27 @@ public sealed class SalesRepository : ISalesRepository
     private readonly ErpDbContext _context;
     private readonly DocumentSchemaOptions _schemaOptions;
     private readonly IUnifiedDocumentSync _documentSync;
+    private readonly ICurrentCompany _company;
 
     public SalesRepository(
         ErpDbContext context,
         IOptions<DocumentSchemaOptions> schemaOptions,
-        IUnifiedDocumentSync documentSync)
+        IUnifiedDocumentSync documentSync,
+        ICurrentCompany company)
     {
         _context = context;
         _schemaOptions = schemaOptions.Value;
         _documentSync = documentSync;
+        _company = company;
     }
 
     private bool UseUnified => _schemaOptions.UseUnifiedSchema;
+
+    private IQueryable<SalesBill> ScopedBills(Guid subscriberId) =>
+        _context.SalesBills.ForOperationalScope(subscriberId, _company);
+
+    private IQueryable<SalesDocument> ScopedDocuments(Guid subscriberId) =>
+        _context.SalesDocuments.ForOperationalScope(subscriberId, _company);
 
     public Task AddBillAsync(SalesBill factura, CancellationToken ct = default)
     {
@@ -38,11 +48,11 @@ public sealed class SalesRepository : ISalesRepository
     {
         if (UseUnified)
         {
-            var doc = await _context.SalesDocuments
+            var doc = await ScopedDocuments(subscriberId)
                 .Include(d => d.Cliente)
                 .Include(d => d.Lines)
                 .Include(d => d.Electronic)
-                .Where(d => d.SubscriberId == subscriberId && d.Id == id
+                .Where(d => d.Id == id
                     && (d.DocType == SalesDocumentType.Invoice || d.DocType == SalesDocumentType.Proforma))
                 .FirstOrDefaultAsync(ct);
             if (doc is null) return null;
@@ -51,10 +61,10 @@ public sealed class SalesRepository : ISalesRepository
             return bill;
         }
 
-        return await _context.SalesBills
+        return await ScopedBills(subscriberId)
             .Include(f => f.Cliente)
             .Include(f => f.Lines)
-            .FirstOrDefaultAsync(f => f.SubscriberId == subscriberId && f.Id == id, ct);
+            .FirstOrDefaultAsync(f => f.Id == id, ct);
     }
 
     public async Task<IReadOnlyList<SalesBill>> GetBillsAsync(
@@ -78,9 +88,7 @@ public sealed class SalesRepository : ISalesRepository
             return docs.Select(SalesDocumentMapper.ToLegacyBill).ToList();
         }
 
-        var legacyQuery = _context.SalesBills
-            .Include(f => f.Cliente)
-            .Where(f => f.SubscriberId == subscriberId);
+        IQueryable<SalesBill> legacyQuery = ScopedBills(subscriberId).Include(f => f.Cliente);
 
         if (fechaDesde.HasValue)
             legacyQuery = legacyQuery.Where(f => f.IssueDate >= fechaDesde.Value);
@@ -131,9 +139,7 @@ public sealed class SalesRepository : ISalesRepository
             return (docs.Select(SalesDocumentMapper.ToLegacyBill).ToList(), totalCount);
         }
 
-        var legacyQuery = _context.SalesBills
-            .Include(f => f.Cliente)
-            .Where(f => f.SubscriberId == subscriberId);
+        IQueryable<SalesBill> legacyQuery = ScopedBills(subscriberId).Include(f => f.Cliente);
 
         if (clienteId.HasValue)
             legacyQuery = legacyQuery.Where(f => f.CustomerId == clienteId.Value);
@@ -160,11 +166,10 @@ public sealed class SalesRepository : ISalesRepository
     }
 
     private IQueryable<SalesDocument> InvoiceDocumentsQuery(Guid subscriberId) =>
-        _context.SalesDocuments
+        ScopedDocuments(subscriberId)
             .Include(f => f.Cliente)
             .Include(f => f.Electronic)
-            .Where(f => f.SubscriberId == subscriberId
-                && (f.DocType == SalesDocumentType.Invoice || f.DocType == SalesDocumentType.Proforma));
+            .Where(f => f.DocType == SalesDocumentType.Invoice || f.DocType == SalesDocumentType.Proforma);
 
     public Task AddNoteAsync(SalesNote nota, CancellationToken ct = default)
     {
@@ -204,9 +209,8 @@ public sealed class SalesRepository : ISalesRepository
     {
         if (UseUnified)
         {
-            IQueryable<SalesDocument> q = _context.SalesDocuments
-                .Where(n => n.SubscriberId == subscriberId
-                    && (n.DocType == SalesDocumentType.CreditNote || n.DocType == SalesDocumentType.DebitNote))
+            IQueryable<SalesDocument> q = ScopedDocuments(subscriberId)
+                .Where(n => n.DocType == SalesDocumentType.CreditNote || n.DocType == SalesDocumentType.DebitNote)
                 .Include(n => n.Reference)
                     .ThenInclude(f => f!.Cliente);
 
@@ -233,9 +237,8 @@ public sealed class SalesRepository : ISalesRepository
     }
 
     private IQueryable<SalesDocument> NoteDocumentsQuery(Guid subscriberId) =>
-        _context.SalesDocuments
-            .Where(n => n.SubscriberId == subscriberId
-                && (n.DocType == SalesDocumentType.CreditNote || n.DocType == SalesDocumentType.DebitNote));
+        ScopedDocuments(subscriberId)
+            .Where(n => n.DocType == SalesDocumentType.CreditNote || n.DocType == SalesDocumentType.DebitNote);
 
     public Task AddRetentionAsync(SalesRetention retencion, CancellationToken ct = default)
     {

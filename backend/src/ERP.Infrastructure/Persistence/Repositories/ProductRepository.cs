@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ERP.Application.Common;
 using ERP.Domain.Products.Entities;
 using ERP.Domain.Products.Interfaces;
 
@@ -7,18 +8,22 @@ namespace ERP.Infrastructure.Persistence.Repositories;
 public class ProductRepository : IProductRepository
 {
     private readonly ErpDbContext _context;
+    private readonly ICurrentCompany _company;
 
-    public ProductRepository(ErpDbContext context)
+    public ProductRepository(ErpDbContext context, ICurrentCompany company)
     {
         _context = context;
+        _company = company;
     }
 
+    private IQueryable<Product> Scoped(Guid subscriberId)
+        => _context.Products.ForOperationalScope(subscriberId, _company);
+
     public async Task<Product?> GetByIdAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
-        => await _context.Products
-            .FirstOrDefaultAsync(p => p.Id == id && p.SubscriberId == subscriberId, ct);
+        => await Scoped(subscriberId).FirstOrDefaultAsync(p => p.Id == id, ct);
 
     public async Task<Product?> GetByIdWithLinesAsync(Guid id, Guid subscriberId, CancellationToken ct = default)
-        => await _context.Products
+        => await Scoped(subscriberId)
             .Include(p => p.Barcodes)
             .Include(p => p.SupplierCodes)
             .Include(p => p.UnitConversions)
@@ -30,18 +35,17 @@ public class ProductRepository : IProductRepository
             .Include(p => p.TariffDetails)
             .Include(p => p.Substitutes)
             .Include(p => p.CustomFields)
-            .FirstOrDefaultAsync(p => p.Id == id && p.SubscriberId == subscriberId, ct);
+            .FirstOrDefaultAsync(p => p.Id == id, ct);
 
     public async Task<IReadOnlyList<Product>> GetAllByTenantAsync(Guid subscriberId, CancellationToken ct = default)
-        => await _context.Products
-            .Where(p => p.SubscriberId == subscriberId && p.IsActive)
+        => await Scoped(subscriberId)
+            .Where(p => p.IsActive)
             .OrderBy(p => p.SaleCode)
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<Product>> GetReportAsync(Guid subscriberId, ProductReportFilter filter, CancellationToken ct = default)
     {
-        var query = _context.Products.AsQueryable()
-            .Where(p => p.SubscriberId == subscriberId);
+        var query = Scoped(subscriberId);
 
         if (filter.IsActive is not null)
             query = query.Where(p => p.IsActive == filter.IsActive);

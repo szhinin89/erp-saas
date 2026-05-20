@@ -1,62 +1,37 @@
-using MediatR;
-using Microsoft.Extensions.Logging;
-using ERP.Domain.Modules.Inventory.Entities;
-using ERP.Domain.Modules.Inventory.Enums;
-using ERP.Domain.Modules.Inventory.Interfaces;
+using ERP.Application.Common.Inventory;
 using ERP.Domain.Modules.Sales.Events;
+using MediatR;
 
 namespace ERP.Application.Modules.Inventory.EventHandlers;
 
 public sealed class SalesNoteAuthorizedEventHandler : INotificationHandler<SalesNoteAuthorizedEvent>
 {
-    private readonly IStockRepository _inventario;
-    private readonly ILogger<SalesNoteAuthorizedEventHandler> _logger;
+    private readonly IInventoryPostingService _posting;
 
-    public SalesNoteAuthorizedEventHandler(
-        IStockRepository inventario,
-        ILogger<SalesNoteAuthorizedEventHandler> logger)
-    {
-        _inventario = inventario;
-        _logger     = logger;
-    }
+    public SalesNoteAuthorizedEventHandler(IInventoryPostingService posting) => _posting = posting;
 
     public async Task Handle(SalesNoteAuthorizedEvent notification, CancellationToken ct)
     {
-        var subscriberId = notification.SubscriberId;
-        var userId   = notification.UserId;
-        var bodegaId = notification.WarehouseId;
+        if (notification.CompanyId == Guid.Empty || notification.StockLines.Count == 0)
+            return;
 
-        foreach (var line in notification.StockLines)
-        {
-            var stock = await _inventario.GetStockAsync(
-                subscriberId, bodegaId, line.ProductId, ct);
+        var lines = notification.StockLines
+            .Select(l => new InventoryPostingLine(l.ProductId, l.Quantity))
+            .ToList();
 
-            if (stock is null)
-            {
-                _logger.LogWarning(
-                    "Nota crédito {NotaId}: sin stock para producto {ProductoId} en Warehouse {BodegaId}; se omite reingreso.",
-                    notification.NoteId, line.ProductId, bodegaId);
-                continue;
-            }
+        var result = await _posting.PostSaleReturnAsync(
+            new InventoryPostingRequest(
+                notification.SubscriberId,
+                notification.CompanyId,
+                notification.WarehouseId,
+                lines,
+                notification.NoteNumber,
+                notification.NoteId,
+                "SalesNote",
+                notification.UserId),
+            ct);
 
-            var cantidadAnterior = stock.Quantity;
-            var costo            = stock.AverageCost;
-            stock.ApplyMovement(line.Quantity, userId, costo);
-
-            var movimiento = StockMovement.Create(
-                subscriberId,
-                line.ProductId,
-                bodegaId,
-                StockMovementType.SaleReturn,
-                quantity:            line.Quantity,
-                previousQuantity:    cantidadAnterior,
-                reference:          notification.NoteNumber,
-                sourceDocId:   notification.NoteId,
-                sourceDocType: "SalesNote",
-                createdBy: userId,
-                unitCost:       costo);
-
-            await _inventario.AddMovementAsync(movimiento, ct);
-        }
+        if (!result.IsSuccess)
+            throw new InvalidOperationException(result.Error ?? "Error al registrar reingreso de inventario por nota.");
     }
 }

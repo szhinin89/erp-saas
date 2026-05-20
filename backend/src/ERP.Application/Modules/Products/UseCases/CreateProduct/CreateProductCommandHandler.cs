@@ -15,6 +15,7 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
     private readonly ITaxRateRepository _taxRates;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentSubscriber _currentSubscriber;
+    private readonly ICurrentCompany _currentCompany;
     private readonly ICurrentUser _currentUser;
 
     public CreateProductCommandHandler(
@@ -22,12 +23,14 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
         ITaxRateRepository taxRates,
         IUserActivityRepository activity,
         ICurrentSubscriber currentSubscriber,
+        ICurrentCompany currentCompany,
         ICurrentUser currentUser)
     {
         _repository    = repository;
         _taxRates      = taxRates;
         _activity      = activity;
         _currentSubscriber = currentSubscriber;
+        _currentCompany = currentCompany;
         _currentUser   = currentUser;
     }
 
@@ -98,7 +101,8 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
             command.HasMultipleColors,
             command.HasSizes,
             command.HandlesTariff,
-            command.IsForSale);
+            command.IsForSale,
+            companyId: _currentCompany.HasCompanyContext ? _currentCompany.CompanyId : null);
 
         if (command.Barcodes is { Count: > 0 })
         {

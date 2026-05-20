@@ -12,6 +12,7 @@ public sealed class SalesBillAuthorizedEvent : IDomainEvent
     public Guid     SubscriberId     { get; }
     public Guid     UserId       { get; }
     public Guid     WarehouseId  { get; }
+    public Guid     CompanyId    { get; }
     public string   BillNumber   { get; }
     public IReadOnlyList<SalesBillAuthorizedStockLine> StockLines { get; }
 
@@ -20,6 +21,7 @@ public sealed class SalesBillAuthorizedEvent : IDomainEvent
         Guid   subscriberId,
         Guid   userId,
         Guid   warehouseId,
+        Guid   companyId,
         string billNumber,
         IReadOnlyList<SalesBillAuthorizedStockLine> stockLines)
     {
@@ -27,6 +29,7 @@ public sealed class SalesBillAuthorizedEvent : IDomainEvent
         SubscriberId    = subscriberId;
         UserId      = userId;
         WarehouseId = warehouseId;
+        CompanyId   = companyId;
         BillNumber  = billNumber;
         StockLines  = stockLines;
     }

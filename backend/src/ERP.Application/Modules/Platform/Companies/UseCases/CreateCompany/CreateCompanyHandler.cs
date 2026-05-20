@@ -48,9 +48,9 @@ public sealed class CreateCompanyHandler : IRequestHandler<CreateCompanyCommand,
 
             return Result<CompanyDetailDto>.Success(CompanyDetailDto.FromEntity(company));
         }
-        catch (CommercialPlanLimitExceededException ex)
+        catch (CommercialPlanLimitExceededException)
         {
-            return Result<CompanyDetailDto>.Failure(ex.Message);
+            throw;
         }
         catch (InvalidOperationException ex)
         {

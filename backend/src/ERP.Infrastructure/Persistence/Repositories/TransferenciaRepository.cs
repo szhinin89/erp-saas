@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ERP.Application.Common;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
@@ -7,26 +8,30 @@ namespace ERP.Infrastructure.Persistence.Repositories;
 public sealed class StockTransferRepository : IStockTransferRepository
 {
     private readonly ErpDbContext _context;
+    private readonly ICurrentCompany _company;
 
-    public StockTransferRepository(ErpDbContext context) => _context = context;
+    public StockTransferRepository(ErpDbContext context, ICurrentCompany company)
+    {
+        _context = context;
+        _company = company;
+    }
+
+    private IQueryable<StockTransfer> Scoped(Guid subscriberId)
+        => _context.StockTransfers.ForOperationalScope(subscriberId, _company);
 
     public Task AddAsync(StockTransfer StockTransfer, CancellationToken ct = default)
         => _context.StockTransfers.AddAsync(StockTransfer, ct).AsTask();
 
     public Task<StockTransfer?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
-        => _context.StockTransfers
+        => Scoped(subscriberId)
             .Include(t => t.SourceWarehouse)
             .Include(t => t.TargetWarehouse)
             .Include(t => t.Lines)
-            .FirstOrDefaultAsync(t => t.SubscriberId == subscriberId && t.Id == id, ct);
+            .FirstOrDefaultAsync(t => t.Id == id, ct);
 
     public async Task<int> GetNextSequentialAsync(Guid subscriberId, CancellationToken ct = default)
     {
-        // MaxAsync on empty sequence throws; use nullable Max then coalesce.
-        // Also compatible with EF InMemory (DefaultIfEmpty+MaxAsync not translatable there).
-        var max = await _context.StockTransfers
-            .Where(t => t.SubscriberId == subscriberId)
-            .MaxAsync(t => (int?)t.Sequential, ct);
+        var max = await Scoped(subscriberId).MaxAsync(t => (int?)t.Sequential, ct);
         return (max ?? 0) + 1;
     }
 
@@ -41,10 +46,7 @@ public sealed class StockTransferRepository : IStockTransferRepository
         DateTime? fechaHasta,
         CancellationToken ct = default)
     {
-        var query = _context.StockTransfers
-            .Include(t => t.SourceWarehouse)
-            .Include(t => t.TargetWarehouse)
-            .Where(t => t.SubscriberId == subscriberId);
+        IQueryable<StockTransfer> query = Scoped(subscriberId);
 
         if (WarehouseOrigenId.HasValue)
             query = query.Where(t => t.SourceWarehouseId == WarehouseOrigenId.Value);
@@ -59,6 +61,8 @@ public sealed class StockTransferRepository : IStockTransferRepository
 
         var total = await query.CountAsync(ct);
         var items = await query
+            .Include(t => t.SourceWarehouse)
+            .Include(t => t.TargetWarehouse)
             .OrderByDescending(t => t.TransferDate)
             .Skip((pageNumber - 1) * pageSize)
             .Take(pageSize)
@@ -70,4 +74,3 @@ public sealed class StockTransferRepository : IStockTransferRepository
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _context.SaveChangesAsync(ct);
 }
-

@@ -218,7 +218,7 @@ export function SubscriberAccessPage() {
             ) : listFiltered.length === 0 ? (
               <EmptyState message={t('common.listTab.noMatch')} />
             ) : (
-              <table className="table tenant-access-responsive-table">
+              <table className="table responsive-table tenant-access-responsive-table">
                 <thead>
                   <tr>
                     <th>{t('subscriberAccess.table.user')}</th>

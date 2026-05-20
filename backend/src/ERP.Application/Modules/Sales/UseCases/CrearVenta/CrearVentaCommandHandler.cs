@@ -26,6 +26,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
     private readonly ITaxRateRepository     _taxRateRepository;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentSubscriber          _currentSubscriber;
+    private readonly ICurrentCompany           _currentCompany;
     private readonly ICurrentUser            _currentUser;
     private readonly IUnitOfWork             _unitOfWork;
     private readonly ILogger<CreateSaleCommandHandler> _logger;
@@ -40,6 +41,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         ITaxRateRepository taxRateRepository,
         IUserActivityRepository activity,
         ICurrentSubscriber currentSubscriber,
+        ICurrentCompany currentCompany,
         ICurrentUser currentUser,
         IUnitOfWork unitOfWork,
         ILogger<CreateSaleCommandHandler> logger)
@@ -64,6 +66,9 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
     {
         var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
+        if (!_currentCompany.HasCompanyContext)
+            return Result<Guid>.Failure("No hay empresa operativa seleccionada.");
+        var companyId = _currentCompany.CompanyId;
 
         _logger.LogInformation(
             "Creando venta: tenant={SubscriberId}, cliente={ClienteId}, Warehouse={BodegaId}, ítems={ItemCount}",
@@ -73,11 +78,15 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         var cliente = await _customerRepository.GetByIdAsync(subscriberId, command.CustomerId, ct);
         if (cliente is null || !cliente.IsActive)
             return Result<Guid>.Failure("El cliente no existe o no está activo.");
+        if (cliente.CompanyId.HasValue && cliente.CompanyId != companyId)
+            return Result<Guid>.Failure("El cliente no pertenece a la empresa operativa activa.");
 
         // 2. Validar Warehouse existe y está activa
         var Warehouse = await _bodegaRepository.GetByIdAsync(subscriberId, command.WarehouseId, ct);
         if (Warehouse is null || !Warehouse.IsActive)
             return Result<Guid>.Failure("La Warehouse no existe o no está activa.");
+        if (Warehouse.CompanyId.HasValue && Warehouse.CompanyId != companyId)
+            return Result<Guid>.Failure("La bodega no pertenece a la empresa operativa activa.");
 
         // 3. Validar productos existen y están activos (de-duplicar por ProductoId)
         var productos = new Dictionary<Guid, ERP.Domain.Products.Entities.Product>();
@@ -87,6 +96,8 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             var producto = await _productRepository.GetByIdAsync(item.ProductId, subscriberId, ct);
             if (producto is null || !producto.IsActive)
                 return Result<Guid>.Failure($"El producto con ID {item.ProductId} no existe o no está activo.");
+            if (producto.CompanyId.HasValue && producto.CompanyId != companyId)
+                return Result<Guid>.Failure($"El producto '{producto.ShortName}' no pertenece a la empresa operativa activa.");
             productos[item.ProductId] = producto;
         }
 
@@ -201,7 +212,8 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
                 authNumber:        null,
                 authDate:          null,
                 errorMessage:      null,
-                createdBy:         userId
+                createdBy:         userId,
+                companyId:         companyId
             );
 
             foreach (var detalle in detalles)

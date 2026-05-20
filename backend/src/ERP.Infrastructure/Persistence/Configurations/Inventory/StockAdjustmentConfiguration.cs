@@ -13,6 +13,7 @@ public sealed class StockAdjustmentConfiguration : IEntityTypeConfiguration<Stoc
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(e => e.CompanyId).HasColumnName("company_id");
         builder.Property(e => e.Sequential).HasColumnName("sequential").IsRequired();
         builder.Property(e => e.AdjustmentNumber).HasColumnName("adjustment_number").HasMaxLength(StockAdjustment.NumberMaxLen).IsRequired();
         builder.Property(e => e.WarehouseId).HasColumnName("warehouse_id").IsRequired();
@@ -35,5 +36,6 @@ public sealed class StockAdjustmentConfiguration : IEntityTypeConfiguration<Stoc
         builder.HasIndex(e => new { e.SubscriberId, e.AdjustmentNumber }).IsUnique().HasDatabaseName("uq_stock_adjustment_number");
         builder.HasIndex(e => new { e.SubscriberId, e.Status }).HasDatabaseName("ix_stock_adjustment_subscriber_status");
         builder.HasIndex(e => new { e.SubscriberId, e.WarehouseId }).HasDatabaseName("ix_stock_adjustment_subscriber_warehouse");
+        builder.HasIndex(e => new { e.SubscriberId, e.CompanyId }).HasDatabaseName("ix_stock_adjustment_subscriber_company");
     }
 }

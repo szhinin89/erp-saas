@@ -46,7 +46,7 @@ type CascadeItemProps = {
   disabled?: boolean;
 };
 
-function CascadeItem({ id, icon, name, subtitle, isSelected, isActive, onSelect, onEdit, onToggle, canEdit, canToggle, disabled }: CascadeItemProps) {
+function CascadeItem({ icon, name, subtitle, isSelected, isActive, onSelect, onEdit, onToggle, canEdit, canToggle, disabled }: CascadeItemProps) {
   const [hovered, setHovered] = useState(false);
   return (
     <div

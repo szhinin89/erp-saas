@@ -10,10 +10,10 @@ export function DeploymentProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DeploymentState>({
     loaded: false,
     superAdminPanelEnabled: true,
-    maxActiveTenants: null,
+    maxActiveSubscribers: null,
     maxIdentityUsers: null,
     dedicatedSingleClientInstance: false,
-    maxUsersPerTenant: null,
+    maxUsersPerSubscriber: null,
   });
 
   useEffect(() => {
@@ -23,10 +23,10 @@ export function DeploymentProvider({ children }: { children: ReactNode }) {
         setState({
           loaded: true,
           superAdminPanelEnabled: info.superAdminPanelEnabled,
-          maxActiveTenants: info.maxActiveTenants ?? null,
+          maxActiveSubscribers: info.maxActiveSubscribers ?? null,
           maxIdentityUsers: info.maxIdentityUsers ?? null,
           dedicatedSingleClientInstance: info.dedicatedSingleClientInstance ?? false,
-          maxUsersPerTenant: info.maxUsersPerSubscriber ?? null,
+          maxUsersPerSubscriber: info.maxUsersPerSubscriber ?? null,
         });
       }
     });
@@ -42,6 +42,6 @@ export function DeploymentProvider({ children }: { children: ReactNode }) {
 
 export function useDeployment(): DeploymentState {
   const ctx = useContext(DeploymentContext);
-  if (!ctx) throw new Error('useDeployment debe usarse dentro de DeploymentProvider');
+  if (!ctx) throw new Error('useDeployment must be used within DeploymentProvider');
   return ctx;
 }

@@ -18,7 +18,7 @@ export const supplierSchema = z.object({
   address:          z.string().optional(),
   website:          z.string().optional(),
   category:         z.string().optional(),
-  status:           z.enum(['active', 'pending', 'inactive']).default('active'),
+  status:           z.enum(['active', 'pending', 'inactive']),
 });
 
 export type SupplierFormValues = z.infer<typeof supplierSchema>;

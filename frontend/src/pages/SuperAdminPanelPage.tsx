@@ -518,7 +518,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
                         <div className="sa-tenantPlanRow subtle">
                           <span className="sa-tenantPlanKey">{t('superadmin.tenantRow.plan')}:</span>{' '}
                           <strong className="mono">
-                            {planLabelForTenant(tenant.planCode) || t('superadmin.tenantRow.planUnset')}
+                            {planLabelForSubscriber(tenant.planCode) || t('superadmin.tenantRow.planUnset')}
                           </strong>
                         </div>
                         <div className="sa-tenantModulesRow">

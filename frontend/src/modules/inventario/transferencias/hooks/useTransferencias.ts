@@ -100,7 +100,7 @@ export function useTransferenciaAcciones(onSuccess?: () => void) {
 // ── Lista de bodegas (para selectores) ──────────────────────────────────────
 
 export function useBodegas() {
-  const [data,    setData]    = useState<Array<{ id: string; nombre: string; isActive: boolean }> | null>(null);
+  const [data,    setData]    = useState<import('../api/transferenciaService').BodegaOpcion[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState<string | null>(null);
 

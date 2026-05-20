@@ -4,7 +4,6 @@ import { accessService } from '../services/accessService';
 import { syncSessionEntitlements } from '../lib/syncSessionEntitlements';
 import { useAccessStore } from '../store/accessStore';
 import { useAuthStore } from '../store/authStore';
-import { usePermissionsStore } from '../store/permissionsStore';
 import type { AuthResponse } from '../types/auth';
 import { useI18n } from '../i18n/i18n';
 import { ZHPageNotice } from '../components/zh/ZHPageNotice';

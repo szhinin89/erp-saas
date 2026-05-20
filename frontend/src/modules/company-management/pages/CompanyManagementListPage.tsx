@@ -12,8 +12,8 @@ import { CurrentCompanyCard } from './CurrentCompanyCard';
 export function CompanyManagementListPage() {
   const { t } = useI18n();
   const isAdmin = (useAuthStore((s) => s.user?.role) ?? '') === 'Admin';
-  const hasPerm = usePermissionsStore((s) => s.hasPerm);
-  const canCreate = isAdmin || hasPerm('saas.companies.create');
+  const has = usePermissionsStore((s) => s.has);
+  const canCreate = isAdmin || has('saas.companies.create');
   const [items, setItems] = useState<CompanyListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -63,7 +63,7 @@ export function CompanyManagementListPage() {
         ) : items.length === 0 ? (
           <EmptyState message={t('common.noData')} />
         ) : (
-          <table className="companies-table companies-responsive-table">
+          <table className="companies-table responsive-table companies-responsive-table">
             <thead>
               <tr>
                 <th>{t('companyManagement.legalName')}</th>

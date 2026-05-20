@@ -162,7 +162,9 @@ public static class DependencyInjection
         services.AddScoped<ISubscriberBillingRepository, SubscriberBillingRepository>();
         services.AddScoped<IBillingGovernanceService, BillingGovernanceService>();
         services.AddScoped<IPaymentProviderAdapter, NullPaymentProviderAdapter>();
-        services.AddScoped<ISubscriberEntitlementsSnapshotCache, DistributedSubscriberEntitlementsSnapshotCache>();
+        services.AddScoped<DistributedSubscriberEntitlementsSnapshotCache>();
+        services.AddScoped<ISubscriberEntitlementsSnapshotCache>(sp =>
+            sp.GetRequiredService<DistributedSubscriberEntitlementsSnapshotCache>());
         services.AddScoped<ISubscriberEntitlementsCacheInvalidator>(sp =>
             sp.GetRequiredService<DistributedSubscriberEntitlementsSnapshotCache>());
         services.AddScoped<IEntitlementsCacheService, EntitlementsCacheService>();

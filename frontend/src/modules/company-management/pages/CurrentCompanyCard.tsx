@@ -46,10 +46,9 @@ export function CurrentCompanyCard() {
           <p className="mono subtle">{detail.taxId}</p>
           <p className="subtle">{detail.mainAddress}</p>
           <div className="company-current-meta">
-            <Badge
-              label={detail.isActive ? t('common.active') : t('common.inactive')}
-              variant={detail.isActive ? 'green' : 'gray'}
-            />
+            <Badge variant={detail.isActive ? 'success' : 'info'}>
+              {detail.isActive ? t('common.active') : t('common.inactive')}
+            </Badge>
             <span className="subtle">{detail.timezone} · {detail.currencyCode}</span>
           </div>
           <Link to={`/saas/companies/${detail.id}/edit`} className="zh-link">

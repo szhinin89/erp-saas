@@ -113,7 +113,8 @@ public sealed class SalesNote : AuditableEntity, ISubscriberScopedEntity
         string?  xmlSignedPath,
         string?  xmlAuthPath,
         Guid     journalEntryId,
-        IReadOnlyList<SalesNoteStockLine>? stockLines = null)
+        IReadOnlyList<SalesNoteStockLine>? stockLines = null,
+        Guid? companyId = null)
     {
         if (Status != "Validated")
             throw new InvalidOperationException($"Only Validated notes can be authorized (current: {Status}).");
@@ -132,7 +133,7 @@ public sealed class SalesNote : AuditableEntity, ISubscriberScopedEntity
         if (lines.Count > 0)
         {
             var number = $"{EstabCode}-{EmPointCode}-{Sequential}";
-            RaiseDomainEvent(new SalesNoteAuthorizedEvent(Id, SubscriberId, userId, warehouseId, number, lines));
+            RaiseDomainEvent(new SalesNoteAuthorizedEvent(Id, SubscriberId, userId, warehouseId, companyId ?? Guid.Empty, number, lines));
         }
     }
 

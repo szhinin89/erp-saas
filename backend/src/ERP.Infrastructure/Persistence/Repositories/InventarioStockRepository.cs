@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ERP.Application.Common;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
@@ -7,16 +8,24 @@ namespace ERP.Infrastructure.Persistence.Repositories;
 public sealed class StockRepository : IStockRepository
 {
     private readonly ErpDbContext _context;
+    private readonly ICurrentCompany _company;
 
-    public StockRepository(ErpDbContext context) => _context = context;
+    public StockRepository(ErpDbContext context, ICurrentCompany company)
+    {
+        _context = context;
+        _company = company;
+    }
+
+    private IQueryable<CurrentStock> Scoped(Guid subscriberId)
+        => _context.CurrentStocks.ForOperationalScope(subscriberId, _company);
 
     public Task<CurrentStock?> GetStockAsync(
         Guid subscriberId,
         Guid WarehouseId,
         Guid productoId,
         CancellationToken ct = default)
-        => _context.CurrentStocks.FirstOrDefaultAsync(
-            s => s.SubscriberId == subscriberId && s.WarehouseId == WarehouseId && s.ProductId == productoId,
+        => Scoped(subscriberId).FirstOrDefaultAsync(
+            s => s.WarehouseId == WarehouseId && s.ProductId == productoId,
             ct);
 
     public async Task<IReadOnlyList<CurrentStock>> GetStockByWarehouseAsync(
@@ -25,8 +34,7 @@ public sealed class StockRepository : IStockRepository
         Guid? productoId,
         CancellationToken ct = default)
     {
-        var q = _context.CurrentStocks
-            .Where(s => s.SubscriberId == subscriberId && s.WarehouseId == WarehouseId);
+        var q = Scoped(subscriberId).Where(s => s.WarehouseId == WarehouseId);
 
         if (productoId.HasValue)
             q = q.Where(s => s.ProductId == productoId.Value);

@@ -13,17 +13,20 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
     private readonly ICustomerRepository _repo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentSubscriber _tenant;
+    private readonly ICurrentCompany _company;
     private readonly ICurrentUser _user;
 
     public CreateCustomerCommandHandler(
         ICustomerRepository repo,
         IUserActivityRepository activity,
         ICurrentSubscriber tenant,
+        ICurrentCompany company,
         ICurrentUser user)
     {
         _repo = repo;
         _activity = activity;
         _tenant = tenant;
+        _company = company;
         _user = user;
     }
 
@@ -37,6 +40,7 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
 
         var subscriberId = _tenant.SubscriberId;
         var userId = _user.UserId;
+        var companyId = _company.HasCompanyContext ? _company.CompanyId : (Guid?)null;
 
         Customer entity;
         try
@@ -51,7 +55,8 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
                 command.Phone,
                 command.Email,
                 command.Notes,
-                userId);
+                userId,
+                companyId: companyId);
         }
         catch (ArgumentException ex)
         {

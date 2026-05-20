@@ -27,7 +27,8 @@ public sealed class VentasEndToEndTests
         var scope    = factory.Services.CreateScope();
         var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-        var seed     = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+        var seed     = await IntegrationSeedData.SeedAsync(
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial, ct: CancellationToken.None);
 
         var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;

@@ -60,12 +60,6 @@ export function CreateCreditNotePage() {
     [authorizedInvoices, invoiceId],
   );
 
-  const productMap = useMemo(() => {
-    const map = new Map<string, Product>();
-    (productsState.data ?? []).forEach((p) => map.set(p.id, p));
-    return map;
-  }, [productsState.data]);
-
   const updateLine = (localId: string, field: keyof NoteLine, value: unknown) =>
     setLines((prev) => prev.map((l) => (l.localId === localId ? { ...l, [field]: value } : l)));
 

@@ -1994,10 +1994,10 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
               <ZHBtn variant="ghost" size="md" type="button" onClick={() => void loadTenantResolved()} disabled={busy || !subscriberId}>
                 {t('superadmin.menuBuilder.loadResolvedTenant')}
               </ZHBtn>
-              <ZHBtn variant="ghost" size="md" type="button" onClick={() => void resetTenant()} disabled={busy || !subscriberId}>
+              <ZHBtn variant="ghost" size="md" type="button" onClick={() => void resetSubscriber()} disabled={busy || !subscriberId}>
                 {t('superadmin.menuBuilder.resetTenant')}
               </ZHBtn>
-              <ZHBtn variant="primary" size="md" type="button" onClick={() => void saveTenant()} disabled={busy || !subscriberId}>
+              <ZHBtn variant="primary" size="md" type="button" onClick={() => void saveSubscriber()} disabled={busy || !subscriberId}>
                 {t('superadmin.menuBuilder.saveTenant')}
               </ZHBtn>
             </>

@@ -68,6 +68,8 @@ public sealed class SalesDocumentConfiguration : IEntityTypeConfiguration<SalesD
             .HasForeignKey<SalesElectronicDoc>(e => e.SalesDocumentId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasIndex(e => new { e.SubscriberId, e.CompanyId })
+            .HasDatabaseName("ix_sales_document_subscriber_company");
         builder.HasIndex(e => new { e.SubscriberId, e.IssueDate, e.Status, e.DocType })
             .HasDatabaseName("ix_sales_document_subscriber_date_status_type");
         builder.HasIndex(e => new { e.SubscriberId, e.CustomerId, e.IssueDate })

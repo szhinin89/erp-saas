@@ -177,12 +177,16 @@ export function ZHField(props: {
   required?: boolean;
   /** Mensaje de validación (p. ej. Zod + react-hook-form); en español. Si hay `fieldError`, sustituye al `hint` visual de ayuda. */
   fieldError?: string | null;
+  /** Alias de `fieldError` (formularios legacy). */
+  error?: string | null;
   hint?: string | null;
   hintType?: ZHFieldHintType;
   readOnly?: boolean;
+  style?: React.CSSProperties;
   children: React.ReactNode;
 }) {
-  const { label, required, fieldError, hint, hintType, readOnly, children } = props;
+  const { label, required, fieldError: fieldErrorProp, error, hint, hintType, readOnly, style, children } = props;
+  const fieldError = fieldErrorProp ?? error;
   const effectiveHint = fieldError?.trim() ? fieldError : hint;
   const effectiveHintType: ZHFieldHintType | undefined = fieldError?.trim() ? 'error' : hintType;
   const variantClass = effectiveHintType ? `zh-field--${effectiveHintType}` : '';
@@ -190,7 +194,7 @@ export function ZHField(props: {
   const cls = ['zh-field', variantClass, roClass].filter(Boolean).join(' ');
 
   return (
-    <label className={cls}>
+    <label className={cls} style={style}>
       <span className="zh-field-label">
         {label}
         {required ? <span className="zh-field-required">*</span> : null}

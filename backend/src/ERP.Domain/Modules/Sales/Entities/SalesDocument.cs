@@ -5,7 +5,7 @@ using ERP.Domain.Modules.Sales.Events;
 
 namespace ERP.Domain.Modules.Sales.Entities;
 
-public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity
+public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
     public const int EstabMaxLen         = 3;
     public const int EmPointMaxLen       = 3;
@@ -76,12 +76,14 @@ public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity
         string paymentMethodCode,
         short paymentDays,
         string? notes,
-        Guid createdBy)
+        Guid createdBy,
+        Guid? companyId = null)
     {
         var doc = new SalesDocument
         {
             Id                = Guid.NewGuid(),
             SubscriberId          = subscriberId,
+            CompanyId         = companyId,
             BranchId          = branchId,
             CustomerId        = customerId,
             WarehouseId       = warehouseId,
@@ -134,7 +136,7 @@ public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity
             && stockLines is { Count: > 0 })
         {
             var number = $"{EstabCode}-{EmPointCode}-{Sequential}";
-            RaiseDomainEvent(new SalesBillAuthorizedEvent(Id, SubscriberId, userId, WarehouseId.Value, number, stockLines));
+            RaiseDomainEvent(new SalesBillAuthorizedEvent(Id, SubscriberId, userId, WarehouseId.Value, CompanyId ?? Guid.Empty, number, stockLines));
         }
     }
 

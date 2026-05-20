@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ERP.Application.Common;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
 
@@ -7,14 +8,22 @@ namespace ERP.Infrastructure.Persistence.Repositories;
 public sealed class WarehouseRepository : IWarehouseRepository
 {
     private readonly ErpDbContext _context;
+    private readonly ICurrentCompany _company;
 
-    public WarehouseRepository(ErpDbContext context) => _context = context;
+    public WarehouseRepository(ErpDbContext context, ICurrentCompany company)
+    {
+        _context = context;
+        _company = company;
+    }
+
+    private IQueryable<Warehouse> Scoped(Guid subscriberId)
+        => _context.Warehouses.ForOperationalScope(subscriberId, _company);
 
     public Task AddAsync(Warehouse Warehouse, CancellationToken ct = default)
         => _context.Warehouses.AddAsync(Warehouse, ct).AsTask();
 
     public Task<Warehouse?> GetByIdAsync(Guid subscriberId, Guid id, CancellationToken ct = default)
-        => _context.Warehouses.FirstOrDefaultAsync(b => b.SubscriberId == subscriberId && b.Id == id, ct);
+        => Scoped(subscriberId).FirstOrDefaultAsync(b => b.Id == id, ct);
 
     public async Task<bool> ExistsNameAsync(
         Guid subscriberId,
@@ -22,8 +31,7 @@ public sealed class WarehouseRepository : IWarehouseRepository
         Guid? excludeId,
         CancellationToken ct = default)
     {
-        var q = _context.Warehouses
-            .Where(b => b.SubscriberId == subscriberId && b.Name == nombre.Trim());
+        var q = Scoped(subscriberId).Where(b => b.Name == nombre.Trim());
         if (excludeId.HasValue)
             q = q.Where(b => b.Id != excludeId.Value);
         return await q.AnyAsync(ct);
@@ -36,7 +44,7 @@ public sealed class WarehouseRepository : IWarehouseRepository
         Guid? sucursalId,
         CancellationToken ct = default)
     {
-        var q = _context.Warehouses.Where(b => b.SubscriberId == subscriberId);
+        var q = Scoped(subscriberId);
 
         if (activeFilter is true)  q = q.Where(b => b.IsActive);
         else if (activeFilter is false) q = q.Where(b => !b.IsActive);

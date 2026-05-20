@@ -5,7 +5,7 @@ import type { AccessibleSubscriber, BootstrapLoginResponse } from '../types/acce
 interface AccessState {
   bootstrapToken: string | null;
   bootstrapUser: { userId: string; fullName: string; email: string } | null;
-  subscribers: AccessibleTenant[];
+  subscribers: AccessibleSubscriber[];
   setBootstrap: (r: BootstrapLoginResponse) => void;
   clearBootstrap: () => void;
 }

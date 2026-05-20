@@ -36,7 +36,7 @@ const ELECTRONIC_BILLING_TRIAL_KEY = 'billing.electronic.trial_enabled';
 
 function CompaniesPage() {
   const { t } = useI18n();
-  const { maxActiveTenants, maxIdentityUsers } = useDeployment();
+  const { maxActiveSubscribers, maxIdentityUsers } = useDeployment();
   const [searchParams, setSearchParams] = useSearchParams();
   const user = useAuthStore((s) => s.user);
   const subscriberId = useAuthStore((s) => s.user?.subscriberId ?? '');
@@ -587,7 +587,7 @@ function CompaniesPage() {
               ) : filtered.length === 0 ? (
                 <EmptyState message={items.length === 0 ? t('common.noData') : t('common.listTab.noMatch')} />
               ) : (
-                <table className="companies-table companies-table--embedded companies-responsive-table">
+                <table className="companies-table companies-table--embedded responsive-table companies-responsive-table">
                   <thead>
                     <tr>
                       <th>{t('companies.table.name')}</th>
@@ -631,9 +631,9 @@ function CompaniesPage() {
                   <form onSubmit={submit}>
                   <input type="hidden" name="subscriberId" value={subscriberId} />
 
-                  {maxActiveTenants != null ? (
+                  {maxActiveSubscribers != null ? (
                     <p className="companies-quota-hint" role="note">
-                      {t('companies.deployment.maxTenantsHint')} <strong>{maxActiveTenants}</strong>
+                      {t('companies.deployment.maxTenantsHint')} <strong>{maxActiveSubscribers}</strong>
                     </p>
                   ) : null}
                   {maxIdentityUsers != null ? (

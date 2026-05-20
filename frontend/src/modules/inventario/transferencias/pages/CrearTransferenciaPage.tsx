@@ -139,7 +139,7 @@ export function CrearTransferenciaPage() {
           </div>
           <div className="pg-section-body">
             <ItemsTransferenciaGrid
-              bodegaOrigenId={bodegaOrigenId}
+              sourceWarehouseId={bodegaOrigenId}
               items={items}
               onChange={setItems}
               disabled={loading || !bodegaOrigenId}
