@@ -51,6 +51,7 @@ using ERP.Infrastructure.Services.Cash;
 using ERP.Infrastructure.Seeding;
 using ERP.Infrastructure.Seeding.InstallData;
 using ERP.Domain.Modules.Cash;
+using ERP.Domain.Modules.Menu.Interfaces;
 using ERP.Infrastructure.Options;
 
 namespace ERP.Infrastructure;
@@ -78,6 +79,7 @@ public static class DependencyInjection
                 .AddInterceptors(sp.GetRequiredService<PostgreSqlSessionContextInterceptor>()));
 
         services.AddScoped<IPasswordHasher, BcryptPasswordHasher>();
+        services.AddScoped<ISecretProtector, DataProtectionSecretProtector>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IRefreshTokenService, RefreshTokenService>();
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
@@ -152,7 +154,7 @@ public static class DependencyInjection
         services.AddScoped<IStockTransferRepository, StockTransferRepository>();
         services.AddScoped<IStockAdjustmentRepository, StockAdjustmentRepository>();
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
-        services.AddScoped<IAccountingService, AccountingService>();
+        services.AddScoped<IAppFeatureRepository, AppFeatureRepository>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<ICommercialLimitUsageProvider, MaxCompaniesLimitUsageProvider>();
         services.AddScoped<ICommercialLimitUsageProvider, MaxUsersLimitUsageProvider>();

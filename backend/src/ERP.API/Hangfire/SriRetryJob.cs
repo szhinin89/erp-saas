@@ -1,9 +1,8 @@
-using ERP.Application.Common;
+using ERP.Application.Sales.UseCases.ListPendingSriRetry;
 using ERP.Application.Sales.UseCases.ReintentarEnvio;
-using ERP.Infrastructure.Persistence;
+using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Infrastructure.Services;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace ERP.API.Hangfire;
@@ -14,31 +13,30 @@ namespace ERP.API.Hangfire;
 /// </summary>
 public sealed class SriRetryJob : ISriRetryJob
 {
-    private readonly ErpDbContext          _context;
-    private readonly IPlatformQueryAccessor _platform;
-    private readonly IServiceScopeFactory  _scopeFactory;
-    private readonly ILogger<SriRetryJob>  _logger;
+    private readonly IMediator            _mediator;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ILogger<SriRetryJob> _logger;
 
     public SriRetryJob(
-        ErpDbContext         context,
-        IPlatformQueryAccessor platform,
+        IMediator mediator,
         IServiceScopeFactory scopeFactory,
         ILogger<SriRetryJob> logger)
     {
-        _context      = context;
-        _platform     = platform;
-        _scopeFactory = scopeFactory;
-        _logger       = logger;
+        _mediator      = mediator;
+        _scopeFactory  = scopeFactory;
+        _logger        = logger;
     }
 
     public async Task ExecuteAsync(CancellationToken ct = default)
     {
-        var pendientes = await _platform
-            .Unfiltered(_context.SalesBills, PlatformQueryReason.BackgroundJob)
-            .Where(b => b.Status == "ErrorEnvio" || b.Status == "Rechazado")
-            .Select(b => new { b.Id, b.SubscriberId })
-            .ToListAsync(ct);
+        var pendingResult = await _mediator.Send(new ListPendingSriRetryQuery(), ct);
+        if (!pendingResult.IsSuccess)
+        {
+            _logger.LogWarning("SriRetryJob: no se pudo listar pendientes: {Error}", pendingResult.Error);
+            return;
+        }
 
+        var pendientes = pendingResult.Value ?? Array.Empty<SalesBillRetryCandidate>();
         if (pendientes.Count == 0)
         {
             _logger.LogDebug("SriRetryJob: sin facturas pendientes de reintento.");
@@ -49,15 +47,12 @@ public sealed class SriRetryJob : ISriRetryJob
             "SriRetryJob: {Count} factura(s) pendiente(s) de reintento.",
             pendientes.Count);
 
-        // Agrupar por tenant para procesar en lote y minimizar cambios de contexto
         var porSubscriber = pendientes.GroupBy(b => b.SubscriberId);
 
         foreach (var grupo in porSubscriber)
         {
             var subscriberId = grupo.Key;
 
-            // Establecer el contexto de tenant para que CurrentSubscriberService lo use
-            // como fallback (AsyncLocal fluye a través de await)
             JobSubscriberContext.Current = subscriberId;
             try
             {
@@ -69,22 +64,22 @@ public sealed class SriRetryJob : ISriRetryJob
                         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
                         var result = await mediator.Send(
-                            new RetrySubmissionCommand(bill.Id), ct);
+                            new RetrySubmissionCommand(bill.BillId), ct);
 
                         if (result.IsSuccess)
                             _logger.LogInformation(
                                 "SriRetryJob: factura {BillId} (tenant {SubscriberId}) reintentada con éxito.",
-                                bill.Id, subscriberId);
+                                bill.BillId, subscriberId);
                         else
                             _logger.LogWarning(
                                 "SriRetryJob: factura {BillId} (tenant {SubscriberId}) falló: {Error}",
-                                bill.Id, subscriberId, result.Error);
+                                bill.BillId, subscriberId, result.Error);
                     }
                     catch (Exception ex)
                     {
                         _logger.LogError(ex,
                             "SriRetryJob: error inesperado al reintentar factura {BillId} (tenant {SubscriberId}).",
-                            bill.Id, subscriberId);
+                            bill.BillId, subscriberId);
                     }
                 }
             }

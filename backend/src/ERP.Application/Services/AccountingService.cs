@@ -5,7 +5,7 @@ using ERP.Application.Modules.Accounting.UseCases.CreateJournalEntry;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Modules.Accounting.Interfaces;
 
-namespace ERP.Infrastructure.Services;
+namespace ERP.Application.Services;
 
 /// <summary>
 /// Asientos automáticos de compra, venta y gasto. Si existe configuración contable por tenant,

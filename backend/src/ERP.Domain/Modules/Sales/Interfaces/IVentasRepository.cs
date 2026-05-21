@@ -35,5 +35,7 @@ public interface ISalesRepository
     Task<IReadOnlyList<SalesRetention>> GetRetentionsAsync(Guid subscriberId, CancellationToken ct = default);
     Task<bool> ExistsRetentionAccessKeyAsync(Guid subscriberId, string accessKey, CancellationToken ct = default);
 
+    Task<IReadOnlyList<SalesBillRetryCandidate>> ListPendingElectronicRetryAsync(CancellationToken ct = default);
+
     Task SaveChangesAsync(CancellationToken ct = default);
 }

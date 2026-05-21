@@ -1,5 +1,6 @@
 using MediatR;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Application.Configuration.DTOs;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
@@ -12,15 +13,18 @@ public sealed class UpsertSriConfigurationCommandHandler
     private readonly ISriSettingsRepository _repo;
     private readonly ICurrentSubscriber              _currentSubscriber;
     private readonly ICurrentUser                _currentUser;
+    private readonly ISecretProtector            _secretProtector;
 
     public UpsertSriConfigurationCommandHandler(
         ISriSettingsRepository repo,
         ICurrentSubscriber currentSubscriber,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        ISecretProtector secretProtector)
     {
         _repo          = repo;
         _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
+        _secretProtector = secretProtector;
     }
 
     public async Task<Result<SriConfigurationDto>> Handle(
@@ -28,6 +32,7 @@ public sealed class UpsertSriConfigurationCommandHandler
     {
         var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
+        var protectedPassword = _secretProtector.Protect(command.CertPassword.Trim());
 
         var existing = await _repo.GetBySubscriberIdAsync(subscriberId, ct);
 
@@ -45,7 +50,7 @@ public sealed class UpsertSriConfigurationCommandHandler
                 emPointCode:       command.EmPointCode,
                 currentSequential: 1,
                 certP12Path:       command.CertP12Path,
-                certPassword:      command.CertPassword,
+                certPassword:      protectedPassword,
                 environment:       command.Environment,
                 emissionType:      command.EmissionType,
                 wsdlUrl:           command.WsdlUrl,
@@ -66,7 +71,7 @@ public sealed class UpsertSriConfigurationCommandHandler
             estabCode:         command.EstabCode,
             emPointCode:       command.EmPointCode,
             certP12Path:       command.CertP12Path,
-            certPassword:      command.CertPassword,
+            certPassword:      protectedPassword,
             environment:       command.Environment,
             emissionType:      command.EmissionType,
             wsdlUrl:           command.WsdlUrl,

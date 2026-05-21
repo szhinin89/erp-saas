@@ -108,6 +108,7 @@ else
 }
 
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddDataProtection();
 builder.Services.AddApplication();
 builder.Services.AddScoped<AppFeatureDiscoveryService>();
 

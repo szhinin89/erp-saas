@@ -23,6 +23,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
     private readonly IProductRepository          _productRepository;
     private readonly IUserActivityRepository     _activity;
     private readonly IUnitOfWork                 _unitOfWork;
+    private readonly ISecretProtector            _secretProtector;
     private readonly ICurrentSubscriber              _currentSubscriber;
     private readonly ICurrentUser                _currentUser;
     private readonly ILogger<EnviarSalesNotesriCommandHandler> _logger;
@@ -36,6 +37,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         IProductRepository productRepository,
         IUserActivityRepository activity,
         IUnitOfWork unitOfWork,
+        ISecretProtector secretProtector,
         ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<EnviarSalesNotesriCommandHandler> logger)
@@ -48,6 +50,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         _productRepository   = productRepository;
         _activity            = activity;
         _unitOfWork          = unitOfWork;
+        _secretProtector     = secretProtector;
         _currentSubscriber       = currentSubscriber;
         _currentUser         = currentUser;
         _logger              = logger;
@@ -83,18 +86,18 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         {
             xmlContent = await _sriService.GenerarXmlNotaCreditoDebitoAsync(facturaOriginal, nota, detalles, configSri);
             xmlFirmado = await _sriService.FirmarXmlAsync(
-                xmlContent, configSri.CertP12Path, configSri.CertPassword);
+                xmlContent, configSri.CertP12Path, _secretProtector.UnprotectOrPlaintext(configSri.CertPassword));
         }
         catch (SriCommunicationException ex)
         {
             nota.Reject(userId, ex.Message);
-            await _ventasRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error SRI: {ex.Message}");
         }
         catch (Exception ex)
         {
             nota.Reject(userId, ex.Message);
-            await _ventasRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error al generar XML: {ex.Message}");
         }
 
@@ -106,20 +109,20 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         catch (SriCommunicationException ex)
         {
             nota.Reject(userId, ex.Message);
-            await _ventasRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error SRI: {ex.Message}");
         }
         catch (Exception ex)
         {
             nota.Reject(userId, ex.Message);
-            await _ventasRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error de comunicación con SRI: {ex.Message}");
         }
 
         if (!response.IsAuthorized)
         {
             nota.Reject(userId, response.ErrorMessage ?? "Rechazada por el SRI.");
-            await _ventasRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure(response.ErrorMessage ?? "El SRI rechazó la nota.");
         }
 
@@ -158,7 +161,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
             {
                 await _unitOfWork.RollbackAsync(ct);
                 nota.Reject(userId, $"Autorizado por SRI pero falló el asiento: {asientoResult.Error}");
-                await _ventasRepository.SaveChangesAsync(ct);
+                await _unitOfWork.SaveChangesAsync(ct);
                 return Result<Guid>.Failure(asientoResult.Error ?? "Error contable.");
             }
 
@@ -209,7 +212,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         {
             await _unitOfWork.RollbackAsync(ct);
             nota.Reject(userId, ex.Message);
-            await _ventasRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure(ex.Message);
         }
     }

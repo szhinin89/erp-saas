@@ -63,16 +63,19 @@ public sealed class CreateJournalEntryCommandHandler : IRequestHandler<CreateJou
 
         // El asiento queda en Draft. Para contabilizarlo se usa un endpoint dedicado.
 
+        var ownsTransaction = !_unitOfWork.HasActiveTransaction;
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
             await _repository.AddJournalEntryAsync(entry, ct);
             await _unitOfWork.SaveChangesAsync(ct);
-            await _unitOfWork.CommitAsync(ct);
+            if (ownsTransaction)
+                await _unitOfWork.CommitAsync(ct);
         }
         catch (Exception ex)
         {
-            await _unitOfWork.RollbackAsync(ct);
+            if (ownsTransaction)
+                await _unitOfWork.RollbackAsync(ct);
             return Result<JournalEntryDto>.Failure($"No se pudo crear el asiento: {ex.Message}");
         }
 

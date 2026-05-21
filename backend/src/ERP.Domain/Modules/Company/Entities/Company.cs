@@ -1,3 +1,4 @@
+using ERP.Domain.Common;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Modules.Company.Enums;
 
@@ -8,7 +9,7 @@ namespace ERP.Domain.Modules.Company.Entities;
 /// Un <see cref="Subscriber"/> puede tener N companies (holdings / franquicias).
 /// Tablas SRI y documentos electrónicos referencian <c>company_id</c>.
 /// </summary>
-public class Company
+public class Company : ISubscriberScopedEntity
 {
     public Guid    Id                 { get; set; }
     public Guid    SubscriberId       { get; set; }

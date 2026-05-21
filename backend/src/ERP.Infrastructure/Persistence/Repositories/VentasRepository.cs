@@ -16,17 +16,20 @@ public sealed class SalesRepository : ISalesRepository
     private readonly DocumentSchemaOptions _schemaOptions;
     private readonly IUnifiedDocumentSync _documentSync;
     private readonly ICurrentCompany _company;
+    private readonly IPlatformQueryAccessor _platform;
 
     public SalesRepository(
         ErpDbContext context,
         IOptions<DocumentSchemaOptions> schemaOptions,
         IUnifiedDocumentSync documentSync,
-        ICurrentCompany company)
+        ICurrentCompany company,
+        IPlatformQueryAccessor platform)
     {
         _context = context;
         _schemaOptions = schemaOptions.Value;
         _documentSync = documentSync;
         _company = company;
+        _platform = platform;
     }
 
     private bool UseUnified => _schemaOptions.UseUnifiedSchema;
@@ -285,5 +288,15 @@ public sealed class SalesRepository : ISalesRepository
     {
         await _documentSync.FlushAsync(ct);
         await _context.SaveChangesAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<SalesBillRetryCandidate>> ListPendingElectronicRetryAsync(CancellationToken ct = default)
+    {
+        var query = _platform.Unfiltered(_context.SalesBills, PlatformQueryReason.BackgroundJob)
+            .Where(b => b.Status == "ErrorEnvio" || b.Status == "Rechazado");
+
+        return await query
+            .Select(b => new SalesBillRetryCandidate(b.Id, b.SubscriberId))
+            .ToListAsync(ct);
     }
 }

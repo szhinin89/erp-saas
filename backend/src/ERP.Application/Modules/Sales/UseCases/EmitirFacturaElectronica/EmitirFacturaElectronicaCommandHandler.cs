@@ -24,6 +24,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
     private readonly IProductRepository              _productRepository;
     private readonly IUserActivityRepository         _activity;
     private readonly IUnitOfWork                     _unitOfWork;
+    private readonly ISecretProtector                _secretProtector;
     private readonly ICurrentSubscriber                  _currentSubscriber;
     private readonly ICurrentUser                    _currentUser;
     private readonly ILogger<IssueElectronicInvoiceCommandHandler> _logger;
@@ -37,6 +38,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
         IProductRepository productRepository,
         IUserActivityRepository activity,
         IUnitOfWork unitOfWork,
+        ISecretProtector secretProtector,
         ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<IssueElectronicInvoiceCommandHandler> logger)
@@ -49,6 +51,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
         _productRepository   = productRepository;
         _activity            = activity;
         _unitOfWork          = unitOfWork;
+        _secretProtector     = secretProtector;
         _currentSubscriber       = currentSubscriber;
         _currentUser         = currentUser;
         _logger              = logger;
@@ -84,20 +87,20 @@ public sealed class IssueElectronicInvoiceCommandHandler
             _logger.LogDebug("Generando y firmando XML para factura {FacturaId}", factura.Id);
             xmlContent = await _sriService.GenerarXmlFacturaAsync(factura, detalles, configSri);
             xmlFirmado = await _sriService.FirmarXmlAsync(
-                xmlContent, configSri.CertP12Path, configSri.CertPassword);
+                xmlContent, configSri.CertP12Path, _secretProtector.UnprotectOrPlaintext(configSri.CertPassword));
         }
         catch (SriCommunicationException ex)
         {
             _logger.LogError(ex, "Error SRI al generar/firmar XML de factura {FacturaId}", factura.Id);
             factura.Reject(userId, ex.Message);
-            await _ventasRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error SRI: {ex.Message}");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error inesperado al generar/firmar XML de factura {FacturaId}", factura.Id);
             factura.Reject(userId, $"Error al generar XML: {ex.Message}");
-            await _ventasRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error al generar XML: {ex.Message}");
         }
 
@@ -112,14 +115,14 @@ public sealed class IssueElectronicInvoiceCommandHandler
         {
             _logger.LogError(ex, "Error de comunicación SRI para factura {FacturaId}", factura.Id);
             factura.Reject(userId, ex.Message);
-            await _ventasRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error SRI: {ex.Message}");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error de red al enviar factura {FacturaId} al SRI", factura.Id);
             factura.Reject(userId, $"Error de comunicación con SRI: {ex.Message}");
-            await _ventasRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error de red al comunicarse con el SRI: {ex.Message}");
         }
 
@@ -129,7 +132,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
             var mensajeError = response.ErrorMessage ?? "SRI rechazó la factura sin indicar motivo.";
             _logger.LogWarning("SRI rechazó factura {FacturaId}: {Error}", factura.Id, mensajeError);
             factura.Reject(userId, mensajeError);
-            await _ventasRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"El SRI rechazó la factura: {mensajeError}");
         }
 
@@ -172,7 +175,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
                 await _unitOfWork.RollbackAsync(ct);
                 factura.Reject(userId,
                     $"Autorizado por SRI pero falló el asiento contable: {asientoResult.Error}");
-                await _ventasRepository.SaveChangesAsync(ct);
+                await _unitOfWork.SaveChangesAsync(ct);
                 return Result<Guid>.Failure(asientoResult.Error ?? "Error al crear asiento contable.");
             }
 
@@ -215,7 +218,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
             _logger.LogError(ex, "Error al procesar emisión de factura {FacturaId}", command.VentaId);
             factura.Reject(userId,
                 $"Autorizado por SRI pero falló el procesamiento interno: {ex.Message}");
-            await _ventasRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure($"Error al procesar la emisión: {ex.Message}");
         }
     }

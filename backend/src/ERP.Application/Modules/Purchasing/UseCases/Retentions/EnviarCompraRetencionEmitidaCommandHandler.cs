@@ -21,6 +21,7 @@ public sealed class SendIssuedRetentionCommandHandler
     private readonly IAccountingService                   _accounting;
     private readonly IUserActivityRepository              _activity;
     private readonly IUnitOfWork                          _unitOfWork;
+    private readonly ISecretProtector                     _secretProtector;
     private readonly ICurrentSubscriber                       _currentSubscriber;
     private readonly ICurrentUser                         _currentUser;
     private readonly ILogger<SendIssuedRetentionCommandHandler> _logger;
@@ -33,6 +34,7 @@ public sealed class SendIssuedRetentionCommandHandler
         IAccountingService accounting,
         IUserActivityRepository activity,
         IUnitOfWork unitOfWork,
+        ISecretProtector secretProtector,
         ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<SendIssuedRetentionCommandHandler> logger)
@@ -44,6 +46,7 @@ public sealed class SendIssuedRetentionCommandHandler
         _accounting            = accounting;
         _activity              = activity;
         _unitOfWork            = unitOfWork;
+        _secretProtector       = secretProtector;
         _currentSubscriber         = currentSubscriber;
         _currentUser           = currentUser;
         _logger                = logger;
@@ -74,18 +77,18 @@ public sealed class SendIssuedRetentionCommandHandler
         try
         {
             xml     = await _sri.GenerarXmlRetencionAsync(ret, detalles, configSri);
-            firmado = await _sri.FirmarXmlAsync(xml, configSri.CertP12Path, configSri.CertPassword);
+            firmado = await _sri.FirmarXmlAsync(xml, configSri.CertP12Path, _secretProtector.UnprotectOrPlaintext(configSri.CertPassword));
         }
         catch (SriCommunicationException ex)
         {
             ret.Reject(userId, ex.Message);
-            await _compraRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure(ex.Message);
         }
         catch (Exception ex)
         {
             ret.Reject(userId, ex.Message);
-            await _compraRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure(ex.Message);
         }
 
@@ -97,14 +100,14 @@ public sealed class SendIssuedRetentionCommandHandler
         catch (Exception ex)
         {
             ret.Reject(userId, ex.Message);
-            await _compraRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure(ex.Message);
         }
 
         if (!resp.IsAuthorized)
         {
             ret.Reject(userId, resp.ErrorMessage ?? "Rechazada");
-            await _compraRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure(resp.ErrorMessage ?? "Rechazada");
         }
 
@@ -133,7 +136,7 @@ public sealed class SendIssuedRetentionCommandHandler
             {
                 await _unitOfWork.RollbackAsync(ct);
                 ret.Reject(userId, asiento.Error ?? "Asiento");
-                await _compraRepository.SaveChangesAsync(ct);
+                await _unitOfWork.SaveChangesAsync(ct);
                 return Result<Guid>.Failure(asiento.Error ?? "Asiento");
             }
 
@@ -152,7 +155,7 @@ public sealed class SendIssuedRetentionCommandHandler
         {
             await _unitOfWork.RollbackAsync(ct);
             ret.Reject(userId, ex.Message);
-            await _compraRepository.SaveChangesAsync(ct);
+            await _unitOfWork.SaveChangesAsync(ct);
             return Result<Guid>.Failure(ex.Message);
         }
     }

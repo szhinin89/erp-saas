@@ -25,6 +25,7 @@ public sealed class SriSettings : AuditableEntity, ISubscriberScopedEntity
     public string  EmPointCode          { get; private set; } = "001";
     public int     CurrentSequential    { get; private set; } = 1;
     public string  CertP12Path          { get; private set; } = null!;
+    /// <summary>Contraseña del certificado cifrada en reposo (prefijo dp1:). Legacy: texto plano hasta próximo guardado.</summary>
     public string  CertPassword         { get; private set; } = null!;
     public int     Environment          { get; private set; }
     public int     EmissionType         { get; private set; } = 1;

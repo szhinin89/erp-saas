@@ -60,6 +60,16 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 | Accounting, cash | ✅ |
 | Retenciones / guía remisión | 🟡 partial / placeholder UI |
 
+### Backend architecture hardening (audit 2026-05-21)
+
+| Item | Status |
+|------|--------|
+| SRI post-auth atomic transactions (`IUnitOfWork` ambient + journal entry nested) | ✅ |
+| `SriSettings.CertPassword` encrypted at rest (Data Protection, legacy plaintext fallback) | ✅ |
+| `Company` → `ISubscriberScopedEntity` + global EF subscriber filter | ✅ |
+| `AccountingService` orchestration in Application layer | ✅ |
+| API DbContext leakage → CQRS (`GetAppFeatureTree`, `ListPendingSriRetry`, `IAppFeatureRepository`) | ✅ |
+
 ## Frontend
 
 | Area | Status |
@@ -88,6 +98,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 | JWT + refresh rotation | ✅ |
 | Permission policies | ✅ |
 | Company isolation (app layer) | ✅ |
+| SRI certificate password encryption (Data Protection) | ✅ |
 | RLS (DB layer) | ✅ |
 | SuperAdmin platform bypass | ✅ controlled |
 | Permissions cache in handler hot path | ⏳ service exists, wiring partial |

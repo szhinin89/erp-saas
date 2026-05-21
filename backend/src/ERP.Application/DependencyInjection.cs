@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<IKardexService, KardexService>();
         services.AddScoped<IInventoryPostingService, InventoryPostingService>();
         services.AddScoped<IReconciliationService, ReconciliationService>();
+        services.AddScoped<IAccountingService, Services.AccountingService>();
         services.AddValidatorsFromAssembly(assembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(BillingGateBehavior<,>));

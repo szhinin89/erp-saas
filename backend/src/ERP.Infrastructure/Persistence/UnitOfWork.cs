@@ -16,6 +16,9 @@ public class UnitOfWork : IUnitOfWork
         _documentSync = documentSync;
     }
 
+    public bool HasActiveTransaction =>
+        _transaction is not null || _context.Database.CurrentTransaction is not null;
+
     public async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
         await _documentSync.FlushAsync(ct);
@@ -23,7 +26,12 @@ public class UnitOfWork : IUnitOfWork
     }
 
     public async Task BeginTransactionAsync(CancellationToken ct = default)
-        => _transaction = await _context.Database.BeginTransactionAsync(ct);
+    {
+        if (HasActiveTransaction)
+            return;
+
+        _transaction = await _context.Database.BeginTransactionAsync(ct);
+    }
 
     public async Task CommitAsync(CancellationToken ct = default)
     {
