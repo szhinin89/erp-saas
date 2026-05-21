@@ -1,26 +1,32 @@
 # Scripts — ERP SaaS
 
-Mapa canónico y uso detallado: **[`docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md#scripts-powershell-canónicos)**.
+Scripts PowerShell **canónicos** (lista en [`stack-allowlist.json`](stack-allowlist.json)). CI rechaza cualquier otro `.ps1`.
 
-## PowerShell (9 archivos + JSON)
+## Mapa
 
-| Script | Rol |
-|--------|-----|
-| [`../Crear-SuperAdmin.ps1`](../Crear-SuperAdmin.ps1) | Alta SuperAdmin first-run (raíz del repo) |
-| `dev-restart.ps1` | Dev: Docker, migraciones EF, API + Vite |
-| `run-e2e.ps1` | Playwright E2E local/CI |
-| `verify-stack-allowlist.ps1` | CI: dependencias + scripts permitidos |
-| `check-identity-guardrails.ps1` | CI: sin auth legacy `users` |
-| `check-handler-size.ps1` | CI: métodos MediatR `Handle` ≤ 150 líneas |
-| `check-architecture-guardrails.ps1` | CI: capas, frontend patterns, límites TSX, chunk Vite |
-| `architecture-grandfather.json` | Allowlist de deuda legacy (handlers/páginas grandes) |
-| `new-master-module.ps1` | Scaffolding módulo master |
-| `import_inec_ecuador_geography.ps1` | Generar SQL geografía INEC |
+| Ruta | Rol |
+|------|-----|
+| [`setup/Crear-SuperAdmin.ps1`](setup/Crear-SuperAdmin.ps1) | Alta SuperAdmin first-run |
+| [`dev/dev-restart.ps1`](dev/dev-restart.ps1) | Docker + EF + API + Vite |
+| [`ci/run-e2e.ps1`](ci/run-e2e.ps1) | Playwright E2E completo |
+| [`ci/verify-stack-allowlist.ps1`](ci/verify-stack-allowlist.ps1) | Auditoría stack CI |
+| [`db/import_inec_ecuador_geography.ps1`](db/import_inec_ecuador_geography.ps1) | SQL geografía INEC |
+| [`db/sql/`](db/sql/) | SQL excepcional documentado |
 
-Lista verificada en CI: **`stack-allowlist.json`** → clave `scriptsAllowed`.
+## Tooling (no operación)
 
-## SQL (`sql/`)
+| Ruta | Rol |
+|------|-----|
+| [`../tools/architecture/`](../tools/architecture/) | Guardrails arquitectura |
+| [`../tools/quality/`](../tools/quality/) | Handler size |
+| [`../tools/generators/`](../tools/generators/) | Scaffolding módulos |
 
-Mapa: [`sql/README.md`](./sql/README.md). Política InstallData: [`docs/DATABASE.md`](../docs/DATABASE.md).
+## Carpetas reservadas
 
-No añadir `.ps1` fuera del mapa sin actualizar `stack-allowlist.json`, `docs/DEVELOPMENT.md` y [`CONTEXT.md`](../CONTEXT.md).
+`deploy/`, `maintenance/`, `auth/` — runbooks futuros.
+
+## Añadir script
+
+1. Ubicación coherente (`dev/`, `ci/`, `db/`, …)
+2. Entrada en `scriptsAllowed` en `stack-allowlist.json`
+3. Actualizar [`CONTEXT.md`](../CONTEXT.md) y [`docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md)

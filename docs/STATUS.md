@@ -2,11 +2,12 @@
 
 **Single source of truth** for delivery state. Updated: **2026-05-21**.
 
-## Documentation map (canonical — 7 files in `docs/`)
+## Documentation map (canonical — 7 files in `docs/` + índices)
 
 | Topic | File |
 |-------|------|
 | Index | `CONTEXT.md` |
+| Repo structure (2026-05) | `README.md`, `infrastructure/`, `scripts/`, `tools/` |
 | Product summary | `README.md` |
 | Agent rules | `CLAUDE.md`, `.cursor/rules/` |
 | Delivery state | `docs/STATUS.md` (this file) |
@@ -62,7 +63,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 | `SuperAdminPanelPage` + `SuperAdminPlansSection` en hook + tabs/modales | ✅ |
 | `AccountingPage`, `BranchesPage`, `CustomersPage`, `SriConfigPage`, `BodegasPage` | ✅ |
 | `CatalogPages`, `CatalogStructurePage`, categorías/subcategorías | ✅ |
-| `architecture-grandfather.json`: `tsxMaxLines500` vacío | ✅ |
+| `architecture-grandfather.json`: `tsxMaxLines500` vacío | ✅ (`tools/architecture/`) |
 
 ### Post-audit wave 6 (2026-05-21)
 
@@ -235,7 +236,7 @@ cd ../ERP.API
 dotnet run
 ```
 
-First-run super admin: banner en consola al arrancar API, o **`Crear-SuperAdmin.ps1`** (raíz del repo).
+First-run super admin: banner en consola al arrancar API, o **`scripts/setup/Crear-SuperAdmin.ps1`**.
 
 ## Related
 

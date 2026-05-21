@@ -68,28 +68,35 @@ foreach ($name in $npmDeps.Keys) {
     }
 }
 
-# 3) docker-compose services (solo dentro del bloque services:)
-$composePath = Join-Path $root "docker-compose.yml"
-$composeLines = Get-Content $composePath
-$inServices = $false
-for ($i = 0; $i -lt $composeLines.Count; $i++) {
-    $line = $composeLines[$i]
+# 3) docker-compose services (base + includes)
+$composeFiles = @(
+    (Join-Path $root "docker-compose.yml"),
+    (Join-Path $root "infrastructure/docker/compose.base.yml")
+)
+foreach ($composePath in $composeFiles) {
+    if (-not (Test-Path $composePath)) { continue }
+    $composeRel = $composePath.Replace($root + [IO.Path]::DirectorySeparatorChar, "").Replace('\', '/')
+    $composeLines = Get-Content $composePath
+    $inServices = $false
+    for ($i = 0; $i -lt $composeLines.Count; $i++) {
+        $line = $composeLines[$i]
 
-    if ($line -match '^\s*services:\s*$') {
-        $inServices = $true
-        continue
-    }
+        if ($line -match '^\s*services:\s*$') {
+            $inServices = $true
+            continue
+        }
 
-    if ($inServices -and $line -match '^\S') {
-        $inServices = $false
-    }
+        if ($inServices -and $line -match '^\S') {
+            $inServices = $false
+        }
 
-    if (-not $inServices) { continue }
-    if ($line -notmatch '^\s{2}([a-zA-Z0-9_-]+):\s*$') { continue }
+        if (-not $inServices) { continue }
+        if ($line -notmatch '^\s{2}([a-zA-Z0-9_-]+):\s*$') { continue }
 
-    $svc = $matches[1]
-    if ($allowlist.dockerComposeServicesAllowed -notcontains $svc) {
-        Add-Violation -List $violations -File "docker-compose.yml" -Line ($i + 1) -Detected $svc -Reason "Servicio docker-compose fuera de allowlist." -Suggestion "Retirar el servicio o autorizarlo explícitamente."
+        $svc = $matches[1]
+        if ($allowlist.dockerComposeServicesAllowed -notcontains $svc) {
+            Add-Violation -List $violations -File $composeRel -Line ($i + 1) -Detected $svc -Reason "Servicio docker-compose fuera de allowlist." -Suggestion "Retirar el servicio o autorizarlo explícitamente."
+        }
     }
 }
 

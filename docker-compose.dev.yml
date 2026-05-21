@@ -1,0 +1,3 @@
+# Desarrollo local — extiende la base (mismos servicios; override futuro aquí)
+include:
+  - path: infrastructure/docker/compose.base.yml

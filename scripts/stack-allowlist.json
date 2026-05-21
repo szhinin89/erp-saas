@@ -6,6 +6,7 @@
     "Npgsql.EntityFrameworkCore.PostgreSQL",
     "Microsoft.AspNetCore.Authentication.JwtBearer",
     "Microsoft.EntityFrameworkCore.Design",
+    "Microsoft.EntityFrameworkCore",
     "Microsoft.EntityFrameworkCore.InMemory",
     "Microsoft.Extensions.Caching.StackExchangeRedis",
     "Microsoft.Extensions.Caching.Abstractions",
@@ -30,6 +31,7 @@
     "Hangfire.AspNetCore",
     "Hangfire.PostgreSql",
     "QuestPDF",
+    "System.Security.Cryptography.Xml",
     "RazorLight",
     "ClosedXML",
     "xunit",
@@ -63,7 +65,11 @@
     "globals",
     "@types/node",
     "@types/react",
-    "@types/react-dom"
+    "@types/react-dom",
+    "@dnd-kit/core",
+    "@dnd-kit/sortable",
+    "@dnd-kit/utilities",
+    "vitest"
   ],
   "dockerComposeServicesAllowed": [
     "postgres",
@@ -71,7 +77,8 @@
     "adminer"
   ],
   "githubActionsAllowedPrefixes": [
-    "actions/"
+    "actions/",
+    "./.github/workflows/"
   ],
   "githubActionsAllowed": [
     "actions/checkout@v6",
@@ -94,14 +101,14 @@
     "Microsoft.Data.SqlClient"
   ],
   "scriptsAllowed": [
-    "Crear-SuperAdmin.ps1",
-    "scripts/dev-restart.ps1",
-    "scripts/run-e2e.ps1",
-    "scripts/verify-stack-allowlist.ps1",
-    "scripts/check-identity-guardrails.ps1",
-    "scripts/check-handler-size.ps1",
-    "scripts/check-architecture-guardrails.ps1",
-    "scripts/new-master-module.ps1",
-    "scripts/import_inec_ecuador_geography.ps1"
+    "scripts/setup/Crear-SuperAdmin.ps1",
+    "scripts/dev/dev-restart.ps1",
+    "scripts/ci/run-e2e.ps1",
+    "scripts/ci/verify-stack-allowlist.ps1",
+    "tools/architecture/check-identity-guardrails.ps1",
+    "tools/quality/check-handler-size.ps1",
+    "tools/architecture/check-architecture-guardrails.ps1",
+    "tools/generators/new-master-module.ps1",
+    "scripts/db/import_inec_ecuador_geography.ps1"
   ]
 }

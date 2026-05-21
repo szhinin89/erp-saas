@@ -14,9 +14,9 @@
       - Deployment:InitialSuperAdminSetupToken NO valida este flujo; no uses esa clave como sustituto.
       - El login requiere Deployment:SuperAdminPanelEnabled = true (por defecto suele estarlo).
 .EXAMPLE
-    .\Crear-SuperAdmin.ps1
+    .\scripts\setup\Crear-SuperAdmin.ps1
 .EXAMPLE
-    $env:ERP_SUPERADMIN_SETUP_TOKEN = '<token-desde-consola>'; .\Crear-SuperAdmin.ps1
+    $env:ERP_SUPERADMIN_SETUP_TOKEN = '<token-desde-consola>'; .\scripts\setup\Crear-SuperAdmin.ps1
 #>
 
 $ErrorActionPreference = "Stop"

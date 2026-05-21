@@ -32,7 +32,7 @@
   No ejecuta docker compose antes de migrar (útil si Postgres/Redis ya están corriendo).
 
 .EXAMPLE
-  powershell -ExecutionPolicy Bypass -File .\scripts\dev-restart.ps1
+    powershell -ExecutionPolicy Bypass -File .\scripts\dev\dev-restart.ps1
 
 .EXAMPLE
   .\scripts\dev-restart.ps1 -DockerUp
@@ -320,8 +320,20 @@ function Write-EfFailureGuidance {
     Write-Host "    Revisa el mensaje completo de dotnet ef y aplica la corrección sugerida por EF Core." -ForegroundColor DarkYellow
 }
 
-# Rutas: este archivo está en <erp-saas>/scripts → raíz SaaS = carpeta padre de scripts
-$saasRoot = Split-Path $PSScriptRoot -Parent
+# Rutas: resolver raíz del monorepo (scripts/dev → repo root)
+function Get-ErpSaasRepoRoot {
+    $dir = $PSScriptRoot
+    while ($dir) {
+        if ((Test-Path (Join-Path $dir 'backend')) -and (Test-Path (Join-Path $dir 'docker-compose.yml'))) {
+            return $dir
+        }
+        $parent = Split-Path -Parent $dir
+        if ([string]::IsNullOrEmpty($parent) -or $parent -eq $dir) { break }
+        $dir = $parent
+    }
+    throw 'No se encontró la raíz del repo ERP SaaS.'
+}
+$saasRoot = Get-ErpSaasRepoRoot
 $backendRoot = Join-Path $saasRoot 'backend'
 $frontendRoot = Join-Path $saasRoot 'frontend'
 $infraCsproj = Join-Path $backendRoot 'src\ERP.Infrastructure\ERP.Infrastructure.csproj'

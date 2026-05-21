@@ -283,7 +283,7 @@ Handler de 400 líneas con create + email + SRI + contabilidad inline.
 
 ### ENFORCEMENT
 - **BLOQUEANTE PR:** handler `Handle` > 150 líneas sin justificación en descripción PR.
-- Script: `scripts/check-handler-size.ps1` (propuesto en sección Guardrails).
+- Script: `tools/quality/check-handler-size.ps1` (propuesto en sección Guardrails).
 
 ---
 
@@ -849,11 +849,11 @@ Plantilla PR debe incluir sección:
 
 | Guardrail | Comando / ubicación | Reglas |
 |-----------|---------------------|--------|
-| Stack allowlist | `scripts/verify-stack-allowlist.ps1` | Stack, PR-15 |
-| Identity legacy | `scripts/check-identity-guardrails.ps1` | SEC-01 |
-| Handler size | `scripts/check-handler-size.ps1` | C-03 |
-| Architecture grep + limits | `scripts/check-architecture-guardrails.ps1` | B-05, F-01, M-02, PR-1–PR-10, P-01 |
-| Grandfather legacy | `scripts/architecture-grandfather.json` | Deuda documentada |
+| Stack allowlist | `scripts/ci/verify-stack-allowlist.ps1` | Stack, PR-15 |
+| Identity legacy | `tools/architecture/check-identity-guardrails.ps1` | SEC-01 |
+| Handler size | `tools/quality/check-handler-size.ps1` | C-03 |
+| Architecture grep + limits | `tools/architecture/check-architecture-guardrails.ps1` | B-05, F-01, M-02, PR-1–PR-10, P-01 |
+| Grandfather legacy | `tools/architecture/architecture-grandfather.json` | Deuda documentada |
 | NetArchTest capas | `backend/src/ERP.Architecture.Tests` | B-01, B-03, B-05 |
 | IgnoreQueryFilters audit | `ERP.Infrastructure.Tests/Persistence/IgnoreQueryFiltersAuditTests.cs` | M-02, PR-2 |
 | Unit tests sesión | `frontend/src/lib/session/fullLogout.test.ts` | S-02 |
@@ -867,10 +867,10 @@ Plantilla PR debe incluir sección:
 | Job | Paso | Script / test |
 |-----|------|----------------|
 | Backend | Restore, build, test | `dotnet test ERP.slnx` (incluye `ERP.Architecture.Tests`) |
-| Backend | Architecture guardrails | `check-architecture-guardrails.ps1 -SkipFrontendChunk` |
-| Backend | Identity | `check-identity-guardrails.ps1` |
+| Backend | Architecture guardrails | `tools/architecture/check-architecture-guardrails.ps1 -SkipFrontendChunk` |
+| Backend | Identity | `tools/architecture/check-identity-guardrails.ps1` |
 | Frontend | ESLint | `npm run lint` (max-lines warn en pages) |
-| Frontend | Build + chunk | `npm run build` + `check-architecture-guardrails.ps1 -FrontendChunkOnly` |
+| Frontend | Build + chunk | `npm run build` + `tools/architecture/check-architecture-guardrails.ps1 -FrontendChunkOnly` |
 
 ## Pendiente / mejora continua
 
@@ -888,10 +888,10 @@ Proyecto `backend/src/ERP.Architecture.Tests` (`LayerDependencyTests`, `ApiContr
 Equivalente a pre-commit (sin Husky): ejecutar desde raíz del repo:
 
 ```powershell
-./scripts/check-handler-size.ps1
-./scripts/check-architecture-guardrails.ps1 -SkipFrontendChunk
+./tools/quality/check-handler-size.ps1
+./tools/architecture/check-architecture-guardrails.ps1 -SkipFrontendChunk
 # Tras npm run build en frontend:
-./scripts/check-architecture-guardrails.ps1 -FrontendChunkOnly
+./tools/architecture/check-architecture-guardrails.ps1 -FrontendChunkOnly
 ```
 
 ---

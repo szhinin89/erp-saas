@@ -1,45 +1,92 @@
 # ERP SaaS — ZH Technologies
 
-Monorepo: **backend** (.NET 10, Clean Architecture, PostgreSQL) + **frontend** (Vite, React, TypeScript).
+Monorepo enterprise: **backend** (.NET 10, Clean Architecture, PostgreSQL) + **frontend** (Vite, React, TypeScript).
 
-## Producto
+## Visión
 
-ERP **SaaS multi-tenant** para empresas ecuatorianas: facturación electrónica **SRI**, inventario y compras, contabilidad integrada y administración multi-empresa desde un panel **SuperAdmin**. ZH Technologies opera la instancia; cada cliente tiene plan, módulos y datos aislados.
+ERP **SaaS multi-tenant** para Ecuador: facturación electrónica **SRI**, inventario, contabilidad, panel **SuperAdmin**, planes comerciales e i18n **es / en / Kichwa (`qu`)**.
 
-**Segmentos:** PYME (ventas/catálogo) → PYME con inventario → empresa mediana (contabilidad, sucursales) → operador (SuperAdmin).
+| Documento | Contenido |
+|-----------|-----------|
+| [`CONTEXT.md`](CONTEXT.md) | Índice maestro |
+| [`ARCHITECTURE.md`](ARCHITECTURE.md) | Arquitectura (entrada) |
+| [`docs/STATUS.md`](docs/STATUS.md) | Estado delivery (fuente de verdad) |
+| [`FEATURES.md`](FEATURES.md) | Módulos producto |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | PR, tests, estándares |
 
-**Diferenciadores:** integración SRI nativa (XML, firma P12, RIDE), i18n **es / en / Kichwa de Cañar (`qu`)**, permisos granulares y menú por plan.
+## Estructura del repositorio
 
-Estado de entrega y MVP: **[`docs/STATUS.md`](./docs/STATUS.md)** · Prioridades: **[`docs/ROADMAP.md`](./docs/ROADMAP.md)** · Checklist: **`PROGRESS.html`**.
+```
+erp-saas/
+├── backend/           # .NET — src/, tests en ERP.*.Tests
+├── frontend/          # React SPA — src/, e2e/
+├── infrastructure/    # Docker, postgres, deploy templates
+├── docs/              # Documentación producto (7 archivos canónicos + ADRs)
+├── scripts/           # dev/, ci/, db/, setup/
+├── tools/             # Guardrails, generators, quality
+├── security/          # Políticas auth, tenant, compliance
+├── monitoring/        # Preparación observabilidad
+├── tests/             # Índice suites
+└── .github/workflows/ # CI modular (architecture, backend, frontend)
+```
+
+## Stack
+
+PostgreSQL 16 · Redis 7 · EF Core · MediatR · FluentValidation · JWT + refresh rotation · Vite · Playwright · Docker Compose · GitHub Actions.
+
+Stack permitido y auditoría: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md#stack-oficial) · `scripts/ci/verify-stack-allowlist.ps1`.
 
 ## Arranque rápido
 
 ```powershell
-docker compose up -d   # PostgreSQL (5435) + Redis (6379)
-# Atajo: .\scripts\dev-restart.ps1
+docker compose up -d                    # Postgres :5435, Redis :6379
+.\scripts\dev\dev-restart.ps1           # atajo: Docker + migraciones + API + Vite
+# Manual EF:
 cd backend/src && dotnet ef database update --project ERP.Infrastructure --startup-project ERP.API
-dotnet run --project ERP.API --launch-profile http   # http://localhost:5003  /swagger
-cd frontend && npm run dev                            # http://localhost:5173
+dotnet run --project ERP.API --launch-profile http   # http://localhost:5003
+cd frontend && npm run dev                             # http://localhost:5173
 ```
 
-Copiar `backend/src/ERP.API/appsettings.Development.json.example` → `appsettings.Development.json`. Detalle, scripts y tests: **[`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)**.
+SuperAdmin first-run: **`.\scripts\setup\Crear-SuperAdmin.ps1`**
 
-## Documentación
+Config: copiar `backend/src/ERP.API/appsettings.Development.json.example` → `appsettings.Development.json`.
 
-**Índice maestro:** **[`CONTEXT.md`](./CONTEXT.md)** — mapa de los 7 archivos en `docs/` + reglas para agentes (`CLAUDE.md`, `.cursor/rules/`).
+## Auth
 
-| Documento | Contenido |
-|-----------|-----------|
-| [`docs/STATUS.md`](./docs/STATUS.md) | Estado de delivery (fuente de verdad) |
-| [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Arquitectura, scopes, platform vs ERP |
-| [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md) | Stack, scripts, tests, reglas dev |
-| [`docs/IDENTITY.md`](./docs/IDENTITY.md) | Auth, JWT, seguridad |
-| [`docs/SAAS-COMMERCIAL.md`](./docs/SAAS-COMMERCIAL.md) | Planes, billing, empresas |
-| [`docs/DATABASE.md`](./docs/DATABASE.md) | PostgreSQL, migraciones, RLS |
-| [`docs/ROADMAP.md`](./docs/ROADMAP.md) | Prioridades pendientes |
+Access token en memoria · refresh en cookie httpOnly · rotación por familia · multi-tab (Web Locks + BroadcastChannel). Ver [`AUTH_RULES.md`](AUTH_RULES.md).
 
-Al cambiar arquitectura o avance, actualizar **`docs/STATUS.md`** y **`docs/ROADMAP.md`** (ver `.cursor/rules/docs-progress-status-sync.mdc`).
+## CI/CD
 
-## CI
+Orquestador: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) — SDK en [`backend/src/global.json`](backend/src/global.json); `dotnet test`; frontend Node 22, lint, build, Playwright E2E. Dependabot: [`.github/dependabot.yml`](.github/dependabot.yml).
+| Workflow | Job |
+|----------|-----|
+| `architecture.yml` | Stack allowlist + guardrails |
+| `backend-ci.yml` | `dotnet test` |
+| `frontend-ci.yml` | lint, build, Playwright |
+| `security.yml` | Identity guardrails (reusable) |
+| `e2e.yml` | E2E manual dispatch |
+
+## Reglas (obligatorias)
+
+| Archivo | Ámbito |
+|---------|--------|
+| [`CLAUDE.md`](CLAUDE.md) | Agentes / implementación |
+| [`ARCHITECTURE_RULES.md`](ARCHITECTURE_RULES.md) | PR bloqueantes |
+| [`BACKEND_RULES.md`](BACKEND_RULES.md) | .NET |
+| [`FRONTEND_RULES.md`](FRONTEND_RULES.md) | React |
+| [`AUTH_RULES.md`](AUTH_RULES.md) | Sesión / tokens |
+| [`DATABASE_RULES.md`](DATABASE_RULES.md) | PostgreSQL / EF |
+
+ADRs: [`docs/decisions/`](docs/decisions/)
+
+## Troubleshooting
+
+| Problema | Acción |
+|----------|--------|
+| Puerto 5435 ocupado | `docker compose down` o cambiar puerto en compose |
+| Migraciones EF | `.\scripts\dev\dev-restart.ps1 -Doctor` |
+| Refresh 401 tras F5 | Verificar cookie `Path=/api`; ver `AUTH_RULES.md` |
+| CI stack audit falla | Revisar `scripts/stack-allowlist.json` |
+
+Detalle: [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).

@@ -14,7 +14,7 @@ No es código de aplicación. Política de datos versionados: [`docs/DATABASE.md
 
 ## First-run / reset
 
-Usar **`POST /api/dev/reset-first-run`** (Development) o [`Crear-SuperAdmin.ps1`](../../Crear-SuperAdmin.ps1). No mantener SQL manual contra tablas legacy `users`.
+Usar **`POST /api/dev/reset-first-run`** (Development) o [`Crear-SuperAdmin.ps1`](../../setup/Crear-SuperAdmin.ps1). No mantener SQL manual contra tablas legacy `users`.
 
 ## Geografía INEC (regenerar 001)
 

@@ -20,11 +20,16 @@ $ErrorActionPreference = 'Stop'
 
 function Resolve-RepoRoot {
     param([string]$Start)
-    $root = Split-Path -Parent (Split-Path -Parent $Start)
-    if (-not (Test-Path (Join-Path $root 'backend'))) {
-        $root = Split-Path -Parent $Start
+    $dir = $Start
+    while ($dir) {
+        if ((Test-Path (Join-Path $dir 'backend')) -and (Test-Path (Join-Path $dir 'frontend'))) {
+            return $dir
+        }
+        $parent = Split-Path -Parent $dir
+        if ([string]::IsNullOrEmpty($parent) -or $parent -eq $dir) { break }
+        $dir = $parent
     }
-    return $root
+    throw "No se encontró la raíz del monorepo ERP SaaS desde: $Start"
 }
 
 function Normalize-RelativePath {
@@ -126,7 +131,7 @@ if (Test-Path $controllersRoot) {
 }
 
 # --- Handler size (delegado) ---
-$handlerScript = Join-Path $PSScriptRoot 'check-handler-size.ps1'
+$handlerScript = Join-Path (Split-Path $PSScriptRoot -Parent) 'quality/check-handler-size.ps1'
 & $handlerScript -GrandfatherPath $GrandfatherPath
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE

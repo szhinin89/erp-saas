@@ -4,10 +4,19 @@
   Falla si el repositorio reintroduce referencias al auth legacy (tabla users).
 #>
 $ErrorActionPreference = 'Stop'
-$root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-if (-not (Test-Path (Join-Path $root 'backend'))) {
-  $root = Split-Path -Parent $PSScriptRoot
+function Resolve-ErpRepoRoot {
+  $dir = $PSScriptRoot
+  while ($dir) {
+    if ((Test-Path (Join-Path $dir 'backend')) -and (Test-Path (Join-Path $dir 'frontend'))) {
+      return $dir
+    }
+    $parent = Split-Path -Parent $dir
+    if ([string]::IsNullOrEmpty($parent) -or $parent -eq $dir) { break }
+    $dir = $parent
+  }
+  throw 'No se encontró la raíz del repo ERP SaaS.'
 }
+$root = Resolve-ErpRepoRoot
 
 $banned = @(
   'ERP\.Domain\.Auth\.Entities\.User',

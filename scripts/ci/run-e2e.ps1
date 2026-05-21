@@ -14,9 +14,9 @@
 .PARAMETER PlaywrightArgs
     Argumentos extra para playwright (ej. "e2e/smoke.spec.ts").
 .EXAMPLE
-    pwsh -File scripts/run-e2e.ps1
+    pwsh -File scripts/ci/run-e2e.ps1
 .EXAMPLE
-    pwsh -File scripts/run-e2e.ps1 -SkipDocker -PlaywrightArgs "e2e/enterprise-auth.spec.ts"
+    pwsh -File scripts/ci/run-e2e.ps1 -SkipDocker -PlaywrightArgs "e2e/enterprise-auth.spec.ts"
 #>
 [CmdletBinding()]
 param(
@@ -28,7 +28,19 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$repoRoot = Split-Path $PSScriptRoot -Parent
+function Get-ErpSaasRepoRoot {
+    $dir = $PSScriptRoot
+    while ($dir) {
+        if ((Test-Path (Join-Path $dir 'backend')) -and (Test-Path (Join-Path $dir 'frontend'))) {
+            return $dir
+        }
+        $parent = Split-Path -Parent $dir
+        if ([string]::IsNullOrEmpty($parent) -or $parent -eq $dir) { break }
+        $dir = $parent
+    }
+    throw 'No se encontró la raíz del repo ERP SaaS.'
+}
+$repoRoot = Get-ErpSaasRepoRoot
 $backendRoot = Join-Path $repoRoot "backend\src"
 $apiProject = Join-Path $backendRoot "ERP.API\ERP.API.csproj"
 $infraProject = Join-Path $backendRoot "ERP.Infrastructure\ERP.Infrastructure.csproj"

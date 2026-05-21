@@ -1,0 +1,39 @@
+name: Architecture & Stack Audit
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  stack-audit:
+    name: Stack Audit (allowlist)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify allowed stack
+        shell: pwsh
+        run: ./scripts/ci/verify-stack-allowlist.ps1
+
+  architecture-guardrails:
+    name: Architecture guardrails
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: stack-audit
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Backend architecture guardrails
+        shell: pwsh
+        run: |
+          $base = ''
+          if ($env:GITHUB_EVENT_NAME -eq 'pull_request') {
+            $base = "origin/$($env:GITHUB_BASE_REF)"
+          }
+          ./tools/architecture/check-architecture-guardrails.ps1 -SkipFrontendChunk -DiffBase $base
+      - name: Identity guardrails
+        shell: pwsh
+        run: ./tools/architecture/check-identity-guardrails.ps1

@@ -2,7 +2,7 @@
 
 Reglas oficiales para contribuidores y agentes. Violaciones rompen aislamiento multi-tenant o límites de billing.
 
-**Stack permitido:** sección [Stack oficial](#stack-oficial) (verificado por `scripts/verify-stack-allowlist.ps1` y `scripts/stack-allowlist.json`).
+**Stack permitido:** sección [Stack oficial](#stack-oficial) (verificado por `scripts/ci/verify-stack-allowlist.ps1` y `scripts/stack-allowlist.json`).
 
 ---
 
@@ -78,7 +78,7 @@ cd ../../../frontend
 npm run dev
 ```
 
-- First-run SuperAdmin: banner en consola API o `.\Crear-SuperAdmin.ps1`
+- First-run SuperAdmin: banner en consola API o `.\scripts\setup\Crear-SuperAdmin.ps1`
 - Copiar `appsettings.Development.json.example` → `appsettings.Development.json`
 - PostgreSQL: `Host=localhost;Port=5435;Database=dberpsaas`
 
@@ -86,19 +86,19 @@ npm run dev
 
 ## Scripts PowerShell (canónicos)
 
-Solo **9** scripts `.ps1` en el repo (+ `architecture-grandfather.json`). CI los valida vía `scriptsAllowed` en [`scripts/stack-allowlist.json`](../scripts/stack-allowlist.json) (`verify-stack-allowlist.ps1`).
+Solo **9** scripts `.ps1` en el repo (+ `tools/architecture/architecture-grandfather.json`). CI los valida vía `scriptsAllowed` en [`scripts/stack-allowlist.json`](../scripts/stack-allowlist.json) (`scripts/ci/verify-stack-allowlist.ps1`).
 
 | Script | Uso |
 |--------|-----|
-| `Crear-SuperAdmin.ps1` (raíz) | Alta SuperAdmin first-run interactiva |
-| `scripts/dev-restart.ps1` | Entorno dev (Docker, EF, API, Vite) |
-| `scripts/run-e2e.ps1` | Playwright E2E |
-| `scripts/verify-stack-allowlist.ps1` | CI: NuGet, npm, Docker, Actions, patrones, **scripts** |
-| `scripts/check-identity-guardrails.ps1` | CI: sin referencias auth legacy `users` |
-| `scripts/check-handler-size.ps1` | CI: MediatR `Handle` ≤ 150 líneas |
-| `scripts/check-architecture-guardrails.ps1` | CI: capas, patrones frontend, límites TSX, chunk Vite |
-| `scripts/new-master-module.ps1` | Scaffolding vertical módulo master |
-| `scripts/import_inec_ecuador_geography.ps1` | Generar SQL geografía INEC (ArcGIS → `geo_*`) |
+| `scripts/setup/Crear-SuperAdmin.ps1` | Alta SuperAdmin first-run interactiva |
+| `scripts/dev/dev-restart.ps1` | Entorno dev (Docker, EF, API, Vite) |
+| `scripts/ci/run-e2e.ps1` | Playwright E2E |
+| `scripts/ci/verify-stack-allowlist.ps1` | CI: NuGet, npm, Docker, Actions, patrones, **scripts** |
+| `tools/architecture/check-identity-guardrails.ps1` | CI: sin referencias auth legacy `users` |
+| `tools/quality/check-handler-size.ps1` | CI: MediatR `Handle` ≤ 150 líneas |
+| `tools/architecture/check-architecture-guardrails.ps1` | CI: capas, patrones frontend, límites TSX, chunk Vite |
+| `tools/generators/new-master-module.ps1` | Scaffolding vertical módulo master |
+| `scripts/db/import_inec_ecuador_geography.ps1` | Generar SQL geografía INEC (ArcGIS → `geo_*`) |
 
 Índice breve: [`scripts/README.md`](../scripts/README.md).
 
@@ -200,9 +200,9 @@ dotnet test ERP.API.Tests
 Requisitos: Docker, .NET SDK, Node 22+, `npx playwright install chromium`.
 
 ```powershell
-pwsh -File scripts/run-e2e.ps1
-pwsh -File scripts/run-e2e.ps1 -SkipDocker
-pwsh -File scripts/run-e2e.ps1 -PlaywrightArgs "e2e/smoke.spec.ts"
+pwsh -File scripts/ci/run-e2e.ps1
+pwsh -File scripts/ci/run-e2e.ps1 -SkipDocker
+pwsh -File scripts/ci/run-e2e.ps1 -PlaywrightArgs "e2e/smoke.spec.ts"
 ```
 
 Demo (`Development:SeedDemoTenant: true`): `admin@erp.com` / `Admin123!`, API `:5003`.

@@ -8,95 +8,99 @@
 
 | Qué necesito | Archivo | Contenido |
 |--------------|---------|-----------|
-| **Entrada GitHub / visión producto** | [`README.md`](./README.md) (raíz) | Resumen negocio, arranque, enlaces |
-| **Reglas de código (agentes)** | [`CLAUDE.md`](./CLAUDE.md) (raíz) | Convenciones implementación |
-| **Estado y delivery** | [`docs/STATUS.md`](./docs/STATUS.md) | Única fuente de avance MVP |
+| **Entrada GitHub / visión producto** | [`README.md`](./README.md) | Monorepo, stack, CI, troubleshooting |
+| **Reglas de código (agentes)** | [`CLAUDE.md`](./CLAUDE.md) | Convenciones implementación |
+| **Arquitectura (entrada)** | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | → [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) |
+| **Estado delivery** | [`docs/STATUS.md`](./docs/STATUS.md) | Fuente de verdad MVP |
+| **Reglas PR (entrada)** | [`ARCHITECTURE_RULES.md`](./ARCHITECTURE_RULES.md) | → [`docs/ARCHITECTURE-RULES.md`](./docs/ARCHITECTURE-RULES.md) |
+| **Backend / Frontend / Auth / DB** | [`BACKEND_RULES.md`](./BACKEND_RULES.md), [`FRONTEND_RULES.md`](./FRONTEND_RULES.md), [`AUTH_RULES.md`](./AUTH_RULES.md), [`DATABASE_RULES.md`](./DATABASE_RULES.md) | Reglas por capa |
+| **Contribución** | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | PR, tests, prohibiciones |
+| **Features** | [`FEATURES.md`](./FEATURES.md) | Módulos producto |
 | **Prioridades** | [`docs/ROADMAP.md`](./docs/ROADMAP.md) | Fases pendientes |
-| **Cómo está construido** | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Capas, scopes, platform vs ERP, API |
-| **Reglas arquitectura (normativas, PR)** | [`docs/ARCHITECTURE-RULES.md`](./docs/ARCHITECTURE-RULES.md) | Reglas bloqueantes backend/frontend, enforcement |
-| **Cómo desarrollar** | [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md) | Arranque, scripts, stack, tests, reglas |
-| **Login, JWT, seguridad** | [`docs/IDENTITY.md`](./docs/IDENTITY.md) | IAM, auth backend/frontend |
-| **Planes, billing, empresas** | [`docs/SAAS-COMMERCIAL.md`](./docs/SAAS-COMMERCIAL.md) | Límites, billing SaaS, companies |
-| **PostgreSQL, EF, RLS** | [`docs/DATABASE.md`](./docs/DATABASE.md) | Migraciones, tablas, RLS |
+| **Desarrollo** | [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md) | Arranque, stack, tests |
+| **Identity** | [`docs/IDENTITY.md`](./docs/IDENTITY.md) | JWT, IAM |
+| **SaaS comercial** | [`docs/SAAS-COMMERCIAL.md`](./docs/SAAS-COMMERCIAL.md) | Planes, billing |
+| **Base de datos** | [`docs/DATABASE.md`](./docs/DATABASE.md) | EF, RLS |
+| **ADRs** | [`docs/decisions/`](./docs/decisions/) | Decisiones arquitectura |
 
-> No crear `.md` de producto fuera de esta lista (salvo stubs mínimos en `.github/` o README operativos en `Migrations/` / `InstallData/`).
+> Los **7 archivos canónicos** siguen en `docs/` raíz. Subcarpetas (`decisions/`, `diagrams/`, …) amplían sin reemplazar.
 
 ---
 
-## Árbol `docs/` (oficial — 7 archivos)
+## Estructura monorepo
 
 ```
-docs/
-├── STATUS.md
-├── ROADMAP.md
-├── ARCHITECTURE.md
-├── ARCHITECTURE-RULES.md
-├── DEVELOPMENT.md
-├── IDENTITY.md
-├── SAAS-COMMERCIAL.md
-└── DATABASE.md
+erp-saas/
+├── backend/          → backend/README.md
+├── frontend/
+├── infrastructure/   → Docker, postgres, deployment
+├── docs/             → 7 canónicos + decisions/, diagrams/, …
+├── scripts/          → dev/, ci/, db/, setup/
+├── tools/            → architecture/, quality/, generators/
+├── security/         → auth/, tenant-isolation/, …
+├── monitoring/       → preparación observabilidad
+├── tests/            → índice suites
+└── .github/workflows/
 ```
 
-Referencia SRI (PDF): `docs/FICHA TECNICA COMPROBANTES ELECTRONICOS ESQUEMA OFFLINE Versio232.pdf`
+Compose: `docker-compose.yml` (include → `infrastructure/docker/compose.base.yml`).
 
 ---
 
 ## Arranque local
 
-Atajo: **`.\scripts\dev-restart.ps1`** · SuperAdmin first-run: **`.\Crear-SuperAdmin.ps1`**
+Atajo: **`.\scripts\dev\dev-restart.ps1`** · SuperAdmin: **`.\scripts\setup\Crear-SuperAdmin.ps1`**
 
-Manual completo: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md#arranque-local).
+Manual: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md#arranque-local).
 
 ---
 
-## Scripts PowerShell (9 canónicos + grandfather JSON)
+## Scripts y tooling (9 .ps1 canónicos)
 
 | Script | Rol |
 |--------|-----|
-| [`Crear-SuperAdmin.ps1`](./Crear-SuperAdmin.ps1) | SuperAdmin first-run |
-| [`scripts/dev-restart.ps1`](./scripts/dev-restart.ps1) | Dev: Docker + EF + API + Vite |
-| [`scripts/run-e2e.ps1`](./scripts/run-e2e.ps1) | Playwright E2E |
-| [`scripts/verify-stack-allowlist.ps1`](./scripts/verify-stack-allowlist.ps1) | CI: stack + scripts |
-| [`scripts/check-identity-guardrails.ps1`](./scripts/check-identity-guardrails.ps1) | CI: auth legacy |
-| [`scripts/check-handler-size.ps1`](./scripts/check-handler-size.ps1) | CI: handler size |
-| [`scripts/check-architecture-guardrails.ps1`](./scripts/check-architecture-guardrails.ps1) | CI: architecture guardrails |
-| [`scripts/new-master-module.ps1`](./scripts/new-master-module.ps1) | Scaffolding módulo |
-| [`scripts/import_inec_ecuador_geography.ps1`](./scripts/import_inec_ecuador_geography.ps1) | SQL geografía INEC |
+| [`scripts/setup/Crear-SuperAdmin.ps1`](./scripts/setup/Crear-SuperAdmin.ps1) | SuperAdmin first-run |
+| [`scripts/dev/dev-restart.ps1`](./scripts/dev/dev-restart.ps1) | Dev stack |
+| [`scripts/ci/run-e2e.ps1`](./scripts/ci/run-e2e.ps1) | Playwright E2E |
+| [`scripts/ci/verify-stack-allowlist.ps1`](./scripts/ci/verify-stack-allowlist.ps1) | CI stack audit |
+| [`tools/architecture/check-identity-guardrails.ps1`](./tools/architecture/check-identity-guardrails.ps1) | Auth legacy |
+| [`tools/quality/check-handler-size.ps1`](./tools/quality/check-handler-size.ps1) | Handler size |
+| [`tools/architecture/check-architecture-guardrails.ps1`](./tools/architecture/check-architecture-guardrails.ps1) | Architecture |
+| [`tools/generators/new-master-module.ps1`](./tools/generators/new-master-module.ps1) | Scaffolding |
+| [`scripts/db/import_inec_ecuador_geography.ps1`](./scripts/db/import_inec_ecuador_geography.ps1) | Geografía INEC |
 
-Detalle y flags: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md#scripts-powershell-canónicos) · Índice carpeta: [`scripts/README.md`](./scripts/README.md).
+Grandfather JSON: [`tools/architecture/architecture-grandfather.json`](./tools/architecture/architecture-grandfather.json)
 
-No añadir `.ps1` sin actualizar `scripts/stack-allowlist.json` (`scriptsAllowed`).
+Índices: [`scripts/README.md`](./scripts/README.md) · [`tools/README.md`](./tools/README.md)
+
+No añadir `.ps1` sin `scripts/stack-allowlist.json` (`scriptsAllowed`).
+
+---
+
+## CI
+
+Orquestador: [`.github/workflows/ci.yml`](./.github/workflows/ci.yml) → `architecture.yml`, `backend-ci.yml`, `frontend-ci.yml`.
 
 ---
 
 ## Reglas para agentes
 
 1. **`CLAUDE.md`** + **`docs/DEVELOPMENT.md`** antes de implementar.
-2. Reglas bloqueantes PR → **`docs/ARCHITECTURE-RULES.md`**.
-3. Arquitectura / scopes → **`docs/ARCHITECTURE.md`**.
-4. Auth / permisos → **`docs/IDENTITY.md`**.
-5. Planes / billing → **`docs/SAAS-COMMERCIAL.md`**.
-6. Schema / EF → **`docs/DATABASE.md`**.
-7. Estado → **`docs/STATUS.md`**; prioridades → **`docs/ROADMAP.md`**.
-8. Stack nuevo → **`docs/DEVELOPMENT.md#stack-oficial`** + `scripts/stack-allowlist.json`.
-9. Scripts `.ps1` → solo los 9 canónicos; mapa en **`scripts/README.md`**.
+2. PR bloqueantes → **`docs/ARCHITECTURE-RULES.md`** / reglas raíz `*_RULES.md`.
+3. Estado → **`docs/STATUS.md`** + **`PROGRESS.html`** al cerrar tareas.
+4. Stack → **`docs/DEVELOPMENT.md#stack-oficial`** + allowlist.
 
-Copilot / IDE: [`copilot-instructions.md`](./copilot-instructions.md) → [`.github/INSTRUCCIONES-COPILOT.md`](./.github/INSTRUCCIONES-COPILOT.md).
+Copilot: [`.github/INSTRUCCIONES-COPILOT.md`](./.github/INSTRUCCIONES-COPILOT.md).
 
 ---
 
-## Otros archivos (no duplicar)
+## Otros
 
-| Tipo | Dónde | Nota |
-|------|--------|------|
-| Reglas Cursor | `.cursor/rules/*.mdc` | Fuente agente; no copiar a `docs/` |
-| Stub Copilot | `copilot-instructions.md`, `.cursorrules`, `.github/instructions/` | Punteros mínimos |
-| SQL auxiliar | `scripts/sql/` | Ver [`scripts/sql/README.md`](./scripts/sql/README.md) |
-| InstallData | `backend/.../Seeding/InstallData/` | Scripts inmutables de arranque |
-| Checklist MVP | `PROGRESS.html` | Sincronizar con `docs/STATUS.md` |
-| Spec SRI | `docs/*.pdf` | Referencia normativa |
-| Artefactos locales | `_verify_build_out/`, `*.log`, `backend/scripts/` | `.gitignore`; no versionar |
-
-No crear carpetas paralelas (`database/`, docs sueltos en `src/`, caches `.lscache`).
+| Tipo | Dónde |
+|------|--------|
+| Reglas Cursor | `.cursor/rules/*.mdc` |
+| SQL auxiliar | `scripts/db/sql/` |
+| Ops postgres | `infrastructure/postgres/` |
+| Spec SRI PDF | `docs/*.pdf` |
 
 ---

@@ -9,7 +9,7 @@
 #>
 param(
     [int]$MaxHandleLines = 150,
-    [string]$GrandfatherPath = (Join-Path $PSScriptRoot 'architecture-grandfather.json')
+    [string]$GrandfatherPath = (Join-Path (Split-Path $PSScriptRoot -Parent) 'architecture/architecture-grandfather.json')
 )
 
 $ErrorActionPreference = 'Stop'

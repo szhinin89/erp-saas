@@ -1,0 +1,13 @@
+name: E2E (manual)
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Playwright E2E
+    uses: ./.github/workflows/frontend-ci.yml
