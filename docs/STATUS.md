@@ -135,7 +135,7 @@ cd ../ERP.API
 dotnet run
 ```
 
-First-run super admin: banner en consola al arrancar API, o `scripts/create-superadmin.ps1` / `Crear-SuperAdmin.ps1`.
+First-run super admin: banner en consola al arrancar API, o **`Crear-SuperAdmin.ps1`** (raíz del repo).
 
 ## Related
 

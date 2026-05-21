@@ -17,10 +17,13 @@ Reglas de implementación. Para arquitectura → `docs/ARCHITECTURE.md`. Para es
 
 ```powershell
 docker compose up -d
+# o: .\scripts\dev-restart.ps1 -DockerUp
 cd backend/src && dotnet ef database update --project ERP.Infrastructure --startup-project ERP.API
 dotnet run --project ERP.API --launch-profile http          # http://localhost:5003  swagger: /swagger
 cd frontend && npm run dev                                   # http://localhost:5173
 ```
+
+Atajo completo (Docker + migraciones + ventanas API/Vite): **`.\scripts\dev-restart.ps1`**
 
 ---
 

@@ -6,6 +6,7 @@ Monorepo: **backend** (.NET 10, Clean Architecture, PostgreSQL) + **frontend** (
 
 ```powershell
 docker compose up -d   # PostgreSQL (5435) + Redis (6379)
+# Atajo dev: .\scripts\dev-restart.ps1
 cd backend/src && dotnet ef database update --project ERP.Infrastructure --startup-project ERP.API
 dotnet run --project ERP.API --launch-profile http   # http://localhost:5003  /swagger
 cd frontend && npm run dev                            # http://localhost:5173

@@ -25,8 +25,17 @@
   Ejecuta diagnóstico del entorno de desarrollo (sin matar procesos, sin migrar, sin arrancar apps).
   Útil para detectar bloqueos, toolchain faltante y estado de migraciones.
 
+.PARAMETER DockerUp
+  Solo levanta PostgreSQL + Redis con docker compose y termina (reemplaza dev-up.ps1).
+
+.PARAMETER SkipDocker
+  No ejecuta docker compose antes de migrar (útil si Postgres/Redis ya están corriendo).
+
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File .\scripts\dev-restart.ps1
+
+.EXAMPLE
+  .\scripts\dev-restart.ps1 -DockerUp
 
 .EXAMPLE
   cd C:\ProyectCursor\erp-saas
@@ -37,7 +46,9 @@ param(
     [switch] $NoStart,
     [switch] $StrictMigrate,
     [switch] $NoAutoFixMigration,
-    [switch] $Doctor
+    [switch] $Doctor,
+    [switch] $DockerUp,
+    [switch] $SkipDocker
 )
 
 $ErrorActionPreference = 'Stop'
@@ -144,6 +155,26 @@ function Get-ListeningProcessSummary([int[]]$Ports) {
         }
     }
     return $rows
+}
+
+function Invoke-DockerUp {
+    param([string] $SaasRoot)
+
+    Write-Step "Docker compose up -d (Postgres + Redis)"
+    Push-Location $SaasRoot
+    try {
+        docker compose up -d
+        if ($LASTEXITCODE -ne 0) {
+            throw "docker compose up -d falló (exit $LASTEXITCODE)"
+        }
+        docker compose ps
+        Write-Ok "Contenedores levantados."
+        Write-Info "Redis: docker exec erp-saas-redis redis-cli ping  (esperado: PONG)"
+        Write-Info "Siguiente: appsettings.Development.json + .\scripts\dev-restart.ps1 -NoStart"
+    }
+    finally {
+        Pop-Location
+    }
 }
 
 function Invoke-DoctorMode {
@@ -281,9 +312,18 @@ Write-Host "  ERP SaaS - reinicio dev + migraciones" -ForegroundColor White
 Write-Host "========================================"  -ForegroundColor White
 Write-Host "  Raíz SaaS: $saasRoot"
 
+if ($DockerUp) {
+    Invoke-DockerUp -SaasRoot $saasRoot
+    exit 0
+}
+
 if ($Doctor) {
     Invoke-DoctorMode -SaasRoot $saasRoot -BackendRoot $backendRoot -FrontendRoot $frontendRoot -InfraCsprojPath $infraCsproj -ApiCsprojPath $apiCsproj
     exit 0
+}
+
+if (-not $SkipDocker -and -not $NoMigrate) {
+    Invoke-DockerUp -SaasRoot $saasRoot
 }
 
 Write-Step "1/3 Deteniendo procesos en puertos (API 5003/7253, Vite 5173)"

@@ -27,7 +27,7 @@ $exclude = @(
   '*\docs\*',
   '*\scripts\*',
   '*\.lscache',
-  '*erp_auth.ps1*'
+  '*\.cursor\*'
 )
 
 $failed = $false

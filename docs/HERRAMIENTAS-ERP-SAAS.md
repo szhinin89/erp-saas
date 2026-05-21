@@ -68,6 +68,20 @@ Verificación automática: `scripts/verify-stack-allowlist.ps1` (lista en `scrip
 
 ---
 
+## Scripts PowerShell
+
+| Script | Propósito |
+|--------|-----------|
+| `scripts/dev-restart.ps1` | **Arranque dev** (Docker, EF, API, Vite) |
+| `Crear-SuperAdmin.ps1` | First-run SuperAdmin |
+| `scripts/run-e2e.ps1` | E2E Playwright |
+| `scripts/verify-stack-allowlist.ps1` | Allowlist stack (CI) |
+| `scripts/check-identity-guardrails.ps1` | Guardrails IAM (CI) |
+| `scripts/new-master-module.ps1` | Scaffolding módulo |
+| `scripts/import_inec_ecuador_geography.ps1` | SQL geografía Ecuador |
+
+Detalle de flags: `docs/DEVELOPMENT-RULES.md`.
+
 ## Scripts SQL de mantenimiento
 
 | Archivo | Propósito |

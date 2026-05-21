@@ -47,6 +47,22 @@ Declare scope before adding tables — see [SCOPES.md](./SCOPES.md).
 ## Local setup
 
 ```powershell
+# 1) Infra + migraciones + arranque (recomendado)
+.\scripts\dev-restart.ps1
+
+# Solo Docker (Postgres + Redis)
+.\scripts\dev-restart.ps1 -DockerUp
+
+# Migraciones sin abrir ventanas API/Vite
+.\scripts\dev-restart.ps1 -NoStart
+
+# Diagnóstico (puertos, toolchain, EF pending)
+.\scripts\dev-restart.ps1 -Doctor
+```
+
+Manual (equivalente):
+
+```powershell
 docker compose up -d
 cd backend/src/ERP.Infrastructure
 dotnet ef database update --startup-project ../ERP.API/ERP.API.csproj
@@ -59,9 +75,25 @@ npm run dev
 # http://localhost:5173
 ```
 
+First-run SuperAdmin: banner en consola al arrancar API, o `.\Crear-SuperAdmin.ps1` en la raíz del repo.
+
 Copy `appsettings.Development.json.example` → `appsettings.Development.json`.
 
 PostgreSQL (default): `Host=localhost;Port=5435;Database=dberpsaas`.
+
+## Scripts PowerShell (canónicos)
+
+| Script | Uso |
+|--------|-----|
+| **`scripts/dev-restart.ps1`** | Entorno dev: Docker, migraciones EF, reinicio API + Vite |
+| **`Crear-SuperAdmin.ps1`** | Alta interactiva del SuperAdmin (first-run) |
+| **`scripts/run-e2e.ps1`** | Playwright E2E (Docker + API + tests) |
+| **`scripts/verify-stack-allowlist.ps1`** | CI: dependencias permitidas |
+| **`scripts/check-identity-guardrails.ps1`** | CI: sin auth legacy |
+| **`scripts/new-master-module.ps1`** | Scaffolding de módulo master (interactivo) |
+| **`scripts/import_inec_ecuador_geography.ps1`** | Generar SQL geo Ecuador (INEC) |
+
+No mantener scripts duplicados fuera de esta lista sin actualizar esta tabla.
 
 ## Migrations (dev)
 

@@ -70,6 +70,10 @@ erp-saas/
 ## Arranque rápido
 
 ```powershell
+# Recomendado (Docker + migraciones + API + Vite)
+.\scripts\dev-restart.ps1
+
+# Manual
 docker compose up -d
 cd backend/src/ERP.Infrastructure
 dotnet ef database update --startup-project ../ERP.API/ERP.API.csproj
@@ -78,6 +82,8 @@ dotnet run
 cd ../../../frontend
 npm run dev
 ```
+
+First-run SuperAdmin: `.\Crear-SuperAdmin.ps1`
 
 ---
 
