@@ -6,6 +6,7 @@
 backend/src/_buildcheck/
 backend/_buildcheck/
 backend/_buildcheck2/
+_verify_build_out/
 
 # Visual Studio
 .vs/
@@ -76,5 +77,6 @@ docker-compose.override.yml
 # Test results
 TestResults/
 coverage/
+frontend/e2e/artifacts/
 *.trx
 *.coveragexml

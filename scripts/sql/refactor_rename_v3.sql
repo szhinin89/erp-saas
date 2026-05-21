@@ -1,5 +1,5 @@
 -- Script idempotente: cada sección es independiente
--- Ejecutar con: psql -f refactor_rename_v3.sql
+-- Ejecutar con: psql -f scripts/sql/refactor_rename_v3.sql
 
 -- ═══════════════════════════════════════════════════════════════
 -- 1. ui_nav_groups

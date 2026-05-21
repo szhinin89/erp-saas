@@ -6,22 +6,21 @@ applyTo: ["backend/**", "frontend/**", "scripts/**"]
 
 # ERP SaaS — contexto (resumen)
 
-**No duplicar** aquí guías largas: este archivo solo fija prioridades. La documentación canónica está en el repo.
+**No duplicar** guías largas aquí. Documentación canónica en el repo.
 
 ## Orden de lectura
 
-1. **[`CONTEXT.md`](../../CONTEXT.md)** (raíz del repo) — mapa de documentos y enlaces por tarea.
-2. **[`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md)** — capas, multi-tenant, módulos.
-3. **[`docs/DESARROLLO.md`](../../docs/DESARROLLO.md)** — arranque local, Docker, EF, tests.
-4. **[`.cursor/rules/erp-unified-rules.mdc`](../../.cursor/rules/erp-unified-rules.mdc)** — reglas de implementación (validación 4 capas, ZH Form, i18n `qu`, navegación SaaS).
-5. **[`.github/INSTRUCCIONES-COPILOT.md`](../INSTRUCCIONES-COPILOT.md)** — guía extendida en español (stack, flujos, ejemplos).
+1. **[`CONTEXT.md`](../../CONTEXT.md)** — mapa de documentos
+2. **[`CLAUDE.md`](../../CLAUDE.md)** — reglas de implementación
+3. **[`docs/DEVELOPMENT-RULES.md`](../../docs/DEVELOPMENT-RULES.md)** — arranque, Docker, EF, tests
+4. **[`docs/HERRAMIENTAS-ERP-SAAS.md`](../../docs/HERRAMIENTAS-ERP-SAAS.md)** — stack permitido
+5. **[`.cursor/rules/erp-unified-rules.mdc`](../../.cursor/rules/erp-unified-rules.mdc)** — validación 4 capas, ZH Form, i18n, navegación SaaS
 
 ## Reglas duras
 
-- **Multi-tenant:** JWT + filtros EF; nunca filtrar datos sin `TenantId` coherente.
-- **Navegación:** sin UUID sensibles en query string; `sessionStorage` (`erp.saas.*`). Ver `saas-navigation-no-sensitive-url.mdc`.
-- **Validación:** DTO → negocio → autorización → query filters.
-- **Estado del proyecto:** `docs/ESTADO-PROYECTO.md`; diario: `docs/REGISTRO-PROYECTO.md`.
-- **Histórico de riesgos resueltos:** `docs/HISTORIAL-ARQUITECTURA-RIESGOS.md` (solo referencia).
+- **Multi-tenant:** JWT + filtros EF; nunca filtrar datos sin scope coherente (`subscriber` / `company`).
+- **Navegación:** sin UUID en query string; `sessionStorage` (`erp.saas.*`). Ver `saas-navigation-no-sensitive-url.mdc`.
+- **Validación:** frontend Zod → FluentValidation → dominio → EF.
+- **Estado del proyecto:** **`docs/STATUS.md`**; prioridades en **`docs/ROADMAP.md`**.
 
-**Última revisión de este stub:** 2026-05-11.
+**Última revisión:** 2026-05-21.

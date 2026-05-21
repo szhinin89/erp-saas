@@ -14,6 +14,7 @@
 | **Arquitectura oficial** | **`docs/ARCHITECTURE.md`** |
 | **Roadmap y prioridades** | **`docs/ROADMAP.md`** |
 | **Reglas de desarrollo** | **`docs/DEVELOPMENT-RULES.md`** |
+| **Stack permitido (herramientas)** | **`docs/HERRAMIENTAS-ERP-SAAS.md`** |
 | **Multi-tenant / company** | **`docs/MULTITENANCY.md`**, **`docs/SCOPES.md`** |
 | **Seguridad** | **`docs/SECURITY.md`** |
 | **Billing SaaS** | **`docs/BILLING.md`** |
@@ -41,6 +42,7 @@ erp-saas/
 │   ├── STATUS.md
 │   ├── ROADMAP.md
 │   ├── DEVELOPMENT-RULES.md
+│   ├── HERRAMIENTAS-ERP-SAAS.md
 │   ├── MULTITENANCY.md
 │   ├── SCOPES.md
 │   ├── SECURITY.md
@@ -86,4 +88,5 @@ npm run dev
 3. Estado y qué falta → **`docs/STATUS.md`**.
 4. Prioridades → **`docs/ROADMAP.md`**.
 5. Schema / RLS / migraciones → **`docs/DATABASE/`**.
-6. No crear documentos fuera de la estructura oficial en `docs/`.
+6. Stack / dependencias nuevas → **`docs/HERRAMIENTAS-ERP-SAAS.md`** + `scripts/stack-allowlist.json`.
+7. No crear documentos fuera de la estructura oficial en `docs/` (stubs mínimos solo en `.github/` o `.cursor/`).

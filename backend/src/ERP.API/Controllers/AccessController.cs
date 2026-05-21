@@ -29,7 +29,7 @@ namespace ERP.API.Controllers;
 /// <remarks>
 /// Políticas mezcladas a propósito: <c>AllowAnonymous</c> (bootstrap / registro empresa),
 /// <c>Bootstrap</c> (<c>switch-subscriber</c>), <c>Session</c> (<c>me/menu</c>, <c>me/permissions</c>),
-/// <c>Roles</c> (membresías globales, perfiles, permisos de perfil). Ver criterio P0 en <c>docs/ESTADO-PROYECTO.md</c> (sección backlog de refactor).
+/// <c>Roles</c> (membresías globales, perfiles, permisos de perfil). Ver criterio P0 en <c>docs/STATUS.md</c> (backlog IAM).
 /// </remarks>
 [ApiController]
 [AppFeature("Access IAM API", "perm:admin.iam.api", "🧩", null, null, 983, IsVisibleInMenu = false)]

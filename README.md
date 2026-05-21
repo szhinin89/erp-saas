@@ -20,6 +20,7 @@ cd frontend && npm run dev                            # http://localhost:5173
 | [**docs/STATUS.md**](./docs/STATUS.md) | **Estado actual** — única fuente de verdad de delivery |
 | [**docs/ARCHITECTURE.md**](./docs/ARCHITECTURE.md) | Arquitectura oficial (Clean + CQRS, scopes) |
 | [**docs/ROADMAP.md**](./docs/ROADMAP.md) | Prioridades y fases pendientes |
+| [**docs/HERRAMIENTAS-ERP-SAAS.md**](./docs/HERRAMIENTAS-ERP-SAAS.md) | Stack oficial permitido |
 | [**docs/DEVELOPMENT-RULES.md**](./docs/DEVELOPMENT-RULES.md) | Reglas de desarrollo, tests y E2E |
 | [**docs/identity-model.md**](./docs/identity-model.md) | IAM (`identity_users`), auth endpoints |
 | [**docs/DATABASE/**](./docs/DATABASE/) | Migraciones, RLS, tablas |

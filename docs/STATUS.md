@@ -1,6 +1,17 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-05-20**.
+**Single source of truth** for delivery state. Updated: **2026-05-21**.
+
+## Documentation map (canonical)
+
+| Topic | File |
+|-------|------|
+| Index | `CONTEXT.md` |
+| Agent / coding rules | `CLAUDE.md`, `.cursor/rules/` |
+| Stack allowlist | `docs/HERRAMIENTAS-ERP-SAAS.md` |
+| Development setup | `docs/DEVELOPMENT-RULES.md` |
+
+Legacy or duplicate docs outside this map were removed 2026-05-21 (`_verify_build_out/`, audit snapshots, READMEs de migración en código).
 
 ## Architecture (current)
 

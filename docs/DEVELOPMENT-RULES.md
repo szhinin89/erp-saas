@@ -2,6 +2,8 @@
 
 Official rules for contributors and agents. Violations break tenant isolation or billing boundaries.
 
+Stack allowlist: [HERRAMIENTAS-ERP-SAAS.md](./HERRAMIENTAS-ERP-SAAS.md) (enforced by `scripts/verify-stack-allowlist.ps1`).
+
 ## Naming
 
 | Area | Convention |

@@ -18,14 +18,14 @@ Marcá lo que aplica a este PR.
 ### Frontend (si aplica)
 
 - [ ] Ruta en `frontend/src/App.tsx` y menú en `frontend/src/nav/navConfig.ts` si la pantalla es navegable.
-- [ ] Inventario actualizado en [`docs/FRONTEND-PANTALLAS.md`](docs/FRONTEND-PANTALLAS.md).
+- [ ] Inventario de pantallas/rutas reflejado en [`docs/STATUS.md`](docs/STATUS.md) si aplica.
 - [ ] Texto nuevo con i18n **es**, **en** y **qu** (`frontend/src/i18n/locales/*.json`).
 - [ ] Si cambió el login o el arranque de la SPA: `cd frontend && npm run test:e2e` (Playwright smoke).
 
 ### Datos / despliegue (si aplica)
 
 - [ ] Migración EF probada (`dotnet ef database update` desde entorno local).
-- [ ] Notas en [`docs/ESTADO-PROYECTO.md`](docs/ESTADO-PROYECTO.md) o [`docs/REGISTRO-PROYECTO.md`](docs/REGISTRO-PROYECTO.md) si cambia algo relevante para el equipo (migraciones, auth, puertos).
+- [ ] [`docs/STATUS.md`](docs/STATUS.md) actualizado si cambia estado de entrega (migraciones, auth, puertos, módulos).
 
 ## Cómo lo probé
 

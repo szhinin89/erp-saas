@@ -10,4 +10,4 @@ docker compose up -d
 docker compose ps
 
 Write-Host "`nRedis: docker exec erp-saas-redis redis-cli ping  (esperado: PONG)" -ForegroundColor DarkGray
-Write-Host "Siguiente: copiar ERP.API/appsettings.Development.json.example -> appsettings.Development.json y ejecutar dotnet ef database update (ver docs/DESARROLLO.md)." -ForegroundColor Green
+Write-Host "Siguiente: copiar ERP.API/appsettings.Development.json.example -> appsettings.Development.json y ejecutar dotnet ef database update (ver docs/DEVELOPMENT-RULES.md)." -ForegroundColor Green
