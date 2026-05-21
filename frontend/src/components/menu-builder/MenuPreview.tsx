@@ -138,9 +138,9 @@ function SkeletonContent({ cardHeights }: { cardHeights: number[] }) {
       <div className="smp-skeleton-line smp-skeleton-line--lg smp-skeleton-line--w40" />
       <div className="smp-skeleton-line smp-skeleton-line--sm smp-skeleton-line--w60" />
       <div className="smp-skeleton-cards">
-        {cardHeights.map((h) => (
+        {cardHeights.map((h, i) => (
           <div
-            key={h}
+            key={`${h}-${i}`}
             className={`smp-skeleton-card smp-skeleton-card--h${h}`}
           />
         ))}
