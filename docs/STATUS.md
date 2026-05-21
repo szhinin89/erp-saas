@@ -35,8 +35,80 @@ Consolidated 2026-05-21: former `MULTITENANCY`, `SCOPES`, `SECURITY`, `BILLING`,
 | PostgreSQL RLS (enterprise tables) | ✅ (in baseline) |
 | Rate limit per subscriber (600/min) | ✅ |
 | Architecture guardrails CI (scripts + NetArchTest) | ✅ (2026-05-21) |
+| Post-audit remediation (session SEC, Sales unify, Kardex CQRS, Cash validators) | ✅ (2026-05-21) |
+| Post-audit wave 2 (menu builder split, services→modules, access/security pages) | ✅ (2026-05-21) |
+| Post-audit wave 3 (menu builder modular split, test sessionStorage) | ✅ (2026-05-21) |
+| Post-audit P2 + wave 4 (services eliminados, AppLayout/Companies split) | ✅ (2026-05-21) |
+| Post-audit wave 5 (PR-7 TSX: catálogo, clientes, contabilidad, menu builder, superadmin) | ✅ (2026-05-21) |
+| Post-audit wave 6 (handlers C-03, lazy routes, grandfather vacío) | ✅ (2026-05-21) |
 
 Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
+
+### Post-audit remediation (2026-05-21)
+
+| Item | Estado |
+|------|--------|
+| Frontend: tokens en memoria + perfil/bootstrap/permisos en `sessionStorage`; `SessionBootstrap` + cookie refresh | ✅ |
+| Backend: `ERP.Application/Sales` consolidado bajo `Modules/Sales` + validators Notas/Retenciones | ✅ |
+| Backend: `EnqueueKardexReportCommand` (controller sin `SaveChangesAsync`) | ✅ |
+| Backend: validators Cash (caja/bancos/conciliación) | ✅ |
+| Pendiente PR-7 TSX >500 | ✅ (grandfather `tsxMaxLines500` vacío 2026-05-21) |
+
+### Post-audit wave 5 (2026-05-21)
+
+| Item | Estado |
+|------|--------|
+| `MenuBuilder` + `NavigationMenuEditorPanel` modularizados (controller + subpaneles) | ✅ |
+| `SuperAdminPanelPage` + `SuperAdminPlansSection` en hook + tabs/modales | ✅ |
+| `AccountingPage`, `BranchesPage`, `CustomersPage`, `SriConfigPage`, `BodegasPage` | ✅ |
+| `CatalogPages`, `CatalogStructurePage`, categorías/subcategorías | ✅ |
+| `architecture-grandfather.json`: `tsxMaxLines500` vacío | ✅ |
+
+### Post-audit wave 6 (2026-05-21)
+
+| Item | Estado |
+|------|--------|
+| Handlers C-03: `CrearVenta`, `CreateProduct`, `UpdateProduct`, `EmitirFactura`, `EnviarNotaSri` (Handle ≤150) | ✅ |
+| `ProductCommandMutationHelper` compartido create/update | ✅ |
+| Rutas lazy: `accessRoutes`, `companiesRoutes`, `companyManagementRoutes`, `publicRoutes`, `mainRoutes` (placeholder) | ✅ |
+| Grandfather vacío (`handlerHandleMaxLines150`, `tsxMaxLines500`, `tsxPageWrapperMaxLines15`) | ✅ |
+| Chunk `index-*.js` ~362 KB (límite 650 KB) | ✅ |
+
+### Post-audit P2 (2026-05-21)
+
+| Item | Estado |
+|------|--------|
+| Carpeta `frontend/src/services/` eliminada (cero consumidores; API solo en `modules/*/api`) | ✅ |
+| `SalesReportPage` → `modules/reportes/pages/` + wrapper 1 línea | ✅ |
+| Placeholders → `modules/shared/pages/` + wrappers delgados | ✅ |
+| `components/ui` sustituido por ZH en company-management, access, security, companies | ✅ |
+
+### Post-audit wave 4 (2026-05-21)
+
+| Item | Estado |
+|------|--------|
+| `AppLayout.tsx` (~634 → ~216) + `AppLayoutMainMenu`, `useAppLayoutNavigation`, banner | ✅ |
+| `CompaniesPage.tsx` (~820 → ~252) + `useCompaniesPage`, `CompaniesPageDataTab` | ✅ |
+| Grandfather: retirados `AppLayout`, `CompaniesPage`, `SalesReportPage` | ✅ |
+
+### Post-audit wave 3 (2026-05-21)
+
+| Item | Estado |
+|------|--------|
+| `useSuperAdminMenuBuilder` (~844 → ~371 líneas) + effects/actions/persist extraídos | ✅ |
+| `SuperAdminMenuBuilderCrmWorkspace` (~934 → ~259 líneas) + panels/preview/audit/modals | ✅ |
+| Test `syncSessionEntitlements` con stub `sessionStorage`/`localStorage` | ✅ |
+| Grandfather: `SuperAdminMenuBuilderCrmWorkspace` retirado de PR-7 | ✅ |
+
+### Post-audit wave 2 (2026-05-21)
+
+| Item | Estado |
+|------|--------|
+| `SuperAdminMenuBuilderSection` dividido en entry + hook + CRM/legacy panels | ✅ |
+| Imports `services/` → `modules/*/api` (cero consumidores directos en `src/`) | ✅ |
+| `ProfilesPage`, `SubscriberAccessPage`, `SecuritySettingsPage` en `modules/` + wrappers delgados | ✅ |
+| Re-exports `@deprecated` en `frontend/src/services/` para compatibilidad | ✅ (carpeta eliminada 2026-05-21) |
+| Grandfather JSON actualizado (CRM workspace, sin legacy service imports) | ✅ |
 
 ## SaaS platform
 

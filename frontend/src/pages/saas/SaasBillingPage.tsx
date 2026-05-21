@@ -4,7 +4,7 @@ import { ZHCardSection, ZHScreenHeading } from '../../components/zh/ZHLayout';
 import { ZHPageNotice } from '../../components/zh/ZHPageNotice';
 import { LoadingState, EmptyState } from '../../components/PageShell';
 import { RuntimeModeBadge } from '../../components/RuntimeModeBadge';
-import { saasBillingService, type SaasBillingInvoiceDto, type SubscriberBillingAccountDto } from '../../services/saasBillingService';
+import { saasBillingService, type SaasBillingInvoiceDto, type SubscriberBillingAccountDto } from '../../modules/saas/billing/api/saasBillingService';
 import { formatApiRequestError } from '../../modules/lib/apiError';
 import { useI18n } from '../../i18n/i18n';
 

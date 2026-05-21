@@ -10,12 +10,12 @@ using ERP.Application.Common;
 using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Inventory.DTOs;
+using ERP.API.Attributes;
+using ERP.Application.Inventory.UseCases.EnqueueKardexReport;
 using ERP.Application.Inventory.UseCases.GetKardex;
 using ERP.Application.Inventory.UseCases.RecalcularSnapshots;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Interfaces;
-using ERP.Infrastructure.BackgroundServices;
-using ERP.API.Attributes;
 
 namespace ERP.API.Controllers;
 
@@ -34,20 +34,17 @@ public sealed class KardexController : ControllerBase
     private readonly KardexOptions          _opts;
     private readonly ICurrentSubscriber         _tenant;
     private readonly IKardexReportRepository _reporteRepo;
-    private readonly KardexReportQueue     _queue;
 
     public KardexController(
         IMediator                  mediator,
         IOptions<KardexOptions>    opts,
         ICurrentSubscriber             tenant,
-        IKardexReportRepository   reporteRepo,
-        KardexReportQueue         queue)
+        IKardexReportRepository   reporteRepo)
     {
         _mediator    = mediator;
         _opts        = opts.Value;
         _tenant      = tenant;
         _reporteRepo = reporteRepo;
-        _queue       = queue;
     }
 
     // â”€â”€ Kardex sÃ­ncrono / redirecciÃ³n automÃ¡tica a async â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -259,20 +256,18 @@ public sealed class KardexController : ControllerBase
         DateTime? startDate, DateTime? endDate,
         CancellationToken ct)
     {
-        var reporte = KardexReport.Create(_tenant.SubscriberId, productId, warehouseId, startDate, endDate);
+        var result = await _mediator.Send(
+            new EnqueueKardexReportCommand(productId, warehouseId, startDate, endDate), ct);
 
-        await _reporteRepo.AddAsync(reporte, ct);
-        await _reporteRepo.SaveChangesAsync(ct);
-
-        await _queue.Writer.WriteAsync(reporte.Id, ct);
+        if (!result.IsSuccess)
+            return BadRequest(new { mensaje = result.Error });
 
         Response.Headers.Append("Retry-After", "10");
         return Accepted(new
         {
-            jobId   = reporte.Id,
-            estado  = reporte.Status,
-            mensaje = "El reporte estÃ¡ siendo procesado. " +
-                      $"Consulte el resultado en /api/inventory/kardex/resultado/{reporte.Id}",
+            jobId   = result.Value!.JobId,
+            estado  = result.Value.Status,
+            mensaje = result.Value.Message,
         });
     }
 

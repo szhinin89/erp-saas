@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../../../i18n/i18n';
-import { companyManagementService } from '../../../services/companyManagementService';
+import { companyManagementService } from '../api/companyManagementService';
 import type { CompanyListItem } from '../../../types/companyManagement';
 import { PageShell, LoadingState, EmptyState, Badge } from '../../../components/PageShell';
-import { Button, Card } from '../../../components/ui';
+import { ZHBtn } from '../../../components/zh/ZHForm';
+import { ZHCard } from '../../../components/zh/ZHCard';
 import { usePermissionsStore } from '../../../store/permissionsStore';
 import { useAuthStore } from '../../../store/authStore';
 import { CurrentCompanyCard } from './CurrentCompanyCard';
@@ -42,16 +43,16 @@ export function CompanyManagementListPage() {
       subtitle={t('companyManagement.subtitle')}
     >
       <CurrentCompanyCard />
-      <Card
+      <ZHCard
         title={t('companyManagement.listTitle')}
         actions={
           <>
-            <Button variant="secondary" size="sm" onClick={() => void refresh()} disabled={loading}>
+            <ZHBtn variant="ghost" size="sm" type="button" onClick={() => void refresh()} disabled={loading}>
               {t('common.refresh')}
-            </Button>
+            </ZHBtn>
             {canCreate ? (
               <Link to="/saas/companies/new">
-                <Button variant="primary" size="sm">{t('companyManagement.create')}</Button>
+                <ZHBtn variant="primary" size="sm" type="button">{t('companyManagement.create')}</ZHBtn>
               </Link>
             ) : null}
           </>
@@ -95,7 +96,7 @@ export function CompanyManagementListPage() {
             </tbody>
           </table>
         )}
-      </Card>
+      </ZHCard>
     </PageShell>
   );
 }

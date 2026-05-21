@@ -47,8 +47,12 @@ public sealed class AprobarCompraCommandHandlerStockTests
             .Callback<StockMovement, CancellationToken>((m, _) => movimientos.Add(m))
             .Returns(Task.CompletedTask);
 
+        var company = new Mock<ICurrentCompany>();
+        company.Setup(c => c.CompanyId).Returns(Guid.NewGuid());
+
         var handler = new PurchBillApprovedEventHandler(
             inv.Object,
+            company.Object,
             NullLogger<PurchBillApprovedEventHandler>.Instance);
 
         var ev = new PurchBillApprovedEvent(Guid.NewGuid(), subscriberId, "F-9001", userId, lines);

@@ -1,10 +1,12 @@
 import { useI18n } from '../../i18n/i18n';
 import { SUBSCRIBER_MODULE_KEYS, moduleKeysMatch } from '../../constants/subscriptionModules';
-import type { CompanyItem } from '../../services/companyService';
+import type { CompanyItem } from '../../modules/companies/api/companyService';
 
-type Row = Pick<CompanyItem, 'enabledModules' | 'hasModuleRestrictions'>;
-
-export function CompanyModuleChips({ company }: { company: Row }) {
+export function CompanyModuleChips({
+  company,
+}: {
+  company: Pick<CompanyItem, 'enabledModules' | 'hasModuleRestrictions'> | CompanyItem;
+}) {
   const { t } = useI18n();
 
   const enabled = company.enabledModules ?? [];

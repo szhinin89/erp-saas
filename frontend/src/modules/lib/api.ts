@@ -1,25 +1,18 @@
 import axios, { type AxiosRequestConfig } from 'axios';
-import { AUTH_STORAGE_KEY } from '../../lib/session/sessionStorageKeys';
 import { fullLogout } from '../../lib/session/fullLogout';
+import {
+  clearAccessToken,
+  getAccessToken,
+  setAccessToken,
+} from '../../lib/session/authTokenMemory';
+import { useAuthStore } from '../../store/authStore';
 
 /**
  * Cliente HTTP centralizado.
  *
- * Estrategia de tokens:
- * - Access token (corto plazo, 60 min): en Authorization: Bearer, persistido en localStorage.
- * - Refresh token (largo plazo, 30 días): preferentemente en httpOnly cookie (el backend la
- *   establece automáticamente). Como fallback, también se persiste en localStorage para
- *   entornos no-browser (Postman, apps nativas) o cuando las cookies están bloqueadas.
- *
- * Flujo ante 401:
- * 1. El interceptor intercepta el 401.
- * 2. Si NO es un endpoint público de auth, intenta refrescar vía POST /api/auth/refresh.
- *    - La cookie httpOnly se envía automáticamente (withCredentials: true).
- *    - Si no hay cookie, el body incluye el refreshToken desde localStorage.
- * 3. Si el refresh tiene éxito: actualiza los tokens y reintenta la petición original.
- * 4. Si el refresh falla: limpia la sesión y redirige al login.
- * 5. Peticiones concurrentes que reciben 401 simultáneamente: se encolan y se resuelven
- *    con el nuevo token una vez que el refresh termina (no se hacen múltiples refreshes).
+ * Tokens:
+ * - Access token: memoria (`authTokenMemory`) + espejo en Zustand (no persistido).
+ * - Refresh token: cookie httpOnly del backend (`withCredentials: true`).
  */
 
 const viteApiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? '';
@@ -27,10 +20,8 @@ const viteApiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim()
 export const api = axios.create({
   baseURL:         viteApiBase.length > 0 ? viteApiBase : '',
   headers:         { 'Content-Type': 'application/json' },
-  withCredentials: true, // necesario para que el navegador envíe/reciba la cookie httpOnly
+  withCredentials: true,
 });
-
-// ── Cola de reintentos (previene múltiples refreshes simultáneos) ─────────
 
 type QueueItem = { resolve: (token: string) => void; reject: (err: unknown) => void };
 
@@ -39,61 +30,23 @@ let pendingQueue: QueueItem[] = [];
 
 function processQueue(error: unknown, newToken: string | null = null) {
   pendingQueue.forEach((item) =>
-    error ? item.reject(error) : item.resolve(newToken!)
+    error ? item.reject(error) : item.resolve(newToken!),
   );
   pendingQueue = [];
 }
 
-// ── Helpers para leer el store sin importar el hook (evita dependencias cíclicas) ──
-
-function getStoredToken(): string | null {
-  try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    return raw ? (JSON.parse(raw)?.state?.token ?? null) : null;
-  } catch {
-    return null;
-  }
-}
-
-function getStoredRefreshToken(): string | null {
-  try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    return raw ? (JSON.parse(raw)?.state?.refreshToken ?? null) : null;
-  } catch {
-    return null;
-  }
-}
-
-function updateStoredTokens(accessToken: string, refreshToken: string | null) {
-  try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    parsed.state.token        = accessToken;
-    parsed.state.refreshToken = refreshToken ?? parsed.state.refreshToken;
-    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
-  } catch {
-    // no-op
-  }
-}
-
-/** Reinicia cola de refresh tras logout o sesión inválida. */
 export function resetAuthTransportState() {
   isRefreshing = false;
   pendingQueue = [];
 }
 
-// ── Interceptor de REQUEST: inyecta Bearer token ──────────────────────────
-
 api.interceptors.request.use((config) => {
-  const token = getStoredToken();
+  const token = getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
-
-// ── Interceptor de RESPONSE: maneja 401 con refresh automático ───────────
 
 const PUBLIC_AUTH_PATHS = [
   '/api/auth/login',
@@ -103,7 +56,7 @@ const PUBLIC_AUTH_PATHS = [
   '/api/auth/password-reset',
   '/api/auth/forgot-password',
   '/api/auth/reset-password',
-  '/api/auth/refresh',          // evitar loop infinito
+  '/api/auth/refresh',
   '/api/admin/iam/bootstrap-login',
   '/api/admin/iam/switch-subscriber',
   '/api/admin/iam/subscriber/company_user_memberships',
@@ -118,13 +71,11 @@ api.interceptors.response.use(
     const status          = error.response?.status as number | undefined;
     const url             = (originalRequest?.url ?? '') as string;
 
-    // Solo intentar refresh para 401 en endpoints protegidos (y solo una vez)
     const isPublicAuth = PUBLIC_AUTH_PATHS.some((p) => url.includes(p));
     if (status !== 401 || isPublicAuth || originalRequest._retry) {
       return Promise.reject(error);
     }
 
-    // Si ya hay un refresh en curso, encolar esta petición
     if (isRefreshing) {
       return new Promise<string>((resolve, reject) => {
         pendingQueue.push({ resolve, reject });
@@ -143,22 +94,17 @@ api.interceptors.response.use(
     isRefreshing            = true;
 
     try {
-      // Intentar refresh: la cookie httpOnly se envía automáticamente.
-      // Si no hay cookie, el fallback es el refreshToken de localStorage.
-      const storedRefreshToken = getStoredRefreshToken();
-
       const refreshRes = await axios.post<{
         responseObject: { token: string; refreshToken?: string | null };
       }>(
         `${viteApiBase}/api/auth/refresh`,
-        storedRefreshToken ? { refreshToken: storedRefreshToken } : {},
-        { withCredentials: true }
+        {},
+        { withCredentials: true },
       );
 
-      const newAccessToken   = refreshRes.data.responseObject.token;
-      const newRefreshToken  = refreshRes.data.responseObject.refreshToken ?? null;
-
-      updateStoredTokens(newAccessToken, newRefreshToken);
+      const newAccessToken = refreshRes.data.responseObject.token;
+      setAccessToken(newAccessToken);
+      useAuthStore.getState().updateTokens(newAccessToken, null);
       processQueue(null, newAccessToken);
 
       originalRequest.headers = {
@@ -168,11 +114,12 @@ api.interceptors.response.use(
       return api(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError, null);
+      clearAccessToken();
       fullLogout();
       window.location.href = '/login';
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
     }
-  }
+  },
 );

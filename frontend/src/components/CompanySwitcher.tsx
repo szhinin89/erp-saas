@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../services/authService';
-import { companyManagementService } from '../services/companyManagementService';
+import { authService } from '../modules/auth/api/authService';
+import { companyManagementService } from '../modules/company-management/api/companyManagementService';
 import { syncSessionEntitlements } from '../lib/syncSessionEntitlements';
 import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';

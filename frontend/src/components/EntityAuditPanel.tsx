@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { activityService, type UserActivityDto } from '../services/activityService';
+import { activityService, type UserActivityDto } from '../modules/admin/api/activityService';
 import { useI18n } from '../i18n/i18n';
 import { Badge, EmptyState, LoadingState } from './PageShell';
 import { ZHPageNotice } from './zh/ZHPageNotice';

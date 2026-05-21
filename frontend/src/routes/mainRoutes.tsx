@@ -1,6 +1,10 @@
 import { Route, Navigate } from 'react-router-dom';
 import { lazyNamedPage } from './lazyPage';
-import { ModulePlaceholderPage } from '../pages/ModulePlaceholderPage';
+
+const ModulePlaceholderPage = lazyNamedPage<{ variant: 'purchases' | 'hr' }>(
+  () => import('../modules/shared/pages/ModulePlaceholderPage'),
+  'ModulePlaceholderPage',
+);
 
 const DashboardPage = lazyNamedPage(() => import('../pages/DashboardPage'), 'DashboardPage');
 const ProductsPage = lazyNamedPage(() => import('../pages/ProductsPage'), 'ProductsPage');

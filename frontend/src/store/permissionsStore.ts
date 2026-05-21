@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { PERMISSIONS_STORAGE_KEY } from '../lib/session/sessionStorageKeys';
+import { zustandSessionStorage } from '../lib/session/zustandSessionStorage';
 
 /** Alinea claves del menú/catálogo (`perm:…`) con las del perfil (`inventario.*.view`). */
 export function normalizePolicyPermissionKey(key: string): string {
@@ -22,7 +23,6 @@ interface PermissionsState {
     planCode?: string | null;
     enabledModules?: string[];
   }) => void;
-  /** Snapshot SaaS desde `GET /api/subscribers/entitlements/me` (F1). */
   setEntitlementsSnapshot: (payload: {
     permissions: string[];
     planCode?: string | null;
@@ -92,11 +92,11 @@ export const usePermissionsStore = create<PermissionsState>()(
     }),
     {
       name: PERMISSIONS_STORAGE_KEY,
+      storage: createJSONStorage(() => zustandSessionStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         state.hasHydrated = true;
       },
-    }
-  )
+    },
+  ),
 );
-

@@ -1,5 +1,5 @@
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
-import type { AdminNavGroupRow, AdminNavItemRow } from '../../services/superAdminService';
+import type { AdminNavGroupRow, AdminNavItemRow } from '../../modules/superadmin/api/superAdminService';
 
 export type NavMenuItemTrailingRenderArgs = { groupId: string; item: AdminNavItemRow };
 

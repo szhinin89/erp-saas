@@ -7,9 +7,10 @@ import {
   companyManagementFormSchema,
   type CompanyManagementFormValues,
 } from '../../../schemas/companyManagementSchema';
-import { companyManagementService } from '../../../services/companyManagementService';
+import { companyManagementService } from '../api/companyManagementService';
 import { PageShell } from '../../../components/PageShell';
-import { Button, Card } from '../../../components/ui';
+import { ZHBtn } from '../../../components/zh/ZHForm';
+import { ZHCard } from '../../../components/zh/ZHCard';
 import { ZHFormSection, ZHGrid, ZHField } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { formatApiRequestError } from '../../lib/apiError';
@@ -119,7 +120,7 @@ export function CompanyManagementFormPage({ mode }: { mode: 'create' | 'edit' })
       title={mode === 'create' ? t('companyManagement.create') : t('companyManagement.edit')}
       subtitle={t('companyManagement.formSubtitle')}
     >
-      <Card>
+      <ZHCard>
         <form onSubmit={onSubmit}>
           {error ? <ZHPageNotice variant="error" message={error} /> : null}
           <ZHFormSection title={t('companyManagement.sectionIdentity')}>
@@ -173,15 +174,15 @@ export function CompanyManagementFormPage({ mode }: { mode: 'create' | 'edit' })
             </ZHField>
           ) : null}
           <div className="zh-form-actions-row zh-form-actions-row--end">
-            <Button variant="secondary" size="sm" type="button" onClick={() => navigate('/saas/companies')}>
+            <ZHBtn variant="ghost" size="sm" type="button" onClick={() => navigate('/saas/companies')}>
               {t('common.cancel')}
-            </Button>
-            <Button variant="primary" size="sm" type="submit" disabled={saving}>
+            </ZHBtn>
+            <ZHBtn variant="primary" size="sm" type="submit" disabled={saving}>
               {saving ? t('common.saving') : t('common.save')}
-            </Button>
+            </ZHBtn>
           </div>
         </form>
-      </Card>
+      </ZHCard>
     </PageShell>
   );
 }

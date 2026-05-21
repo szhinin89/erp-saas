@@ -1,4 +1,4 @@
-import type { FuncionalidadArbolDto } from '../../services/superAdminService';
+import type { FuncionalidadArbolDto } from '../../modules/superadmin/api/superAdminService';
 import type { SessionMenuGroupDto, SessionMenuItemDto } from '../../types/access';
 import { normalizePolicyPermissionKey } from '../../store/permissionsStore';
 

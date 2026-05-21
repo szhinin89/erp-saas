@@ -20,7 +20,7 @@ import {
   superAdminService,
   type GrowthAnalyticsResponse,
   type GrowthMonetaryResponse,
-} from '../../services/superAdminService';
+} from '../../modules/superadmin/api/superAdminService';
 import { formatApiRequestError } from '../../modules/lib/apiError';
 import './SuperAdminGrowthSection.css';
 

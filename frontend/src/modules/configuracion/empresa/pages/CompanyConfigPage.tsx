@@ -8,7 +8,7 @@ import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { useAuthStore } from '../../../../store/authStore';
 import { useI18n } from '../../../../i18n/i18n';
 import { useAsync } from '../../../../hooks/useAsync';
-import { companyService } from '../../../../services/companyService';
+import { companyService } from '../../../companies/api/companyService';
 import { catalogService, type CatalogItem } from '../../../catalog/api/catalogService';
 import { formatApiError } from '../../../lib/formatApiError';
 import {

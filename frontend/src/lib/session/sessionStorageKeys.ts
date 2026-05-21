@@ -1,10 +1,13 @@
-/** Zustand persist — auth (access + refresh tokens, user profile). */
+/** Zustand persist — perfil de usuario (sin tokens). sessionStorage. */
+export const AUTH_PROFILE_STORAGE_KEY = 'auth-profile';
+
+/** @deprecated Migración: clave legacy en localStorage; fullLogout la elimina. */
 export const AUTH_STORAGE_KEY = 'auth-storage';
 
-/** Zustand persist — permisos y snapshot SaaS del tenant activo. */
+/** Zustand persist — permisos y snapshot SaaS del tenant activo (sessionStorage). */
 export const PERMISSIONS_STORAGE_KEY = 'permissions-storage';
 
-/** Zustand persist — bootstrap IAM multi-subscriber (pre-switch). */
+/** Zustand persist — bootstrap IAM multi-subscriber (sessionStorage). */
 export const ACCESS_BOOTSTRAP_STORAGE_KEY = 'access-bootstrap';
 
 /** Etiqueta UI de impersonación SuperAdmin (no es credencial). */

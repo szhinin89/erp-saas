@@ -4,7 +4,6 @@ using ERP.Application.Products.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Products.Entities;
-using ERP.Domain.Products.Enums;
 using ERP.Domain.Products.Interfaces;
 
 namespace ERP.Application.Products.UseCases.CreateProduct;
@@ -41,28 +40,37 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
         var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        if (command.AppliesVatOnSale && command.SaleTaxId is not null)
-        {
-            var tax = await _taxRates.GetByIdAsync(command.SaleTaxId.Value, subscriberId, ct);
-            if (tax is null || !tax.IsActive || tax.Type != TaxRateType.VAT)
-                return Result<ProductDto>.Failure("La tarifa de IVA (venta) no es válida o no está vigente.");
-        }
+        var taxError = await ProductCommandMutationHelper.ValidateTaxRatesAsync(
+            _taxRates, subscriberId,
+            command.AppliesVatOnSale, command.SaleTaxId,
+            command.AppliesVatOnPurchase, command.PurchaseTaxId,
+            command.AppliesExciseTax, command.ExciseTaxId, ct);
+        if (taxError is not null)
+            return taxError;
 
-        if (command.AppliesVatOnPurchase && command.PurchaseTaxId is not null)
-        {
-            var tax = await _taxRates.GetByIdAsync(command.PurchaseTaxId.Value, subscriberId, ct);
-            if (tax is null || !tax.IsActive || tax.Type != TaxRateType.VAT)
-                return Result<ProductDto>.Failure("La tarifa de IVA (compra) no es válida o no está vigente.");
-        }
+        var product = BuildProduct(command, subscriberId, userId);
+        var collectionError = ProductCommandMutationHelper.ApplyCreateChildCollections(product, command, userId);
+        if (collectionError is not null)
+            return collectionError;
 
-        if (command.AppliesExciseTax && command.ExciseTaxId is not null)
-        {
-            var tax = await _taxRates.GetByIdAsync(command.ExciseTaxId.Value, subscriberId, ct);
-            if (tax is null || !tax.IsActive || tax.Type != TaxRateType.Excise)
-                return Result<ProductDto>.Failure("La tarifa de ICE no es válida o no está vigente.");
-        }
+        await _repository.AddAsync(product, ct);
+        await _activity.AddAsync(UserActivity.Create(
+            subscriberId,
+            userId,
+            _currentUser.Email,
+            _currentUser.FullName,
+            module: "inventario",
+            action: "product.create",
+            entityType: "Product",
+            entityId: product.Id,
+            description: $"{product.SaleCode} — {product.ShortName}"), ct);
+        await _repository.SaveChangesAsync(ct);
 
-        var product = Product.Create(
+        return Result<ProductDto>.Success(ProductCommandMutationHelper.MapToDto(product));
+    }
+
+    private Product BuildProduct(CreateProductCommand command, Guid subscriberId, Guid userId) =>
+        Product.Create(
             subscriberId,
             command.SaleCode,
             command.ShortName,
@@ -103,113 +111,4 @@ public sealed class CreateProductCommandHandler : IRequestHandler<CreateProductC
             command.HandlesTariff,
             command.IsForSale,
             companyId: _currentCompany.HasCompanyContext ? _currentCompany.CompanyId : null);
-
-        if (command.Barcodes is { Count: > 0 })
-        {
-            foreach (var b in command.Barcodes)
-            {
-                if (!Enum.IsDefined(typeof(BarcodeType), b.Type))
-                    return Result<ProductDto>.Failure($"Tipo de código de barras inválido: {b.Type}");
-                product.AddBarcode(b.Code, (BarcodeType)b.Type, userId);
-            }
-        }
-
-        if (command.SupplierCodes is { Count: > 0 })
-            product.ReplaceSupplierCodes(
-                command.SupplierCodes.Select(s => (s.SupplierId, s.Code, s.IsDefault)),
-                userId);
-
-        if (command.UnitConversions is { Count: > 0 })
-            product.ReplaceUnitConversions(
-                command.UnitConversions.Select(u => (u.AlternateUnitId, u.ConversionFactor)),
-                userId);
-
-        if (command.Colors is { Count: > 0 })
-            product.ReplaceColors(
-                command.Colors.Select(c => (c.Name, c.HexCode)),
-                userId);
-
-        if (command.Sizes is { Count: > 0 })
-            product.ReplaceSizes(
-                command.Sizes.Select(s => (s.Name, s.SortOrder)),
-                userId);
-
-        if (command.Dimensions is { Count: > 0 })
-            product.ReplaceDimensions(
-                command.Dimensions.Select(d => (d.Name, d.Value, d.Unit)),
-                userId);
-
-        if (command.Images is { Count: > 0 })
-            product.ReplaceImages(
-                command.Images.Select(i => (i.Url, i.AltText, i.IsMain, i.IsEcommerce, i.SortOrder)),
-                userId);
-
-        if (command.Features is { Count: > 0 })
-            product.ReplaceFeatures(
-                command.Features.Select(f => (f.Name, f.Value)),
-                userId);
-
-        if (command.TariffDetails is { Count: > 0 })
-            product.ReplaceTariffDetails(
-                command.TariffDetails.Select(t => (t.OriginCountry, t.TariffCode, t.Percentage)),
-                userId);
-
-        if (command.Substitutes is { Count: > 0 })
-            product.ReplaceSubstitutes(
-                command.Substitutes.Select(s => (s.SubstituteProductId, s.Note)),
-                userId);
-
-        if (command.CustomFields is { Count: > 0 })
-        {
-            foreach (var c in command.CustomFields)
-            {
-                if (!Enum.IsDefined(typeof(CustomFieldType), c.FieldType))
-                    return Result<ProductDto>.Failure($"Tipo de campo personalizado inválido: {c.FieldType}");
-            }
-            product.ReplaceCustomFields(
-                command.CustomFields.Select(c => (c.FieldName, (CustomFieldType)c.FieldType, c.FieldValue)),
-                userId);
-        }
-
-        await _repository.AddAsync(product, ct);
-        await _activity.AddAsync(UserActivity.Create(
-            subscriberId,
-            userId,
-            _currentUser.Email,
-            _currentUser.FullName,
-            module: "inventario",
-            action: "product.create",
-            entityType: "Product",
-            entityId: product.Id,
-            description: $"{product.SaleCode} — {product.ShortName}"), ct);
-        await _repository.SaveChangesAsync(ct);
-
-        return Result<ProductDto>.Success(new ProductDto(
-            product.Id,
-            product.SaleCode,
-            product.PurchaseCode,
-            product.ShortName,
-            product.Description,
-            product.LineId,
-            product.CategoryId,
-            product.SubcategoryId,
-            product.UnitOfMeasureId,
-            product.BrandId,
-            product.ProductTypeId,
-            product.TariffId,
-            product.AppliesVatOnSale,
-            product.SaleTaxId,
-            product.AppliesVatOnPurchase,
-            product.PurchaseTaxId,
-            product.AppliesExciseTax,
-            product.ExciseTaxId,
-            product.IsService,
-            product.TracksStock,
-            product.IsActive,
-            product.AvailableOnWeb,
-            product.AvailableOnMobile,
-            product.IsEcommerceActive,
-            product.IsForSale,
-            product.CreatedAt));
-    }
 }

@@ -1,5 +1,5 @@
-import { accessService } from '../services/accessService';
-import { entitlementsService } from '../services/entitlementsService';
+import { accessService } from '../modules/auth/api/accessService';
+import { entitlementsService } from '../modules/auth/api/entitlementsService';
 import { usePermissionsStore } from '../store/permissionsStore';
 
 /** Carga snapshot SaaS + permisos RBAC del perfil (única rutina post-login / switch-subscriber). */

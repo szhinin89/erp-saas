@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Modal } from './Modal';
-import { accountingService, type JournalEntryLineRequest } from '../services/accountingService';
+import { accountingService, type JournalEntryLineRequest } from '../modules/accounting/api/accountingService';
 import type { Account } from '../types/accounting';
 import './CreateJournalEntryModal.css';
 import { useI18n } from '../i18n/i18n';

@@ -6,8 +6,10 @@ import { resetAuthTransportState } from '../../modules/lib/api';
 import { useAccessStore } from '../../store/accessStore';
 import { useAuthStore } from '../../store/authStore';
 import { usePermissionsStore } from '../../store/permissionsStore';
+import { clearAccessToken } from './authTokenMemory';
 import {
   ACCESS_BOOTSTRAP_STORAGE_KEY,
+  AUTH_PROFILE_STORAGE_KEY,
   AUTH_STORAGE_KEY,
   PERMISSIONS_STORAGE_KEY,
   SAAS_SESSION_STORAGE_PREFIX,
@@ -15,22 +17,21 @@ import {
 } from './sessionStorageKeys';
 
 export type FullLogoutOptions = {
-  /** Reinicia stores Zustand en memoria (default: true). */
   resetStores?: boolean;
 };
 
-/**
- * Elimina artefactos persistidos de sesión (localStorage + sessionStorage erp.saas.*).
- * Idempotente; no navega ni llama API.
- */
+/** Elimina artefactos de sesión (sessionStorage + legacy localStorage). */
 export function clearPersistedSessionArtifacts(): void {
   try {
+    sessionStorage.removeItem(AUTH_PROFILE_STORAGE_KEY);
+    sessionStorage.removeItem(PERMISSIONS_STORAGE_KEY);
+    sessionStorage.removeItem(ACCESS_BOOTSTRAP_STORAGE_KEY);
     localStorage.removeItem(AUTH_STORAGE_KEY);
     localStorage.removeItem(PERMISSIONS_STORAGE_KEY);
     localStorage.removeItem(ACCESS_BOOTSTRAP_STORAGE_KEY);
     localStorage.removeItem(SUPERADMIN_IMPERSONATION_NAME_KEY);
   } catch {
-    /* storage disabled / private mode */
+    /* storage disabled */
   }
 
   clearCompaniesDetailSubscriberId();
@@ -48,14 +49,11 @@ export function clearPersistedSessionArtifacts(): void {
   }
 }
 
-/**
- * Cierre de sesión centralizado: stores + persistencia + cola de refresh Axios.
- * Mantiene i18n, favoritos del menú y preferencias no sensibles.
- */
 export function fullLogout(options: FullLogoutOptions = {}): void {
   const { resetStores = true } = options;
 
   resetAuthTransportState();
+  clearAccessToken();
 
   if (resetStores) {
     useAuthStore.getState().logout();

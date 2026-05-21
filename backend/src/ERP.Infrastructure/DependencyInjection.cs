@@ -149,6 +149,7 @@ public static class DependencyInjection
         services.AddScoped<KardexSnapshotService>();
         services.AddScoped<IKardexSnapshotCalculator>(sp => sp.GetRequiredService<KardexSnapshotService>());
         services.AddSingleton<KardexReportQueue>();
+        services.AddScoped<IKardexReportEnqueueService, KardexReportEnqueueService>();
         services.AddHostedService<KardexSnapshotWorker>();
         services.AddHostedService<KardexReportProcessor>();
         services.AddScoped<IStockTransferRepository, StockTransferRepository>();

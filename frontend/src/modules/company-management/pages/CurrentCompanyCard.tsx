@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '../../../i18n/i18n';
-import { companyManagementService } from '../../../services/companyManagementService';
+import { companyManagementService } from '../api/companyManagementService';
 import type { CompanyDetail } from '../../../types/companyManagement';
-import { Card, Badge } from '../../../components/ui';
+import { ZHCard } from '../../../components/zh/ZHCard';
 import { LoadingState } from '../../../components/PageShell';
 import { useAuthStore } from '../../../store/authStore';
 
@@ -37,7 +37,7 @@ export function CurrentCompanyCard() {
   if (!companyId) return null;
 
   return (
-    <Card title={t('companyManagement.currentTitle')}>
+    <ZHCard title={t('companyManagement.currentTitle')}>
       {loading ? (
         <LoadingState />
       ) : detail ? (
@@ -46,9 +46,9 @@ export function CurrentCompanyCard() {
           <p className="mono subtle">{detail.taxId}</p>
           <p className="subtle">{detail.mainAddress}</p>
           <div className="company-current-meta">
-            <Badge variant={detail.isActive ? 'success' : 'info'}>
+            <span className={`badge badge--md ${detail.isActive ? 'badge--green' : 'badge--gray'}`}>
               {detail.isActive ? t('common.active') : t('common.inactive')}
-            </Badge>
+            </span>
             <span className="subtle">{detail.timezone} · {detail.currencyCode}</span>
           </div>
           <Link to={`/saas/companies/${detail.id}/edit`} className="zh-link">
@@ -58,6 +58,6 @@ export function CurrentCompanyCard() {
       ) : (
         <p className="subtle">{t('companyManagement.currentUnavailable')}</p>
       )}
-    </Card>
+    </ZHCard>
   );
 }

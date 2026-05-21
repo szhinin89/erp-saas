@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { ACCESS_BOOTSTRAP_STORAGE_KEY } from '../lib/session/sessionStorageKeys';
+import { zustandSessionStorage } from '../lib/session/zustandSessionStorage';
 import type { AccessibleSubscriber, BootstrapLoginResponse } from '../types/access';
 
 interface AccessState {
@@ -30,7 +31,9 @@ export const useAccessStore = create<AccessState>()(
           subscribers: [],
         }),
     }),
-    { name: ACCESS_BOOTSTRAP_STORAGE_KEY }
-  )
+    {
+      name: ACCESS_BOOTSTRAP_STORAGE_KEY,
+      storage: createJSONStorage(() => zustandSessionStorage),
+    },
+  ),
 );
-

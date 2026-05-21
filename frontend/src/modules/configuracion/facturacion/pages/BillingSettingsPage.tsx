@@ -7,7 +7,7 @@ import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { useAuthStore } from '../../../../store/authStore';
 import { useAsync } from '../../../../hooks/useAsync';
-import { billingSettingsService } from '../../../../services/billingSettingsService';
+import { billingSettingsService } from '../api/billingSettingsService';
 import { formatApiError } from '../../../lib/formatApiError';
 import {
   billingSettingsSchema,

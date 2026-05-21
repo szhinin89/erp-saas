@@ -20,8 +20,10 @@ vi.stubGlobal('sessionStorage', createStorage());
 import { useAccessStore } from '../../store/accessStore';
 import { useAuthStore } from '../../store/authStore';
 import { usePermissionsStore } from '../../store/permissionsStore';
+import { setAccessToken } from './authTokenMemory';
 import {
   ACCESS_BOOTSTRAP_STORAGE_KEY,
+  AUTH_PROFILE_STORAGE_KEY,
   AUTH_STORAGE_KEY,
   PERMISSIONS_STORAGE_KEY,
   SUPERADMIN_IMPERSONATION_NAME_KEY,
@@ -42,9 +44,10 @@ describe('fullLogout', () => {
   });
 
   it('clearPersistedSessionArtifacts elimina claves sensibles y erp.saas.*', () => {
+    sessionStorage.setItem(AUTH_PROFILE_STORAGE_KEY, '{}');
+    sessionStorage.setItem(PERMISSIONS_STORAGE_KEY, '{}');
+    sessionStorage.setItem(ACCESS_BOOTSTRAP_STORAGE_KEY, '{}');
     localStorage.setItem(AUTH_STORAGE_KEY, '{}');
-    localStorage.setItem(PERMISSIONS_STORAGE_KEY, '{}');
-    localStorage.setItem(ACCESS_BOOTSTRAP_STORAGE_KEY, '{}');
     localStorage.setItem(SUPERADMIN_IMPERSONATION_NAME_KEY, 'Acme');
     sessionStorage.setItem('erp.saas.companies.detailSubscriberId', 'uuid');
     sessionStorage.setItem('erp.saas.other', 'x');
@@ -52,9 +55,10 @@ describe('fullLogout', () => {
 
     clearPersistedSessionArtifacts();
 
+    expect(sessionStorage.getItem(AUTH_PROFILE_STORAGE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(PERMISSIONS_STORAGE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(ACCESS_BOOTSTRAP_STORAGE_KEY)).toBeNull();
     expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
-    expect(localStorage.getItem(PERMISSIONS_STORAGE_KEY)).toBeNull();
-    expect(localStorage.getItem(ACCESS_BOOTSTRAP_STORAGE_KEY)).toBeNull();
     expect(localStorage.getItem(SUPERADMIN_IMPERSONATION_NAME_KEY)).toBeNull();
     expect(sessionStorage.getItem('erp.saas.companies.detailSubscriberId')).toBeNull();
     expect(sessionStorage.getItem('erp.saas.other')).toBeNull();
@@ -62,6 +66,7 @@ describe('fullLogout', () => {
   });
 
   it('fullLogout limpia stores y persistencia', () => {
+    setAccessToken('access');
     useAuthStore.setState({
       user: {
         userId: 'u1',
@@ -73,7 +78,6 @@ describe('fullLogout', () => {
         userType: 'Tenant',
       },
       token: 'access',
-      refreshToken: 'refresh',
       isAuthenticated: true,
     });
     usePermissionsStore.getState().setEntitlementsSnapshot({
@@ -88,7 +92,7 @@ describe('fullLogout', () => {
       email: 'a@b.com',
       subscribers: [],
     });
-    localStorage.setItem(AUTH_STORAGE_KEY, '{"state":{"token":"x"}}');
+    sessionStorage.setItem(AUTH_PROFILE_STORAGE_KEY, '{"state":{"token":"x"}}');
 
     fullLogout();
 
@@ -96,6 +100,6 @@ describe('fullLogout', () => {
     expect(useAuthStore.getState().token).toBeNull();
     expect(usePermissionsStore.getState().permissions).toEqual([]);
     expect(useAccessStore.getState().bootstrapToken).toBeNull();
-    expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
+    expect(sessionStorage.getItem(AUTH_PROFILE_STORAGE_KEY)).toBeNull();
   });
 });

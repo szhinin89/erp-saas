@@ -34,4 +34,4 @@ modules/{domain}/
 
 ## Adapters legacy
 
-`services/*` y `schemas/*` re-exportan con `@deprecated` hasta migrar imports restantes.
+`schemas/*` raíz pueden re-exportar con `@deprecated` hacia módulos. **`frontend/src/services/` eliminado** — toda API vive en `modules/{domain}/api/`.

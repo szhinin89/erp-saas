@@ -14,6 +14,7 @@ import {
   accessRoutes,
 } from './routes';
 import { superAdminShellRoutes } from './routes/superAdminShellRoutes';
+import { SessionBootstrap } from './components/SessionBootstrap';
 
 function AppRoutes() {
   const { superAdminPanelEnabled } = useDeployment();
@@ -45,7 +46,9 @@ function AppRoutes() {
 export default function App() {
   return (
     <ConfigProvider>
-      <AppRoutes />
+      <SessionBootstrap>
+        <AppRoutes />
+      </SessionBootstrap>
     </ConfigProvider>
   );
 }

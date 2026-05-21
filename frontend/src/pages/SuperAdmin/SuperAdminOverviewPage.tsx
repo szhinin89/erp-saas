@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { usePermissionsStore } from '../../store/permissionsStore';
-import { superAdminService, type SuperAdminSubscriber } from '../../services/superAdminService';
+import { superAdminService, type SuperAdminSubscriber } from '../../modules/superadmin/api/superAdminService';
 import { LoadingState, EmptyState } from '../../components/PageShell';
 import { ZHPageNotice } from '../../components/zh/ZHPageNotice';
 import { ZHScreenHeading } from '../../components/zh/ZHLayout';
