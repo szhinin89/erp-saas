@@ -148,27 +148,11 @@ export function SuperAdminLayout() {
           <div className="sa-nav-divider" />
 
           <NavLink
-            to="/saas/overview"
+            to="/superadmin/subscribers"
             className={({ isActive }) => `sa-nav-link${isActive ? ' is-active' : ''}`}
           >
-            <span className="sa-nav-icon material-symbols-outlined">summarize</span>
-            <span>{t('app.nav.saasOverview')}</span>
-          </NavLink>
-
-          <NavLink
-            to="/saas/companies"
-            className={({ isActive }) => `sa-nav-link${isActive ? ' is-active' : ''}`}
-          >
-            <span className="sa-nav-icon material-symbols-outlined">domain</span>
-            <span>{t('app.nav.saasCompanies')}</span>
-          </NavLink>
-
-          <NavLink
-            to="/saas/billing"
-            className={({ isActive }) => `sa-nav-link${isActive ? ' is-active' : ''}`}
-          >
-            <span className="sa-nav-icon material-symbols-outlined">receipt_long</span>
-            <span>{t('app.nav.saasBilling')}</span>
+            <span className="sa-nav-icon material-symbols-outlined">manage_accounts</span>
+            <span>Suscriptores</span>
           </NavLink>
         </nav>
 

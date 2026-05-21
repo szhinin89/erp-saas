@@ -2,6 +2,11 @@ import { Navigate, Route } from 'react-router-dom';
 import { SuperAdminLayout } from '../layouts/SuperAdminLayout';
 import { lazyNamedPage } from './lazyPage';
 
+const SuperAdminSubscribersPage = lazyNamedPage(
+  () => import('../pages/SuperAdmin/SuperAdminSubscribersPage'),
+  'SuperAdminSubscribersPage',
+);
+
 const SuperAdminOverviewPage = lazyNamedPage(
   () => import('../pages/SuperAdmin/SuperAdminOverviewPage'),
   'SuperAdminOverviewPage',
@@ -29,6 +34,7 @@ export function superAdminShellRoutes() {
       <Route path="features" element={<Navigate to="/superadmin/menu-plans?tab=plans" replace />} />
       <Route path="menu-plans" element={<SuperAdminMenuPlansHubPage />} />
       <Route path="plans" element={<SuperAdminPlansPage />} />
+      <Route path="subscribers" element={<SuperAdminSubscribersPage />} />
       <Route path="menu-builder" element={<Navigate to="/superadmin/menu-plans?tab=menu" replace />} />
       <Route path="forms" element={<Navigate to="/superadmin/overview" replace />} />
       <Route path="growth" element={<Navigate to="/superadmin/overview" replace />} />
