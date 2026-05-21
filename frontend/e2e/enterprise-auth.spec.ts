@@ -15,7 +15,7 @@ test.describe('Enterprise auth & limits', () => {
     test.skip(!ok, `API no disponible en ${API_BASE} — inicie ERP.API y aplique migraciones`);
   });
 
-  test('happy path: login UI → select-company → dashboard', async ({ page, request }) => {
+  test('happy path: login UI → select-company → dashboard', async ({ page }) => {
     test.setTimeout(60_000);
     await page.goto('/login');
     await page.locator('#lp-email').fill(DEMO_EMAIL);

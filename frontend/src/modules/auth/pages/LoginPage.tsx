@@ -180,7 +180,7 @@ export function LoginPage() {
             <div className="lp-brand-icon" aria-hidden="true">
               <span className="material-symbols-outlined">dashboard</span>
             </div>
-            <h1 className="lp-brand-name">ZH Technologies</h1>
+            <h1 className="lp-brand-name" data-testid="erp-brand-title">ZH Technologies</h1>
           </div>
           <p className="lp-brand-sub">Acceso al Portal ERP Corporativo</p>
         </div>

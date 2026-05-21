@@ -98,7 +98,7 @@ export function SuperAdminMenuPlansHubPage() {
             className={tab === 'menuBuilder' ? 'is-active' : ''}
             onClick={() => setTab('menuBuilder')}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>folder_managed</span>
+            <span className="material-symbols-outlined pg-icon-16">folder_managed</span>
             {t('superadmin.menuPlansHub.tabMenuBuilder')}
           </button>
           <button
@@ -109,7 +109,7 @@ export function SuperAdminMenuPlansHubPage() {
             className={tab === 'auditoriaGlobal' ? 'is-active' : ''}
             onClick={() => setTab('auditoriaGlobal')}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>history</span>
+            <span className="material-symbols-outlined pg-icon-16">history</span>
             {t('superadmin.menuPlansHub.tabAuditoria')}
           </button>
         </div>
@@ -132,23 +132,23 @@ export function SuperAdminMenuPlansHubPage() {
                   <h2 className="pg-section-label">{t('superadmin.menuPlansHub.auditTitle')}</h2>
                 </div>
                 <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm" onClick={loadAudit}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>refresh</span>
+                  <span className="material-symbols-outlined pg-icon-16">refresh</span>
                   {t('common.refresh')}
                 </button>
               </div>
 
               {auditLines.length === 0 ? (
-                <p className="subtle" style={{ padding: 'var(--space-8)', textAlign: 'center' }}>
+                <p className="subtle pg-audit-empty">
                   {t('superadmin.menuPlansHub.auditEmpty')}
                 </p>
               ) : (
-                <div style={{ overflowX: 'auto', maxHeight: 400, overflowY: 'auto' }}>
+                <div className="pg-audit-scroll">
                   <table className="table">
                     <thead>
                       <tr>
-                        <th style={{ width: 120 }}>Timestamp</th>
-                        <th style={{ width: 110 }}>Usuario</th>
-                        <th style={{ width: 100 }}>Acción</th>
+                        <th className="pg-th-w-120">Timestamp</th>
+                        <th className="pg-th-w-110">Usuario</th>
+                        <th className="pg-th-w-100">Acción</th>
                         <th>Detalles</th>
                       </tr>
                     </thead>
@@ -158,17 +158,17 @@ export function SuperAdminMenuPlansHubPage() {
                         return (
                           <tr key={`${i}-${line.slice(0, 16)}`}>
                             <td>
-                              <span className="subtle mono" style={{ fontSize: 11 }}>{timestamp}</span>
+                              <span className="subtle mono pg-icon-11">{timestamp}</span>
                             </td>
                             <td>
-                              <span style={{ fontSize: 12, fontWeight: 500 }}>{user}</span>
+                              <span className="pg-audit-user">{user}</span>
                             </td>
                             <td>
-                              <span className={`badge badge--${auditBadge(action)} badge--upper`} style={{ fontSize: 10 }}>
+                              <span className={`badge badge--${auditBadge(action)} badge--upper pg-badge-10`}>
                                 {action}
                               </span>
                             </td>
-                            <td style={{ fontSize: 12, color: 'var(--color-primary)' }}>{details}</td>
+                            <td className="pg-audit-details">{details}</td>
                           </tr>
                         );
                       })}

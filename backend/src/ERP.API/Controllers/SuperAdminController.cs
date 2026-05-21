@@ -1,17 +1,13 @@
-using System.Globalization;
-using System;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
+using ERP.Application.Access.DTOs;
+using ERP.Application.Access.UseCases.SuperAdminSubscribers;
 using ERP.Application.Admin;
+using ERP.Application.Admin.UseCases.SuperAdminGlobal;
 using ERP.Application.Common;
-using ERP.Application.Navigation;
 using ERP.Application.Navigation.DTOs;
-using ERP.Application.Subscriptions;
-using ERP.Application.Common.Interfaces;
-using ERP.Domain.Access.Interfaces;
-using ERP.Domain.Subscribers.Interfaces;
-using ERP.Infrastructure.Deployment;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,95 +22,41 @@ namespace ERP.API.Controllers;
 [Route("api/superadmin")]
 [Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]
-public class SuperAdminController : ControllerBase
+public sealed class SuperAdminController : ControllerBase
 {
-    private readonly ISubscriberRepository       _tenantRepository;
-    private readonly IAccessRepository           _accessRepository;
-    private readonly ICommercialCatalogQuery       _saasCatalogQuery;
-    private readonly IDeploymentFeatureFlags _deployment;
-    private readonly InstanceQuotaFileStore  _instanceQuotaFile;
-    private readonly INavigationMenuAdminService _navigationMenuAdmin;
-    private readonly IGrowthAnalyticsReader  _growthAnalytics;
-    private readonly IRefreshTokenService    _refreshTokenService;
-    private readonly ISubscriberMenuAdminService   _tenantMenuAdmin;
-    private readonly ISessionModulesResolver _sessionModules;
+    private readonly IMediator _mediator;
 
-    public SuperAdminController(
-        ISubscriberRepository tenantRepository,
-        IAccessRepository accessRepository,
-        ICommercialCatalogQuery saasCatalogQuery,
-        IDeploymentFeatureFlags deployment,
-        InstanceQuotaFileStore instanceQuotaFile,
-        INavigationMenuAdminService navigationMenuAdmin,
-        IGrowthAnalyticsReader growthAnalytics,
-        IRefreshTokenService refreshTokenService,
-        ISubscriberMenuAdminService tenantMenuAdmin,
-        ISessionModulesResolver sessionModules)
-    {
-        _tenantRepository    = tenantRepository;
-        _accessRepository    = accessRepository;
-        _saasCatalogQuery    = saasCatalogQuery;
-        _deployment          = deployment;
-        _instanceQuotaFile   = instanceQuotaFile;
-        _navigationMenuAdmin = navigationMenuAdmin;
-        _growthAnalytics     = growthAnalytics;
-        _refreshTokenService = refreshTokenService;
-        _tenantMenuAdmin     = tenantMenuAdmin;
-        _sessionModules      = sessionModules;
-    }
+    public SuperAdminController(IMediator mediator) => _mediator = mediator;
 
-    /// <summary>Cuotas efectivas de la instancia (config + archivo <c>App_Data/instance-quota.json</c> si existe).</summary>
     [HttpGet("instance-quota")]
     [ProducesResponseType(typeof(ApiResponse<InstanceQuotaFileModel>), StatusCodes.Status200OK)]
-    public IActionResult GetInstanceQuota()
+    public async Task<IActionResult> GetInstanceQuota(CancellationToken ct)
     {
-        var dto = new InstanceQuotaFileModel
-        {
-            DedicatedSingleClientInstance = _deployment.IsDedicatedSingleClientInstance,
-            MaxActiveSubscribers = _deployment.MaxActiveSubscribers,
-            MaxIdentityUsers = _deployment.MaxIdentityUsers,
-            MaxUsersPerSubscriber = _deployment.MaxUsersPerSubscriber,
-        };
-        return this.ApiOk(dto);
+        var result = await _mediator.Send(new GetInstanceQuotaQuery(), ct);
+        return this.ToOkOrBadRequest(result, "OK");
     }
 
-    /// <summary>
-    /// Guarda cuotas en <c>App_Data/instance-quota.json</c> (sobrescribe configuración para esos campos).
-    /// En modo dedicado a un cliente, <c>maxActiveTenants</c> debe ser &gt; 0 (no se permiten empresas/RUC ilimitadas).
-    /// </summary>
     [HttpPut("instance-quota")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public IActionResult PutInstanceQuota([FromBody] InstanceQuotaFileModel body)
+    public async Task<IActionResult> PutInstanceQuota([FromBody] InstanceQuotaFileModel body, CancellationToken ct)
     {
-        if (body.DedicatedSingleClientInstance == true &&
-            (!body.MaxActiveSubscribers.HasValue || body.MaxActiveSubscribers <= 0))
-        {
-            return this.ApiBadRequest("En instancia dedicada debe indicar maxActiveTenants (máximo de empresas/RUC) mayor que cero.");
-        }
-
-        _instanceQuotaFile.Write(body);
-        return this.ApiOk(new { }, "Guardado");
+        var result = await _mediator.Send(new UpdateInstanceQuotaCommand(body), ct);
+        return result.IsSuccess
+            ? this.ApiOk(new { }, "Guardado")
+            : this.ApiBadRequest(result.Error ?? "Error");
     }
 
-    /// <summary>Catálogo de planes comerciales y features incluidas (solo lectura).</summary>
     [HttpGet("plans")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPlansCatalog(CancellationToken ct)
     {
-        var plans = await _saasCatalogQuery.GetPlansWithFeaturesAsync(ct);
-        return this.ApiOk(new { plans });
+        var result = await _mediator.Send(new GetSuperAdminPlansCatalogQuery(), ct);
+        return this.ToOkOrBadRequest(result, "OK");
     }
 
-    /// <summary>Lista todas las empresas (subscribers), activas e inactivas.</summary>
-    /// <remarks>
-    /// Útil para el "Subscriber Picker" del Panel Global de SuperAdmin.
-    /// Legacy — incluye métricas de usuarios. Para administración MediatR alineada con provisioning,
-    /// preferir <c>GET /api/platform/subscribers</c>.
-    /// </remarks>
     [Obsolete("Legacy SuperAdmin analytics route. Prefer GET /api/platform/subscribers for platform CRUD alignment.")]
     [HttpGet("subscribers")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -122,83 +64,23 @@ public class SuperAdminController : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetTenants(CancellationToken ct)
     {
-        var subscribers = (await _tenantRepository.GetAllAsync(ct))
-            .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var result = await _mediator.Send(new GetSuperAdminSubscribersQuery(), ct);
+        if (!result.IsSuccess)
+            return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<SuperAdminSubscriberItemDto>());
 
-        var withCustomMenu = await _tenantMenuAdmin.GetSubscriberIdsWithCustomMenuAsync(ct);
-
-        // Métricas por empresa (globales del tenant): usuarios total/activos.
-        // Nota: usamos ejecución SECUENCIAL para evitar concurrencia sobre el mismo DbContext scoped.
-        // Si este endpoint crece en carga, se optimiza con queries agregadas (COUNT/GROUP BY) a nivel DB.
-        var items = new List<object>(subscribers.Count);
-        foreach (var t in subscribers)
-        {
-            var (totalUsers, activeUsers) = await _accessRepository.CountDistinctIdentityUsersForSubscriberAsync(t.Id, ct);
-            var modules = await _sessionModules.GetEnabledModuleKeysAsync(t.Id, ct);
-            items.Add(new
-            {
-                t.Id,
-                t.Name,
-                t.Slug,
-                t.IsActive,
-                t.CreatedAt,
-                totalUsers,
-                activeUsers,
-                planCode = t.PlanCode,
-                enabledModules = modules,
-                hasModuleRestrictions = SubscriberSubscriptionCatalog.HasModuleRestrictionsFromModules(modules),
-                hasCustomMenu = withCustomMenu.Contains(t.Id),
-            });
-        }
-
-        return this.ApiOk(new { subscribers = items });
+        return this.ApiOk(new { subscribers = result.Value });
     }
 
-    /// <summary>Métricas globales del sistema (todas las empresas).</summary>
-    /// <remarks>
-    /// Retorna totales de empresas y usuarios para el Dashboard Global de SuperAdmin.
-    /// </remarks>
-    /// <response code="200">Totales y lista reciente de empresas.</response>
-    /// <response code="401">Token JWT ausente o inválido.</response>
-    /// <response code="403">El usuario no tiene rol SuperAdmin.</response>
     [HttpGet("metrics")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<SuperAdminMetricsDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetMetrics(CancellationToken ct)
     {
-        var subscribers = await _tenantRepository.GetAllAsync(ct);
-        var activeSubscribers = subscribers.Count(t => t.IsActive);
-        var totalSubscribers = subscribers.Count;
-
-        var totalUsers = await _accessRepository.CountIdentityUsersAsync(ct);
-        var activeUsers = await _accessRepository.CountActiveCompanyUsersAsync(ct)
-                          + await _accessRepository.CountActivePlatformUsersAsync(ct);
-
-        var recentSubscribers = subscribers
-            .OrderByDescending(t => t.CreatedAt)
-            .Take(10)
-            .Select(t => new { t.Id, t.Name, t.Slug, t.IsActive, t.CreatedAt })
-            .ToList();
-
-        return this.ApiOk(new
-        {
-            totals = new
-            {
-                totalSubscribers,
-                activeSubscribers,
-                totalUsers,
-                activeUsers
-            },
-            recentSubscribers
-        });
+        var result = await _mediator.Send(new GetSuperAdminMetricsQuery(), ct);
+        return this.ToOkOrBadRequest(result, "OK");
     }
 
-    /// <summary>
-    /// Serie de crecimiento de empresas, usuarios (identidad) y membresías por periodo (día/semana/mes), con acumulados.
-    /// Por defecto últimos 3 meses y granularidad mensual.
-    /// </summary>
     [HttpGet("growth-analytics")]
     [ProducesResponseType(typeof(ApiResponse<GrowthAnalyticsResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -208,27 +90,10 @@ public class SuperAdminController : ControllerBase
         [FromQuery] string? granularity,
         CancellationToken ct)
     {
-        var toUtc = ParseDateOrDefault(to, DateTime.UtcNow.Date);
-        var fromUtc = ParseDateOrDefault(from, toUtc.AddMonths(-3));
-        if ((toUtc - fromUtc).TotalDays > 800)
-        {
-            return this.ApiBadRequest("El rango máximo permitido es aproximadamente 24 meses.");
-        }
-
-        var g = (granularity ?? string.Empty).Trim().ToLowerInvariant();
-        if (string.IsNullOrEmpty(g))
-        {
-            var spanDays = (toUtc - fromUtc).TotalDays;
-            g = spanDays > 120 ? "month" : spanDays > 35 ? "week" : "day";
-        }
-
-        var dto = await _growthAnalytics.GetSeriesAsync(fromUtc, toUtc, g, ct);
-        return this.ApiOk(dto);
+        var result = await _mediator.Send(new GetSuperAdminGrowthAnalyticsQuery(from, to, granularity), ct);
+        return this.ToOkOrBadRequest(result, "OK");
     }
 
-    /// <summary>
-    /// Mismo rango y agrupación que growth-analytics; serie en MRR mensual equivalente (plan actual, subscribers activos).
-    /// </summary>
     [HttpGet("growth-analytics-monetary")]
     [ProducesResponseType(typeof(ApiResponse<GrowthMonetaryResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -238,154 +103,93 @@ public class SuperAdminController : ControllerBase
         [FromQuery] string? granularity,
         CancellationToken ct)
     {
-        var toUtc = ParseDateOrDefault(to, DateTime.UtcNow.Date);
-        var fromUtc = ParseDateOrDefault(from, toUtc.AddMonths(-3));
-        if ((toUtc - fromUtc).TotalDays > 800)
-        {
-            return this.ApiBadRequest("El rango máximo permitido es aproximadamente 24 meses.");
-        }
-
-        var g = (granularity ?? string.Empty).Trim().ToLowerInvariant();
-        if (string.IsNullOrEmpty(g))
-        {
-            var spanDays = (toUtc - fromUtc).TotalDays;
-            g = spanDays > 120 ? "month" : spanDays > 35 ? "week" : "day";
-        }
-
-        var dto = await _growthAnalytics.GetMonetarySeriesAsync(fromUtc, toUtc, g, ct);
-        return this.ApiOk(dto);
+        var result = await _mediator.Send(new GetSuperAdminGrowthMonetaryQuery(from, to, granularity), ct);
+        return this.ToOkOrBadRequest(result, "OK");
     }
 
-    private static DateTime ParseDateOrDefault(string? isoDate, DateTime fallbackUtcDate)
-    {
-        if (!string.IsNullOrWhiteSpace(isoDate) &&
-            DateTime.TryParse(isoDate, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))
-        {
-            return DateTime.SpecifyKind(parsed.Date, DateTimeKind.Utc);
-        }
-
-        return DateTime.SpecifyKind(fallbackUtcDate.Date, DateTimeKind.Utc);
-    }
-
-    /// <summary>Árbol del menú principal (grupos e ítems recursivos) para configuración.</summary>
     [HttpGet("navigation-menu")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetNavigationMenu(CancellationToken ct)
     {
-        var menu = await _navigationMenuAdmin.GetMenuTreeAsync(ct);
-        return this.ApiOk(new { menu });
+        var result = await _mediator.Send(new GetSuperAdminNavigationMenuQuery(), ct);
+        return result.IsSuccess
+            ? this.ApiOk(new { menu = result.Value })
+            : this.ApiBadRequest(result.Error ?? "Error");
     }
 
-    /// <summary>Reordena grupos activos del menú principal (<c>ui_nav_groups.sort_order</c>).</summary>
     [HttpPut("navigation-menu/groups/reorder")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> ReorderNavigationGroups(
         [FromBody] ReorderNavigationGroupsRequest body,
         CancellationToken ct)
     {
-        if (body.OrderedGroupIds is not { Count: > 0 })
-            return this.ApiBadRequest("orderedGroupIds requerido.");
-
-        var (ok, err) = await _navigationMenuAdmin.ReorderGroupsAsync(body.OrderedGroupIds, ct);
-        if (!ok)
-            return this.ApiBadRequest(err ?? "Error");
-
-        return this.ApiOk(new { }, "Guardado");
+        var result = await _mediator.Send(new ReorderSuperAdminNavigationGroupsCommand(body.OrderedGroupIds), ct);
+        return result.IsSuccess
+            ? this.ApiOk(new { }, "Guardado")
+            : this.ApiBadRequest(result.Error ?? "Error");
     }
 
-    /// <summary>Aplica árbol de ítems: jerarquía (<c>parent_item_id</c>) y orden entre hermanos.</summary>
     [HttpPut("navigation-menu/items/reorder-levels")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> ReorderNavigationItemLevels(
         [FromBody] ReorderNavigationItemLevelsRequest body,
         CancellationToken ct)
     {
-        if (body.Levels is not { Count: > 0 })
-            return this.ApiBadRequest("levels requerido.");
-
-        var (ok, err) = await _navigationMenuAdmin.ReorderItemLevelsAsync(body.Levels, ct);
-        if (!ok)
-            return this.ApiBadRequest(err ?? "Error");
-
-        return this.ApiOk(new { }, "Guardado");
+        var result = await _mediator.Send(new ReorderSuperAdminNavigationItemLevelsCommand(body.Levels), ct);
+        return result.IsSuccess
+            ? this.ApiOk(new { }, "Guardado")
+            : this.ApiBadRequest(result.Error ?? "Error");
     }
 
-    /// <summary>Crea un ítem de menú (submenú o hoja) bajo un grupo, en la raíz o bajo un padre.</summary>
     [HttpPost("navigation-menu/items")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> CreateNavigationMenuItem([FromBody] CreateNavItemRequest body, CancellationToken ct)
     {
-        var (ok, newId, err) = await _navigationMenuAdmin.CreateNavItemAsync(body, ct);
-        if (!ok || newId is null)
-            return this.ApiBadRequest(err ?? "Error");
-
-        return this.ApiOk(new { id = newId }, "Creado");
+        var result = await _mediator.Send(new CreateSuperAdminNavigationMenuItemCommand(body), ct);
+        return result.IsSuccess
+            ? this.ApiOk(new { id = result.Value }, "Creado")
+            : this.ApiBadRequest(result.Error ?? "Error");
     }
 
-    /// <summary>Actualiza un ítem de menú (etiqueta visible, ruta, permisos, vínculo a feature SaaS).</summary>
     [HttpPut("navigation-menu/items/{itemId:guid}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> UpdateNavigationMenuItem(Guid itemId, [FromBody] UpdateNavItemRequest body, CancellationToken ct)
+    public async Task<IActionResult> UpdateNavigationMenuItem(
+        Guid itemId,
+        [FromBody] UpdateNavItemRequest body,
+        CancellationToken ct)
     {
-        var (ok, err) = await _navigationMenuAdmin.UpdateNavItemAsync(itemId, body, ct);
-        if (!ok)
-            return this.ApiBadRequest(err ?? "Error");
-
-        return this.ApiOk(new { }, "Guardado");
+        var result = await _mediator.Send(new UpdateSuperAdminNavigationMenuItemCommand(itemId, body), ct);
+        return result.IsSuccess
+            ? this.ApiOk(new { }, "Guardado")
+            : this.ApiBadRequest(result.Error ?? "Error");
     }
 
-    /// <summary>Desactiva un ítem y todos sus descendientes (el menú deja de mostrarlos).</summary>
     [HttpDelete("navigation-menu/items/{itemId:guid}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteNavigationMenuItem(Guid itemId, CancellationToken ct)
     {
-        var (ok, err) = await _navigationMenuAdmin.DeleteNavItemAsync(itemId, ct);
-        if (!ok)
-            return this.ApiBadRequest(err ?? "Error");
-
-        return this.ApiOk(new { }, "Eliminado");
+        var result = await _mediator.Send(new DeleteSuperAdminNavigationMenuItemCommand(itemId), ct);
+        return result.IsSuccess
+            ? this.ApiOk(new { }, "Eliminado")
+            : this.ApiBadRequest(result.Error ?? "Error");
     }
 
-    // ── Gestión de sesiones (refresh tokens) ─────────────────────────────
-
-    /// <summary>
-    /// Revoca todos los refresh tokens activos de un usuario.
-    /// Usar cuando se desactiva un usuario, se detecta compromiso o se cambia de rol.
-    /// </summary>
-    /// <param name="userId">ID del usuario cuyos tokens serán revocados.</param>
-    /// <param name="subscriberId">Subscriber del usuario.</param>
     [HttpDelete("users/{userId:guid}/sessions")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RevokeUserSessions(
-        Guid userId, [FromQuery] Guid subscriberId, CancellationToken ct)
+        Guid userId,
+        [FromQuery] Guid subscriberId,
+        CancellationToken ct)
     {
-        var user = await _accessRepository.GetUserByIdAsync(userId, ct);
-        if (user is null)
-            return this.ApiBadRequest("Usuario no encontrado.");
-
-        await _refreshTokenService.RevokeAllForUserAsync(userId, subscriberId, "Revocación administrativa", ct);
-        return this.ApiOk($"Sesiones del usuario {userId} revocadas.", "OK");
+        var result = await _mediator.Send(new RevokeSuperAdminUserSessionsCommand(userId, subscriberId), ct);
+        return result.IsSuccess
+            ? this.ApiOk(result.Value!, "OK")
+            : this.ApiBadRequest(result.Error ?? "Error");
     }
 }
-

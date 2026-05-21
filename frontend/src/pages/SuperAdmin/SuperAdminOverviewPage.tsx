@@ -111,7 +111,7 @@ export function SuperAdminOverviewPage() {
         title={t('superadmin.overview.title')}
         subtitle={t('superadmin.overview.subtitle')}
         right={
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="pg-flex-row-8-wrap">
             <RuntimeModeBadge />
             <button
               className="zh-btn zh-btn--secondary"
@@ -191,12 +191,12 @@ export function SuperAdminOverviewPage() {
 
         {/* Table */}
         {loading ? (
-          <div style={{ padding: '40px' }}><LoadingState /></div>
+          <div className="pg-pad-40"><LoadingState /></div>
         ) : subscribers.length === 0 ? (
-          <div style={{ padding: '40px' }}><EmptyState message={t('common.noData')} /></div>
+          <div className="pg-pad-40"><EmptyState message={t('common.noData')} /></div>
         ) : (
           <>
-            <div style={{ overflowX: 'auto' }}>
+            <div className="pg-overflow-x">
               <table className="table">
                 <thead>
                   <tr>
@@ -204,14 +204,14 @@ export function SuperAdminOverviewPage() {
                     <th>Identificador</th>
                     <th>Plan</th>
                     <th>Estado</th>
-                    <th style={{ textAlign: 'right' }}>Acciones</th>
+                    <th className="pg-table-actions">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
                   {previewSubscribers.map((subscriber, i) => (
                     <tr key={subscriber.id}>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div className="pg-flex-row-12">
                           <div className={`zh-avatar zh-avatar--square zh-avatar--${avatarVariant(i)}`} aria-hidden="true">
                             {initials(subscriber.name)}
                           </div>
@@ -221,7 +221,7 @@ export function SuperAdminOverviewPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="mono" style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                      <td className="mono pg-text-muted-sm">
                         {subscriber.id.split('-')[0]}…
                       </td>
                       <td>
@@ -234,13 +234,12 @@ export function SuperAdminOverviewPage() {
                           {subscriber.isActive ? t('common.active') : t('common.inactive')}
                         </span>
                       </td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td className="pg-table-actions">
                         <button
-                          className="zh-btn zh-btn--primary zh-btn--sm"
+                          className="zh-btn zh-btn--primary zh-btn--sm pg-btn-ml-auto"
                           type="button"
                           disabled={!subscriber.isActive || !!switching}
                           onClick={() => void handleSwitch(subscriber)}
-                          style={{ marginLeft: 'auto' }}
                         >
                           {switching === subscriber.id ? t('superadmin.switching') : 'Entrar como empresa'}
                           <span className="material-symbols-outlined">login</span>
@@ -257,7 +256,7 @@ export function SuperAdminOverviewPage() {
               <span className="pg-table-timestamp">
                 Mostrando {previewSubscribers.length} de {subscribers.length} empresas
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div className="pg-flex-row-8">
                 <div className="sa-page-pagination">
                   <button className="sa-page-nav-btn" type="button" disabled>
                     <span className="material-symbols-outlined">chevron_left</span>
@@ -305,7 +304,7 @@ export function SuperAdminOverviewPage() {
               <span className="material-symbols-outlined pg-section-icon">map</span>
               <span className="pg-section-label">Distribución de Empresas</span>
             </div>
-            <span style={{ fontSize: 'var(--text-label-sm-size)', color: 'var(--color-text-secondary)' }}>
+            <span className="pg-label-secondary">
               {metrics?.totals.totalSubscribers ?? 0} registradas
             </span>
           </div>
@@ -350,7 +349,7 @@ export function SuperAdminOverviewPage() {
             </div>
           </div>
           <div className="pg-section-body">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <div className="pg-flex-col-3">
               {inactiveCount > 0 && (
                 <div className="sa-alert-item sa-alert-item--error">
                   <span className="material-symbols-outlined sa-alert-icon sa-alert-icon--error">report</span>

@@ -1,0 +1,96 @@
+/* Utilidades para páginas legacy en src/pages/ (SuperAdmin + SaaS). Preferir tokens ZH en código nuevo. */
+.pg-table-actions {
+  text-align: right;
+}
+
+.pg-pad-40 {
+  padding: 40px;
+}
+
+.pg-overflow-x {
+  overflow-x: auto;
+}
+
+.pg-flex-row-8 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pg-flex-row-8-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pg-flex-row-12 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pg-flex-col-3 {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.pg-text-muted-sm {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.pg-label-secondary {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+}
+
+.pg-icon-16 {
+  font-size: 16px;
+}
+
+.pg-icon-11 {
+  font-size: 11px;
+}
+
+.pg-badge-10 {
+  font-size: 10px;
+}
+
+.pg-audit-scroll {
+  overflow-x: auto;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.pg-audit-empty {
+  padding: var(--space-8);
+  text-align: center;
+}
+
+.pg-th-w-120 {
+  width: 120px;
+}
+
+.pg-th-w-110 {
+  width: 110px;
+}
+
+.pg-th-w-100 {
+  width: 100px;
+}
+
+.pg-audit-details {
+  font-size: 12px;
+  color: var(--color-primary);
+}
+
+.pg-audit-user {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.pg-btn-ml-auto {
+  margin-left: auto;
+}

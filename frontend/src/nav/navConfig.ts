@@ -533,6 +533,7 @@ export function ensureSalesNextToInventory(
   t: TranslateFn,
   _options?: { superAdminPanelEnabled?: boolean },
 ): NavGroup[] {
+  void _options;
   if (groups.some((g) => g.id === 'sales')) {
     return sortNavGroupsForMainBar(groups);
   }

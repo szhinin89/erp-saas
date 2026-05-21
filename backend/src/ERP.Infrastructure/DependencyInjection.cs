@@ -65,6 +65,7 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
         services.AddMemoryCache();
         services.AddSingleton<InstanceQuotaFileStore>();
+        services.AddSingleton<IInstanceQuotaPersistence, InstanceQuotaPersistence>();
         services.AddSingleton<IDeploymentFeatureFlags, DeploymentFeatureFlags>();
         services.AddScoped<IFirstRunSetupService, FirstRunSetupService>();
         services.Configure<InstallDataOptions>(configuration.GetSection(InstallDataOptions.SectionName));

@@ -28,7 +28,8 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       hasHydrated:     false,
 
-      login: ({ token, refreshToken: _rt, refreshTokenExpiry: _exp, ...user }) => {
+      login: (response: AuthResponse) => {
+        const { token, ...user } = response;
         setAccessToken(token);
         set({ user, token, isAuthenticated: true });
       },

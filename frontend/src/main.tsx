@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import './pages/legacy-pages.css'
 import './components/zh/ZHLayout.css'
 import './components/zh/ZHFormTabs.css'
 import App from './App.tsx'

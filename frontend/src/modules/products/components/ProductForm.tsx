@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useFieldArray, useForm, type Resolver } from 'react-hook-form';
 import type { CatalogItem } from '../../catalog/api/catalogService';
 import { ZHBtn, ZHField, ZHFormSection, ZHGrid } from '../../../components/zh/ZHForm';
 import { defaultProductValues, productSchema, type ProductFormValues } from '../schemas/productSchema';
@@ -23,7 +23,7 @@ type Props = {
   t: (key: string, fallback?: string) => string;
   catalogs: ProductFormCatalogs | null | undefined;
   loading: boolean;
-  onSubmit: (values: any) => Promise<void>;
+  onSubmit: (values: ProductFormValues) => Promise<void>;
   editMode?: boolean;
   existingProduct?: Product | null;
   onCancelEdit?: () => void;
@@ -38,7 +38,7 @@ export function ProductForm({ t, catalogs, loading, onSubmit, editMode = false, 
     watch,
     formState: { errors },
   } = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema) as any,
+    resolver: zodResolver(productSchema) as Resolver<ProductFormValues>,
     defaultValues: defaultProductValues,
   });
 
@@ -83,9 +83,10 @@ export function ProductForm({ t, catalogs, loading, onSubmit, editMode = false, 
     if (editMode && existingProduct) {
       // Reset form with existing data
       Object.keys(defaultProductValues).forEach((key) => {
-        const value = (existingProduct as any)[key];
+        const k = key as keyof ProductFormValues;
+        const value = existingProduct[k as keyof Product];
         if (value !== undefined) {
-          setValue(key as keyof ProductFormValues, value);
+          setValue(k, value as ProductFormValues[typeof k]);
         }
       });
 

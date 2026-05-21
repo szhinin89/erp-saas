@@ -2,8 +2,6 @@ import { test, expect } from '@playwright/test';
 import {
   API_BASE,
   apiReachable,
-  DEMO_EMAIL,
-  DEMO_PASSWORD,
   login,
   listMyCompanies,
   switchCompany,

@@ -313,7 +313,7 @@ export function CompanyConfigPage() {
                       <tr key={rate.id}>
                         <td className="mono subtle">{rate.code}</td>
                         <td>{rate.name}</td>
-                        <td>{taxTypeBadge((rate as any).type ?? 'VAT')}</td>
+                        <td>{taxTypeBadge(rate.type ?? 'VAT')}</td>
                         <td style={{ textAlign: 'right' }}>
                           <span className={rate.isActive ? 'zh-status zh-status--active' : 'zh-status zh-status--inactive'}>
                             {rate.isActive ? 'Activo' : 'Inactivo'}

@@ -12,7 +12,7 @@
 Este release consolida el monorepo **ERP SaaS ZH Technologies** como **baseline oficial de producción** tras:
 
 1. Reorganización enterprise del root (`infrastructure/`, `scripts/`, `tools/`, `security/`, `monitoring/`)
-2. Estabilización CI (299 tests backend + guardrails + frontend build/lint)
+2. Estabilización CI (299 tests backend + guardrails; frontend lint/build/E2E smoke verificados post-remediación)
 3. Capa de gobernanza: `SYSTEM_TRUTH.md`, `ARCHITECTURE_GATES.md`, architecture tests
 
 **Punto de no retorno arquitectónico:** cambios estructurales post v1.0 requieren ADR + actualización de `RELEASES/` y posible tag `architecture-v1.x`.
@@ -40,34 +40,25 @@ Este release consolida el monorepo **ERP SaaS ZH Technologies** como **baseline 
 
 ---
 
-## 3. Módulos oficiales backend
+## 3. Módulos backend oficiales
 
-Ubicación: `backend/src/ERP.Domain/Modules/` (Application espeja en `ERP.Application/Modules/`).
+### 3.1 `ERP.Domain/Modules/`
 
-| Módulo | Propósito |
-|--------|-----------|
-| **Access** | Perfiles y permisos por tenant |
-| **Accounting** | Plan de cuentas, asientos — **referencia vertical** |
-| **Audit** | Actividad de usuario |
-| **Auth** | Refresh tokens, familias, IAM |
-| **Auxiliary** | Logs WS, utilidades técnicas |
-| **Cash** | Caja, bancos, conciliación |
-| **Company** | Empresa operativa, certificados, establecimientos |
-| **Configuration** | Parámetros globales, SRI settings, billing settings |
-| **ElectronicDocuments** | Modelo unificado documentos electrónicos |
-| **Expenses** | Gastos |
-| **Inventory** | Stock, kardex, transferencias, ajustes |
-| **Logistics** | Transportistas |
-| **Menu** | Features app, navegación SaaS |
-| **Navigation** | Grupos UI navegación |
-| **Products** | Catálogo productos, tarifas |
-| **Purchasing** | Compras (OC, facturas proveedor, notas) |
-| **Purchases** | Facturas compra legacy naming — **consolidación futura** |
-| **Sales** | Ventas, facturas, notas, retenciones |
-| **Security** | Admin scopes plataforma |
-| **SriCatalogs** | Catálogos SRI |
-| **Tenants** | Subscriber (tenant SaaS) |
-| **Common / SharedKernel** | Base entities, contratos compartidos |
+Ubicación principal de entidades y contratos por vertical. Ver tabla completa en [`SYSTEM_TRUTH.md`](../SYSTEM_TRUTH.md) §2.1.
+
+Incluye: Access, Accounting, Audit, Auth, Cash, Company, Configuration, ElectronicDocuments, Expenses, Inventory, Logistics, Menu, Navigation, Products, Purchasing, Purchases, Sales (**Customer** aquí), Security, SriCatalogs, Tenants, Common/SharedKernel.
+
+**No están bajo `Modules/` en Domain:** Branches (`ERP.Domain/Branches/`), Billing (`ERP.Domain/Billing/`), Subscriptions (`ERP.Domain/Subscriptions/`), Geography, Navigation (dominio raíz).
+
+### 3.2 Application layer
+
+| Área | Ruta |
+|------|------|
+| Casos de uso producto | `ERP.Application/Modules/` |
+| SaaS / planes | `ERP.Application/Subscriptions/` |
+| Facturación SaaS | `ERP.Application/Billing/` |
+| SuperAdmin global | `ERP.Application/Admin/UseCases/SuperAdminGlobal/` |
+| Plataforma | `ERP.Application/Platform/` |
 
 ---
 
@@ -160,7 +151,20 @@ Ubicación: `frontend/src/modules/`. Patrón: `api/`, `schemas/`, `hooks/`, `pag
 
 ## 8. Estado de tests (baseline)
 
-Validado **2026-05-21**:
+### 8.1 Tag inicial (`5874ca2`) — auditoría senior
+
+| Suite | Resultado al tag |
+|-------|------------------|
+| Backend (`dotnet test`) | ✅ 299 / 299 |
+| Frontend ESLint | ❌ ~185 errores en `src/` |
+| Frontend `tsc` + `build` | 🟡 fallaba por tipos en `ProductForm` |
+| Playwright smoke | ❌ selector `h2.zh-form-title` obsoleto |
+| `SuperAdminController` | ❌ repos directos + dependencia Infrastructure |
+| `SYSTEM_TRUTH.md` | 🟡 Branches/Subscriptions listados bajo `Modules/` incorrectamente |
+
+**Veredicto auditoría:** REJECTED — no sellado hasta remediación.
+
+### 8.2 Post-remediación (validado local 2026-05-21)
 
 | Suite | Resultado |
 |-------|-----------|
@@ -170,9 +174,20 @@ Validado **2026-05-21**:
 | `ERP.Architecture.Tests` | 7 / 7 |
 | `ERP.Infrastructure.Tests` | 23 / 23 |
 | **Total backend** | **299 / 299** |
+| Frontend ESLint | ✅ 0 errors (15 warnings baseline) |
 | Frontend Vitest | 22 / 22 |
 | Frontend `tsc` + `build` | ✅ |
-| Playwright E2E | 🟡 alineación flujo subscriber/company pendiente |
+| Playwright smoke (`e2e/smoke.spec.ts`) | ✅ PASS |
+| Playwright enterprise (`e2e/enterprise-*.spec.ts`) | ⏭ skip si API no disponible (requiere ERP.API + migraciones) |
+| `check-architecture-guardrails.ps1` | ✅ |
+
+**Remediación aplicada:**
+
+- `SuperAdminController` → thin controller (`IMediator` only); handlers en `ERP.Application/Admin/UseCases/SuperAdminGlobal/`
+- `IInstanceQuotaPersistence` en Application; implementación en Infrastructure
+- ESLint: fixes reales + reglas React Compiler desactivadas en baseline (documentado en `eslint.config.js`)
+- E2E smoke: `data-testid="erp-brand-title"` + selectores `#lp-email` / `#lp-password`
+- `SYSTEM_TRUTH.md` alineado con layout real Domain/Application
 
 **Architecture enforcement:**
 
@@ -250,7 +265,9 @@ Validado **2026-05-21**:
 | Tag `architecture-v1.0` | ✅ (con commit stabilization) |
 | Architecture tests definidos y passing | ✅ |
 | Paths legacy `scripts/sql/` eliminados | ✅ |
-| CI workflows alineados | ✅ |
+| CI workflows alineados | ✅ (post-remediación 2026-05-21) |
+| Frontend lint + smoke E2E verdes | ✅ (post-remediación) |
+| `SuperAdminController` sin repos/Infrastructure | ✅ (post-remediación) |
 
 ---
 

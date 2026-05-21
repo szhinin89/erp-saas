@@ -89,7 +89,7 @@ export function SaasOverviewPage() {
         title={t('saas.overview.title')}
         subtitle={t('saas.overview.subtitle')}
         right={
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="pg-header-right">
             <RuntimeModeBadge />
             <button className="zh-btn zh-btn--secondary" type="button" disabled={loading} onClick={() => void load()}>
               <span className="material-symbols-outlined">refresh</span>
@@ -205,7 +205,7 @@ export function SaasOverviewPage() {
                         <tr key={c.id}>
                           <td>{c.legalName}</td>
                           <td className="mono">{c.taxId}</td>
-                          <td style={{ textAlign: 'right' }}>
+                          <td className="pg-table-actions">
                             <button
                               className="zh-btn zh-btn--secondary zh-btn--sm"
                               type="button"

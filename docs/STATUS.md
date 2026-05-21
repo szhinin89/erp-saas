@@ -36,7 +36,7 @@ Consolidated 2026-05-21: former `MULTITENANCY`, `SCOPES`, `SECURITY`, `BILLING`,
 | PostgreSQL RLS (enterprise tables) | ✅ (in baseline) |
 | Rate limit per subscriber (600/min) | ✅ |
 | Architecture guardrails CI (scripts + NetArchTest) | ✅ (2026-05-21) |
-| **Architecture baseline v1.0** (`SYSTEM_TRUTH`, `ARCHITECTURE_GATES`, tag `architecture-v1.0`) | ✅ (2026-05-21) |
+| Architecture baseline v1.0 remediation (lint, E2E smoke, SuperAdminController, SYSTEM_TRUTH) | ✅ (2026-05-21) |
 | Post-audit remediation (session SEC, Sales unify, Kardex CQRS, Cash validators) | ✅ (2026-05-21) |
 | Post-audit wave 2 (menu builder split, services→modules, access/security pages) | ✅ (2026-05-21) |
 | Post-audit wave 3 (menu builder modular split, test sessionStorage) | ✅ (2026-05-21) |
@@ -206,8 +206,11 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 | `ERP.Application.Tests` | ✅ 95/95 |
 | `ERP.API.Tests` | ✅ 174/174 |
 | `ERP.Architecture.Tests` (NetArchTest + controller guardrails) | ✅ 7/7 |
+| Frontend ESLint (`npm run lint`) | ✅ 0 errors (2026-05-21 remediation) |
 | Frontend Vitest | ✅ 22/22 |
-| Playwright E2E | 🟡 align with subscriber/company flow |
+| Frontend build | ✅ |
+| Playwright smoke | ✅ PASS |
+| Playwright enterprise E2E | 🟡 requiere API local; skip controlado sin backend |
 
 ## MVP commercial (~85–90%)
 
@@ -217,7 +220,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 
 1. Validate SRI in `celcer.sri.gob.ec` with test certificate
 2. Billing + retenciones UI gaps
-3. Playwright E2E hardening for CI
+3. Playwright enterprise E2E con API en CI (smoke ya verde)
 
 See [ROADMAP.md](./ROADMAP.md) for prioritized backlog.
 

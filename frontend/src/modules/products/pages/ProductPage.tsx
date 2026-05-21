@@ -8,6 +8,7 @@ import { useI18n } from '../../../i18n/i18n';
 import { ProductForm } from '../components/ProductForm';
 import { useProducts } from '../hooks/useProducts';
 import { toOptionalGuid, type ProductFormValues } from '../schemas/productSchema';
+import type { Product } from '../../../types/product';
 import '../../../pages/ProductsPage.css';
 
 type TabId = 'listado' | 'formulario';
@@ -32,7 +33,7 @@ export function ProductPage() {
   const [activeTab, setActiveTab]         = useState<TabId>('listado');
   const [listQuery, setListQuery]         = useState('');
   const [editMode, setEditMode]           = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   const filteredProducts = useMemo(() => {
     const q = listQuery.trim().toLowerCase();
@@ -48,7 +49,7 @@ export function ProductPage() {
     inactive: recentProducts.filter((p) => !p.isActive).length,
   }), [recentProducts]);
 
-  const handleEdit = (product: any) => {
+  const handleEdit = (product: Product) => {
     setEditingProduct(product);
     setEditMode(true);
     setActiveTab('formulario');
@@ -305,7 +306,7 @@ export function ProductPage() {
                           </td>
                           <td>
                             <span className="badge badge--gray">
-                              {(product as any).categoryName ?? '—'}
+                              {catalogs?.categories.find((c) => c.id === product.categoryId)?.name ?? '—'}
                             </span>
                           </td>
                           <td>

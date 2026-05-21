@@ -46,7 +46,7 @@ export function SaasBillingPage() {
         title={t('saas.billing.title')}
         subtitle={t('saas.billing.subtitle')}
         right={
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div className="pg-flex-row-8">
             <RuntimeModeBadge />
             <button className="zh-btn zh-btn--secondary" type="button" onClick={() => navigate('/saas/overview')}>
               {t('saas.billing.backOverview')}

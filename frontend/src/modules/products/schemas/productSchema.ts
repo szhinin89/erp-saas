@@ -68,7 +68,7 @@ export const productSchema = z.object({
   handlesTariff: z.boolean().default(false),
 });
 
-export type ProductFormValues = z.infer<typeof productSchema>;
+export type ProductFormValues = z.output<typeof productSchema>;
 
 export const defaultProductValues: ProductFormValues = {
   // Identificación básica

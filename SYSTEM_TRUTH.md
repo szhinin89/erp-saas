@@ -43,33 +43,59 @@ erp-saas/
 
 ---
 
-## 2. Módulos backend oficiales (`ERP.Domain/Modules/`)
+## 2. Backend — layout real (`backend/src/`)
+
+### 2.1 `ERP.Domain/Modules/` (vertical slices principales)
 
 | Módulo | Propósito | Estado |
 |--------|-----------|--------|
 | **Accounting** | Plan de cuentas, asientos | Oficial · referencia vertical |
 | **Access** | Perfiles, permisos tenant | Oficial |
+| **Audit** | Actividad de usuario | Oficial |
 | **Auth** | Refresh tokens, familias, IAM | Oficial |
 | **Auxiliary** | Logs WS, utilidades | Oficial |
-| **Branches** | Sucursales | Oficial |
 | **Cash** | Caja, conciliación | Oficial |
 | **Company** | Empresa operativa, establecimientos | Oficial |
 | **Configuration** | Parámetros, billing settings tenant | Oficial |
-| **Customers** | (legacy naming) — ver Sales/Customers | Oficial |
 | **ElectronicDocuments** | Modelo documentos electrónicos unificado | Oficial |
 | **Expenses** | Gastos | Oficial |
 | **Inventory** | Stock, kardex, transferencias, ajustes | Oficial |
 | **Logistics** | Transportistas | Oficial |
 | **Menu** | Navegación, features SaaS | Oficial |
+| **Navigation** | Grupos UI navegación | Oficial |
 | **Products** | Catálogo productos | Oficial |
 | **Purchasing** / **Purchases** | Compras (conviven; unificar naming es deuda) | Oficial · naming en transición |
-| **Sales** | Ventas, facturas, notas | Oficial |
+| **Sales** | Ventas, facturas, notas; **Customer** vive aquí | Oficial |
 | **Security** | Admin scopes plataforma | Oficial |
 | **SriCatalogs** | Catálogos SRI | Oficial |
-| **Subscriptions** | Planes comerciales, entitlements | Oficial |
 | **Tenants** | Subscriber (SaaS tenant) | Oficial |
+| **Common / SharedKernel** | Base entities, contratos compartidos | Oficial |
 
-**Application** espeja la misma estructura bajo `ERP.Application/Modules/`.
+### 2.2 `ERP.Domain/` en raíz (fuera de `Modules/`)
+
+| Carpeta | Contenido real | Application espejo |
+|---------|----------------|-------------------|
+| **Billing/** | Entidades/interfaces facturación SaaS | `ERP.Application/Billing/` |
+| **Branches/** | Entidad `Branch` (sucursales) | `ERP.Application/Modules/Branches/` |
+| **Geography/** | Catálogos geográficos | handlers en `Modules/` / catálogos |
+| **Navigation/** | `TenantCustomMenu` | `ERP.Application/Navigation/` |
+| **Subscriptions/** | Planes SaaS, entitlements, límites comerciales | `ERP.Application/Subscriptions/` |
+| **Sales/** | Carpetas vacías legacy (entidades en `Modules/Sales/`) | no usar para código nuevo |
+| **Common/**, **Exceptions/** | Infraestructura de dominio compartida | `ERP.Application/Common/` |
+
+**Regla de lectura:** no asumir que todo el dominio vive bajo `Modules/`. **Branches**, **Billing** y **Subscriptions** están en raíz de `ERP.Domain/`; **Customers** no es módulo aparte — está en `Modules/Sales/Entities/Customer.cs`.
+
+### 2.3 `ERP.Application/` (casos de uso)
+
+| Área | Ubicación |
+|------|-----------|
+| Vertical slices producto | `ERP.Application/Modules/` (espeja la mayoría de `Domain/Modules/`) |
+| Plataforma SuperAdmin | `ERP.Application/Admin/`, `SuperAdmin/` |
+| Subscribers / tenants plataforma | `ERP.Application/Access/`, `Platform/` |
+| SaaS comercial | `ERP.Application/Subscriptions/` |
+| Facturación SaaS | `ERP.Application/Billing/` |
+| Navegación sesión | `ERP.Application/Navigation/` |
+| Cross-cutting | `Behaviors/`, `Common/`, `Services/`, `IAM/` |
 
 ---
 
