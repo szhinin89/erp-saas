@@ -58,6 +58,7 @@ public class AuthController : ControllerBase
         });
     }
 
+    /// <summary>Body tiene precedencia sobre cookie httpOnly (clientes móviles/legacy).</summary>
     private string? ResolveRefreshToken(string? fromBody)
         => string.IsNullOrWhiteSpace(fromBody)
             ? Request.Cookies[RefreshCookieName]
@@ -168,7 +169,7 @@ public class AuthController : ControllerBase
             return this.ApiOk(result.Value);
         }
 
-        return this.ApiUnauthorized("Refresh token inválido.");
+        return this.ApiUnauthorized(result.Error ?? "Refresh token inválido.");
     }
 
     /// <summary>Cierra la sesión revocando el refresh token.</summary>

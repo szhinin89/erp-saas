@@ -6,6 +6,7 @@ import {
   setAccessToken,
 } from '../../lib/session/authTokenMemory';
 import { useAuthStore } from '../../store/authStore';
+import { shouldAttemptTokenRefresh } from './authRefreshPolicy';
 
 /**
  * Cliente HTTP centralizado.
@@ -48,22 +49,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-const PUBLIC_AUTH_PATHS = [
-  '/api/auth/login',
-  '/api/platform/auth/login',
-  '/api/auth/superadmin-login',
-  '/api/auth/register',
-  '/api/auth/password-reset',
-  '/api/auth/forgot-password',
-  '/api/auth/reset-password',
-  '/api/auth/refresh',
-  '/api/admin/iam/bootstrap-login',
-  '/api/admin/iam/switch-subscriber',
-  '/api/admin/iam/subscriber/company_user_memberships',
-  '/api/admin/iam/register-tenant',
-  '/api/admin/iam/register-subscriber',
-];
-
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -71,8 +56,7 @@ api.interceptors.response.use(
     const status          = error.response?.status as number | undefined;
     const url             = (originalRequest?.url ?? '') as string;
 
-    const isPublicAuth = PUBLIC_AUTH_PATHS.some((p) => url.includes(p));
-    if (status !== 401 || isPublicAuth || originalRequest._retry) {
+    if (!shouldAttemptTokenRefresh(status, url, originalRequest._retry ?? false)) {
       return Promise.reject(error);
     }
 

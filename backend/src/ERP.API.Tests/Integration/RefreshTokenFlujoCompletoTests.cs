@@ -196,6 +196,17 @@ public sealed class RefreshTokenFlujoCompletoTests
     // ── HTTP: endpoint /api/auth/refresh con token inválido ───────────────
 
     [Fact]
+    public async Task POST_refresh_con_body_vacio_sin_cookie_devuelve_401()
+    {
+        await using var factory = new IntegrationTestWebAppFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/api/auth/refresh", new { });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task POST_refresh_con_token_invalido_devuelve_401()
     {
         await using var factory = new IntegrationTestWebAppFactory();

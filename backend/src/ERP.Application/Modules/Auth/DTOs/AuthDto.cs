@@ -2,7 +2,8 @@ namespace ERP.Application.Auth.DTOs;
 
 // ── Request DTOs (endpoints /auth/refresh y /auth/logout) ─────────────────
 
-public record RefreshRequest(string RefreshToken);
+/// <param name="RefreshToken">Opcional si el cliente envía la cookie httpOnly <c>erp_refresh_token</c>.</param>
+public record RefreshRequest(string? RefreshToken = null);
 
 /// <param name="RefreshToken">Token opaco a revocar. Obligatorio.</param>
 /// <param name="AllDevices">Si true, revoca todos los tokens del usuario (logout global).</param>

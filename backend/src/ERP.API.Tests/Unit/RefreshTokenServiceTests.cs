@@ -178,6 +178,19 @@ public sealed class RefreshTokenServiceTests
             return Task.FromResult(result);
         }
 
+        public Task<bool> TryRevokeForRotationAsync(
+            string tokenHash, string replacedByHash, CancellationToken ct = default)
+        {
+            if (!_byHash.TryGetValue(tokenHash, out var token))
+                return Task.FromResult(false);
+
+            if (!token.IsActive)
+                return Task.FromResult(false);
+
+            token.Revoke("Rotación", replacedByHash);
+            return Task.FromResult(true);
+        }
+
         public Task SaveChangesAsync(CancellationToken ct = default) => Task.CompletedTask;
     }
 }

@@ -157,12 +157,38 @@ function Get-ListeningProcessSummary([int[]]$Ports) {
     return $rows
 }
 
+function Remove-OrphanDockerContainers {
+    param(
+        [string] $ComposeProjectName = 'erp-saas',
+        [string[]] $ManagedContainerNames = @('postgreszh', 'erp-saas-redis')
+    )
+
+    foreach ($name in $ManagedContainerNames) {
+        $exists = docker ps -a --filter "name=^/${name}$" --format "{{.ID}}" 2>$null
+        if (-not $exists) { continue }
+
+        $managed = docker ps -a `
+            --filter "name=^/${name}$" `
+            --filter "label=com.docker.compose.project=$ComposeProjectName" `
+            --format "{{.ID}}" 2>$null
+        if ($managed) { continue }
+
+        Write-Warn "Contenedor '$name' existe fuera de docker compose ($ComposeProjectName). Eliminando huérfano..."
+        docker rm -f $name | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "No se pudo eliminar el contenedor huérfano '$name'"
+        }
+        Write-Ok "Contenedor huérfano '$name' eliminado."
+    }
+}
+
 function Invoke-DockerUp {
     param([string] $SaasRoot)
 
     Write-Step "Docker compose up -d (Postgres + Redis)"
     Push-Location $SaasRoot
     try {
+        Remove-OrphanDockerContainers
         docker compose up -d
         if ($LASTEXITCODE -ne 0) {
             throw "docker compose up -d falló (exit $LASTEXITCODE)"

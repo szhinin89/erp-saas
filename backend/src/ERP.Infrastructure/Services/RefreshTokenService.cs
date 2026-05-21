@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -9,6 +10,8 @@ namespace ERP.Infrastructure.Services;
 
 public sealed class RefreshTokenService : IRefreshTokenService
 {
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> RotationGates = new();
+
     private readonly IRefreshTokenRepository _repo;
     private readonly ILogger<RefreshTokenService> _logger;
 
@@ -41,8 +44,22 @@ public sealed class RefreshTokenService : IRefreshTokenService
         string rawToken, CancellationToken ct = default)
     {
         var tokenHash = Hash(rawToken);
-        var stored    = await _repo.GetByHashAsync(tokenHash, ct);
+        var gate = RotationGates.GetOrAdd(tokenHash, _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(ct);
+        try
+        {
+            return await ValidateAndRotateCoreAsync(rawToken, tokenHash, ct);
+        }
+        finally
+        {
+            gate.Release();
+        }
+    }
 
+    private async Task<RefreshTokenValidationResult> ValidateAndRotateCoreAsync(
+        string rawToken, string tokenHash, CancellationToken ct)
+    {
+        var stored    = await _repo.GetByHashAsync(tokenHash, ct);
         if (stored is null)
             return RefreshTokenValidationResult.Fail("Refresh token no válido.");
 
@@ -59,13 +76,32 @@ public sealed class RefreshTokenService : IRefreshTokenService
         if (!stored.IsActive)
             return RefreshTokenValidationResult.Fail("Refresh token expirado. Inicia sesión nuevamente.");
 
-        // Rotación: revocar el actual y generar uno nuevo
-        var (newRaw, newExpiry) = await CreateAsync(stored.UserId, stored.SubscriberId, stored.CompanyId, stored.UserType, ct);
-        stored.Revoke("Rotación", Hash(newRaw));
+        var newRaw  = GenerateRaw();
+        var newHash = Hash(newRaw);
+        var revoked = await _repo.TryRevokeForRotationAsync(tokenHash, newHash, ct);
+
+        if (!revoked)
+        {
+            var again = await _repo.GetByHashAsync(tokenHash, ct);
+            if (again is not null && again.IsRevoked)
+            {
+                _logger.LogWarning(
+                    "Intento de reutilizar refresh token revocado para usuario {UserId}. " +
+                    "Revocando todos los tokens activos.", stored.UserId);
+                await RevokeAllForUserAsync(stored.UserId, stored.SubscriberId, "Reutilización detectada", ct);
+                return RefreshTokenValidationResult.Fail("Refresh token revocado. Inicia sesión nuevamente.");
+            }
+
+            return RefreshTokenValidationResult.Fail("Refresh token ya utilizado. Inicia sesión nuevamente.");
+        }
+
+        var entity = RefreshToken.Create(
+            stored.UserId, stored.SubscriberId, stored.CompanyId, stored.UserType, newHash);
+        await _repo.AddAsync(entity, ct);
         await _repo.SaveChangesAsync(ct);
 
         return RefreshTokenValidationResult.Ok(
-            stored.UserId, stored.SubscriberId, stored.CompanyId, stored.UserType, newRaw, newExpiry);
+            stored.UserId, stored.SubscriberId, stored.CompanyId, stored.UserType, newRaw, entity.ExpiresAt);
     }
 
     public async Task RevokeAllForUserAsync(
