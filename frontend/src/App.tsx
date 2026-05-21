@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import './pages/legacy-pages.css';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { HomeRedirect } from './components/HomeRedirect';
 import { AppLayout } from './components/AppLayout';
