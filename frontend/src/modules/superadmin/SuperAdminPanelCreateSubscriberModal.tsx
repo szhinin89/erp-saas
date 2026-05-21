@@ -62,8 +62,15 @@ export function SuperAdminPanelCreateSubscriberModal({
       }
     >
       {createError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={createError} /> : null}
+
+      {/* ── Sección 1: Datos del suscriptor ── */}
+      <div className="sa-form-section">
+        <p className="sa-form-section__title">{t('superadmin.createSubscriber.section.subscriber')}</p>
+        <p className="sa-form-section__hint">{t('superadmin.createSubscriber.section.subscriberHint')}</p>
+      </div>
+
       <ZHGridRow cols={2}>
-        <ZHField label={t('superadmin.createSubscriber.field.name')}>
+        <ZHField label={t('superadmin.createSubscriber.field.name')} required>
           <input
             className="zh-input"
             value={createForm.subscriberName}
@@ -74,14 +81,16 @@ export function SuperAdminPanelCreateSubscriberModal({
                 return { ...s, subscriberName: name, subscriberSlug: nextSlug };
               })
             }
+            placeholder="Ej: Distribuidora XYZ S.A."
             disabled={createBusy}
           />
         </ZHField>
-        <ZHField label={t('superadmin.createSubscriber.field.slug')}>
+        <ZHField label={t('superadmin.createSubscriber.field.slug')} hint={t('superadmin.createSubscriber.field.slugHint')}>
           <input
             className="zh-input"
             value={createForm.subscriberSlug}
             onChange={(e) => setCreateForm((s) => ({ ...s, subscriberSlug: e.target.value }))}
+            placeholder="Ej: distribuidora-xyz"
             disabled={createBusy}
           />
         </ZHField>
@@ -114,7 +123,7 @@ export function SuperAdminPanelCreateSubscriberModal({
         </ZHField>
       </ZHGridRow>
       <ZHGridRow cols={2}>
-        <ZHField label={t('superadmin.createSubscriber.field.planCode')}>
+        <ZHField label={t('superadmin.createSubscriber.field.planCode')} required>
           <select
             className="zh-input"
             value={createPlanCode}
@@ -172,8 +181,14 @@ export function SuperAdminPanelCreateSubscriberModal({
           ))}
         </div>
       ) : null}
+      {/* ── Sección 2: Administrador inicial ── */}
+      <div className="sa-form-section">
+        <p className="sa-form-section__title">{t('superadmin.createSubscriber.section.admin')}</p>
+        <p className="sa-form-section__hint">{t('superadmin.createSubscriber.section.adminHint')}</p>
+      </div>
+
       <ZHGridRow cols={2}>
-        <ZHField label={t('superadmin.createSubscriber.field.adminFirstName')}>
+        <ZHField label={t('superadmin.createSubscriber.field.adminFirstName')} required>
           <input
             className="zh-input"
             value={createForm.adminFirstName}

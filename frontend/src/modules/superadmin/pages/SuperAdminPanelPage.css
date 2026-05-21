@@ -143,3 +143,23 @@
 
 /* .zh-inline-check (zh-ui.css) handles labeled checkboxes */
 .sa-moduleCheck { margin-bottom: 0; }
+
+/* ── Secciones del formulario de creación ────────────────── */
+.sa-form-section {
+  margin: var(--space-4, 16px) 0 var(--space-2, 8px);
+  padding-bottom: var(--space-2, 8px);
+  border-bottom: 1px solid var(--color-outline-variant, #e5e7eb);
+}
+.sa-form-section__title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-primary, #1a73e8);
+  margin: 0 0 2px;
+}
+.sa-form-section__hint {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary, #666);
+  margin: 0;
+}
