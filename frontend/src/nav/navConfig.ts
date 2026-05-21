@@ -276,10 +276,7 @@ export function getSuperAdminPanelNavExtras(
   const superAdminOn = options?.superAdminPanelEnabled ?? true;
   if (!superAdminOn) return [];
   return [
-    { to: '/superadmin/overview', label: t('app.nav.superadmin'),    roles: ['SuperAdmin'] },
-    { to: '/saas/overview',       label: t('app.nav.saasOverview'),   roles: ['Admin', 'SuperAdmin'] },
-    { to: '/saas/companies',      label: t('app.nav.saasCompanies'),  roles: ['Admin', 'SuperAdmin'] },
-    { to: '/saas/billing',        label: t('app.nav.saasBilling'),    roles: ['Admin', 'SuperAdmin'] },
+    { to: '/superadmin/overview', label: t('app.nav.superadmin'), roles: ['SuperAdmin'] },
   ];
 }
 
@@ -318,7 +315,6 @@ export function buildNavGroups(
       icon: '⊞',
       sortOrder: defaultBarRank('home') * 10,
       items: [
-        { to: '/saas/overview', label: t('app.nav.saasOverview') },
         { to: '/dashboard', label: t('app.nav.erpDashboard') },
         ...getSuperAdminPanelNavExtras(t, options),
       ],
