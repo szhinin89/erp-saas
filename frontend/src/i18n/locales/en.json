@@ -106,6 +106,8 @@
   "app.nav.group.inventory": "Inventory",
   "app.nav.item.sales.credit-notes": "Credit notes",
   "app.nav.item.sales.withholding-received": "Received withholdings",
+  "app.nav.item.sales.reports": "Reports",
+  "app.nav.item.sales.report-ventas": "Sales report",
   "app.nav.item.purchases.invoices": "Purchase invoices",
   "app.nav.item.purchases.suppliers": "Suppliers",
   "app.nav.item.purchases.orders": "Purchase orders",

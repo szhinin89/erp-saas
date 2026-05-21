@@ -99,7 +99,11 @@ public static class CommercialPlansBootstrap
               {"routePath": "/sales/invoices",             "labelKey": "app.nav.sales.invoices",                  "displayLabel": "Facturas",              "sortOrder": 10, "moduleKey": "sales", "permissionKey": "perm:sales.invoices.view",             "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "🧾"},
               {"routePath": "/sales/customers",            "labelKey": "app.nav.catalog.customers",               "displayLabel": "Clientes",              "sortOrder": 20, "moduleKey": "sales", "permissionKey": "perm:sales.customers.view",            "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "👤"},
               {"routePath": "/sales/credit-notes",         "labelKey": "app.nav.item.sales.credit-notes",         "displayLabel": "Notas de crédito",      "sortOrder": 30, "moduleKey": "sales", "permissionKey": "perm:sales.credit-notes.view",         "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📄"},
-              {"routePath": "/sales/withholding-received", "labelKey": "app.nav.item.sales.withholding-received", "displayLabel": "Retenciones recibidas", "sortOrder": 40, "moduleKey": "sales", "permissionKey": "perm:sales.withholding-received.view", "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📋"}
+              {"routePath": "/sales/withholding-received", "labelKey": "app.nav.item.sales.withholding-received", "displayLabel": "Retenciones recibidas", "sortOrder": 40, "moduleKey": "sales", "permissionKey": "perm:sales.withholding-received.view", "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📋"},
+              {"routePath": "", "labelKey": "app.nav.item.sales.reports", "displayLabel": "Reportes", "sortOrder": 50, "moduleKey": "sales", "permissionKey": null, "permissionKeysAny": null, "itemRoles": null, "icon": "bar_chart",
+                "children": [
+                  {"routePath": "/reportes/ventas", "labelKey": "app.nav.item.sales.report-ventas", "displayLabel": "Reporte de ventas", "sortOrder": 10, "moduleKey": "sales", "permissionKey": "perm:sales.invoices.view", "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "receipt_long"}
+                ]}
             ]
           },
           {
