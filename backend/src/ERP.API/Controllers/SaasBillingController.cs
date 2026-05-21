@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers;
 
-[AppFeature("Facturación SaaS", "perm:saas.billing.view", "💳", "/saas/billing", "perm:settings.group", 27)]
+[AppFeature("Facturación SaaS", "perm:saas.billing.view", "💳", "/saas/billing", null, 27, IsVisibleInMenu = false)]
 [ApiController]
 [Route("api/saas/billing")]
 [Authorize]

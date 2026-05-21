@@ -19,8 +19,9 @@ namespace ERP.API.Controllers;
     CompanyPermissions.PolicyView,
     "🏢",
     "/saas/companies",
-    "perm:settings.group",
-    28)]
+    null,
+    28,
+    IsVisibleInMenu = false)]
 [ApiController]
 [Route("api/companies")]
 [Authorize]

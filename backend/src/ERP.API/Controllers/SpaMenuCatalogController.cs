@@ -16,21 +16,14 @@ namespace ERP.API.Controllers;
 public sealed class SpaMenuCatalogController : ControllerBase
 {
     [HttpGet("profiles")]
-    [AppFeature("Perfiles", "perm:access.profiles.view", "👤", "/profiles", null, 86)]
+    [AppFeature("Perfiles (Roles)", "perm:admin.roles.view", "👥", "/admin/roles", null, 86)]
     public IActionResult ProfilesCatalogMarker() => NotFound();
 
     [HttpGet("tenant-access")]
-    [AppFeature("Acceso usuarios", "perm:access.company_user_memberships.view", "🧑‍🤝‍🧑", "/access", null, 87)]
+    [AppFeature("Acceso usuarios", "perm:admin.users.view", "👤", "/admin/users", null, 87)]
     public IActionResult SubscriberAccessCatalogMarker() => NotFound();
 
-    // ── Grupo "Configuración" ─────────────────────────────────
-    // Carpeta padre en el catálogo para los 3 formularios de configuración de empresa.
-    // path = null → aparece como carpeta en la biblioteca del plan builder, no como ruta.
-    [HttpGet("configuracion-group")]
-    [AppFeature("Configuración", "perm:settings.group", "⚙️", null, null, 28)]
-    public IActionResult ConfiguracionGroupMarker() => NotFound();
-
     [HttpGet("empresa")]
-    [AppFeature("Datos de Empresa", "perm:settings.company.view", "🏢", "/settings/company", "perm:settings.group", 29)]
+    [AppFeature("Datos de Empresa", "perm:settings.company.view", "🏢", "/settings/company", null, 29)]
     public IActionResult EmpresaCatalogMarker() => NotFound();
 }
