@@ -1,6 +1,8 @@
 {
   "app.nav.dashboard": "Resumen",
   "app.nav.saasOverview": "Cuenta SaaS",
+  "app.nav.saasCompanies": "Empresas",
+  "app.nav.saasBilling": "Facturación",
   "app.nav.erpDashboard": "Dashboard ERP",
   "app.runtimeMode.platform": "Modo Platform",
   "app.runtimeMode.subscriber": "Modo Subscriber",

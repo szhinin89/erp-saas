@@ -1,5 +1,7 @@
 {
   "app.nav.dashboard": "Resumen",
+  "app.nav.saasCompanies": "Llaqtakuna",
+  "app.nav.saasBilling": "Pagakuy",
   "app.nav.products": "Administración de ítems",
   "app.nav.catalog.customers": "Rantikuna",
   "app.nav.sales.invoices": "Rantikuy willaykuna",

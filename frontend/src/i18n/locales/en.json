@@ -1,6 +1,8 @@
 {
   "app.nav.dashboard": "Overview",
   "app.nav.saasOverview": "SaaS account",
+  "app.nav.saasCompanies": "Companies",
+  "app.nav.saasBilling": "Billing",
   "app.nav.erpDashboard": "ERP dashboard",
   "app.runtimeMode.platform": "Platform mode",
   "app.runtimeMode.subscriber": "Subscriber mode",

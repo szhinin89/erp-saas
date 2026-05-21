@@ -16,6 +16,4 @@ export const accessRoutes = [
   <Route key="admin-users" path="/admin/users" element={<SubscriberAccessPage />} />,
   <Route key="admin-roles" path="/admin/roles" element={<ProfilesPage />} />,
   <Route key="security-legacy" path="/security" element={<Navigate to="/admin/security" replace />} />,
-  <Route key="access-legacy" path="/access" element={<Navigate to="/admin/users" replace />} />,
-  <Route key="profiles-legacy" path="/profiles" element={<Navigate to="/admin/roles" replace />} />,
 ];

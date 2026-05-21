@@ -275,7 +275,12 @@ export function getSuperAdminPanelNavExtras(
 ): NavItem[] {
   const superAdminOn = options?.superAdminPanelEnabled ?? true;
   if (!superAdminOn) return [];
-  return [{ to: '/superadmin/overview', label: t('app.nav.superadmin'), roles: ['SuperAdmin'] }];
+  return [
+    { to: '/superadmin/overview', label: t('app.nav.superadmin'),    roles: ['SuperAdmin'] },
+    { to: '/saas/overview',       label: t('app.nav.saasOverview'),   roles: ['Admin', 'SuperAdmin'] },
+    { to: '/saas/companies',      label: t('app.nav.saasCompanies'),  roles: ['Admin', 'SuperAdmin'] },
+    { to: '/saas/billing',        label: t('app.nav.saasBilling'),    roles: ['Admin', 'SuperAdmin'] },
+  ];
 }
 
 /** Cuando el menú viene de BD, añade en Inicio los enlaces estáticos de SuperAdmin que falten (misma ruta = no duplicar). */
