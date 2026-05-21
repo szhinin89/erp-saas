@@ -81,17 +81,17 @@ export const comprasService = {
     const q = new URLSearchParams();
     if (filtros.estado !== undefined) q.set('estado', String(filtros.estado));
     if (filtros.proveedorId) q.set('proveedorId', filtros.proveedorId);
-    const res = await api.get<ApiResponse<CompraDto[]>>(`/api/Compras?${q.toString()}`);
+    const res = await api.get<ApiResponse<CompraDto[]>>(`/api/purchases/invoices?${q.toString()}`);
     return readObj<CompraDto[]>(res.data) ?? [];
   },
 
   async getById(id: string): Promise<CompraDetalleDto | null> {
-    const res = await api.get<ApiResponse<CompraDetalleDto>>(`/api/Compras/${id}`);
+    const res = await api.get<ApiResponse<CompraDetalleDto>>(`/api/purchases/invoices/${id}`);
     return readObj<CompraDetalleDto | null>(res.data);
   },
 
   async crearManual(payload: CrearCompraManualRequest): Promise<CompraDto> {
-    const res = await api.post<ApiResponse<CompraDto>>('/api/Compras/manual', {
+    const res = await api.post<ApiResponse<CompraDto>>('/api/purchases/invoices/manual', {
       modo: 2, // Manual
       supplierId: payload.supplierId,
       invoiceNumber: payload.invoiceNumber,
@@ -108,14 +108,14 @@ export const comprasService = {
   },
 
   async validar(id: string): Promise<void> {
-    await api.patch(`/api/Compras/${id}/validar`, {});
+    await api.patch(`/api/purchases/invoices/${id}/validar`, {});
   },
 
   async aprobar(id: string): Promise<void> {
-    await api.patch(`/api/Compras/${id}/aprobar`, {});
+    await api.patch(`/api/purchases/invoices/${id}/aprobar`, {});
   },
 
   async rechazar(id: string, motivo: string): Promise<void> {
-    await api.patch(`/api/Compras/${id}/rechazar`, { reason: motivo });
+    await api.patch(`/api/purchases/invoices/${id}/rechazar`, { reason: motivo });
   },
 };

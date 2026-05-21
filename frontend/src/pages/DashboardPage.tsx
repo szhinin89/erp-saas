@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useI18n } from '../i18n/i18n';
 import { useAuthStore } from '../store/authStore';
+import { RuntimeModeBadge } from '../components/RuntimeModeBadge';
+import { ZHPageNotice } from '../components/zh/ZHPageNotice';
 import './DashboardPage.css';
 
 type ActivityStatus = 'completed' | 'pending' | 'cancelled';
@@ -30,6 +33,14 @@ export function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (!user?.companyId) {
+      navigate('/saas/overview', { replace: true });
+    }
+  }, [navigate, user?.companyId]);
+
+  if (!user?.companyId) return null;
+
   const today = new Date().toLocaleDateString(locale === 'en' ? 'en-US' : 'es-ES', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
   });
@@ -45,9 +56,16 @@ export function DashboardPage() {
 
       {/* ── Welcome ── */}
       <div className="dsh-welcome">
-        <h1 className="dsh-welcome-title">{t('dashboard.welcome')} {user?.fullName ?? ''}</h1>
-        <p className="dsh-welcome-date">{today}</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
+          <div>
+            <h1 className="dsh-welcome-title">{t('dashboard.welcome')} {user?.fullName ?? ''}</h1>
+            <p className="dsh-welcome-date">{today}</p>
+          </div>
+          <RuntimeModeBadge />
+        </div>
       </div>
+
+      <ZHPageNotice variant="info" message={t('dashboard.kpis.comingSoon')} />
 
       {/* ── KPI Cards — usa pg-kpi* global ── */}
       <div className="pg-kpis">

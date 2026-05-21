@@ -24,7 +24,7 @@ export const activityService = {
     if (opts?.page) q.set('page', String(opts.page));
     if (opts?.pageSize) q.set('pageSize', String(opts.pageSize));
     const qs = q.toString();
-    return getList<UserActivityDto[]>(`/api/activity/my${qs ? `?${qs}` : ''}`);
+    return getList<UserActivityDto[]>(`/api/admin/activity/my${qs ? `?${qs}` : ''}`);
   },
 
   /** Últimos movimientos sobre una entidad (subscriber), cualquier usuario. */
@@ -33,7 +33,7 @@ export const activityService = {
     q.set('entityType', opts.entityType);
     q.set('entityId', opts.entityId);
     if (opts.take != null) q.set('take', String(opts.take));
-    return getList<UserActivityDto[]>(`/api/activity/entity?${q.toString()}`);
+    return getList<UserActivityDto[]>(`/api/admin/activity/entity?${q.toString()}`);
   },
 };
 

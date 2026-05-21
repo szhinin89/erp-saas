@@ -63,21 +63,21 @@ export const ajusteService = {
     if (filter.fechaHasta) q.set('fechaHasta', filter.fechaHasta);
 
     const res = await api.get<ApiResponse<AjustesPagedResult>>(
-      `/api/inventario/ajustes?${q.toString()}`
+      `/api/inventory/adjustments?${q.toString()}`
     );
     return res.data.responseObject ?? { items: [], totalCount: 0, pageNumber: 1, pageSize: 20 };
   },
 
   async getById(id: string): Promise<AjusteInventario | null> {
     const res = await api.get<ApiResponse<AjusteInventario | null>>(
-      `/api/inventario/ajustes/${id}`
+      `/api/inventory/adjustments/${id}`
     );
     return res.data.responseObject ?? null;
   },
 
   async crear(payload: CrearAjusteRequest): Promise<AjusteInventario> {
     const res = await api.post<ApiResponse<AjusteInventario>>(
-      '/api/inventario/ajustes',
+      '/api/inventory/adjustments',
       payload
     );
     return res.data.responseObject;
@@ -85,14 +85,14 @@ export const ajusteService = {
 
   async ejecutar(id: string): Promise<AjusteInventario> {
     const res = await api.patch<ApiResponse<AjusteInventario>>(
-      `/api/inventario/ajustes/${id}/ejecutar`
+      `/api/inventory/adjustments/${id}/ejecutar`
     );
     return res.data.responseObject;
   },
 
   async cancelar(id: string): Promise<AjusteInventario> {
     const res = await api.patch<ApiResponse<AjusteInventario>>(
-      `/api/inventario/ajustes/${id}/cancelar`
+      `/api/inventory/adjustments/${id}/cancelar`
     );
     return res.data.responseObject;
   },
@@ -101,7 +101,7 @@ export const ajusteService = {
   async getStockDisponible(bodegaId: string, productoId: string): Promise<number> {
     const q = new URLSearchParams({ bodegaId, productoId });
     const res = await api.get<ApiResponse<Array<{ productId: string; availableQuantity: number }>>>(
-      `/api/inventario/stock-actual?${q.toString()}`
+      `/api/inventory/stock/stock-actual?${q.toString()}`
     );
     return res.data.responseObject?.[0]?.availableQuantity ?? 0;
   },

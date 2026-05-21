@@ -4,5 +4,5 @@ using ERP.Application.Modules.Sales.DTOs;
 
 namespace ERP.Application.Modules.Sales.UseCases.ObtenerCliente;
 
-[RequireFeature(SubscriptionFeatureCodes.Customers)]
+[RequireFeature(SubscriptionFeatureCodes.Sales)]
 public sealed record GetCustomerByIdQuery(Guid Id) : IRequest<Result<CustomerDetailDto>>;

@@ -34,7 +34,7 @@ export interface CreateProductRequest {
 }
 
 export const productService = {
-  getAll:   () => api.get<ApiResponse<Product[]>>('/api/products').then((r) => r.data.responseObject),
-  getById:  (id: string) => api.get<ApiResponse<Product>>(`/api/products/${id}`).then((r) => r.data.responseObject),
-  create:   (data: CreateProductRequest) => api.post<ApiResponse<Product>>('/api/products', data).then((r) => r.data.responseObject),
+  getAll:   () => api.get<ApiResponse<Product[]>>('/api/inventory/products').then((r) => r.data.responseObject),
+  getById:  (id: string) => api.get<ApiResponse<Product>>(`/api/inventory/products/${id}`).then((r) => r.data.responseObject),
+  create:   (data: CreateProductRequest) => api.post<ApiResponse<Product>>('/api/inventory/products', data).then((r) => r.data.responseObject),
 };

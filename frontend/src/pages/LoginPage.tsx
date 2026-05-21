@@ -54,7 +54,7 @@ export function LoginPage() {
     } catch {
       // AppLayout re-fetches entitlements if empty after redirect.
     }
-    navigate('/dashboard', { replace: true });
+    navigate('/saas/overview', { replace: true });
   };
 
   const onValid = async (form: LoginFormValues) => {
@@ -88,7 +88,7 @@ export function LoginPage() {
             clearBootstrap();
             clearPermissions();
             login(payload);
-            navigate('/select-company', { replace: true });
+            navigate('/saas/overview', { replace: true });
             return;
           }
 
@@ -141,7 +141,7 @@ export function LoginPage() {
           clearBootstrap();
           clearPermissions();
           login(auth);
-          navigate('/select-company', { replace: true });
+          navigate('/saas/overview', { replace: true });
           return;
         }
         await enterSubscriberDashboard(auth);

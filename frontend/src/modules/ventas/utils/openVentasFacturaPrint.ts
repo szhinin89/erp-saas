@@ -9,7 +9,7 @@ export type OpenVentasFacturaPrintResult =
  */
 export async function openVentasFacturaPrint(facturaId: string): Promise<OpenVentasFacturaPrintResult> {
   try {
-    const res = await api.get<string>(`/api/ventas/${facturaId}/imprimir`, {
+    const res = await api.get<string>(`/api/sales/invoices/${facturaId}/imprimir`, {
       responseType: 'text',
       headers: { Accept: 'text/html' },
     });

@@ -1,3 +1,4 @@
+using ERP.Domain.Access.Entities;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Support;
@@ -18,7 +19,26 @@ internal static class TestDataFactory
 
     internal static async Task SeedCommercialPlansAndLimitsAsync(ErpDbContext db, CancellationToken ct = default)
     {
-        await CommercialPlansBootstrap.EnsureDefaultsAsync(db);
-        await CommercialPlanLimitsBootstrap.EnsureDefaultsAsync(db);
+        await CommercialPlansBootstrap.EnsureDefaultsAsync(db, ct);
+        await CommercialPlanFeaturesBootstrap.EnsureDefaultsAsync(db, ct);
+        await CommercialPlanLimitsBootstrap.EnsureDefaultsAsync(db, ct);
+    }
+
+    internal static async Task<Guid> SeedPlatformSuperAdminAsync(
+        ErpDbContext db,
+        MutableCurrentUser factoryUser,
+        CancellationToken ct = default)
+    {
+        var userId = Guid.NewGuid();
+        var user = IdentityUser.CreatePlatformSuperAdmin(
+            "Platform",
+            "SuperAdmin",
+            $"superadmin-{userId:N}@test.local",
+            passwordHash: "$2a$11$test.hash.only.for.integration.tests",
+            createdBy: userId);
+        db.IdentityUsers.Add(user);
+        await db.SaveChangesAsync(ct);
+        factoryUser.UserId = userId;
+        return userId;
     }
 }

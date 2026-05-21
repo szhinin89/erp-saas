@@ -27,27 +27,27 @@ export interface CreateGastoCategoriaRequest {
 export const accountingConfigService = {
   getConfig: () =>
     api
-      .get<ApiResponse<ConfiguracionContableEmpresaDto | null>>('/api/contabilidad/configuracion')
+      .get<ApiResponse<ConfiguracionContableEmpresaDto | null>>('/api/finance/config')
       .then((r) => r.data.responseObject),
 
   upsertConfig: (data: ConfiguracionContableEmpresaDto) =>
     api
-      .put<ApiResponse<ConfiguracionContableEmpresaDto>>('/api/contabilidad/configuracion', data)
+      .put<ApiResponse<ConfiguracionContableEmpresaDto>>('/api/finance/config', data)
       .then((r) => r.data.responseObject),
 
   listGastoMappings: () =>
     api
-      .get<ApiResponse<ConfiguracionGastoCategoriaDto[]>>('/api/contabilidad/configuracion/gastos')
+      .get<ApiResponse<ConfiguracionGastoCategoriaDto[]>>('/api/finance/config/gastos')
       .then((r) => r.data.responseObject ?? []),
 
   createGastoMapping: (data: CreateGastoCategoriaRequest) =>
     api
-      .post<ApiResponse<ConfiguracionGastoCategoriaDto>>('/api/contabilidad/configuracion/gastos', data)
+      .post<ApiResponse<ConfiguracionGastoCategoriaDto>>('/api/finance/config/gastos', data)
       .then((r) => r.data.responseObject),
 
   deleteGastoMapping: (id: string) =>
     api
-      .delete<ApiResponse<unknown>>(`/api/contabilidad/configuracion/gastos/${id}`)
+      .delete<ApiResponse<unknown>>(`/api/finance/config/gastos/${id}`)
       .then((r) => r.data.responseObject),
 };
 

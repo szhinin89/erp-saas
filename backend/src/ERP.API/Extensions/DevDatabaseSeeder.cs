@@ -30,6 +30,7 @@ internal static class DevDatabaseSeeder
         ("EXPENSES", "expenses"),
         ("ACCOUNTING", "accounting"),
         ("ACCESS", "access"),
+        ("LOGISTICS", "logistics"),
     ];
 
     public static async Task SeedMinimumAsync(IServiceProvider services, CancellationToken ct = default)

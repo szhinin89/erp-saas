@@ -71,14 +71,14 @@ export type UpdateCustomerBody = CreateCustomerBody & { id: string };
 
 export const customerService = {
   list: (activeStatus: CatalogActiveStatus = 'all', search?: string) =>
-    get<CustomerDto[]>(`/api/customers${listQuery(activeStatus, search)}`),
+    get<CustomerDto[]>(`/api/sales/customers${listQuery(activeStatus, search)}`),
 
-  getById: (id: string) => get<CustomerDetailDto>(`/api/customers/${id}`),
+  getById: (id: string) => get<CustomerDetailDto>(`/api/sales/customers/${id}`),
 
-  create: (body: CreateCustomerBody) => post<CustomerDto>('/api/customers', body),
+  create: (body: CreateCustomerBody) => post<CustomerDto>('/api/sales/customers', body),
 
-  update: (id: string, body: UpdateCustomerBody) => put<CustomerDto>(`/api/customers/${id}`, body),
+  update: (id: string, body: UpdateCustomerBody) => put<CustomerDto>(`/api/sales/customers/${id}`, body),
 
-  disable: (id: string) => patch<CustomerDto>(`/api/customers/${id}/disable`),
-  enable: (id: string) => patch<CustomerDto>(`/api/customers/${id}/enable`),
+  disable: (id: string) => patch<CustomerDto>(`/api/sales/customers/${id}/disable`),
+  enable: (id: string) => patch<CustomerDto>(`/api/sales/customers/${id}/enable`),
 };

@@ -14,12 +14,14 @@ import { ZHAppSubscriberHeader } from './zh/ZHAppSubscriberHeader';
 import { CompanySwitcher } from './CompanySwitcher';
 import {
   buildGlobalSuperAdminNavGroups,
+  buildNavGroups,
   ensureSalesNextToInventory,
   flattenAccessIntoSecurity,
   flattenSaaSIntoHome,
   isPlanBuilderSessionMenu,
   mapSessionMenuToNavGroups,
   mergeSuperAdminNavExtrasIntoHome,
+  ensureSubscriberHomeOverview,
   expandPlanCustomRootsToBarGroups,
   sortNavGroupsForMainBar,
   type NavItem,
@@ -262,8 +264,11 @@ export function AppLayout() {
     const fromApi =
       sessionMenuDto !== undefined && sessionMenuDto.length > 0
         ? mapSessionMenuToNavGroups(sessionMenuDto, t, opts)
-        : [];
-    const raw = mergeSuperAdminNavExtrasIntoHome(fromApi, t, opts);
+        : buildNavGroups(t, opts);
+    const raw = ensureSubscriberHomeOverview(
+      mergeSuperAdminNavExtrasIntoHome(fromApi, t, opts),
+      t,
+    );
     if (restrictedPlanMenu) {
       let piped = sortNavGroupsForMainBar(flattenAccessIntoSecurity(flattenSaaSIntoHome(raw)));
       if (planMenuBarLayout === 'horizontal') {

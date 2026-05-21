@@ -6,6 +6,7 @@ import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { useI18n } from '../../../i18n/i18n';
 import { usePermissionsStore } from '../../../store/permissionsStore';
+import { useAuthStore } from '../../../store/authStore';
 import type { Customer } from '../api/customerService';
 import { useCustomers } from '../hooks/useCustomers';
 import { customerSchema, defaultCustomerValues, type CustomerFormValues } from '../schemas/customerSchema';
@@ -59,9 +60,11 @@ function categoryBadgeClass(category: CustomerCategory): string {
 export function CustomersPage() {
   const { t } = useI18n();
   const hasPerm = usePermissionsStore((s) => s.has);
+  const companyId = useAuthStore((s) => s.user?.companyId);
   const canView   = hasPerm('sales.customers.view');
   const canCreate = hasPerm('sales.customers.create');
   const canEdit   = hasPerm('sales.customers.update') || canCreate;
+  const canLoadCustomers = canView && !!companyId;
 
   /* ── State ── */
   const [activeTab, setActiveTab]       = useState<TabId>('clientes');
@@ -88,7 +91,7 @@ export function CustomersPage() {
   const [auditItems, setAuditItems] = useState<AuditItem[]>([]);
 
   /* ── Data ── */
-  const { customers, loading, error, creating, createError, createCustomer, updateCustomer, toggleCustomerStatus } = useCustomers();
+  const { customers, loading, error, creating, createError, createCustomer, updateCustomer, toggleCustomerStatus } = useCustomers(canLoadCustomers);
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema),

@@ -9,11 +9,16 @@ public static class SubscriptionFeatureCodes
     public const string Accounting = "ACCOUNTING";
     public const string Payroll = "PAYROLL";
     public const string ApiAccess = "API_ACCESS";
+    public const string Access    = "ACCESS";
     public const string Customers = "CUSTOMERS";
     public const string Branches  = "BRANCHES";
     public const string Bodegas   = "BODEGAS";
-    public const string Compras   = "COMPRAS";
-    public const string Purchases = "COMPRAS";
+    public const string Purchases = "PURCHASES";
+    /// <summary>Alias legacy → <see cref="Purchases"/>.</summary>
+    public const string Compras   = Purchases;
     public const string Sales     = "SALES";
-    public const string Gastos    = "GASTOS";
+    public const string Logistics = "LOGISTICS";
+    public const string Expenses  = "EXPENSES";
+    /// <summary>Alias legacy → <see cref="Expenses"/>.</summary>
+    public const string Gastos    = Expenses;
 }

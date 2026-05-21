@@ -4,6 +4,6 @@ using ERP.Application.Modules.Sales.DTOs;
 
 namespace ERP.Application.Modules.Sales.UseCases.ListarClientes;
 
-[RequireFeature(SubscriptionFeatureCodes.Customers)]
+[RequireFeature(SubscriptionFeatureCodes.Sales)]
 public sealed record GetCustomersQuery(bool? ActiveFilter, string? Search)
     : IRequest<Result<IReadOnlyList<CustomerDto>>>;

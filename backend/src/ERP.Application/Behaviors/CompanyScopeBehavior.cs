@@ -27,9 +27,7 @@ public sealed class CompanyScopeBehavior<TRequest, TResponse> : IPipelineBehavio
     ];
 
     private readonly ICompanyAccessGuard _accessGuard;
-    private readonly ICurrentSubscriber _subscriber;
     private readonly ICurrentCompany _company;
-    private readonly ICurrentUser _user;
 
     public CompanyScopeBehavior(
         ICompanyAccessGuard accessGuard,
@@ -38,9 +36,9 @@ public sealed class CompanyScopeBehavior<TRequest, TResponse> : IPipelineBehavio
         ICurrentUser user)
     {
         _accessGuard = accessGuard;
-        _subscriber = subscriber;
         _company = company;
-        _user = user;
+        _ = subscriber;
+        _ = user;
     }
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken ct)
@@ -49,9 +47,6 @@ public sealed class CompanyScopeBehavior<TRequest, TResponse> : IPipelineBehavio
             return await next();
 
         if (!RequiresCompanyScope(request))
-            return await next();
-
-        if (IsPlatformBypass())
             return await next();
 
         var subResult = await _accessGuard.RequireActiveSubscriberAsync(ct);
@@ -78,10 +73,6 @@ public sealed class CompanyScopeBehavior<TRequest, TResponse> : IPipelineBehavio
 
         return await next();
     }
-
-    private bool IsPlatformBypass()
-        => _subscriber.SubscriberId == Guid.Empty
-           && string.Equals(_user.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
 
     private static bool RequiresCompanyScope(TRequest request)
     {

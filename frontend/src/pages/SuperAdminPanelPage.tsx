@@ -205,7 +205,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
       storeImpersonationSubscriberName(subscriber.name);
       clearPermissions();
       login(auth);
-      navigate('/dashboard');
+      navigate('/saas/overview');
     } catch (e) {
       setError(formatApiRequestError(e, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
     } finally {
@@ -334,7 +334,7 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
       title={t('superadmin.title')}
       subtitle={isSuperAdmin && !hasSelectedSubscriber ? t('superadmin.subtitle') : undefined}
       subscriberGuardAction={
-        <Button variant="primary" size="sm" onClick={() => navigate('/dashboard')}>
+        <Button variant="primary" size="sm" onClick={() => navigate('/saas/overview')}>
           {t('superadmin.goToSubscriber')}
         </Button>
       }

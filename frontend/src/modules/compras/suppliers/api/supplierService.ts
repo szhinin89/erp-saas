@@ -44,26 +44,27 @@ export const supplierService = {
     const q = new URLSearchParams({ activeStatus: 'all' });
     if (search?.trim()) q.set('search', search.trim());
     const raw = await api
-      .get<ApiResponse<Supplier[]> | Record<string, unknown>>(`/api/suppliers?${q.toString()}`)
+      .get<ApiResponse<Supplier[]> | Record<string, unknown>>(`/api/purchases/suppliers?${q.toString()}`)
       .then((r) => readEnvelope<Supplier[]>(r.data));
     return raw ?? [];
   },
 
   async create(payload: CreateSupplierRequest): Promise<Supplier> {
     return api
-      .post<ApiResponse<Supplier> | Record<string, unknown>>('/api/suppliers', payload)
+      .post<ApiResponse<Supplier> | Record<string, unknown>>('/api/purchases/suppliers', payload)
       .then((r) => readEnvelope<Supplier>(r.data));
   },
 
   async update(id: string, payload: CreateSupplierRequest): Promise<Supplier> {
     return api
-      .put<ApiResponse<Supplier> | Record<string, unknown>>(`/api/suppliers/${id}`, { ...payload, id })
+      .put<ApiResponse<Supplier> | Record<string, unknown>>(`/api/purchases/suppliers/${id}`, { ...payload, id })
       .then((r) => readEnvelope<Supplier>(r.data));
   },
 
   async setStatus(id: string, status: 'active' | 'pending' | 'inactive'): Promise<Supplier> {
+    const action = status === 'inactive' ? 'disable' : 'enable';
     return api
-      .patch<ApiResponse<Supplier> | Record<string, unknown>>(`/api/suppliers/${id}/status`, { status })
+      .patch<ApiResponse<Supplier> | Record<string, unknown>>(`/api/purchases/suppliers/${id}/${action}`, {})
       .then((r) => readEnvelope<Supplier>(r.data));
   },
 };

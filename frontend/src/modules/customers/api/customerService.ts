@@ -60,14 +60,14 @@ export const customerService = {
     query.set('activeStatus', 'all');
     if (search?.trim()) query.set('search', search.trim());
     const raw = await api
-      .get<ApiResponse<LegacyCustomerApi[]> | Record<string, unknown>>(`/api/customers?${query.toString()}`)
+      .get<ApiResponse<LegacyCustomerApi[]> | Record<string, unknown>>(`/api/sales/customers?${query.toString()}`)
       .then((r) => readEnvelopePayload<LegacyCustomerApi[]>(r.data));
     return (raw ?? []).map(toCustomer);
   },
 
   async create(payload: CreateCustomerRequest): Promise<Customer> {
     const raw = await api
-      .post<ApiResponse<LegacyCustomerApi> | Record<string, unknown>>('/api/customers', toApiPayload(payload, true))
+      .post<ApiResponse<LegacyCustomerApi> | Record<string, unknown>>('/api/sales/customers', toApiPayload(payload, true))
       .then((r) => readEnvelopePayload<LegacyCustomerApi>(r.data));
 
     return toCustomer(raw);
@@ -75,7 +75,7 @@ export const customerService = {
 
   async update(id: string, payload: CreateCustomerRequest): Promise<Customer> {
     const raw = await api
-      .put<ApiResponse<LegacyCustomerApi> | Record<string, unknown>>(`/api/customers/${id}`, {
+      .put<ApiResponse<LegacyCustomerApi> | Record<string, unknown>>(`/api/sales/customers/${id}`, {
         ...toApiPayload(payload, true),
         id,
       })
@@ -87,7 +87,7 @@ export const customerService = {
   async setActive(id: string, isActive: boolean): Promise<Customer> {
     const raw = await api
       .patch<ApiResponse<LegacyCustomerApi> | Record<string, unknown>>(
-        `/api/customers/${id}/${isActive ? 'enable' : 'disable'}`,
+        `/api/sales/customers/${id}/${isActive ? 'enable' : 'disable'}`,
         {}
       )
       .then((r) => readEnvelopePayload<LegacyCustomerApi>(r.data));

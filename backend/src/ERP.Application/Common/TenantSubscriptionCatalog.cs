@@ -100,6 +100,7 @@ public static class SubscriberSubscriptionCatalog
             ["rrhh"] = "payroll",
             ["accounting"] = "accounting",
             ["access"] = "access",
+            ["settings"] = "access",
             ["saas"] = "saas",
         };
 
@@ -118,8 +119,24 @@ public static class SubscriberSubscriptionCatalog
         return true;
     }
 
+    private static readonly HashSet<string> SubscriberAccountPermissions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "saas.companies.view",
+        "saas.companies.create",
+        "saas.companies.update",
+        "saas.billing.view",
+    };
+
+    /// <summary>
+    /// Permisos de cuenta SaaS (empresas operativas, billing) no dependen del módulo comercial <c>saas</c>.
+    /// Todo suscriptor autenticado con rol Admin debe poder gestionar su cuenta.
+    /// </summary>
+    public static bool IsSubscriberAccountPermission(string permissionKey) =>
+        SubscriberAccountPermissions.Contains(permissionKey.Trim());
+
     /// <summary>
     /// Gating por plan vía entitlements (SoT). Prefijos no comerciales → permitido.
+    /// Permisos de cuenta suscriptor → siempre permitidos.
     /// </summary>
     public static async Task<bool> TenantAllowsPermissionAsync(
         Guid subscriberId,
@@ -127,6 +144,9 @@ public static class SubscriberSubscriptionCatalog
         string permissionKey,
         CancellationToken ct = default)
     {
+        if (IsSubscriberAccountPermission(permissionKey))
+            return true;
+
         if (!TryGetModuleKeyForPermission(permissionKey, out var module))
             return true;
 

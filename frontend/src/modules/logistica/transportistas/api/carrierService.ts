@@ -36,32 +36,32 @@ export const carrierService = {
     const q = new URLSearchParams({ activeStatus });
     if (search?.trim()) q.set('search', search.trim());
     const raw = await api
-      .get<ApiResponse<Carrier[]> | Record<string, unknown>>(`/api/carriers?${q.toString()}`)
+      .get<ApiResponse<Carrier[]> | Record<string, unknown>>(`/api/logistics/carriers?${q.toString()}`)
       .then(r => unwrap<Carrier[]>(r.data));
     return raw ?? [];
   },
 
   async create(payload: CreateCarrierRequest): Promise<Carrier> {
     return api
-      .post<ApiResponse<Carrier> | Record<string, unknown>>('/api/carriers', payload)
+      .post<ApiResponse<Carrier> | Record<string, unknown>>('/api/logistics/carriers', payload)
       .then(r => unwrap<Carrier>(r.data));
   },
 
   async update(id: string, payload: CreateCarrierRequest): Promise<Carrier> {
     return api
-      .put<ApiResponse<Carrier> | Record<string, unknown>>(`/api/carriers/${id}`, { ...payload, carrierId: id })
+      .put<ApiResponse<Carrier> | Record<string, unknown>>(`/api/logistics/carriers/${id}`, { ...payload, carrierId: id })
       .then(r => unwrap<Carrier>(r.data));
   },
 
   async disable(id: string): Promise<Carrier> {
     return api
-      .patch<ApiResponse<Carrier> | Record<string, unknown>>(`/api/carriers/${id}/disable`, {})
+      .patch<ApiResponse<Carrier> | Record<string, unknown>>(`/api/logistics/carriers/${id}/disable`, {})
       .then(r => unwrap<Carrier>(r.data));
   },
 
   async enable(id: string): Promise<Carrier> {
     return api
-      .patch<ApiResponse<Carrier> | Record<string, unknown>>(`/api/carriers/${id}/enable`, {})
+      .patch<ApiResponse<Carrier> | Record<string, unknown>>(`/api/logistics/carriers/${id}/enable`, {})
       .then(r => unwrap<Carrier>(r.data));
   },
 };

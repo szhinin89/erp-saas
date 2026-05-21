@@ -44,32 +44,32 @@ export interface BalanceComprobacionLineDto {
 
 export const accountingService = {
   getAccounts: (pageNumber = 1, pageSize = 200) =>
-    api.get<ApiResponse<PagedResponse<Account>>>('/api/accounts', { params: { pageNumber, pageSize } })
+    api.get<ApiResponse<PagedResponse<Account>>>('/api/finance/accounts', { params: { pageNumber, pageSize } })
       .then((r) => r.data.responseObject.items),
   getAccountById: (id: string) =>
-    api.get<ApiResponse<Account>>(`/api/accounts/${id}`).then((r) => r.data.responseObject),
+    api.get<ApiResponse<Account>>(`/api/finance/accounts/${id}`).then((r) => r.data.responseObject),
   createAccount: (data: CreateAccountRequest) =>
-    api.post<ApiResponse<Account>>('/api/accounts', data).then((r) => r.data.responseObject),
+    api.post<ApiResponse<Account>>('/api/finance/accounts', data).then((r) => r.data.responseObject),
   enableAccount: (id: string) =>
-    api.patch<ApiResponse<Account>>(`/api/accounts/${id}/enable`).then((r) => r.data.responseObject),
+    api.patch<ApiResponse<Account>>(`/api/finance/accounts/${id}/enable`).then((r) => r.data.responseObject),
   disableAccount: (id: string) =>
-    api.patch<ApiResponse<Account>>(`/api/accounts/${id}/disable`).then((r) => r.data.responseObject),
+    api.patch<ApiResponse<Account>>(`/api/finance/accounts/${id}/disable`).then((r) => r.data.responseObject),
 
   getJournalEntries: (pageNumber = 1, pageSize = 100) =>
-    api.get<ApiResponse<PagedResponse<JournalEntry>>>('/api/accounts/journal-entries', { params: { pageNumber, pageSize } })
+    api.get<ApiResponse<PagedResponse<JournalEntry>>>('/api/finance/accounts/journal-entries', { params: { pageNumber, pageSize } })
       .then((r) => r.data.responseObject.items),
   getJournalEntryById: (id: string) =>
-    api.get<ApiResponse<JournalEntry>>(`/api/accounts/journal-entries/${id}`).then((r) => r.data.responseObject),
+    api.get<ApiResponse<JournalEntry>>(`/api/finance/accounts/journal-entries/${id}`).then((r) => r.data.responseObject),
   createJournalEntry: (data: CreateJournalEntryRequest) =>
-    api.post<ApiResponse<JournalEntry>>('/api/accounts/journal-entries', data).then((r) => r.data.responseObject),
+    api.post<ApiResponse<JournalEntry>>('/api/finance/accounts/journal-entries', data).then((r) => r.data.responseObject),
 
   getMayorGeneral: (accountId: string, desde: string, hasta: string): Promise<MayorGeneralLineDto[]> =>
     api.get<ApiResponse<MayorGeneralLineDto[]>>(
-      `/api/accounts/${accountId}/mayor`, { params: { desde, hasta } }
+      `/api/finance/accounts/${accountId}/mayor`, { params: { desde, hasta } }
     ).then((r) => r.data.responseObject ?? []),
 
   getBalanceComprobacion: (desde: string, hasta: string): Promise<BalanceComprobacionLineDto[]> =>
     api.get<ApiResponse<BalanceComprobacionLineDto[]>>(
-      '/api/accounts/balance-comprobacion', { params: { desde, hasta } }
+      '/api/finance/accounts/balance-comprobacion', { params: { desde, hasta } }
     ).then((r) => r.data.responseObject ?? []),
 };

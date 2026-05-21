@@ -4,7 +4,7 @@ using ERP.Application.Modules.Branches.DTOs;
 
 namespace ERP.Application.Modules.Branches.UseCases.CreateBranch;
 
-[RequireFeature(SubscriptionFeatureCodes.Branches)]
+[RequireFeature(SubscriptionFeatureCodes.Access)]
 public sealed record CreateBranchCommand(
     string   Name,
     string   Address,

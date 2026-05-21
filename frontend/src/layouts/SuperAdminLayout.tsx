@@ -1,7 +1,9 @@
-import { NavLink, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { NavLink, Navigate, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n/i18n';
+import { useSuperAdminGate } from '../hooks/useSuperAdminGate';
+import { RuntimeModeBadge } from '../components/RuntimeModeBadge';
 import './SuperAdminLayout.css';
 
 const tabToPath: Record<string, string> = {
@@ -13,6 +15,7 @@ const tabToPath: Record<string, string> = {
 
 export function SuperAdminLayout() {
   const { t } = useI18n();
+  const { isSuperAdmin } = useSuperAdminGate();
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -61,11 +64,15 @@ export function SuperAdminLayout() {
   const exitImpersonation = () => {
     localStorage.removeItem('superadmin-impersonation-subscriber-name');
     setImpersonationName('');
-    navigate('/dashboard');
+    navigate('/superadmin/overview');
   };
 
   const showBanner = !!impersonationName;
   const userInitial = (user?.fullName ?? user?.email ?? 'SA').charAt(0).toUpperCase();
+
+  if (!isSuperAdmin) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div className={`sa-shell${showBanner ? ' sa-shell--with-banner' : ''}`}>
@@ -163,6 +170,7 @@ export function SuperAdminLayout() {
         <h2 className="sa-topbar-title">{pageTitle}</h2>
 
         <div className="sa-topbar-right">
+          <RuntimeModeBadge />
           {/* Search */}
           <div className="sa-topbar-search">
             <span className="material-symbols-outlined">search</span>

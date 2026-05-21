@@ -102,28 +102,28 @@ export const ordenCompraService = {
     if (filter.fechaHasta)  q.set('fechaHasta',  filter.fechaHasta);
 
     const res = await api.get<ApiResponse<OrdenesCompraPagedResult>>(
-      `/api/compras/ordenes?${q.toString()}`
+      `/api/purchases/orders?${q.toString()}`
     );
     return res.data.responseObject ?? { items: [], totalCount: 0, pageNumber: 1, pageSize: 20 };
   },
 
   async getById(id: string): Promise<OrdenCompraDetail | null> {
     const res = await api.get<ApiResponse<OrdenCompraDetail | null>>(
-      `/api/compras/ordenes/${id}`
+      `/api/purchases/orders/${id}`
     );
     return res.data.responseObject ?? null;
   },
 
   async getPendientesPorFacturar(): Promise<OrdenCompra[]> {
     const res = await api.get<ApiResponse<OrdenCompra[]>>(
-      '/api/compras/ordenes/pendientes-por-facturar'
+      '/api/purchases/orders/pendientes-por-facturar'
     );
     return res.data.responseObject ?? [];
   },
 
   async crear(payload: CrearOrdenCompraRequest): Promise<OrdenCompra> {
     const res = await api.post<ApiResponse<OrdenCompra>>(
-      '/api/compras/ordenes',
+      '/api/purchases/orders',
       payload
     );
     return res.data.responseObject;
@@ -131,28 +131,28 @@ export const ordenCompraService = {
 
   async enviar(id: string): Promise<OrdenCompra> {
     const res = await api.patch<ApiResponse<OrdenCompra>>(
-      `/api/compras/ordenes/${id}/enviar`
+      `/api/purchases/orders/${id}/enviar`
     );
     return res.data.responseObject;
   },
 
   async aprobar(id: string): Promise<OrdenCompra> {
     const res = await api.patch<ApiResponse<OrdenCompra>>(
-      `/api/compras/ordenes/${id}/aprobar`
+      `/api/purchases/orders/${id}/aprobar`
     );
     return res.data.responseObject;
   },
 
   async cancelar(id: string): Promise<OrdenCompra> {
     const res = await api.patch<ApiResponse<OrdenCompra>>(
-      `/api/compras/ordenes/${id}/cancelar`
+      `/api/purchases/orders/${id}/cancelar`
     );
     return res.data.responseObject;
   },
 
   async vincularFactura(id: string, compraFacturaId: string): Promise<OrdenCompra> {
     const res = await api.post<ApiResponse<OrdenCompra>>(
-      `/api/compras/ordenes/${id}/vincular-factura`,
+      `/api/purchases/orders/${id}/vincular-factura`,
       { compraFacturaId }
     );
     return res.data.responseObject;

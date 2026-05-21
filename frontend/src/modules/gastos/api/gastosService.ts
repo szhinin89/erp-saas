@@ -54,19 +54,19 @@ export const gastosService = {
     const q = new URLSearchParams();
     if (filtros.status !== undefined) q.set('estado', String(filtros.status));
     if (filtros.proveedorId) q.set('proveedorId', filtros.proveedorId);
-    const res = await api.get<ApiResponse<GastoDto[]>>(`/api/Gastos?${q.toString()}`);
+    const res = await api.get<ApiResponse<GastoDto[]>>(`/api/expenses?${q.toString()}`);
     return readObj<GastoDto[]>(res.data) ?? [];
   },
 
   async getCategorias(): Promise<ExpenseCategoryDto[]> {
     const res = await api.get<ApiResponse<ExpenseCategoryDto[]>>(
-      '/api/contabilidad/configuracion/gastos'
+      '/api/finance/config/gastos'
     );
     return readObj<ExpenseCategoryDto[]>(res.data) ?? [];
   },
 
   async crearManual(payload: CrearGastoManualRequest): Promise<GastoDto> {
-    const res = await api.post<ApiResponse<GastoDto>>('/api/Gastos/manual', {
+    const res = await api.post<ApiResponse<GastoDto>>('/api/expenses/manual', {
       modo: 1, // Manual
       supplierId: payload.supplierId,
       issueDate: payload.issueDate,
@@ -84,14 +84,14 @@ export const gastosService = {
   },
 
   async validar(id: string): Promise<void> {
-    await api.patch(`/api/Gastos/${id}/validar`, {});
+    await api.patch(`/api/expenses/${id}/validar`, {});
   },
 
   async aprobar(id: string): Promise<void> {
-    await api.patch(`/api/Gastos/${id}/aprobar`, {});
+    await api.patch(`/api/expenses/${id}/aprobar`, {});
   },
 
   async rechazar(id: string, motivo: string): Promise<void> {
-    await api.patch(`/api/Gastos/${id}/rechazar`, { reason: motivo });
+    await api.patch(`/api/expenses/${id}/rechazar`, { reason: motivo });
   },
 };

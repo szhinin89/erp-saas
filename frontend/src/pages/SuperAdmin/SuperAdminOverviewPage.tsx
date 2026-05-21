@@ -5,6 +5,9 @@ import { usePermissionsStore } from '../../store/permissionsStore';
 import { superAdminService, type SuperAdminSubscriber } from '../../services/superAdminService';
 import { LoadingState, EmptyState } from '../../components/PageShell';
 import { ZHPageNotice } from '../../components/zh/ZHPageNotice';
+import { ZHScreenHeading } from '../../components/zh/ZHLayout';
+import { StatCard } from '../../components/zh/StatCard';
+import { RuntimeModeBadge } from '../../components/RuntimeModeBadge';
 import { formatApiRequestError } from '../../modules/lib/apiError';
 import { useI18n } from '../../i18n/i18n';
 import './SuperAdminOverviewPage.css';
@@ -80,7 +83,7 @@ export function SuperAdminOverviewPage() {
       storeImpersonationSubscriberName(subscriber.name);
       clearPermissions();
       login(auth);
-      navigate('/dashboard');
+      navigate('/saas/overview');
     } catch (e) {
       setError(formatApiRequestError(e, {
         offline: t('common.apiUnreachable'),
@@ -103,93 +106,68 @@ export function SuperAdminOverviewPage() {
     <div className="pg-page">
 
       {/* ── Page Header ── */}
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">SuperAdmin</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Administración Global</span>
-          </nav>
-          <h1 className="pg-title">Administración Global</h1>
-          <p className="pg-subtitle">Panel de control para la gestión de empresas, planes y usuarios.</p>
-        </div>
-        <div className="pg-header-right">
-          <button
-            className="zh-btn zh-btn--secondary"
-            type="button"
-            disabled={loading}
-            onClick={() => void load()}
-          >
-            <span className="material-symbols-outlined">refresh</span>
-            Actualizar
-          </button>
-          <button
-            className="zh-btn zh-btn--primary"
-            type="button"
-            onClick={() => navigate('/superadmin/companies')}
-          >
-            <span className="material-symbols-outlined">add</span>
-            Nueva Empresa
-          </button>
-        </div>
-      </div>
+      <ZHScreenHeading
+        kicker={t('superadmin.overview.kicker')}
+        title={t('superadmin.overview.title')}
+        subtitle={t('superadmin.overview.subtitle')}
+        right={
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <RuntimeModeBadge />
+            <button
+              className="zh-btn zh-btn--secondary"
+              type="button"
+              disabled={loading}
+              onClick={() => void load()}
+            >
+              <span className="material-symbols-outlined">refresh</span>
+              {t('common.refresh')}
+            </button>
+            <button
+              className="zh-btn zh-btn--primary"
+              type="button"
+              onClick={() => navigate('/superadmin/companies')}
+            >
+              <span className="material-symbols-outlined">add</span>
+              {t('superadmin.createSubscriber')}
+            </button>
+          </div>
+        }
+      />
 
       {error && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />}
 
-      {/* ── KPI Cards (3-col horizontal) ── */}
+      {/* ── KPI Cards ── */}
       {loading ? (
         <LoadingState />
       ) : metrics ? (
-        <div className="sa-overview-kpis">
-
-          {/* Total Empresas */}
-          <div className="sa-kpi-h">
-            <div className="sa-kpi-h-left">
-              <p className="sa-kpi-h-label">Total Empresas</p>
-              <p className="sa-kpi-h-value">{metrics.totals.totalSubscribers.toLocaleString('es')}</p>
-              <div className="sa-kpi-h-trend sa-kpi-h-trend--up">
-                <span className="material-symbols-outlined">trending_up</span>
-                <span>{metrics.totals.activeSubscribers} activas</span>
-              </div>
-            </div>
-            <div className="sa-kpi-h-icon sa-kpi-h-icon--primary">
-              <span className="material-symbols-outlined">apartment</span>
-            </div>
-          </div>
-
-          {/* Usuarios Totales */}
-          <div className="sa-kpi-h">
-            <div className="sa-kpi-h-left">
-              <p className="sa-kpi-h-label">Usuarios Totales</p>
-              <p className="sa-kpi-h-value">{metrics.totals.totalUsers.toLocaleString('es')}</p>
-              <div className="sa-kpi-h-trend sa-kpi-h-trend--up">
-                <span className="material-symbols-outlined">trending_up</span>
-                <span>{metrics.totals.activeUsers} activos</span>
-              </div>
-            </div>
-            <div className="sa-kpi-h-icon sa-kpi-h-icon--secondary">
-              <span className="material-symbols-outlined">groups</span>
-            </div>
-          </div>
-
-          {/* Ratio activas */}
-          <div className="sa-kpi-h">
-            <div className="sa-kpi-h-left">
-              <p className="sa-kpi-h-label">Empresas Activas</p>
-              <p className="sa-kpi-h-value">
-                {metrics.totals.totalSubscribers
-                  ? Math.round((metrics.totals.activeSubscribers / metrics.totals.totalSubscribers) * 100)
-                  : 0}%
-              </p>
-              <div className="sa-kpi-h-trend sa-kpi-h-trend--neutral">
-                <span className="material-symbols-outlined">horizontal_rule</span>
-                <span>de {metrics.totals.totalSubscribers} registradas</span>
-              </div>
-            </div>
-            <div className="sa-kpi-h-icon sa-kpi-h-icon--tertiary">
-              <span className="material-symbols-outlined">payments</span>
-            </div>
-          </div>
+        <div className="pg-kpis">
+          <StatCard
+            label={t('superadmin.totalSubscribers')}
+            value={metrics.totals.totalSubscribers.toLocaleString('es')}
+            icon="apartment"
+            tone="primary"
+            hint={`${metrics.totals.activeSubscribers} ${t('common.active').toLowerCase()}`}
+          />
+          <StatCard
+            label={t('superadmin.totalUsers')}
+            value={metrics.totals.totalUsers.toLocaleString('es')}
+            icon="groups"
+            tone="secondary"
+            hint={`${metrics.totals.activeUsers} ${t('common.active').toLowerCase()}`}
+          />
+          <StatCard
+            label={t('superadmin.activeSubscribers')}
+            value={`${
+              metrics.totals.totalSubscribers
+                ? Math.round((metrics.totals.activeSubscribers / metrics.totals.totalSubscribers) * 100)
+                : 0
+            }%`}
+            icon="payments"
+            tone="tertiary"
+            hint={t('superadmin.overview.activeRatioHint', {
+              total: metrics.totals.totalSubscribers,
+            })}
+          />
         </div>
       ) : null}
 

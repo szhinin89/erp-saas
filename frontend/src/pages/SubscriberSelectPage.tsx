@@ -73,12 +73,8 @@ export function SubscriberSelectPage() {
       };
       login(auth);
       clearBootstrap();
-      if (!auth.companyId) {
-        navigate('/select-company', { replace: true });
-        return;
-      }
       await syncSessionEntitlements();
-      navigate('/dashboard');
+      navigate('/saas/overview', { replace: true });
     } catch (err: unknown) {
       const ax = err as { response?: { status?: number; data?: { message?: string } } };
       const status = ax?.response?.status;

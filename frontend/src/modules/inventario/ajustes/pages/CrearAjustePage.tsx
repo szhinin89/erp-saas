@@ -26,7 +26,7 @@ export function CrearAjustePage() {
 
   const { data: bodegas, loading: loadingBodegas } = useBodegas();
   const { data: productos } = useAsync<ProductoOpcion[]>(async () => {
-    const res = await api.get<ApiResponse<ProductoOpcion[]>>('/api/products');
+    const res = await api.get<ApiResponse<ProductoOpcion[]>>('/api/inventory/products');
     return (res.data.responseObject ?? []).filter((p) => p.isActive && !p.isService && p.tracksStock);
   });
 

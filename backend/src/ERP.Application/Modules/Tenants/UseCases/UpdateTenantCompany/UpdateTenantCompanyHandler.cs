@@ -9,11 +9,16 @@ public sealed class UpdateSubscriberCompanyHandler : IRequestHandler<UpdateSubsc
 {
     private readonly ISubscriberRepository _repository;
     private readonly ICurrentUser _currentUser;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
-    public UpdateSubscriberCompanyHandler(ISubscriberRepository repository, ICurrentUser currentUser)
+    public UpdateSubscriberCompanyHandler(
+        ISubscriberRepository repository,
+        ICurrentUser currentUser,
+        ICurrentSubscriber currentSubscriber)
     {
         _repository = repository;
         _currentUser = currentUser;
+        _currentSubscriber = currentSubscriber;
     }
 
     public async Task<Result<SubscriberDto>> Handle(UpdateSubscriberCompanyCommand command, CancellationToken ct)
@@ -21,6 +26,9 @@ public sealed class UpdateSubscriberCompanyHandler : IRequestHandler<UpdateSubsc
         var tenant = await _repository.GetByIdAsync(command.SubscriberId, ct);
         if (tenant is null)
             return Result<SubscriberDto>.Failure("Empresa no encontrada.");
+
+        if (_currentUser.Role == "Admin" && _currentSubscriber.SubscriberId != command.SubscriberId)
+            return Result<SubscriberDto>.Failure("No tiene permiso para modificar esta empresa.");
 
         var slug = command.Slug.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(slug))

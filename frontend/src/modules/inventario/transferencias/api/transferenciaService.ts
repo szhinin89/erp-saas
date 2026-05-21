@@ -89,21 +89,21 @@ export const transferenciaService = {
     if (filter.fechaHasta) q.set('fechaHasta', filter.fechaHasta);
 
     const res = await api.get<ApiResponse<TransferenciasPagedResult>>(
-      `/api/inventario/transferencias?${q.toString()}`
+      `/api/inventory/transfers?${q.toString()}`
     );
     return res.data.responseObject ?? { items: [], totalCount: 0, pageNumber: 1, pageSize: 20 };
   },
 
   async getById(id: string): Promise<TransferenciaDetail | null> {
     const res = await api.get<ApiResponse<TransferenciaDetail | null>>(
-      `/api/inventario/transferencias/${id}`
+      `/api/inventory/transfers/${id}`
     );
     return res.data.responseObject ?? null;
   },
 
   async crear(payload: CrearTransferenciaRequest): Promise<Transferencia> {
     const res = await api.post<ApiResponse<Transferencia>>(
-      '/api/inventario/transferencias',
+      '/api/inventory/transfers',
       payload
     );
     return res.data.responseObject;
@@ -111,14 +111,14 @@ export const transferenciaService = {
 
   async confirmar(id: string): Promise<Transferencia> {
     const res = await api.patch<ApiResponse<Transferencia>>(
-      `/api/inventario/transferencias/${id}/confirmar`
+      `/api/inventory/transfers/${id}/confirmar`
     );
     return res.data.responseObject;
   },
 
   async cancelar(id: string): Promise<Transferencia> {
     const res = await api.patch<ApiResponse<Transferencia>>(
-      `/api/inventario/transferencias/${id}/cancelar`
+      `/api/inventory/transfers/${id}/cancelar`
     );
     return res.data.responseObject;
   },
@@ -126,14 +126,14 @@ export const transferenciaService = {
   // ── Auxiliares ─────────────────────────────────────────────────────────────
 
   async getBodegas(): Promise<BodegaOpcion[]> {
-    const res = await api.get<ApiResponse<BodegaOpcion[]>>('/api/bodegas');
+    const res = await api.get<ApiResponse<BodegaOpcion[]>>('/api/inventory/warehouses');
     return (res.data.responseObject ?? []).filter((b) => b.isActive);
   },
 
   async getStockDisponible(bodegaId: string, productoId: string): Promise<number> {
     const q = new URLSearchParams({ bodegaId, productoId });
     const res = await api.get<ApiResponse<StockDisponible[]>>(
-      `/api/inventario/stock-actual?${q.toString()}`
+      `/api/inventory/stock/stock-actual?${q.toString()}`
     );
     return res.data.responseObject?.[0]?.availableQuantity ?? 0;
   },

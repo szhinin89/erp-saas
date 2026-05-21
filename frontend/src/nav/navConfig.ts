@@ -312,7 +312,11 @@ export function buildNavGroups(
       label: t('app.nav.group.home'),
       icon: '⊞',
       sortOrder: defaultBarRank('home') * 10,
-      items: [{ to: '/dashboard', label: t('app.nav.dashboard') }, ...getSuperAdminPanelNavExtras(t, options)],
+      items: [
+        { to: '/saas/overview', label: t('app.nav.saasOverview') },
+        { to: '/dashboard', label: t('app.nav.erpDashboard') },
+        ...getSuperAdminPanelNavExtras(t, options),
+      ],
     },
     {
       id: 'inventario',
@@ -467,6 +471,34 @@ export function flattenAccessIntoSecurity(groups: NavGroup[]): NavGroup[] {
     items: mergedItems,
   };
   return rest.map((g) => (g.id === 'security' ? newSecurity : g));
+}
+
+/** Asegura que el dashboard SaaS del suscriptor sea el primer ítem en Inicio. */
+export function ensureSubscriberHomeOverview(groups: NavGroup[], t: TranslateFn): NavGroup[] {
+  const saasItem: NavItem = { to: '/saas/overview', label: t('app.nav.saasOverview') };
+  const erpItem: NavItem = { to: '/dashboard', label: t('app.nav.erpDashboard') };
+
+  const homeIdx = groups.findIndex((g) => g.id === 'home');
+  if (homeIdx < 0) {
+    return sortNavGroupsForMainBar([
+      {
+        id: 'home',
+        label: t('app.nav.group.home'),
+        icon: '⊞',
+        sortOrder: defaultBarRank('home') * 10,
+        items: [saasItem, erpItem],
+      },
+      ...groups,
+    ]);
+  }
+
+  const home = groups[homeIdx]!;
+  const withoutSaas = home.items.filter((it) => it.to !== '/saas/overview');
+  const hasErp = withoutSaas.some((it) => it.to === '/dashboard');
+  const nextItems = hasErp ? [saasItem, ...withoutSaas] : [saasItem, erpItem, ...withoutSaas];
+  const next = [...groups];
+  next[homeIdx] = { ...home, items: nextItems };
+  return next;
 }
 
 /** Mueve el grupo `saas` (API/BD antigua) bajo Inicio y elimina la píldora SaaS. */

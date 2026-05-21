@@ -65,28 +65,28 @@ export interface UpdateProductRequest extends CreateProductRequest {
 
 export const productService = {
   async getAll(): Promise<Product[]> {
-    const response = await api.get<ApiResponse<Product[]>>('/api/products');
+    const response = await api.get<ApiResponse<Product[]>>('/api/inventory/products');
     return response.data.responseObject ?? [];
   },
 
   async create(request: CreateProductRequest): Promise<Product> {
-    const response = await api.post<ApiResponse<Product>>('/api/products', request);
+    const response = await api.post<ApiResponse<Product>>('/api/inventory/products', request);
     return response.data.responseObject;
   },
 
   async update(request: UpdateProductRequest): Promise<Product> {
     const { id, ...updateData } = request;
-    const response = await api.put<ApiResponse<Product>>(`/api/products/${id}`, { id, ...updateData });
+    const response = await api.put<ApiResponse<Product>>(`/api/inventory/products/${id}`, { id, ...updateData });
     return response.data.responseObject;
   },
 
   async disable(id: string): Promise<Product> {
-    const response = await api.patch<ApiResponse<Product>>(`/api/products/${id}/disable`);
+    const response = await api.patch<ApiResponse<Product>>(`/api/inventory/products/${id}/disable`);
     return response.data.responseObject;
   },
 
   async enable(id: string): Promise<Product> {
-    const response = await api.patch<ApiResponse<Product>>(`/api/products/${id}/enable`);
+    const response = await api.patch<ApiResponse<Product>>(`/api/inventory/products/${id}/enable`);
     return response.data.responseObject;
   },
 };

@@ -4,7 +4,7 @@ using ERP.Application.Modules.Sales.DTOs;
 
 namespace ERP.Application.Modules.Sales.UseCases.ActualizarCliente;
 
-[RequireFeature(SubscriptionFeatureCodes.Customers)]
+[RequireFeature(SubscriptionFeatureCodes.Sales)]
 public sealed record UpdateCustomerCommand(
     Guid Id,
     string IdentificationType,

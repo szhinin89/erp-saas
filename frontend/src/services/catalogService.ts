@@ -55,12 +55,12 @@ function catalogQuery(params: {
 }
 
 export const catalogService = {
-  brands: (onlyActive = true) => getList<BrandItem[]>(`/api/brands?onlyActive=${onlyActive}`),
-  productTypes: (onlyActive = true) => getList<CatalogItem[]>(`/api/producttypes?onlyActive=${onlyActive}`),
-  units: (onlyActive = true) => getList<UnitItem[]>(`/api/unitsofmeasure?onlyActive=${onlyActive}`),
+  brands: (onlyActive = true) => getList<BrandItem[]>(`/api/inventory/brands?onlyActive=${onlyActive}`),
+  productTypes: (onlyActive = true) => getList<CatalogItem[]>(`/api/inventory/product-types?onlyActive=${onlyActive}`),
+  units: (onlyActive = true) => getList<UnitItem[]>(`/api/inventory/units?onlyActive=${onlyActive}`),
   taxRates: (onlyActive = true) => getList<CatalogItem[]>(`/api/taxrates?onlyActive=${onlyActive}`),
   tariffs: async (onlyActive = true) => {
-    const data = await getList<TariffApiItem[]>(`/api/tariffs?onlyActive=${onlyActive}`);
+    const data = await getList<TariffApiItem[]>(`/api/inventory/tariffs?onlyActive=${onlyActive}`);
     return (data ?? []).map((x) => ({
       id: x.id,
       code: x.code,
@@ -71,7 +71,7 @@ export const catalogService = {
 
   productLines: (opts?: { activeStatus?: CatalogActiveStatus; search?: string }) =>
     getList<CatalogItem[]>(
-      `/api/productlines${catalogQuery({
+      `/api/inventory/product-lines${catalogQuery({
         activeStatus: opts?.activeStatus ?? 'active',
         search: opts?.search,
       })}`
@@ -79,7 +79,7 @@ export const catalogService = {
 
   categories: (opts?: { activeStatus?: CatalogActiveStatus; search?: string; lineId?: string }) =>
     getList<ProductCategoryListItem[]>(
-      `/api/productcategories${catalogQuery({
+      `/api/inventory/categories${catalogQuery({
         activeStatus: opts?.activeStatus ?? 'active',
         search: opts?.search,
         lineId: opts?.lineId,
@@ -93,7 +93,7 @@ export const catalogService = {
     categoryId?: string;
   }) =>
     getList<ProductSubcategoryListItem[]>(
-      `/api/productsubcategories${catalogQuery({
+      `/api/inventory/subcategories${catalogQuery({
         activeStatus: opts?.activeStatus ?? 'active',
         search: opts?.search,
         lineId: opts?.lineId,
@@ -102,25 +102,25 @@ export const catalogService = {
     ),
 
   createBrand: (body: { code: string; name: string; manufacturer?: string | null; countryOfOrigin?: string | null }) =>
-    post<BrandItem>('/api/brands', body),
+    post<BrandItem>('/api/inventory/brands', body),
   updateBrand: (id: string, body: { code: string; name: string; manufacturer?: string | null; countryOfOrigin?: string | null }) =>
-    put<BrandItem>(`/api/brands/${encodeURIComponent(id)}`, { brandId: id, ...body }),
-  disableBrand: (id: string) => patch<BrandItem>(`/api/brands/${encodeURIComponent(id)}/disable`),
-  enableBrand:  (id: string) => patch<BrandItem>(`/api/brands/${encodeURIComponent(id)}/enable`),
-  createProductType: (body: { code: string; name: string }) => post<CatalogItem>('/api/producttypes', body),
+    put<BrandItem>(`/api/inventory/brands/${encodeURIComponent(id)}`, { brandId: id, ...body }),
+  disableBrand: (id: string) => patch<BrandItem>(`/api/inventory/brands/${encodeURIComponent(id)}/disable`),
+  enableBrand:  (id: string) => patch<BrandItem>(`/api/inventory/brands/${encodeURIComponent(id)}/enable`),
+  createProductType: (body: { code: string; name: string }) => post<CatalogItem>('/api/inventory/product-types', body),
   updateProductType: (id: string, body: { code: string; name: string }) =>
-    put<CatalogItem>(`/api/producttypes/${encodeURIComponent(id)}`, { productTypeId: id, ...body }),
-  disableProductType: (id: string) => patch<CatalogItem>(`/api/producttypes/${encodeURIComponent(id)}/disable`),
-  enableProductType:  (id: string) => patch<CatalogItem>(`/api/producttypes/${encodeURIComponent(id)}/enable`),
-  createUnit: (body: { code: string; name: string; symbol?: string | null }) => post<UnitItem>('/api/unitsofmeasure', body),
+    put<CatalogItem>(`/api/inventory/product-types/${encodeURIComponent(id)}`, { productTypeId: id, ...body }),
+  disableProductType: (id: string) => patch<CatalogItem>(`/api/inventory/product-types/${encodeURIComponent(id)}/disable`),
+  enableProductType:  (id: string) => patch<CatalogItem>(`/api/inventory/product-types/${encodeURIComponent(id)}/enable`),
+  createUnit: (body: { code: string; name: string; symbol?: string | null }) => post<UnitItem>('/api/inventory/units', body),
   updateUnit: (id: string, body: { code: string; name: string; symbol?: string | null }) =>
-    put<UnitItem>(`/api/unitsofmeasure/${encodeURIComponent(id)}`, { unitOfMeasureId: id, ...body }),
-  disableUnit: (id: string) => patch<UnitItem>(`/api/unitsofmeasure/${encodeURIComponent(id)}/disable`),
-  enableUnit:  (id: string) => patch<UnitItem>(`/api/unitsofmeasure/${encodeURIComponent(id)}/enable`),
+    put<UnitItem>(`/api/inventory/units/${encodeURIComponent(id)}`, { unitOfMeasureId: id, ...body }),
+  disableUnit: (id: string) => patch<UnitItem>(`/api/inventory/units/${encodeURIComponent(id)}/disable`),
+  enableUnit:  (id: string) => patch<UnitItem>(`/api/inventory/units/${encodeURIComponent(id)}/enable`),
   createTaxRate: (body: { code: string; name: string; type: 'VAT' | 'Excise' | 'Other'; percentage: number }) =>
     post<CatalogItem>('/api/taxrates', body),
   createTariff: async (body: { code: string; name: string }) => {
-    const created = await post<TariffApiItem>('/api/tariffs', {
+    const created = await post<TariffApiItem>('/api/inventory/tariffs', {
       code: body.code,
       description: body.name,
     });
@@ -132,27 +132,27 @@ export const catalogService = {
       isActive: created.isActive,
     } satisfies CatalogItem;
   },
-  createProductLine: (body: { code: string; name: string }) => post<CatalogItem>('/api/productlines', body),
-  createCategory: (body: { code: string; name: string; lineId: string }) => post<CatalogItem>('/api/productcategories', body),
-  createSubcategory: (body: { code: string; name: string; categoryId: string }) => post<CatalogItem>('/api/productsubcategories', body),
+  createProductLine: (body: { code: string; name: string }) => post<CatalogItem>('/api/inventory/product-lines', body),
+  createCategory: (body: { code: string; name: string; lineId: string }) => post<CatalogItem>('/api/inventory/categories', body),
+  createSubcategory: (body: { code: string; name: string; categoryId: string }) => post<CatalogItem>('/api/inventory/subcategories', body),
 
   updateProductLine: (id: string, body: { code: string; name: string }) =>
-    put<CatalogItem>(`/api/productlines/${encodeURIComponent(id)}`, { id, code: body.code, name: body.name }),
-  disableProductLine: (id: string) => patch<CatalogItem>(`/api/productlines/${encodeURIComponent(id)}/disable`),
-  enableProductLine: (id: string) => patch<CatalogItem>(`/api/productlines/${encodeURIComponent(id)}/enable`),
+    put<CatalogItem>(`/api/inventory/product-lines/${encodeURIComponent(id)}`, { id, code: body.code, name: body.name }),
+  disableProductLine: (id: string) => patch<CatalogItem>(`/api/inventory/product-lines/${encodeURIComponent(id)}/disable`),
+  enableProductLine: (id: string) => patch<CatalogItem>(`/api/inventory/product-lines/${encodeURIComponent(id)}/enable`),
 
   updateCategory: (id: string, body: { code: string; name: string; lineId: string }) =>
-    put<CatalogItem>(`/api/productcategories/${encodeURIComponent(id)}`, { id, code: body.code, name: body.name, lineId: body.lineId }),
-  disableCategory: (id: string) => patch<CatalogItem>(`/api/productcategories/${encodeURIComponent(id)}/disable`),
-  enableCategory: (id: string) => patch<CatalogItem>(`/api/productcategories/${encodeURIComponent(id)}/enable`),
+    put<CatalogItem>(`/api/inventory/categories/${encodeURIComponent(id)}`, { id, code: body.code, name: body.name, lineId: body.lineId }),
+  disableCategory: (id: string) => patch<CatalogItem>(`/api/inventory/categories/${encodeURIComponent(id)}/disable`),
+  enableCategory: (id: string) => patch<CatalogItem>(`/api/inventory/categories/${encodeURIComponent(id)}/enable`),
 
   updateSubcategory: (id: string, body: { code: string; name: string; categoryId: string }) =>
-    put<CatalogItem>(`/api/productsubcategories/${encodeURIComponent(id)}`, {
+    put<CatalogItem>(`/api/inventory/subcategories/${encodeURIComponent(id)}`, {
       id,
       code: body.code,
       name: body.name,
       categoryId: body.categoryId,
     }),
-  disableSubcategory: (id: string) => patch<CatalogItem>(`/api/productsubcategories/${encodeURIComponent(id)}/disable`),
-  enableSubcategory: (id: string) => patch<CatalogItem>(`/api/productsubcategories/${encodeURIComponent(id)}/enable`),
+  disableSubcategory: (id: string) => patch<CatalogItem>(`/api/inventory/subcategories/${encodeURIComponent(id)}/disable`),
+  enableSubcategory: (id: string) => patch<CatalogItem>(`/api/inventory/subcategories/${encodeURIComponent(id)}/enable`),
 };

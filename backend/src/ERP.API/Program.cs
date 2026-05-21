@@ -216,6 +216,7 @@ if (!app.Environment.IsEnvironment("Testing")
     using var plansScope = app.Services.CreateScope();
     var db = plansScope.ServiceProvider.GetRequiredService<ErpDbContext>();
     await CommercialPlansBootstrap.EnsureDefaultsAsync(db);
+    await CommercialPlanFeaturesBootstrap.EnsureDefaultsAsync(db);
     await CommercialPlanLimitsBootstrap.EnsureDefaultsAsync(db);
 }
 

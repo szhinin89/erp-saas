@@ -170,6 +170,22 @@ public sealed class SubscriberSubscriptionCatalogTests
     }
 
     [Fact]
+    public async Task TenantAllowsPermissionAsync_subscriber_account_permissions_always_true_without_saas_module()
+    {
+        var subscriberId = Guid.NewGuid();
+        var entitlements = new Mock<ISubscriberEntitlementsService>(MockBehavior.Strict);
+        entitlements
+            .Setup(e => e.GetEnabledModuleKeysAsync(subscriberId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { "sales", "inventory" });
+
+        (await SubscriberSubscriptionCatalog.TenantAllowsPermissionAsync(
+            subscriberId, entitlements.Object, "saas.companies.view")).Should().BeTrue();
+
+        (await SubscriberSubscriptionCatalog.TenantAllowsPermissionAsync(
+            subscriberId, entitlements.Object, "saas.billing.view")).Should().BeTrue();
+    }
+
+    [Fact]
     public async Task TenantAllowsPermissionAsync_respects_enabled_modules()
     {
         var subscriberId = Guid.NewGuid();

@@ -30,9 +30,9 @@ export function CrearOrdenCompraPage() {
   const [productos,   setProductos]   = useState<ProductoOpcion[]>([]);
 
   useEffect(() => {
-    api.get<ApiResponse<ProveedorOpcion[]>>('/api/suppliers')
+    api.get<ApiResponse<ProveedorOpcion[]>>('/api/purchases/suppliers')
       .then((r) => setProveedores(r.data.responseObject ?? []));
-    api.get<ApiResponse<ProductoOpcion[]>>('/api/products')
+    api.get<ApiResponse<ProductoOpcion[]>>('/api/inventory/products')
       .then((r) => setProductos((r.data.responseObject ?? []).filter((p) => p.isActive)));
   }, []);
 

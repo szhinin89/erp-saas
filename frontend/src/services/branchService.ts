@@ -107,24 +107,24 @@ function listQuery(activeStatus: CatalogActiveStatus, search?: string) {
 
 export const branchService = {
   list: (activeStatus: CatalogActiveStatus = 'all', search?: string) =>
-    get<BranchDto[]>(`/api/branches${listQuery(activeStatus, search)}`),
+    get<BranchDto[]>(`/api/settings/branches${listQuery(activeStatus, search)}`),
 
-  getById: (id: string) => get<BranchDetailDto>(`/api/branches/${id}`),
+  getById: (id: string) => get<BranchDetailDto>(`/api/settings/branches/${id}`),
 
   create: (body: Omit<BranchDto, 'id' | 'code'>) =>
-    post<BranchDto>('/api/branches', body),
+    post<BranchDto>('/api/settings/branches', body),
 
   update: (id: string, body: Omit<BranchDto, 'id' | 'code'> & { id: string }) =>
-    put<BranchDto>(`/api/branches/${id}`, body),
+    put<BranchDto>(`/api/settings/branches/${id}`, body),
 
-  disable: (id: string) => patch<BranchDto>(`/api/branches/${id}/disable`),
-  enable:  (id: string) => patch<BranchDto>(`/api/branches/${id}/enable`),
+  disable: (id: string) => patch<BranchDto>(`/api/settings/branches/${id}/disable`),
+  enable:  (id: string) => patch<BranchDto>(`/api/settings/branches/${id}/enable`),
 
-  countries: () => getGeography('/api/geography/countries'),
+  countries: () => getGeography('/api/settings/geography/countries'),
   provinces: (countryId: string) =>
-    getGeography(`/api/geography/provinces?countryId=${encodeURIComponent(countryId)}`),
+    getGeography(`/api/settings/geography/provinces?countryId=${encodeURIComponent(countryId)}`),
   cantons: (provinceId: string) =>
-    getGeography(`/api/geography/cantons?provinceId=${encodeURIComponent(provinceId)}`),
+    getGeography(`/api/settings/geography/cantons?provinceId=${encodeURIComponent(provinceId)}`),
   parishes: (cantonId: string) =>
-    getGeography(`/api/geography/parishes?cantonId=${encodeURIComponent(cantonId)}`),
+    getGeography(`/api/settings/geography/parishes?cantonId=${encodeURIComponent(cantonId)}`),
 };

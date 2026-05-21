@@ -4,6 +4,7 @@ using MediatR;
 
 namespace ERP.Application.Modules.Logistics.UseCases.CreateCarrier;
 
+[RequireFeature(SubscriptionFeatureCodes.Logistics)]
 public record CreateCarrierCommand(
     string  IdentificationType,
     string  IdentificationNumber,

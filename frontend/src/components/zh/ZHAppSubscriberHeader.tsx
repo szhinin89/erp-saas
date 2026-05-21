@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n/i18n';
+import { RuntimeModeBadge } from '../RuntimeModeBadge';
 import './ZHForm.css';
 
 function getImpersonationSubscriberName(): string | null {
@@ -99,6 +100,7 @@ export function ZHAppSubscriberHeader(props: {
         </div>
 
         <div className="zh-subscriber-right" aria-label={t('app.header.actions')}>
+          <RuntimeModeBadge />
           <button type="button" className="zh-app-subscriberIconBtn" aria-label={t('app.header.notifications')}>
             🔔
           </button>

@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { HomeRedirect } from './components/HomeRedirect';
 import { AppLayout } from './components/AppLayout';
 import { useDeployment } from './deployment/DeploymentContext';
 import { ConfigProvider } from './modules/config';
@@ -25,6 +26,7 @@ function AppRoutes() {
         <Route element={<ProtectedRoute />}>
           {superAdminPanelEnabled ? superAdminShellRoutes() : null}
           <Route element={<AppLayout />}>
+            <Route index element={<HomeRedirect />} />
             {adminRoutes(superAdminPanelEnabled)}
             {mainRoutes}
             {catalogRoutes}
@@ -34,7 +36,7 @@ function AppRoutes() {
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<HomeRedirect />} />
       </Routes>
     </BrowserRouter>
   );

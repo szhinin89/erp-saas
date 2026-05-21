@@ -14,6 +14,7 @@ using ERP.Application.Common;
 using ERP.Application.Subscriptions;
 using ERP.Application.Subscribers.DTOs;
 using ERP.Domain.Subscribers.Interfaces;
+using System.Security.Claims;
 
 namespace ERP.API.Controllers;
 
@@ -31,24 +32,31 @@ public class SubscribersController : ControllerBase
     private readonly IMediator _mediator;
     private readonly ISubscriberRepository _tenantRepository;
     private readonly ISessionModulesResolver _sessionModules;
+    private readonly ICurrentSubscriber _currentSubscriber;
 
     public SubscribersController(
         IMediator mediator,
         ISubscriberRepository tenantRepository,
-        ISessionModulesResolver sessionModules)
+        ISessionModulesResolver sessionModules,
+        ICurrentSubscriber currentSubscriber)
     {
         _mediator = mediator;
         _tenantRepository = tenantRepository;
         _sessionModules = sessionModules;
+        _currentSubscriber = currentSubscriber;
     }
 
-    /// <summary>Obtiene el detalle de un tenant (SuperAdmin).</summary>
+    /// <summary>Obtiene el detalle de un tenant (SuperAdmin o Admin de la misma cuenta).</summary>
     [HttpGet("{id:guid}")]
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Policy = "Session")]
     [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct)
     {
+        if (!CanAccessSubscriber(id))
+            return Forbid();
+
         var tenant = await _tenantRepository.GetByIdAsync(id, ct);
         if (tenant is null)
             return this.ApiNotFound("Empresa no encontrada.");
@@ -57,17 +65,21 @@ public class SubscribersController : ControllerBase
         return this.ApiOk(SubscriberDto.FromTenant(tenant, modules));
     }
 
-    /// <summary>Actualiza datos comerciales/legales de la empresa (SuperAdmin).</summary>
+    /// <summary>Actualiza datos comerciales/legales de la empresa (SuperAdmin o Admin de la misma cuenta).</summary>
     [HttpPatch("{id:guid}/company")]
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Policy = "Session")]
     [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpdateCompany(
         [FromRoute] Guid id,
         [FromBody] UpdateSubscriberCompanyRequest body,
         CancellationToken ct)
     {
+        if (!CanAccessSubscriber(id))
+            return Forbid();
+
         var command = new UpdateSubscriberCompanyCommand(
             id, body.Name, body.Slug, body.Ruc, body.ShortName,
             body.TradeName, body.Dinardap, body.LogoUrl, body.DisplayOrder, body.Priority);
@@ -185,6 +197,18 @@ public class SubscribersController : ControllerBase
     {
         var result = await _mediator.Send(new UpdateSubscriberSubscriptionCommand(id, body.PlanCode, body.EnabledModules), ct);
         return this.ToOkOrBadRequest(result);
+    }
+
+    private bool CanAccessSubscriber(Guid subscriberId)
+    {
+        var role = User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
+        if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
+            return _currentSubscriber.SubscriberId == subscriberId;
+
+        return false;
     }
 }
 

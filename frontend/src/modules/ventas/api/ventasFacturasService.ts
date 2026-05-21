@@ -67,43 +67,43 @@ export const ventasFacturasService = {
     const q = new URLSearchParams();
     q.set('pageNumber', String(pageNumber));
     q.set('pageSize', String(pageSize));
-    const res = await api.get<ApiResponse<VentasPagedResult>>(`/api/ventas?${q.toString()}`);
+    const res = await api.get<ApiResponse<VentasPagedResult>>(`/api/sales/invoices?${q.toString()}`);
     return res.data.responseObject ?? { items: [], totalCount: 0, pageNumber, pageSize };
   },
 
   async create(payload: CreateSaleRequest): Promise<string> {
-    const res = await api.post<ApiResponse<string>>('/api/Ventas', payload);
+    const res = await api.post<ApiResponse<string>>('/api/sales/invoices', payload);
     return readId(res.data);
   },
 
   async validate(id: string): Promise<string> {
-    const res = await api.patch<ApiResponse<string>>(`/api/Ventas/${id}/validar`, {});
+    const res = await api.patch<ApiResponse<string>>(`/api/sales/invoices/${id}/validar`, {});
     return readId(res.data);
   },
 
   async issue(id: string): Promise<string> {
-    const res = await api.patch<ApiResponse<string>>(`/api/Ventas/${id}/emitir`, {});
+    const res = await api.patch<ApiResponse<string>>(`/api/sales/invoices/${id}/emitir`, {});
     return readId(res.data);
   },
 
   async void(id: string): Promise<string> {
-    const res = await api.patch<ApiResponse<string>>(`/api/Ventas/${id}/anular`, {});
+    const res = await api.patch<ApiResponse<string>>(`/api/sales/invoices/${id}/anular`, {});
     return readId(res.data);
   },
 
   async getStock(productId: string, warehouseId: string): Promise<StockDisponibleDto | null> {
     const res = await api.get<ApiResponse<StockDisponibleDto>>(
-      `/api/Ventas/stock?productoId=${productId}&bodegaId=${warehouseId}`
+      `/api/sales/invoices/stock?productoId=${productId}&bodegaId=${warehouseId}`
     );
     return res.data.responseObject ?? null;
   },
 
   async retry(id: string): Promise<void> {
-    await api.patch(`/api/Ventas/${id}/reintentar`, {});
+    await api.patch(`/api/sales/invoices/${id}/reintentar`, {});
   },
 
   async downloadRide(id: string): Promise<Blob> {
-    const res = await api.get(`/api/ventas/${id}/ride`, { responseType: 'blob' });
+    const res = await api.get(`/api/sales/invoices/${id}/ride`, { responseType: 'blob' });
     return res.data as Blob;
   },
 };

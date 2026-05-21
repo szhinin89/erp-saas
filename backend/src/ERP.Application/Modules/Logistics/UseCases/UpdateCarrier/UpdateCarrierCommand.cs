@@ -4,6 +4,7 @@ using MediatR;
 
 namespace ERP.Application.Modules.Logistics.UseCases.UpdateCarrier;
 
+[RequireFeature(SubscriptionFeatureCodes.Logistics)]
 public record UpdateCarrierCommand(
     Guid    CarrierId,
     string  IdentificationType,

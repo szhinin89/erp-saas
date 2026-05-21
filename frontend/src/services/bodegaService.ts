@@ -74,16 +74,16 @@ function listQuery(activeStatus: CatalogActiveStatus, search?: string, branchId?
 
 export const bodegaService = {
   list: (activeStatus: CatalogActiveStatus = 'all', search?: string, branchId?: string) =>
-    get<WarehouseDto[]>(`/api/bodegas${listQuery(activeStatus, search, branchId)}`),
+    get<WarehouseDto[]>(`/api/inventory/warehouses${listQuery(activeStatus, search, branchId)}`),
 
-  getById: (id: string) => get<WarehouseDetailDto>(`/api/bodegas/${id}`),
+  getById: (id: string) => get<WarehouseDetailDto>(`/api/inventory/warehouses/${id}`),
 
   create: (body: WarehousePayload) =>
-    post<WarehouseDto>('/api/bodegas', body),
+    post<WarehouseDto>('/api/inventory/warehouses', body),
 
   update: (id: string, body: WarehousePayload & { id: string }) =>
-    put<WarehouseDto>(`/api/bodegas/${id}`, body),
+    put<WarehouseDto>(`/api/inventory/warehouses/${id}`, body),
 
-  disable: (id: string) => patch<WarehouseDto>(`/api/bodegas/${id}/disable`),
-  enable:  (id: string) => patch<WarehouseDto>(`/api/bodegas/${id}/enable`),
+  disable: (id: string) => patch<WarehouseDto>(`/api/inventory/warehouses/${id}/disable`),
+  enable:  (id: string) => patch<WarehouseDto>(`/api/inventory/warehouses/${id}/enable`),
 };

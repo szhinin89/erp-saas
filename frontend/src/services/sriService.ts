@@ -37,12 +37,12 @@ export type UpsertSriConfigRequest = {
 export const sriService = {
   get: () =>
     api
-      .get<ApiResponse<SriConfigDto | null>>('/api/configuracion-sri')
+      .get<ApiResponse<SriConfigDto | null>>('/api/settings/sri')
       .then((r) => r.data.responseObject ?? null),
 
   upsert: (body: UpsertSriConfigRequest) =>
     api
-      .put<ApiResponse<SriConfigDto>>('/api/configuracion-sri', body)
+      .put<ApiResponse<SriConfigDto>>('/api/settings/sri', body)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');

@@ -34,12 +34,12 @@ export type UpsertBillingSettingsRequest = {
 export const billingSettingsService = {
   get: () =>
     api
-      .get<ApiResponse<BillingSettingsDto | null>>('/api/configuracion-facturacion')
+      .get<ApiResponse<BillingSettingsDto | null>>('/api/settings/ride')
       .then((r) => r.data.responseObject ?? null),
 
   upsert: (body: UpsertBillingSettingsRequest) =>
     api
-      .put<ApiResponse<BillingSettingsDto>>('/api/configuracion-facturacion', body)
+      .put<ApiResponse<BillingSettingsDto>>('/api/settings/ride', body)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');
