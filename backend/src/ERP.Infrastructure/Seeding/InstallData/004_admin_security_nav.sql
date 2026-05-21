@@ -2,7 +2,7 @@
 -- 004_admin_security_nav.sql
 -- Agrega /admin/security al grupo "admin":
 --   § 1  ui_nav_items  — fallback global
---   § 2  saas_plans    — starter menu_config via jsonb_set
+--   § 2  commercial_plans — starter menu_config via jsonb_set
 -- Idempotente en ambos casos.
 -- ============================================================================
 
@@ -19,7 +19,7 @@ WHERE g.code = 'admin'
   );
 
 -- § 2  starter menu_config (jsonb_set sobre grupo admin) ──────────────────────
-UPDATE saas_plans
+UPDATE commercial_plans
 SET menu_config = (
     SELECT jsonb_agg(
         CASE

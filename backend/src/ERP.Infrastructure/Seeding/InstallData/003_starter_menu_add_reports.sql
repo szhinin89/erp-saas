@@ -7,7 +7,7 @@
 -- "sales" sin reescribir todo el JSON del plan.
 -- ============================================================================
 
-UPDATE saas_plans
+UPDATE commercial_plans
 SET menu_config = (
     SELECT jsonb_agg(
         CASE
