@@ -156,6 +156,8 @@
 
 .sa-nav-icon { font-size: 20px; flex-shrink: 0; }
 
+.sa-nav-divider { height: 1px; background: var(--color-outline-variant, #e0e0e0); margin: 8px 12px; }
+
 /* Sidebar footer */
 .sa-sidebar-footer {
   padding-top: var(--space-4);
