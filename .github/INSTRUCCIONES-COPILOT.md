@@ -5,9 +5,10 @@
 ## Orden de lectura (canónico)
 
 1. [`CONTEXT.md`](../CONTEXT.md) — índice maestro del monorepo
-2. [`CLAUDE.md`](../CLAUDE.md) — reglas de implementación para agentes
-3. [`docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md) — arranque, stack, tests
-4. [`.cursor/rules/erp-unified-rules.mdc`](../.cursor/rules/erp-unified-rules.mdc) — validación 4 capas, ZH Form, i18n `qu`, navegación SaaS
+2. [`docs/ARCHITECTURE-RULES.md`](../docs/ARCHITECTURE-RULES.md) — reglas normativas bloqueantes (PR, auditoría)
+3. [`CLAUDE.md`](../CLAUDE.md) — reglas de implementación para agentes
+4. [`docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md) — arranque, stack, tests
+5. [`.cursor/rules/erp-unified-rules.mdc`](../.cursor/rules/erp-unified-rules.mdc) — validación 4 capas, ZH Form, i18n `qu`, navegación SaaS
 
 ## Reglas duras
 

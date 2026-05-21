@@ -1,0 +1,44 @@
+{
+  "$schemaNote": "Archivos legacy permitidos temporalmente. Nuevos archivos NO deben añadirse aquí sin ADR. Ver docs/ARCHITECTURE-RULES.md.",
+  "handlerHandleMaxLines150": [
+    "backend/src/ERP.Application/Modules/Sales/UseCases/CrearVenta/CrearVentaCommandHandler.cs",
+    "backend/src/ERP.Application/Modules/Products/UseCases/CreateProduct/CreateProductCommandHandler.cs",
+    "backend/src/ERP.Application/Modules/Products/UseCases/UpdateProduct/UpdateProductHandler.cs",
+    "backend/src/ERP.Application/Modules/Sales/UseCases/EmitirFacturaElectronica/EmitirFacturaElectronicaCommandHandler.cs",
+    "backend/src/ERP.Application/Sales/UseCases/SalesNotes/EnviarVentasNotaSriCommandHandler.cs"
+  ],
+  "tsxMaxLines500": [
+    "frontend/src/components/AppLayout.tsx",
+    "frontend/src/components/menu-builder/MenuBuilder.tsx",
+    "frontend/src/components/superadmin/NavigationMenuEditorPanel.tsx",
+    "frontend/src/components/superadmin/SuperAdminMenuBuilderSection.tsx",
+    "frontend/src/components/superadmin/SuperAdminPlansSection.tsx",
+    "frontend/src/modules/accounting/pages/AccountingPage.tsx",
+    "frontend/src/modules/branches/pages/BranchesPage.tsx",
+    "frontend/src/modules/catalog/pages/CatalogPages.tsx",
+    "frontend/src/modules/catalog/pages/CatalogStructurePage.tsx",
+    "frontend/src/modules/companies/pages/CompaniesPage.tsx",
+    "frontend/src/modules/configuracion/sri/pages/SriConfigPage.tsx",
+    "frontend/src/modules/customers/pages/CustomersPage.tsx",
+    "frontend/src/modules/inventario/warehouses/pages/BodegasPage.tsx",
+    "frontend/src/modules/superadmin/pages/SuperAdminPanelPage.tsx"
+  ],
+  "tsxPageWrapperMaxLines15": [
+    "frontend/src/pages/ProfilesPage.tsx",
+    "frontend/src/pages/SubscriberAccessPage.tsx",
+    "frontend/src/pages/SalesReportPage.tsx",
+    "frontend/src/pages/SecuritySettingsPage.tsx",
+    "frontend/src/pages/ModulePlaceholderPage.tsx",
+    "frontend/src/pages/FeaturePlaceholderPage.tsx"
+  ],
+  "modulesLegacyRootServiceImports": [
+    "frontend/src/modules/companies/pages/CompaniesPage.tsx",
+    "frontend/src/modules/company-management/pages/CompanyManagementFormPage.tsx",
+    "frontend/src/modules/company-management/pages/CompanyManagementListPage.tsx",
+    "frontend/src/modules/company-management/pages/CurrentCompanyCard.tsx",
+    "frontend/src/modules/configuracion/empresa/pages/CompanyConfigPage.tsx",
+    "frontend/src/modules/configuracion/facturacion/pages/BillingSettingsPage.tsx",
+    "frontend/src/modules/configuracion/sri/pages/SriConfigPage.tsx"
+  ],
+  "frontendIndexChunkMaxKb": 650
+}

@@ -13,6 +13,7 @@
 | **Estado y delivery** | [`docs/STATUS.md`](./docs/STATUS.md) | Única fuente de avance MVP |
 | **Prioridades** | [`docs/ROADMAP.md`](./docs/ROADMAP.md) | Fases pendientes |
 | **Cómo está construido** | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Capas, scopes, platform vs ERP, API |
+| **Reglas arquitectura (normativas, PR)** | [`docs/ARCHITECTURE-RULES.md`](./docs/ARCHITECTURE-RULES.md) | Reglas bloqueantes backend/frontend, enforcement |
 | **Cómo desarrollar** | [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md) | Arranque, scripts, stack, tests, reglas |
 | **Login, JWT, seguridad** | [`docs/IDENTITY.md`](./docs/IDENTITY.md) | IAM, auth backend/frontend |
 | **Planes, billing, empresas** | [`docs/SAAS-COMMERCIAL.md`](./docs/SAAS-COMMERCIAL.md) | Límites, billing SaaS, companies |
@@ -29,6 +30,7 @@ docs/
 ├── STATUS.md
 ├── ROADMAP.md
 ├── ARCHITECTURE.md
+├── ARCHITECTURE-RULES.md
 ├── DEVELOPMENT.md
 ├── IDENTITY.md
 ├── SAAS-COMMERCIAL.md
@@ -47,7 +49,7 @@ Manual completo: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md#arranque-local).
 
 ---
 
-## Scripts PowerShell (7 canónicos)
+## Scripts PowerShell (9 canónicos + grandfather JSON)
 
 | Script | Rol |
 |--------|-----|
@@ -56,6 +58,8 @@ Manual completo: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md#arranque-local).
 | [`scripts/run-e2e.ps1`](./scripts/run-e2e.ps1) | Playwright E2E |
 | [`scripts/verify-stack-allowlist.ps1`](./scripts/verify-stack-allowlist.ps1) | CI: stack + scripts |
 | [`scripts/check-identity-guardrails.ps1`](./scripts/check-identity-guardrails.ps1) | CI: auth legacy |
+| [`scripts/check-handler-size.ps1`](./scripts/check-handler-size.ps1) | CI: handler size |
+| [`scripts/check-architecture-guardrails.ps1`](./scripts/check-architecture-guardrails.ps1) | CI: architecture guardrails |
 | [`scripts/new-master-module.ps1`](./scripts/new-master-module.ps1) | Scaffolding módulo |
 | [`scripts/import_inec_ecuador_geography.ps1`](./scripts/import_inec_ecuador_geography.ps1) | SQL geografía INEC |
 
@@ -68,13 +72,14 @@ No añadir `.ps1` sin actualizar `scripts/stack-allowlist.json` (`scriptsAllowed
 ## Reglas para agentes
 
 1. **`CLAUDE.md`** + **`docs/DEVELOPMENT.md`** antes de implementar.
-2. Arquitectura / scopes → **`docs/ARCHITECTURE.md`**.
-3. Auth / permisos → **`docs/IDENTITY.md`**.
-4. Planes / billing → **`docs/SAAS-COMMERCIAL.md`**.
-5. Schema / EF → **`docs/DATABASE.md`**.
-6. Estado → **`docs/STATUS.md`**; prioridades → **`docs/ROADMAP.md`**.
-7. Stack nuevo → **`docs/DEVELOPMENT.md#stack-oficial`** + `scripts/stack-allowlist.json`.
-8. Scripts `.ps1` → solo los 7 canónicos; mapa en **`scripts/README.md`**.
+2. Reglas bloqueantes PR → **`docs/ARCHITECTURE-RULES.md`**.
+3. Arquitectura / scopes → **`docs/ARCHITECTURE.md`**.
+4. Auth / permisos → **`docs/IDENTITY.md`**.
+5. Planes / billing → **`docs/SAAS-COMMERCIAL.md`**.
+6. Schema / EF → **`docs/DATABASE.md`**.
+7. Estado → **`docs/STATUS.md`**; prioridades → **`docs/ROADMAP.md`**.
+8. Stack nuevo → **`docs/DEVELOPMENT.md#stack-oficial`** + `scripts/stack-allowlist.json`.
+9. Scripts `.ps1` → solo los 9 canónicos; mapa en **`scripts/README.md`**.
 
 Copilot / IDE: [`copilot-instructions.md`](./copilot-instructions.md) → [`.github/INSTRUCCIONES-COPILOT.md`](./.github/INSTRUCCIONES-COPILOT.md).
 

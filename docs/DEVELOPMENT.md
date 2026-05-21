@@ -86,7 +86,7 @@ npm run dev
 
 ## Scripts PowerShell (canónicos)
 
-Solo **7** scripts `.ps1` en el repo. CI los valida vía `scriptsAllowed` en [`scripts/stack-allowlist.json`](../scripts/stack-allowlist.json) (`verify-stack-allowlist.ps1`).
+Solo **9** scripts `.ps1` en el repo (+ `architecture-grandfather.json`). CI los valida vía `scriptsAllowed` en [`scripts/stack-allowlist.json`](../scripts/stack-allowlist.json) (`verify-stack-allowlist.ps1`).
 
 | Script | Uso |
 |--------|-----|
@@ -95,6 +95,8 @@ Solo **7** scripts `.ps1` en el repo. CI los valida vía `scriptsAllowed` en [`s
 | `scripts/run-e2e.ps1` | Playwright E2E |
 | `scripts/verify-stack-allowlist.ps1` | CI: NuGet, npm, Docker, Actions, patrones, **scripts** |
 | `scripts/check-identity-guardrails.ps1` | CI: sin referencias auth legacy `users` |
+| `scripts/check-handler-size.ps1` | CI: MediatR `Handle` ≤ 150 líneas |
+| `scripts/check-architecture-guardrails.ps1` | CI: capas, patrones frontend, límites TSX, chunk Vite |
 | `scripts/new-master-module.ps1` | Scaffolding vertical módulo master |
 | `scripts/import_inec_ecuador_geography.ps1` | Generar SQL geografía INEC (ArcGIS → `geo_*`) |
 

@@ -1,6 +1,6 @@
 # REGLAS DEL PROYECTO — ERP SaaS ZH Technologies
 
-Reglas de implementación. Para arquitectura → `docs/ARCHITECTURE.md`. Para estado → `docs/STATUS.md`. Para desarrollo → `docs/DEVELOPMENT.md`.
+Reglas de implementación. Reglas normativas bloqueantes (PR) → **`docs/ARCHITECTURE-RULES.md`**. Contexto arquitectónico → `docs/ARCHITECTURE.md`. Estado → `docs/STATUS.md`. Desarrollo → `docs/DEVELOPMENT.md`.
 
 ## ⚡ Regla obligatoria al terminar cualquier tarea
 

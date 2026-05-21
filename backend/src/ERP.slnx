@@ -8,5 +8,6 @@
     <Project Path="ERP.Domain.Tests/ERP.Domain.Tests.csproj" />
     <Project Path="ERP.Infrastructure/ERP.Infrastructure.csproj" />
     <Project Path="ERP.Infrastructure.Tests/ERP.Infrastructure.Tests.csproj" />
+    <Project Path="ERP.Architecture.Tests/ERP.Architecture.Tests.csproj" />
   </Folder>
 </Solution>

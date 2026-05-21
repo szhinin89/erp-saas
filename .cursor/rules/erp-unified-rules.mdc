@@ -11,6 +11,7 @@ alwaysApply: true
 
 - Esta regla es transversal y de contexto general.
 - Para cambios especificos, aplicar tambien:
+  - `docs/ARCHITECTURE-RULES.md` (normativa bloqueante PR)
   - `rules-consolidated-map.mdc` (precedencia y mapa)
   - `backend-api-contracts.mdc` (controllers y status HTTP)
   - `backend-clean-architecture-strict.mdc` (capas)
@@ -67,7 +68,7 @@ Orden lógico para **no** saltarse capas ni contradecir UI:
 
 ## Antes de actuar
 
-1. Lee **`CLAUDE.md`** (reglas) y **`CONTEXT.md`** (índice). Para arquitectura → `docs/ARCHITECTURE.md`; para estado → `docs/STATUS.md`; para desarrollo → `docs/DEVELOPMENT.md`.
+1. Lee **`CLAUDE.md`** (reglas) y **`CONTEXT.md`** (índice). Reglas bloqueantes PR → **`docs/ARCHITECTURE-RULES.md`**. Contexto arquitectónico → `docs/ARCHITECTURE.md`; estado → `docs/STATUS.md`; desarrollo → `docs/DEVELOPMENT.md`.
 2. Identifica si el archivo que vas a crear o modificar **ya existe**.
 3. Si ya existe → **no** lo regeneres; cambia solo lo necesario.
 4. Define un **plan breve** antes de escribir código (no bloquear al usuario salvo ambigüedad real).

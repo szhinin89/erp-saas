@@ -38,7 +38,8 @@
     "Microsoft.AspNetCore.Mvc.Testing",
     "coverlet.collector",
     "Microsoft.NET.Test.Sdk",
-    "xunit.runner.visualstudio"
+    "xunit.runner.visualstudio",
+    "NetArchTest.Rules"
   ],
   "npmAllowed": [
     "react",
@@ -98,6 +99,8 @@
     "scripts/run-e2e.ps1",
     "scripts/verify-stack-allowlist.ps1",
     "scripts/check-identity-guardrails.ps1",
+    "scripts/check-handler-size.ps1",
+    "scripts/check-architecture-guardrails.ps1",
     "scripts/new-master-module.ps1",
     "scripts/import_inec_ecuador_geography.ps1"
   ]

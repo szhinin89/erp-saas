@@ -42,4 +42,13 @@ export default defineConfig([
       ],
     },
   },
+  {
+    files: ['src/modules/**/pages/**/*.{ts,tsx}'],
+    rules: {
+      'max-lines': [
+        'warn',
+        { max: 400, skipBlankLines: true, skipComments: true },
+      ],
+    },
+  },
 ])

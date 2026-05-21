@@ -7,12 +7,14 @@ alwaysApply: true
 
 Usar este orden de precedencia cuando varias reglas apliquen al mismo cambio:
 
-1. Regla de alcance mas especifico (por `globs`) gana sobre regla general.
-2. Si hay conflicto, aplicar la regla mas estricta de seguridad/tenant/contrato API.
-3. Mantener consistencia con `erp-unified-rules.mdc` como guia transversal.
+1. **`docs/ARCHITECTURE-RULES.md`** — reglas normativas bloqueantes (PR, auditoría).
+2. Regla de alcance mas especifico (por `globs`) gana sobre regla general.
+3. Si hay conflicto, aplicar la regla mas estricta de seguridad/tenant/contrato API.
+4. Mantener consistencia con `erp-unified-rules.mdc` como guia transversal.
 
 ## Reglas por area
 
+- **Normativa enterprise (PR bloqueante):** `docs/ARCHITECTURE-RULES.md`
 - Backend API controllers: `backend-api-contracts.mdc`
 - Arquitectura backend: `backend-clean-architecture-strict.mdc`
 - CQRS/validacion en Application: `backend-cqrs-validation-result.mdc`

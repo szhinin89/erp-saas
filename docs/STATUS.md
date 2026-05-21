@@ -12,6 +12,7 @@
 | Delivery state | `docs/STATUS.md` (this file) |
 | Priorities | `docs/ROADMAP.md` |
 | Architecture | `docs/ARCHITECTURE.md` |
+| Architecture rules (PR blocking) | `docs/ARCHITECTURE-RULES.md` |
 | Development + stack | `docs/DEVELOPMENT.md` |
 | Identity + security | `docs/IDENTITY.md` |
 | SaaS plans + billing | `docs/SAAS-COMMERCIAL.md` |
@@ -33,6 +34,7 @@ Consolidated 2026-05-21: former `MULTITENANCY`, `SCOPES`, `SECURITY`, `BILLING`,
 | Wave 1 `company_id` (inventory core) | ✅ (in baseline) |
 | PostgreSQL RLS (enterprise tables) | ✅ (in baseline) |
 | Rate limit per subscriber (600/min) | ✅ |
+| Architecture guardrails CI (scripts + NetArchTest) | ✅ (2026-05-21) |
 
 Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 
@@ -126,6 +128,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 | `ERP.Domain.Tests` | ✅ |
 | `ERP.Application.Tests` | ✅ |
 | `ERP.API.Tests` | ✅ 156/156 |
+| `ERP.Architecture.Tests` (NetArchTest + controller guardrails) | ✅ 7/7 |
 | Playwright E2E | 🟡 align with subscriber/company flow |
 
 ## MVP commercial (~85–90%)
