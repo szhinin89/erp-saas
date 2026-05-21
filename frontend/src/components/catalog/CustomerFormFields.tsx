@@ -4,7 +4,7 @@ import { useI18n } from '../../i18n/i18n';
 import { ZHField, ZHFormSection, ZHGrid, ZHToggle } from '../zh/ZHForm';
 import { ZHColSpan } from '../zh/ZHLayout';
 import { CUSTOMER_ID_TYPES } from '../../modules/catalog/customers/customerFormModel';
-import type { CustomerFormValues } from '../../schemas/catalog/customerSchema';
+import type { CustomerCatalogFormValues } from '../../modules/customers/schemas/customerCatalogFormSchema';
 
 export type CustomerFormFieldsSections = {
   identity?: boolean;
@@ -13,9 +13,9 @@ export type CustomerFormFieldsSections = {
 };
 
 export type CustomerFormFieldsProps = {
-  register: UseFormRegister<CustomerFormValues>;
-  control: Control<CustomerFormValues>;
-  errors: FieldErrors<CustomerFormValues>;
+  register: UseFormRegister<CustomerCatalogFormValues>;
+  control: Control<CustomerCatalogFormValues>;
+  errors: FieldErrors<CustomerCatalogFormValues>;
   disabled: boolean;
   /** Por defecto se muestran identidad, contacto y estado (activo). Facturación puede ocultar secciones poco relevantes. */
   sections?: CustomerFormFieldsSections;

@@ -1,5 +1,4 @@
-import { api } from '../../lib/api';
-import type { ApiResponse } from '../../../types/api';
+import { apiGet, apiPatch, apiPost, apiPut } from '../../lib/apiEnvelope';
 import type { Product } from '../../../types/product';
 
 export interface CreateProductRequest {
@@ -64,29 +63,16 @@ export interface UpdateProductRequest extends CreateProductRequest {
 }
 
 export const productService = {
-  async getAll(): Promise<Product[]> {
-    const response = await api.get<ApiResponse<Product[]>>('/api/inventory/products');
-    return response.data.responseObject ?? [];
-  },
+  getAll: () => apiGet<Product[]>('/api/inventory/products').then((rows) => rows ?? []),
 
-  async create(request: CreateProductRequest): Promise<Product> {
-    const response = await api.post<ApiResponse<Product>>('/api/inventory/products', request);
-    return response.data.responseObject;
-  },
+  create: (request: CreateProductRequest) => apiPost<Product>('/api/inventory/products', request),
 
-  async update(request: UpdateProductRequest): Promise<Product> {
+  update: (request: UpdateProductRequest) => {
     const { id, ...updateData } = request;
-    const response = await api.put<ApiResponse<Product>>(`/api/inventory/products/${id}`, { id, ...updateData });
-    return response.data.responseObject;
+    return apiPut<Product>(`/api/inventory/products/${id}`, { id, ...updateData });
   },
 
-  async disable(id: string): Promise<Product> {
-    const response = await api.patch<ApiResponse<Product>>(`/api/inventory/products/${id}/disable`);
-    return response.data.responseObject;
-  },
+  disable: (id: string) => apiPatch<Product>(`/api/inventory/products/${id}/disable`),
 
-  async enable(id: string): Promise<Product> {
-    const response = await api.patch<ApiResponse<Product>>(`/api/inventory/products/${id}/enable`);
-    return response.data.responseObject;
-  },
+  enable: (id: string) => apiPatch<Product>(`/api/inventory/products/${id}/enable`),
 };

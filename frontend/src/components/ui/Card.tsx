@@ -1,16 +1,17 @@
-import React from 'react'
+import type { ReactNode } from 'react';
 
 interface CardProps {
-  title?: React.ReactNode
-  actions?: React.ReactNode
-  className?: string
-  bodyClassName?: string
-  children: React.ReactNode
+  title?: ReactNode;
+  actions?: ReactNode;
+  className?: string;
+  bodyClassName?: string;
+  children: ReactNode;
 }
 
-export const Card: React.FC<CardProps> = ({ title, actions, className = '', bodyClassName = '', children }) => {
-  const cardClassName = `card ${className}`.trim()
-  const cardBodyClassName = `card-body ${bodyClassName}`.trim()
+/** @deprecated Preferir `ZHCard`. Misma estructura `.card` de `zh-ui.css`. */
+export function Card({ title, actions, className = '', bodyClassName = '', children }: CardProps) {
+  const cardClassName = `card ${className}`.trim();
+  const cardBodyClassName = `card-body ${bodyClassName}`.trim();
   return (
     <div className={cardClassName}>
       {(title || actions) && (
@@ -21,5 +22,5 @@ export const Card: React.FC<CardProps> = ({ title, actions, className = '', body
       )}
       <div className={cardBodyClassName}>{children}</div>
     </div>
-  )
+  );
 }

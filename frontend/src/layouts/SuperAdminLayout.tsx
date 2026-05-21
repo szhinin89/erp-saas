@@ -3,6 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n/i18n';
 import { useSuperAdminGate } from '../hooks/useSuperAdminGate';
+import { fullLogout } from '../lib/session/fullLogout';
+import { SUPERADMIN_IMPERSONATION_NAME_KEY } from '../lib/session/sessionStorageKeys';
 import { RuntimeModeBadge } from '../components/RuntimeModeBadge';
 import './SuperAdminLayout.css';
 
@@ -19,10 +21,10 @@ export function SuperAdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
 
   const [impersonationName, setImpersonationName] = useState(
-    () => localStorage.getItem('superadmin-impersonation-subscriber-name') ?? '',
+    () => localStorage.getItem(SUPERADMIN_IMPERSONATION_NAME_KEY) ?? '',
   );
 
   /* ── Existing redirect logic (unchanged) ── */
@@ -57,12 +59,12 @@ export function SuperAdminLayout() {
   }, [location.pathname, t]);
 
   const handleLogout = () => {
-    logout();
+    fullLogout();
     navigate('/login');
   };
 
   const exitImpersonation = () => {
-    localStorage.removeItem('superadmin-impersonation-subscriber-name');
+    localStorage.removeItem(SUPERADMIN_IMPERSONATION_NAME_KEY);
     setImpersonationName('');
     navigate('/superadmin/overview');
   };

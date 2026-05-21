@@ -1,4 +1,6 @@
 import axios, { type AxiosRequestConfig } from 'axios';
+import { AUTH_STORAGE_KEY } from '../../lib/session/sessionStorageKeys';
+import { fullLogout } from '../../lib/session/fullLogout';
 
 /**
  * Cliente HTTP centralizado.
@@ -46,7 +48,7 @@ function processQueue(error: unknown, newToken: string | null = null) {
 
 function getStoredToken(): string | null {
   try {
-    const raw = localStorage.getItem('auth-storage');
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
     return raw ? (JSON.parse(raw)?.state?.token ?? null) : null;
   } catch {
     return null;
@@ -55,7 +57,7 @@ function getStoredToken(): string | null {
 
 function getStoredRefreshToken(): string | null {
   try {
-    const raw = localStorage.getItem('auth-storage');
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
     return raw ? (JSON.parse(raw)?.state?.refreshToken ?? null) : null;
   } catch {
     return null;
@@ -64,19 +66,21 @@ function getStoredRefreshToken(): string | null {
 
 function updateStoredTokens(accessToken: string, refreshToken: string | null) {
   try {
-    const raw = localStorage.getItem('auth-storage');
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
     if (!raw) return;
     const parsed = JSON.parse(raw);
     parsed.state.token        = accessToken;
     parsed.state.refreshToken = refreshToken ?? parsed.state.refreshToken;
-    localStorage.setItem('auth-storage', JSON.stringify(parsed));
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
   } catch {
     // no-op
   }
 }
 
-function clearSession() {
-  localStorage.removeItem('auth-storage');
+/** Reinicia cola de refresh tras logout o sesión inválida. */
+export function resetAuthTransportState() {
+  isRefreshing = false;
+  pendingQueue = [];
 }
 
 // ── Interceptor de REQUEST: inyecta Bearer token ──────────────────────────
@@ -164,7 +168,7 @@ api.interceptors.response.use(
       return api(originalRequest);
     } catch (refreshError) {
       processQueue(refreshError, null);
-      clearSession();
+      fullLogout();
       window.location.href = '/login';
       return Promise.reject(refreshError);
     } finally {

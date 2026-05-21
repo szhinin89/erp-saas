@@ -28,6 +28,8 @@ import {
 } from '../nav/navConfig';
 import { GLOBAL_SUBSCRIBER_ID } from '../constants/subscriberIds';
 import { useDeployment } from '../deployment/DeploymentContext';
+import { fullLogout } from '../lib/session/fullLogout';
+import { SUPERADMIN_IMPERSONATION_NAME_KEY } from '../lib/session/sessionStorageKeys';
 import type { SessionMenuGroupDto } from '../types/access';
 import { readPlanCustomMenuBarLayout } from './menu-builder/menuBuilderTypes';
 import './AppLayout.css';
@@ -185,12 +187,12 @@ function MainMenuList({
 }
 
 function getImpersonationSubscriberName(): string | null {
-  return localStorage.getItem('superadmin-impersonation-subscriber-name');
+  return localStorage.getItem(SUPERADMIN_IMPERSONATION_NAME_KEY);
 }
 
 export function AppLayout() {
   const { superAdminPanelEnabled } = useDeployment();
-  const { user, logout, login } = useAuthStore();
+  const { user, login } = useAuthStore();
   const { permissions, enabledModules, has: hasPerm, clearPermissions, hasHydrated: permsHydrated } =
     usePermissionsStore();
   const navigate = useNavigate();
@@ -476,8 +478,7 @@ export function AppLayout() {
   }, [location.pathname]);
 
   const handleLogout = () => {
-    logout();
-    clearPermissions();
+    fullLogout();
     navigate('/login');
   };
 
@@ -486,7 +487,7 @@ export function AppLayout() {
     setSuperadminReturningGlobal(true);
     try {
       const auth = await superAdminService.switchSubscriber(GLOBAL_SUBSCRIBER_ID);
-      localStorage.removeItem('superadmin-impersonation-subscriber-name');
+      localStorage.removeItem(SUPERADMIN_IMPERSONATION_NAME_KEY);
       login(auth);
       clearPermissions();
       navigate('/superadmin/overview');

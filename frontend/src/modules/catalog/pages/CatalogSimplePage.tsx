@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PageShell, EmptyState, LoadingState, Badge, NoAccessPage } from '../components/PageShell';
-import { Card } from '../components/ui/Card';
-import { ZHPageNotice } from '../components/zh/ZHPageNotice';
-import { useI18n } from '../i18n/i18n';
-import { usePermissionsStore } from '../store/permissionsStore';
-import { useAuthStore } from '../store/authStore';
-import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHBtn } from '../components/zh/ZHForm';
-import { SearchBar } from '../components/ui';
-import { EntityAuditPanel } from '../components/EntityAuditPanel';
-import { buildCatalogSimpleRowSchema } from '../schemas/catalog/catalogSimpleSchema';
+import { PageShell, EmptyState, LoadingState, Badge, NoAccessPage } from '../../../components/PageShell';
+import { ZHCard } from '../../../components/zh/ZHCard';
+import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
+import { useI18n } from '../../../i18n/i18n';
+import { usePermissionsStore } from '../../../store/permissionsStore';
+import { useAuthStore } from '../../../store/authStore';
+import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHBtn } from '../../../components/zh/ZHForm';
+import { ZHSearchBar as SearchBar } from '../../../components/shared/ZHSearchBar';
+import { EntityAuditPanel } from '../../../components/EntityAuditPanel';
+import { buildCatalogSimpleRowSchema } from '../../../schemas/catalog/catalogSimpleSchema';
 import './CatalogSimplePage.css';
 
 export type CatalogRow = { id: string; code: string; name: string; isActive: boolean };
@@ -180,7 +180,7 @@ export function CatalogSimplePage({
         ) : undefined
       }
     >
-      <Card>
+      <ZHCard>
         {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
         <div className="zh-form-tabs" role="tablist">
           <button type="button" className={tab === 'data' ? 'is-active' : ''} onClick={() => setTab('data')}>
@@ -312,7 +312,7 @@ export function CatalogSimplePage({
             <EmptyState message={t('audit.pickRow')} />
           )
         ) : null}
-      </Card>
+      </ZHCard>
     </PageShell>
   );
 }

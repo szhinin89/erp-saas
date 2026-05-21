@@ -3,10 +3,11 @@ import { createPortal } from 'react-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n/i18n';
 import { RuntimeModeBadge } from '../RuntimeModeBadge';
+import { SUPERADMIN_IMPERSONATION_NAME_KEY } from '../../lib/session/sessionStorageKeys';
 import './ZHForm.css';
 
 function getImpersonationSubscriberName(): string | null {
-  return localStorage.getItem('superadmin-impersonation-subscriber-name');
+  return localStorage.getItem(SUPERADMIN_IMPERSONATION_NAME_KEY);
 }
 
 function initials(name: string) {

@@ -10,7 +10,7 @@ import { useAsync } from '../../../hooks/useAsync';
 import { formatApiError } from '../../lib/formatApiError';
 import { ventasFacturasService, type VentasFacturaDto } from '../api/ventasFacturasService';
 import { creditNotesService } from '../api/creditNotesService';
-import { productService } from '../../../services/productService';
+import { productService } from '../../products/api/productService';
 import type { Product } from '../../../types/product';
 import './credit-notes-page.css';
 

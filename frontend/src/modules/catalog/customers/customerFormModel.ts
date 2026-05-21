@@ -1,10 +1,10 @@
-import type { CustomerDetailDto, CustomerDto } from '../../../services/customerService';
-import type { CustomerFormValues } from '../../../schemas/catalog/customerSchema';
+import type { CustomerDetailDto, CustomerDto } from '../../customers/api/customerCatalogService';
+import type { CustomerCatalogFormValues } from '../../customers/schemas/customerCatalogFormSchema';
 
 /** Tipos de identificación soportados en catálogo (misma lista que API). */
 export const CUSTOMER_ID_TYPES = ['RUC', 'CI', 'PASSPORT', 'OTHER'] as const;
 
-export function emptyCustomerForm(): CustomerFormValues {
+export function emptyCustomerForm(): CustomerCatalogFormValues {
   return {
     identificationType: 'RUC',
     identificationNumber: '',
@@ -18,7 +18,7 @@ export function emptyCustomerForm(): CustomerFormValues {
   };
 }
 
-export function customerFormFromDto(d: CustomerDto | CustomerDetailDto): CustomerFormValues {
+export function customerFormFromDto(d: CustomerDto | CustomerDetailDto): CustomerCatalogFormValues {
   return {
     identificationType: d.identificationType,
     identificationNumber: d.identificationNumber,
@@ -33,7 +33,7 @@ export function customerFormFromDto(d: CustomerDto | CustomerDetailDto): Custome
 }
 
 /** Cuerpo para crear o actualizar cliente (sin `id`; el update lo añade la página). */
-export function customerFormToApiBody(form: CustomerFormValues) {
+export function customerFormToApiBody(form: CustomerCatalogFormValues) {
   return {
     identificationType: form.identificationType.trim(),
     identificationNumber: form.identificationNumber.trim(),

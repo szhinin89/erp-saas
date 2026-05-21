@@ -1,5 +1,4 @@
-import { api } from '../../lib/api';
-import type { ApiResponse } from '../../../types/api';
+import { apiGet, apiPatch, apiPost, apiPut } from '../../lib/apiEnvelope';
 
 export type Customer = {
   id: string;
@@ -32,15 +31,6 @@ type LegacyCustomerApi = {
   isActive: boolean;
 };
 
-function readEnvelopePayload<T>(body: unknown): T {
-  if (body && typeof body === 'object') {
-    const o = body as Record<string, unknown>;
-    if ('responseObject' in o && o.responseObject !== undefined) return o.responseObject as T;
-    if ('ResponseObject' in o && o.ResponseObject !== undefined) return o.ResponseObject as T;
-  }
-  return body as T;
-}
-
 function toCustomer(item: LegacyCustomerApi): Customer {
   return {
     id: item.id,
@@ -59,39 +49,27 @@ export const customerService = {
     const query = new URLSearchParams();
     query.set('activeStatus', 'all');
     if (search?.trim()) query.set('search', search.trim());
-    const raw = await api
-      .get<ApiResponse<LegacyCustomerApi[]> | Record<string, unknown>>(`/api/sales/customers?${query.toString()}`)
-      .then((r) => readEnvelopePayload<LegacyCustomerApi[]>(r.data));
+    const raw = await apiGet<LegacyCustomerApi[]>(`/api/sales/customers?${query.toString()}`);
     return (raw ?? []).map(toCustomer);
   },
 
   async create(payload: CreateCustomerRequest): Promise<Customer> {
-    const raw = await api
-      .post<ApiResponse<LegacyCustomerApi> | Record<string, unknown>>('/api/sales/customers', toApiPayload(payload, true))
-      .then((r) => readEnvelopePayload<LegacyCustomerApi>(r.data));
-
+    const raw = await apiPost<LegacyCustomerApi>('/api/sales/customers', toApiPayload(payload, true));
     return toCustomer(raw);
   },
 
   async update(id: string, payload: CreateCustomerRequest): Promise<Customer> {
-    const raw = await api
-      .put<ApiResponse<LegacyCustomerApi> | Record<string, unknown>>(`/api/sales/customers/${id}`, {
-        ...toApiPayload(payload, true),
-        id,
-      })
-      .then((r) => readEnvelopePayload<LegacyCustomerApi>(r.data));
-
+    const raw = await apiPut<LegacyCustomerApi>(`/api/sales/customers/${id}`, {
+      ...toApiPayload(payload, true),
+      id,
+    });
     return toCustomer(raw);
   },
 
   async setActive(id: string, isActive: boolean): Promise<Customer> {
-    const raw = await api
-      .patch<ApiResponse<LegacyCustomerApi> | Record<string, unknown>>(
-        `/api/sales/customers/${id}/${isActive ? 'enable' : 'disable'}`,
-        {}
-      )
-      .then((r) => readEnvelopePayload<LegacyCustomerApi>(r.data));
-
+    const raw = await apiPatch<LegacyCustomerApi>(
+      `/api/sales/customers/${id}/${isActive ? 'enable' : 'disable'}`
+    );
     return toCustomer(raw);
   },
 };

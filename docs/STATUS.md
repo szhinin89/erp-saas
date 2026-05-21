@@ -76,6 +76,12 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 |------|--------|
 | Auth, subscriber select, company select | ✅ |
 | Core ERP modules (sales, purchases, inventory, settings) | ✅ |
+| **`fullLogout()` centralizado** (stores + localStorage + `erp.saas.*`) | ✅ |
+| **Products/customers — fuente única en `modules/*`** (`apiEnvelope`, adapters `@deprecated`) | ✅ |
+| **Consolidación modular P3** (auth, branches, accounting, dashboard, superadmin API + pages) | ✅ |
+| **Catálogo + bodegas + auth UI** en `modules/catalog`, `modules/inventario/warehouses`, `modules/auth/pages` | ✅ |
+| **Lazy routes P4** (`routes/lazyPage.tsx`, main/catalog/superadmin split) | ✅ |
+| **ZH UI estándar** (`components/ui` delega clases ZH; catálogo usa `ZHCard`/`ZHSearchBar`) | ✅ |
 | Company management module | ✅ |
 | SaaS billing pages | ⏳ |
 | Kardex / stock dedicated UI | ⏳ placeholder routes |
@@ -102,6 +108,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 | RLS (DB layer) | ✅ |
 | SuperAdmin platform bypass | ✅ controlled |
 | Permissions cache in handler hot path | ⏳ service exists, wiring partial |
+| SPA session cleanup (`fullLogout`) | ✅ frontend |
 
 ## Cache
 

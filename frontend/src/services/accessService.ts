@@ -1,36 +1,4 @@
-import { api } from '../modules/lib/api';
-import type { ApiResponse } from '../types/api';
-import type {
-  BootstrapLoginRequest,
-  BootstrapLoginResponse,
-  MyPermissionsResponse,
-  SessionMenuGroupDto,
-  SessionResponse,
-  SwitchSubscriberRequest,
-} from '../types/access';
-
-export const accessService = {
-  async bootstrapLogin(req: BootstrapLoginRequest) {
-    const { data } = await api.post<ApiResponse<BootstrapLoginResponse>>('/api/admin/iam/bootstrap-login', req);
-    return data.responseObject;
-  },
-
-  async switchSubscriber(bootstrapToken: string, req: SwitchSubscriberRequest) {
-    const { data } = await api.post<ApiResponse<SessionResponse>>('/api/admin/iam/switch-subscriber', req, {
-      headers: { Authorization: `Bearer ${bootstrapToken}` },
-    });
-    return data.responseObject;
-  },
-
-  async getMyPermissions() {
-    const { data } = await api.get<ApiResponse<MyPermissionsResponse>>('/api/admin/iam/me/permissions');
-    return data.responseObject;
-  },
-
-  /** Menú lateral resuelto (subscriber → plan → global). Alias de GET /api/access/me/menu. */
-  async getSessionMenu() {
-    const { data } = await api.get<ApiResponse<SessionMenuGroupDto[]>>('/api/me/menu');
-    return data.responseObject ?? [];
-  },
-};
-
+/**
+ * @deprecated Importar desde `modules/auth/api/accessService`.
+ */
+export { accessService } from '../modules/auth/api/accessService';

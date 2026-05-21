@@ -1,9 +1,23 @@
 import { Navigate, Route } from 'react-router-dom';
 import { SuperAdminLayout } from '../layouts/SuperAdminLayout';
-import { SuperAdminOverviewPage } from '../pages/SuperAdmin/SuperAdminOverviewPage';
-import { SuperAdminCompaniesShellPage } from '../pages/SuperAdmin/SuperAdminCompaniesShellPage';
-import { SuperAdminMenuPlansHubPage } from '../pages/SuperAdmin/SuperAdminMenuPlansHubPage';
-import { SuperAdminPlansPage } from '../pages/SuperAdmin/SuperAdminPlansPage';
+import { lazyNamedPage } from './lazyPage';
+
+const SuperAdminOverviewPage = lazyNamedPage(
+  () => import('../pages/SuperAdmin/SuperAdminOverviewPage'),
+  'SuperAdminOverviewPage',
+);
+const SuperAdminCompaniesShellPage = lazyNamedPage(
+  () => import('../pages/SuperAdmin/SuperAdminCompaniesShellPage'),
+  'SuperAdminCompaniesShellPage',
+);
+const SuperAdminMenuPlansHubPage = lazyNamedPage(
+  () => import('../pages/SuperAdmin/SuperAdminMenuPlansHubPage'),
+  'SuperAdminMenuPlansHubPage',
+);
+const SuperAdminPlansPage = lazyNamedPage(
+  () => import('../pages/SuperAdmin/SuperAdminPlansPage'),
+  'SuperAdminPlansPage',
+);
 
 /** Rutas del shell SuperAdmin (fuera de `AppLayout`). */
 export function superAdminShellRoutes() {

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { AUTH_STORAGE_KEY } from '../lib/session/sessionStorageKeys';
 import type { AuthResponse } from '../types/auth';
 
 interface AuthState {
@@ -53,7 +54,7 @@ export const useAuthStore = create<AuthState>()(
         set({ user: null, token: null, refreshToken: null, isAuthenticated: false }),
     }),
     {
-      name: 'auth-storage',
+      name: AUTH_STORAGE_KEY,
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         state.hasHydrated = true;

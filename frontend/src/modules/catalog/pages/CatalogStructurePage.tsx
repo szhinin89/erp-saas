@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { NoAccessPage } from '../components/PageShell';
-import { ZHPageNotice } from '../components/zh/ZHPageNotice';
-import { ZHBtn, ZHField } from '../components/zh/ZHForm';
-import { useI18n } from '../i18n/i18n';
-import { usePermissionsStore } from '../store/permissionsStore';
-import { useAuthStore } from '../store/authStore';
+import { NoAccessPage } from '../../../components/PageShell';
+import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
+import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
+import { useI18n } from '../../../i18n/i18n';
+import { usePermissionsStore } from '../../../store/permissionsStore';
+import { useAuthStore } from '../../../store/authStore';
 import {
   catalogService,
   type CatalogItem,
   type ProductCategoryListItem,
   type ProductSubcategoryListItem,
-} from '../services/catalogService';
-import { formatApiError } from '../modules/lib/formatApiError';
+} from '../api/catalogService';
+import { formatApiError } from '../../lib/formatApiError';
 
 /* ── Types ──────────────────────────────────────────────────── */
 type ModalType =

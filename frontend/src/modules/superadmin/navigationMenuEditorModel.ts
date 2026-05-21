@@ -1,5 +1,5 @@
-import type { AdminNavigationMenu, AdminNavGroupRow, AdminNavItemRow } from '../../services/superAdminService';
-import type { NavItemSiblingOrderLevel } from '../../services/superAdminService';
+import type { AdminNavigationMenu, AdminNavGroupRow, AdminNavItemRow } from './api/superAdminService';
+import type { NavItemSiblingOrderLevel } from './api/superAdminService';
 
 export function cloneMenu(m: AdminNavigationMenu): AdminNavigationMenu {
   return typeof structuredClone === 'function'

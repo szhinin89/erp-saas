@@ -8,7 +8,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { useI18n } from '../../../i18n/i18n';
 import { useAsync } from '../../../hooks/useAsync';
 import { customerService } from '../../../modules/customers/api/customerService';
-import { bodegaService } from '../../../services/bodegaService';
+import { warehouseService, type WarehouseDto } from '../../inventario/warehouses/api/warehouseService';
 import { formatApiError } from '../../lib/formatApiError';
 import { ventasFacturasService } from '../api/ventasFacturasService';
 import {
@@ -45,7 +45,7 @@ export function CreateInvoicePage() {
   const [draftId, setDraftId] = useState<string | null>(null);
 
   const clientsState    = useAsync(() => customerService.getAll());
-  const warehousesState = useAsync(() => bodegaService.list('active'));
+  const warehousesState = useAsync<WarehouseDto[]>(() => warehouseService.list('active'));
 
   useEffect(() => {
     const bodegas = warehousesState.data;

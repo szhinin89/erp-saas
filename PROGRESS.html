@@ -107,7 +107,7 @@
   <div class="header">
     <div class="header-title">
       <h1>ERP SaaS — Estado de Avance</h1>
-      <p>ZH Technologies · Revisión: <span id="last-updated">2026-05-21 (v12 — backend audit hardening)</span></p>
+      <p>ZH Technologies · Revisión: <span id="last-updated">2026-05-21 (v15 — frontend audit completo)</span></p>
       <div class="global-bar"><div class="global-bar-fill" id="global-bar-fill"></div></div>
     </div>
     <div class="header-kpi">
@@ -394,6 +394,9 @@
         <div class="item"><input type="checkbox" data-sec="s14" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Fix: 403 en /settings/company (GET /api/subscribers/{id})</strong><p class="note">SubscribersController: Admin puede leer y actualizar datos de su propio subscriber (CanAccessSubscriber). UpdateSubscriberCompanyHandler valida scope Admin.</p></div><span class="status-badge s-done">Corregido</span></div>
         <div class="item"><input type="checkbox" data-sec="s14" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Fix: 403 dashboard SaaS (/saas/overview)</strong><p class="note">TenantSubscriptionCatalog: permisos saas.companies.* y saas.billing.view siempre permitidos (no dependen del módulo comercial saas). SaasOverviewPage usa Promise.allSettled.</p></div><span class="status-badge s-done">Corregido</span></div>
         <div class="item"><input type="checkbox" data-sec="s14" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Fix: rutas API legacy en frontend (404)</strong><p class="note">Migración masiva a rutas modulares: /api/sales/customers, /api/inventory/products, /api/inventory/warehouses, /api/purchases/suppliers, /api/sales/invoices, etc.</p></div><span class="status-badge s-done">Corregido</span></div>
+        <div class="item"><input type="checkbox" data-sec="s14" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Frontend audit P1: `fullLogout()` centralizado</strong><p class="note">Claves sessionStorage unificadas (`lib/session/sessionStorageKeys`), limpieza stores + `erp.saas.*` + transporte API en logout/401.</p></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s14" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Frontend audit P2: products/customers — fuente única en `modules/*`</strong><p class="note">`apiEnvelope.ts` compartido; `customerCatalogService` + `customerCatalogFormSchema`; adapters `@deprecated` en `services/` y `schemas/catalog/`; imports directos al módulo en catálogo y NC.</p></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s14" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Frontend audit P3–P7: modular + lazy + ZH + pendientes</strong><p class="note">Catálogo/bodegas/auth/superadmin en `modules/*`; `catalogService`/`warehouseService`/`accessService`; lazy routes; `ZHCard`; wrappers en `pages/`; UI legacy usa clases ZH.</p></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s14" data-val="0" onchange="recalc()"><div class="item-text"><strong>Pendiente: invalidar caché entitlements al cambiar commercial_plan_features</strong><p class="note">Tras bootstrap de features nuevas (LOGISTICS), el suscriptor puede necesitar re-login o esperar TTL (~5 min) del snapshot cacheado.</p></div><span class="status-badge s-partial">Parcial</span></div>
       </div>
     </div>

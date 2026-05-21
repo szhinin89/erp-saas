@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { ACCESS_BOOTSTRAP_STORAGE_KEY } from '../lib/session/sessionStorageKeys';
 import type { AccessibleSubscriber, BootstrapLoginResponse } from '../types/access';
 
 interface AccessState {
@@ -29,7 +30,7 @@ export const useAccessStore = create<AccessState>()(
           subscribers: [],
         }),
     }),
-    { name: 'access-bootstrap' }
+    { name: ACCESS_BOOTSTRAP_STORAGE_KEY }
   )
 );
 

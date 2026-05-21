@@ -9,7 +9,7 @@ import { useAuthStore } from '../../../../store/authStore';
 import { useI18n } from '../../../../i18n/i18n';
 import { useAsync } from '../../../../hooks/useAsync';
 import { companyService } from '../../../../services/companyService';
-import { catalogService, type CatalogItem } from '../../../../services/catalogService';
+import { catalogService, type CatalogItem } from '../../../catalog/api/catalogService';
 import { formatApiError } from '../../../lib/formatApiError';
 import {
   companyConfigSchema,

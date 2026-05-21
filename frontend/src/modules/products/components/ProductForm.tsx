@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
-import type { CatalogItem } from '../../../services/catalogService';
+import type { CatalogItem } from '../../catalog/api/catalogService';
 import { ZHBtn, ZHField, ZHFormSection, ZHGrid } from '../../../components/zh/ZHForm';
 import { defaultProductValues, productSchema, type ProductFormValues } from '../schemas/productSchema';
 import type { Product } from '../../../types/product';

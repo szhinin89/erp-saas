@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { PERMISSIONS_STORAGE_KEY } from '../lib/session/sessionStorageKeys';
 
 /** Alinea claves del menú/catálogo (`perm:…`) con las del perfil (`inventario.*.view`). */
 export function normalizePolicyPermissionKey(key: string): string {
@@ -90,7 +91,7 @@ export const usePermissionsStore = create<PermissionsState>()(
       },
     }),
     {
-      name: 'permissions-storage',
+      name: PERMISSIONS_STORAGE_KEY,
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         state.hasHydrated = true;

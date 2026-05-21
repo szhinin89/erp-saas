@@ -1,4 +1,4 @@
-import type { AdminNavigationMenu, AdminNavItemRow } from '../../services/superAdminService';
+import type { AdminNavigationMenu, AdminNavItemRow } from './api/superAdminService';
 import type { SessionMenuGroupDto, SessionMenuItemDto } from '../../types/access';
 
 function isPlatformRoute(path: string): boolean {

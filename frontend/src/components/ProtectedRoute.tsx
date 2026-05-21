@@ -3,6 +3,8 @@ import { useAuthStore } from '../store/authStore';
 import { GLOBAL_SUBSCRIBER_ID } from '../constants/subscriberIds';
 import { useDeployment } from '../deployment/DeploymentContext';
 import { useSuperAdminGate } from '../hooks/useSuperAdminGate';
+import { fullLogout } from '../lib/session/fullLogout';
+import { AUTH_STORAGE_KEY } from '../lib/session/sessionStorageKeys';
 
 function normalizeUuid(uuid: string): string {
   return uuid.replace(/-/g, '').toLowerCase();
@@ -51,16 +53,15 @@ export function ProtectedRoute() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const user = useAuthStore((s) => s.user);
-  const logout = useAuthStore((s) => s.logout);
   const location = useLocation();
 
   if (!hasHydrated) return null;
 
-  const raw = localStorage.getItem('auth-storage');
+  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
   const token = raw ? (JSON.parse(raw)?.state?.token as string | undefined) : undefined;
 
   if (!superAdminPanelEnabled && (user?.role ?? '') === 'SuperAdmin') {
-    logout();
+    fullLogout();
     return <Navigate to="/login" replace />;
   }
 

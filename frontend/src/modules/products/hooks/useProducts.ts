@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { catalogService, type CatalogItem } from '../../../services/catalogService';
+import { catalogService, type CatalogItem } from '../../catalog/api/catalogService';
 import { useAsync } from '../../../hooks/useAsync';
 import { formatApiError } from '../../lib/formatApiError';
 import { productService, type CreateProductRequest, type UpdateProductRequest } from '../api/productService';
