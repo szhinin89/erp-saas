@@ -48,7 +48,38 @@ const OrdenCompraDetailPage = lazyNamedPage(
   () => import('../modules/compras/ordenes/pages/OrdenCompraDetailPage'),
   'OrdenCompraDetailPage',
 );
-const FeaturePlaceholderPage = lazyNamedPage(() => import('../pages/FeaturePlaceholderPage'), 'FeaturePlaceholderPage');
+const StockPage = lazyNamedPage(
+  () => import('../modules/inventario/stock/pages/StockPage'),
+  'StockPage',
+);
+const KardexPage = lazyNamedPage(
+  () => import('../modules/inventario/kardex/pages/KardexPage'),
+  'KardexPage',
+);
+const CashBankPage = lazyNamedPage(
+  () => import('../modules/cash/bank/pages/CashBankPage'),
+  'CashBankPage',
+);
+const GeographyPage = lazyNamedPage(
+  () => import('../modules/settings/geography/pages/GeographyPage'),
+  'GeographyPage',
+);
+const ActivityPage = lazyNamedPage(
+  () => import('../modules/admin/activity/pages/ActivityPage'),
+  'ActivityPage',
+);
+const WithholdingReceivedPage = lazyNamedPage(
+  () => import('../modules/ventas/pages/WithholdingReceivedPage'),
+  'WithholdingReceivedPage',
+);
+const PurchaseCreditNotesPage = lazyNamedPage(
+  () => import('../modules/compras/credit-notes/pages/PurchaseCreditNotesPage'),
+  'PurchaseCreditNotesPage',
+);
+const WithholdingIssuedPage = lazyNamedPage(
+  () => import('../modules/compras/withholding-issued/pages/WithholdingIssuedPage'),
+  'WithholdingIssuedPage',
+);
 const BodegasPage = lazyNamedPage(() => import('../pages/BodegasPage'), 'BodegasPage');
 const CarriersPage = lazyNamedPage(
   () => import('../modules/logistica/transportistas/pages/CarriersPage'),
@@ -65,8 +96,8 @@ export const catalogRoutes = [
   <Route key="purchases-orders" path="/purchases/orders" element={<OrdenesCompraListPage />} />,
   <Route key="purchases-orders-new" path="/purchases/orders/new" element={<CrearOrdenCompraPage />} />,
   <Route key="purchases-orders-detail" path="/purchases/orders/:id" element={<OrdenCompraDetailPage />} />,
-  <Route key="purchases-credit-notes" path="/purchases/credit-notes" element={<FeaturePlaceholderPage />} />,
-  <Route key="purchases-withholding-issued" path="/purchases/withholding-issued" element={<FeaturePlaceholderPage />} />,
+  <Route key="purchases-credit-notes" path="/purchases/credit-notes" element={<PurchaseCreditNotesPage />} />,
+  <Route key="purchases-withholding-issued" path="/purchases/withholding-issued" element={<WithholdingIssuedPage />} />,
   // Legacy
   <Route key="compras-ordenes" path="/compras/ordenes" element={<Navigate to="/purchases/orders" replace />} />,
   <Route key="compras-ordenes-nueva" path="/compras/ordenes/nueva" element={<Navigate to="/purchases/orders/new" replace />} />,
@@ -99,8 +130,8 @@ export const catalogRoutes = [
   <Route key="inventory-tariffs" path="/inventory/tariffs" element={<TariffsCatalogPage />} />,
   <Route key="inventory-catalog-structure" path="/inventory/catalog-structure" element={<CatalogStructurePage />} />,
   <Route key="inventory-warehouses" path="/inventory/warehouses" element={<BodegasPage />} />,
-  <Route key="inventory-kardex" path="/inventory/kardex" element={<FeaturePlaceholderPage />} />,
-  <Route key="inventory-stock" path="/inventory/stock" element={<FeaturePlaceholderPage />} />,
+  <Route key="inventory-kardex" path="/inventory/kardex" element={<KardexPage />} />,
+  <Route key="inventory-stock" path="/inventory/stock" element={<StockPage />} />,
   // Legacy
   <Route key="inventario-brands" path="/inventario/brands" element={<Navigate to="/inventory/brands" replace />} />,
   <Route key="inventario-product-types" path="/inventario/product-types" element={<Navigate to="/inventory/product-types" replace />} />,
@@ -122,21 +153,21 @@ export const catalogRoutes = [
   <Route key="logistica-transportistas" path="/logistica/transportistas" element={<Navigate to="/logistics/carriers" replace />} />,
 
   // ── Cash / Caja ────────────────────────────────────────────────────────────
-  <Route key="cash-bank" path="/cash/bank" element={<FeaturePlaceholderPage />} />,
+  <Route key="cash-bank" path="/cash/bank" element={<CashBankPage />} />,
   <Route key="caja-root" path="/caja" element={<Navigate to="/cash/bank" replace />} />,
 
   // ── Sales (rutas secundarias) ──────────────────────────────────────────────
   <Route key="sales-credit-notes" path="/sales/credit-notes" element={<CreditNotesPage />} />,
   <Route key="sales-credit-notes-new" path="/sales/credit-notes/new" element={<CreateCreditNotePage />} />,
-  <Route key="sales-withholding-received" path="/sales/withholding-received" element={<FeaturePlaceholderPage />} />,
+  <Route key="sales-withholding-received" path="/sales/withholding-received" element={<WithholdingReceivedPage />} />,
   <Route key="ventas-notas-legacy" path="/ventas/notas" element={<Navigate to="/sales/credit-notes" replace />} />,
   <Route key="ventas-ret-rec-legacy" path="/ventas/retenciones-recibidas" element={<Navigate to="/sales/withholding-received" replace />} />,
 
   // ── Settings adicionales ───────────────────────────────────────────────────
-  <Route key="settings-geography" path="/settings/geography" element={<FeaturePlaceholderPage />} />,
+  <Route key="settings-geography" path="/settings/geography" element={<GeographyPage />} />,
   <Route key="geo-legacy" path="/configuracion/geografia" element={<Navigate to="/settings/geography" replace />} />,
 
   // ── Admin / Activity ───────────────────────────────────────────────────────
-  <Route key="admin-activity" path="/admin/activity" element={<FeaturePlaceholderPage />} />,
+  <Route key="admin-activity" path="/admin/activity" element={<ActivityPage />} />,
   <Route key="actividad-legacy" path="/actividad" element={<Navigate to="/admin/activity" replace />} />,
 ];
