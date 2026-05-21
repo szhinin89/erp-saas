@@ -75,6 +75,9 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         if (subscriberGroups.Count > 1)
             return Result<AuthResponseDto>.Failure("Tu usuario está asociado a múltiples suscriptores. Usa el flujo de selección de suscriptor.");
 
+        if (subscriberGroups.Count == 0)
+            return Result<AuthResponseDto>.Failure("No estás registrado a una empresa. Comunícate con el administrador.");
+
         var subscriberId = subscriberGroups[0].Key;
         var subscriber = await _tenantRepository.GetByIdAsync(subscriberId, ct);
         if (subscriber is null || !subscriber.IsActive)

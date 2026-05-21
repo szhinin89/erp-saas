@@ -1,6 +1,7 @@
 import { useI18n } from '../../i18n/i18n';
 import { SUBSCRIBER_MODULE_KEYS, moduleKeysMatch } from '../../constants/subscriptionModules';
 import type { CompanyItem } from '../../modules/companies/api/companyService';
+import './CompanyModuleChips.css';
 
 export function CompanyModuleChips({
   company,

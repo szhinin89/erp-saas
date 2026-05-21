@@ -1,3 +1,4 @@
+using ERP.Application.Common;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -7,10 +8,12 @@ namespace ERP.Infrastructure.Persistence.Repositories;
 public sealed class CompanyRepository : ICompanyRepository
 {
     private readonly ErpDbContext _db;
+    private readonly IPlatformQueryAccessor _platform;
 
-    public CompanyRepository(ErpDbContext db)
+    public CompanyRepository(ErpDbContext db, IPlatformQueryAccessor platform)
     {
         _db = db;
+        _platform = platform;
     }
 
     public Task<Company?> GetByIdAsync(Guid id, CancellationToken ct = default)
@@ -45,7 +48,8 @@ public sealed class CompanyRepository : ICompanyRepository
             .FirstOrDefaultAsync(c => c.Id == companyId && c.SubscriberId == subscriberId, ct);
 
     public async Task<IReadOnlyList<Company>> GetActiveBySubscriberIdAsync(Guid subscriberId, CancellationToken ct = default)
-        => await _db.Companies.AsNoTracking()
+        => await _platform
+            .Unfiltered(_db.Companies.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
             .Where(c => c.SubscriberId == subscriberId && c.IsActive)
             .OrderBy(c => c.LegalName)
             .ToListAsync(ct);
@@ -54,14 +58,18 @@ public sealed class CompanyRepository : ICompanyRepository
         => _db.Companies.CountAsync(c => c.SubscriberId == subscriberId && c.IsActive, ct);
 
     public Task<Company?> GetByIdForSubscriberAsync(Guid companyId, Guid subscriberId, CancellationToken ct = default)
-        => _db.Companies.AsNoTracking()
+        => _platform
+            .Unfiltered(_db.Companies.AsNoTracking(), PlatformQueryReason.TenantScopedExplicit)
             .FirstOrDefaultAsync(c => c.Id == companyId && c.SubscriberId == subscriberId && c.IsActive, ct);
 
     public async Task<IReadOnlyList<Company>> GetByIdsAsync(IReadOnlyCollection<Guid> companyIds, CancellationToken ct = default)
     {
         if (companyIds.Count == 0)
             return Array.Empty<Company>();
-        return await _db.Companies.AsNoTracking()
+
+        // Auth/bootstrap/refresh resuelven IDs desde membresías sin contexto HTTP de tenant.
+        return await _platform
+            .Unfiltered(_db.Companies.AsNoTracking(), PlatformQueryReason.CrossTenantSystem)
             .Where(c => companyIds.Contains(c.Id) && c.IsActive)
             .ToListAsync(ct);
     }

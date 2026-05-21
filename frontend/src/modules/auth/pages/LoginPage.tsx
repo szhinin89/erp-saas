@@ -14,10 +14,26 @@ import { loginSchema, type LoginFormValues } from '../../../schemas/auth/loginSc
 import { useDeployment } from '../../../deployment/DeploymentContext';
 import { GLOBAL_SUBSCRIBER_ID } from '../../../constants/subscriberIds';
 import { formatApiRequestError } from '../../lib/apiError';
+import { isAxiosError } from 'axios';
 import './LoginPage.css';
 
 function normalizeUuid(uuid: string): string {
   return uuid.replace(/-/g, '').toLowerCase();
+}
+
+function readApiErrorMessage(err: unknown): string | null {
+  if (!isAxiosError(err)) return null;
+  const data = err.response?.data;
+  if (data && typeof data === 'object' && 'message' in data) {
+    const message = (data as { message?: unknown }).message;
+    return typeof message === 'string' && message.trim().length > 0 ? message : null;
+  }
+  return null;
+}
+
+function shouldTryPlatformLogin(err: unknown): boolean {
+  const message = readApiErrorMessage(err);
+  return message?.toLowerCase().includes('login platform') ?? false;
 }
 
 
@@ -68,6 +84,7 @@ export function LoginPage() {
 
     try {
       /* ── 1. Direct login (identity user or legacy single-tenant) ── */
+      let directLoginErr: unknown = null;
       try {
         const payload = await authService.loginUser(credentials);
 
@@ -95,7 +112,8 @@ export function LoginPage() {
           await enterSubscriberDashboard(payload);
           return;
         }
-      } catch {
+      } catch (err) {
+        directLoginErr = err;
         if (superAdminPanelEnabled) {
           try {
             const platformPayload = await authService.loginPlatform(credentials);
@@ -106,8 +124,10 @@ export function LoginPage() {
               navigate('/superadmin/overview', { replace: true });
               return;
             }
-          } catch {
-            // Wrong credentials or multi-tenant user → try bootstrap.
+          } catch (platformErr) {
+            if (shouldTryPlatformLogin(directLoginErr)) {
+              throw platformErr;
+            }
           }
         }
       }

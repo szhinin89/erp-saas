@@ -80,7 +80,7 @@ export function SuperAdminPanelCompaniesTab({
                   variant={subscriber.isActive ? 'green' : 'gray'}
                 />
                 <span className="subtle">
-                  {t('common.users') ?? 'Usuarios'}: <strong>{subscriber.totalUsers}</strong> · {t('common.active')}:{' '}
+                  {t('common.users')}: <strong>{subscriber.totalUsers}</strong> · {t('common.active')}:{' '}
                   <strong>{subscriber.activeUsers}</strong>
                 </span>
                 <span className="subtle">{new Date(subscriber.createdAt).toLocaleDateString()}</span>
