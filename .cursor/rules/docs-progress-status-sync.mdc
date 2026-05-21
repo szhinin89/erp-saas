@@ -12,18 +12,18 @@ Si editas **`docs/STATUS.md`**, trata el cambio como **actualización de estado 
 
 1. **`docs/STATUS.md`** — estado operativo consolidado (única fuente oficial)
 2. **`docs/ROADMAP.md`** — prioridades y fases pendientes
-3. **`PROJECT.md`** — resumen de negocio / alcance MVP
+3. **`README.md`** (sección Producto) — resumen de negocio; tablas MVP en **`docs/STATUS.md`**
 
 ## Checklist obligatorio (misma sesión de cambio)
 
 | Documento | Actualizar cuando… |
 |-----------|-------------------|
 | **`docs/ROADMAP.md`** | Cambian prioridades, fases o ítems diferidos |
-| **`PROJECT.md`** | Cambia alcance MVP o pendientes comerciales |
+| **`README.md`** (Producto) + **`docs/STATUS.md`** | Cambia alcance MVP o pendientes comerciales |
 | **`README.md`** | Cambia la tabla de documentación o arranque |
 | **`CONTEXT.md`** | Cambia el mapa de docs |
 | **`docs/ARCHITECTURE.md`** | Decisión arquitectónica nueva |
-| **`docs/DATABASE/*`** | Schema, RLS o política de migraciones |
+| **`docs/DATABASE.md`** | Schema, RLS o política de migraciones |
 
 No crear documentos fuera de la estructura oficial en `docs/`.
 

@@ -1,98 +1,97 @@
 # CONTEXT.md — ZH Technologies ERP
 
-Índice maestro. Lee primero este archivo; luego abre solo el enlace que corresponde a tu tarea.
+Índice maestro. Lee primero este archivo; luego abre **solo** el documento de tu tarea.
 
 ---
 
-## Documentación oficial (`docs/`)
+## Mapa de documentación
 
-| Qué necesito saber | Archivo |
-|--------------------|---------|
-| **Objetivo y visión** del producto | **`PROJECT.md`** (raíz) |
-| **Reglas de código** para agentes | **`CLAUDE.md`** (raíz) |
-| **Estado actual del proyecto** (única fuente) | **`docs/STATUS.md`** |
-| **Arquitectura oficial** | **`docs/ARCHITECTURE.md`** |
-| **Roadmap y prioridades** | **`docs/ROADMAP.md`** |
-| **Reglas de desarrollo** | **`docs/DEVELOPMENT-RULES.md`** |
-| **Stack permitido (herramientas)** | **`docs/HERRAMIENTAS-ERP-SAAS.md`** |
-| **Multi-tenant / company** | **`docs/MULTITENANCY.md`**, **`docs/SCOPES.md`** |
-| **Seguridad** | **`docs/SECURITY.md`** |
-| **Billing SaaS** | **`docs/BILLING.md`** |
-| **Planes comerciales** | **`docs/COMMERCIAL-PLANS.md`** |
-| **Gestión de empresas** | **`docs/COMPANY-MANAGEMENT.md`** |
-| **Identidad / auth** | **`docs/identity-model.md`**, **`docs/frontend-identity.md`** |
-| **Platform vs ERP runtime** | **`docs/platform-runtime-boundaries.md`** |
-| **Base de datos** | **`docs/DATABASE/`** |
+| Qué necesito | Archivo | Contenido |
+|--------------|---------|-----------|
+| **Entrada GitHub / visión producto** | [`README.md`](./README.md) (raíz) | Resumen negocio, arranque, enlaces |
+| **Reglas de código (agentes)** | [`CLAUDE.md`](./CLAUDE.md) (raíz) | Convenciones implementación |
+| **Estado y delivery** | [`docs/STATUS.md`](./docs/STATUS.md) | Única fuente de avance MVP |
+| **Prioridades** | [`docs/ROADMAP.md`](./docs/ROADMAP.md) | Fases pendientes |
+| **Cómo está construido** | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Capas, scopes, platform vs ERP, API |
+| **Cómo desarrollar** | [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md) | Arranque, scripts, stack, tests, reglas |
+| **Login, JWT, seguridad** | [`docs/IDENTITY.md`](./docs/IDENTITY.md) | IAM, auth backend/frontend |
+| **Planes, billing, empresas** | [`docs/SAAS-COMMERCIAL.md`](./docs/SAAS-COMMERCIAL.md) | Límites, billing SaaS, companies |
+| **PostgreSQL, EF, RLS** | [`docs/DATABASE.md`](./docs/DATABASE.md) | Migraciones, tablas, RLS |
 
-> Al cambiar arquitectura o delivery: actualizar **`docs/STATUS.md`** y **`docs/ROADMAP.md`** primero.
+> No crear `.md` de producto fuera de esta lista (salvo stubs mínimos en `.github/` o README operativos en `Migrations/` / `InstallData/`).
 
 ---
 
-## Árbol del monorepo
+## Árbol `docs/` (oficial — 7 archivos)
 
 ```
-erp-saas/
-├── CLAUDE.md
-├── CONTEXT.md
-├── PROJECT.md
-├── README.md
-├── docker-compose.yml
-├── docs/
-│   ├── ARCHITECTURE.md
-│   ├── STATUS.md
-│   ├── ROADMAP.md
-│   ├── DEVELOPMENT-RULES.md
-│   ├── HERRAMIENTAS-ERP-SAAS.md
-│   ├── MULTITENANCY.md
-│   ├── SCOPES.md
-│   ├── SECURITY.md
-│   ├── BILLING.md
-│   ├── COMMERCIAL-PLANS.md
-│   ├── COMPANY-MANAGEMENT.md
-│   ├── identity-model.md
-│   ├── frontend-identity.md
-│   ├── platform-runtime-boundaries.md
-│   └── DATABASE/
-│       ├── DATABASE-ARCHITECTURE.md
-│       ├── MIGRATIONS.md
-│       ├── RLS.md
-│       └── TABLES.md
-├── backend/src/
-│   ├── ERP.API/
-│   ├── ERP.Application/
-│   ├── ERP.Domain/
-│   └── ERP.Infrastructure/
-└── frontend/
+docs/
+├── STATUS.md
+├── ROADMAP.md
+├── ARCHITECTURE.md
+├── DEVELOPMENT.md
+├── IDENTITY.md
+├── SAAS-COMMERCIAL.md
+└── DATABASE.md
 ```
+
+Referencia SRI (PDF): `docs/FICHA TECNICA COMPROBANTES ELECTRONICOS ESQUEMA OFFLINE Versio232.pdf`
 
 ---
 
-## Arranque rápido
+## Arranque local
 
-```powershell
-# Recomendado (Docker + migraciones + API + Vite)
-.\scripts\dev-restart.ps1
+Atajo: **`.\scripts\dev-restart.ps1`** · SuperAdmin first-run: **`.\Crear-SuperAdmin.ps1`**
 
-# Manual
-docker compose up -d
-cd backend/src/ERP.Infrastructure
-dotnet ef database update --startup-project ../ERP.API/ERP.API.csproj
-cd ../ERP.API
-dotnet run
-cd ../../../frontend
-npm run dev
-```
+Manual completo: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md#arranque-local).
 
-First-run SuperAdmin: `.\Crear-SuperAdmin.ps1`
+---
+
+## Scripts PowerShell (7 canónicos)
+
+| Script | Rol |
+|--------|-----|
+| [`Crear-SuperAdmin.ps1`](./Crear-SuperAdmin.ps1) | SuperAdmin first-run |
+| [`scripts/dev-restart.ps1`](./scripts/dev-restart.ps1) | Dev: Docker + EF + API + Vite |
+| [`scripts/run-e2e.ps1`](./scripts/run-e2e.ps1) | Playwright E2E |
+| [`scripts/verify-stack-allowlist.ps1`](./scripts/verify-stack-allowlist.ps1) | CI: stack + scripts |
+| [`scripts/check-identity-guardrails.ps1`](./scripts/check-identity-guardrails.ps1) | CI: auth legacy |
+| [`scripts/new-master-module.ps1`](./scripts/new-master-module.ps1) | Scaffolding módulo |
+| [`scripts/import_inec_ecuador_geography.ps1`](./scripts/import_inec_ecuador_geography.ps1) | SQL geografía INEC |
+
+Detalle y flags: [`docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md#scripts-powershell-canónicos) · Índice carpeta: [`scripts/README.md`](./scripts/README.md).
+
+No añadir `.ps1` sin actualizar `scripts/stack-allowlist.json` (`scriptsAllowed`).
 
 ---
 
 ## Reglas para agentes
 
-1. Leer **`CLAUDE.md`** y **`docs/DEVELOPMENT-RULES.md`** antes de implementar.
-2. Arquitectura → **`docs/ARCHITECTURE.md`**.
-3. Estado y qué falta → **`docs/STATUS.md`**.
-4. Prioridades → **`docs/ROADMAP.md`**.
-5. Schema / RLS / migraciones → **`docs/DATABASE/`**.
-6. Stack / dependencias nuevas → **`docs/HERRAMIENTAS-ERP-SAAS.md`** + `scripts/stack-allowlist.json`.
-7. No crear documentos fuera de la estructura oficial en `docs/` (stubs mínimos solo en `.github/` o `.cursor/`).
+1. **`CLAUDE.md`** + **`docs/DEVELOPMENT.md`** antes de implementar.
+2. Arquitectura / scopes → **`docs/ARCHITECTURE.md`**.
+3. Auth / permisos → **`docs/IDENTITY.md`**.
+4. Planes / billing → **`docs/SAAS-COMMERCIAL.md`**.
+5. Schema / EF → **`docs/DATABASE.md`**.
+6. Estado → **`docs/STATUS.md`**; prioridades → **`docs/ROADMAP.md`**.
+7. Stack nuevo → **`docs/DEVELOPMENT.md#stack-oficial`** + `scripts/stack-allowlist.json`.
+8. Scripts `.ps1` → solo los 7 canónicos; mapa en **`scripts/README.md`**.
+
+Copilot / IDE: [`copilot-instructions.md`](./copilot-instructions.md) → [`.github/INSTRUCCIONES-COPILOT.md`](./.github/INSTRUCCIONES-COPILOT.md).
+
+---
+
+## Otros archivos (no duplicar)
+
+| Tipo | Dónde | Nota |
+|------|--------|------|
+| Reglas Cursor | `.cursor/rules/*.mdc` | Fuente agente; no copiar a `docs/` |
+| Stub Copilot | `copilot-instructions.md`, `.cursorrules`, `.github/instructions/` | Punteros mínimos |
+| SQL auxiliar | `scripts/sql/` | Ver [`scripts/sql/README.md`](./scripts/sql/README.md) |
+| InstallData | `backend/.../Seeding/InstallData/` | Scripts inmutables de arranque |
+| Checklist MVP | `PROGRESS.html` | Sincronizar con `docs/STATUS.md` |
+| Spec SRI | `docs/*.pdf` | Referencia normativa |
+| Artefactos locales | `_verify_build_out/`, `*.log`, `backend/scripts/` | `.gitignore`; no versionar |
+
+No crear carpetas paralelas (`database/`, docs sueltos en `src/`, caches `.lscache`).
+
+---

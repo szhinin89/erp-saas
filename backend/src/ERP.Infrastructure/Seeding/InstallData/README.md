@@ -1,6 +1,6 @@
 # InstallData
 
-Carpeta reservada para datos de instalación que se cargan automáticamente al iniciar la API.
+Datos de instalación cargados al iniciar la API. Política general: **[docs/DATABASE.md](../../../../docs/DATABASE.md)**.
 
 ## Reglas
 

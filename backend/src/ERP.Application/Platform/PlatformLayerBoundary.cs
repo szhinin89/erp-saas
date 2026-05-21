@@ -12,6 +12,6 @@ namespace ERP.Application.Platform;
 ///   <item><c>Modules/Tenants</c> (settings, subscription) → Platform.Subscribers</item>
 ///   <item><c>Subscriptions/*</c> → Platform.Billing / Platform.Plans</item>
 /// </list>
-/// API canónica: <c>/api/platform/*</c>. Ver docs/platform-runtime-boundaries.md.
+/// API canónica: <c>/api/platform/*</c>. Ver docs/ARCHITECTURE.md.
 /// </remarks>
 public static class PlatformLayerBoundary;

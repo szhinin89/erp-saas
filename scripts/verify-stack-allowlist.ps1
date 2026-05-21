@@ -143,6 +143,39 @@ foreach ($pattern in $allowlist.disallowedPatterns) {
     }
 }
 
+# 6) PowerShell scripts — solo los listados en scriptsAllowed
+$allowedScripts = @($allowlist.scriptsAllowed)
+if ($null -eq $allowedScripts -or $allowedScripts.Count -eq 0) {
+    Write-Warning "scriptsAllowed vacío en allowlist; omitiendo auditoría de scripts."
+} else {
+    $allowedSet = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($s in $allowedScripts) { [void]$allowedSet.Add($s.Replace('\', '/')) }
+
+    $ps1Files = Get-ChildItem -Path $root -Recurse -Filter "*.ps1" -File -ErrorAction SilentlyContinue |
+        Where-Object {
+            $full = $_.FullName
+            if ($full -match '[\\/]node_modules[\\/]|[\\/]bin[\\/]|[\\/]obj[\\/]|[\\/]\.git[\\/]|[\\/]dist[\\/]|[\\/]build[\\/]|[\\/]_verify_build_out[\\/]') {
+                return $false
+            }
+            return $true
+        }
+
+    foreach ($ps1 in $ps1Files) {
+        $rel = $ps1.FullName.Replace($root + [IO.Path]::DirectorySeparatorChar, "").Replace('\', '/')
+        if (-not $allowedSet.Contains($rel)) {
+            Add-Violation -List $violations -File $rel -Line 1 -Detected $rel -Reason "Script .ps1 fuera del mapa canónico (scriptsAllowed)." -Suggestion "Eliminar el script o añadirlo a scripts/stack-allowlist.json y docs/DEVELOPMENT.md."
+        }
+    }
+
+    foreach ($expected in $allowedScripts) {
+        $expectedNorm = $expected.Replace('\', '/')
+        $full = Join-Path $root ($expectedNorm -replace '/', [IO.Path]::DirectorySeparatorChar)
+        if (-not (Test-Path $full)) {
+            Add-Violation -List $violations -File $expectedNorm -Line 1 -Detected $expectedNorm -Reason "Script canónico declarado en allowlist pero no existe en disco." -Suggestion "Restaurar el archivo o quitarlo de scriptsAllowed."
+        }
+    }
+}
+
 if ($violations.Count -eq 0) {
     Write-Host "Stack audit passed. No violations found." -ForegroundColor Green
     exit 0

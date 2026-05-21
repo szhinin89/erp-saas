@@ -91,5 +91,14 @@
     "SqlServerCache",
     "System.Data.SqlClient",
     "Microsoft.Data.SqlClient"
+  ],
+  "scriptsAllowed": [
+    "Crear-SuperAdmin.ps1",
+    "scripts/dev-restart.ps1",
+    "scripts/run-e2e.ps1",
+    "scripts/verify-stack-allowlist.ps1",
+    "scripts/check-identity-guardrails.ps1",
+    "scripts/new-master-module.ps1",
+    "scripts/import_inec_ecuador_geography.ps1"
   ]
 }

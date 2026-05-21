@@ -15,6 +15,7 @@ _verify_build_out/
 *.userosscache
 *.sln.docstates
 *.slnx.user
+*.lscache
 
 # Rider
 .idea/
@@ -59,7 +60,7 @@ desktop.ini
 backend/artifacts/
 backend/src/ERP.Domain/*.zip
 
-# Scripts de setup (ya no se necesitan en el repo)
+# Carpeta legacy local (bootstrap antiguo); no versionar — scripts canónicos en scripts/
 backend/scripts/
 
 # Node (para cuando agreguemos el frontend)

@@ -4,7 +4,7 @@
 
 ### Decisiones de arquitectura (si aplica)
 
-- [ ] Si esta PR cambia arquitectura, scopes o política de BD, actualizá el doc oficial correspondiente en [`docs/`](docs/) (`ARCHITECTURE.md`, `DATABASE/`, `SECURITY.md`, etc.) y [`docs/STATUS.md`](docs/STATUS.md) si afecta el estado de entrega.
+- [ ] Si esta PR cambia arquitectura, scopes o BD, actualizá el doc en [`docs/`](docs/) (`ARCHITECTURE.md`, `DATABASE.md`, `IDENTITY.md`, etc.) y [`docs/STATUS.md`](docs/STATUS.md) si afecta delivery.
 
 ## Checklist (definición de hecho sugerida)
 

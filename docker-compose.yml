@@ -1,4 +1,4 @@
-# PostgreSQL + Redis locales — ver docs/DEVELOPMENT-RULES.md y appsettings.Development.json.example
+# PostgreSQL + Redis locales — ver docs/DEVELOPMENT.md y appsettings.Development.json.example
 # Uso: desde la raíz del repo →  docker compose up -d
 # Apagar: docker compose down   (datos de Postgres persisten en el volumen hasta que hagas down -v)
 

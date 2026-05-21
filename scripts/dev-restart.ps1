@@ -26,7 +26,7 @@
   Útil para detectar bloqueos, toolchain faltante y estado de migraciones.
 
 .PARAMETER DockerUp
-  Solo levanta PostgreSQL + Redis con docker compose y termina (reemplaza dev-up.ps1).
+  Solo levanta PostgreSQL + Redis con docker compose y termina (equivale a `-DockerUp`).
 
 .PARAMETER SkipDocker
   No ejecuta docker compose antes de migrar (útil si Postgres/Redis ya están corriendo).

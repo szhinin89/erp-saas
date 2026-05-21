@@ -3,7 +3,7 @@
   Descarga DPA Ecuador (INEC vía ArcGIS Ecuador en Cifras) y genera SQL para geo_*.
 
 .DESCRIPTION
-  Misma lógica que import_inec_ecuador_geography.py: INSERT ... ON CONFLICT DO UPDATE.
+  Genera SQL para geo_* (INSERT ... ON CONFLICT DO UPDATE).
 
 .EXAMPLE
   .\import_inec_ecuador_geography.ps1 -OutputFile .\inec_ecuador_geography.sql

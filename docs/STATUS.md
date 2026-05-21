@@ -2,16 +2,22 @@
 
 **Single source of truth** for delivery state. Updated: **2026-05-21**.
 
-## Documentation map (canonical)
+## Documentation map (canonical — 7 files in `docs/`)
 
 | Topic | File |
 |-------|------|
 | Index | `CONTEXT.md` |
-| Agent / coding rules | `CLAUDE.md`, `.cursor/rules/` |
-| Stack allowlist | `docs/HERRAMIENTAS-ERP-SAAS.md` |
-| Development setup | `docs/DEVELOPMENT-RULES.md` |
+| Product summary | `README.md` |
+| Agent rules | `CLAUDE.md`, `.cursor/rules/` |
+| Delivery state | `docs/STATUS.md` (this file) |
+| Priorities | `docs/ROADMAP.md` |
+| Architecture | `docs/ARCHITECTURE.md` |
+| Development + stack | `docs/DEVELOPMENT.md` |
+| Identity + security | `docs/IDENTITY.md` |
+| SaaS plans + billing | `docs/SAAS-COMMERCIAL.md` |
+| Database | `docs/DATABASE.md` |
 
-Legacy or duplicate docs outside this map were removed 2026-05-21 (`_verify_build_out/`, audit snapshots, READMEs de migración en código).
+Consolidated 2026-05-21: former `MULTITENANCY`, `SCOPES`, `SECURITY`, `BILLING`, `DATABASE/*`, etc. merged into the files above.
 
 ## Architecture (current)
 
@@ -28,7 +34,7 @@ Legacy or duplicate docs outside this map were removed 2026-05-21 (`_verify_buil
 | PostgreSQL RLS (enterprise tables) | ✅ (in baseline) |
 | Rate limit per subscriber (600/min) | ✅ |
 
-Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE/](./DATABASE/).
+Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 
 ## SaaS platform
 
@@ -140,4 +146,4 @@ First-run super admin: banner en consola al arrancar API, o **`Crear-SuperAdmin.
 ## Related
 
 - [ROADMAP.md](./ROADMAP.md) — what’s next
-- [DEVELOPMENT-RULES.md](./DEVELOPMENT-RULES.md) — how to contribute safely
+- [DEVELOPMENT.md](./DEVELOPMENT.md) — how to contribute safely

@@ -5,13 +5,13 @@ alwaysApply: true
 
 # Stack permitido (fuente de verdad)
 
-Fuente de verdad obligatoria: `docs/HERRAMIENTAS-ERP-SAAS.md`.
+Fuente de verdad obligatoria: `docs/DEVELOPMENT.md` (sección Stack oficial).
 
 ## Reglas operativas
 
 - No proponer, generar ni configurar herramientas fuera de la lista oficial sin autorización explícita del usuario.
 - Si una necesidad no está cubierta por el stack actual, pedir confirmación primero y ofrecer alternativas dentro del stack listado.
-- Antes de crear migraciones, scripts o configuración nueva, verificar que la herramienta correspondiente esté en `docs/HERRAMIENTAS-ERP-SAAS.md`.
+- Antes de crear migraciones, scripts o configuración nueva, verificar que la herramienta correspondiente esté en `docs/DEVELOPMENT.md` (Stack oficial).
 - En documentación/comentarios de operación, asumir entorno oficial: Docker Compose (PostgreSQL + Redis), CI en GitHub Actions, pruebas con xUnit/Playwright y flujo actual del repo.
 - Si surge una sugerencia fuera del inventario, detenerse, advertirlo y consultar antes de continuar.
 

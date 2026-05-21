@@ -6,9 +6,8 @@
 
 1. [`CONTEXT.md`](../CONTEXT.md) — índice maestro del monorepo
 2. [`CLAUDE.md`](../CLAUDE.md) — reglas de implementación para agentes
-3. [`docs/DEVELOPMENT-RULES.md`](../docs/DEVELOPMENT-RULES.md) — arranque, tests, convenciones
-4. [`docs/HERRAMIENTAS-ERP-SAAS.md`](../docs/HERRAMIENTAS-ERP-SAAS.md) — stack permitido
-5. [`.cursor/rules/erp-unified-rules.mdc`](../.cursor/rules/erp-unified-rules.mdc) — validación 4 capas, ZH Form, i18n `qu`, navegación SaaS
+3. [`docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md) — arranque, stack, tests
+4. [`.cursor/rules/erp-unified-rules.mdc`](../.cursor/rules/erp-unified-rules.mdc) — validación 4 capas, ZH Form, i18n `qu`, navegación SaaS
 
 ## Reglas duras
 

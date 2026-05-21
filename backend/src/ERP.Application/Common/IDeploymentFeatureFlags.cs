@@ -35,7 +35,7 @@ public interface IDeploymentFeatureFlags
     /// <summary>
     /// Validación alternativa por configuración (<c>Deployment:InitialSuperAdminSetupToken</c>).
     /// <b>No</b> la usa hoy el flujo de alta en <c>POST /api/setup/superadmin</c> (ese flujo usa <c>IFirstRunSetupService</c> / token en BD).
-    /// Se mantiene por compatibilidad o futuros usos; ver <c>docs/SUPERADMIN-Y-FIRST-RUN.md</c>.
+    /// Se mantiene por compatibilidad o futuros usos; ver docs/DEVELOPMENT.md (first-run SuperAdmin).
     /// </summary>
     bool AuthorizeInitialSuperAdminSetup(string? submittedToken);
 }

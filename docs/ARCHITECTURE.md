@@ -1,109 +1,207 @@
-# Architecture
+# Arquitectura
 
-Official architecture of the ERP SaaS platform. Modular monolith: **Clean Architecture + CQRS (MediatR)**.
+Monolito modular: **Clean Architecture + CQRS (MediatR)**.
 
-## Layers
+Documentos relacionados: [IDENTITY.md](./IDENTITY.md), [SAAS-COMMERCIAL.md](./SAAS-COMMERCIAL.md), [DATABASE.md](./DATABASE.md), [STATUS.md](./STATUS.md), [ROADMAP.md](./ROADMAP.md).
 
-| Layer | Project | Responsibility |
-|-------|---------|----------------|
-| Domain | `ERP.Domain` | Entities, enums, domain exceptions, interfaces |
-| Application | `ERP.Application` | Use cases, behaviors, DTOs, ports |
+---
+
+## Capas
+
+| Capa | Proyecto | Responsabilidad |
+|------|----------|-----------------|
+| Domain | `ERP.Domain` | Entidades, enums, excepciones, interfaces |
+| Application | `ERP.Application` | Casos de uso, behaviors, DTOs, ports |
 | Infrastructure | `ERP.Infrastructure` | EF Core, Redis, guards, billing, limits |
-| API | `ERP.API` | HTTP, JWT, middleware, authorization policies |
+| API | `ERP.API` | HTTP, JWT, middleware, policies |
 
-Dependency rule: API → Application → Domain; Infrastructure implements Application ports.
+Dependencias: API → Application → Domain; Infrastructure implementa ports.
 
-## Hierarchy
+---
+
+## Jerarquía multi-tenant
 
 ```
 GlobalSuperAdmin (platform)
-  └── Subscriber (SaaS contract: plan, billing, limits)
-        └── Company (fiscal / operational entity)
+  └── Subscriber (contrato SaaS: plan, billing, límites)
+        └── Company (entidad fiscal / operativa)
               └── CompanyUserMembership
-                    └── ERP modules (Sales, Inventory, Accounting, …)
+                    └── Módulos ERP (Ventas, Inventario, Contabilidad, …)
 ```
 
-| Actor | Scope key | Pays / governed | Operates ERP |
-|-------|-----------|-----------------|--------------|
-| GlobalSuperAdmin | none (platform) | — | bypass RLS via `app.is_platform_admin` |
-| Subscriber | `subscriber_id` | yes | via companies |
-| Company | `company_id` | no | yes (JWT) |
+| Actor | Clave scope | Paga / gobernado | Opera ERP |
+|-------|-------------|------------------|-----------|
+| GlobalSuperAdmin | — (platform) | — | bypass RLS vía `app.is_platform_admin` |
+| Subscriber | `subscriber_id` | sí | vía companies |
+| Company | `company_id` | no | sí (JWT) |
 
-**Rule:** Subscriber pays and is governed. Company operates. SaaS billing never uses `company_id`.
+**Regla:** Subscriber paga y se gobierna. Company opera. Billing SaaS nunca usa `company_id`.
 
-## Bounded contexts (modular monolith)
+---
 
-| Context | Namespace / folder | Scope |
-|---------|-------------------|--------|
-| Platform / IAM | `Modules/Platform`, `Modules/Access` | `subscriber_id`, `company_id` |
+## Capas platform vs ERP runtime
+
+| Capa | Clave | Responsabilidad | API (canónica) |
+|------|-------|-----------------|----------------|
+| **Platform** | `subscriber_id` | Onboarding, planes, límites, menús | `/api/platform/*` |
+| **IAM** | `identity_user_id` | Auth, switch, perfiles, permisos | `/api/auth/*`, `/api/platform/auth/*` |
+| **Billing SaaS** | `subscriber_id` | Cuenta billing plataforma | `/api/saas/billing/*` |
+| **Company** | `company_id` | Empresa fiscal (RUC) | `/api/companies/*` |
+| **ERP Runtime** | `company_id` | Ventas, inventario, compras, SRI | `/api/sales/*`, `/api/inventory/*`, … |
+
+Separación:
+
+- Platform **no** ejecuta lógica ERP operativa.
+- IAM **no** provisiona billing ni companies (orquestador Platform).
+- ERP Runtime **siempre** filtra por `company_id`.
+
+### Ownership matrix
+
+| Concepto | Capa | Clave |
+|--------|------|-------|
+| Suscriptor SaaS | Platform | `subscriber_id` |
+| Empresa fiscal | Company / ERP | `company_id` |
+| Usuario login | IAM | `identity_users.id` |
+| Membership | IAM | `(company_id, identity_user_id)` |
+| Billing account | Billing | `subscriber_id` |
+| Límites plan | Platform | `subscriber_id` |
+
+---
+
+## Scopes
+
+Toda entidad nueva declara **un** scope primario.
+
+### SaaS (`subscriber_id`)
+
+`subscribers`, `commercial_plans*`, `subscriber_subscriptions`, `saas_billing_*`, `subscriber_custom_menus`, `config_*`.
+
+JWT: `subscriber_id` en operaciones platform del tenant.
+
+### ERP operativo (`company_id` target)
+
+Ventas, compras, contabilidad, caja — hoy filtro `subscriber_id`; migración a `company_id`. Wave 1: inventario core con `company_id` nullable + RLS.
+
+JWT: `company_id` obligatorio (`CompanyScopeBehavior`).
+
+### Billing SaaS
+
+Solo `subscriber_id`. Ver [SAAS-COMMERCIAL.md](./SAAS-COMMERCIAL.md).
+
+### IAM
+
+`company_user_memberships` solo `company_id` + `identity_user_id`. Permisos por `(companyId, userId)`.
+
+### Platform (sin tenant)
+
+SuperAdmin global: `subscriber_id` vacío, `app.is_platform_admin=true`. `PlatformQueryReason` si `IgnoreQueryFilters()`.
+
+---
+
+## Multi-tenant — aislamiento
+
+| Capa | Mecanismo |
+|------|-----------|
+| JWT | `subscriber_id`, `company_id` |
+| MediatR | `BillingGateBehavior`, `SubscriptionGateBehavior`, `CompanyScopeBehavior` |
+| Application | `ICompanyAccessGuard`, `ICurrentSubscriber`, `ICurrentCompany` |
+| EF Core | Filtro global `ISubscriberScopedEntity` |
+| PostgreSQL | RLS Wave 1 — [DATABASE.md](./DATABASE.md#rls) |
+
+### Cambio de contexto
+
+1. Login → `subscriber_id`
+2. Una company → auto `company_id`
+3. Varias → `/select-company` → `POST /api/auth/switch-company`
+4. Handlers leen `ICurrentCompany` — **nunca** `company_id` del body como autoridad
+
+### Background jobs
+
+Antes de BD: `JobSubscriberContext`, `JobCompanyContext` para interceptor PostgreSQL.
+
+Cuotas: solo `ICommercialPlanLimitService` — no `COUNT(*)` manual en handlers.
+
+Terminología retirada: `Tenant`, `tenant_id`.
+
+---
+
+## Bounded contexts
+
+| Contexto | Carpeta / namespace | Scope |
+|----------|---------------------|-------|
+| Platform / IAM | `Modules/Platform`, `Modules/Access` | subscriber, company |
 | Subscriptions | `Subscriptions`, `CommercialPlanLimits` | `subscriber_id` |
 | Billing | `Billing` | `subscriber_id` only |
-| Sales | `Modules/Sales` | `subscriber_id` today → `company_id` target |
-| Purchasing | `Modules/Purchasing` | same |
-| Inventory | `Modules/Inventario`, `Bodegas` | Wave 1: `company_id` on core tables |
-| Accounting | `Modules/Accounting` | `company_id` target |
-| Cash | `Modules/Cash` | `company_id` target |
-| SRI / electronic docs | `Configuration`, `Sales` | per company settings |
+| Sales / Purchasing / Inventory / Accounting / Cash | `Modules/*` | → `company_id` |
+| SRI | `Configuration`, `Sales` | por company settings |
 
-## MediatR pipeline (order)
+Markers: `PlatformLayerBoundary`, `IamLayerBoundary`, `ErpRuntimeLayerBoundary`.
+
+---
+
+## Pipeline MediatR
 
 1. `ValidationBehavior`
-2. `BillingGateBehavior` — SaaS account state (suspended / grace)
-3. `SubscriptionGateBehavior` — plan features and usage meters
-4. `CompanyScopeBehavior` — ERP: JWT `company_id` + membership
-5. `CachingBehavior` — read models with explicit cache keys
+2. `BillingGateBehavior`
+3. `SubscriptionGateBehavior`
+4. `CompanyScopeBehavior`
+5. `CachingBehavior`
 
-## Core services
+---
 
-| Concern | Interface | Role |
-|---------|-----------|------|
-| SaaS context | `ICurrentSubscriber` | Active subscriber from JWT |
-| ERP context | `ICurrentCompany` | Active company from JWT |
-| Company access | `ICompanyAccessGuard` | Membership + active company |
-| Commercial limits | `ICommercialPlanLimitService` | Single enforcement for quotas |
-| Entitlements | `ISubscriberEntitlementsSnapshotCache` | Plan features + billing status |
-| Billing governance | `IBillingGovernanceService` | Suspend, grace, reactivate |
-| Payments (future) | `IPaymentProviderAdapter` | Stripe/Paddle; `NullPaymentProviderAdapter` today |
+## Servicios core
 
-## CQRS conventions
+| Concern | Interface |
+|---------|-----------|
+| Contexto SaaS | `ICurrentSubscriber` |
+| Contexto ERP | `ICurrentCompany` |
+| Acceso company | `ICompanyAccessGuard` |
+| Límites plan | `ICommercialPlanLimitService` |
+| Entitlements | `ISubscriberEntitlementsSnapshotCache` |
+| Billing | `IBillingGovernanceService` |
+| Pagos (futuro) | `IPaymentProviderAdapter` |
 
-- Commands/queries under `ERP.Application/Modules/{Module}/UseCases/`
-- Handlers are thin: load aggregates, call domain, persist via repositories
-- ERP handlers in scoped namespaces implement `ICompanyScopedRequest` or are covered by `CompanyScopeBehavior` namespace rules
-- Platform endpoints implement `ISubscriberOnlyRequest` when no company context
+---
+
+## CQRS
+
+- Commands/queries en `ERP.Application/Modules/{Module}/UseCases/`
+- ERP: `ICompanyScopedRequest` o namespaces cubiertos por `CompanyScopeBehavior`
+- Platform: `ISubscriberOnlyRequest` cuando no hay company
+
+---
+
+## API (rutas estables)
+
+| Área | Base |
+|------|------|
+| Auth | `/api/auth/*` |
+| Platform auth | `/api/platform/auth/*` |
+| Platform admin | `/api/platform/subscribers/*` |
+| Companies | `/api/companies/*` |
+| Billing SaaS | `/api/saas/billing/*` |
+| Entitlements | `/api/saas/entitlements` |
+| ERP | `/api/{module}/*` |
+| SuperAdmin legacy | `/api/superadmin/*`, `/api/admin/*` (alias en deprecación) |
+
+Aliases legacy documentados en código `[Obsolete]`; nuevas integraciones usan rutas `/api/platform/*`.
+
+---
+
+## Frontend
+
+- Claims JWT: `subscriber_id`, `company_id`
+- Flujo: login → subscriber → switch-company si N empresas
+- UI SaaS: `/saas/companies`, `/select-company`, `CompanySwitcher`
+- Detalle auth UI: [IDENTITY.md](./IDENTITY.md#frontend)
+
+---
 
 ## Caching
 
-| Cache | Key pattern | Invalidation |
-|-------|-------------|--------------|
-| Entitlements | `entitlements:snapshot:{subscriberId}:v{N}` | Plan/billing mutations |
-| Permissions | distributed per `(companyId, userId)` | Profile/membership changes |
+| Cache | Patrón clave | Invalidación |
+|-------|--------------|--------------|
+| Entitlements | `entitlements:snapshot:{subscriberId}:v{N}` | plan/billing |
+| Permisos | por `(companyId, userId)` | perfil/membership |
 
-Redis optional via `ConnectionStrings:Redis`; in-memory fallback when disabled.
-
-## API surface (stable)
-
-| Area | Base route |
-|------|------------|
-| Auth | `/api/auth/*` (login, refresh, switch-company) |
-| Companies | `/api/companies/*` |
-| SaaS billing | `/api/saas/billing/*` |
-| Entitlements | `/api/saas/entitlements` |
-| ERP modules | `/api/{module}/*` (sales, purchases, inventory, …) |
-| SuperAdmin | `/api/superadmin/*`, `/api/admin/*` |
-
-## Frontend alignment
-
-- JWT claims: `subscriber_id`, `company_id`
-- Flow: login → subscriber → `POST /api/auth/switch-company` when N companies
-- SaaS UI: `/saas/companies`, `/select-company`, `CompanySwitcher`
-- Some legacy route/i18n aliases still say `tenant` (UX rename deferred)
-
-## Related docs
-
-- [MULTITENANCY.md](./MULTITENANCY.md)
-- [SCOPES.md](./SCOPES.md)
-- [SECURITY.md](./SECURITY.md)
-- [DATABASE/DATABASE-ARCHITECTURE.md](./DATABASE/DATABASE-ARCHITECTURE.md)
-- [STATUS.md](./STATUS.md)
-- [ROADMAP.md](./ROADMAP.md)
+Redis opcional; fallback in-memory si deshabilitado.

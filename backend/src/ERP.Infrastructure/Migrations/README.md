@@ -1,6 +1,6 @@
 # EF Core Migrations
 
-Official policy: **[docs/DATABASE/MIGRATIONS.md](../../../../docs/DATABASE/MIGRATIONS.md)**
+Official policy: **[docs/DATABASE.md](../../../../docs/DATABASE.md)**
 
 Single baseline (no prior history):
 

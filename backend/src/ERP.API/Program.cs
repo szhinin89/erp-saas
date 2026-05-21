@@ -258,7 +258,7 @@ if (!app.Environment.IsEnvironment("Testing")
             "curl -X POST https://localhost:5001/api/setup/superadmin " +
             "-H \"Content-Type: application/json\" " +
             "-d '{\"setupToken\":\"" + setupResult.PlainToken + "\",\"firstName\":\"Super\",\"lastName\":\"Admin\",\"email\":\"superadmin@erp.com\",\"password\":\"CAMBIAR-ESTA-CLAVE\"}'");
-        Console.WriteLine("Documentación: docs/DEVELOPMENT-RULES.md | script: .\\Crear-SuperAdmin.ps1");
+        Console.WriteLine("Documentación: docs/DEVELOPMENT.md | script: .\\Crear-SuperAdmin.ps1");
         Console.WriteLine("Token expira en: " + setupResult.ExpiresAtUtc?.ToString("u"));
         Console.WriteLine("==================================================");
         Console.ResetColor();

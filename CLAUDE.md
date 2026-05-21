@@ -1,6 +1,6 @@
 # REGLAS DEL PROYECTO — ERP SaaS ZH Technologies
 
-Reglas de implementación. Para arquitectura → `docs/ARCHITECTURE.md`. Para estado → `docs/STATUS.md`. Para reglas de desarrollo → `docs/DEVELOPMENT-RULES.md`.
+Reglas de implementación. Para arquitectura → `docs/ARCHITECTURE.md`. Para estado → `docs/STATUS.md`. Para desarrollo → `docs/DEVELOPMENT.md`.
 
 ## ⚡ Regla obligatoria al terminar cualquier tarea
 
@@ -13,17 +13,7 @@ Reglas de implementación. Para arquitectura → `docs/ARCHITECTURE.md`. Para es
 
 ---
 
-## Arranque rápido
-
-```powershell
-docker compose up -d
-# o: .\scripts\dev-restart.ps1 -DockerUp
-cd backend/src && dotnet ef database update --project ERP.Infrastructure --startup-project ERP.API
-dotnet run --project ERP.API --launch-profile http          # http://localhost:5003  swagger: /swagger
-cd frontend && npm run dev                                   # http://localhost:5173
-```
-
-Atajo completo (Docker + migraciones + ventanas API/Vite): **`.\scripts\dev-restart.ps1`**
+**Arranque local, Docker, EF, scripts y tests:** [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) (no duplicar aquí).
 
 ---
 
