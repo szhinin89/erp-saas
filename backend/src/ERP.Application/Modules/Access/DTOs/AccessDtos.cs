@@ -12,7 +12,7 @@ public record BootstrapLoginResponseDto(
     string FullName,
     string Email,
     string BootstrapToken,
-    IReadOnlyList<AccessibleSubscriberDto> Tenants
+    IReadOnlyList<AccessibleSubscriberDto> Subscribers
 );
 
 public record SessionResponseDto(
@@ -36,5 +36,8 @@ public record SuperAdminSubscriberItemDto(
     string? PlanCode,
     IReadOnlyList<string> EnabledModules,
     bool HasModuleRestrictions,
-    bool HasCustomMenu);
+    bool HasCustomMenu,
+    DateTime CreatedAt,
+    int TotalUsers,
+    int ActiveUsers);
 

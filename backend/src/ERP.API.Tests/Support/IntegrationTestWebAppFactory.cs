@@ -5,39 +5,45 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using MediatR;
+using Microsoft.Extensions.Hosting;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Subscriptions;
 using ERP.Domain.Subscriptions.Interfaces;
+using ERP.Infrastructure.BackgroundServices;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Support;
 
-/// <summary>API real con EF InMemory, suscripciÃ³n ilimitada y tenant/usuario mutables para integraciÃ³n.</summary>
+/// <summary>API real con EF InMemory, suscripción/entitlements ilimitados y tenant/usuario/company mutables.</summary>
 internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Program>
 {
     public MutableCurrentSubscriber MutableSubscriber { get; } = new();
-    public MutableCurrentUser   MutableUser   { get; } = new();
+    public MutableCurrentUser MutableUser { get; } = new();
     public MutableCurrentCompany MutableCompany { get; } = new();
-    public bool UseScalableMode { get; set; } = false;
+    public bool UseScalableMode { get; set; }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        // ContentRoot = proyecto ERP.API para que exista Templates/ (RazorLight) al ejecutar tests desde ERP.API.Tests/bin.
         var apiProjectRoot = Path.GetFullPath(
             Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "ERP.API"));
         if (Directory.Exists(Path.Combine(apiProjectRoot, "Templates")))
             builder.UseContentRoot(apiProjectRoot);
 
-        builder.UseEnvironment("Development");
+        builder.UseEnvironment("Testing");
 
-        // Gana a user-secrets / appsettings para que el JWT de prueba coincida con la validaciÃ³n del host.
         builder.UseSetting("Jwt:SecretKey", IntegrationTestConstants.JwtSecretKey);
         builder.UseSetting("Jwt:Issuer", "ZHTechnologies");
         builder.UseSetting("Jwt:Audience", "ERPUsers");
         builder.UseSetting("Jwt:ExpirationMinutes", "60");
         builder.UseSetting("HealthChecks:EnableRedis", "false");
         builder.UseSetting("HealthChecks:SriProbeUrl", "");
+        builder.UseSetting("Hangfire:Enabled", "false");
+        builder.UseSetting("InstallData:Enabled", "false");
+        builder.UseSetting("Development:SeedDemoTenant", "false");
+        builder.UseSetting("Development:SyncFuncionalidadesOnStartup", "false");
+        builder.UseSetting("Testing:SkipFirstRunSetup", "true");
+        builder.UseSetting("Testing:SkipCommercialPlansBootstrap", "true");
 
         builder.ConfigureAppConfiguration((_, config) =>
         {
@@ -48,17 +54,22 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
                 ["Redis:ConnectionString"] = "",
                 ["HealthChecks:EnableRedis"] = "false",
                 ["HealthChecks:SriProbeUrl"] = "",
-                ["Jwt:SecretKey"]                      = IntegrationTestConstants.JwtSecretKey,
-                ["Jwt:Issuer"]                         = "ZHTechnologies",
-                ["Jwt:Audience"]                       = "ERPUsers",
-                ["Jwt:ExpirationMinutes"]              = "60",
-                ["Kardex:UseScalableMode"]             = UseScalableMode.ToString(),
+                ["Jwt:SecretKey"] = IntegrationTestConstants.JwtSecretKey,
+                ["Jwt:Issuer"] = "ZHTechnologies",
+                ["Jwt:Audience"] = "ERPUsers",
+                ["Jwt:ExpirationMinutes"] = "60",
+                ["Hangfire:Enabled"] = "false",
+                ["InstallData:Enabled"] = "false",
+                ["Development:SeedDemoTenant"] = "false",
+                ["Development:SyncFuncionalidadesOnStartup"] = "false",
+                ["Testing:SkipFirstRunSetup"] = "true",
+                ["Testing:SkipCommercialPlansBootstrap"] = "true",
+                ["Kardex:UseScalableMode"] = UseScalableMode.ToString(),
             });
         });
 
         builder.ConfigureTestServices(services =>
         {
-            // Quitar el registro Npgsql de AddInfrastructure y sustituir por InMemory sin mezclar proveedores internos.
             foreach (var d in services.Where(x =>
                          x.ServiceType == typeof(DbContextOptions<ErpDbContext>)
                          || x.ServiceType == typeof(ErpDbContext)
@@ -71,7 +82,7 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
             }
 
             var dbName = "erp-api-integration-" + Guid.NewGuid().ToString("N");
-            services.AddDbContext<ErpDbContext>((sp, opts) =>
+            services.AddDbContext<ErpDbContext>((_, opts) =>
             {
                 opts.UseInMemoryDatabase(dbName)
                     .ConfigureWarnings(w => w.Ignore(InMemoryEventId.TransactionIgnoredWarning));
@@ -98,7 +109,19 @@ internal sealed class IntegrationTestWebAppFactory : WebApplicationFactory<Progr
             foreach (var d in services.Where(x => x.ServiceType == typeof(ISubscriptionService)).ToList())
                 services.Remove(d);
             services.AddSingleton<ISubscriptionService, AllowAllSubscriptionService>();
+
+            foreach (var d in services.Where(x => x.ServiceType == typeof(ISubscriberEntitlementsService)).ToList())
+                services.Remove(d);
+            services.AddSingleton<ISubscriberEntitlementsService, AllowAllEntitlementsService>();
+
+            foreach (var d in services
+                         .Where(x => x.ServiceType == typeof(IHostedService)
+                                     && (x.ImplementationType == typeof(KardexSnapshotWorker)
+                                         || x.ImplementationType == typeof(KardexReportProcessor)))
+                         .ToList())
+            {
+                services.Remove(d);
+            }
         });
     }
 }
-

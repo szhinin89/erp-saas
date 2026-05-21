@@ -57,9 +57,9 @@ public sealed class ConfirmTransferCommandHandler
         if (transfer is null)
             return Result<TransferDto>.Failure("transfer no encontrada.");
 
-        if (transfer.Status != "Borrador")
+        if (transfer.Status != "Draft")
             return Result<TransferDto>.Failure(
-                $"Solo se puede confirmar una transfer en Borrador (estado actual: {transfer.Status}).");
+                $"Solo se puede confirmar una transfer en Draft (estado actual: {transfer.Status}).");
 
         if (transfer.Lines.Count == 0)
             return Result<TransferDto>.Failure("La transfer no tiene ítems.");

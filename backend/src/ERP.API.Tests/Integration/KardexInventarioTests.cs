@@ -11,6 +11,7 @@ using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Domain.Products.Entities;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Services;
 
 namespace ERP.API.Tests.Integration;
 
@@ -38,7 +39,8 @@ public sealed class KardexInventarioTests
     {
         var m = StockMovement.Create(
             subscriberId, productoId, bodegaId, tipo,
-            quantity, cantAnterior, referencia, null, null, userId, unitCost);
+            quantity, cantAnterior, referencia, null, null, userId, unitCost,
+            companyId: JobCompanyContext.Current != Guid.Empty ? JobCompanyContext.Current : null);
         if (fecha.HasValue) SetCreatedAt(m, fecha.Value);
         return m;
     }
@@ -52,7 +54,8 @@ public sealed class KardexInventarioTests
     {
         var m = StockMovement.Create(
             subscriberId, productoId, bodegaId, tipo,
-            -quantity, cantAnterior, referencia, null, null, userId, averageCost);
+            -quantity, cantAnterior, referencia, null, null, userId, averageCost,
+            companyId: JobCompanyContext.Current != Guid.Empty ? JobCompanyContext.Current : null);
         if (fecha.HasValue) SetCreatedAt(m, fecha.Value);
         return m;
     }
@@ -60,7 +63,7 @@ public sealed class KardexInventarioTests
     private static async Task<IntegrationSeedData.SeedResult> SeedBaseAsync(
         ErpDbContext db, IntegrationTestWebAppFactory factory)
         => await IntegrationSeedData.SeedAsync(
-            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
     // â”€â”€ Escenario 1: Errores bÃ¡sicos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -365,7 +368,8 @@ public sealed class KardexInventarioTests
 
         // Crear segunda bodega
         var bodegaA   = await db.Warehouses.FirstAsync(b => b.Id == bidA);
-        var bodegaB   = Warehouse.Create(tid, bodegaA.BranchId, "Warehouse Destino", null, null, uid);
+        var bodegaB = WarehouseTestHelpers.CreateSecondary(
+            tid, bodegaA.BranchId, "Warehouse Destino", "WBD", uid, seed.CompanyId);
         db.Warehouses.Add(bodegaB);
         await db.SaveChangesAsync();
         var bidB = bodegaB.Id;
@@ -383,7 +387,7 @@ public sealed class KardexInventarioTests
         resA.IsSuccess.Should().BeTrue();
         resA.Value!.Rows.Should().HaveCount(2);
         resA.Value!.Rows[0].MovementType.Should().Be("Compra");
-        resA.Value!.Rows[1].MovementType.Should().Be("Transferencia salida");
+        resA.Value!.Rows[1].MovementType.Should().Be("transfer salida");
         resA.Value!.Resumen.ClosingQuantity.Should().Be(15m);
         resA.Value!.Resumen.ClosingValue.Should().Be(600m); // 15 Ã— $40
 
@@ -393,7 +397,7 @@ public sealed class KardexInventarioTests
 
         resB.IsSuccess.Should().BeTrue();
         resB.Value!.Rows.Should().HaveCount(1);
-        resB.Value!.Rows[0].MovementType.Should().Be("Transferencia entrada");
+        resB.Value!.Rows[0].MovementType.Should().Be("transfer entrada");
         resB.Value!.Rows[0].InboundQuantity.Should().Be(5m);
         resB.Value!.Resumen.ClosingQuantity.Should().Be(5m);
         resB.Value!.Resumen.ClosingValue.Should().Be(200m); // 5 Ã— $40
@@ -430,7 +434,8 @@ public sealed class KardexInventarioTests
             reference: "AJ-001",
             sourceDocId: null, sourceDocType: null,
             createdBy: uid,
-            unitCost: null);   // sin costo â†’ trata como $0
+            unitCost: null,
+            companyId: seed.CompanyId);
         db.StockMovements.Add(ajuste);
         await db.SaveChangesAsync();
 
@@ -484,7 +489,8 @@ public sealed class KardexInventarioTests
             reference: "AJ-002",
             sourceDocId: null, sourceDocType: null,
             createdBy: uid,
-            unitCost: averageCost); // valorizado al promedio actual
+            unitCost: averageCost,
+            companyId: seed.CompanyId); // valorizado al promedio actual
         db.StockMovements.Add(ajusteNeg);
         await db.SaveChangesAsync();
 
@@ -543,12 +549,12 @@ public sealed class KardexInventarioTests
 
         tipos.Should().Contain("Compra");
         tipos.Should().Contain("Venta");
-        tipos.Should().Contain("Transferencia entrada");
-        tipos.Should().Contain("Transferencia salida");
+        tipos.Should().Contain("transfer entrada");
+        tipos.Should().Contain("transfer salida");
         tipos.Should().Contain("Ajuste (+)");
         tipos.Should().Contain("Ajuste (-)");
-        tipos.Should().Contain("DevoluciÃ³n compra");
-        tipos.Should().Contain("DevoluciÃ³n venta");
+        tipos.Should().Contain("Devolución compra");
+        tipos.Should().Contain("Devolución venta");
     }
 
     // â”€â”€ Escenario 10: MÃºltiples productos son independientes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -584,7 +590,8 @@ public sealed class KardexInventarioTests
             uid,
             purchaseCode: "SKU-INT-B",
             isService: false,
-            tracksStock: true);
+            tracksStock: true,
+            companyId: seed.CompanyId);
         db.Products.Add(prodB);
         await db.SaveChangesAsync();
         var pidB = prodB.Id;

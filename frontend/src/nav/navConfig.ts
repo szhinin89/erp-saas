@@ -21,7 +21,7 @@ export type NavGroup = {
   icon: string;
   items: NavItem[];
   roles?: string[];
-  /** Si está definido, el grupo solo se muestra si el tenant tiene ese módulo contratado. */
+  /** Si está definido, el grupo solo se muestra si el subscriber tiene ese módulo contratado. */
   moduleKey?: string;
   /** Orden desde API/BD (<c>ui_nav_groups.sort_order</c>); si falta, se usa el orden fijo de barra. */
   sortOrder?: number;
@@ -244,7 +244,7 @@ function collectNavTos(items: NavItem[]): string[] {
 }
 
 /**
- * Menú único para SuperAdmin en contexto global (sin tenant operativo).
+ * Menú único para SuperAdmin en contexto global (sin subscriber operativo).
  * Solo rutas de plataforma; no incluye inventario, contabilidad, etc.
  */
 export function buildGlobalSuperAdminNavGroups(

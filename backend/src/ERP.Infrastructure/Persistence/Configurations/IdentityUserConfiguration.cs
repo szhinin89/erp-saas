@@ -1,4 +1,5 @@
 using ERP.Domain.Access.Entities;
+using ERP.Domain.Access.Enums;
 using ERP.Domain.Auth.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -23,8 +24,29 @@ public class IdentityUserConfiguration : IEntityTypeConfiguration<IdentityUser>
             .IsRequired()
             .HasConversion(e => e.Value, v => new Email(v));
 
+        builder.Property(u => u.EmailNormalized)
+            .HasColumnName("email_normalized")
+            .HasMaxLength(200)
+            .IsRequired();
+
         builder.Property(u => u.PasswordHash).HasColumnName("password_hash").IsRequired();
         builder.Property(u => u.IsActive).HasColumnName("is_active").IsRequired();
+
+        builder.Property(u => u.UserType)
+            .HasColumnName("user_type")
+            .HasConversion<string>()
+            .HasMaxLength(32)
+            .IsRequired()
+            .HasDefaultValue(IdentityUserType.Company);
+
+        builder.Property(u => u.PlatformRole)
+            .HasColumnName("platform_role")
+            .HasConversion<string>()
+            .HasMaxLength(32);
+
+        builder.Property(u => u.SubscriberId).HasColumnName("subscriber_id");
+        builder.Property(u => u.SecurityStamp).HasColumnName("security_stamp").HasMaxLength(64).IsRequired();
+        builder.Property(u => u.RequirePasswordReset).HasColumnName("require_password_reset").IsRequired().HasDefaultValue(false);
 
         builder.Property(u => u.CreatedAt).HasColumnName("created_at");
         builder.Property(u => u.UpdatedAt).HasColumnName("updated_at");
@@ -34,6 +56,9 @@ public class IdentityUserConfiguration : IEntityTypeConfiguration<IdentityUser>
         builder.HasIndex(u => u.Email)
             .IsUnique()
             .HasDatabaseName("ux_identity_users_email");
+
+        builder.HasIndex(u => u.EmailNormalized)
+            .IsUnique()
+            .HasDatabaseName("ux_identity_users_email_normalized");
     }
 }
-

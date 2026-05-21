@@ -45,9 +45,9 @@ public sealed class CancelStockAdjustmentCommandHandler
         if (ajuste is null)
             return Result<StockAdjustmentDto>.Failure("Ajuste no encontrado.");
 
-        if (ajuste.Status != "Borrador")
+        if (ajuste.Status != "Draft")
             return Result<StockAdjustmentDto>.Failure(
-                $"Solo se puede cancelar un ajuste en Borrador (estado actual: {ajuste.Status}).");
+                $"Solo se puede cancelar un ajuste en Draft (estado actual: {ajuste.Status}).");
 
         ajuste.Cancel(userId);
 

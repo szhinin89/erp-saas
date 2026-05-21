@@ -26,10 +26,10 @@ public sealed class VentasHttpTests
 
         using var scope = factory.Services.CreateScope();
         var db   = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial, ct: CancellationToken.None);
 
-        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId);
+        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId, seed.CompanyId);
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -37,7 +37,7 @@ public sealed class VentasHttpTests
         return (factory, client, seed);
     }
 
-    // â”€â”€ GET /api/ventas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // â”€â”€ GET /api/sales/invoices â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task Ventas_GetAll_con_admin_token_responde_200()
@@ -45,7 +45,7 @@ public sealed class VentasHttpTests
         var (factory, client, _) = await CreateClientAsync();
         await using var _ = factory;
 
-        var res = await client.GetAsync("/api/ventas");
+        var res = await client.GetAsync("/api/sales/invoices");
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         res.Content.Headers.ContentType!.MediaType.Should().Be("application/json");
@@ -60,7 +60,7 @@ public sealed class VentasHttpTests
         await using var factory = new IntegrationTestWebAppFactory();
         using var client = factory.CreateClient();
 
-        var res = await client.GetAsync("/api/ventas");
+        var res = await client.GetAsync("/api/sales/invoices");
         res.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -70,14 +70,14 @@ public sealed class VentasHttpTests
         var (factory, client, _) = await CreateClientAsync();
         await using var _ = factory;
 
-        var res = await client.GetAsync("/api/ventas?estado=Borrador&pageSize=5");
+        var res = await client.GetAsync("/api/sales/invoices?estado=Borrador&pageSize=5");
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await res.Content.ReadAsStringAsync();
         body.Should().Contain("\"success\":true");
     }
 
-    // â”€â”€ GET /api/ventas/{id} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // â”€â”€ GET /api/sales/invoices/{id} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task Ventas_GetById_factura_inexistente_responde_200_con_payload_nulo()
@@ -86,7 +86,7 @@ public sealed class VentasHttpTests
         var (factory, client, _) = await CreateClientAsync();
         await using var _ = factory;
 
-        var res = await client.GetAsync($"/api/ventas/{Guid.NewGuid()}");
+        var res = await client.GetAsync($"/api/sales/invoices/{Guid.NewGuid()}");
         res.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var body = await res.Content.ReadAsStringAsync();
@@ -94,7 +94,7 @@ public sealed class VentasHttpTests
         body.Should().Contain("\"responseObject\":null");
     }
 
-    // â”€â”€ POST /api/ventas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // â”€â”€ POST /api/sales/invoices â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task Ventas_Crear_con_payload_valido_responde_201()
@@ -109,13 +109,13 @@ public sealed class VentasHttpTests
 
         var payload = new
         {
-            clienteId  = clienteId,
-            bodegaId   = seed.WarehouseId,
-            sucursalId = sucursalId,
-            items      = new[] { new { productoId = seed.ProductId, cantidad = 1, precioUnitario = 10.0 } }
+            customerId = clienteId,
+            warehouseId = seed.WarehouseId,
+            branchId = sucursalId,
+            items = new[] { new { productId = seed.ProductId, quantity = 1m, unitPrice = 10.0m } }
         };
 
-        var res = await client.PostAsJsonAsync("/api/ventas", payload);
+        var res = await client.PostAsJsonAsync("/api/sales/invoices", payload);
 
         res.StatusCode.Should().Be(HttpStatusCode.Created);
         var body = await res.Content.ReadAsStringAsync();
@@ -138,7 +138,7 @@ public sealed class VentasHttpTests
             items      = Array.Empty<object>()
         };
 
-        var res = await client.PostAsJsonAsync("/api/ventas", payload);
+        var res = await client.PostAsJsonAsync("/api/sales/invoices", payload);
 
         // FluentValidation lanza ValidationException â†’ ExceptionMiddleware â†’ 422
         ((int)res.StatusCode).Should().BeOneOf(400, 422);
@@ -148,7 +148,7 @@ public sealed class VentasHttpTests
         body.Should().Contain("message");
     }
 
-    // â”€â”€ GET /api/ventas/stock â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // â”€â”€ GET /api/sales/invoices/stock â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task Ventas_GetStock_SinParametros_Retorna400()
@@ -156,7 +156,7 @@ public sealed class VentasHttpTests
         var (factory, client, _) = await CreateClientAsync();
         await using var _ = factory;
 
-        var res = await client.GetAsync("/api/ventas/stock");
+        var res = await client.GetAsync("/api/sales/invoices/stock");
         res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
 
         var body = await res.Content.ReadAsStringAsync();
@@ -170,18 +170,18 @@ public sealed class VentasHttpTests
         await using var _ = factory;
 
         var res = await client.GetAsync(
-            $"/api/ventas/stock?productoId={seed.ProductId}&bodegaId={seed.WarehouseId}");
+            $"/api/sales/invoices/stock?productoId={seed.ProductId}&bodegaId={seed.WarehouseId}");
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await res.Content.ReadAsStringAsync();
 
         using var doc = JsonDocument.Parse(body);
         var ro = doc.RootElement.GetProperty("responseObject");
-        ro.GetProperty("cantidadDisponible").GetDecimal().Should().Be(5m);
-        ro.GetProperty("cantidadTotal").GetDecimal().Should().Be(5m);
+        ro.GetProperty("availableQty").GetDecimal().Should().Be(5m);
+        ro.GetProperty("totalQty").GetDecimal().Should().Be(5m);
     }
 
-    // â”€â”€ PATCH /api/ventas/{id}/validar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // â”€â”€ PATCH /api/sales/invoices/{id}/validar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     [Fact]
     public async Task Ventas_Validar_factura_borrador_responde_200()
@@ -196,14 +196,14 @@ public sealed class VentasHttpTests
         var sucursalId     = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         var crear = await mediator.Send(
-            new ERP.Application.Sales.UseCases.CrearVenta.CrearVentaCommand(
+            new ERP.Application.Sales.UseCases.CrearVenta.CreateSaleCommand(
                 clienteId, seed.WarehouseId, sucursalId,
-                new List<ERP.Application.Sales.UseCases.CrearVenta.ItemVentaDto>
+                new List<ERP.Application.Sales.UseCases.CrearVenta.SaleItemDto>
                     { new(seed.ProductId, 1m, 10m) }),
             CancellationToken.None);
         crear.IsSuccess.Should().BeTrue(crear.Error);
 
-        var res = await client.PatchAsync($"/api/ventas/{crear.Value}/validar", null);
+        var res = await client.PatchAsync($"/api/sales/invoices/{crear.Value}/validar", null);
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await res.Content.ReadAsStringAsync();
@@ -219,11 +219,11 @@ public sealed class VentasHttpTests
         var (factory, client, _) = await CreateClientAsync();
         await using var _ = factory;
 
-        var res = await client.GetAsync("/api/configuracion-sri");
+        var res = await client.GetAsync("/api/settings/sri");
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await res.Content.ReadAsStringAsync();
-        body.Should().Contain("\"rucEmpresa\":\"9999999999999\"");
+        body.Should().Contain("\"companyRuc\":\"9999999999999\"");
     }
 
     [Fact]
@@ -269,6 +269,10 @@ public sealed class VentasHttpTests
             subtotal: 100m,
             vatTotal: 12m,
             total: 112m,
+            totalDiscount: 0m,
+            paymentMethodCode: "01",
+            paymentDays: 0,
+            notes: null,
             xmlSignedPath: null,
             xmlAuthPath: null,
             authNumber: null,
@@ -279,11 +283,15 @@ public sealed class VentasHttpTests
         var detalle = SalesBillLine.Create(
             seed.SubscriberId,
             seed.ProductId,
-            quantity: 1m,
-            unitPrice: 100m,
-            vatTotal: 12m,
-            description: "Producto de prueba",
-            createdBy: seed.UserId);
+            "SKU-INT",
+            1m,
+            100m,
+            0m,
+            "2",
+            12m,
+            12m,
+            "Producto de prueba",
+            seed.UserId);
         detalle.AssignBillId(factura.Id);
         factura.AddLine(detalle);
         factura.Validate(seed.UserId);
@@ -298,7 +306,7 @@ public sealed class VentasHttpTests
         db.SalesBills.Add(factura);
         await db.SaveChangesAsync(CancellationToken.None);
 
-        var res = await client.GetAsync($"/api/ventas/{factura.Id}/imprimir");
+        var res = await client.GetAsync($"/api/sales/invoices/{factura.Id}/imprimir");
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         res.Content.Headers.ContentType!.MediaType.Should().Be("text/html");
@@ -338,6 +346,10 @@ public sealed class VentasHttpTests
             subtotal: 50m,
             vatTotal: 6m,
             total: 56m,
+            totalDiscount: 0m,
+            paymentMethodCode: "01",
+            paymentDays: 0,
+            notes: null,
             xmlSignedPath: null,
             xmlAuthPath: null,
             authNumber: null,
@@ -348,11 +360,15 @@ public sealed class VentasHttpTests
         var detalle = SalesBillLine.Create(
             seed.SubscriberId,
             seed.ProductId,
-            quantity: 1m,
-            unitPrice: 50m,
-            vatTotal: 6m,
-            description: "Item default",
-            createdBy: seed.UserId);
+            "SKU-INT",
+            1m,
+            50m,
+            0m,
+            "2",
+            12m,
+            6m,
+            "Item default",
+            seed.UserId);
         detalle.AssignBillId(factura.Id);
         factura.AddLine(detalle);
         factura.Validate(seed.UserId);
@@ -367,12 +383,12 @@ public sealed class VentasHttpTests
         db.SalesBills.Add(factura);
         await db.SaveChangesAsync(CancellationToken.None);
 
-        var res = await client.GetAsync($"/api/ventas/{factura.Id}/imprimir");
+        var res = await client.GetAsync($"/api/sales/invoices/{factura.Id}/imprimir");
 
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var html = await res.Content.ReadAsStringAsync();
         html.Should().Contain("<html");
-        html.Should().Contain("EMPRESA DEMO");
+        html.Should().Contain("DEMO COMPANY");
         html.Should().Contain("Item default");
     }
 }

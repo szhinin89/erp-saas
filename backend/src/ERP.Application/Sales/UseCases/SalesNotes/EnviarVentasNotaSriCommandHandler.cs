@@ -62,11 +62,11 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         if (nota is null)
             return Result<Guid>.Failure("Nota no encontrada.");
 
-        if (nota.Status == "Borrador")
+        if (nota.Status == "Draft")
             nota.Validate(userId);
 
-        if (nota.Status != "Validado")
-            return Result<Guid>.Failure($"La nota debe estar Validada para enviar (estado: {nota.Status}).");
+        if (nota.Status != "Validated")
+            return Result<Guid>.Failure($"La nota debe estar Validated para enviar (estado: {nota.Status}).");
 
         var facturaOriginal = nota.OriginalBill;
         if (facturaOriginal.Status != "Autorizado")
@@ -142,8 +142,10 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
         try
         {
             var numero = $"{nota.EstabCode}-{nota.EmPointCode}-{nota.Sequential}";
+            var isCredit = string.Equals(nota.NoteType, "CREDIT", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(nota.NoteType, "CREDITO", StringComparison.OrdinalIgnoreCase);
             Result<Guid> asientoResult;
-            if (string.Equals(nota.NoteType, "CREDITO", StringComparison.OrdinalIgnoreCase))
+            if (isCredit)
                 asientoResult = await _accounting.CrearAsientoNotaCreditoVentaAsync(
                     nota.Id, numero, nota.IssueDate, nota.Subtotal, nota.VatTotal, nota.Total,
                     $"Nota de crédito {numero}", ct);
@@ -160,7 +162,7 @@ public sealed class EnviarSalesNotesriCommandHandler : IRequestHandler<SendSales
                 return Result<Guid>.Failure(asientoResult.Error ?? "Error contable.");
             }
 
-            if (string.Equals(nota.NoteType, "CREDITO", StringComparison.OrdinalIgnoreCase))
+            if (isCredit)
             {
                 var stockLines = new List<SalesNoteStockLine>();
                 foreach (var detalle in detalles)

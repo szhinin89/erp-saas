@@ -14,6 +14,17 @@ function messageFromRecord(o: Record<string, unknown>): string | null {
     pickString(o.error);
   if (direct) return direct;
 
+  const responseObject = o.responseObject;
+  if (responseObject && typeof responseObject === 'object' && !Array.isArray(responseObject)) {
+    const roMsg = messageFromRecord(responseObject as Record<string, unknown>);
+    if (roMsg) return roMsg;
+  }
+
+  const code = pickString(o.code);
+  if (code === 'company.ruc_already_exists') {
+    return 'El RUC ya está registrado en el sistema.';
+  }
+
   const errors = o.errors;
   if (errors && typeof errors === 'object' && !Array.isArray(errors)) {
     const firstKey = Object.keys(errors as Record<string, unknown>)[0];

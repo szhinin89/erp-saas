@@ -4,9 +4,7 @@ using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Auth.Entities;
-using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Subscribers.Interfaces;
-
 using MediatR;
 
 namespace ERP.Application.Auth.UseCases.PasswordReset;
@@ -16,7 +14,6 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
     public const string InvalidTokenMessage = "El enlace de recuperación no es válido o ha expirado.";
 
     private readonly IPasswordResetTokenRepository _tokenRepository;
-    private readonly IUserRepository _userRepository;
     private readonly IAccessRepository _accessRepository;
     private readonly ISubscriberRepository _tenantRepository;
     private readonly IPasswordHasher _passwordHasher;
@@ -25,7 +22,6 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
 
     public ResetPasswordWithTokenHandler(
         IPasswordResetTokenRepository tokenRepository,
-        IUserRepository userRepository,
         IAccessRepository accessRepository,
         ISubscriberRepository tenantRepository,
         IPasswordHasher passwordHasher,
@@ -33,7 +29,6 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
         IValidator<ResetPasswordWithTokenCommand> validator)
     {
         _tokenRepository = tokenRepository;
-        _userRepository = userRepository;
         _accessRepository = accessRepository;
         _tenantRepository = tenantRepository;
         _passwordHasher = passwordHasher;
@@ -52,7 +47,8 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
         if (stored is null || !stored.IsValid)
             return Result<bool>.Failure(InvalidTokenMessage);
 
-        if (stored.UserKind != PasswordResetToken.KindSuperAdmin)
+        var isPlatformKind = stored.UserKind is PasswordResetToken.KindPlatform or PasswordResetToken.KindSuperAdmin;
+        if (!isPlatformKind)
         {
             if (!stored.SubscriberId.HasValue)
                 return Result<bool>.Failure(InvalidTokenMessage);
@@ -62,47 +58,22 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
         }
 
         var newHash = _passwordHasher.HashPassword(command.NewPassword);
+        var identity = await _accessRepository.GetUserByIdAsync(stored.UserId, ct);
+        if (identity is null)
+            return Result<bool>.Failure(InvalidTokenMessage);
 
-        switch (stored.UserKind)
-        {
-            case PasswordResetToken.KindSuperAdmin:
-            {
-                var user = await _userRepository.GetByIdSystemAsync(stored.UserId, ct);
-                if (user is null || !string.Equals(user.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
-                    return Result<bool>.Failure(InvalidTokenMessage);
+        if (isPlatformKind && !identity.IsPlatformSuperAdmin)
+            return Result<bool>.Failure(InvalidTokenMessage);
 
-                user.SetPasswordHash(newHash, updatedBy: user.Id);
-                await _userRepository.SaveChangesAsync(ct);
-                await _refreshTokenService.RevokeAllForUserAsync(user.Id, Guid.Empty, "Cambio de contraseña (reset)", ct);
-                break;
-            }
-            case PasswordResetToken.KindIdentity:
-            {
-                var identity = await _accessRepository.GetUserByIdAsync(stored.UserId, ct);
-                if (identity is null)
-                    return Result<bool>.Failure(InvalidTokenMessage);
+        if (stored.UserKind == PasswordResetToken.KindLegacy)
+            return Result<bool>.Failure(InvalidTokenMessage);
 
-                var subscriberId = stored.SubscriberId!.Value;
-                identity.SetPasswordHash(newHash, updatedBy: identity.Id);
-                await _accessRepository.SaveChangesAsync(ct);
-                await _refreshTokenService.RevokeAllForUserAsync(identity.Id, subscriberId, "Cambio de contraseña (reset)", ct);
-                break;
-            }
-            case PasswordResetToken.KindLegacy:
-            {
-                var subscriberId = stored.SubscriberId!.Value;
-                var legacy = await _userRepository.GetByIdAsync(stored.UserId, subscriberId, ct);
-                if (legacy is null)
-                    return Result<bool>.Failure(InvalidTokenMessage);
+        identity.SetPasswordHash(newHash, updatedBy: identity.Id);
+        await _accessRepository.SaveChangesAsync(ct);
 
-                legacy.SetPasswordHash(newHash, updatedBy: legacy.Id);
-                await _userRepository.SaveChangesAsync(ct);
-                await _refreshTokenService.RevokeAllForUserAsync(legacy.Id, subscriberId, "Cambio de contraseña (reset)", ct);
-                break;
-            }
-            default:
-                return Result<bool>.Failure(InvalidTokenMessage);
-        }
+        var revokeSubscriberId = stored.SubscriberId ?? Guid.Empty;
+        await _refreshTokenService.RevokeAllForUserAsync(
+            identity.Id, revokeSubscriberId, "Cambio de contraseña (reset)", ct);
 
         stored.MarkUsed();
         await _tokenRepository.SaveChangesAsync(ct);

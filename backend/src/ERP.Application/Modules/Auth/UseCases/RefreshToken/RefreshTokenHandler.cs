@@ -5,7 +5,6 @@ using ERP.Application.Common.Interfaces;
 using ERP.Application.Subscriptions;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
-using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Subscribers.Interfaces;
 
@@ -14,34 +13,25 @@ namespace ERP.Application.Auth.UseCases.RefreshToken;
 public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, Result<AuthResponseDto>>
 {
     private readonly IRefreshTokenService _refreshTokenService;
-    private readonly IUserRepository _userRepository;
     private readonly IAccessRepository _accessRepository;
     private readonly ISubscriberRepository _tenantRepository;
-    private readonly IJwtService _jwtService;
     private readonly IAccessTokenService _accessTokenService;
     private readonly ISessionModulesResolver _sessionModules;
-    private readonly ICompanyProvisioningService _companyProvisioning;
     private readonly ICompanyRepository _companyRepository;
 
     public RefreshTokenHandler(
         IRefreshTokenService refreshTokenService,
-        IUserRepository userRepository,
         IAccessRepository accessRepository,
         ISubscriberRepository tenantRepository,
-        IJwtService jwtService,
         IAccessTokenService accessTokenService,
         ISessionModulesResolver sessionModules,
-        ICompanyProvisioningService companyProvisioning,
         ICompanyRepository companyRepository)
     {
         _refreshTokenService = refreshTokenService;
-        _userRepository = userRepository;
         _accessRepository = accessRepository;
         _tenantRepository = tenantRepository;
-        _jwtService = jwtService;
         _accessTokenService = accessTokenService;
         _sessionModules = sessionModules;
-        _companyProvisioning = companyProvisioning;
         _companyRepository = companyRepository;
     }
 
@@ -51,46 +41,28 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
         if (!v.IsValid)
             return Result<AuthResponseDto>.Failure(v.Error ?? "Refresh token inválido.");
 
-        if (v.UserType == RefreshUserType.SuperAdmin)
+        if (v.UserType is RefreshUserType.Platform or RefreshUserType.SuperAdmin)
         {
-            var super = await _userRepository.GetByIdSystemAsync(v.UserId, ct);
-            if (super is null || !super.IsActive)
+            var platformUser = await _accessRepository.GetUserByIdAsync(v.UserId, ct);
+            if (platformUser is null || !platformUser.IsPlatformSuperAdmin)
                 return Result<AuthResponseDto>.Failure("Usuario no válido.");
 
-            var superToken = _jwtService.GenerateToken(super, Guid.Empty);
+            var platformToken = _accessTokenService.GeneratePlatformSessionToken(platformUser);
             return Result<AuthResponseDto>.Success(new AuthResponseDto(
-                super.Id, super.FullName, super.Email.Value,
-                super.Role, Guid.Empty, superToken,
+                platformUser.Id, platformUser.FullName, platformUser.Email.Value,
+                "SuperAdmin", Guid.Empty, platformToken,
                 PlanCode: null,
                 SubscriberSubscriptionCatalog.AllModuleKeys)
             {
                 RefreshToken = v.NewToken,
                 RefreshTokenExpiry = v.NewExpiry,
+                UserType = platformUser.UserType.ToString(),
+                PlatformRole = platformUser.PlatformRole?.ToString(),
             });
         }
 
         if (v.UserType == RefreshUserType.Legacy)
-        {
-            var legacy = await _userRepository.GetByIdSystemAsync(v.UserId, ct);
-            if (legacy is null || !legacy.IsActive)
-                return Result<AuthResponseDto>.Failure("Usuario no válido.");
-
-            var legacyToken = _jwtService.GenerateToken(legacy);
-            var legacyTenant = await _tenantRepository.GetByIdAsync(v.SubscriberId, ct);
-            var legacyModules = legacyTenant is null
-                ? Array.Empty<string>()
-                : await _sessionModules.GetEnabledModuleKeysAsync(v.SubscriberId, ct);
-
-            return Result<AuthResponseDto>.Success(new AuthResponseDto(
-                legacy.Id, legacy.FullName, legacy.Email.Value,
-                legacy.Role, v.SubscriberId, legacyToken,
-                legacyTenant?.PlanCode,
-                legacyModules)
-            {
-                RefreshToken = v.NewToken,
-                RefreshTokenExpiry = v.NewExpiry,
-            });
-        }
+            return Result<AuthResponseDto>.Failure("Sesión legacy expirada. Inicie sesión nuevamente.");
 
         var user = await _accessRepository.GetUserByIdAsync(v.UserId, ct);
         if (user is null || !user.IsActive)

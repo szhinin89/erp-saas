@@ -1,7 +1,7 @@
 /* AppLayout — main app shell, nav menu, superadmin banner */
 
 /* ── Tenant header wrapper ────────────────────────────────── */
-.app-tenantHeaderWrap {
+.app-subscriberHeaderWrap {
   position: sticky;
   top: 0;
   z-index: 40;
@@ -45,7 +45,7 @@
 
 .superadmin-banner-title { font-weight: 700; }
 
-.superadmin-banner-tenantInline {
+.superadmin-banner-subscriberInline {
   font-weight: 600;
   color: var(--color-primary);
   overflow: hidden;
@@ -54,7 +54,7 @@
   max-width: 200px;
 }
 
-.superadmin-banner-tenantIdInline {
+.superadmin-banner-subscriberIdInline {
   font-size: var(--text-label-sm-size);
   color: var(--color-on-surface-variant);
   opacity: 0.7;
@@ -72,13 +72,13 @@
   background: rgba(255,255,255,0.5);
 }
 
-.superadmin-banner-tenant {
+.superadmin-banner-subscriber {
   font-weight: 700;
   color: var(--color-primary);
   font-size: 13px;
 }
 
-.superadmin-banner-tenantId {
+.superadmin-banner-subscriberId {
   font-size: var(--text-label-sm-size);
   color: var(--color-text-secondary);
 }
@@ -102,7 +102,7 @@
 .superadmin-banner-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ── Main menu — horizontal nav bar ──────────────────────── */
-/* Renders as bottomLeft inside ZHAppTenantHeader → zh-tenant-status */
+/* Renders as bottomLeft inside ZHAppTenantHeader → zh-subscriber-status */
 .app-mainmenu {
   display: flex;
   align-items: center;

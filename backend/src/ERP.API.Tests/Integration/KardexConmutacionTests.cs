@@ -18,6 +18,7 @@ using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Products.Interfaces;
 using ERP.Infrastructure.Services;
 using ERP.Infrastructure.Persistence;
+using ERP.Infrastructure.Services;
 
 namespace ERP.API.Tests.Integration;
 
@@ -41,7 +42,7 @@ public sealed class KardexConmutacionTests
     private static StockMovement MovConFecha(
         Guid subscriberId, Guid productoId, Guid bodegaId,
         StockMovementType tipo, decimal quantity, decimal cantAnterior,
-        decimal? unitCost, Guid userId, DateTime fecha)
+        decimal? unitCost, Guid userId, DateTime fecha, Guid? companyId = null)
     {
         var movimientoCantidad = tipo switch
         {
@@ -52,9 +53,13 @@ public sealed class KardexConmutacionTests
             _ => Math.Abs(quantity),
         };
 
+        var resolvedCompanyId = companyId
+            ?? (JobCompanyContext.Current != Guid.Empty ? JobCompanyContext.Current : (Guid?)null);
+
         var m = StockMovement.Create(
             subscriberId, productoId, bodegaId, tipo,
-            movimientoCantidad, cantAnterior, null, null, null, userId, unitCost);
+            movimientoCantidad, cantAnterior, null, null, null, userId, unitCost,
+            companyId: resolvedCompanyId);
         SetCreatedAt(m, fecha);
         return m;
     }
@@ -83,7 +88,8 @@ public sealed class KardexConmutacionTests
         var scope = factory.Services.CreateScope();
         var db    = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var seed  = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
+        JobCompanyContext.Current = seed.CompanyId;
 
         // Registrar un ManualCurrentSubscriber que el handler pueda resolver directamente.
         // (No se pasa por DI convencional â€” se pasa directo al constructor del handler.)
@@ -104,17 +110,17 @@ public sealed class KardexConmutacionTests
         var (db, scope, seed) = await SeedAsync(factory);
         var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
 
-        var ayer = DateTime.UtcNow.AddDays(-1);
-        var hoy  = DateTime.UtcNow;
+        var hoyUtc  = DateTime.UtcNow.Date;
+        var ayerUtc = hoyUtc.AddDays(-1).AddHours(12);
 
         // Movimiento de ayer (queda fuera del perÃ­odo)
         db.StockMovements.Add(
             MovConFecha(tid, pid, bid, StockMovementType.PurchaseEntry,
-                        10m, 0m, 50m, uid, ayer));
+                        10m, 0m, 50m, uid, ayerUtc, seed.CompanyId));
         await db.SaveChangesAsync();
 
         // Snapshot CON DATOS INCORRECTOS para verificar que no se usa
-        var snapFalso = KardexSnapshot.Create(tid, pid, bid, ayer.Date, 999m, 99999m, 99m);
+        var snapFalso = KardexSnapshot.Create(tid, pid, bid, ayerUtc.Date, 999m, 99999m, 99m);
         await scope.ServiceProvider.GetRequiredService<IKardexSnapshotRepository>()
                    .UpsertAsync(snapFalso, CancellationToken.None);
         await db.SaveChangesAsync();
@@ -122,7 +128,7 @@ public sealed class KardexConmutacionTests
         // Movimiento de hoy (perÃ­odo)
         db.StockMovements.Add(
             MovConFecha(tid, pid, bid, StockMovementType.PurchaseEntry,
-                        5m, 10m, 60m, uid, hoy));
+                        5m, 10m, 60m, uid, hoyUtc.AddHours(1), seed.CompanyId));
         await db.SaveChangesAsync();
 
         // Handler en modo SIMPLE â€” no debe usar el snapshot falso
@@ -130,7 +136,7 @@ public sealed class KardexConmutacionTests
         var handler = BuildHandler(scope, tid, opts);
 
         var result = await handler.Handle(
-            new GetKardexQuery(pid, bid, DateFrom: DateTime.Today, DateTo: null),
+            new GetKardexQuery(pid, bid, DateFrom: hoyUtc, DateTo: null),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -174,7 +180,7 @@ public sealed class KardexConmutacionTests
         // Movimiento de hoy (perÃ­odo): E=5@$70
         db.StockMovements.Add(
             MovConFecha(tid, pid, bid, StockMovementType.PurchaseEntry,
-                        5m, 10m, 70m, uid, hoyUtc.AddHours(1)));
+                        5m, 10m, 70m, uid, hoyUtc.AddHours(1), seed.CompanyId));
         await db.SaveChangesAsync();
 
         // Handler en modo ESCALABLE
@@ -182,7 +188,7 @@ public sealed class KardexConmutacionTests
         var handler = BuildHandler(scope, tid, opts);
 
         var result = await handler.Handle(
-            new GetKardexQuery(pid, bid, DateFrom: DateTime.Today, DateTo: null),
+            new GetKardexQuery(pid, bid, DateFrom: hoyUtc, DateTo: null),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -222,9 +228,9 @@ public sealed class KardexConmutacionTests
         using var scope  = factory.Services.CreateScope();
         var db      = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var seed    = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
-        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId);
+        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId, seed.CompanyId);
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
@@ -232,7 +238,7 @@ public sealed class KardexConmutacionTests
         // Rango de 200 dÃ­as >> MaxDaysForSync (90) â†’ debe activar el modo async
         var fechaInicio = DateTime.Today.AddDays(-200).ToString("yyyy-MM-dd");
         var fechaFin    = DateTime.Today.ToString("yyyy-MM-dd");
-        var url = $"/api/inventario/kardex?productoId={seed.ProductId}&bodegaId={seed.WarehouseId}" +
+        var url = $"/api/inventory/kardex?productoId={seed.ProductId}&bodegaId={seed.WarehouseId}" +
                   $"&fechaInicio={fechaInicio}&fechaFin={fechaFin}";
 
         var response = await client.GetAsync(url);
@@ -243,7 +249,7 @@ public sealed class KardexConmutacionTests
 
         var body = await response.Content.ReadAsStringAsync();
         body.Should().Contain("jobId", "la respuesta debe incluir un identificador del trabajo");
-        body.Should().Contain("Pendiente", "el estado inicial del job debe ser Pendiente");
+        body.Should().Contain("Pending", "el estado inicial del job debe ser Pending");
 
         // Verificar que el reporte fue creado en BD
         var reporteCreado = await db.KardexReports
@@ -263,17 +269,17 @@ public sealed class KardexConmutacionTests
         var (db, scope, seed) = await SeedAsync(factory);
         var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
 
-        var ayer = DateTime.UtcNow.Date.AddDays(-1).AddHours(12);
-        var hoy  = DateTime.UtcNow.Date.AddHours(1);
+        var hoyUtc  = DateTime.UtcNow.Date;
+        var ayerUtc = hoyUtc.AddDays(-1).AddHours(12);
 
         // Movimientos previos al perÃ­odo (ayer)
         db.StockMovements.Add(
             MovConFecha(tid, pid, bid, StockMovementType.PurchaseEntry,
-                        10m, 0m, 50m, uid, ayer));
+                        10m, 0m, 50m, uid, ayerUtc, seed.CompanyId));
         // Movimiento del perÃ­odo (hoy)
         db.StockMovements.Add(
             MovConFecha(tid, pid, bid, StockMovementType.SaleExit,
-                        4m, 10m, 50m, uid, hoy));
+                        4m, 10m, 50m, uid, hoyUtc.AddHours(1), seed.CompanyId));
         await db.SaveChangesAsync();
 
         // Confirmar que la tabla de snapshots estÃ¡ vacÃ­a
@@ -284,14 +290,14 @@ public sealed class KardexConmutacionTests
         var handlerSimple = BuildHandler(scope, tid, new KardexOptions { UseScalableMode = false });
 
         var resultSimple = await handlerSimple.Handle(
-            new GetKardexQuery(pid, bid, DateFrom: DateTime.Today, DateTo: null),
+            new GetKardexQuery(pid, bid, DateFrom: hoyUtc, DateTo: null),
             CancellationToken.None);
 
         // Ejecutar con modo ESCALABLE (sin snapshots â†’ fallback idÃ©ntico)
         var handlerScalable = BuildHandler(scope, tid, new KardexOptions { UseScalableMode = true });
 
         var resultScalable = await handlerScalable.Handle(
-            new GetKardexQuery(pid, bid, DateFrom: DateTime.Today, DateTo: null),
+            new GetKardexQuery(pid, bid, DateFrom: hoyUtc, DateTo: null),
             CancellationToken.None);
 
         resultSimple.IsSuccess.Should().BeTrue();
@@ -332,9 +338,9 @@ public sealed class KardexConmutacionTests
         using var scope  = factory.Services.CreateScope();
         var db      = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var seed    = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
-        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId);
+        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId, seed.CompanyId);
         using var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
@@ -342,7 +348,7 @@ public sealed class KardexConmutacionTests
         // Rango de 7 dÃ­as << MaxDaysForSync (90) â†’ debe responder 200 (sÃ­ncrono)
         var fechaInicio = DateTime.Today.AddDays(-7).ToString("yyyy-MM-dd");
         var fechaFin    = DateTime.Today.ToString("yyyy-MM-dd");
-        var url = $"/api/inventario/kardex?productoId={seed.ProductId}&bodegaId={seed.WarehouseId}" +
+        var url = $"/api/inventory/kardex?productoId={seed.ProductId}&bodegaId={seed.WarehouseId}" +
                   $"&fechaInicio={fechaInicio}&fechaFin={fechaFin}";
 
         var response = await client.GetAsync(url);
@@ -352,7 +358,7 @@ public sealed class KardexConmutacionTests
             "un rango de 7 dÃ­as no supera el umbral de 90 dÃ­as, debe responder sincrono");
 
         var body = await response.Content.ReadAsStringAsync();
-        body.Should().Contain("movimientos",
+        body.Should().Contain("\"rows\"",
             "la respuesta sÃ­ncrona incluye el kardex completo en JSON");
     }
 }

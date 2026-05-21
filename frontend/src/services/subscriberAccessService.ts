@@ -19,21 +19,23 @@ export type SubscriberUpsertCompanyUserMembershipRequest = {
   password?: string | null;
 };
 
+const IAM_SUBSCRIBER_MEMBERSHIPS = '/api/admin/iam/subscriber/company_user_memberships';
+
 export const subscriberAccessService = {
   listCompanyUserMemberships: (onlyActive = true) =>
     api
-      .get<ApiResponse<SubscriberCompanyUserMembershipItem[]>>('/api/admin/iam/tenant/company_user_memberships', {
+      .get<ApiResponse<SubscriberCompanyUserMembershipItem[]>>(IAM_SUBSCRIBER_MEMBERSHIPS, {
         params: { onlyActive },
       })
       .then((r) => r.data.responseObject),
 
   upsertCompanyUserMembership: (req: SubscriberUpsertCompanyUserMembershipRequest) =>
     api
-      .post<ApiResponse<object>>('/api/admin/iam/tenant/company_user_memberships', req)
+      .post<ApiResponse<object>>(IAM_SUBSCRIBER_MEMBERSHIPS, req)
       .then((r) => r.data.responseObject),
 
   revokeCompanyUserMembership: (email: string) =>
     api
-      .post<ApiResponse<object>>('/api/admin/iam/tenant/company_user_memberships/revoke', { email })
+      .post<ApiResponse<object>>(`${IAM_SUBSCRIBER_MEMBERSHIPS}/revoke`, { email })
       .then((r) => r.data.responseObject),
 };

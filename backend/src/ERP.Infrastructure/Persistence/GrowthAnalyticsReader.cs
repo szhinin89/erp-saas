@@ -69,10 +69,10 @@ public sealed class GrowthAnalyticsReader : IGrowthAnalyticsReader
                 PeriodStart: start.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 PeriodEnd: end.AddTicks(-1).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 PeriodLabel: label,
-                NewTenants: newT,
+                NewSubscribers: newT,
                 NewIdentityUsers: newU,
                 NewCompanyUserMemberships: newM,
-                CumulativeTenants: cumT,
+                CumulativeSubscribers: cumT,
                 CumulativeIdentityUsers: cumU,
                 CumulativeCompanyUserMemberships: cumM));
         }

@@ -7,18 +7,26 @@ namespace ERP.API.Tests.Support;
 
 internal static class TestJwtFactory
 {
-    public static string CreateSessionJwt(Guid subscriberId, Guid userId, string role = "Admin")
+    public static string CreateSessionJwt(
+        Guid subscriberId,
+        Guid userId,
+        Guid? companyId = null,
+        string role = "Admin")
     {
-        var claims = new[]
+        var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, "integration@test.local"),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim("subscriber_id", subscriberId.ToString()),
-            new Claim("full_name", "Integration User"),
-            new Claim(ClaimTypes.Role, role),
-            new Claim("token_type", "session"),
+            new(JwtRegisteredClaimNames.Sub, userId.ToString()),
+            new(JwtRegisteredClaimNames.Email, "integration@test.local"),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new("subscriber_id", subscriberId.ToString()),
+            new("full_name", "Integration User"),
+            new(ClaimTypes.Role, role),
+            new("token_type", "session"),
+            new("user_type", "subscriber"),
         };
+
+        if (companyId is Guid cid && cid != Guid.Empty)
+            claims.Add(new Claim("company_id", cid.ToString()));
 
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(IntegrationTestConstants.JwtSecretKey));
@@ -28,7 +36,7 @@ internal static class TestJwtFactory
         var token = new JwtSecurityToken(
             issuer:             "ZHTechnologies",
             audience:           "ERPUsers",
-            claims:             claims,
+            claims:             claims.ToArray(),
             expires:            DateTime.UtcNow.AddHours(1),
             signingCredentials: creds);
 

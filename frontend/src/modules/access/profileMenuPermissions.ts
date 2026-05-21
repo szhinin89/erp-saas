@@ -4,7 +4,7 @@ import { normalizePolicyPermissionKey } from '../../store/permissionsStore';
 /** Rutas de administración de identidad: no se asignan como permisos de negocio desde el árbol. */
 const IamRoutePrefixes = ['/profiles', '/access'];
 
-const TenantIamGroupCode = 'tenant-company-iam';
+const SubscriberIamGroupCode = 'subscriber-company-iam';
 
 export type MenuPermLeaf = {
   id: string;
@@ -73,7 +73,7 @@ export function buildMenuPermissionSections(groups: SessionMenuGroupDto[] | unde
   const seenLeaf = new Set<string>();
 
   for (const g of groups) {
-    if (g.code === TenantIamGroupCode) continue;
+    if (g.code === SubscriberIamGroupCode) continue;
     const leaves: MenuPermLeaf[] = [];
     collectLeavesFromItems(g.items, g.code, leaves, seenLeaf);
     if (leaves.length === 0) continue;

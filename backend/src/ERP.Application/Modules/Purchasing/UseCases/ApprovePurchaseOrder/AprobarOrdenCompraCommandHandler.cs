@@ -46,9 +46,9 @@ public sealed class ApproveOrderPurchaseCommandHandler
         if (orden is null)
             return Result<PurchaseOrderDto>.Failure("Orden de compra no encontrada.");
 
-        if (orden.Status is not ("Borrador" or "Enviada"))
+        if (orden.Status is not ("Draft" or "Sent"))
             return Result<PurchaseOrderDto>.Failure(
-                $"Solo se puede aprobar una OC en Borrador o Enviada (estado actual: {orden.Status}).");
+                $"Solo se puede aprobar una OC en Draft o Sent (estado actual: {orden.Status}).");
 
         orden.Approve(userId);
 

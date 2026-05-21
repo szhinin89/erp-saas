@@ -114,7 +114,7 @@ public sealed class EjecutarAjusteCommandHandlerTests
         var result = await ctx.Handle();
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Borrador");
+        result.Error.Should().Contain("Draft");
     }
 
     [Fact]
@@ -126,7 +126,7 @@ public sealed class EjecutarAjusteCommandHandlerTests
         var result = await ctx.Handle();
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Borrador");
+        result.Error.Should().Contain("Draft");
     }
 
     [Fact]
@@ -219,7 +219,7 @@ public sealed class EjecutarAjusteCommandHandlerTests
 
         public Task<Result<StockAdjustmentDto>> Handle()
         {
-            var handler = new EjecutarAjusteCommandHandler(
+            var handler = new ExecuteStockAdjustmentCommandHandler(
                 AjusteRepo.Object,
                 StockRepo.Object,
                 _costo.Object,
@@ -227,9 +227,9 @@ public sealed class EjecutarAjusteCommandHandlerTests
                 Uow.Object,
                 _tenant.Object,
                 _user.Object,
-                NullLogger<EjecutarAjusteCommandHandler>.Instance);
+                NullLogger<ExecuteStockAdjustmentCommandHandler>.Instance);
 
-            return handler.Handle(new EjecutarAjusteCommand(Ajuste.Id), CancellationToken.None);
+            return handler.Handle(new ExecuteStockAdjustmentCommand(Ajuste.Id), CancellationToken.None);
         }
     }
 }

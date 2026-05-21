@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using ERP.Domain.Access.Entities;
+using ERP.Domain.Access.Enums;
 using ERP.Domain.Access.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -19,24 +20,56 @@ public class AccessTokenService : IAccessTokenService
 
     public string GenerateBootstrapToken(IdentityUser user, IReadOnlyList<Guid> subscriberIds)
     {
+        if (user.IsPlatformSuperAdmin)
+        {
+            return GenerateBootstrapToken(
+                userId: user.Id,
+                email: user.Email.Value,
+                fullName: user.FullName,
+                role: "SuperAdmin",
+                subscriberIds: subscriberIds,
+                userType: IdentityUserType.Platform,
+                platformRole: PlatformRole.SuperAdmin);
+        }
+
         return GenerateBootstrapToken(
             userId: user.Id,
             email: user.Email.Value,
             fullName: user.FullName,
             role: "Bootstrap",
-            subscriberIds: subscriberIds);
+            subscriberIds: subscriberIds,
+            userType: user.UserType,
+            platformRole: user.PlatformRole);
     }
 
     public string GenerateSessionToken(IdentityUser user, Guid subscriberId, string role, Guid companyId = default)
-    {
-        var expMinutes = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "60");
-        return GenerateSessionToken(
+        => GenerateSessionToken(
             userId: user.Id,
             email: user.Email.Value,
             fullName: user.FullName,
             subscriberId: subscriberId,
             role: role,
-            companyId: companyId);
+            companyId: companyId,
+            userType: user.UserType,
+            platformRole: user.PlatformRole);
+
+    public string GeneratePlatformSessionToken(IdentityUser platformUser)
+    {
+        if (!platformUser.IsPlatformSuperAdmin)
+            throw new InvalidOperationException("Solo operadores platform SuperAdmin pueden usar tokens platform.");
+
+        var expMinutes = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "60");
+        return GenerateToken(
+            userId: platformUser.Id,
+            email: platformUser.Email.Value,
+            fullName: platformUser.FullName,
+            subscriberId: Guid.Empty,
+            role: "SuperAdmin",
+            tokenType: "session",
+            expiresAtUtc: DateTime.UtcNow.AddMinutes(expMinutes),
+            userType: IdentityUserType.Platform,
+            platformRole: PlatformRole.SuperAdmin,
+            extraClaims: []);
     }
 
     public string GenerateBootstrapToken(
@@ -44,7 +77,9 @@ public class AccessTokenService : IAccessTokenService
         string email,
         string fullName,
         string role,
-        IReadOnlyList<Guid> subscriberIds)
+        IReadOnlyList<Guid> subscriberIds,
+        IdentityUserType userType = IdentityUserType.Company,
+        PlatformRole? platformRole = null)
     {
         var expMinutes = int.Parse(_configuration["Jwt:BootstrapExpirationMinutes"] ?? "5");
 
@@ -61,6 +96,8 @@ public class AccessTokenService : IAccessTokenService
             role: role,
             tokenType: "bootstrap",
             expiresAtUtc: DateTime.UtcNow.AddMinutes(expMinutes),
+            userType: userType,
+            platformRole: platformRole,
             extraClaims: extra);
     }
 
@@ -70,7 +107,9 @@ public class AccessTokenService : IAccessTokenService
         string fullName,
         Guid subscriberId,
         string role,
-        Guid companyId = default)
+        Guid companyId = default,
+        IdentityUserType userType = IdentityUserType.Company,
+        PlatformRole? platformRole = null)
     {
         var expMinutes = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "60");
 
@@ -89,6 +128,8 @@ public class AccessTokenService : IAccessTokenService
             role: role,
             tokenType: "session",
             expiresAtUtc: DateTime.UtcNow.AddMinutes(expMinutes),
+            userType: userType,
+            platformRole: platformRole,
             extraClaims: extra);
     }
 
@@ -100,6 +141,8 @@ public class AccessTokenService : IAccessTokenService
         string role,
         string tokenType,
         DateTime expiresAtUtc,
+        IdentityUserType userType,
+        PlatformRole? platformRole,
         IReadOnlyList<Claim> extraClaims)
     {
         var secretKey = _configuration["Jwt:SecretKey"]!;
@@ -114,8 +157,12 @@ public class AccessTokenService : IAccessTokenService
             new Claim("subscriber_id", subscriberId.ToString()),
             new Claim("full_name", fullName),
             new Claim(ClaimTypes.Role, role),
-            new Claim("token_type", tokenType)
+            new Claim("token_type", tokenType),
+            new Claim("user_type", userType.ToString()),
         };
+
+        if (platformRole is not null)
+            claims.Add(new Claim("platform_role", platformRole.Value.ToString()));
 
         if (extraClaims.Count > 0)
             claims.AddRange(extraClaims);
@@ -133,4 +180,3 @@ public class AccessTokenService : IAccessTokenService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }
-

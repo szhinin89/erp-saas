@@ -93,6 +93,7 @@ api.interceptors.request.use((config) => {
 
 const PUBLIC_AUTH_PATHS = [
   '/api/auth/login',
+  '/api/platform/auth/login',
   '/api/auth/superadmin-login',
   '/api/auth/register',
   '/api/auth/password-reset',
@@ -101,7 +102,9 @@ const PUBLIC_AUTH_PATHS = [
   '/api/auth/refresh',          // evitar loop infinito
   '/api/admin/iam/bootstrap-login',
   '/api/admin/iam/switch-subscriber',
+  '/api/admin/iam/subscriber/company_user_memberships',
   '/api/admin/iam/register-tenant',
+  '/api/admin/iam/register-subscriber',
 ];
 
 api.interceptors.response.use(

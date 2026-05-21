@@ -41,12 +41,12 @@ export function SubscriberSelectPage() {
         <div className="zh-auth-wrapper ts-wrapper">
           <div className="ts-card">
             <div className="ts-card-body">
-              <h2 className="ts-title">{t('tenantSelect.title')}</h2>
+              <h2 className="ts-title">{t('subscriberSelect.title')}</h2>
               <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                {t('tenantSelect.missing')}
+                {t('subscriberSelect.missing')}
               </p>
               <button className="zh-btn zh-btn--primary" onClick={() => navigate('/login')}>
-                {t('tenantSelect.back')}
+                {t('subscriberSelect.back')}
               </button>
             </div>
           </div>
@@ -59,7 +59,7 @@ export function SubscriberSelectPage() {
     setError('');
     setLoading(true);
     try {
-      const session = await accessService.switchTenant(bootstrapToken, { subscriberId });
+      const session = await accessService.switchSubscriber(bootstrapToken, { subscriberId });
       const auth: AuthResponse = {
         userId: session.userId,
         fullName: session.fullName,
@@ -86,12 +86,12 @@ export function SubscriberSelectPage() {
 
       if (status === 401) {
         clearBootstrap();
-        setError(t('tenantSelect.missing'));
+        setError(t('subscriberSelect.missing'));
         navigate('/login');
         return;
       }
 
-      setError(apiMsg ?? t('tenantSelect.error.default'));
+      setError(apiMsg ?? t('subscriberSelect.error.default'));
     } finally {
       setLoading(false);
     }
@@ -118,7 +118,7 @@ export function SubscriberSelectPage() {
           <div className="ts-card-body">
             {/* Encabezado */}
             <div className="ts-card-head">
-              <h2 className="ts-title">{t('tenantSelect.title')}</h2>
+              <h2 className="ts-title">{t('subscriberSelect.title')}</h2>
               <span className="ts-count">
                 {subscribers.length} {subscribers.length === 1 ? 'empresa' : 'empresas'}
               </span>
@@ -129,7 +129,7 @@ export function SubscriberSelectPage() {
               className="ts-search"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder={t('tenantSelect.search')}
+              placeholder={t('subscriberSelect.search')}
               disabled={loading}
             />
 
@@ -185,7 +185,7 @@ export function SubscriberSelectPage() {
             onClick={() => { clearBootstrap(); navigate('/login'); }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>logout</span>
-            {t('tenantSelect.back')}
+            {t('subscriberSelect.back')}
           </button>
           <nav className="ts-footer-nav" aria-label="Vínculos">
             <a href="#" className="ts-footer-link">Términos</a>

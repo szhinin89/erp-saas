@@ -1,12 +1,12 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using ERP.Application.Sales.Helpers;
 
 namespace ERP.API.Tests.Unit;
 
-/// <summary>Pruebas unitarias del algoritmo de generaciÃ³n de clave de acceso SRI Ecuador (mÃ³dulo 11).</summary>
+/// <summary>Pruebas unitarias del algoritmo de generación de clave de acceso SRI Ecuador (módulo 11).</summary>
 public sealed class ClaveAccesoHelperTests
 {
-    // â”€â”€ CalcularDigitoVerificador â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── CalcularDigitoVerificador ─────────────────────────────────────────
 
     [Fact]
     public void CalcularDigitoVerificador_con_todos_ceros_retorna_cero()
@@ -16,9 +16,9 @@ public sealed class ClaveAccesoHelperTests
     }
 
     [Theory]
-    [InlineData("000000000000000000000000000000000000000000000001", 4)]  // 1Ã—7=7 â†’ 11-7=4
-    [InlineData("111111111111111111111111111111111111111111111111", 4)]  // 8Ã—(2+3+4+5+6+7)=216 â†’ 216%11=7 â†’ 11-7=4
-    [InlineData("100000000000000000000000000000000000000000000000", 9)]  // 1Ã—2=2 â†’ 2%11=2 â†’ 11-2=9
+    [InlineData("000000000000000000000000000000000000000000000001", 4)]  // 1×7=7 → 11-7=4
+    [InlineData("111111111111111111111111111111111111111111111111", 4)]  // 8×(2+3+4+5+6+7)=216 → 216%11=7 → 11-7=4
+    [InlineData("100000000000000000000000000000000000000000000000", 9)]  // 1×2=2 → 2%11=2 → 11-2=9
     public void CalcularDigitoVerificador_valores_conocidos(string clave48, int esperado)
     {
         ClaveAccesoHelper.CalcularDigitoVerificador(clave48).Should().Be(esperado);
@@ -31,7 +31,7 @@ public sealed class ClaveAccesoHelperTests
         acto.Should().Throw<ArgumentException>().WithMessage("*48*");
     }
 
-    // â”€â”€ Generar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── Generar ───────────────────────────────────────────────────────────
 
     [Fact]
     public void Generar_produce_exactamente_49_caracteres()
@@ -65,7 +65,7 @@ public sealed class ClaveAccesoHelperTests
         var digitoReal = clave[48] - '0';
         var digitoCalc = ClaveAccesoHelper.CalcularDigitoVerificador(clave48);
 
-        digitoReal.Should().Be(digitoCalc, "el Ãºltimo dÃ­gito debe coincidir con el verificador calculado");
+        digitoReal.Should().Be(digitoCalc, "el último dígito debe coincidir con el verificador calculado");
     }
 
     [Fact]
@@ -92,13 +92,13 @@ public sealed class ClaveAccesoHelperTests
         var args = ("9999999999999", 1, "001", "001", 1, "000000001", new DateTime(2026, 5, 9));
         var (ruc, amb, estab, pto, tipo, seq, fecha) = args;
 
-        // El cÃ³digo numÃ©rico (8 dÃ­gitos aleatorios) hace que dos claves con mismo input difieran
+        // El código numérico (8 dígitos aleatorios) hace que dos claves con mismo input difieran
         var claves = Enumerable.Range(0, 20)
             .Select(_ => ClaveAccesoHelper.Generar(ruc, amb, estab, pto, tipo, seq, fecha))
             .Distinct()
             .Count();
 
-        claves.Should().BeGreaterThan(1, "el cÃ³digo numÃ©rico aleatorio garantiza unicidad");
+        claves.Should().BeGreaterThan(1, "el código numérico aleatorio garantiza unicidad");
     }
 
     [Fact]
@@ -106,7 +106,7 @@ public sealed class ClaveAccesoHelperTests
     {
         var clave = ClaveAccesoHelper.Generar("1234567", 1, "001", "001", 1, "000000001", new DateTime(2026, 5, 9));
 
-        // pos 10-22: RUC (13 dÃ­gitos, padding izquierdo con '0')
+        // pos 10-22: RUC (13 dígitos, padding izquierdo con '0')
         var rucEn = clave.Substring(10, 13);
         rucEn.Should().Be("0000001234567");
     }

@@ -2,7 +2,9 @@ using ERP.Application.Common;
 using ERP.Application.Subscriptions.CommercialPlanLimits;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Subscribers.Entities;
 using ERP.Domain.Subscriptions.Entities;
@@ -31,25 +33,7 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         if (active.Count > 0)
             return active[0];
 
-        var ruc = string.IsNullOrWhiteSpace(subscriber.Ruc)
-            ? "0000000000000"
-            : subscriber.Ruc.Trim();
-
-        if (ruc.Length != 13)
-            ruc = ruc.PadRight(13, '0')[..13];
-
-        var existingByRuc = await _companies.GetBySubscriberAndRucAsync(subscriber.Id, ruc, ct);
-        if (existingByRuc is not null)
-            return existingByRuc;
-
-        var company = Company.CreateFromSubscriber(
-            subscriber.Id,
-            ruc,
-            legalName: subscriber.Name,
-            mainAddress: "—",
-            tradeName: subscriber.TradeName ?? subscriber.ShortName,
-            email: null,
-            phone: null);
+        var company = await CreateDefaultCompanyForSubscriberAsync(subscriber, ct: ct);
 
         Company? created = null;
         await _planLimits.ExecuteWithLimitEnforcementAsync(
@@ -64,6 +48,29 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
             ct);
 
         return created ?? company;
+    }
+
+    public async Task<Company> CreateDefaultCompanyForSubscriberAsync(
+        Subscriber subscriber,
+        string? countryCode = "ECU",
+        string? timezone = "America/Guayaquil",
+        CancellationToken ct = default)
+    {
+        var (taxId, isProvisional, status) = await ResolveTaxIdAsync(subscriber.Ruc, ct);
+
+        return Company.CreateManaged(
+            subscriber.Id,
+            taxId,
+            legalName: subscriber.Name,
+            mainAddress: "—",
+            tradeName: subscriber.TradeName ?? subscriber.ShortName,
+            email: null,
+            phone: null,
+            countryCode: string.IsNullOrWhiteSpace(countryCode) ? "ECU" : countryCode,
+            timezone: string.IsNullOrWhiteSpace(timezone) ? "America/Guayaquil" : timezone,
+            currencyCode: "USD",
+            isProvisionalTaxId: isProvisional,
+            taxIdStatus: status);
     }
 
     public async Task<Company> CreateManagedCompanyAsync(
@@ -83,17 +90,12 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
         string? brandingJson = null,
         CancellationToken ct = default)
     {
-        var existingGlobal = await _companies.GetByRucAsync(ruc, ct);
-        if (existingGlobal is not null)
-            throw new InvalidOperationException("El RUC ya está registrado en el sistema.");
-
-        var existingInSub = await _companies.GetBySubscriberAndRucAsync(subscriberId, ruc, ct);
-        if (existingInSub is not null)
-            throw new InvalidOperationException("Ya existe una empresa con este RUC en el suscriptor.");
+        var normalized = NormalizeProvidedTaxId(ruc);
+        await EnsureTaxIdAvailableGloballyAsync(normalized, ct);
 
         var company = Company.CreateManaged(
             subscriberId,
-            ruc,
+            normalized,
             legalName,
             mainAddress,
             tradeName,
@@ -103,7 +105,11 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
             timezone,
             currencyCode,
             logoUrl,
-            brandingJson);
+            brandingJson,
+            isProvisionalTaxId: ProvisionalTaxIdGenerator.IsProvisional(normalized),
+            taxIdStatus: ProvisionalTaxIdGenerator.IsProvisional(normalized)
+                ? TaxIdStatus.Pending
+                : TaxIdStatus.Verified);
 
         Company? created = null;
         await _planLimits.ExecuteWithLimitEnforcementAsync(
@@ -128,5 +134,38 @@ public sealed class CompanyProvisioningService : ICompanyProvisioningService
             ct);
 
         return created ?? company;
+    }
+
+    private async Task<(string TaxId, bool IsProvisional, TaxIdStatus Status)> ResolveTaxIdAsync(
+        string? providedRuc,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(providedRuc))
+        {
+            for (var attempt = 0; attempt < 5; attempt++)
+            {
+                var provisional = ProvisionalTaxIdGenerator.Create();
+                if (await _companies.GetByRucAsync(provisional, ct) is null)
+                    return (provisional, true, TaxIdStatus.Pending);
+            }
+
+            throw new InvalidOperationException("No se pudo generar un RUC provisional único.");
+        }
+
+        var normalized = NormalizeProvidedTaxId(providedRuc);
+        await EnsureTaxIdAvailableGloballyAsync(normalized, ct);
+        return (normalized, false, TaxIdStatus.Verified);
+    }
+
+    private static string NormalizeProvidedTaxId(string ruc) =>
+        ProvisionalTaxIdGenerator.IsProvisional(ruc)
+            ? ruc.Trim()
+            : ProvisionalTaxIdGenerator.NormalizeOfficial(ruc);
+
+    private async Task EnsureTaxIdAvailableGloballyAsync(string taxId, CancellationToken ct)
+    {
+        var existing = await _companies.GetByRucAsync(taxId, ct);
+        if (existing is not null)
+            throw new CompanyRucAlreadyExistsException(taxId);
     }
 }

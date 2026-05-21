@@ -58,10 +58,10 @@ public sealed class SendIssuedRetentionCommandHandler
         if (ret is null)
             return Result<Guid>.Failure("Retención no encontrada.");
 
-        if (ret.Status == "Borrador")
+        if (ret.Status == "Draft")
             ret.Validate(userId);
 
-        if (ret.Status != "Validado")
+        if (ret.Status != "Validated")
             return Result<Guid>.Failure($"Estado inválido para enviar: {ret.Status}");
 
         var configSri = await _configSriRepository.GetBySubscriberIdAsync(subscriberId, ct);

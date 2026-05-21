@@ -4,11 +4,11 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useI18n } from '../../../i18n/i18n';
 import { useAuthStore } from '../../../store/authStore';
-import { companyService, type CompanyItem, type TenantDetailDto } from '../../../services/companyService';
+import { companyService, type CompanyItem, type SubscriberDetailDto } from '../../../services/companyService';
 import { CompanyModuleChips } from '../../../components/saas/CompanyModuleChips';
 import {
   createCompanyWithAdminSchema,
-  updateTenantCompanySchema,
+  updateSubscriberCompanySchema,
   type CreateCompanyFormValues,
   type UpdateSubscriberCompanyFormValues,
 } from '../../../schemas/saas/companySchema';
@@ -85,7 +85,7 @@ function CompaniesPage() {
 
   /** Subscriber cuya ficha se muestra en Datos; el id vive en memoria + sessionStorage (no en la URL). */
   const [detailSubscriberId, setDetailSubscriberId] = useState<string | null>(null);
-  const [tenantDetail, setTenantDetail] = useState<TenantDetailDto | null>(null);
+  const [subscriberDetail, setSubscriberDetail] = useState<SubscriberDetailDto | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
   const [detailSaving, setDetailSaving] = useState(false);
@@ -117,7 +117,7 @@ function CompaniesPage() {
     reset: resetDetailForm,
     formState: { errors: detailFieldErrors },
   } = useForm<UpdateSubscriberCompanyFormValues>({
-    resolver: zodResolver(updateTenantCompanySchema),
+    resolver: zodResolver(updateSubscriberCompanySchema),
     defaultValues: emptyDetailCompanyForm(),
   });
 
@@ -150,11 +150,11 @@ function CompaniesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const clearTenantDetailView = () => {
+  const clearSubscriberDetailView = () => {
     clearCompaniesDetailSubscriberId();
     clearCompaniesSubscriptionSubscriberId();
     setDetailSubscriberId(null);
-    setTenantDetail(null);
+    setSubscriberDetail(null);
     setDetailError('');
     setSearchParams(
       (prev) => {
@@ -221,7 +221,7 @@ function CompaniesPage() {
 
   useEffect(() => {
     if (!detailSubscriberId) {
-      setTenantDetail(null);
+      setSubscriberDetail(null);
       setDetailError('');
       setDetailLoading(false);
       return;
@@ -231,11 +231,11 @@ function CompaniesPage() {
     setDetailError('');
     (async () => {
       try {
-        const d = await companyService.getTenant(detailSubscriberId);
-        if (!cancelled) setTenantDetail(d);
+        const d = await companyService.getSubscriber(detailSubscriberId);
+        if (!cancelled) setSubscriberDetail(d);
       } catch {
         if (!cancelled) {
-          setTenantDetail(null);
+          setSubscriberDetail(null);
           setDetailError(t('companies.error.detailLoad'));
         }
       } finally {
@@ -248,17 +248,17 @@ function CompaniesPage() {
   }, [detailSubscriberId, t]);
 
   useEffect(() => {
-    if (!tenantDetail) return;
+    if (!subscriberDetail) return;
     resetDetailForm({
-      subscriberName: tenantDetail.name,
-      subscriberSlug: tenantDetail.slug,
-      ruc: tenantDetail.ruc ?? '',
-      shortName: tenantDetail.shortName ?? '',
-      tradeName: tenantDetail.tradeName ?? '',
-      dinardap: tenantDetail.dinardap ?? '',
-      logoUrl: tenantDetail.logoUrl ?? '',
-      displayOrder: tenantDetail.displayOrder,
-      priority: tenantDetail.priority,
+      subscriberName: subscriberDetail.name,
+      subscriberSlug: subscriberDetail.slug,
+      ruc: subscriberDetail.ruc ?? '',
+      shortName: subscriberDetail.shortName ?? '',
+      tradeName: subscriberDetail.tradeName ?? '',
+      dinardap: subscriberDetail.dinardap ?? '',
+      logoUrl: subscriberDetail.logoUrl ?? '',
+      displayOrder: subscriberDetail.displayOrder,
+      priority: subscriberDetail.priority,
     });
     setDetailSaveError('');
     setDetailSaveOk(false);
@@ -266,16 +266,16 @@ function CompaniesPage() {
     setGlobalParamOk(false);
     setGlobalParamScopeResolved('');
     setGlobalConfigCount(0);
-  }, [tenantDetail, resetDetailForm]);
+  }, [subscriberDetail, resetDetailForm]);
 
   useEffect(() => {
-    if (!detailSubscriberId || !tenantDetail) return;
+    if (!detailSubscriberId || !subscriberDetail) return;
     let cancelled = false;
     (async () => {
       try {
         const [resolved, globals] = await Promise.all([
-          companyService.resolveTenantConfig(detailSubscriberId, ELECTRONIC_BILLING_TRIAL_KEY),
-          companyService.listTenantGlobalConfig(detailSubscriberId),
+          companyService.resolveSubscriberConfig(detailSubscriberId, ELECTRONIC_BILLING_TRIAL_KEY),
+          companyService.listSubscriberGlobalConfig(detailSubscriberId),
         ]);
         if (cancelled) return;
         const resolvedValue = resolved?.value?.trim().toLowerCase();
@@ -287,13 +287,13 @@ function CompaniesPage() {
               : '',
           );
         } else {
-          setElectronicBillingTrialEnabled(tenantDetail.electronicBillingTrialEnabled);
+          setElectronicBillingTrialEnabled(subscriberDetail.electronicBillingTrialEnabled);
           setGlobalParamScopeResolved('');
         }
         setGlobalConfigCount(Array.isArray(globals) ? globals.length : 0);
       } catch {
         if (!cancelled) {
-          setElectronicBillingTrialEnabled(tenantDetail.electronicBillingTrialEnabled);
+          setElectronicBillingTrialEnabled(subscriberDetail.electronicBillingTrialEnabled);
           setGlobalParamScopeResolved('');
           setGlobalConfigCount(0);
         }
@@ -302,7 +302,7 @@ function CompaniesPage() {
     return () => {
       cancelled = true;
     };
-  }, [detailSubscriberId, tenantDetail]);
+  }, [detailSubscriberId, subscriberDetail]);
 
   if (user?.role !== 'SuperAdmin') {
     return <NoAccessPage title={t('companies.title')} />;
@@ -359,7 +359,7 @@ function CompaniesPage() {
     setDetailSaveOk(false);
     try {
       const slug = (values.subscriberSlug.trim() || values.subscriberName.trim()).toLowerCase();
-      const updated = await companyService.updateTenantCompany(detailSubscriberId, {
+      const updated = await companyService.updateSubscriberCompany(detailSubscriberId, {
         name: values.subscriberName.trim(),
         slug,
         ruc: values.ruc?.trim() || null,
@@ -370,7 +370,7 @@ function CompaniesPage() {
         displayOrder: values.displayOrder,
         priority: values.priority,
       });
-      setTenantDetail(updated);
+      setSubscriberDetail(updated);
       await refresh();
       setDetailSaveOk(true);
       window.setTimeout(() => setDetailSaveOk(false), 5000);
@@ -387,18 +387,18 @@ function CompaniesPage() {
   });
 
   const saveGlobalParameters = async () => {
-    if (!detailSubscriberId || !tenantDetail) return;
+    if (!detailSubscriberId || !subscriberDetail) return;
     setGlobalParamSaving(true);
     setGlobalParamError('');
     setGlobalParamOk(false);
     try {
-      await companyService.upsertTenantGlobalConfig(detailSubscriberId, {
+      await companyService.upsertSubscriberGlobalConfig(detailSubscriberId, {
         key: ELECTRONIC_BILLING_TRIAL_KEY,
         value: electronicBillingTrialEnabled ? 'true' : 'false',
         dataType: 'bool',
       });
       setGlobalParamScopeResolved('global');
-      const globals = await companyService.listTenantGlobalConfig(detailSubscriberId);
+      const globals = await companyService.listSubscriberGlobalConfig(detailSubscriberId);
       setGlobalConfigCount(Array.isArray(globals) ? globals.length : 0);
       await refresh();
       setGlobalParamOk(true);
@@ -457,8 +457,8 @@ function CompaniesPage() {
             <LoadingState />
           ) : detailError ? (
             <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={detailError} />
-          ) : tenantDetail ? (
-            !tenantDetail.planCode?.trim() ? (
+          ) : subscriberDetail ? (
+            !subscriberDetail.planCode?.trim() ? (
               <ZHPageNotice
                 variant="warning"
                 message={t('companies.globalParams.noPlanTitle')}
@@ -484,8 +484,8 @@ function CompaniesPage() {
                     message={t('companies.globalParams.modelTitle')}
                     detail={`${t('companies.globalParams.modelDetail')} ${t('companies.globalParams.structuredKeyExample')}: ${ELECTRONIC_BILLING_TRIAL_KEY}`}
                   />
-                  <FeatureGate feature="ui.cliente.mostrar_ruc" fallback={<ZHPageNotice variant="warning" message="Feature flag ui.cliente.mostrar_ruc está desactivada en este tenant." />}>
-                    <ZHPageNotice variant="info" message="Feature flag ui.cliente.mostrar_ruc activa para el tenant actual." />
+                  <FeatureGate feature="ui.cliente.mostrar_ruc" fallback={<ZHPageNotice variant="warning" message="Feature flag ui.cliente.mostrar_ruc está desactivada en este subscriber." />}>
+                    <ZHPageNotice variant="info" message="Feature flag ui.cliente.mostrar_ruc activa para el subscriber actual." />
                   </FeatureGate>
                   <ZHPageNotice
                     variant={stockNegativeEnabled ? 'warning' : 'info'}
@@ -574,7 +574,7 @@ function CompaniesPage() {
                   >
                     {t('common.clear')}
                   </Button>
-                  <Button variant="primary" size="sm" onClick={clearTenantDetailView} disabled={loading}>
+                  <Button variant="primary" size="sm" onClick={clearSubscriberDetailView} disabled={loading}>
                     {t('companies.list.newAction')}
                   </Button>
                 </div>
@@ -633,7 +633,7 @@ function CompaniesPage() {
 
                   {maxActiveSubscribers != null ? (
                     <p className="companies-quota-hint" role="note">
-                      {t('companies.deployment.maxTenantsHint')} <strong>{maxActiveSubscribers}</strong>
+                      {t('companies.deployment.maxSubscribersHint')} <strong>{maxActiveSubscribers}</strong>
                     </p>
                   ) : null}
                   {maxIdentityUsers != null ? (
@@ -712,29 +712,29 @@ function CompaniesPage() {
               <>
                 <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={detailError} />
                 <div className="zh-mt-12">
-                  <Button variant="secondary" size="sm" type="button" onClick={clearTenantDetailView}>
+                  <Button variant="secondary" size="sm" type="button" onClick={clearSubscriberDetailView}>
                     {t('companies.data.newCompany')}
                   </Button>
                 </div>
               </>
-            ) : tenantDetail ? (
+            ) : subscriberDetail ? (
               <div className="companies-inner-stack">
                 <Card title={t('companies.data.sectionMeta')}>
                   <ZHFormBody standalone>
                     <ZHGrid cols={2}>
                       <ZHField label={t('companies.table.id')}>
-                        <div className="companies-readonly-value mono">{tenantDetail.id}</div>
+                        <div className="companies-readonly-value mono">{subscriberDetail.id}</div>
                       </ZHField>
                       <ZHField label={t('companies.data.createdAt')}>
                         <div className="companies-readonly-value">
-                          {new Date(tenantDetail.createdAt).toLocaleString()}
+                          {new Date(subscriberDetail.createdAt).toLocaleString()}
                         </div>
                       </ZHField>
                       <ZHField label={t('common.status')}>
                         <div className="companies-readonly-value">
                           <Badge
-                            label={tenantDetail.isActive ? t('common.active') : t('common.inactive')}
-                            variant={tenantDetail.isActive ? 'green' : 'gray'}
+                            label={subscriberDetail.isActive ? t('common.active') : t('common.inactive')}
+                            variant={subscriberDetail.isActive ? 'green' : 'gray'}
                           />
                         </div>
                       </ZHField>
@@ -801,7 +801,7 @@ function CompaniesPage() {
         {tab === 'audit' ? (
           auditSubscriberId ? (
             <EntityAuditPanel
-              entityType="Tenant"
+              entityType="Subscriber"
               entityId={auditSubscriberId}
               take={10}
               refreshKey={auditRefreshKey}

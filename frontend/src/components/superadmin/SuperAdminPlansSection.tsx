@@ -20,7 +20,7 @@ import { useI18n } from '../../i18n/i18n';
 import { ZHBtn, ZHField } from '../zh/ZHForm';
 import { ZHCardSection, ZHGridRow, ZHInlineRowRight } from '../zh/ZHLayout';
 import { formatApiRequestError } from '../../modules/lib/apiError';
-import { goToCompaniesTenantDetail } from '../../navigation/companiesSubscriberDetailNav';
+import { goToCompaniesSubscriberDetail } from '../../navigation/companiesSubscriberDetailNav';
 import './SuperAdminPlansSection.css';
 
 const POLL_MS = 20_000;
@@ -104,11 +104,11 @@ export function SuperAdminPlansSection() {
 
   const [plans, setPlans] = useState<CommercialPlanAdmin[]>([]);
   const [publicPlans, setPublicPlans] = useState<SaasPublicPlan[]>([]);
-  const [subscribers, setTenants] = useState<SuperAdminSubscriber[]>([]);
+  const [subscribers, setSubscribers] = useState<SuperAdminSubscriber[]>([]);
   const [metrics, setMetrics] = useState<SuperAdminMetrics | null>(null);
-  const [tenantSearch, setTenantSearch] = useState('');
-  const [tenantPlanFilter, setTenantPlanFilter] = useState('');
-  const [tenantStatusFilter, setTenantStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [subscriberSearch, setSubscriberSearch] = useState('');
+  const [subscriberPlanFilter, setSubscriberPlanFilter] = useState('');
+  const [subscriberStatusFilter, setSubscriberStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -123,17 +123,17 @@ export function SuperAdminPlansSection() {
     const [p, pub, tns, met] = await Promise.all([
       superAdminService.listCommercialPlansAdmin(),
       superAdminService.getPublicPlans().catch(() => [] as SaasPublicPlan[]),
-      superAdminService.getTenants().catch(() => [] as SuperAdminSubscriber[]),
+      superAdminService.getSubscribers().catch(() => [] as SuperAdminSubscriber[]),
       superAdminService.getMetrics().catch(() => null),
     ]);
     const sorted = [...p].sort((a, b) => a.sortOrder - b.sortOrder || a.code.localeCompare(b.code));
     setPlans(sorted);
     setPublicPlans(pub);
-    setTenants(Array.isArray(tns) ? tns : []);
+    setSubscribers(Array.isArray(tns) ? tns : []);
     setMetrics(met && typeof met === 'object' && 'totals' in met ? (met as SuperAdminMetrics) : null);
   }, []);
 
-  const planTenantStats = useMemo(() => {
+  const planSubscriberStats = useMemo(() => {
     const counts = new Map<string, number>();
     for (const tn of subscribers) {
       const c = (tn.planCode ?? '').trim().toLowerCase();
@@ -166,14 +166,14 @@ export function SuperAdminPlansSection() {
 
   const filteredTenantsForTable = useMemo(() => {
     let r = subscribers;
-    const pf = tenantPlanFilter.trim().toLowerCase();
+    const pf = subscriberPlanFilter.trim().toLowerCase();
     if (pf) r = r.filter((tn) => (tn.planCode ?? '').trim().toLowerCase() === pf);
-    if (tenantStatusFilter === 'active') r = r.filter((tn) => tn.isActive);
-    if (tenantStatusFilter === 'inactive') r = r.filter((tn) => !tn.isActive);
-    const q = tenantSearch.trim().toLowerCase();
+    if (subscriberStatusFilter === 'active') r = r.filter((tn) => tn.isActive);
+    if (subscriberStatusFilter === 'inactive') r = r.filter((tn) => !tn.isActive);
+    const q = subscriberSearch.trim().toLowerCase();
     if (q) r = r.filter((tn) => `${tn.name} ${tn.slug} ${tn.id}`.toLowerCase().includes(q));
     return r;
-  }, [subscribers, tenantPlanFilter, tenantSearch, tenantStatusFilter]);
+  }, [subscribers, subscriberPlanFilter, subscriberSearch, subscriberStatusFilter]);
 
   const exportTenantsCsv = () => {
     const headers = [
@@ -374,8 +374,8 @@ export function SuperAdminPlansSection() {
     .map((p) => p.shortLabel ?? p.name)
     .join(', ');
   const totals = metrics?.totals;
-  const inactiveTenants = totals ? Math.max(0, totals.totalTenants - totals.activeTenants) : 0;
-  const inactivePct = totals && totals.totalTenants > 0 ? Math.round((inactiveTenants / totals.totalTenants) * 100) : 0;
+  const inactiveSubscribers = totals ? Math.max(0, totals.totalSubscribers - totals.activeSubscribers) : 0;
+  const inactivePct = totals && totals.totalSubscribers > 0 ? Math.round((inactiveSubscribers / totals.totalSubscribers) * 100) : 0;
 
   return (
     <div className="sap-plansSection">
@@ -411,13 +411,13 @@ export function SuperAdminPlansSection() {
           <div className="pg-kpis">
             <div className="pg-kpi sap-kpi--info">
               <div className="pg-kpi-bottom">
-                <p className="pg-kpi-value">{totals?.activeTenants ?? subscribers.length}</p>
+                <p className="pg-kpi-value">{totals?.activeSubscribers ?? subscribers.length}</p>
                 <p className="pg-kpi-unit">
                   {totals
-                    ? t('superadmin.plansDashboard.kpi.activeTenantsSub').replace('{{total}}', String(totals.totalTenants))
+                    ? t('superadmin.plansDashboard.kpi.activeSubscribersSub').replace('{{total}}', String(totals.totalSubscribers))
                     : '—'}
                 </p>
-                <p className="pg-kpi-label">{t('superadmin.plansDashboard.kpi.activeTenants')}</p>
+                <p className="pg-kpi-label">{t('superadmin.plansDashboard.kpi.activeSubscribers')}</p>
               </div>
             </div>
             <div className="pg-kpi sap-kpi--success">
@@ -439,7 +439,7 @@ export function SuperAdminPlansSection() {
                 <p className="pg-kpi-value">{inactivePct}%</p>
                 <p className="pg-kpi-unit">
                   {totals
-                    ? t('superadmin.plansDashboard.kpi.inactiveSub').replace('{{n}}', String(inactiveTenants))
+                    ? t('superadmin.plansDashboard.kpi.inactiveSub').replace('{{n}}', String(inactiveSubscribers))
                     : '—'}
                 </p>
                 <p className="pg-kpi-label">{t('superadmin.plansDashboard.kpi.inactiveRatio')}</p>
@@ -459,8 +459,8 @@ export function SuperAdminPlansSection() {
             const taglineKey = `superadmin.plansCard.tagline.${codeKey}`;
             const taglineResolved = t(taglineKey);
             const taglineText = taglineResolved !== taglineKey ? taglineResolved : t('superadmin.plansCard.taglineFallback');
-            const tenantCount = planTenantStats.counts.get(codeKey) ?? 0;
-            const usagePct = planTenantStats.max > 0 ? Math.round((tenantCount / planTenantStats.max) * 100) : 0;
+            const subscriberCount = planSubscriberStats.counts.get(codeKey) ?? 0;
+            const usagePct = planSubscriberStats.max > 0 ? Math.round((subscriberCount / planSubscriberStats.max) * 100) : 0;
             return (
               <article
                 key={plan.id}
@@ -515,7 +515,7 @@ export function SuperAdminPlansSection() {
                   <div className="sap-pricing-usage">
                     <div className="sap-pricing-usageLine">
                       <span>
-                        {tenantCount} {t('superadmin.plansCard.subscribersUnit')}
+                        {subscriberCount} {t('superadmin.plansCard.subscribersUnit')}
                       </span>
                       <span className="sap-pricing-usagePct">{usagePct}%</span>
                     </div>
@@ -550,7 +550,7 @@ export function SuperAdminPlansSection() {
                         className="zh-btn zh-btn--ghost zh-btn--md sap-pricing-linkBtn"
                         to={`/companies?plan=${encodeURIComponent(plan.code)}`}
                       >
-                        {t('superadmin.plansCard.viewTenants')}
+                        {t('superadmin.plansCard.viewSubscribers')}
                       </NavLink>
                     </div>
                     <div className="sap-pricing-footerExtra">
@@ -616,19 +616,19 @@ export function SuperAdminPlansSection() {
 
       <Card>
         <ZHCardSection title={t('superadmin.plansDashboard.subscribersSectionTitle')}>
-          <div className="sap-tenant-toolbar">
+          <div className="sap-subscriber-toolbar">
             <input
               type="search"
-              className="zh-input sap-tenant-search"
-              value={tenantSearch}
-              onChange={(e) => setTenantSearch(e.target.value)}
-              placeholder={t('superadmin.plansDashboard.tenantSearchPlaceholder')}
-              aria-label={t('superadmin.plansDashboard.tenantSearchPlaceholder')}
+              className="zh-input sap-subscriber-search"
+              value={subscriberSearch}
+              onChange={(e) => setSubscriberSearch(e.target.value)}
+              placeholder={t('superadmin.plansDashboard.subscriberSearchPlaceholder')}
+              aria-label={t('superadmin.plansDashboard.subscriberSearchPlaceholder')}
             />
             <select
-              className="zh-input sap-tenant-select"
-              value={tenantPlanFilter}
-              onChange={(e) => setTenantPlanFilter(e.target.value)}
+              className="zh-input sap-subscriber-select"
+              value={subscriberPlanFilter}
+              onChange={(e) => setSubscriberPlanFilter(e.target.value)}
               aria-label={t('superadmin.plansDashboard.filterPlan')}
             >
               <option value="">{t('superadmin.plansDashboard.filterAllPlans')}</option>
@@ -639,9 +639,9 @@ export function SuperAdminPlansSection() {
               ))}
             </select>
             <select
-              className="zh-input sap-tenant-select"
-              value={tenantStatusFilter}
-              onChange={(e) => setTenantStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+              className="zh-input sap-subscriber-select"
+              value={subscriberStatusFilter}
+              onChange={(e) => setSubscriberStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
               aria-label={t('superadmin.plansDashboard.filterStatus')}
             >
               <option value="all">{t('superadmin.plansDashboard.filterAllStatuses')}</option>
@@ -652,7 +652,7 @@ export function SuperAdminPlansSection() {
           {filteredTenantsForTable.length === 0 ? (
             <EmptyState message={t('superadmin.plansDashboard.subscribersEmpty')} />
           ) : (
-            <div className="sap-tenant-tableWrap">
+            <div className="sap-subscriber-tableWrap">
               <table className="table">
                 <thead>
                   <tr>
@@ -676,16 +676,16 @@ export function SuperAdminPlansSection() {
                     return (
                       <tr key={tn.id}>
                         <td>
-                          <div className="sap-tenant-company">{tn.name}</div>
-                          <div className="mono subtle sap-tenant-id">{tn.slug}</div>
+                          <div className="sap-subscriber-company">{tn.name}</div>
+                          <div className="mono subtle sap-subscriber-id">{tn.slug}</div>
                         </td>
                         <td>
-                          <span className={`badge sap-tenant-planBadge--tier-${tier}`}>{planLabel}</span>
+                          <span className={`badge sap-subscriber-planBadge--tier-${tier}`}>{planLabel}</span>
                         </td>
                         <td className="mono">
                           {tn.activeUsers}/{tn.totalUsers}
                         </td>
-                        <td className="sap-tenant-dates">
+                        <td className="sap-subscriber-dates">
                           <div>{new Date(tn.createdAt).toLocaleDateString()}</div>
                           <div className="subtle">{t('superadmin.plansDashboard.expiresNotTracked')}</div>
                         </td>
@@ -700,7 +700,7 @@ export function SuperAdminPlansSection() {
                             variant="ghost"
                             size="sm"
                             type="button"
-                            onClick={() => goToCompaniesTenantDetail(navigate, tn.id)}
+                            onClick={() => goToCompaniesSubscriberDetail(navigate, tn.id)}
                           >
                             {t('common.edit')}
                           </ZHBtn>

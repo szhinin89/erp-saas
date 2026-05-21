@@ -30,18 +30,18 @@ public sealed class OrdenesCompraEndToEndTests
 
         var (proveedorId, productoId) = await SeedAsync(db, factory);
 
-        var result = await mediator.Send(new CrearOrdenCompraCommand(
+        var result = await mediator.Send(new CreatePurchaseOrderCommand(
             proveedorId,
             RequiredDate: DateTime.UtcNow.AddDays(30),
             TargetWarehouseId: null,
             DeliveryAddress: null,
             Notes: "Pedido prueba",
-            Items: [new ItemOrdenCompraRequest(productoId, 10m, 15m, 15m)]),
+            Items: [new PurchaseOrderItemRequest(productoId, 10m, 15m, 15m)]),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.OrderNumber.Should().Be("OC-0001");
-        result.Value.Status.Should().Be("Borrador");
+        result.Value!.OrderNumber.Should().Be("PO-0001");
+        result.Value.Status.Should().Be("Draft");
         result.Value.Total.Should().BeGreaterThan(0);
     }
 
@@ -55,22 +55,22 @@ public sealed class OrdenesCompraEndToEndTests
 
         var (proveedorId, productoId) = await SeedAsync(db, factory);
 
-        var crear = await mediator.Send(new CrearOrdenCompraCommand(
+        var crear = await mediator.Send(new CreatePurchaseOrderCommand(
             proveedorId, DateTime.UtcNow.AddDays(15), null, null, null,
-            [new ItemOrdenCompraRequest(productoId, 5m, 20m, 15m)]),
+            [new PurchaseOrderItemRequest(productoId, 5m, 20m, 15m)]),
             CancellationToken.None);
 
         crear.IsSuccess.Should().BeTrue(crear.Error);
 
         var enviar = await mediator.Send(
-            new EnviarOrdenCompraCommand(crear.Value!.Id), CancellationToken.None);
+            new SendOrderPurchaseCommand(crear.Value!.Id), CancellationToken.None);
         enviar.IsSuccess.Should().BeTrue(enviar.Error);
-        enviar.Value!.Status.Should().Be("Enviada");
+        enviar.Value!.Status.Should().Be("Sent");
 
         var aprobar = await mediator.Send(
-            new AprobarOrdenCompraCommand(crear.Value.Id), CancellationToken.None);
+            new ApproveOrderPurchaseCommand(crear.Value.Id), CancellationToken.None);
         aprobar.IsSuccess.Should().BeTrue(aprobar.Error);
-        aprobar.Value!.Status.Should().Be("Aprobada");
+        aprobar.Value!.Status.Should().Be("Approved");
     }
 
     [Fact]
@@ -83,16 +83,16 @@ public sealed class OrdenesCompraEndToEndTests
 
         var (proveedorId, productoId) = await SeedAsync(db, factory);
 
-        var crear = await mediator.Send(new CrearOrdenCompraCommand(
+        var crear = await mediator.Send(new CreatePurchaseOrderCommand(
             proveedorId, DateTime.UtcNow.AddDays(7), null, null, null,
-            [new ItemOrdenCompraRequest(productoId, 2m, 10m, 15m)]),
+            [new PurchaseOrderItemRequest(productoId, 2m, 10m, 15m)]),
             CancellationToken.None);
 
         var cancelar = await mediator.Send(
-            new CancelarOrdenCompraCommand(crear.Value!.Id), CancellationToken.None);
+            new CancelOrderPurchaseCommand(crear.Value!.Id), CancellationToken.None);
 
         cancelar.IsSuccess.Should().BeTrue(cancelar.Error);
-        cancelar.Value!.Status.Should().Be("Cancelada");
+        cancelar.Value!.Status.Should().Be("Cancelled");
     }
 
     [Fact]
@@ -108,21 +108,21 @@ public sealed class OrdenesCompraEndToEndTests
         var userId   = factory.MutableUser.UserId;
 
         // Crear y aprobar OC con 5 unidades
-        var crear = await mediator.Send(new CrearOrdenCompraCommand(
+        var crear = await mediator.Send(new CreatePurchaseOrderCommand(
             proveedorId, DateTime.UtcNow.AddDays(20), null, null, null,
-            [new ItemOrdenCompraRequest(productoId, 5m, 10m, 15m)]),
+            [new PurchaseOrderItemRequest(productoId, 5m, 10m, 15m)]),
             CancellationToken.None);
-        await mediator.Send(new AprobarOrdenCompraCommand(crear.Value!.Id), CancellationToken.None);
+        await mediator.Send(new ApproveOrderPurchaseCommand(crear.Value!.Id), CancellationToken.None);
 
         // Crear factura de compra Aprobada con 5 unidades del mismo producto
         var factura = BuildFacturaAprobada(subscriberId, proveedorId, productoId, quantity: 5m, userId, db);
 
         var vincular = await mediator.Send(
-            new VincularFacturaAOrdenCompraCommand(crear.Value.Id, factura.Id),
+            new LinkInvoiceToPurchaseOrderCommand(crear.Value.Id, factura.Id),
             CancellationToken.None);
 
         vincular.IsSuccess.Should().BeTrue(vincular.Error);
-        vincular.Value!.Status.Should().Be("Cerrada");
+        vincular.Value!.Status.Should().Be("Closed");
     }
 
     [Fact]
@@ -138,21 +138,21 @@ public sealed class OrdenesCompraEndToEndTests
         var userId   = factory.MutableUser.UserId;
 
         // OC pide 10 unidades
-        var crear = await mediator.Send(new CrearOrdenCompraCommand(
+        var crear = await mediator.Send(new CreatePurchaseOrderCommand(
             proveedorId, DateTime.UtcNow.AddDays(20), null, null, null,
-            [new ItemOrdenCompraRequest(productoId, 10m, 10m, 15m)]),
+            [new PurchaseOrderItemRequest(productoId, 10m, 10m, 15m)]),
             CancellationToken.None);
-        await mediator.Send(new AprobarOrdenCompraCommand(crear.Value!.Id), CancellationToken.None);
+        await mediator.Send(new ApproveOrderPurchaseCommand(crear.Value!.Id), CancellationToken.None);
 
         // Factura solo trae 4 unidades
         var factura = BuildFacturaAprobada(subscriberId, proveedorId, productoId, quantity: 4m, userId, db);
 
         var vincular = await mediator.Send(
-            new VincularFacturaAOrdenCompraCommand(crear.Value.Id, factura.Id),
+            new LinkInvoiceToPurchaseOrderCommand(crear.Value.Id, factura.Id),
             CancellationToken.None);
 
         vincular.IsSuccess.Should().BeTrue(vincular.Error);
-        vincular.Value!.Status.Should().Be("RecibidaParcial");
+        vincular.Value!.Status.Should().Be("PartiallyReceived");
     }
 
     // â”€â”€ Seed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -161,10 +161,10 @@ public sealed class OrdenesCompraEndToEndTests
         ErpDbContext db, IntegrationTestWebAppFactory factory)
     {
         var seed = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
         var proveedor = Supplier.Create(
-            seed.SubscriberId, "Juridica", "Supplier Test S.A.",
+            seed.SubscriberId, "Legal", "Supplier Test S.A.",
             seed.ProveedorRuc, email: null, phone: null, address: null,
             "30 dias", seed.UserId);
         db.Suppliers.Add(proveedor);

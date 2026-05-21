@@ -200,7 +200,8 @@ public sealed class StockRepository : IStockRepository
 
         if (stock is null)
         {
-            stock = CurrentStock.Create(subscriberId, productoId, WarehouseId, createdBy);
+            var companyId = _company.HasCompanyContext ? _company.CompanyId : (Guid?)null;
+            stock = CurrentStock.Create(subscriberId, productoId, WarehouseId, createdBy, companyId: companyId);
             await _context.CurrentStocks.AddAsync(stock, ct);
             stock.ApplyMovement(delta, createdBy, unitCost);
             return 0;

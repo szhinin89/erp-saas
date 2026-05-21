@@ -70,6 +70,10 @@ jobs:
       - name: Restore, build, test
         run: dotnet test backend/src/ERP.slnx -c Release --verbosity minimal
 
+      - name: Identity guardrails (no legacy users auth)
+        shell: pwsh
+        run: ./scripts/check-identity-guardrails.ps1
+
   frontend:
     name: Frontend (Node)
     runs-on: ubuntu-latest

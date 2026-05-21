@@ -9,6 +9,7 @@ using ERP.Infrastructure.Persistence.Repositories;
 using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -58,6 +59,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         tenant.Setup(t => t.SubscriberId).Returns(SubscriberId);
 
         var services = new ServiceCollection();
+        services.AddLogging();
         services.AddSingleton<ICurrentSubscriber>(tenant.Object);
         services.AddSingleton(Mock.Of<IPublisher>());
         services.Configure<SaasEntitlementsOptions>(_ => { });

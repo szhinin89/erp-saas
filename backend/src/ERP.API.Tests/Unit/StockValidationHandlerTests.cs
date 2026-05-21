@@ -31,8 +31,8 @@ public sealed class StockValidationHandlerTests
             await SeedMinimalDataAsync(db, factory, stockUnidades: 10m);
 
         var result = await mediator.Send(
-            new CrearVentaCommand(clienteId, bodegaId, sucursalId,
-                new List<ItemVentaDto> { new(productoId, Quantity: 5m, UnitPrice: 10m) }),
+            new CreateSaleCommand(clienteId, bodegaId, sucursalId,
+                new List<SaleItemDto> { new(productoId, Quantity: 5m, UnitPrice: 10m) }),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
@@ -50,8 +50,8 @@ public sealed class StockValidationHandlerTests
             await SeedMinimalDataAsync(db, factory, stockUnidades: 3m);
 
         var result = await mediator.Send(
-            new CrearVentaCommand(clienteId, bodegaId, sucursalId,
-                new List<ItemVentaDto> { new(productoId, Quantity: 3m, UnitPrice: 10m) }),
+            new CreateSaleCommand(clienteId, bodegaId, sucursalId,
+                new List<SaleItemDto> { new(productoId, Quantity: 3m, UnitPrice: 10m) }),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
@@ -69,8 +69,8 @@ public sealed class StockValidationHandlerTests
             await SeedMinimalDataAsync(db, factory, stockUnidades: 2m);
 
         var result = await mediator.Send(
-            new CrearVentaCommand(clienteId, bodegaId, sucursalId,
-                new List<ItemVentaDto> { new(productoId, Quantity: 5m, UnitPrice: 10m) }),
+            new CreateSaleCommand(clienteId, bodegaId, sucursalId,
+                new List<SaleItemDto> { new(productoId, Quantity: 5m, UnitPrice: 10m) }),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
@@ -92,8 +92,8 @@ public sealed class StockValidationHandlerTests
             await SeedMinimalDataAsync(db, factory, stockUnidades: 0m, crearStockActual: false);
 
         var result = await mediator.Send(
-            new CrearVentaCommand(clienteId, bodegaId, sucursalId,
-                new List<ItemVentaDto> { new(productoId, Quantity: 1m, UnitPrice: 10m) }),
+            new CreateSaleCommand(clienteId, bodegaId, sucursalId,
+                new List<SaleItemDto> { new(productoId, Quantity: 1m, UnitPrice: 10m) }),
             CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
@@ -108,7 +108,7 @@ public sealed class StockValidationHandlerTests
         var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, ct: CancellationToken.None);
 
         var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
@@ -118,8 +118,8 @@ public sealed class StockValidationHandlerTests
         var prod2Id = seed.ProductId; // mismo producto â€” pedimos 100 con solo 10 en stock
 
         var result = await mediator.Send(
-            new CrearVentaCommand(clienteId, seed.WarehouseId, sucursalId,
-                new List<ItemVentaDto>
+            new CreateSaleCommand(clienteId, seed.WarehouseId, sucursalId,
+                new List<SaleItemDto>
                 {
                     new(seed.ProductId, Quantity: 1m,   UnitPrice: 10m), // OK (10 â‰¥ 1)
                     new(prod2Id,        Quantity: 100m,  UnitPrice: 10m), // FALLA (10 < 100)
@@ -139,7 +139,7 @@ public sealed class StockValidationHandlerTests
             decimal stockUnidades,
             bool crearStockActual = true)
     {
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockUnidades, crearStockActual, CancellationToken.None);
 
         var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;

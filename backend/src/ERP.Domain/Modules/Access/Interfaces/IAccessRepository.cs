@@ -4,6 +4,11 @@ namespace ERP.Domain.Access.Interfaces;
 
 public interface IAccessRepository
 {
+    Task<IdentityUser?> GetPlatformSuperAdminByEmailAsync(string email, CancellationToken ct = default);
+    Task<bool> AnyPlatformSuperAdminAsync(CancellationToken ct = default);
+    Task<int> CountActivePlatformUsersAsync(CancellationToken ct = default);
+    Task<int> CountActiveCompanyUsersAsync(CancellationToken ct = default);
+
     Task<IdentityUser?> GetUserByIdAsync(Guid userId, CancellationToken ct = default);
     Task<IdentityUser?> GetUserByEmailAsync(string email, CancellationToken ct = default);
     Task<bool> AnyUserWithEmailAsync(string email, CancellationToken ct = default);
@@ -35,6 +40,12 @@ public interface IAccessRepository
     Task<IReadOnlyList<AccessProfilePermission>> GetProfilePermissionsAsync(Guid subscriberId, Guid profileId, CancellationToken ct = default);
     Task<AccessProfilePermission?> GetProfilePermissionAsync(Guid subscriberId, Guid profileId, string permissionKey, CancellationToken ct = default);
     Task AddProfilePermissionAsync(AccessProfilePermission permission, CancellationToken ct = default);
+
+    Task<(int TotalUsers, int ActiveUsers)> CountDistinctIdentityUsersForSubscriberAsync(
+        Guid subscriberId, CancellationToken ct = default);
+
+    Task<IReadOnlyList<IdentityUser>> GetActiveIdentityUsersForSubscriberAsync(
+        Guid subscriberId, CancellationToken ct = default);
 
     Task SaveChangesAsync(CancellationToken ct = default);
 }

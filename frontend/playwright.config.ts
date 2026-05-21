@@ -15,6 +15,7 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // API E2E: E2E_API_URL (default http://localhost:5003). Helpers poll GET /health/live. See scripts/run-e2e.ps1.
   webServer: {
     command: 'npm run preview -- --host 127.0.0.1 --port 4173 --strictPort',
     url: 'http://127.0.0.1:4173',

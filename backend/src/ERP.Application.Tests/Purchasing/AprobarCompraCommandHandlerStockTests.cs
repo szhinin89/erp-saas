@@ -88,7 +88,7 @@ public sealed class AprobarCompraCommandHandlerStockTests
         ];
 
         var repo = new Mock<IPurchBillRepository>();
-        repo.Setup(x => x.GetByIdWithLinesAsync(subscriberId, compra.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(x => x.GetByIdAsync(subscriberId, compra.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(compra);
         repo.Setup(x => x.GetWarehouseAllocsByBillIdAsync(subscriberId, compra.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(asignaciones);
@@ -119,16 +119,16 @@ public sealed class AprobarCompraCommandHandlerStockTests
         user.SetupGet(x => x.Email).Returns("t@test");
         user.SetupGet(x => x.FullName).Returns("Test");
 
-        var handler = new AprobarCompraCommandHandler(
+        var handler = new ApprovePurchaseCommandHandler(
             repo.Object,
             accounting.Object,
             activity.Object,
             tenant.Object,
             user.Object,
             uow.Object,
-            NullLogger<AprobarCompraCommandHandler>.Instance);
+            NullLogger<ApprovePurchaseCommandHandler>.Instance);
 
-        var result = await handler.Handle(new AprobarCompraCommand(compra.Id), CancellationToken.None);
+        var result = await handler.Handle(new ApprovePurchaseCommand(compra.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         compra.Status.Should().Be(PurchaseStatus.Approved);
@@ -157,7 +157,7 @@ public sealed class AprobarCompraCommandHandlerStockTests
         compra.Validate(userId);
 
         var repo = new Mock<IPurchBillRepository>();
-        repo.Setup(x => x.GetByIdWithLinesAsync(subscriberId, compra.Id, It.IsAny<CancellationToken>()))
+        repo.Setup(x => x.GetByIdAsync(subscriberId, compra.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(compra);
         repo.Setup(x => x.GetWarehouseAllocsByBillIdAsync(subscriberId, compra.Id, It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<PurchWarehouseAlloc>());
@@ -183,16 +183,16 @@ public sealed class AprobarCompraCommandHandlerStockTests
         user.SetupGet(x => x.Email).Returns("t@test");
         user.SetupGet(x => x.FullName).Returns("Test");
 
-        var handler = new AprobarCompraCommandHandler(
+        var handler = new ApprovePurchaseCommandHandler(
             repo.Object,
             accounting.Object,
             activity.Object,
             tenant.Object,
             user.Object,
             uow.Object,
-            NullLogger<AprobarCompraCommandHandler>.Instance);
+            NullLogger<ApprovePurchaseCommandHandler>.Instance);
 
-        var result = await handler.Handle(new AprobarCompraCommand(compra.Id), CancellationToken.None);
+        var result = await handler.Handle(new ApprovePurchaseCommand(compra.Id), CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
         compra.Status.Should().Be(PurchaseStatus.Validated);

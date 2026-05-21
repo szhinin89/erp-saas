@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
 using ERP.API.Tests.Support;
@@ -30,7 +30,7 @@ public class ApiSmokeTests
             AllowAutoRedirect = false
         });
 
-        var res = await client.GetAsync("/api/access/me/permissions");
+        var res = await client.GetAsync("/api/admin/iam/me/permissions");
 
         res.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }

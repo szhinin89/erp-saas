@@ -55,9 +55,9 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
         if (orden is null)
             return Result<PurchaseOrderDto>.Failure("Orden de compra no encontrada.");
 
-        if (orden.Status is not ("Aprobada" or "RecibidaParcial"))
+        if (orden.Status is not ("Approved" or "PartiallyReceived"))
             return Result<PurchaseOrderDto>.Failure(
-                $"Solo se puede vincular una factura a OC en Aprobada o RecibidaParcial (estado: {orden.Status}).");
+                $"Solo se puede vincular una factura a OC en Approved o PartiallyReceived (estado: {orden.Status}).");
 
         // 2. Cargar la factura con sus detalles
         var factura = await _compraRepo.GetByIdAsync(subscriberId, command.PurchBillId, ct);
@@ -135,7 +135,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
             var todoFacturado = orden.Lines.All(d => d.InvoicedQty >= d.OrderedQty);
             if (todoFacturado)
                 orden.Close(userId);
-            else if (orden.Status == "Aprobada")
+            else if (orden.Status == "Approved")
                 orden.MarkPartiallyReceived(userId);
 
             var actividadDesc = advertencias.Count > 0

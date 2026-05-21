@@ -319,6 +319,16 @@ public sealed class KardexService : IKardexService
 
     private static string DescripcionTipo(string tipo) => tipo switch
     {
+        "PurchaseEntry"        => "Compra",
+        "SaleExit"             => "Venta",
+        "PositiveAdjust"       => "Ajuste (+)",
+        "NegativeAdjust"       => "Ajuste (-)",
+        "TransferEntry"        => "transfer entrada",
+        "TransferExit"         => "transfer salida",
+        "PurchaseReturn"       => "Devolución compra",
+        "SaleReturn"           => "Devolución venta",
+        "SupplierCreditNote"   => "Nota crédito proveedor",
+        "SupplierDebitNote"    => "Nota débito proveedor",
         "EntradaCompra"        => "Compra",
         "SalidaVenta"          => "Venta",
         "AjustePositivo"       => "Ajuste (+)",

@@ -17,8 +17,8 @@ public sealed class VentasDomainTests
     {
         var factura = BuildFactura();
 
-        var d1 = SalesBillLine.Create(SubscriberId, Guid.NewGuid(), quantity: 2m, unitPrice: 10m, vatTotal: 2.4m, "Prod A", UserId);
-        var d2 = SalesBillLine.Create(SubscriberId, Guid.NewGuid(), quantity: 1m, unitPrice: 50m, vatTotal: 7.5m, "Prod B", UserId);
+        var d1 = SalesBillLine.Create(SubscriberId, Guid.NewGuid(), "P-A", 2m, 10m, 0m, "2", 12m, 2.4m, "Prod A", UserId);
+        var d2 = SalesBillLine.Create(SubscriberId, Guid.NewGuid(), "P-B", 1m, 50m, 0m, "2", 12m, 7.5m, "Prod B", UserId);
 
         d1.AssignBillId(factura.Id);
         d2.AssignBillId(factura.Id);
@@ -38,7 +38,7 @@ public sealed class VentasDomainTests
 
         for (var i = 1; i <= 3; i++)
         {
-            var d = SalesBillLine.Create(SubscriberId, productoId, quantity: i, unitPrice: 10m, vatTotal: 0m, $"Prod {i}", UserId);
+            var d = SalesBillLine.Create(SubscriberId, productoId, $"P{i}", i, 10m, 0m, "0", 0m, 0m, $"Prod {i}", UserId);
             d.AssignBillId(factura.Id);
             factura.AddLine(d);
         }
@@ -168,6 +168,10 @@ public sealed class VentasDomainTests
         subtotal:          0m,
         vatTotal:          0m,
         total:             0m,
+        totalDiscount:     0m,
+        paymentMethodCode: "01",
+        paymentDays:       0,
+        notes:             null,
         xmlSignedPath:   null,
         xmlAuthPath: null,
         authNumber:  null,

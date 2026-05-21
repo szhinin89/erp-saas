@@ -34,7 +34,13 @@ public record AuthResponseDto(
     /// <summary>Empresa operativa (RUC) activa. Null si el token no incluye contexto company.</summary>
     public Guid? CompanyId { get; init; }
 
-    /// <summary>Token opaco para renovar el access token sin re-autenticarse. Null para SuperAdmin.</summary>
+    /// <summary>Token opaco para renovar el access token sin re-autenticarse.</summary>
     public string?   RefreshToken       { get; init; }
     public DateTime? RefreshTokenExpiry { get; init; }
+
+    /// <summary>IAM unificado: Platform | Company | Subscriber.</summary>
+    public string? UserType { get; init; }
+
+    /// <summary>Rol platform cuando <see cref="UserType"/> es Platform.</summary>
+    public string? PlatformRole { get; init; }
 }

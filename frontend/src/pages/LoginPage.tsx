@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../modules/lib/api';
+import { authService } from '../services/authService';
 import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
 import type { AuthResponse } from '../types/auth';
-import type { ApiResponse } from '../types/api';
 import { useI18n } from '../i18n/i18n';
 import { accessService } from '../services/accessService';
 import { syncSessionEntitlements } from '../lib/syncSessionEntitlements';
@@ -46,7 +45,7 @@ export function LoginPage() {
 
   /* ── Auth helpers ─────────────────────────────────────────── */
 
-  const enterTenantDashboard = async (auth: AuthResponse) => {
+  const enterSubscriberDashboard = async (auth: AuthResponse) => {
     clearBootstrap();
     clearPermissions();
     login(auth);
@@ -70,11 +69,7 @@ export function LoginPage() {
     try {
       /* ── 1. Direct login (identity user or legacy single-tenant) ── */
       try {
-        const { data } = await api.post<ApiResponse<AuthResponse>>(
-          '/api/auth/login',
-          credentials,
-        );
-        const payload = data.responseObject;
+        const payload = await authService.loginUser(credentials);
 
         if (payload?.token) {
           const isGlobalSuperAdmin =
@@ -97,11 +92,24 @@ export function LoginPage() {
             return;
           }
 
-          await enterTenantDashboard(payload);
+          await enterSubscriberDashboard(payload);
           return;
         }
       } catch {
-        // Wrong credentials or multi-tenant user → try bootstrap.
+        if (superAdminPanelEnabled) {
+          try {
+            const platformPayload = await authService.loginPlatform(credentials);
+            if (platformPayload?.token) {
+              clearBootstrap();
+              clearPermissions();
+              login(platformPayload);
+              navigate('/superadmin/overview', { replace: true });
+              return;
+            }
+          } catch {
+            // Wrong credentials or multi-tenant user → try bootstrap.
+          }
+        }
       }
 
       /* ── 2. Bootstrap (multi-tenant flow) ── */
@@ -113,9 +121,9 @@ export function LoginPage() {
         return;
       }
 
-      /* Single tenant → enter directly */
+      /* Single subscriber → enter directly */
       if (bootstrap.subscribers.length === 1) {
-        const session = await accessService.switchTenant(bootstrap.bootstrapToken, {
+        const session = await accessService.switchSubscriber(bootstrap.bootstrapToken, {
           subscriberId: bootstrap.subscribers[0].subscriberId,
         });
         const auth: AuthResponse = {
@@ -136,11 +144,11 @@ export function LoginPage() {
           navigate('/select-company', { replace: true });
           return;
         }
-        await enterTenantDashboard(auth);
+        await enterSubscriberDashboard(auth);
         return;
       }
 
-      /* Multiple subscribers → tenant selector */
+      /* Multiple subscribers → subscriber selector */
       navigate('/select-subscriber', { replace: true });
 
     } catch (err: unknown) {

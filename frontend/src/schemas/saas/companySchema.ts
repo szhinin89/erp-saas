@@ -50,7 +50,7 @@ export const createCompanyWithAdminSchema = z
 export type CreateCompanyFormValues = z.infer<typeof createCompanyWithAdminSchema>;
 
 /** Edición de datos de empresa existente (SuperAdmin, sin admin). */
-export const updateTenantCompanySchema = z.object({
+export const updateSubscriberCompanySchema = z.object({
   subscriberName: z.string().min(1, 'Ingresa el nombre de la empresa.'),
   subscriberSlug: z.string().min(1, 'Ingresa el slug de la empresa.'),
   ruc: z.string().optional(),
@@ -62,4 +62,4 @@ export const updateTenantCompanySchema = z.object({
   priority: z.coerce.number().int('Ingresa un número entero para la prioridad.'),
 });
 
-export type UpdateSubscriberCompanyFormValues = z.infer<typeof updateTenantCompanySchema>;
+export type UpdateSubscriberCompanyFormValues = z.infer<typeof updateSubscriberCompanySchema>;

@@ -46,7 +46,7 @@ public sealed class RefreshTokenFlujoCompletoTests
         expiry1.Should().BeAfter(DateTime.UtcNow.AddDays(25));
 
         // Rotar: obtener nuevo access token + nuevo refresh token
-        var result = await handler.HandleAsync(rawToken1);
+        var result = await handler.Handle(new RefreshTokenCommand(rawToken1), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value!.Token.Should().NotBeNullOrEmpty("debe emitir un nuevo access token");
@@ -70,11 +70,11 @@ public sealed class RefreshTokenFlujoCompletoTests
         var (rawToken1, _) = await service.CreateAsync(identityUser.Id, subscriberId, null, RefreshUserType.Identity);
 
         // Primera rotación → éxito
-        var result1 = await handler.HandleAsync(rawToken1);
+        var result1 = await handler.Handle(new RefreshTokenCommand(rawToken1), CancellationToken.None);
         result1.IsSuccess.Should().BeTrue(result1.Error);
 
         // Reusar el token original (ya revocado) → falla
-        var result2 = await handler.HandleAsync(rawToken1);
+        var result2 = await handler.Handle(new RefreshTokenCommand(rawToken1), CancellationToken.None);
         result2.IsSuccess.Should().BeFalse("el token fue rotado — no puede usarse de nuevo");
     }
 
@@ -88,7 +88,7 @@ public sealed class RefreshTokenFlujoCompletoTests
         var db      = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var service = scope.ServiceProvider.GetRequiredService<IRefreshTokenService>();
 
-        await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+        await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
         var userId   = factory.MutableUser.UserId;
         var subscriberId = factory.MutableSubscriber.SubscriberId;
 
@@ -114,7 +114,7 @@ public sealed class RefreshTokenFlujoCompletoTests
         var db      = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var service = scope.ServiceProvider.GetRequiredService<IRefreshTokenService>();
 
-        await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+        await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
         var userId   = factory.MutableUser.UserId;
         var subscriberId = factory.MutableSubscriber.SubscriberId;
 
@@ -148,14 +148,14 @@ public sealed class RefreshTokenFlujoCompletoTests
         var service = scope.ServiceProvider.GetRequiredService<IRefreshTokenService>();
         var handler = scope.ServiceProvider.GetRequiredService<LogoutHandler>();
 
-        await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+        await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
         var userId   = factory.MutableUser.UserId;
         var subscriberId = factory.MutableSubscriber.SubscriberId;
 
         var (token1, _) = await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
         var (token2, _) = await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
 
-        var result = await handler.HandleAsync(token1, allDevices: false);
+        var result = await handler.Handle(new LogoutCommand(token1, AllDevices: false), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
 
@@ -183,7 +183,7 @@ public sealed class RefreshTokenFlujoCompletoTests
         var (token1, _) = await service.CreateAsync(identityUser.Id, subscriberId, null, RefreshUserType.Identity);
         await service.CreateAsync(identityUser.Id, subscriberId, null, RefreshUserType.Identity); // token2
 
-        var result = await handler.HandleAsync(token1, allDevices: true);
+        var result = await handler.Handle(new LogoutCommand(token1, AllDevices: true), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
         result.Value.Should().Contain("todos los dispositivos");
@@ -227,7 +227,7 @@ public sealed class RefreshTokenFlujoCompletoTests
         ErpDbContext db, IntegrationTestWebAppFactory factory)
     {
         var seed = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
         var subscriberId = seed.SubscriberId;
         var userId   = seed.UserId;

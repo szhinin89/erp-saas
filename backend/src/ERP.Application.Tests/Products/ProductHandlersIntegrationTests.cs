@@ -20,6 +20,7 @@ public class ProductHandlersIntegrationTests
         var taxRepo = new InMemoryTaxRateRepository();
         var activityRepo = new InMemoryUserActivityRepository();
         var currentSubscriber = new TestCurrentSubscriber(subscriberId);
+        var currentCompany = new TestCurrentCompany(Guid.NewGuid());
         var currentUser = new TestCurrentUser(userId);
 
         var handler = new CreateProductCommandHandler(
@@ -27,6 +28,7 @@ public class ProductHandlersIntegrationTests
             taxRepo,
             activityRepo,
             currentSubscriber,
+            currentCompany,
             currentUser);
 
         var command = new CreateProductCommand(
@@ -108,6 +110,14 @@ public class ProductHandlersIntegrationTests
     {
         public TestCurrentSubscriber(Guid subscriberId) => SubscriberId = subscriberId;
         public Guid SubscriberId { get; }
+        public bool IsAuthenticated => true;
+    }
+
+    private sealed class TestCurrentCompany : ICurrentCompany
+    {
+        public TestCurrentCompany(Guid companyId) => CompanyId = companyId;
+        public Guid CompanyId { get; }
+        public bool HasCompanyContext => true;
         public bool IsAuthenticated => true;
     }
 

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
@@ -8,7 +9,7 @@ using ERP.Application.Navigation;
 using ERP.Application.Navigation.DTOs;
 using ERP.Application.Subscriptions;
 using ERP.Application.Common.Interfaces;
-using ERP.Domain.Auth.Interfaces;
+using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Subscribers.Interfaces;
 using ERP.Infrastructure.Deployment;
 using Microsoft.AspNetCore.Authorization;
@@ -28,7 +29,7 @@ namespace ERP.API.Controllers;
 public class SuperAdminController : ControllerBase
 {
     private readonly ISubscriberRepository       _tenantRepository;
-    private readonly IUserRepository         _userRepository;
+    private readonly IAccessRepository           _accessRepository;
     private readonly ICommercialCatalogQuery       _saasCatalogQuery;
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly InstanceQuotaFileStore  _instanceQuotaFile;
@@ -40,7 +41,7 @@ public class SuperAdminController : ControllerBase
 
     public SuperAdminController(
         ISubscriberRepository tenantRepository,
-        IUserRepository userRepository,
+        IAccessRepository accessRepository,
         ICommercialCatalogQuery saasCatalogQuery,
         IDeploymentFeatureFlags deployment,
         InstanceQuotaFileStore instanceQuotaFile,
@@ -51,7 +52,7 @@ public class SuperAdminController : ControllerBase
         ISessionModulesResolver sessionModules)
     {
         _tenantRepository    = tenantRepository;
-        _userRepository      = userRepository;
+        _accessRepository    = accessRepository;
         _saasCatalogQuery    = saasCatalogQuery;
         _deployment          = deployment;
         _instanceQuotaFile   = instanceQuotaFile;
@@ -111,10 +112,10 @@ public class SuperAdminController : ControllerBase
     /// <summary>Lista todas las empresas (subscribers), activas e inactivas.</summary>
     /// <remarks>
     /// Útil para el "Subscriber Picker" del Panel Global de SuperAdmin.
+    /// Legacy — incluye métricas de usuarios. Para administración MediatR alineada con provisioning,
+    /// preferir <c>GET /api/platform/subscribers</c>.
     /// </remarks>
-    /// <response code="200">Lista de empresas (id, name, slug, isActive, plan, módulos).</response>
-    /// <response code="401">Token JWT ausente o inválido.</response>
-    /// <response code="403">El usuario no tiene rol SuperAdmin.</response>
+    [Obsolete("Legacy SuperAdmin analytics route. Prefer GET /api/platform/subscribers for platform CRUD alignment.")]
     [HttpGet("subscribers")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -133,9 +134,7 @@ public class SuperAdminController : ControllerBase
         var items = new List<object>(subscribers.Count);
         foreach (var t in subscribers)
         {
-            var users = await _userRepository.GetAllByTenantAsync(t.Id, ct);
-            var totalUsers = users.Count;
-            var activeUsers = users.Count(u => u.IsActive);
+            var (totalUsers, activeUsers) = await _accessRepository.CountDistinctIdentityUsersForSubscriberAsync(t.Id, ct);
             var modules = await _sessionModules.GetEnabledModuleKeysAsync(t.Id, ct);
             items.Add(new
             {
@@ -170,13 +169,14 @@ public class SuperAdminController : ControllerBase
     public async Task<IActionResult> GetMetrics(CancellationToken ct)
     {
         var subscribers = await _tenantRepository.GetAllAsync(ct);
-        var activeTenants = subscribers.Count(t => t.IsActive);
-        var totalTenants = subscribers.Count;
+        var activeSubscribers = subscribers.Count(t => t.IsActive);
+        var totalSubscribers = subscribers.Count;
 
-        var totalUsers = await _userRepository.CountAllSystemAsync(ct);
-        var activeUsers = await _userRepository.CountActiveSystemAsync(ct);
+        var totalUsers = await _accessRepository.CountIdentityUsersAsync(ct);
+        var activeUsers = await _accessRepository.CountActiveCompanyUsersAsync(ct)
+                          + await _accessRepository.CountActivePlatformUsersAsync(ct);
 
-        var recentTenants = subscribers
+        var recentSubscribers = subscribers
             .OrderByDescending(t => t.CreatedAt)
             .Take(10)
             .Select(t => new { t.Id, t.Name, t.Slug, t.IsActive, t.CreatedAt })
@@ -186,12 +186,12 @@ public class SuperAdminController : ControllerBase
         {
             totals = new
             {
-                totalTenants,
-                activeTenants,
+                totalSubscribers,
+                activeSubscribers,
                 totalUsers,
                 activeUsers
             },
-            recentTenants
+            recentSubscribers
         });
     }
 
@@ -380,7 +380,7 @@ public class SuperAdminController : ControllerBase
     public async Task<IActionResult> RevokeUserSessions(
         Guid userId, [FromQuery] Guid subscriberId, CancellationToken ct)
     {
-        var user = await _userRepository.GetByIdSystemAsync(userId, ct);
+        var user = await _accessRepository.GetUserByIdAsync(userId, ct);
         if (user is null)
             return this.ApiBadRequest("Usuario no encontrado.");
 

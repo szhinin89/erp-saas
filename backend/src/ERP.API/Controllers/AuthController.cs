@@ -138,7 +138,12 @@ public class AuthController : ControllerBase
     {
         var result = await _mediator.Send(command, ct);
         if (result.IsSuccess)
+        {
+            if (result.Value?.RefreshToken is not null && result.Value.RefreshTokenExpiry is not null)
+                SetRefreshCookie(result.Value.RefreshToken, result.Value.RefreshTokenExpiry.Value);
+
             return this.ApiOk(result.Value);
+        }
 
         return MapAuthFailure(result.Error);
     }

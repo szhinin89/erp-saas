@@ -198,7 +198,8 @@ var app = builder.Build();
 using (var migrationScope = app.Services.CreateScope())
 {
     var db = migrationScope.ServiceProvider.GetRequiredService<ErpDbContext>();
-    await db.Database.MigrateAsync();
+    if (db.Database.IsRelational())
+        await db.Database.MigrateAsync();
 }
 
 if (app.Environment.IsDevelopment() &&
@@ -209,8 +210,10 @@ if (app.Environment.IsDevelopment() &&
 }
 
 // Catálogo mínimo de planes SaaS en BD (idempotente) — antes del seed demo (entitlements).
-using (var plansScope = app.Services.CreateScope())
+if (!app.Environment.IsEnvironment("Testing")
+    || !app.Configuration.GetValue("Testing:SkipCommercialPlansBootstrap", false))
 {
+    using var plansScope = app.Services.CreateScope();
     var db = plansScope.ServiceProvider.GetRequiredService<ErpDbContext>();
     await CommercialPlansBootstrap.EnsureDefaultsAsync(db);
     await CommercialPlanLimitsBootstrap.EnsureDefaultsAsync(db);
@@ -237,11 +240,11 @@ using (var installDataScope = app.Services.CreateScope())
     }
 }
 
-// Bootstrap seguro de primera ejecución:
-// - Sin credenciales por defecto.
-// - Emite token efímero de un solo uso (15 minutos) solo en consola del servidor.
-using (var setupScope = app.Services.CreateScope())
+// Bootstrap seguro de primera ejecución (omitido en Testing).
+if (!app.Environment.IsEnvironment("Testing")
+    || !app.Configuration.GetValue("Testing:SkipFirstRunSetup", false))
 {
+    using var setupScope = app.Services.CreateScope();
     var firstRunSetup = setupScope.ServiceProvider.GetRequiredService<IFirstRunSetupService>();
     var setupResult = await firstRunSetup.EnsureTokenIssuedAsync();
     if (setupResult.IsFirstRun && setupResult.TokenGenerated && !string.IsNullOrWhiteSpace(setupResult.PlainToken))
@@ -261,7 +264,7 @@ using (var setupScope = app.Services.CreateScope())
     }
 }
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();

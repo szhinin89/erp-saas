@@ -19,9 +19,10 @@ public class CustomerHandlersIntegrationTests
         var repo = new InMemoryCustomerRepository();
         var activity = new InMemoryUserActivityRepository();
         var tenant = new TestCurrentSubscriber(subscriberId);
+        var company = new TestCurrentCompany(Guid.NewGuid());
         var user = new TestCurrentUser(userId);
 
-        var handler = new CreateCustomerCommandHandler(repo, activity, tenant, user);
+        var handler = new CreateCustomerCommandHandler(repo, activity, tenant, company, user);
 
         var result = await handler.Handle(new CreateCustomerCommand(
             IdentificationType: "RUC",
@@ -92,6 +93,14 @@ public class CustomerHandlersIntegrationTests
     {
         public TestCurrentSubscriber(Guid subscriberId) => SubscriberId = subscriberId;
         public Guid SubscriberId { get; }
+        public bool IsAuthenticated => true;
+    }
+
+    private sealed class TestCurrentCompany : ICurrentCompany
+    {
+        public TestCurrentCompany(Guid companyId) => CompanyId = companyId;
+        public Guid CompanyId { get; }
+        public bool HasCompanyContext => true;
         public bool IsAuthenticated => true;
     }
 

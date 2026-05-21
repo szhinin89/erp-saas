@@ -15,10 +15,10 @@ using Moq;
 namespace ERP.Application.Tests.Inventario;
 
 /// <summary>
-/// Pruebas unitarias de CrearTransferenciaCommandHandler con mocks de IStockRepository.
+/// Pruebas unitarias de CreateTransferCommandHandler con mocks de IStockRepository.
 /// Verifican la lógica de validación de stock sin tocar la base de datos.
 /// </summary>
-public sealed class CrearTransferenciaCommandHandlerTests
+public sealed class CreateTransferCommandHandlerTests
 {
     // ── Casos de stock insuficiente ────────────────────────────────────────
 
@@ -59,7 +59,7 @@ public sealed class CrearTransferenciaCommandHandlerTests
         var result = await ctx.Handle(cantidadItem: 1m);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("bodega origen");
+        result.Error.Should().Contain("Warehouse origen");
     }
 
     [Fact]
@@ -73,7 +73,7 @@ public sealed class CrearTransferenciaCommandHandlerTests
         var result = await ctx.Handle(cantidadItem: 1m);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("bodega destino");
+        result.Error.Should().Contain("Warehouse destino");
     }
 
     [Fact]
@@ -153,6 +153,7 @@ public sealed class CrearTransferenciaCommandHandlerTests
         public Guid SourceWarehouseId  { get; } = Guid.NewGuid();
         public Guid DestinationWarehouseId { get; } = Guid.NewGuid();
         public Guid ProductoId    { get; } = Guid.NewGuid();
+        public Guid CompanyId { get; } = Guid.NewGuid();
 
         public Mock<IStockTransferRepository>    TransferenciaRepo { get; } = new();
         public Mock<IWarehouseRepository>           BodegaOrigenRepo  { get; } = new();
@@ -162,6 +163,7 @@ public sealed class CrearTransferenciaCommandHandlerTests
 
         private readonly Mock<IUserActivityRepository> _activity  = new();
         private readonly Mock<ICurrentSubscriber>          _tenant    = new();
+        private readonly Mock<ICurrentCompany>         _company   = new();
         private readonly Mock<ICurrentUser>            _user      = new();
 
         public TestContext()
@@ -173,13 +175,15 @@ public sealed class CrearTransferenciaCommandHandlerTests
             UnitOfWork.Setup(x => x.RollbackAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
             _tenant.SetupGet(x => x.SubscriberId).Returns(SubscriberId);
+            _company.SetupGet(x => x.CompanyId).Returns(CompanyId);
+            _company.SetupGet(x => x.HasCompanyContext).Returns(true);
             _user.SetupGet(x => x.UserId).Returns(UserId);
             _user.SetupGet(x => x.Email).Returns("test@erp.dev");
             _user.SetupGet(x => x.FullName).Returns("Test User");
 
-            // Bodegas activas por defecto
-            var origen  = Warehouse.Create(SubscriberId, Guid.NewGuid(), "Bodega Origen",  null, null, UserId);
-            var destino = Warehouse.Create(SubscriberId, Guid.NewGuid(), "Bodega Destino", null, null, UserId);
+            // Bodegas activas por defecto (misma empresa operativa)
+            var origen  = Warehouse.Create(SubscriberId, Guid.NewGuid(), "Bodega Origen",  "BO", null, null, null, null, null, null, null, null, null, UserId, companyId: CompanyId);
+            var destino = Warehouse.Create(SubscriberId, Guid.NewGuid(), "Bodega Destino", "BD", null, null, null, null, null, null, null, null, null, UserId, companyId: CompanyId);
 
             BodegaOrigenRepo.Setup(x => x.GetByIdAsync(SubscriberId, SourceWarehouseId,  It.IsAny<CancellationToken>())).ReturnsAsync(origen);
             BodegaOrigenRepo.Setup(x => x.GetByIdAsync(SubscriberId, DestinationWarehouseId, It.IsAny<CancellationToken>())).ReturnsAsync(destino);
@@ -228,21 +232,22 @@ public sealed class CrearTransferenciaCommandHandlerTests
                 tracksStock: tracksStock);
         }
 
-        public Task<Result<TransferenciaDto>> Handle(decimal cantidadItem)
+        public Task<Result<TransferDto>> Handle(decimal cantidadItem)
         {
-            var handler = new CrearTransferenciaCommandHandler(
+            var handler = new CreateTransferCommandHandler(
                 TransferenciaRepo.Object,
                 BodegaOrigenRepo.Object,
                 ProductRepo.Object,
                 StockRepo.Object,
                 _activity.Object,
                 _tenant.Object,
+                _company.Object,
                 _user.Object,
                 UnitOfWork.Object,
-                NullLogger<CrearTransferenciaCommandHandler>.Instance);
+                NullLogger<CreateTransferCommandHandler>.Instance);
 
             return handler.Handle(
-                new CrearTransferenciaCommand(
+                new CreateTransferCommand(
                     SourceWarehouseId, DestinationWarehouseId,
                     Reason: null, Notes: null,
                     Items: [new(ProductoId, cantidadItem)]),

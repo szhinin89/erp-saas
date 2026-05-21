@@ -1,3 +1,4 @@
+using System;
 using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
@@ -22,6 +23,7 @@ public sealed class SuperAdminEmpresasMenuController : ControllerBase
 
     public sealed record EmpresaMenuPutBody(string MenuConfigJson);
 
+    [Obsolete("Legacy SuperAdmin route. Use /api/platform/subscribers/{subscriberId}/menu instead.")]
     [HttpGet("{empresaId:guid}/menu")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMenu(Guid empresaId, CancellationToken ct)
@@ -39,6 +41,7 @@ public sealed class SuperAdminEmpresasMenuController : ControllerBase
         });
     }
 
+    [Obsolete("Legacy SuperAdmin route. Use PUT /api/platform/subscribers/{subscriberId}/menu instead.")]
     [HttpPut("{empresaId:guid}/menu")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> PutMenu(Guid empresaId, [FromBody] EmpresaMenuPutBody body, CancellationToken ct)
@@ -49,6 +52,7 @@ public sealed class SuperAdminEmpresasMenuController : ControllerBase
             : this.ApiBadRequest(r.Error ?? "Error");
     }
 
+    [Obsolete("Legacy SuperAdmin route. Use DELETE /api/platform/subscribers/{subscriberId}/menu instead.")]
     [HttpDelete("{empresaId:guid}/menu")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> DeleteMenu(Guid empresaId, CancellationToken ct)

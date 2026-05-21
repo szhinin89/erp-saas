@@ -9,7 +9,8 @@ public sealed class RefreshToken
 {
     public const int ExpiryDays = 30;
 
-    /// <summary>"SuperAdmin" | "Identity" | "Legacy" — determina qué servicio regenera el access token.</summary>
+    /// <summary>"Platform" | "SuperAdmin" | "Identity" | "Legacy"</summary>
+    public const string TypePlatform   = "Platform";
     public const string TypeSuperAdmin = "SuperAdmin";
     public const string TypeIdentity   = "Identity";
     public const string TypeLegacy     = "Legacy";

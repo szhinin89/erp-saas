@@ -27,13 +27,13 @@ public sealed class CompraGastoEndToEndTests
         var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
         var xml = IntegrationSeedData.BuildFacturaXml(seed.ClaveAcceso49, seed.ProveedorRuc);
 
         var crear = await mediator.Send(
-            new CrearCompraCommand(
-                ModoCreacionCompra.Xml,
+            new CreatePurchaseCommand(
+                PurchaseCreationMode.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xml),
                 XmlFileName: "factura.xml",
                 SupplierId: null,
@@ -51,14 +51,14 @@ public sealed class CompraGastoEndToEndTests
 
         crear.IsSuccess.Should().BeTrue(crear.Error);
 
-        var val = await mediator.Send(new ValidarCompraCommand(crear.Value!.Id), CancellationToken.None);
+        var val = await mediator.Send(new ValidatePurchaseCommand(crear.Value!.Id), CancellationToken.None);
         val.IsSuccess.Should().BeTrue(val.Error);
 
-        var apr = await mediator.Send(new AprobarCompraCommand(crear.Value.Id), CancellationToken.None);
+        var apr = await mediator.Send(new ApprovePurchaseCommand(crear.Value.Id), CancellationToken.None);
         apr.IsSuccess.Should().BeTrue(apr.Error);
 
         var stock = await mediator.Send(
-            new GetCurrentStockPorBodegaQuery(seed.WarehouseId, seed.ProductId),
+            new GetCurrentStockPorWarehouseQuery(seed.WarehouseId, seed.ProductId),
             CancellationToken.None);
 
         stock.IsSuccess.Should().BeTrue();
@@ -76,7 +76,7 @@ public sealed class CompraGastoEndToEndTests
         var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
         var crear = await mediator.Send(
             new CreateExpenseCommand(

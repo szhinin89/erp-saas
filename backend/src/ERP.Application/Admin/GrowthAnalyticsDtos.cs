@@ -4,10 +4,10 @@ public sealed record GrowthAnalyticsBucketDto(
     string PeriodStart,
     string PeriodEnd,
     string PeriodLabel,
-    int NewTenants,
+    int NewSubscribers,
     int NewIdentityUsers,
     int NewCompanyUserMemberships,
-    int CumulativeTenants,
+    int CumulativeSubscribers,
     int CumulativeIdentityUsers,
     int CumulativeCompanyUserMemberships);
 

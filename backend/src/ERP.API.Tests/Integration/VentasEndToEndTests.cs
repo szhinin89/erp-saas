@@ -16,10 +16,10 @@ public sealed class VentasEndToEndTests
 {
     // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-    private static CrearVentaCommand BuildCrearVenta(
+    private static CreateSaleCommand BuildCrearVenta(
         Guid clienteId, Guid bodegaId, Guid sucursalId, Guid productoId, decimal quantity)
         => new(clienteId, bodegaId, sucursalId,
-               new List<ItemVentaDto> { new(productoId, quantity, 25.00m) });
+               new List<SaleItemDto> { new(productoId, quantity, 25.00m) });
 
     private static async Task<(IMediator Mediator, ErpDbContext Db, IntegrationSeedData.SeedResult Seed, Guid ClienteId, Guid SucursalId)>
         SetupAsync(IntegrationTestWebAppFactory factory, decimal stockInicial = 10m)
@@ -57,7 +57,7 @@ public sealed class VentasEndToEndTests
         facturaInicial.Sequential.Should().Be("000000001");
 
         // 2. Validar
-        var validar = await mediator.Send(new ValidarVentaCommand(ventaId), CancellationToken.None);
+        var validar = await mediator.Send(new ValidateSaleCommand(ventaId), CancellationToken.None);
         validar.IsSuccess.Should().BeTrue(validar.Error);
         db.SalesBills.Find(ventaId)!.Status.Should().Be("Validado");
 
@@ -73,7 +73,7 @@ public sealed class VentasEndToEndTests
         factura.JournalEntryId.Should().NotBeNull("el asiento contable debe haberse creado");
 
         // 4. Consultar detalle via query
-        var query = await mediator.Send(new GetVentaByIdQuery(ventaId), CancellationToken.None);
+        var query = await mediator.Send(new GetSaleByIdQuery(ventaId), CancellationToken.None);
         query.IsSuccess.Should().BeTrue();
         query.Value!.Lines.Should().HaveCount(1);
         query.Value.Total.Should().Be(50.00m); // 2 Ã— 25.00, sin IVA
@@ -119,7 +119,7 @@ public sealed class VentasEndToEndTests
         crear.IsSuccess.Should().BeTrue(crear.Error);
         var ventaId = crear.Value;
 
-        await mediator.Send(new ValidarVentaCommand(ventaId), CancellationToken.None);
+        await mediator.Send(new ValidateSaleCommand(ventaId), CancellationToken.None);
         var emitir1 = await mediator.Send(new IssueElectronicInvoiceCommand(ventaId), CancellationToken.None);
         emitir1.IsSuccess.Should().BeTrue(emitir1.Error);
 

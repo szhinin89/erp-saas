@@ -17,19 +17,26 @@ public class Result<T>
     public bool IsSuccess { get; }
     public T? Value { get; }
     public string? Error { get; }
+    public string? ErrorCode { get; }
 
     private Result(T value) { IsSuccess = true; Value = value; }
-    private Result(string error) { IsSuccess = false; Error = error; }
+    private Result(string error, string? errorCode = null)
+    {
+        IsSuccess = false;
+        Error = error;
+        ErrorCode = errorCode;
+    }
 
     /// <summary>Constructor para deserialización JSON (p. ej. caché distribuida).</summary>
     [JsonConstructor]
-    private Result(bool isSuccess, T? value, string? error)
+    private Result(bool isSuccess, T? value, string? error, string? errorCode = null)
     {
         IsSuccess = isSuccess;
         Value = value;
         Error = error;
+        ErrorCode = errorCode;
     }
 
     public static Result<T> Success(T value) => new(value);
-    public static Result<T> Failure(string error) => new(error);
+    public static Result<T> Failure(string error, string? errorCode = null) => new(error, errorCode);
 }

@@ -14,11 +14,11 @@ using Moq;
 namespace ERP.Application.Tests.Inventario;
 
 /// <summary>
-/// Pruebas unitarias de ConfirmarTransferenciaCommandHandler con mocks de IStockRepository.
+/// Pruebas unitarias de ConfirmTransferCommandHandler con mocks de IStockRepository.
 /// Verifican el movimiento atómico de stock y el manejo de transacciones,
 /// incluyendo el escenario de stock insuficiente por concurrencia.
 /// </summary>
-public sealed class ConfirmarTransferenciaCommandHandlerTests
+public sealed class ConfirmTransferCommandHandlerTests
 {
     // ── Casos de éxito ────────────────────────────────────────────────────
 
@@ -127,7 +127,7 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
         var result = await ctx.Handle();
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Borrador");
+        result.Error.Should().Contain("Draft");
     }
 
     [Fact]
@@ -139,7 +139,7 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
         var result = await ctx.Handle();
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("Borrador");
+        result.Error.Should().Contain("Draft");
     }
 
     // ── Contexto de test ──────────────────────────────────────────────────
@@ -230,9 +230,9 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
                     SubscriberId, DestinationWarehouseId, ProductoId, 5m, UserId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(cantAnteriorDestino);
 
-        public Task<Result<TransferenciaDto>> Handle()
+        public Task<Result<TransferDto>> Handle()
         {
-            var handler = new ConfirmarTransferenciaCommandHandler(
+            var handler = new ConfirmTransferCommandHandler(
                 TransferenciaRepo.Object,
                 StockRepo.Object,
                 _costo.Object,
@@ -241,10 +241,10 @@ public sealed class ConfirmarTransferenciaCommandHandlerTests
                 Uow.Object,
                 _tenant.Object,
                 _user.Object,
-                NullLogger<ConfirmarTransferenciaCommandHandler>.Instance);
+                NullLogger<ConfirmTransferCommandHandler>.Instance);
 
             return handler.Handle(
-                new ConfirmarTransferenciaCommand(StockTransfer.Id),
+                new ConfirmTransferCommand(StockTransfer.Id),
                 CancellationToken.None);
         }
     }

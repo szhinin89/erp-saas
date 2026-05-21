@@ -24,7 +24,9 @@ public record SuperAdminCreateSubscriberWithAdminCommand(
     /// <summary>Código de plan SaaS (p. ej. starter). Null/vacío = sin plan explícito.</summary>
     string? PlanCode = null,
     /// <summary>Si null o vacío, el tenant no restringe módulos (todos los habilitados según catálogo).</summary>
-    List<string>? EnabledModules = null
+    List<string>? EnabledModules = null,
+    string? CountryCode = "ECU",
+    string? Timezone = "America/Guayaquil"
 ) : IRequest<Result<SessionResponseDto>>;
 
 public record GetSuperAdminSubscribersQuery : IRequest<Result<IReadOnlyList<SuperAdminSubscriberItemDto>>>;

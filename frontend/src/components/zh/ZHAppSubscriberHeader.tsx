@@ -38,8 +38,8 @@ export function ZHAppSubscriberHeader(props: {
   const subscriberName = useMemo(() => {
     if (!user) return '';
     if (isGlobalSuperAdmin) return user.fullName || t('superadmin.title');
-    if (isImpersonatingSubscriber) return getImpersonationSubscriberName() ?? t('superadmin.tenant.unknown');
-    return t('app.tenant.defaultName');
+    if (isImpersonatingSubscriber) return getImpersonationSubscriberName() ?? t('superadmin.subscriber.unknown');
+    return t('app.subscriber.defaultName');
   }, [isGlobalSuperAdmin, isImpersonatingSubscriber, t, user]);
 
   const subtitle = useMemo(() => {
@@ -81,42 +81,42 @@ export function ZHAppSubscriberHeader(props: {
   if (!user) return null;
 
   return (
-    <div className="zh-tenant-header zh-app-tenantHeader">
-      <div className="zh-tenant-top">
-        <div className="zh-app-tenantLeftGroup">
-          {props.leftExtra ? <div className="zh-app-tenantLeftExtra">{props.leftExtra}</div> : null}
-          <div className="zh-tenant-logo" aria-hidden="true">
-            <span className="zh-tenant-initials">{initials(subscriberName || user.fullName || 'ZH')}</span>
+    <div className="zh-subscriber-header zh-app-subscriberHeader">
+      <div className="zh-subscriber-top">
+        <div className="zh-app-subscriberLeftGroup">
+          {props.leftExtra ? <div className="zh-app-subscriberLeftExtra">{props.leftExtra}</div> : null}
+          <div className="zh-subscriber-logo" aria-hidden="true">
+            <span className="zh-subscriber-initials">{initials(subscriberName || user.fullName || 'ZH')}</span>
           </div>
         </div>
 
-        <div className="zh-tenant-info">
-          <div className="zh-tenant-name">{subscriberName}</div>
-          <div className="zh-tenant-sub">
-            <span className="zh-tenant-badge">{user.role}</span>
-            <span className="zh-tenant-subtext">{subtitle}</span>
+        <div className="zh-subscriber-info">
+          <div className="zh-subscriber-name">{subscriberName}</div>
+          <div className="zh-subscriber-sub">
+            <span className="zh-subscriber-badge">{user.role}</span>
+            <span className="zh-subscriber-subtext">{subtitle}</span>
           </div>
         </div>
 
-        <div className="zh-tenant-right" aria-label={t('app.header.actions')}>
-          <button type="button" className="zh-app-tenantIconBtn" aria-label={t('app.header.notifications')}>
+        <div className="zh-subscriber-right" aria-label={t('app.header.actions')}>
+          <button type="button" className="zh-app-subscriberIconBtn" aria-label={t('app.header.notifications')}>
             🔔
           </button>
-          <button type="button" className="zh-app-tenantIconBtn" aria-label={t('app.header.apps')}>
+          <button type="button" className="zh-app-subscriberIconBtn" aria-label={t('app.header.apps')}>
             ⊞
           </button>
-          {props.rightExtra ? <div className="zh-app-tenantRightExtra">{props.rightExtra}</div> : null}
+          {props.rightExtra ? <div className="zh-app-subscriberRightExtra">{props.rightExtra}</div> : null}
           <div className="zh-app-userMenu">
             <button
               type="button"
-              className="zh-app-tenantAvatarBtn"
+              className="zh-app-subscriberAvatarBtn"
               aria-label={t('app.header.userMenu')}
               aria-haspopup="menu"
               aria-expanded={userMenuOpen}
               onClick={() => setUserMenuOpen((s) => !s)}
               ref={anchorRef}
             >
-              <span className="zh-app-tenantAvatar" aria-hidden="true">
+              <span className="zh-app-subscriberAvatar" aria-hidden="true">
                 {(user.fullName?.[0] ?? user.email?.[0] ?? 'U').toUpperCase()}
               </span>
             </button>
@@ -153,12 +153,12 @@ export function ZHAppSubscriberHeader(props: {
       </div>
 
       {props.bottomLeft ? (
-        <div className="zh-tenant-bottom">
-          <div className="zh-tenant-status" aria-label={t('app.header.bottomNav')}>
+        <div className="zh-subscriber-bottom">
+          <div className="zh-subscriber-status" aria-label={t('app.header.bottomNav')}>
             {props.bottomLeft}
           </div>
-          <div className="zh-tenant-credit" aria-label={t('app.header.vendorCredit')}>
-            <span className="zh-tenant-credit-text">{t('app.zh.brandName')}</span>
+          <div className="zh-subscriber-credit" aria-label={t('app.header.vendorCredit')}>
+            <span className="zh-subscriber-credit-text">{t('app.zh.brandName')}</span>
           </div>
         </div>
       ) : null}

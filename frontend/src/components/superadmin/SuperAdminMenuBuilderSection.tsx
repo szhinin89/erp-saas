@@ -105,7 +105,7 @@ function planEmoji(code: string): string {
   return '📋';
 }
 
-type SubMode = 'plan' | 'tenant';
+type SubMode = 'plan' | 'subscriber';
 
 type EditorMainTab = 'json' | 'visual';
 
@@ -264,7 +264,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
   const { t, locale } = useI18n();
   const [sub, setSub] = useState<SubMode>('plan');
   const [plans, setPlans] = useState<CommercialPlanAdmin[]>([]);
-  const [subscribers, setTenants] = useState<SuperAdminSubscriber[]>([]);
+  const [subscribers, setSubscribers] = useState<SuperAdminSubscriber[]>([]);
   const [planId, setPlanId] = useState('');
   const [subscriberId, setSubscriberId] = useState('');
   const [catalogSearch, setCatalogSearch] = useState('');
@@ -287,7 +287,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
   const [json, setJson] = useState('[]');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  const [tenantFlags, setTenantFlags] = useState<{
+  const [subscriberMenuFlags, setSubscriberMenuFlags] = useState<{
     hasCustomMenu: boolean;
     usedPlanMenu: boolean;
     usedGlobalFallback: boolean;
@@ -631,9 +631,9 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
       .then(setPlans)
       .catch(() => setPlans([]));
     void superAdminService
-      .getTenants()
-      .then(setTenants)
-      .catch(() => setTenants([]));
+      .getSubscribers()
+      .then(setSubscribers)
+      .catch(() => setSubscribers([]));
     void reloadArbol();
   }, [reloadArbol]);
 
@@ -814,9 +814,9 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
     if (!subscriberId) return;
     setErr('');
     try {
-      const r = await superAdminService.getTenantResolvedMenu(subscriberId);
+      const r = await superAdminService.getSubscriberResolvedMenu(subscriberId);
       applyMenuJsonString(JSON.stringify(r.menu, null, 2));
-      setTenantFlags({
+      setSubscriberMenuFlags({
         hasCustomMenu: r.hasCustomMenu,
         usedPlanMenu: r.usedPlanMenu,
         usedGlobalFallback: r.usedGlobalFallback,
@@ -1869,8 +1869,8 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
           <button type="button" role="tab" className={sub === 'plan' ? 'is-active' : ''} onClick={() => setSub('plan')}>
             {t('superadmin.menuBuilder.byPlan')}
           </button>
-          <button type="button" role="tab" className={sub === 'tenant' ? 'is-active' : ''} onClick={() => setSub('tenant')}>
-            {t('superadmin.menuBuilder.byTenant')}
+          <button type="button" role="tab" className={sub === 'subscriber' ? 'is-active' : ''} onClick={() => setSub('subscriber')}>
+            {t('superadmin.menuBuilder.bySubscriber')}
           </button>
         </div>
 
@@ -1937,7 +1937,7 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
           </>
         ) : (
           <ZHGridRow cols={1}>
-            <ZHField label={t('superadmin.menuBuilder.tenantSelect')}>
+            <ZHField label={t('superadmin.menuBuilder.subscriberSelect')}>
               <select className="zh-input" value={subscriberId} onChange={(e) => setSubscriberId(e.target.value)} disabled={busy}>
                 <option value="">{t('common.select')}</option>
                 {subscribers.map((x) => (
@@ -1947,13 +1947,13 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
                 ))}
               </select>
             </ZHField>
-            {tenantFlags ? (
+            {subscriberMenuFlags ? (
               <p className="subtle menu-plan-composer__legacySubtleHelp">
                 {t('superadmin.menuBuilder.hintFlags')}{' '}
                 <strong>
-                  {tenantFlags.hasCustomMenu ? 'custom ' : ''}
-                  {tenantFlags.usedPlanMenu ? 'plan ' : ''}
-                  {tenantFlags.usedGlobalFallback ? 'global' : ''}
+                  {subscriberMenuFlags.hasCustomMenu ? 'custom ' : ''}
+                  {subscriberMenuFlags.usedPlanMenu ? 'plan ' : ''}
+                  {subscriberMenuFlags.usedGlobalFallback ? 'global' : ''}
                 </strong>
               </p>
             ) : null}
@@ -1992,13 +1992,13 @@ export function SuperAdminMenuBuilderSection({ crmWorkspace = false }: SuperAdmi
           ) : (
             <>
               <ZHBtn variant="ghost" size="md" type="button" onClick={() => void loadTenantResolved()} disabled={busy || !subscriberId}>
-                {t('superadmin.menuBuilder.loadResolvedTenant')}
+                {t('superadmin.menuBuilder.loadResolvedSubscriber')}
               </ZHBtn>
               <ZHBtn variant="ghost" size="md" type="button" onClick={() => void resetSubscriber()} disabled={busy || !subscriberId}>
-                {t('superadmin.menuBuilder.resetTenant')}
+                {t('superadmin.menuBuilder.resetSubscriber')}
               </ZHBtn>
               <ZHBtn variant="primary" size="md" type="button" onClick={() => void saveSubscriber()} disabled={busy || !subscriberId}>
-                {t('superadmin.menuBuilder.saveTenant')}
+                {t('superadmin.menuBuilder.saveSubscriber')}
               </ZHBtn>
             </>
           )}

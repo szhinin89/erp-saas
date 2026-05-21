@@ -40,7 +40,7 @@ public sealed class KardexFlujoCompletoTests
 
         // Seed base (tenant, product, bodega, cuentas contables)
         var seed = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
         // Seed prerrequisitos de ventas (cliente, SRI, cuenta ingresos)
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(
@@ -80,8 +80,8 @@ public sealed class KardexFlujoCompletoTests
     {
         // 1. Crear en estado Borrador (modo Manual, sin XML)
         var crear = await mediator.Send(
-            new CrearCompraCommand(
-                Modo: ModoCreacionCompra.Manual,
+            new CreatePurchaseCommand(
+                Modo: PurchaseCreationMode.Manual,
                 XmlContent: null, XmlFileName: null,
                 SupplierId:      proveedorId,
                 InvoiceNumber:    invoiceNumber,
@@ -89,7 +89,7 @@ public sealed class KardexFlujoCompletoTests
                 DueDate: null,
                 PaymentTerms:    "Contado",
                 Notes:    null,
-                Lines: [new DetalleCompraInput(
+                Lines: [new PurchaseLineInput(
                     "Producto test kardex", null, productoId,
                     quantity, unitPrice, 0m, 0m)],
                 WarehouseAllocations: [new WarehouseAllocationRequest(0, bodegaId, quantity, productoId)]),
@@ -100,12 +100,12 @@ public sealed class KardexFlujoCompletoTests
 
         // 2. Validar (Borrador â†’ Validado)
         var validar = await mediator.Send(
-            new ValidarCompraCommand(compraId), CancellationToken.None);
+            new ValidatePurchaseCommand(compraId), CancellationToken.None);
         validar.IsSuccess.Should().BeTrue($"ValidarCompra {invoiceNumber} fallÃ³: {validar.Error}");
 
         // 3. Aprobar (Validado â†’ IsApproved): registra movimiento de inventario con CostoUnitario
         var aprobar = await mediator.Send(
-            new AprobarCompraCommand(compraId), CancellationToken.None);
+            new ApprovePurchaseCommand(compraId), CancellationToken.None);
         aprobar.IsSuccess.Should().BeTrue($"AprobarCompra {invoiceNumber} fallÃ³: {aprobar.Error}");
 
         return compraId;
@@ -162,12 +162,12 @@ public sealed class KardexFlujoCompletoTests
 
         // â”€â”€ VENTA: 5 uds â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         var crearVenta = await mediator.Send(
-            new CrearVentaCommand(clienteId, bid, sucursalId,
-                new List<ItemVentaDto> { new(pid, 5m, 10m) }),   // precio venta $10 (irrelevante para el costo)
+            new CreateSaleCommand(clienteId, bid, sucursalId,
+                new List<SaleItemDto> { new(pid, 5m, 10m) }),   // precio venta $10 (irrelevante para el costo)
             CancellationToken.None);
         crearVenta.IsSuccess.Should().BeTrue(crearVenta.Error);
 
-        await mediator.Send(new ValidarVentaCommand(crearVenta.Value), CancellationToken.None);
+        await mediator.Send(new ValidateSaleCommand(crearVenta.Value), CancellationToken.None);
         var emitir = await mediator.Send(
             new IssueElectronicInvoiceCommand(crearVenta.Value), CancellationToken.None);
         emitir.IsSuccess.Should().BeTrue(emitir.Error);
@@ -248,19 +248,19 @@ public sealed class KardexFlujoCompletoTests
         await CrearYAprobarCompraAsync(mediator, proveedorId, pid, bid, "001-001-000000011", 5m, 20m);
 
         var v1 = await mediator.Send(
-            new CrearVentaCommand(clienteId, bid, sucursalId,
-                new List<ItemVentaDto> { new(pid, 4m, 25m) }),
+            new CreateSaleCommand(clienteId, bid, sucursalId,
+                new List<SaleItemDto> { new(pid, 4m, 25m) }),
             CancellationToken.None);
-        await mediator.Send(new ValidarVentaCommand(v1.Value), CancellationToken.None);
+        await mediator.Send(new ValidateSaleCommand(v1.Value), CancellationToken.None);
         await mediator.Send(new IssueElectronicInvoiceCommand(v1.Value), CancellationToken.None);
 
         await CrearYAprobarCompraAsync(mediator, proveedorId, pid, bid, "001-001-000000012", 6m, 12m);
 
         var v2 = await mediator.Send(
-            new CrearVentaCommand(clienteId, bid, sucursalId,
-                new List<ItemVentaDto> { new(pid, 6m, 25m) }),
+            new CreateSaleCommand(clienteId, bid, sucursalId,
+                new List<SaleItemDto> { new(pid, 6m, 25m) }),
             CancellationToken.None);
-        await mediator.Send(new ValidarVentaCommand(v2.Value), CancellationToken.None);
+        await mediator.Send(new ValidateSaleCommand(v2.Value), CancellationToken.None);
         await mediator.Send(new IssueElectronicInvoiceCommand(v2.Value), CancellationToken.None);
 
         var kardex = await mediator.Send(

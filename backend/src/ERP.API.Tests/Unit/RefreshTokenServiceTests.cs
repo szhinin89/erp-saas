@@ -76,11 +76,11 @@ public sealed class RefreshTokenServiceTests
         var subscriberId = Guid.NewGuid();
 
         // Crear 2 tokens activos + 1 revocado que es el que intentamos reusar
-        var revocado = RefreshToken.Create(userId, subscriberId, RefreshUserType.Legacy, "hash-revocado");
+        var revocado = RefreshToken.Create(userId, subscriberId, null, RefreshUserType.Legacy, "hash-revocado");
         revocado.Revoke("Test");
         repo.Stored.Add(revocado);
 
-        var activo = RefreshToken.Create(userId, subscriberId, RefreshUserType.Legacy, "hash-activo");
+        var activo = RefreshToken.Create(userId, subscriberId, null, RefreshUserType.Legacy, "hash-activo");
         repo.Stored.Add(activo);
 
         repo.SetupHash("hash-revocado-raw", revocado);

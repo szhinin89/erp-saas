@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Modules.Platform.Companies.DTOs;
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.Company.Interfaces;
 using MediatR;
 
@@ -30,8 +31,12 @@ public sealed class UpdateCompanyHandler : IRequestHandler<UpdateCompanyCommand,
         {
             var taken = await _companies.GetByRucAsync(command.TaxId.Trim(), ct);
             if (taken is not null && taken.Id != entity.Id)
-                return Result<CompanyDetailDto>.Failure("El RUC ya está registrado en el sistema.");
-            entity.UpdateTaxId(command.TaxId);
+                return Result<CompanyDetailDto>.Failure("El RUC ya está registrado en el sistema.", ERP.Domain.Exceptions.CompanyRucAlreadyExistsException.ErrorCode);
+            var isProvisional = ProvisionalTaxIdGenerator.IsProvisional(command.TaxId);
+            entity.UpdateTaxId(
+                command.TaxId,
+                isProvisional,
+                isProvisional ? TaxIdStatus.Pending : TaxIdStatus.Verified);
         }
 
         entity.UpdateProfile(

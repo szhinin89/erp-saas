@@ -20,8 +20,19 @@ public sealed class GlobalSuperAdminHandler : AuthorizationHandler<GlobalSuperAd
         GlobalSuperAdminRequirement requirement)
     {
         var role = context.User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
-        if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase) &&
-            _currentSubscriber.SubscriberId == Guid.Empty)
+        var userType = context.User.FindFirst("user_type")?.Value ?? string.Empty;
+        var platformRole = context.User.FindFirst("platform_role")?.Value ?? string.Empty;
+
+        var isPlatformSuperAdmin =
+            string.Equals(userType, "Platform", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(platformRole, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
+
+        var isLegacySuperAdmin =
+            string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(userType, string.Empty, StringComparison.Ordinal);
+
+        if ((isPlatformSuperAdmin || isLegacySuperAdmin)
+            && _currentSubscriber.SubscriberId == Guid.Empty)
         {
             context.Succeed(requirement);
         }

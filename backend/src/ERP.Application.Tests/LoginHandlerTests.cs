@@ -1,13 +1,11 @@
 using FluentAssertions;
+using ERP.Application.Common;
 using Moq;
 using ERP.Application.Auth.UseCases.Login;
-using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Subscriptions;
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
-using ERP.Domain.Auth.Entities;
-using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Modules.Company.Entities;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Subscribers.Entities;
@@ -33,18 +31,13 @@ public class LoginHandlerTests
         var company = Company.CreateFromSubscriber(subscriberId, "1999999999001", "Test Company", "Main St");
         company.Id = companyId;
 
-        var userRepo = new Mock<IUserRepository>(MockBehavior.Strict);
         var tenantRepo = new Mock<ISubscriberRepository>(MockBehavior.Strict);
         var companyRepo = new Mock<ICompanyRepository>(MockBehavior.Strict);
-        var jwtService = new Mock<IJwtService>(MockBehavior.Strict);
-        var deployment = new Mock<IDeploymentFeatureFlags>(MockBehavior.Strict);
         var accessRepo = new Mock<IAccessRepository>(MockBehavior.Strict);
         var accessTokenService = new Mock<IAccessTokenService>(MockBehavior.Strict);
         var passwordHasher = new Mock<IPasswordHasher>(MockBehavior.Strict);
         var companyProvisioning = new Mock<ICompanyProvisioningService>(MockBehavior.Strict);
 
-        deployment.SetupGet(d => d.IsSuperAdminPanelEnabled).Returns(true);
-        userRepo.Setup(r => r.GetSingleSuperAdminByEmailAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync((User?)null);
         accessRepo.Setup(r => r.GetUserByEmailAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(identityUser);
         passwordHasher.Setup(h => h.VerifyPassword(password, passwordHash)).Returns(true);
         accessRepo.Setup(r => r.GetActiveCompanyUserMembershipsForUserSystemAsync(identityUser.Id, It.IsAny<CancellationToken>())).ReturnsAsync(new[] { membership });
@@ -64,11 +57,8 @@ public class LoginHandlerTests
             .ReturnsAsync(new[] { "inventory" });
 
         var handler = new LoginHandler(
-            userRepo.Object,
             tenantRepo.Object,
             companyRepo.Object,
-            jwtService.Object,
-            deployment.Object,
             accessRepo.Object,
             accessTokenService.Object,
             passwordHasher.Object,

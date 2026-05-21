@@ -1,5 +1,6 @@
 using ERP.API.Contracts;
 using ERP.Application.Common;
+using ERP.Domain.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Extensions;
@@ -43,17 +44,6 @@ public static class ApiResultExtensions
         string message = "No se puede completar la operación.")
         => controller.UnprocessableEntity(new ApiResponse<object>(false, message, new { }));
 
-    public static IActionResult ToOkOrBadRequest<T>(
-        this ControllerBase controller,
-        Result<T> result,
-        string successMessage = "OK",
-        Func<T>? successFallbackFactory = null)
-    {
-        return result.IsSuccess
-            ? controller.Ok(new ApiResponse<T>(true, successMessage, ResolveValue(result, successFallbackFactory)))
-            : controller.BadRequest(new ApiResponse<object>(false, result.Error ?? "Error", new { }));
-    }
-
     public static IActionResult ToCreatedOrBadRequest<T>(
         this ControllerBase controller,
         Result<T> result,
@@ -62,7 +52,33 @@ public static class ApiResultExtensions
     {
         return result.IsSuccess
             ? controller.StatusCode(StatusCodes.Status201Created, new ApiResponse<T>(true, successMessage, ResolveValue(result, successFallbackFactory)))
-            : controller.BadRequest(new ApiResponse<object>(false, result.Error ?? "Error", new { }));
+            : MapFailure(controller, result.Error, result.ErrorCode);
+    }
+
+    public static IActionResult ToOkOrBadRequest<T>(
+        this ControllerBase controller,
+        Result<T> result,
+        string successMessage = "OK",
+        Func<T>? successFallbackFactory = null)
+    {
+        return result.IsSuccess
+            ? controller.Ok(new ApiResponse<T>(true, successMessage, ResolveValue(result, successFallbackFactory)))
+            : MapFailure(controller, result.Error, result.ErrorCode);
+    }
+
+    public static IActionResult ApiConflict(
+        this ControllerBase controller,
+        string message,
+        string? errorCode = null)
+        => controller.Conflict(new ApiResponse<object>(false, message, new { code = errorCode }));
+
+    private static IActionResult MapFailure(ControllerBase controller, string? error, string? errorCode)
+    {
+        var message = error ?? "Error";
+        if (string.Equals(errorCode, CompanyRucAlreadyExistsException.ErrorCode, StringComparison.Ordinal))
+            return controller.ApiConflict(message, errorCode);
+
+        return controller.BadRequest(new ApiResponse<object>(false, message, new { code = errorCode }));
     }
 
     public static IActionResult ToOkOrUnauthorized<T>(

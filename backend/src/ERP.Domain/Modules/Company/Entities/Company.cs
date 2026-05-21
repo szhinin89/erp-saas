@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.SriCatalogs.Entities;
+using ERP.Domain.Modules.Company.Enums;
 
 namespace ERP.Domain.Modules.Company.Entities;
 
@@ -12,6 +13,8 @@ public class Company
     public Guid    Id                 { get; set; }
     public Guid    SubscriberId       { get; set; }
     public string  Ruc                { get; set; } = null!;
+    public bool    IsProvisionalTaxId { get; set; }
+    public TaxIdStatus TaxIdStatus    { get; set; } = TaxIdStatus.Verified;
     public string  LegalName          { get; set; } = null!;
     public string? TradeName          { get; set; }
     public string  MainAddress        { get; set; } = null!;
@@ -67,7 +70,10 @@ public class Company
         string mainAddress,
         string? tradeName = null,
         string? email = null,
-        string? phone = null)
+        string? phone = null,
+        string countryCode = "ECU",
+        string timezone = "America/Guayaquil",
+        string currencyCode = "USD")
         => CreateManaged(
             subscriberId,
             ruc,
@@ -75,7 +81,10 @@ public class Company
             mainAddress,
             tradeName,
             email,
-            phone);
+            phone,
+            countryCode,
+            timezone,
+            currencyCode);
 
     public static Company CreateManaged(
         Guid subscriberId,
@@ -89,14 +98,18 @@ public class Company
         string timezone = "America/Guayaquil",
         string currencyCode = "USD",
         string? logoUrl = null,
-        string? brandingJson = null)
+        string? brandingJson = null,
+        bool isProvisionalTaxId = false,
+        TaxIdStatus taxIdStatus = TaxIdStatus.Verified)
     {
         var now = DateTime.UtcNow;
         return new Company
         {
             Id = Guid.NewGuid(),
             SubscriberId = subscriberId,
-            Ruc = NormalizeRuc(ruc),
+            Ruc = NormalizeRuc(ruc, isProvisionalTaxId),
+            IsProvisionalTaxId = isProvisionalTaxId,
+            TaxIdStatus = taxIdStatus,
             LegalName = legalName.Trim(),
             TradeName = string.IsNullOrWhiteSpace(tradeName) ? null : tradeName.Trim(),
             MainAddress = string.IsNullOrWhiteSpace(mainAddress) ? "—" : mainAddress.Trim(),
@@ -140,11 +153,19 @@ public class Company
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public void UpdateTaxId(string ruc) => Ruc = NormalizeRuc(ruc);
+    public void UpdateTaxId(string ruc, bool isProvisional, TaxIdStatus status)
+    {
+        Ruc = NormalizeRuc(ruc, isProvisional);
+        IsProvisionalTaxId = isProvisional;
+        TaxIdStatus = status;
+    }
 
-    private static string NormalizeRuc(string ruc)
+    private static string NormalizeRuc(string ruc, bool isProvisional)
     {
         var t = ruc.Trim();
+        if (isProvisional)
+            return t;
+
         if (t.Length == 13)
             return t;
         if (t.Length < 13)

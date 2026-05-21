@@ -41,7 +41,7 @@ namespace ERP.Infrastructure.Persistence;
 /// ESTADO ACTUAL (Permitido para monolito modular):
 /// - Contabilidad: Account, JournalEntry, JournalEntryLine
 /// - Productos: Product, ProductLine, ProductCategory, ProductSubcategory, Brand, ProductType, TaxRate, UnitOfMeasure, Tariff
-/// - Autenticación: User, IdentityUser, CompanyUserMembership
+/// - Autenticación: IdentityUser, CompanyUserMembership
 /// - Tenants: Tenant
 /// - Seguridad: AccessProfile, AccessProfilePermission, SecurityAdminScopeAssignment
 /// - Geografía: SriCountry (países), GeoProvince, GeoCanton, GeoParish
@@ -226,7 +226,6 @@ public class ErpDbContext : DbContext
     public DbSet<UnitOfMeasure> UnitsOfMeasure => Set<UnitOfMeasure>();
     public DbSet<Tariff> Tariffs => Set<Tariff>();
     public DbSet<Carrier> Carriers => Set<Carrier>();
-    public DbSet<User>         Users         => Set<User>();
     public DbSet<FirstRunSetupState> FirstRunSetupStates => Set<FirstRunSetupState>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();

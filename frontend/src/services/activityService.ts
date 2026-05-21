@@ -27,7 +27,7 @@ export const activityService = {
     return getList<UserActivityDto[]>(`/api/activity/my${qs ? `?${qs}` : ''}`);
   },
 
-  /** Últimos movimientos sobre una entidad (tenant), cualquier usuario. */
+  /** Últimos movimientos sobre una entidad (subscriber), cualquier usuario. */
   forEntity: (opts: { entityType: string; entityId: string; take?: number }) => {
     const q = new URLSearchParams();
     q.set('entityType', opts.entityType);

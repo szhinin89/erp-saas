@@ -3,32 +3,35 @@ using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Application.Subscriptions;
-using ERP.Domain.Auth.Entities;
-using ERP.Domain.Auth.Interfaces;
+using ERP.Domain.Access.Entities;
+using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Subscribers.Interfaces;
 
 namespace ERP.Application.Auth.UseCases.Register;
 
 public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthResponseDto>>
 {
-    private readonly IUserRepository _userRepository;
+    private readonly IAccessRepository _accessRepository;
     private readonly ISubscriberRepository _tenantRepository;
-    private readonly IJwtService _jwtService;
+    private readonly IAccessTokenService _accessTokenService;
+    private readonly ICompanyProvisioningService _companyProvisioning;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ISessionModulesResolver _sessionModules;
 
     public RegisterHandler(
-        IUserRepository userRepository,
+        IAccessRepository accessRepository,
         ISubscriberRepository tenantRepository,
-        IJwtService jwtService,
+        IAccessTokenService accessTokenService,
+        ICompanyProvisioningService companyProvisioning,
         IPasswordHasher passwordHasher,
         ISessionModulesResolver sessionModules)
     {
-        _userRepository   = userRepository;
+        _accessRepository = accessRepository;
         _tenantRepository = tenantRepository;
-        _jwtService       = jwtService;
-        _passwordHasher   = passwordHasher;
-        _sessionModules   = sessionModules;
+        _accessTokenService = accessTokenService;
+        _companyProvisioning = companyProvisioning;
+        _passwordHasher = passwordHasher;
+        _sessionModules = sessionModules;
     }
 
     public async Task<Result<AuthResponseDto>> Handle(
@@ -36,53 +39,53 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthRespo
         CancellationToken ct)
     {
         if (string.Equals(command.Role, "SuperAdmin", StringComparison.Ordinal))
-        {
-            var existsSuperAdmin = await _userRepository.AnySuperAdminAsync(ct);
-            if (existsSuperAdmin)
-                return Result<AuthResponseDto>.Failure("Ya existe un SuperAdmin en el sistema.");
-        }
+            return Result<AuthResponseDto>.Failure("Use el flujo de setup platform para SuperAdmin.");
 
-        var tenantExists = await _tenantRepository.ExistsAsync(command.SubscriberId, ct);
-        if (!tenantExists)
+        var tenant = await _tenantRepository.GetByIdAsync(command.SubscriberId, ct);
+        if (tenant is null || !tenant.IsActive)
             return Result<AuthResponseDto>.Failure("El tenant no existe.");
 
-        var emailExists = await _userRepository.ExistsAsync(command.Email, command.SubscriberId, ct);
-        if (emailExists)
+        if (await _accessRepository.AnyUserWithEmailAsync(command.Email, ct))
             return Result<AuthResponseDto>.Failure("Ya existe un usuario con ese email.");
 
         var passwordHash = _passwordHasher.HashPassword(command.Password);
-
-        // En auto-registro el usuario es su propio creador: se pre-genera el ID
-        // para usarlo como createdBy antes de persistir.
         var newId = Guid.NewGuid();
-        var user  = User.Create(
-            command.SubscriberId,
+        var user = IdentityUser.CreateCompanyUser(
             command.FirstName,
             command.LastName,
             command.Email,
             passwordHash,
+            createdBy: newId,
+            subscriberId: command.SubscriberId);
+
+        var company = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
+        var membership = CompanyUserMembership.Create(
+            company.Id,
+            user.Id,
             command.Role,
+            profileId: null,
             createdBy: newId);
 
-        await _userRepository.AddAsync(user, ct);
-        await _userRepository.SaveChangesAsync(ct);
+        await _accessRepository.AddUserAsync(user, ct);
+        await _accessRepository.AddCompanyUserMembershipAsync(membership, ct);
+        await _accessRepository.SaveChangesAsync(ct);
 
-        var token = _jwtService.GenerateToken(user);
+        var token = _accessTokenService.GenerateSessionToken(
+            user, command.SubscriberId, command.Role, company.Id);
 
-        var tenantEntity = await _tenantRepository.GetByIdAsync(user.SubscriberId, ct);
-
-        var modules = tenantEntity is null
-            ? Array.Empty<string>()
-            : await _sessionModules.GetEnabledModuleKeysAsync(user.SubscriberId, ct);
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(command.SubscriberId, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id,
             user.FullName,
             user.Email.Value,
-            user.Role,
-            user.SubscriberId,
+            command.Role,
+            command.SubscriberId,
             token,
-            tenantEntity?.PlanCode,
-            modules));
+            tenant.PlanCode,
+            modules)
+        {
+            CompanyId = company.Id,
+        });
     }
 }

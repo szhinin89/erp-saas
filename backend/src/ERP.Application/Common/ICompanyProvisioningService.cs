@@ -11,6 +11,15 @@ public interface ICompanyProvisioningService
     Task<CompanyEntity> EnsureDefaultCompanyAsync(Subscriber subscriber, CancellationToken ct = default);
 
     /// <summary>
+    /// Crea entidad company por defecto (sin persistir). Valida RUC globalmente.
+    /// </summary>
+    Task<CompanyEntity> CreateDefaultCompanyForSubscriberAsync(
+        Subscriber subscriber,
+        string? countryCode = "ECU",
+        string? timezone = "America/Guayaquil",
+        CancellationToken ct = default);
+
+    /// <summary>
     /// Crea una empresa fiscal bajo el suscriptor, con enforcement de <c>MAX_COMPANIES</c>
     /// y membresía activa para el usuario creador.
     /// </summary>

@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
+using ERP.Application.Common;
 using ERP.Domain.Modules.Purchasing.Events;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -10,20 +11,24 @@ namespace ERP.Application.Modules.Inventory.EventHandlers;
 public sealed class PurchBillApprovedEventHandler : INotificationHandler<PurchBillApprovedEvent>
 {
     private readonly IStockRepository _inventario;
+    private readonly ICurrentCompany _company;
     private readonly ILogger<PurchBillApprovedEventHandler> _logger;
 
     public PurchBillApprovedEventHandler(
         IStockRepository inventario,
+        ICurrentCompany company,
         ILogger<PurchBillApprovedEventHandler> logger)
     {
         _inventario = inventario;
-        _logger     = logger;
+        _company     = company;
+        _logger      = logger;
     }
 
     public async Task Handle(PurchBillApprovedEvent notification, CancellationToken ct)
     {
         var subscriberId = notification.SubscriberId;
         var userId   = notification.ApprovedByUserId;
+        var companyId = _company.HasCompanyContext ? _company.CompanyId : (Guid?)null;
 
         foreach (var line in notification.StockLines)
         {
@@ -41,7 +46,7 @@ public sealed class PurchBillApprovedEventHandler : INotificationHandler<PurchBi
                 subscriberId, line.WarehouseId, productoId, ct);
             if (stock is null)
             {
-                stock = CurrentStock.Create(subscriberId, productoId, line.WarehouseId, userId);
+                stock = CurrentStock.Create(subscriberId, productoId, line.WarehouseId, userId, companyId: companyId);
                 await _inventario.AddCurrentStockAsync(stock, ct);
             }
 
@@ -59,7 +64,8 @@ public sealed class PurchBillApprovedEventHandler : INotificationHandler<PurchBi
                 sourceDocId:   notification.PurchBillId,
                 sourceDocType: "PurchBill",
                 createdBy: userId,
-                unitCost:       line.NetUnitCost);
+                unitCost:       line.NetUnitCost,
+                companyId:      companyId);
 
             await _inventario.AddMovementAsync(movimiento, ct);
         }

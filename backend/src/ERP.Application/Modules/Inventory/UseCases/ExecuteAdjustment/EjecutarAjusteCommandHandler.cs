@@ -53,9 +53,9 @@ public sealed class ExecuteStockAdjustmentCommandHandler
         if (ajuste is null)
             return Result<StockAdjustmentDto>.Failure("Ajuste no encontrado.");
 
-        if (ajuste.Status != "Borrador")
+        if (ajuste.Status != "Draft")
             return Result<StockAdjustmentDto>.Failure(
-                $"Solo se puede ejecutar un ajuste en Borrador (estado actual: {ajuste.Status}).");
+                $"Solo se puede ejecutar un ajuste en Draft (estado actual: {ajuste.Status}).");
 
         _logger.LogInformation(
             "Ejecutando ajuste {Numero} ({Id}): {Cantidad} en Warehouse {Warehouse}",

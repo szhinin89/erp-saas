@@ -1,60 +1,46 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
-using ERP.Application.Common.Interfaces;
 using ERP.Application.Navigation;
 using ERP.Application.Subscriptions;
-using MediatR;
-using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
-using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
+using ERP.Domain.Auth.Interfaces;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Subscribers.Interfaces;
-using ERP.Domain.Subscribers.Entities;
+using MediatR;
 
 namespace ERP.Application.Access.UseCases.SuperAdminSubscribers;
 
-/// <summary>Alta de empresa + Admin en <c>identity_users</c>/<c>company_user_memberships</c>; el Admin debe poder iniciar sesión y operar solo en ese tenant.</summary>
+/// <summary>Alta de empresa + Admin en <c>identity_users</c>/<c>company_user_memberships</c>; transaccional vía orchestrator.</summary>
 public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperAdminCreateSubscriberWithAdminCommand, Result<SessionResponseDto>>
 {
     private readonly ISubscriberRepository _tenantRepository;
     private readonly IAccessRepository _accessRepository;
     private readonly IAccessTokenService _tokenService;
-    private readonly IUserActivityRepository _activity;
     private readonly ICurrentUser _currentUser;
     private readonly IDeploymentFeatureFlags _deployment;
-    private readonly IPasswordHasher _passwordHasher;
     private readonly ICommercialCatalogQuery _saasCatalogQuery;
-    private readonly ISubscriberOnboardingService _onboarding;
     private readonly ISessionModulesResolver _sessionModules;
-    private readonly ISubscriptionFeatureOverridesService _overrides;
-    private readonly ICompanyProvisioningService _companyProvisioning;
+    private readonly ISubscriberProvisioningOrchestrator _provisioning;
 
     public SuperAdminCreateSubscriberWithAdminHandler(
         ISubscriberRepository tenantRepository,
         IAccessRepository accessRepository,
         IAccessTokenService tokenService,
-        IUserActivityRepository activity,
         ICurrentUser currentUser,
         IDeploymentFeatureFlags deployment,
-        IPasswordHasher passwordHasher,
         ICommercialCatalogQuery saasCatalogQuery,
-        ISubscriberOnboardingService onboarding,
         ISessionModulesResolver sessionModules,
-        ISubscriptionFeatureOverridesService overrides,
-        ICompanyProvisioningService companyProvisioning)
+        ISubscriberProvisioningOrchestrator provisioning)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
         _tokenService = tokenService;
-        _activity = activity;
         _currentUser = currentUser;
         _deployment = deployment;
-        _passwordHasher = passwordHasher;
         _saasCatalogQuery = saasCatalogQuery;
-        _onboarding = onboarding;
         _sessionModules = sessionModules;
-        _overrides = overrides;
-        _companyProvisioning = companyProvisioning;
+        _provisioning = provisioning;
     }
 
     public Task<Result<SessionResponseDto>> HandleAsync(SuperAdminCreateSubscriberWithAdminCommand command, CancellationToken ct = default)
@@ -66,8 +52,7 @@ public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperA
         if (string.IsNullOrWhiteSpace(slug))
             return Result<SessionResponseDto>.Failure("Slug inválido.");
 
-        var existingSubscriber = await _tenantRepository.GetBySlugAsync(slug, ct);
-        if (existingSubscriber is not null)
+        if (await _tenantRepository.GetBySlugAsync(slug, ct) is not null)
             return Result<SessionResponseDto>.Failure("El slug ya está en uso.");
 
         var email = command.AdminEmail.Trim().ToLowerInvariant();
@@ -97,75 +82,43 @@ public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperA
 
         var (planCode, moduleKeys) = NormalizeSubscription(command.PlanCode, command.EnabledModules);
 
-        var tenant = Subscriber.Create(
-            command.SubscriberName,
-            slug,
-            createdBy: _currentUser.UserId,
-            passwordResetMode: command.PasswordResetMode,
-            ruc: command.Ruc,
-            shortName: command.ShortName,
-            tradeName: command.TradeName,
-            dinardap: command.Dinardap,
-            logoUrl: command.LogoUrl,
-            displayOrder: command.DisplayOrder,
-            priority: command.Priority,
-            planCode: planCode);
-        await _tenantRepository.AddAsync(tenant, ct);
-
-        var hash = _passwordHasher.HashPassword(command.AdminPassword);
-        var adminUser = IdentityUser.Create(command.AdminFirstName, command.AdminLastName, email, hash, _currentUser.UserId);
-        await _accessRepository.AddUserAsync(adminUser, ct);
-
-        await _activity.AddAsync(UserActivity.Create(
-            tenant.Id,
-            _currentUser.UserId,
-            _currentUser.Email,
-            _currentUser.FullName,
-            module: "subscribers",
-            action: "tenant.create",
-            entityType: "Tenant",
-            entityId: tenant.Id,
-            description: $"{tenant.Name} ({tenant.Slug})"), ct);
-
-        await _accessRepository.SaveChangesAsync(ct);
-
-        var defaultCompany = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
-
-        var membershipCap = await DeploymentQuota.GetBlockingReasonIfAtTenantCompanyUserMembershipUserCapAsync(
-            _deployment, _accessRepository, tenant.Id, ct);
-        if (membershipCap is not null)
-            return Result<SessionResponseDto>.Failure(membershipCap);
-
-        var membership = CompanyUserMembership.Create(defaultCompany.Id, adminUser.Id, "Admin", profileId: null, createdBy: _currentUser.UserId);
-        await _accessRepository.AddCompanyUserMembershipAsync(membership, ct);
-        await _accessRepository.SaveChangesAsync(ct);
-
-        if (moduleKeys is { Count: > 0 })
+        try
         {
-            await _overrides.ApplyModuleOverridesAsync(
-                tenant.Id,
-                SubscriberSubscriptionCatalog.NormalizeModuleKeysInput(moduleKeys),
-                _currentUser.UserId,
+            var provisioned = await _provisioning.ProvisionNewSubscriberWithAdminAsync(
+                new SubscriberProvisioningRequest(
+                    SubscriberName: command.SubscriberName,
+                    SubscriberSlug: slug,
+                    AdminFirstName: command.AdminFirstName,
+                    AdminLastName: command.AdminLastName,
+                    AdminEmail: email,
+                    AdminPassword: command.AdminPassword,
+                    ActorId: _currentUser.UserId,
+                    PasswordResetMode: command.PasswordResetMode,
+                    Ruc: command.Ruc,
+                    ShortName: command.ShortName,
+                    TradeName: command.TradeName,
+                    Dinardap: command.Dinardap,
+                    LogoUrl: command.LogoUrl,
+                    DisplayOrder: command.DisplayOrder,
+                    Priority: command.Priority,
+                    PlanCode: planCode,
+                    EnabledModules: moduleKeys,
+                    LinkExistingAdmin: false,
+                    CountryCode: command.CountryCode,
+                    Timezone: command.Timezone,
+                    AuditDescription: $"{command.SubscriberName} ({slug})"),
                 ct);
-            await _accessRepository.SaveChangesAsync(ct);
+
+            return await BuildSessionResultAsync(provisioned.Subscriber, provisioned.AdminUser, provisioned.DefaultCompany, ct);
         }
-
-        await _onboarding.OnboardAsync(tenant.Id, _currentUser.UserId, ct);
-
-        var sessionToken = _tokenService.GenerateSessionToken(adminUser, tenant.Id, "Admin", defaultCompany.Id);
-        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, ct);
-        return Result<SessionResponseDto>.Success(new SessionResponseDto(
-            UserId: adminUser.Id,
-            FullName: adminUser.FullName,
-            Email: adminUser.Email.Value,
-            SubscriberId: tenant.Id,
-            Role: "Admin",
-            Token: sessionToken,
-            tenant.PlanCode,
-            modules)
+        catch (CompanyRucAlreadyExistsException ex)
         {
-            CompanyId = defaultCompany.Id,
-        });
+            return Result<SessionResponseDto>.Failure(ex.Message, CompanyRucAlreadyExistsException.ErrorCode);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result<SessionResponseDto>.Failure(ex.Message);
+        }
     }
 
     private async Task<Result<SessionResponseDto>> HandleLinkExistingAdminAsync(
@@ -185,72 +138,58 @@ public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperA
 
         var (planCode, moduleKeys) = NormalizeSubscription(command.PlanCode, command.EnabledModules);
 
-        var tenant = Subscriber.Create(
-            command.SubscriberName,
-            slug,
-            createdBy: _currentUser.UserId,
-            passwordResetMode: command.PasswordResetMode,
-            ruc: command.Ruc,
-            shortName: command.ShortName,
-            tradeName: command.TradeName,
-            dinardap: command.Dinardap,
-            logoUrl: command.LogoUrl,
-            displayOrder: command.DisplayOrder,
-            priority: command.Priority,
-            planCode: planCode);
-        await _tenantRepository.AddAsync(tenant, ct);
-
-        await _activity.AddAsync(UserActivity.Create(
-            tenant.Id,
-            _currentUser.UserId,
-            _currentUser.Email,
-            _currentUser.FullName,
-            module: "subscribers",
-            action: "tenant.create",
-            entityType: "Tenant",
-            entityId: tenant.Id,
-            description: $"{tenant.Name} ({tenant.Slug}); admin vinculado {email}"), ct);
-
-        await _accessRepository.SaveChangesAsync(ct);
-
-        var defaultCompany = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
-
-        var existingCompanyUserMembership = await _accessRepository.GetCompanyUserMembershipAsync(defaultCompany.Id, existingUser.Id, ct);
-        if (existingCompanyUserMembership is null)
+        try
         {
-            var membershipCap = await DeploymentQuota.GetBlockingReasonIfAtTenantCompanyUserMembershipUserCapAsync(
-                _deployment, _accessRepository, tenant.Id, ct);
-            if (membershipCap is not null)
-                return Result<SessionResponseDto>.Failure(membershipCap);
-
-            var membership = CompanyUserMembership.Create(defaultCompany.Id, existingUser.Id, "Admin", profileId: null, createdBy: _currentUser.UserId);
-            await _accessRepository.AddCompanyUserMembershipAsync(membership, ct);
-        }
-        else
-        {
-            existingCompanyUserMembership.Activate("Admin", profileId: null, updatedBy: _currentUser.UserId);
-        }
-
-        await _accessRepository.SaveChangesAsync(ct);
-
-        if (moduleKeys is { Count: > 0 })
-        {
-            await _overrides.ApplyModuleOverridesAsync(
-                tenant.Id,
-                SubscriberSubscriptionCatalog.NormalizeModuleKeysInput(moduleKeys),
-                _currentUser.UserId,
+            var provisioned = await _provisioning.ProvisionSubscriberWithExistingAdminAsync(
+                new SubscriberProvisioningRequest(
+                    SubscriberName: command.SubscriberName,
+                    SubscriberSlug: slug,
+                    AdminFirstName: existingUser.FirstName,
+                    AdminLastName: existingUser.LastName,
+                    AdminEmail: email,
+                    AdminPassword: null,
+                    ActorId: _currentUser.UserId,
+                    PasswordResetMode: command.PasswordResetMode,
+                    Ruc: command.Ruc,
+                    ShortName: command.ShortName,
+                    TradeName: command.TradeName,
+                    Dinardap: command.Dinardap,
+                    LogoUrl: command.LogoUrl,
+                    DisplayOrder: command.DisplayOrder,
+                    Priority: command.Priority,
+                    PlanCode: planCode,
+                    EnabledModules: moduleKeys,
+                    LinkExistingAdmin: true,
+                    CountryCode: command.CountryCode,
+                    Timezone: command.Timezone,
+                    AuditDescription: $"{command.SubscriberName} ({slug}); admin vinculado {email}"),
+                existingUser,
                 ct);
-            await _accessRepository.SaveChangesAsync(ct);
+
+            return await BuildSessionResultAsync(provisioned.Subscriber, provisioned.AdminUser, provisioned.DefaultCompany, ct);
         }
+        catch (CompanyRucAlreadyExistsException ex)
+        {
+            return Result<SessionResponseDto>.Failure(ex.Message, CompanyRucAlreadyExistsException.ErrorCode);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result<SessionResponseDto>.Failure(ex.Message);
+        }
+    }
 
-        await _onboarding.OnboardAsync(tenant.Id, _currentUser.UserId, ct);
-
-        var sessionToken = _tokenService.GenerateSessionToken(existingUser, tenant.Id, "Admin", defaultCompany.Id);
+    private async Task<Result<SessionResponseDto>> BuildSessionResultAsync(
+        ERP.Domain.Subscribers.Entities.Subscriber tenant,
+        ERP.Domain.Access.Entities.IdentityUser adminUser,
+        ERP.Domain.Modules.Company.Entities.Company defaultCompany,
+        CancellationToken ct)
+    {
+        var sessionToken = _tokenService.GenerateSessionToken(adminUser, tenant.Id, "Admin", defaultCompany.Id);
         var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, ct);
         return Result<SessionResponseDto>.Success(new SessionResponseDto(
-            UserId: existingUser.Id,
-            FullName: existingUser.FullName,
-            Email: existingUser.Email.Value,
+            UserId: adminUser.Id,
+            FullName: adminUser.FullName,
+            Email: adminUser.Email.Value,
             SubscriberId: tenant.Id,
             Role: "Admin",
             Token: sessionToken,
@@ -261,7 +200,6 @@ public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperA
         });
     }
 
-    /// <summary>Devuelve mensaje de error o null si OK. Exige al menos un plan en catálogo y un plan activo elegido.</summary>
     private async Task<string?> ValidatePlanAndModulesAsync(string? planCode, List<string>? enabledModules, CancellationToken ct)
     {
         var plans = await _saasCatalogQuery.GetPlansWithFeaturesAsync(ct);
@@ -294,7 +232,6 @@ public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperA
         return null;
     }
 
-    /// <summary>Plan normalizado; módulos null si la lista viene vacía (sin restricción JSON).</summary>
     private static (string? PlanCode, IReadOnlyList<string>? ModuleKeys) NormalizeSubscription(string? planCode, List<string>? enabledModules)
     {
         var pc = string.IsNullOrWhiteSpace(planCode) ? null : planCode.Trim();
@@ -311,15 +248,18 @@ public class GetSuperAdminSubscribersHandler : IRequestHandler<GetSuperAdminSubs
     private readonly ISubscriberRepository _tenantRepository;
     private readonly ISubscriberMenuAdminService _tenantMenuAdmin;
     private readonly ISessionModulesResolver _sessionModules;
+    private readonly IAccessRepository _accessRepository;
 
     public GetSuperAdminSubscribersHandler(
         ISubscriberRepository tenantRepository,
         ISubscriberMenuAdminService tenantMenuAdmin,
-        ISessionModulesResolver sessionModules)
+        ISessionModulesResolver sessionModules,
+        IAccessRepository accessRepository)
     {
         _tenantRepository = tenantRepository;
         _tenantMenuAdmin = tenantMenuAdmin;
         _sessionModules = sessionModules;
+        _accessRepository = accessRepository;
     }
 
     public async Task<Result<IReadOnlyList<SuperAdminSubscriberItemDto>>> Handle(GetSuperAdminSubscribersQuery request, CancellationToken ct)
@@ -333,6 +273,7 @@ public class GetSuperAdminSubscribersHandler : IRequestHandler<GetSuperAdminSubs
         foreach (var t in ordered)
         {
             var modules = await _sessionModules.GetEnabledModuleKeysAsync(t.Id, ct);
+            var (totalUsers, activeUsers) = await _accessRepository.CountDistinctIdentityUsersForSubscriberAsync(t.Id, ct);
             subscribers.Add(new SuperAdminSubscriberItemDto(
                 t.Id,
                 t.Name,
@@ -341,7 +282,10 @@ public class GetSuperAdminSubscribersHandler : IRequestHandler<GetSuperAdminSubs
                 t.PlanCode,
                 modules,
                 SubscriberSubscriptionCatalog.HasModuleRestrictionsFromModules(modules),
-                withCustom.Contains(t.Id)));
+                withCustom.Contains(t.Id),
+                t.CreatedAt,
+                totalUsers,
+                activeUsers));
         }
 
         return Result<IReadOnlyList<SuperAdminSubscriberItemDto>>.Success(subscribers);

@@ -6,6 +6,7 @@ namespace ERP.Domain.Auth.Entities;
 /// </summary>
 public sealed class PasswordResetToken
 {
+    public const string KindPlatform = "Platform";
     public const string KindSuperAdmin = "SuperAdmin";
     public const string KindIdentity = "Identity";
     public const string KindLegacy = "Legacy";

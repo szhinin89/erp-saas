@@ -13,11 +13,11 @@ export type SuperAdminPageTemplateProps = {
   action?: ReactNode;
   /**
    * Si true (defecto), con sesión dentro de una empresa no se muestra el contenido:
-   * pantalla “vuelva al panel global” con `tenantGuardAction` o enlace por defecto.
+   * pantalla “vuelva al panel global” con `subscriberGuardAction` o enlace por defecto.
    */
   requireGlobal?: boolean;
-  /** Acción en barra del título cuando `requireGlobal` y el usuario está dentro de un tenant. */
-  tenantGuardAction?: ReactNode;
+  /** Acción en barra del título cuando `requireGlobal` y el usuario está dentro de un subscriber. */
+  subscriberGuardAction?: ReactNode;
   /** Clave i18n cuando el rol no es SuperAdmin. */
   accessDeniedKey?: string;
   /** Subtítulo en cabecera si acceso denegado; por defecto igual que `accessDeniedKey`. */
@@ -36,7 +36,7 @@ export function SuperAdminPageTemplate({
   subtitle,
   action,
   requireGlobal = true,
-  tenantGuardAction,
+  subscriberGuardAction,
   accessDeniedKey = 'superadmin.noAccess',
   accessDeniedSubtitleKey,
   hideHeader = false,
@@ -62,9 +62,9 @@ export function SuperAdminPageTemplate({
       <NavLink to="/superadmin/overview">{t('superadmin.backToGlobal')}</NavLink>
     );
     return (
-      <PageShell kicker={k} title={title} action={tenantGuardAction ?? defaultAction}>
+      <PageShell kicker={k} title={title} action={subscriberGuardAction ?? defaultAction}>
         <Card>
-          <EmptyState message={t('superadmin.alreadyInTenant')} />
+          <EmptyState message={t('superadmin.alreadyInSubscriber')} />
         </Card>
       </PageShell>
     );

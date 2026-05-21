@@ -1,5 +1,5 @@
 import { useI18n } from '../../i18n/i18n';
-import { TENANT_MODULE_KEYS, moduleKeysMatch } from '../../constants/subscriptionModules';
+import { SUBSCRIBER_MODULE_KEYS, moduleKeysMatch } from '../../constants/subscriptionModules';
 import type { CompanyItem } from '../../services/companyService';
 
 type Row = Pick<CompanyItem, 'enabledModules' | 'hasModuleRestrictions'>;
@@ -21,7 +21,7 @@ export function CompanyModuleChips({ company }: { company: Row }) {
     return <span className="companies-module-chip companies-module-chip--muted">—</span>;
   }
 
-  const keys = TENANT_MODULE_KEYS.filter((k) =>
+  const keys = SUBSCRIBER_MODULE_KEYS.filter((k) =>
     enabled.some((m) => moduleKeysMatch(m, k))
   );
 

@@ -1,4 +1,5 @@
 using FluentAssertions;
+using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing;
 using ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
 using ERP.Domain.Modules.Inventory.Entities;
@@ -15,7 +16,7 @@ public sealed class PurchaseWarehouseAllocationRulesTests
         var b1 = Guid.NewGuid();
         var detalles = new[]
         {
-            new DetalleCompraInput("A", null, Guid.NewGuid(), 10m, 1m, 0m, 0m),
+            new PurchaseLineInput("A", null, Guid.NewGuid(), 10m, 1m, 0m, 0m),
         };
         var asignaciones = new[]
         {
@@ -24,9 +25,9 @@ public sealed class PurchaseWarehouseAllocationRulesTests
 
         var bodegas = new Mock<IWarehouseRepository>();
         bodegas.Setup(x => x.GetByIdAsync(It.IsAny<Guid>(), b1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Warehouse.Create(Guid.NewGuid(), Guid.NewGuid(), "B1", null, null, Guid.NewGuid()));
+            .ReturnsAsync(Warehouse.Create(Guid.NewGuid(), Guid.NewGuid(), "B1", "B1", null, null, null, null, null, null, null, null, null, Guid.NewGuid()));
 
-        var err = await PurchaseWarehouseAllocationRules.ValidateAsync(
+        var err = await PurchaseAsignacionWarehousesRules.ValidateAsync(
             detalles, asignaciones, Guid.NewGuid(), bodegas.Object, CancellationToken.None);
 
         err.Should().NotBeNull();
@@ -44,8 +45,8 @@ public sealed class PurchaseWarehouseAllocationRulesTests
 
         var detalles = new[]
         {
-            new DetalleCompraInput("P1", null, p1, 10m, 1m, 0m, 0m),
-            new DetalleCompraInput("P2", null, p2, 5m, 1m, 0m, 0m),
+            new PurchaseLineInput("P1", null, p1, 10m, 1m, 0m, 0m),
+            new PurchaseLineInput("P2", null, p2, 5m, 1m, 0m, 0m),
         };
         var asignaciones = new[]
         {
@@ -56,11 +57,11 @@ public sealed class PurchaseWarehouseAllocationRulesTests
 
         var bodegas = new Mock<IWarehouseRepository>();
         bodegas.Setup(x => x.GetByIdAsync(subscriberId, b1, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Warehouse.Create(subscriberId, Guid.NewGuid(), "B1", null, null, Guid.NewGuid()));
+            .ReturnsAsync(Warehouse.Create(subscriberId, Guid.NewGuid(), "B1", "B1", null, null, null, null, null, null, null, null, null, Guid.NewGuid()));
         bodegas.Setup(x => x.GetByIdAsync(subscriberId, b2, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Warehouse.Create(subscriberId, Guid.NewGuid(), "B2", null, null, Guid.NewGuid()));
+            .ReturnsAsync(Warehouse.Create(subscriberId, Guid.NewGuid(), "B2", "B2", null, null, null, null, null, null, null, null, null, Guid.NewGuid()));
 
-        var err = await PurchaseWarehouseAllocationRules.ValidateAsync(
+        var err = await PurchaseAsignacionWarehousesRules.ValidateAsync(
             detalles, asignaciones, subscriberId, bodegas.Object, CancellationToken.None);
 
         err.Should().BeNull();

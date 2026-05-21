@@ -44,8 +44,3 @@ export function goToCompaniesSubscriberDetail(navigate: NavigateFunction, subscr
   persistCompaniesDetailSubscriberId(subscriberId);
   navigate('/companies');
 }
-
-/** @deprecated Use `goToCompaniesSubscriberDetail`. */
-export function goToCompaniesTenantDetail(navigate: NavigateFunction, subscriberId: string): void {
-  goToCompaniesSubscriberDetail(navigate, subscriberId);
-}

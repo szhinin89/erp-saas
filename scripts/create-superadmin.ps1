@@ -36,8 +36,8 @@ $ErrorActionPreference = "Stop"
 if ([string]::IsNullOrWhiteSpace($SetupToken)) {
   $SetupToken = $env:ERP_SUPERADMIN_SETUP_TOKEN
 }
-if ([string]::IsNullOrWhiteSpace($SetupToken)) {
-  $SetupToken = $env:Deployment__InitialSuperAdminSetupToken
+if (-not [string]::IsNullOrWhiteSpace($env:Deployment__InitialSuperAdminSetupToken)) {
+  Write-Warning "Se ignoró Deployment__InitialSuperAdminSetupToken (no valida POST /api/setup/superadmin)."
 }
 
 function Read-HttpErrorBody {
@@ -124,10 +124,10 @@ catch {
     catch { }
   }
   Write-Host "`nComprueba:" -ForegroundColor Cyan
-  Write-Host "  1) La API usa el MISMO token: desde ERP.API ejecuta  dotnet user-secrets list" -ForegroundColor Gray
-  Write-Host "     y compara Deployment:InitialSuperAdminSetupToken con -SetupToken." -ForegroundColor Gray
-  Write-Host "  2) Si ya creaste SuperAdmin antes: la API responde error (solo uno por BD)." -ForegroundColor Gray
-  Write-Host "  3) Contraseña por defecto del script: minimo 10 caracteres (-Password)." -ForegroundColor Gray
+  Write-Host "  1) Token copiado del bloque FIRST-RUN en consola del API (expira ~15 min)." -ForegroundColor Gray
+  Write-Host "  2) Development: POST /api/dev/reset-first-run para un token nuevo." -ForegroundColor Gray
+  Write-Host "  3) Si ya hay SuperAdmin: first-run cerrado (solo uno en identity_users)." -ForegroundColor Gray
+  Write-Host "  4) Contraseña: minimo 10 caracteres (-Password)." -ForegroundColor Gray
   exit 1
 }
 
@@ -152,4 +152,5 @@ if ($ro) {
   }
 }
 
-Write-Host "`nSiguiente: abre el frontend, inicia sesión con ese email/contraseña (superadmin-login) o usa el token en el cliente." -ForegroundColor Green
+Write-Host "`nSiguiente: POST /api/platform/auth/login (o legacy /api/auth/superadmin-login) o usa el JWT del setup." -ForegroundColor Green
+Write-Host "Requiere Deployment:SuperAdminPanelEnabled=true." -ForegroundColor Gray

@@ -54,11 +54,11 @@ export type ZHTenantHeaderModuleCrumb = { label: string; icon?: React.ReactNode;
 
 export function ZHMultiTenantHeader(props: {
   subscriberName: string;
-  tenantMeta?: string[]; // e.g. ["Quito, Ecuador", "RUC 179001...", "Plan Empresarial"]
-  tenantBadge?: string | null; // e.g. Plan
-  tenantInitials?: string; // fallback when no logo
-  tenantLogoUrl?: string | null;
-  tenantColor?: string | null; // used when no logo image
+  subscriberMeta?: string[]; // e.g. ["Quito, Ecuador", "RUC 179001...", "Plan Empresarial"]
+  subscriberBadge?: string | null; // e.g. Plan
+  subscriberInitials?: string; // fallback when no logo
+  subscriberLogoUrl?: string | null;
+  subscriberColor?: string | null; // used when no logo image
   fiscalYear?: string | number | null;
   modules?: ZHTenantHeaderModuleCrumb[];
   statusText?: string | null; // e.g. "Sistema operativo · Subscriber #TEN-0014"
@@ -67,11 +67,11 @@ export function ZHMultiTenantHeader(props: {
 }) {
   const {
     subscriberName,
-    tenantMeta,
-    tenantBadge,
-    tenantInitials,
-    tenantLogoUrl,
-    tenantColor,
+    subscriberMeta,
+    subscriberBadge,
+    subscriberInitials,
+    subscriberLogoUrl,
+    subscriberColor,
     fiscalYear,
     modules,
     statusText,
@@ -81,7 +81,7 @@ export function ZHMultiTenantHeader(props: {
 
   const { t } = useI18n();
 
-  const initials = (tenantInitials ?? subscriberName)
+  const initials = (subscriberInitials ?? subscriberName)
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
@@ -89,60 +89,60 @@ export function ZHMultiTenantHeader(props: {
     .join('');
 
   return (
-    <div className="zh-tenant-header">
-      <div className="zh-tenant-top">
+    <div className="zh-subscriber-header">
+      <div className="zh-subscriber-top">
         <div
-          className="zh-tenant-logo"
-          style={tenantLogoUrl ? undefined : tenantColor ? { background: tenantColor } : undefined}
+          className="zh-subscriber-logo"
+          style={subscriberLogoUrl ? undefined : subscriberColor ? { background: subscriberColor } : undefined}
         >
-          {tenantLogoUrl ? <img src={tenantLogoUrl} alt="" /> : <span className="zh-tenant-initials">{initials}</span>}
+          {subscriberLogoUrl ? <img src={subscriberLogoUrl} alt="" /> : <span className="zh-subscriber-initials">{initials}</span>}
         </div>
 
-        <div className="zh-tenant-info">
-          <div className="zh-tenant-name">{subscriberName}</div>
-          {(tenantMeta?.length ?? 0) > 0 ? (
-            <div className="zh-tenant-sub">
-              {tenantMeta!.map((x, idx) => (
+        <div className="zh-subscriber-info">
+          <div className="zh-subscriber-name">{subscriberName}</div>
+          {(subscriberMeta?.length ?? 0) > 0 ? (
+            <div className="zh-subscriber-sub">
+              {subscriberMeta!.map((x, idx) => (
                 <span key={`${idx}-${x}`}>{x}</span>
               ))}
-              {tenantBadge ? <span className="zh-tenant-badge">{tenantBadge}</span> : null}
+              {subscriberBadge ? <span className="zh-subscriber-badge">{subscriberBadge}</span> : null}
             </div>
-          ) : tenantBadge ? (
-            <div className="zh-tenant-sub">
-              <span className="zh-tenant-badge">{tenantBadge}</span>
+          ) : subscriberBadge ? (
+            <div className="zh-subscriber-sub">
+              <span className="zh-subscriber-badge">{subscriberBadge}</span>
             </div>
           ) : null}
         </div>
 
-        <div className="zh-tenant-right">
+        <div className="zh-subscriber-right">
           {right}
           {fiscalYear ? (
-            <div className="zh-tenant-fy">
-              <div className="zh-tenant-fy-label">{t('app.fiscalYear.label')}</div>
-              <div className="zh-tenant-fy-value">{fiscalYear}</div>
+            <div className="zh-subscriber-fy">
+              <div className="zh-subscriber-fy-label">{t('app.fiscalYear.label')}</div>
+              <div className="zh-subscriber-fy-value">{fiscalYear}</div>
             </div>
           ) : null}
         </div>
       </div>
 
       {(modules?.length ?? 0) > 0 ? (
-        <div className="zh-tenant-modules">
+        <div className="zh-subscriber-modules">
           {modules!.map((m, idx) => (
-            <div key={`${idx}-${m.label}`} className={`zh-tenant-module-pill${m.active ? ' is-active' : ''}`}>
-              {m.icon ? <span className="zh-tenant-module-ico" aria-hidden="true">{m.icon}</span> : null}
+            <div key={`${idx}-${m.label}`} className={`zh-subscriber-module-pill${m.active ? ' is-active' : ''}`}>
+              {m.icon ? <span className="zh-subscriber-module-ico" aria-hidden="true">{m.icon}</span> : null}
               {m.label}
             </div>
           ))}
         </div>
       ) : null}
 
-      <div className="zh-tenant-bottom">
-        <div className="zh-tenant-status">
-          <span className="zh-tenant-status-dot" aria-hidden="true" />
-          <span className="zh-tenant-status-text">{statusText ?? ''}</span>
+      <div className="zh-subscriber-bottom">
+        <div className="zh-subscriber-status">
+          <span className="zh-subscriber-status-dot" aria-hidden="true" />
+          <span className="zh-subscriber-status-text">{statusText ?? ''}</span>
         </div>
-        <div className="zh-tenant-credit" title={t('app.zh.developedByTitle')}>
-          <img className="zh-tenant-credit-logo" src={zhLogoSrc ?? '/zh-logo.svg'} alt={t('app.zh.brandName')} />
+        <div className="zh-subscriber-credit" title={t('app.zh.developedByTitle')}>
+          <img className="zh-subscriber-credit-logo" src={zhLogoSrc ?? '/zh-logo.svg'} alt={t('app.zh.brandName')} />
         </div>
       </div>
     </div>

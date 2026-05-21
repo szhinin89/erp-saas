@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
+using ERP.Domain.Access.Enums;
 using ERP.Domain.Auth.Entities;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -24,10 +25,11 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
     {
         var state = await GetOrCreateStateAsync(ct);
 
-        // Si ya existe SuperAdmin, cerramos first-run de forma defensiva.
         var hasSuperAdmin = await _platform
-            .Unfiltered(_db.Users, PlatformQueryReason.CrossTenantSystem)
-            .AnyAsync(u => u.Role == "SuperAdmin", ct);
+            .Unfiltered(_db.IdentityUsers, PlatformQueryReason.CrossTenantSystem)
+            .AnyAsync(
+                u => u.UserType == IdentityUserType.Platform && u.PlatformRole == PlatformRole.SuperAdmin,
+                ct);
         if (hasSuperAdmin && state.IsFirstRun)
         {
             state.CompleteFirstRun(SystemActorId);
@@ -73,7 +75,6 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
 
     public async Task MarkFirstRunCompletedAsync(CancellationToken ct = default)
     {
-        // Tras crear el SuperAdmin: is_first_run=false, completed_at=UTC, hash y expiración del token en NULL.
         var state = await GetOrCreateStateAsync(ct);
         if (!state.IsFirstRun)
             return;
@@ -85,16 +86,19 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
     public async Task<FirstRunResetResult> ResetForDevelopmentAsync(CancellationToken ct = default)
     {
         var superAdmins = await _platform
-            .Unfiltered(_db.Users, PlatformQueryReason.CrossTenantSystem)
-            .Where(u => u.Role == "SuperAdmin")
+            .Unfiltered(_db.IdentityUsers, PlatformQueryReason.CrossTenantSystem)
+            .Where(u => u.UserType == IdentityUserType.Platform && u.PlatformRole == PlatformRole.SuperAdmin)
             .ToListAsync(ct);
         var superAdminIds = superAdmins.Select(x => x.Id).ToArray();
 
         if (superAdmins.Count > 0)
-            _db.Users.RemoveRange(superAdmins);
+            _db.IdentityUsers.RemoveRange(superAdmins);
 
         var superAdminRefreshTokens = await _db.RefreshTokens
-            .Where(rt => rt.UserType == RefreshToken.TypeSuperAdmin || superAdminIds.Contains(rt.UserId))
+            .Where(rt =>
+                rt.UserType == RefreshToken.TypeSuperAdmin
+                || rt.UserType == RefreshToken.TypePlatform
+                || superAdminIds.Contains(rt.UserId))
             .ToListAsync(ct);
         if (superAdminRefreshTokens.Count > 0)
             _db.RefreshTokens.RemoveRange(superAdminRefreshTokens);

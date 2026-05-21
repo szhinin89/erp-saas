@@ -1,4 +1,5 @@
-﻿using ERP.API.Authorization;
+﻿using System;
+using ERP.API.Authorization;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
@@ -98,6 +99,8 @@ public class AccessController : ControllerBase
     /// </remarks>
     /// <response code="201">Subscriber creado + session token del admin.</response>
     /// <response code="400">Slug duplicado o email ya registrado.</response>
+    [HttpPost("register-subscriber")]
+    [Obsolete("Legacy IAM route register-tenant. Prefer register-subscriber.")]
     [HttpPost("register-tenant")]
     [Authorize(Roles = "SuperAdmin")]
     [ApiExplorerSettings(IgnoreApi = true)]
@@ -154,6 +157,8 @@ public class AccessController : ControllerBase
 
     /// <summary>SuperAdmin: lista empresas activas para administración.</summary>
     /// <remarks>Incluye <c>planCode</c>, <c>enabledModules</c> efectivos y <c>hasModuleRestrictions</c>.</remarks>
+    /// <remarks>Legacy — usar <c>GET /api/platform/subscribers</c>.</remarks>
+    [Obsolete("Legacy IAM route. Use GET /api/platform/subscribers instead.")]
     [HttpGet("superadmin/subscribers")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -166,6 +171,8 @@ public class AccessController : ControllerBase
     }
 
     /// <summary>SuperAdmin: crea empresa + Admin inicial (solo para esa empresa).</summary>
+    /// <remarks>Legacy — usar <c>POST /api/platform/subscribers</c>.</remarks>
+    [Obsolete("Legacy IAM route. Use POST /api/platform/subscribers instead.")]
     [HttpPost("superadmin/subscribers")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<SessionResponseDto?>), StatusCodes.Status201Created)]
@@ -182,6 +189,8 @@ public class AccessController : ControllerBase
     public sealed record TenantMenuPutBody(string MenuConfigJson);
 
     /// <summary>SuperAdmin: menú efectivo de la empresa (personalizado, del plan o global).</summary>
+    /// <remarks>Legacy — usar <c>GET /api/platform/subscribers/{subscriberId}/menu</c>.</remarks>
+    [Obsolete("Legacy IAM route. Use GET /api/platform/subscribers/{subscriberId}/menu instead.")]
     [HttpGet("superadmin/subscribers/{subscriberId:guid}/menu")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -202,6 +211,8 @@ public class AccessController : ControllerBase
     }
 
     /// <summary>SuperAdmin: guarda menú personalizado por empresa (JSON = <c>SessionMenuGroupDto[]</c>).</summary>
+    /// <remarks>Legacy — usar <c>PUT /api/platform/subscribers/{subscriberId}/menu</c>.</remarks>
+    [Obsolete("Legacy IAM route. Use PUT /api/platform/subscribers/{subscriberId}/menu instead.")]
     [HttpPut("superadmin/subscribers/{subscriberId:guid}/menu")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -215,6 +226,8 @@ public class AccessController : ControllerBase
     }
 
     /// <summary>SuperAdmin: elimina menú personalizado; la empresa vuelve al menú del plan o global.</summary>
+    /// <remarks>Legacy — usar <c>DELETE /api/platform/subscribers/{subscriberId}/menu</c>.</remarks>
+    [Obsolete("Legacy IAM route. Use DELETE /api/platform/subscribers/{subscriberId}/menu instead.")]
     [HttpDelete("superadmin/subscribers/{subscriberId:guid}/menu")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -228,7 +241,9 @@ public class AccessController : ControllerBase
 
     // ── Admin del tenant: accesos ───────────────────────────────────
 
-    /// <summary>Admin: lista accesos (company_user_memberships) del tenant actual.</summary>
+    /// <summary>Admin: lista accesos (company_user_memberships) del subscriber actual.</summary>
+    [HttpGet("subscriber/company_user_memberships")]
+    [Obsolete("Legacy IAM route segment 'tenant'. Prefer subscriber/company_user_memberships.")]
     [HttpGet("tenant/company_user_memberships")]
     [Authorize(Policy = "Session")]
     [Authorize(Policy = "perm:access.company_user_memberships.view")]
@@ -239,7 +254,9 @@ public class AccessController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<SubscriberCompanyUserMembershipItemDto>());
     }
 
-    /// <summary>Admin: crea/actualiza acceso de un usuario a este tenant.</summary>
+    /// <summary>Admin: crea/actualiza acceso de un usuario a este subscriber.</summary>
+    [HttpPost("subscriber/company_user_memberships")]
+    [Obsolete("Legacy IAM route segment 'tenant'. Prefer subscriber/company_user_memberships.")]
     [HttpPost("tenant/company_user_memberships")]
     [Authorize(Policy = "Session")]
     [Authorize(Policy = "perm:access.company_user_memberships.view")]
@@ -252,7 +269,9 @@ public class AccessController : ControllerBase
         return this.ToOkOrBadRequest(result, "OK", () => new { });
     }
 
-    /// <summary>Admin: revoca acceso (desactiva membership) de un usuario en este tenant.</summary>
+    /// <summary>Admin: revoca acceso (desactiva membership) de un usuario en este subscriber.</summary>
+    [HttpPost("subscriber/company_user_memberships/revoke")]
+    [Obsolete("Legacy IAM route segment 'tenant'. Prefer subscriber/company_user_memberships/revoke.")]
     [HttpPost("tenant/company_user_memberships/revoke")]
     [Authorize(Policy = "Session")]
     [Authorize(Policy = "perm:access.company_user_memberships.view")]

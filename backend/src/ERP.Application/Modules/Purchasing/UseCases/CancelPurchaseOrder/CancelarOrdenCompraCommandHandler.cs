@@ -46,7 +46,7 @@ public sealed class CancelOrderPurchaseCommandHandler
         if (orden is null)
             return Result<PurchaseOrderDto>.Failure("Orden de compra no encontrada.");
 
-        if (orden.Status is "Cerrada" or "Cancelada")
+        if (orden.Status is "Closed" or "Cancelled")
             return Result<PurchaseOrderDto>.Failure(
                 $"No se puede cancelar una OC en estado {orden.Status}.");
 

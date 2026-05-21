@@ -1,9 +1,9 @@
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
-using ERP.Domain.Auth.Entities;
-using ERP.Domain.Auth.Interfaces;
-
+using ERP.Application.Subscriptions;
+using ERP.Domain.Access.Entities;
+using ERP.Domain.Access.Interfaces;
 using MediatR;
 
 namespace ERP.Application.Auth.UseCases.ClaimInitialSuperAdmin;
@@ -12,21 +12,24 @@ public sealed class ClaimInitialSuperAdminHandler : IRequestHandler<ClaimInitial
 {
     private const int MinPasswordLength = 10;
 
-    private readonly IUserRepository _userRepository;
-    private readonly IJwtService _jwtService;
+    private readonly IAccessRepository _accessRepository;
+    private readonly IAccessTokenService _accessTokenService;
     private readonly IFirstRunSetupService _firstRunSetupService;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IRefreshTokenService _refreshTokenService;
 
     public ClaimInitialSuperAdminHandler(
-        IUserRepository userRepository,
-        IJwtService jwtService,
+        IAccessRepository accessRepository,
+        IAccessTokenService accessTokenService,
         IFirstRunSetupService firstRunSetupService,
-        IPasswordHasher passwordHasher)
+        IPasswordHasher passwordHasher,
+        IRefreshTokenService refreshTokenService)
     {
-        _userRepository = userRepository;
-        _jwtService = jwtService;
+        _accessRepository = accessRepository;
+        _accessTokenService = accessTokenService;
         _firstRunSetupService = firstRunSetupService;
         _passwordHasher = passwordHasher;
+        _refreshTokenService = refreshTokenService;
     }
 
     public async Task<Result<AuthResponseDto>> Handle(
@@ -36,7 +39,7 @@ public sealed class ClaimInitialSuperAdminHandler : IRequestHandler<ClaimInitial
         if (!await _firstRunSetupService.ValidateSetupTokenAsync(command.SetupToken, ct))
             return Result<AuthResponseDto>.Failure("Token de instalación inválido o no configurado.");
 
-        if (await _userRepository.AnySuperAdminAsync(ct))
+        if (await _accessRepository.AnyPlatformSuperAdminAsync(ct))
             return Result<AuthResponseDto>.Failure("Ya existe un SuperAdmin en el sistema.");
 
         var email = command.Email.Trim().ToLowerInvariant();
@@ -46,32 +49,23 @@ public sealed class ClaimInitialSuperAdminHandler : IRequestHandler<ClaimInitial
         if (string.IsNullOrWhiteSpace(command.FirstName) || string.IsNullOrWhiteSpace(command.LastName))
             return Result<AuthResponseDto>.Failure("Nombre y apellido son requeridos.");
 
-        try
-        {
-            if (await _userRepository.ExistsByEmailGloballyAsync(email, ct))
-                return Result<AuthResponseDto>.Failure("Ya existe un usuario con ese email.");
-        }
-        catch (ArgumentException ex)
-        {
-            return Result<AuthResponseDto>.Failure(ex.Message);
-        }
+        if (await _accessRepository.AnyUserWithEmailAsync(email, ct))
+            return Result<AuthResponseDto>.Failure("Ya existe un usuario con ese email.");
 
         var password = command.Password ?? string.Empty;
         if (password.Length < MinPasswordLength)
             return Result<AuthResponseDto>.Failure($"La contraseña debe tener al menos {MinPasswordLength} caracteres.");
 
-        User user;
+        IdentityUser user;
         try
         {
             var passwordHash = _passwordHasher.HashPassword(password);
             var newId = Guid.NewGuid();
-            user = User.Create(
-                Guid.Empty,
+            user = IdentityUser.CreatePlatformSuperAdmin(
                 command.FirstName.Trim(),
                 command.LastName.Trim(),
                 email,
                 passwordHash,
-                "SuperAdmin",
                 createdBy: newId);
         }
         catch (ArgumentException ex)
@@ -79,21 +73,26 @@ public sealed class ClaimInitialSuperAdminHandler : IRequestHandler<ClaimInitial
             return Result<AuthResponseDto>.Failure(ex.Message);
         }
 
-        await _userRepository.AddAsync(user, ct);
-        await _userRepository.SaveChangesAsync(ct);
-        // Actualiza first_run_setup_state: is_first_run=false, completed_at UTC, sin hash ni expiración de token.
+        await _accessRepository.AddUserAsync(user, ct);
+        await _accessRepository.SaveChangesAsync(ct);
         await _firstRunSetupService.MarkFirstRunCompletedAsync(ct);
 
-        var token = _jwtService.GenerateToken(user, Guid.Empty);
+        var token = _accessTokenService.GeneratePlatformSessionToken(user);
+        var (refresh, refreshExpiry) = await _refreshTokenService.CreateAsync(
+            user.Id, Guid.Empty, null, RefreshUserType.Platform, ct);
 
         return Result<AuthResponseDto>.Success(new AuthResponseDto(
             user.Id,
             user.FullName,
             user.Email.Value,
-            user.Role,
+            "SuperAdmin",
             Guid.Empty,
             token,
             PlanCode: null,
-            EnabledModules: SubscriberSubscriptionCatalog.AllModuleKeys));
+            EnabledModules: SubscriberSubscriptionCatalog.AllModuleKeys)
+        {
+            RefreshToken = refresh,
+            RefreshTokenExpiry = refreshExpiry,
+        });
     }
 }

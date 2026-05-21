@@ -32,7 +32,7 @@ type Props = {
 };
 
 /**
- * Lista los últimos eventos de `user_activity` para una entidad (mismo tenant).
+ * Lista los últimos eventos de `user_activity` para una entidad (mismo subscriber).
  */
 export function EntityAuditPanel({ entityType, entityId, take = 10, refreshKey = 0 }: Props) {
   const { t } = useI18n();

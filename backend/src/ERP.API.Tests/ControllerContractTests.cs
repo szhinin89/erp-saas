@@ -40,7 +40,7 @@ public class ControllerContractTests
     public async Task Branches_Create_WhenSuccess_Returns201Contract()
     {
         var expected = new BranchDto(
-            Guid.NewGuid(), "Matriz", "Av. Principal", null, null, null, null, null, null, null, null, null, true, true);
+            Guid.NewGuid(), "Matriz", "Av. Principal", "MAT", null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true);
 
         var mediator = new StubMediator(request =>
         {
@@ -51,7 +51,7 @@ public class ControllerContractTests
         });
 
         var controller = new BranchesController(mediator);
-        var command = new CreateBranchCommand("Matriz", "Av. Principal", null, null, null, null, null, null, null, null, null, true, true);
+        var command = new CreateBranchCommand("Matriz", "Av. Principal", null, null, null, null, null, null, null, null, null, null, null, null, null, null, true, true);
         var result = await controller.Create(command, CancellationToken.None);
 
         var created = result.Should().BeOfType<ObjectResult>().Subject;

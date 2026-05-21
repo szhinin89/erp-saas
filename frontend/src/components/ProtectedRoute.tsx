@@ -22,7 +22,7 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace />;
   }
 
-  // SuperAdmin global: solo panel SuperAdmin y administración de empresas (sin rutas operativas de tenant).
+  // SuperAdmin global: solo panel SuperAdmin y administración de empresas (sin rutas operativas de subscriber).
   if (superAdminPanelEnabled && (user?.role ?? '') === 'SuperAdmin' && (user?.subscriberId ?? '') === GLOBAL_SUBSCRIBER_ID) {
     const path = window.location.pathname;
     const allowed = path.startsWith('/superadmin') || path === '/companies' || path.startsWith('/companies/');

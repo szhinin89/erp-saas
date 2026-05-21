@@ -7,19 +7,19 @@ namespace ERP.Application.Tests.Compras;
 
 public sealed class CrearOrdenCompraCommandValidatorTests
 {
-    private static readonly CrearOrdenCompraCommandValidator _v = new();
+    private static readonly CreatePurchaseOrderCommandValidator _v = new();
 
-    private static CrearOrdenCompraCommand ValidCmd(
+    private static CreatePurchaseOrderCommand ValidCmd(
         Guid? proveedorId = null,
         DateTime? fecha = null,
-        List<ItemOrdenCompraRequest>? items = null) =>
+        List<PurchaseOrderItemRequest>? items = null) =>
         new(
             proveedorId ?? Guid.NewGuid(),
             fecha ?? DateTime.UtcNow.AddDays(10),
             TargetWarehouseId:  null,
             DeliveryAddress: null,
             Notes:    null,
-            Items: items ?? [new ItemOrdenCompraRequest(Guid.NewGuid(), 5m, 10m, 15m)]);
+            Items: items ?? [new PurchaseOrderItemRequest(Guid.NewGuid(), 5m, 10m, 15m)]);
 
     // ── ProveedorId ───────────────────────────────────────────────────────
 
@@ -28,7 +28,7 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     {
         var result = _v.Validate(ValidCmd(proveedorId: Guid.Empty));
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "ProveedorId");
+        result.Errors.Should().Contain(e => e.PropertyName == "SupplierId");
     }
 
     // ── RequiredDate ────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     [Fact]
     public void Item_cantidad_cero_falla()
     {
-        var items = new List<ItemOrdenCompraRequest>
+        var items = new List<PurchaseOrderItemRequest>
             { new(Guid.NewGuid(), Quantity: 0m, UnitPrice: 10m, VatPct: 15m) };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeFalse();
@@ -65,7 +65,7 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     [Fact]
     public void Item_cantidad_negativa_falla()
     {
-        var items = new List<ItemOrdenCompraRequest>
+        var items = new List<PurchaseOrderItemRequest>
             { new(Guid.NewGuid(), Quantity: -1m, UnitPrice: 10m, VatPct: 15m) };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeFalse();
@@ -74,7 +74,7 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     [Fact]
     public void Item_precio_negativo_falla()
     {
-        var items = new List<ItemOrdenCompraRequest>
+        var items = new List<PurchaseOrderItemRequest>
             { new(Guid.NewGuid(), Quantity: 5m, UnitPrice: -1m, VatPct: 15m) };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeFalse();
@@ -85,7 +85,7 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     public void Item_precio_cero_es_valido()
     {
         // Precio 0 permitido (servicios gratuitos, muestras)
-        var items = new List<ItemOrdenCompraRequest>
+        var items = new List<PurchaseOrderItemRequest>
             { new(Guid.NewGuid(), Quantity: 5m, UnitPrice: 0m, VatPct: 15m) };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeTrue();
@@ -94,7 +94,7 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     [Fact]
     public void Item_iva_negativo_falla()
     {
-        var items = new List<ItemOrdenCompraRequest>
+        var items = new List<PurchaseOrderItemRequest>
             { new(Guid.NewGuid(), Quantity: 5m, UnitPrice: 10m, VatPct: -1m) };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeFalse();
@@ -104,7 +104,7 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     [Fact]
     public void Item_iva_cero_es_valido()
     {
-        var items = new List<ItemOrdenCompraRequest>
+        var items = new List<PurchaseOrderItemRequest>
             { new(Guid.NewGuid(), Quantity: 5m, UnitPrice: 10m, VatPct: 0m) };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeTrue();
@@ -113,7 +113,7 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     [Fact]
     public void Item_productoId_vacio_falla()
     {
-        var items = new List<ItemOrdenCompraRequest>
+        var items = new List<PurchaseOrderItemRequest>
             { new(Guid.Empty, Quantity: 5m, UnitPrice: 10m, VatPct: 15m) };
         var result = _v.Validate(ValidCmd(items: items));
         result.IsValid.Should().BeFalse();
@@ -132,7 +132,7 @@ public sealed class CrearOrdenCompraCommandValidatorTests
     [Fact]
     public void Comando_dos_items_valido_pasa()
     {
-        var items = new List<ItemOrdenCompraRequest>
+        var items = new List<PurchaseOrderItemRequest>
         {
             new(Guid.NewGuid(), Quantity: 10m, UnitPrice:  5m, VatPct: 15m),
             new(Guid.NewGuid(), Quantity:  5m, UnitPrice: 10m, VatPct: 15m),

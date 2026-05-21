@@ -17,7 +17,7 @@ namespace ERP.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("ProductVersion", "10.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -201,6 +201,12 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("email");
 
+                    b.Property<string>("EmailNormalized")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("email_normalized");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -222,6 +228,27 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
 
+                    b.Property<string>("PlatformRole")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("platform_role");
+
+                    b.Property<bool>("RequirePasswordReset")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("require_password_reset");
+
+                    b.Property<string>("SecurityStamp")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("security_stamp");
+
+                    b.Property<Guid?>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -230,11 +257,23 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
 
+                    b.Property<string>("UserType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasDefaultValue("Company")
+                        .HasColumnName("user_type");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique()
                         .HasDatabaseName("ux_identity_users_email");
+
+                    b.HasIndex("EmailNormalized")
+                        .IsUnique()
+                        .HasDatabaseName("ux_identity_users_email_normalized");
 
                     b.ToTable("identity_users", (string)null);
                 });
@@ -474,75 +513,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_refresh_tokens_user_subscriber");
 
                     b.ToTable("refresh_tokens", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Auth.Entities.User", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("email");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("first_name");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("last_name");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("password_hash");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("role");
-
-                    b.Property<Guid>("SubscriberId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("subscriber_id");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SubscriberId", "Email")
-                        .IsUnique()
-                        .HasDatabaseName("ix_users_subscriber_email");
-
-                    b.ToTable("users", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Billing.Entities.BillingEvent", b =>
@@ -2629,6 +2599,12 @@ namespace ERP.Infrastructure.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_foreign_trade");
 
+                    b.Property<bool>("IsProvisionalTaxId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_provisional_tax_id");
+
                     b.Property<string>("LegalName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -2663,10 +2639,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Property<string>("Ruc")
                         .IsRequired()
-                        .HasMaxLength(13)
-                        .HasColumnType("character(13)")
-                        .HasColumnName("ruc")
-                        .IsFixedLength();
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("ruc");
 
                     b.Property<string>("SpecialTaxpayerNo")
                         .HasMaxLength(200)
@@ -2676,6 +2651,14 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
                         .HasColumnName("subscriber_id");
+
+                    b.Property<string>("TaxIdStatus")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Verified")
+                        .HasColumnName("tax_id_status");
 
                     b.Property<string>("TaxRegimeCode")
                         .HasMaxLength(5)

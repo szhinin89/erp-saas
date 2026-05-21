@@ -2,6 +2,18 @@ import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
 import type { SessionResponse, SessionMenuGroupDto } from '../types/access';
 
+/** Rutas canónicas Platform Layer (SaaS / subscribers). */
+export const PLATFORM_SUBSCRIBERS_API = '/api/platform/subscribers';
+
+export function parsePlatformSubscriberList(
+  responseObject: SuperAdminSubscriber[] | { subscribers?: SuperAdminSubscriber[] } | null | undefined,
+): SuperAdminSubscriber[] {
+  if (!responseObject) return [];
+  if (Array.isArray(responseObject)) return responseObject;
+  if (Array.isArray(responseObject.subscribers)) return responseObject.subscribers;
+  return [];
+}
+
 export type SuperAdminSubscriber = {
   id: string;
   name: string;
@@ -113,6 +125,12 @@ export type CreateSubscriberWithAdminBody = {
   adminLastName: string;
   adminEmail: string;
   adminPassword: string;
+  /** RUC ecuatoriano (13 dígitos). Opcional: la API genera TMP-EC-* provisional. */
+  ruc?: string | null;
+  /** ISO 3166-1 alpha-3, p. ej. ECU */
+  countryCode?: string | null;
+  /** IANA timezone, p. ej. America/Guayaquil */
+  timezone?: string | null;
   /** Coincide con `PasswordResetMode` en backend: 0 Disabled, 1 Direct, 2 Email, 3 Phone. */
   passwordResetMode?: number;
   /** Si true, no crea usuario; vincula un Admin existente por email. */
@@ -218,12 +236,12 @@ export type UpdateNavItemBody = {
 
 export type SuperAdminMetrics = {
   totals: {
-    totalTenants: number;
-    activeTenants: number;
+    totalSubscribers: number;
+    activeSubscribers: number;
     totalUsers: number;
     activeUsers: number;
   };
-  recentTenants: Array<{
+  recentSubscribers: Array<{
     id: string;
     name: string;
     slug: string;
@@ -236,10 +254,10 @@ export type GrowthAnalyticsBucket = {
   periodStart: string;
   periodEnd: string;
   periodLabel: string;
-  newTenants: number;
+  newSubscribers: number;
   newIdentityUsers: number;
   newCompanyUserMemberships: number;
-  cumulativeTenants: number;
+  cumulativeSubscribers: number;
   cumulativeIdentityUsers: number;
   cumulativeCompanyUserMemberships: number;
 };
@@ -268,16 +286,17 @@ export type GrowthMonetaryResponse = {
 };
 
 export const superAdminService = {
-  getTenants: () =>
-    api.get<ApiResponse<{ subscribers: SuperAdminSubscriber[] }>>('/api/superadmin/subscribers')
-      .then((r) => r.data.responseObject.subscribers),
-
-  createTenantWithAdmin: (body: CreateSubscriberWithAdminBody) =>
+  getSubscribers: () =>
     api
-      .post<ApiResponse<SessionResponse>>('/api/admin/iam/superadmin/subscribers', body)
+      .get<ApiResponse<SuperAdminSubscriber[]>>('/api/platform/subscribers')
+      .then((r) => parsePlatformSubscriberList(r.data.responseObject)),
+
+  createSubscriberWithAdmin: (body: CreateSubscriberWithAdminBody) =>
+    api
+      .post<ApiResponse<SessionResponse>>('/api/platform/subscribers', body)
       .then((r) => r.data.responseObject),
 
-  updateTenantSubscription: (subscriberId: string, body: UpdateSubscriberSubscriptionBody) =>
+  updateSubscriberSubscription: (subscriberId: string, body: UpdateSubscriberSubscriptionBody) =>
     api
       .patch<ApiResponse<unknown>>(`/api/subscribers/${encodeURIComponent(subscriberId)}/subscription`, body)
       .then((r) => r.data),
@@ -353,7 +372,7 @@ export const superAdminService = {
       )
       .then((r) => r.data),
 
-  getTenantResolvedMenu: (subscriberId: string) =>
+  getSubscriberResolvedMenu: (subscriberId: string) =>
     api
       .get<
         ApiResponse<{
@@ -362,14 +381,15 @@ export const superAdminService = {
           usedPlanMenu: boolean;
           usedGlobalFallback: boolean;
         }>
-      >(`/api/superadmin/empresas/${encodeURIComponent(subscriberId)}/menu`)
+      >(`${PLATFORM_SUBSCRIBERS_API}/${encodeURIComponent(subscriberId)}/menu`)
       .then((r) => r.data.responseObject),
 
   putSubscriberCustomMenu: (subscriberId: string, menuConfigJson: string) =>
     api
-      .put<ApiResponse<Record<string, unknown>>>(`/api/superadmin/empresas/${encodeURIComponent(subscriberId)}/menu`, {
-        menuConfigJson,
-      })
+      .put<ApiResponse<Record<string, unknown>>>(
+        `${PLATFORM_SUBSCRIBERS_API}/${encodeURIComponent(subscriberId)}/menu`,
+        { menuConfigJson },
+      )
       .then((r) => r.data),
 
   getFuncionalidadesArbol: () =>
@@ -385,7 +405,7 @@ export const superAdminService = {
   deleteSubscriberCustomMenu: (subscriberId: string) =>
     api
       .delete<ApiResponse<Record<string, unknown>>>(
-        `/api/superadmin/empresas/${encodeURIComponent(subscriberId)}/menu`,
+        `${PLATFORM_SUBSCRIBERS_API}/${encodeURIComponent(subscriberId)}/menu`,
       )
       .then((r) => r.data),
 
@@ -393,7 +413,7 @@ export const superAdminService = {
   getPublicPlans: () =>
     api.get<ApiResponse<{ plans: SaasPublicPlan[] }>>('/api/public/plans').then((r) => r.data.responseObject.plans),
 
-  switchTenant: (subscriberId: string) =>
+  switchSubscriber: (subscriberId: string) =>
     api.post<ApiResponse<import('../types/auth').AuthResponse>>('/api/auth/switch-subscriber', { subscriberId })
       .then((r) => r.data.responseObject),
 

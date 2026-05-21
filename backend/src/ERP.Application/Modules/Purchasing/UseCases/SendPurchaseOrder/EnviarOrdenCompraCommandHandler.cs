@@ -46,9 +46,9 @@ public sealed class SendOrderPurchaseCommandHandler
         if (orden is null)
             return Result<PurchaseOrderDto>.Failure("Orden de compra no encontrada.");
 
-        if (orden.Status != "Borrador")
+        if (orden.Status != "Draft")
             return Result<PurchaseOrderDto>.Failure(
-                $"Solo se puede enviar una OC en Borrador (estado actual: {orden.Status}).");
+                $"Solo se puede enviar una OC en Draft (estado actual: {orden.Status}).");
 
         orden.Send(userId);
 

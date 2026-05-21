@@ -57,9 +57,9 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
         if (nota is null)
             return Result<SupplierPurchaseNoteDto>.Failure("Nota de Supplier no encontrada.");
 
-        if (nota.Status != "Borrador")
+        if (nota.Status != "Draft")
             return Result<SupplierPurchaseNoteDto>.Failure(
-                $"Solo se puede aprobar una nota en Borrador (estado: {nota.Status}).");
+                $"Solo se puede aprobar una nota en Draft (estado: {nota.Status}).");
 
         if (!nota.PurchBillId.HasValue && !nota.ExpenseInvoiceId.HasValue)
             return Result<SupplierPurchaseNoteDto>.Failure(
@@ -84,7 +84,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
 
                 compra.RegisterAppliedNote(nota.NoteType, nota.Total, userId);
 
-                asientoResult = nota.NoteType == "CREDITO"
+                asientoResult = nota.NoteType is "CREDIT" or "CREDITO"
                     ? await _accounting.CrearAsientoNotaCreditoCompraProveedorAsync(
                         nota.Id,
                         reference:  numeroNota,
@@ -116,7 +116,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
 
                 gasto.RegisterAppliedSupplierNote(nota.NoteType, nota.Total, userId);
 
-                asientoResult = nota.NoteType == "CREDITO"
+                asientoResult = nota.NoteType is "CREDIT" or "CREDITO"
                     ? await _accounting.CrearAsientoNotaCreditoGastoProveedorAsync(
                         nota.Id,
                         reference:     numeroNota,
@@ -207,7 +207,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
                 continue;
 
             var detCant = compraDet.Quantity;
-            var sign    = nota.NoteType == "CREDITO" ? 1m : -1m;
+            var sign    = nota.NoteType is "CREDIT" or "CREDITO" ? 1m : -1m;
             var costo   = compraDet.Quantity > 0
                 ? compraDet.UnitPrice * (1 - compraDet.DiscountPct / 100m)
                 : 0m;

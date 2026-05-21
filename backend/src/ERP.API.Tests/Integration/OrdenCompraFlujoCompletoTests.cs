@@ -33,7 +33,7 @@ public sealed class OrdenCompraFlujoCompletoTests
 
         // â”€â”€ Seed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         var seed = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
         var subscriberId   = seed.SubscriberId;
         var userId     = seed.UserId;
@@ -41,13 +41,13 @@ public sealed class OrdenCompraFlujoCompletoTests
         var productoBId = await SeedSegundoProductoAsync(db, seed); // Producto B
 
         var proveedor = Supplier.Create(
-            subscriberId, "Juridica", "Supplier Test S.A.",
+            subscriberId, "Legal", "Supplier Test S.A.",
             seed.ProveedorRuc, null, null, null, "30 dias", userId);
         db.Suppliers.Add(proveedor);
         await db.SaveChangesAsync(CancellationToken.None);
 
         // â”€â”€ PASO 1: Crear OC con Producto A (10 uds Ã— $5) y Producto B (5 uds Ã— $10) â”€â”€
-        var crear = await mediator.Send(new CrearOrdenCompraCommand(
+        var crear = await mediator.Send(new CreatePurchaseOrderCommand(
             proveedor.Id,
             DateTime.UtcNow.AddDays(30),
             TargetWarehouseId: null,
@@ -55,14 +55,14 @@ public sealed class OrdenCompraFlujoCompletoTests
             Notes: "OC prueba flujo completo",
             Items:
             [
-                new ItemOrdenCompraRequest(productoAId, Quantity: 10m, UnitPrice: 5m,  VatPct: 15m),
-                new ItemOrdenCompraRequest(productoBId, Quantity:  5m, UnitPrice: 10m, VatPct: 15m),
+                new PurchaseOrderItemRequest(productoAId, Quantity: 10m, UnitPrice: 5m,  VatPct: 15m),
+                new PurchaseOrderItemRequest(productoBId, Quantity:  5m, UnitPrice: 10m, VatPct: 15m),
             ]), CancellationToken.None);
 
         crear.IsSuccess.Should().BeTrue(crear.Error);
         var oc = crear.Value!;
-        oc.Status.Should().Be("Borrador");
-        oc.OrderNumber.Should().Be("OC-0001");
+        oc.Status.Should().Be("Draft");
+        oc.OrderNumber.Should().Be("PO-0001");
 
         // Subtotal = 10*5 + 5*10 = 100; IVA 15% = 15; Total = 115
         oc.Subtotal.Should().Be(100m);
@@ -70,14 +70,14 @@ public sealed class OrdenCompraFlujoCompletoTests
         oc.Total.Should().Be(115m);
 
         // â”€â”€ PASO 2: Enviar OC â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        var enviar = await mediator.Send(new EnviarOrdenCompraCommand(oc.Id), CancellationToken.None);
+        var enviar = await mediator.Send(new SendOrderPurchaseCommand(oc.Id), CancellationToken.None);
         enviar.IsSuccess.Should().BeTrue(enviar.Error);
-        enviar.Value!.Status.Should().Be("Enviada");
+        enviar.Value!.Status.Should().Be("Sent");
 
         // â”€â”€ PASO 3: Aprobar OC â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        var aprobar = await mediator.Send(new AprobarOrdenCompraCommand(oc.Id), CancellationToken.None);
+        var aprobar = await mediator.Send(new ApproveOrderPurchaseCommand(oc.Id), CancellationToken.None);
         aprobar.IsSuccess.Should().BeTrue(aprobar.Error);
-        aprobar.Value!.Status.Should().Be("Aprobada");
+        aprobar.Value!.Status.Should().Be("Approved");
 
         // â”€â”€ PASO 4: Factura 1 â€” A:6 uds, B:5 uds (parcial en A, total en B) â”€â”€
         var factura1 = BuildFacturaAprobada(subscriberId, proveedor.Id,
@@ -86,14 +86,14 @@ public sealed class OrdenCompraFlujoCompletoTests
             userId, db, "001-001-000000001");
 
         var vincular1 = await mediator.Send(
-            new VincularFacturaAOrdenCompraCommand(oc.Id, factura1.Id), CancellationToken.None);
+            new LinkInvoiceToPurchaseOrderCommand(oc.Id, factura1.Id), CancellationToken.None);
 
         vincular1.IsSuccess.Should().BeTrue(vincular1.Error);
-        vincular1.Value!.Status.Should().Be("RecibidaParcial",
+        vincular1.Value!.Status.Should().Be("PartiallyReceived",
             "B ya estÃ¡ completo pero A tiene 4 pendientes â†’ RecibidaParcial");
 
         // Verificar detalles vÃ­a GetById
-        var detalle1 = (await mediator.Send(new GetOrdenCompraByIdQuery(oc.Id), CancellationToken.None)).Value!;
+        var detalle1 = (await mediator.Send(new GetPurchaseOrderByIdQuery(oc.Id), CancellationToken.None)).Value!;
         var lineaA1  = detalle1.Lines.First(d => d.ProductId == productoAId);
         var lineaB1  = detalle1.Lines.First(d => d.ProductId == productoBId);
 
@@ -109,14 +109,14 @@ public sealed class OrdenCompraFlujoCompletoTests
             userId, db, "001-001-000000002");
 
         var vincular2 = await mediator.Send(
-            new VincularFacturaAOrdenCompraCommand(oc.Id, factura2.Id), CancellationToken.None);
+            new LinkInvoiceToPurchaseOrderCommand(oc.Id, factura2.Id), CancellationToken.None);
 
         vincular2.IsSuccess.Should().BeTrue(vincular2.Error);
-        vincular2.Value!.Status.Should().Be("Cerrada",
+        vincular2.Value!.Status.Should().Be("Closed",
             "A ya tiene 10/10, B tiene 5/5 â†’ OC cierra completamente");
 
         // Verificar cantidades finales
-        var detalleFinal = (await mediator.Send(new GetOrdenCompraByIdQuery(oc.Id), CancellationToken.None)).Value!;
+        var detalleFinal = (await mediator.Send(new GetPurchaseOrderByIdQuery(oc.Id), CancellationToken.None)).Value!;
         var lineaAFinal  = detalleFinal.Lines.First(d => d.ProductId == productoAId);
         lineaAFinal.InvoicedQuantity.Should().Be(10m);
         lineaAFinal.PendingBillingQuantity.Should().Be(0m);
@@ -131,12 +131,12 @@ public sealed class OrdenCompraFlujoCompletoTests
             userId, db, "001-001-000000003");
 
         var vincularExtra = await mediator.Send(
-            new VincularFacturaAOrdenCompraCommand(oc.Id, facturaExtra.Id), CancellationToken.None);
+            new LinkInvoiceToPurchaseOrderCommand(oc.Id, facturaExtra.Id), CancellationToken.None);
 
         vincularExtra.IsSuccess.Should().BeFalse(
             "la OC estÃ¡ Cerrada â€” no puede recibir mÃ¡s facturas");
-        vincularExtra.Error.Should().Contain("Aprobada",
-            "el handler rechaza OC fuera de estado Aprobada/RecibidaParcial");
+        vincularExtra.Error.Should().Contain("PartiallyReceived",
+            "el handler rechaza OC fuera de estado Approved/PartiallyReceived");
     }
 
     // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -162,7 +162,8 @@ public sealed class OrdenCompraFlujoCompletoTests
             seed.UserId,
             purchaseCode: "SKU-INT-02",
             isService: false,
-            tracksStock: true);
+            tracksStock: true,
+            companyId: seed.CompanyId);
 
         db.Products.Add(productoB);
         await db.SaveChangesAsync(CancellationToken.None);

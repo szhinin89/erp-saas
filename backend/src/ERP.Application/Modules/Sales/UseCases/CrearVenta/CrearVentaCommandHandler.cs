@@ -55,6 +55,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         _taxRateRepository   = taxRateRepository;
         _activity            = activity;
         _currentSubscriber       = currentSubscriber;
+        _currentCompany        = currentCompany;
         _currentUser         = currentUser;
         _unitOfWork          = unitOfWork;
         _logger              = logger;

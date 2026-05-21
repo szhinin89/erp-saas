@@ -8,7 +8,7 @@ using Moq;
 
 namespace ERP.Application.Tests.Proveedores;
 
-public sealed class CreateProveedorCommandValidatorTests
+public sealed class CreateSupplierCommandValidatorTests
 {
     private static string ValidSociedadPrivadaRuc()
     {
@@ -22,7 +22,7 @@ public sealed class CreateProveedorCommandValidatorTests
         throw new InvalidOperationException("RUC de prueba no encontrado.");
     }
 
-    private static CreateProveedorCommandValidator CreateValidator(
+    private static CreateSupplierCommandValidator CreateValidator(
         Mock<ISupplierRepository>? repo = null,
         Guid? subscriberId = null)
     {
@@ -30,7 +30,7 @@ public sealed class CreateProveedorCommandValidatorTests
         var tid = subscriberId ?? Guid.NewGuid();
         var tenant = new Mock<ICurrentSubscriber>();
         tenant.SetupGet(x => x.SubscriberId).Returns(tid);
-        return new CreateProveedorCommandValidator(r.Object, tenant.Object);
+        return new CreateSupplierCommandValidator(r.Object, tenant.Object);
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public sealed class CreateProveedorCommandValidatorTests
             .ReturnsAsync(true);
 
         var v = CreateValidator(repo);
-        var result = await v.ValidateAsync(new CreateProveedorCommand(
+        var result = await v.ValidateAsync(new CreateSupplierCommand(
             Supplier.TypeLegal,
             "ACME",
             ruc,
@@ -52,7 +52,7 @@ public sealed class CreateProveedorCommandValidatorTests
             "Contado"));
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateProveedorCommand.Ruc)
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateSupplierCommand.Ruc)
             && e.ErrorMessage.Contains("Ya existe", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -67,14 +67,14 @@ public sealed class CreateProveedorCommandValidatorTests
             .ReturnsAsync(false);
 
         var v = CreateValidator(repo);
-        var result = await v.ValidateAsync(new CreateProveedorCommand(
+        var result = await v.ValidateAsync(new CreateSupplierCommand(
             Supplier.TypeLegal,
             "ACME",
             ruc,
             null, null, null, "Contado"));
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateProveedorCommand.Ruc));
+        result.Errors.Should().Contain(e => e.PropertyName == nameof(CreateSupplierCommand.Ruc));
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public sealed class CreateProveedorCommandValidatorTests
 
         var v = CreateValidator(repo);
         // 13 dígitos pero dígito verificador incorrecto para sociedad privada
-        var result = await v.ValidateAsync(new CreateProveedorCommand(
+        var result = await v.ValidateAsync(new CreateSupplierCommand(
             Supplier.TypeLegal,
             "ACME",
             "1790016910001",
@@ -94,7 +94,7 @@ public sealed class CreateProveedorCommandValidatorTests
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e =>
-            e.PropertyName == nameof(CreateProveedorCommand.Ruc)
+            e.PropertyName == nameof(CreateSupplierCommand.Ruc)
             && e.ErrorMessage.Contains("SRI", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -107,7 +107,7 @@ public sealed class CreateProveedorCommandValidatorTests
             .ReturnsAsync(false);
 
         var v = CreateValidator(repo);
-        var result = await v.ValidateAsync(new CreateProveedorCommand(
+        var result = await v.ValidateAsync(new CreateSupplierCommand(
             Supplier.TypeLegal,
             "Proveedor OK SA",
             ruc,

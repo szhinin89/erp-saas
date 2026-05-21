@@ -1,13 +1,11 @@
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
-using ERP.Application.Common.Interfaces;
-using ERP.Application.Billing.Governance;
+using ERP.Application.Navigation;
 using ERP.Application.Subscriptions;
-using MediatR;
-using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
-using ERP.Domain.Subscribers.Entities;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Subscribers.Interfaces;
+using MediatR;
 
 namespace ERP.Application.Access.UseCases.RegisterSubscriberWithAdmin;
 
@@ -17,32 +15,23 @@ public class RegisterSubscriberWithAdminHandler : IRequestHandler<RegisterSubscr
     private readonly IAccessRepository _accessRepository;
     private readonly IAccessTokenService _tokenService;
     private readonly IDeploymentFeatureFlags _deployment;
-    private readonly IPasswordHasher _passwordHasher;
-    private readonly ISubscriberOnboardingService _onboarding;
     private readonly ISessionModulesResolver _sessionModules;
-    private readonly ICompanyProvisioningService _companyProvisioning;
-    private readonly IBillingGovernanceService _billingGovernance;
+    private readonly ISubscriberProvisioningOrchestrator _provisioning;
 
     public RegisterSubscriberWithAdminHandler(
         ISubscriberRepository tenantRepository,
         IAccessRepository accessRepository,
         IAccessTokenService tokenService,
         IDeploymentFeatureFlags deployment,
-        IPasswordHasher passwordHasher,
-        ISubscriberOnboardingService onboarding,
         ISessionModulesResolver sessionModules,
-        ICompanyProvisioningService companyProvisioning,
-        IBillingGovernanceService billingGovernance)
+        ISubscriberProvisioningOrchestrator provisioning)
     {
         _tenantRepository = tenantRepository;
         _accessRepository = accessRepository;
         _tokenService = tokenService;
         _deployment = deployment;
-        _passwordHasher = passwordHasher;
-        _onboarding = onboarding;
         _sessionModules = sessionModules;
-        _companyProvisioning = companyProvisioning;
-        _billingGovernance = billingGovernance;
+        _provisioning = provisioning;
     }
 
     public Task<Result<SessionResponseDto>> HandleAsync(RegisterSubscriberWithAdminCommand command, CancellationToken ct = default)
@@ -54,8 +43,7 @@ public class RegisterSubscriberWithAdminHandler : IRequestHandler<RegisterSubscr
         if (string.IsNullOrWhiteSpace(slug))
             return Result<SessionResponseDto>.Failure("Slug inválido.");
 
-        var existingSubscriber = await _tenantRepository.GetBySlugAsync(slug, ct);
-        if (existingSubscriber is not null)
+        if (await _tenantRepository.GetBySlugAsync(slug, ct) is not null)
             return Result<SessionResponseDto>.Failure("El slug ya está en uso.");
 
         var tenantQuota = await DeploymentQuota.GetBlockingReasonIfAtActiveSubscriberCapAsync(_deployment, _tenantRepository, ct);
@@ -70,65 +58,58 @@ public class RegisterSubscriberWithAdminHandler : IRequestHandler<RegisterSubscr
         if (userQuota is not null)
             return Result<SessionResponseDto>.Failure(userQuota);
 
-        var tenant = Subscriber.Create(
-            command.SubscriberName,
-            slug,
-            createdBy: Guid.Empty,
-            passwordResetMode: command.PasswordResetMode,
-            ruc: command.Ruc,
-            shortName: command.ShortName,
-            tradeName: command.TradeName,
-            dinardap: command.Dinardap,
-            logoUrl: command.LogoUrl,
-            displayOrder: command.DisplayOrder,
-            priority: command.Priority);
-        await _tenantRepository.AddAsync(tenant, ct);
-        await _tenantRepository.SaveChangesAsync(ct);
+        try
+        {
+            var provisioned = await _provisioning.ProvisionNewSubscriberWithAdminAsync(
+                new SubscriberProvisioningRequest(
+                    SubscriberName: command.SubscriberName,
+                    SubscriberSlug: slug,
+                    AdminFirstName: command.AdminFirstName,
+                    AdminLastName: command.AdminLastName,
+                    AdminEmail: email,
+                    AdminPassword: command.AdminPassword,
+                    ActorId: Guid.Empty,
+                    PasswordResetMode: command.PasswordResetMode,
+                    Ruc: command.Ruc,
+                    ShortName: command.ShortName,
+                    TradeName: command.TradeName,
+                    Dinardap: command.Dinardap,
+                    LogoUrl: command.LogoUrl,
+                    DisplayOrder: command.DisplayOrder,
+                    Priority: command.Priority),
+                ct);
 
-        await _billingGovernance.EnsureBillingAccountAsync(tenant.Id, email, Guid.Empty, ct);
+            var membershipCap = await DeploymentQuota.GetBlockingReasonIfAtTenantCompanyUserMembershipUserCapAsync(
+                _deployment, _accessRepository, provisioned.Subscriber.Id, ct);
+            if (membershipCap is not null)
+                return Result<SessionResponseDto>.Failure(membershipCap);
 
-        var passwordHash = _passwordHasher.HashPassword(command.AdminPassword);
-        var identityUser = IdentityUser.Create(
-            firstName: command.AdminFirstName,
-            lastName: command.AdminLastName,
-            email: email,
-            passwordHash: passwordHash,
-            createdBy: Guid.Empty);
-        await _accessRepository.AddUserAsync(identityUser, ct);
-
-        await _accessRepository.SaveChangesAsync(ct);
-
-        var defaultCompany = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);
-
-        var membershipCap = await DeploymentQuota.GetBlockingReasonIfAtTenantCompanyUserMembershipUserCapAsync(
-            _deployment, _accessRepository, tenant.Id, ct);
-        if (membershipCap is not null)
-            return Result<SessionResponseDto>.Failure(membershipCap);
-
-        var membership = CompanyUserMembership.Create(
-            companyId: defaultCompany.Id,
-            identityUserId: identityUser.Id,
-            role: "Admin",
-            profileId: null,
-            createdBy: Guid.Empty);
-        await _accessRepository.AddCompanyUserMembershipAsync(membership, ct);
-
-        await _accessRepository.SaveChangesAsync(ct);
-
-        // Onboard the new tenant: default profiles, Consumidor Final, main branch, main warehouse.
-        await _onboarding.OnboardAsync(tenant.Id, actorId: identityUser.Id, ct);
-
-        var sessionToken = _tokenService.GenerateSessionToken(identityUser, tenant.Id, "Admin", defaultCompany.Id);
-        var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, ct);
-        return Result<SessionResponseDto>.Success(new SessionResponseDto(
-            UserId: identityUser.Id,
-            FullName: identityUser.FullName,
-            Email: identityUser.Email.Value,
-            SubscriberId: tenant.Id,
-            Role: "Admin",
-            Token: sessionToken,
-            tenant.PlanCode,
-            modules));
+            var sessionToken = _tokenService.GenerateSessionToken(
+                provisioned.AdminUser,
+                provisioned.Subscriber.Id,
+                "Admin",
+                provisioned.DefaultCompany.Id);
+            var modules = await _sessionModules.GetEnabledModuleKeysAsync(provisioned.Subscriber.Id, ct);
+            return Result<SessionResponseDto>.Success(new SessionResponseDto(
+                UserId: provisioned.AdminUser.Id,
+                FullName: provisioned.AdminUser.FullName,
+                Email: provisioned.AdminUser.Email.Value,
+                SubscriberId: provisioned.Subscriber.Id,
+                Role: "Admin",
+                Token: sessionToken,
+                provisioned.Subscriber.PlanCode,
+                modules)
+            {
+                CompanyId = provisioned.DefaultCompany.Id,
+            });
+        }
+        catch (CompanyRucAlreadyExistsException ex)
+        {
+            return Result<SessionResponseDto>.Failure(ex.Message, CompanyRucAlreadyExistsException.ErrorCode);
+        }
+        catch (ArgumentException ex)
+        {
+            return Result<SessionResponseDto>.Failure(ex.Message);
+        }
     }
 }
-

@@ -312,30 +312,30 @@
 .sap-plans-summary-stat-value--success { color: var(--color-success); }
 
 /* ── Tenant section ──────────────────────────────────────── */
-.sap-tenant-toolbar {
+.sap-subscriber-toolbar {
   display: flex;
   gap: var(--space-3);
   flex-wrap: wrap;
   margin-bottom: var(--space-4);
 }
 
-.sap-tenant-search { flex: 1; min-width: 200px; }
-.sap-tenant-select { width: 180px; }
+.sap-subscriber-search { flex: 1; min-width: 200px; }
+.sap-subscriber-select { width: 180px; }
 
 /* tabla → .table (zh-ui.css) — solo clases de celda específicas abajo */
-.sap-tenant-tableWrap { overflow-x: auto; }
+.sap-subscriber-tableWrap { overflow-x: auto; }
 
-.sap-tenant-company { font-weight: 600; }
-.sap-tenant-id      { font-size: 11px; }
-.sap-tenant-dates   { font-size: 12px; }
+.sap-subscriber-company { font-weight: 600; }
+.sap-subscriber-id      { font-size: 11px; }
+.sap-subscriber-dates   { font-size: 12px; }
 
-/* sap-tenant-planBadge base → .badge (zh-ui.css) */
-.sap-tenant-planBadge--tier-starter      { background: var(--color-secondary-container);  color: var(--color-on-secondary-container); }
-.sap-tenant-planBadge--tier-business     { background: rgba(26,122,74,0.10);              color: var(--color-success); }
-.sap-tenant-planBadge--tier-professional { background: rgba(26,122,74,0.10);              color: var(--color-success); }
-.sap-tenant-planBadge--tier-enterprise   { background: var(--color-tertiary-fixed);        color: var(--color-on-tertiary-fixed-variant); }
-.sap-tenant-planBadge--tier-default      { background: var(--color-surface-container);     color: var(--color-text-secondary); }
+/* sap-subscriber-planBadge base → .badge (zh-ui.css) */
+.sap-subscriber-planBadge--tier-starter      { background: var(--color-secondary-container);  color: var(--color-on-secondary-container); }
+.sap-subscriber-planBadge--tier-business     { background: rgba(26,122,74,0.10);              color: var(--color-success); }
+.sap-subscriber-planBadge--tier-professional { background: rgba(26,122,74,0.10);              color: var(--color-success); }
+.sap-subscriber-planBadge--tier-enterprise   { background: var(--color-tertiary-fixed);        color: var(--color-on-tertiary-fixed-variant); }
+.sap-subscriber-planBadge--tier-default      { background: var(--color-surface-container);     color: var(--color-text-secondary); }
 
-/* .sap-tenant-status → .zh-status.zh-status--active/suspended (zh-ui.css) */
+/* .sap-subscriber-status → .zh-status.zh-status--active/suspended (zh-ui.css) */
 
 /* .zh-inline-check (zh-ui.css) handles form checkboxes */

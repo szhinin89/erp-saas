@@ -56,8 +56,8 @@ export function CompanyConfigPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved,     setSaved]     = useState(false);
 
-  const tenantState = useAsync(
-    () => subscriberId ? companyService.getTenant(subscriberId) : Promise.resolve(null),
+  const subscriberState = useAsync(
+    () => subscriberId ? companyService.getSubscriber(subscriberId) : Promise.resolve(null),
     !!subscriberId,
   );
 
@@ -69,7 +69,7 @@ export function CompanyConfigPage() {
   });
 
   useEffect(() => {
-    const d = tenantState.data;
+    const d = subscriberState.data;
     if (!d) return;
     reset({
       companyName:       d.name ?? '',
@@ -82,7 +82,7 @@ export function CompanyConfigPage() {
       initialFolio:      1001,
       defaultCreditDays: d.defaultCreditDays ?? 30,
     });
-  }, [tenantState.data, reset]);
+  }, [subscriberState.data, reset]);
 
   const onSubmit = handleSubmit(async (values) => {
     if (!canEdit || !subscriberId) return;
@@ -90,19 +90,19 @@ export function CompanyConfigPage() {
     setSaved(false);
     setSaving(true);
     try {
-      await companyService.updateTenantCompany(subscriberId, {
+      await companyService.updateSubscriberCompany(subscriberId, {
         name:         values.companyName,
-        slug:         tenantState.data?.slug ?? '',
+        slug:         subscriberState.data?.slug ?? '',
         ruc:          values.ruc  || null,
         shortName:    values.shortName || null,
-        tradeName:    tenantState.data?.tradeName ?? null,
-        dinardap:     tenantState.data?.dinardap  ?? null,
-        logoUrl:      tenantState.data?.logoUrl   ?? null,
-        displayOrder: tenantState.data?.displayOrder ?? 0,
-        priority:     tenantState.data?.priority     ?? 0,
+        tradeName:    subscriberState.data?.tradeName ?? null,
+        dinardap:     subscriberState.data?.dinardap  ?? null,
+        logoUrl:      subscriberState.data?.logoUrl   ?? null,
+        displayOrder: subscriberState.data?.displayOrder ?? 0,
+        priority:     subscriberState.data?.priority     ?? 0,
       });
 
-      await companyService.updateTenantOperationalSettings(subscriberId, {
+      await companyService.updateSubscriberOperationalSettings(subscriberId, {
         currency:          values.currency,
         language:          values.language,
         timezone:          values.timezone,
@@ -111,7 +111,7 @@ export function CompanyConfigPage() {
       });
 
       setSaved(true);
-      tenantState.refetch();
+      subscriberState.refetch();
     } catch (err) {
       setSaveError(formatApiError(err));
     } finally {
@@ -122,7 +122,7 @@ export function CompanyConfigPage() {
   const handleDiscard = () => {
     setSaveError(null);
     setSaved(false);
-    const d = tenantState.data;
+    const d = subscriberState.data;
     if (d) {
       reset({
         companyName:       d.name ?? '',
@@ -139,7 +139,7 @@ export function CompanyConfigPage() {
   };
 
   if (!canView) return <NoAccessPage title="Configuración de Empresa" />;
-  if (tenantState.loading) return <LoadingState />;
+  if (subscriberState.loading) return <LoadingState />;
 
   return (
     <div className="pg-page">
@@ -156,8 +156,8 @@ export function CompanyConfigPage() {
         </div>
       </div>
 
-      {tenantState.error && (
-        <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={tenantState.error} />
+      {subscriberState.error && (
+        <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={subscriberState.error} />
       )}
       {saveError && (
         <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={saveError} />

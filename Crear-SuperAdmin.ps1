@@ -1,15 +1,25 @@
 <#
 .SYNOPSIS
-    Crea el SuperAdmin global en el ERP SaaS, usando el modo first-run.
+    Crea el SuperAdmin global en el ERP SaaS (modo first-run).
 .DESCRIPTION
-    Este script interactivo guía al usuario para:
-      - Conectarse a la API.
-      - Capturar el token generado por la API.
-      - Enviar los datos del SuperAdmin al endpoint de creación.
-      - Validar el login (POST /api/auth/superadmin-login; la API envuelve el JWT en responseObject.token).
+    Guía interactiva para:
+      - Conectar con la API.
+      - Usar el token efímero de first-run (tabla first_run_setup_state, hash en BD).
+      - Crear el operador en identity_users (user_type=Platform, platform_role=SuperAdmin).
+      - Verificar JWT (respuesta del setup o login POST /api/platform/auth/login).
+
+    NOTAS:
+      - El token first-run expira en ~15 minutos y solo se muestra en consola del servidor
+        (o vía POST /api/dev/reset-first-run en Development).
+      - Deployment:InitialSuperAdminSetupToken NO valida este flujo; no uses esa clave como sustituto.
+      - El login requiere Deployment:SuperAdminPanelEnabled = true (por defecto suele estarlo).
 .EXAMPLE
     .\Crear-SuperAdmin.ps1
+.EXAMPLE
+    $env:ERP_SUPERADMIN_SETUP_TOKEN = '<token-desde-consola>'; .\Crear-SuperAdmin.ps1
 #>
+
+$ErrorActionPreference = "Stop"
 
 # Salida UTF-8 en consola Windows (acentos en mensajes del script)
 try {
@@ -24,29 +34,158 @@ try {
 }
 catch { }
 
-# Colores para la consola
-$Host.UI.RawUI.ForegroundColor = "White"
-
 function Write-Info { Write-Host "[INFO] $($args[0])" -ForegroundColor Cyan }
 function Write-Success { Write-Host "[SUCCESS] $($args[0])" -ForegroundColor Green }
-function Write-Error { Write-Host "[ERROR] $($args[0])" -ForegroundColor Red }
-function Write-Warning { Write-Host "[WARNING] $($args[0])" -ForegroundColor Yellow }
+function Write-Err { Write-Host "[ERROR] $($args[0])" -ForegroundColor Red }
+function Write-Warn { Write-Host "[WARNING] $($args[0])" -ForegroundColor Yellow }
+
+function Get-ApiResponseObject {
+    param([object] $Response)
+    if ($null -eq $Response) { return $null }
+    if ($null -ne $Response.responseObject) { return $Response.responseObject }
+    if ($null -ne $Response.ResponseObject) { return $Response.ResponseObject }
+    return $Response
+}
+
+function Get-ApiSuccess {
+    param([object] $Response)
+    if ($null -eq $Response) { return $false }
+    $ok = $Response.success
+    if ($null -eq $ok) { $ok = $Response.Success }
+    return [bool]$ok
+}
+
+function Get-ApiMessage {
+    param([object] $Response)
+    if ($null -eq $Response) { return $null }
+    $msg = $Response.message
+    if ([string]::IsNullOrWhiteSpace($msg)) { $msg = $Response.Message }
+    return $msg
+}
+
+function Get-AuthTokenFromResponse {
+    param([object] $Response)
+    $auth = Get-ApiResponseObject $Response
+    if (-not $auth) { return $null }
+    $token = $auth.token
+    if ([string]::IsNullOrWhiteSpace($token)) { $token = $auth.Token }
+    if ([string]::IsNullOrWhiteSpace($token)) { return $null }
+    return [string]$token
+}
+
+function Read-HttpErrorBody {
+    param([System.Management.Automation.ErrorRecord] $Err)
+    if ($Err.ErrorDetails -and $Err.ErrorDetails.Message) {
+        return [string]$Err.ErrorDetails.Message
+    }
+    $resp = $Err.Exception.Response
+    if ($null -eq $resp) { return $null }
+    try {
+        $stream = $resp.GetResponseStream()
+        if ($null -eq $stream) { return $null }
+        $reader = New-Object System.IO.StreamReader($stream)
+        $text = $reader.ReadToEnd()
+        $reader.Dispose()
+        return $text
+    }
+    catch {
+        return $null
+    }
+}
+
+function Read-SecurePlainText {
+    param([string] $Prompt)
+    $secure = Read-Host $Prompt -AsSecureString
+    if ($null -eq $secure -or $secure.Length -eq 0) { return "" }
+    $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+    try {
+        return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr)
+    }
+    finally {
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) | Out-Null
+    }
+}
+
+function Test-ApiReachable {
+    param([Parameter(Mandatory)][string] $ApiBase)
+    $base = $ApiBase.TrimEnd('/')
+    $candidates = @(
+        "$base/health/live",
+        "$base/swagger/index.html"
+    )
+    foreach ($uri in $candidates) {
+        try {
+            $r = Invoke-WebRequest -Uri $uri -Method Get -TimeoutSec 8 -UseBasicParsing
+            if ($r.StatusCode -eq 200) {
+                Write-Success "API accesible ($uri)."
+                return $true
+            }
+        }
+        catch { }
+    }
+    return $false
+}
+
+function Invoke-SetupSuperAdmin {
+    param(
+        [Parameter(Mandatory)][string] $ApiBase,
+        [Parameter(Mandatory)][string] $SetupToken,
+        [Parameter(Mandatory)][string] $FirstName,
+        [Parameter(Mandatory)][string] $LastName,
+        [Parameter(Mandatory)][string] $Email,
+        [Parameter(Mandatory)][string] $Password
+    )
+
+    $uri = "$($ApiBase.TrimEnd('/'))/api/setup/superadmin"
+    $body = @{
+        setupToken = $SetupToken.Trim()
+        firstName  = $FirstName.Trim()
+        lastName   = $LastName.Trim()
+        email      = $Email.Trim()
+        password   = $Password
+    } | ConvertTo-Json -Compress
+
+    Write-Info "Enviando solicitud a $uri ..."
+    return Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json; charset=utf-8"
+}
+
+function Invoke-PlatformLogin {
+    param(
+        [Parameter(Mandatory)][string] $ApiBase,
+        [Parameter(Mandatory)][string] $Email,
+        [Parameter(Mandatory)][string] $Password,
+        [switch] $UseLegacyRoute
+    )
+
+    $base = $ApiBase.TrimEnd('/')
+    $uri = if ($UseLegacyRoute) { "$base/api/auth/superadmin-login" } else { "$base/api/platform/auth/login" }
+    $body = @{
+        email    = $Email.Trim()
+        password = $Password
+    } | ConvertTo-Json -Compress
+
+    return Invoke-RestMethod -Uri $uri -Method Post -Body $body -ContentType "application/json; charset=utf-8"
+}
+
+function Write-SetupFailureHints {
+    Write-Warn "Comprueba:"
+    Write-Warn "  1) Token copiado del bloque FIRST-RUN en consola del API (expira ~15 min)."
+    Write-Warn "  2) En Development: POST /api/dev/reset-first-run para un token nuevo."
+    Write-Warn "  3) Si ya hay SuperAdmin: first-run está cerrado (solo uno por instancia)."
+    Write-Warn "  4) Deployment:InitialSuperAdminSetupToken NO sirve para este endpoint."
+}
 
 # ------------------------------------------------------------
 # 1. Configuración del endpoint de la API
 # ------------------------------------------------------------
 $defaultUrl = "http://localhost:5003"
-Write-Info "Por favor, indica la URL de la API (dejar vacío para usar $defaultUrl):"
+Write-Info "Indica la URL de la API (vacío = $defaultUrl):"
 $userUrl = Read-Host "URL"
-if ([string]::IsNullOrWhiteSpace($userUrl)) { $apiUrl = $defaultUrl } else { $apiUrl = $userUrl }
+if ([string]::IsNullOrWhiteSpace($userUrl)) { $apiUrl = $defaultUrl } else { $apiUrl = $userUrl.TrimEnd('/') }
 
-# Verificar conectividad
 Write-Info "Probando conexión a $apiUrl ..."
-try {
-    $test = Invoke-WebRequest -Uri "$apiUrl/swagger" -Method Get -TimeoutSec 5 -UseBasicParsing
-    Write-Success "API accesible."
-} catch {
-    Write-Error "No se pudo conectar a la API en $apiUrl. ¿Está corriendo? (dotnet run)"
+if (-not (Test-ApiReachable -ApiBase $apiUrl)) {
+    Write-Err "No se pudo conectar a la API en $apiUrl. ¿Está corriendo? (dotnet run --project backend/src/ERP.API)"
     exit 1
 }
 
@@ -56,128 +195,166 @@ try {
 Write-Info "Ingresa los datos del SuperAdmin:"
 do {
     $email = Read-Host "Email (ej. admin@erp.com)"
+    $email = $email.Trim()
     if ($email -notmatch '^[^@]+@[^@]+\.[^@]+$') {
-        Write-Error "Formato de email inválido. Intenta de nuevo."
+        Write-Err "Formato de email inválido. Intenta de nuevo."
     }
 } while ($email -notmatch '^[^@]+@[^@]+\.[^@]+$')
 
 $nombreCompleto = Read-Host "Nombre completo (nombre y apellido, p. ej. Ana Garcia)"
-# Dividir en FirstName y LastName (primer palabra como nombre, el resto como apellido)
-$nameParts = $nombreCompleto -split ' ', 2
+$nameParts = $nombreCompleto.Trim() -split '\s+', 2
 $firstName = $nameParts[0]
 $lastName = if ($nameParts.Length -gt 1) { $nameParts[1] } else { "" }
 if ([string]::IsNullOrWhiteSpace($firstName) -or [string]::IsNullOrWhiteSpace($lastName)) {
-    Write-Error "Se requieren al menos dos palabras (nombre y apellido), como exige la API."
+    Write-Err "Se requieren al menos dos palabras (nombre y apellido), como exige la API."
     exit 1
 }
 
 do {
-    $password = Read-Host "Contraseña (mínimo 10 caracteres, igual que la API)" -AsSecureString
-    $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($password)
-    $plainPassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+    $plainPassword = Read-SecurePlainText "Contraseña (mínimo 10 caracteres, igual que la API)"
     if ($plainPassword.Length -lt 10) {
-        Write-Error "La contraseña debe tener al menos 10 caracteres."
+        Write-Err "La contraseña debe tener al menos 10 caracteres."
         $valid = $false
-    } else {
+    }
+    else {
         $valid = $true
     }
 } while (-not $valid)
 
 Write-Info "Confirmar contraseña:"
-$confirm = Read-Host "Repite la contraseña" -AsSecureString
-$BSTR2 = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($confirm)
-$plainConfirm = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR2)
+$plainConfirm = Read-SecurePlainText "Repite la contraseña"
 if ($plainPassword -ne $plainConfirm) {
-    Write-Error "Las contraseñas no coinciden."
+    Write-Err "Las contraseñas no coinciden."
     exit 1
 }
 
 # ------------------------------------------------------------
-# 3. Obtener el token first-run (desde la consola del servidor)
+# 3. Token efímero first-run (consola del servidor)
 # ------------------------------------------------------------
-Write-Warning "Asegúrate de que la API esté ejecutándose y que no exista un SuperAdmin previamente."
-Write-Info "Si ya existe un SuperAdmin, el modo first-run no estará activo y este script fallará."
-Write-Info "La API imprime el token en el bloque FIRST-RUN (consola del servidor)."
-Read-Host "Presiona ENTER cuando tengas ese token copiado"
-$setupToken = Read-Host "Pega aquí el token (ej. base64 ...==)"
+Write-Warn "Requisitos: API en marcha, sin SuperAdmin previo, token first-run vigente (~15 min)."
+Write-Info "Copia el token del bloque FIRST-RUN en la consola del proceso ERP.API."
+Write-Info "Development: POST $apiUrl/api/dev/reset-first-run devuelve setupToken en JSON."
+
+$setupTokenDefault = $env:ERP_SUPERADMIN_SETUP_TOKEN
+if (-not [string]::IsNullOrWhiteSpace($env:Deployment__InitialSuperAdminSetupToken)) {
+    Write-Warn "Se ignoró Deployment__InitialSuperAdminSetupToken (no valida POST /api/setup/superadmin)."
+}
+
+if ([string]::IsNullOrWhiteSpace($setupTokenDefault)) {
+    Read-Host "Presiona ENTER cuando tengas el token copiado (usa el token en los próximos ~15 min)"
+    $setupToken = Read-Host "Pega aquí el token (ej. base64 ...==)"
+}
+else {
+    Write-Info "ERP_SUPERADMIN_SETUP_TOKEN detectado (debe ser el token efímero de consola, no InitialSuperAdminSetupToken)."
+    $setupToken = Read-Host "Pega el token o pulsa Enter para usar ERP_SUPERADMIN_SETUP_TOKEN"
+    if ([string]::IsNullOrWhiteSpace($setupToken)) {
+        $setupToken = $setupTokenDefault
+    }
+}
+
+if ([string]::IsNullOrWhiteSpace($setupToken)) {
+    Write-Err "El token de first-run es obligatorio."
+    exit 1
+}
 
 # ------------------------------------------------------------
-# 4. Construir el payload con los nombres correctos y llamar al endpoint
+# 4. Crear SuperAdmin (identity_users: Platform / SuperAdmin)
 # ------------------------------------------------------------
-$body = @{
-    SetupToken = $setupToken
-    Email = $email
-    FirstName = $firstName
-    LastName = $lastName
-    Password = $plainPassword
-} | ConvertTo-Json
-
-Write-Info "Enviando solicitud a $apiUrl/api/setup/claim-initial-superadmin ..."
-
+$setupTokenFromResponse = $null
 try {
-    $response = Invoke-RestMethod -Uri "$apiUrl/api/setup/claim-initial-superadmin" -Method Post -Body $body -ContentType "application/json; charset=utf-8"
-    $claimOk = $response.success
-    if ($null -eq $claimOk) { $claimOk = $response.Success }
-    if (-not $claimOk) {
-        $msg = $response.message
-        if ([string]::IsNullOrWhiteSpace($msg)) { $msg = $response.Message }
-        Write-Error "El servidor respondió sin éxito: $msg"
+    $response = Invoke-SetupSuperAdmin `
+        -ApiBase $apiUrl `
+        -SetupToken $setupToken `
+        -FirstName $firstName `
+        -LastName $lastName `
+        -Email $email `
+        -Password $plainPassword
+
+    if (-not (Get-ApiSuccess $response)) {
+        Write-Err "El servidor respondió sin éxito: $(Get-ApiMessage $response)"
+        Write-SetupFailureHints
         exit 1
     }
-    Write-Success "SuperAdmin creado. $(if ($response.message) { $response.message } else { $response.Message })"
-} catch {
-    Write-Error "Falló la creación del SuperAdmin."
-    if ($_.Exception.Response) {
-        $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-        $errorBody = $reader.ReadToEnd() | ConvertFrom-Json
-        Write-Error "Detalle: $($errorBody.title) - $($errorBody.errors | Out-String)"
-    } else {
-        Write-Error $_.Exception.Message
-    }
-    exit 1
-}
 
-# ------------------------------------------------------------
-# 5. Probar login del SuperAdmin (endpoint dedicado; cuerpo ApiResponse con responseObject.token)
-# ------------------------------------------------------------
-Write-Info "Probando superadmin-login con las credenciales proporcionadas..."
-$loginBody = @{
-    email    = $email
-    password = $plainPassword
-} | ConvertTo-Json
-
-$loginOk = $false
-try {
-    $loginResponse = Invoke-RestMethod -Uri "$apiUrl/api/auth/superadmin-login" -Method Post -Body $loginBody -ContentType "application/json; charset=utf-8"
-    $auth = $loginResponse.responseObject
-    if (-not $auth) { $auth = $loginResponse.ResponseObject }
-    $tokenValue = $null
-    if ($auth) {
-        $tokenValue = $auth.token
-        if ([string]::IsNullOrWhiteSpace($tokenValue)) { $tokenValue = $auth.Token }
-    }
-    $ok = $loginResponse.success
-    if ($null -eq $ok) { $ok = $loginResponse.Success }
-    if ($ok -and $auth -and -not [string]::IsNullOrWhiteSpace($tokenValue)) {
-        $loginOk = $true
-        Write-Success "Login verificado. SuperAdmin operativo."
-        $t = [string]$tokenValue
-        Write-Info "JWT (primeros 50 caracteres): $($t.Substring(0, [Math]::Min(50, $t.Length)))..."
-    }
-    else {
-        $msg = $loginResponse.message
-        if ([string]::IsNullOrWhiteSpace($msg)) { $msg = $loginResponse.Message }
-        Write-Error "Login respondió sin token. success=$ok message=$msg"
+    $setupTokenFromResponse = Get-AuthTokenFromResponse $response
+    Write-Success "SuperAdmin creado en identity_users. $(Get-ApiMessage $response)"
+    if ($setupTokenFromResponse) {
+        $t = $setupTokenFromResponse
+        Write-Info "JWT del setup (primeros 50 caracteres): $($t.Substring(0, [Math]::Min(50, $t.Length)))..."
     }
 }
 catch {
-    Write-Error "El SuperAdmin se creó, pero falló la verificación de login: $($_.Exception.Message)"
+    Write-Err "Falló la creación del SuperAdmin."
+    $raw = Read-HttpErrorBody $_
+    if ($raw) {
+        Write-Err "Detalle: $raw"
+        try {
+            $errorBody = $raw | ConvertFrom-Json
+            $detail = Get-ApiMessage $errorBody
+            if (-not [string]::IsNullOrWhiteSpace($detail)) {
+                Write-Err "--> $detail"
+            }
+            elseif ($errorBody.title) {
+                Write-Err "--> $($errorBody.title)"
+            }
+        }
+        catch { }
+    }
+    else {
+        Write-Err $_.Exception.Message
+    }
+    Write-SetupFailureHints
+    exit 1
 }
 
+# ------------------------------------------------------------
+# 5. Verificar login platform (opcional si el setup ya devolvió JWT)
+# ------------------------------------------------------------
+Write-Info "Verificando login platform (POST /api/platform/auth/login)..."
+Write-Info "Si falla, comprueba Deployment:SuperAdminPanelEnabled=true en configuración."
+
+$loginOk = -not [string]::IsNullOrWhiteSpace($setupTokenFromResponse)
 if ($loginOk) {
-    Write-Success "Proceso completado."
+    Write-Success "JWT recibido en la respuesta del setup; alta confirmada."
 }
-else {
-    Write-Warning "Proceso terminado con advertencias (revisar login arriba)."
-    exit 2
+
+foreach ($attempt in @(
+        @{ Label = "platform"; Legacy = $false },
+        @{ Label = "legacy superadmin-login"; Legacy = $true }
+    )) {
+    if ($loginOk) { break }
+    try {
+        Write-Info "Intento login ($($attempt.Label))..."
+        $loginResponse = Invoke-PlatformLogin -ApiBase $apiUrl -Email $email -Password $plainPassword -UseLegacyRoute:$attempt.Legacy
+        $tokenValue = Get-AuthTokenFromResponse $loginResponse
+
+        if ((Get-ApiSuccess $loginResponse) -and -not [string]::IsNullOrWhiteSpace($tokenValue)) {
+            $loginOk = $true
+            Write-Success "Login verificado ($($attempt.Label))."
+            $t = [string]$tokenValue
+            Write-Info "JWT (primeros 50 caracteres): $($t.Substring(0, [Math]::Min(50, $t.Length)))..."
+        }
+        else {
+            Write-Warn "Login $($attempt.Label): sin token. message=$(Get-ApiMessage $loginResponse)"
+        }
+    }
+    catch {
+        Write-Warn "Login $($attempt.Label) falló: $($_.Exception.Message)"
+        $raw = Read-HttpErrorBody $_
+        if ($raw) { Write-Warn "Detalle: $raw" }
+    }
 }
+
+$plainPassword = $null
+$plainConfirm = $null
+$setupToken = $null
+
+if ($loginOk) {
+    Write-Success "Proceso completado. Usuario en identity_users (Platform / SuperAdmin)."
+    Write-Info "Frontend: inicia sesión con el mismo email/contraseña (panel SuperAdmin)."
+    exit 0
+}
+
+Write-Warn "SuperAdmin creado, pero no se pudo verificar login."
+Write-Warn "Revisa Deployment:SuperAdminPanelEnabled y credenciales."
+exit 2

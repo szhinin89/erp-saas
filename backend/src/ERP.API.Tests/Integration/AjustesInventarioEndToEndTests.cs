@@ -31,24 +31,24 @@ public sealed class AjustesInventarioEndToEndTests
         var (bodegaId, productoId) = await SeedAsync(db, factory, stockInicial: 100m);
 
         // Crear ajuste +15 (sobrante)
-        var crear = await mediator.Send(new CrearAjusteCommand(
+        var crear = await mediator.Send(new CreateStockAdjustmentCommand(
             bodegaId, productoId, AdjustmentQty: +15m,
             Reason: "Sobrante", Notes: null), CancellationToken.None);
 
         crear.IsSuccess.Should().BeTrue(crear.Error);
-        crear.Value!.Status.Should().Be("Borrador");
-        crear.Value.AdjustmentNumber.Should().StartWith("AJ-");
+        crear.Value!.Status.Should().Be("Draft");
+        crear.Value.AdjustmentNumber.Should().StartWith("ADJ-");
 
         // Ejecutar
         var ejecutar = await mediator.Send(
-            new EjecutarAjusteCommand(crear.Value.Id), CancellationToken.None);
+            new ExecuteStockAdjustmentCommand(crear.Value.Id), CancellationToken.None);
 
         ejecutar.IsSuccess.Should().BeTrue(ejecutar.Error);
-        ejecutar.Value!.Status.Should().Be("Ejecutado");
+        ejecutar.Value!.Status.Should().Be("Executed");
 
         // Stock debe ser 115
         var stockResult = await mediator.Send(
-            new GetCurrentStockPorBodegaQuery(bodegaId, productoId), CancellationToken.None);
+            new GetCurrentStockPorWarehouseQuery(bodegaId, productoId), CancellationToken.None);
         stockResult.Value!.First(i => i.ProductId == productoId).AvailableQuantity.Should().Be(115m);
 
         // Movimiento registrado
@@ -74,20 +74,20 @@ public sealed class AjustesInventarioEndToEndTests
 
         var (bodegaId, productoId) = await SeedAsync(db, factory, stockInicial: 50m);
 
-        var crear = await mediator.Send(new CrearAjusteCommand(
+        var crear = await mediator.Send(new CreateStockAdjustmentCommand(
             bodegaId, productoId, AdjustmentQty: -10m,
             Reason: "Merma", Notes: "Productos vencidos"), CancellationToken.None);
 
         crear.IsSuccess.Should().BeTrue(crear.Error);
 
         var ejecutar = await mediator.Send(
-            new EjecutarAjusteCommand(crear.Value!.Id), CancellationToken.None);
+            new ExecuteStockAdjustmentCommand(crear.Value!.Id), CancellationToken.None);
 
         ejecutar.IsSuccess.Should().BeTrue(ejecutar.Error);
 
         // Stock: 50 - 10 = 40
         var stockResult = await mediator.Send(
-            new GetCurrentStockPorBodegaQuery(bodegaId, productoId), CancellationToken.None);
+            new GetCurrentStockPorWarehouseQuery(bodegaId, productoId), CancellationToken.None);
         stockResult.Value!.First(i => i.ProductId == productoId).AvailableQuantity.Should().Be(40m);
 
         var subscriberId = factory.MutableSubscriber.SubscriberId;
@@ -109,7 +109,7 @@ public sealed class AjustesInventarioEndToEndTests
 
         var (bodegaId, productoId) = await SeedAsync(db, factory, stockInicial: 5m);
 
-        var crear = await mediator.Send(new CrearAjusteCommand(
+        var crear = await mediator.Send(new CreateStockAdjustmentCommand(
             bodegaId, productoId, AdjustmentQty: -5m,
             Reason: "Ajuste fÃ­sico", Notes: null), CancellationToken.None);
 
@@ -125,7 +125,7 @@ public sealed class AjustesInventarioEndToEndTests
         await db.SaveChangesAsync(CancellationToken.None);
 
         var ejecutar = await mediator.Send(
-            new EjecutarAjusteCommand(crear.Value!.Id), CancellationToken.None);
+            new ExecuteStockAdjustmentCommand(crear.Value!.Id), CancellationToken.None);
 
         ejecutar.IsSuccess.Should().BeFalse();
         ejecutar.Error.Should().Contain("Stock insuficiente");
@@ -147,15 +147,15 @@ public sealed class AjustesInventarioEndToEndTests
 
         var (bodegaId, productoId) = await SeedAsync(db, factory, stockInicial: 30m);
 
-        var crear = await mediator.Send(new CrearAjusteCommand(
+        var crear = await mediator.Send(new CreateStockAdjustmentCommand(
             bodegaId, productoId, AdjustmentQty: -10m,
             Reason: "Robo", Notes: null), CancellationToken.None);
 
         var cancelar = await mediator.Send(
-            new CancelarAjusteCommand(crear.Value!.Id), CancellationToken.None);
+            new CancelStockAdjustmentCommand(crear.Value!.Id), CancellationToken.None);
 
         cancelar.IsSuccess.Should().BeTrue(cancelar.Error);
-        cancelar.Value!.Status.Should().Be("Cancelado");
+        cancelar.Value!.Status.Should().Be("Cancelled");
 
         // Stock intacto
         var subscriberId = factory.MutableSubscriber.SubscriberId;
@@ -175,17 +175,17 @@ public sealed class AjustesInventarioEndToEndTests
 
         var (bodegaId, productoId) = await SeedAsync(db, factory, stockInicial: 20m);
 
-        var crear = await mediator.Send(new CrearAjusteCommand(
+        var crear = await mediator.Send(new CreateStockAdjustmentCommand(
             bodegaId, productoId, +5m, "Ajuste fÃ­sico", null), CancellationToken.None);
 
-        await mediator.Send(new EjecutarAjusteCommand(crear.Value!.Id), CancellationToken.None);
+        await mediator.Send(new ExecuteStockAdjustmentCommand(crear.Value!.Id), CancellationToken.None);
 
         // Segundo intento
         var segunda = await mediator.Send(
-            new EjecutarAjusteCommand(crear.Value.Id), CancellationToken.None);
+            new ExecuteStockAdjustmentCommand(crear.Value.Id), CancellationToken.None);
 
         segunda.IsSuccess.Should().BeFalse();
-        segunda.Error.Should().Contain("Borrador");
+        segunda.Error.Should().Contain("Draft");
     }
 
     [Fact]
@@ -199,7 +199,7 @@ public sealed class AjustesInventarioEndToEndTests
 
         var (bodegaId, productoId) = await SeedAsync(db, factory, stockInicial: 10m);
 
-        var act = async () => await mediator.Send(new CrearAjusteCommand(
+        var act = async () => await mediator.Send(new CreateStockAdjustmentCommand(
             bodegaId, productoId, AdjustmentQty: 0m,
             Reason: "Ajuste fÃ­sico", Notes: null), CancellationToken.None);
 
@@ -218,7 +218,7 @@ public sealed class AjustesInventarioEndToEndTests
 
         var (bodegaId, productoId) = await SeedAsync(db, factory, stockInicial: 10m);
 
-        var act = async () => await mediator.Send(new CrearAjusteCommand(
+        var act = async () => await mediator.Send(new CreateStockAdjustmentCommand(
             bodegaId, productoId, AdjustmentQty: 5m,
             Reason: "", Notes: null), CancellationToken.None);
 
@@ -233,7 +233,7 @@ public sealed class AjustesInventarioEndToEndTests
         ErpDbContext db, IntegrationTestWebAppFactory factory, decimal stockInicial)
     {
         var seed = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
         var subscriberId   = seed.SubscriberId;
         var userId     = seed.UserId;
@@ -242,7 +242,7 @@ public sealed class AjustesInventarioEndToEndTests
 
         if (stockInicial > 0)
         {
-            var stock = CurrentStock.Create(subscriberId, productoId, bodegaId, userId);
+            var stock = CurrentStock.Create(subscriberId, productoId, bodegaId, userId, companyId: seed.CompanyId);
             stock.ApplyMovement(stockInicial, userId);
             db.CurrentStocks.Add(stock);
 
@@ -254,7 +254,8 @@ public sealed class AjustesInventarioEndToEndTests
                 reference:          "Stock inicial test ajuste",
                 sourceDocId:   null,
                 sourceDocType: null,
-                createdBy:           userId));
+                createdBy:           userId,
+                companyId:           seed.CompanyId));
 
             await db.SaveChangesAsync(CancellationToken.None);
         }

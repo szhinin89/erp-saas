@@ -15,7 +15,7 @@ export const accessService = {
     return data.responseObject;
   },
 
-  async switchTenant(bootstrapToken: string, req: SwitchSubscriberRequest) {
+  async switchSubscriber(bootstrapToken: string, req: SwitchSubscriberRequest) {
     const { data } = await api.post<ApiResponse<SessionResponse>>('/api/admin/iam/switch-subscriber', req, {
       headers: { Authorization: `Bearer ${bootstrapToken}` },
     });
@@ -27,7 +27,7 @@ export const accessService = {
     return data.responseObject;
   },
 
-  /** Menú lateral resuelto (tenant → plan → global). Alias de GET /api/access/me/menu. */
+  /** Menú lateral resuelto (subscriber → plan → global). Alias de GET /api/access/me/menu. */
   async getSessionMenu() {
     const { data } = await api.get<ApiResponse<SessionMenuGroupDto[]>>('/api/me/menu');
     return data.responseObject ?? [];

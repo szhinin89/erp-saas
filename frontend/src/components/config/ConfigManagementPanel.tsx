@@ -344,7 +344,7 @@ export function ConfigManagementPanel(props: ConfigManagementPanelProps) {
 
       <div className="companies-config-list">
         {entries.length === 0 ? (
-          <p className="companies-config-empty">No hay configuraciones cargadas para este tenant.</p>
+          <p className="companies-config-empty">No hay configuraciones cargadas para este subscriber.</p>
         ) : (
           <table className="companies-table companies-table--embedded">
             <thead>

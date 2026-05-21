@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.Extensions.Logging;
+using ERP.Application.Common;
 using ERP.Domain.Modules.Purchasing.Events;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
@@ -10,22 +11,26 @@ namespace ERP.Application.Modules.Inventory.EventHandlers;
 public sealed class PurchNoteApprovedEventHandler : INotificationHandler<PurchNoteApprovedEvent>
 {
     private readonly IStockRepository _inventario;
+    private readonly ICurrentCompany _company;
     private readonly ILogger<PurchNoteApprovedEventHandler> _logger;
 
     public PurchNoteApprovedEventHandler(
         IStockRepository inventario,
+        ICurrentCompany company,
         ILogger<PurchNoteApprovedEventHandler> logger)
     {
         _inventario = inventario;
-        _logger     = logger;
+        _company     = company;
+        _logger      = logger;
     }
 
     public async Task Handle(PurchNoteApprovedEvent notification, CancellationToken ct)
     {
         var subscriberId = notification.SubscriberId;
         var userId   = notification.UserId;
+        var companyId = _company.HasCompanyContext ? _company.CompanyId : (Guid?)null;
 
-        var tipoMov = notification.NoteType == "CREDITO"
+        var tipoMov = notification.NoteType is "CREDIT" or "CREDITO"
             ? StockMovementType.SupplierCreditNote
             : StockMovementType.SupplierDebitNote;
 
@@ -37,7 +42,7 @@ public sealed class PurchNoteApprovedEventHandler : INotificationHandler<PurchNo
             {
                 if (line.QuantityDelta > 0)
                 {
-                    stock = CurrentStock.Create(subscriberId, line.ProductId, line.WarehouseId, userId);
+                    stock = CurrentStock.Create(subscriberId, line.ProductId, line.WarehouseId, userId, companyId: companyId);
                     await _inventario.AddCurrentStockAsync(stock, ct);
                 }
                 else
@@ -67,7 +72,8 @@ public sealed class PurchNoteApprovedEventHandler : INotificationHandler<PurchNo
                 sourceDocId:   notification.NoteId,
                 sourceDocType: "PurchNote",
                 createdBy: userId,
-                unitCost:       costo);
+                unitCost:       costo,
+                companyId:      companyId);
 
             await _inventario.AddMovementAsync(movimiento, ct);
         }

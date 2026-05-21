@@ -96,7 +96,7 @@ export function ProductLinesCatalogPage() {
 }
 
 // TaxRatesCatalogPage eliminada: las tarifas SRI vienen de sri_vat_rate (datos oficiales pre-cargados,
-// no editables por el tenant). Se configuran en el producto al momento de crearlo/editarlo.
+// no editables por el subscriber). Se configuran en el producto al momento de crearlo/editarlo.
 
 export function CategoriesCatalogPage() {
   const { t } = useI18n();

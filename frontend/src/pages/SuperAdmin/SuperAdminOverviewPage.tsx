@@ -44,7 +44,7 @@ export function SuperAdminOverviewPage() {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState('');
   const [metrics,   setMetrics]   = useState<Metrics | null>(null);
-  const [subscribers,   setTenants]   = useState<SuperAdminSubscriber[]>([]);
+  const [subscribers,   setSubscribers]   = useState<SuperAdminSubscriber[]>([]);
   const [switching, setSwitching] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -53,10 +53,10 @@ export function SuperAdminOverviewPage() {
     try {
       const [m, tns] = await Promise.all([
         superAdminService.getMetrics(),
-        superAdminService.getTenants(),
+        superAdminService.getSubscribers(),
       ]);
       setMetrics(m);
-      setTenants(tns);
+      setSubscribers(tns);
     } catch (e) {
       setError(formatApiRequestError(e, {
         offline: t('common.apiUnreachable'),
@@ -69,15 +69,15 @@ export function SuperAdminOverviewPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const previewTenants = useMemo(() => subscribers.slice(0, 5), [subscribers]);
+  const previewSubscribers = useMemo(() => subscribers.slice(0, 5), [subscribers]);
 
-  const handleSwitch = async (tenant: SuperAdminSubscriber) => {
-    if (!tenant.isActive || switching) return;
-    setSwitching(tenant.id);
+  const handleSwitch = async (subscriber: SuperAdminSubscriber) => {
+    if (!subscriber.isActive || switching) return;
+    setSwitching(subscriber.id);
     setError('');
     try {
-      const auth = await superAdminService.switchTenant(tenant.id);
-      storeImpersonationSubscriberName(tenant.name);
+      const auth = await superAdminService.switchSubscriber(subscriber.id);
+      storeImpersonationSubscriberName(subscriber.name);
       clearPermissions();
       login(auth);
       navigate('/dashboard');
@@ -92,7 +92,7 @@ export function SuperAdminOverviewPage() {
   };
 
   const inactiveCount = metrics
-    ? metrics.totals.totalTenants - metrics.totals.activeTenants
+    ? metrics.totals.totalSubscribers - metrics.totals.activeSubscribers
     : 0;
 
   const inactiveUsers = metrics
@@ -146,10 +146,10 @@ export function SuperAdminOverviewPage() {
           <div className="sa-kpi-h">
             <div className="sa-kpi-h-left">
               <p className="sa-kpi-h-label">Total Empresas</p>
-              <p className="sa-kpi-h-value">{metrics.totals.totalTenants.toLocaleString('es')}</p>
+              <p className="sa-kpi-h-value">{metrics.totals.totalSubscribers.toLocaleString('es')}</p>
               <div className="sa-kpi-h-trend sa-kpi-h-trend--up">
                 <span className="material-symbols-outlined">trending_up</span>
-                <span>{metrics.totals.activeTenants} activas</span>
+                <span>{metrics.totals.activeSubscribers} activas</span>
               </div>
             </div>
             <div className="sa-kpi-h-icon sa-kpi-h-icon--primary">
@@ -177,13 +177,13 @@ export function SuperAdminOverviewPage() {
             <div className="sa-kpi-h-left">
               <p className="sa-kpi-h-label">Empresas Activas</p>
               <p className="sa-kpi-h-value">
-                {metrics.totals.totalTenants
-                  ? Math.round((metrics.totals.activeTenants / metrics.totals.totalTenants) * 100)
+                {metrics.totals.totalSubscribers
+                  ? Math.round((metrics.totals.activeSubscribers / metrics.totals.totalSubscribers) * 100)
                   : 0}%
               </p>
               <div className="sa-kpi-h-trend sa-kpi-h-trend--neutral">
                 <span className="material-symbols-outlined">horizontal_rule</span>
-                <span>de {metrics.totals.totalTenants} registradas</span>
+                <span>de {metrics.totals.totalSubscribers} registradas</span>
               </div>
             </div>
             <div className="sa-kpi-h-icon sa-kpi-h-icon--tertiary">
@@ -230,41 +230,41 @@ export function SuperAdminOverviewPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {previewTenants.map((tenant, i) => (
-                    <tr key={tenant.id}>
+                  {previewSubscribers.map((subscriber, i) => (
+                    <tr key={subscriber.id}>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <div className={`zh-avatar zh-avatar--square zh-avatar--${avatarVariant(i)}`} aria-hidden="true">
-                            {initials(tenant.name)}
+                            {initials(subscriber.name)}
                           </div>
                           <div className="sa-company-info">
-                            <p className="sa-company-name">{tenant.name}</p>
-                            <p className="sa-company-sub">{tenant.slug}</p>
+                            <p className="sa-company-name">{subscriber.name}</p>
+                            <p className="sa-company-sub">{subscriber.slug}</p>
                           </div>
                         </div>
                       </td>
                       <td className="mono" style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                        {tenant.id.split('-')[0]}…
+                        {subscriber.id.split('-')[0]}…
                       </td>
                       <td>
-                        <span className={planBadgeClass(tenant.planCode)}>
-                          {tenant.planCode ?? 'Sin plan'}
+                        <span className={planBadgeClass(subscriber.planCode)}>
+                          {subscriber.planCode ?? 'Sin plan'}
                         </span>
                       </td>
                       <td>
-                        <span className={`sa-status-dot ${tenant.isActive ? 'sa-status-dot--active' : 'sa-status-dot--inactive'}`}>
-                          {tenant.isActive ? t('common.active') : t('common.inactive')}
+                        <span className={`sa-status-dot ${subscriber.isActive ? 'sa-status-dot--active' : 'sa-status-dot--inactive'}`}>
+                          {subscriber.isActive ? t('common.active') : t('common.inactive')}
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <button
                           className="zh-btn zh-btn--primary zh-btn--sm"
                           type="button"
-                          disabled={!tenant.isActive || !!switching}
-                          onClick={() => void handleSwitch(tenant)}
+                          disabled={!subscriber.isActive || !!switching}
+                          onClick={() => void handleSwitch(subscriber)}
                           style={{ marginLeft: 'auto' }}
                         >
-                          {switching === tenant.id ? t('superadmin.switching') : 'Entrar como empresa'}
+                          {switching === subscriber.id ? t('superadmin.switching') : 'Entrar como empresa'}
                           <span className="material-symbols-outlined">login</span>
                         </button>
                       </td>
@@ -277,7 +277,7 @@ export function SuperAdminOverviewPage() {
             {/* Table footer */}
             <div className="pg-table-footer">
               <span className="pg-table-timestamp">
-                Mostrando {previewTenants.length} de {subscribers.length} empresas
+                Mostrando {previewSubscribers.length} de {subscribers.length} empresas
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div className="sa-page-pagination">
@@ -328,7 +328,7 @@ export function SuperAdminOverviewPage() {
               <span className="pg-section-label">Distribución de Empresas</span>
             </div>
             <span style={{ fontSize: 'var(--text-label-sm-size)', color: 'var(--color-text-secondary)' }}>
-              {metrics?.totals.totalTenants ?? 0} registradas
+              {metrics?.totals.totalSubscribers ?? 0} registradas
             </span>
           </div>
           <div className="pg-section-body">
@@ -336,25 +336,25 @@ export function SuperAdminOverviewPage() {
               <div className="sa-geo-grid">
                 <div>
                   <p className="sa-geo-value">
-                    {metrics ? Math.round(metrics.totals.activeTenants * 0.55) : '—'}
+                    {metrics ? Math.round(metrics.totals.activeSubscribers * 0.55) : '—'}
                   </p>
                   <p className="sa-geo-label">Costa</p>
                 </div>
                 <div>
                   <p className="sa-geo-value">
-                    {metrics ? Math.round(metrics.totals.activeTenants * 0.38) : '—'}
+                    {metrics ? Math.round(metrics.totals.activeSubscribers * 0.38) : '—'}
                   </p>
                   <p className="sa-geo-label">Sierra</p>
                 </div>
                 <div>
                   <p className="sa-geo-value">
-                    {metrics ? Math.round(metrics.totals.activeTenants * 0.05) : '—'}
+                    {metrics ? Math.round(metrics.totals.activeSubscribers * 0.05) : '—'}
                   </p>
                   <p className="sa-geo-label">Oriente</p>
                 </div>
                 <div>
                   <p className="sa-geo-value">
-                    {metrics ? Math.round(metrics.totals.activeTenants * 0.02) : '—'}
+                    {metrics ? Math.round(metrics.totals.activeSubscribers * 0.02) : '—'}
                   </p>
                   <p className="sa-geo-label">Insular</p>
                 </div>
@@ -401,7 +401,7 @@ export function SuperAdminOverviewPage() {
                   <p className="sa-alert-title">Estado del sistema</p>
                   <p className="sa-alert-body">
                     {metrics
-                      ? `${metrics.totals.activeTenants} empresas y ${metrics.totals.activeUsers} usuarios activos en este momento.`
+                      ? `${metrics.totals.activeSubscribers} empresas y ${metrics.totals.activeUsers} usuarios activos en este momento.`
                       : 'Cargando estado del sistema…'}
                   </p>
                 </div>

@@ -2,7 +2,7 @@ using MediatR;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Subscriptions;
-using ERP.Domain.Auth.Interfaces;
+using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Subscribers.Interfaces;
 
 namespace ERP.Application.Auth.UseCases.SwitchSubscriber;
@@ -10,22 +10,22 @@ namespace ERP.Application.Auth.UseCases.SwitchSubscriber;
 public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, Result<AuthResponseDto>>
 {
     private readonly ICurrentUser _currentUser;
-    private readonly IUserRepository _userRepository;
+    private readonly IAccessRepository _accessRepository;
     private readonly ISubscriberRepository _tenantRepository;
-    private readonly IJwtService _jwtService;
+    private readonly IAccessTokenService _accessTokenService;
     private readonly ISessionModulesResolver _sessionModules;
 
     public SwitchSubscriberHandler(
         ICurrentUser currentUser,
-        IUserRepository userRepository,
+        IAccessRepository accessRepository,
         ISubscriberRepository tenantRepository,
-        IJwtService jwtService,
+        IAccessTokenService accessTokenService,
         ISessionModulesResolver sessionModules)
     {
         _currentUser = currentUser;
-        _userRepository = userRepository;
+        _accessRepository = accessRepository;
         _tenantRepository = tenantRepository;
-        _jwtService = jwtService;
+        _accessTokenService = accessTokenService;
         _sessionModules = sessionModules;
     }
 
@@ -34,23 +34,18 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
         if (!_currentUser.IsAuthenticated || _currentUser.UserId == Guid.Empty)
             return Result<AuthResponseDto>.Failure("No autenticado.");
 
-        var user = await _userRepository.GetByIdSystemAsync(_currentUser.UserId, ct);
-        if (user is null)
-            return Result<AuthResponseDto>.Failure("Usuario no encontrado.");
-
-        if (!string.Equals(user.Role, "SuperAdmin", StringComparison.Ordinal))
+        var user = await _accessRepository.GetUserByIdAsync(_currentUser.UserId, ct);
+        if (user is null || !user.IsPlatformSuperAdmin)
             return Result<AuthResponseDto>.Failure("No autorizado.");
 
-        // Permite "volver al panel global" para SuperAdmin: subscriber_id = Guid.Empty.
-        // Esto evita una pantalla intermedia cuando el SuperAdmin ya está impersonando una empresa.
         if (command.SubscriberId == Guid.Empty)
         {
-            var globalToken = _jwtService.GenerateToken(user, Guid.Empty);
+            var globalToken = _accessTokenService.GeneratePlatformSessionToken(user);
             return Result<AuthResponseDto>.Success(new AuthResponseDto(
                 user.Id,
                 user.FullName,
                 user.Email.Value,
-                user.Role,
+                "SuperAdmin",
                 Guid.Empty,
                 globalToken,
                 PlanCode: null,
@@ -61,7 +56,15 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
         if (tenant is null || !tenant.IsActive)
             return Result<AuthResponseDto>.Failure("Empresa no encontrada o inactiva.");
 
-        var token = _jwtService.GenerateToken(user, tenant.Id);
+        var token = _accessTokenService.GenerateSessionToken(
+            user.Id,
+            user.Email.Value,
+            user.FullName,
+            tenant.Id,
+            "SuperAdmin",
+            companyId: default,
+            userType: user.UserType,
+            platformRole: user.PlatformRole);
 
         var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, ct);
 
@@ -69,11 +72,10 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
             user.Id,
             user.FullName,
             user.Email.Value,
-            user.Role,
+            "SuperAdmin",
             tenant.Id,
             token,
             tenant.PlanCode,
             modules));
     }
 }
-

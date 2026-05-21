@@ -11,7 +11,7 @@ using ERP.Infrastructure.Persistence;
 namespace ERP.API.Tests.Unit;
 
 /// <summary>
-/// Pruebas unitarias de la lÃ³gica de stock en CrearTransferenciaCommandHandler.
+/// Pruebas unitarias de la lÃ³gica de stock en CreateTransferCommandHandler.
 /// Verifican que la validaciÃ³n de stock de la bodega origen funcione correctamente.
 /// </summary>
 public sealed class TransferenciasStockTests
@@ -26,7 +26,7 @@ public sealed class TransferenciasStockTests
 
         var (origenId, destinoId, productoId) = await SeedBodegasYStockAsync(db, factory, stockOrigen: 10m);
 
-        var result = await mediator.Send(new CrearTransferenciaCommand(
+        var result = await mediator.Send(new CreateTransferCommand(
             origenId, destinoId,
             Reason: "ReubicaciÃ³n",
             Notes: null,
@@ -34,7 +34,7 @@ public sealed class TransferenciasStockTests
             CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error);
-        result.Value!.Status.Should().Be("Borrador");
+        result.Value!.Status.Should().Be("Draft");
         result.Value.TransferNumber.Should().StartWith("TR-");
     }
 
@@ -48,7 +48,7 @@ public sealed class TransferenciasStockTests
 
         var (origenId, destinoId, productoId) = await SeedBodegasYStockAsync(db, factory, stockOrigen: 3m);
 
-        var result = await mediator.Send(new CrearTransferenciaCommand(
+        var result = await mediator.Send(new CreateTransferCommand(
             origenId, destinoId,
             Reason: null,
             Notes: null,
@@ -68,7 +68,7 @@ public sealed class TransferenciasStockTests
 
         var (origenId, destinoId, productoId) = await SeedBodegasYStockAsync(db, factory, stockOrigen: 2m);
 
-        var result = await mediator.Send(new CrearTransferenciaCommand(
+        var result = await mediator.Send(new CreateTransferCommand(
             origenId, destinoId,
             Reason: null,
             Notes: null,
@@ -92,7 +92,7 @@ public sealed class TransferenciasStockTests
         // stockOrigen: 0 sin crear CurrentStocks â†’ el producto existe pero no tiene stock
         var (origenId, destinoId, productoId) = await SeedBodegasYStockAsync(db, factory, stockOrigen: 0m, crearStock: false);
 
-        var result = await mediator.Send(new CrearTransferenciaCommand(
+        var result = await mediator.Send(new CreateTransferCommand(
             origenId, destinoId,
             Reason: null,
             Notes: null,
@@ -114,7 +114,7 @@ public sealed class TransferenciasStockTests
         var (_, destinoId, productoId) = await SeedBodegasYStockAsync(db, factory, stockOrigen: 10m);
         var bodegaInexistenteId = Guid.NewGuid();
 
-        var result = await mediator.Send(new CrearTransferenciaCommand(
+        var result = await mediator.Send(new CreateTransferCommand(
             bodegaInexistenteId, destinoId,
             Reason: null,
             Notes: null,
@@ -122,7 +122,7 @@ public sealed class TransferenciasStockTests
             CancellationToken.None);
 
         result.IsSuccess.Should().BeFalse();
-        result.Error.Should().Contain("bodega origen");
+        result.Error.Should().Contain("Warehouse origen");
     }
 
     // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -139,7 +139,7 @@ public sealed class TransferenciasStockTests
             bool crearStock = true)
     {
         var seed = await IntegrationSeedData.SeedAsync(
-            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+            db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
         var subscriberId  = seed.SubscriberId;
         var userId    = seed.UserId;
@@ -147,13 +147,14 @@ public sealed class TransferenciasStockTests
 
         // La bodega creada en SeedAsync es la origen; creamos una segunda como destino.
         var branchId = db.Branches.First(b => b.SubscriberId == subscriberId).Id;
-        var destino  = Warehouse.Create(subscriberId, branchId, "Warehouse Destino Test", null, null, userId);
+        var destino = WarehouseTestHelpers.CreateSecondary(
+            subscriberId, branchId, "Warehouse Destino Test", "WD", userId, seed.CompanyId);
         db.Warehouses.Add(destino);
         await db.SaveChangesAsync(CancellationToken.None);
 
         if (crearStock && stockOrigen > 0)
         {
-            var stock = CurrentStock.Create(subscriberId, productoId, seed.WarehouseId, userId);
+            var stock = CurrentStock.Create(subscriberId, productoId, seed.WarehouseId, userId, companyId: seed.CompanyId);
             stock.ApplyMovement(stockOrigen, userId);
             db.CurrentStocks.Add(stock);
 
@@ -165,7 +166,8 @@ public sealed class TransferenciasStockTests
                 reference:          "Stock inicial test transferencia",
                 sourceDocId:   null,
                 sourceDocType: null,
-                createdBy:           userId);
+                createdBy:           userId,
+                companyId:           seed.CompanyId);
             db.StockMovements.Add(mov);
             await db.SaveChangesAsync(CancellationToken.None);
         }

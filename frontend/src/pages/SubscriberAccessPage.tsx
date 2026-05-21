@@ -197,7 +197,7 @@ export function SubscriberAccessPage() {
 
         {tab === 'list' && (
           <>
-            <div className="tenant-access-search-row">
+            <div className="subscriber-access-search-row">
               <SearchBar
                 searchQuery={listQuery}
                 onSearch={setListQuery}
@@ -218,7 +218,7 @@ export function SubscriberAccessPage() {
             ) : listFiltered.length === 0 ? (
               <EmptyState message={t('common.listTab.noMatch')} />
             ) : (
-              <table className="table responsive-table tenant-access-responsive-table">
+              <table className="table responsive-table subscriber-access-responsive-table">
                 <thead>
                   <tr>
                     <th>{t('subscriberAccess.table.user')}</th>
@@ -236,8 +236,8 @@ export function SubscriberAccessPage() {
                       </td>
                       <td data-label={t('subscriberAccess.table.role')}>{m.role}</td>
                       <td data-label={t('subscriberAccess.table.profile')} className="mono">{m.profileId ?? '-'}</td>
-                      <td data-label={t('subscriberAccess.table.actions')} className="tenant-access-cell-actions">
-                        <ZHActionsRow className="tenant-access-actions">
+                      <td data-label={t('subscriberAccess.table.actions')} className="subscriber-access-cell-actions">
+                        <ZHActionsRow className="subscriber-access-actions">
                           <ZHBtn variant="destructive" type="button" onClick={() => setRevokeConfirmEmail(m.email)}>
                             {t('subscriberAccess.actions.revoke')}
                           </ZHBtn>

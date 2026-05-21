@@ -15,7 +15,7 @@ public sealed class RetentionSettingsRepository : IRetentionSettingsRepository
         CancellationToken ct = default)
         => await _context.RetentionSettings
             .Where(r => r.SubscriberId == subscriberId && r.IsActive &&
-                        (r.SubjectType == "Supplier" || r.SubjectType == "AMBOS"))
+                        (r.SubjectType == "SUPPLIER" || r.SubjectType == "AMBOS"))
             .OrderBy(r => r.TaxType)
             .ThenBy(r => r.SriCode)
             .ToListAsync(ct);

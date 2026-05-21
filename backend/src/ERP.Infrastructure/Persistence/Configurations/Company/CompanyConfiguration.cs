@@ -1,4 +1,5 @@
 using ERP.Domain.Modules.Company.Entities;
+using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Subscribers.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -14,7 +15,14 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
         builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
-        builder.Property(x => x.Ruc).HasColumnName("ruc").HasMaxLength(13).IsFixedLength().IsRequired();
+        builder.Property(x => x.Ruc).HasColumnName("ruc").HasMaxLength(32).IsRequired();
+        builder.Property(x => x.IsProvisionalTaxId).HasColumnName("is_provisional_tax_id").HasDefaultValue(false).IsRequired();
+        builder.Property(x => x.TaxIdStatus)
+            .HasColumnName("tax_id_status")
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .HasDefaultValue(TaxIdStatus.Verified)
+            .IsRequired();
         builder.Property(x => x.LegalName).HasColumnName("legal_name").HasMaxLength(200).IsRequired();
         builder.Property(x => x.TradeName).HasColumnName("trade_name").HasMaxLength(200);
         builder.Property(x => x.MainAddress).HasColumnName("main_address").HasMaxLength(500).IsRequired();

@@ -201,7 +201,7 @@ export function SuperAdminGrowthSection() {
                     <YAxis allowDecimals={false} width={40} />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="newTenants" name={t('superadmin.growth.legend.subscribers')} fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="newSubscribers" name={t('superadmin.growth.legend.subscribers')} fill="#0ea5e9" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="newIdentityUsers" name={t('superadmin.growth.legend.users')} fill="#6366f1" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="newCompanyUserMemberships" name={t('superadmin.growth.legend.company_user_memberships')} fill="#14b8a6" radius={[4, 4, 0, 0]} />
                   </ComposedChart>
@@ -221,7 +221,7 @@ export function SuperAdminGrowthSection() {
                     <Legend />
                     <Line
                       type="monotone"
-                      dataKey="cumulativeTenants"
+                      dataKey="cumulativeSubscribers"
                       name={t('superadmin.growth.legend.subscribers')}
                       stroke="#0ea5e9"
                       strokeWidth={2}

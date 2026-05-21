@@ -18,7 +18,7 @@ public sealed class VentasNotaTotalsTests
         var nota = SalesNote.Create(
             subscriberId,
             facturaId,
-            "CREDITO",
+            "CREDIT",
             "DevoluciÃ³n",
             "04",
             "001",
@@ -28,8 +28,8 @@ public sealed class VentasNotaTotalsTests
             DateTime.UtcNow,
             userId);
 
-        var d1 = SalesNoteLine.Create(subscriberId, productId, 2m, 10m, 1.20m, "LÃ­nea A", userId);
-        var d2 = SalesNoteLine.Create(subscriberId, productId, 1m, 5m, 0m, "LÃ­nea B", userId);
+        var d1 = SalesNoteLine.Create(subscriberId, productId, "P1", 2m, 10m, "2", 12m, 1.20m, "Línea A", userId);
+        var d2 = SalesNoteLine.Create(subscriberId, productId, "P2", 1m, 5m, "0", 0m, 0m, "Línea B", userId);
         d1.AssignNoteId(nota.Id);
         d2.AssignNoteId(nota.Id);
         nota.AddLine(d1);

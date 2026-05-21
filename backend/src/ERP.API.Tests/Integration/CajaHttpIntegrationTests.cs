@@ -23,9 +23,9 @@ public sealed class CajaHttpIntegrationTests
 
         using var scope = factory.Services.CreateScope();
         var db   = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
-        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId);
+        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId, seed.CompanyId);
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", token);
@@ -39,7 +39,7 @@ public sealed class CajaHttpIntegrationTests
         await using var factory = new IntegrationTestWebAppFactory();
         using var client = factory.CreateClient();
 
-        var res = await client.GetAsync("/api/caja/cuentas-bancarias");
+        var res = await client.GetAsync("/api/cash/bank/cuentas-bancarias");
         res.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -60,15 +60,15 @@ public sealed class CajaHttpIntegrationTests
         }
 
         var crear = await client.PostAsJsonAsync(
-            "/api/caja/cuentas-bancarias",
+            "/api/cash/bank/cuentas-bancarias",
             new
             {
-                nombre         = "Banco INT",
-                numeroCuenta   = "1002999",
-                tipoCuenta     = "Corriente",
-                moneda         = "USD",
-                saldoInicial   = 1000m,
-                cuentaContableId = cuentaGlId,
+                name = "Banco INT",
+                accountNumber = "1002999",
+                accountType = "Corriente",
+                currency = "USD",
+                initialBalance = 1000m,
+                ledgerAccountId = cuentaGlId,
             });
         crear.StatusCode.Should().Be(HttpStatusCode.Created);
 
@@ -85,23 +85,23 @@ public sealed class CajaHttpIntegrationTests
         form.Add(new ByteArrayContent(Encoding.UTF8.GetBytes(csv))
         {
             Headers = { ContentType = new MediaTypeHeaderValue("text/csv") },
-        }, "Archivo", "extracto.csv");
-        form.Add(new StringContent(cuentaId.ToString()), "CuentaBancariaId");
-        form.Add(new StringContent("2026-05-01T00:00:00Z"), "PeriodoDesde");
-        form.Add(new StringContent("2026-05-02T23:59:59Z"), "PeriodoHasta");
-        form.Add(new StringContent("1000"), "SaldoInicialExtracto");
-        form.Add(new StringContent("975"), "SaldoFinalExtracto");
+        }, "file", "extracto.csv");
+        form.Add(new StringContent(cuentaId.ToString()), "bankAccountId");
+        form.Add(new StringContent("2026-05-01T00:00:00Z"), "periodFrom");
+        form.Add(new StringContent("2026-05-02T23:59:59Z"), "periodTo");
+        form.Add(new StringContent("1000"), "openingBalance");
+        form.Add(new StringContent("975"), "closingBalance");
 
-        var import = await client.PostAsync("/api/caja/extractos/importar", form);
+        var import = await client.PostAsync("/api/cash/bank/extractos/importar", form);
         import.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var list = await client.GetAsync($"/api/caja/extractos?cuentaBancariaId={cuentaId}");
+        var list = await client.GetAsync($"/api/cash/bank/extractos?cuentaBancariaId={cuentaId}");
         list.StatusCode.Should().Be(HttpStatusCode.OK);
         var listBody = await list.Content.ReadAsStringAsync();
         listBody.Should().Contain("\"success\":true");
 
         var extractoId = (await import.Content.ReadFromJsonAsync<ApiResponse<BankStatementDto>>(jsonOpts))!.ResponseObject.Id;
-        var det = await client.GetAsync($"/api/caja/extractos/{extractoId}");
+        var det = await client.GetAsync($"/api/cash/bank/extractos/{extractoId}");
         det.StatusCode.Should().Be(HttpStatusCode.OK);
         var detBody = await det.Content.ReadAsStringAsync();
         detBody.Should().Contain("\"success\":true");
@@ -127,26 +127,26 @@ public sealed class CajaHttpIntegrationTests
         }
 
         var crearCaja = await client.PostAsJsonAsync(
-            "/api/caja/cajas-chicas",
-            new { nombre = "Caja INT", saldoAsignado = 200m, cuentaBancariaIdReposicion = (Guid?)null, cuentaContableCajaId = cuentaGlId });
+            "/api/cash/bank/cajas-chicas",
+            new { name = "Caja INT", assignedBalance = 200m, replenishmentBankAccountId = (Guid?)null, ledgerCashAccountId = cuentaGlId });
         crearCaja.StatusCode.Should().Be(HttpStatusCode.Created);
         var cajaId = (await crearCaja.Content.ReadFromJsonAsync<ApiResponse<PettyCashDto>>(jsonOpts))!.ResponseObject.Id;
 
         var gasto = await client.PostAsJsonAsync(
-            "/api/caja/caja-chica/gastos",
+            "/api/cash/bank/caja-chica/gastos",
             new
             {
-                cajaChicaId = cajaId,
-                fecha = DateTime.UtcNow,
-                concepto = "Ãštiles",
-                monto = 10m,
-                tipoComprobante = "Recibo",
-                numeroComprobante = "R-1",
+                pettyCashId = cajaId,
+                date = DateTime.UtcNow,
+                description = "Utiles",
+                amount = 10m,
+                voucherType = "Recibo",
+                voucherNumber = "R-1",
             });
         gasto.StatusCode.Should().Be(HttpStatusCode.Created);
 
         var flujo = await client.GetAsync(
-            "/api/caja/flujo-efectivo/real?desde=2026-01-01&hasta=2026-12-31");
+            "/api/cash/bank/flujo-efectivo/real?desde=2026-01-01&hasta=2026-12-31");
         flujo.StatusCode.Should().Be(HttpStatusCode.OK);
         (await flujo.Content.ReadAsStringAsync()).Should().Contain("\"success\":true");
     }

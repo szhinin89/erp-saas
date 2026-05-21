@@ -90,7 +90,7 @@ public sealed class UpdateSubscriberSubscriptionHandlerTests
     public async Task HandleAsync_fails_when_tenant_missing()
     {
         var repo = new Mock<ISubscriberRepository>(MockBehavior.Strict);
-        repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync((Tenant?)null);
+        repo.Setup(r => r.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync((Subscriber?)null);
 
         var user = new Mock<ICurrentUser>(MockBehavior.Strict);
         user.SetupGet(u => u.UserId).Returns(Guid.NewGuid());

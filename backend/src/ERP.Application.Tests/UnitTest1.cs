@@ -34,7 +34,12 @@ public class CreateProductHandlerTests
         activity.Setup(a => a.AddAsync(It.IsAny<ERP.Domain.Audit.Entities.UserActivity>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var handler = new CreateProductCommandHandler(repo.Object, taxRates.Object, activity.Object, currentSubscriber.Object, currentUser.Object);
+        var currentCompany = new Mock<ICurrentCompany>(MockBehavior.Strict);
+        currentCompany.SetupGet(c => c.CompanyId).Returns(Guid.NewGuid());
+        currentCompany.SetupGet(c => c.HasCompanyContext).Returns(true);
+        currentCompany.SetupGet(c => c.IsAuthenticated).Returns(true);
+
+        var handler = new CreateProductCommandHandler(repo.Object, taxRates.Object, activity.Object, currentSubscriber.Object, currentCompany.Object, currentUser.Object);
 
         var cmd = new CreateProductCommand(
             SaleCode: "S-001",

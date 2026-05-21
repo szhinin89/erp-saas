@@ -6,11 +6,9 @@ using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Auth.Entities;
-using ERP.Domain.Auth.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
 using ERP.Domain.Subscribers.Entities;
 using ERP.Domain.Subscribers.Interfaces;
-
 using MediatR;
 
 namespace ERP.Application.Auth.UseCases.PasswordReset;
@@ -21,7 +19,6 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
     public const string MultipleAccountsMessage = "Hay múltiples cuentas con ese correo. Contacte a soporte.";
     public const string TenantResetDisabledMessage = "La recuperación de contraseña no está habilitada para esta empresa.";
 
-    private readonly IUserRepository _userRepository;
     private readonly IAccessRepository _accessRepository;
     private readonly ISubscriberRepository _tenantRepository;
     private readonly ICompanyRepository _companyRepository;
@@ -32,7 +29,6 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
     private readonly IValidator<ForgotPasswordCommand> _validator;
 
     public ForgotPasswordHandler(
-        IUserRepository userRepository,
         IAccessRepository accessRepository,
         ISubscriberRepository tenantRepository,
         ICompanyRepository companyRepository,
@@ -42,7 +38,6 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
         IOptions<PasswordResetOptions> options,
         IValidator<ForgotPasswordCommand> validator)
     {
-        _userRepository = userRepository;
         _accessRepository = accessRepository;
         _tenantRepository = tenantRepository;
         _companyRepository = companyRepository;
@@ -60,80 +55,54 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
             return Result<bool>.Failure(string.Join(" ", vr.Errors.Select(e => e.ErrorMessage)));
 
         var email = command.Email.Trim().ToLowerInvariant();
+        var identity = await _accessRepository.GetUserByEmailAsync(email, ct);
+        if (identity is null)
+            return Result<bool>.Failure(NoAccountMessage);
 
-        // 1) SuperAdmin (tabla users, rol global)
-        var superAdmin = await _userRepository.GetSingleSuperAdminByEmailAsync(email, ct);
-        if (superAdmin is not null)
+        if (!identity.IsActive)
+            return Result<bool>.Failure(NoAccountMessage);
+
+        if (identity.IsPlatformSuperAdmin)
         {
             if (!_deployment.IsSuperAdminPanelEnabled)
                 return Result<bool>.Failure(NoAccountMessage);
 
-            if (!superAdmin.IsActive)
-                return Result<bool>.Failure(NoAccountMessage);
-
-            await IssueTokenAndSendAsync(
-                superAdmin.Id,
-                null,
-                PasswordResetToken.KindSuperAdmin,
-                superAdmin.Email.Value,
-                ct);
-            return Result<bool>.Success(true);
-        }
-
-        // 2) Identity + company_user_memberships
-        var identity = await _accessRepository.GetUserByEmailAsync(email, ct);
-        if (identity is not null)
-        {
-            if (!identity.IsActive)
-                return Result<bool>.Failure(NoAccountMessage);
-
-            var company_user_memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(identity.Id, ct);
-            if (company_user_memberships.Count == 0)
-                return Result<bool>.Failure(NoAccountMessage);
-
-            if (company_user_memberships.Count > 1)
-                return Result<bool>.Failure(MultipleAccountsMessage);
-
-            var companies = await _companyRepository.GetByIdsAsync(
-                new[] { company_user_memberships[0].CompanyId }, ct);
-            var subscriberId = companies.FirstOrDefault()?.SubscriberId ?? Guid.Empty;
-            var tenant = await _tenantRepository.GetByIdAsync(subscriberId, ct);
-            if (tenant is null || !tenant.IsActive)
-                return Result<bool>.Failure(NoAccountMessage);
-
-            if (!TenantAllowsTokenReset(tenant.PasswordResetMode))
-                return Result<bool>.Failure(TenantResetDisabledMessage);
-
             await IssueTokenAndSendAsync(
                 identity.Id,
-                tenant.Id,
-                PasswordResetToken.KindIdentity,
+                null,
+                PasswordResetToken.KindPlatform,
                 identity.Email.Value,
                 ct);
             return Result<bool>.Success(true);
         }
 
-        // 3) Legacy users por empresa
-        var legacyMatches = await _userRepository.GetNonSuperAdminLegacyUsersByEmailAsync(email, ct);
-        if (legacyMatches.Count == 0)
+        var memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(identity.Id, ct);
+        if (memberships.Count == 0)
             return Result<bool>.Failure(NoAccountMessage);
 
-        if (legacyMatches.Count > 1)
-            return Result<bool>.Failure(MultipleAccountsMessage);
+        if (memberships.Count > 1)
+        {
+            var companyIds = memberships.Select(m => m.CompanyId).Distinct().ToList();
+            var companies = await _companyRepository.GetByIdsAsync(companyIds, ct);
+            if (companies.Select(c => c.SubscriberId).Distinct().Count() > 1)
+                return Result<bool>.Failure(MultipleAccountsMessage);
+        }
 
-        var legacyUser = legacyMatches[0];
-        var legacySubscriber = await _tenantRepository.GetByIdAsync(legacyUser.SubscriberId, ct);
-        if (legacySubscriber is null || !legacySubscriber.IsActive)
+        var company = (await _companyRepository.GetByIdsAsync(
+            new[] { memberships[0].CompanyId }, ct)).FirstOrDefault();
+        var subscriberId = company?.SubscriberId ?? Guid.Empty;
+        var tenant = await _tenantRepository.GetByIdAsync(subscriberId, ct);
+        if (tenant is null || !tenant.IsActive)
             return Result<bool>.Failure(NoAccountMessage);
 
-        if (!TenantAllowsTokenReset(legacySubscriber.PasswordResetMode))
+        if (!TenantAllowsTokenReset(tenant.PasswordResetMode))
             return Result<bool>.Failure(TenantResetDisabledMessage);
 
         await IssueTokenAndSendAsync(
-            legacyUser.Id,
-            legacyUser.SubscriberId,
-            PasswordResetToken.KindLegacy,
-            legacyUser.Email.Value,
+            identity.Id,
+            tenant.Id,
+            PasswordResetToken.KindIdentity,
+            identity.Email.Value,
             ct);
         return Result<bool>.Success(true);
     }

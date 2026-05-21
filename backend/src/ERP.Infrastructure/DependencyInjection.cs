@@ -92,6 +92,8 @@ public static class DependencyInjection
         services.AddScoped<ICurrentCompany, CurrentCompanyService>();
         services.AddScoped<ICompanyContextResolver, CompanyContextResolver>();
         services.AddScoped<ICompanyProvisioningService, CompanyProvisioningService>();
+        services.AddScoped<ISubscriberProvisioningOrchestrator, SubscriberProvisioningOrchestrator>();
+        services.AddScoped<ISubscriberIntegrityRepairService, SubscriberIntegrityRepairService>();
         services.AddScoped<ERP.Application.Modules.Platform.Companies.ICompanyAccessGuard, CompanyAccessGuard>();
         services.AddScoped<ICompanyRepository, CompanyRepository>();
         services.AddScoped<ICurrentUser, CurrentUserService>();
@@ -101,9 +103,7 @@ public static class DependencyInjection
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ITaxRateRepository, TaxRateRepository>();
         services.AddScoped<IProductCatalogRepository, ProductCatalogRepository>();
-        services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IAccessRepository, AccessRepository>();
-        services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<IAccessTokenService, AccessTokenService>();
         services.AddScoped<ISubscriberRepository, SubscriberRepository>();
         services.AddScoped<ISecurityRepository, SecurityRepository>();

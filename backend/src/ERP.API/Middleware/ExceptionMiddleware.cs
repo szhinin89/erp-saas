@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 using FluentValidation;
 using ERP.Application.Common.Exceptions;
+using ERP.Domain.Exceptions;
 using ERP.Domain.Subscriptions.Exceptions;
 
 namespace ERP.API.Middleware;
@@ -102,15 +103,30 @@ public class ExceptionMiddleware
                  string.IsNullOrWhiteSpace(companyScope.Message)
                      ? "Acceso denegado por contexto de empresa."
                      : companyScope.Message.Trim()),
+            CompanyRucAlreadyExistsException rucExists =>
+                (HttpStatusCode.Conflict, rucExists.Message),
             UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "No autorizado."),
             _ => (HttpStatusCode.InternalServerError, "Error interno del servidor."),
         };
 
         context.Response.StatusCode = (int)statusCode;
 
-        object response = validationErrors.Length > 0
-            ? new { status = context.Response.StatusCode, message, errors = validationErrors }
-            : new { status = context.Response.StatusCode, message };
+        object response = exception switch
+        {
+            ValidationException => validationErrors.Length > 0
+                ? new { status = context.Response.StatusCode, message, errors = validationErrors }
+                : new { status = context.Response.StatusCode, message },
+            CompanyRucAlreadyExistsException rucExists => new
+            {
+                status = context.Response.StatusCode,
+                message,
+                code = CompanyRucAlreadyExistsException.ErrorCode,
+                taxId = rucExists.TaxId,
+            },
+            _ => validationErrors.Length > 0
+                ? new { status = context.Response.StatusCode, message, errors = validationErrors }
+                : new { status = context.Response.StatusCode, message },
+        };
         await context.Response.WriteAsync(JsonSerializer.Serialize(response));
     }
 }

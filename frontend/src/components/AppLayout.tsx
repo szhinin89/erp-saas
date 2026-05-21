@@ -480,7 +480,7 @@ export function AppLayout() {
     if (superadminReturningGlobal) return;
     setSuperadminReturningGlobal(true);
     try {
-      const auth = await superAdminService.switchTenant(GLOBAL_SUBSCRIBER_ID);
+      const auth = await superAdminService.switchSubscriber(GLOBAL_SUBSCRIBER_ID);
       localStorage.removeItem('superadmin-impersonation-subscriber-name');
       login(auth);
       clearPermissions();
@@ -505,10 +505,10 @@ export function AppLayout() {
             >
               <span className="superadmin-banner-dot" aria-hidden="true" />
               <strong className="superadmin-banner-title">{t('superadmin.banner')}</strong>
-              <span className="superadmin-banner-tenantInline" title={t('superadmin.tenant.title')}>
-                {getImpersonationSubscriberName() ?? t('superadmin.tenant.unknown')}
+              <span className="superadmin-banner-subscriberInline" title={t('superadmin.subscriber.title')}>
+                {getImpersonationSubscriberName() ?? t('superadmin.subscriber.unknown')}
               </span>
-              <span className="superadmin-banner-subscriberIdInline mono" title={t('superadmin.tenant.idTitle')}>
+              <span className="superadmin-banner-subscriberIdInline mono" title={t('superadmin.subscriber.idTitle')}>
                 {user.subscriberId}
               </span>
               <span className="superadmin-banner-caret" aria-hidden="true">{superadminBannerOpen ? '▾' : '▸'}</span>
@@ -516,10 +516,10 @@ export function AppLayout() {
 
             {superadminBannerOpen ? (
               <div className="superadmin-banner-details">
-                <div className="superadmin-banner-tenant" title={t('superadmin.tenant.title')}>
-                  {getImpersonationSubscriberName() ?? t('superadmin.tenant.unknown')}
+                <div className="superadmin-banner-subscriber" title={t('superadmin.subscriber.title')}>
+                  {getImpersonationSubscriberName() ?? t('superadmin.subscriber.unknown')}
                 </div>
-                <div className="superadmin-banner-subscriberId mono" title={t('superadmin.tenant.idTitle')}>
+                <div className="superadmin-banner-subscriberId mono" title={t('superadmin.subscriber.idTitle')}>
                   {user.subscriberId}
                 </div>
                 <button className="superadmin-banner-btn" onClick={() => void returnToGlobal()} type="button" disabled={superadminReturningGlobal}>
@@ -529,7 +529,7 @@ export function AppLayout() {
             ) : null}
           </div>
         )}
-        <div className="app-tenantHeaderWrap">
+        <div className="app-subscriberHeaderWrap">
           <ZHAppSubscriberHeader
             onLogout={handleLogout}
             leftExtra={!isGlobalSuperAdmin ? <CompanySwitcher /> : null}

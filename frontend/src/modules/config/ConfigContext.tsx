@@ -203,7 +203,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
         const entries = await configService.loadTenantConfig(subscriberId);
         dispatch({ type: 'load_success', subscriberId, entries });
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'No se pudo cargar configuración del tenant.';
+        const message = error instanceof Error ? error.message : 'No se pudo cargar configuración del subscriber.';
         dispatch({ type: 'load_error', subscriberId, error: message });
       }
     })();
@@ -272,7 +272,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
 
   const upsertConfig = useCallback(
     async (input: ConfigUpsertInput) => {
-      if (!shouldLoad) throw new Error('No hay tenant activo para guardar configuración.');
+      if (!shouldLoad) throw new Error('No hay subscriber activo para guardar configuración.');
       const entry = await configService.upsertConfig(subscriberId, input);
       dispatch({ type: 'upsert_entry', entry });
       return entry;
@@ -282,7 +282,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
 
   const deleteConfig = useCallback(
     async (input: ConfigDeleteInput) => {
-      if (!shouldLoad) throw new Error('No hay tenant activo para eliminar configuración.');
+      if (!shouldLoad) throw new Error('No hay subscriber activo para eliminar configuración.');
       await configService.deleteConfig(subscriberId, input);
       dispatch({
         type: 'delete_entry',

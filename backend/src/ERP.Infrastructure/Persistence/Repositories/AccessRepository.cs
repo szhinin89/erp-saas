@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Domain.Access.Entities;
+using ERP.Domain.Access.Enums;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Auth.ValueObjects;
 using Microsoft.EntityFrameworkCore;
@@ -17,19 +18,40 @@ public class AccessRepository : IAccessRepository
         _platform = platform;
     }
 
+    public Task<IdentityUser?> GetPlatformSuperAdminByEmailAsync(string email, CancellationToken ct = default)
+    {
+        var normalized = NormalizeEmail(email);
+        return _db.IdentityUsers.FirstOrDefaultAsync(
+            u => u.EmailNormalized == normalized
+                 && u.UserType == IdentityUserType.Platform
+                 && u.PlatformRole == PlatformRole.SuperAdmin,
+            ct);
+    }
+
+    public Task<bool> AnyPlatformSuperAdminAsync(CancellationToken ct = default)
+        => _db.IdentityUsers.AnyAsync(
+            u => u.UserType == IdentityUserType.Platform && u.PlatformRole == PlatformRole.SuperAdmin,
+            ct);
+
+    public Task<int> CountActivePlatformUsersAsync(CancellationToken ct = default)
+        => _db.IdentityUsers.CountAsync(u => u.UserType == IdentityUserType.Platform && u.IsActive, ct);
+
+    public Task<int> CountActiveCompanyUsersAsync(CancellationToken ct = default)
+        => _db.IdentityUsers.CountAsync(u => u.UserType == IdentityUserType.Company && u.IsActive, ct);
+
     public Task<IdentityUser?> GetUserByIdAsync(Guid userId, CancellationToken ct = default)
         => _db.IdentityUsers.FirstOrDefaultAsync(u => u.Id == userId, ct);
 
     public Task<IdentityUser?> GetUserByEmailAsync(string email, CancellationToken ct = default)
     {
-        var normalized = new Email(email);
-        return _db.IdentityUsers.FirstOrDefaultAsync(u => u.Email == normalized, ct);
+        var normalized = NormalizeEmail(email);
+        return _db.IdentityUsers.FirstOrDefaultAsync(u => u.EmailNormalized == normalized, ct);
     }
 
     public Task<bool> AnyUserWithEmailAsync(string email, CancellationToken ct = default)
     {
-        var normalized = new Email(email);
-        return _db.IdentityUsers.AnyAsync(u => u.Email == normalized, ct);
+        var normalized = NormalizeEmail(email);
+        return _db.IdentityUsers.AnyAsync(u => u.EmailNormalized == normalized, ct);
     }
 
     public Task<int> CountIdentityUsersAsync(CancellationToken ct = default)
@@ -116,6 +138,56 @@ public class AccessRepository : IAccessRepository
     public Task AddProfilePermissionAsync(AccessProfilePermission permission, CancellationToken ct = default)
         => _db.AccessProfilePermissions.AddAsync(permission, ct).AsTask();
 
+    public async Task<(int TotalUsers, int ActiveUsers)> CountDistinctIdentityUsersForSubscriberAsync(
+        Guid subscriberId, CancellationToken ct = default)
+    {
+        var userIds = await (
+            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.TenantScopedExplicit)
+            join c in _db.Companies on m.CompanyId equals c.Id
+            where c.SubscriberId == subscriberId
+            select m.IdentityUserId
+        ).Distinct().ToListAsync(ct);
+
+        if (userIds.Count == 0)
+            return (0, 0);
+
+        var users = await _db.IdentityUsers
+            .Where(u => userIds.Contains(u.Id))
+            .Select(u => new { u.Id, u.IsActive })
+            .ToListAsync(ct);
+
+        var activeMembershipUserIds = await (
+            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.TenantScopedExplicit)
+            join c in _db.Companies on m.CompanyId equals c.Id
+            where c.SubscriberId == subscriberId && m.IsActive
+            select m.IdentityUserId
+        ).Distinct().ToListAsync(ct);
+
+        var activeSet = activeMembershipUserIds.ToHashSet();
+        var activeUsers = users.Count(u => u.IsActive && activeSet.Contains(u.Id));
+        return (users.Count, activeUsers);
+    }
+
+    public async Task<IReadOnlyList<IdentityUser>> GetActiveIdentityUsersForSubscriberAsync(
+        Guid subscriberId, CancellationToken ct = default)
+    {
+        var userIds = await (
+            from m in _platform.Unfiltered(_db.CompanyUserMemberships, PlatformQueryReason.TenantScopedExplicit)
+            join c in _db.Companies on m.CompanyId equals c.Id
+            where c.SubscriberId == subscriberId && m.IsActive
+            select m.IdentityUserId
+        ).Distinct().ToListAsync(ct);
+
+        return await _db.IdentityUsers
+            .Where(u => userIds.Contains(u.Id))
+            .OrderBy(u => u.LastName)
+            .ThenBy(u => u.FirstName)
+            .ToListAsync(ct);
+    }
+
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _db.SaveChangesAsync(ct);
+
+    private static string NormalizeEmail(string email)
+        => email.Trim().ToLowerInvariant();
 }

@@ -25,8 +25,8 @@ export function PasswordResetPage() {
 
   const subscriberIdWatched = watch('subscriberId');
 
-  const [tenantAllowsDirectReset, setTenantAllowsDirectReset] = useState<boolean | null>(null);
-  const [tenantCheckError, setTenantCheckError] = useState<string>('');
+  const [subscriberAllowsDirectReset, setSubscriberAllowsDirectReset] = useState<boolean | null>(null);
+  const [subscriberCheckError, setSubscriberCheckError] = useState<string>('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,31 +34,31 @@ export function PasswordResetPage() {
   useEffect(() => {
     const raw = subscriberIdWatched.trim();
     if (!raw) {
-      setTenantCheckError('');
-      setTenantAllowsDirectReset(null);
+      setSubscriberCheckError('');
+      setSubscriberAllowsDirectReset(null);
       return;
     }
 
     const isGuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(raw);
     if (!isGuid) {
-      setTenantCheckError('');
-      setTenantAllowsDirectReset(null);
+      setSubscriberCheckError('');
+      setSubscriberAllowsDirectReset(null);
       return;
     }
 
     let cancelled = false;
     (async () => {
       try {
-        setTenantCheckError('');
+        setSubscriberCheckError('');
         const { data } = await api.get<ApiResponse<{ subscriberId: string; passwordResetMode: number }>>(
           `/api/subscribers/${raw}/public-settings`
         );
         if (cancelled) return;
-        setTenantAllowsDirectReset(data.responseObject.passwordResetMode === 1);
+        setSubscriberAllowsDirectReset(data.responseObject.passwordResetMode === 1);
       } catch {
         if (cancelled) return;
-        setTenantCheckError(t('reset.tenantCheck.unavailable'));
-        setTenantAllowsDirectReset(null);
+        setSubscriberCheckError(t('reset.subscriberCheck.unavailable'));
+        setSubscriberAllowsDirectReset(null);
       }
     })();
 
@@ -69,12 +69,12 @@ export function PasswordResetPage() {
     setError('');
     setSuccess('');
 
-    if (tenantAllowsDirectReset === false) {
+    if (subscriberAllowsDirectReset === false) {
       setError(t('reset.error.disabled'));
       return;
     }
-    if (tenantAllowsDirectReset === null && tenantCheckError) {
-      setError(t('reset.tenantCheck.unavailable'));
+    if (subscriberAllowsDirectReset === null && subscriberCheckError) {
+      setError(t('reset.subscriberCheck.unavailable'));
       return;
     }
 
@@ -97,19 +97,19 @@ export function PasswordResetPage() {
     }
   };
 
-  const tenantHint =
-    tenantAllowsDirectReset === true
-      ? t('reset.tenantCheck.enabled')
-      : tenantAllowsDirectReset === false
+  const subscriberHint =
+    subscriberAllowsDirectReset === true
+      ? t('reset.subscriberCheck.enabled')
+      : subscriberAllowsDirectReset === false
         ? t('reset.error.disabled')
-        : tenantCheckError || undefined;
+        : subscriberCheckError || undefined;
 
-  const tenantHintType =
-    tenantAllowsDirectReset === true
+  const subscriberHintType =
+    subscriberAllowsDirectReset === true
       ? 'success'
-      : tenantAllowsDirectReset === false
+      : subscriberAllowsDirectReset === false
         ? 'error'
-        : tenantCheckError
+        : subscriberCheckError
           ? 'info'
           : undefined;
 
@@ -159,9 +159,9 @@ export function PasswordResetPage() {
               </div>
               {errors.subscriberId?.message ? (
                 <span className="zh-auth-field-error">{errors.subscriberId.message}</span>
-              ) : tenantHint ? (
-                <span className={`zh-auth-field-hint${tenantHintType ? ` zh-auth-field-hint--${tenantHintType}` : ''}`}>
-                  {tenantHint}
+              ) : subscriberHint ? (
+                <span className={`zh-auth-field-hint${subscriberHintType ? ` zh-auth-field-hint--${subscriberHintType}` : ''}`}>
+                  {subscriberHint}
                 </span>
               ) : null}
             </div>
@@ -235,7 +235,7 @@ export function PasswordResetPage() {
             <button
               type="submit"
               className="zh-auth-submit"
-              disabled={loading || tenantAllowsDirectReset === false}
+              disabled={loading || subscriberAllowsDirectReset === false}
             >
               <span>{loading ? t('reset.button.loading') : t('reset.button.submit')}</span>
               {!loading && (

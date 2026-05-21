@@ -44,9 +44,9 @@ public sealed class CancelTransferCommandHandler
         if (transfer is null)
             return Result<TransferDto>.Failure("transfer no encontrada.");
 
-        if (transfer.Status != "Borrador")
+        if (transfer.Status != "Draft")
             return Result<TransferDto>.Failure(
-                $"Solo se puede cancelar una transfer en Borrador (estado actual: {transfer.Status}).");
+                $"Solo se puede cancelar una transfer en Draft (estado actual: {transfer.Status}).");
 
         transfer.Cancel(userId);
 

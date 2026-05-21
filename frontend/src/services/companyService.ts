@@ -1,6 +1,7 @@
 import { api } from '../modules/lib/api';
 import type { ApiResponse } from '../types/api';
 import type { SessionResponse } from '../types/access';
+import { PLATFORM_SUBSCRIBERS_API, parsePlatformSubscriberList, type SuperAdminSubscriber } from './superAdminService';
 
 export type CompanyItem = {
   id: string;
@@ -10,7 +11,7 @@ export type CompanyItem = {
   isActive?: boolean;
   planCode?: string | null;
   enabledModules?: string[];
-  /** Si es false, el tenant no tiene JSON de módulos (equivalente a «todos los módulos»). */
+  /** Si es false, el subscriber no tiene JSON de módulos (equivalente a «todos los módulos»). */
   hasModuleRestrictions?: boolean;
 };
 
@@ -80,8 +81,8 @@ export type UpsertConfigBody = {
   dataType: string;
 };
 
-/** Detalle de empresa (`GET /api/subscribers/{id}`), alineado con `SubscriberDto` del backend. */
-export type TenantDetailDto = {
+/** Detalle de suscriptor SaaS (`GET /api/subscribers/{id}`), alineado con `SubscriberDto` del backend. */
+export type SubscriberDetailDto = {
   id: string;
   name: string;
   slug: string;
@@ -98,7 +99,6 @@ export type TenantDetailDto = {
   planCode: string | null;
   enabledModules: string[];
   hasModuleRestrictions: boolean;
-  // Parámetros operativos
   currency: string;
   language: string;
   timezone: string;
@@ -108,21 +108,26 @@ export type TenantDetailDto = {
 
 export const companyService = {
   list: () =>
-    api.get<ApiResponse<{ subscribers?: CompanyItem[] } | CompanyItem[]>>('/api/admin/iam/superadmin/subscribers')
+    api
+      .get<ApiResponse<SuperAdminSubscriber[]>>(PLATFORM_SUBSCRIBERS_API)
       .then((r) => {
-        const responseObject = r.data.responseObject;
-        if (Array.isArray(responseObject)) {
-          return responseObject;
-        }
-        if (responseObject && Array.isArray(responseObject.subscribers)) {
-          return responseObject.subscribers;
-        }
-        return [];
+        const rows = parsePlatformSubscriberList(r.data.responseObject);
+        return rows.map(
+          (s): CompanyItem => ({
+            id: s.id,
+            name: s.name,
+            slug: s.slug,
+            isActive: s.isActive,
+            planCode: s.planCode,
+            enabledModules: s.enabledModules,
+            hasModuleRestrictions: s.hasModuleRestrictions,
+          }),
+        );
       }),
 
-  getTenant: (subscriberId: string) =>
+  getSubscriber: (subscriberId: string) =>
     api
-      .get<ApiResponse<TenantDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}`)
+      .get<ApiResponse<SubscriberDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}`)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');
@@ -130,18 +135,18 @@ export const companyService = {
       }),
 
   create: (req: CreateCompanyWithAdminRequest) =>
-    api.post<ApiResponse<SessionResponse>>('/api/admin/iam/superadmin/subscribers', req).then((r) => r.data.responseObject),
+    api.post<ApiResponse<SessionResponse>>(PLATFORM_SUBSCRIBERS_API, req).then((r) => r.data.responseObject),
 
-  updateTenantCompany: (subscriberId: string, body: UpdateSubscriberCompanyBody) =>
+  updateSubscriberCompany: (subscriberId: string, body: UpdateSubscriberCompanyBody) =>
     api
-      .patch<ApiResponse<TenantDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}/company`, body)
+      .patch<ApiResponse<SubscriberDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}/company`, body)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');
         return o;
       }),
 
-  updateTenantOperationalSettings: (subscriberId: string, body: {
+  updateSubscriberOperationalSettings: (subscriberId: string, body: {
     currency: string;
     language: string;
     timezone: string;
@@ -149,35 +154,35 @@ export const companyService = {
     defaultCreditDays: number;
   }) =>
     api
-      .patch<ApiResponse<TenantDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}/operational-settings`, body)
+      .patch<ApiResponse<SubscriberDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}/operational-settings`, body)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');
         return o;
       }),
 
-  updateTenantGlobalParameters: (subscriberId: string, body: UpdateSubscriberGlobalParametersBody) =>
+  updateSubscriberGlobalParameters: (subscriberId: string, body: UpdateSubscriberGlobalParametersBody) =>
     api
-      .patch<ApiResponse<TenantDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}/global-parameters`, body)
+      .patch<ApiResponse<SubscriberDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}/global-parameters`, body)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');
         return o;
       }),
 
-  resolveTenantConfig: (subscriberId: string, key: string, module?: string | null, feature?: string | null) =>
+  resolveSubscriberConfig: (subscriberId: string, key: string, module?: string | null, feature?: string | null) =>
     api
       .get<ApiResponse<ResolvedConfigValueDto | null>>(`/api/superadmin/config/${encodeURIComponent(subscriberId)}/resolve`, {
         params: { key, module: module ?? undefined, feature: feature ?? undefined },
       })
       .then((r) => r.data.responseObject),
 
-  listTenantGlobalConfig: (subscriberId: string) =>
+  listSubscriberGlobalConfig: (subscriberId: string) =>
     api
       .get<ApiResponse<ConfigEntryDto[]>>(`/api/superadmin/config/${encodeURIComponent(subscriberId)}/global`)
       .then((r) => r.data.responseObject ?? []),
 
-  upsertTenantGlobalConfig: (subscriberId: string, body: UpsertConfigBody) =>
+  upsertSubscriberGlobalConfig: (subscriberId: string, body: UpsertConfigBody) =>
     api
       .put<ApiResponse<ConfigEntryDto>>(`/api/superadmin/config/${encodeURIComponent(subscriberId)}/global`, body)
       .then((r) => {
@@ -186,4 +191,3 @@ export const companyService = {
         return o;
       }),
 };
-

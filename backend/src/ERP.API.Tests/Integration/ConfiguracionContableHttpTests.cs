@@ -22,9 +22,9 @@ public sealed class ConfiguracionContableHttpTests
 
         using var scope = factory.Services.CreateScope();
         var db   = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
-        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None);
+        var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
-        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId);
+        var token  = TestJwtFactory.CreateSessionJwt(seed.SubscriberId, seed.UserId, seed.CompanyId);
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
@@ -38,7 +38,7 @@ public sealed class ConfiguracionContableHttpTests
         await using var factory = new IntegrationTestWebAppFactory();
         using var client = factory.CreateClient();
 
-        var res = await client.GetAsync("/api/contabilidad/configuracion");
+        var res = await client.GetAsync("/api/finance/config");
         res.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
@@ -48,7 +48,7 @@ public sealed class ConfiguracionContableHttpTests
         var (factory, client, _) = await CreateClientAsync();
         await using var _ = factory;
 
-        var res = await client.GetAsync("/api/contabilidad/configuracion");
+        var res = await client.GetAsync("/api/finance/config");
         res.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await res.Content.ReadAsStringAsync();
         body.Should().Contain("\"success\":true");
@@ -62,11 +62,11 @@ public sealed class ConfiguracionContableHttpTests
 
         var payload = new
         {
-            cuentaInventarioId  = Guid.NewGuid(),
-            cuentaProveedoresId = Guid.NewGuid(),
+            inventoryAccountId = Guid.NewGuid(),
+            suppliersAccountId = Guid.NewGuid(),
         };
 
-        var res = await client.PutAsJsonAsync("/api/contabilidad/configuracion", payload);
+        var res = await client.PutAsJsonAsync("/api/finance/config", payload);
         res.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         var body = await res.Content.ReadAsStringAsync();
         body.Should().Contain("\"success\":false");
@@ -110,30 +110,30 @@ public sealed class ConfiguracionContableHttpTests
         // upsert config OK
         var putPayload = new
         {
-            cuentaInventarioId  = invId,
-            cuentaProveedoresId = provId,
-            cuentaVentasId      = ventasId,
-            cuentaClientesId    = clientesId,
-            cuentaIvaVentasId   = ivaVentasId,
+            inventoryAccountId = invId,
+            suppliersAccountId = provId,
+            salesAccountId = ventasId,
+            customersAccountId = clientesId,
+            vatSalesAccountId = ivaVentasId,
         };
 
-        var putRes = await client.PutAsJsonAsync("/api/contabilidad/configuracion", putPayload);
+        var putRes = await client.PutAsJsonAsync("/api/finance/config", putPayload);
         putRes.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // create gasto mapping
-        var postRes = await client.PostAsJsonAsync("/api/contabilidad/configuracion/gastos", new
+        var postRes = await client.PostAsJsonAsync("/api/finance/config/gastos", new
         {
-            categoria = "Luz",
-            cuentaGastoId = gastoId,
+            category = "Luz",
+            expenseAccountId = gastoId,
         });
         postRes.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // list gasto mappings
-        var listRes = await client.GetAsync("/api/contabilidad/configuracion/gastos");
+        var listRes = await client.GetAsync("/api/finance/config/gastos");
         listRes.StatusCode.Should().Be(HttpStatusCode.OK);
         var listBody = await listRes.Content.ReadAsStringAsync();
         listBody.Should().Contain("\"success\":true");
-        listBody.Should().Contain("\"categoria\":\"Luz\"");
+        listBody.Should().Contain("\"category\":\"Luz\"");
 
         // delete
         var created = await postRes.Content.ReadFromJsonAsync<ApiResponse<ExpenseCategoryDto>>(
@@ -143,7 +143,7 @@ public sealed class ConfiguracionContableHttpTests
         created.ResponseObject.Should().NotBeNull();
         var id = created.ResponseObject!.Id;
 
-        var delRes = await client.DeleteAsync($"/api/contabilidad/configuracion/gastos/{id}");
+        var delRes = await client.DeleteAsync($"/api/finance/config/gastos/{id}");
         delRes.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 }

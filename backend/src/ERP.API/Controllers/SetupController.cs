@@ -4,6 +4,7 @@ using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Auth.UseCases.ClaimInitialSuperAdmin;
+using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,15 +20,18 @@ public sealed class SetupController : ControllerBase
 {
     private readonly IMediator _mediator;
     private readonly IFirstRunSetupService _firstRunSetupService;
+    private readonly ISubscriberIntegrityRepairService _integrityRepair;
     private readonly IWebHostEnvironment _environment;
 
     public SetupController(
         IMediator mediator,
         IFirstRunSetupService firstRunSetupService,
+        ISubscriberIntegrityRepairService integrityRepair,
         IWebHostEnvironment environment)
     {
         _mediator = mediator;
         _firstRunSetupService = firstRunSetupService;
+        _integrityRepair = integrityRepair;
         _environment = environment;
     }
 
@@ -78,6 +82,31 @@ public sealed class SetupController : ControllerBase
             result.RemovedSuperAdmins,
             result.SetupToken,
             result.ExpiresAtUtc
+        });
+    }
+
+    /// <summary>SOLO DESARROLLO: escanea y repara integridad enterprise (subscriber/company/billing).</summary>
+    [HttpPost("/api/dev/repair-enterprise-integrity")]
+    [AllowAnonymous]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RepairEnterpriseIntegrity(
+        [FromQuery] bool repair = false,
+        CancellationToken ct = default)
+    {
+        if (!_environment.IsDevelopment())
+            return this.ApiNotFound("Endpoint disponible solo en Development.");
+
+        var report = repair
+            ? await _integrityRepair.RepairAsync(ct)
+            : await _integrityRepair.ScanAsync(ct);
+
+        return this.ApiOk(new
+        {
+            report.Issues,
+            report.RepairedCount,
+            mode = repair ? "repair" : "scan",
         });
     }
 }

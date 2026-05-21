@@ -101,14 +101,20 @@ internal static class IntegrationSeedData
             tid,
             "Matriz",
             "Av. Test",
+            "MAT",
+            branchType: null,
             reference: null,
             phones: null,
+            email: null,
+            managerName: null,
             countryId: null,
             provinceId: null,
             cantonId: null,
             parishId: null,
             latitude: null,
             longitude: null,
+            storageCapacity: null,
+            dailySalesGoal: null,
             rechargeOption: null,
             isMainBranch: true,
             createdBy: userId);
@@ -142,7 +148,7 @@ internal static class IntegrationSeedData
         await db.SaveChangesAsync(ct);
 
         var bodega = Warehouse.Create(
-            tid, branch.Id, "Warehouse Central", "WH-INT", null, null, null, null, null, null, null, null, userId,
+            tid, branch.Id, "Warehouse Central", "WH-INT", null, null, null, null, null, null, null, null, null, userId,
             companyId: company.Id);
         db.Warehouses.Add(bodega);
 

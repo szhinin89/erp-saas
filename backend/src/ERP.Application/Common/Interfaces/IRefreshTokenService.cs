@@ -3,6 +3,7 @@ namespace ERP.Application.Common.Interfaces;
 /// <summary>Constantes de tipo de usuario para refresh tokens. Evita dependencia circular con el namespace de handlers.</summary>
 public static class RefreshUserType
 {
+    public const string Platform   = "Platform";
     public const string SuperAdmin = "SuperAdmin";
     public const string Identity   = "Identity";
     public const string Legacy     = "Legacy";
