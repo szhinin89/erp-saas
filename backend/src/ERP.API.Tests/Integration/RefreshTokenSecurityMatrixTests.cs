@@ -7,6 +7,7 @@ using ERP.API.Contracts;
 using ERP.API.Tests.Support;
 using ERP.Application.Auth.DTOs;
 using ERP.Application.Common.Interfaces;
+using ERP.Domain.Access.Entities;
 using ERP.Infrastructure.Persistence;
 using ERP.Infrastructure.Services;
 
@@ -125,7 +126,7 @@ public sealed class RefreshTokenSecurityMatrixTests
     }
 
     [Fact]
-    public async Task Refresh_token_revocado_tras_rotacion_devuelve_401_y_revoca_familia()
+    public async Task Refresh_reuso_inmediato_tras_rotacion_no_revoca_familia()
     {
         await using var factory = new IntegrationTestWebAppFactory();
         using var client = RefreshTokenHttpTestSupport.CreateAnonymousClient(factory);
@@ -144,7 +145,75 @@ public sealed class RefreshTokenSecurityMatrixTests
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var activos = await db.RefreshTokens.CountAsync(
             t => t.UserId == user.Id && !t.IsRevoked, CancellationToken.None);
-        activos.Should().Be(0, "reutilizar un refresh revocado debe invalidar la familia de tokens");
+        activos.Should().BeGreaterThan(0,
+            "reuso concurrente/inmediato tras rotación no debe invalidar otras sesiones");
+    }
+
+    [Fact]
+    public async Task Refresh_reuso_tardio_tras_rotacion_revoca_solo_familia()
+    {
+        await using var factory = new IntegrationTestWebAppFactory();
+        using var client = RefreshTokenHttpTestSupport.CreateAnonymousClient(factory);
+        var (rawToken, user, subscriberId) = await RefreshTokenHttpTestSupport.CreateRefreshTokenAsync(factory);
+        var secondDeviceToken = await RefreshTokenHttpTestSupport.CreateSecondRefreshTokenAsync(factory, user.Id, subscriberId);
+
+        var first = await RefreshTokenHttpTestSupport.PostRefreshAsync(
+            client, new RefreshHttpRequest { BodyToken = rawToken });
+        first.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        await RefreshTokenHttpTestSupport.BackdateRevokedRotationAsync(factory, rawToken, TimeSpan.FromSeconds(30));
+
+        var reuse = await RefreshTokenHttpTestSupport.PostRefreshAsync(
+            client, new RefreshHttpRequest { BodyToken = rawToken });
+        reuse.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var secondStillActive = await db.RefreshTokens.AnyAsync(
+            t => t.TokenHash == RefreshTokenService.Hash(secondDeviceToken) && !t.IsRevoked,
+            CancellationToken.None);
+        secondStillActive.Should().BeTrue("reuso tardío revoca la familia comprometida, no otros dispositivos");
+
+        var firstFamilyActive = await db.RefreshTokens.CountAsync(
+            t => t.UserId == user.Id && t.SubscriberId == subscriberId && !t.IsRevoked,
+            CancellationToken.None);
+        firstFamilyActive.Should().Be(1, "solo debe quedar activo el token del segundo dispositivo");
+    }
+
+    [Fact]
+    public async Task Refresh_concurrente_20_requests_solo_un_exito()
+    {
+        await using var factory = new IntegrationTestWebAppFactory();
+        var (rawToken, _, _) = await RefreshTokenHttpTestSupport.CreateRefreshTokenAsync(factory);
+
+        var tasks = Enumerable.Range(0, 20)
+            .Select(_ => RefreshTokenHttpTestSupport.PostRefreshAsync(
+                RefreshTokenHttpTestSupport.CreateAnonymousClient(factory),
+                new RefreshHttpRequest { BodyToken = rawToken }))
+            .ToArray();
+
+        var responses = await Task.WhenAll(tasks);
+        responses.Count(r => r.StatusCode == HttpStatusCode.OK).Should().Be(1);
+        responses.Count(r => r.StatusCode == HttpStatusCode.Unauthorized).Should().Be(19);
+    }
+
+    [Fact]
+    public async Task Refresh_multidispositivo_mantiene_sesiones_independientes()
+    {
+        await using var factory = new IntegrationTestWebAppFactory();
+        var (tokenA, user, subscriberId) = await RefreshTokenHttpTestSupport.CreateRefreshTokenAsync(factory);
+        var tokenB = await RefreshTokenHttpTestSupport.CreateSecondRefreshTokenAsync(factory, user.Id, subscriberId);
+
+        using var clientA = RefreshTokenHttpTestSupport.CreateAnonymousClient(factory);
+        using var clientB = RefreshTokenHttpTestSupport.CreateAnonymousClient(factory);
+
+        var refreshA = await RefreshTokenHttpTestSupport.PostRefreshAsync(
+            clientA, new RefreshHttpRequest { BodyToken = tokenA });
+        var refreshB = await RefreshTokenHttpTestSupport.PostRefreshAsync(
+            clientB, new RefreshHttpRequest { BodyToken = tokenB });
+
+        refreshA.StatusCode.Should().Be(HttpStatusCode.OK);
+        refreshB.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
@@ -194,6 +263,46 @@ public sealed class RefreshTokenSecurityMatrixTests
             CancellationToken.None);
         activos.Should().BeLessThanOrEqualTo(1,
             "tras carrera debe quedar como máximo el token nuevo, sin cadena paralela activa");
+    }
+
+    [Fact]
+    public async Task Platform_login_cookie_httpOnly_permite_refresh_tras_recarga()
+    {
+        await using var factory = new IntegrationTestWebAppFactory();
+        const string email = "platform.refresh@test.local";
+        const string password = "Test123!";
+
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+            var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+            var actorId = Guid.NewGuid();
+            var user = IdentityUser.CreatePlatformSuperAdmin(
+                "Platform", "Refresh", email, hasher.HashPassword(password), actorId);
+            await db.IdentityUsers.AddAsync(user);
+            await db.SaveChangesAsync();
+        }
+
+        using var client = factory.CreateClient();
+        var login = await client.PostAsJsonAsync(
+            "/api/platform/auth/login",
+            new { email, password });
+        login.StatusCode.Should().Be(HttpStatusCode.OK);
+        login.Headers.TryGetValues("Set-Cookie", out var setCookie).Should().BeTrue();
+        setCookie!.Any(c =>
+            c.Contains("erp_refresh_token", StringComparison.OrdinalIgnoreCase)
+            && c.Contains("path=/api", StringComparison.OrdinalIgnoreCase)
+            && !c.Contains("path=/api/auth", StringComparison.OrdinalIgnoreCase))
+            .Should().BeTrue("login platform debe persistir cookie con Path=/api");
+
+        var refresh = await client.PostAsJsonAsync("/api/auth/refresh", new { });
+        refresh.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var payload = await refresh.Content.ReadFromJsonAsync<ApiResponse<AuthResponseDto>>(
+            RefreshTokenHttpTestSupport.JsonOpts);
+        payload!.Success.Should().BeTrue();
+        payload.ResponseObject.Role.Should().Be("SuperAdmin");
+        payload.ResponseObject.Token.Should().NotBeNullOrWhiteSpace();
     }
 
     [Fact]

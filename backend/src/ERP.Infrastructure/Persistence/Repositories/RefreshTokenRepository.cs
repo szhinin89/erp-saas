@@ -32,43 +32,70 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
             .ToListAsync(ct);
     }
 
-    public async Task<bool> TryRevokeForRotationAsync(
-        string tokenHash, string replacedByHash, CancellationToken ct = default)
+    public async Task<(bool Success, RefreshToken? Previous)> TryRotateAsync(
+        string tokenHash, RefreshToken successor, CancellationToken ct = default)
     {
-        var now = DateTime.UtcNow;
         var providerName = _context.Database.ProviderName ?? string.Empty;
-
-        if (providerName.Contains("Npgsql", StringComparison.OrdinalIgnoreCase))
+        if (!providerName.Contains("Npgsql", StringComparison.OrdinalIgnoreCase))
         {
-            var affected = await _context.RefreshTokens
-                .Where(t => t.TokenHash == tokenHash && !t.IsRevoked && t.ExpiresAt > now)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(t => t.IsRevoked, true)
-                    .SetProperty(t => t.RevokedAt, now)
-                    .SetProperty(t => t.ReasonRevoked, "Rotación")
-                    .SetProperty(t => t.ReplacedByHash, replacedByHash), ct);
-
-            return affected == 1;
+            var gate = RotationLocks.GetOrAdd(tokenHash, _ => new SemaphoreSlim(1, 1));
+            await gate.WaitAsync(ct);
+            try
+            {
+                return await RotateInTransactionAsync(tokenHash, successor, ct);
+            }
+            finally
+            {
+                gate.Release();
+            }
         }
 
-        var gate = RotationLocks.GetOrAdd(tokenHash, _ => new SemaphoreSlim(1, 1));
-        await gate.WaitAsync(ct);
+        return await RotateInTransactionAsync(tokenHash, successor, ct);
+    }
+
+    private async Task<(bool Success, RefreshToken? Previous)> RotateInTransactionAsync(
+        string tokenHash, RefreshToken successor, CancellationToken ct)
+    {
+        await using var tx = await _context.Database.BeginTransactionAsync(ct);
         try
         {
-            var tracked = await _context.RefreshTokens
+            var now = DateTime.UtcNow;
+            var stored = await _context.RefreshTokens
                 .FirstOrDefaultAsync(t => t.TokenHash == tokenHash, ct);
 
-            if (tracked is null || tracked.IsRevoked || tracked.ExpiresAt <= now)
-                return false;
+            if (stored is null || stored.IsRevoked || stored.ExpiresAt <= now)
+            {
+                await tx.RollbackAsync(ct);
+                return (false, stored);
+            }
 
-            tracked.Revoke("Rotación", replacedByHash);
+            stored.Revoke("Rotación", successor.TokenHash);
+            await _context.RefreshTokens.AddAsync(successor, ct);
             await _context.SaveChangesAsync(ct);
-            return true;
+            await tx.CommitAsync(ct);
+            return (true, stored);
         }
-        finally
+        catch
         {
-            gate.Release();
+            await tx.RollbackAsync(ct);
+            throw;
         }
+    }
+
+    public async Task<int> RevokeFamilyAsync(Guid familyId, string reason, CancellationToken ct = default)
+    {
+        var now = DateTime.UtcNow;
+        var tokens = await _context.RefreshTokens
+            .Where(t => t.FamilyId == familyId && !t.IsRevoked && t.ExpiresAt > now)
+            .ToListAsync(ct);
+
+        foreach (var token in tokens)
+            token.Revoke(reason);
+
+        if (tokens.Count > 0)
+            await _context.SaveChangesAsync(ct);
+
+        return tokens.Count;
     }
 
     public Task SaveChangesAsync(CancellationToken ct = default)

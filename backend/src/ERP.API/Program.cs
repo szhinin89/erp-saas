@@ -84,6 +84,21 @@ builder.Services.AddRateLimiter(options =>
                 QueueLimit = 0,
             });
     });
+
+    var refreshIpLimit = builder.Configuration.GetValue("Auth:RefreshRateLimitPerIpPerMinute", 60);
+    options.AddPolicy("auth-refresh-ip", httpContext =>
+    {
+        var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter(
+            ip,
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = refreshIpLimit,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+            });
+    });
 });
 
 // IDistributedCache: Redis si Redis:ConnectionString o ConnectionStrings:Redis está definida;
@@ -159,6 +174,8 @@ var kardexSection = builder.Configuration.GetSection(
 builder.Services.Configure<ERP.Application.Common.Config.KardexOptions>(kardexSection);
 builder.Services.Configure<ERP.Application.Common.Config.PasswordResetOptions>(
     builder.Configuration.GetSection(ERP.Application.Common.Config.PasswordResetOptions.SectionName));
+builder.Services.Configure<ERP.Application.Common.Config.AuthOptions>(
+    builder.Configuration.GetSection(ERP.Application.Common.Config.AuthOptions.Section));
 builder.Services.Configure<ERP.Application.Common.Config.SaasEntitlementsOptions>(
     builder.Configuration.GetSection(ERP.Application.Common.Config.SaasEntitlementsOptions.Section));
 builder.Services.AddSingleton(sp =>

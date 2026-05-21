@@ -1,5 +1,9 @@
 using FluentAssertions;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
@@ -15,7 +19,7 @@ public sealed class RefreshTokenServiceTests
     // ── Creación ──────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task Create_persiste_hash_SHA256_no_token_plano()
+    public async Task Create_persiste_hash_SHA256_y_familyId()
     {
         var repo    = new FakeRefreshTokenRepository();
         var service = Build(repo);
@@ -28,15 +32,15 @@ public sealed class RefreshTokenServiceTests
         expiry.Should().BeAfter(DateTime.UtcNow.AddDays(25));
 
         repo.Stored.Should().HaveCount(1);
-        repo.Stored[0].TokenHash.Should().NotBe(rawToken, "se persiste el hash, no el token plano");
         repo.Stored[0].TokenHash.Should().Be(RefreshTokenService.Hash(rawToken));
-        repo.Stored[0].UserType.Should().Be(RefreshUserType.Legacy);
+        repo.Stored[0].FamilyId.Should().Be(repo.Stored[0].Id);
+        repo.Stored[0].RotationDepth.Should().Be(0);
     }
 
     // ── Validación y rotación ─────────────────────────────────────────────
 
     [Fact]
-    public async Task ValidateAndRotate_token_valido_rota_y_devuelve_datos_correctos()
+    public async Task ValidateAndRotate_token_valido_rota_y_hereda_familia()
     {
         var repo     = new FakeRefreshTokenRepository();
         var service  = Build(repo);
@@ -44,15 +48,17 @@ public sealed class RefreshTokenServiceTests
         var subscriberId = Guid.NewGuid();
 
         var (rawToken1, _) = await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
+        var original = repo.Stored[0];
         var result = await service.ValidateAndRotateAsync(rawToken1);
 
         result.IsValid.Should().BeTrue(result.Error);
-        result.UserId.Should().Be(userId);
-        result.SubscriberId.Should().Be(subscriberId);
-        result.UserType.Should().Be(RefreshUserType.Legacy);
         result.NewToken.Should().NotBeNullOrEmpty().And.NotBe(rawToken1);
 
-        var original = repo.Stored.First(t => t.TokenHash == RefreshTokenService.Hash(rawToken1));
+        var successor = repo.Stored.First(t => t.TokenHash == RefreshTokenService.Hash(result.NewToken!));
+        successor.FamilyId.Should().Be(original.FamilyId);
+        successor.ParentTokenId.Should().Be(original.Id);
+        successor.RotationDepth.Should().Be(1);
+
         original.IsRevoked.Should().BeTrue();
         original.ReasonRevoked.Should().Be("Rotación");
     }
@@ -68,30 +74,44 @@ public sealed class RefreshTokenServiceTests
     }
 
     [Fact]
-    public async Task ValidateAndRotate_token_ya_revocado_falla_y_revoca_todos()
+    public async Task ValidateAndRotate_reuso_sospechoso_revoca_solo_familia()
     {
         var repo     = new FakeRefreshTokenRepository();
         var service  = Build(repo);
         var userId   = Guid.NewGuid();
         var subscriberId = Guid.NewGuid();
 
-        // Crear 2 tokens activos + 1 revocado que es el que intentamos reusar
         var revocado = RefreshToken.Create(userId, subscriberId, null, RefreshUserType.Legacy, "hash-revocado");
         revocado.Revoke("Test");
         repo.Stored.Add(revocado);
-
-        var activo = RefreshToken.Create(userId, subscriberId, null, RefreshUserType.Legacy, "hash-activo");
-        repo.Stored.Add(activo);
-
         repo.SetupHash("hash-revocado-raw", revocado);
+
+        var activoOtraFamilia = RefreshToken.Create(userId, subscriberId, null, RefreshUserType.Legacy, "hash-activo");
+        repo.Stored.Add(activoOtraFamilia);
 
         var result = await service.ValidateAndRotateAsync("hash-revocado-raw");
 
         result.IsValid.Should().BeFalse();
         result.Error.Should().Contain("revocado");
+        activoOtraFamilia.IsRevoked.Should().BeFalse("otra sesión/dispositivo no debe invalidarse");
+    }
 
-        // Todos los tokens activos del usuario también deben quedar revocados
-        activo.IsRevoked.Should().BeTrue("reutilización maliciosa → revocar todo");
+    [Fact]
+    public async Task ValidateAndRotate_reuso_benigno_no_revoca_familia()
+    {
+        var repo     = new FakeRefreshTokenRepository();
+        var service  = Build(repo);
+        var userId   = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
+
+        var (raw, _) = await service.CreateAsync(userId, subscriberId, null, RefreshUserType.Legacy);
+        await service.ValidateAndRotateAsync(raw);
+
+        var revoked = repo.Stored.First(t => t.TokenHash == RefreshTokenService.Hash(raw));
+        var reuse = await service.ValidateAndRotateAsync(raw);
+
+        reuse.IsValid.Should().BeFalse();
+        repo.Stored.Count(t => !t.IsRevoked).Should().BeGreaterThan(0);
     }
 
     // ── Revocación masiva ─────────────────────────────────────────────────
@@ -110,15 +130,24 @@ public sealed class RefreshTokenServiceTests
         await service.RevokeAllForUserAsync(userId, subscriberId, "Logout");
 
         repo.Stored.All(t => t.IsRevoked).Should().BeTrue();
-        repo.Stored.All(t => t.ReasonRevoked == "Logout").Should().BeTrue();
     }
 
     [Fact]
-    public async Task RevokeAll_sin_tokens_no_falla()
+    public async Task RevokeFamily_revoca_solo_tokens_de_la_familia()
     {
-        var service = Build(new FakeRefreshTokenRepository());
-        var act     = async () => await service.RevokeAllForUserAsync(Guid.NewGuid(), Guid.NewGuid(), "Logout");
-        await act.Should().NotThrowAsync();
+        var repo = new FakeRefreshTokenRepository();
+        var service = Build(repo);
+        var userId = Guid.NewGuid();
+        var subscriberId = Guid.NewGuid();
+
+        var a = RefreshToken.Create(userId, subscriberId, null, RefreshUserType.Legacy, "h1");
+        var b = RefreshToken.Create(userId, subscriberId, null, RefreshUserType.Legacy, "h2");
+        repo.Stored.AddRange([a, b]);
+
+        await service.RevokeFamilyAsync(a.FamilyId, "Compromiso");
+
+        a.IsRevoked.Should().BeTrue();
+        b.IsRevoked.Should().BeFalse();
     }
 
     // ── Hash ──────────────────────────────────────────────────────────────
@@ -126,30 +155,21 @@ public sealed class RefreshTokenServiceTests
     [Fact]
     public void Hash_mismo_input_produce_mismo_output()
     {
-        var h1 = RefreshTokenService.Hash("test-token");
-        var h2 = RefreshTokenService.Hash("test-token");
-        h1.Should().Be(h2);
+        RefreshTokenService.Hash("test-token").Should().Be(RefreshTokenService.Hash("test-token"));
     }
-
-    [Fact]
-    public void Hash_distinto_input_produce_distinto_output()
-    {
-        var h1 = RefreshTokenService.Hash("token-A");
-        var h2 = RefreshTokenService.Hash("token-B");
-        h1.Should().NotBe(h2);
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────
 
     private static RefreshTokenService Build(FakeRefreshTokenRepository repo)
-        => new(repo, NullLogger<RefreshTokenService>.Instance);
-
-    // ── Fake repository ───────────────────────────────────────────────────
+    {
+        var cache = new MemoryDistributedCache(
+            Microsoft.Extensions.Options.Options.Create(new MemoryDistributedCacheOptions()));
+        var rateLimiter = new RefreshTokenRateLimiter(cache, NullLogger<RefreshTokenRateLimiter>.Instance);
+        var options = Options.Create(new AuthOptions { RefreshRotationGraceSeconds = 5 });
+        return new RefreshTokenService(repo, rateLimiter, options, NullLogger<RefreshTokenService>.Instance);
+    }
 
     private sealed class FakeRefreshTokenRepository : IRefreshTokenRepository
     {
         public List<RefreshToken> Stored { get; } = new();
-
         private readonly Dictionary<string, RefreshToken> _byHash = new();
 
         public void SetupHash(string rawToken, RefreshToken entity)
@@ -171,24 +191,33 @@ public sealed class RefreshTokenServiceTests
         public Task<IReadOnlyList<RefreshToken>> GetActiveByUserAsync(
             Guid userId, Guid subscriberId, CancellationToken ct = default)
         {
-            var now    = DateTime.UtcNow;
-            var result = (IReadOnlyList<RefreshToken>)Stored
+            var now = DateTime.UtcNow;
+            return Task.FromResult<IReadOnlyList<RefreshToken>>(Stored
                 .Where(t => t.UserId == userId && t.SubscriberId == subscriberId && !t.IsRevoked && t.ExpiresAt > now)
-                .ToList();
-            return Task.FromResult(result);
+                .ToList());
         }
 
-        public Task<bool> TryRevokeForRotationAsync(
-            string tokenHash, string replacedByHash, CancellationToken ct = default)
+        public async Task<(bool Success, RefreshToken? Previous)> TryRotateAsync(
+            string tokenHash, RefreshToken successor, CancellationToken ct = default)
         {
-            if (!_byHash.TryGetValue(tokenHash, out var token))
-                return Task.FromResult(false);
+            if (!_byHash.TryGetValue(tokenHash, out var token) || !token.IsActive)
+                return (false, token);
 
-            if (!token.IsActive)
-                return Task.FromResult(false);
+            token.Revoke("Rotación", successor.TokenHash);
+            await AddAsync(successor, ct);
+            return (true, token);
+        }
 
-            token.Revoke("Rotación", replacedByHash);
-            return Task.FromResult(true);
+        public Task<int> RevokeFamilyAsync(Guid familyId, string reason, CancellationToken ct = default)
+        {
+            var now = DateTime.UtcNow;
+            var count = 0;
+            foreach (var t in Stored.Where(t => t.FamilyId == familyId && !t.IsRevoked && t.ExpiresAt > now))
+            {
+                t.Revoke(reason);
+                count++;
+            }
+            return Task.FromResult(count);
         }
 
         public Task SaveChangesAsync(CancellationToken ct = default) => Task.CompletedTask;

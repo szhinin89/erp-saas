@@ -2,7 +2,10 @@ import {
   clearCompaniesDetailSubscriberId,
   clearCompaniesSubscriptionSubscriberId,
 } from '../../navigation/companiesSubscriberDetailNav';
-import { resetAuthTransportState } from '../../modules/lib/api';
+import {
+  resetRefreshSessionFlight,
+  broadcastAuthLogout,
+} from '../../lib/session/authRefreshManager';
 import { useAccessStore } from '../../store/accessStore';
 import { useAuthStore } from '../../store/authStore';
 import { usePermissionsStore } from '../../store/permissionsStore';
@@ -18,6 +21,8 @@ import {
 
 export type FullLogoutOptions = {
   resetStores?: boolean;
+  /** Publicar logout a otras pestañas (default true). */
+  broadcast?: boolean;
 };
 
 /** Elimina artefactos de sesión (sessionStorage + legacy localStorage). */
@@ -50,9 +55,13 @@ export function clearPersistedSessionArtifacts(): void {
 }
 
 export function fullLogout(options: FullLogoutOptions = {}): void {
-  const { resetStores = true } = options;
+  const { resetStores = true, broadcast = true } = options;
 
-  resetAuthTransportState();
+  if (broadcast) {
+    broadcastAuthLogout();
+  }
+
+  resetRefreshSessionFlight();
   clearAccessToken();
 
   if (resetStores) {

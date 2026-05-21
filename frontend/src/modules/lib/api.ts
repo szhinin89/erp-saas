@@ -1,12 +1,8 @@
 import axios, { type AxiosRequestConfig } from 'axios';
 import { fullLogout } from '../../lib/session/fullLogout';
-import {
-  clearAccessToken,
-  getAccessToken,
-  setAccessToken,
-} from '../../lib/session/authTokenMemory';
-import { useAuthStore } from '../../store/authStore';
+import { clearAccessToken, getAccessToken } from '../../lib/session/authTokenMemory';
 import { shouldAttemptTokenRefresh } from './authRefreshPolicy';
+import { refreshSessionToken } from '../../lib/session/refreshSessionToken';
 
 /**
  * Cliente HTTP centralizado.
@@ -14,6 +10,7 @@ import { shouldAttemptTokenRefresh } from './authRefreshPolicy';
  * Tokens:
  * - Access token: memoria (`authTokenMemory`) + espejo en Zustand (no persistido).
  * - Refresh token: cookie httpOnly del backend (`withCredentials: true`).
+ * - Refresh coordinado: `authRefreshManager` (Web Locks + BroadcastChannel + single-flight).
  */
 
 const viteApiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? '';
@@ -24,21 +21,9 @@ export const api = axios.create({
   withCredentials: true,
 });
 
-type QueueItem = { resolve: (token: string) => void; reject: (err: unknown) => void };
-
-let isRefreshing   = false;
-let pendingQueue: QueueItem[] = [];
-
-function processQueue(error: unknown, newToken: string | null = null) {
-  pendingQueue.forEach((item) =>
-    error ? item.reject(error) : item.resolve(newToken!),
-  );
-  pendingQueue = [];
-}
-
+/** @deprecated Usar resetRefreshSessionFlight vía fullLogout. Mantener por compatibilidad de tests. */
 export function resetAuthTransportState() {
-  isRefreshing = false;
-  pendingQueue = [];
+  /* cola duplicada eliminada — refreshSessionToken dedupe en authRefreshManager */
 }
 
 api.interceptors.request.use((config) => {
@@ -60,50 +45,20 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    if (isRefreshing) {
-      return new Promise<string>((resolve, reject) => {
-        pendingQueue.push({ resolve, reject });
-      })
-        .then((newToken) => {
-          originalRequest.headers = {
-            ...originalRequest.headers,
-            Authorization: `Bearer ${newToken}`,
-          };
-          return api(originalRequest);
-        })
-        .catch((e) => Promise.reject(e));
-    }
-
     originalRequest._retry = true;
-    isRefreshing            = true;
 
     try {
-      const refreshRes = await axios.post<{
-        responseObject: { token: string; refreshToken?: string | null };
-      }>(
-        `${viteApiBase}/api/auth/refresh`,
-        {},
-        { withCredentials: true },
-      );
-
-      const newAccessToken = refreshRes.data.responseObject.token;
-      setAccessToken(newAccessToken);
-      useAuthStore.getState().updateTokens(newAccessToken, null);
-      processQueue(null, newAccessToken);
-
+      const newAccessToken = await refreshSessionToken();
       originalRequest.headers = {
         ...originalRequest.headers,
         Authorization: `Bearer ${newAccessToken}`,
       };
       return api(originalRequest);
     } catch (refreshError) {
-      processQueue(refreshError, null);
       clearAccessToken();
       fullLogout();
       window.location.href = '/login';
       return Promise.reject(refreshError);
-    } finally {
-      isRefreshing = false;
     }
   },
 );

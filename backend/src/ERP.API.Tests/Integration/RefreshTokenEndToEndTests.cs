@@ -98,7 +98,7 @@ public sealed class RefreshTokenEndToEndTests
         var result2 = await service.ValidateAndRotateAsync(rawToken);
 
         result2.IsValid.Should().BeFalse();
-        result2.Error.Should().Contain("revocado");
+        result2.Error.Should().Contain("ya utilizado");
     }
 
     [Fact]

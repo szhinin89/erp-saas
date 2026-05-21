@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.RateLimiting;
+using ERP.API.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,39 +31,32 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public class AuthController : ControllerBase
 {
-    private const string RefreshCookieName = "erp_refresh_token";
-
     private readonly IMediator _mediator;
 
     public AuthController(IMediator mediator) => _mediator = mediator;
 
     private void SetRefreshCookie(string rawToken, DateTime expiry)
     {
-        Response.Cookies.Append(RefreshCookieName, rawToken, new CookieOptions
-        {
-            HttpOnly  = true,
-            Secure    = !HttpContext.Request.IsHttps ? false : true,
-            SameSite  = SameSiteMode.Strict,
-            Expires   = expiry,
-            Path      = "/api/auth",
-        });
+        Response.Cookies.Append(
+            AuthRefreshCookie.Name,
+            rawToken,
+            AuthRefreshCookie.BuildOptions(HttpContext.Request, expiry));
     }
 
     private void ClearRefreshCookie()
     {
-        Response.Cookies.Delete(RefreshCookieName, new CookieOptions
+        foreach (var path in new[] { AuthRefreshCookie.Path, AuthRefreshCookie.LegacyPath })
         {
-            HttpOnly = true,
-            Secure   = !HttpContext.Request.IsHttps ? false : true,
-            SameSite = SameSiteMode.Strict,
-            Path     = "/api/auth",
-        });
+            Response.Cookies.Delete(
+                AuthRefreshCookie.Name,
+                AuthRefreshCookie.BuildDeleteOptions(HttpContext.Request, path));
+        }
     }
 
     /// <summary>Body tiene precedencia sobre cookie httpOnly (clientes móviles/legacy).</summary>
     private string? ResolveRefreshToken(string? fromBody)
         => string.IsNullOrWhiteSpace(fromBody)
-            ? Request.Cookies[RefreshCookieName]
+            ? Request.Cookies[AuthRefreshCookie.Name]
             : fromBody;
 
     /// <summary>Registra un nuevo usuario en un tenant existente.</summary>
@@ -152,8 +147,10 @@ public class AuthController : ControllerBase
     /// <summary>Renueva el access token usando un refresh token válido.</summary>
     [HttpPost("refresh")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth-refresh-ip")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<IActionResult> Refresh([FromBody] RefreshRequest? request, CancellationToken ct)
     {
         var rawToken = ResolveRefreshToken(request?.RefreshToken);
@@ -168,6 +165,11 @@ public class AuthController : ControllerBase
 
             return this.ApiOk(result.Value);
         }
+
+        if (result.ErrorCode == "rate_limited")
+            return StatusCode(
+                StatusCodes.Status429TooManyRequests,
+                new ApiResponse<AuthResponseDto?>(false, result.Error ?? "Demasiados intentos.", null));
 
         return this.ApiUnauthorized(result.Error ?? "Refresh token inválido.");
     }

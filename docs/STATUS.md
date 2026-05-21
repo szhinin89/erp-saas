@@ -175,7 +175,8 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 
 | Item | Status |
 |------|--------|
-| JWT + refresh rotation | ✅ |
+| JWT + refresh rotation (FamilyId, grace configurable, revocación por familia, rate limit IP/user/family, audit logs) | ✅ |
+| Multi-tab SPA (Web Locks + BroadcastChannel + bootstrap retry) | ✅ |
 | Permission policies | ✅ |
 | Company isolation (app layer) | ✅ |
 | SRI certificate password encryption (Data Protection) | ✅ |

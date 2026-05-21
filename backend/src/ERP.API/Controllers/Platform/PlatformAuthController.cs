@@ -1,3 +1,4 @@
+using ERP.API.Auth;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Platform.Auth.UseCases.PlatformLogin;
@@ -12,8 +13,6 @@ namespace ERP.API.Controllers.Platform;
 [Produces("application/json")]
 public sealed class PlatformAuthController : ControllerBase
 {
-    private const string RefreshCookieName = "erp_refresh_token";
-
     private readonly IMediator _mediator;
 
     public PlatformAuthController(IMediator mediator) => _mediator = mediator;
@@ -30,14 +29,10 @@ public sealed class PlatformAuthController : ControllerBase
 
         if (result.Value?.RefreshToken is not null && result.Value.RefreshTokenExpiry is not null)
         {
-            Response.Cookies.Append(RefreshCookieName, result.Value.RefreshToken, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = Request.IsHttps,
-                SameSite = SameSiteMode.Strict,
-                Expires = result.Value.RefreshTokenExpiry.Value,
-                Path = "/api/auth",
-            });
+            Response.Cookies.Append(
+                AuthRefreshCookie.Name,
+                result.Value.RefreshToken,
+                AuthRefreshCookie.BuildOptions(Request, result.Value.RefreshTokenExpiry.Value));
         }
 
         return this.ApiOk(result.Value);

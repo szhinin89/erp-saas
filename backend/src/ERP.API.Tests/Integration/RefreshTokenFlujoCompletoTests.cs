@@ -125,16 +125,21 @@ public sealed class RefreshTokenFlujoCompletoTests
         // Primer uso normal del token1 → rota
         await service.ValidateAndRotateAsync(rawToken1);
 
-        // Intento de reuso del token1 (ya revocado) → detecta posible compromiso
+        // Simular reuso tardío (fuera de ventana de gracia) → robo de token
+        var hash = RefreshTokenService.Hash(rawToken1);
+        var rotated = await db.RefreshTokens.SingleAsync(t => t.TokenHash == hash, CancellationToken.None);
+        db.Entry(rotated).Property(t => t.RevokedAt).CurrentValue = DateTime.UtcNow.AddSeconds(-30);
+        await db.SaveChangesAsync(CancellationToken.None);
+
         var resultMalicioso = await service.ValidateAndRotateAsync(rawToken1);
 
         resultMalicioso.IsValid.Should().BeFalse("token ya fue revocado");
         resultMalicioso.Error.Should().Contain("revocado");
 
-        // Todos los tokens del usuario deben quedar revocados (respuesta a posible compromiso)
+        // Solo la familia comprometida debe quedar revocada; el segundo dispositivo sigue activo
         var tokenesActivos = await db.RefreshTokens
             .CountAsync(t => t.UserId == userId && !t.IsRevoked, CancellationToken.None);
-        tokenesActivos.Should().Be(0, "la detección de reutilización revoca todos los tokens");
+        tokenesActivos.Should().Be(1, "reutilización sospechosa revoca la familia, no otras sesiones");
     }
 
     // ── Logout ────────────────────────────────────────────────────────────

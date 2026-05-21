@@ -28,6 +28,15 @@ public sealed class RefreshToken
     public string?  ReasonRevoked  { get; private set; }
     public DateTime CreatedAt      { get; private set; }
 
+    /// <summary>Cadena de rotación (sesión/dispositivo). Todos los sucesores comparten el mismo FamilyId.</summary>
+    public Guid     FamilyId       { get; private set; }
+
+    /// <summary>Token anterior en la cadena de rotación, si aplica.</summary>
+    public Guid?    ParentTokenId  { get; private set; }
+
+    /// <summary>Profundidad de rotación dentro de la familia (0 = emisión inicial).</summary>
+    public int      RotationDepth  { get; private set; }
+
     private RefreshToken() { }
 
     public static RefreshToken Create(
@@ -35,19 +44,26 @@ public sealed class RefreshToken
         Guid   subscriberId,
         Guid?  companyId,
         string userType,
-        string tokenHash)
+        string tokenHash,
+        Guid?  familyId = null,
+        Guid?  parentTokenId = null,
+        int    rotationDepth = 0)
     {
+        var id = Guid.NewGuid();
         return new RefreshToken
         {
-            Id        = Guid.NewGuid(),
-            UserId    = userId,
-            SubscriberId  = subscriberId,
-            CompanyId = companyId == Guid.Empty ? null : companyId,
-            UserType  = userType,
-            TokenHash = tokenHash,
-            ExpiresAt = DateTime.UtcNow.AddDays(ExpiryDays),
-            IsRevoked = false,
-            CreatedAt = DateTime.UtcNow,
+            Id             = id,
+            UserId         = userId,
+            SubscriberId   = subscriberId,
+            CompanyId      = companyId == Guid.Empty ? null : companyId,
+            UserType       = userType,
+            TokenHash      = tokenHash,
+            ExpiresAt      = DateTime.UtcNow.AddDays(ExpiryDays),
+            IsRevoked      = false,
+            CreatedAt      = DateTime.UtcNow,
+            FamilyId       = familyId ?? id,
+            ParentTokenId  = parentTokenId,
+            RotationDepth  = rotationDepth,
         };
     }
 

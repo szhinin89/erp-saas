@@ -41,10 +41,25 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
 
         builder.Property(e => e.CreatedAt).HasColumnName("created_at").IsRequired();
 
+        builder.Property(e => e.FamilyId)
+            .HasColumnName("family_id")
+            .IsRequired();
+
+        builder.Property(e => e.ParentTokenId)
+            .HasColumnName("parent_token_id");
+
+        builder.Property(e => e.RotationDepth)
+            .HasColumnName("rotation_depth")
+            .IsRequired();
+
         // Búsqueda principal por hash (único para prevenir duplicados)
         builder.HasIndex(e => e.TokenHash)
             .IsUnique()
             .HasDatabaseName("ix_refresh_tokens_hash");
+
+        // Índice para revocación por familia (replay sospechoso)
+        builder.HasIndex(e => e.FamilyId)
+            .HasDatabaseName("ix_refresh_tokens_family_id");
 
         // Índice para revocación masiva por usuario/tenant
         builder.HasIndex(e => new { e.UserId, e.SubscriberId })

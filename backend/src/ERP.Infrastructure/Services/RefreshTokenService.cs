@@ -2,6 +2,8 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
@@ -13,14 +15,20 @@ public sealed class RefreshTokenService : IRefreshTokenService
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> RotationGates = new();
 
     private readonly IRefreshTokenRepository _repo;
+    private readonly RefreshTokenRateLimiter _rateLimiter;
+    private readonly AuthOptions _authOptions;
     private readonly ILogger<RefreshTokenService> _logger;
 
     public RefreshTokenService(
         IRefreshTokenRepository repo,
+        RefreshTokenRateLimiter rateLimiter,
+        IOptions<AuthOptions> authOptions,
         ILogger<RefreshTokenService> logger)
     {
-        _repo   = repo;
-        _logger = logger;
+        _repo         = repo;
+        _rateLimiter  = rateLimiter;
+        _authOptions  = authOptions.Value;
+        _logger       = logger;
     }
 
     public async Task<(string RawToken, DateTime Expiry)> CreateAsync(
@@ -34,8 +42,8 @@ public sealed class RefreshTokenService : IRefreshTokenService
         await _repo.SaveChangesAsync(ct);
 
         _logger.LogDebug(
-            "RefreshToken creado para usuario {UserId} ({UserType}), expira {Expiry}",
-            userId, userType, entity.ExpiresAt);
+            "RefreshToken creado userId={UserId} familyId={FamilyId} userType={UserType} expiry={Expiry}",
+            userId, entity.FamilyId, userType, entity.ExpiresAt);
 
         return (rawToken, entity.ExpiresAt);
     }
@@ -59,49 +67,93 @@ public sealed class RefreshTokenService : IRefreshTokenService
     private async Task<RefreshTokenValidationResult> ValidateAndRotateCoreAsync(
         string rawToken, string tokenHash, CancellationToken ct)
     {
-        var stored    = await _repo.GetByHashAsync(tokenHash, ct);
+        var stored = await _repo.GetByHashAsync(tokenHash, ct);
         if (stored is null)
-            return RefreshTokenValidationResult.Fail("Refresh token no válido.");
-
-        if (stored.IsRevoked)
         {
-            // Posible reutilización maliciosa — revocar toda la familia
-            _logger.LogWarning(
-                "Intento de reutilizar refresh token revocado para usuario {UserId}. " +
-                "Revocando todos los tokens activos.", stored.UserId);
-            await RevokeAllForUserAsync(stored.UserId, stored.SubscriberId, "Reutilización detectada", ct);
-            return RefreshTokenValidationResult.Fail("Refresh token revocado. Inicia sesión nuevamente.");
+            LogAudit(RefreshTokenAuditEvents.RefreshRotationFailed, null, null, null, "Token no encontrado");
+            return RefreshTokenValidationResult.Fail("Refresh token no válido.");
         }
 
+        if (stored.IsRevoked)
+            return await HandleRevokedReuseAsync(stored, ct);
+
         if (!stored.IsActive)
+        {
+            LogAudit(RefreshTokenAuditEvents.RefreshRotationFailed, stored, null, null, "Expirado");
             return RefreshTokenValidationResult.Fail("Refresh token expirado. Inicia sesión nuevamente.");
+        }
+
+        if (!await CheckRateLimitsAsync(stored, ct))
+            return RefreshTokenValidationResult.RateLimited("Demasiados intentos de renovación. Espera un momento.");
 
         var newRaw  = GenerateRaw();
         var newHash = Hash(newRaw);
-        var revoked = await _repo.TryRevokeForRotationAsync(tokenHash, newHash, ct);
+        var successor = RefreshToken.Create(
+            stored.UserId,
+            stored.SubscriberId,
+            stored.CompanyId,
+            stored.UserType,
+            newHash,
+            familyId: stored.FamilyId,
+            parentTokenId: stored.Id,
+            rotationDepth: stored.RotationDepth + 1);
 
-        if (!revoked)
+        var (rotated, previous) = await _repo.TryRotateAsync(tokenHash, successor, ct);
+
+        if (!rotated)
         {
             var again = await _repo.GetByHashAsync(tokenHash, ct);
             if (again is not null && again.IsRevoked)
-            {
-                _logger.LogWarning(
-                    "Intento de reutilizar refresh token revocado para usuario {UserId}. " +
-                    "Revocando todos los tokens activos.", stored.UserId);
-                await RevokeAllForUserAsync(stored.UserId, stored.SubscriberId, "Reutilización detectada", ct);
-                return RefreshTokenValidationResult.Fail("Refresh token revocado. Inicia sesión nuevamente.");
-            }
+                return await HandleRevokedReuseAsync(again, ct);
 
+            LogAudit(RefreshTokenAuditEvents.RefreshRotationFailed, stored, null, null, "Rotación concurrente");
             return RefreshTokenValidationResult.Fail("Refresh token ya utilizado. Inicia sesión nuevamente.");
         }
 
-        var entity = RefreshToken.Create(
-            stored.UserId, stored.SubscriberId, stored.CompanyId, stored.UserType, newHash);
-        await _repo.AddAsync(entity, ct);
-        await _repo.SaveChangesAsync(ct);
+        LogAudit(
+            RefreshTokenAuditEvents.RefreshSuccess,
+            previous ?? stored,
+            successor.Id,
+            successor.TokenHash,
+            null);
 
         return RefreshTokenValidationResult.Ok(
-            stored.UserId, stored.SubscriberId, stored.CompanyId, stored.UserType, newRaw, entity.ExpiresAt);
+            stored.UserId, stored.SubscriberId, stored.CompanyId, stored.UserType, newRaw, successor.ExpiresAt);
+    }
+
+    private async Task<RefreshTokenValidationResult> HandleRevokedReuseAsync(
+        RefreshToken stored, CancellationToken ct)
+    {
+        if (IsBenignRotationReuse(stored))
+        {
+            LogAudit(
+                RefreshTokenAuditEvents.RefreshReuseBenign,
+                stored,
+                null,
+                null,
+                "Reuso inmediato post-rotación");
+            return RefreshTokenValidationResult.Fail("Refresh token ya utilizado. Inicia sesión nuevamente.");
+        }
+
+        LogAudit(
+            RefreshTokenAuditEvents.RefreshReuseSuspicious,
+            stored,
+            null,
+            null,
+            "Reuso tardío — posible robo");
+
+        var revokedCount = await _repo.RevokeFamilyAsync(stored.FamilyId, "Reutilización detectada", ct);
+
+        _logger.LogWarning(
+            "{Event} userId={UserId} subscriberId={SubscriberId} familyId={FamilyId} tokenId={TokenId} revokedCount={RevokedCount}",
+            RefreshTokenAuditEvents.RefreshFamilyRevoked,
+            stored.UserId,
+            stored.SubscriberId,
+            stored.FamilyId,
+            stored.Id,
+            revokedCount);
+
+        return RefreshTokenValidationResult.Fail("Refresh token revocado. Inicia sesión nuevamente.");
     }
 
     public async Task RevokeAllForUserAsync(
@@ -115,8 +167,16 @@ public sealed class RefreshTokenService : IRefreshTokenService
             await _repo.SaveChangesAsync(ct);
 
         _logger.LogInformation(
-            "Revocados {Count} refresh tokens de usuario {UserId} — motivo: {Reason}",
+            "Revocados {Count} refresh tokens userId={UserId} reason={Reason}",
             tokens.Count, userId, reason);
+    }
+
+    public async Task RevokeFamilyAsync(Guid familyId, string reason, CancellationToken ct = default)
+    {
+        var count = await _repo.RevokeFamilyAsync(familyId, reason, ct);
+        _logger.LogInformation(
+            "Familia revocada familyId={FamilyId} count={Count} reason={Reason}",
+            familyId, count, reason);
     }
 
     public async Task RevokeAsync(string rawToken, string reason, CancellationToken ct = default)
@@ -130,7 +190,60 @@ public sealed class RefreshTokenService : IRefreshTokenService
         await _repo.SaveChangesAsync(ct);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    private async Task<bool> CheckRateLimitsAsync(RefreshToken stored, CancellationToken ct)
+    {
+        var window = TimeSpan.FromMinutes(1);
+        var userOk = await _rateLimiter.TryAcquireAsync(
+            $"user:{stored.UserId}",
+            _authOptions.RefreshRateLimitPerUserPerMinute,
+            window,
+            ct);
+        if (!userOk)
+        {
+            LogAudit(RefreshTokenAuditEvents.RefreshRateLimited, stored, null, null, "user");
+            return false;
+        }
+
+        var familyOk = await _rateLimiter.TryAcquireAsync(
+            $"family:{stored.FamilyId}",
+            _authOptions.RefreshRateLimitPerFamilyPerMinute,
+            window,
+            ct);
+        if (!familyOk)
+        {
+            LogAudit(RefreshTokenAuditEvents.RefreshRateLimited, stored, null, null, "family");
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool IsBenignRotationReuse(RefreshToken stored)
+        => stored.ReasonRevoked == "Rotación"
+           && stored.RevokedAt.HasValue
+           && (DateTime.UtcNow - stored.RevokedAt.Value).TotalSeconds
+              < _authOptions.RefreshRotationGraceSeconds;
+
+    private void LogAudit(
+        string eventName,
+        RefreshToken? token,
+        Guid? successorId,
+        string? successorHash,
+        string? detail)
+    {
+        _logger.LogInformation(
+            "{Event} userId={UserId} subscriberId={SubscriberId} familyId={FamilyId} tokenId={TokenId} " +
+            "successorId={SuccessorId} successorHash={SuccessorHash} depth={Depth} detail={Detail}",
+            eventName,
+            token?.UserId,
+            token?.SubscriberId,
+            token?.FamilyId,
+            token?.Id,
+            successorId,
+            successorHash,
+            token?.RotationDepth,
+            detail);
+    }
 
     private static string GenerateRaw()
     {

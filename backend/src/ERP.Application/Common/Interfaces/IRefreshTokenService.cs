@@ -25,13 +25,27 @@ public interface IRefreshTokenService
     Task<RefreshTokenValidationResult> ValidateAndRotateAsync(
         string rawToken, CancellationToken ct = default);
 
-    /// <summary>Revoca todos los refresh tokens activos del usuario (logout).</summary>
+    /// <summary>Revoca todos los refresh tokens activos del usuario (logout global / cambio contraseña).</summary>
     Task RevokeAllForUserAsync(
         Guid userId, Guid subscriberId, string reason, CancellationToken ct = default);
+
+    /// <summary>Revoca la cadena de rotación comprometida sin afectar otras sesiones/dispositivos.</summary>
+    Task RevokeFamilyAsync(Guid familyId, string reason, CancellationToken ct = default);
 
     /// <summary>Revoca un token específico por su valor en texto plano (logout de dispositivo).</summary>
     Task RevokeAsync(
         string rawToken, string reason, CancellationToken ct = default);
+}
+
+public static class RefreshTokenAuditEvents
+{
+    public const string RefreshSuccess           = "refresh_success";
+    public const string RefreshReuseBenign       = "refresh_reuse_benign";
+    public const string RefreshReuseSuspicious   = "refresh_reuse_suspicious";
+    public const string RefreshFamilyRevoked     = "refresh_family_revoked";
+    public const string RefreshMultitabRetry     = "refresh_multitab_retry";
+    public const string RefreshRotationFailed    = "refresh_rotation_failed";
+    public const string RefreshRateLimited       = "refresh_rate_limited";
 }
 
 public sealed class RefreshTokenValidationResult
@@ -44,9 +58,13 @@ public sealed class RefreshTokenValidationResult
     public string?  NewToken  { get; init; }
     public DateTime? NewExpiry { get; init; }
     public string?  Error     { get; init; }
+    public bool     IsRateLimited { get; init; }
 
     public static RefreshTokenValidationResult Fail(string error)
         => new() { IsValid = false, Error = error };
+
+    public static RefreshTokenValidationResult RateLimited(string error)
+        => new() { IsValid = false, IsRateLimited = true, Error = error };
 
     public static RefreshTokenValidationResult Ok(
         Guid userId, Guid subscriberId, Guid? companyId, string userType,

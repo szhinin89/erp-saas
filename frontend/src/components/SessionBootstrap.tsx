@@ -2,11 +2,13 @@ import type { ReactNode } from 'react';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { restoreSessionFromCookie } from '../lib/session/restoreSessionFromCookie';
+import { getAccessToken } from '../lib/session/authTokenMemory';
 
 type Props = { children: ReactNode };
 
 /**
  * Espera hidratación Zustand y restaura access token vía cookie httpOnly si hace falta.
+ * No renderiza rutas hasta bootstrap completo (evita flash login/app).
  */
 export function SessionBootstrap({ children }: Props) {
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
@@ -18,7 +20,7 @@ export function SessionBootstrap({ children }: Props) {
 
     let cancelled = false;
     (async () => {
-      if (isAuthenticated) {
+      if (isAuthenticated && !getAccessToken()) {
         await restoreSessionFromCookie();
       }
       if (!cancelled) setReady(true);

@@ -77,6 +77,20 @@ internal static class RefreshTokenHttpTestSupport
         await db.SaveChangesAsync();
     }
 
+    public static async Task BackdateRevokedRotationAsync(
+        IntegrationTestWebAppFactory factory,
+        string rawToken,
+        TimeSpan age)
+    {
+        await using var scope = factory.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
+        var hash = RefreshTokenService.Hash(rawToken);
+        var entity = await db.RefreshTokens.SingleAsync(t => t.TokenHash == hash);
+        db.Entry(entity).Property(nameof(ERP.Domain.Auth.Entities.RefreshToken.RevokedAt)).CurrentValue =
+            DateTime.UtcNow.Subtract(age);
+        await db.SaveChangesAsync();
+    }
+
     private static async Task<(IdentityUser User, Guid SubscriberId)> SeedIdentityUserAsync(
         ErpDbContext db,
         IntegrationTestWebAppFactory factory)

@@ -39,7 +39,13 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
     {
         var v = await _refreshTokenService.ValidateAndRotateAsync(command.RawRefreshToken, ct);
         if (!v.IsValid)
+        {
+            if (v.IsRateLimited)
+                return Result<AuthResponseDto>.Failure(
+                    v.Error ?? "Demasiados intentos de renovación.",
+                    "rate_limited");
             return Result<AuthResponseDto>.Failure(v.Error ?? "Refresh token inválido.");
+        }
 
         if (v.UserType is RefreshUserType.Platform or RefreshUserType.SuperAdmin)
         {
