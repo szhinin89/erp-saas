@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
@@ -113,29 +114,20 @@ export function CrearCompraPage() {
   if (!canCreate) return <NoAccessPage title="Nueva Factura de Compra" />;
 
   return (
-    <div className="pg-page">
-
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">Compras</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item" style={{ cursor: 'pointer' }} onClick={() => navigate('/compras/facturas')}>Facturas</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Nueva</span>
-          </nav>
-          <h1 className="pg-title">Nueva Factura de Compra</h1>
-        </div>
-        <div className="pg-header-right">
+    <ErpPageTemplate
+      kicker="Compras"
+      title="Nueva Factura de Compra"
+      action={
+        <>
           <button className="zh-btn zh-btn--ghost zh-btn--md" type="button" onClick={() => navigate('/compras/facturas')}>
             Cancelar
           </button>
           <ZHBtn variant="primary" size="md" onClick={() => void handleSubmit()} disabled={saving}>
             {saving ? 'Guardando...' : 'Guardar Compra'}
           </ZHBtn>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       {error && <ZHPageNotice variant="error" message={error} />}
 
       {/* Cabecera del documento */}
@@ -206,17 +198,17 @@ export function CrearCompraPage() {
             Agregar línea
           </button>
         </div>
-        <div className="pg-section-body" style={{ overflowX: 'auto' }}>
+        <div className="pg-section-body pg-overflow-x">
           <table className="cf-line-table">
             <thead>
               <tr>
-                <th style={{ minWidth: 260 }}>Descripción</th>
-                <th style={{ width: 80 }}>Cantidad</th>
-                <th style={{ width: 110 }}>Precio Unit.</th>
-                <th style={{ width: 80 }}>Desc %</th>
-                <th style={{ width: 80 }}>IVA %</th>
-                <th style={{ width: 110 }}>Subtotal</th>
-                <th style={{ width: 40 }}></th>
+                <th className="cf-th-desc">Descripción</th>
+                <th className="cf-th-qty">Cantidad</th>
+                <th className="cf-th-price">Precio Unit.</th>
+                <th className="cf-th-pct">Desc %</th>
+                <th className="cf-th-pct">IVA %</th>
+                <th className="cf-th-subtotal">Subtotal</th>
+                <th className="cf-th-actions" aria-label="Acciones" />
               </tr>
             </thead>
             <tbody>
@@ -251,11 +243,10 @@ export function CrearCompraPage() {
                     <td className="cf-td-total">${subtotal.toFixed(2)}</td>
                     <td>
                       <button
-                        className="zh-btn zh-btn--ghost zh-btn--sm"
+                        className="zh-btn zh-btn--ghost zh-btn--sm pg-btn-error-ghost"
                         type="button"
                         onClick={() => removeLinea(l._key)}
                         title="Eliminar línea"
-                        style={{ color: 'var(--color-error)' }}
                       >
                         <span className="material-symbols-outlined">delete</span>
                       </button>
@@ -283,6 +274,6 @@ export function CrearCompraPage() {
           </div>
         </div>
       </div>
-    </div>
+    </ErpPageTemplate>
   );
 }

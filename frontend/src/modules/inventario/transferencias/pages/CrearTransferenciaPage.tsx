@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
@@ -65,29 +66,18 @@ export function CrearTransferenciaPage() {
   if (!canCreate) return <NoAccessPage title="Nueva Transferencia" />;
 
   return (
-    <div className="pg-page">
-
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">Inventario</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Transferencias</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Nueva</span>
-          </nav>
-          <h1 className="pg-title">Nueva Transferencia</h1>
-          <p className="pg-subtitle">Mueva stock entre bodegas de manera controlada.</p>
-        </div>
-      </div>
-
+    <ErpPageTemplate
+      kicker="Inventario"
+      title="Nueva Transferencia"
+      subtitle="Mueva stock entre bodegas de manera controlada."
+    >
       {(error || localError) && (
         <ZHPageNotice variant="error" message="No se pudo crear la transferencia" detail={error ?? localError ?? ''} />
       )}
 
       <form onSubmit={(e) => void handleSubmit(e)}>
 
-        <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="pg-section pg-section--mb-4">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
               <span className="material-symbols-outlined pg-section-icon">swap_horiz</span>
@@ -130,7 +120,7 @@ export function CrearTransferenciaPage() {
           </div>
         </div>
 
-        <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="pg-section pg-section--mb-4">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
               <span className="material-symbols-outlined pg-section-icon">list_alt</span>
@@ -162,6 +152,6 @@ export function CrearTransferenciaPage() {
           </div>
         </div>
       </form>
-    </div>
+    </ErpPageTemplate>
   );
 }

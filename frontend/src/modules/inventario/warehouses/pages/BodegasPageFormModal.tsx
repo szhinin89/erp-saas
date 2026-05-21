@@ -43,12 +43,10 @@ export function BodegasPageFormModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="zh-modal" style={{ maxWidth: 'min(900px, 95vw)', width: '100%' }}>
+      <div className="zh-modal pg-modal--lg">
         <div className="zh-modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-            <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)', fontSize: 22 }}>
-              warehouse
-            </span>
+          <div className="pg-modal-title-row">
+            <span className="material-symbols-outlined pg-icon-22 pg-icon-primary">warehouse</span>
             <h2 className="zh-modal-title">{editingId ? 'Editar Bodega' : 'Registro de Nueva Bodega'}</h2>
           </div>
           <button type="button" className="zh-modal-close" onClick={onClose} aria-label="Cerrar">
@@ -59,8 +57,8 @@ export function BodegasPageFormModal({
         <div className="zh-modal-body">
           {saveError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={saveError} />}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)', alignItems: 'start' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div className="bod-modal-grid">
+            <div className="pg-flex-col-4">
               <div className="pg-section">
                 <div className="pg-section-header">
                   <div className="pg-section-header-left">
@@ -70,15 +68,16 @@ export function BodegasPageFormModal({
                 </div>
                 <div className="pg-section-body">
                   <div className="pg-form-grid pg-form-grid--2">
-                    <ZHField label="Nombre de la Bodega" required error={errors.name?.message} style={{ gridColumn: '1 / -1' }}>
-                      <input className="zh-input" placeholder="Ej: Almacén Central Norte" disabled={saving} {...register('name')} />
-                    </ZHField>
+                    <div className="pg-form-span-full">
+                      <ZHField label="Nombre de la Bodega" required error={errors.name?.message}>
+                        <input className="zh-input" placeholder="Ej: Almacén Central Norte" disabled={saving} {...register('name')} />
+                      </ZHField>
+                    </div>
                     <ZHField label="Código">
                       <input
-                        className="zh-input mono"
+                        className="zh-input mono bod-code-readonly"
                         readOnly
                         value={editingId ? (editCode ?? '—') : 'Auto-generado'}
-                        style={{ background: 'var(--color-surface-container)', color: 'var(--color-primary)' }}
                       />
                     </ZHField>
                     <ZHField label="Tipo de Almacenamiento">
@@ -91,16 +90,18 @@ export function BodegasPageFormModal({
                         ))}
                       </select>
                     </ZHField>
-                    <ZHField label="Sede / Sucursal" required error={errors.branchId?.message} style={{ gridColumn: '1 / -1' }}>
-                      <select className="zh-input" disabled={saving} {...register('branchId')}>
-                        <option value="">— seleccionar sucursal —</option>
-                        {branches.map((b) => (
-                          <option key={b.id} value={b.id}>
-                            {b.name}
-                          </option>
-                        ))}
-                      </select>
-                    </ZHField>
+                    <div className="pg-form-span-full">
+                      <ZHField label="Sede / Sucursal" required error={errors.branchId?.message}>
+                        <select className="zh-input" disabled={saving} {...register('branchId')}>
+                          <option value="">— seleccionar sucursal —</option>
+                          {branches.map((b) => (
+                            <option key={b.id} value={b.id}>
+                              {b.name}
+                            </option>
+                          ))}
+                        </select>
+                      </ZHField>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -114,9 +115,11 @@ export function BodegasPageFormModal({
                 </div>
                 <div className="pg-section-body">
                   <div className="pg-form-grid pg-form-grid--2">
-                    <ZHField label="Dirección Completa" error={errors.address?.message} style={{ gridColumn: '1 / -1' }}>
-                      <input className="zh-input" placeholder="Calle, número, colonia..." disabled={saving} {...register('address')} />
-                    </ZHField>
+                    <div className="pg-form-span-full">
+                      <ZHField label="Dirección Completa" error={errors.address?.message}>
+                        <input className="zh-input" placeholder="Calle, número, colonia..." disabled={saving} {...register('address')} />
+                      </ZHField>
+                    </div>
                     <ZHField label="Latitud" error={errors.latitude?.message}>
                       <input className="zh-input mono" placeholder="0.000000" disabled={saving} {...register('latitude')} />
                     </ZHField>
@@ -128,7 +131,7 @@ export function BodegasPageFormModal({
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            <div className="pg-flex-col-4">
               <div className="pg-section">
                 <div className="pg-section-header">
                   <div className="pg-section-header-left">
@@ -156,7 +159,7 @@ export function BodegasPageFormModal({
                   </div>
                 </div>
                 <div className="pg-section-body">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                  <div className="pg-flex-col-3">
                     <ZHField label="Jefe de Logística">
                       <input className="zh-input" placeholder="Nombre del responsable" disabled={saving} {...register('manager')} />
                     </ZHField>
@@ -172,23 +175,12 @@ export function BodegasPageFormModal({
                 </div>
               </div>
 
-              <div
-                style={{
-                  background: 'var(--color-surface-container)',
-                  borderLeft: '4px solid var(--color-primary)',
-                  borderRadius: '0 var(--radius-md) var(--radius-md) 0',
-                  padding: 'var(--space-4)',
-                }}
-              >
-                <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', marginBottom: 'var(--space-1)' }}>
-                  <span className="material-symbols-outlined" style={{ color: 'var(--color-primary)', fontSize: 18 }}>
-                    lightbulb
-                  </span>
-                  <span style={{ fontWeight: 600, color: 'var(--color-primary)', fontSize: 'var(--text-label-md-size)' }}>
-                    Consejo ZH
-                  </span>
+              <div className="bod-tip-panel">
+                <div className="bod-tip-head">
+                  <span className="material-symbols-outlined pg-icon-18 pg-icon-primary">lightbulb</span>
+                  <span className="bod-tip-title">Consejo ZH</span>
                 </div>
-                <p style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                <p className="bod-tip-text">
                   Optimiza el espacio usando estanterías de doble profundidad para productos de baja rotación y zonas de{' '}
                   <em>cross-docking</em> cerca de los muelles para envíos rápidos.
                 </p>
@@ -196,32 +188,14 @@ export function BodegasPageFormModal({
 
               <div className="pg-section">
                 <div className="pg-section-body">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span
-                        style={{
-                          fontSize: 'var(--text-label-sm-size)',
-                          color: 'var(--color-text-secondary)',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                        }}
-                      >
-                        Estado de Registro
-                      </span>
+                  <div className="bod-meta-stack">
+                    <div className="bod-meta-row">
+                      <span className="bod-meta-label">Estado de Registro</span>
                       <span className="badge badge--orange badge--md">{editingId ? 'Editando' : 'Borrador'}</span>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span
-                        style={{
-                          fontSize: 'var(--text-label-sm-size)',
-                          color: 'var(--color-text-secondary)',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em',
-                        }}
-                      >
-                        Fecha
-                      </span>
-                      <span style={{ fontSize: 'var(--text-body-sm-size)' }}>{new Date().toLocaleDateString('es')}</span>
+                    <div className="bod-meta-row">
+                      <span className="bod-meta-label">Fecha</span>
+                      <span className="bod-meta-value">{new Date().toLocaleDateString('es')}</span>
                     </div>
                   </div>
                 </div>

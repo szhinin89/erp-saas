@@ -58,19 +58,19 @@ export function BodegasPageListPanel({
       </div>
 
       {loading ? (
-        <div style={{ padding: '40px' }}>
+        <div className="pg-pad-40">
           <LoadingState />
         </div>
       ) : items.length === 0 ? (
-        <div style={{ padding: '40px' }}>
+        <div className="pg-pad-40">
           <EmptyState message={t('common.noData')} />
         </div>
       ) : filtered.length === 0 ? (
-        <div style={{ padding: '40px' }}>
+        <div className="pg-pad-40">
           <EmptyState message="No se encontraron resultados." />
         </div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
+        <div className="pg-overflow-x">
           <table className="table">
             <thead>
               <tr>
@@ -80,24 +80,24 @@ export function BodegasPageListPanel({
                 <th>Encargado</th>
                 <th>Capacidad</th>
                 <th>Estado</th>
-                {canUpdate || canDelete ? <th style={{ textAlign: 'right' }}>Acciones</th> : null}
+                {canUpdate || canDelete ? <th className="pg-th-right">Acciones</th> : null}
               </tr>
             </thead>
             <tbody>
               {filtered.map((row) => (
-                <tr key={row.id} style={{ opacity: row.isActive ? 1 : 0.65 }}>
+                <tr key={row.id} className={row.isActive ? undefined : 'pg-row-inactive'}>
                   <td>
                     <span className="badge badge--gray badge--md mono">{row.code ?? '—'}</span>
                   </td>
                   <td>
-                    <div style={{ fontWeight: 500, color: 'var(--color-text-primary)' }}>{row.name}</div>
+                    <div className="bod-list-name">{row.name}</div>
                     {row.storageType && (
-                      <div style={{ fontSize: 'var(--text-label-sm-size)', color: 'var(--color-text-secondary)' }}>
+                      <div className="bod-list-sub">
                         {row.storageType}
                       </div>
                     )}
                   </td>
-                  <td style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-body-sm-size)' }}>
+                  <td className="bod-list-branch">
                     {branchName(row.branchId)}
                   </td>
                   <td>{row.manager ?? <span className="subtle">—</span>}</td>
@@ -114,8 +114,8 @@ export function BodegasPageListPanel({
                     </span>
                   </td>
                   {canUpdate || canDelete ? (
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: 'var(--space-1)', justifyContent: 'flex-end' }}>
+                    <td className="pg-td-right">
+                      <div className="bod-actions-tight">
                         {canUpdate && (
                           <button
                             type="button"
@@ -149,7 +149,7 @@ export function BodegasPageListPanel({
       )}
 
       <div className="pg-table-footer">
-        <p className="subtle" style={{ fontSize: 12, margin: 0 }}>
+        <p className="subtle bod-list-footer-note">
           {filtered.length} bodegas
         </p>
         {items.length > 0 && (

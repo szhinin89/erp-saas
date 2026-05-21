@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../components/PageShell';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { usePermissionsStore } from '../../../store/permissionsStore';
@@ -76,27 +77,20 @@ export function CrearGastoPage() {
   const categorias: ExpenseCategoryDto[] = categoriasState.data ?? [];
 
   return (
-    <div className="pg-page">
-
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item" style={{ cursor: 'pointer' }} onClick={() => navigate('/gastos')}>Gastos</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Nuevo</span>
-          </nav>
-          <h1 className="pg-title">Nuevo Gasto</h1>
-        </div>
-        <div className="pg-header-right">
+    <ErpPageTemplate
+      kicker="Gastos"
+      title="Nuevo Gasto"
+      action={
+        <>
           <button className="zh-btn zh-btn--ghost zh-btn--md" type="button" onClick={() => navigate('/gastos')}>
             Cancelar
           </button>
           <ZHBtn variant="primary" size="md" onClick={() => void handleSubmit()} disabled={saving}>
             {saving ? 'Guardando...' : 'Guardar Gasto'}
           </ZHBtn>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       {error && <ZHPageNotice variant="error" message={error} />}
 
       <div className="pg-section">
@@ -169,8 +163,8 @@ export function CrearGastoPage() {
           </div>
 
           {/* Totales */}
-          <div style={{ marginTop: 'var(--space-6)', borderTop: '1px solid var(--color-border)', paddingTop: 'var(--space-4)' }}>
-            <div className="pg-form-grid pg-form-grid--3" style={{ maxWidth: 560 }}>
+          <div className="gst-totals-section">
+            <div className="pg-form-grid pg-form-grid--3 gst-totals-grid">
 
               <ZHField label="Subtotal (sin IVA)" required>
                 <input
@@ -197,13 +191,12 @@ export function CrearGastoPage() {
 
               <ZHField label="Total">
                 <input
-                  className="zh-input"
+                  className="zh-input gst-total-input"
                   type="number"
                   min="0"
                   step="0.01"
                   value={total}
                   onChange={(e) => setTotal(e.target.value)}
-                  style={{ fontWeight: 700, color: 'var(--color-primary)' }}
                 />
               </ZHField>
 
@@ -211,6 +204,6 @@ export function CrearGastoPage() {
           </div>
         </div>
       </div>
-    </div>
+    </ErpPageTemplate>
   );
 }

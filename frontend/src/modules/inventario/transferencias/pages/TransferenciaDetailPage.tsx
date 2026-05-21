@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHConfirmModal } from '../../../../components/zh/ZHConfirmModal';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
@@ -11,8 +12,8 @@ import { useTransferenciaDetalle, useTransferenciaAcciones } from '../hooks/useT
 function InfoItem({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="subtle" style={{ fontSize: 'var(--text-label-sm-size)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</p>
-      <div style={{ fontWeight: 500 }}>{children}</div>
+      <p className="subtle pg-info-item-label">{label}</p>
+      <div className="pg-info-item-value">{children}</div>
     </div>
   );
 }
@@ -35,21 +36,11 @@ export function TransferenciaDetailPage() {
   const esBorrador = transferencia?.status === 'Borrador';
 
   return (
-    <div className="pg-page">
-
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">Inventario</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item pg-breadcrumb-item--link" style={{ cursor: 'pointer' }}
-              onClick={() => navigate('/inventario/transferencias')}>Transferencias</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">{transferencia?.transferNumber ?? '…'}</span>
-          </nav>
-          <h1 className="pg-title">{loading ? 'Cargando…' : (transferencia?.transferNumber ?? 'Transferencia')}</h1>
-        </div>
-        <div className="pg-header-right">
+    <ErpPageTemplate
+      kicker="Inventario"
+      title={loading ? 'Cargando…' : (transferencia?.transferNumber ?? 'Transferencia')}
+      action={
+        <>
           {esBorrador && (
             <>
               {canConfirm && (
@@ -67,20 +58,20 @@ export function TransferenciaDetailPage() {
             </>
           )}
           <ZHBtn variant="ghost" size="md" onClick={() => navigate('/inventario/transferencias')}>← Volver</ZHBtn>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       {(error ?? actError) && (
         <ZHPageNotice variant="error" message="Error" detail={error ?? actError ?? ''} />
       )}
 
       {loading ? (
-        <div style={{ padding: '40px' }}><LoadingState /></div>
+        <div className="pg-pad-40"><LoadingState /></div>
       ) : !transferencia ? (
-        <div style={{ padding: '40px' }}><EmptyState message="Transferencia no encontrada." /></div>
+        <div className="pg-pad-40"><EmptyState message="Transferencia no encontrada." /></div>
       ) : (
         <>
-          <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+          <div className="pg-section pg-section--mb-4">
             <div className="pg-section-body">
               <div className="pg-form-grid pg-form-grid--3">
                 <InfoItem label="Número">{transferencia.transferNumber}</InfoItem>
@@ -106,19 +97,19 @@ export function TransferenciaDetailPage() {
                 <span className="pg-section-label">Ítems Transferidos</span>
               </div>
             </div>
-            <div style={{ overflowX: 'auto' }}>
+            <div className="pg-overflow-x">
               <table className="table">
                 <thead>
                   <tr>
                     <th>Producto</th>
-                    <th style={{ textAlign: 'right' }}>Cantidad</th>
+                    <th className="pg-th-right">Cantidad</th>
                   </tr>
                 </thead>
                 <tbody>
                   {transferencia.detalles.map((d) => (
                     <tr key={d.id}>
                       <td>{d.description}</td>
-                      <td style={{ textAlign: 'right' }} className="mono">{d.quantity}</td>
+                      <td className="mono pg-td-right">{d.quantity}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -144,6 +135,6 @@ export function TransferenciaDetailPage() {
           }}
         />
       )}
-    </div>
+    </ErpPageTemplate>
   );
 }

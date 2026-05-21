@@ -23,7 +23,7 @@ export function CustomersPageContactsPanel({
   }
 
   return (
-    <div style={{ overflowX: 'auto' }}>
+    <div className="pg-overflow-x">
       <table className="table">
         <thead>
           <tr>

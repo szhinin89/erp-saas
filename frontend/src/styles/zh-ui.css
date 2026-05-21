@@ -753,11 +753,16 @@ input[type="date"] { appearance: none; }
   border-radius: var(--radius-sm);
 }
 
-/* Content layout */
-.layout   { display: flex; min-height: 100vh; background: var(--color-background); }
-.content  { flex: 1; padding: 28px; overflow-y: auto; }
+/* Content layout — shell chrome; page padding via LayoutFrame tokens */
+.layout { display: flex; min-height: 100vh; background: var(--color-background); }
 
-@media (max-width: 980px) { .content { padding: var(--space-4); } }
+/** @deprecated Use LayoutFrame; kept for legacy markup during migration */
+.content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
 
 /* ── 13. CARD SECTIONS ───────────────────────────────────── */
 .zh-card-section { padding: var(--space-4); }

@@ -1,4 +1,5 @@
 import { LoadingState, NoAccessPage } from '../../../components/PageShell';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { CreateJournalEntryModal } from '../../../components/CreateJournalEntryModal';
 import { ZHBtn } from '../../../components/zh/ZHForm';
 import { AccountingAccountsTab } from '../components/AccountingAccountsTab';
@@ -39,52 +40,48 @@ export function AccountingPage() {
 
   if (!permsHydrated && !isAdmin) {
     return (
-      <div className="pg-page">
-        <div style={{ padding: '40px' }}>
+      <ErpPageTemplate kicker={t('app.nav.group.accounting')} title={t('app.nav.accounting')}>
+        <div className="acc-page-loading">
           <LoadingState />
         </div>
-      </div>
+      </ErpPageTemplate>
     );
   }
 
   if (!canUseModule) return <NoAccessPage title={t('app.nav.accounting')} />;
 
-  return (
-    <div className="pg-page">
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">{t('app.nav.group.accounting')}</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">{tabTitle}</span>
-          </nav>
-          <h1 className="pg-title">{tabTitle}</h1>
-        </div>
-        <div className="pg-header-right">
-          {displayTab === 'accounts' && activeAccountSubTab === 'data' && canCreateAccount && (
-            <ZHBtn
-              variant="primary"
-              size="md"
-              type="button"
-              disabled={formLoading}
-              onClick={() => formRef.current?.requestSubmit()}
-            >
-              {formLoading ? t('common.saving') : t('finance.accounts.modal.create.submit')}
-            </ZHBtn>
-          )}
-          {displayTab === 'journal' && canCreateJournal && (
-            <ZHBtn variant="primary" size="md" type="button" onClick={() => setShowJournal(true)}>
-              {t('finance.journal.primaryCreate')}
-            </ZHBtn>
-          )}
-          {displayTab === 'config' && canEditConfig && (
-            <ZHBtn variant="primary" size="md" type="button" disabled={configSaving} onClick={() => void saveConfig()}>
-              {configSaving ? t('common.saving') : t('common.save')}
-            </ZHBtn>
-          )}
-        </div>
-      </div>
+  const headerAction = (
+    <>
+      {displayTab === 'accounts' && activeAccountSubTab === 'data' && canCreateAccount ? (
+        <ZHBtn
+          variant="primary"
+          size="md"
+          type="button"
+          disabled={formLoading}
+          onClick={() => formRef.current?.requestSubmit()}
+        >
+          {formLoading ? t('common.saving') : t('finance.accounts.modal.create.submit')}
+        </ZHBtn>
+      ) : null}
+      {displayTab === 'journal' && canCreateJournal ? (
+        <ZHBtn variant="primary" size="md" type="button" onClick={() => setShowJournal(true)}>
+          {t('finance.journal.primaryCreate')}
+        </ZHBtn>
+      ) : null}
+      {displayTab === 'config' && canEditConfig ? (
+        <ZHBtn variant="primary" size="md" type="button" disabled={configSaving} onClick={() => void saveConfig()}>
+          {configSaving ? t('common.saving') : t('common.save')}
+        </ZHBtn>
+      ) : null}
+    </>
+  );
 
+  return (
+    <ErpPageTemplate
+      kicker={t('app.nav.group.accounting')}
+      title={tabTitle}
+      action={headerAction}
+    >
       {showJournal && canCreateJournal && (
         <CreateJournalEntryModal
           accounts={accounts.data ?? []}
@@ -93,7 +90,7 @@ export function AccountingPage() {
         />
       )}
 
-      <div className="zh-form-tabs" role="tablist" style={{ marginBottom: 'var(--space-4)' }}>
+      <div className="zh-form-tabs acc-page-tabs" role="tablist">
         {canViewAccounts && (
           <button
             type="button"
@@ -159,6 +156,6 @@ export function AccountingPage() {
       {displayTab === 'journal' && canViewJournal && <AccountingJournalTab {...ctx} />}
       {displayTab === 'mayor' && canViewJournal && <AccountingMayorTab {...ctx} />}
       {displayTab === 'balance' && canViewJournal && <AccountingBalanceTab {...ctx} />}
-    </div>
+    </ErpPageTemplate>
   );
 }

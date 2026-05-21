@@ -1,4 +1,5 @@
 import { NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { BodegasPageFormModal } from './BodegasPageFormModal';
 import { BodegasPageListPanel } from './BodegasPageListPanel';
@@ -11,19 +12,18 @@ export function BodegasPage() {
   if (!page.canView) return <NoAccessPage title="Bodegas" />;
 
   return (
-    <div className="pg-page">
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">Inventario</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Bodegas</span>
-          </nav>
-          <h1 className="pg-title">Gestión de Bodegas</h1>
-          <p className="pg-subtitle">Administre sus almacenes, encargados y parámetros logísticos.</p>
-        </div>
-        <div className="pg-header-right">
-          <button className="zh-btn zh-btn--secondary" type="button" disabled={page.loading} onClick={() => void page.fetchList()}>
+    <ErpPageTemplate
+      kicker="Inventario"
+      title="Gestión de Bodegas"
+      subtitle="Administre sus almacenes, encargados y parámetros logísticos."
+      action={
+        <>
+          <button
+            className="zh-btn zh-btn--secondary"
+            type="button"
+            disabled={page.loading}
+            onClick={() => void page.fetchList()}
+          >
             <span className="material-symbols-outlined">refresh</span>
             Actualizar
           </button>
@@ -33,9 +33,9 @@ export function BodegasPage() {
               Nueva Bodega
             </button>
           )}
-        </div>
-      </div>
-
+        </>
+      }
+    >
       {page.error && <ZHPageNotice variant="error" message={page.t('common.errorPrefix')} detail={page.error} />}
 
       {!page.loading && (
@@ -106,6 +106,6 @@ export function BodegasPage() {
         onClose={page.closeModal}
         onSave={() => void page.save()}
       />
-    </div>
+    </ErpPageTemplate>
   );
 }

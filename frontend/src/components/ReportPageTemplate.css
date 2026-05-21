@@ -115,6 +115,13 @@
 }
 .rpt-chart-area svg { width: 100%; display: block; }
 
+.rpt-chart-tooltip-anchor {
+  position: absolute;
+  top: 40px;
+  left: 48%;
+  transform: translateX(-50%);
+}
+
 /* Date labels */
 .rpt-chart-dates {
   display: flex;

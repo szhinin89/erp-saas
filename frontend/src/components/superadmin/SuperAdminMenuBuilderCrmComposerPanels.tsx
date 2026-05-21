@@ -86,21 +86,21 @@ export function buildCrmComposerPanels(props: CrmComposerPanelsProps): {
       >
         ↻
       </button>
-      <span className="subtle mono" style={{ fontSize: 11 }} title="Versión del esquema de menú">
+      <span className="subtle mono smb-toolbar-schema" title="Versión del esquema de menú">
         v{MENU_BUILDER_SCHEMA_VERSION}
       </span>
     </>
   );
 
   const crmMasterStack: ReactNode = (
-    <div className="zh-form-tabs" role="tablist" aria-label="Planes comerciales" style={{ padding: 'var(--space-4) var(--space-4) 0' }}>
+    <div className="zh-form-tabs smb-plan-tabs" role="tablist" aria-label="Planes comerciales">
       {crmPlans.map((p) => (
         <button
           key={p.id}
           type="button"
           role="tab"
           aria-selected={planId === p.id}
-          className={planId === p.id ? 'is-active' : ''}
+          className={[planId === p.id ? 'is-active' : '', !p.isPubliclyVisible ? 'smb-plan-tab--internal' : ''].filter(Boolean).join(' ')}
           onClick={() => {
             setErr('');
             setPlanId(p.id);
@@ -108,9 +108,10 @@ export function buildCrmComposerPanels(props: CrmComposerPanelsProps): {
           }}
           disabled={busy || savingAuto}
           title={!p.isPubliclyVisible ? `${p.code} — plan interno (no visible al público)` : p.code}
-          style={!p.isPubliclyVisible ? { opacity: 0.45, fontStyle: 'italic' } : undefined}
         >
-          <span aria-hidden style={{ fontSize: 14 }}>{planEmoji(p.code)}</span>
+          <span className="smb-plan-tab-emoji" aria-hidden>
+            {planEmoji(p.code)}
+          </span>
           {p.code}
         </button>
       ))}
@@ -119,8 +120,8 @@ export function buildCrmComposerPanels(props: CrmComposerPanelsProps): {
 
   const crmLibraryStack: ReactNode = (
     <div className="menu-plan-composer__masterStack">
-      <div className="pg-table-controls" style={{ flexWrap: 'wrap' }}>
-        <div className="pg-search" style={{ flex: 1, minWidth: 140 }}>
+      <div className="pg-table-controls smb-catalog-controls">
+        <div className="pg-search smb-catalog-search">
           <span className="material-symbols-outlined">search</span>
           <input
             className="zh-input"
@@ -133,7 +134,7 @@ export function buildCrmComposerPanels(props: CrmComposerPanelsProps): {
             aria-label="Buscar en el catálogo de formularios"
           />
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0 }}>
+        <div className="smb-catalog-actions">
           <ZHBtn
             variant="ghost"
             size="sm"
@@ -157,7 +158,7 @@ export function buildCrmComposerPanels(props: CrmComposerPanelsProps): {
             Sync API
           </ZHBtn>
           <ZHBtn variant="ghost" size="sm" type="button" onClick={() => void reloadArbol()} disabled={busy || savingAuto} aria-label="Refrescar lista de formularios">
-            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>refresh</span>
+            <span className="material-symbols-outlined pg-icon-16">refresh</span>
           </ZHBtn>
         </div>
       </div>
@@ -200,7 +201,7 @@ export function buildCrmComposerPanels(props: CrmComposerPanelsProps): {
           />
           <span>Solo con ruta</span>
         </label>
-        <span className="subtle" style={{ fontSize: 11, marginLeft: 'auto' }} title="Tip: combina búsqueda + tipo para encontrar nodos más rápido.">
+        <span className="subtle smb-filter-tip" title="Tip: combina búsqueda + tipo para encontrar nodos más rápido.">
           💡 Filtro avanzado
         </span>
       </div>

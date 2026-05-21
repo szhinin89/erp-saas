@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHConfirmModal } from '../../../../components/zh/ZHConfirmModal';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
@@ -11,8 +12,8 @@ import { useAjusteDetalle, useAjusteAcciones } from '../hooks/useAjustes';
 function InfoItem({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="subtle" style={{ fontSize: 'var(--text-label-sm-size)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</p>
-      <div style={{ fontWeight: 500 }}>{children}</div>
+      <p className="subtle pg-info-item-label">{label}</p>
+      <div className="pg-info-item-value">{children}</div>
     </div>
   );
 }
@@ -35,21 +36,11 @@ export function AjusteDetailPage() {
   const esBorrador = ajuste?.status === 'Borrador';
 
   return (
-    <div className="pg-page">
-
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">Inventario</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item pg-breadcrumb-item--link" style={{ cursor: 'pointer' }}
-              onClick={() => navigate('/inventario/ajustes')}>Ajustes</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">{ajuste?.adjustmentNumber ?? '…'}</span>
-          </nav>
-          <h1 className="pg-title">{loading ? 'Cargando…' : (ajuste?.adjustmentNumber ?? 'Ajuste')}</h1>
-        </div>
-        <div className="pg-header-right">
+    <ErpPageTemplate
+      kicker="Inventario"
+      title={loading ? 'Cargando…' : (ajuste?.adjustmentNumber ?? 'Ajuste')}
+      action={
+        <>
           {esBorrador && (
             <>
               {canExecute && (
@@ -67,17 +58,17 @@ export function AjusteDetailPage() {
             </>
           )}
           <ZHBtn variant="ghost" size="md" onClick={() => navigate('/inventario/ajustes')}>← Volver</ZHBtn>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       {(error ?? actError) && (
         <ZHPageNotice variant="error" message="Error" detail={error ?? actError ?? ''} />
       )}
 
       {loading ? (
-        <div style={{ padding: '40px' }}><LoadingState /></div>
+        <div className="pg-pad-40"><LoadingState /></div>
       ) : !ajuste ? (
-        <div style={{ padding: '40px' }}><EmptyState message="Ajuste no encontrado." /></div>
+        <div className="pg-pad-40"><EmptyState message="Ajuste no encontrado." /></div>
       ) : (
         <div className="pg-section">
           <div className="pg-section-body">
@@ -123,6 +114,6 @@ export function AjusteDetailPage() {
           }}
         />
       )}
-    </div>
+    </ErpPageTemplate>
   );
 }

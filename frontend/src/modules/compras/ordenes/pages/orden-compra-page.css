@@ -1,0 +1,53 @@
+/* OrdenCompraDetailPage — prefijo oc-doc-* */
+
+.oc-doc-notes {
+  grid-column: 1 / -1;
+}
+
+/* CrearOrdenCompraPage — líneas editables */
+.oc-create-th-qty {
+  width: 100px;
+  text-align: right;
+}
+
+.oc-create-th-price {
+  width: 130px;
+  text-align: right;
+}
+
+.oc-create-th-vat {
+  width: 90px;
+  text-align: right;
+}
+
+.oc-create-th-line-total {
+  width: 120px;
+  text-align: right;
+}
+
+.oc-create-th-actions {
+  width: 48px;
+}
+
+.oc-create-cell-line-total {
+  text-align: right;
+  font-weight: 600;
+  font-size: var(--text-body-md-size);
+}
+
+.oc-create-cell-actions {
+  text-align: center;
+}
+
+.oc-create-totals-bar {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.oc-create-grand-total {
+  color: var(--color-primary);
+  font-size: 16px;
+}

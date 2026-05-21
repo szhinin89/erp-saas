@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LoadingState, NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
@@ -13,6 +14,7 @@ import {
   billingSettingsSchema,
   type BillingSettingsValues,
 } from '../../../../schemas/configuracion/billingSettingsSchema';
+import './billing-settings-page.css';
 
 const RECEIPT_WIDTHS = [
   { value: 80, label: '80 mm (estándar)' },
@@ -154,22 +156,11 @@ export function BillingSettingsPage() {
   if (settingsState.loading) return <LoadingState />;
 
   return (
-    <div className="pg-page">
-
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Ruta de navegación">
-            <span className="pg-breadcrumb-item">Configuración</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Representación Impresa (RIDE)</span>
-          </nav>
-          <h1 className="pg-title">Configuración RIDE</h1>
-          <p className="pg-subtitle">
-            Datos que aparecen en la representación impresa de comprobantes electrónicos (facturas, notas de crédito, retenciones).
-          </p>
-        </div>
-      </div>
-
+    <ErpPageTemplate
+      kicker="Configuración"
+      title="Configuración RIDE"
+      subtitle="Datos que aparecen en la representación impresa de comprobantes electrónicos (facturas, notas de crédito, retenciones)."
+    >
       {saveError && (
         <ZHPageNotice variant="error" message="Error al guardar." detail={saveError} />
       )}
@@ -180,7 +171,7 @@ export function BillingSettingsPage() {
       <form onSubmit={onSubmit}>
 
         {/* ── 1. Datos del emisor ───────────────────────────── */}
-        <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="pg-section pg-section--mb-4">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
               <span className="material-symbols-outlined pg-section-icon">badge</span>
@@ -255,7 +246,7 @@ export function BillingSettingsPage() {
               </ZHField>
 
               <ZHField label="Obligado a Llevar Contabilidad">
-                <div style={{ display: 'flex', alignItems: 'center', paddingTop: 6 }}>
+                <div className="bill-check-row">
                   <Controller
                     name="requiresAccounting"
                     control={control}
@@ -278,7 +269,7 @@ export function BillingSettingsPage() {
         </div>
 
         {/* ── 2. Logo ───────────────────────────────────────── */}
-        <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="pg-section pg-section--mb-4">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
               <span className="material-symbols-outlined pg-section-icon">image</span>
@@ -290,37 +281,33 @@ export function BillingSettingsPage() {
               variant="info"
               message="Formato PNG o JPG, máximo 200 KB. Se incrusta en Base64 en el RIDE."
             />
-            <div style={{ marginTop: 'var(--space-4)', display: 'flex', gap: 'var(--space-6)', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <div className="bill-logo-row">
               {logoPreview ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', alignItems: 'center' }}>
+                <div className="bill-logo-preview-wrap">
                   <img
                     src={logoPreview}
                     alt="Logo empresa"
-                    style={{ maxWidth: 200, maxHeight: 100, objectFit: 'contain', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: 8, background: '#fff' }}
+                    className="bill-logo-img"
                   />
                   {canEdit && (
                     <ZHBtn variant="ghost" size="sm" type="button" onClick={handleRemoveLogo} disabled={saving}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 16 }}>delete</span>
+                      <span className="material-symbols-outlined pg-icon-16">delete</span>
                       Quitar logo
                     </ZHBtn>
                   )}
                 </div>
               ) : (
-                <div style={{
-                  width: 200, height: 100, border: '2px dashed var(--color-border)',
-                  borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', color: 'var(--color-text-secondary)', fontSize: 13,
-                }}>
+                <div className="bill-logo-placeholder">
                   Sin logotipo
                 </div>
               )}
               {canEdit && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                <div className="bill-logo-upload-col">
                   <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/png,image/jpeg"
-                    style={{ display: 'none' }}
+                    className="bill-file-hidden"
                     onChange={handleLogoFile}
                   />
                   <ZHBtn
@@ -333,7 +320,7 @@ export function BillingSettingsPage() {
                     <span className="material-symbols-outlined">upload</span>
                     {logoPreview ? 'Cambiar logo' : 'Subir logo'}
                   </ZHBtn>
-                  <p style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>PNG / JPG · máx. 200 KB</p>
+                  <p className="bill-logo-hint">PNG / JPG · máx. 200 KB</p>
                 </div>
               )}
             </div>
@@ -341,7 +328,7 @@ export function BillingSettingsPage() {
         </div>
 
         {/* ── 3. Configuración de tirilla ───────────────────── */}
-        <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="pg-section pg-section--mb-4">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
               <span className="material-symbols-outlined pg-section-icon">receipt</span>
@@ -370,16 +357,17 @@ export function BillingSettingsPage() {
               </ZHField>
             </div>
 
-            <ZHField label="Leyenda / Nota al pie" error={errors.footerText?.message} style={{ marginTop: 'var(--space-4)' }}>
-              <textarea
-                className="zh-input"
-                rows={3}
-                placeholder="Texto adicional que aparece al final del comprobante impreso (opcional)"
-                disabled={saving || !canEdit}
-                style={{ resize: 'vertical', minHeight: 72 }}
-                {...register('footerText')}
-              />
-            </ZHField>
+            <div className="bill-footer-field">
+              <ZHField label="Leyenda / Nota al pie" error={errors.footerText?.message}>
+                <textarea
+                  className="zh-input bill-textarea-footer"
+                  rows={3}
+                  placeholder="Texto adicional que aparece al final del comprobante impreso (opcional)"
+                  disabled={saving || !canEdit}
+                  {...register('footerText')}
+                />
+              </ZHField>
+            </div>
           </div>
         </div>
 
@@ -412,6 +400,6 @@ export function BillingSettingsPage() {
         </div>
 
       </form>
-    </div>
+    </ErpPageTemplate>
   );
 }

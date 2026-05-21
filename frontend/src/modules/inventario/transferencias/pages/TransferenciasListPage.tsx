@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
@@ -26,29 +27,23 @@ export function TransferenciasListPage() {
   const pageSize = filter.pageSize   ?? 20;
 
   return (
-    <div className="pg-page">
-
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">Inventario</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Transferencias</span>
-          </nav>
-          <h1 className="pg-title">Transferencias entre Bodegas</h1>
-          <p className="pg-subtitle">Movimientos internos de stock entre almacenes.</p>
-        </div>
-        <div className="pg-header-right">
-          {canCreate && (
-            <button className="zh-btn zh-btn--primary" type="button"
-              onClick={() => navigate('/inventario/transferencias/nueva')}>
-              <span className="material-symbols-outlined">add</span>
-              Nueva Transferencia
-            </button>
-          )}
-        </div>
-      </div>
-
+    <ErpPageTemplate
+      kicker="Inventario"
+      title="Transferencias entre Bodegas"
+      subtitle="Movimientos internos de stock entre almacenes."
+      action={
+        canCreate ? (
+          <button
+            className="zh-btn zh-btn--primary"
+            type="button"
+            onClick={() => navigate('/inventario/transferencias/nueva')}
+          >
+            <span className="material-symbols-outlined">add</span>
+            Nueva Transferencia
+          </button>
+        ) : undefined
+      }
+    >
       {error && <ZHPageNotice variant="error" message="Error al cargar" detail={error} />}
 
       <div className="pg-section">
@@ -97,11 +92,11 @@ export function TransferenciasListPage() {
         </div>
 
         {loading ? (
-          <div style={{ padding: '40px' }}><LoadingState /></div>
+          <div className="pg-pad-40"><LoadingState /></div>
         ) : items.length === 0 ? (
-          <div style={{ padding: '40px' }}><EmptyState message="No hay transferencias que coincidan con los filtros." /></div>
+          <div className="pg-pad-40"><EmptyState message="No hay transferencias que coincidan con los filtros." /></div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="pg-overflow-x">
             <table className="table">
               <thead>
                 <tr>
@@ -110,19 +105,19 @@ export function TransferenciasListPage() {
                   <th>Destino</th>
                   <th>Fecha</th>
                   <th>Estado</th>
-                  <th style={{ textAlign: 'right' }}>Acciones</th>
+                  <th className="pg-th-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((t) => (
-                  <tr key={t.id} style={{ cursor: 'pointer' }}
+                  <tr key={t.id} className="pg-row-clickable"
                     onClick={() => navigate(`/inventario/transferencias/${t.id}`)}>
                     <td><strong className="mono">{t.transferNumber}</strong></td>
                     <td>{t.sourceWarehouseName}</td>
                     <td>{t.destinationWarehouseName}</td>
                     <td>{new Date(t.transferDate).toLocaleDateString('es')}</td>
                     <td><TransferenciaEstadoBadge estado={t.status} /></td>
-                    <td style={{ textAlign: 'right' }}>
+                    <td className="pg-td-right">
                       <ZHBtn variant="ghost" size="sm" onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/inventario/transferencias/${t.id}`);
@@ -137,7 +132,7 @@ export function TransferenciasListPage() {
 
         {total > pageSize && (
           <div className="pg-table-footer">
-            <span className="subtle" style={{ fontSize: 12 }}>Pág. {page} · {total} registros</span>
+            <span className="subtle pg-text-muted-sm">Pág. {page} · {total} registros</span>
             <div className="pg-pagination-controls">
               <button className="pg-pagination-btn" disabled={page <= 1}
                 onClick={() => setFilter((f) => ({ ...f, pageNumber: page - 1 }))}>
@@ -151,6 +146,6 @@ export function TransferenciasListPage() {
           </div>
         )}
       </div>
-    </div>
+    </ErpPageTemplate>
   );
 }

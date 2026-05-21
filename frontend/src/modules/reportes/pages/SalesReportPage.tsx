@@ -103,7 +103,7 @@ export function SalesReportPage() {
           <circle cx="500" cy="74" r="5" fill="#3a5f84" stroke="white" strokeWidth="2" />
           <circle cx="900" cy="37" r="5" fill="#3a5f84" stroke="white" strokeWidth="2" />
         </svg>
-        <div style={{ position: 'absolute', top: 40, left: '48%', transform: 'translateX(-50%)' }}>
+        <div className="rpt-chart-tooltip-anchor">
           <ReportChartTooltip
             date="15 Octubre"
             rows={[

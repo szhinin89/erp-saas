@@ -410,6 +410,11 @@
   "common.noAccess": "Kay pantallaman mana atinki.",
   "common.readOnly": "Modo lectura: kay pantallapi mana ruray permiso kanchu.",
 
+  "settings.company.kicker": "Allchichay",
+  "settings.company.title": "Kampana allchichay",
+  "settings.company.subtitle": "Sistemapa llaqui chaninakunata, allchichaykunatapash allichay.",
+  "settings.company.saved": "Allchichaykunaka alli guardarcrka.",
+
   "dashboard.title": "Dashboard",
   "dashboard.kpis.totalIncome": "Llapa yaykuykuna",
   "dashboard.kpis.monthExpenses": "Killa lluqsi",
@@ -1005,6 +1010,8 @@
   "profiles.perms.saas.branches.delete": "Sucursalta mana llamkachiy",
 
   "ventas.facturas.title": "Rantikuy willaykuna",
+  "ventas.facturas.subtitle": "Rantikuy willaykunata qillqay, kamachiy.",
+  "ventas.facturas.newInvoice": "Musuq willay",
   "ventas.facturas.refresh": "Lista musuqchay",
   "ventas.facturas.print": "Tirilla imprentay",
   "ventas.facturas.printPopupBlocked": "Navegadorqa emergente ventanata harkarqun. Kay sitioyku ventanakunata saqisqa musuqchay.",
@@ -1145,6 +1152,7 @@
   "customers.audit.table.details": "Astawan",
 
   "branches.title": "Sucursalkuna",
+  "branches.subtitle": "Rantikuy wasikunata, kamachikunatapash sucursalpi allichay.",
   "branches.tabList": "Sucursalkunata qhaway",
   "branches.list.searchPlaceholder": "Suti, tiyay wan fonu…",
   "branches.list.entityLabel": "sucursalkunata rikuchisqa",

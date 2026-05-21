@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../components/PageShell';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { usePermissionsStore } from '../../../store/permissionsStore';
@@ -17,6 +18,7 @@ import {
   emptyInvoiceLine,
   type InvoiceLineValues,
 } from '../schemas/createInvoiceSchema';
+import './create-invoice-page.css';
 
 const TODAY = new Date().toISOString().split('T')[0]!;
 const VAT_RATE = 0.15; // IVA Ecuador 15%
@@ -152,45 +154,35 @@ export function CreateInvoicePage() {
   const folio = draftId ? 'Borrador guardado' : 'FAC-PENDIENTE';
 
   return (
-    <div className="pg-page">
-
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Ruta de navegación">
-            <span className="pg-breadcrumb-item">Ventas</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Nueva Factura</span>
-          </nav>
-          <h1 className="pg-title">Nueva Factura</h1>
-          <p className="pg-subtitle">Generación de comprobante fiscal electrónico</p>
+    <ErpPageTemplate
+      kicker="Ventas"
+      title="Nueva Factura"
+      subtitle="Generación de comprobante fiscal electrónico"
+    >
+      <div className="pg-header-fields">
+        <div className="pg-header-field">
+          <label className="pg-header-field-label">Folio</label>
+          <input
+            className="zh-input mono vf-folio-readonly"
+            readOnly
+            value={folio}
+          />
         </div>
-
-        <div className="pg-header-fields">
-          <div className="pg-header-field">
-            <label className="pg-header-field-label">Folio</label>
-            <input
-              className="zh-input mono"
-              readOnly
-              value={folio}
-              style={{ color: 'var(--color-primary)', fontWeight: 500 }}
-            />
-          </div>
-          <div className="pg-header-field">
-            <label className="pg-header-field-label">Fecha de Emisión</label>
-            <input
-              className="zh-input"
-              type="date"
-              value={issueDate}
-              onChange={(e) => setIssueDate(e.target.value)}
-            />
-          </div>
-          <div className="pg-header-field">
-            <label className="pg-header-field-label">Moneda</label>
-            <select className="zh-input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
-              <option value="USD">USD — Dólar</option>
-              <option value="EUR">EUR — Euro</option>
-            </select>
-          </div>
+        <div className="pg-header-field">
+          <label className="pg-header-field-label">Fecha de Emisión</label>
+          <input
+            className="zh-input"
+            type="date"
+            value={issueDate}
+            onChange={(e) => setIssueDate(e.target.value)}
+          />
+        </div>
+        <div className="pg-header-field">
+          <label className="pg-header-field-label">Moneda</label>
+          <select className="zh-input" value={currency} onChange={(e) => setCurrency(e.target.value)}>
+            <option value="USD">USD — Dólar</option>
+            <option value="EUR">EUR — Euro</option>
+          </select>
         </div>
       </div>
 
@@ -209,51 +201,46 @@ export function CreateInvoicePage() {
           <div className="pg-form-grid pg-form-grid--4">
 
             <ZHField label="Buscar Cliente" required>
-              <div className="pg-search">
-                <span className="material-symbols-outlined">search</span>
-                <input
-                  className="zh-input"
-                  type="search"
-                  placeholder="Nombre o RUC…"
-                  value={clientSearch}
-                  onChange={(e) => { setClientSearch(e.target.value); setCustomerId(''); }}
-                  list="client-list"
-                />
-                <datalist id="client-list">
-                  {filteredClients.map((c) => (
-                    <option
-                      key={c.id}
-                      value={c.fullName}
-                      onClick={() => handleSelectClient(c.id)}
-                    />
-                  ))}
-                </datalist>
-              </div>
-              {clientSearch && !customerId && filteredClients.length > 0 && (
-                <div style={{
-                  position: 'absolute', zIndex: 100, background: 'var(--color-surface)',
-                  border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',
-                  boxShadow: 'var(--shadow-md)', width: '100%', maxHeight: 200, overflowY: 'auto',
-                }}>
-                  {filteredClients.slice(0, 8).map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      style={{
-                        display: 'block', width: '100%', textAlign: 'left',
-                        padding: '8px 12px', background: 'none', border: 'none',
-                        cursor: 'pointer', fontSize: 'var(--text-body-md-size)',
-                      }}
-                      onMouseDown={() => handleSelectClient(c.id)}
-                    >
-                      <strong>{c.fullName}</strong>
-                      <span style={{ color: 'var(--color-text-secondary)', marginLeft: 8, fontSize: 12 }}>
-                        {c.identificationNumber}
-                      </span>
-                    </button>
-                  ))}
+              <div className="vf-create-client-search-wrap">
+                <div className="pg-search">
+                  <span className="material-symbols-outlined">search</span>
+                  <input
+                    className="zh-input"
+                    type="search"
+                    placeholder="Nombre o RUC…"
+                    value={clientSearch}
+                    onChange={(e) => { setClientSearch(e.target.value); setCustomerId(''); }}
+                    list="client-list"
+                  />
+                  <datalist id="client-list">
+                    {filteredClients.map((c) => (
+                      <option
+                        key={c.id}
+                        value={c.fullName}
+                        onClick={() => handleSelectClient(c.id)}
+                      />
+                    ))}
+                  </datalist>
                 </div>
-              )}
+                {clientSearch && !customerId && filteredClients.length > 0 && (
+                  <div className="vf-create-client-dropdown" role="listbox">
+                    {filteredClients.slice(0, 8).map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        className="vf-create-client-option"
+                        role="option"
+                        onMouseDown={() => handleSelectClient(c.id)}
+                      >
+                        <strong>{c.fullName}</strong>
+                        <span className="vf-create-client-option-id">
+                          {c.identificationNumber}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </ZHField>
 
             <ZHField label="RUC / Cédula">
@@ -280,7 +267,7 @@ export function CreateInvoicePage() {
             </ZHField>
           </div>
 
-          <div className="pg-form-grid pg-form-grid--4" style={{ marginTop: 'var(--space-4)' }}>
+          <div className="pg-form-grid pg-form-grid--4 vf-create-form-grid-offset">
             <ZHField label="Bodega" required>
               <select
                 className="zh-input"
@@ -310,18 +297,18 @@ export function CreateInvoicePage() {
           </ZHBtn>
         </div>
 
-        <div style={{ overflowX: 'auto' }}>
-          <table className="table">
+        <div className="vf-create-line-items-wrap">
+          <table className="table vf-create-line-items-table">
             <thead>
               <tr>
-                <th style={{ width: 100 }}>SKU / Código</th>
-                <th>Descripción</th>
-                <th style={{ width: 90, textAlign: 'right' }}>Cant.</th>
-                <th style={{ width: 120, textAlign: 'right' }}>P. Unitario</th>
-                <th style={{ width: 110, textAlign: 'right' }}>Descuento</th>
-                <th style={{ width: 120, textAlign: 'right' }}>IVA (15%)</th>
-                <th style={{ width: 120, textAlign: 'right' }}>Total</th>
-                <th style={{ width: 48 }} />
+                <th className="vf-create-th vf-create-th--sku">SKU / Código</th>
+                <th className="vf-create-th">Descripción</th>
+                <th className="vf-create-th vf-create-th--qty">Cant.</th>
+                <th className="vf-create-th vf-create-th--price">P. Unitario</th>
+                <th className="vf-create-th vf-create-th--discount">Descuento</th>
+                <th className="vf-create-th vf-create-th--vat">IVA (15%)</th>
+                <th className="vf-create-th vf-create-th--total">Total</th>
+                <th className="vf-create-th vf-create-th--actions" aria-label="Acciones" />
               </tr>
             </thead>
             <tbody>
@@ -365,24 +352,23 @@ export function CreateInvoicePage() {
                         onChange={(e) => updateLine(line.localId, 'unitPrice', parseFloat(e.target.value) || 0)}
                       />
                     </td>
-                    <td style={{ color: 'var(--color-error)', textAlign: 'right', fontSize: 'var(--text-body-md-size)' }}>
+                    <td className="vf-create-cell vf-create-cell--discount">
                       <input
-                        className="pg-editable-input pg-editable-input--right"
+                        className="pg-editable-input pg-editable-input--right vf-create-input--discount"
                         type="number"
                         min={0}
                         step={0.01}
                         value={line.discountAmount}
                         onChange={(e) => updateLine(line.localId, 'discountAmount', parseFloat(e.target.value) || 0)}
-                        style={{ color: 'var(--color-error)' }}
                       />
                     </td>
-                    <td style={{ textAlign: 'right', color: 'var(--color-text-secondary)', fontSize: 'var(--text-body-md-size)' }}>
+                    <td className="vf-create-cell vf-create-cell--vat">
                       {vatAmount.toFixed(2)}
                     </td>
-                    <td style={{ textAlign: 'right', fontWeight: 600, fontSize: 'var(--text-body-md-size)' }}>
+                    <td className="vf-create-cell vf-create-cell--line-total">
                       {total.toFixed(2)}
                     </td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td className="vf-create-cell vf-create-cell--actions">
                       <button
                         type="button"
                         className="pg-row-delete"
@@ -390,7 +376,7 @@ export function CreateInvoicePage() {
                         aria-label="Eliminar línea"
                         title="Eliminar"
                       >
-                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
+                        <span className="material-symbols-outlined vf-create-icon--sm">delete</span>
                       </button>
                     </td>
                   </tr>
@@ -407,24 +393,23 @@ export function CreateInvoicePage() {
       </div>
 
       {/* ── Notes + Totals ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '7fr 5fr', gap: 'var(--space-4)', alignItems: 'start' }}>
+      <div className="vf-create-summary-grid">
 
-        <div className="pg-section">
+        <div className="pg-section vf-create-summary-notes">
           <div className="pg-section-body">
             <ZHField label="Notas Adicionales">
               <textarea
-                className="zh-input"
+                className="zh-input vf-create-notes-input"
                 rows={5}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Condiciones de pago, observaciones, etc."
-                style={{ resize: 'none' }}
               />
             </ZHField>
           </div>
         </div>
 
-        <div className="pg-section">
+        <div className="pg-section vf-create-summary-totals">
           <div className="pg-section-body">
             <div className="pg-totals">
               <div className="pg-totals-row">
@@ -493,6 +478,6 @@ export function CreateInvoicePage() {
         </div>
       </div>
 
-    </div>
+    </ErpPageTemplate>
   );
 }

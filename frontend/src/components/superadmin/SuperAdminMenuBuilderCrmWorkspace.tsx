@@ -151,11 +151,11 @@ export function SuperAdminMenuBuilderCrmWorkspace(props: SuperAdminMenuBuilderCr
           <div className="pg-section-header-left">
             <span className="material-symbols-outlined pg-section-icon">settings_accessibility</span>
             <h2 className="pg-section-label">Panel SuperAdmin</h2>
-            <p className="subtle" style={{ margin: 0, marginLeft: 'var(--space-2)' }}>
+            <p className="subtle smb-workspace-subtitle">
               Gestión completa de menús, planes comerciales y configuración global
             </p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+          <div className="smb-header-actions">
             <ZHBtn
               variant="ghost"
               size="md"
@@ -167,7 +167,7 @@ export function SuperAdminMenuBuilderCrmWorkspace(props: SuperAdminMenuBuilderCr
               disabled={busy || savingAuto}
               title="Abrir guía rápida del flujo de configuración"
             >
-              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>help</span>
+              <span className="material-symbols-outlined pg-icon-16">help</span>
               Guía rápida
             </ZHBtn>
             {savingAuto ? (

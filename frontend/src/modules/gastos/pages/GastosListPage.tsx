@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../components/PageShell';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../store/permissionsStore';
 import { useAuthStore } from '../../../store/authStore';
@@ -108,18 +109,12 @@ export function GastosListPage() {
   if (!canView) return <NoAccessPage title="Gastos" />;
 
   return (
-    <div className="pg-page">
-
-      {/* Header */}
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">Gastos</span>
-          </nav>
-          <h1 className="pg-title">Registro de Gastos</h1>
-          <p className="pg-subtitle">Facturas de gasto y erogaciones del período.</p>
-        </div>
-        <div className="pg-header-right">
+    <ErpPageTemplate
+      kicker="Gastos"
+      title="Registro de Gastos"
+      subtitle="Facturas de gasto y erogaciones del período."
+      action={
+        <>
           <button className="zh-btn zh-btn--secondary" type="button" onClick={() => void load()} disabled={loading}>
             <span className="material-symbols-outlined">refresh</span>
             Actualizar
@@ -130,9 +125,9 @@ export function GastosListPage() {
               Nuevo Gasto
             </button>
           )}
-        </div>
-      </div>
-
+        </>
+      }
+    >
       {msg && <ZHPageNotice variant={msg.type} message={msg.text} />}
 
       {/* KPIs */}
@@ -188,13 +183,13 @@ export function GastosListPage() {
         </div>
 
         {loading ? (
-          <div style={{ padding: 40 }}><LoadingState /></div>
+          <div className="pg-pad-40"><LoadingState /></div>
         ) : rows.length === 0 ? (
-          <div style={{ padding: 40 }}><EmptyState message="Sin gastos registrados. Agrega el primero." /></div>
+          <div className="pg-pad-40"><EmptyState message="Sin gastos registrados. Agrega el primero." /></div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: 40 }}><EmptyState message="Sin resultados." /></div>
+          <div className="pg-pad-40"><EmptyState message="Sin resultados." /></div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="pg-overflow-x">
             <table className="table">
               <thead>
                 <tr>
@@ -218,9 +213,9 @@ export function GastosListPage() {
                       <td className="gst-col-date">{new Date(row.issueDate).toLocaleDateString('es')}</td>
                       <td><span className="badge badge--gray">{row.expenseCategory}</span></td>
                       <td>{row.description}</td>
-                      <td style={{ color: 'var(--color-text-secondary)' }}>{prov}</td>
+                      <td className="pg-cell-muted">{prov}</td>
                       <td>${row.subtotal.toFixed(2)}</td>
-                      <td className="gst-cell-right" style={{ fontWeight: 600 }}>${row.total.toFixed(2)}</td>
+                      <td className="gst-cell-right pg-cell-strong">${row.total.toFixed(2)}</td>
                       <td><span className={badge.cls}>{badge.label}</span></td>
                       <td className="gst-cell-actions">
                         {row.status === 0 && (
@@ -229,7 +224,7 @@ export function GastosListPage() {
                               <span className="material-symbols-outlined">check</span>
                               {isBusy ? '...' : 'Validar'}
                             </button>
-                            <button className="zh-btn zh-btn--ghost zh-btn--sm" style={{ color: 'var(--color-error)' }} disabled={isBusy} onClick={() => { setRejectId(row.id); setRejectText(''); }}>
+                            <button className="zh-btn zh-btn--ghost zh-btn--sm pg-btn-error-ghost" disabled={isBusy} onClick={() => { setRejectId(row.id); setRejectText(''); }}>
                               Rechazar
                             </button>
                           </>
@@ -240,7 +235,7 @@ export function GastosListPage() {
                               <span className="material-symbols-outlined">done_all</span>
                               {isBusy ? '...' : 'Aprobar'}
                             </button>
-                            <button className="zh-btn zh-btn--ghost zh-btn--sm" style={{ color: 'var(--color-error)' }} disabled={isBusy} onClick={() => { setRejectId(row.id); setRejectText(''); }}>
+                            <button className="zh-btn zh-btn--ghost zh-btn--sm pg-btn-error-ghost" disabled={isBusy} onClick={() => { setRejectId(row.id); setRejectText(''); }}>
                               Rechazar
                             </button>
                           </>
@@ -258,17 +253,17 @@ export function GastosListPage() {
       {/* Modal rechazo */}
       {rejectId && (
         <div className="zh-modal-overlay" onClick={() => setRejectId(null)}>
-          <div className="zh-modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+          <div className="zh-modal pg-modal--sm" onClick={(e) => e.stopPropagation()}>
             <div className="zh-modal-header">
               <h2 className="zh-modal-title">Rechazar Gasto</h2>
               <button className="zh-modal-close" onClick={() => setRejectId(null)}>
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <div className="zh-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-              <p style={{ color: 'var(--color-text-secondary)' }}>Indica el motivo del rechazo:</p>
-              <textarea className="zh-input" rows={3} value={rejectText} onChange={(e) => setRejectText(e.target.value)} placeholder="Motivo obligatorio..." style={{ resize: 'vertical' }} />
-              <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+            <div className="zh-modal-body pg-reject-body">
+              <p className="pg-reject-hint">Indica el motivo del rechazo:</p>
+              <textarea className="zh-input" rows={3} value={rejectText} onChange={(e) => setRejectText(e.target.value)} placeholder="Motivo obligatorio..." />
+              <div className="pg-table-actions-row">
                 <button className="zh-btn zh-btn--ghost zh-btn--md" onClick={() => setRejectId(null)}>Cancelar</button>
                 <button className="zh-btn zh-btn--destructive zh-btn--md" disabled={!rejectText.trim()} onClick={() => void handleRechazar()}>
                   Confirmar rechazo
@@ -278,6 +273,6 @@ export function GastosListPage() {
           </div>
         </div>
       )}
-    </div>
+    </ErpPageTemplate>
   );
 }

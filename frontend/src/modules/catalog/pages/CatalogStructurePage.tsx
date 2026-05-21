@@ -1,8 +1,10 @@
 import { NoAccessPage } from '../../../components/PageShell';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { CatalogStructureCascadePanel } from './CatalogStructureCascadePanel';
 import { CatalogStructureModal } from './CatalogStructureModal';
 import { useCatalogStructurePage } from './useCatalogStructurePage';
+import './CatalogStructurePage.css';
 
 export function CatalogStructurePage() {
   const page = useCatalogStructurePage();
@@ -10,15 +12,11 @@ export function CatalogStructurePage() {
   if (!page.canView) return <NoAccessPage title={page.t('catalog.structure.title')} />;
 
   return (
-    <div className="pg-page">
-      <div className="pg-header-row">
-        <div>
-          <p className="pg-kicker">{page.t('app.nav.group.inventario')}</p>
-          <h1 className="pg-title">{page.t('catalog.structure.title')}</h1>
-          <p className="pg-subtitle">{page.t('catalog.structure.subtitle')}</p>
-        </div>
-      </div>
-
+    <ErpPageTemplate
+      kicker={page.t('app.nav.group.inventario')}
+      title={page.t('catalog.structure.title')}
+      subtitle={page.t('catalog.structure.subtitle')}
+    >
       {page.error && !page.modal && (
         <ZHPageNotice variant="error" message={page.t('common.errorPrefix')} detail={page.error} />
       )}
@@ -76,6 +74,6 @@ export function CatalogStructurePage() {
           onSubmit={page.onSubmit}
         />
       )}
-    </div>
+    </ErpPageTemplate>
   );
 }

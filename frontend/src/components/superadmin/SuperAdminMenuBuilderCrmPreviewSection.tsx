@@ -34,11 +34,7 @@ export function SuperAdminMenuBuilderCrmPreviewSection({
   const cycleLabel = showAnnual ? '/año' : '/mes';
 
   const previewControls: ReactNode = (
-    <div
-      role="radiogroup"
-      aria-label="Orientación del menú"
-      style={{ display: 'flex', gap: 2, background: 'rgba(0,0,0,0.08)', borderRadius: 6, padding: 2 }}
-    >
+    <div className="smb-layout-toggle" role="radiogroup" aria-label="Orientación del menú">
       {(['horizontal', 'vertical'] as const).map((layout) => {
         const active = previewLayout === layout;
         return (
@@ -49,18 +45,9 @@ export function SuperAdminMenuBuilderCrmPreviewSection({
             aria-checked={active}
             disabled={busy || savingAuto}
             onClick={() => setPreviewLayout(layout)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 3,
-              padding: '2px 7px', borderRadius: 4,
-              border: 'none', cursor: 'pointer', fontSize: 10,
-              fontWeight: active ? 700 : 400,
-              background: active ? '#fff' : 'transparent',
-              color: active ? '#3a5f84' : '#64748b',
-              boxShadow: active ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
-              transition: 'all 0.15s',
-            }}
+            className={`smb-layout-btn${active ? ' smb-layout-btn--active' : ''}`}
           >
-            <span className="material-symbols-outlined" style={{ fontSize: 11 }}>
+            <span className={`material-symbols-outlined smb-layout-btn-icon`}>
               {layout === 'horizontal' ? 'dock_to_right' : 'view_sidebar'}
             </span>
             {layout === 'horizontal' ? 'Horizontal' : 'Vertical'}
@@ -72,21 +59,18 @@ export function SuperAdminMenuBuilderCrmPreviewSection({
 
   const planCard: ReactNode = (
     <div className="menu-plan-composer__planCard">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span aria-hidden style={{ fontSize: 16 }}>{planEmoji(activePlan?.code ?? '')}</span>
-          <span className="badge badge--blue badge--md" style={{ textTransform: 'uppercase' }}>
-            {activePlan?.code ?? 'PLAN'}
+      <div className="smb-plan-card-head">
+        <div className="smb-plan-card-meta">
+          <span className="smb-plan-emoji" aria-hidden>
+            {planEmoji(activePlan?.code ?? '')}
           </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text)' }}>
-            {priceLabel}<span style={{ fontSize: 11, fontWeight: 400, color: 'var(--color-text-secondary)', marginLeft: 2 }}>{cycleLabel}</span>
+          <span className="badge badge--blue badge--md smb-plan-badge">{activePlan?.code ?? 'PLAN'}</span>
+          <span className="smb-plan-price">
+            {priceLabel}
+            <span className="smb-plan-cycle">{cycleLabel}</span>
           </span>
         </div>
-        <div
-          role="radiogroup"
-          aria-label="Ciclo de facturación"
-          style={{ display: 'flex', gap: 1, background: 'var(--color-surface-container)', borderRadius: 'var(--radius-md)', padding: 2 }}
-        >
+        <div className="smb-billing-toggle" role="radiogroup" aria-label="Ciclo de facturación">
           {(['Mensual', 'Anual'] as const).map((label) => {
             const isAnnual = label === 'Anual';
             const active = showAnnual === isAnnual;
@@ -97,15 +81,7 @@ export function SuperAdminMenuBuilderCrmPreviewSection({
                 role="radio"
                 aria-checked={active}
                 onClick={() => setShowAnnual(isAnnual)}
-                style={{
-                  padding: '2px 8px', borderRadius: 'var(--radius-sm)',
-                  border: 'none', cursor: 'pointer', fontSize: 10,
-                  fontWeight: active ? 700 : 400,
-                  background: active ? 'var(--color-surface)' : 'transparent',
-                  color: active ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                  boxShadow: active ? 'var(--shadow-sm)' : 'none',
-                  transition: 'all 0.15s',
-                }}
+                className={`smb-billing-btn${active ? ' smb-billing-btn--active' : ''}`}
               >
                 {label}
               </button>
@@ -125,7 +101,12 @@ export function SuperAdminMenuBuilderCrmPreviewSection({
           <li className="subtle">Añade carpetas o formularios al árbol para listarlos aquí.</li>
         )}
       </ul>
-      <button type="button" className="zh-btn zh-btn--primary zh-btn--md menu-plan-composer__planCardCta" disabled aria-label="Seleccionar plan (solo demostración visual)">
+      <button
+        type="button"
+        className="zh-btn zh-btn--primary zh-btn--md menu-plan-composer__planCardCta"
+        disabled
+        aria-label="Seleccionar plan (solo demostración visual)"
+      >
         Seleccionar plan →
       </button>
     </div>
@@ -137,19 +118,15 @@ export function SuperAdminMenuBuilderCrmPreviewSection({
         <div className="pg-section-header-left">
           <span className="material-symbols-outlined pg-section-icon">visibility</span>
           <h3 className="pg-section-label">Vista empresa (previsualización)</h3>
-          <span className="subtle" style={{ fontSize: 12, marginLeft: 'var(--space-2)' }}>
-            Vista aproximada del menú según el plan activo.
-          </span>
+          <span className="subtle smb-preview-hint">Vista aproximada del menú según el plan activo.</span>
         </div>
         {previewControls}
       </div>
-      <div className="pg-section-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-4)' }}>
-        <div style={{ width: '100%', maxWidth: 900 }}>
+      <div className="pg-section-body smb-preview-body">
+        <div className="smb-preview-menu-wrap">
           <MenuPreview items={previewData} layout={previewLayout} />
         </div>
-        <div style={{ width: '100%', maxWidth: 320 }}>
-          {planCard}
-        </div>
+        <div className="smb-preview-plan-wrap">{planCard}</div>
       </div>
     </div>
   );

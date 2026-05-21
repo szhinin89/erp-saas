@@ -3,12 +3,64 @@
   text-align: right;
 }
 
+.pg-th-right { text-align: right; }
+.pg-th-center { text-align: center; }
+.pg-td-center { text-align: center; }
+.pg-mt-4 { margin-top: var(--space-4); }
+.pg-th-actions { width: 180px; }
+
+.pg-row-muted { opacity: 0.65; }
+
+.pg-tab-icon {
+  font-size: 16px;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.pg-section-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.pg-accent-card-inner {
+  position: relative;
+  z-index: 1;
+}
+
+.pg-state-pad {
+  padding: var(--space-6);
+}
+
+.pg-desc-subtle {
+  margin: 0;
+  font-size: var(--text-label-sm-size);
+}
+
+.pg-table-actions-row {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.pg-nowrap {
+  white-space: nowrap;
+}
+
+.pg-kpi-value--error {
+  color: var(--color-error);
+}
+
 .pg-pad-40 {
   padding: 40px;
 }
 
 .pg-overflow-x {
   overflow-x: auto;
+}
+
+.pg-section--mb-4 {
+  margin-bottom: var(--space-4);
 }
 
 .pg-flex-row-8 {
@@ -34,6 +86,26 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+}
+
+.pg-flex-col-4 {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pg-th-right {
+  text-align: right;
+}
+
+.pg-td-right {
+  text-align: right;
+}
+
+.pg-modal-hint {
+  font-size: var(--text-body-md-size);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-4);
 }
 
 .pg-text-muted-sm {
@@ -93,4 +165,186 @@
 
 .pg-btn-ml-auto {
   margin-left: auto;
+}
+
+/* Formulario / layout transversal */
+.pg-form-span-full {
+  grid-column: 1 / -1;
+}
+
+.pg-radio-group {
+  display: flex;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+
+.pg-summary-box {
+  padding: var(--space-3);
+  background: var(--color-surface-container);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+}
+
+/* Modales auxiliares (rechazo, confirmación) */
+.pg-modal--sm {
+  max-width: 420px;
+}
+
+.pg-modal--md {
+  max-width: 520px;
+}
+
+.pg-modal--480 {
+  max-width: 480px;
+}
+
+.pg-modal--440 {
+  max-width: 440px;
+}
+
+.pg-modal--lg {
+  max-width: min(900px, 95vw);
+  width: 100%;
+}
+
+.pg-reject-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pg-reject-hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+/* Tabla / listado */
+.pg-cell-muted {
+  color: var(--color-text-secondary);
+}
+
+.pg-cell-strong {
+  font-weight: 600;
+}
+
+.pg-row-inactive {
+  opacity: 0.65;
+}
+
+.pg-row-clickable {
+  cursor: pointer;
+}
+
+.pg-text-13 {
+  font-size: 13px;
+}
+
+.pg-text-11 {
+  font-size: 11px;
+}
+
+.pg-text-12 {
+  font-size: 12px;
+}
+
+.pg-actions-inline {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.pg-actions-inline-10 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pg-icon-17 {
+  font-size: 17px;
+}
+
+.pg-icon-18 {
+  font-size: 18px;
+}
+
+.pg-icon-20 {
+  font-size: 20px;
+}
+
+.pg-icon-22 {
+  font-size: 22px;
+}
+
+.pg-icon-primary {
+  color: var(--color-primary);
+}
+
+.pg-avatar-sm {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-container-high);
+}
+
+.pg-modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pg-modal-title-text {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.pg-state-pad-24 {
+  padding: 24px;
+}
+
+.pg-state-pad-24-center {
+  padding: 24px;
+  text-align: center;
+}
+
+.pg-btn-error-ghost {
+  color: var(--color-error);
+}
+
+/* Ficha detalle (documentos inventario/compras) */
+.pg-info-item-label {
+  margin: 0 0 2px;
+  font-size: var(--text-label-sm-size);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pg-info-item-value {
+  font-weight: 500;
+}
+
+.pg-doc-hero-mono {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.pg-doc-notes-label {
+  margin: 0 0 2px;
+  font-size: var(--text-label-sm-size);
+  text-transform: uppercase;
+}
+
+.pg-cell-warn {
+  color: var(--color-warning);
+}
+
+.pg-cell-success {
+  color: var(--color-success);
 }

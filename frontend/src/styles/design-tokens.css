@@ -63,6 +63,12 @@
   --space-8: 32px;
   --space-10: 40px;
 
+  /* ── App / platform shell content (LayoutFrame) ─────────── */
+  --shell-content-padding: var(--space-6);
+  --shell-content-padding-compact: var(--space-4);
+  --shell-content-max-width: 1440px;
+  --shell-content-gap: var(--space-6);
+
   /* ── Typography ───────────────────────────────────────────── */
   --font-family: 'Inter', system-ui, -apple-system, sans-serif;
 

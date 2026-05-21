@@ -3,30 +3,17 @@
    Tabla         → .table      (zh-ui.css)
    Badges        → .badge*     (zh-ui.css)                        */
 
-/* ── Page wrapper ────────────────────────────────────────── */
+/* Dashboard — dsh-* únicos; shell vía ErpPageTemplate + pg-page */
 .dsh-page {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
   padding-bottom: var(--space-8);
 }
 
-/* ── Welcome ─────────────────────────────────────────────── */
-.dsh-welcome { margin-bottom: var(--space-2); }
-
-.dsh-welcome-title {
-  font-size: var(--text-headline-lg-size);
-  font-weight: var(--text-headline-lg-weight);
-  letter-spacing: var(--text-headline-lg-spacing);
-  color: var(--color-text-primary);
-  margin: 0 0 var(--space-1);
+.dsh-activity-row {
+  cursor: pointer;
 }
 
-.dsh-welcome-date {
-  font-size: var(--text-body-md-size);
-  color: var(--color-text-secondary);
-  margin: 0;
-  text-transform: capitalize;
+.dsh-kpi-progress-bar--75 {
+  width: 75%;
 }
 
 /* ── KPI unique extensions ───────────────────────────────── */

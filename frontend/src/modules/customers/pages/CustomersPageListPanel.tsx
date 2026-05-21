@@ -88,7 +88,7 @@ export function CustomersPageListPanel({
       ) : filteredCustomers.length === 0 ? (
         <EmptyState message={t('common.noData')} />
       ) : (
-        <div style={{ overflowX: 'auto' }}>
+        <div className="pg-overflow-x">
           <table className="table">
             <thead>
               <tr>
@@ -106,24 +106,24 @@ export function CustomersPageListPanel({
                 const cat = categorizationByCustomer[customer.id]?.category ?? 'Minorista';
                 return (
                   <tr key={customer.id}>
-                    <td className="subtle mono" style={{ whiteSpace: 'nowrap' }}>
+                    <td className="subtle mono cls-cell-nowrap">
                       #{customer.identificationNumber.slice(0, 8)}
                     </td>
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                      <div className="cls-customer-row">
                         <div className="zh-avatar zh-avatar--square">{getInitials(customer.fullName)}</div>
                         <div>
-                          <div style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{customer.fullName}</div>
-                          <div className="subtle" style={{ fontSize: 'var(--text-body-sm-size)' }}>
+                          <div className="cls-customer-name">{customer.fullName}</div>
+                          <div className="subtle cls-customer-id-line">
                             {customer.identificationType}: {customer.identificationNumber}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                      <div className="cls-contact-stack">
                         {customer.email ? (
-                          <span style={{ color: 'var(--color-text-primary)' }}>{customer.email}</span>
+                          <span className="cls-contact-email">{customer.email}</span>
                         ) : (
                           <span className="subtle">—</span>
                         )}
@@ -139,8 +139,8 @@ export function CustomersPageListPanel({
                       </span>
                     </td>
                     <td className="subtle">
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                      <div className="cls-contacts-count">
+                        <span className="material-symbols-outlined pg-icon-18">
                           groups
                         </span>
                         {contactCountByCustomer[customer.id] ?? 0}

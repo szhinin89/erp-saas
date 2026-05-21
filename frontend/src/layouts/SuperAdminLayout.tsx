@@ -6,6 +6,7 @@ import { useSuperAdminGate } from '../hooks/useSuperAdminGate';
 import { fullLogout } from '../lib/session/fullLogout';
 import { SUPERADMIN_IMPERSONATION_NAME_KEY } from '../lib/session/sessionStorageKeys';
 import { RuntimeModeBadge } from '../components/RuntimeModeBadge';
+import { LayoutFrame } from '../components/layout/LayoutFrame';
 import './SuperAdminLayout.css';
 
 const tabToPath: Record<string, string> = {
@@ -203,12 +204,12 @@ export function SuperAdminLayout() {
         </div>
       </header>
 
-      {/* ── Main content ── */}
-      <main className="sa-shell-content">
-        <div className="sa-shell-outlet">
+      {/* ── Main content (shell offset + shared LayoutFrame) ── */}
+      <div className="sa-shell-content">
+        <LayoutFrame variant="platform" className="sa-shell__frame">
           <Outlet />
-        </div>
-      </main>
+        </LayoutFrame>
+      </div>
 
       {/* ── FAB ── */}
       <button

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ZHCardSection, ZHScreenHeading } from '../../components/zh/ZHLayout';
+import { ZHCardSection } from '../../components/zh/ZHLayout';
+import { ErpPageTemplate } from '../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../components/zh/ZHPageNotice';
 import { LoadingState, EmptyState } from '../../components/PageShell';
 import { RuntimeModeBadge } from '../../components/RuntimeModeBadge';
@@ -40,21 +41,19 @@ export function SaasBillingPage() {
   useEffect(() => { void load(); }, [load]);
 
   return (
-    <div className="pg-page">
-      <ZHScreenHeading
-        kicker={t('saas.billing.kicker')}
-        title={t('saas.billing.title')}
-        subtitle={t('saas.billing.subtitle')}
-        right={
-          <div className="pg-flex-row-8">
-            <RuntimeModeBadge />
-            <button className="zh-btn zh-btn--secondary" type="button" onClick={() => navigate('/saas/overview')}>
-              {t('saas.billing.backOverview')}
-            </button>
-          </div>
-        }
-      />
-
+    <ErpPageTemplate
+      kicker={t('saas.billing.kicker')}
+      title={t('saas.billing.title')}
+      subtitle={t('saas.billing.subtitle')}
+      action={
+        <div className="pg-flex-row-8">
+          <RuntimeModeBadge />
+          <button className="zh-btn zh-btn--secondary" type="button" onClick={() => navigate('/saas/overview')}>
+            {t('saas.billing.backOverview')}
+          </button>
+        </div>
+      }
+    >
       {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
       {loading ? (
@@ -108,6 +107,6 @@ export function SaasBillingPage() {
           </div>
         </>
       )}
-    </div>
+    </ErpPageTemplate>
   );
 }

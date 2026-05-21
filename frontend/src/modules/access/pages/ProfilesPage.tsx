@@ -8,8 +8,10 @@ import { profileService, type Profile } from '../api/profileService';
 import { ZHField, ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { NoAccessPage } from '../../../components/PageShell';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { profileCreateSchema, type ProfileCreateFormValues } from '../../../schemas/access/profileSchema';
 import { formatApiRequestError } from '../../lib/apiError';
+import './ProfilesPage.css';
 
 /* ── Permission groups mapped to CRUD columns ───────────────── */
 type PermGroup = {
@@ -240,21 +242,17 @@ export function ProfilesPage() {
   }
 
   return (
-    <div className="pg-page">
-      {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="pg-header-row">
-        <div>
-          <p className="pg-kicker">{t('app.nav.group.configuracion')}</p>
-          <h1 className="pg-title">{t('profiles.title')}</h1>
-          <p className="pg-subtitle">{t('profiles.subtitle')}</p>
-        </div>
+    <ErpPageTemplate
+      kicker={t('app.nav.group.configuracion')}
+      title={t('profiles.title')}
+      subtitle={t('profiles.subtitle')}
+      action={
         <ZHBtn variant="primary" size="md" type="button" onClick={openCreate}>
           + {t('profiles.list.newAction')}
         </ZHBtn>
-      </div>
-
-      {/* ── List error ─────────────────────────────────────────── */}
-      {listError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={listError} />}
+      }
+    >
+      {listError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={listError} /> : null}
 
       {/* ── Table section ──────────────────────────────────────── */}
       <div className="pg-section">
@@ -275,16 +273,16 @@ export function ProfilesPage() {
         </div>
 
         {listLoading ? (
-          <p className="subtle" style={{ padding: 24 }}>{t('common.loading')}</p>
+          <p className="subtle pg-state-pad">{t('common.loading')}</p>
         ) : filteredProfiles.length === 0 ? (
-          <p className="subtle" style={{ padding: 24 }}>{t('common.noData')}</p>
+          <p className="subtle pg-state-pad">{t('common.noData')}</p>
         ) : (
           <table className="table">
             <thead>
               <tr>
                 <th>{t('profiles.table.name')}</th>
                 <th>{t('profiles.table.active')}</th>
-                <th style={{ width: 180 }}>{t('common.actions')}</th>
+                <th className="pg-th-actions">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -292,7 +290,7 @@ export function ProfilesPage() {
                 <tr key={p.id}>
                   <td>
                     <strong>{p.name}</strong>
-                    {p.description && <p className="subtle" style={{ margin: 0, fontSize: 12 }}>{p.description}</p>}
+                    {p.description ? <p className="subtle pg-desc-subtle">{p.description}</p> : null}
                   </td>
                   <td>
                     <span className={`zh-status zh-status--${p.isActive ? 'active' : 'inactive'}`}>
@@ -300,7 +298,7 @@ export function ProfilesPage() {
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div className="prf-row-actions">
                       <ZHBtn variant="ghost" size="md" type="button" onClick={() => void openEdit(p)}>
                         {t('profiles.actions.permissions')}
                       </ZHBtn>
@@ -325,19 +323,19 @@ export function ProfilesPage() {
           aria-label={editTarget ? t('profiles.form.edit') : t('profiles.form.create')}
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          <div className="zh-modal" style={{ maxWidth: 960, width: '100%' }}>
+          <div className="zh-modal prf-modal--wide">
 
             {/* Modal header */}
             <div className="zh-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div className="pg-kpi-icon--primary" style={{ width: 40, height: 40, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 22 }}>shield_person</span>
+              <div className="prf-modal-header-main">
+                <div className="pg-kpi-icon--primary prf-modal-header-icon">
+                  <span className="material-symbols-outlined">shield_person</span>
                 </div>
                 <div>
-                  <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
+                  <h2 className="prf-modal-header-title">
                     {editTarget ? t('profiles.form.edit') : t('profiles.form.create')}
                   </h2>
-                  <p className="subtle" style={{ margin: 0, fontSize: 12 }}>{t('profiles.subtitle')}</p>
+                  <p className="subtle prf-modal-header-subtitle">{t('profiles.subtitle')}</p>
                 </div>
               </div>
               <button
@@ -351,16 +349,16 @@ export function ProfilesPage() {
             </div>
 
             {/* Modal body — two columns */}
-            <div className="zh-modal-body" style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 24, alignItems: 'start' }}>
+            <div className="zh-modal-body prf-modal-body-grid">
 
               {/* ── Left column ─────────────────────────────────── */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              <div className="prf-modal-column-main">
 
                 {/* General info */}
                 <form id="profile-form" onSubmit={onSubmit}>
-                  <div className="pg-section" style={{ padding: 0, boxShadow: 'none', border: 'none' }}>
+                  <div className="pg-section prf-modal-section-flush">
                     <div className="pg-section-header">
-                      <span className="material-symbols-outlined" style={{ fontSize: 16 }}>info</span>
+                      <span className="material-symbols-outlined prf-modal-section-icon">info</span>
                       {t('profiles.form.generalInfo')}
                     </div>
                     <div className="pg-form-grid--2">
@@ -374,7 +372,7 @@ export function ProfilesPage() {
                         </select>
                       </ZHField>
                     </div>
-                    <div style={{ marginTop: 12 }}>
+                    <div className="prf-modal-field-offset">
                       <ZHField label={t('profiles.form.description')} error={errors.description?.message}>
                         <textarea
                           className="zh-input"
@@ -388,66 +386,67 @@ export function ProfilesPage() {
                 </form>
 
                 {/* Permissions table */}
-                <div className="pg-section" style={{ padding: 0, boxShadow: 'none', border: 'none' }}>
+                <div className="pg-section prf-modal-section-flush">
                   <div className="pg-section-header">
-                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>rule</span>
+                    <span className="material-symbols-outlined prf-modal-section-icon">rule</span>
                     {t('profiles.perms.title')}
                   </div>
 
                   {permLoading ? (
-                    <p className="subtle" style={{ padding: 16 }}>{t('common.loading')}</p>
+                    <p className="subtle prf-modal-loading">{t('common.loading')}</p>
                   ) : (
-                    <table className="table">
-                      <thead>
-                        <tr>
-                          <th>{t('profiles.perms.module')}</th>
-                          <th style={{ textAlign: 'center', width: 70 }}>{t('profiles.perms.view')}</th>
-                          <th style={{ textAlign: 'center', width: 70 }}>{t('profiles.perms.create')}</th>
-                          <th style={{ textAlign: 'center', width: 70 }}>{t('profiles.perms.edit')}</th>
-                          <th style={{ textAlign: 'center', width: 70 }}>{t('profiles.perms.delete')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {MODULE_PERM_GROUPS.map((group) => (
-                          <tr key={group.module}>
-                            <td><strong>{group.module}</strong></td>
-                            {(['view', 'create', 'edit', 'delete'] as const).map((col) => (
-                              <td key={col} style={{ textAlign: 'center' }}>
-                                {group[col].length > 0 ? (
-                                  <input
-                                    type="checkbox"
-                                    className="zh-inline-check"
-                                    checked={allOn(group[col], permState)}
-                                    onChange={(e) =>
-                                      setPermState((s) => handleColumnToggle(group, col, e.target.checked, s))
-                                    }
-                                    style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--color-primary)' }}
-                                  />
-                                ) : (
-                                  <span className="subtle" style={{ fontSize: 12 }}>—</span>
-                                )}
-                              </td>
-                            ))}
+                    <div className="prf-matrix-wrap">
+                      <table className="table prf-matrix-table">
+                        <thead>
+                          <tr>
+                            <th>{t('profiles.perms.module')}</th>
+                            <th className="prf-matrix-th-action">{t('profiles.perms.view')}</th>
+                            <th className="prf-matrix-th-action">{t('profiles.perms.create')}</th>
+                            <th className="prf-matrix-th-action">{t('profiles.perms.edit')}</th>
+                            <th className="prf-matrix-th-action">{t('profiles.perms.delete')}</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {MODULE_PERM_GROUPS.map((group) => (
+                            <tr key={group.module}>
+                              <td><strong>{group.module}</strong></td>
+                              {(['view', 'create', 'edit', 'delete'] as const).map((col) => (
+                                <td key={col} className="prf-matrix-cell-action">
+                                  {group[col].length > 0 ? (
+                                    <input
+                                      type="checkbox"
+                                      className="zh-inline-check prf-matrix-check"
+                                      checked={allOn(group[col], permState)}
+                                      onChange={(e) =>
+                                        setPermState((s) => handleColumnToggle(group, col, e.target.checked, s))
+                                      }
+                                    />
+                                  ) : (
+                                    <span className="subtle prf-matrix-empty">—</span>
+                                  )}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   )}
                 </div>
               </div>
 
               {/* ── Right column ────────────────────────────────── */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div className="prf-modal-column-aside">
 
                 {/* Tip box */}
-                <div className="pg-section" style={{ background: 'var(--color-primary-lt, #e8f0f8)', border: '1px solid var(--color-primary, #3a5f84)22' }}>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--color-primary)', flexShrink: 0 }}>lightbulb</span>
+                <div className="pg-section prf-modal-tip">
+                  <div className="prf-modal-tip-row">
+                    <span className="material-symbols-outlined prf-modal-tip-icon">lightbulb</span>
                     <div>
-                      <p style={{ margin: '0 0 4px', fontWeight: 600, fontSize: 12, color: 'var(--color-primary)' }}>
+                      <p className="prf-modal-tip-title">
                         {t('profiles.tip.title')}
                       </p>
-                      <p className="subtle" style={{ margin: 0, fontSize: 12, lineHeight: 1.5 }}>
+                      <p className="subtle prf-modal-tip-body">
                         {t('profiles.tip.body')}
                       </p>
                     </div>
@@ -455,40 +454,51 @@ export function ProfilesPage() {
                 </div>
 
                 {/* Configuration status */}
-                <div className="pg-section">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <p style={{ margin: 0, fontSize: 12, fontWeight: 600 }}>{t('profiles.form.configStatus')}</p>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: progressPct > 0 ? 'var(--success, #1a7a4a)' : 'var(--color-text-secondary)' }}>
+                <div className="pg-section prf-modal-status">
+                  <div className="prf-modal-status-head">
+                    <p className="prf-modal-status-label">{t('profiles.form.configStatus')}</p>
+                    <span
+                      className={
+                        progressPct > 0
+                          ? 'prf-modal-progress-value prf-modal-progress-value--active'
+                          : 'prf-modal-progress-value'
+                      }
+                    >
                       {progressPct}%
                     </span>
                   </div>
-                  <div style={{ height: 8, background: 'var(--color-border)', borderRadius: 99, overflow: 'hidden', marginBottom: 8 }}>
-                    <div style={{ height: '100%', width: `${progressPct}%`, background: 'var(--success, #1a7a4a)', borderRadius: 99, transition: 'width 0.3s' }} />
-                  </div>
+                  <progress
+                    className="prf-modal-progress"
+                    value={modulesWithPerms}
+                    max={MODULE_PERM_GROUPS.length}
+                    aria-label={t('profiles.form.configStatus')}
+                  />
                   {modulesWithoutPerms > 0 ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>pending_actions</span>
-                      <p className="subtle" style={{ margin: 0, fontSize: 12 }}>
+                    <div className="prf-modal-status-row">
+                      <span className="material-symbols-outlined prf-modal-status-row-icon">pending_actions</span>
+                      <p className="subtle prf-modal-status-row-text">
                         {t('profiles.form.missingModules', { count: modulesWithoutPerms })}
                       </p>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 14, color: 'var(--success, #1a7a4a)' }}>check_circle</span>
-                      <p className="subtle" style={{ margin: 0, fontSize: 12 }}>{t('profiles.form.allModulesSet')}</p>
+                    <div className="prf-modal-status-row">
+                      <span className="material-symbols-outlined prf-modal-status-row-icon prf-modal-status-row-icon--success">
+                        check_circle
+                      </span>
+                      <p className="subtle prf-modal-status-row-text">{t('profiles.form.allModulesSet')}</p>
                     </div>
                   )}
                 </div>
 
                 {/* Security badge */}
-                <div className="pg-section" style={{ textAlign: 'center', padding: '24px 16px' }}>
-                  <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--color-primary)', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(58,95,132,0.25)' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 28, color: '#fff' }}>security</span>
+                <div className="pg-section prf-modal-security">
+                  <div className="prf-modal-security-icon-wrap">
+                    <span className="material-symbols-outlined prf-modal-security-icon">security</span>
                   </div>
-                  <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--color-primary)' }}>
+                  <p className="prf-modal-security-title">
                     Sistema Protegido
                   </p>
-                  <p className="subtle" style={{ margin: 0, fontSize: 11, lineHeight: 1.4 }}>
+                  <p className="subtle prf-modal-security-desc">
                     Cifrado ZH Core v2.4 activo y verificado.
                   </p>
                 </div>
@@ -497,24 +507,24 @@ export function ProfilesPage() {
 
             {/* Save error */}
             {saveError && (
-              <div style={{ padding: '0 24px' }}>
+              <div className="prf-modal-error-wrap">
                 <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={saveError} />
               </div>
             )}
 
             {/* Modal footer */}
-            <div className="pg-actions-bar">
+            <div className="pg-actions-bar prf-modal-actions">
               <ZHBtn variant="ghost" size="md" type="button" onClick={closeModal} disabled={saving}>
                 {t('common.cancel')}
               </ZHBtn>
               <ZHBtn variant="primary" size="md" type="submit" form="profile-form" disabled={saving || permLoading}>
-                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>save</span>
+                <span className="material-symbols-outlined prf-modal-save-icon">save</span>
                 {saving ? t('common.saving') : t('profiles.form.saveProfile')}
               </ZHBtn>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </ErpPageTemplate>
   );
 }

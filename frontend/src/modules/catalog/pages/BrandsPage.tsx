@@ -9,7 +9,9 @@ import { catalogService, type BrandItem } from '../api/catalogService';
 import { ZHField, ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { NoAccessPage } from '../../../components/PageShell';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { formatApiRequestError } from '../../lib/apiError';
+import './catalog-list-page.css';
 
 /* ── Form schema ────────────────────────────────────────────── */
 const brandSchema = z.object({
@@ -145,23 +147,19 @@ export function BrandsPage() {
   const modalTitle = modal?.kind === 'create' ? t('brands.modal.create') : t('brands.modal.edit');
 
   return (
-    <div className="pg-page">
-
-      {/* ── Header ─────────────────────────────────────────── */}
-      <div className="pg-header-row">
-        <div>
-          <p className="pg-kicker">{t('app.nav.group.inventario')}</p>
-          <h1 className="pg-title">{t('brands.title')}</h1>
-          <p className="pg-subtitle">{t('brands.subtitle')}</p>
-        </div>
-        {canCreate && (
+    <ErpPageTemplate
+      kicker={t('app.nav.group.inventario')}
+      title={t('brands.title')}
+      subtitle={t('brands.subtitle')}
+      action={
+        canCreate ? (
           <ZHBtn variant="primary" size="md" type="button" onClick={openCreate}>
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add</span>
+            <span className="material-symbols-outlined">add</span>
             {t('brands.new')}
           </ZHBtn>
-        )}
-      </div>
-
+        ) : undefined
+      }
+    >
       {/* ── KPIs ───────────────────────────────────────────── */}
       <div className="pg-kpis">
         <div className="pg-kpi">
@@ -217,10 +215,9 @@ export function BrandsPage() {
               />
             </div>
             <select
-              className="zh-input"
+              className="zh-input cat-list-filter-select"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              style={{ width: 'auto', minWidth: 130 }}
             >
               <option value="all">{t('brands.filter.all')}</option>
               <option value="active">{t('common.active')}</option>
@@ -233,9 +230,9 @@ export function BrandsPage() {
         </div>
 
         {loading ? (
-          <p className="subtle" style={{ padding: 24 }}>{t('common.loading')}</p>
+          <p className="subtle pg-state-pad-24">{t('common.loading')}</p>
         ) : filtered.length === 0 ? (
-          <p className="subtle" style={{ padding: 24, textAlign: 'center' }}>{t('common.noData')}</p>
+          <p className="subtle pg-state-pad-24-center">{t('common.noData')}</p>
         ) : (
           <table className="table">
             <thead>
@@ -243,52 +240,48 @@ export function BrandsPage() {
                 <th>{t('brands.table.brand')}</th>
                 <th>{t('brands.table.manufacturer')}</th>
                 <th>{t('brands.table.country')}</th>
-                <th style={{ textAlign: 'center' }}>{t('common.status')}</th>
-                <th style={{ textAlign: 'right' }}>{t('common.actions')}</th>
+                <th className="cat-list-th-center">{t('common.status')}</th>
+                <th className="cat-list-th-right">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((brand) => (
-                <tr key={brand.id} style={{ opacity: brand.isActive ? 1 : 0.65 }}>
+                <tr key={brand.id} className={brand.isActive ? undefined : 'pg-row-inactive'}>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div
-                        className="zh-avatar zh-avatar--square"
-                        style={{ width: 36, height: 36, flexShrink: 0, background: 'var(--color-surface-container-high)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        aria-hidden
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--color-primary)' }}>sell</span>
+                    <div className="pg-actions-inline-10">
+                      <div className="zh-avatar zh-avatar--square pg-avatar-sm" aria-hidden>
+                        <span className="material-symbols-outlined pg-icon-18 pg-icon-primary">sell</span>
                       </div>
                       <div>
-                        <p style={{ margin: 0, fontWeight: 500, fontSize: 13 }}>{brand.name}</p>
-                        <p className="subtle mono" style={{ margin: 0, fontSize: 11 }}>{brand.code}</p>
+                        <p className="cat-list-name">{brand.name}</p>
+                        <p className="subtle mono cat-list-code">{brand.code}</p>
                       </div>
                     </div>
                   </td>
                   <td>
                     {brand.manufacturer ? (
-                      <span style={{ fontSize: 13 }}>{brand.manufacturer}</span>
+                      <span className="pg-text-13">{brand.manufacturer}</span>
                     ) : (
-                      <span className="subtle" style={{ fontSize: 12 }}>—</span>
+                      <span className="subtle pg-text-12">—</span>
                     )}
                   </td>
                   <td>
                     {brand.countryOfOrigin ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>public</span>
-                        <span style={{ fontSize: 13 }}>{brand.countryOfOrigin}</span>
+                      <div className="cat-list-country-row">
+                        <span className="material-symbols-outlined cat-list-icon-country">public</span>
+                        <span className="pg-text-13">{brand.countryOfOrigin}</span>
                       </div>
                     ) : (
-                      <span className="subtle" style={{ fontSize: 12 }}>—</span>
+                      <span className="subtle pg-text-12">—</span>
                     )}
                   </td>
-                  <td style={{ textAlign: 'center' }}>
+                  <td className="cat-list-td-center">
                     <span className={`zh-status zh-status--${brand.isActive ? 'active' : 'inactive'}`}>
                       {brand.isActive ? t('common.active') : t('common.inactive')}
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                    <div className="pg-actions-inline">
                       {canUpdate && (
                         <button
                           type="button"
@@ -296,7 +289,7 @@ export function BrandsPage() {
                           onClick={() => openEdit(brand)}
                           title={t('common.edit')}
                         >
-                          <span className="material-symbols-outlined" style={{ fontSize: 17 }}>edit</span>
+                          <span className="material-symbols-outlined pg-icon-17">edit</span>
                         </button>
                       )}
                       {(canDelete || canUpdate) && (
@@ -306,7 +299,7 @@ export function BrandsPage() {
                           onClick={() => void toggleBrand(brand)}
                           title={brand.isActive ? t('common.disable') : t('common.enable')}
                         >
-                          <span className="material-symbols-outlined" style={{ fontSize: 17 }}>
+                          <span className="material-symbols-outlined pg-icon-17">
                             {brand.isActive ? 'visibility_off' : 'visibility'}
                           </span>
                         </button>
@@ -328,12 +321,12 @@ export function BrandsPage() {
           aria-modal="true"
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          <div className="zh-modal" style={{ maxWidth: 520 }}>
+          <div className="zh-modal pg-modal--md">
 
             <div className="zh-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--color-primary)' }}>sell</span>
-                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{modalTitle}</h2>
+              <div className="pg-modal-title-row">
+                <span className="material-symbols-outlined pg-icon-20 pg-icon-primary">sell</span>
+                <h2 className="pg-modal-title-text">{modalTitle}</h2>
               </div>
               <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm" onClick={closeModal} aria-label={t('common.close')}>
                 <span className="material-symbols-outlined">close</span>
@@ -373,6 +366,6 @@ export function BrandsPage() {
           </div>
         </div>
       )}
-    </div>
+    </ErpPageTemplate>
   );
 }

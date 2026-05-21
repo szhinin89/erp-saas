@@ -65,7 +65,7 @@ export function BranchFormModal({
         if (e.target === e.currentTarget) closeModal();
       }}
     >
-      <div className="zh-modal" style={{ maxWidth: 'min(900px, 95vw)', width: '100%' }}>
+      <div className="zh-modal pg-modal--lg">
         <div className="zh-modal-header">
           <h2 className="zh-modal-title">{editingId ? 'Editar Sucursal' : 'Nueva Sucursal'}</h2>
           <button type="button" className="zh-modal-close" onClick={closeModal} aria-label="Cerrar">
@@ -76,10 +76,8 @@ export function BranchFormModal({
         <div className="zh-modal-body">
           {saveError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={saveError} />}
 
-          <div
-            style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-6)', alignItems: 'start' }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          <div className="br-modal-grid">
+            <div className="pg-flex-col-4">
               <div className="pg-section">
                 <div className="pg-section-header">
                   <div className="pg-section-header-left">
@@ -99,10 +97,9 @@ export function BranchFormModal({
                     </ZHField>
                     <ZHField label="Código">
                       <input
-                        className="zh-input mono"
+                        className="zh-input mono br-code-readonly"
                         readOnly
                         value={editingId ? (editCode ?? '—') : 'Auto-generado'}
-                        style={{ color: 'var(--color-primary)', background: 'var(--color-surface-container)' }}
                       />
                     </ZHField>
                     <ZHField label="Tipo de Sucursal">
@@ -234,7 +231,7 @@ export function BranchFormModal({
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+            <div className="pg-flex-col-4">
               <div className="pg-section">
                 <div className="pg-section-header">
                   <div className="pg-section-header-left">
@@ -243,7 +240,7 @@ export function BranchFormModal({
                   </div>
                 </div>
                 <div className="pg-section-body">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                  <div className="pg-flex-col-3">
                     <ZHField label="Teléfono" error={errors.phones?.message}>
                       <input
                         className="zh-input"
@@ -273,7 +270,7 @@ export function BranchFormModal({
                   </div>
                 </div>
                 <div className="pg-section-body">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                  <div className="pg-flex-col-3">
                     <ZHField label="Gerente Asignado">
                       <input
                         className="zh-input"
@@ -308,33 +305,16 @@ export function BranchFormModal({
                 </div>
               </div>
 
-              <div
-                className="pg-accent-card"
-                style={{
-                  background: 'var(--color-primary-fixed)',
-                  borderRadius: 'var(--radius-lg)',
-                  padding: 'var(--space-4)',
-                }}
-              >
-                <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ color: 'var(--color-primary)', fontSize: 24, flexShrink: 0, marginTop: 2 }}
-                  >
+              <div className="br-tip-panel">
+                <div className="br-tip-head">
+                  <span className="material-symbols-outlined br-tip-icon">
                     lightbulb
                   </span>
                   <div>
-                    <p
-                      style={{
-                        fontWeight: 600,
-                        color: 'var(--color-primary)',
-                        margin: '0 0 var(--space-1)',
-                        fontSize: 'var(--text-label-md-size)',
-                      }}
-                    >
+                    <p className="br-tip-title">
                       Consejo ZH
                     </p>
-                    <p style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--color-text-secondary)', margin: 0 }}>
+                    <p className="br-tip-text">
                       Asegúrate de asignar un <strong>Gerente</strong> con experiencia en el tipo de sucursal
                       seleccionado para optimizar la meta diaria.
                     </p>
@@ -344,7 +324,7 @@ export function BranchFormModal({
 
               <div className="pg-section">
                 <div className="pg-section-body">
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                  <div className="pg-flex-col-3">
                     <Controller
                       name="isActive"
                       control={control}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
@@ -10,6 +11,7 @@ import { ajusteService, MOTIVOS_PREDEFINIDOS } from '../api/ajusteService';
 import { useAsync } from '../../../../hooks/useAsync';
 import { api } from '../../../lib/api';
 import type { ApiResponse } from '../../../../types/api';
+import './ajustes-pages.css';
 
 interface ProductoOpcion {
   id: string;
@@ -74,29 +76,18 @@ export function CrearAjustePage() {
   if (!canCreate) return <NoAccessPage title="Nuevo Ajuste" />;
 
   return (
-    <div className="pg-page">
-
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">Inventario</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Ajustes</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Nuevo</span>
-          </nav>
-          <h1 className="pg-title">Nuevo Ajuste de Inventario</h1>
-          <p className="pg-subtitle">Registre una entrada o salida manual de stock.</p>
-        </div>
-      </div>
-
+    <ErpPageTemplate
+      kicker="Inventario"
+      title="Nuevo Ajuste de Inventario"
+      subtitle="Registre una entrada o salida manual de stock."
+    >
       {(error || localError) && (
         <ZHPageNotice variant="error" message="No se pudo crear el ajuste" detail={error ?? localError ?? ''} />
       )}
 
       <form onSubmit={(e) => void handleSubmit(e)}>
 
-        <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="pg-section pg-section--mb-4">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
               <span className="material-symbols-outlined pg-section-icon">inventory_2</span>
@@ -124,19 +115,16 @@ export function CrearAjustePage() {
             </div>
 
             {bodegaId && productoId && (
-              <div style={{
-                marginTop: 'var(--space-3)', padding: 'var(--space-3) var(--space-4)',
-                background: stockInsuficiente ? 'var(--color-error-surface, #fdecea)' : 'var(--color-surface-container)',
-                borderRadius: 'var(--radius-md)', fontSize: 'var(--text-body-sm-size)',
-                color: stockInsuficiente ? 'var(--color-error)' : 'var(--color-text-secondary)',
-              }}>
+              <div
+                className={`adj-stock-hint ${stockInsuficiente ? 'adj-stock-hint--warn' : 'adj-stock-hint--ok'}`}
+              >
                 Stock actual en bodega seleccionada: <strong>{stockLabel}</strong>
               </div>
             )}
           </div>
         </div>
 
-        <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="pg-section pg-section--mb-4">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
               <span className="material-symbols-outlined pg-section-icon">tune</span>
@@ -199,6 +187,6 @@ export function CrearAjustePage() {
           </div>
         </div>
       </form>
-    </div>
+    </ErpPageTemplate>
   );
 }

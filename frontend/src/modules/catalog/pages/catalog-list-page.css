@@ -1,0 +1,60 @@
+/* Catálogo — listados Brands / Units / ProductTypes (prefijo cat-list-*) */
+
+.cat-list-filter-select {
+  width: auto;
+  min-width: 130px;
+}
+
+.cat-list-filter-select--wide {
+  min-width: 140px;
+}
+
+.cat-list-code-primary {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.cat-list-type-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.pg-avatar-sm-32 {
+  width: 32px;
+  height: 32px;
+}
+
+.cat-list-th-center {
+  text-align: center;
+}
+
+.cat-list-th-right {
+  text-align: right;
+}
+
+.cat-list-td-center {
+  text-align: center;
+}
+
+.cat-list-name {
+  margin: 0;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.cat-list-code {
+  margin: 0;
+  font-size: 11px;
+}
+
+.cat-list-country-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cat-list-icon-country {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}

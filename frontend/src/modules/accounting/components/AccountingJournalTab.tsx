@@ -54,29 +54,20 @@ export function AccountingJournalTab({
           </ZHBtn>
         )}
       </div>
-      <div
-        className="pg-section-body"
-        style={{
-          display: 'flex',
-          gap: 'var(--space-4)',
-          flexWrap: 'wrap',
-          alignItems: 'flex-end',
-          marginBottom: 'var(--space-3)',
-        }}
-      >
+      <div className="pg-section-body acc-tab-filters acc-tab-filters--tight">
         <ZHField label="Desde">
           <input className="zh-input" type="date" value={jDesde} onChange={(e) => setJDesde(e.target.value)} />
         </ZHField>
         <ZHField label="Hasta">
           <input className="zh-input" type="date" value={jHasta} onChange={(e) => setJHasta(e.target.value)} />
         </ZHField>
-        <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', paddingBottom: 2 }}>
+        <span className="acc-tab-count-hint">
           {filteredJournal.length} asientos
         </span>
       </div>
 
       {journalEntries.loading && (
-        <div style={{ padding: '40px' }}>
+        <div className="pg-pad-40">
           <LoadingState />
         </div>
       )}
@@ -84,21 +75,21 @@ export function AccountingJournalTab({
         <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={journalEntries.error} />
       )}
       {!journalEntries.loading && !journalEntries.error && filteredJournal.length === 0 && (
-        <div style={{ padding: '40px' }}>
+        <div className="pg-pad-40">
           <EmptyState message={t('finance.journal.empty')} />
         </div>
       )}
       {!journalEntries.loading && !journalEntries.error && filteredJournal.length > 0 && (
-        <div style={{ overflowX: 'auto' }}>
+        <div className="pg-overflow-x">
           <table className="table">
             <thead>
               <tr>
-                <th style={{ width: 28 }}></th>
+                <th className="acc-journal-expand-col" aria-hidden />
                 <th>{t('finance.journal.table.reference')}</th>
                 <th>{t('finance.journal.table.date')}</th>
                 <th>{t('finance.journal.table.description')}</th>
-                <th style={{ textAlign: 'right' }}>Débito</th>
-                <th style={{ textAlign: 'right' }}>Crédito</th>
+                <th className="pg-th-right">Débito</th>
+                <th className="pg-th-right">Crédito</th>
                 <th>{t('finance.journal.table.status')}</th>
               </tr>
             </thead>
@@ -113,11 +104,11 @@ export function AccountingJournalTab({
                 return [
                   <tr
                     key={e.id}
-                    style={{ cursor: 'pointer' }}
+                    className="pg-row-clickable"
                     onClick={() => setExpandedEntry(isExpanded ? null : e.id)}
                   >
-                    <td style={{ textAlign: 'center', color: 'var(--color-text-secondary)' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>
+                    <td className="acc-journal-expand-icon">
+                      <span className="material-symbols-outlined pg-icon-18">
                         {isExpanded ? 'expand_less' : 'expand_more'}
                       </span>
                     </td>
@@ -126,33 +117,33 @@ export function AccountingJournalTab({
                     </td>
                     <td>{new Date(e.date).toLocaleDateString('es-EC')}</td>
                     <td className="subtle">{e.description}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>${totalDebit.toFixed(2)}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 600 }}>${totalCredit.toFixed(2)}</td>
+                    <td className="pg-td-right pg-cell-strong">${totalDebit.toFixed(2)}</td>
+                    <td className="pg-td-right pg-cell-strong">${totalCredit.toFixed(2)}</td>
                     <td>
                       <span className={statusBadgeClass[e.status]}>{documentStatusLabel[e.status]}</span>
                     </td>
                   </tr>,
                   isExpanded && (
                     <tr key={`${e.id}-lines`}>
-                      <td colSpan={7} style={{ background: 'var(--color-surface-raised)', padding: 0 }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--text-sm)' }}>
+                      <td colSpan={7} className="acc-journal-expand-cell">
+                        <table className="acc-journal-lines-table">
                           <thead>
-                            <tr style={{ background: 'var(--color-surface)' }}>
-                              <th style={{ padding: '6px 12px', textAlign: 'left' }}>Cuenta</th>
-                              <th style={{ padding: '6px 12px', textAlign: 'right' }}>Débito</th>
-                              <th style={{ padding: '6px 12px', textAlign: 'right' }}>Crédito</th>
+                            <tr className="acc-journal-lines-thead">
+                              <th className="acc-journal-lines-th">Cuenta</th>
+                              <th className="acc-journal-lines-th-right">Débito</th>
+                              <th className="acc-journal-lines-th-right">Crédito</th>
                             </tr>
                           </thead>
                           <tbody>
                             {e.lines.map((l) => (
                               <tr key={l.id}>
-                                <td style={{ padding: '4px 12px' }}>
+                                <td className="acc-journal-lines-td">
                                   {accountMap[l.accountId] ?? l.accountId.slice(0, 8)}
                                 </td>
-                                <td style={{ padding: '4px 12px', textAlign: 'right' }}>
+                                <td className="acc-journal-lines-td-right">
                                   {l.debitAmount > 0 ? `$${l.debitAmount.toFixed(2)}` : ''}
                                 </td>
-                                <td style={{ padding: '4px 12px', textAlign: 'right' }}>
+                                <td className="acc-journal-lines-td-right">
                                   {l.creditAmount > 0 ? `$${l.creditAmount.toFixed(2)}` : ''}
                                 </td>
                               </tr>

@@ -10,7 +10,9 @@
 |--------------|---------|-----------|
 | **Verdad arquitectónica (baseline)** | [`SYSTEM_TRUTH.md`](./SYSTEM_TRUTH.md) | Estructura oficial, módulos, evolución |
 | **Gates bloqueantes** | [`ARCHITECTURE_GATES.md`](./ARCHITECTURE_GATES.md) | Reglas prohibidas/obligatorias + CI |
-| **Baseline sellada** | [`RELEASES/`](./RELEASES/) | `architecture-v1.0` |
+| **Baseline sellada** | [`RELEASES/`](./RELEASES/) | `architecture-v1.0`, `frontend-governance-v1.0` |
+| **Frontend baseline (UI)** | [`docs/FRONTEND_ARCHITECTURE_BASELINE.md`](./docs/FRONTEND_ARCHITECTURE_BASELINE.md) | Shells, templates, CSS, governance |
+| **Frontend QA checklist** | [`docs/FRONTEND_QA_CHECKLIST.md`](./docs/FRONTEND_QA_CHECKLIST.md) | Validación manual pre-release |
 | **Entrada GitHub / visión producto** | [`README.md`](./README.md) | Monorepo, stack, CI, troubleshooting |
 | **Reglas de código (agentes)** | [`CLAUDE.md`](./CLAUDE.md) | Convenciones implementación |
 | **Arquitectura (entrada)** | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | → [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) |
@@ -35,7 +37,7 @@
 ```
 erp-saas/
 ├── backend/          → backend/README.md
-├── frontend/
+├── frontend/         → baseline UI: `docs/FRONTEND_ARCHITECTURE_BASELINE.md`, `docs/frontend-layout-conventions.md`
 ├── infrastructure/   → Docker, postgres, deployment
 ├── docs/             → 7 canónicos + decisions/, diagrams/, …
 ├── scripts/          → dev/, ci/, db/, setup/

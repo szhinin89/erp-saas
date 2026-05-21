@@ -1,8 +1,10 @@
 import { NoAccessPage } from '../../../components/PageShell';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { BranchFormModal } from '../components/BranchFormModal';
 import { BranchesListSection } from '../components/BranchesListSection';
 import { useBranchesPage } from '../hooks/useBranchesPage';
+import './branches-page.css';
 
 export function BranchesPage() {
   const ctx = useBranchesPage();
@@ -11,37 +13,28 @@ export function BranchesPage() {
   if (!canView) return <NoAccessPage title={t('branches.title')} />;
 
   return (
-    <div className="pg-page">
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">{t('app.nav.group.security')}</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">{t('branches.title')}</span>
-          </nav>
-          <h1 className="pg-title">{t('branches.title')}</h1>
-          <p className="pg-subtitle">
-            Gestione sus puntos de venta, encargados y parámetros operativos por sucursal.
-          </p>
-        </div>
-        <div className="pg-header-right">
+    <ErpPageTemplate
+      kicker={t('app.nav.group.configuracion')}
+      title={t('branches.title')}
+      subtitle={t('branches.subtitle')}
+      action={
+        <>
           <button className="zh-btn zh-btn--secondary" type="button" disabled={loading} onClick={() => void fetchList()}>
             <span className="material-symbols-outlined">refresh</span>
-            {t('common.refresh') || 'Actualizar'}
+            {t('common.refresh')}
           </button>
-          {canCreate && (
+          {canCreate ? (
             <button className="zh-btn zh-btn--primary" type="button" onClick={openCreateModal}>
               <span className="material-symbols-outlined">add</span>
-              Nueva Sucursal
+              {t('branches.list.newAction')}
             </button>
-          )}
-        </div>
-      </div>
-
-      {error && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />}
-
+          ) : null}
+        </>
+      }
+    >
+      {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
       <BranchesListSection {...ctx} />
       <BranchFormModal {...ctx} />
-    </div>
+    </ErpPageTemplate>
   );
 }

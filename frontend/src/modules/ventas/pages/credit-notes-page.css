@@ -27,3 +27,19 @@
 .cn-add-row-btn { margin-top: var(--space-3); }
 .cn-remove-btn  { color: var(--color-error); background: none; border: none; cursor: pointer; padding: var(--space-1); }
 .cn-remove-btn:hover { opacity: 0.7; }
+
+/* CreateCreditNotePage */
+.cn-items-scroll {
+  overflow-x: auto;
+}
+
+.cn-th-product { width: 40%; }
+.cn-th-qty { width: 15%; }
+.cn-th-price { width: 20%; }
+.cn-th-subtotal { width: 20%; text-align: right; }
+.cn-th-actions { width: 5%; }
+
+.cn-cell-subtotal {
+  text-align: right;
+  font-weight: 600;
+}

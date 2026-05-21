@@ -29,6 +29,7 @@ export type SuperAdminPageTemplateProps = {
 
 /**
  * Plantilla común para pantallas SuperAdmin: sin rol, sin contexto global (opcional), luego contenido.
+ * En shell con topbar: preferir SuperAdminCrudTemplate (hideHeader) — docs/frontend-layout-conventions.md
  */
 export function SuperAdminPageTemplate({
   title,

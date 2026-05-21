@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { useAuthStore } from '../../../../store/authStore';
 import { useI18n } from '../../../../i18n/i18n';
@@ -147,34 +148,25 @@ export function SuppliersPage() {
   const anyError = error || saveError;
 
   return (
-    <div className="pg-page">
-
-      {/* ── Header ── */}
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Breadcrumb">
-            <span className="pg-breadcrumb-item">{t('suppliers.breadcrumb.purchases')}</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">{t('suppliers.breadcrumb.suppliers')}</span>
-          </nav>
-          <h1 className="pg-title">{t('suppliers.title')}</h1>
-          <p className="pg-subtitle">{t('suppliers.subtitle')}</p>
-        </div>
-        <div className="pg-header-right">
+    <ErpPageTemplate
+      kicker={t('suppliers.breadcrumb.purchases')}
+      title={t('suppliers.title')}
+      subtitle={t('suppliers.subtitle')}
+      action={
+        <>
           <ZHBtn variant="ghost" size="md" type="button">
             <span className="material-symbols-outlined">download</span>
             {t('suppliers.export')}
           </ZHBtn>
-          {canCreate && (
+          {canCreate ? (
             <ZHBtn variant="primary" size="md" type="button" onClick={openCreateModal}>
               <span className="material-symbols-outlined">add</span>
               {t('suppliers.new')}
             </ZHBtn>
-          )}
-        </div>
-      </div>
-
-      {/* ── Errors ── */}
+          ) : null}
+        </>
+      }
+    >
       {anyError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={anyError} /> : null}
 
       {/* ── KPI cards ── */}
@@ -229,7 +221,7 @@ export function SuppliersPage() {
               className={activeTab === 'list' ? 'is-active' : ''}
               onClick={() => setActiveTab('list')}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: 'middle', marginRight: 4 }}>view_list</span>
+              <span className="material-symbols-outlined pg-tab-icon">view_list</span>
               {t('suppliers.tab.list')}
             </button>
             {canCreate && (
@@ -239,7 +231,7 @@ export function SuppliersPage() {
                 className={activeTab === 'form' ? 'is-active' : ''}
                 onClick={handleNewInTab}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: 'middle', marginRight: 4 }}>add_box</span>
+                <span className="material-symbols-outlined pg-tab-icon">add_box</span>
                 {t('suppliers.tab.new')}
               </button>
             )}
@@ -263,11 +255,10 @@ export function SuppliersPage() {
                   />
                 </div>
                 <select
-                  className="zh-input"
+                  className="zh-input vf-filter-min"
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
                   aria-label={t('suppliers.form.status')}
-                  style={{ width: 'auto', minWidth: 130 }}
                 >
                   <option value="all">{t('suppliers.filter.all')}</option>
                   <option value="active">{t('suppliers.filter.active')}</option>
@@ -294,14 +285,14 @@ export function SuppliersPage() {
                         <th>{t('suppliers.table.legalName')}</th>
                         <th>{t('suppliers.table.contact')}</th>
                         <th>{t('suppliers.table.phone')}</th>
-                        <th style={{ textAlign: 'center' }}>{t('common.status')}</th>
-                        {canEdit ? <th style={{ textAlign: 'right' }}>{t('common.actions')}</th> : null}
+                        <th className="pg-th-center">{t('common.status')}</th>
+                        {canEdit ? <th className="pg-th-right">{t('common.actions')}</th> : null}
                       </tr>
                     </thead>
                     <tbody>
                       {filtered.map((supplier) => (
-                        <tr key={supplier.id} style={{ opacity: supplier.status === 'inactive' ? 0.65 : 1 }}>
-                          <td className="mono subtle" style={{ whiteSpace: 'nowrap' }}>{supplier.taxId}</td>
+                        <tr key={supplier.id} className={supplier.status === 'inactive' ? 'pg-row-muted' : undefined}>
+                          <td className="mono subtle pg-nowrap">{supplier.taxId}</td>
                           <td>
                             <div className="prv-supplier-name">{supplier.legalName}</div>
                             {supplier.category && (
@@ -310,14 +301,14 @@ export function SuppliersPage() {
                           </td>
                           <td>{supplier.primaryContact ?? <span className="subtle">—</span>}</td>
                           <td className="mono">{supplier.phone ?? <span className="subtle">—</span>}</td>
-                          <td style={{ textAlign: 'center' }}>
+                          <td className="pg-th-center">
                             <span className={statusClass(supplier.status)}>
                               {t(`suppliers.status.${supplier.status}`)}
                             </span>
                           </td>
                           {canEdit ? (
-                            <td style={{ textAlign: 'right' }}>
-                              <div className="prv-actions-cell" style={{ justifyContent: 'flex-end' }}>
+                            <td className="pg-th-right">
+                              <div className="prv-actions-cell">
                                 <button
                                   type="button"
                                   className="zh-btn zh-btn--ghost zh-btn--sm"
@@ -346,7 +337,7 @@ export function SuppliersPage() {
                   </table>
                 </div>
                 <div className="pg-table-footer">
-                  <p className="subtle" style={{ fontSize: 12, margin: 0 }}>{filtered.length} {t('common.results') ?? 'resultados'}</p>
+                  <p className="subtle prv-results-count">{filtered.length} {t('common.results')}</p>
                   <p className="pg-table-timestamp">{t('suppliers.results.updated')}</p>
                 </div>
               </>
@@ -354,9 +345,9 @@ export function SuppliersPage() {
 
             {/* Secondary panels */}
             <div className="prv-panels-grid">
-              <div className="pg-kpi" style={{ flexDirection: 'column', gap: 'var(--space-3)', height: 'auto' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <p className="pg-kpi-label" style={{ margin: 0 }}>{t('suppliers.notes.title')}</p>
+              <div className="pg-kpi prv-notes-kpi">
+                <div className="prv-notes-kpi-head">
+                  <p className="pg-kpi-label prv-notes-kpi-label">{t('suppliers.notes.title')}</p>
                   <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm" aria-label={t('suppliers.notes.title')}>
                     <span className="material-symbols-outlined">add</span>
                   </button>
@@ -380,7 +371,7 @@ export function SuppliersPage() {
                   <p className="prv-payment-amount">$0.00</p>
                   <p className="prv-payment-sub">{t('suppliers.payment.accumulated')}</p>
                 </div>
-                <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+                <div className="prv-notes-tags">
                   <ZHBtn variant="primary" size="md" type="button">
                     <span className="material-symbols-outlined">receipt_long</span>
                     {t('suppliers.payment.view')}
@@ -394,7 +385,7 @@ export function SuppliersPage() {
 
         {/* ── Form tab ── */}
         {activeTab === 'form' && canCreate && (
-          <div style={{ padding: 'var(--space-4) var(--space-5)' }}>
+          <div className="prv-form-pad">
             <form onSubmit={onSubmit}>
               <div className="pg-form-grid pg-form-grid--2">
                 <ZHField label={t('suppliers.form.taxId')} required error={errors.taxId?.message}>
@@ -461,11 +452,11 @@ export function SuppliersPage() {
           aria-label={editingId ? t('suppliers.modal.edit') : t('suppliers.modal.create')}
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          <div className="zh-modal" style={{ maxWidth: 600 }}>
+          <div className="zh-modal prv-modal--md">
             <div className="zh-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--color-primary)' }}>storefront</span>
-                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>
+              <div className="prv-modal-title-row">
+                <span className="material-symbols-outlined prv-modal-title-icon">storefront</span>
+                <h2 className="prv-modal-title-text">
                   {editingId ? t('suppliers.modal.edit') : t('suppliers.modal.create')}
                 </h2>
               </div>
@@ -523,6 +514,6 @@ export function SuppliersPage() {
           </div>
         </div>
       )}
-    </div>
+    </ErpPageTemplate>
   );
 }

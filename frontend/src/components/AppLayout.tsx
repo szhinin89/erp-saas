@@ -13,6 +13,7 @@ import { fullLogout } from '../lib/session/fullLogout';
 import { SUPERADMIN_IMPERSONATION_NAME_KEY } from '../lib/session/sessionStorageKeys';
 import { MainMenuList } from './AppLayoutMainMenu';
 import { SuperAdminImpersonationBanner } from './SuperAdminImpersonationBanner';
+import { LayoutFrame } from './layout/LayoutFrame';
 import { useAppLayoutNavigation } from './useAppLayoutNavigation';
 import './AppLayout.css';
 
@@ -108,109 +109,116 @@ export function AppLayout() {
     user?.role === 'SuperAdmin' && user.subscriberId && user.subscriberId !== GLOBAL_SUBSCRIBER_ID;
 
   return (
-    <div className="layout">
-      <main className="content">
-        {showImpersonationBanner ? (
-          <SuperAdminImpersonationBanner
-            subscriberId={user.subscriberId}
-            t={t}
-            onReturnToGlobal={returnToGlobal}
-            returningGlobal={superadminReturningGlobal}
-          />
-        ) : null}
-        <div className="app-subscriberHeaderWrap">
-          <ZHAppSubscriberHeader
-            onLogout={handleLogout}
-            leftExtra={!isGlobalSuperAdmin ? <CompanySwitcher /> : null}
-            rightExtra={<LanguageSwitcher />}
-            bottomLeft={
-              !isGlobalSuperAdmin && user && !sessionMenuResolved ? (
-                <div className="app-mainmenu app-mainmenu--loading" role="status" aria-live="polite" aria-busy="true">
-                  <LoadingState />
-                </div>
-              ) : mainMenuGroups.length > 0 ? (
-                showPlanVerticalNav ? (
-                  <div
-                    ref={mainMenuBarRef}
-                    className="app-mainmenu app-mainmenu--planVertical"
-                    role="navigation"
-                    aria-label={t('app.layout.mainNav')}
-                  >
-                    {mainMenuGroups.map((g) => (
-                      <div key={g.id} className="app-mainmenu-verticalSection">
-                        {mainMenuGroups.length > 1 ? (
-                          <div className="app-mainmenu-verticalSectionLabel">{g.label}</div>
-                        ) : null}
-                        <MainMenuList
-                          items={g.items}
-                          depth={0}
-                          onClose={() => {}}
-                          isFavorite={isFavorite}
-                          toggleFavorite={toggleFavorite}
-                          t={t}
-                          showFavoriteStars={!isGlobalSuperAdmin}
-                        />
-                      </div>
-                    ))}
+    <div className="layout app-layout">
+      <LayoutFrame
+        variant="tenant"
+        className="app-layout__frame"
+        banner={
+          showImpersonationBanner ? (
+            <SuperAdminImpersonationBanner
+              subscriberId={user.subscriberId}
+              t={t}
+              onReturnToGlobal={returnToGlobal}
+              returningGlobal={superadminReturningGlobal}
+            />
+          ) : null
+        }
+        topUtilities={
+          <div className="app-subscriberHeaderWrap">
+            <ZHAppSubscriberHeader
+              onLogout={handleLogout}
+              leftExtra={!isGlobalSuperAdmin ? <CompanySwitcher /> : null}
+              rightExtra={<LanguageSwitcher />}
+              bottomLeft={
+                !isGlobalSuperAdmin && user && !sessionMenuResolved ? (
+                  <div className="app-mainmenu app-mainmenu--loading" role="status" aria-live="polite" aria-busy="true">
+                    <LoadingState />
                   </div>
-                ) : (
-                  <div ref={mainMenuBarRef} className="app-mainmenu" role="navigation" aria-label={t('app.layout.mainNav')}>
-                    {mainMenuGroups.map((g) => (
-                      <button
-                        key={g.id}
-                        type="button"
-                        className={`app-mainmenu-item${g.isActive ? ' is-active' : ''}${mainMenuOpenId === g.id ? ' is-open' : ''}`}
-                        aria-haspopup="menu"
-                        aria-expanded={mainMenuOpenId === g.id}
-                        onMouseEnter={(e) => openGroup(g.id, e.currentTarget.getBoundingClientRect())}
-                        onMouseLeave={scheduleClose}
-                        onClick={(e) => {
-                          if (mainMenuOpenId === g.id) {
-                            setMainMenuOpenId(null);
-                          } else {
-                            openGroup(g.id, e.currentTarget.getBoundingClientRect());
-                          }
-                        }}
-                      >
-                        {g.icon ? <span className="app-mainmenu-groupIcon" aria-hidden="true">{g.icon}</span> : null}
-                        <span className="app-mainmenu-groupLabel">{g.label}</span>
-                        <span className="app-mainmenu-caret" aria-hidden="true">▾</span>
-                      </button>
-                    ))}
-                  </div>
-                )
-              ) : null
-            }
-          />
-        </div>
-
-        {mainMenuOpenId && mainMenuPos && !showPlanVerticalNav
-          ? createPortal(
-              <div
-                ref={mainMenuPopoverRef}
-                className="app-mainmenu-popover"
-                role="menu"
-                aria-label={t('app.layout.groupMenu')}
-                data-top={mainMenuPos.top}
-                data-left={mainMenuPos.left}
-                onMouseEnter={cancelClose}
-                onMouseLeave={scheduleClose}
-              >
-                <MainMenuList
-                  items={mainMenuGroups.find((g) => g.id === mainMenuOpenId)?.items ?? []}
-                  depth={0}
-                  onClose={() => setMainMenuOpenId(null)}
-                  isFavorite={isFavorite}
-                  toggleFavorite={toggleFavorite}
-                  t={t}
-                  showFavoriteStars={!isGlobalSuperAdmin}
-                />
-              </div>,
-              document.body,
-            )
-          : null}
+                ) : mainMenuGroups.length > 0 ? (
+                  showPlanVerticalNav ? (
+                    <div
+                      ref={mainMenuBarRef}
+                      className="app-mainmenu app-mainmenu--planVertical"
+                      role="navigation"
+                      aria-label={t('app.layout.mainNav')}
+                    >
+                      {mainMenuGroups.map((g) => (
+                        <div key={g.id} className="app-mainmenu-verticalSection">
+                          {mainMenuGroups.length > 1 ? (
+                            <div className="app-mainmenu-verticalSectionLabel">{g.label}</div>
+                          ) : null}
+                          <MainMenuList
+                            items={g.items}
+                            depth={0}
+                            onClose={() => {}}
+                            isFavorite={isFavorite}
+                            toggleFavorite={toggleFavorite}
+                            t={t}
+                            showFavoriteStars={!isGlobalSuperAdmin}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div ref={mainMenuBarRef} className="app-mainmenu" role="navigation" aria-label={t('app.layout.mainNav')}>
+                      {mainMenuGroups.map((g) => (
+                        <button
+                          key={g.id}
+                          type="button"
+                          className={`app-mainmenu-item${g.isActive ? ' is-active' : ''}${mainMenuOpenId === g.id ? ' is-open' : ''}`}
+                          aria-haspopup="menu"
+                          aria-expanded={mainMenuOpenId === g.id}
+                          onMouseEnter={(e) => openGroup(g.id, e.currentTarget.getBoundingClientRect())}
+                          onMouseLeave={scheduleClose}
+                          onClick={(e) => {
+                            if (mainMenuOpenId === g.id) {
+                              setMainMenuOpenId(null);
+                            } else {
+                              openGroup(g.id, e.currentTarget.getBoundingClientRect());
+                            }
+                          }}
+                        >
+                          {g.icon ? <span className="app-mainmenu-groupIcon" aria-hidden="true">{g.icon}</span> : null}
+                          <span className="app-mainmenu-groupLabel">{g.label}</span>
+                          <span className="app-mainmenu-caret" aria-hidden="true">▾</span>
+                        </button>
+                      ))}
+                    </div>
+                  )
+                ) : null
+              }
+            />
+          </div>
+        }
+      >
         <Outlet />
-      </main>
+      </LayoutFrame>
+
+      {mainMenuOpenId && mainMenuPos && !showPlanVerticalNav
+        ? createPortal(
+            <div
+              ref={mainMenuPopoverRef}
+              className="app-mainmenu-popover"
+              role="menu"
+              aria-label={t('app.layout.groupMenu')}
+              data-top={mainMenuPos.top}
+              data-left={mainMenuPos.left}
+              onMouseEnter={cancelClose}
+              onMouseLeave={scheduleClose}
+            >
+              <MainMenuList
+                items={mainMenuGroups.find((g) => g.id === mainMenuOpenId)?.items ?? []}
+                depth={0}
+                onClose={() => setMainMenuOpenId(null)}
+                isFavorite={isFavorite}
+                toggleFavorite={toggleFavorite}
+                t={t}
+                showFavoriteStars={!isGlobalSuperAdmin}
+              />
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

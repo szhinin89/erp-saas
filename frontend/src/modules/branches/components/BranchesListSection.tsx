@@ -101,19 +101,19 @@ export function BranchesListSection({
         </div>
 
         {loading ? (
-          <div style={{ padding: '40px' }}>
+          <div className="pg-pad-40">
             <LoadingState />
           </div>
         ) : items.length === 0 ? (
-          <div style={{ padding: '40px' }}>
+          <div className="pg-pad-40">
             <EmptyState message={t('common.noData')} />
           </div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: '40px' }}>
+          <div className="pg-pad-40">
             <EmptyState message="No se encontraron resultados." />
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="pg-overflow-x">
             <table className="table">
               <thead>
                 <tr>
@@ -123,26 +123,26 @@ export function BranchesListSection({
                   <th>Contacto</th>
                   <th>Principal</th>
                   <th>Estado</th>
-                  {canUpdate || canDelete ? <th style={{ textAlign: 'right' }}>Acciones</th> : null}
+                  {canUpdate || canDelete ? <th className="pg-th-right">Acciones</th> : null}
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((row) => (
-                  <tr key={row.id} style={{ opacity: row.isActive ? 1 : 0.65 }}>
+                  <tr key={row.id} className={row.isActive ? undefined : 'pg-row-inactive'}>
                     <td>
                       <span className="badge badge--gray badge--md mono">{row.code ?? '—'}</span>
                     </td>
                     <td>
-                      <div style={{ fontWeight: 500, color: 'var(--color-text-primary)' }}>{row.name}</div>
+                      <div className="br-list-name">{row.name}</div>
                       {row.branchType && (
-                        <div style={{ fontSize: 'var(--text-label-sm-size)', color: 'var(--color-text-secondary)' }}>
+                        <div className="br-list-sub">
                           {row.branchType}
                         </div>
                       )}
                     </td>
                     <td>{row.managerName ?? <span className="subtle">—</span>}</td>
                     <td>
-                      <div style={{ fontSize: 'var(--text-body-sm-size)', color: 'var(--color-text-secondary)' }}>
+                      <div className="br-list-contact">
                         {row.phones ?? ''}
                         {row.email && row.phones ? ' · ' : ''}
                         {row.email ?? ''}
@@ -153,7 +153,7 @@ export function BranchesListSection({
                       {row.isMainBranch ? (
                         <span className="badge badge--blue badge--md">Principal</span>
                       ) : (
-                        <span className="subtle" style={{ fontSize: 'var(--text-body-sm-size)' }}>
+                        <span className="subtle br-list-contact">
                           —
                         </span>
                       )}
@@ -164,8 +164,8 @@ export function BranchesListSection({
                       </span>
                     </td>
                     {canUpdate || canDelete ? (
-                      <td style={{ textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: 'var(--space-1)', justifyContent: 'flex-end' }}>
+                      <td className="pg-td-right">
+                        <div className="br-actions-tight">
                           {canUpdate && (
                             <button
                               type="button"
@@ -199,7 +199,7 @@ export function BranchesListSection({
         )}
 
         <div className="pg-table-footer">
-          <p className="subtle" style={{ fontSize: 12, margin: 0 }}>
+          <p className="subtle br-list-footer-note">
             {filtered.length} sucursales
           </p>
           {items.length > 0 && (

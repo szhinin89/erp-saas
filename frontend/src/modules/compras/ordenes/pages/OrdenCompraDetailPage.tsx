@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { useOrdenCompraDetalle, useOrdenCompraAcciones } from '../hooks/useOrdenesCompra';
 import type { EstadoOrdenCompra } from '../api/ordenCompraService';
+import './orden-compra-page.css';
 
 function estadoBadgeClass(estado: EstadoOrdenCompra): string {
   const map: Record<string, string> = {
@@ -18,8 +20,8 @@ function estadoBadgeClass(estado: EstadoOrdenCompra): string {
 function InfoItem({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="subtle" style={{ fontSize: 'var(--text-label-sm-size)', marginBottom: 2, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</p>
-      <div style={{ fontWeight: 500 }}>{children}</div>
+      <p className="subtle pg-info-item-label">{label}</p>
+      <div className="pg-info-item-value">{children}</div>
     </div>
   );
 }
@@ -51,21 +53,11 @@ export function OrdenCompraDetailPage() {
   };
 
   return (
-    <div className="pg-page">
-
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">Compras</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item pg-breadcrumb-item--link" style={{ cursor: 'pointer' }}
-              onClick={() => navigate('/compras/ordenes')}>Órdenes de Compra</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">{data?.numeroOrden ?? '…'}</span>
-          </nav>
-          <h1 className="pg-title">{loading ? 'Cargando…' : (data?.numeroOrden ?? 'Orden de Compra')}</h1>
-        </div>
-        <div className="pg-header-right">
+    <ErpPageTemplate
+      kicker="Compras"
+      title={loading ? 'Cargando…' : (data?.numeroOrden ?? 'Orden de Compra')}
+      action={
+        <>
           {data && (
             <>
               {canEnviar   && <ZHBtn variant="secondary"   size="md" disabled={acciones.loading} onClick={() => acciones.enviar(data.id)}>Enviar</ZHBtn>}
@@ -75,20 +67,20 @@ export function OrdenCompraDetailPage() {
             </>
           )}
           <ZHBtn variant="ghost" size="md" onClick={() => navigate('/compras/ordenes')}>← Volver</ZHBtn>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       {acciones.error && <ZHPageNotice variant="error" message="Error" detail={acciones.error} />}
       {error          && <ZHPageNotice variant="error" message="Error al cargar" detail={error} />}
 
       {loading ? (
-        <div style={{ padding: '40px' }}><LoadingState /></div>
+        <div className="pg-pad-40"><LoadingState /></div>
       ) : !data ? (
-        <div style={{ padding: '40px' }}><EmptyState message="Orden no encontrada." /></div>
+        <div className="pg-pad-40"><EmptyState message="Orden no encontrada." /></div>
       ) : (
         <>
           {/* Summary */}
-          <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+          <div className="pg-section pg-section--mb-4">
             <div className="pg-section-body">
               <div className="pg-form-grid pg-form-grid--4">
                 <InfoItem label="Estado">
@@ -98,13 +90,13 @@ export function OrdenCompraDetailPage() {
                 <InfoItem label="Fecha emisión">{new Date(data.fechaEmision).toLocaleDateString('es')}</InfoItem>
                 <InfoItem label="Fecha requerida">{new Date(data.fechaRequerida).toLocaleDateString('es')}</InfoItem>
                 <InfoItem label="Total">
-                  <span className="mono" style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-primary)' }}>
+                  <span className="mono pg-doc-hero-mono">
                     ${data.total.toFixed(2)}
                   </span>
                 </InfoItem>
                 {data.observaciones && (
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <p className="subtle" style={{ fontSize: 'var(--text-label-sm-size)', marginBottom: 2, textTransform: 'uppercase' }}>Observaciones</p>
+                  <div className="oc-doc-notes">
+                    <p className="subtle pg-doc-notes-label">Observaciones</p>
                     <p>{data.observaciones}</p>
                   </div>
                 )}
@@ -113,39 +105,38 @@ export function OrdenCompraDetailPage() {
           </div>
 
           {/* Lines */}
-          <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+          <div className="pg-section pg-section--mb-4">
             <div className="pg-section-header">
               <div className="pg-section-header-left">
                 <span className="material-symbols-outlined pg-section-icon">list_alt</span>
                 <span className="pg-section-label">Líneas de la Orden</span>
               </div>
             </div>
-            <div style={{ overflowX: 'auto' }}>
+            <div className="pg-overflow-x">
               <table className="table">
                 <thead>
                   <tr>
                     <th>Descripción</th>
-                    <th style={{ textAlign: 'right' }}>Cant. pedida</th>
-                    <th style={{ textAlign: 'right' }}>Cant. facturada</th>
-                    <th style={{ textAlign: 'right' }}>Pendiente</th>
-                    <th style={{ textAlign: 'right' }}>Precio unit.</th>
-                    <th style={{ textAlign: 'right' }}>Subtotal</th>
-                    <th style={{ textAlign: 'right' }}>IVA</th>
-                    <th style={{ textAlign: 'right' }}>Total</th>
+                    <th className="pg-th-right">Cant. pedida</th>
+                    <th className="pg-th-right">Cant. facturada</th>
+                    <th className="pg-th-right">Pendiente</th>
+                    <th className="pg-th-right">Precio unit.</th>
+                    <th className="pg-th-right">Subtotal</th>
+                    <th className="pg-th-right">IVA</th>
+                    <th className="pg-th-right">Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.detalles.map((d) => (
                     <tr key={d.id}>
                       <td>{d.descripcion}</td>
-                      <td style={{ textAlign: 'right' }} className="mono">{d.cantidadPedida}</td>
-                      <td style={{ textAlign: 'right' }} className="mono">{d.cantidadFacturada}</td>
-                      <td style={{ textAlign: 'right', color: d.pendienteFacturar > 0 ? 'var(--color-warning)' : 'var(--color-success)' }}
-                        className="mono">{d.pendienteFacturar}</td>
-                      <td style={{ textAlign: 'right' }} className="mono">${d.precioUnitario.toFixed(4)}</td>
-                      <td style={{ textAlign: 'right' }} className="mono">${d.subtotal.toFixed(2)}</td>
-                      <td style={{ textAlign: 'right' }} className="mono">${d.impuesto.toFixed(2)}</td>
-                      <td style={{ textAlign: 'right', fontWeight: 600 }} className="mono">${d.total.toFixed(2)}</td>
+                      <td className="mono pg-td-right">{d.cantidadPedida}</td>
+                      <td className="mono pg-td-right">{d.cantidadFacturada}</td>
+                      <td className={`mono pg-td-right ${d.pendienteFacturar > 0 ? 'pg-cell-warn' : 'pg-cell-success'}`}>{d.pendienteFacturar}</td>
+                      <td className="mono pg-td-right">${d.precioUnitario.toFixed(4)}</td>
+                      <td className="mono pg-td-right">${d.subtotal.toFixed(2)}</td>
+                      <td className="mono pg-td-right">${d.impuesto.toFixed(2)}</td>
+                      <td className="mono pg-td-right pg-cell-strong">${d.total.toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -162,7 +153,7 @@ export function OrdenCompraDetailPage() {
                   <span className="pg-section-label">Facturas Vinculadas</span>
                 </div>
               </div>
-              <div style={{ overflowX: 'auto' }}>
+              <div className="pg-overflow-x">
                 <table className="table">
                   <thead>
                     <tr>
@@ -193,14 +184,14 @@ export function OrdenCompraDetailPage() {
           aria-modal="true"
           onClick={(e) => { if (e.target === e.currentTarget) setShowVincularModal(false); }}
         >
-          <div className="zh-modal" style={{ maxWidth: 480 }}>
+          <div className="zh-modal pg-modal--480">
             <div className="zh-modal-header">
               <h2 className="zh-modal-title">Vincular factura de compra</h2>
               <button type="button" className="zh-modal-close"
                 onClick={() => setShowVincularModal(false)} aria-label="Cerrar">✕</button>
             </div>
             <div className="zh-modal-body">
-              <p style={{ fontSize: 'var(--text-body-md-size)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-4)' }}>
+              <p className="pg-modal-hint">
                 Ingresa el ID de la factura de compra aprobada a vincular con esta orden.
               </p>
               <input
@@ -227,6 +218,6 @@ export function OrdenCompraDetailPage() {
           </div>
         </div>
       )}
-    </div>
+    </ErpPageTemplate>
   );
 }

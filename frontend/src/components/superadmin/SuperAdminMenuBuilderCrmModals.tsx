@@ -124,11 +124,11 @@ export function SuperAdminMenuBuilderCrmModals({
 
       {newPlanModalOpen ? (
         <div className="zh-modal-overlay" role="dialog" aria-modal="true" aria-label="Crear nuevo plan">
-          <div className="zh-modal" style={{ maxWidth: 480 }}>
+          <div className="zh-modal pg-modal--480">
             <div className="zh-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--color-primary)' }}>add_circle</span>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Crear nuevo plan comercial</h3>
+              <div className="smb-modal-head">
+                <span className="material-symbols-outlined smb-modal-head-icon">add_circle</span>
+                <h3 className="smb-modal-head-title">Crear nuevo plan comercial</h3>
               </div>
             </div>
             <ZHField label="Nombre del plan">
@@ -156,7 +156,7 @@ export function SuperAdminMenuBuilderCrmModals({
               <textarea className="zh-input" rows={2} value={newPlanDescription} onChange={(e) => setNewPlanDescription(e.target.value)} placeholder="Características..." />
             </ZHField>
             <ZHField label="Herencia automática (opcional)">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              <div className="smb-inherit-stack">
                 <label className="zh-inline-check">
                   <input type="checkbox" checked={newPlanInheritOnCreate} onChange={(e) => setNewPlanInheritOnCreate(e.target.checked)} />
                   <span>Heredar activaciones desde un plan existente</span>
@@ -201,16 +201,18 @@ export function SuperAdminMenuBuilderCrmModals({
       ) : null}
       {wizardOpen ? (
         <div className="zh-modal-overlay" role="dialog" aria-modal="true" aria-label="Guía rápida de configuración">
-          <div className="zh-modal" style={{ maxWidth: 420 }}>
+          <div className="zh-modal pg-modal--sm">
             <div className="zh-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--color-primary)' }}>help_center</span>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{wizardCurrentStep.title}</h3>
+              <div className="smb-modal-head">
+                <span className="material-symbols-outlined smb-modal-head-icon">help_center</span>
+                <h3 className="smb-modal-head-title">{wizardCurrentStep.title}</h3>
               </div>
             </div>
             <div className="zh-modal-body">
               <p className="subtle">{wizardCurrentStep.body}</p>
-              <p className="subtle" style={{ textAlign: 'center', fontSize: 12 }}>Paso {wizardStep + 1} de {wizardSteps.length}</p>
+              <p className="subtle smb-wizard-step">
+                Paso {wizardStep + 1} de {wizardSteps.length}
+              </p>
             </div>
             <div className="pg-actions-bar">
               <div />

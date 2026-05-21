@@ -60,7 +60,7 @@ export function AccountingConfigTab({
     <div className="pg-section">
       {configError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={configError} />}
       {config.loading && (
-        <div style={{ padding: '40px' }}>
+        <div className="pg-pad-40">
           <LoadingState />
         </div>
       )}
@@ -90,7 +90,7 @@ export function AccountingConfigTab({
             </div>
           </div>
 
-          <div className="pg-section-header" style={{ marginTop: 'var(--space-6)' }}>
+          <div className="pg-section-header acc-config-section-head">
             <div className="pg-section-header-left">
               <span className="material-symbols-outlined pg-section-icon">category</span>
               <span className="pg-section-label">{t('finance.config.expenses.title')}</span>
@@ -98,7 +98,7 @@ export function AccountingConfigTab({
           </div>
           <div className="pg-section-body">
             {gastoError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={gastoError} />}
-            <div className="pg-form-grid pg-form-grid--2" style={{ marginBottom: 'var(--space-3)' }}>
+            <div className="pg-form-grid pg-form-grid--2 acc-form-grid-mb">
               <ZHField label={t('finance.config.expenses.fields.category')}>
                 <input
                   className="zh-input"
@@ -129,7 +129,7 @@ export function AccountingConfigTab({
             </ZHBtn>
 
             {gastoMappings.loading && (
-              <div style={{ padding: '24px' }}>
+              <div className="pg-state-pad-24">
                 <LoadingState />
               </div>
             )}
@@ -137,18 +137,18 @@ export function AccountingConfigTab({
               <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={gastoMappings.error} />
             )}
             {!gastoMappings.loading && !gastoMappings.error && (gastoMappings.data ?? []).length === 0 && (
-              <div style={{ padding: '24px' }}>
+              <div className="pg-state-pad-24">
                 <EmptyState message={t('finance.config.expenses.empty')} />
               </div>
             )}
             {!gastoMappings.loading && !gastoMappings.error && (gastoMappings.data ?? []).length > 0 && (
-              <div style={{ overflowX: 'auto', marginTop: 'var(--space-4)' }}>
+              <div className="pg-overflow-x acc-table-scroll-mt">
                 <table className="table">
                   <thead>
                     <tr>
                       <th>{t('finance.config.expenses.table.category')}</th>
                       <th>{t('finance.config.expenses.table.account')}</th>
-                      <th style={{ textAlign: 'right' }}>{t('common.actions')}</th>
+                      <th className="pg-th-right">{t('common.actions')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -158,7 +158,7 @@ export function AccountingConfigTab({
                         <tr key={row.id}>
                           <td>{row.categoria}</td>
                           <td>{acc ? `${acc.code} — ${acc.name}` : row.cuentaGastoId}</td>
-                          <td style={{ textAlign: 'right' }}>
+                          <td className="pg-td-right">
                             <ZHBtn
                               variant="destructive"
                               size="sm"

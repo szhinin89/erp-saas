@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../components/PageShell';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn } from '../../../components/zh/ZHForm';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { usePermissionsStore } from '../../../store/permissionsStore';
 import { useAuthStore } from '../../../store/authStore';
 import { useI18n } from '../../../i18n/i18n';
@@ -123,37 +124,26 @@ export function ProductPage() {
 
   const anyError = productsError || catalogsError || createError || updateError || toggleError;
 
+  const headerAction = canCreate ? (
+    editMode ? (
+      <ZHBtn variant="ghost" size="md" type="button" onClick={handleCancelEdit}>
+        {t('common.cancel')}
+      </ZHBtn>
+    ) : (
+      <ZHBtn variant="primary" size="md" type="button" onClick={handleNewProduct}>
+        <span className="material-symbols-outlined">add</span>
+        {t('products.new')}
+      </ZHBtn>
+    )
+  ) : null;
+
   return (
-    <div className="pg-page">
-
-      {/* ── Page header ── */}
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Ruta de navegación">
-            <span className="pg-breadcrumb-item">{t('app.nav.group.inventario') || 'Inventario'}</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">{t('products.title') || 'Productos'}</span>
-          </nav>
-          <h1 className="pg-title">{t('products.title') || 'Administración de Productos'}</h1>
-          <p className="pg-subtitle">{t('products.list.subtitle') || 'Gestiona el catálogo, niveles de stock y precios unitarios.'}</p>
-        </div>
-        {canCreate && (
-          <div className="pg-header-right">
-            {editMode ? (
-              <ZHBtn variant="ghost" size="md" type="button" onClick={handleCancelEdit}>
-                {t('common.cancel')}
-              </ZHBtn>
-            ) : (
-              <ZHBtn variant="primary" size="md" type="button" onClick={handleNewProduct}>
-                <span className="material-symbols-outlined">add</span>
-                {t('products.new') || 'Nuevo Producto'}
-              </ZHBtn>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ── Errors ── */}
+    <ErpPageTemplate
+      kicker={t('app.nav.group.inventario')}
+      title={t('products.title')}
+      subtitle={t('products.list.subtitle')}
+      action={headerAction}
+    >
       {anyError ? (
         <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={anyError} />
       ) : null}
@@ -166,7 +156,7 @@ export function ProductPage() {
               <span className="material-symbols-outlined">inventory_2</span>
             </div>
             <span className="badge badge--green">
-              <span className="material-symbols-outlined" style={{ fontSize: 12 }}>trending_up</span>
+              <span className="material-symbols-outlined prd-kpi-trend-icon">trending_up</span>
               +12%
             </span>
           </div>
@@ -185,7 +175,7 @@ export function ProductPage() {
           </div>
           <div className="pg-kpi-bottom">
             <p className="pg-kpi-label">{t('products.kpi.lowStock') || 'Bajo Stock'}</p>
-            <p className="pg-kpi-value" style={{ color: 'var(--color-error)' }}>{stats.inactive}</p>
+            <p className="pg-kpi-value pg-kpi-value--error">{stats.inactive}</p>
           </div>
         </div>
 
@@ -196,7 +186,7 @@ export function ProductPage() {
               <p className="pg-kpi-value">—<span className="pg-kpi-unit">USD</span></p>
             </div>
             <div className="prd-sparkline" aria-hidden>
-              <span /><span /><span /><span style={{ background: 'var(--color-primary)' }} />
+              <span /><span /><span /><span className="prd-sparkline-bar--primary" />
             </div>
           </div>
         </div>
@@ -214,7 +204,7 @@ export function ProductPage() {
               className={activeTab === 'listado' ? 'is-active' : ''}
               onClick={() => { if (!editMode) setActiveTab('listado'); }}
             >
-              <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: 'middle', marginRight: 4 }}>view_list</span>
+              <span className="material-symbols-outlined pg-tab-icon">view_list</span>
               {t('products.tabs.list') || 'Listado'}
             </button>
             {canCreate && (
@@ -224,7 +214,7 @@ export function ProductPage() {
                 className={activeTab === 'formulario' ? 'is-active' : ''}
                 onClick={() => setActiveTab('formulario')}
               >
-                <span className="material-symbols-outlined" style={{ fontSize: 16, verticalAlign: 'middle', marginRight: 4 }}>
+                <span className="material-symbols-outlined pg-tab-icon">
                   {editMode ? 'edit' : 'add_box'}
                 </span>
                 {editMode ? t('common.edit') || 'Editar' : t('products.tabs.form') || 'Nuevo Producto'}
@@ -284,23 +274,23 @@ export function ProductPage() {
                         <th>Categoría</th>
                         <th>{t('products.table.status') || 'Estado'}</th>
                         <th>{t('products.table.createdAt') || 'Creado'}</th>
-                        {canEdit ? <th style={{ textAlign: 'right' }}>{t('common.actions') || 'Acciones'}</th> : null}
+                        {canEdit ? <th className="pg-th-right">{t('common.actions')}</th> : null}
                       </tr>
                     </thead>
                     <tbody>
                       {filteredProducts.map((product) => (
-                        <tr key={product.id} style={{ opacity: product.isActive ? 1 : 0.65 }}>
+                        <tr key={product.id} className={product.isActive ? undefined : 'pg-row-muted'}>
                           <td>
                             <span className="mono prd-sku">{product.saleCode}</span>
                           </td>
                           <td>
                             <div className="prd-product-cell">
                               <div className="zh-avatar zh-avatar--square prd-thumb" aria-hidden>
-                                <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--color-primary)' }}>inventory_2</span>
+                                <span className="material-symbols-outlined prd-thumb-icon">inventory_2</span>
                               </div>
                               <div>
                                 <div className="prd-name">{product.shortName}</div>
-                                <div className="subtle" style={{ fontSize: 11 }}>{product.description}</div>
+                                <div className="subtle prd-desc-subtle">{product.description}</div>
                               </div>
                             </div>
                           </td>
@@ -314,11 +304,11 @@ export function ProductPage() {
                               {product.isActive ? t('common.active') : t('common.inactive')}
                             </span>
                           </td>
-                          <td className="subtle mono" style={{ fontSize: 11 }}>
+                          <td className="subtle mono prd-date-cell">
                             {new Date(product.createdAt).toLocaleDateString()}
                           </td>
                           {canEdit ? (
-                            <td style={{ textAlign: 'right' }}>
+                            <td className="pg-th-right">
                               <div className="prd-actions-cell">
                                 <button
                                   type="button"
@@ -353,7 +343,7 @@ export function ProductPage() {
 
                 {/* Table footer */}
                 <div className="pg-table-footer">
-                  <p className="subtle" style={{ fontSize: 12, margin: 0 }}>
+                  <p className="subtle prd-footer-count">
                     {filteredProducts.length} {t('products.list.results') || 'resultados'}
                   </p>
                   <p className="pg-table-timestamp">
@@ -384,6 +374,6 @@ export function ProductPage() {
           )
         )}
       </div>
-    </div>
+    </ErpPageTemplate>
   );
 }

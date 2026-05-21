@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
@@ -32,29 +33,23 @@ export function OrdenesCompraListPage() {
   const pageSize = filter.pageSize   ?? 20;
 
   return (
-    <div className="pg-page">
-
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">Compras</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Órdenes de Compra</span>
-          </nav>
-          <h1 className="pg-title">Órdenes de Compra</h1>
-          <p className="pg-subtitle">Gestión y seguimiento de órdenes de compra a proveedores.</p>
-        </div>
-        <div className="pg-header-right">
-          {canCreate && (
-            <button className="zh-btn zh-btn--primary" type="button"
-              onClick={() => navigate('/compras/ordenes/nueva')}>
-              <span className="material-symbols-outlined">add</span>
-              Nueva Orden
-            </button>
-          )}
-        </div>
-      </div>
-
+    <ErpPageTemplate
+      kicker="Compras"
+      title="Órdenes de Compra"
+      subtitle="Gestión y seguimiento de órdenes de compra a proveedores."
+      action={
+        canCreate ? (
+          <button
+            className="zh-btn zh-btn--primary"
+            type="button"
+            onClick={() => navigate('/compras/ordenes/nueva')}
+          >
+            <span className="material-symbols-outlined">add</span>
+            Nueva Orden
+          </button>
+        ) : undefined
+      }
+    >
       {error && <ZHPageNotice variant="error" message="Error al cargar" detail={error} />}
 
       <div className="pg-section">
@@ -94,11 +89,11 @@ export function OrdenesCompraListPage() {
         </div>
 
         {loading ? (
-          <div style={{ padding: '40px' }}><LoadingState /></div>
+          <div className="pg-pad-40"><LoadingState /></div>
         ) : items.length === 0 ? (
-          <div style={{ padding: '40px' }}><EmptyState message="No hay órdenes de compra que coincidan con los filtros." /></div>
+          <div className="pg-pad-40"><EmptyState message="No hay órdenes de compra que coincidan con los filtros." /></div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="pg-overflow-x">
             <table className="table">
               <thead>
                 <tr>
@@ -106,22 +101,22 @@ export function OrdenesCompraListPage() {
                   <th>Proveedor</th>
                   <th>Fecha emisión</th>
                   <th>Fecha requerida</th>
-                  <th style={{ textAlign: 'right' }}>Total</th>
+                  <th className="pg-th-right">Total</th>
                   <th>Estado</th>
-                  <th style={{ textAlign: 'right' }}>Acciones</th>
+                  <th className="pg-th-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((oc) => (
-                  <tr key={oc.id} style={{ cursor: 'pointer' }}
+                  <tr key={oc.id} className="pg-row-clickable"
                     onClick={() => navigate(`/compras/ordenes/${oc.id}`)}>
                     <td><strong className="mono">{oc.numeroOrden}</strong></td>
                     <td>{oc.proveedorNombre}</td>
                     <td>{new Date(oc.fechaEmision).toLocaleDateString('es')}</td>
                     <td>{new Date(oc.fechaRequerida).toLocaleDateString('es')}</td>
-                    <td style={{ textAlign: 'right' }} className="mono">${oc.total.toFixed(2)}</td>
+                    <td className="mono pg-td-right">${oc.total.toFixed(2)}</td>
                     <td><span className={estadoBadgeClass(oc.estado)}>{oc.estado}</span></td>
-                    <td style={{ textAlign: 'right' }}>
+                    <td className="pg-td-right">
                       <ZHBtn variant="ghost" size="sm" onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/compras/ordenes/${oc.id}`);
@@ -136,7 +131,7 @@ export function OrdenesCompraListPage() {
 
         {total > pageSize && (
           <div className="pg-table-footer">
-            <span className="subtle" style={{ fontSize: 12 }}>Pág. {page} · {total} registros</span>
+            <span className="subtle pg-text-muted-sm">Pág. {page} · {total} registros</span>
             <div className="pg-pagination-controls">
               <button className="pg-pagination-btn" disabled={page <= 1}
                 onClick={() => setFilter((f) => ({ ...f, pageNumber: page - 1 }))}>
@@ -150,6 +145,6 @@ export function OrdenesCompraListPage() {
           </div>
         )}
       </div>
-    </div>
+    </ErpPageTemplate>
   );
 }

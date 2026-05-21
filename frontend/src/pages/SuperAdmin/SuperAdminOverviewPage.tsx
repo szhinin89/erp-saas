@@ -6,6 +6,7 @@ import { superAdminService, type SuperAdminSubscriber } from '../../modules/supe
 import { LoadingState, EmptyState } from '../../components/PageShell';
 import { ZHPageNotice } from '../../components/zh/ZHPageNotice';
 import { ZHScreenHeading } from '../../components/zh/ZHLayout';
+import { SuperAdminCrudTemplate } from '../../templates/SuperAdminCrudTemplate';
 import { StatCard } from '../../components/zh/StatCard';
 import { RuntimeModeBadge } from '../../components/RuntimeModeBadge';
 import { formatApiRequestError } from '../../modules/lib/apiError';
@@ -103,9 +104,7 @@ export function SuperAdminOverviewPage() {
     : 0;
 
   return (
-    <div className="pg-page">
-
-      {/* ── Page Header ── */}
+    <SuperAdminCrudTemplate title={t('superadmin.title')}>
       <ZHScreenHeading
         kicker={t('superadmin.overview.kicker')}
         title={t('superadmin.overview.title')}
@@ -388,7 +387,6 @@ export function SuperAdminOverviewPage() {
         </div>
 
       </div>
-
-    </div>
+    </SuperAdminCrudTemplate>
   );
 }

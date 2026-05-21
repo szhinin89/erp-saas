@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
@@ -25,29 +26,23 @@ export function AjustesListPage() {
   const pageSize = filter.pageSize   ?? 20;
 
   return (
-    <div className="pg-page">
-
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">Inventario</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Ajustes</span>
-          </nav>
-          <h1 className="pg-title">Ajustes de Inventario</h1>
-          <p className="pg-subtitle">Control de entradas y salidas manuales de stock.</p>
-        </div>
-        <div className="pg-header-right">
-          {canCreate && (
-            <button className="zh-btn zh-btn--primary" type="button"
-              onClick={() => navigate('/inventario/ajustes/nuevo')}>
-              <span className="material-symbols-outlined">add</span>
-              Nuevo Ajuste
-            </button>
-          )}
-        </div>
-      </div>
-
+    <ErpPageTemplate
+      kicker="Inventario"
+      title="Ajustes de Inventario"
+      subtitle="Control de entradas y salidas manuales de stock."
+      action={
+        canCreate ? (
+          <button
+            className="zh-btn zh-btn--primary"
+            type="button"
+            onClick={() => navigate('/inventario/ajustes/nuevo')}
+          >
+            <span className="material-symbols-outlined">add</span>
+            Nuevo Ajuste
+          </button>
+        ) : undefined
+      }
+    >
       {error && <ZHPageNotice variant="error" message="Error al cargar" detail={error} />}
 
       <div className="pg-section">
@@ -84,11 +79,11 @@ export function AjustesListPage() {
         </div>
 
         {loading ? (
-          <div style={{ padding: '40px' }}><LoadingState /></div>
+          <div className="pg-pad-40"><LoadingState /></div>
         ) : items.length === 0 ? (
-          <div style={{ padding: '40px' }}><EmptyState message="No hay ajustes que coincidan con los filtros." /></div>
+          <div className="pg-pad-40"><EmptyState message="No hay ajustes que coincidan con los filtros." /></div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="pg-overflow-x">
             <table className="table">
               <thead>
                 <tr>
@@ -99,12 +94,12 @@ export function AjustesListPage() {
                   <th>Motivo</th>
                   <th>Fecha</th>
                   <th>Estado</th>
-                  <th style={{ textAlign: 'right' }}>Acciones</th>
+                  <th className="pg-th-right">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((a) => (
-                  <tr key={a.id} style={{ cursor: 'pointer' }}
+                  <tr key={a.id} className="pg-row-clickable"
                     onClick={() => navigate(`/inventario/ajustes/${a.id}`)}>
                     <td><strong className="mono">{a.adjustmentNumber}</strong></td>
                     <td>{a.productName}</td>
@@ -113,7 +108,7 @@ export function AjustesListPage() {
                     <td>{a.reason}</td>
                     <td>{new Date(a.adjustmentDate).toLocaleDateString('es')}</td>
                     <td><AjusteEstadoBadge estado={a.status} /></td>
-                    <td style={{ textAlign: 'right' }}>
+                    <td className="pg-td-right">
                       <ZHBtn variant="ghost" size="sm" onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/inventario/ajustes/${a.id}`);
@@ -128,7 +123,7 @@ export function AjustesListPage() {
 
         {total > pageSize && (
           <div className="pg-table-footer">
-            <span className="subtle" style={{ fontSize: 12 }}>Pág. {page} · {total} registros</span>
+            <span className="subtle pg-text-muted-sm">Pág. {page} · {total} registros</span>
             <div className="pg-pagination-controls">
               <button className="pg-pagination-btn" disabled={page <= 1}
                 onClick={() => setFilter((f) => ({ ...f, pageNumber: page - 1 }))}>
@@ -142,6 +137,6 @@ export function AjustesListPage() {
           </div>
         )}
       </div>
-    </div>
+    </ErpPageTemplate>
   );
 }

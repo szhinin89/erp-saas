@@ -249,3 +249,244 @@
   font-size: 12px;
   resize: vertical;
 }
+
+/* ── smb-* — SuperAdmin Menu Builder CRM (platform-only) ─── */
+
+.smb-workspace-subtitle {
+  margin: 0;
+  margin-left: var(--space-2);
+}
+
+.smb-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.smb-layout-toggle {
+  display: flex;
+  gap: 2px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.smb-layout-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 400;
+  background: transparent;
+  color: #64748b;
+  box-shadow: none;
+  transition: all 0.15s;
+}
+
+.smb-layout-btn--active {
+  font-weight: 700;
+  background: #fff;
+  color: #3a5f84;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.smb-layout-btn-icon {
+  font-size: 11px;
+}
+
+.smb-preview-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.smb-preview-menu-wrap {
+  width: 100%;
+  max-width: 900px;
+}
+
+.smb-preview-plan-wrap {
+  width: 100%;
+  max-width: 320px;
+}
+
+.smb-preview-hint {
+  font-size: 12px;
+  margin-left: var(--space-2);
+}
+
+.smb-plan-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.smb-plan-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.smb-plan-emoji {
+  font-size: 16px;
+}
+
+.smb-plan-badge {
+  text-transform: uppercase;
+}
+
+.smb-plan-price {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.smb-plan-cycle {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  margin-left: 2px;
+}
+
+.smb-billing-toggle {
+  display: flex;
+  gap: 1px;
+  background: var(--color-surface-container);
+  border-radius: var(--radius-md);
+  padding: 2px;
+}
+
+.smb-billing-btn {
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 400;
+  background: transparent;
+  color: var(--color-text-secondary);
+  box-shadow: none;
+  transition: all 0.15s;
+}
+
+.smb-billing-btn--active {
+  font-weight: 700;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.smb-audit-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.smb-audit-empty {
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.smb-audit-scroll {
+  overflow-x: auto;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.smb-audit-ts {
+  font-size: 11px;
+}
+
+.smb-audit-user {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.smb-audit-badge {
+  font-size: 10px;
+}
+
+.smb-audit-details {
+  font-size: 12px;
+  color: var(--color-primary);
+}
+
+.smb-toolbar-schema {
+  font-size: 11px;
+}
+
+.smb-plan-tabs {
+  padding: var(--space-4) var(--space-4) 0;
+}
+
+.smb-plan-tab--internal {
+  opacity: 0.45;
+  font-style: italic;
+}
+
+.smb-plan-tab-emoji {
+  font-size: 14px;
+}
+
+.smb-catalog-controls {
+  flex-wrap: wrap;
+}
+
+.smb-catalog-search {
+  flex: 1;
+  min-width: 140px;
+}
+
+.smb-catalog-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.smb-filter-tip {
+  font-size: 11px;
+  margin-left: auto;
+}
+
+.smb-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.smb-modal-head-icon {
+  font-size: 20px;
+  color: var(--color-primary);
+}
+
+.smb-modal-head-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.smb-wizard-step {
+  text-align: center;
+  font-size: 12px;
+}
+
+.smb-inherit-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+@media (max-width: 980px) {
+  .smb-preview-menu-wrap,
+  .smb-preview-plan-wrap {
+    max-width: 100%;
+  }
+}

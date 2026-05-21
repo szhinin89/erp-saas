@@ -33,16 +33,7 @@ export function AccountingBalanceTab({
           <span className="pg-section-label">Balance de Comprobación</span>
         </div>
       </div>
-      <div
-        className="pg-section-body"
-        style={{
-          display: 'flex',
-          gap: 'var(--space-4)',
-          flexWrap: 'wrap',
-          alignItems: 'flex-end',
-          marginBottom: 'var(--space-4)',
-        }}
-      >
+      <div className="pg-section-body acc-tab-filters">
         <ZHField label="Desde">
           <input className="zh-input" type="date" value={balDesde} onChange={(e) => setBalDesde(e.target.value)} />
         </ZHField>
@@ -56,26 +47,26 @@ export function AccountingBalanceTab({
 
       {balError && <ZHPageNotice variant="error" message={balError} />}
       {balLoading && (
-        <div style={{ padding: 40 }}>
+        <div className="pg-pad-40">
           <LoadingState />
         </div>
       )}
       {!balLoading && !balError && balData.length === 0 && (
-        <div style={{ padding: 40 }}>
+        <div className="pg-pad-40">
           <EmptyState message="Haz clic en 'Generar' para calcular el balance." />
         </div>
       )}
       {!balLoading && balData.length > 0 && (
-        <div style={{ overflowX: 'auto' }}>
+        <div className="pg-overflow-x">
           <table className="table">
             <thead>
               <tr>
                 <th>Código</th>
                 <th>Cuenta</th>
                 <th>Tipo</th>
-                <th style={{ textAlign: 'right' }}>Total Débito</th>
-                <th style={{ textAlign: 'right' }}>Total Crédito</th>
-                <th style={{ textAlign: 'right' }}>Saldo Neto</th>
+                <th className="pg-th-right">Total Débito</th>
+                <th className="pg-th-right">Total Crédito</th>
+                <th className="pg-th-right">Saldo Neto</th>
               </tr>
             </thead>
             <tbody>
@@ -85,15 +76,11 @@ export function AccountingBalanceTab({
                     <span className="mono">{l.accountCode}</span>
                   </td>
                   <td>{l.accountName}</td>
-                  <td style={{ color: 'var(--color-text-secondary)' }}>{l.accountType}</td>
-                  <td style={{ textAlign: 'right' }}>${l.totalDebit.toFixed(2)}</td>
-                  <td style={{ textAlign: 'right' }}>${l.totalCredit.toFixed(2)}</td>
+                  <td className="pg-cell-muted">{l.accountType}</td>
+                  <td className="pg-td-right">${l.totalDebit.toFixed(2)}</td>
+                  <td className="pg-td-right">${l.totalCredit.toFixed(2)}</td>
                   <td
-                    style={{
-                      textAlign: 'right',
-                      fontWeight: 700,
-                      color: l.netBalance >= 0 ? 'var(--color-success)' : 'var(--color-error)',
-                    }}
+                    className={`acc-cell-balance ${l.netBalance >= 0 ? 'acc-cell-balance--pos' : 'acc-cell-balance--neg'}`}
                   >
                     ${l.netBalance.toFixed(2)}
                   </td>
@@ -101,15 +88,15 @@ export function AccountingBalanceTab({
               ))}
             </tbody>
             <tfoot>
-              <tr style={{ background: 'var(--color-surface-raised)', fontWeight: 700 }}>
+              <tr className="acc-table-foot-row">
                 <td colSpan={3}>TOTALES</td>
-                <td style={{ textAlign: 'right' }}>
+                <td className="pg-td-right">
                   ${balData.reduce((s, l) => s + l.totalDebit, 0).toFixed(2)}
                 </td>
-                <td style={{ textAlign: 'right' }}>
+                <td className="pg-td-right">
                   ${balData.reduce((s, l) => s + l.totalCredit, 0).toFixed(2)}
                 </td>
-                <td style={{ textAlign: 'right' }}>
+                <td className="pg-td-right">
                   ${balData.reduce((s, l) => s + l.netBalance, 0).toFixed(2)}
                 </td>
               </tr>

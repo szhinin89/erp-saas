@@ -19,3 +19,43 @@
 .cls-btn-danger:hover:not(:disabled) { background: rgba(192, 57, 43, 0.08); }
 .cls-btn-success:not(:disabled)      { color: var(--color-success); }
 .cls-btn-success:hover:not(:disabled){ background: rgba(26, 122, 74, 0.08); }
+
+/* ── Paneles (listado, contactos, categorías, auditoría) ─── */
+.cls-panel-actions-mb {
+  margin-bottom: var(--space-6);
+}
+
+.cls-customer-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.cls-customer-name {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.cls-customer-id-line {
+  font-size: var(--text-body-sm-size);
+}
+
+.cls-contact-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cls-contact-email {
+  color: var(--color-text-primary);
+}
+
+.cls-contacts-count {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.cls-cell-nowrap {
+  white-space: nowrap;
+}

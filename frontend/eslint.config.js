@@ -16,6 +16,18 @@ const reactCompilerRulesOff = {
   'react-hooks/incompatible-library': 'off',
 }
 
+/** Prohibición de style={{}} en pantallas (governance visual). */
+const inlineStylePageRules = {
+  'no-restricted-syntax': [
+    'error',
+    {
+      selector: 'JSXAttribute[name.name="style"]',
+      message:
+        'No uses style={{...}} en pantallas. Usa pg-* / prefijo de dominio. Ver docs/frontend-layout-conventions.md',
+    },
+  ],
+}
+
 export default defineConfig([
   globalIgnores(['dist', 'playwright-report', 'test-results']),
   {
@@ -48,26 +60,39 @@ export default defineConfig([
       ],
     },
   },
-  // Estilos inline: solo wrappers legacy en src/pages/ (modules/*/pages — deuda documentada).
+  // Estilos inline: wrappers legacy en src/pages/ y módulos de producto.
   {
     files: ['src/pages/**/*.{ts,tsx}'],
+    rules: inlineStylePageRules,
+  },
+  {
+    files: ['src/modules/**/pages/**/*.{ts,tsx}'],
+    rules: {
+      ...inlineStylePageRules,
+      'max-lines': [
+        'warn',
+        { max: 400, skipBlankLines: true, skipComments: true },
+      ],
+    },
+  },
+  // Excepciones documentadas: auth (clase C, zh-auth-*).
+  {
+    files: ['src/modules/auth/pages/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
+  },
+  // Plantillas y layouts: prohibir style inline (referencia para páginas nuevas).
+  {
+    files: ['src/templates/**/*.{ts,tsx}', 'src/components/layout/**/*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': [
         'error',
         {
           selector: 'JSXAttribute[name.name="style"]',
           message:
-            'No uses style={{...}} en pantallas. Usa tokens CSS + clases ZH.',
+            'No uses style inline en plantillas/layout. Ver docs/frontend-layout-conventions.md',
         },
-      ],
-    },
-  },
-  {
-    files: ['src/modules/**/pages/**/*.{ts,tsx}'],
-    rules: {
-      'max-lines': [
-        'warn',
-        { max: 400, skipBlankLines: true, skipComments: true },
       ],
     },
   },

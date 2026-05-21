@@ -6,3 +6,18 @@
 .gst-cell-right { text-align: right; }
 .gst-cell-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
 /* .gst-cat-badge eliminado — usar .badge.badge--gray (zh-ui.css) */
+
+.gst-totals-section {
+  margin-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-4);
+}
+
+.gst-totals-grid {
+  max-width: 560px;
+}
+
+.gst-total-input {
+  font-weight: 700;
+  color: var(--color-primary);
+}

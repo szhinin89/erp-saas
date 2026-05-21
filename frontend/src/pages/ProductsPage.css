@@ -36,6 +36,32 @@
 .prd-sparkline span:nth-child(3) { height: 65%; }
 .prd-sparkline span:nth-child(4) { height: 100%; }
 
+.prd-sparkline span.prd-sparkline-bar--primary {
+  background: var(--color-primary);
+}
+
+.prd-kpi-trend-icon {
+  font-size: 12px;
+}
+
+.prd-thumb-icon {
+  font-size: 18px;
+  color: var(--color-primary);
+}
+
+.prd-desc-subtle {
+  font-size: var(--text-label-sm-size);
+}
+
+.prd-date-cell {
+  font-size: var(--text-label-sm-size);
+}
+
+.prd-footer-count {
+  font-size: var(--text-label-sm-size);
+  margin: 0;
+}
+
 /* ── Table scroll wrapper ────────────────────────────────── */
 .prd-table-wrap { overflow-x: auto; }
 

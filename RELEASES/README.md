@@ -5,5 +5,6 @@
 | Versión | Documento | Tag Git | Fecha |
 |---------|-----------|---------|-------|
 | Architecture v1.0 | [RELEASE-ARCHITECTURE-v1.0.md](./RELEASE-ARCHITECTURE-v1.0.md) | `architecture-v1.0` | 2026-05-21 |
+| Frontend Governance v1.0 | [RELEASE-FRONTEND-GOVERNANCE-v1.0.md](./RELEASE-FRONTEND-GOVERNANCE-v1.0.md) | `frontend-governance-v1.0` | 2026-05-21 |
 
 > Las baselines de **producto** (semver app) se documentarán aquí cuando aplique. La baseline `architecture-v1.0` congela **estructura y gobernanza**, no feature freeze funcional.

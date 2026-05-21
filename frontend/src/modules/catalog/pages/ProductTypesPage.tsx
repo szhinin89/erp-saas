@@ -9,7 +9,9 @@ import { catalogService, type CatalogItem } from '../api/catalogService';
 import { ZHField, ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { NoAccessPage } from '../../../components/PageShell';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { formatApiRequestError } from '../../lib/apiError';
+import './catalog-list-page.css';
 
 /* ── Form schema ────────────────────────────────────────────── */
 const productTypeSchema = z.object({
@@ -132,23 +134,19 @@ export function ProductTypesPage() {
   const modalTitle = modal?.kind === 'create' ? t('productTypes.modal.create') : t('productTypes.modal.edit');
 
   return (
-    <div className="pg-page">
-
-      {/* ── Header ─────────────────────────────────────────── */}
-      <div className="pg-header-row">
-        <div>
-          <p className="pg-kicker">{t('app.nav.group.inventario')}</p>
-          <h1 className="pg-title">{t('productTypes.title')}</h1>
-          <p className="pg-subtitle">{t('productTypes.subtitle')}</p>
-        </div>
-        {canCreate && (
+    <ErpPageTemplate
+      kicker={t('app.nav.group.inventario')}
+      title={t('productTypes.title')}
+      subtitle={t('productTypes.subtitle')}
+      action={
+        canCreate ? (
           <ZHBtn variant="primary" size="md" type="button" onClick={openCreate}>
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add</span>
+            <span className="material-symbols-outlined">add</span>
             {t('productTypes.new')}
           </ZHBtn>
-        )}
-      </div>
-
+        ) : undefined
+      }
+    >
       {/* ── KPIs ───────────────────────────────────────────── */}
       <div className="pg-kpis">
         <div className="pg-kpi">
@@ -204,10 +202,9 @@ export function ProductTypesPage() {
               />
             </div>
             <select
-              className="zh-input"
+              className="zh-input cat-list-filter-select cat-list-filter-select--wide"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              style={{ width: 'auto', minWidth: 140 }}
             >
               <option value="all">{t('productTypes.filter.all')}</option>
               <option value="active">{t('common.active')}</option>
@@ -222,46 +219,42 @@ export function ProductTypesPage() {
         </div>
 
         {loading ? (
-          <p className="subtle" style={{ padding: 24 }}>{t('common.loading')}</p>
+          <p className="subtle pg-state-pad-24">{t('common.loading')}</p>
         ) : filtered.length === 0 ? (
-          <p className="subtle" style={{ padding: 24, textAlign: 'center' }}>{t('common.noData')}</p>
+          <p className="subtle pg-state-pad-24-center">{t('common.noData')}</p>
         ) : (
           <table className="table">
             <thead>
               <tr>
                 <th>{t('common.code')}</th>
                 <th>{t('productTypes.table.type')}</th>
-                <th style={{ textAlign: 'center' }}>{t('common.status')}</th>
-                <th style={{ textAlign: 'right' }}>{t('common.actions')}</th>
+                <th className="cat-list-th-center">{t('common.status')}</th>
+                <th className="cat-list-th-right">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((item) => (
-                <tr key={item.id} style={{ opacity: item.isActive ? 1 : 0.65 }}>
+                <tr key={item.id} className={item.isActive ? undefined : 'pg-row-inactive'}>
                   <td>
-                    <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-primary)' }}>
+                    <span className="mono cat-list-code-primary">
                       {item.code}
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div
-                        className="zh-avatar zh-avatar--square"
-                        style={{ width: 32, height: 32, flexShrink: 0, background: 'var(--color-surface-container-high)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        aria-hidden
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--color-primary)' }}>inventory_2</span>
+                    <div className="pg-actions-inline-10">
+                      <div className="zh-avatar zh-avatar--square pg-avatar-sm-32" aria-hidden>
+                        <span className="material-symbols-outlined pg-icon-18 pg-icon-primary">inventory_2</span>
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: 500 }}>{item.name}</span>
+                      <span className="cat-list-type-name">{item.name}</span>
                     </div>
                   </td>
-                  <td style={{ textAlign: 'center' }}>
+                  <td className="cat-list-td-center">
                     <span className={`zh-status zh-status--${item.isActive ? 'active' : 'inactive'}`}>
                       {item.isActive ? t('common.active') : t('common.inactive')}
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                    <div className="pg-actions-inline">
                       {canUpdate && (
                         <button
                           type="button"
@@ -269,7 +262,7 @@ export function ProductTypesPage() {
                           onClick={() => openEdit(item)}
                           title={t('common.edit')}
                         >
-                          <span className="material-symbols-outlined" style={{ fontSize: 17 }}>edit</span>
+                          <span className="material-symbols-outlined pg-icon-17">edit</span>
                         </button>
                       )}
                       {(canDelete || canUpdate) && (
@@ -279,7 +272,7 @@ export function ProductTypesPage() {
                           onClick={() => void toggleItem(item)}
                           title={item.isActive ? t('common.disable') : t('common.enable')}
                         >
-                          <span className="material-symbols-outlined" style={{ fontSize: 17 }}>
+                          <span className="material-symbols-outlined pg-icon-17">
                             {item.isActive ? 'visibility_off' : 'visibility'}
                           </span>
                         </button>
@@ -301,12 +294,12 @@ export function ProductTypesPage() {
           aria-modal="true"
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          <div className="zh-modal" style={{ maxWidth: 440 }}>
+          <div className="zh-modal pg-modal--440">
 
             <div className="zh-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--color-primary)' }}>inventory_2</span>
-                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{modalTitle}</h2>
+              <div className="pg-modal-title-row">
+                <span className="material-symbols-outlined pg-icon-20 pg-icon-primary">inventory_2</span>
+                <h2 className="pg-modal-title-text">{modalTitle}</h2>
               </div>
               <button
                 type="button"
@@ -358,6 +351,6 @@ export function ProductTypesPage() {
           </div>
         </div>
       )}
-    </div>
+    </ErpPageTemplate>
   );
 }

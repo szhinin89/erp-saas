@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ZHCardSection, ZHGridRow, ZHScreenHeading } from '../../components/zh/ZHLayout';
+import { ZHCardSection, ZHGridRow } from '../../components/zh/ZHLayout';
+import { ErpPageTemplate } from '../../templates/ErpPageTemplate';
 import { StatCard } from '../../components/zh/StatCard';
 import { ZHPageNotice } from '../../components/zh/ZHPageNotice';
 import { LoadingState, EmptyState } from '../../components/PageShell';
@@ -83,26 +84,24 @@ export function SaasOverviewPage() {
   }, [companies.length, entitlements?.limits, t]);
 
   return (
-    <div className="pg-page">
-      <ZHScreenHeading
-        kicker={t('saas.overview.kicker')}
-        title={t('saas.overview.title')}
-        subtitle={t('saas.overview.subtitle')}
-        right={
-          <div className="pg-header-right">
-            <RuntimeModeBadge />
-            <button className="zh-btn zh-btn--secondary" type="button" disabled={loading} onClick={() => void load()}>
-              <span className="material-symbols-outlined">refresh</span>
-              {t('common.refresh')}
-            </button>
-            <button className="zh-btn zh-btn--primary" type="button" onClick={() => navigate('/saas/companies')}>
-              <span className="material-symbols-outlined">domain</span>
-              {t('saas.overview.manageCompanies')}
-            </button>
-          </div>
-        }
-      />
-
+    <ErpPageTemplate
+      kicker={t('saas.overview.kicker')}
+      title={t('saas.overview.title')}
+      subtitle={t('saas.overview.subtitle')}
+      action={
+        <div className="pg-flex-row-8-wrap">
+          <RuntimeModeBadge />
+          <button className="zh-btn zh-btn--secondary" type="button" disabled={loading} onClick={() => void load()}>
+            <span className="material-symbols-outlined">refresh</span>
+            {t('common.refresh')}
+          </button>
+          <button className="zh-btn zh-btn--primary" type="button" onClick={() => navigate('/saas/companies')}>
+            <span className="material-symbols-outlined">domain</span>
+            {t('saas.overview.manageCompanies')}
+          </button>
+        </div>
+      }
+    >
       {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
 
       {loading ? (
@@ -224,6 +223,6 @@ export function SaasOverviewPage() {
           </ZHGridRow>
         </>
       )}
-    </div>
+    </ErpPageTemplate>
   );
 }

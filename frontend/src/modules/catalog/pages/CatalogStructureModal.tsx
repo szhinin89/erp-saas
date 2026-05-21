@@ -3,6 +3,7 @@ import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import type { CatalogItem, ProductCategoryListItem } from '../api/catalogService';
 import type { CatalogStructureModalForm } from './catalogStructureTypes';
+import './CatalogStructurePage.css';
 
 type CatalogStructureModalProps = {
   t: (key: string) => string;
@@ -46,9 +47,9 @@ export function CatalogStructureModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="zh-modal" style={{ maxWidth: 480 }}>
+      <div className="zh-modal pg-modal--480">
         <div className="zh-modal-header">
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{title}</h2>
+          <h2 className="pg-modal-title-text">{title}</h2>
           <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm" onClick={onClose} aria-label={t('common.close')}>
             <span className="material-symbols-outlined">close</span>
           </button>

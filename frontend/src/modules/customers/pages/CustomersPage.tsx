@@ -1,6 +1,7 @@
 import { NoAccessPage } from '../../../components/PageShell';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn } from '../../../components/zh/ZHForm';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { CustomersPageAuditPanel } from './CustomersPageAuditPanel';
 import { CustomersPageCategoriesPanel } from './CustomersPageCategoriesPanel';
 import { CustomersPageContactModal } from './CustomersPageContactModal';
@@ -69,31 +70,28 @@ export function CustomersPage() {
     saveCategorization,
   } = page;
 
-  return (
-    <div className="pg-page">
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <p className="pg-kicker">{t('customers.kicker')}</p>
-          <h1 className="pg-title">{t('customers.title')}</h1>
-          <p className="pg-subtitle">{t('customers.subtitle')}</p>
-        </div>
-        <div className="pg-header-right">
-          {activeTab === 'contactos' ? (
-            <ZHBtn variant="primary" size="md" type="button" onClick={() => openContactModal()}>
-              <span className="material-symbols-outlined">contacts</span>
-              {t('customers.contacts.new')}
-            </ZHBtn>
-          ) : canCreate ? (
-            <ZHBtn variant="primary" size="md" type="button" disabled={creating} onClick={openCreateModal}>
-              <span className="material-symbols-outlined">person_add</span>
-              {t('customers.list.newAction')}
-            </ZHBtn>
-          ) : null}
-        </div>
-      </div>
+  const headerAction =
+    activeTab === 'contactos' ? (
+      <ZHBtn variant="primary" size="md" type="button" onClick={() => openContactModal()}>
+        <span className="material-symbols-outlined">contacts</span>
+        {t('customers.contacts.new')}
+      </ZHBtn>
+    ) : canCreate ? (
+      <ZHBtn variant="primary" size="md" type="button" disabled={creating} onClick={openCreateModal}>
+        <span className="material-symbols-outlined">person_add</span>
+        {t('customers.list.newAction')}
+      </ZHBtn>
+    ) : null;
 
-      {error && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />}
-      {createError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={createError} />}
+  return (
+    <ErpPageTemplate
+      kicker={t('customers.kicker')}
+      title={t('customers.title')}
+      subtitle={t('customers.subtitle')}
+      action={headerAction}
+    >
+      {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
+      {createError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={createError} /> : null}
 
       <div className="pg-kpis">
         <div className="pg-kpi pg-kpi--h">
@@ -225,6 +223,6 @@ export function CustomersPage() {
         onSave={saveContact}
         onDelete={deleteContact}
       />
-    </div>
+    </ErpPageTemplate>
   );
 }

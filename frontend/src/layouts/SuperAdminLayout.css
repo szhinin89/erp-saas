@@ -346,10 +346,9 @@
   padding-top: calc(var(--sa-banner-h) + var(--sa-topbar-h));
 }
 
-.sa-shell-outlet {
-  padding: var(--space-6);
-  max-width: 1440px;
-  margin: 0 auto;
+/* Page padding / max-width: LayoutFrame + --shell-content-* tokens */
+.sa-shell__frame {
+  min-height: 100%;
 }
 
 /* ── FAB ──────────────────────────────────────────────────── */

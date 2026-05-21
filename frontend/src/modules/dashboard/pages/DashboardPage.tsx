@@ -4,6 +4,7 @@ import { useI18n } from '../../../i18n/i18n';
 import { useAuthStore } from '../../../store/authStore';
 import { RuntimeModeBadge } from '../../../components/RuntimeModeBadge';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import './DashboardPage.css';
 
 type ActivityStatus = 'completed' | 'pending' | 'cancelled';
@@ -51,25 +52,19 @@ export function DashboardPage() {
     return t('dashboard.activity.status.cancelled');
   };
 
+  const welcomeTitle = `${t('dashboard.welcome')} ${user?.fullName ?? ''}`.trim();
+
   return (
-    <div className="dsh-page">
-
-      {/* ── Welcome ── */}
-      <div className="dsh-welcome">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', flexWrap: 'wrap' }}>
-          <div>
-            <h1 className="dsh-welcome-title">{t('dashboard.welcome')} {user?.fullName ?? ''}</h1>
-            <p className="dsh-welcome-date">{today}</p>
-          </div>
-          <RuntimeModeBadge />
-        </div>
-      </div>
-
+    <ErpPageTemplate
+      title={welcomeTitle}
+      subtitle={today}
+      kicker={t('dashboard.title')}
+      action={<RuntimeModeBadge />}
+      pageClassName="dsh-page"
+    >
       <ZHPageNotice variant="info" message={t('dashboard.kpis.comingSoon')} />
 
-      {/* ── KPI Cards — usa pg-kpi* global ── */}
       <div className="pg-kpis">
-
         <div className="pg-kpi">
           <div className="pg-kpi-top">
             <div className="pg-kpi-icon pg-kpi-icon--primary">
@@ -122,18 +117,14 @@ export function DashboardPage() {
             <p className="pg-kpi-label">{t('dashboard.kpis.monthlyRevenue')}</p>
             <p className="pg-kpi-value">—</p>
             <div className="dsh-kpi-progress">
-              <div className="dsh-kpi-progress-bar" style={{ width: '75%' }} />
+              <div className="dsh-kpi-progress-bar dsh-kpi-progress-bar--75" />
             </div>
             <p className="dsh-kpi-progress-label">75% {t('dashboard.kpis.monthlyRevenue.goal')}</p>
           </div>
         </div>
-
       </div>
 
-      {/* ── Body grid ── */}
       <div className="dsh-body">
-
-        {/* Activity table — usa .table global */}
         <div className="card card--xl">
           <div className="dsh-activity-head">
             <h2 className="dsh-section-title">{t('dashboard.activity.title')}</h2>
@@ -154,7 +145,11 @@ export function DashboardPage() {
               </thead>
               <tbody>
                 {DEMO_ACTIVITY.map((row) => (
-                  <tr key={row.id} style={{ cursor: 'pointer' }} onClick={() => navigate('/ventas/facturas')}>
+                  <tr
+                    key={row.id}
+                    className="dsh-activity-row"
+                    onClick={() => navigate('/ventas/facturas')}
+                  >
                     <td className="dsh-cell-id">{row.id}</td>
                     <td>{row.client}</td>
                     <td>{row.amount}</td>
@@ -169,10 +164,7 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* Right column */}
         <div className="dsh-right">
-
-          {/* Quick access */}
           <div className="card card--xl">
             <div className="card-header">
               <h2 className="dsh-section-title">{t('dashboard.quickAccess.title')}</h2>
@@ -202,7 +194,6 @@ export function DashboardPage() {
             </div>
           </div>
 
-          {/* Notifications */}
           <div className="card card--xl">
             <div className="card-header">
               <h2 className="dsh-section-title">{t('dashboard.notifications.title')}</h2>
@@ -221,11 +212,9 @@ export function DashboardPage() {
               ))}
             </div>
           </div>
-
         </div>
       </div>
 
-      {/* ── Footer ── */}
       <footer className="dsh-footer">
         <div className="dsh-footer-left">
           <span className="dsh-footer-brand">ZH Technologies</span>
@@ -237,7 +226,6 @@ export function DashboardPage() {
           <a href="#">{t('dashboard.footer.privacy')}</a>
         </nav>
       </footer>
-
-    </div>
+    </ErpPageTemplate>
   );
 }

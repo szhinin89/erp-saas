@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { LoadingState, NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
@@ -138,37 +139,35 @@ export function CompanyConfigPage() {
     }
   };
 
-  if (!canView) return <NoAccessPage title="Configuración de Empresa" />;
-  if (subscriberState.loading) return <LoadingState />;
+  if (!canView) return <NoAccessPage title={t('settings.company.title')} />;
+  if (subscriberState.loading) {
+    return (
+      <ErpPageTemplate
+        kicker={t('settings.company.kicker')}
+        title={t('settings.company.title')}
+        subtitle={t('settings.company.subtitle')}
+      >
+        <LoadingState />
+      </ErpPageTemplate>
+    );
+  }
 
   return (
-    <div className="pg-page">
-
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Ruta de navegación">
-            <span className="pg-breadcrumb-item">Configuración</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Empresa</span>
-          </nav>
-          <h1 className="pg-title">Configuración de Parámetros</h1>
-          <p className="pg-subtitle">Ajusta los valores globales y las preferencias operativas del sistema.</p>
-        </div>
-      </div>
-
-      {subscriberState.error && (
+    <ErpPageTemplate
+      kicker={t('settings.company.kicker')}
+      title={t('settings.company.title')}
+      subtitle={t('settings.company.subtitle')}
+    >
+      {subscriberState.error ? (
         <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={subscriberState.error} />
-      )}
-      {saveError && (
+      ) : null}
+      {saveError ? (
         <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={saveError} />
-      )}
-      {saved && (
-        <ZHPageNotice variant="success" message="Configuración guardada correctamente." />
-      )}
+      ) : null}
+      {saved ? <ZHPageNotice variant="success" message={t('settings.company.saved')} /> : null}
 
       <form onSubmit={onSubmit}>
-
-        <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="pg-section">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
               <span className="material-symbols-outlined pg-section-icon">settings</span>
@@ -231,7 +230,7 @@ export function CompanyConfigPage() {
           </div>
         </div>
 
-        <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="pg-section pg-section--mb-4">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
               <span className="material-symbols-outlined pg-section-icon">receipt_long</span>
@@ -270,7 +269,7 @@ export function CompanyConfigPage() {
               </ZHField>
             </div>
 
-            <div style={{ marginTop: 'var(--space-4)' }}>
+            <div className="pg-mt-4">
               <ZHPageNotice
                 variant="info"
                 message="La numeración de folios es correlativa y se reiniciará al cambiar el prefijo."
@@ -279,32 +278,32 @@ export function CompanyConfigPage() {
           </div>
         </div>
 
-        <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="pg-section pg-section--mb-4">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
               <span className="material-symbols-outlined pg-section-icon">account_balance</span>
               <p className="pg-section-label">Tarifas de Impuestos SRI</p>
             </div>
-            <span className="badge badge--gray" style={{ fontSize: 11 }}>Solo lectura — catálogo SRI</span>
+            <span className="badge badge--gray pg-text-11">Solo lectura — catálogo SRI</span>
           </div>
 
           {taxState.loading ? (
             <div className="pg-section-body"><LoadingState /></div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
+            <div className="pg-overflow-x">
               <table className="table">
                 <thead>
                   <tr>
                     <th>Código</th>
                     <th>Nombre del Impuesto</th>
                     <th>Tipo</th>
-                    <th style={{ textAlign: 'right' }}>Estado</th>
+                    <th className="pg-th-right">Estado</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(taxState.data ?? []).length === 0 ? (
                     <tr>
-                      <td colSpan={4} style={{ textAlign: 'center', padding: 'var(--space-6)', color: 'var(--color-text-secondary)' }}>
+                      <td colSpan={4} className="pg-state-pad pg-cell-muted pg-td-center">
                         No hay tarifas disponibles
                       </td>
                     </tr>
@@ -314,7 +313,7 @@ export function CompanyConfigPage() {
                         <td className="mono subtle">{rate.code}</td>
                         <td>{rate.name}</td>
                         <td>{taxTypeBadge(rate.type ?? 'VAT')}</td>
-                        <td style={{ textAlign: 'right' }}>
+                        <td className="pg-td-right">
                           <span className={rate.isActive ? 'zh-status zh-status--active' : 'zh-status zh-status--inactive'}>
                             {rate.isActive ? 'Activo' : 'Inactivo'}
                           </span>
@@ -362,6 +361,6 @@ export function CompanyConfigPage() {
         </div>
 
       </form>
-    </div>
+    </ErpPageTemplate>
   );
 }

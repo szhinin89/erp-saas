@@ -459,6 +459,11 @@
   "catalog.structure.categoriesCount": "Categories",
   "catalog.structure.subcategoriesCount": "Subcategories",
 
+  "settings.company.kicker": "Settings",
+  "settings.company.title": "Company parameters",
+  "settings.company.subtitle": "Adjust global values and operational preferences for the system.",
+  "settings.company.saved": "Settings saved successfully.",
+
   "dashboard.title": "Dashboard",
   "dashboard.kpis.totalIncome": "Total income",
   "dashboard.kpis.monthExpenses": "Monthly expenses",
@@ -1049,6 +1054,8 @@
   "profiles.perms.saas.branches.delete": "Disable branches",
 
   "ventas.facturas.title": "Sales invoices",
+  "ventas.facturas.subtitle": "Register and track electronic sales documents.",
+  "ventas.facturas.newInvoice": "New invoice",
   "ventas.facturas.refresh": "Refresh list",
   "ventas.facturas.print": "Print receipt",
   "ventas.facturas.printPopupBlocked": "The browser blocked the pop-up. Allow pop-ups for this site and try again.",
@@ -1189,6 +1196,7 @@
   "customers.audit.table.details": "Details",
 
   "branches.title": "Branches",
+  "branches.subtitle": "Manage store locations, managers, and operational parameters per branch.",
   "branches.tabList": "View branches",
   "branches.list.searchPlaceholder": "Name, address or phone…",
   "branches.list.entityLabel": "branches listed",

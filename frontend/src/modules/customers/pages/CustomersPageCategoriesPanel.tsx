@@ -74,12 +74,12 @@ export function CustomersPageCategoriesPanel({
           disabled={!selectedCategoryCustomerId}
         />
       </ZHField>
-      <div style={{ marginBottom: 'var(--space-6)' }}>
+      <div className="cls-panel-actions-mb">
         <ZHBtn variant="primary" size="md" type="button" onClick={onSave} disabled={!selectedCategoryCustomerId}>
           {t('customers.categories.save')}
         </ZHBtn>
       </div>
-      <div style={{ overflowX: 'auto' }}>
+      <div className="pg-overflow-x">
         <table className="table">
           <thead>
             <tr>

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../components/PageShell';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../i18n/i18n';
 import { usePermissionsStore } from '../../../store/permissionsStore';
@@ -87,20 +88,12 @@ export function CreditNotesPage() {
   if (!canView) return <NoAccessPage title={t('ventas.notas.title')} />;
 
   return (
-    <div className="pg-page">
-
-      {/* ── Header ── */}
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">{t('app.nav.group.sales')}</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">{t('ventas.notas.title')}</span>
-          </nav>
-          <h1 className="pg-title">{t('ventas.notas.title')}</h1>
-          <p className="pg-subtitle">Notas de crédito y débito emitidas sobre facturas autorizadas.</p>
-        </div>
-        <div className="pg-header-right">
+    <ErpPageTemplate
+      kicker={t('app.nav.group.sales')}
+      title={t('ventas.notas.title')}
+      subtitle="Notas de crédito y débito emitidas sobre facturas autorizadas."
+      action={
+        <>
           <button
             className="zh-btn zh-btn--secondary"
             type="button"
@@ -120,9 +113,9 @@ export function CreditNotesPage() {
               {t('ventas.notas.new')}
             </button>
           )}
-        </div>
-      </div>
-
+        </>
+      }
+    >
       {/* ── Alerts ── */}
       {error     && <ZHPageNotice variant="error" message="Error al cargar" detail={error} />}
       {sendError && <ZHPageNotice variant="error" message="Error al enviar" detail={sendError} />}
@@ -172,13 +165,13 @@ export function CreditNotesPage() {
 
         {/* Table */}
         {loading ? (
-          <div style={{ padding: 40 }}><LoadingState /></div>
+          <div className="pg-pad-40"><LoadingState /></div>
         ) : rows.length === 0 ? (
-          <div style={{ padding: 40 }}><EmptyState message="No hay notas emitidas." /></div>
+          <div className="pg-pad-40"><EmptyState message="No hay notas emitidas." /></div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: 40 }}><EmptyState message="Sin resultados para los filtros aplicados." /></div>
+          <div className="pg-pad-40"><EmptyState message="Sin resultados para los filtros aplicados." /></div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="pg-overflow-x">
             <table className="table">
               <thead>
                 <tr>
@@ -223,6 +216,6 @@ export function CreditNotesPage() {
           </div>
         )}
       </div>
-    </div>
+    </ErpPageTemplate>
   );
 }

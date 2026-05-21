@@ -1,5 +1,5 @@
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
-import { SuperAdminPageTemplate } from '../../../components/superadmin/SuperAdminPageTemplate';
+import { SuperAdminCrudTemplate } from '../../../templates/SuperAdminCrudTemplate';
 import { ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHDashboardScaffold } from '../../../components/zh/ZHDashboard';
 import { SuperAdminPlansSection } from '../../../components/superadmin/SuperAdminPlansSection';
@@ -71,8 +71,9 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
   } = panel;
 
   return (
-    <SuperAdminPageTemplate
-      title={t('superadmin.title')}
+    <SuperAdminCrudTemplate
+      title={shellLayout ? t('superadmin.tabCompanies') : t('superadmin.title')}
+      shellLayout={!!shellLayout}
       subtitle={isSuperAdmin && !hasSelectedSubscriber ? t('superadmin.subtitle') : undefined}
       subscriberGuardAction={
         <ZHBtn variant="primary" size="sm" onClick={() => navigate('/saas/overview')}>
@@ -197,6 +198,6 @@ export function SuperAdminPanelPage({ embeddedTab, shellLayout }: SuperAdminPane
         moduleLabel={moduleLabel}
         saveSubscriptionModal={saveSubscriptionModal}
       />
-    </SuperAdminPageTemplate>
+    </SuperAdminCrudTemplate>
   );
 }

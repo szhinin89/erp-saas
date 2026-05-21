@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../components/PageShell';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { useI18n } from '../../../i18n/i18n';
 import { usePermissionsStore } from '../../../store/permissionsStore';
 import { ventasFacturasService, type VentasFacturaDto } from '../api/ventasFacturasService';
@@ -119,20 +120,12 @@ export function VentasFacturasPage() {
   if (!canView) return <NoAccessPage title={t('ventas.facturas.title')} />;
 
   return (
-    <div className="pg-page">
-
-      {/* ── Page Header ── */}
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">{t('app.nav.group.sales')}</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">{t('ventas.facturas.title')}</span>
-          </nav>
-          <h1 className="pg-title">{t('ventas.facturas.title')}</h1>
-          <p className="pg-subtitle">Registro y control de comprobantes de venta electrónicos.</p>
-        </div>
-        <div className="pg-header-right">
+    <ErpPageTemplate
+      kicker={t('app.nav.group.sales')}
+      title={t('ventas.facturas.title')}
+      subtitle={t('ventas.facturas.subtitle')}
+      action={
+        <>
           <button
             className="zh-btn zh-btn--secondary"
             type="button"
@@ -148,15 +141,14 @@ export function VentasFacturasPage() {
             onClick={() => navigate('/ventas/facturas/nueva')}
           >
             <span className="material-symbols-outlined">add</span>
-            Nueva Factura
+            {t('ventas.facturas.newInvoice')}
           </button>
-        </div>
-      </div>
-
-      {/* ── Alerts ── */}
-      {error      && <ZHPageNotice variant="error"   message={t('common.errorPrefix')} detail={error} />}
-      {printError && <ZHPageNotice variant="error"   message={t('common.errorPrefix')} detail={printError} />}
-      {retryMsg   && <ZHPageNotice variant="success" message={retryMsg} />}
+        </>
+      }
+    >
+      {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
+      {printError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={printError} /> : null}
+      {retryMsg ? <ZHPageNotice variant="success" message={retryMsg} /> : null}
 
       {/* ── KPI Cards ── */}
       {!loading && (
@@ -242,7 +234,7 @@ export function VentasFacturasPage() {
             <span className="material-symbols-outlined pg-section-icon">receipt</span>
             <span className="pg-section-label">Comprobantes Emitidos</span>
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <div className="pg-section-actions">
             <button className="zh-btn zh-btn--ghost zh-btn--sm" type="button">
               <span className="material-symbols-outlined">download</span>
               Exportar
@@ -285,13 +277,13 @@ export function VentasFacturasPage() {
 
         {/* Table Body */}
         {loading ? (
-          <div style={{ padding: '40px' }}><LoadingState /></div>
+          <div className="pg-pad-40"><LoadingState /></div>
         ) : rows.length === 0 ? (
-          <div style={{ padding: '40px' }}><EmptyState message={t('common.noData')} /></div>
+          <div className="pg-pad-40"><EmptyState message={t('common.noData')} /></div>
         ) : filtered.length === 0 ? (
-          <div style={{ padding: '40px' }}><EmptyState message="No se encontraron resultados para la búsqueda." /></div>
+          <div className="pg-pad-40"><EmptyState message={t('common.listTab.noMatch')} /></div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="pg-overflow-x">
             <table className="table responsive-table vf-responsive-table">
               <thead>
                 <tr>
@@ -452,7 +444,7 @@ export function VentasFacturasPage() {
 
         {/* Accent card */}
         <div className="pg-accent-card">
-          <div style={{ position: 'relative', zIndex: 1 }}>
+          <div className="pg-accent-card-inner">
             <h3 className="pg-accent-card-title">Emisión Electrónica</h3>
             <p className="pg-accent-card-body">
               Los comprobantes autorizados se envían automáticamente al sistema tributario. Verifica el estado de cada factura en la tabla.
@@ -467,6 +459,6 @@ export function VentasFacturasPage() {
 
       </div>
 
-    </div>
+    </ErpPageTemplate>
   );
 }

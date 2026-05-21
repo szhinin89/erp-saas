@@ -1,4 +1,5 @@
 import { LoadingState, NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { SriConfigPageDataTab } from './SriConfigPageDataTab';
@@ -12,28 +13,18 @@ export function SriConfigPage() {
   if (page.sriState.loading) return <LoadingState />;
 
   return (
-    <div className="pg-page">
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Ruta de navegación">
-            <span className="pg-breadcrumb-item">Configuración</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Facturación Electrónica SRI</span>
-          </nav>
-          <h1 className="pg-title">Configuración SRI</h1>
-          <p className="pg-subtitle">
-            Parámetros obligatorios para emitir comprobantes electrónicos según la ficha técnica del SRI Ecuador.
-          </p>
-        </div>
-        {page.sriState.data && (
-          <div className="pg-header-right">
-            <span className={`badge badge--md ${page.sriState.data.environment === 1 ? 'badge--green' : 'badge--orange'}`}>
-              {page.sriState.data.environment === 1 ? 'Producción' : 'Pruebas'}
-            </span>
-          </div>
-        )}
-      </div>
-
+    <ErpPageTemplate
+      kicker="Configuración"
+      title="Configuración SRI"
+      subtitle="Parámetros obligatorios para emitir comprobantes electrónicos según la ficha técnica del SRI Ecuador."
+      action={
+        page.sriState.data ? (
+          <span className={`badge badge--md ${page.sriState.data.environment === 1 ? 'badge--green' : 'badge--orange'}`}>
+            {page.sriState.data.environment === 1 ? 'Producción' : 'Pruebas'}
+          </span>
+        ) : undefined
+      }
+    >
       {!page.sriState.data && !page.sriState.loading && (
         <ZHPageNotice
           variant="warning"
@@ -77,6 +68,6 @@ export function SriConfigPage() {
           </div>
         </div>
       </form>
-    </div>
+    </ErpPageTemplate>
   );
 }

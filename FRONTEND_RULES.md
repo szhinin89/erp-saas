@@ -1,6 +1,6 @@
 # Frontend Rules
 
-> Canónico: [`CLAUDE.md`](CLAUDE.md) · [`docs/ARCHITECTURE-RULES.md`](docs/ARCHITECTURE-RULES.md) (sección Frontend)
+> Canónico: [`docs/FRONTEND_ARCHITECTURE_BASELINE.md`](docs/FRONTEND_ARCHITECTURE_BASELINE.md) · [`CLAUDE.md`](CLAUDE.md) · [`docs/ARCHITECTURE-RULES.md`](docs/ARCHITECTURE-RULES.md) (sección Frontend)
 
 ## Obligatorio
 
@@ -22,6 +22,14 @@ frontend/
 ├── scripts/       # Scripts locales (vacío — usar scripts/ raíz)
 └── public/
 ```
+
+## Baseline y QA
+
+- Arquitectura sellada: [`docs/FRONTEND_ARCHITECTURE_BASELINE.md`](docs/FRONTEND_ARCHITECTURE_BASELINE.md)
+- Convenciones layout: [`docs/frontend-layout-conventions.md`](docs/frontend-layout-conventions.md)
+- Inventario páginas: [`frontend/src/templates/PAGE-AUDIT.md`](frontend/src/templates/PAGE-AUDIT.md)
+- Checklist QA: [`docs/FRONTEND_QA_CHECKLIST.md`](docs/FRONTEND_QA_CHECKLIST.md)
+- Changelog: [`frontend/CHANGELOG.md`](frontend/CHANGELOG.md)
 
 ## CI
 

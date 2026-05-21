@@ -1,1 +1,89 @@
-/* BodegasPage.css — usa solo clases globales pg-*/zh-*/badge/table */
+/* BodegasPage — prefijo bod-* */
+
+.bod-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.bod-code-readonly {
+  background: var(--color-surface-container);
+  color: var(--color-primary);
+}
+
+.bod-tip-panel {
+  background: var(--color-surface-container);
+  border-left: 4px solid var(--color-primary);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: var(--space-4);
+}
+
+.bod-tip-head {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin-bottom: var(--space-1);
+}
+
+.bod-tip-title {
+  font-weight: 600;
+  color: var(--color-primary);
+  font-size: var(--text-label-md-size);
+}
+
+.bod-tip-text {
+  font-size: var(--text-body-sm-size);
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.bod-meta-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.bod-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bod-meta-label {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bod-meta-value {
+  font-size: var(--text-body-sm-size);
+}
+
+.bod-list-name {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.bod-list-sub {
+  font-size: var(--text-label-sm-size);
+  color: var(--color-text-secondary);
+}
+
+.bod-list-branch {
+  color: var(--color-text-secondary);
+  font-size: var(--text-body-sm-size);
+}
+
+.bod-list-footer-note {
+  font-size: 12px;
+  margin: 0;
+}
+
+.bod-actions-tight {
+  display: flex;
+  gap: var(--space-1);
+  justify-content: flex-end;
+}

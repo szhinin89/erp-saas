@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { SuperAdminPageTemplate } from '../../components/superadmin/SuperAdminPageTemplate';
+import { SuperAdminCrudTemplate } from '../../templates/SuperAdminCrudTemplate';
 import { SuperAdminMenuBuilderSection } from '../../components/superadmin/SuperAdminMenuBuilderSection';
 import { useI18n } from '../../i18n/i18n';
 
@@ -72,23 +72,10 @@ export function SuperAdminMenuPlansHubPage() {
   );
 
   return (
-    <SuperAdminPageTemplate
-      title={t('superadmin.menuPlansHub.title')}
+    <SuperAdminCrudTemplate
+      title={t('superadmin.shell.menuAndPlans')}
       subtitle={t('superadmin.menuPlansHub.subtitle')}
-      hideHeader
     >
-      <div className="pg-page">
-
-        {/* ── Header ─────────────────────────────────────────── */}
-        <div className="pg-header-row">
-          <div>
-            <p className="pg-kicker">{t('app.nav.group.superadmin')}</p>
-            <h1 className="pg-title">{t('superadmin.menuPlansHub.title')}</h1>
-            <p className="pg-subtitle">{t('superadmin.menuPlansHub.subtitle')}</p>
-          </div>
-        </div>
-
-        {/* ── Tab bar ────────────────────────────────────────── */}
         <div className="zh-form-tabs" role="tablist" aria-label={t('superadmin.menuPlansHub.tabListLabel')}>
           <button
             type="button"
@@ -180,7 +167,6 @@ export function SuperAdminMenuPlansHubPage() {
           ) : null}
 
         </div>
-      </div>
-    </SuperAdminPageTemplate>
+    </SuperAdminCrudTemplate>
   );
 }

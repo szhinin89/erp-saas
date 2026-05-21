@@ -4,6 +4,7 @@ import type {
   ProductSubcategoryListItem,
 } from '../api/catalogService';
 import { CascadeColumn, CascadeItem } from './CatalogStructureCascadeComponents';
+import './CatalogStructurePage.css';
 
 type CatalogStructureCascadePanelProps = {
   t: (key: string) => string;
@@ -76,7 +77,7 @@ export function CatalogStructureCascadePanel({
 }: CatalogStructureCascadePanelProps) {
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-4)', alignItems: 'start' }}>
+      <div className="cat-cascade-grid">
         <CascadeColumn
           icon="account_tree"
           title={t('catalog.structure.level1')}
@@ -114,9 +115,7 @@ export function CatalogStructureCascadePanel({
           onAdd={onCreateCategory}
         >
           {!selectedLineId ? (
-            <p className="subtle" style={{ padding: 16, textAlign: 'center', fontSize: 12 }}>
-              {t('catalog.structure.selectLineFirst')}
-            </p>
+            <p className="subtle cat-cascade-empty">{t('catalog.structure.selectLineFirst')}</p>
           ) : (
             categories.map((cat) => (
               <CascadeItem
@@ -148,9 +147,7 @@ export function CatalogStructureCascadePanel({
           onAdd={onCreateSubcategory}
         >
           {!selectedCategoryId ? (
-            <p className="subtle" style={{ padding: 16, textAlign: 'center', fontSize: 12 }}>
-              {t('catalog.structure.selectCategoryFirst')}
-            </p>
+            <p className="subtle cat-cascade-empty">{t('catalog.structure.selectCategoryFirst')}</p>
           ) : (
             subcategories.map((sub) => (
               <CascadeItem
@@ -174,58 +171,41 @@ export function CatalogStructureCascadePanel({
       </div>
 
       {(selectedLine || selectedCategory) && (
-        <div className="pg-section" style={{ marginTop: 'var(--space-4)' }}>
+        <div className="pg-section cat-summary-section">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
               <span className="material-symbols-outlined pg-section-icon">info</span>
               <span className="pg-section-label">{t('catalog.structure.selectionSummary')}</span>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-6)', flexWrap: 'wrap', padding: 'var(--space-3) 0 0' }}>
+          <div className="cat-summary-row">
             <div>
-              <p
-                className="subtle"
-                style={{ margin: '0 0 4px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}
-              >
-                {t('catalog.structure.hierarchyPath')}
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 500 }}>
+              <p className="subtle cat-summary-label">{t('catalog.structure.hierarchyPath')}</p>
+              <div className="cat-summary-path">
                 {selectedLine && <span>{selectedLine.name}</span>}
                 {selectedCategory && (
                   <>
-                    <span className="material-symbols-outlined" style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>
-                      arrow_forward
-                    </span>
-                    <span style={{ color: 'var(--color-primary)' }}>{selectedCategory.name}</span>
+                    <span className="material-symbols-outlined pg-icon-14 pg-cell-muted">arrow_forward</span>
+                    <span className="cat-summary-path-primary">{selectedCategory.name}</span>
                   </>
                 )}
               </div>
             </div>
             {selectedLineId && (
               <>
-                <div style={{ width: 1, height: 36, background: 'var(--color-border)' }} />
+                <div className="cat-summary-divider" aria-hidden />
                 <div>
-                  <p
-                    className="subtle"
-                    style={{ margin: '0 0 4px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}
-                  >
-                    {t('catalog.structure.categoriesCount')}
-                  </p>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>{categories.length}</p>
+                  <p className="subtle cat-summary-label">{t('catalog.structure.categoriesCount')}</p>
+                  <p className="cat-summary-value">{categories.length}</p>
                 </div>
               </>
             )}
             {selectedCategoryId && (
               <>
-                <div style={{ width: 1, height: 36, background: 'var(--color-border)' }} />
+                <div className="cat-summary-divider" aria-hidden />
                 <div>
-                  <p
-                    className="subtle"
-                    style={{ margin: '0 0 4px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}
-                  >
-                    {t('catalog.structure.subcategoriesCount')}
-                  </p>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>{subcategories.length}</p>
+                  <p className="subtle cat-summary-label">{t('catalog.structure.subcategoriesCount')}</p>
+                  <p className="cat-summary-value">{subcategories.length}</p>
                 </div>
               </>
             )}

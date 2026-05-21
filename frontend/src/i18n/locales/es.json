@@ -459,6 +459,11 @@
   "catalog.structure.categoriesCount": "Categorías",
   "catalog.structure.subcategoriesCount": "Subcategorías",
 
+  "settings.company.kicker": "Configuración",
+  "settings.company.title": "Configuración de parámetros",
+  "settings.company.subtitle": "Ajusta los valores globales y las preferencias operativas del sistema.",
+  "settings.company.saved": "Configuración guardada correctamente.",
+
   "dashboard.title": "Dashboard",
   "dashboard.kpis.totalIncome": "Ingresos totales",
   "dashboard.kpis.monthExpenses": "Gastos del mes",
@@ -1074,6 +1079,8 @@
   "profiles.perms.saas.branches.delete": "Deshabilitar sucursales",
 
   "ventas.facturas.title": "Facturas de venta",
+  "ventas.facturas.subtitle": "Registro y control de comprobantes de venta electrónicos.",
+  "ventas.facturas.newInvoice": "Nueva factura",
   "ventas.facturas.refresh": "Actualizar lista",
   "ventas.facturas.print": "Imprimir tirilla",
   "ventas.facturas.printPopupBlocked": "El navegador bloqueó la ventana emergente. Permite ventanas para este sitio e inténtalo de nuevo.",
@@ -1214,6 +1221,7 @@
   "customers.audit.table.details": "Detalles",
 
   "branches.title": "Sucursales",
+  "branches.subtitle": "Gestione sus puntos de venta, encargados y parámetros operativos por sucursal.",
   "branches.tabList": "Ver sucursales",
   "branches.list.searchPlaceholder": "Nombre, dirección o teléfono…",
   "branches.list.entityLabel": "sucursales listadas",

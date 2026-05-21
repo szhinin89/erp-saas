@@ -31,3 +31,13 @@
 @media (max-width: 1024px) {
   .vf-support-grid { grid-template-columns: 1fr; }
 }
+
+.vf-folio-readonly {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.vf-filter-min {
+  width: auto;
+  min-width: 130px;
+}

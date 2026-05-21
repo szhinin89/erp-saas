@@ -1,0 +1,50 @@
+/* Shared shell content frame — padding, width, scroll (no navigation). */
+
+.shell-content-frame {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  background: var(--color-background);
+}
+
+.shell-content-frame__banner,
+.shell-content-frame__utilities {
+  flex-shrink: 0;
+}
+
+.shell-content-frame__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.shell-content-frame__inner {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--shell-content-max-width);
+  margin-inline: auto;
+  padding: var(--shell-content-padding);
+  display: flex;
+  flex-direction: column;
+  gap: var(--shell-content-gap);
+}
+
+/* Tenant shell: full viewport column inside .layout */
+.shell-content-frame--tenant {
+  min-height: 100vh;
+}
+
+/* Platform shell: scroll lives inside sa-shell-content offset area */
+.shell-content-frame--platform {
+  min-height: 100%;
+}
+
+@media (max-width: 980px) {
+  .shell-content-frame__inner {
+    padding: var(--shell-content-padding-compact, var(--space-4));
+  }
+}

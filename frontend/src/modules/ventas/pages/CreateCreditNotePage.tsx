@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../components/PageShell';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { useI18n } from '../../../i18n/i18n';
@@ -106,37 +107,21 @@ export function CreateCreditNotePage() {
     `${inv.establecimiento}-${inv.puntoEmision}-${inv.secuencial} · ${inv.clienteNombre}`;
 
   return (
-    <div className="pg-page">
-
-      {/* ── Header ── */}
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">{t('app.nav.group.sales')}</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span
-              className="pg-breadcrumb-item"
-              style={{ cursor: 'pointer' }}
-              onClick={() => navigate('/sales/credit-notes')}
-            >
-              {t('ventas.notas.title')}
-            </span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">{t('ventas.notas.new')}</span>
-          </nav>
-          <h1 className="pg-title">{t('ventas.notas.form.title')}</h1>
-          <p className="pg-subtitle">Sobre una factura autorizada. El comprobante se crea en estado Borrador.</p>
-        </div>
-        <div className="pg-header-right">
+    <ErpPageTemplate
+      kicker={t('app.nav.group.sales')}
+      title={t('ventas.notas.form.title')}
+      subtitle="Sobre una factura autorizada. El comprobante se crea en estado Borrador."
+      action={
+        <>
           <button className="zh-btn zh-btn--ghost" type="button" onClick={() => navigate('/sales/credit-notes')}>
             Cancelar
           </button>
           <ZHBtn variant="primary" size="md" type="button" disabled={saving} onClick={handleSubmit}>
             {saving ? 'Guardando...' : 'Crear nota'}
           </ZHBtn>
-        </div>
-      </div>
-
+        </>
+      }
+    >
       {error && <ZHPageNotice variant="error" message="Error" detail={error} />}
 
       {/* ── Main Form ── */}
@@ -167,7 +152,7 @@ export function CreateCreditNotePage() {
 
             {/* Note type */}
             <ZHField label={t('ventas.notas.form.noteType')} required>
-              <div style={{ display: 'flex', gap: 'var(--space-3)', paddingTop: 'var(--space-2)' }}>
+              <div className="pg-radio-group">
                 <label className="zh-inline-check">
                   <input
                     type="radio"
@@ -192,7 +177,7 @@ export function CreateCreditNotePage() {
             </ZHField>
 
             {/* Reason */}
-            <div style={{ gridColumn: '1 / -1' }}>
+            <div className="pg-form-span-full">
               <ZHField label={t('ventas.notas.form.reason')} required>
                 <input
                   className="zh-input"
@@ -207,15 +192,8 @@ export function CreateCreditNotePage() {
 
             {/* Selected invoice summary */}
             {selectedInvoice && (
-              <div style={{ gridColumn: '1 / -1' }}>
-                <div style={{
-                  padding: 'var(--space-3)',
-                  background: 'var(--color-surface-container)',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: 'var(--text-sm)',
-                  display: 'flex',
-                  gap: 'var(--space-6)',
-                }}>
+              <div className="pg-form-span-full">
+                <div className="pg-summary-box">
                   <span><strong>Cliente:</strong> {selectedInvoice.clienteNombre}</span>
                   <span><strong>Total factura:</strong> ${selectedInvoice.total.toFixed(2)}</span>
                   <span><strong>Fecha:</strong> {new Date(selectedInvoice.fechaEmision).toLocaleDateString('es')}</span>
@@ -235,15 +213,15 @@ export function CreateCreditNotePage() {
           </div>
         </div>
         <div className="pg-section-body">
-          <div style={{ overflowX: 'auto' }}>
+          <div className="cn-items-scroll">
             <table className="cn-items-table">
               <thead>
                 <tr>
-                  <th style={{ width: '40%' }}>Producto</th>
-                  <th style={{ width: '15%' }}>Cantidad</th>
-                  <th style={{ width: '20%' }}>Precio unit.</th>
-                  <th style={{ width: '20%', textAlign: 'right' }}>Subtotal</th>
-                  <th style={{ width: '5%' }}></th>
+                  <th className="cn-th-product">Producto</th>
+                  <th className="cn-th-qty">Cantidad</th>
+                  <th className="cn-th-price">Precio unit.</th>
+                  <th className="cn-th-subtotal">Subtotal</th>
+                  <th className="cn-th-actions" aria-label={t('common.actions')} />
                 </tr>
               </thead>
               <tbody>
@@ -288,7 +266,7 @@ export function CreateCreditNotePage() {
                           onChange={(e) => updateLine(line.localId, 'unitPrice', parseFloat(e.target.value) || 0)}
                         />
                       </td>
-                      <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                      <td className="cn-cell-subtotal">
                         ${lineTotal.toFixed(2)}
                       </td>
                       <td>
@@ -335,6 +313,6 @@ export function CreateCreditNotePage() {
         </div>
       </div>
 
-    </div>
+    </ErpPageTemplate>
   );
 }

@@ -25,9 +25,11 @@ export function SuperAdminMenuBuilderCrmAuditSection({
       <div className="pg-section-header">
         <div className="pg-section-header-left">
           <span className="material-symbols-outlined pg-section-icon">history_edu</span>
-          <h3 id="menu-plan-audit-heading" className="pg-section-label">Auditoría</h3>
+          <h3 id="menu-plan-audit-heading" className="pg-section-label">
+            Auditoría
+          </h3>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+        <div className="smb-audit-actions">
           <ZHBtn variant="ghost" size="sm" type="button" onClick={onExportAudit} disabled={!auditLines.length} aria-label="Exportar auditoría">
             Exportar auditoría
           </ZHBtn>
@@ -54,17 +56,15 @@ export function SuperAdminMenuBuilderCrmAuditSection({
         }}
       />
       {auditLines.length === 0 ? (
-        <p className="subtle" style={{ padding: 'var(--space-6)', textAlign: 'center' }}>
-          Las acciones (guardado automático, recargas, simulación…) aparecerán aquí.
-        </p>
+        <p className="subtle smb-audit-empty">Las acciones (guardado automático, recargas, simulación…) aparecerán aquí.</p>
       ) : (
-        <div style={{ overflowX: 'auto', maxHeight: 200, overflowY: 'auto' }}>
+        <div className="smb-audit-scroll">
           <table className="table">
             <thead>
               <tr>
-                <th style={{ width: 110 }}>Timestamp</th>
-                <th style={{ width: 110 }}>Usuario</th>
-                <th style={{ width: 96 }}>Acción</th>
+                <th className="pg-th-w-110">Timestamp</th>
+                <th className="pg-th-w-110">Usuario</th>
+                <th className="pg-th-w-100">Acción</th>
                 <th>Detalles</th>
               </tr>
             </thead>
@@ -74,17 +74,15 @@ export function SuperAdminMenuBuilderCrmAuditSection({
                 return (
                   <tr key={`${i}-${line.slice(0, 16)}`}>
                     <td>
-                      <span className="subtle mono" style={{ fontSize: 11 }}>{timestamp}</span>
+                      <span className="subtle mono smb-audit-ts">{timestamp}</span>
                     </td>
                     <td>
-                      <span style={{ fontSize: 12, fontWeight: 500 }}>{user}</span>
+                      <span className="smb-audit-user">{user}</span>
                     </td>
                     <td>
-                      <span className={`badge badge--${auditActionBadge(action)} badge--upper`} style={{ fontSize: 10 }}>
-                        {action}
-                      </span>
+                      <span className={`badge badge--${auditActionBadge(action)} badge--upper smb-audit-badge`}>{action}</span>
                     </td>
-                    <td style={{ fontSize: 12, color: 'var(--color-primary)' }}>{details}</td>
+                    <td className="smb-audit-details">{details}</td>
                   </tr>
                 );
               })}

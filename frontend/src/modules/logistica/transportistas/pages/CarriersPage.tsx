@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { useI18n } from '../../../../i18n/i18n';
@@ -98,25 +99,19 @@ export function CarriersPage() {
   if (!canView) return <NoAccessPage title={t('carriers.title')} />;
 
   return (
-    <div className="pg-page">
-
-      {/* ── Header ── */}
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <p className="pg-kicker">{t('carriers.kicker')}</p>
-          <h1 className="pg-title">{t('carriers.title')}</h1>
-          <p className="pg-subtitle">{t('carriers.subtitle')}</p>
-        </div>
-        {canCreate && (
-          <div className="pg-header-right">
-            <ZHBtn variant="primary" size="md" type="button" disabled={saving} onClick={openCreate}>
-              <span className="material-symbols-outlined">add</span>
-              {t('carriers.new')}
-            </ZHBtn>
-          </div>
-        )}
-      </div>
-
+    <ErpPageTemplate
+      kicker={t('carriers.kicker')}
+      title={t('carriers.title')}
+      subtitle={t('carriers.subtitle')}
+      action={
+        canCreate ? (
+          <ZHBtn variant="primary" size="md" type="button" disabled={saving} onClick={openCreate}>
+            <span className="material-symbols-outlined">add</span>
+            {t('carriers.new')}
+          </ZHBtn>
+        ) : undefined
+      }
+    >
       {/* ── Errors ── */}
       {error     && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />}
       {saveError && <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={saveError} />}
@@ -190,7 +185,7 @@ export function CarriersPage() {
         ) : filtered.length === 0 ? (
           <EmptyState message={t('common.noData')} />
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="pg-overflow-x">
             <table className="table">
               <thead>
                 <tr>
@@ -213,7 +208,7 @@ export function CarriersPage() {
                       </span>
                     </td>
                     <td className="mono">{carrier.identificationNumber}</td>
-                    <td style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                    <td className="crt-col-name">
                       {carrier.legalName}
                     </td>
                     <td>
@@ -367,6 +362,6 @@ export function CarriersPage() {
           </div>
         </div>
       )}
-    </div>
+    </ErpPageTemplate>
   );
 }

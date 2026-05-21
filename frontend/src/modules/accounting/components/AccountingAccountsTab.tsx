@@ -111,18 +111,19 @@ export function AccountingAccountsTab({
                 </select>
               </ZHField>
 
-              <ZHField
-                label={t('finance.accounts.form.parentId')}
-                error={errors.parentId?.message}
-                style={{ gridColumn: '1 / -1' }}
-              >
-                <input
-                  className="zh-input"
-                  placeholder={t('common.guid.placeholder')}
-                  disabled={formLoading}
-                  {...register('parentId')}
-                />
-              </ZHField>
+              <div className="pg-form-span-full">
+                <ZHField
+                  label={t('finance.accounts.form.parentId')}
+                  error={errors.parentId?.message}
+                >
+                  <input
+                    className="zh-input"
+                    placeholder={t('common.guid.placeholder')}
+                    disabled={formLoading}
+                    {...register('parentId')}
+                  />
+                </ZHField>
+              </div>
             </div>
           </div>
         </form>
@@ -156,7 +157,7 @@ export function AccountingAccountsTab({
           </div>
 
           {accounts.loading && (
-            <div style={{ padding: '40px' }}>
+            <div className="pg-pad-40">
               <LoadingState />
             </div>
           )}
@@ -164,17 +165,17 @@ export function AccountingAccountsTab({
             <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={accounts.error} />
           )}
           {!accounts.loading && !accounts.error && (accounts.data?.length ?? 0) === 0 && (
-            <div style={{ padding: '40px' }}>
+            <div className="pg-pad-40">
               <EmptyState message={t('finance.accounts.empty')} />
             </div>
           )}
           {!accounts.loading && !accounts.error && filteredAccounts.length === 0 && (accounts.data?.length ?? 0) > 0 && (
-            <div style={{ padding: '40px' }}>
+            <div className="pg-pad-40">
               <EmptyState message={t('common.listTab.noMatch')} />
             </div>
           )}
           {!accounts.loading && !accounts.error && filteredAccounts.length > 0 && (
-            <div style={{ overflowX: 'auto' }}>
+            <div className="pg-overflow-x">
               <table className="table">
                 <thead>
                   <tr>
@@ -204,23 +205,21 @@ export function AccountingAccountsTab({
                         <td>
                           {a.isActive ? (
                             <button
-                              className="zh-btn zh-btn--ghost zh-btn--sm"
-                              style={{ color: 'var(--color-error)' }}
+                              className="zh-btn zh-btn--ghost zh-btn--sm pg-btn-error-ghost"
                               onClick={() => accountingService.disableAccount(a.id).then(() => accounts.refetch())}
                               title="Deshabilitar cuenta"
                             >
-                              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                              <span className="material-symbols-outlined pg-icon-16">
                                 block
                               </span>
                             </button>
                           ) : (
                             <button
-                              className="zh-btn zh-btn--ghost zh-btn--sm"
-                              style={{ color: 'var(--color-success)' }}
+                              className="zh-btn zh-btn--ghost zh-btn--sm acc-btn-enable-ghost"
                               onClick={() => accountingService.enableAccount(a.id).then(() => accounts.refetch())}
                               title="Habilitar cuenta"
                             >
-                              <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                              <span className="material-symbols-outlined pg-icon-16">
                                 check_circle
                               </span>
                             </button>

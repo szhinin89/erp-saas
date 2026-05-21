@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../../components/PageShell';
+import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { usePermissionsStore } from '../../../../store/permissionsStore';
@@ -8,6 +9,7 @@ import { useOrdenCompraAcciones } from '../hooks/useOrdenesCompra';
 import { api } from '../../../lib/api';
 import type { ApiResponse } from '../../../../types/api';
 import type { ItemOrdenCompraRequest } from '../api/ordenCompraService';
+import './orden-compra-page.css';
 
 interface ProveedorOpcion { id: string; razonSocial: string; }
 interface ProductoOpcion  { id: string; shortName: string; isActive: boolean; }
@@ -89,20 +91,11 @@ export function CrearOrdenCompraPage() {
   if (!canCreate) return <NoAccessPage title="Nueva Orden de Compra" />;
 
   return (
-    <div className="pg-page">
-
-      <div className="pg-header-row">
-        <div className="pg-header-left">
-          <nav className="pg-breadcrumb" aria-label="Navegación">
-            <span className="pg-breadcrumb-item">Compras</span>
-            <span className="material-symbols-outlined pg-breadcrumb-sep">chevron_right</span>
-            <span className="pg-breadcrumb-item">Nueva Orden</span>
-          </nav>
-          <h1 className="pg-title">Nueva Orden de Compra</h1>
-          <p className="pg-subtitle">Cree una nueva solicitud de compra a proveedor.</p>
-        </div>
-      </div>
-
+    <ErpPageTemplate
+      kicker="Compras"
+      title="Nueva Orden de Compra"
+      subtitle="Cree una nueva solicitud de compra a proveedor."
+    >
       {(localError || error) && (
         <ZHPageNotice variant="error" message="Error" detail={localError ?? error ?? ''} />
       )}
@@ -110,7 +103,7 @@ export function CrearOrdenCompraPage() {
       <form onSubmit={(e) => void handleSubmit(e)}>
 
         {/* General info section */}
-        <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="pg-section pg-section--mb-4">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
               <span className="material-symbols-outlined pg-section-icon">info</span>
@@ -146,7 +139,7 @@ export function CrearOrdenCompraPage() {
         </div>
 
         {/* Lines section */}
-        <div className="pg-section" style={{ marginBottom: 'var(--space-4)' }}>
+        <div className="pg-section pg-section--mb-4">
           <div className="pg-section-header">
             <div className="pg-section-header-left">
               <span className="material-symbols-outlined pg-section-icon">list_alt</span>
@@ -158,16 +151,16 @@ export function CrearOrdenCompraPage() {
               Agregar línea
             </ZHBtn>
           </div>
-          <div style={{ overflowX: 'auto' }}>
+          <div className="pg-overflow-x">
             <table className="table">
               <thead>
                 <tr>
                   <th>Producto</th>
-                  <th style={{ width: 100, textAlign: 'right' }}>Cantidad</th>
-                  <th style={{ width: 130, textAlign: 'right' }}>Precio unit.</th>
-                  <th style={{ width: 90, textAlign: 'right' }}>IVA %</th>
-                  <th style={{ width: 120, textAlign: 'right' }}>Total línea</th>
-                  <th style={{ width: 48 }} />
+                  <th className="oc-create-th-qty">Cantidad</th>
+                  <th className="oc-create-th-price">Precio unit.</th>
+                  <th className="oc-create-th-vat">IVA %</th>
+                  <th className="oc-create-th-line-total">Total línea</th>
+                  <th className="oc-create-th-actions" aria-label="Acciones" />
                 </tr>
               </thead>
               <tbody>
@@ -204,14 +197,14 @@ export function CrearOrdenCompraPage() {
                           <option value="15">15%</option>
                         </select>
                       </td>
-                      <td style={{ textAlign: 'right', fontWeight: 600, fontSize: 'var(--text-body-md-size)' }}>
+                      <td className="oc-create-cell-line-total">
                         ${tot.toFixed(2)}
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td className="oc-create-cell-actions">
                         {items.length > 1 && (
                           <button type="button" className="pg-row-delete"
                             onClick={() => removeItem(idx)} aria-label="Eliminar">
-                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>delete</span>
+                            <span className="material-symbols-outlined pg-icon-18">delete</span>
                           </button>
                         )}
                       </td>
@@ -228,10 +221,9 @@ export function CrearOrdenCompraPage() {
             </button>
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-4)',
-            padding: 'var(--space-4) var(--space-5)', borderTop: '1px solid var(--color-border)' }}>
+          <div className="oc-create-totals-bar">
             <span className="subtle">Subtotal: <strong>${subtotal.toFixed(2)}</strong></span>
-            <span>Total: <strong className="mono" style={{ color: 'var(--color-primary)', fontSize: 16 }}>
+            <span>Total: <strong className="mono oc-create-grand-total">
               ${total.toFixed(2)}
             </strong></span>
           </div>
@@ -251,6 +243,6 @@ export function CrearOrdenCompraPage() {
           </div>
         </div>
       </form>
-    </div>
+    </ErpPageTemplate>
   );
 }

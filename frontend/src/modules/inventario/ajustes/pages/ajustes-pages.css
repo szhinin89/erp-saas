@@ -1,1 +1,16 @@
-/* estilos pendientes */
+.adj-stock-hint {
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-body-sm-size);
+}
+
+.adj-stock-hint--ok {
+  background: var(--color-surface-container);
+  color: var(--color-text-secondary);
+}
+
+.adj-stock-hint--warn {
+  background: var(--color-error-surface, #fdecea);
+  color: var(--color-error);
+}

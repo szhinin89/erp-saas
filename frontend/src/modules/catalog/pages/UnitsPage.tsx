@@ -9,7 +9,9 @@ import { catalogService, type UnitItem } from '../api/catalogService';
 import { ZHField, ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { NoAccessPage } from '../../../components/PageShell';
+import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { formatApiRequestError } from '../../lib/apiError';
+import './catalog-list-page.css';
 
 /* ── Form schema ────────────────────────────────────────────── */
 const unitSchema = z.object({
@@ -138,23 +140,19 @@ export function UnitsPage() {
   const modalTitle = modal?.kind === 'create' ? t('units.modal.create') : t('units.modal.edit');
 
   return (
-    <div className="pg-page">
-
-      {/* ── Header ─────────────────────────────────────────── */}
-      <div className="pg-header-row">
-        <div>
-          <p className="pg-kicker">{t('app.nav.group.inventario')}</p>
-          <h1 className="pg-title">{t('units.title')}</h1>
-          <p className="pg-subtitle">{t('units.subtitle')}</p>
-        </div>
-        {canCreate && (
+    <ErpPageTemplate
+      kicker={t('app.nav.group.inventario')}
+      title={t('units.title')}
+      subtitle={t('units.subtitle')}
+      action={
+        canCreate ? (
           <ZHBtn variant="primary" size="md" type="button" onClick={openCreate}>
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>add</span>
+            <span className="material-symbols-outlined">add</span>
             {t('units.new')}
           </ZHBtn>
-        )}
-      </div>
-
+        ) : undefined
+      }
+    >
       {/* ── KPIs ───────────────────────────────────────────── */}
       <div className="pg-kpis">
         <div className="pg-kpi">
@@ -210,10 +208,9 @@ export function UnitsPage() {
               />
             </div>
             <select
-              className="zh-input"
+              className="zh-input cat-list-filter-select cat-list-filter-select--wide"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              style={{ width: 'auto', minWidth: 140 }}
             >
               <option value="all">{t('units.filter.all')}</option>
               <option value="active">{t('common.active')}</option>
@@ -228,9 +225,9 @@ export function UnitsPage() {
         </div>
 
         {loading ? (
-          <p className="subtle" style={{ padding: 24 }}>{t('common.loading')}</p>
+          <p className="subtle pg-state-pad-24">{t('common.loading')}</p>
         ) : filtered.length === 0 ? (
-          <p className="subtle" style={{ padding: 24, textAlign: 'center' }}>{t('common.noData')}</p>
+          <p className="subtle pg-state-pad-24-center">{t('common.noData')}</p>
         ) : (
           <table className="table">
             <thead>
@@ -238,42 +235,38 @@ export function UnitsPage() {
                 <th>{t('common.code')}</th>
                 <th>{t('common.name')}</th>
                 <th>{t('units.table.symbol')}</th>
-                <th style={{ textAlign: 'center' }}>{t('common.status')}</th>
-                <th style={{ textAlign: 'right' }}>{t('common.actions')}</th>
+                <th className="cat-list-th-center">{t('common.status')}</th>
+                <th className="cat-list-th-right">{t('common.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((unit) => (
-                <tr key={unit.id} style={{ opacity: unit.isActive ? 1 : 0.65 }}>
+                <tr key={unit.id} className={unit.isActive ? undefined : 'pg-row-inactive'}>
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div
-                        className="zh-avatar zh-avatar--square"
-                        style={{ width: 32, height: 32, flexShrink: 0, background: 'var(--color-surface-container-high)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                        aria-hidden
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--color-primary)' }}>straighten</span>
+                    <div className="pg-actions-inline-10">
+                      <div className="zh-avatar zh-avatar--square pg-avatar-sm-32" aria-hidden>
+                        <span className="material-symbols-outlined pg-icon-18 pg-icon-primary">straighten</span>
                       </div>
-                      <span className="mono" style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)' }}>
+                      <span className="mono cat-list-code-primary">
                         {unit.code}
                       </span>
                     </div>
                   </td>
-                  <td style={{ fontSize: 13 }}>{unit.name}</td>
+                  <td className="pg-text-13">{unit.name}</td>
                   <td>
                     {unit.symbol ? (
                       <span className="badge badge--blue">{unit.symbol}</span>
                     ) : (
-                      <span className="subtle" style={{ fontSize: 12 }}>—</span>
+                      <span className="subtle pg-text-12">—</span>
                     )}
                   </td>
-                  <td style={{ textAlign: 'center' }}>
+                  <td className="cat-list-td-center">
                     <span className={`zh-status zh-status--${unit.isActive ? 'active' : 'inactive'}`}>
                       {unit.isActive ? t('common.active') : t('common.inactive')}
                     </span>
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                    <div className="pg-actions-inline">
                       {canUpdate && (
                         <button
                           type="button"
@@ -281,7 +274,7 @@ export function UnitsPage() {
                           onClick={() => openEdit(unit)}
                           title={t('common.edit')}
                         >
-                          <span className="material-symbols-outlined" style={{ fontSize: 17 }}>edit</span>
+                          <span className="material-symbols-outlined pg-icon-17">edit</span>
                         </button>
                       )}
                       {(canDelete || canUpdate) && (
@@ -291,7 +284,7 @@ export function UnitsPage() {
                           onClick={() => void toggleUnit(unit)}
                           title={unit.isActive ? t('common.disable') : t('common.enable')}
                         >
-                          <span className="material-symbols-outlined" style={{ fontSize: 17 }}>
+                          <span className="material-symbols-outlined pg-icon-17">
                             {unit.isActive ? 'visibility_off' : 'visibility'}
                           </span>
                         </button>
@@ -313,12 +306,12 @@ export function UnitsPage() {
           aria-modal="true"
           onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
         >
-          <div className="zh-modal" style={{ maxWidth: 480 }}>
+          <div className="zh-modal pg-modal--480">
 
             <div className="zh-modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 20, color: 'var(--color-primary)' }}>straighten</span>
-                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{modalTitle}</h2>
+              <div className="pg-modal-title-row">
+                <span className="material-symbols-outlined pg-icon-20 pg-icon-primary">straighten</span>
+                <h2 className="pg-modal-title-text">{modalTitle}</h2>
               </div>
               <button
                 type="button"
@@ -378,6 +371,6 @@ export function UnitsPage() {
           </div>
         </div>
       )}
-    </div>
+    </ErpPageTemplate>
   );
 }
