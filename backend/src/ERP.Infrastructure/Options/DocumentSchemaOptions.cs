@@ -6,7 +6,7 @@ public sealed class DocumentSchemaOptions
 
     /// <summary>
     /// Si true, lectura/escritura de facturas de venta usa sales_document (esquema unificado).
-    /// Requiere haber ejecutado scripts/sql/002_unified_documents_schema_and_migration.sql.
+    /// Requiere haber ejecutado scripts/db/sql/002_unified_documents_schema_and_migration.sql.
     /// </summary>
     public bool UseUnifiedSchema { get; set; }
 }

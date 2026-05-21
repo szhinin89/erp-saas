@@ -108,7 +108,8 @@ public sealed class ConfirmTransferCommandHandler
                         sourceDocId:   transfer.Id,
                         sourceDocType: "transfer",
                         createdBy: userId,
-                        unitCost:       averageCost),
+                        unitCost:       averageCost,
+                        companyId:      transfer.CompanyId),
                     ct);
 
                 // ── Incremento atómico en Warehouse DESTINO ──────────────────────
@@ -126,7 +127,8 @@ public sealed class ConfirmTransferCommandHandler
                         sourceDocId:   transfer.Id,
                         sourceDocType: "transfer",
                         createdBy: userId,
-                        unitCost:       averageCost),
+                        unitCost:       averageCost,
+                        companyId:      transfer.CompanyId),
                     ct);
             }
 

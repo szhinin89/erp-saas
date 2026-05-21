@@ -33,6 +33,7 @@ public sealed class KardexInventarioTests
     private static StockMovement Entrada(
         Guid subscriberId, Guid productoId, Guid bodegaId,
         decimal quantity, decimal cantAnterior, decimal unitCost, Guid userId,
+        Guid? companyId,
         string? referencia = null,
         DateTime? fecha = null,
         StockMovementType tipo = StockMovementType.PurchaseEntry)
@@ -40,7 +41,7 @@ public sealed class KardexInventarioTests
         var m = StockMovement.Create(
             subscriberId, productoId, bodegaId, tipo,
             quantity, cantAnterior, referencia, null, null, userId, unitCost,
-            companyId: JobCompanyContext.Current != Guid.Empty ? JobCompanyContext.Current : null);
+            companyId: companyId);
         if (fecha.HasValue) SetCreatedAt(m, fecha.Value);
         return m;
     }
@@ -48,6 +49,7 @@ public sealed class KardexInventarioTests
     private static StockMovement Salida(
         Guid subscriberId, Guid productoId, Guid bodegaId,
         decimal quantity, decimal cantAnterior, decimal averageCost, Guid userId,
+        Guid? companyId,
         string? referencia = null,
         DateTime? fecha = null,
         StockMovementType tipo = StockMovementType.SaleExit)
@@ -55,15 +57,19 @@ public sealed class KardexInventarioTests
         var m = StockMovement.Create(
             subscriberId, productoId, bodegaId, tipo,
             -quantity, cantAnterior, referencia, null, null, userId, averageCost,
-            companyId: JobCompanyContext.Current != Guid.Empty ? JobCompanyContext.Current : null);
+            companyId: companyId);
         if (fecha.HasValue) SetCreatedAt(m, fecha.Value);
         return m;
     }
 
     private static async Task<IntegrationSeedData.SeedResult> SeedBaseAsync(
         ErpDbContext db, IntegrationTestWebAppFactory factory)
-        => await IntegrationSeedData.SeedAsync(
+    {
+        var seed = await IntegrationSeedData.SeedAsync(
             db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
+        JobCompanyContext.Current = seed.CompanyId;
+        return seed;
+    }
 
     // â”€â”€ Escenario 1: Errores bÃ¡sicos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -140,10 +146,10 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid, cid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId, seed.CompanyId);
 
         db.StockMovements.Add(
-            Entrada(tid, pid, bid, 10m, 0m, 50m, uid, referencia: "FAC-001"));
+            Entrada(tid, pid, bid, 10m, 0m, 50m, uid, cid, referencia: "FAC-001"));
         await db.SaveChangesAsync();
 
         var result = await mediator.Send(
@@ -198,17 +204,17 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid, cid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId, seed.CompanyId);
 
         const decimal avg2 = 800m  / 15m;   // 53.3333...
         const decimal avg4 = 8075m / 150m;  // 53.8333...
 
         db.StockMovements.AddRange(
-            Entrada(tid, pid, bid, 10m, 0m,  50m,  uid, referencia: "C-001"),
-            Entrada(tid, pid, bid,  5m, 10m, 60m,  uid, referencia: "C-002"),
-            Salida( tid, pid, bid,  8m, 15m, avg2, uid, referencia: "V-001"),
-            Entrada(tid, pid, bid,  3m,  7m, 55m,  uid, referencia: "C-003"),
-            Salida( tid, pid, bid,  3m, 10m, avg4, uid, referencia: "V-002"));
+            Entrada(tid, pid, bid, 10m, 0m,  50m,  uid, cid, referencia: "C-001"),
+            Entrada(tid, pid, bid,  5m, 10m, 60m,  uid, cid, referencia: "C-002"),
+            Salida( tid, pid, bid,  8m, 15m, avg2, uid, cid, referencia: "V-001"),
+            Entrada(tid, pid, bid,  3m,  7m, 55m,  uid, cid, referencia: "C-003"),
+            Salida( tid, pid, bid,  3m, 10m, avg4, uid, cid, referencia: "V-002"));
         await db.SaveChangesAsync();
 
         var result = await mediator.Send(
@@ -293,7 +299,7 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid, cid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId, seed.CompanyId);
 
         // Usar fechas UTC explÃ­citas para evitar problemas de zona horaria.
         // "ayer" = inicio del dÃ­a anterior en UTC, "hoy" = inicio del dÃ­a actual en UTC + 1 hora.
@@ -302,16 +308,16 @@ public sealed class KardexInventarioTests
         var hogUtcNow = hoyUtc.AddHours(1);                         // 2026-05-10 01:00:00 UTC
 
         // Movimientos de ayer
-        var m1 = Entrada(tid, pid, bid, 10m, 0m,  50m, uid, fecha: ayerUtc);
-        var m2 = Entrada(tid, pid, bid,  5m, 10m, 60m, uid, fecha: ayerUtc.AddMinutes(5));
+        var m1 = Entrada(tid, pid, bid, 10m, 0m,  50m, uid, cid, fecha: ayerUtc);
+        var m2 = Entrada(tid, pid, bid,  5m, 10m, 60m, uid, cid, fecha: ayerUtc.AddMinutes(5));
         db.StockMovements.AddRange(m1, m2);
         await db.SaveChangesAsync();
 
         // Movimientos de hoy
         const decimal avgTrasM3 = 1080m / 19m;  // tras entrada de hoy
 
-        var m3 = Entrada(tid, pid, bid, 4m, 15m, 70m,      uid, fecha: hogUtcNow);
-        var m4 = Salida( tid, pid, bid, 6m, 19m, avgTrasM3, uid, fecha: hogUtcNow.AddMinutes(5));
+        var m3 = Entrada(tid, pid, bid, 4m, 15m, 70m,      uid, cid, fecha: hogUtcNow);
+        var m4 = Salida( tid, pid, bid, 6m, 19m, avgTrasM3, uid, cid, fecha: hogUtcNow.AddMinutes(5));
         db.StockMovements.AddRange(m3, m4);
         await db.SaveChangesAsync();
 
@@ -363,7 +369,7 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, pid, uid) = (seed.SubscriberId, seed.ProductId, seed.UserId);
+        var (tid, pid, uid, cid) = (seed.SubscriberId, seed.ProductId, seed.UserId, seed.CompanyId);
         var bidA = seed.WarehouseId;
 
         // Crear segunda bodega
@@ -375,9 +381,9 @@ public sealed class KardexInventarioTests
         var bidB = bodegaB.Id;
 
         db.StockMovements.AddRange(
-            Entrada(tid, pid, bidA, 20m,  0m, 40m, uid),
-            Salida( tid, pid, bidA,  5m, 20m, 40m, uid, tipo: StockMovementType.TransferExit),
-            Entrada(tid, pid, bidB,  5m,  0m, 40m, uid, tipo: StockMovementType.TransferEntry));
+            Entrada(tid, pid, bidA, 20m,  0m, 40m, uid, cid),
+            Salida( tid, pid, bidA,  5m, 20m, 40m, uid, cid, tipo: StockMovementType.TransferExit),
+            Entrada(tid, pid, bidB,  5m,  0m, 40m, uid, cid, tipo: StockMovementType.TransferEntry));
         await db.SaveChangesAsync();
 
         // Kardex bodega A
@@ -420,10 +426,10 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid, cid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId, seed.CompanyId);
 
         db.StockMovements.Add(
-            Entrada(tid, pid, bid, 10m, 0m, 50m, uid));
+            Entrada(tid, pid, bid, 10m, 0m, 50m, uid, cid));
         await db.SaveChangesAsync();
 
         // Ajuste positivo sin costo unitario conocido
@@ -472,11 +478,11 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid, cid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId, seed.CompanyId);
 
         db.StockMovements.AddRange(
-            Entrada(tid, pid, bid, 6m, 0m, 30m, uid),
-            Entrada(tid, pid, bid, 4m, 6m, 50m, uid));
+            Entrada(tid, pid, bid, 6m, 0m, 30m, uid, cid),
+            Entrada(tid, pid, bid, 4m, 6m, 50m, uid, cid));
         await db.SaveChangesAsync();
 
         // El promedio tras las dos entradas es $38
@@ -528,17 +534,17 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, pid, bid, uid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId);
+        var (tid, pid, bid, uid, cid) = (seed.SubscriberId, seed.ProductId, seed.WarehouseId, seed.UserId, seed.CompanyId);
 
         db.StockMovements.AddRange(
-            Entrada(tid, pid, bid, 20m, 0m,  50m, uid, tipo: StockMovementType.PurchaseEntry),
-            Salida( tid, pid, bid,  2m, 20m, 50m, uid, tipo: StockMovementType.SaleExit),
-            Entrada(tid, pid, bid,  5m, 18m, 50m, uid, tipo: StockMovementType.TransferEntry),
-            Salida( tid, pid, bid,  3m, 23m, 50m, uid, tipo: StockMovementType.TransferExit),
-            Entrada(tid, pid, bid,  2m, 20m, 0m,  uid, tipo: StockMovementType.PositiveAdjust),
-            Salida( tid, pid, bid,  1m, 22m, 50m, uid, tipo: StockMovementType.NegativeAdjust),
-            Entrada(tid, pid, bid,  1m, 21m, 50m, uid, tipo: StockMovementType.PurchaseReturn),
-            Salida( tid, pid, bid,  1m, 22m, 50m, uid, tipo: StockMovementType.SaleReturn));
+            Entrada(tid, pid, bid, 20m, 0m,  50m, uid, cid, tipo: StockMovementType.PurchaseEntry),
+            Salida( tid, pid, bid,  2m, 20m, 50m, uid, cid, tipo: StockMovementType.SaleExit),
+            Entrada(tid, pid, bid,  5m, 18m, 50m, uid, cid, tipo: StockMovementType.TransferEntry),
+            Salida( tid, pid, bid,  3m, 23m, 50m, uid, cid, tipo: StockMovementType.TransferExit),
+            Entrada(tid, pid, bid,  2m, 20m, 0m,  uid, cid, tipo: StockMovementType.PositiveAdjust),
+            Salida( tid, pid, bid,  1m, 22m, 50m, uid, cid, tipo: StockMovementType.NegativeAdjust),
+            Entrada(tid, pid, bid,  1m, 21m, 50m, uid, cid, tipo: StockMovementType.PurchaseReturn),
+            Salida( tid, pid, bid,  1m, 22m, 50m, uid, cid, tipo: StockMovementType.SaleReturn));
         await db.SaveChangesAsync();
 
         var result = await mediator.Send(
@@ -573,7 +579,7 @@ public sealed class KardexInventarioTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var seed = await SeedBaseAsync(db, factory);
-        var (tid, uid, bid) = (seed.SubscriberId, seed.UserId, seed.WarehouseId);
+        var (tid, uid, bid, cid) = (seed.SubscriberId, seed.UserId, seed.WarehouseId, seed.CompanyId);
         var pidA = seed.ProductId;
 
         // Crear segundo producto con los mismos catÃ¡logos del primero
@@ -597,8 +603,8 @@ public sealed class KardexInventarioTests
         var pidB = prodB.Id;
 
         db.StockMovements.AddRange(
-            Entrada(tid, pidA, bid, 10m, 0m, 50m, uid),
-            Entrada(tid, pidB, bid, 20m, 0m, 30m, uid));
+            Entrada(tid, pidA, bid, 10m, 0m, 50m, uid, cid),
+            Entrada(tid, pidB, bid, 20m, 0m, 30m, uid, cid));
         await db.SaveChangesAsync();
 
         // Kardex de A

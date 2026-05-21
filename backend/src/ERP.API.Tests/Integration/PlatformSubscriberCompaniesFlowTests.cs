@@ -66,7 +66,7 @@ public sealed class PlatformSubscriberCompaniesFlowTests
         var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
 
         (await db.Subscribers.AnyAsync(s => s.Id == subscriberId)).Should().BeTrue();
-        (await db.Companies.CountAsync(c => c.SubscriberId == subscriberId)).Should().Be(1);
+        (await db.Companies.IgnoreQueryFilters().CountAsync(c => c.SubscriberId == subscriberId)).Should().Be(1);
         (await db.CompanyUserMemberships.AnyAsync(m => m.CompanyId == companyId)).Should().BeTrue();
         (await db.SubscriberBillingAccounts.IgnoreQueryFilters()
             .AnyAsync(a => a.SubscriberId == subscriberId)).Should().BeTrue();

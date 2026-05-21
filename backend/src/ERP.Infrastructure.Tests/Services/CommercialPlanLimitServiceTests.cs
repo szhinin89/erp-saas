@@ -21,12 +21,11 @@ public sealed class CommercialPlanLimitServiceTests
     [Fact]
     public async Task EvaluateAsync_blocks_when_active_companies_reach_max()
     {
-        var subscriberId = Guid.NewGuid();
-        await using var ctx = CreateContext(subscriberId);
+        var subscriber = Subscriber.Create("Acme", "acme", Guid.NewGuid(), planCode: "starter");
+        await using var ctx = CreateContext(subscriber.Id);
         var plan = CommercialPlan.Create("starter", "Starter", "STARTER", true, 49m, "USD", CommercialBillingCycle.Monthly, true, false, 0, null);
         ctx.CommercialPlans.Add(plan);
         ctx.CommercialPlanLimits.Add(CommercialPlanLimit.Create(plan.Id, CommercialPlanLimit.Codes.MaxCompanies, 1));
-        var subscriber = Subscriber.Create("Acme", "acme", Guid.NewGuid(), planCode: "starter");
         ctx.Subscribers.Add(subscriber);
         ctx.Companies.Add(Company.CreateFromSubscriber(subscriber.Id, "1799999999001", "Acme", "Addr"));
         await ctx.SaveChangesAsync();
@@ -42,12 +41,11 @@ public sealed class CommercialPlanLimitServiceTests
     [Fact]
     public async Task EvaluateAsync_allows_first_company_when_limit_is_one()
     {
-        var subscriberId = Guid.NewGuid();
-        await using var ctx = CreateContext(subscriberId);
+        var subscriber = Subscriber.Create("Acme", "acme", Guid.NewGuid(), planCode: "starter");
+        await using var ctx = CreateContext(subscriber.Id);
         var plan = CommercialPlan.Create("starter", "Starter", "STARTER", true, 49m, "USD", CommercialBillingCycle.Monthly, true, false, 0, null);
         ctx.CommercialPlans.Add(plan);
         ctx.CommercialPlanLimits.Add(CommercialPlanLimit.Create(plan.Id, CommercialPlanLimit.Codes.MaxCompanies, 1));
-        var subscriber = Subscriber.Create("Acme", "acme", Guid.NewGuid(), planCode: "starter");
         ctx.Subscribers.Add(subscriber);
         await ctx.SaveChangesAsync();
 

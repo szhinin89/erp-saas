@@ -5,7 +5,7 @@
 .PARAMETER MaxHandleLines
   Límite de líneas del cuerpo de Handle (default 150).
 .PARAMETER GrandfatherPath
-  JSON con rutas legacy permitidas (scripts/architecture-grandfather.json).
+  JSON con rutas legacy permitidas (tools/architecture/architecture-grandfather.json).
 #>
 param(
     [int]$MaxHandleLines = 150,

@@ -122,7 +122,7 @@ Solo **9** scripts `.ps1` en el repo (+ `tools/architecture/architecture-grandfa
 | `-SkipMigrations` | Omite `dotnet ef database update` |
 | `-PlaywrightArgs` | P. ej. `"e2e/smoke.spec.ts"` |
 
-Scripts SQL puntuales: [`scripts/sql/`](./sql/) (ver [`scripts/sql/README.md`](./sql/README.md)). Datos de instalación inmutables: `InstallData/*.sql` — ver [DATABASE.md](./DATABASE.md).
+Scripts SQL puntuales: [`scripts/db/sql/`](../scripts/db/sql/) (ver [`scripts/db/sql/README.md`](../scripts/db/sql/README.md)). Datos de instalación inmutables: `InstallData/*.sql` — ver [DATABASE.md](./DATABASE.md).
 
 **Regla:** no crear `.ps1` adicionales sin ampliar `scriptsAllowed`, este mapa y [`CONTEXT.md`](../CONTEXT.md).
 

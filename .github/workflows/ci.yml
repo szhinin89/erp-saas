@@ -40,3 +40,7 @@ jobs:
   frontend:
     needs: architecture
     uses: ./.github/workflows/frontend-ci.yml
+
+  security:
+    needs: architecture
+    uses: ./.github/workflows/security.yml

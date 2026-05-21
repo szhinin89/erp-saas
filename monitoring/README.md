@@ -12,4 +12,4 @@ Estructura para observabilidad futura. **Stack producto actual:** logs Serilog (
 
 > Prometheus/Datadog no están en stack allowlist hasta aprobación explícita (`docs/DEVELOPMENT.md`).
 
-Relacionado: `infrastructure/monitoring/` (enlace ops).
+Relacionado: [`infrastructure/monitoring/`](../infrastructure/monitoring/) (enlace ops).

@@ -42,7 +42,7 @@ public sealed class SriFacturaParser : IXmlFacturaParser
         var detallesEl = RequireElement(root, "detalles");
 
         // ── infoTributaria ────────────────────────────────────────────────
-        var accessKey     = RequireText(infoTrib, "accessKey");
+        var accessKey     = RequireTextAny(infoTrib, "accessKey", "claveAcceso");
         var ruc             = RequireText(infoTrib, "ruc");
         var razonSocial     = RequireText(infoTrib, "razonSocial");
         var estab           = RequireText(infoTrib, "estab");
@@ -53,17 +53,14 @@ public sealed class SriFacturaParser : IXmlFacturaParser
         ValidarClaveAcceso(accessKey);
 
         // ── infoFactura ───────────────────────────────────────────────────
-        var fechaTexto   = RequireText(infoFact, "issueDate");
+        var fechaTexto   = RequireTextAny(infoFact, "issueDate", "fechaEmision");
         var issueDate = ParseFecha(fechaTexto);
 
-        var subtotal     = ParseDecimal(infoFact, "totalSinImpuestos");
-        var total        = ParseDecimal(infoFact, "importeTotal");
+        var subtotal     = ParseDecimalAny(infoFact, "totalSinImpuestos");
+        var total        = ParseDecimalAny(infoFact, "importeTotal");
 
         // Suma de todos los impuestos del encabezado (IVA + ICE + otros)
-        var impuesto = infoFact
-            .Element("totalConImpuestos")
-            ?.Elements("totalVat")
-            .Sum(t => ParseDecimalText(t.Element("valor")?.Value ?? "0")) ?? 0m;
+        var impuesto = SumImpuestosEncabezado(infoFact);
 
         // ── detalles ──────────────────────────────────────────────────────
         var items = detallesEl.Elements("detalle").Select(ParseDetalle).ToList();
@@ -111,7 +108,7 @@ public sealed class SriFacturaParser : IXmlFacturaParser
         var infoNota   = RequireElement(root, infoNotaName);
         var detallesEl = RequireElement(root, "detalles");
 
-        var accessKey = RequireText(infoTrib, "accessKey");
+        var accessKey = RequireTextAny(infoTrib, "accessKey", "claveAcceso");
         var ruc         = RequireText(infoTrib, "ruc");
         var razonSocial = RequireText(infoTrib, "razonSocial");
         var estab       = RequireText(infoTrib, "estab");
@@ -120,7 +117,7 @@ public sealed class SriFacturaParser : IXmlFacturaParser
         var numeroNota  = $"{estab}-{ptoEmi}-{secuencial}";
         ValidarClaveAcceso(accessKey);
 
-        var fechaTexto   = RequireText(infoNota, "issueDate");
+        var fechaTexto   = RequireTextAny(infoNota, "issueDate", "fechaEmision");
         var issueDate = ParseFecha(fechaTexto);
         var motivo       = infoNota.Element("motivo")?.Value.Trim() ?? string.Empty;
 
@@ -203,6 +200,49 @@ public sealed class SriFacturaParser : IXmlFacturaParser
 
         return el ?? throw new XmlParseException(
             $"Nodo crítico ausente: <{name}> no encontrado dentro de <{parent.Name.LocalName}>.");
+    }
+
+    private static string RequireTextAny(XElement parent, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            var el = parent.Element(name)
+                ?? parent.Elements().FirstOrDefault(e => e.Name.LocalName == name);
+            if (el is null)
+                continue;
+            var val = el.Value.Trim();
+            if (!string.IsNullOrEmpty(val))
+                return val;
+        }
+
+        throw new XmlParseException(
+            $"Nodo crítico ausente: se esperaba uno de [{string.Join(", ", names)}] dentro de <{parent.Name.LocalName}>.");
+    }
+
+    private static decimal ParseDecimalAny(XElement parent, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            var el = parent.Element(name)
+                ?? parent.Elements().FirstOrDefault(e => e.Name.LocalName == name);
+            if (el is null)
+                continue;
+            return ParseDecimalText(el.Value);
+        }
+
+        throw new XmlParseException(
+            $"Nodo numérico ausente: se esperaba uno de [{string.Join(", ", names)}] dentro de <{parent.Name.LocalName}>.");
+    }
+
+    private static decimal SumImpuestosEncabezado(XElement infoFact)
+    {
+        var totalConImpuestos = infoFact.Element("totalConImpuestos");
+        if (totalConImpuestos is null)
+            return 0m;
+
+        var impuestoNodes = totalConImpuestos.Elements("totalImpuesto")
+            .Concat(totalConImpuestos.Elements("totalVat"));
+        return impuestoNodes.Sum(t => ParseDecimalText(t.Element("valor")?.Value ?? "0"));
     }
 
     private static string RequireText(XElement parent, string name)

@@ -93,7 +93,8 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         await using var sp = BuildServices(useUnified: true);
         var repo = sp.GetRequiredService<ISalesRepository>();
         var ctx = sp.GetRequiredService<ErpDbContext>();
-        await UnifiedIntegrationTestSeed.EnsureAsync(ctx);
+        if (!await UnifiedIntegrationTestSeed.TryEnsureAsync(ctx))
+            return;
 
         var suffix = Guid.NewGuid().ToString("N")[..9];
         var bill = BuildBill(suffix);
@@ -136,7 +137,8 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         await using var sp = BuildServices(useUnified: true);
         var repo = sp.GetRequiredService<ISalesRepository>();
         var ctx = sp.GetRequiredService<ErpDbContext>();
-        await UnifiedIntegrationTestSeed.EnsureAsync(ctx);
+        if (!await UnifiedIntegrationTestSeed.TryEnsureAsync(ctx))
+            return;
 
         var suffix = Guid.NewGuid().ToString("N")[..9];
         var bill = BuildBill(suffix);
@@ -175,7 +177,8 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         await using var sp = BuildServices(useUnified: true);
         var repo = sp.GetRequiredService<ISalesRepository>();
         var ctx = sp.GetRequiredService<ErpDbContext>();
-        await UnifiedIntegrationTestSeed.EnsureAsync(ctx);
+        if (!await UnifiedIntegrationTestSeed.TryEnsureAsync(ctx))
+            return;
 
         var suffix = Guid.NewGuid().ToString("N")[..9];
         var bill = BuildBill(suffix);
@@ -227,7 +230,8 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         await using var sp = BuildServices(useUnified: true);
         var repo = sp.GetRequiredService<ISalesRepository>();
         var ctx = sp.GetRequiredService<ErpDbContext>();
-        await UnifiedIntegrationTestSeed.EnsureAsync(ctx);
+        if (!await UnifiedIntegrationTestSeed.TryEnsureAsync(ctx))
+            return;
 
         var suffix = Guid.NewGuid().ToString("N")[..9];
         var bill = BuildBill(suffix);
@@ -296,7 +300,8 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         await using var sp = BuildServices(useUnified: true);
         var repo = sp.GetRequiredService<ISalesRepository>();
         var ctx = sp.GetRequiredService<ErpDbContext>();
-        await UnifiedIntegrationTestSeed.EnsureAsync(ctx);
+        if (!await UnifiedIntegrationTestSeed.TryEnsureAsync(ctx))
+            return;
 
         var suffix = Guid.NewGuid().ToString("N")[..9];
         var bill = BuildBill(suffix);

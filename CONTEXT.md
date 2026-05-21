@@ -8,6 +8,9 @@
 
 | Qué necesito | Archivo | Contenido |
 |--------------|---------|-----------|
+| **Verdad arquitectónica (baseline)** | [`SYSTEM_TRUTH.md`](./SYSTEM_TRUTH.md) | Estructura oficial, módulos, evolución |
+| **Gates bloqueantes** | [`ARCHITECTURE_GATES.md`](./ARCHITECTURE_GATES.md) | Reglas prohibidas/obligatorias + CI |
+| **Baseline sellada** | [`RELEASES/`](./RELEASES/) | `architecture-v1.0` |
 | **Entrada GitHub / visión producto** | [`README.md`](./README.md) | Monorepo, stack, CI, troubleshooting |
 | **Reglas de código (agentes)** | [`CLAUDE.md`](./CLAUDE.md) | Convenciones implementación |
 | **Arquitectura (entrada)** | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | → [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) |

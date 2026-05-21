@@ -114,7 +114,8 @@ public sealed class ExecuteStockAdjustmentCommandHandler
                     sourceDocId:   ajuste.Id,
                     sourceDocType: "StockAdjustment",
                     createdBy: userId,
-                    unitCost:       costoUnitarioMovimiento),
+                    unitCost:       costoUnitarioMovimiento,
+                    companyId:      ajuste.CompanyId),
                 ct);
 
             ajuste.Execute(userId);

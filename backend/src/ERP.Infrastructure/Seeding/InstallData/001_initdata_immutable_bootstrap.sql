@@ -1,7 +1,7 @@
 -- Immutable bootstrap seed: Ecuador geographic base catalogs.
 -- Source: INEC (Instituto Nacional de Estadistica y Censos), via ArcGIS layers
 --         published in Ecuador en Cifras (service metadata references INEC geoportal).
--- Generated with: erp-saas/scripts/import_inec_ecuador_geography.ps1
+-- Generated with: erp-saas/scripts/db/import_inec_ecuador_geography.ps1
 -- (No BEGIN/COMMIT: EF migration already runs inside a transaction.)
 
 -- Canonical country source: sri_country

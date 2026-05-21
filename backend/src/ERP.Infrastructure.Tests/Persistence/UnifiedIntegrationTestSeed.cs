@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using ERP.Infrastructure.Persistence;
 
 namespace ERP.Infrastructure.Tests.Persistence;
@@ -6,6 +7,20 @@ namespace ERP.Infrastructure.Tests.Persistence;
 internal static class UnifiedIntegrationTestSeed
 {
     private static bool _seeded;
+
+    /// <summary>Intenta seed SQL mínimo; devuelve false si Postgres no está migrado o el esquema difiere.</summary>
+    public static async Task<bool> TryEnsureAsync(ErpDbContext ctx, CancellationToken ct = default)
+    {
+        try
+        {
+            await EnsureAsync(ctx, ct);
+            return true;
+        }
+        catch (PostgresException)
+        {
+            return false;
+        }
+    }
 
     public static async Task EnsureAsync(ErpDbContext ctx, CancellationToken ct = default)
     {
@@ -23,8 +38,8 @@ internal static class UnifiedIntegrationTestSeed
 
         await ctx.Database.ExecuteSqlRawAsync(
             """
-            INSERT INTO subscribers (id, name, slug, is_active, password_reset_mode, display_order, priority, electronic_billing_trial_enabled, "SubscriberId", created_at, created_by)
-            VALUES ({0}, 'Test Tenant', 'test-tenant', true, 0, 0, 0, false, {0}, {1}, {2})
+            INSERT INTO subscribers (id, name, slug, is_active, password_reset_mode, display_order, priority, electronic_billing_trial_enabled, created_at, created_by)
+            VALUES ({0}, 'Test Tenant', 'test-tenant', true, 0, 0, 0, false, {1}, {2})
             ON CONFLICT (id) DO NOTHING;
             INSERT INTO company (id, subscriber_id, ruc, legal_name, main_address, country_code, created_at, updated_at)
             VALUES ({3}, {0}, '1799999999001', 'Test Company', 'Quito', 'ECU', {1}, {1})

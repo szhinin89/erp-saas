@@ -7,7 +7,7 @@
 -- NO ejecutar si la BD ya tiene migracion EF 20260521034018_InitialEnterpriseBaseline
 -- ni InstallData 002_system_bootstrap.sql aplicado (menu ya en ingles).
 --
--- Uso: psql $DATABASE_URL -v ON_ERROR_STOP=1 -f scripts/sql/legacy_pre_baseline_nav_permissions_rename.sql
+-- Uso: psql $DATABASE_URL -v ON_ERROR_STOP=1 -f scripts/db/sql/legacy_pre_baseline_nav_permissions_rename.sql
 --
 -- Idempotente: cada UPDATE filtra por valor legacy; re-ejecutar es seguro.
 -- Sustituye refactor_rename.sql / refactor_rename_v2.sql / refactor_rename_v3.sql

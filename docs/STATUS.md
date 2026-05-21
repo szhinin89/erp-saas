@@ -36,9 +36,12 @@ Consolidated 2026-05-21: former `MULTITENANCY`, `SCOPES`, `SECURITY`, `BILLING`,
 | PostgreSQL RLS (enterprise tables) | ✅ (in baseline) |
 | Rate limit per subscriber (600/min) | ✅ |
 | Architecture guardrails CI (scripts + NetArchTest) | ✅ (2026-05-21) |
+| **Architecture baseline v1.0** (`SYSTEM_TRUTH`, `ARCHITECTURE_GATES`, tag `architecture-v1.0`) | ✅ (2026-05-21) |
 | Post-audit remediation (session SEC, Sales unify, Kardex CQRS, Cash validators) | ✅ (2026-05-21) |
 | Post-audit wave 2 (menu builder split, services→modules, access/security pages) | ✅ (2026-05-21) |
 | Post-audit wave 3 (menu builder modular split, test sessionStorage) | ✅ (2026-05-21) |
+| Enterprise monorepo root (`infrastructure/`, `scripts/`, `tools/`, docs stubs) | ✅ (2026-05-21) |
+| Post-reorg stabilization (paths, CI green, company-scoped inventory movements) | ✅ (2026-05-21) |
 | Post-audit P2 + wave 4 (services eliminados, AppLayout/Companies split) | ✅ (2026-05-21) |
 | Post-audit wave 5 (PR-7 TSX: catálogo, clientes, contabilidad, menu builder, superadmin) | ✅ (2026-05-21) |
 | Post-audit wave 6 (handlers C-03, lazy routes, grandfather vacío) | ✅ (2026-05-21) |
@@ -196,13 +199,14 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 
 ## Tests
 
-| Project | Status (2026-05-20) |
+| Project | Status (2026-05-21) |
 |---------|---------------------|
-| `ERP.Infrastructure.Tests` (limits/entitlements) | ✅ 8/8 |
-| `ERP.Domain.Tests` | ✅ |
-| `ERP.Application.Tests` | ✅ |
-| `ERP.API.Tests` | ✅ 156/156 |
+| `ERP.Infrastructure.Tests` (limits/entitlements + optional Postgres unified-doc) | ✅ 23/23 |
+| `ERP.Domain.Tests` | ✅ 24/24 |
+| `ERP.Application.Tests` | ✅ 95/95 |
+| `ERP.API.Tests` | ✅ 174/174 |
 | `ERP.Architecture.Tests` (NetArchTest + controller guardrails) | ✅ 7/7 |
+| Frontend Vitest | ✅ 22/22 |
 | Playwright E2E | 🟡 align with subscriber/company flow |
 
 ## MVP commercial (~85–90%)

@@ -97,10 +97,10 @@ dotnet ef database update --startup-project ../ERP.API/ERP.API.csproj
 | `Migrations/*.cs` | Schema oficial | Una cadena activa (`InitialEnterpriseBaseline`) |
 | `Seeding/InstallData/001_*.sql` | Geografía INEC inmutable | Una versión; regenerar vía `import_inec_ecuador_geography.ps1` |
 | `Seeding/InstallData/002_*.sql` | Menú global EN + `erp_seed_tenant_default_profiles` | Una versión |
-| `scripts/sql/002_unified_documents_*.sql` | Migración opcional documentos | Una versión; flag `Documents:UseUnifiedSchema` |
-| `scripts/sql/legacy_pre_baseline_nav_permissions_rename.sql` | Upgrade legacy ES→EN | **Única** (reemplaza `refactor_rename*.sql`) |
+| `scripts/db/sql/002_unified_documents_*.sql` | Migración opcional documentos | Una versión; flag `Documents:UseUnifiedSchema` |
+| `scripts/db/sql/legacy_pre_baseline_nav_permissions_rename.sql` | Upgrade legacy ES→EN | **Única** (reemplaza `refactor_rename*.sql`) |
 
-Detalle operativo: [`scripts/sql/README.md`](../scripts/sql/README.md).
+Detalle operativo: [`scripts/db/sql/README.md`](../scripts/db/sql/README.md).
 
 ### Naming schema
 

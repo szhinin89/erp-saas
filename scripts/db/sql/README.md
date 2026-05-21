@@ -1,4 +1,4 @@
-# SQL auxiliar (`scripts/sql/`)
+# SQL auxiliar (`scripts/db/sql/`)
 
 No es código de aplicación. Política de datos versionados: [`docs/DATABASE.md`](../../docs/DATABASE.md) e [`InstallData/`](../../backend/src/ERP.Infrastructure/Seeding/InstallData/).
 
@@ -18,7 +18,7 @@ Usar **`POST /api/dev/reset-first-run`** (Development) o [`Crear-SuperAdmin.ps1`
 
 ## Geografía INEC (regenerar 001)
 
-1. `scripts/import_inec_ecuador_geography.ps1 -OutputFile .\geo.sql`
+1. `scripts/db/import_inec_ecuador_geography.ps1 -OutputFile .\geo.sql`
 2. Reemplazar contenido de `001_initdata_immutable_bootstrap.sql` (o crear `003_...` si 001 ya está aplicado en prod — ver README InstallData).
 
 No añadir `.sql` aquí sin documentar en este README y en `docs/DATABASE.md`.

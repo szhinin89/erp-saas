@@ -8,9 +8,12 @@ ERP **SaaS multi-tenant** para Ecuador: facturación electrónica **SRI**, inven
 
 | Documento | Contenido |
 |-----------|-----------|
+| [`SYSTEM_TRUTH.md`](SYSTEM_TRUTH.md) | **Fuente única verdad arquitectónica** (baseline `architecture-v1.0`) |
+| [`ARCHITECTURE_GATES.md`](ARCHITECTURE_GATES.md) | Gates bloqueantes PR / CI / agentes |
+| [`RELEASES/RELEASE-ARCHITECTURE-v1.0.md`](RELEASES/RELEASE-ARCHITECTURE-v1.0.md) | Release baseline arquitectura |
 | [`CONTEXT.md`](CONTEXT.md) | Índice maestro |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Arquitectura (entrada) |
-| [`docs/STATUS.md`](docs/STATUS.md) | Estado delivery (fuente de verdad) |
+| [`docs/STATUS.md`](docs/STATUS.md) | Estado delivery |
 | [`FEATURES.md`](FEATURES.md) | Módulos producto |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) | PR, tests, estándares |
 
@@ -67,10 +70,16 @@ Orquestador: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
 | `security.yml` | Identity guardrails (reusable) |
 | `e2e.yml` | E2E manual dispatch |
 
+## Baseline arquitectura
+
+Tag Git: **`architecture-v1.0`** — estructura y gobernanza congeladas. Evolución: ver [`SYSTEM_TRUTH.md`](SYSTEM_TRUTH.md) §7.
+
 ## Reglas (obligatorias)
 
 | Archivo | Ámbito |
 |---------|--------|
+| [`SYSTEM_TRUTH.md`](SYSTEM_TRUTH.md) | Estructura y módulos oficiales |
+| [`ARCHITECTURE_GATES.md`](ARCHITECTURE_GATES.md) | Gates CI / review |
 | [`CLAUDE.md`](CLAUDE.md) | Agentes / implementación |
 | [`ARCHITECTURE_RULES.md`](ARCHITECTURE_RULES.md) | PR bloqueantes |
 | [`BACKEND_RULES.md`](BACKEND_RULES.md) | .NET |

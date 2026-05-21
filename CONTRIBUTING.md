@@ -2,7 +2,7 @@
 
 ## Antes de abrir PR
 
-1. Leer [`CONTEXT.md`](CONTEXT.md) y reglas: [`CLAUDE.md`](CLAUDE.md), [`ARCHITECTURE_RULES.md`](ARCHITECTURE_RULES.md).
+1. Leer [`SYSTEM_TRUTH.md`](SYSTEM_TRUTH.md), [`ARCHITECTURE_GATES.md`](ARCHITECTURE_GATES.md), [`CONTEXT.md`](CONTEXT.md) y [`CLAUDE.md`](CLAUDE.md).
 2. Rama desde `development` (features) o `hotfix/*` (urgente).
 3. Ejecutar localmente:
    ```powershell
@@ -30,7 +30,7 @@
 
 - Backend: xUnit + FluentAssertions; integración en `ERP.API.Tests`
 - Frontend: Vitest (unit) + Playwright (e2e en CI)
-- Architecture: `ERP.Architecture.Tests`, guardrails PowerShell
+- Architecture: `backend/src/ERP.Architecture.Tests/` (índice: `backend/tests/README.md`), guardrails PowerShell
 
 ## Documentación
 

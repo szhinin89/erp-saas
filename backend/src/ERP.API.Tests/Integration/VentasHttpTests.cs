@@ -278,7 +278,8 @@ public sealed class VentasHttpTests
             authNumber: null,
             authDate: null,
             errorMessage: null,
-            createdBy: seed.UserId);
+            createdBy: seed.UserId,
+            companyId: seed.CompanyId);
 
         var detalle = SalesBillLine.Create(
             seed.SubscriberId,
@@ -355,7 +356,8 @@ public sealed class VentasHttpTests
             authNumber: null,
             authDate: null,
             errorMessage: null,
-            createdBy: seed.UserId);
+            createdBy: seed.UserId,
+            companyId: seed.CompanyId);
 
         var detalle = SalesBillLine.Create(
             seed.SubscriberId,
