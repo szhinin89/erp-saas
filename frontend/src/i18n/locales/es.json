@@ -127,6 +127,7 @@
   "app.nav.item.admin.roles": "Perfiles",
   "app.nav.item.admin.users": "Acceso usuarios",
   "app.nav.item.admin.activity": "Actividad",
+  "app.nav.item.admin.security": "Seguridad",
   "app.logout": "Cerrar sesión",
   "app.favorites.add": "Agregar a favoritos",
   "app.favorites.remove": "Quitar de favoritos",

@@ -186,9 +186,10 @@ public static class CommercialPlansBootstrap
             "sortOrder": 90, "moduleKey": "admin", "roles": null,
             "requireSuperAdminPanel": false, "menuBarLayout": null,
             "items": [
-              {"routePath": "/admin/roles",    "labelKey": "app.nav.item.admin.roles",    "displayLabel": "Perfiles (Roles)", "sortOrder": 10, "moduleKey": "admin", "permissionKey": "perm:admin.roles.view",    "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "👥"},
-              {"routePath": "/admin/users",    "labelKey": "app.nav.item.admin.users",    "displayLabel": "Acceso usuarios",  "sortOrder": 20, "moduleKey": "admin", "permissionKey": "perm:admin.users.view",    "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "👤"},
-              {"routePath": "/admin/activity", "labelKey": "app.nav.item.admin.activity", "displayLabel": "Actividad",        "sortOrder": 30, "moduleKey": "admin", "permissionKey": "perm:admin.activity.view", "permissionKeysAny": null, "itemRoles": null, "children": null, "icon": "📜"}
+              {"routePath": "/admin/roles",    "labelKey": "app.nav.item.admin.roles",    "displayLabel": "Perfiles (Roles)", "sortOrder": 10, "moduleKey": "admin", "permissionKey": "perm:admin.roles.view",    "permissionKeysAny": null, "itemRoles": null,               "children": null, "icon": "👥"},
+              {"routePath": "/admin/users",    "labelKey": "app.nav.item.admin.users",    "displayLabel": "Acceso usuarios",  "sortOrder": 20, "moduleKey": "admin", "permissionKey": "perm:admin.users.view",    "permissionKeysAny": null, "itemRoles": null,               "children": null, "icon": "👤"},
+              {"routePath": "/admin/activity", "labelKey": "app.nav.item.admin.activity", "displayLabel": "Actividad",        "sortOrder": 30, "moduleKey": "admin", "permissionKey": "perm:admin.activity.view", "permissionKeysAny": null, "itemRoles": null,               "children": null, "icon": "📜"},
+              {"routePath": "/admin/security", "labelKey": "app.nav.item.admin.security", "displayLabel": "Seguridad",        "sortOrder": 40, "moduleKey": "admin", "permissionKey": null,                        "permissionKeysAny": null, "itemRoles": ["SuperAdmin", "Admin"], "children": null, "icon": "🔒"}
             ]
           }
         ]

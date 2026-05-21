@@ -127,6 +127,7 @@
   "app.nav.item.admin.roles": "Roles",
   "app.nav.item.admin.users": "User access",
   "app.nav.item.admin.activity": "Activity",
+  "app.nav.item.admin.security": "Security",
   "app.logout": "Sign out",
   "app.favorites.add": "Add to favorites",
   "app.favorites.remove": "Remove from favorites",
