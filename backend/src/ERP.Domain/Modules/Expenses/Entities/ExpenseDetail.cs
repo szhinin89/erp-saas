@@ -1,11 +1,14 @@
+using ERP.Domain.Common;
+
 namespace ERP.Domain.Modules.Expenses.Entities;
 
 /// <summary>
-/// Detalle del gasto. Tabla nueva para soportar patrón maestro-detalle en gastos.
+/// Detalle del gasto. Comparte scope de suscriptor con <see cref="ExpenseInvoice"/>.
 /// </summary>
-public class ExpenseDetail
+public class ExpenseDetail : ISubscriberScopedEntity
 {
     public Guid Id { get; set; }
+    public Guid SubscriberId { get; set; }
     public Guid ExpenseId { get; set; }
     public Guid? ProductId { get; set; }
     public string Description { get; set; } = null!;

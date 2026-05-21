@@ -344,12 +344,14 @@ public sealed class UnifiedDocumentSync : IUnifiedDocumentSync
             if (existing is null)
             {
                 src.ExpenseId = tracked.Id;
+                src.SubscriberId = tracked.SubscriberId;
                 tracked.Details.Add(src);
                 _context.ExpenseDetails.Add(src);
             }
             else
             {
                 existing.ExpenseId = tracked.Id;
+                existing.SubscriberId = tracked.SubscriberId;
                 existing.ProductId = src.ProductId;
                 existing.Description = src.Description;
                 existing.Quantity = src.Quantity;

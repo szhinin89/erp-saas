@@ -12,6 +12,8 @@ public class StockAdjustmentLineConfiguration : IEntityTypeConfiguration<StockAd
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(x => x.CompanyId).HasColumnName("company_id");
         builder.Property(x => x.StockAdjustmentId).HasColumnName("stock_adjustment_id").IsRequired();
         builder.Property(x => x.ProductId).HasColumnName("product_id").IsRequired();
         builder.Property(x => x.WarehouseId).HasColumnName("warehouse_id").IsRequired();
@@ -26,11 +28,6 @@ public class StockAdjustmentLineConfiguration : IEntityTypeConfiguration<StockAd
             .WithMany(x => x.Lines)
             .HasForeignKey(x => x.StockAdjustmentId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        // El padre (StockAdjustment) tiene query filter por SubscriberId; declarar
-        // la navigation como opcional para que EF no emita WRN cuando el padre
-        // es filtrado. El FK sigue siendo NOT NULL en BD.
-        builder.Navigation(x => x.StockAdjustment).IsRequired(false);
 
         builder.HasIndex(x => x.StockAdjustmentId).HasDatabaseName("ix_stock_adjustment_line_adjustment");
         builder.HasIndex(x => new { x.StockAdjustmentId, x.SortOrder }).HasDatabaseName("ix_stock_adjustment_line_adjustment_sort");

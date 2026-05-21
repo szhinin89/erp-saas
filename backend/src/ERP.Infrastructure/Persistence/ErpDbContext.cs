@@ -29,7 +29,6 @@ using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Auxiliary.Entities;
 using ERP.Application.Common;
-using System.Linq.Expressions;
 
 namespace ERP.Infrastructure.Persistence;
 
@@ -71,6 +70,7 @@ namespace ERP.Infrastructure.Persistence;
 public class ErpDbContext : DbContext
 {
     private readonly ICurrentSubscriber _currentSubscriber;
+    private readonly ICurrentCompany _currentCompany;
     private readonly IPublisher _publisher;
     private readonly IPlatformQueryAccessor _platform;
 
@@ -78,12 +78,23 @@ public class ErpDbContext : DbContext
         DbContextOptions<ErpDbContext> options,
         ICurrentSubscriber currentSubscriber,
         IPublisher publisher,
-        IPlatformQueryAccessor platform) : base(options)
+        IPlatformQueryAccessor platform,
+        ICurrentCompany currentCompany) : base(options)
     {
         _currentSubscriber = currentSubscriber;
+        _currentCompany = currentCompany;
         _publisher     = publisher;
         _platform      = platform;
     }
+
+    /// <summary>Expuesto para expresiones de query filter (evaluado por query).</summary>
+    internal Guid FilterSubscriberId => _currentSubscriber.SubscriberId;
+
+    /// <summary>Expuesto para expresiones de query filter (evaluado por query).</summary>
+    internal Guid FilterCompanyId => _currentCompany.CompanyId;
+
+    /// <summary>Expuesto para expresiones de query filter (evaluado por query).</summary>
+    internal bool FilterHasCompanyContext => _currentCompany.HasCompanyContext;
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
         => SaveChangesAsync(acceptAllChangesOnSuccess, CancellationToken.None)
@@ -390,41 +401,12 @@ public class ErpDbContext : DbContext
     /// global no retorne filas (ya que SubscriberId nunca debe ser Guid.Empty en
     /// entidades multi-tenant). Esto permite endpoints anónimos como login/reset.
     /// </summary>
-    private Guid CurrentSubscriberId
-    {
-        get
-        {
-            return _currentSubscriber.SubscriberId;
-        }
-    }
+    private Guid CurrentSubscriberId => FilterSubscriberId;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ErpDbContext).Assembly);
-
-        // Filtro global multi-tenant automático:
-        // - Aplica a toda entidad NO-OWNED que implemente ISubscriberScopedEntity.
-        // - Evita que al agregar una nueva entidad se nos olvide registrar el filtro.
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-        {
-            if (entityType.IsOwned())
-                continue;
-
-            var clrType = entityType.ClrType;
-            if (clrType == typeof(Subscriber))
-                continue;
-            if (!typeof(ISubscriberScopedEntity).IsAssignableFrom(clrType))
-                continue;
-
-            var parameter = Expression.Parameter(clrType, "e");
-            var tenantProperty = Expression.Property(parameter, nameof(ISubscriberScopedEntity.SubscriberId));
-            var currentSubscriber = Expression.Property(Expression.Constant(this), nameof(CurrentSubscriberId));
-            var body = Expression.Equal(tenantProperty, currentSubscriber);
-            var lambda = Expression.Lambda(body, parameter);
-
-            modelBuilder.Entity(clrType).HasQueryFilter(lambda);
-        }
-
+        EnterpriseQueryFilterConfigurator.Apply(modelBuilder, this);
         base.OnModelCreating(modelBuilder);
     }
 }

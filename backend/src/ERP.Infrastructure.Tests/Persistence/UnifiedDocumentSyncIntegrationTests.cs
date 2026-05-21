@@ -29,6 +29,16 @@ public sealed class UnifiedDocumentSyncIntegrationTests
     internal static readonly Guid BranchId = Guid.Parse("e24d1d82-46b9-40bb-a11f-89ac524f9597");
     internal static readonly Guid WarehouseId = Guid.Parse("c2b21669-67f5-4b60-83a2-b27a94f21f2d");
     internal static readonly Guid UserId = Guid.Parse("71ac8b3b-13db-47db-8cf7-214721a3a31f");
+    internal static readonly Guid CompanyId = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
+
+    private static ICurrentCompany CreateTestCompany()
+    {
+        var company = new Mock<ICurrentCompany>();
+        company.Setup(c => c.CompanyId).Returns(CompanyId);
+        company.Setup(c => c.HasCompanyContext).Returns(true);
+        company.Setup(c => c.IsAuthenticated).Returns(true);
+        return company.Object;
+    }
 
     private static async Task<bool> CanConnectAsync()
     {
@@ -50,7 +60,8 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         return TestErpDbContextFactory.Create(
             new DbContextOptionsBuilder<ErpDbContext>().UseNpgsql(ConnectionString).Options,
             tenant.Object,
-            Mock.Of<IPublisher>());
+            Mock.Of<IPublisher>(),
+            CreateTestCompany());
     }
 
     private static ServiceProvider BuildServices(bool useUnified)
@@ -61,6 +72,7 @@ public sealed class UnifiedDocumentSyncIntegrationTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddSingleton<ICurrentSubscriber>(tenant.Object);
+        services.AddSingleton<ICurrentCompany>(CreateTestCompany());
         services.AddSingleton(Mock.Of<IPublisher>());
         services.Configure<SaasEntitlementsOptions>(_ => { });
         services.AddScoped<IPlatformQueryAccessor, PlatformQueryAccessor>();

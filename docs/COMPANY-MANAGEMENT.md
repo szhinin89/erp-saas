@@ -50,6 +50,20 @@ Auth: `POST /api/auth/switch-company`, `GET /api/auth/my-companies`.
 | `/select-company` | Multi-company picker |
 | `CompanySwitcher` | Header context switch |
 
+## Provisioning (SuperAdmin → nueva empresa)
+
+`SubscriberProvisioningOrchestrator` crea en **una transacción Serializable**:
+
+1. `Subscriber`
+2. `subscriber_billing_accounts`
+3. `Company` (RUC único global)
+4. `IdentityUser` (opcional)
+5. `CompanyUserMembership` Admin
+6. Module overrides
+7. Onboarding (perfiles, sucursal, bodega)
+
+Si falla cualquier paso, no quedan entidades huérfanas.
+
 ## Security
 
 - Global unique RUC check before create

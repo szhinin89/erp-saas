@@ -41,4 +41,19 @@ CHECK (user_type <> 'Platform' OR subscriber_id IS NULL)
 | `subscriber_id` | `00000000-...` o impersonation | subscriber activo |
 | `company_id` | opcional (impersonation) | empresa operativa |
 
-Ver [auth-unified.md](./auth-unified.md) y [identity-migration.md](./identity-migration.md).
+## Endpoints de autenticación
+
+| Método | Ruta | Uso |
+|--------|------|-----|
+| POST | `/api/platform/auth/login` | SuperAdmin / operadores platform |
+| POST | `/api/auth/login` | Usuarios company (ERP runtime) |
+| POST | `/api/auth/refresh` | Refresh único (platform + company) |
+| POST | `/api/auth/forgot-password` | Solicitud reset |
+| POST | `/api/auth/reset-password` | Completar reset |
+| POST | `/api/setup/superadmin` | First-run → crea platform user |
+
+Aliases legacy (`POST /api/auth/superadmin-login`, rutas `[Obsolete]`) delegan a handlers MediatR canónicos.
+
+Servicios: `IAccessTokenService` (JWT), `IRefreshTokenService` (rotación), `IPasswordHasher` (BCrypt).
+
+Frontend: [frontend-identity.md](./frontend-identity.md). Seguridad: [SECURITY.md](./SECURITY.md).

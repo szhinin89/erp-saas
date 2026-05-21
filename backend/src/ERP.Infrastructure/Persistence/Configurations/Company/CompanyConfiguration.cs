@@ -1,5 +1,4 @@
 using ERP.Domain.Modules.Company.Entities;
-using ERP.Domain.Modules.Company.Enums;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using ERP.Domain.Subscribers.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +20,6 @@ public class CompanyConfiguration : IEntityTypeConfiguration<Company>
             .HasColumnName("tax_id_status")
             .HasConversion<string>()
             .HasMaxLength(20)
-            .HasDefaultValue(TaxIdStatus.Verified)
             .IsRequired();
         builder.Property(x => x.LegalName).HasColumnName("legal_name").HasMaxLength(200).IsRequired();
         builder.Property(x => x.TradeName).HasColumnName("trade_name").HasMaxLength(200);

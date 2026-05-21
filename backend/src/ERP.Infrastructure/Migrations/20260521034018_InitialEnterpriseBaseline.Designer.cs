@@ -12,15 +12,15 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERP.Infrastructure.Migrations
 {
     [DbContext(typeof(ErpDbContext))]
-    [Migration("20260520230443_Wave2SalesCompanyScope")]
-    partial class Wave2SalesCompanyScope
+    [Migration("20260521034018_InitialEnterpriseBaseline")]
+    partial class InitialEnterpriseBaseline
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.4")
+                .HasAnnotation("ProductVersion", "10.0.7")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -204,6 +204,12 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("email");
 
+                    b.Property<string>("EmailNormalized")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("email_normalized");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -225,6 +231,27 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
 
+                    b.Property<string>("PlatformRole")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("platform_role");
+
+                    b.Property<bool>("RequirePasswordReset")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("require_password_reset");
+
+                    b.Property<string>("SecurityStamp")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("security_stamp");
+
+                    b.Property<Guid?>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -233,11 +260,21 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("updated_by");
 
+                    b.Property<string>("UserType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("user_type");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique()
                         .HasDatabaseName("ux_identity_users_email");
+
+                    b.HasIndex("EmailNormalized")
+                        .IsUnique()
+                        .HasDatabaseName("ux_identity_users_email_normalized");
 
                     b.ToTable("identity_users", (string)null);
                 });
@@ -477,75 +514,6 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_refresh_tokens_user_subscriber");
 
                     b.ToTable("refresh_tokens", (string)null);
-                });
-
-            modelBuilder.Entity("ERP.Domain.Auth.Entities.User", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("CreatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("created_by");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("email");
-
-                    b.Property<string>("FirstName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("first_name");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean")
-                        .HasColumnName("is_active");
-
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("last_name");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("password_hash");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("role");
-
-                    b.Property<Guid>("SubscriberId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("subscriber_id");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid")
-                        .HasColumnName("updated_by");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SubscriberId", "Email")
-                        .IsUnique()
-                        .HasDatabaseName("ix_users_subscriber_email");
-
-                    b.ToTable("users", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Billing.Entities.BillingEvent", b =>
@@ -2632,6 +2600,12 @@ namespace ERP.Infrastructure.Migrations
                         .HasDefaultValue(false)
                         .HasColumnName("is_foreign_trade");
 
+                    b.Property<bool>("IsProvisionalTaxId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_provisional_tax_id");
+
                     b.Property<string>("LegalName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -2666,10 +2640,9 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Property<string>("Ruc")
                         .IsRequired()
-                        .HasMaxLength(13)
-                        .HasColumnType("character(13)")
-                        .HasColumnName("ruc")
-                        .IsFixedLength();
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("ruc");
 
                     b.Property<string>("SpecialTaxpayerNo")
                         .HasMaxLength(200)
@@ -2679,6 +2652,12 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
                         .HasColumnName("subscriber_id");
+
+                    b.Property<string>("TaxIdStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("tax_id_status");
 
                     b.Property<string>("TaxRegimeCode")
                         .HasMaxLength(5)
@@ -4107,6 +4086,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasDefaultValue((short)0)
                         .HasColumnName("sort_order");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("TaxAmount")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(18, 4)
@@ -4737,6 +4720,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("adjustment_quantity");
 
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<decimal>("PhysicalQuantity")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -4760,6 +4747,10 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("StockAdjustmentId")
                         .HasColumnType("uuid")
                         .HasColumnName("stock_adjustment_id");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
 
                     b.Property<decimal>("SystemQuantity")
                         .HasPrecision(18, 4)
@@ -12450,7 +12441,8 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.Expenses.Entities.ExpenseInvoice", "Expense")
                         .WithMany("Details")
                         .HasForeignKey("ExpenseId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Expense");
                 });
@@ -12460,7 +12452,8 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.Inventory.Entities.StockAdjustment", "StockAdjustment")
                         .WithMany("Lines")
                         .HasForeignKey("StockAdjustmentId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("StockAdjustment");
                 });

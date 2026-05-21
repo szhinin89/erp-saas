@@ -259,10 +259,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Property<string>("UserType")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)")
-                        .HasDefaultValue("Company")
                         .HasColumnName("user_type");
 
                     b.HasKey("Id");
@@ -2654,10 +2652,8 @@ namespace ERP.Infrastructure.Migrations
 
                     b.Property<string>("TaxIdStatus")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
-                        .HasDefaultValue("Verified")
                         .HasColumnName("tax_id_status");
 
                     b.Property<string>("TaxRegimeCode")
@@ -4087,6 +4083,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasDefaultValue((short)0)
                         .HasColumnName("sort_order");
 
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
                     b.Property<decimal>("TaxAmount")
                         .ValueGeneratedOnAdd()
                         .HasPrecision(18, 4)
@@ -4717,6 +4717,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("numeric(18,4)")
                         .HasColumnName("adjustment_quantity");
 
+                    b.Property<Guid?>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
                     b.Property<decimal>("PhysicalQuantity")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)")
@@ -4740,6 +4744,10 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("StockAdjustmentId")
                         .HasColumnType("uuid")
                         .HasColumnName("stock_adjustment_id");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
 
                     b.Property<decimal>("SystemQuantity")
                         .HasPrecision(18, 4)
@@ -12430,7 +12438,8 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.Expenses.Entities.ExpenseInvoice", "Expense")
                         .WithMany("Details")
                         .HasForeignKey("ExpenseId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Expense");
                 });
@@ -12440,7 +12449,8 @@ namespace ERP.Infrastructure.Migrations
                     b.HasOne("ERP.Domain.Modules.Inventory.Entities.StockAdjustment", "StockAdjustment")
                         .WithMany("Lines")
                         .HasForeignKey("StockAdjustmentId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("StockAdjustment");
                 });

@@ -27,4 +27,4 @@ authService.refresh(refreshToken?)     // POST /api/auth/refresh
 
 Consume rutas canónicas `/api/platform/subscribers/*` vía `superAdminService`.
 
-Ver [legacy-tenant-cleanup.md](./legacy-tenant-cleanup.md) para wrappers `switchSubscriber`.
+Compatibilidad: algunos servicios frontend aún exponen alias `switchTenant` → `switch-subscriber` en API.

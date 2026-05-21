@@ -12,19 +12,17 @@ PostgreSQL RLS complements application-layer filters. Session variables are set 
 
 Components: `ISessionContext`, `HttpSessionContext`, `DbSessionContextApplicator`, `PostgreSqlSessionContextInterceptor`.
 
-## Wave 1 — enabled tables
-
-| Table | Policy logic |
-|-------|----------------|
-| `products` | Platform admin OR (`subscriber_id` match AND (`company_id` null OR matches)) |
-| `warehouse` | same |
-| `stock_movement` | same |
-| `customers` | Platform admin OR `subscriber_id` match |
-| `sales_invoice` | Platform admin OR `company_id` match |
+## Tables with RLS (baseline)
 
 Policies named `rls_{table}_enterprise`. `FORCE ROW LEVEL SECURITY` is on.
 
-Defined in migration `InitialEnterpriseBaseline` (SQL block at end of `Up()`).
+| Table | Policy logic |
+|-------|----------------|
+| `products`, `warehouse`, `stock_movement`, `current_stock`, `stock_transfer`, `stock_adjustment`, `sales_bill`, `sales_document` | Platform admin OR (`subscriber_id` match AND (`company_id` null OR matches)) |
+| `customers` | Platform admin OR (`subscriber_id` + optional `company_id` match) |
+| `sales_invoice` | Platform admin OR `company_id` match |
+
+Defined in `EnterpriseBaselineRowLevelSecurity.Apply()` at end of `InitialEnterpriseBaseline.Up()`.
 
 ## Platform admin bypass
 
@@ -48,12 +46,9 @@ Without this, RLS may deny all rows.
 RLS does not replace:
 
 - `CompanyScopeBehavior`
+- `EnterpriseQueryFilterConfigurator` (EF global filters)
 - `ICompanyAccessGuard`
 - JWT validation
-
-## Future waves
-
-Extend RLS to sales documents, purchasing, accounting as `company_id` migration completes ([../ROADMAP.md](../ROADMAP.md)).
 
 ## Troubleshooting
 

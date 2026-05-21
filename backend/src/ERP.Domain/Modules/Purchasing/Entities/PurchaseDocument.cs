@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 using ERP.Domain.Modules.Purchasing.Enums;
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class PurchaseDocument : AuditableEntity, ISubscriberScopedEntity
+public sealed class PurchaseDocument : AuditableEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
     public const int DocNumberMaxLen = 30;
     public const int AccessKeyLen    = 49;

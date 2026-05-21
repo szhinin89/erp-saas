@@ -12,6 +12,7 @@ public class ExpenseDetailConfiguration : IEntityTypeConfiguration<ExpenseDetail
 
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
+        builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(x => x.ExpenseId).HasColumnName("expense_id").IsRequired();
         builder.Property(x => x.ProductId).HasColumnName("product_id");
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(500).IsRequired();
@@ -25,11 +26,6 @@ public class ExpenseDetailConfiguration : IEntityTypeConfiguration<ExpenseDetail
             .WithMany(x => x.Details)
             .HasForeignKey(x => x.ExpenseId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        // El padre (ExpenseInvoice) tiene query filter por SubscriberId; declarar
-        // la navigation como opcional para que EF no emita WRN cuando el padre
-        // es filtrado. El FK sigue siendo NOT NULL en BD.
-        builder.Navigation(x => x.Expense).IsRequired(false);
 
         builder.HasIndex(x => x.ExpenseId).HasDatabaseName("ix_expense_detail_expense_id");
         builder.HasIndex(x => new { x.ExpenseId, x.SortOrder }).HasDatabaseName("ix_expense_detail_expense_sort");

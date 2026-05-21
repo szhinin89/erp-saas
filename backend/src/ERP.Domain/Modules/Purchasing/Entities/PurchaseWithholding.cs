@@ -2,7 +2,7 @@ using ERP.Domain.Common;
 
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class PurchaseWithholding : AuditableEntity, ISubscriberScopedEntity
+public sealed class PurchaseWithholding : AuditableEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
     public const int AccessKeyMaxLen  = 49;
     public const int EstabMaxLen      = 3;

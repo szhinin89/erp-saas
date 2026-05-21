@@ -1,5 +1,4 @@
 using ERP.Domain.Access.Entities;
-using ERP.Domain.Access.Enums;
 using ERP.Domain.Auth.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -36,8 +35,7 @@ public class IdentityUserConfiguration : IEntityTypeConfiguration<IdentityUser>
             .HasColumnName("user_type")
             .HasConversion<string>()
             .HasMaxLength(32)
-            .IsRequired()
-            .HasDefaultValue(IdentityUserType.Company);
+            .IsRequired();
 
         builder.Property(u => u.PlatformRole)
             .HasColumnName("platform_role")

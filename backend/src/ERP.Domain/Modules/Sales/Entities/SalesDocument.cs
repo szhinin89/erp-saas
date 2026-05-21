@@ -187,7 +187,7 @@ public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity, IC
     private void EnsureElectronic()
     {
         if (Electronic is not null) return;
-        Electronic = SalesElectronicDoc.CreateShell(Id, SubscriberId);
+        Electronic = SalesElectronicDoc.CreateShell(Id, SubscriberId, CompanyId);
     }
 
     private void RecalcTotals()

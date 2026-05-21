@@ -1,8 +1,8 @@
 namespace ERP.Domain.Common;
 
 /// <summary>
-/// Marca entidades del dominio ERP cuyo aislamiento operativo es por empresa (company_id).
-/// Fase 6: query filter por <see cref="ICurrentCompany"/>.
+/// Entidad ERP con <c>company_id</c> obligatorio. Usar junto con <see cref="ISubscriberScopedEntity"/>
+/// para el query filter global (suscriptor + company scope).
 /// </summary>
 public interface ICompanyScopedEntity
 {

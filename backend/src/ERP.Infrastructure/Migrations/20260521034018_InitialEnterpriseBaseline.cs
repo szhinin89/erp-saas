@@ -299,6 +299,7 @@ namespace ERP.Infrastructure.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: true),
                     identification_type = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     identification_number = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     legal_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
@@ -426,8 +427,14 @@ namespace ERP.Infrastructure.Migrations
                     first_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     last_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     email = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    email_normalized = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     password_hash = table.Column<string>(type: "text", nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false),
+                    user_type = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    platform_role = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: true),
+                    subscriber_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    security_stamp = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false),
+                    require_password_reset = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     created_by = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1202,6 +1209,7 @@ namespace ERP.Infrastructure.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: true),
                     sequential = table.Column<int>(type: "integer", nullable: false),
                     adjustment_number = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     warehouse_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1527,28 +1535,6 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "users",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    first_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    last_name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    email = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    password_hash = table.Column<string>(type: "text", nullable: false),
-                    role = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    is_active = table.Column<bool>(type: "boolean", nullable: false),
-                    subscriber_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    created_by = table.Column<Guid>(type: "uuid", nullable: false),
-                    updated_by = table.Column<Guid>(type: "uuid", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_users", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "vat_refund",
                 columns: table => new
                 {
@@ -1783,6 +1769,7 @@ namespace ERP.Infrastructure.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    subscriber_id = table.Column<Guid>(type: "uuid", nullable: false),
                     expense_id = table.Column<Guid>(type: "uuid", nullable: false),
                     product_id = table.Column<Guid>(type: "uuid", nullable: true),
                     description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
@@ -2070,6 +2057,8 @@ namespace ERP.Infrastructure.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
+                    subscriber_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: true),
                     stock_adjustment_id = table.Column<Guid>(type: "uuid", nullable: false),
                     product_id = table.Column<Guid>(type: "uuid", nullable: false),
                     warehouse_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -2097,7 +2086,9 @@ namespace ERP.Infrastructure.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "gen_random_uuid()"),
                     subscriber_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ruc = table.Column<string>(type: "character(13)", fixedLength: true, maxLength: 13, nullable: false),
+                    ruc = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    is_provisional_tax_id = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    tax_id_status = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     legal_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     trade_name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     main_address = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
@@ -2509,6 +2500,7 @@ namespace ERP.Infrastructure.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: true),
                     branch_id = table.Column<Guid>(type: "uuid", nullable: false),
                     customer_id = table.Column<Guid>(type: "uuid", nullable: false),
                     warehouse_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -2623,6 +2615,7 @@ namespace ERP.Infrastructure.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
+                    company_id = table.Column<Guid>(type: "uuid", nullable: true),
                     sequential = table.Column<int>(type: "integer", nullable: false),
                     transfer_number = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     source_warehouse_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -4816,20 +4809,25 @@ namespace ERP.Infrastructure.Migrations
                 column: "orig_doc_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_current_stock_subscriber_company",
+                table: "current_stock",
+                columns: new[] { "subscriber_id", "company_id" });
+
+            migrationBuilder.CreateIndex(
                 name: "uq_current_stock_subscriber_product_warehouse",
                 table: "current_stock",
                 columns: new[] { "subscriber_id", "product_id", "warehouse_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_customers_subscriber_id",
+                name: "ix_customers_subscriber_company",
                 table: "customers",
-                column: "subscriber_id");
+                columns: new[] { "subscriber_id", "company_id" });
 
             migrationBuilder.CreateIndex(
-                name: "ux_customers_subscriber_doc",
+                name: "ux_customers_subscriber_company_doc",
                 table: "customers",
-                columns: new[] { "subscriber_id", "identification_type", "identification_number" },
+                columns: new[] { "subscriber_id", "company_id", "identification_type", "identification_number" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -5006,6 +5004,12 @@ namespace ERP.Infrastructure.Migrations
                 name: "ux_identity_users_email",
                 table: "identity_users",
                 column: "email",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ux_identity_users_email_normalized",
+                table: "identity_users",
+                column: "email_normalized",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -5619,6 +5623,11 @@ namespace ERP.Infrastructure.Migrations
                 column: "customer_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_sales_bill_subscriber_company",
+                table: "sales_bill",
+                columns: new[] { "subscriber_id", "company_id" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_sales_bill_subscriber_date",
                 table: "sales_bill",
                 columns: new[] { "subscriber_id", "issue_date" });
@@ -5658,6 +5667,11 @@ namespace ERP.Infrastructure.Migrations
                 name: "IX_sales_document_reference_document_id",
                 table: "sales_document",
                 column: "reference_document_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_sales_document_subscriber_company",
+                table: "sales_document",
+                columns: new[] { "subscriber_id", "company_id" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_sales_document_subscriber_customer_date",
@@ -5800,6 +5814,11 @@ namespace ERP.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_stock_adjustment_subscriber_company",
+                table: "stock_adjustment",
+                columns: new[] { "subscriber_id", "company_id" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_stock_adjustment_subscriber_status",
                 table: "stock_adjustment",
                 columns: new[] { "subscriber_id", "status" });
@@ -5844,6 +5863,11 @@ namespace ERP.Infrastructure.Migrations
                 name: "IX_stock_transfer_source_warehouse_id",
                 table: "stock_transfer",
                 column: "source_warehouse_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_stock_transfer_subscriber_company",
+                table: "stock_transfer",
+                columns: new[] { "subscriber_id", "company_id" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_stock_transfer_subscriber_status",
@@ -6004,12 +6028,6 @@ namespace ERP.Infrastructure.Migrations
                 columns: new[] { "subscriber_id", "user_id", "created_at" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_users_subscriber_email",
-                table: "users",
-                columns: new[] { "subscriber_id", "email" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "idx_vat_refund_company",
                 table: "vat_refund",
                 columns: new[] { "company_id", "status" });
@@ -6061,82 +6079,13 @@ namespace ERP.Infrastructure.Migrations
                 column: "doc_id",
                 filter: "doc_id IS NOT NULL");
 
-            ApplyRowLevelSecurity(migrationBuilder);
-        }
-
-        private static void ApplyRowLevelSecurity(MigrationBuilder migrationBuilder)
-        {
-            const string policyBody = """
-                COALESCE(current_setting('app.is_platform_admin', true), '') = 'true'
-                OR (
-                    subscriber_id::text = NULLIF(current_setting('app.subscriber_id', true), '')
-                    AND (
-                        company_id IS NULL
-                        OR company_id::text = NULLIF(current_setting('app.company_id', true), '')
-                    )
-                )
-                """;
-
-            const string subscriberOnlyPolicy = """
-                COALESCE(current_setting('app.is_platform_admin', true), '') = 'true'
-                OR subscriber_id::text = NULLIF(current_setting('app.subscriber_id', true), '')
-                """;
-
-            foreach (var table in new[] { "products", "warehouse", "stock_movement" })
-            {
-                migrationBuilder.Sql($"""
-                    ALTER TABLE {table} ENABLE ROW LEVEL SECURITY;
-                    ALTER TABLE {table} FORCE ROW LEVEL SECURITY;
-                    DROP POLICY IF EXISTS rls_{table}_enterprise ON {table};
-                    CREATE POLICY rls_{table}_enterprise ON {table}
-                        FOR ALL
-                        USING ({policyBody})
-                        WITH CHECK ({policyBody});
-                    """);
-            }
-
-            migrationBuilder.Sql($"""
-                ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
-                ALTER TABLE customers FORCE ROW LEVEL SECURITY;
-                DROP POLICY IF EXISTS rls_customers_enterprise ON customers;
-                CREATE POLICY rls_customers_enterprise ON customers
-                    FOR ALL
-                    USING ({subscriberOnlyPolicy})
-                    WITH CHECK ({subscriberOnlyPolicy});
-                """);
-
-            const string companyOnlyPolicy = """
-                COALESCE(current_setting('app.is_platform_admin', true), '') = 'true'
-                OR company_id::text = NULLIF(current_setting('app.company_id', true), '')
-                """;
-
-            migrationBuilder.Sql($"""
-                ALTER TABLE sales_invoice ENABLE ROW LEVEL SECURITY;
-                ALTER TABLE sales_invoice FORCE ROW LEVEL SECURITY;
-                DROP POLICY IF EXISTS rls_sales_invoice_enterprise ON sales_invoice;
-                CREATE POLICY rls_sales_invoice_enterprise ON sales_invoice
-                    FOR ALL
-                    USING ({companyOnlyPolicy})
-                    WITH CHECK ({companyOnlyPolicy});
-                """);
-        }
-
-        private static void DropRowLevelSecurity(MigrationBuilder migrationBuilder)
-        {
-            foreach (var table in new[] { "products", "warehouse", "stock_movement", "customers", "sales_invoice" })
-            {
-                migrationBuilder.Sql($"""
-                    DROP POLICY IF EXISTS rls_{table}_enterprise ON {table};
-                    ALTER TABLE {table} DISABLE ROW LEVEL SECURITY;
-                    """);
-            }
+            EnterpriseBaselineRowLevelSecurity.Apply(migrationBuilder);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            DropRowLevelSecurity(migrationBuilder);
-
+            EnterpriseBaselineRowLevelSecurity.Drop(migrationBuilder);
             migrationBuilder.DropTable(
                 name: "access_profile_permissions");
 
@@ -6409,9 +6358,6 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "user_activity");
-
-            migrationBuilder.DropTable(
-                name: "users");
 
             migrationBuilder.DropTable(
                 name: "vat_refund");

@@ -19,6 +19,8 @@
 | **Billing SaaS** | **`docs/BILLING.md`** |
 | **Planes comerciales** | **`docs/COMMERCIAL-PLANS.md`** |
 | **Gestión de empresas** | **`docs/COMPANY-MANAGEMENT.md`** |
+| **Identidad / auth** | **`docs/identity-model.md`**, **`docs/frontend-identity.md`** |
+| **Platform vs ERP runtime** | **`docs/platform-runtime-boundaries.md`** |
 | **Base de datos** | **`docs/DATABASE/`** |
 
 > Al cambiar arquitectura o delivery: actualizar **`docs/STATUS.md`** y **`docs/ROADMAP.md`** primero.
@@ -45,6 +47,9 @@ erp-saas/
 │   ├── BILLING.md
 │   ├── COMMERCIAL-PLANS.md
 │   ├── COMPANY-MANAGEMENT.md
+│   ├── identity-model.md
+│   ├── frontend-identity.md
+│   ├── platform-runtime-boundaries.md
 │   └── DATABASE/
 │       ├── DATABASE-ARCHITECTURE.md
 │       ├── MIGRATIONS.md

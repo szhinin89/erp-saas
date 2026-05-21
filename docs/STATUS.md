@@ -7,14 +7,14 @@
 | Area | State |
 |------|--------|
 | Modular monolith (Clean + CQRS) | ✅ |
-| Single EF baseline `20260520215307_InitialEnterpriseBaseline` | ✅ |
+| Single EF baseline `20260521034018_InitialEnterpriseBaseline` | ✅ |
 | Subscriber / Company / Membership model | ✅ |
 | SaaS billing domain (isolated tables) | ✅ |
 | Commercial plan limits service | ✅ |
 | CompanyScopeBehavior + BillingGate + SubscriptionGate | ✅ |
 | Entitlements distributed cache | ✅ |
-| Wave 1 `company_id` (inventory core) | ✅ |
-| PostgreSQL RLS (Wave 1 tables) | ✅ |
+| Wave 1 `company_id` (inventory core) | ✅ (in baseline) |
+| PostgreSQL RLS (enterprise tables) | ✅ (in baseline) |
 | Rate limit per subscriber (600/min) | ✅ |
 
 Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE/](./DATABASE/).
@@ -60,9 +60,9 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE/](./DATABASE/).
 |------|--------|
 | Schema from single baseline | ✅ |
 | Naming `_subscriber_` on indexes/FK | ✅ |
-| RLS enabled: `products`, `warehouse`, `stock_movement`, `customers`, `sales_invoice` | ✅ |
+| RLS enabled (inventory, sales core) | ✅ |
 | Session vars via interceptor | ✅ |
-| ERP tables still primarily `subscriber_id` filtered | 🟡 Phase 6 roadmap |
+| Company scope on operational entities | ✅ (baseline + query filters) |
 
 ## Security
 
@@ -70,8 +70,8 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE/](./DATABASE/).
 |------|--------|
 | JWT + refresh rotation | ✅ |
 | Permission policies | ✅ |
-| Company isolation (app layer) | ✅ Wave 1 + behavior |
-| RLS (DB layer) | ✅ Wave 1 |
+| Company isolation (app layer) | ✅ |
+| RLS (DB layer) | ✅ |
 | SuperAdmin platform bypass | ✅ controlled |
 | Permissions cache in handler hot path | ⏳ service exists, wiring partial |
 
@@ -89,8 +89,8 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE/](./DATABASE/).
 |---------|---------------------|
 | `ERP.Infrastructure.Tests` (limits/entitlements) | ✅ 8/8 |
 | `ERP.Domain.Tests` | ✅ |
-| `ERP.Application.Tests` | 🟡 repair after renames |
-| `ERP.API.Tests` | 🟡 repair after renames |
+| `ERP.Application.Tests` | ✅ |
+| `ERP.API.Tests` | ✅ 156/156 |
 | Playwright E2E | 🟡 align with subscriber/company flow |
 
 ## MVP commercial (~85–90%)
@@ -100,8 +100,8 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE/](./DATABASE/).
 **Blocking / high priority:**
 
 1. Validate SRI in `celcer.sri.gob.ec` with test certificate
-2. Repair automated test suite for CI
-3. Billing + retenciones UI gaps
+2. Billing + retenciones UI gaps
+3. Playwright E2E hardening for CI
 
 See [ROADMAP.md](./ROADMAP.md) for prioritized backlog.
 
@@ -109,7 +109,7 @@ See [ROADMAP.md](./ROADMAP.md) for prioritized backlog.
 
 | Risk | Mitigation |
 |------|------------|
-| Cross-company data leak during Phase 6 | `CompanyScopeBehavior` + RLS expansion per wave |
+| Cross-company data leak | `CompanyScopeBehavior` + RLS + EF query filters |
 | Production migration from old chain | Use baseline + planned data migration — never `DROP SCHEMA` in prod |
 | Billing suspend without UI visibility | Entitlements snapshot exposes status; build `/saas/billing` |
 | Test drift | Fix controller/DTO names before release gate |
@@ -124,7 +124,7 @@ cd ../ERP.API
 dotnet run
 ```
 
-First-run super admin: see log banner or `docs/SUPERADMIN-Y-FIRST-RUN.md` in repo root scripts area.
+First-run super admin: banner en consola al arrancar API, o `scripts/create-superadmin.ps1` / `Crear-SuperAdmin.ps1`.
 
 ## Related
 

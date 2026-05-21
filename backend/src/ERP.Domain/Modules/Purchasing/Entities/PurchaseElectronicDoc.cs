@@ -1,6 +1,8 @@
+using ERP.Domain.Common;
+
 namespace ERP.Domain.Modules.Purchasing.Entities;
 
-public sealed class PurchaseElectronicDoc
+public sealed class PurchaseElectronicDoc : ISubscriberScopedEntity, ICompanyScopedEntity
 {
     public Guid    PurchaseDocumentId     { get; private set; }
     public Guid    SubscriberId               { get; private set; }

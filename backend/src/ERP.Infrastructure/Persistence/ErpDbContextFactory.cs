@@ -1,6 +1,5 @@
 using ERP.Application.Common;
-using ERP.Application.Common.Config;
-using Microsoft.EntityFrameworkCore;
+using ERP.Application.Common.Config;using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -27,7 +26,7 @@ internal sealed class ErpDbContextFactory : IDesignTimeDbContextFactory<ErpDbCon
         var platform = new PlatformQueryAccessor(
             NullLogger<PlatformQueryAccessor>.Instance,
             Microsoft.Extensions.Options.Options.Create(new SaasEntitlementsOptions()));
-        return new ErpDbContext(options, new DesignTimeSubscriber(), new NoOpPublisher(), platform);
+        return new ErpDbContext(options, new DesignTimeSubscriber(), new NoOpPublisher(), platform, new DesignTimeCompany());
     }
 
     /// <summary>Subscriber vacío para satisfacer ICurrentSubscriber en diseño.</summary>
@@ -36,4 +35,10 @@ internal sealed class ErpDbContextFactory : IDesignTimeDbContextFactory<ErpDbCon
         public Guid SubscriberId        => Guid.Empty;
         public bool IsAuthenticated => false;
     }
-}
+
+    private sealed class DesignTimeCompany : ICurrentCompany
+    {
+        public Guid CompanyId => Guid.Empty;
+        public bool IsAuthenticated => false;
+        public bool HasCompanyContext => false;
+    }}

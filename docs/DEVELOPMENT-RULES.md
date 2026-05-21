@@ -86,6 +86,24 @@ dotnet test ERP.Application.Tests
 dotnet test ERP.API.Tests
 ```
 
+## E2E (Playwright)
+
+Requisitos: Docker (Postgres `:5435`, Redis `:6379`), .NET SDK, Node 22+, `npx playwright install chromium`.
+
+```powershell
+# Recomendado (desde raíz del repo)
+pwsh -File scripts/run-e2e.ps1
+
+# Variantes
+pwsh -File scripts/run-e2e.ps1 -SkipDocker
+pwsh -File scripts/run-e2e.ps1 -SkipMigrations
+pwsh -File scripts/run-e2e.ps1 -PlaywrightArgs "e2e/smoke.spec.ts"
+```
+
+Credenciales demo (`Development:SeedDemoTenant: true`): `admin@erp.com` / `Admin123!`, API `http://localhost:5003`.
+
+Suites: `e2e/smoke.spec.ts` (solo UI); `e2e/enterprise-*.spec.ts` requieren API en `/health/live`.
+
 ## Verification
 
 Manual smoke (after schema or auth changes):

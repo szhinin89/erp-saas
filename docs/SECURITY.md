@@ -4,10 +4,13 @@
 
 | Mechanism | Detail |
 |-----------|--------|
-| Session | JWT access token (`subscriber_id`, `company_id`, user claims) |
-| Refresh | Rotation via `refresh_tokens` |
-| First run | `POST /api/setup/superadmin` with one-time setup token |
-| SuperAdmin | Role `SuperAdmin`; empty `subscriber_id` |
+| Session | JWT access token (`subscriber_id`, `company_id`, `user_type`, claims) |
+| Refresh | Rotation via `refresh_tokens` (`POST /api/auth/refresh`) |
+| First run | `POST /api/setup/superadmin` with one-time setup token (banner en startup) |
+| Platform login | `POST /api/platform/auth/login` → `identity_users` con `user_type=Platform` |
+| Company login | `POST /api/auth/login` → membership + `company_id` en JWT |
+
+Detalle IAM: [identity-model.md](./identity-model.md).
 
 ## Authorization
 
@@ -22,8 +25,8 @@
 
 1. JWT validation
 2. MediatR behaviors (billing → subscription → company scope)
-3. EF global query filters (`ISubscriberScopedEntity`)
-4. PostgreSQL RLS (Wave 1 tables)
+3. EF global query filters (`EnterpriseQueryFilterConfigurator`)
+4. PostgreSQL RLS (baseline enterprise tables)
 5. Controlled SuperAdmin bypass (`app.is_platform_admin`)
 
 ## PostgreSQL session variables

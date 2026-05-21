@@ -2,7 +2,7 @@
 
 Documento canónico de capas enterprise para el ERP SaaS. Define ownership, rutas API, JWT, provisioning, RLS y bounded contexts **sin** revertir la arquitectura `Subscriber → Companies → CompanyUserMembership`.
 
-Relacionado: [enterprise-onboarding-fix.md](./enterprise-onboarding-fix.md), [legacy-tenant-cleanup.md](./legacy-tenant-cleanup.md).
+Relacionado: [COMPANY-MANAGEMENT.md](./COMPANY-MANAGEMENT.md), [identity-model.md](./identity-model.md).
 
 ---
 

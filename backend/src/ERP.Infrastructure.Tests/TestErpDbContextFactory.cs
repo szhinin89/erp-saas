@@ -1,5 +1,6 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Config;
+using ERP.Application.Common;
 using ERP.Infrastructure.Persistence;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -13,11 +14,20 @@ internal static class TestErpDbContextFactory
     internal static ErpDbContext Create(
         DbContextOptions<ErpDbContext> options,
         ICurrentSubscriber tenant,
-        IPublisher publisher)
+        IPublisher publisher,
+        ICurrentCompany? company = null)
     {
         var platform = new PlatformQueryAccessor(
             NullLogger<PlatformQueryAccessor>.Instance,
             Microsoft.Extensions.Options.Options.Create(new SaasEntitlementsOptions()));
-        return new ErpDbContext(options, tenant, publisher, platform);
+        company ??= new TestCurrentCompany();
+        return new ErpDbContext(options, tenant, publisher, platform, company);
+    }
+
+    private sealed class TestCurrentCompany : ICurrentCompany
+    {
+        public Guid CompanyId => Guid.Empty;
+        public bool IsAuthenticated => false;
+        public bool HasCompanyContext => false;
     }
 }
