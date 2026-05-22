@@ -22,6 +22,7 @@ public sealed class PermissionPolicyProvider : DefaultAuthorizationPolicyProvide
             {
                 var policy = new AuthorizationPolicyBuilder()
                     .RequireAuthenticatedUser()
+                    .AddRequirements(new TokenTypeRequirement("session"))
                     .AddRequirements(new PermissionRequirement(key))
                     .Build();
 

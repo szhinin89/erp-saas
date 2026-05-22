@@ -170,6 +170,9 @@ public class SubscribersController : ControllerBase
         [FromBody] UpdateSubscriberOperationalSettingsRequest body,
         CancellationToken ct)
     {
+        if (!CanAccessSubscriber(id))
+            return Forbid();
+
         var command = new UpdateSubscriberOperationalSettingsCommand(
             id,
             body.Currency,
