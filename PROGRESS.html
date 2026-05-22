@@ -1334,14 +1334,15 @@ body {
         <div class="tl-item">
           <div class="tl-dot current">⟳</div>
           <div class="tl-content">
-            <div class="tl-phase">Fase 3 — En curso · 2026-05-22</div>
-            <div class="tl-title">Event-Driven Foundation + AI Preparation</div>
-            <div class="tl-sub">BaseDomainEvent · Outbox Pattern · OutboxProcessor · ProcessOutboxJob · ADRs 7–9 · AI-RULES/AI-FOUNDATION</div>
+            <div class="tl-phase">Fase 3 — Completada · 2026-05-22</div>
+            <div class="tl-title">Event-Driven Foundation + AI Preparation + Permission Pipeline</div>
+            <div class="tl-sub">BaseDomainEvent · Outbox Hardening · ADRs 7–12 · AI-RULES completo · IRuntimePermissionAuthorizer · ResilientCache · usePermissionsUi · 2 security fixes · 11 checks CI</div>
             <div class="tl-tags">
-              <span class="badge badge-blue">⟳ Outbox ✅</span>
-              <span class="badge badge-blue">⟳ ADRs 7–9 ✅</span>
-              <span class="badge badge-blue">⟳ ERP.AI.* placeholders ✅</span>
-              <span class="badge badge-orange">Módulos ERP pendientes</span>
+              <span class="badge badge-success">✓ Outbox enterprise</span>
+              <span class="badge badge-success">✓ ADRs 7–12</span>
+              <span class="badge badge-success">✓ Permission pipeline</span>
+              <span class="badge badge-success">✓ Security hardening</span>
+              <span class="badge badge-success">✓ Frontend permissions</span>
             </div>
           </div>
         </div>
@@ -1465,13 +1466,14 @@ body {
     <div class="mod-card">
       <div class="mod-head">
         <div class="mod-name">🔐 Auth / Permisos</div>
-        <div class="mod-pct tc-green">92%</div>
+        <div class="mod-pct tc-green">97%</div>
       </div>
-      <div class="pbar thin mb12"><div class="pbar-fill green" style="width:92%"></div></div>
+      <div class="pbar thin mb12"><div class="pbar-fill green" style="width:97%"></div></div>
       <div class="mod-tags">
         <span class="badge badge-success">JWT</span>
-        <span class="badge badge-success">Roles granulares</span>
-        <span class="badge badge-success">Guards</span>
+        <span class="badge badge-success">Resilient cache</span>
+        <span class="badge badge-success">IDOR fixes</span>
+        <span class="badge badge-success">usePermissionsUi</span>
       </div>
     </div>
 
@@ -1851,6 +1853,41 @@ body {
         <div class="ci"><input type="checkbox" checked data-sec="s14" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ NUEVO — ADRs 007–009 + AI-RULES/EVENT-DRIVEN-RULES + AI-FOUNDATION</strong><p class="note">ADR-007 (domain events), ADR-008 (outbox), ADR-009 (AI layer separation). AI-RULES/EVENT-DRIVEN-RULES.md, AI-FOUNDATION.md. ERP.AI.Application + ERP.AI.Infrastructure placeholders. 2026-05-22.</p></div><span class="ci-badge s-done">Implementado</span></div>
         <div class="ci"><input type="checkbox" checked data-sec="s14" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ NUEVO — Architecture checks event-driven + AI boundaries</strong><p class="note">check-domain-events-rules.mjs (naming EV-001/002/003), check-ai-layer-boundaries.mjs (AI-001/002/003/004). 2026-05-22.</p></div><span class="ci-badge s-done">Implementado</span></div>
         <div class="ci"><input type="checkbox" data-sec="s14" data-val="0" onchange="recalc()"><div class="ci-text"><strong>Pendiente: invalidar caché entitlements al cambiar commercial_plan_features</strong><p class="note">Tras bootstrap de features nuevas, suscriptor puede necesitar re-login o esperar TTL ~5 min.</p></div><span class="ci-badge s-partial">Parcial</span></div>
+      </div>
+    </div>
+
+    <!-- S15 -->
+    <div class="sec-item open" data-section="s15">
+      <div class="sec-head" onclick="toggleSec('s15')">
+        <h4>15. Permission pipeline hardening + Frontend UI checks (2026-05-22)</h4>
+        <span class="sec-pct-badge" id="pct-s15">—</span>
+        <span class="sec-chevron">›</span>
+      </div>
+      <div class="sec-strip"><div class="sec-strip-fill" id="bar-s15" style="background:var(--success)"></div></div>
+      <div class="sec-body">
+        <!-- BACKEND PERMISSION PIPELINE -->
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>IRuntimePermissionAuthorizer — abstracción de autorización en runtime</strong><p class="note">RuntimePermissionAuthorizer orquesta plan check + profile check via IEffectivePermissionKeysProvider. PermissionHandler delegado limpio. Elimina lógica de negocio inline del handler ASP.NET.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>ICompanyContextProvider — resuelve company sin HttpContext</strong><p class="note">CompanyContextProvider reemplaza ICompanyContextResolver. Soporta contexto de company tanto en requests HTTP como en background jobs (Hangfire). ICompanyContextResolver eliminado del contrato público.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>ResilientPermissionsCacheService — cache con fallback resiliente</strong><p class="note">Wrappea DistributedPermissionsCacheService. Si Redis falla, cae a in-memory sin romper auth. IPermissionsCacheBackend abstrae el backend (Redis / Memory). IPermissionsCacheInvalidator separado de lectura.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>EffectivePermissionKeysProvider — cálculo de permisos efectivos</strong><p class="note">Centraliza la lógica de qué permisos tiene realmente un usuario (plan + perfil + overrides). PermissionsCacheMissReason y PermissionsCacheReadResult para observabilidad.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>InstrumentedDistributedCache + CacheDiagnosticsMetrics</strong><p class="note">Wrapper de IDistributedCache con métricas de hit/miss/latencia. CacheDiagnosticsOptions configurable. DistributedCacheInstrumentationExtensions para registro DI limpio.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>AdminReadModelAttribute — marca endpoints solo para admins</strong><p class="note">Attribute declarativo para read models administrativos. Permite al check de arquitectura distinguir entre endpoints operativos y endpoints de admin read model.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>GetMyPermissionsHandler refactorizado — fuente única de verdad</strong><p class="note">Usa EffectivePermissionKeysProvider. Elimina lógica duplicada de plan-check + profile-check. ProfilesHandlers, UpsertProfilePermissionsHandler, TenantMembershipHandlers actualizados.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>DevCacheController — diagnóstico de cache en desarrollo</strong><p class="note">GET /api/dev/cache: estado del cache de permisos por usuario. Solo disponible en Development. Habilitado via DevTools:CacheController en appsettings.Development.json.</p></div><span class="ci-badge s-done">Implementado</span></div>
+
+        <!-- FRONTEND PERMISSION UI -->
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>Frontend: access/ — módulo centralizado de UI permissions</strong><p class="note">frontend/src/access/: permissionUi.ts (lógica pura), usePermissionsUi.ts (hook React), index.ts (re-exports). Respaldado por /me/permissions. Tests unitarios incluidos (permissionUi.test.ts).</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>Frontend: migración masiva de isAdmin||hasPerm → usePermissionsUi</strong><p class="note">~60 páginas/hooks migrados a patrón único. Eliminados patrones duplicados en BrandsPage, SuppliersPage, ComprasListPage, VentasFacturasPage, KardexPage, AccountingPage, GastosListPage, SriConfigPage, y 50+ más.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>Frontend: PermissionGuard.tsx refactorizado con usePermissionsUi</strong><p class="note">Guard declarativo usa el nuevo hook. Eliminadas dependencias directas de permissionsStore en el guard.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>Frontend: CompaniesPage alineado con useSuperAdminGate</strong><p class="note">CompaniesPage y CompanyManagementListPage usan useSuperAdminGate para validar identidad de plataforma. Elimina anti-patrón de verificar isAdmin para acceso SuperAdmin.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>Frontend: useAppLayoutNavigation actualizado con permissionsUi</strong><p class="note">useAppLayoutNavigation.ts filtra ítems de menú usando el nuevo hook centralizado en lugar de leer directamente el store.</p></div><span class="ci-badge s-done">Implementado</span></div>
+
+        <!-- SECURITY FIXES -->
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>Security fix: session token requerido en todas las políticas perm:*</strong><p class="note">PermissionPolicyProvider actualizado. Cierra bypass legacy donde requests sin sesión válida podían pasar PermissionHandler en edge cases. Commit 7d8ec8a.</p></div><span class="ci-badge s-done">Corregido</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>Security fix: subscriber ownership en operational-settings y password-reset-mode</strong><p class="note">TenantsController + UpdateTenantPasswordResetModeHandler: verifican que el caller sea dueño del subscriber antes de mutar. Cierra IDOR potencial en endpoints de configuración operacional.</p></div><span class="ci-badge s-done">Corregido</span></div>
+
+        <!-- ARCHITECTURE CHECKS -->
+        <div class="ci"><input type="checkbox" checked data-sec="s15" data-val="1" onchange="recalc()"><div class="ci-text"><strong>New architecture checks: permissions-authorization-rules + frontend-permissions-rules</strong><p class="note">check-permissions-authorization-rules.mjs: valida que perm:* policies no bypaseen session check, que AdminReadModel esté en endpoints correctos. check-frontend-permissions-rules.mjs: detecta patrones isAdmin||hasPerm duplicados en frontend. Ambos registrados en run-all.mjs.</p></div><span class="ci-badge s-done">Implementado</span></div>
       </div>
     </div>
 
@@ -2450,15 +2487,15 @@ body {
     </div>
     <div class="kpi-card blue">
       <div class="kpi-label">CI Quality</div>
-      <div class="kpi-value blue">88%</div>
-      <div class="pbar thin"><div class="pbar-fill blue" style="width:88%"></div></div>
-      <div class="kpi-sub">Node checks + NetArchTest + PS1</div>
+      <div class="kpi-value blue">92%</div>
+      <div class="pbar thin"><div class="pbar-fill blue" style="width:92%"></div></div>
+      <div class="kpi-sub">11 checks · NetArchTest · PS1</div>
     </div>
     <div class="kpi-card amber">
       <div class="kpi-label">ADR Coverage</div>
-      <div class="kpi-value amber">9</div>
-      <div class="pbar thin"><div class="pbar-fill amber" style="width:90%"></div></div>
-      <div class="kpi-sub">ADR-001 → ADR-009 activos</div>
+      <div class="kpi-value amber">12</div>
+      <div class="pbar thin"><div class="pbar-fill amber" style="width:100%"></div></div>
+      <div class="kpi-sub">ADR-001 → ADR-012 activos</div>
     </div>
   </div>
 
@@ -2500,6 +2537,19 @@ body {
         <div class="gv-row"><span class="gv-name">AI-002: LLM call en Domain/App</span><div class="gv-bar"><div class="pbar thin"><div class="pbar-fill green" style="width:100%"></div></div></div><span class="gv-val tc-green">✓ error</span></div>
         <div class="gv-row"><span class="gv-name">AI-003: using AI en core layers</span><div class="gv-bar"><div class="pbar thin"><div class="pbar-fill green" style="width:100%"></div></div></div><span class="gv-val tc-green">✓ error</span></div>
         <div class="gv-row"><span class="gv-name">AI-004: ERP.AI.* → ErpDbContext</span><div class="gv-bar"><div class="pbar thin"><div class="pbar-fill amber" style="width:100%"></div></div></div><span class="gv-val tc-amber">⚠ warn</span></div>
+      </div>
+    </div>
+
+    <div class="card card-accent cyan">
+      <div class="card-header"><span class="card-icon">🔐</span><h3>Permission + Security Checks (NUEVO)</h3><span class="badge badge-cyan">✅ v24</span></div>
+      <div class="card-body">
+        <div class="gv-row"><span class="gv-name">PERM-001: perm:* sin session token</span><div class="gv-bar"><div class="pbar thin"><div class="pbar-fill green" style="width:100%"></div></div></div><span class="gv-val tc-green">✓ error</span></div>
+        <div class="gv-row"><span class="gv-name">PERM-002: AdminReadModel fuera de admin endpoint</span><div class="gv-bar"><div class="pbar thin"><div class="pbar-fill green" style="width:100%"></div></div></div><span class="gv-val tc-green">✓ error</span></div>
+        <div class="gv-row"><span class="gv-name">PERM-003: isAdmin||hasPerm duplicado en frontend</span><div class="gv-bar"><div class="pbar thin"><div class="pbar-fill amber" style="width:100%"></div></div></div><span class="gv-val tc-amber">⚠ warn</span></div>
+        <div class="gv-row"><span class="gv-name">FP-001: permisos no usan usePermissionsUi</span><div class="gv-bar"><div class="pbar thin"><div class="pbar-fill amber" style="width:100%"></div></div></div><span class="gv-val tc-amber">⚠ warn</span></div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text-dim)">
+          check-permissions-authorization-rules.mjs + check-frontend-permissions-rules.mjs
+        </div>
       </div>
     </div>
 
@@ -2652,9 +2702,9 @@ body {
    PROJECT DATA — editar aquí para actualizar dashboard
 ═══════════════════════════════════════════════════════════ */
 const D = {
-  version: 'v23 — Event-Driven Foundation',
+  version: 'v24 — Permission Pipeline + AI Foundation',
   updated: '2026-05-22',
-  sections: ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14'],
+  sections: ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15'],
 };
 
 /* ═══════════════════════════════════════════════════════════
