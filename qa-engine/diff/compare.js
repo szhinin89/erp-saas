@@ -70,6 +70,22 @@ export function computeRegressionDiff(
 
   const criticalBehaviorChanges = behaviorChanges.filter((c) => c.severity === 'CRITICAL');
 
+  /** @type {string[]} */
+  const recurringFailures = [];
+  for (const cur of currentTests) {
+    const prev = prevMap.get(cur.id);
+    if (cur.status === 'FAIL' && prev?.status === 'FAIL') {
+      recurringFailures.push(cur.id);
+    }
+  }
+
+  const currentFailRate = currentTests.length
+    ? currentTests.filter((t) => t.status === 'FAIL').length / currentTests.length
+    : 0;
+  const prevFailRate = prevMap.size
+    ? [...prevMap.values()].filter((t) => t.status === 'FAIL').length / prevMap.size
+    : 0;
+
   const diffPayload = {
     timestamp: new Date().toISOString(),
     version: 2,
@@ -78,11 +94,19 @@ export function computeRegressionDiff(
     fixed,
     behaviorChanges,
     criticalBehaviorChanges: criticalBehaviorChanges.length,
+    recurringFailures,
+    trendHints: {
+      failure_rate_delta: Math.round((currentFailRate - prevFailRate) * 1000) / 1000,
+      behavior_change_count: behaviorChanges.length,
+      degrading: hasBaseline && currentFailRate > prevFailRate + 0.05,
+      improving: hasBaseline && currentFailRate < prevFailRate - 0.05,
+    },
     summary: {
       newFailureCount: newFailures.length,
       fixedCount: fixed.length,
       behaviorChangeCount: behaviorChanges.length,
       criticalBehaviorChangeCount: criticalBehaviorChanges.length,
+      recurringFailureCount: recurringFailures.length,
     },
   };
 

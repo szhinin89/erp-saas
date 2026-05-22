@@ -174,7 +174,14 @@ jobs:
         if: always()
         run: |
           if [ -f reports/regression.json ]; then
-            node -e "const r=require('./reports/regression.json'); if(r.status==='FAILED'){process.exit(1)}"
+            node -e "
+              const r=require('./reports/regression.json');
+              const block=r.status==='FAILED'||r.summary?.block_ci===true;
+              const types=r.diagnostics?.summary?.by_type||{};
+              if(types.AUTH_BYPASS||types.TENANT_ISOLATION_LEAK) process.exit(1);
+              if((r.summary?.max_risk_score||0)>=90) process.exit(1);
+              if(block) process.exit(1);
+            "
           else
             echo "Missing reports/regression.json"
             exit 1

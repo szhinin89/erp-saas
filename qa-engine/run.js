@@ -12,6 +12,7 @@ import { waitForApiReady, waitForFrontendReady } from './core/readiness.js';
 import { QaRunner } from './core/runner.js';
 import { buildCoverageMap } from './coverage/map.js';
 import { computeRegressionDiff } from './diff/compare.js';
+import { runDiagnostics } from './diagnostics/index.js';
 import { writeReports } from './reporting/writer.js';
 import { runSeedEngine } from './seed/seedEngine.js';
 import { runAuthSuite } from './suites/auth/authSuite.js';
@@ -91,6 +92,15 @@ export async function runQaEngine(config) {
   );
   mark('regression.diff.complete', diff.summary);
 
+  mark('diagnostics.start');
+  const diagnostics = runDiagnostics({
+    results: runner.results,
+    diff,
+    previousRunPath: config.previousRunPath,
+    previousBehaviorPath: config.previousBehaviorPath,
+  });
+  mark('diagnostics.complete', diagnostics.summary);
+
   const coverage = buildCoverageMap(runner.results);
   mark('coverage.map.complete', coverage.summary);
 
@@ -98,6 +108,7 @@ export async function runQaEngine(config) {
     correlationId: runCorrelationId,
     seed: 'manifest-v1',
     diff,
+    diagnostics,
     coverage,
     behavior: behavior.toJSON(),
     environment: { api: config.api, frontend: config.frontend },
