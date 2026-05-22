@@ -75,7 +75,7 @@ Orden lógico para **no** saltarse capas ni contradecir UI:
 
 ### Mapa rápido de temas (todo en este archivo)
 
-- **Arranque local, DB, comandos, API** → `CLAUDE.md` (sección "Arranque rápido") y `docs/STATUS.md`.
+- **Arranque local, DB, comandos, API** → `docs/DEVELOPMENT.md` y `docs/STATUS.md`.
 - **Validación** → [Validación en 4 capas](#sec-validation).
 - **Formularios / pantallas** → [ZH Form](#sec-zh-form) → [Tabs entidad](#sec-entity-tabs) → [Copy UX](#sec-copy-ux).
 - **Menú** → [Rutas únicas](#sec-nav); copy del menú en [Copy UX](#sec-copy-ux).

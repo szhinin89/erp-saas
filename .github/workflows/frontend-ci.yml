@@ -30,6 +30,9 @@ jobs:
       - name: Typecheck + production build
         working-directory: frontend
         run: npm run build
+      - name: Pages wrapper rule (F-01 / PR-6)
+        shell: pwsh
+        run: ./scripts/ci/check-pages-wrapper-rule.ps1
       - name: Architecture guardrails (frontend chunk)
         shell: pwsh
         run: ./tools/architecture/check-architecture-guardrails.ps1 -FrontendChunkOnly

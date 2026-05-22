@@ -151,6 +151,11 @@ page-template.css    → layout global (.pg-page, .pg-kpi, .pg-section…)
 | Dashboard | `dsh-*` |
 | Reportes | `rpt-*` |
 | SuperAdmin Planes | `sap-*` |
+| SuperAdmin (overview, suscriptores) | `sa-*` |
+| SaaS (overview, billing) | `saas-*` |
+| Inventario | `inv-*` |
+| Compras | `pur-*` |
+| Contabilidad | `acc-*` |
 
 ### Clases más usadas (no recrear)
 ```
@@ -213,6 +218,17 @@ No implementar hasta que el cliente lo requiera. El dominio ya tiene la base:
 - **IDs de tenant fuera de la URL:** usar `sessionStorage` con clave `erp.saas.*`, nunca `?tenantId=`.
 - **Módulo nuevo:** preguntar en qué planes SaaS debe incluirse antes de dar por cerrado. No asumir "todos los planes".
 - **Tarifas SRI:** no existe formulario para crear tarifas — vienen de `sri_vat_rate`. El endpoint `POST /api/tax-rates` fue eliminado. Usar `GET /api/tax-rates` para poblar dropdowns.
+
+---
+
+## Restricciones estructurales
+
+- No existe `ERP.Shared` en este monorepo. No confundir con otros repos.
+- El código compartido debe vivir:
+  - dentro de su módulo correspondiente (`modules/{dominio}/`), o
+  - en una librería explícitamente aprobada (ver `docs/DEVELOPMENT.md#stack-oficial`).
+- Evitar crear carpetas `shared/` genéricas sin ownership claro.
+- **`pages/*.tsx`** son solo wrappers de enrutamiento (≤ 15 líneas, cero hooks React, cero lógica). La implementación real vive en `modules/{dominio}/pages/`.
 
 ---
 
