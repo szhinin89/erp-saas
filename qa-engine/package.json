@@ -1,0 +1,6 @@
+{
+  "name": "erp-qa-engine",
+  "private": true,
+  "type": "module",
+  "description": "Black-box QA engine for ERP SaaS (CI/dev only — decoupled from production code)"
+}

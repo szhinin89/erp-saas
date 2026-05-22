@@ -1,5 +1,8 @@
 tools/architecture/architecture-report.json
 
+# QA engine generated reports (CI artifacts)
+reports/
+
 # Build
 **/bin/
 **/obj/
