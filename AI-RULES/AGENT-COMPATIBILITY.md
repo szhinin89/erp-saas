@@ -41,7 +41,46 @@ Los adaptadores **no duplican** reglas extensas. Solo:
 
 ---
 
-## Resolución de conflictos
+## Executable Enforcement
+
+Las reglas críticas de frontend **no dependen únicamente** de prompts IA.
+
+**Capa oficial:** `tools/architecture/*.mjs` (Node.js ESM, sin deps pesadas).
+
+| Comando | Uso |
+|---------|-----|
+| `npm run architecture:check` | CI + pre-merge (desde `frontend/`) |
+| `node tools/architecture/run-all.mjs` | Mismo runner desde raíz |
+| `npm run architecture:report` | Artefacto JSON para agentes/CI |
+
+Si un agente (Cursor, Claude, futuro) sugiere código que viola un check, **el CI fallará** aunque el agente no haya leído el adaptador.
+
+### Precedencia con conflictos
+
+| Orden | Fuente |
+|-------|--------|
+| 1 | **Scripts ejecutables + CI** (resultado real) |
+| 2 | `AI-RULES/*` (canónico documental) |
+| 3 | Adaptadores IA (`.mdc`, `CLAUDE.md`) |
+
+Detalle por check: [ENFORCEMENT.md](./ENFORCEMENT.md#architecture-enforcement-node--frontend--backend) · [`tools/architecture/README.md`](../tools/architecture/README.md)
+
+---
+
+## CI Authority
+
+Si entran en conflicto **prompts de IA**, **documentación** o **código sugerido** con el resultado de CI:
+
+1. **Scripts ejecutables** (`tools/architecture/*.mjs`, guardrails PowerShell, tests) tienen **prioridad absoluta**.
+2. **`AI-RULES/*`** prevalece sobre adaptadores (`.mdc`, `CLAUDE.md`) en conflictos documentales.
+3. **ADRs** (`docs/adr/`) explican el *por qué*; no anulan un check que falla en CI sin ADR + cambio de config.
+4. Los agentes deben **corregir el código** o **proponer cambio en config/ADR**, no ignorar el fallo del pipeline.
+
+Rationale histórico: [`docs/adr/ADR-006-multi-agent-governance.md`](../docs/adr/ADR-006-multi-agent-governance.md).
+
+---
+
+## Resolución de conflictos (documentación)
 
 | Situación | Prevalece |
 |-----------|-----------|

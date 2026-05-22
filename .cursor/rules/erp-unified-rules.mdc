@@ -36,7 +36,7 @@ alwaysApply: true
 3. **Backend:** Validator + dominio + EF; `ApiResultExtensions`; `Result<T>`.
 4. **SaaS:** sin UUID tenant en URL → `saas-navigation-no-sensitive-url.mdc`.
 5. **Módulo nuevo:** preguntar planes SaaS antes de cerrar.
-6. **Al terminar:** sync docs → `docs-progress-status-sync.mdc`.
+6. **Al terminar:** sync docs → `docs-progress-status-sync.mdc`; validar → `npm run architecture:check` (desde `frontend/`).
 
 ## Adaptadores por área (globs)
 

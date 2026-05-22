@@ -1,8 +1,9 @@
 {
-  "$schemaNote": "Archivos legacy permitidos temporalmente. Nuevos archivos NO deben añadirse aquí sin ADR. Ver AI-RULES/PR-RULES-CATALOG.md.",
+  "$schemaNote": "Archivos legacy permitidos temporalmente. Nuevos archivos NO deben añadirse aquí sin ADR. Ver AI-RULES/PR-RULES-CATALOG.md. Checks Node: tools/architecture/README.md",
   "handlerHandleMaxLines150": [],
   "tsxMaxLines500": [],
   "tsxPageWrapperMaxLines15": [],
   "modulesLegacyRootServiceImports": [],
+  "backendControllerMaxLines": [],
   "frontendIndexChunkMaxKb": 650
 }

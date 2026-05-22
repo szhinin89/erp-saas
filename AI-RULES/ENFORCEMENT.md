@@ -75,12 +75,14 @@ Cursor hint: `.cursor/rules/docs-progress-status-sync.mdc` (glob `docs/STATUS.md
 cd backend
 dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj
 dotnet test src/ERP.Application.Tests/ERP.Application.Tests.csproj
-cd frontend && npx tsc --noEmit && npm run build
+cd frontend && npx tsc --noEmit && npm run build && npm run architecture:check
 ```
 
 ---
 
 ## Guardrails automatizados
+
+### Backend / monorepo (PowerShell + .NET)
 
 | Herramienta | Ruta |
 |-------------|------|
@@ -90,7 +92,82 @@ cd frontend && npx tsc --noEmit && npm run build
 | Handler size | `tools/quality/check-handler-size.ps1` |
 | NetArchTest | `backend/src/ERP.Architecture.Tests` |
 
-Grandfather: `tools/architecture/architecture-grandfather.json`
+### Frontend + backend architecture (Node.js — enforcement ejecutable)
+
+| Script | Comando | Qué valida |
+|--------|---------|------------|
+| Runner | `npm run architecture:check` (desde `frontend/`) | 9 checks + score + JSON report |
+| Pages wrapper | `npm run architecture:pages` | `pages/**/*.tsx` ≤15 líneas, sin hooks/api |
+| Import boundaries | `npm run architecture:imports` | Imports prohibidos, profundidad relativa |
+| Module boundaries | `npm run architecture:modules` | Cross-imports entre módulos |
+| CSS prefixes | `npm run architecture:css` | Prefijos por área, clases ambiguas |
+| Cross-layer | `npm run architecture:cross-layer` | Pages/stores sin capas prohibidas |
+| Backend (4 checks) | `npm run architecture:backend` | Layering csproj, usings, controllers, tenant |
+| JSON + score | `npm run architecture:report` | `architecture-report.json` con `architectureScore` |
+| GitHub annotations | `node tools/architecture/run-all.mjs --annotate` | `::error file=…::` / `::warning file=…::` |
+
+Fuente: [`tools/architecture/README.md`](../tools/architecture/README.md)
+
+#### Backend checks (Node, heurístico — sin Roslyn)
+
+| Check | Regla | Qué valida |
+|-------|-------|------------|
+| `backend-layering` | B-layering | Referencias de proyecto/paquetes por capa (.csproj) |
+| `backend-clean-architecture` | B-domain / B-application | `using` prohibidos en Domain/Application |
+| `backend-controller-thin` | B-controller | Líneas máx., patrones EF/SQL inline (error); líneas > umbral warning |
+| `backend-tenant-rules` | B-tenant | `IgnoreQueryFilters()` fuera de allowlist; entidades sin `TenantId`/marker |
+
+Umbrales y allowlists: `tools/architecture/config/architecture-rules.json` → `backend`.
+
+#### Architecture score
+
+`calculate-score.mjs` + `config/scoring-rules.json` producen en `architecture-report.json`:
+
+- `architectureScore` (0–100), `status` (`healthy` | `warning` | `critical`)
+- `driftRisk` (`low` | `medium` | `high`)
+- `modules` — desglose por módulo frontend/backend
+- `adrs` — índice de ADRs vigentes
+
+Penalizaciones: violations (−8), warnings (−2), entradas grandfather (−1). Solo afecta reporte/CI; **cero impacto runtime**.
+
+#### PR annotations (GitHub Actions)
+
+`formatters/github-formatter.mjs` convierte violations/warnings en anotaciones:
+
+```
+::error file=frontend/src/pages/Foo.tsx,line=12::PR-6 violation: pages wrapper exceeds 15 lines
+::warning file=backend/src/ERP.API/Controllers/BarController.cs::B-controller-warn: controller has 200 lines
+```
+
+Auto-emite en CI cuando `GITHUB_ACTIONS=true` (integrado en `run-all.mjs`).
+
+#### ADRs (rationale, no enforcement)
+
+| ADR | Tema |
+|-----|------|
+| [ADR-001](../docs/adr/ADR-001-modular-monolith.md) | Modular monolith |
+| [ADR-002](../docs/adr/ADR-002-no-erp-shared.md) | Sin ERP.Shared |
+| [ADR-003](../docs/adr/ADR-003-pages-wrapper-only.md) | Pages wrapper |
+| [ADR-004](../docs/adr/ADR-004-clean-architecture-enforcement.md) | Clean Architecture + checks |
+| [ADR-005](../docs/adr/ADR-005-multi-tenant-query-filters.md) | Multi-tenant filters |
+| [ADR-006](../docs/adr/ADR-006-multi-agent-governance.md) | Governance multi-agente |
+
+Índice: [`docs/adr/README.md`](../docs/adr/README.md). **AI-RULES** = reglas; **ADRs** = por qué.
+
+**Config:**
+
+| Archivo | Uso |
+|---------|-----|
+| `tools/architecture/config/architecture-rules.json` | Reglas FE/BE import/module/cross-layer/backend + `exemptions` + `adr.index` |
+| `tools/architecture/config/css-prefixes.json` | Mapa path → prefijo CSS |
+| `tools/architecture/config/scoring-rules.json` | Pesos del architecture score |
+| `tools/architecture/architecture-grandfather.json` | Legacy permitido (`tsxPageWrapperMaxLines15`, …) |
+
+**Extender reglas:** editar JSON de config → `npm run architecture:check`. Documentar en este archivo (tabla) si la regla es normativa nueva.
+
+**Excepciones:** añadir path a `architecture-grandfather.json` o `architecture-rules.json` → `exemptions`. Requiere ADR o nota en PR. No silenciar checks en código.
+
+Grandfather legacy: `tools/architecture/architecture-grandfather.json`
 
 ---
 

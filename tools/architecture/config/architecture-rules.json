@@ -1,0 +1,209 @@
+{
+  "$schemaNote": "Reglas configurables para tools/architecture/*.mjs. Canónico: AI-RULES/ENFORCEMENT.md",
+  "pageWrapper": {
+    "maxLines": 15,
+    "forbiddenHookPatterns": [
+      "useState",
+      "useEffect",
+      "useMemo",
+      "useCallback",
+      "useRef",
+      "useReducer",
+      "useLayoutEffect",
+      "useContext",
+      "useId",
+      "useSyncExternalStore"
+    ],
+    "forbiddenImportPatterns": [
+      "/api/",
+      "/services/",
+      "/stores/",
+      "/store/",
+      "backend/",
+      "ERP.",
+      "/infrastructure/"
+    ],
+    "forbiddenCodePatterns": [
+      "\\bfetch\\s*\\(",
+      "\\baxios\\.",
+      "createApi\\s*\\("
+    ]
+  },
+  "importBoundaries": {
+    "pages": {
+      "forbiddenImportPatterns": [
+        "/modules/[^/]+/api/",
+        "/services/",
+        "/stores/",
+        "/store/",
+        "backend/",
+        "ERP.",
+        "/infrastructure/"
+      ],
+      "maxRelativeDepth": 6
+    },
+    "modules": {
+      "forbiddenImportPatterns": [
+        "/services/",
+        "backend/",
+        "ERP.",
+        "/infrastructure/"
+      ],
+      "maxRelativeDepth": 8
+    }
+  },
+  "moduleBoundaries": {
+    "sharedModules": ["lib", "shared", "components", "config"],
+    "forbiddenCrossImports": [
+      { "from": "superadmin", "to": "accounting" },
+      { "from": "superadmin", "to": "ventas" },
+      { "from": "superadmin", "to": "compras" },
+      { "from": "superadmin", "to": "inventario" },
+      { "from": "accounting", "to": "superadmin" }
+    ],
+    "allowedCrossImports": [
+      { "from": "ventas", "to": "customers" },
+      { "from": "ventas", "to": "products" },
+      { "from": "ventas", "to": "catalog" },
+      { "from": "ventas", "to": "inventario" },
+      { "from": "compras", "to": "catalog" },
+      { "from": "compras", "to": "gastos" },
+      { "from": "gastos", "to": "compras" },
+      { "from": "products", "to": "catalog" },
+      { "from": "catalog", "to": "customers" },
+      { "from": "companies", "to": "superadmin" },
+      { "from": "configuracion", "to": "companies" },
+      { "from": "configuracion", "to": "catalog" },
+      { "from": "inventario", "to": "branches" },
+      { "from": "settings", "to": "branches" },
+      { "from": "saas", "to": "auth" },
+      { "from": "saas", "to": "company-management" },
+      { "from": "superadmin", "to": "lib" },
+      { "from": "saas", "to": "lib" },
+      { "from": "*", "to": "lib" },
+      { "from": "*", "to": "shared" },
+      { "from": "*", "to": "components" },
+      { "from": "*", "to": "config" }
+    ]
+  },
+  "crossLayer": {
+    "pagesForbiddenPatterns": [
+      "\\bfetch\\s*\\(",
+      "\\baxios\\.",
+      "from\\s+['\"][^'\"]*\\/api\\/",
+      "from\\s+['\"][^'\"]*\\/stores\\/",
+      "from\\s+['\"][^'\"]*\\/store\\/"
+    ],
+    "modulePagesForbiddenPatterns": [
+      "[^a-zA-Z.]fetch\\s*\\(",
+      "from\\s+['\"]axios['\"]"
+    ],
+    "storesForbiddenImportPatterns": [
+      "backend/",
+      "ERP.",
+      "/infrastructure/"
+    ]
+  },
+  "exemptions": {
+    "pagesWrapper": [],
+    "importBoundaries": [],
+    "moduleBoundaries": [],
+    "cssPrefixes": [],
+    "crossLayer": []
+  },
+  "adr": {
+    "index": [
+      "docs/adr/ADR-001-modular-monolith.md",
+      "docs/adr/ADR-002-no-erp-shared.md",
+      "docs/adr/ADR-003-pages-wrapper-only.md",
+      "docs/adr/ADR-004-clean-architecture-enforcement.md",
+      "docs/adr/ADR-005-multi-tenant-query-filters.md",
+      "docs/adr/ADR-006-multi-agent-governance.md"
+    ],
+    "readme": "docs/adr/README.md"
+  },
+  "backend": {
+    "layering": {
+      "projects": {
+        "domain": {
+          "csproj": "backend/src/ERP.Domain/ERP.Domain.csproj",
+          "allowedProjectRefs": [],
+          "allowedPackages": ["MediatR.Contracts"]
+        },
+        "application": {
+          "csproj": "backend/src/ERP.Application/ERP.Application.csproj",
+          "allowedProjectRefs": ["../ERP.Domain/ERP.Domain.csproj"],
+          "allowedPackagePrefixes": ["Microsoft.Extensions.", "FluentValidation", "MediatR"]
+        },
+        "infrastructure": {
+          "csproj": "backend/src/ERP.Infrastructure/ERP.Infrastructure.csproj",
+          "allowedProjectRefs": [
+            "../ERP.Domain/ERP.Domain.csproj",
+            "../ERP.Application/ERP.Application.csproj"
+          ]
+        },
+        "api": {
+          "csproj": "backend/src/ERP.API/ERP.API.csproj",
+          "allowedProjectRefs": [
+            "../ERP.Application/ERP.Application.csproj",
+            "../ERP.Infrastructure/ERP.Infrastructure.csproj"
+          ]
+        }
+      }
+    },
+    "cleanArchitecture": {
+      "layers": {
+        "domain": {
+          "path": "backend/src/ERP.Domain",
+          "forbiddenUsings": [
+            "Microsoft.EntityFrameworkCore",
+            "Microsoft.AspNetCore",
+            "ERP.Infrastructure"
+          ]
+        },
+        "application": {
+          "path": "backend/src/ERP.Application",
+          "forbiddenUsings": [
+            "Microsoft.EntityFrameworkCore",
+            "Microsoft.AspNetCore.Mvc",
+            "ERP.Infrastructure",
+            "ErpDbContext"
+          ]
+        }
+      }
+    },
+    "controller": {
+      "path": "backend/src/ERP.API/Controllers",
+      "maxLinesError": 400,
+      "maxLinesWarning": 150,
+      "forbiddenPatterns": [
+        "ErpDbContext",
+        "FromSqlRaw",
+        "ExecuteSqlRaw",
+        "\\.Database\\.",
+        "SaveChangesAsync"
+      ]
+    },
+    "tenant": {
+      "scanPath": "backend/src",
+      "entityScanPath": "backend/src/ERP.Domain",
+      "scopedMarker": "ISubscriberScopedEntity",
+      "ignoreQueryFiltersAllowlist": [
+        "backend/src/ERP.Infrastructure/Persistence/PlatformQueryAccessor.cs",
+        "backend/src/ERP.API.Tests/Integration/PlatformSubscriberCompaniesFlowTests.cs",
+        "backend/src/ERP.Infrastructure.Tests/Persistence/IgnoreQueryFiltersAuditTests.cs"
+      ],
+      "exemptEntityGlobs": [
+        "**/Billing/**",
+        "**/Saas/**",
+        "**/Geography/**",
+        "**/Sri/**",
+        "**/Platform/**",
+        "**/Modules/Common/**",
+        "**/Access/Entities/AccessProfile*.cs",
+        "**/Configuration/Entities/Config*.cs",
+        "**/Configuration/Entities/BillingSettings.cs"
+      ]
+    }
+  }
+}

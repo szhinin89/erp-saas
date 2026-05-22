@@ -21,6 +21,7 @@ Cursor, Claude y futuros agentes deben leer **estos archivos** antes de inventar
 | [NAMING.md](./NAMING.md) | Convenciones de nombres (BD, código, i18n, CSS) |
 | [ENFORCEMENT.md](./ENFORCEMENT.md) | Validación 4 capas, docs sync, CI, anti-drift |
 | [PR-RULES-CATALOG.md](./PR-RULES-CATALOG.md) | Catálogo normativo B-xx / F-xx (bloqueante PR) |
+| [docs/adr/](../docs/adr/README.md) | ADRs — rationale arquitectónico (no duplicar reglas de enforcement) |
 
 ---
 

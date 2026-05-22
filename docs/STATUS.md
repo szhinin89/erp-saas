@@ -15,6 +15,7 @@
 | Priorities | `docs/ROADMAP.md` |
 | Architecture | `docs/ARCHITECTURE.md` |
 | Architecture rules (PR blocking) | `AI-RULES/PR-RULES-CATALOG.md` (entry: `docs/ARCHITECTURE-RULES.md`) |
+| ADRs (architectural rationale) | `docs/adr/README.md` |
 | Development + stack | `docs/DEVELOPMENT.md` |
 | Identity + security | `docs/IDENTITY.md` |
 | SaaS plans + billing | `docs/SAAS-COMMERCIAL.md` |
@@ -37,6 +38,8 @@ Consolidated 2026-05-21: former `MULTITENANCY`, `SCOPES`, `SECURITY`, `BILLING`,
 | PostgreSQL RLS (enterprise tables) | ✅ (in baseline) |
 | Rate limit per subscriber (600/min) | ✅ |
 | Architecture guardrails CI (scripts + NetArchTest) | ✅ (2026-05-21) |
+| **Frontend architecture checks (Node ESM)** | ✅ (2026-05-21) |
+| **Architecture governance v2** (ADRs, backend Node checks, score, PR annotations) | ✅ (2026-05-21) |
 | Architecture baseline v1.0 remediation (lint, E2E smoke, SuperAdminController, SYSTEM_TRUTH) | ✅ (2026-05-21) |
 | Post-audit remediation (session SEC, Sales unify, Kardex CQRS, Cash validators) | ✅ (2026-05-21) |
 | Post-audit wave 2 (menu builder split, services→modules, access/security pages) | ✅ (2026-05-21) |
