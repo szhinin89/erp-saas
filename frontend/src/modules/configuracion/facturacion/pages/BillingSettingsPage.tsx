@@ -5,8 +5,6 @@ import { LoadingState, NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
-import { useAuthStore } from '../../../../store/authStore';
 import { useAsync } from '../../../../hooks/useAsync';
 import { billingSettingsService } from '../api/billingSettingsService';
 import { formatApiError } from '../../../lib/formatApiError';
@@ -15,6 +13,7 @@ import {
   type BillingSettingsValues,
 } from '../../../../schemas/configuracion/billingSettingsSchema';
 import './billing-settings-page.css';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 const RECEIPT_WIDTHS = [
   { value: 80, label: '80 mm (estándar)' },
@@ -22,12 +21,9 @@ const RECEIPT_WIDTHS = [
 ];
 
 export function BillingSettingsPage() {
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const role    = useAuthStore((s) => s.user?.role ?? '');
-
-  const isAdmin  = role === 'Admin' || role === 'SuperAdmin';
-  const canView  = isAdmin || hasPerm('settings.company.view');
-  const canEdit  = isAdmin || hasPerm('settings.company.edit');
+  const { canShow } = usePermissionsUi();
+  const canView  = canShow('settings.company.view');
+  const canEdit  = canShow('settings.company.edit');
 
   const [saving,    setSaving]    = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);

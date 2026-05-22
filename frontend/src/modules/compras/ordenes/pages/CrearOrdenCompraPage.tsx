@@ -4,12 +4,12 @@ import { NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { useOrdenCompraAcciones } from '../hooks/useOrdenesCompra';
 import { api } from '../../../lib/api';
 import type { ApiResponse } from '../../../../types/api';
 import type { ItemOrdenCompraRequest } from '../api/ordenCompraService';
 import './orden-compra-page.css';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 interface ProveedorOpcion { id: string; razonSocial: string; }
 interface ProductoOpcion  { id: string; shortName: string; isActive: boolean; }
@@ -24,9 +24,9 @@ interface ItemRow {
 const emptyItem = (): ItemRow => ({ productoId: '', cantidad: '', precioUnitario: '', ivaPorcentaje: '15' });
 
 export function CrearOrdenCompraPage() {
+  const { canShow } = usePermissionsUi();
   const navigate  = useNavigate();
-  const hasPerm   = usePermissionsStore((s) => s.has);
-  const canCreate = hasPerm('purchases.orders.create');
+  const canCreate = canShow('purchases.orders.create');
 
   const [proveedores, setProveedores] = useState<ProveedorOpcion[]>([]);
   const [productos,   setProductos]   = useState<ProductoOpcion[]>([]);

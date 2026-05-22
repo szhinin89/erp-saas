@@ -3,8 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useI18n } from '../../../i18n/i18n';
-import { useAuthStore } from '../../../store/authStore';
-import { usePermissionsStore } from '../../../store/permissionsStore';
 import { catalogService, type UnitItem } from '../api/catalogService';
 import { ZHField, ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
@@ -12,6 +10,7 @@ import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { formatApiRequestError } from '../../lib/apiError';
 import './catalog-list-page.css';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 
 /* ── Form schema ────────────────────────────────────────────── */
 const unitSchema = z.object({
@@ -23,15 +22,13 @@ type UnitFormValues = z.infer<typeof unitSchema>;
 
 /* ── Main page ──────────────────────────────────────────────── */
 export function UnitsPage() {
+  const { canShow } = usePermissionsUi();
   const { t } = useI18n();
-  const role    = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin = role === 'Admin' || role === 'SuperAdmin';
-  const hasPerm = usePermissionsStore((s) => s.has);
 
-  const canView   = isAdmin || hasPerm('inventory.units.view');
-  const canCreate = isAdmin || hasPerm('inventory.units.create');
-  const canUpdate = isAdmin || hasPerm('inventory.units.update');
-  const canDelete = isAdmin || hasPerm('inventory.units.delete');
+  const canView   = canShow('inventory.units.view');
+  const canCreate = canShow('inventory.units.create');
+  const canUpdate = canShow('inventory.units.update');
+  const canDelete = canShow('inventory.units.delete');
 
   /* ── Data state ───────────────────────────────────────────── */
   const [units,   setUnits]   = useState<UnitItem[]>([]);

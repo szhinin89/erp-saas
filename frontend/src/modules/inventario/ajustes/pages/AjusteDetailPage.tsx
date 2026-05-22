@@ -5,9 +5,9 @@ import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHConfirmModal } from '../../../../components/zh/ZHConfirmModal';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { AjusteEstadoBadge, AjusteTipoBadge } from '../components/AjusteEstadoBadge';
 import { useAjusteDetalle, useAjusteAcciones } from '../hooks/useAjustes';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 function InfoItem({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -19,13 +19,13 @@ function InfoItem({ label, children }: { label: string; children: React.ReactNod
 }
 
 export function AjusteDetailPage() {
+  const { canShow } = usePermissionsUi();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const hasPerm  = usePermissionsStore((s) => s.has);
 
-  const canView    = hasPerm('inventory.adjustments.view');
-  const canExecute = hasPerm('inventory.adjustments.execute');
-  const canCancel  = hasPerm('inventory.adjustments.cancel');
+  const canView    = canShow('inventory.adjustments.view');
+  const canExecute = canShow('inventory.adjustments.execute');
+  const canCancel  = canShow('inventory.adjustments.cancel');
 
   const { data: ajuste, loading, error, refetch } = useAjusteDetalle(id ?? null);
   const { loading: actLoading, error: actError, ejecutar, cancelar } = useAjusteAcciones(refetch);

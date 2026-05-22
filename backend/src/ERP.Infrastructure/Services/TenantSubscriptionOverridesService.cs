@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ERP.Application.Access.Caching;
 using ERP.Application.Common;
 using ERP.Application.Subscriptions;
 using ERP.Domain.Subscriptions;
@@ -12,11 +13,16 @@ public sealed class SubscriptionFeatureOverridesService : ISubscriptionFeatureOv
 {
     private readonly ErpDbContext _db;
     private readonly IPlatformQueryAccessor _platform;
+    private readonly IPermissionsCacheInvalidator _permissionsCache;
 
-    public SubscriptionFeatureOverridesService(ErpDbContext db, IPlatformQueryAccessor platform)
+    public SubscriptionFeatureOverridesService(
+        ErpDbContext db,
+        IPlatformQueryAccessor platform,
+        IPermissionsCacheInvalidator permissionsCache)
     {
         _db = db;
         _platform = platform;
+        _permissionsCache = permissionsCache;
     }
 
     public async Task ApplyModuleOverridesAsync(
@@ -68,6 +74,7 @@ public sealed class SubscriptionFeatureOverridesService : ISubscriptionFeatureOv
                         actorId,
                         subscriptionId: subscription.Id),
                     ct);
+                await _permissionsCache.BumpSubscriberVersionAsync(subscriberId, ct);
             }
 
             return;
@@ -118,6 +125,8 @@ public sealed class SubscriptionFeatureOverridesService : ISubscriptionFeatureOv
                 subscriptionId: subscription.Id,
                 metadataJson: metadata),
             ct);
+
+        await _permissionsCache.BumpSubscriberVersionAsync(subscriberId, ct);
     }
 
     private static string ResolveModuleKey(string? resourceRef, string code)

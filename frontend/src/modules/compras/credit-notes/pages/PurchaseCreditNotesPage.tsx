@@ -3,8 +3,7 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../../i18n/i18n';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
-import { useAuthStore } from '../../../../store/authStore';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 import {
   purchaseCreditNotesService,
   type PurchaseCreditNote,
@@ -27,12 +26,10 @@ function noteTypeLabel(noteType: string): string {
 
 export function PurchaseCreditNotesPage() {
   const { t } = useI18n();
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const role    = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin = role === 'Admin' || role === 'SuperAdmin';
-  const canView    = isAdmin || hasPerm('purchases.credit-notes.view');
-  const canImport  = isAdmin || hasPerm('purchases.credit-notes.create');
-  const canApprove = isAdmin || hasPerm('purchases.credit-notes.approve');
+  const { canShow } = usePermissionsUi();
+  const canView    = canShow('purchases.credit-notes.view');
+  const canImport  = canShow('purchases.credit-notes.create');
+  const canApprove = canShow('purchases.credit-notes.approve');
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [rows,         setRows]         = useState<PurchaseCreditNote[]>([]);

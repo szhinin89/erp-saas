@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useI18n } from '../../../i18n/i18n';
-import { useAuthStore } from '../../../store/authStore';
-import { usePermissionsStore } from '../../../store/permissionsStore';
 import { profileService, type Profile } from '../api/profileService';
 import { ZHField, ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
@@ -12,6 +10,8 @@ import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { profileCreateSchema, type ProfileCreateFormValues } from '../../../schemas/access/profileSchema';
 import { formatApiRequestError } from '../../lib/apiError';
 import './ProfilesPage.css';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
+import { useAuthStore } from '../../../store/authStore';
 
 /* ── Permission groups mapped to CRUD columns ───────────────── */
 type PermGroup = {
@@ -113,8 +113,8 @@ function handleColumnToggle(
 export function ProfilesPage() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
-  const canManage = usePermissionsStore((s) => s.has('admin.roles.view'));
-  const isAdminOrSuper = user?.role === 'Admin' || user?.role === 'SuperAdmin';
+  const { canShow, isTenantAdmin } = usePermissionsUi();
+  const canManage = canShow('admin.roles.view');
 
   /* list state */
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -237,7 +237,7 @@ export function ProfilesPage() {
   const progressPct = Math.round((modulesWithPerms / MODULE_PERM_GROUPS.length) * 100);
   const modulesWithoutPerms = MODULE_PERM_GROUPS.length - modulesWithPerms;
 
-  if (!user || (!isAdminOrSuper && !canManage)) {
+  if (!user || (!isTenantAdmin && !canManage)) {
     return <NoAccessPage title={t('profiles.title')} />;
   }
 

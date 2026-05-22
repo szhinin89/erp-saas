@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { usePermissionsStore } from '../store/permissionsStore';
+import { usePermissionsUi } from '../access/usePermissionsUi';
 
 type Props = {
   /** Permission key to check, e.g. 'sales.invoices.view' */
@@ -12,27 +12,13 @@ type Props = {
 };
 
 /**
- * Conditionally renders children based on a single permission key.
- *
- * Usage — hide a section:
- *   <PermissionGuard permission="sales.invoices.view">
- *     <InvoiceList />
- *   </PermissionGuard>
- *
- * Usage — show a disabled state instead:
- *   <PermissionGuard
- *     permission="sales.invoices.create"
- *     fallback={<button disabled>Nueva factura</button>}
- *   >
- *     <button onClick={openModal}>Nueva factura</button>
- *   </PermissionGuard>
+ * UI-only: renders children when backend permission snapshot includes the key.
+ * See `frontend/src/access/README.md`.
  */
 export function PermissionGuard({ permission, children, fallback = null }: Props) {
-  const hasPerm = usePermissionsStore(s => s.has);
-  return hasPerm(permission) ? <>{children}</> : <>{fallback}</>;
+  const { canShow } = usePermissionsUi();
+  return canShow(permission) ? <>{children}</> : <>{fallback}</>;
 }
-
-// ── Multi-permission variant ─────────────────────────────────────────────────
 
 type MultiProps = {
   /** All listed permissions must be present. */
@@ -43,18 +29,9 @@ type MultiProps = {
   fallback?: ReactNode;
 };
 
-/**
- * Guards that require multiple permissions simultaneously.
- *
- * Usage — require both view AND create:
- *   <MultiPermissionGuard permissions={['sales.invoices.view', 'sales.invoices.create']}>
- *     ...
- *   </MultiPermissionGuard>
- */
 export function MultiPermissionGuard({ permissions, mode = 'all', children, fallback = null }: MultiProps) {
-  const hasPerm = usePermissionsStore(s => s.has);
-  const allowed = mode === 'all'
-    ? permissions.every(p => hasPerm(p))
-    : permissions.some(p => hasPerm(p));
+  const { canShow } = usePermissionsUi();
+  const allowed =
+    mode === 'all' ? permissions.every((p) => canShow(p)) : permissions.some((p) => canShow(p));
   return allowed ? <>{children}</> : <>{fallback}</>;
 }

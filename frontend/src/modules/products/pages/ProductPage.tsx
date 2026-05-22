@@ -3,25 +3,22 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../components/Page
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn } from '../../../components/zh/ZHForm';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
-import { usePermissionsStore } from '../../../store/permissionsStore';
-import { useAuthStore } from '../../../store/authStore';
 import { useI18n } from '../../../i18n/i18n';
 import { ProductForm } from '../components/ProductForm';
 import { useProducts } from '../hooks/useProducts';
 import { toOptionalGuid, type ProductFormValues } from '../schemas/productSchema';
 import type { Product } from '../../../types/product';
 import '../../../pages/ProductsPage.css';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 
 type TabId = 'listado' | 'formulario';
 
 export function ProductPage() {
   const { t } = useI18n();
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const role = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin   = role === 'Admin' || role === 'SuperAdmin';
-  const canView   = isAdmin || hasPerm('inventory.products.view');
-  const canCreate = isAdmin || hasPerm('inventory.products.create');
-  const canEdit   = isAdmin || hasPerm('inventory.products.edit');
+  const { canShow } = usePermissionsUi();
+  const canView   = canShow('inventory.products.view');
+  const canCreate = canShow('inventory.products.create');
+  const canEdit   = canShow('inventory.products.edit');
 
   const {
     recentProducts, productsLoading, productsError,

@@ -4,7 +4,6 @@ import { NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { useAjusteAcciones } from '../hooks/useAjustes';
 import { useBodegas } from '../../transferencias/hooks/useTransferencias';
 import { ajusteService, MOTIVOS_PREDEFINIDOS } from '../api/ajusteService';
@@ -12,6 +11,7 @@ import { useAsync } from '../../../../hooks/useAsync';
 import { api } from '../../../lib/api';
 import type { ApiResponse } from '../../../../types/api';
 import './ajustes-pages.css';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 interface ProductoOpcion {
   id: string;
@@ -22,9 +22,9 @@ interface ProductoOpcion {
 }
 
 export function CrearAjustePage() {
+  const { canShow } = usePermissionsUi();
   const navigate  = useNavigate();
-  const hasPerm   = usePermissionsStore((s) => s.has);
-  const canCreate = hasPerm('inventory.adjustments.create');
+  const canCreate = canShow('inventory.adjustments.create');
 
   const { data: bodegas, loading: loadingBodegas } = useBodegas();
   const { data: productos } = useAsync<ProductoOpcion[]>(async () => {

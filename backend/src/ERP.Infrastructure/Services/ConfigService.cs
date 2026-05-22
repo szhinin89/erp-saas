@@ -2,10 +2,14 @@ using System.Globalization;
 using System.Text.Json;
 using ERP.Application.Admin;
 using ERP.Application.Common;
+using ERP.Application.Common.Interfaces;
 using ERP.Domain.Configuration.Entities;
+using ERP.Infrastructure.Caching;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace ERP.Infrastructure.Services;
 
@@ -18,17 +22,29 @@ public sealed class ConfigService : IConfigService
     private readonly ErpDbContext _db;
     private readonly IMemoryCache _cache;
     private readonly IPlatformQueryAccessor _platform;
+    private readonly ICacheDiagnosticsMetrics? _cacheMetrics;
+    private readonly CacheDiagnosticsOptions _cacheDiagnostics;
+    private readonly ILogger<ConfigService>? _logger;
     private static readonly MemoryCacheEntryOptions CacheOptions = new()
     {
         SlidingExpiration = TimeSpan.FromMinutes(20),
         AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(2),
     };
 
-    public ConfigService(ErpDbContext db, IMemoryCache cache, IPlatformQueryAccessor platform)
+    public ConfigService(
+        ErpDbContext db,
+        IMemoryCache cache,
+        IPlatformQueryAccessor platform,
+        IOptions<CacheDiagnosticsOptions> cacheDiagnostics,
+        ICacheDiagnosticsMetrics? cacheMetrics = null,
+        ILogger<ConfigService>? logger = null)
     {
         _db = db;
         _cache = cache;
         _platform = platform;
+        _cacheDiagnostics = cacheDiagnostics.Value;
+        _cacheMetrics = cacheMetrics;
+        _logger = logger;
     }
 
     public async Task WarmupTenantAsync(Guid subscriberId, CancellationToken ct = default)
@@ -262,7 +278,16 @@ public sealed class ConfigService : IConfigService
     {
         var cacheKey = CacheKey(subscriberId);
         if (_cache.TryGetValue<SubscriberConfigSnapshot>(cacheKey, out var hit) && hit is not null)
+        {
+            _cacheMetrics?.RecordHit("config-snapshot");
+            if (_cacheDiagnostics.LogConfigSnapshot)
+                _logger?.LogInformation("CACHE HIT category=config-snapshot key={Key}", cacheKey);
             return hit;
+        }
+
+        _cacheMetrics?.RecordMiss("config-snapshot");
+        if (_cacheDiagnostics.LogConfigSnapshot)
+            _logger?.LogInformation("CACHE MISS category=config-snapshot key={Key}", cacheKey);
 
         var globals = await _platform.Unfiltered(_db.ConfigGlobals, PlatformQueryReason.TenantScopedExplicit).AsNoTracking()
             .Where(x => x.SubscriberId == subscriberId)
@@ -282,6 +307,9 @@ public sealed class ConfigService : IConfigService
         };
 
         _cache.Set(cacheKey, snapshot, CacheOptions);
+        _cacheMetrics?.RecordSet("config-snapshot");
+        if (_cacheDiagnostics.LogConfigSnapshot)
+            _logger?.LogInformation("CACHE SET category=config-snapshot key={Key}", cacheKey);
         return snapshot;
     }
 

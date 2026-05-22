@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useI18n } from '../../../i18n/i18n';
-import { usePermissionsStore } from '../../../store/permissionsStore';
-import { useAuthStore } from '../../../store/authStore';
 import {
   catalogService,
   type CatalogItem,
@@ -11,26 +9,25 @@ import {
 } from '../api/catalogService';
 import { formatApiError } from '../../lib/formatApiError';
 import type { CatalogStructureModalForm, CatalogStructureModalType } from './catalogStructureTypes';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 
 export function useCatalogStructurePage() {
   const { t } = useI18n();
-  const role = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin = role === 'Admin' || role === 'SuperAdmin';
-  const hasPerm = usePermissionsStore((s) => s.has);
+  const { canShow } = usePermissionsUi();
 
-  const canViewLines = isAdmin || hasPerm('inventory.product-lines.view');
-  const canViewCategories = isAdmin || hasPerm('inventory.categories.view');
-  const canViewSubcategories = isAdmin || hasPerm('inventory.subcategories.view');
+  const canViewLines = canShow('inventory.product-lines.view');
+  const canViewCategories = canShow('inventory.categories.view');
+  const canViewSubcategories = canShow('inventory.subcategories.view');
   const canView = canViewLines && canViewCategories && canViewSubcategories;
-  const canCreateLines = isAdmin || hasPerm('inventory.product-lines.create');
-  const canCreateCategories = isAdmin || hasPerm('inventory.categories.create');
-  const canCreateSubcategories = isAdmin || hasPerm('inventory.subcategories.create');
-  const canUpdateLines = isAdmin || hasPerm('inventory.product-lines.update');
-  const canDeleteLines = isAdmin || hasPerm('inventory.product-lines.delete');
-  const canUpdateCategories = isAdmin || hasPerm('inventory.categories.update');
-  const canDeleteCategories = isAdmin || hasPerm('inventory.categories.delete');
-  const canUpdateSubcategories = isAdmin || hasPerm('inventory.subcategories.update');
-  const canDeleteSubcategories = isAdmin || hasPerm('inventory.subcategories.delete');
+  const canCreateLines = canShow('inventory.product-lines.create');
+  const canCreateCategories = canShow('inventory.categories.create');
+  const canCreateSubcategories = canShow('inventory.subcategories.create');
+  const canUpdateLines = canShow('inventory.product-lines.update');
+  const canDeleteLines = canShow('inventory.product-lines.delete');
+  const canUpdateCategories = canShow('inventory.categories.update');
+  const canDeleteCategories = canShow('inventory.categories.delete');
+  const canUpdateSubcategories = canShow('inventory.subcategories.update');
+  const canDeleteSubcategories = canShow('inventory.subcategories.delete');
 
   const [lines, setLines] = useState<CatalogItem[]>([]);
   const [categories, setCategories] = useState<ProductCategoryListItem[]>([]);

@@ -95,7 +95,11 @@ public static class DependencyInjection
         services.AddScoped<ISessionContext, HttpSessionContext>();
         services.AddScoped<IDbSessionContextApplicator, DbSessionContextApplicator>();
         services.AddScoped<ICurrentCompany, CurrentCompanyService>();
-        services.AddScoped<ICompanyContextResolver, CompanyContextResolver>();
+        services.AddScoped<DistributedPermissionsCacheService>();
+        services.AddScoped<ResilientPermissionsCacheService>();
+        services.AddScoped<IPermissionsCacheBackend>(sp => sp.GetRequiredService<ResilientPermissionsCacheService>());
+        services.AddScoped<IPermissionsCacheService>(sp => sp.GetRequiredService<ResilientPermissionsCacheService>());
+        services.AddScoped<IPermissionsCacheInvalidator, PermissionsCacheInvalidator>();
         services.AddScoped<ICompanyProvisioningService, CompanyProvisioningService>();
         services.AddScoped<ISubscriberProvisioningOrchestrator, SubscriberProvisioningOrchestrator>();
         services.AddScoped<ISubscriberIntegrityRepairService, SubscriberIntegrityRepairService>();
@@ -169,12 +173,13 @@ public static class DependencyInjection
         services.AddScoped<IBillingGovernanceService, BillingGovernanceService>();
         services.AddScoped<IPaymentProviderAdapter, NullPaymentProviderAdapter>();
         services.AddScoped<DistributedSubscriberEntitlementsSnapshotCache>();
+        services.AddScoped<SubscriberEntitlementsPermissionsCacheInvalidator>();
         services.AddScoped<ISubscriberEntitlementsSnapshotCache>(sp =>
             sp.GetRequiredService<DistributedSubscriberEntitlementsSnapshotCache>());
         services.AddScoped<ISubscriberEntitlementsCacheInvalidator>(sp =>
-            sp.GetRequiredService<DistributedSubscriberEntitlementsSnapshotCache>());
+            sp.GetRequiredService<SubscriberEntitlementsPermissionsCacheInvalidator>());
         services.AddScoped<IEntitlementsCacheService, EntitlementsCacheService>();
-        services.AddScoped<IPermissionsCacheService, DistributedPermissionsCacheService>();
+        services.AddSingleton<IPermissionsCacheDiagnostics, PermissionsCacheDiagnostics>();
         services.Configure<SaasEntitlementsCacheOptions>(
             configuration.GetSection(SaasEntitlementsCacheOptions.SectionName));
         services.AddScoped<ISubscriberEntitlementsService, SubscriberEntitlementsService>();

@@ -1,3 +1,4 @@
+using ERP.Application.Access.Caching;
 using ERP.Application.Common;
 using MediatR;
 using ERP.Domain.Access.Entities;
@@ -63,12 +64,18 @@ public class UpdateProfileHandler : IRequestHandler<UpdateProfileCommand, Result
     private readonly IAccessRepository _repo;
     private readonly ICurrentSubscriber _tenant;
     private readonly ICurrentUser _user;
+    private readonly IPermissionsCacheInvalidator _permissionsCache;
 
-    public UpdateProfileHandler(IAccessRepository repo, ICurrentSubscriber tenant, ICurrentUser user)
+    public UpdateProfileHandler(
+        IAccessRepository repo,
+        ICurrentSubscriber tenant,
+        ICurrentUser user,
+        IPermissionsCacheInvalidator permissionsCache)
     {
         _repo = repo;
         _tenant = tenant;
         _user = user;
+        _permissionsCache = permissionsCache;
     }
 
     public Task<Result<ProfileDto>> HandleAsync(UpdateProfileCommand cmd, CancellationToken ct = default)
@@ -86,6 +93,16 @@ public class UpdateProfileHandler : IRequestHandler<UpdateProfileCommand, Result
         else profile.Deactivate(_user.UserId);
 
         await _repo.SaveChangesAsync(ct);
+
+        var memberships = await _repo.GetCompanyUserMembershipsBySubscriberAsync(subscriberId, onlyActive: true, ct);
+        foreach (var companyId in memberships
+                     .Where(m => m.ProfileId == cmd.ProfileId)
+                     .Select(m => m.CompanyId)
+                     .Distinct())
+        {
+            await _permissionsCache.BumpCompanyVersionAsync(companyId, ct);
+        }
+
         return Result<ProfileDto>.Success(new ProfileDto(profile.Id, profile.Name, profile.Description, profile.IsActive));
     }
 }

@@ -43,7 +43,7 @@ export interface AccessibleCompany {
   role: string;
 }
 
-/** Respuesta de `GET /api/access/me/permissions`. */
+/** Respuesta de `GET /api/admin/iam/me/permissions`. */
 export interface MyPermissionsResponse {
   permissions: string[];
   planCode: string | null;

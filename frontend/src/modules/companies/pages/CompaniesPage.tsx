@@ -6,20 +6,21 @@ import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { NavigationMenuEditorPanel } from '../../../components/superadmin/NavigationMenuEditorPanel';
 import { ConfigManagementPanel } from '../../../components/config/ConfigManagementPanel';
 import { FeatureGate } from '../../config';
+import { useSuperAdminGate } from '../../../hooks/useSuperAdminGate';
 import { CompaniesPageDataTab } from './CompaniesPageDataTab';
 import { ELECTRONIC_BILLING_TRIAL_KEY, useCompaniesPage } from './useCompaniesPage';
 import './CompaniesPage.css';
 
 function CompaniesPage() {
   const page = useCompaniesPage();
+  const { isSuperAdmin } = useSuperAdminGate();
 
-  if (page.user?.role !== 'SuperAdmin') {
+  if (!isSuperAdmin) {
     return <NoAccessPage title={page.t('companies.title')} />;
   }
 
   const {
     t,
-    user,
     subscriberId,
     maxActiveSubscribers,
     maxIdentityUsers,
@@ -192,7 +193,7 @@ function CompaniesPage() {
                 </ZHCard>
                 <ConfigManagementPanel
                   subscriberId={detailSubscriberId}
-                  canManage={user?.role === 'SuperAdmin' || user?.role === 'Admin'}
+                  canManage={isSuperAdmin}
                   title="CRUD de configuración por alcance"
                   subtitle="Permite crear y editar claves estructuradas para Global, Module y Feature con validación por tipo."
                 />

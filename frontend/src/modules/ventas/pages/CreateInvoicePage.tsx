@@ -4,8 +4,6 @@ import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
-import { usePermissionsStore } from '../../../store/permissionsStore';
-import { useAuthStore } from '../../../store/authStore';
 import { useI18n } from '../../../i18n/i18n';
 import { useAsync } from '../../../hooks/useAsync';
 import { customerService } from '../../../modules/customers/api/customerService';
@@ -19,17 +17,16 @@ import {
   type InvoiceLineValues,
 } from '../schemas/createInvoiceSchema';
 import './create-invoice-page.css';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 
 const TODAY = new Date().toISOString().split('T')[0]!;
 const VAT_RATE = 0.15; // IVA Ecuador 15%
 
 export function CreateInvoicePage() {
+  const { canShow } = usePermissionsUi();
   const { t } = useI18n();
   const navigate  = useNavigate();
-  const hasPerm   = usePermissionsStore((s) => s.has);
-  const role      = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin   = role === 'Admin' || role === 'SuperAdmin';
-  const canCreate = isAdmin || hasPerm('sales.invoices.create');
+  const canCreate = canShow('sales.invoices.create');
 
   const [customerId,    setCustomerId]    = useState('');
   const [customerRuc,   setCustomerRuc]   = useState('');

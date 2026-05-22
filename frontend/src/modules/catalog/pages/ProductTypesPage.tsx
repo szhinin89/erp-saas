@@ -3,8 +3,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useI18n } from '../../../i18n/i18n';
-import { useAuthStore } from '../../../store/authStore';
-import { usePermissionsStore } from '../../../store/permissionsStore';
 import { catalogService, type CatalogItem } from '../api/catalogService';
 import { ZHField, ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
@@ -12,6 +10,7 @@ import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { formatApiRequestError } from '../../lib/apiError';
 import './catalog-list-page.css';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 
 /* ── Form schema ────────────────────────────────────────────── */
 const productTypeSchema = z.object({
@@ -22,15 +21,13 @@ type ProductTypeFormValues = z.infer<typeof productTypeSchema>;
 
 /* ── Main page ──────────────────────────────────────────────── */
 export function ProductTypesPage() {
+  const { canShow } = usePermissionsUi();
   const { t } = useI18n();
-  const role    = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin = role === 'Admin' || role === 'SuperAdmin';
-  const hasPerm = usePermissionsStore((s) => s.has);
 
-  const canView   = isAdmin || hasPerm('inventory.product-types.view');
-  const canCreate = isAdmin || hasPerm('inventory.product-types.create');
-  const canUpdate = isAdmin || hasPerm('inventory.product-types.update');
-  const canDelete = isAdmin || hasPerm('inventory.product-types.delete');
+  const canView   = canShow('inventory.product-types.view');
+  const canCreate = canShow('inventory.product-types.create');
+  const canUpdate = canShow('inventory.product-types.update');
+  const canDelete = canShow('inventory.product-types.delete');
 
   /* ── Data state ───────────────────────────────────────────── */
   const [items,   setItems]   = useState<CatalogItem[]>([]);

@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
-import { usePermissionsStore } from '../../../store/permissionsStore';
-import { useAuthStore } from '../../../store/authStore';
 import { supplierService, type Supplier } from '../../compras/suppliers/api/supplierService';
 import { gastosService, type GastoDto, type EstadoGasto } from '../api/gastosService';
 import './gastos-page.css';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 
 type BadgeInfo = { cls: string; label: string };
 
@@ -20,12 +19,10 @@ function estadoBadge(e: EstadoGasto): BadgeInfo {
 }
 
 export function GastosListPage() {
+  const { canShow } = usePermissionsUi();
   const navigate = useNavigate();
-  const hasPerm  = usePermissionsStore((s) => s.has);
-  const role     = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin  = role === 'Admin' || role === 'SuperAdmin';
-  const canView  = isAdmin || hasPerm('expenses.invoices.view');
-  const canCreate = isAdmin || hasPerm('expenses.invoices.create');
+  const canView  = canShow('expenses.invoices.view');
+  const canCreate = canShow('expenses.invoices.create');
 
   const [rows,       setRows]       = useState<GastoDto[]>([]);
   const [suppliers,  setSuppliers]  = useState<Supplier[]>([]);

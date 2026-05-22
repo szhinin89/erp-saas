@@ -5,13 +5,13 @@ import { LoadingState, NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
-import { useAuthStore } from '../../../../store/authStore';
 import { useI18n } from '../../../../i18n/i18n';
 import { useAsync } from '../../../../hooks/useAsync';
 import { companyService } from '../../../companies/api/companyService';
 import { catalogService, type CatalogItem } from '../../../catalog/api/catalogService';
 import { formatApiError } from '../../../lib/formatApiError';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
+import { useAuthStore } from '../../../../store/authStore';
 import {
   companyConfigSchema,
   defaultCompanyConfigValues,
@@ -44,14 +44,11 @@ function taxTypeBadge(type: string): React.ReactElement {
 }
 
 export function CompanyConfigPage() {
+  const { canShow } = usePermissionsUi();
   const { t } = useI18n();
-  const hasPerm  = usePermissionsStore((s) => s.has);
-  const role     = useAuthStore((s) => s.user?.role ?? '');
   const subscriberId = useAuthStore((s) => s.user?.subscriberId ?? '');
-
-  const isAdmin  = role === 'Admin' || role === 'SuperAdmin';
-  const canView  = isAdmin || hasPerm('configuracion.empresa.view');
-  const canEdit  = isAdmin || hasPerm('configuracion.empresa.edit');
+  const canView  = canShow('configuracion.empresa.view');
+  const canEdit  = canShow('configuracion.empresa.edit');
 
   const [saving,    setSaving]    = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);

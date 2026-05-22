@@ -1,3 +1,4 @@
+using ERP.Application.Access.Caching;
 using ERP.Application.Common;
 using MediatR;
 using ERP.Domain.Access.Entities;
@@ -10,15 +11,18 @@ public class UpsertProfilePermissionsHandler : IRequestHandler<UpsertProfilePerm
     private readonly IAccessRepository _repo;
     private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentUser _currentUser;
+    private readonly IPermissionsCacheInvalidator _permissionsCache;
 
     public UpsertProfilePermissionsHandler(
         IAccessRepository repo,
         ICurrentSubscriber currentSubscriber,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IPermissionsCacheInvalidator permissionsCache)
     {
         _repo = repo;
         _currentSubscriber = currentSubscriber;
         _currentUser = currentUser;
+        _permissionsCache = permissionsCache;
     }
 
     public Task<Result<object>> HandleAsync(UpsertProfilePermissionsCommand command, CancellationToken ct = default)
@@ -62,6 +66,16 @@ public class UpsertProfilePermissionsHandler : IRequestHandler<UpsertProfilePerm
         }
 
         await _repo.SaveChangesAsync(ct);
+
+        var memberships = await _repo.GetCompanyUserMembershipsBySubscriberAsync(_currentSubscriber.SubscriberId, onlyActive: true, ct);
+        foreach (var companyId in memberships
+                     .Where(m => m.ProfileId == command.ProfileId)
+                     .Select(m => m.CompanyId)
+                     .Distinct())
+        {
+            await _permissionsCache.BumpCompanyVersionAsync(companyId, ct);
+        }
+
         return Result<object>.Success(new { });
     }
 }

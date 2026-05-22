@@ -3,8 +3,7 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../../i18n/i18n';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
-import { useAuthStore } from '../../../../store/authStore';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 import {
   withholdingIssuedService,
   type WithholdingIssuedItem,
@@ -20,11 +19,9 @@ function statusBadge(status: string): string {
 
 export function WithholdingIssuedPage() {
   const { t } = useI18n();
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const role    = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin = role === 'Admin' || role === 'SuperAdmin';
-  const canView = isAdmin || hasPerm('purchases.withholding-issued.view');
-  const canSend = isAdmin || hasPerm('purchases.withholding-issued.send');
+  const { canShow } = usePermissionsUi();
+  const canView = canShow('purchases.withholding-issued.view');
+  const canSend = canShow('purchases.withholding-issued.send');
 
   const [rows,      setRows]      = useState<WithholdingIssuedItem[]>([]);
   const [loading,   setLoading]   = useState(true);

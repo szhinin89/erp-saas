@@ -6,20 +6,20 @@ import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { useI18n } from '../../../../i18n/i18n';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
 import type { Carrier } from '../api/carrierService';
 import { useCarriers } from '../hooks/useCarriers';
 import { carrierSchema, defaultCarrierValues, type CarrierFormValues } from '../schemas/carrierSchema';
 import './carriers-page.css';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 const ID_TYPES = ['RUC', 'CI', 'PASSPORT'] as const;
 
 export function CarriersPage() {
+  const { canShow } = usePermissionsUi();
   const { t } = useI18n();
-  const hasPerm  = usePermissionsStore(s => s.has);
-  const canView   = hasPerm('logistics.carriers.view');
-  const canCreate = hasPerm('logistics.carriers.create');
-  const canEdit   = hasPerm('logistics.carriers.update') || canCreate;
+  const canView   = canShow('logistics.carriers.view');
+  const canCreate = canShow('logistics.carriers.create');
+  const canEdit   = canShow('logistics.carriers.update') || canCreate;
 
   /* ── State ── */
   const [searchQuery, setSearchQuery]   = useState('');

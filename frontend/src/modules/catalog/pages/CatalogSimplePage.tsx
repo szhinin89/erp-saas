@@ -5,13 +5,12 @@ import { PageShell, EmptyState, LoadingState, Badge, NoAccessPage } from '../../
 import { ZHCard } from '../../../components/zh/ZHCard';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../i18n/i18n';
-import { usePermissionsStore } from '../../../store/permissionsStore';
-import { useAuthStore } from '../../../store/authStore';
 import { ZHFormBody, ZHFormSection, ZHGrid, ZHField, ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHSearchBar as SearchBar } from '../../../components/shared/ZHSearchBar';
 import { EntityAuditPanel } from '../../../components/EntityAuditPanel';
 import { buildCatalogSimpleRowSchema } from '../../../schemas/catalog/catalogSimpleSchema';
 import './CatalogSimplePage.css';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 
 export type CatalogRow = { id: string; code: string; name: string; isActive: boolean };
 
@@ -59,11 +58,9 @@ export function CatalogSimplePage({
   auditEntityType,
 }: Props) {
   const { t } = useI18n();
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const role = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin = role === 'Admin' || role === 'SuperAdmin';
-  const canView = isAdmin || hasPerm(viewPermissionKey);
-  const canCreate = isAdmin || hasPerm(createPermissionKey);
+  const { canShow } = usePermissionsUi();
+  const canView = canShow(viewPermissionKey);
+  const canCreate = canShow(createPermissionKey);
 
   const actualFields = useMemo<Field[]>(
     () =>

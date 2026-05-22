@@ -4,16 +4,16 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { AjusteEstadoBadge, AjusteTipoBadge } from '../components/AjusteEstadoBadge';
 import { useAjustesList } from '../hooks/useAjustes';
 import type { AjustesFilter, EstadoAjuste } from '../api/ajusteService';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 export function AjustesListPage() {
+  const { canShow } = usePermissionsUi();
   const navigate  = useNavigate();
-  const hasPerm   = usePermissionsStore((s) => s.has);
-  const canView   = hasPerm('inventory.adjustments.view');
-  const canCreate = hasPerm('inventory.adjustments.create');
+  const canView   = canShow('inventory.adjustments.view');
+  const canCreate = canShow('inventory.adjustments.create');
 
   const [filter, setFilter] = useState<AjustesFilter>({ pageNumber: 1, pageSize: 20 });
   const { result, loading, error } = useAjustesList(filter);

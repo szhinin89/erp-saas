@@ -6,15 +6,13 @@ import type { CompanyListItem } from '../../../types/companyManagement';
 import { PageShell, LoadingState, EmptyState, Badge } from '../../../components/PageShell';
 import { ZHBtn } from '../../../components/zh/ZHForm';
 import { ZHCard } from '../../../components/zh/ZHCard';
-import { usePermissionsStore } from '../../../store/permissionsStore';
-import { useAuthStore } from '../../../store/authStore';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 import { CurrentCompanyCard } from './CurrentCompanyCard';
 
 export function CompanyManagementListPage() {
   const { t } = useI18n();
-  const isAdmin = (useAuthStore((s) => s.user?.role) ?? '') === 'Admin';
-  const has = usePermissionsStore((s) => s.has);
-  const canCreate = isAdmin || has('saas.companies.create');
+  const { canShow } = usePermissionsUi({ adminOnlyFallback: true });
+  const canCreate = canShow('saas.companies.create');
   const [items, setItems] = useState<CompanyListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

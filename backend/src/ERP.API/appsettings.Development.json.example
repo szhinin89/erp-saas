@@ -44,5 +44,13 @@
     "Enabled": true,
     "AllowDestructive": false,
     "ConfirmDestructive": ""
+  },
+  "Redis": {
+    "ConnectionString": "localhost:6379",
+    "InstanceName": "ERP_"
+  },
+  "CacheDiagnostics": {
+    "LogEnabled": true,
+    "LogConfigSnapshot": true
   }
 }

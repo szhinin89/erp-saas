@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
-import { useAuthStore } from '../../../../store/authStore';
 import { supplierService, type Supplier } from '../../suppliers/api/supplierService';
 import { comprasService, type CompraDto, type EstadoCompra } from '../api/comprasService';
 import './compras-facturas-page.css';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 type BadgeInfo = { cls: string; label: string };
 
@@ -20,12 +19,10 @@ function estadoBadge(e: EstadoCompra): BadgeInfo {
 }
 
 export function ComprasListPage() {
+  const { canShow } = usePermissionsUi();
   const navigate = useNavigate();
-  const hasPerm  = usePermissionsStore((s) => s.has);
-  const role     = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin  = role === 'Admin' || role === 'SuperAdmin';
-  const canView  = isAdmin || hasPerm('purchases.invoices.view');
-  const canCreate = isAdmin || hasPerm('purchases.invoices.create');
+  const canView  = canShow('purchases.invoices.view');
+  const canCreate = canShow('purchases.invoices.create');
 
   const [rows,        setRows]        = useState<CompraDto[]>([]);
   const [suppliers,   setSuppliers]   = useState<Supplier[]>([]);

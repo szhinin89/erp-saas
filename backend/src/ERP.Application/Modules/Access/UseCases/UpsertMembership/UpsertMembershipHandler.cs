@@ -1,3 +1,4 @@
+using ERP.Application.Access.Caching;
 using ERP.Application.Common;
 using MediatR;
 using ERP.Domain.Access.Entities;
@@ -13,19 +14,22 @@ public class UpsertCompanyUserMembershipHandler : IRequestHandler<UpsertCompanyU
     private readonly IDeploymentFeatureFlags _deployment;
     private readonly ISubscriberRepository _subscriberRepository;
     private readonly ICompanyProvisioningService _companyProvisioning;
+    private readonly IPermissionsCacheInvalidator _permissionsCache;
 
     public UpsertCompanyUserMembershipHandler(
         IAccessRepository accessRepository,
         ICurrentUser currentUser,
         IDeploymentFeatureFlags deployment,
         ISubscriberRepository subscriberRepository,
-        ICompanyProvisioningService companyProvisioning)
+        ICompanyProvisioningService companyProvisioning,
+        IPermissionsCacheInvalidator permissionsCache)
     {
         _accessRepository = accessRepository;
         _currentUser = currentUser;
         _deployment = deployment;
         _subscriberRepository = subscriberRepository;
         _companyProvisioning = companyProvisioning;
+        _permissionsCache = permissionsCache;
     }
 
     public Task<Result<object>> HandleAsync(UpsertCompanyUserMembershipCommand command, CancellationToken ct = default)
@@ -75,6 +79,7 @@ public class UpsertCompanyUserMembershipHandler : IRequestHandler<UpsertCompanyU
         }
 
         await _accessRepository.SaveChangesAsync(ct);
+        await _permissionsCache.InvalidateUserAsync(company.Id, user.Id, ct);
         return Result<object>.Success(new { });
     }
 }

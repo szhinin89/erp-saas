@@ -5,8 +5,6 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
-import { useAuthStore } from '../../../../store/authStore';
 import { useI18n } from '../../../../i18n/i18n';
 import { useSuppliers } from '../hooks/useSuppliers';
 import {
@@ -16,6 +14,7 @@ import {
 } from '../schemas/supplierSchema';
 import type { Supplier } from '../api/supplierService';
 import './suppliers-page.css';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 type TabId = 'list' | 'form';
 
@@ -27,12 +26,10 @@ function statusClass(status: Supplier['status']) {
 
 export function SuppliersPage() {
   const { t } = useI18n();
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const role    = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin   = role === 'Admin' || role === 'SuperAdmin';
-  const canView   = isAdmin || hasPerm('purchases.suppliers.view') || hasPerm('purchases.suppliers.view');
-  const canCreate = isAdmin || hasPerm('purchases.suppliers.create') || hasPerm('purchases.suppliers.create');
-  const canEdit   = isAdmin || hasPerm('purchases.suppliers.edit') || hasPerm('purchases.suppliers.update');
+  const { canShow } = usePermissionsUi();
+  const canView   = canShow('purchases.suppliers.view');
+  const canCreate = canShow('purchases.suppliers.create');
+  const canEdit   = canShow('purchases.suppliers.edit');
 
   const { suppliers, loading, error, saving, saveError, createSupplier, updateSupplier, setSupplierStatus } =
     useSuppliers();

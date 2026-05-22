@@ -4,16 +4,16 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { TransferenciaEstadoBadge } from '../components/TransferenciaEstadoBadge';
 import { useBodegas, useTransferenciasList } from '../hooks/useTransferencias';
 import type { EstadoTransferencia, TransferenciasFilter } from '../api/transferenciaService';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 export function TransferenciasListPage() {
+  const { canShow } = usePermissionsUi();
   const navigate  = useNavigate();
-  const hasPerm   = usePermissionsStore((s) => s.has);
-  const canView   = hasPerm('inventory.transfers.view');
-  const canCreate = hasPerm('inventory.transfers.create');
+  const canView   = canShow('inventory.transfers.view');
+  const canCreate = canShow('inventory.transfers.create');
 
   const [filter, setFilter] = useState<TransferenciasFilter>({ pageNumber: 1, pageSize: 20 });
   const { result, loading, error } = useTransferenciasList(filter);

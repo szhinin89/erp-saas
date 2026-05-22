@@ -2,10 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useI18n } from '../../../../i18n/i18n';
-import { useAuthStore } from '../../../../store/authStore';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { branchService, type BranchDto } from '../../../branches/api/branchService';
 import { bodegaService, type WarehouseDto } from '../api/warehouseService';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 import {
   warehouseSchema,
   defaultWarehouseValues,
@@ -30,14 +29,12 @@ export function fromWarehouseDto(d: WarehouseDto): WarehouseFormValues {
 
 export function useBodegasPage() {
   const { t } = useI18n();
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const role = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin = role === 'Admin' || role === 'SuperAdmin';
+  const { canShow } = usePermissionsUi();
 
-  const canView = isAdmin || hasPerm('inventory.warehouses.view');
-  const canCreate = isAdmin || hasPerm('inventory.warehouses.create');
-  const canUpdate = isAdmin || hasPerm('inventory.warehouses.update');
-  const canDelete = isAdmin || hasPerm('inventory.warehouses.delete');
+  const canView = canShow('inventory.warehouses.view');
+  const canCreate = canShow('inventory.warehouses.create');
+  const canUpdate = canShow('inventory.warehouses.update');
+  const canDelete = canShow('inventory.warehouses.delete');
 
   const [items, setItems] = useState<WarehouseDto[]>([]);
   const [branches, setBranches] = useState<BranchDto[]>([]);

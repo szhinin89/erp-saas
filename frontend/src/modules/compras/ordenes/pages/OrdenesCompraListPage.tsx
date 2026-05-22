@@ -4,9 +4,9 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { useOrdenesCompraList } from '../hooks/useOrdenesCompra';
 import type { EstadoOrdenCompra, OrdenesCompraFilter } from '../api/ordenCompraService';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 function estadoBadgeClass(estado: EstadoOrdenCompra): string {
   const map: Record<string, string> = {
@@ -17,10 +17,10 @@ function estadoBadgeClass(estado: EstadoOrdenCompra): string {
 }
 
 export function OrdenesCompraListPage() {
+  const { canShow } = usePermissionsUi();
   const navigate  = useNavigate();
-  const hasPerm   = usePermissionsStore((s) => s.has);
-  const canView   = hasPerm('purchases.orders.view');
-  const canCreate = hasPerm('purchases.orders.create');
+  const canView   = canShow('purchases.orders.view');
+  const canCreate = canShow('purchases.orders.create');
 
   const [filter, setFilter] = useState<OrdenesCompraFilter>({ pageNumber: 1, pageSize: 20 });
   const { result, loading, error } = useOrdenesCompraList(filter);

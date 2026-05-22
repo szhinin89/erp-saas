@@ -5,9 +5,9 @@ import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHConfirmModal } from '../../../../components/zh/ZHConfirmModal';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { TransferenciaEstadoBadge } from '../components/TransferenciaEstadoBadge';
 import { useTransferenciaDetalle, useTransferenciaAcciones } from '../hooks/useTransferencias';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 function InfoItem({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -19,13 +19,13 @@ function InfoItem({ label, children }: { label: string; children: React.ReactNod
 }
 
 export function TransferenciaDetailPage() {
+  const { canShow } = usePermissionsUi();
   const { id }    = useParams<{ id: string }>();
   const navigate  = useNavigate();
-  const hasPerm   = usePermissionsStore((s) => s.has);
 
-  const canView    = hasPerm('inventory.transfers.view');
-  const canConfirm = hasPerm('inventory.transfers.confirm');
-  const canCancel  = hasPerm('inventory.transfers.cancel');
+  const canView    = canShow('inventory.transfers.view');
+  const canConfirm = canShow('inventory.transfers.confirm');
+  const canCancel  = canShow('inventory.transfers.cancel');
 
   const { data: transferencia, loading, error, refetch } = useTransferenciaDetalle(id ?? null);
   const { loading: actLoading, error: actError, confirmar, cancelar } = useTransferenciaAcciones(refetch);

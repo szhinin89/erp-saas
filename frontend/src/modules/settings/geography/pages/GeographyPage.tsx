@@ -3,15 +3,15 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../../i18n/i18n';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { branchService } from '../../../branches/api/branchService';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 type GeoItem = { id: string; name: string };
 
 export function GeographyPage() {
+  const { canShow } = usePermissionsUi();
   const { t } = useI18n();
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const canView = hasPerm('settings.geography.view');
+  const canView = canShow('settings.geography.view');
 
   const [countries, setCountries] = useState<GeoItem[]>([]);
   const [provinces, setProvinces] = useState<GeoItem[]>([]);

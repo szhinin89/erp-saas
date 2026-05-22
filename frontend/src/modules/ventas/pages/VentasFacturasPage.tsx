@@ -4,10 +4,10 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../components/Page
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { useI18n } from '../../../i18n/i18n';
-import { usePermissionsStore } from '../../../store/permissionsStore';
 import { ventasFacturasService, type VentasFacturaDto } from '../api/ventasFacturasService';
 import { openVentasFacturaPrint } from '../utils/openVentasFacturaPrint';
 import './ventas-facturas-page.css';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 
 type BadgeInfo = { cls: string; label: string };
 
@@ -21,10 +21,10 @@ function getStatusBadge(estado: string): BadgeInfo {
 }
 
 export function VentasFacturasPage() {
+  const { canShow } = usePermissionsUi();
   const { t } = useI18n();
   const navigate = useNavigate();
-  const hasPerm  = usePermissionsStore((s) => s.has);
-  const canView  = hasPerm('sales.invoices.view');
+  const canView  = canShow('sales.invoices.view');
 
   const [rows,       setRows]       = useState<VentasFacturaDto[]>([]);
   const [loading,    setLoading]    = useState(true);

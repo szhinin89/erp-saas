@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useI18n } from '../../../i18n/i18n';
-import { useAuthStore } from '../../../store/authStore';
-import { usePermissionsStore } from '../../../store/permissionsStore';
 import { subscriberAccessService, type SubscriberCompanyUserMembershipItem } from '../api/subscriberAccessService';
 import { profileService, type Profile } from '../api/profileService';
 import { PageShell, EmptyState, LoadingState, NoAccessPage } from '../../../components/PageShell';
@@ -15,6 +13,8 @@ import { ZHCard } from '../../../components/zh/ZHCard';
 import { ZHConfirmModal } from '../../../components/zh/ZHConfirmModal';
 import { subscriberAccessUpsertSchema, type SubscriberAccessFormValues } from '../../../schemas/access/subscriberAccessSchema';
 import './SubscriberAccessPage.css';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
+import { useAuthStore } from '../../../store/authStore';
 
 type AccessTab = 'data' | 'list';
 
@@ -22,7 +22,8 @@ export function SubscriberAccessPage() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const subscriberId = useAuthStore((s) => s.user?.subscriberId ?? '');
-  const canManageCompanyUserMemberships = usePermissionsStore((s) => s.has('admin.users.view'));
+  const { canShow, isTenantAdmin } = usePermissionsUi();
+  const canManageCompanyUserMemberships = canShow('admin.users.view');
 
   const [items, setItems] = useState<SubscriberCompanyUserMembershipItem[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -87,8 +88,6 @@ export function SubscriberAccessPage() {
     );
   }, [items, listQuery]);
 
-  const isAdminOrSuper = user?.role === 'Admin' || user?.role === 'SuperAdmin';
-
   const submit = handleSubmit(async (form) => {
     setError('');
     try {
@@ -121,7 +120,7 @@ export function SubscriberAccessPage() {
     }
   };
 
-  if (!user || (!isAdminOrSuper && !canManageCompanyUserMemberships)) {
+  if (!user || (!isTenantAdmin && !canManageCompanyUserMemberships)) {
     return <NoAccessPage title={t('subscriberAccess.title')} />;
   }
 

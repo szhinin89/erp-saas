@@ -1,3 +1,4 @@
+using ERP.Application.Access.Caching;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using MediatR;
@@ -62,6 +63,7 @@ public class SubscriberUpsertCompanyUserMembershipHandler : IRequestHandler<Subs
     private readonly IPasswordHasher _passwordHasher;
     private readonly ICompanyProvisioningService _companyProvisioning;
     private readonly ISubscriberRepository _subscriberRepository;
+    private readonly IPermissionsCacheInvalidator _permissionsCache;
 
     public SubscriberUpsertCompanyUserMembershipHandler(
         IAccessRepository repo,
@@ -70,7 +72,8 @@ public class SubscriberUpsertCompanyUserMembershipHandler : IRequestHandler<Subs
         IDeploymentFeatureFlags deployment,
         IPasswordHasher passwordHasher,
         ICompanyProvisioningService companyProvisioning,
-        ISubscriberRepository subscriberRepository)
+        ISubscriberRepository subscriberRepository,
+        IPermissionsCacheInvalidator permissionsCache)
     {
         _repo = repo;
         _tenant = tenant;
@@ -79,6 +82,7 @@ public class SubscriberUpsertCompanyUserMembershipHandler : IRequestHandler<Subs
         _passwordHasher = passwordHasher;
         _companyProvisioning = companyProvisioning;
         _subscriberRepository = subscriberRepository;
+        _permissionsCache = permissionsCache;
     }
 
     public Task<Result<object>> HandleAsync(SubscriberUpsertCompanyUserMembershipCommand cmd, CancellationToken ct = default)
@@ -146,6 +150,7 @@ public class SubscriberUpsertCompanyUserMembershipHandler : IRequestHandler<Subs
         }
 
         await _repo.SaveChangesAsync(ct);
+        await _permissionsCache.InvalidateUserAsync(company.Id, user.Id, ct);
         return Result<object>.Success(new { });
     }
 }
@@ -157,19 +162,22 @@ public class SubscriberRevokeCompanyUserMembershipHandler : IRequestHandler<Subs
     private readonly ICurrentUser _currentUser;
     private readonly ICompanyProvisioningService _companyProvisioning;
     private readonly ISubscriberRepository _subscriberRepository;
+    private readonly IPermissionsCacheInvalidator _permissionsCache;
 
     public SubscriberRevokeCompanyUserMembershipHandler(
         IAccessRepository repo,
         ICurrentSubscriber tenant,
         ICurrentUser currentUser,
         ICompanyProvisioningService companyProvisioning,
-        ISubscriberRepository subscriberRepository)
+        ISubscriberRepository subscriberRepository,
+        IPermissionsCacheInvalidator permissionsCache)
     {
         _repo = repo;
         _tenant = tenant;
         _currentUser = currentUser;
         _companyProvisioning = companyProvisioning;
         _subscriberRepository = subscriberRepository;
+        _permissionsCache = permissionsCache;
     }
 
     public Task<Result<object>> HandleAsync(SubscriberRevokeCompanyUserMembershipCommand cmd, CancellationToken ct = default)
@@ -194,6 +202,7 @@ public class SubscriberRevokeCompanyUserMembershipHandler : IRequestHandler<Subs
 
         membership.Deactivate(_currentUser.UserId);
         await _repo.SaveChangesAsync(ct);
+        await _permissionsCache.InvalidateUserAsync(company.Id, user.Id, ct);
         return Result<object>.Success(new { });
     }
 }

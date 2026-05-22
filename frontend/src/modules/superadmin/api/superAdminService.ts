@@ -3,7 +3,6 @@ import type { ApiResponse } from '../../../types/api';
 import type { SessionResponse, SessionMenuGroupDto } from '../../../types/access';
 import { readEnvelopePayload } from '../../lib/apiEnvelope';
 import { normalizeAuthResponse } from '../../auth/normalizeAuthResponse';
-import type { AuthResponse } from '../../../types/auth';
 
 /** Rutas canónicas Platform Layer (SaaS / subscribers). */
 export const PLATFORM_SUBSCRIBERS_API = '/api/platform/subscribers';

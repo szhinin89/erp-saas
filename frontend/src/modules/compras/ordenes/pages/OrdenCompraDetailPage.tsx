@@ -4,10 +4,10 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { useOrdenCompraDetalle, useOrdenCompraAcciones } from '../hooks/useOrdenesCompra';
 import type { EstadoOrdenCompra } from '../api/ordenCompraService';
 import './orden-compra-page.css';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 function estadoBadgeClass(estado: EstadoOrdenCompra): string {
   const map: Record<string, string> = {
@@ -27,10 +27,10 @@ function InfoItem({ label, children }: { label: string; children: React.ReactNod
 }
 
 export function OrdenCompraDetailPage() {
+  const { canShow } = usePermissionsUi();
   const { id }    = useParams<{ id: string }>();
   const navigate  = useNavigate();
-  const hasPerm   = usePermissionsStore((s) => s.has);
-  const canView   = hasPerm('purchases.orders.view');
+  const canView   = canShow('purchases.orders.view');
 
   const { data, loading, error, refetch } = useOrdenCompraDetalle(id ?? null);
   const acciones = useOrdenCompraAcciones(refetch);
@@ -41,10 +41,10 @@ export function OrdenCompraDetailPage() {
   if (!canView) return <NoAccessPage title="Orden de Compra" />;
 
   const isActive    = !['Cerrada', 'Cancelada'].includes(data?.estado ?? '');
-  const canEnviar   = data?.estado === 'Borrador' && hasPerm('purchases.orders.send');
-  const canAprobar  = ['Borrador', 'Enviada'].includes(data?.estado ?? '') && hasPerm('purchases.orders.approve');
-  const canCancelar = isActive && hasPerm('purchases.orders.cancel');
-  const canVincular = ['Aprobada', 'RecibidaParcial'].includes(data?.estado ?? '') && hasPerm('purchases.orders.link-invoice');
+  const canEnviar   = data?.estado === 'Borrador' && canShow('purchases.orders.send');
+  const canAprobar  = ['Borrador', 'Enviada'].includes(data?.estado ?? '') && canShow('purchases.orders.approve');
+  const canCancelar = isActive && canShow('purchases.orders.cancel');
+  const canVincular = ['Aprobada', 'RecibidaParcial'].includes(data?.estado ?? '') && canShow('purchases.orders.link-invoice');
 
   const handleVincular = async () => {
     if (!vincularFacturaId.trim()) return;

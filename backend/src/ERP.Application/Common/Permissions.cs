@@ -6,7 +6,7 @@ namespace ERP.Application.Common;
 ///
 /// These keys are used in:
 ///   - Backend: [Authorize(Policy = "perm:{key}")]
-///   - Backend: PermissionHandler checks AccessProfilePermission.PermissionKey
+///   - Backend: <see cref="ERP.Application.Access.Authorization.IRuntimePermissionAuthorizer"/> / <see cref="ERP.Application.Access.Caching.IEffectivePermissionKeysProvider"/>
 ///   - Frontend: usePermissionsStore.has(key)
 ///
 /// Naming convention:

@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useI18n } from '../../../i18n/i18n';
-import { usePermissionsStore } from '../../../store/permissionsStore';
-import { useAuthStore } from '../../../store/authStore';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 import { catalogService, type ProductCategoryListItem } from '../api/catalogService';
 import {
   catalogCategoryFormSchema,
@@ -12,11 +11,9 @@ import {
 
 export function useCategoriesCatalogPage() {
   const { t } = useI18n();
-  const role = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin = role === 'Admin' || role === 'SuperAdmin';
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const canView = isAdmin || hasPerm('inventory.categories.view');
-  const canCreate = isAdmin || hasPerm('inventory.categories.create');
+  const { canShow } = usePermissionsUi();
+  const canView = canShow('inventory.categories.view');
+  const canCreate = canShow('inventory.categories.create');
 
   const [lines, setLines] = useState<{ id: string; code: string; name: string }[]>([]);
   const [items, setItems] = useState<ProductCategoryListItem[]>([]);

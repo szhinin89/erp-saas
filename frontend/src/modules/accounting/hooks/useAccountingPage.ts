@@ -15,7 +15,7 @@ import {
 import { useAsync } from '../../../hooks/useAsync';
 import { useI18n } from '../../../i18n/i18n';
 import { useAuthStore } from '../../../store/authStore';
-import { usePermissionsStore } from '../../../store/permissionsStore';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 import { createAccountFormSchema, type CreateAccountFormValues } from '../schemas/accountSchema';
 
 export type AccountingTab = 'accounts' | 'journal' | 'mayor' | 'balance' | 'config';
@@ -34,16 +34,14 @@ export const EMPTY_ACCOUNT_FORM: CreateAccountFormValues = {
 export function useAccountingPage() {
   const { t } = useI18n();
   const subscriberId = useAuthStore((s) => s.user?.subscriberId ?? '');
-  const role = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin = role === 'Admin' || role === 'SuperAdmin';
-  const hasPerm = usePermissionsStore((s) => s.has);
+  const { canShow, hasHydrated: permsHydrated, skipPermissionHydrationWait } = usePermissionsUi();
 
-  const canViewAccounts = isAdmin || hasPerm('finance.accounts.view');
-  const canCreateAccount = isAdmin || hasPerm('finance.accounts.create');
-  const canViewJournal = isAdmin || hasPerm('finance.journal.view');
-  const canCreateJournal = isAdmin || hasPerm('finance.journal.create');
-  const canViewConfig = isAdmin || hasPerm('finance.config.view');
-  const canEditConfig = isAdmin || hasPerm('finance.config.edit');
+  const canViewAccounts = canShow('finance.accounts.view');
+  const canCreateAccount = canShow('finance.accounts.create');
+  const canViewJournal = canShow('finance.journal.view');
+  const canCreateJournal = canShow('finance.journal.create');
+  const canViewConfig = canShow('finance.config.view');
+  const canEditConfig = canShow('finance.config.edit');
 
   const [tab, setTab] = useState<AccountingTab>('accounts');
   const [showJournal, setShowJournal] = useState(false);
@@ -112,7 +110,6 @@ export function useAccountingPage() {
   const [accountListQuery, setAccountListQuery] = useState('');
 
   const canUseModule = canViewAccounts || canViewJournal || canViewConfig;
-  const permsHydrated = usePermissionsStore((s) => s.hasHydrated);
 
   const displayTab = useMemo<AccountingTab>(() => {
     if (!canViewAccounts && canViewJournal) return 'journal';
@@ -282,7 +279,7 @@ export function useAccountingPage() {
   return {
     t,
     subscriberId,
-    isAdmin,
+    skipPermissionHydrationWait,
     permsHydrated,
     canUseModule,
     canViewAccounts,

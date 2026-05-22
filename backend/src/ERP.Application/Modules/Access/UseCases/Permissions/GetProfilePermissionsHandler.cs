@@ -1,3 +1,5 @@
+using ERP.Application.Access;
+using ERP.Application.Access.Caching;
 using ERP.Application.Access.DTOs;
 using ERP.Application.Common;
 using MediatR;
@@ -5,6 +7,11 @@ using ERP.Domain.Access.Interfaces;
 
 namespace ERP.Application.Access.UseCases.Permissions;
 
+/// <summary>
+/// ADMIN READ MODEL — matriz CRUD de permisos asignados a un perfil (sin filtro de plan).
+/// No usar para autorización runtime; ver <see cref="IEffectivePermissionKeysProvider"/>.
+/// </summary>
+[AdminReadModel("Matriz CRUD de permisos asignados a un perfil (sin filtro de plan).")]
 public class GetProfilePermissionsHandler : IRequestHandler<GetProfilePermissionsQuery, Result<ProfilePermissionsDto>>
 {
     private readonly IAccessRepository _repo;
@@ -37,4 +44,3 @@ public class GetProfilePermissionsHandler : IRequestHandler<GetProfilePermission
         return Result<ProfilePermissionsDto>.Success(new ProfilePermissionsDto(request.ProfileId, items));
     }
 }
-

@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
-import { useAuthStore } from '../../../../store/authStore';
 import { useAsync } from '../../../../hooks/useAsync';
 import { sriService } from '../api/sriService';
 import { formatApiError } from '../../../lib/formatApiError';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 import {
   sriConfigSchema,
   SRI_WSDL_DEFAULTS,
@@ -18,12 +17,9 @@ export const SRI_ENV_OPTIONS = [
 ] as const;
 
 export function useSriConfigPage() {
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const role = useAuthStore((s) => s.user?.role ?? '');
-
-  const isAdmin = role === 'Admin' || role === 'SuperAdmin';
-  const canView = isAdmin || hasPerm('settings.company.view');
-  const canEdit = isAdmin || hasPerm('settings.company.edit');
+  const { canShow } = usePermissionsUi();
+  const canView = canShow('settings.company.view');
+  const canEdit = canShow('settings.company.edit');
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);

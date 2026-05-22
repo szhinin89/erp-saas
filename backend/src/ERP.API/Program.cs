@@ -7,6 +7,7 @@ using ERP.API.Extensions;
 using ERP.API.Middleware;
 using ERP.API.Services;
 using ERP.Infrastructure;
+using ERP.Infrastructure.Caching;
 using ERP.Application;
 using ERP.API.Authorization;
 using ERP.Application.Common.Interfaces;
@@ -109,7 +110,8 @@ var redisInstanceName = builder.Configuration["Redis:InstanceName"];
 if (string.IsNullOrWhiteSpace(redisInstanceName))
     redisInstanceName = "ERP_";
 
-if (!string.IsNullOrWhiteSpace(redisConnection))
+var redisConfigured = !string.IsNullOrWhiteSpace(redisConnection);
+if (redisConfigured)
 {
     builder.Services.AddStackExchangeRedisCache(options =>
     {
@@ -121,6 +123,8 @@ else
 {
     builder.Services.AddDistributedMemoryCache();
 }
+
+builder.Services.AddDistributedCacheInstrumentation(builder.Configuration, redisConfigured);
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddDataProtection();
@@ -135,7 +139,7 @@ var healthChecks = builder.Services.AddHealthChecks()
 var enableRedisHealthCheck = builder.Configuration.GetValue("HealthChecks:EnableRedis", true);
 if (!builder.Environment.IsEnvironment("Testing")
     && enableRedisHealthCheck
-    && !string.IsNullOrWhiteSpace(redisConnection))
+    && redisConfigured)
     healthChecks.AddRedis(redisConnection, name: "redis", tags: ["ready"]);
 
 var sriProbeUrl = builder.Configuration["HealthChecks:SriProbeUrl"];

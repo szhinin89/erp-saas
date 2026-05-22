@@ -4,12 +4,11 @@ import { NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
-import { useAuthStore } from '../../../../store/authStore';
 import { useAsync } from '../../../../hooks/useAsync';
 import { supplierService } from '../../suppliers/api/supplierService';
 import { comprasService, type CompraLineaInput } from '../api/comprasService';
 import './compras-facturas-page.css';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 const TODAY = new Date().toISOString().split('T')[0]!;
 
@@ -43,11 +42,9 @@ function calcLinea(l: LineaForm) {
 }
 
 export function CrearCompraPage() {
+  const { canShow } = usePermissionsUi();
   const navigate  = useNavigate();
-  const hasPerm   = usePermissionsStore((s) => s.has);
-  const role      = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin   = role === 'Admin' || role === 'SuperAdmin';
-  const canCreate = isAdmin || hasPerm('purchases.invoices.create');
+  const canCreate = canShow('purchases.invoices.create');
 
   const suppliersState = useAsync(() => supplierService.getAll());
 

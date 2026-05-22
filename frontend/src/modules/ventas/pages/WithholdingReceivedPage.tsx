@@ -3,16 +3,13 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../components/Page
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../i18n/i18n';
-import { usePermissionsStore } from '../../../store/permissionsStore';
-import { useAuthStore } from '../../../store/authStore';
 import { withholdingReceivedService, type WithholdingReceivedItem } from '../api/withholdingReceivedService';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 
 export function WithholdingReceivedPage() {
   const { t } = useI18n();
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const role    = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin = role === 'Admin' || role === 'SuperAdmin';
-  const canView = isAdmin || hasPerm('sales.withholding-received.view');
+  const { canShow } = usePermissionsUi();
+  const canView = canShow('sales.withholding-received.view');
 
   const [rows,    setRows]    = useState<WithholdingReceivedItem[]>([]);
   const [loading, setLoading] = useState(true);

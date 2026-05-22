@@ -3,9 +3,9 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../../i18n/i18n';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { activityService, type UserActivityDto } from '../../api/activityService';
 import { formatApiError } from '../../../lib/formatApiError';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 function actionVerbI18nKey(action: string): string {
   const i = action.lastIndexOf('.');
@@ -20,9 +20,9 @@ function actionVerbI18nKey(action: string): string {
 }
 
 export function ActivityPage() {
+  const { canShow } = usePermissionsUi();
   const { t } = useI18n();
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const canView = hasPerm('admin.activity.view');
+  const canView = canShow('admin.activity.view');
 
   const [rows,     setRows]     = useState<UserActivityDto[]>([]);
   const [loading,  setLoading]  = useState(true);

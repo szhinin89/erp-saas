@@ -43,12 +43,22 @@ public sealed class DistributedSubscriberEntitlementsSnapshotCache :
         if (!_options.Enabled)
             return;
 
+        var subscriberId = cached.Snapshot.SubscriberId ?? Guid.Empty;
+        var version = cached.Version > 0 ? cached.Version : 1L;
         var bytes = JsonSerializer.SerializeToUtf8Bytes(cached, JsonOptions);
         var options = new DistributedCacheEntryOptions
         {
             AbsoluteExpirationRelativeToNow = ttl ?? TimeSpan.FromSeconds(Math.Max(30, _options.TtlSeconds)),
         };
-        await _cache.SetAsync(SnapshotKey(cached.Snapshot.SubscriberId ?? Guid.Empty, cached.Version), bytes, options, ct);
+
+        // VersionKey must exist or GetAsync always misses (version <= 0).
+        await _cache.SetAsync(
+            VersionKey(subscriberId),
+            BitConverter.GetBytes(version),
+            new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(30) },
+            ct);
+
+        await _cache.SetAsync(SnapshotKey(subscriberId, version), bytes, options, ct);
     }
 
     public async Task<long> GetCurrentVersionAsync(Guid subscriberId, CancellationToken ct = default)

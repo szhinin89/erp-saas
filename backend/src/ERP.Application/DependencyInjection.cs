@@ -2,6 +2,9 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using ERP.Application.Access;
+using ERP.Application.Access.Authorization;
+using ERP.Application.Access.Caching;
 using ERP.Application.Behaviors;
 using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
@@ -24,6 +27,9 @@ public static class DependencyInjection
 
         services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(assembly));
         services.AddScoped<ISessionModulesResolver, SessionModulesResolver>();
+        services.AddScoped<IEffectivePermissionKeysProvider, EffectivePermissionKeysProvider>();
+        services.AddScoped<ICompanyContextProvider, CompanyContextProvider>();
+        services.AddScoped<IRuntimePermissionAuthorizer, RuntimePermissionAuthorizer>();
         services.AddScoped<IKardexService, KardexService>();
         services.AddScoped<IInventoryPostingService, InventoryPostingService>();
         services.AddScoped<IReconciliationService, ReconciliationService>();

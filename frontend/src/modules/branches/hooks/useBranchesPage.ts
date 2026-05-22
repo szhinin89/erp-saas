@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useI18n } from '../../../i18n/i18n';
-import { usePermissionsStore } from '../../../store/permissionsStore';
-import { useAuthStore } from '../../../store/authStore';
 import {
   branchService,
   type BranchDto,
@@ -11,6 +9,7 @@ import {
   type GeographyItemDto,
 } from '../api/branchService';
 import { branchFormSchema, type BranchFormValues } from '../schemas/branchSchema';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 
 export const BRANCH_TYPES = ['Flagship Store', 'Boutique', 'Express', 'Almacén / Centro de Distribución'];
 
@@ -62,13 +61,11 @@ export function branchFormFromDto(d: BranchDto | BranchDetailDto): BranchFormVal
 
 export function useBranchesPage() {
   const { t } = useI18n();
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const role = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin = role === 'Admin' || role === 'SuperAdmin';
-  const canView = isAdmin || hasPerm('settings.branches.view');
-  const canCreate = isAdmin || hasPerm('settings.branches.create');
-  const canUpdate = isAdmin || hasPerm('settings.branches.update');
-  const canDelete = isAdmin || hasPerm('settings.branches.delete');
+  const { canShow } = usePermissionsUi();
+  const canView = canShow('settings.branches.view');
+  const canCreate = canShow('settings.branches.create');
+  const canUpdate = canShow('settings.branches.update');
+  const canDelete = canShow('settings.branches.delete');
 
   const [items, setItems] = useState<BranchDto[]>([]);
   const [loading, setLoading] = useState(true);

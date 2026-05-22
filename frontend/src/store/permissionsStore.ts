@@ -3,6 +3,11 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { PERMISSIONS_STORAGE_KEY } from '../lib/session/sessionStorageKeys';
 import { zustandSessionStorage } from '../lib/session/zustandSessionStorage';
 
+/**
+ * UI cache of backend authorization snapshot (GET /api/admin/iam/me/permissions + entitlements).
+ * Not a security boundary — API enforces access.
+ */
+
 /** Alinea claves del menú/catálogo (`perm:…`) con las del perfil (`inventario.*.view`). */
 export function normalizePolicyPermissionKey(key: string): string {
   const k = (key ?? '').trim().toLowerCase();
@@ -85,6 +90,7 @@ export const usePermissionsStore = create<PermissionsState>()(
       has: (permissionKey) => {
         if (permissionKey.startsWith('session:')) return true;
         const perms = get().permissions;
+        // Wildcard from backend (Admin/SuperAdmin UX snapshot — not a client-side security rule).
         if (perms.includes('*')) return true;
         const want = normalizePolicyPermissionKey(permissionKey);
         return perms.some((p) => normalizePolicyPermissionKey(p) === want);

@@ -6,12 +6,16 @@ using Microsoft.Extensions.Options;
 
 namespace ERP.Infrastructure.Access.Caching;
 
-public sealed class DistributedPermissionsCacheService : IPermissionsCacheService
+public sealed class DistributedPermissionsCacheService : IPermissionsCacheBackend
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly DistributedCacheEntryOptions VersionEntryOptions = new()
+    {
+        AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(30),
+    };
+
     private readonly IDistributedCache _cache;
     private readonly SaasEntitlementsCacheOptions _options;
-    private readonly SemaphoreSlim _stampede = new(1, 1);
 
     public DistributedPermissionsCacheService(
         IDistributedCache cache,
@@ -21,19 +25,34 @@ public sealed class DistributedPermissionsCacheService : IPermissionsCacheServic
         _options = options.Value;
     }
 
-    public async Task<IReadOnlyList<string>?> GetPermissionKeysAsync(Guid companyId, Guid userId, CancellationToken ct = default)
+    public async Task<PermissionsCacheReadResult> ReadAsync(
+        Guid subscriberId,
+        Guid companyId,
+        Guid userId,
+        CancellationToken ct = default)
     {
         if (!_options.Enabled)
-            return null;
+            return new PermissionsCacheReadResult(null, PermissionsCacheMissReason.Disabled);
 
-        var bytes = await _cache.GetAsync(Key(companyId, userId), ct);
+        var bytes = await _cache.GetAsync(DataKey(companyId, userId), ct);
         if (bytes is null || bytes.Length == 0)
-            return null;
+            return new PermissionsCacheReadResult(null, PermissionsCacheMissReason.NotFound);
 
-        return JsonSerializer.Deserialize<List<string>>(bytes, JsonOptions);
+        var envelope = JsonSerializer.Deserialize<PermissionCacheEnvelope>(bytes, JsonOptions);
+        if (envelope?.Keys is null)
+            return new PermissionsCacheReadResult(null, PermissionsCacheMissReason.NotFound);
+
+        var companyVersion = await ReadVersionAsync(CompanyVersionKey(companyId), ct);
+        var subscriberVersion = await ReadVersionAsync(SubscriberVersionKey(subscriberId), ct);
+
+        if (envelope.CompanyVersion != companyVersion || envelope.SubscriberVersion != subscriberVersion)
+            return new PermissionsCacheReadResult(null, PermissionsCacheMissReason.VersionMismatch);
+
+        return new PermissionsCacheReadResult(envelope.Keys, null);
     }
 
-    public async Task SetPermissionKeysAsync(
+    public async Task WriteAsync(
+        Guid subscriberId,
         Guid companyId,
         Guid userId,
         IReadOnlyList<string> keys,
@@ -43,9 +62,17 @@ public sealed class DistributedPermissionsCacheService : IPermissionsCacheServic
         if (!_options.Enabled)
             return;
 
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(keys, JsonOptions);
+        var companyVersion = await ReadVersionAsync(CompanyVersionKey(companyId), ct);
+        var subscriberVersion = await ReadVersionAsync(SubscriberVersionKey(subscriberId), ct);
+
+        var envelope = new PermissionCacheEnvelope(
+            companyVersion,
+            subscriberVersion,
+            keys.ToList());
+
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(envelope, JsonOptions);
         await _cache.SetAsync(
-            Key(companyId, userId),
+            DataKey(companyId, userId),
             bytes,
             new DistributedCacheEntryOptions
             {
@@ -55,28 +82,48 @@ public sealed class DistributedPermissionsCacheService : IPermissionsCacheServic
     }
 
     public Task InvalidateUserAsync(Guid companyId, Guid userId, CancellationToken ct = default)
-        => _cache.RemoveAsync(Key(companyId, userId), ct);
-
-    public async Task InvalidateCompanyAsync(Guid companyId, CancellationToken ct = default)
     {
-        await _stampede.WaitAsync(ct);
-        try
-        {
-            await _cache.SetAsync(
-                CompanyVersionKey(companyId),
-                BitConverter.GetBytes(DateTime.UtcNow.Ticks),
-                new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(7) },
-                ct);
-        }
-        finally
-        {
-            _stampede.Release();
-        }
+        if (!_options.Enabled)
+            return Task.CompletedTask;
+
+        return _cache.RemoveAsync(DataKey(companyId, userId), ct);
     }
 
-    private static string Key(Guid companyId, Guid userId)
+    public Task BumpCompanyVersionAsync(Guid companyId, CancellationToken ct = default)
+        => BumpVersionAsync(CompanyVersionKey(companyId), ct);
+
+    public Task BumpSubscriberVersionAsync(Guid subscriberId, CancellationToken ct = default)
+        => BumpVersionAsync(SubscriberVersionKey(subscriberId), ct);
+
+    private async Task BumpVersionAsync(string versionKey, CancellationToken ct)
+    {
+        if (!_options.Enabled)
+            return;
+
+        var next = await ReadVersionAsync(versionKey, ct) + 1;
+        await _cache.SetAsync(versionKey, BitConverter.GetBytes(next), VersionEntryOptions, ct);
+    }
+
+    private async Task<long> ReadVersionAsync(string versionKey, CancellationToken ct)
+    {
+        var bytes = await _cache.GetAsync(versionKey, ct);
+        if (bytes is null || bytes.Length < sizeof(long))
+            return 0;
+
+        return BitConverter.ToInt64(bytes, 0);
+    }
+
+    private static string DataKey(Guid companyId, Guid userId)
         => $"permissions:{companyId:N}:{userId:N}";
 
     private static string CompanyVersionKey(Guid companyId)
         => $"permissions:version:{companyId:N}";
+
+    private static string SubscriberVersionKey(Guid subscriberId)
+        => $"permissions:version:subscriber:{subscriberId:N}";
+
+    private sealed record PermissionCacheEnvelope(
+        long CompanyVersion,
+        long SubscriberVersion,
+        List<string> Keys);
 }

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState, startTransition } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n/i18n';
-import { usePermissionsStore } from '../store/permissionsStore';
+import { usePermissionsUi } from '../access/usePermissionsUi';
+import { shouldUseNavAdminBypass, hasUnrestrictedPermissionSnapshot } from '../access/permissionUi';
 import { normalizeModuleKey } from '../constants/subscriptionModules';
 import { syncSessionEntitlements } from '../lib/syncSessionEntitlements';
 import { accessService } from '../modules/auth/api/accessService';
@@ -37,7 +38,7 @@ export type MainMenuGroup = {
 export function useAppLayoutNavigation() {
   const { superAdminPanelEnabled } = useDeployment();
   const { user } = useAuthStore();
-  const { permissions, enabledModules, has: hasPerm, hasHydrated: permsHydrated } = usePermissionsStore();
+  const { permissions, enabledModules, hasHydrated: permsHydrated, canShow } = usePermissionsUi();
   const location = useLocation();
   const { t } = useI18n();
   const [sessionMenuDto, setSessionMenuDto] = useState<SessionMenuGroupDto[] | undefined>(undefined);
@@ -202,19 +203,19 @@ export function useAppLayoutNavigation() {
 
     const bySubscription = byRole.filter((g) => moduleEntitled(g.moduleKey));
 
-    if (user?.role === 'SuperAdmin' || user?.role === 'Admin') {
+    if (shouldUseNavAdminBypass(user?.role)) {
       return byRole.filter((g) => g.items.length > 0);
     }
 
     if (!permsHydrated) return bySubscription;
 
-    if (permissions.includes('*')) return bySubscription;
+    if (hasUnrestrictedPermissionSnapshot(permissions)) return bySubscription;
 
     const itemVisible = (it: NavItem) => {
       if (it.roles?.length && (!user?.role || !it.roles.includes(user.role))) return false;
       if (!moduleEntitled(it.moduleKey)) return false;
-      if (it.permissionKeysAny?.length) return it.permissionKeysAny.some((k) => hasPerm(k));
-      if (it.permissionKey) return hasPerm(it.permissionKey);
+      if (it.permissionKeysAny?.length) return it.permissionKeysAny.some((k) => canShow(k));
+      if (it.permissionKey) return canShow(it.permissionKey);
       return true;
     };
 
@@ -238,7 +239,7 @@ export function useAppLayoutNavigation() {
     return bySubscription
       .map((g) => ({ ...g, items: filterNavItemsDeep(g.items) }))
       .filter((g) => g.items.length > 0);
-  }, [groups, user, isGlobalSuperAdmin, enabledModules, permissions, permsHydrated, hasPerm]);
+  }, [groups, user, isGlobalSuperAdmin, enabledModules, permissions, permsHydrated, canShow]);
 
   const activeGroupIds = useMemo(() => {
     const path = location.pathname;

@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useI18n } from '../../../i18n/i18n';
-import { usePermissionsStore } from '../../../store/permissionsStore';
 import { useAuthStore } from '../../../store/authStore';
 import type { Customer } from '../api/customerService';
 import { useCustomers } from '../hooks/useCustomers';
 import { customerSchema, defaultCustomerValues, type CustomerFormValues } from '../schemas/customerSchema';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 import {
   buildId,
   type AuditItem,
@@ -17,12 +17,12 @@ import {
 } from './customersPageUtils';
 
 export function useCustomersPage() {
+  const { canShow } = usePermissionsUi();
   const { t } = useI18n();
-  const hasPerm = usePermissionsStore((s) => s.has);
   const companyId = useAuthStore((s) => s.user?.companyId);
-  const canView = hasPerm('sales.customers.view');
-  const canCreate = hasPerm('sales.customers.create');
-  const canEdit = hasPerm('sales.customers.update') || canCreate;
+  const canView = canShow('sales.customers.view');
+  const canCreate = canShow('sales.customers.create');
+  const canEdit = canShow('sales.customers.update') || canCreate;
   const canLoadCustomers = canView && !!companyId;
 
   const [activeTab, setActiveTab] = useState<CustomerTabId>('clientes');

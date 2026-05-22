@@ -5,8 +5,6 @@ import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { useI18n } from '../../../i18n/i18n';
-import { usePermissionsStore } from '../../../store/permissionsStore';
-import { useAuthStore } from '../../../store/authStore';
 import { useAsync } from '../../../hooks/useAsync';
 import { formatApiError } from '../../lib/formatApiError';
 import { ventasFacturasService, type VentasFacturaDto } from '../api/ventasFacturasService';
@@ -14,6 +12,7 @@ import { creditNotesService } from '../api/creditNotesService';
 import { productService } from '../../products/api/productService';
 import type { Product } from '../../../types/product';
 import './credit-notes-page.css';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 
 interface NoteLine {
   localId: string;
@@ -34,12 +33,10 @@ function calcTotals(lines: NoteLine[]) {
 }
 
 export function CreateCreditNotePage() {
+  const { canShow } = usePermissionsUi();
   const { t }     = useI18n();
   const navigate  = useNavigate();
-  const hasPerm   = usePermissionsStore((s) => s.has);
-  const role      = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin   = role === 'Admin' || role === 'SuperAdmin';
-  const canCreate = isAdmin || hasPerm('sales.credit-notes.create');
+  const canCreate = canShow('sales.credit-notes.create');
 
   const [invoiceId, setInvoiceId]   = useState('');
   const [noteType,  setNoteType]    = useState<'CREDITO' | 'DEBITO'>('CREDITO');

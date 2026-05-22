@@ -4,10 +4,9 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../components/Page
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../i18n/i18n';
-import { usePermissionsStore } from '../../../store/permissionsStore';
-import { useAuthStore } from '../../../store/authStore';
 import { creditNotesService, type SalesNoteDto } from '../api/creditNotesService';
 import './credit-notes-page.css';
+import { usePermissionsUi } from '../../../access/usePermissionsUi';
 
 function getStatusBadge(status: string) {
   const s = status.toLowerCase();
@@ -26,13 +25,11 @@ function noteTypeLabel(noteType: string, t: (k: string) => string) {
 }
 
 export function CreditNotesPage() {
+  const { canShow } = usePermissionsUi();
   const { t }     = useI18n();
   const navigate  = useNavigate();
-  const hasPerm   = usePermissionsStore((s) => s.has);
-  const role      = useAuthStore((s) => s.user?.role ?? '');
-  const isAdmin   = role === 'Admin' || role === 'SuperAdmin';
-  const canView   = isAdmin || hasPerm('sales.credit-notes.view');
-  const canCreate = isAdmin || hasPerm('sales.credit-notes.create');
+  const canView   = canShow('sales.credit-notes.view');
+  const canCreate = canShow('sales.credit-notes.create');
 
   const [rows,      setRows]      = useState<SalesNoteDto[]>([]);
   const [loading,   setLoading]   = useState(true);

@@ -6,9 +6,9 @@ import { useAsync } from '../../../../hooks/useAsync';
 import { useI18n } from '../../../../i18n/i18n';
 import { api } from '../../../lib/api';
 import type { ApiResponse } from '../../../../types/api';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
 import { useBodegas } from '../../transferencias/hooks/useTransferencias';
 import { useStockList } from '../hooks/useStock';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
 interface ProductoOpcion {
   id: string;
@@ -24,9 +24,9 @@ function formatQty(value: number): string {
 }
 
 export function StockPage() {
+  const { canShow } = usePermissionsUi();
   const { t } = useI18n();
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const canView = hasPerm('inventory.stock.view');
+  const canView = canShow('inventory.stock.view');
 
   const { data: bodegas, loading: loadingBodegas } = useBodegas();
   const { data: productos } = useAsync<ProductoOpcion[]>(async () => {

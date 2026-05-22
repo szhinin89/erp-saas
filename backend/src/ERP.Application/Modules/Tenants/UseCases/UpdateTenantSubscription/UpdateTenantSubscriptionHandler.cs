@@ -1,7 +1,8 @@
-using MediatR;
+using ERP.Application.Access.Caching;
+using ERP.Application.Subscribers.DTOs;
 using ERP.Application.Common;
 using ERP.Application.Subscriptions;
-using ERP.Application.Subscribers.DTOs;
+using MediatR;
 using ERP.Domain.Subscribers.Entities;
 using ERP.Domain.Subscribers.Interfaces;
 
@@ -13,17 +14,20 @@ public sealed class UpdateSubscriberSubscriptionHandler : IRequestHandler<Update
     private readonly ICurrentUser _currentUser;
     private readonly ISessionModulesResolver _sessionModules;
     private readonly ISubscriptionFeatureOverridesService _overrides;
+    private readonly IPermissionsCacheInvalidator _permissionsCache;
 
     public UpdateSubscriberSubscriptionHandler(
         ISubscriberRepository repository,
         ICurrentUser currentUser,
         ISessionModulesResolver sessionModules,
-        ISubscriptionFeatureOverridesService overrides)
+        ISubscriptionFeatureOverridesService overrides,
+        IPermissionsCacheInvalidator permissionsCache)
     {
         _repository = repository;
         _currentUser = currentUser;
         _sessionModules = sessionModules;
         _overrides = overrides;
+        _permissionsCache = permissionsCache;
     }
 
     public async Task<Result<SubscriberDto>> Handle(UpdateSubscriberSubscriptionCommand command, CancellationToken ct)
@@ -46,6 +50,8 @@ public sealed class UpdateSubscriberSubscriptionHandler : IRequestHandler<Update
             _currentUser.UserId,
             ct);
         await _repository.SaveChangesAsync(ct);
+
+        await _permissionsCache.BumpSubscriberVersionAsync(tenant.Id, ct);
 
         var modules = await _sessionModules.GetEnabledModuleKeysAsync(tenant.Id, ct);
         return Result<SubscriberDto>.Success(SubscriberDto.FromTenant(tenant, modules));

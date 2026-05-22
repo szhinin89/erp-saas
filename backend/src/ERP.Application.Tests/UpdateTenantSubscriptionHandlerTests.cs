@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Moq;
+using ERP.Application.Access.Caching;
 using ERP.Application.Common;
 using ERP.Application.Subscriptions;
 using ERP.Application.Subscribers.UseCases.UpdateSubscriberSubscription;
@@ -38,7 +39,7 @@ public sealed class UpdateSubscriberSubscriptionHandlerTests
                 It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var handler = new UpdateSubscriberSubscriptionHandler(repo.Object, user.Object, sessionModules.Object, overrides.Object);
+        var handler = CreateHandler(repo.Object, user.Object, sessionModules.Object, overrides.Object);
         var result = await handler.Handle(
             new UpdateSubscriberSubscriptionCommand(subscriberId, PlanCode: "pro", EnabledModules: new[] { "accounting", "saas" }),
             CancellationToken.None);
@@ -76,7 +77,7 @@ public sealed class UpdateSubscriberSubscriptionHandlerTests
             .Setup(o => o.ApplyModuleOverridesAsync(subscriberId, null, editorId, It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        var handler = new UpdateSubscriberSubscriptionHandler(repo.Object, user.Object, sessionModules.Object, overrides.Object);
+        var handler = CreateHandler(repo.Object, user.Object, sessionModules.Object, overrides.Object);
         var result = await handler.Handle(
             new UpdateSubscriberSubscriptionCommand(subscriberId, PlanCode: null, EnabledModules: Array.Empty<string>()),
             CancellationToken.None);
@@ -97,7 +98,7 @@ public sealed class UpdateSubscriberSubscriptionHandlerTests
 
         var sessionModules = new Mock<ISessionModulesResolver>(MockBehavior.Strict);
         var overrides = new Mock<ISubscriptionFeatureOverridesService>(MockBehavior.Strict);
-        var handler = new UpdateSubscriberSubscriptionHandler(repo.Object, user.Object, sessionModules.Object, overrides.Object);
+        var handler = CreateHandler(repo.Object, user.Object, sessionModules.Object, overrides.Object);
         var result = await handler.Handle(
             new UpdateSubscriberSubscriptionCommand(Guid.NewGuid(), "x", new[] { "inventory" }), CancellationToken.None);
 
@@ -117,10 +118,24 @@ public sealed class UpdateSubscriberSubscriptionHandlerTests
 
         var sessionModules = new Mock<ISessionModulesResolver>(MockBehavior.Strict);
         var overrides = new Mock<ISubscriptionFeatureOverridesService>(MockBehavior.Strict);
-        var handler = new UpdateSubscriberSubscriptionHandler(repo.Object, user.Object, sessionModules.Object, overrides.Object);
+        var handler = CreateHandler(repo.Object, user.Object, sessionModules.Object, overrides.Object);
         var act = () => handler.Handle(
             new UpdateSubscriberSubscriptionCommand(tenant.Id, null, new[] { "not-a-module" }), CancellationToken.None);
 
         await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    private static UpdateSubscriberSubscriptionHandler CreateHandler(
+        ISubscriberRepository repo,
+        ICurrentUser user,
+        ISessionModulesResolver sessionModules,
+        ISubscriptionFeatureOverridesService overrides)
+    {
+        var permissionsCache = new Mock<IPermissionsCacheInvalidator>(MockBehavior.Loose);
+        permissionsCache
+            .Setup(c => c.BumpSubscriberVersionAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        return new UpdateSubscriberSubscriptionHandler(repo, user, sessionModules, overrides, permissionsCache.Object);
     }
 }

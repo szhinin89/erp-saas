@@ -14,7 +14,7 @@ export function AccountingPage() {
   const ctx = useAccountingPage();
   const {
     t,
-    isAdmin,
+    skipPermissionHydrationWait,
     permsHydrated,
     canUseModule,
     canViewAccounts,
@@ -38,7 +38,7 @@ export function AccountingPage() {
     fetchBalance,
   } = ctx;
 
-  if (!permsHydrated && !isAdmin) {
+  if (!permsHydrated && !skipPermissionHydrationWait) {
     return (
       <ErpPageTemplate kicker={t('app.nav.group.accounting')} title={t('app.nav.accounting')}>
         <div className="acc-page-loading">

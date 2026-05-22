@@ -3,7 +3,7 @@ import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/P
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { useI18n } from '../../../../i18n/i18n';
-import { usePermissionsStore } from '../../../../store/permissionsStore';
+import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 import {
   cashBankService,
   type BankAccount,
@@ -17,10 +17,10 @@ function money(value: number, currency = 'USD'): string {
 }
 
 export function CashBankPage() {
+  const { canShow } = usePermissionsUi();
   const { t } = useI18n();
-  const hasPerm = usePermissionsStore((s) => s.has);
-  const canViewAccounts = hasPerm('cash.bank.view');
-  const canViewPetty    = hasPerm('cash.bank.cajachica.view');
+  const canViewAccounts = canShow('cash.bank.view');
+  const canViewPetty    = canShow('cash.bank.cajachica.view');
 
   const [accounts,   setAccounts]   = useState<BankAccount[]>([]);
   const [pettyCashes, setPettyCashes] = useState<PettyCash[]>([]);
