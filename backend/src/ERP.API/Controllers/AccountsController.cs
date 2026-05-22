@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using System.Globalization;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API.Contracts;
@@ -243,11 +244,11 @@ public class AccountsController : ControllerBase
         [FromQuery] string hasta,
         CancellationToken ct = default)
     {
-        if (!DateTime.TryParse(desde, out var d) || !DateTime.TryParse(hasta, out var h))
+        if (!TryParseReportDateRange(desde, hasta, out var d, out var h))
             return this.ApiBadRequest("Parámetros 'desde' y 'hasta' requeridos en formato YYYY-MM-DD.");
 
         var result = await _mediator.Send(
-            new GetMayorGeneralQuery(id, d.Date, h.Date.AddDays(1).AddTicks(-1)), ct);
+            new GetMayorGeneralQuery(id, d, h), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<MayorGeneralLineDto>());
     }
 
@@ -264,11 +265,35 @@ public class AccountsController : ControllerBase
         [FromQuery] string hasta,
         CancellationToken ct = default)
     {
-        if (!DateTime.TryParse(desde, out var d) || !DateTime.TryParse(hasta, out var h))
+        if (!TryParseReportDateRange(desde, hasta, out var d, out var h))
             return this.ApiBadRequest("Parámetros 'desde' y 'hasta' requeridos en formato YYYY-MM-DD.");
 
         var result = await _mediator.Send(
-            new GetBalanceComprobacionQuery(d.Date, h.Date.AddDays(1).AddTicks(-1)), ct);
+            new GetBalanceComprobacionQuery(d, h), ct);
         return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<BalanceComprobacionLineDto>());
+    }
+
+    private static bool TryParseReportDateRange(
+        string? desde,
+        string? hasta,
+        out DateTime rangeStart,
+        out DateTime rangeEndInclusive)
+    {
+        rangeStart = default;
+        rangeEndInclusive = default;
+
+        if (string.IsNullOrWhiteSpace(desde) || string.IsNullOrWhiteSpace(hasta))
+            return false;
+
+        if (!DateOnly.TryParseExact(desde.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var from)
+            || !DateOnly.TryParseExact(hasta.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var to))
+            return false;
+
+        if (to < from)
+            return false;
+
+        rangeStart = DateTime.SpecifyKind(from.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+        rangeEndInclusive = DateTime.SpecifyKind(to.ToDateTime(TimeOnly.MaxValue), DateTimeKind.Utc);
+        return true;
     }
 }

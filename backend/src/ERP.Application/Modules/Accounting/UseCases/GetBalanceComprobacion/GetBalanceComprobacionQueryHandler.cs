@@ -25,7 +25,6 @@ public sealed class GetBalanceComprobacionQueryHandler
         var totals   = await _repo.GetBalanceComprobacionAsync(subscriberId, query.Desde, query.Hasta, ct);
 
         var accountMap = accounts.ToDictionary(a => a.Id);
-        var totalsMap  = totals.ToDictionary(t => t.AccountId);
 
         // Only include accounts that have movements in the period, ordered by code
         var lines = totals

@@ -13,6 +13,7 @@ import {
   type CreateGastoCategoriaRequest,
 } from '../api/accountingConfigService';
 import { useAsync } from '../../../hooks/useAsync';
+import { formatApiError } from '../../lib/formatApiError';
 import { useI18n } from '../../../i18n/i18n';
 import { useAuthStore } from '../../../store/authStore';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
@@ -76,7 +77,7 @@ export function useAccountingPage() {
       const data = await accountingService.getMayorGeneral(mayorAccountId, mayorDesde, mayorHasta);
       setMayorData(data);
     } catch (e) {
-      setMayorError(e instanceof Error ? e.message : 'Error al cargar el mayor');
+      setMayorError(formatApiError(e));
     } finally {
       setMayorLoading(false);
     }
@@ -89,7 +90,7 @@ export function useAccountingPage() {
       const data = await accountingService.getBalanceComprobacion(balDesde, balHasta);
       setBalData(data);
     } catch (e) {
-      setBalError(e instanceof Error ? e.message : 'Error al cargar el balance');
+      setBalError(formatApiError(e));
     } finally {
       setBalLoading(false);
     }

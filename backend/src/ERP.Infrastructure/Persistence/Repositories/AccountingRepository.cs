@@ -205,17 +205,17 @@ public class AccountingRepository : IAccountingRepository
                   && e.Status == DocumentStatus.Posted
                   && e.Date >= desde
                   && e.Date <= hasta
-            group new { Debit = line.Debit.Amount, Credit = line.Credit.Amount }
-                by line.AccountId
-            into g
             select new
             {
-                AccountId    = g.Key,
-                TotalDebit   = g.Sum(x => x.Debit),
-                TotalCredit  = g.Sum(x => x.Credit),
+                line.AccountId,
+                Debit  = line.Debit.Amount,
+                Credit = line.Credit.Amount,
             };
 
         var rows = await q.ToListAsync(ct);
-        return rows.Select(r => (r.AccountId, r.TotalDebit, r.TotalCredit)).ToList();
+        return rows
+            .GroupBy(r => r.AccountId)
+            .Select(g => (g.Key, g.Sum(x => x.Debit), g.Sum(x => x.Credit)))
+            .ToList();
     }
 }
