@@ -20,10 +20,17 @@ function normalizeUuid(uuid: string): string {
   return uuid.replace(/-/g, '').toLowerCase();
 }
 
-/** Respuesta de POST /api/auth/login cuando el usuario es operador platform. */
-function isSuperAdminMustUsePlatform(err: unknown): boolean {
-  const message = readApiErrorMessage(err);
-  return message?.toLowerCase().includes('login platform') ?? false;
+/** Errores definitivos del login tenant: no intentar bootstrap. */
+function isDefinitiveTenantLoginError(err: unknown): boolean {
+  const message = readApiErrorMessage(err)?.toLowerCase() ?? '';
+  if (!message) return false;
+  return (
+    message.includes('credencial') ||
+    message.includes('contraseña') ||
+    message.includes('password') ||
+    message.includes('inactivo') ||
+    message.includes('restablecer')
+  );
 }
 
 
@@ -80,28 +87,16 @@ export function LoginPage() {
     };
 
     try {
-      /* ── 1. Platform login (SuperAdmin global) — antes que /api/auth/login ── */
-      let platformLoginErr: unknown = null;
-      if (superAdminPanelEnabled) {
-        try {
-          const platformPayload = await authService.loginPlatform(credentials);
-          if (platformPayload?.token) {
-            enterSuperAdminDashboard(platformPayload);
-            return;
-          }
-        } catch (err) {
-          platformLoginErr = err;
-        }
-      }
-
-      /* ── 2. Direct login (usuarios company / tenant) ── */
+      /* ── 1. Login tenant/empresa (caso habitual: Admin, operadores) ── */
       try {
         const payload = await authService.loginUser(credentials);
 
         if (payload?.token) {
           const isGlobalSuperAdmin =
             payload.role === 'SuperAdmin' &&
-            normalizeUuid(payload.subscriberId) === normalizeUuid(GLOBAL_SUBSCRIBER_ID);
+            (!payload.subscriberId ||
+              normalizeUuid(payload.subscriberId) === normalizeUuid(GLOBAL_SUBSCRIBER_ID) ||
+              payload.userType === 'Platform');
 
           if (superAdminPanelEnabled && isGlobalSuperAdmin) {
             enterSuperAdminDashboard(payload);
@@ -119,13 +114,13 @@ export function LoginPage() {
           await enterSubscriberDashboard(payload);
           return;
         }
-      } catch (directLoginErr) {
-        if (isSuperAdminMustUsePlatform(directLoginErr)) {
-          throw platformLoginErr ?? directLoginErr;
+      } catch (err) {
+        if (isDefinitiveTenantLoginError(err)) {
+          throw err;
         }
       }
 
-      /* ── 3. Bootstrap (multi-tenant flow) ── */
+      /* ── 3. Bootstrap (multi-suscriptor / flujo IAM legacy) ── */
       const bootstrap = await accessService.bootstrapLogin(credentials);
       setBootstrap(bootstrap);
 

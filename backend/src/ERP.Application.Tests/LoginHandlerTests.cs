@@ -56,6 +56,9 @@ public class LoginHandlerTests
             .Setup(s => s.GetEnabledModuleKeysAsync(subscriberId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { "inventory" });
 
+        var deployment = new Mock<IDeploymentFeatureFlags>();
+        deployment.Setup(d => d.IsSuperAdminPanelEnabled).Returns(true);
+
         var handler = new LoginHandler(
             tenantRepo.Object,
             companyRepo.Object,
@@ -64,7 +67,8 @@ public class LoginHandlerTests
             passwordHasher.Object,
             refreshTokenService.Object,
             sessionModules.Object,
-            companyProvisioning.Object);
+            companyProvisioning.Object,
+            deployment.Object);
 
         var result = await handler.Handle(new LoginCommand(email, password), CancellationToken.None);
 
@@ -75,5 +79,48 @@ public class LoginHandlerTests
         result.Value.CompanyId.Should().Be(companyId);
         result.Value.Role.Should().Be(role);
         result.Value.Email.Should().Be(email);
+    }
+
+    [Fact]
+    public async Task HandleAsync_returns_platform_session_for_superadmin_via_unified_login()
+    {
+        var email = "superadmin@zh.local";
+        var password = "Secret123!";
+        var passwordHash = "hashed-password";
+
+        var platformUser = IdentityUser.CreatePlatformSuperAdmin("Super", "Admin", email, passwordHash, Guid.NewGuid());
+
+        var accessRepo = new Mock<IAccessRepository>(MockBehavior.Strict);
+        var accessTokenService = new Mock<IAccessTokenService>(MockBehavior.Strict);
+        var passwordHasher = new Mock<IPasswordHasher>(MockBehavior.Strict);
+        var refreshTokenService = new Mock<IRefreshTokenService>();
+        var deployment = new Mock<IDeploymentFeatureFlags>();
+
+        accessRepo.Setup(r => r.GetUserByEmailAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(platformUser);
+        passwordHasher.Setup(h => h.VerifyPassword(password, passwordHash)).Returns(true);
+        deployment.Setup(d => d.IsSuperAdminPanelEnabled).Returns(true);
+        accessTokenService.Setup(s => s.GeneratePlatformSessionToken(platformUser)).Returns("platform-token");
+        refreshTokenService
+            .Setup(s => s.CreateAsync(platformUser.Id, Guid.Empty, null, RefreshUserType.Platform, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(("refresh-token", DateTime.UtcNow.AddDays(30)));
+
+        var handler = new LoginHandler(
+            Mock.Of<ISubscriberRepository>(),
+            Mock.Of<ICompanyRepository>(),
+            accessRepo.Object,
+            accessTokenService.Object,
+            passwordHasher.Object,
+            refreshTokenService.Object,
+            Mock.Of<ISessionModulesResolver>(),
+            Mock.Of<ICompanyProvisioningService>(),
+            deployment.Object);
+
+        var result = await handler.Handle(new LoginCommand(email, password), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Token.Should().Be("platform-token");
+        result.Value.Role.Should().Be("SuperAdmin");
+        result.Value.SubscriberId.Should().Be(Guid.Empty);
+        result.Value.UserType.Should().Be("Platform");
     }
 }
