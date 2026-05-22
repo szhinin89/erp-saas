@@ -165,6 +165,7 @@ if (hangfireEnabled)
             options.UseNpgsqlConnection(hangfireConn)));
     builder.Services.AddHangfireServer();
     builder.Services.AddScoped<ISriRetryJob, SriRetryJob>();
+    builder.Services.AddScoped<IProcessOutboxJob, ProcessOutboxJob>();
 }
 
 // Opciones del Kardex: registrar tanto como IOptions<> (convención .NET)
@@ -335,6 +336,11 @@ if (hangfireEnabled)
         "sri-emission-retry",
         x => x.ExecuteAsync(CancellationToken.None),
         "*/5 * * * *"); // cada 5 minutos
+
+    RecurringJob.AddOrUpdate<IProcessOutboxJob>(
+        "process-outbox",
+        x => x.ExecuteAsync(CancellationToken.None),
+        "* * * * *"); // cada minuto
 }
 
 app.UseSerilogRequestLogging();

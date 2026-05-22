@@ -141,6 +141,15 @@ Penalizaciones: violations (−8), warnings (−2), entradas grandfather (−1).
 
 Auto-emite en CI cuando `GITHUB_ACTIONS=true` (integrado en `run-all.mjs`).
 
+#### Checks event-driven + IA (Node.js)
+
+| Script | Qué valida |
+|--------|------------|
+| `check-domain-events-rules.mjs` | Naming eventos (past tense + `Event` suffix); solo en `ERP.Domain`; no en `ERP.API` |
+| `check-ai-layer-boundaries.mjs` | `ERP.Domain`/`ERP.Application` no referencian paquetes IA; `ERP.AI.*` no acceden a DbContext ERP directamente |
+
+---
+
 #### ADRs (rationale, no enforcement)
 
 | ADR | Tema |
@@ -151,6 +160,9 @@ Auto-emite en CI cuando `GITHUB_ACTIONS=true` (integrado en `run-all.mjs`).
 | [ADR-004](../docs/adr/ADR-004-clean-architecture-enforcement.md) | Clean Architecture + checks |
 | [ADR-005](../docs/adr/ADR-005-multi-tenant-query-filters.md) | Multi-tenant filters |
 | [ADR-006](../docs/adr/ADR-006-multi-agent-governance.md) | Governance multi-agente |
+| [ADR-007](../docs/adr/ADR-007-domain-events-foundation.md) | Domain events foundation |
+| [ADR-008](../docs/adr/ADR-008-outbox-pattern-foundation.md) | Outbox pattern foundation |
+| [ADR-009](../docs/adr/ADR-009-ai-layer-separation.md) | Separación capa IA |
 
 Índice: [`docs/adr/README.md`](../docs/adr/README.md). **AI-RULES** = reglas; **ADRs** = por qué.
 

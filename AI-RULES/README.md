@@ -21,6 +21,11 @@ Cursor, Claude y futuros agentes deben leer **estos archivos** antes de inventar
 | [NAMING.md](./NAMING.md) | Convenciones de nombres (BD, código, i18n, CSS) |
 | [ENFORCEMENT.md](./ENFORCEMENT.md) | Validación 4 capas, docs sync, CI, anti-drift |
 | [PR-RULES-CATALOG.md](./PR-RULES-CATALOG.md) | Catálogo normativo B-xx / F-xx (bloqueante PR) |
+| [EVENT-DRIVEN-RULES.md](./EVENT-DRIVEN-RULES.md) | Domain Events, Outbox, naming, handlers, idempotencia |
+| [EVENT-VERSIONING.md](./EVENT-VERSIONING.md) | Additive-first, cuándo subir versión, compatibilidad histórica |
+| [OUTBOX-RETENTION.md](./OUTBOX-RETENTION.md) | Política de retención, purge, archive, compliance |
+| [ANALYTICS-FOUNDATION.md](./ANALYTICS-FOUNDATION.md) | Read models, proyecciones, estrategia BI/analytics |
+| [AI-FOUNDATION.md](./AI-FOUNDATION.md) | Arquitectura IA futura — separación de capas, prohibiciones |
 | [docs/adr/](../docs/adr/README.md) | ADRs — rationale arquitectónico (no duplicar reglas de enforcement) |
 
 ---

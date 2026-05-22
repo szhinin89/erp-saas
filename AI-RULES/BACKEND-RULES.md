@@ -129,6 +129,38 @@ Controller delgado: recibe request → delega → devuelve contrato HTTP.
 
 ---
 
+## AI + Analytics — prohibiciones absolutas en ERP Core
+
+```
+❌ NO llamar OpenAI/Anthropic/LLMs desde ERP.Domain o ERP.Application
+❌ NO referenciar paquetes IA (OpenAI SDK, SemanticKernel, LangChain) en ERP.*.csproj
+❌ NO agregar lógica de analytics o reporting en Controllers — usar CQRS queries
+❌ NO consultar tablas transaccionales desde ERP.AI.* — usar read models o Outbox
+❌ NO mezclar proyecciones OLAP con transacciones OLTP en el mismo SaveChanges
+```
+
+Checks automáticos: [check-ai-layer-boundaries.mjs](../tools/architecture/check-ai-layer-boundaries.mjs) (AI-001 → AI-005)
+Arquitectura futura IA: [AI-FOUNDATION.md](./AI-FOUNDATION.md)
+Read models / analytics: [ANALYTICS-FOUNDATION.md](./ANALYTICS-FOUNDATION.md)
+
+---
+
+## Domain Events — reglas de implementación
+
+Ver detalle completo en [EVENT-DRIVEN-RULES.md](./EVENT-DRIVEN-RULES.md).
+
+Resumen obligatorio:
+
+| Regla | Detalle |
+|-------|---------|
+| Solo AggregateRoots emiten eventos | `RaiseDomainEvent(...)` dentro del AggregateRoot |
+| Naming: past tense | `InvoiceCreatedEvent` ✅ — `CreateInvoiceEvent` ❌ |
+| Nuevos eventos extienden `BaseDomainEvent` | Agrega `CorrelationId`, `TenantId`, `CausationId` |
+| Handlers son idempotentes | Verificar si ya procesaron el evento |
+| IA no vive en Domain/Application | Ver [AI-FOUNDATION.md](./AI-FOUNDATION.md) |
+
+---
+
 ## Tarifas SRI
 
 No existe formulario para crear tarifas — vienen de `sri_vat_rate`. `POST /api/tax-rates` eliminado. Usar `GET /api/tax-rates` para dropdowns.

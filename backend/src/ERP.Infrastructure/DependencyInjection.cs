@@ -53,6 +53,7 @@ using ERP.Infrastructure.Seeding.InstallData;
 using ERP.Domain.Modules.Cash;
 using ERP.Domain.Modules.Menu.Interfaces;
 using ERP.Infrastructure.Options;
+using ERP.Infrastructure.Persistence.Outbox;
 
 namespace ERP.Infrastructure;
 
@@ -198,6 +199,9 @@ public static class DependencyInjection
         services.AddScoped<ICarrierRepository, CarrierRepository>();
         services.AddScoped<IDefaultProfileSeeder, DefaultProfileSeeder>();
         services.AddScoped<ISubscriberOnboardingService, SubscriberOnboardingService>();
+
+        // Event-driven foundation — outbox processor
+        services.AddScoped<IOutboxProcessor, OutboxProcessor>();
 
         return services;
     }

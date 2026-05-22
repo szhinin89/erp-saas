@@ -89,6 +89,23 @@ No implementar hasta requerimiento del cliente. Base en dominio:
 
 ---
 
+## Event-Driven Foundation (preparación para IA)
+
+El ERP utiliza Domain Events + Outbox como base para analytics, automatización e IA futura.
+
+**Reglas irrenunciables:**
+
+- Los eventos de dominio salen **solo** desde AggregateRoots (`RaiseDomainEvent`)
+- La capa Application puede **reaccionar** a eventos (handlers MediatR), no emitirlos directamente
+- Infrastructure procesa el Outbox (job Hangfire `process-outbox`)
+- La IA futura consumirá eventos via Outbox — **no** accediendo al DbContext del ERP directamente
+- **Nunca** llamar LLMs/IA desde `ERP.Domain` o `ERP.Application`
+
+Reglas detalladas: [EVENT-DRIVEN-RULES.md](./EVENT-DRIVEN-RULES.md)
+Arquitectura IA futura: [AI-FOUNDATION.md](./AI-FOUNDATION.md)
+
+---
+
 ## CI y ramas
 
 | Rama | Uso |

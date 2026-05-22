@@ -1,5 +1,6 @@
 using System.Linq;
 using ERP.Domain.Modules.Logistics.Entities;
+using ERP.Infrastructure.Persistence.Outbox;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using ERP.Domain.Modules.Accounting.Entities;
@@ -117,6 +118,14 @@ public class ErpDbContext : DbContext
         var domainEvents = entitiesWithEvents.SelectMany(e => e.DomainEvents).ToList();
         foreach (var entity in entitiesWithEvents)
             entity.ClearDomainEvents();
+
+        // Write outbox messages atomically with business data.
+        // Guarantees every domain event is durably recorded even if in-process publish fails.
+        foreach (var @event in domainEvents)
+        {
+            var metadataJson = OutboxMetadataFactory.Build(@event);
+            OutboxMessages.Add(OutboxMessage.From(@event, metadataJson));
+        }
 
         var result = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
 
@@ -394,6 +403,11 @@ public class ErpDbContext : DbContext
     public DbSet<WsLog>         WsLogs        => Set<WsLog>();
     public DbSet<RetryControl>  RetryControls => Set<RetryControl>();
     public DbSet<VatRefund>     VatRefunds    => Set<VatRefund>();
+
+    // ── Event-Driven Foundation ───────────────────────────────────────────
+    // Durable log of every domain event. No tenant filter — all subscribers.
+    // Background processor marks events as processed; future: forwards to external bus.
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     /// <summary>
     /// Evaluada en cada query, no al compilar el modelo.
