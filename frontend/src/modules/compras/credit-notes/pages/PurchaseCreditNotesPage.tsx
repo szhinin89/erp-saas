@@ -112,7 +112,7 @@ export function PurchaseCreditNotesPage() {
                 ref={fileRef}
                 type="file"
                 accept=".xml,application/xml,text/xml"
-                style={{ display: 'none' }}
+                className="sr-only"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) void onImport(file);

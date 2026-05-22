@@ -1,6 +1,9 @@
 import { api } from '../../lib/api';
 import type { ApiResponse } from '../../../types/api';
 import type { SessionResponse, SessionMenuGroupDto } from '../../../types/access';
+import { readEnvelopePayload } from '../../lib/apiEnvelope';
+import { normalizeAuthResponse } from '../../auth/normalizeAuthResponse';
+import type { AuthResponse } from '../../../types/auth';
 
 /** Rutas canónicas Platform Layer (SaaS / subscribers). */
 export const PLATFORM_SUBSCRIBERS_API = '/api/platform/subscribers';
@@ -413,9 +416,29 @@ export const superAdminService = {
   getPublicPlans: () =>
     api.get<ApiResponse<{ plans: SaasPublicPlan[] }>>('/api/public/plans').then((r) => r.data.responseObject.plans),
 
-  switchSubscriber: (subscriberId: string) =>
-    api.post<ApiResponse<import('../../../types/auth').AuthResponse>>('/api/auth/switch-subscriber', { subscriberId })
-      .then((r) => r.data.responseObject),
+  switchSubscriber: async (subscriberId: string) => {
+    const trimmed = subscriberId.trim();
+    if (!trimmed) {
+      throw new Error('Identificador de suscriptor inválido.');
+    }
+
+    const res = await api.post<ApiResponse<Record<string, unknown>>>(
+      '/api/auth/switch-subscriber',
+      { subscriberId: trimmed },
+    );
+
+    const envelope = res.data;
+    if (envelope && envelope.success === false) {
+      throw new Error(envelope.message?.trim() || 'No se pudo cambiar de suscriptor.');
+    }
+
+    const session = normalizeAuthResponse(readEnvelopePayload<Record<string, unknown> | null>(envelope));
+    if (!session.token) {
+      throw new Error('La sesión no incluyó token de acceso.');
+    }
+
+    return session;
+  },
 
   getNavigationMenu: () =>
     api

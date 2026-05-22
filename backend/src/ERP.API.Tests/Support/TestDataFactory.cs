@@ -38,7 +38,7 @@ internal static class TestDataFactory
             createdBy: userId);
         db.IdentityUsers.Add(user);
         await db.SaveChangesAsync(ct);
-        factoryUser.UserId = userId;
-        return userId;
+        factoryUser.UserId = user.Id;
+        return user.Id;
     }
 }

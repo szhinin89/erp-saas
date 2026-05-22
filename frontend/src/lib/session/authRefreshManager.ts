@@ -1,6 +1,9 @@
 import axios, { type AxiosError } from 'axios';
 import { useAuthStore } from '../../store/authStore';
 import { getAccessToken, setAccessToken } from './authTokenMemory';
+import { readEnvelopePayload } from '../../modules/lib/apiEnvelope';
+import { normalizeAuthResponse } from '../../modules/auth/normalizeAuthResponse';
+import type { ApiResponse } from '../../types/api';
 
 const viteApiBase = (import.meta.env.VITE_API_URL as string | undefined)?.trim() ?? '';
 
@@ -13,9 +16,7 @@ export type AuthBroadcastEvent =
   | { type: 'refresh_failed'; tabId: string; retryable?: boolean }
   | { type: 'logout' };
 
-type RefreshPayload = {
-  responseObject: { token: string; refreshToken?: string | null };
-};
+type RefreshPayload = ApiResponse<Record<string, unknown>>;
 
 const TAB_ID =
   typeof crypto !== 'undefined' && 'randomUUID' in crypto
@@ -132,10 +133,13 @@ async function postRefresh(): Promise<string> {
     {},
     { withCredentials: true },
   );
-  const access = res.data.responseObject.token;
-  setAccessToken(access);
-  useAuthStore.getState().updateTokens(access, res.data.responseObject.refreshToken ?? null);
-  return access;
+  const session = normalizeAuthResponse(readEnvelopePayload<Record<string, unknown> | null>(res.data));
+  if (!session.token) {
+    throw new Error('La renovación de sesión no devolvió token.');
+  }
+  setAccessToken(session.token);
+  useAuthStore.getState().login(session);
+  return session.token;
 }
 
 async function executeRefreshOnce(allowBootstrapRetry: boolean): Promise<string> {

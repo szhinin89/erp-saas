@@ -8,6 +8,7 @@ export const PUBLIC_AUTH_PATHS = [
   '/api/auth/forgot-password',
   '/api/auth/reset-password',
   '/api/auth/refresh',
+  '/api/auth/switch-subscriber',
   '/api/admin/iam/bootstrap-login',
   '/api/admin/iam/switch-subscriber',
   '/api/admin/iam/subscriber/company_user_memberships',

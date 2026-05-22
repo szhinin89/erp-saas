@@ -57,15 +57,29 @@ public sealed class SwitchCompanyHandler : IRequestHandler<SwitchCompanyCommand,
         if (user is null || !user.IsActive)
             return Result<AuthResponseDto>.Failure("Usuario no válido.");
 
-        var membership = await _accessRepository.GetCompanyUserMembershipAsync(company.Id, user.Id, ct);
-        if (membership is null || !membership.IsActive)
-            return Result<AuthResponseDto>.Failure("No tiene acceso a esta empresa.");
+        var isSuperAdminInTenant = string.Equals(_currentUser.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
+        string sessionRole;
+        string refreshUserType;
+
+        if (isSuperAdminInTenant)
+        {
+            sessionRole = "SuperAdmin";
+            refreshUserType = RefreshUserType.Platform;
+        }
+        else
+        {
+            var membership = await _accessRepository.GetCompanyUserMembershipAsync(company.Id, user.Id, ct);
+            if (membership is null || !membership.IsActive)
+                return Result<AuthResponseDto>.Failure("No tiene acceso a esta empresa.");
+            sessionRole = membership.Role;
+            refreshUserType = RefreshUserType.Identity;
+        }
 
         var token = _tokenService.GenerateSessionToken(
-            user, subscriberId, membership.Role, company.Id);
+            user, subscriberId, sessionRole, company.Id);
 
         var (refresh, refreshExpiry) = await _refreshTokenService.CreateAsync(
-            user.Id, subscriberId, company.Id, RefreshUserType.Identity, ct);
+            user.Id, subscriberId, company.Id, refreshUserType, ct);
 
         var tenant = await _subscriberRepository.GetByIdAsync(subscriberId, ct);
         var modules = await _sessionModules.GetEnabledModuleKeysAsync(subscriberId, ct);
@@ -74,7 +88,7 @@ public sealed class SwitchCompanyHandler : IRequestHandler<SwitchCompanyCommand,
             user.Id,
             user.FullName,
             user.Email.Value,
-            membership.Role,
+            sessionRole,
             subscriberId,
             token,
             tenant?.PlanCode,

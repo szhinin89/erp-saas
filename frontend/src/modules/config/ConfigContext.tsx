@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import { useAuthStore } from '../../store/authStore';
+import { GLOBAL_SUBSCRIBER_ID } from '../../constants/subscriberIds';
+import { getAccessToken } from '../../lib/session/authTokenMemory';
 import { configService } from './configService';
 import type {
   ConfigDeleteInput,
@@ -175,18 +177,25 @@ const ConfigContext = createContext<ConfigContextValue | null>(null);
 
 export function ConfigProvider({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((s) => s.user);
+  const hasHydrated = useAuthStore((s) => s.hasHydrated);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [state, dispatch] = useReducer(configReducer, initialState);
   const inFlightRef = useRef<Promise<void> | null>(null);
 
   const subscriberId = (user?.subscriberId ?? '').trim();
   const role = (user?.role ?? '').trim().toLowerCase();
-  const canReadConfig = role === 'superadmin';
-  const shouldLoad =
-    canReadConfig &&
-    subscriberId.length > 0 &&
-    subscriberId !== '00000000-0000-0000-0000-000000000000';
+  const isGlobalSubscriber =
+    !subscriberId ||
+    subscriberId.replace(/-/g, '').toLowerCase() === GLOBAL_SUBSCRIBER_ID.replace(/-/g, '').toLowerCase();
+  const canReadSessionConfig =
+    (role === 'superadmin' || role === 'admin') && !isGlobalSubscriber;
+  const shouldLoad = canReadSessionConfig;
+  /** Tras F5 el perfil hidrata antes que el access token (cookie refresh en SessionBootstrap). */
+  const sessionReady = hasHydrated && (!isAuthenticated || getAccessToken() !== null);
 
   const loadTenantConfig = useCallback(async () => {
+    if (!sessionReady) return;
+
     if (!shouldLoad) {
       dispatch({ type: 'clear' });
       return;
@@ -200,7 +209,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     const task = (async () => {
       dispatch({ type: 'load_start', subscriberId });
       try {
-        const entries = await configService.loadTenantConfig(subscriberId);
+        const entries = await configService.loadCurrentSubscriberConfig();
         dispatch({ type: 'load_success', subscriberId, entries });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'No se pudo cargar configuración del subscriber.';
@@ -214,7 +223,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     } finally {
       inFlightRef.current = null;
     }
-  }, [shouldLoad, subscriberId]);
+  }, [sessionReady, shouldLoad, subscriberId]);
 
   useEffect(() => {
     void loadTenantConfig();

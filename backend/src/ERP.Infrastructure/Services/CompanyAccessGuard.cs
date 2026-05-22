@@ -65,6 +65,18 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
         if (requireActiveCompany && !company.IsActive)
             return Result<CompanyAccessContext>.Failure("La empresa está inactiva.");
 
+        if (string.Equals(_currentUser.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+        {
+            var tenantSubscriber = await _subscribers.GetByIdAsync(subscriberId, ct);
+            return Result<CompanyAccessContext>.Success(new CompanyAccessContext(
+                _currentUser.UserId,
+                subscriberId,
+                companyId,
+                "SuperAdmin",
+                tenantSubscriber?.IsActive ?? false,
+                company.IsActive));
+        }
+
         var membership = await _access.GetCompanyUserMembershipAsync(companyId, _currentUser.UserId, ct);
         if (membership is null || !membership.IsActive)
             return Result<CompanyAccessContext>.Failure("No tiene acceso a esta empresa.");

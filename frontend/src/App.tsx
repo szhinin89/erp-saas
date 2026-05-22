@@ -46,10 +46,10 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <ConfigProvider>
-      <SessionBootstrap>
+    <SessionBootstrap>
+      <ConfigProvider>
         <AppRoutes />
-      </SessionBootstrap>
-    </ConfigProvider>
+      </ConfigProvider>
+    </SessionBootstrap>
   );
 }

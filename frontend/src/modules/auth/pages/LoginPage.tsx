@@ -13,25 +13,15 @@ import { useAccessStore } from '../../../store/accessStore';
 import { loginSchema, type LoginFormValues } from '../../../schemas/auth/loginSchema';
 import { useDeployment } from '../../../deployment/DeploymentContext';
 import { GLOBAL_SUBSCRIBER_ID } from '../../../constants/subscriberIds';
-import { formatApiRequestError } from '../../lib/apiError';
-import { isAxiosError } from 'axios';
+import { formatApiRequestError, readApiErrorMessage } from '../../lib/apiError';
 import './LoginPage.css';
 
 function normalizeUuid(uuid: string): string {
   return uuid.replace(/-/g, '').toLowerCase();
 }
 
-function readApiErrorMessage(err: unknown): string | null {
-  if (!isAxiosError(err)) return null;
-  const data = err.response?.data;
-  if (data && typeof data === 'object' && 'message' in data) {
-    const message = (data as { message?: unknown }).message;
-    return typeof message === 'string' && message.trim().length > 0 ? message : null;
-  }
-  return null;
-}
-
-function shouldTryPlatformLogin(err: unknown): boolean {
+/** Respuesta de POST /api/auth/login cuando el usuario es operador platform. */
+function isSuperAdminMustUsePlatform(err: unknown): boolean {
   const message = readApiErrorMessage(err);
   return message?.toLowerCase().includes('login platform') ?? false;
 }
@@ -61,6 +51,13 @@ export function LoginPage() {
 
   /* ── Auth helpers ─────────────────────────────────────────── */
 
+  const enterSuperAdminDashboard = (auth: AuthResponse) => {
+    clearBootstrap();
+    clearPermissions();
+    login(auth);
+    navigate('/superadmin/overview', { replace: true });
+  };
+
   const enterSubscriberDashboard = async (auth: AuthResponse) => {
     clearBootstrap();
     clearPermissions();
@@ -83,8 +80,21 @@ export function LoginPage() {
     };
 
     try {
-      /* ── 1. Direct login (identity user or legacy single-tenant) ── */
-      let directLoginErr: unknown = null;
+      /* ── 1. Platform login (SuperAdmin global) — antes que /api/auth/login ── */
+      let platformLoginErr: unknown = null;
+      if (superAdminPanelEnabled) {
+        try {
+          const platformPayload = await authService.loginPlatform(credentials);
+          if (platformPayload?.token) {
+            enterSuperAdminDashboard(platformPayload);
+            return;
+          }
+        } catch (err) {
+          platformLoginErr = err;
+        }
+      }
+
+      /* ── 2. Direct login (usuarios company / tenant) ── */
       try {
         const payload = await authService.loginUser(credentials);
 
@@ -94,10 +104,7 @@ export function LoginPage() {
             normalizeUuid(payload.subscriberId) === normalizeUuid(GLOBAL_SUBSCRIBER_ID);
 
           if (superAdminPanelEnabled && isGlobalSuperAdmin) {
-            clearBootstrap();
-            clearPermissions();
-            login(payload);
-            navigate('/superadmin/overview', { replace: true });
+            enterSuperAdminDashboard(payload);
             return;
           }
 
@@ -112,27 +119,13 @@ export function LoginPage() {
           await enterSubscriberDashboard(payload);
           return;
         }
-      } catch (err) {
-        directLoginErr = err;
-        if (superAdminPanelEnabled) {
-          try {
-            const platformPayload = await authService.loginPlatform(credentials);
-            if (platformPayload?.token) {
-              clearBootstrap();
-              clearPermissions();
-              login(platformPayload);
-              navigate('/superadmin/overview', { replace: true });
-              return;
-            }
-          } catch (platformErr) {
-            if (shouldTryPlatformLogin(directLoginErr)) {
-              throw platformErr;
-            }
-          }
+      } catch (directLoginErr) {
+        if (isSuperAdminMustUsePlatform(directLoginErr)) {
+          throw platformLoginErr ?? directLoginErr;
         }
       }
 
-      /* ── 2. Bootstrap (multi-tenant flow) ── */
+      /* ── 3. Bootstrap (multi-tenant flow) ── */
       const bootstrap = await accessService.bootstrapLogin(credentials);
       setBootstrap(bootstrap);
 

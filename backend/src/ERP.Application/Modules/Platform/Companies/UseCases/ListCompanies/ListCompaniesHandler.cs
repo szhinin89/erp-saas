@@ -32,6 +32,27 @@ public sealed class ListCompaniesHandler : IRequestHandler<ListCompaniesQuery, R
             return Result<IReadOnlyList<CompanyListItemDto>>.Failure(subResult.Error!);
 
         var subscriberId = subResult.Value!;
+        if (string.Equals(_currentUser.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+        {
+            var adminRows = await _companies.GetActiveBySubscriberIdAsync(subscriberId, ct);
+            var adminItems = adminRows
+                .Where(c => !request.ActiveOnly || c.IsActive)
+                .Select(c => new CompanyListItemDto(
+                    c.Id,
+                    c.SubscriberId,
+                    c.LegalName,
+                    c.TradeName,
+                    c.Ruc,
+                    c.CountryCode,
+                    c.Timezone,
+                    c.CurrencyCode,
+                    c.IsActive,
+                    "SuperAdmin"))
+                .ToList();
+
+            return Result<IReadOnlyList<CompanyListItemDto>>.Success(adminItems);
+        }
+
         var memberships = await _access.GetActiveCompanyUserMembershipsForUserSystemAsync(_currentUser.UserId, ct);
         if (memberships.Count == 0)
             return Result<IReadOnlyList<CompanyListItemDto>>.Success(Array.Empty<CompanyListItemDto>());

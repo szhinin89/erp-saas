@@ -70,6 +70,20 @@ export function readApiErrorMessage(err: unknown): string | null {
   return null;
 }
 
+function messageFromProblemDetails(o: Record<string, unknown>): string | null {
+  const errors = o.errors;
+  if (errors && typeof errors === 'object' && !Array.isArray(errors)) {
+    for (const key of Object.keys(errors as Record<string, unknown>)) {
+      const arr = (errors as Record<string, unknown>)[key];
+      if (Array.isArray(arr) && arr.length > 0) {
+        const m = pickString(arr[0]);
+        if (m) return m;
+      }
+    }
+  }
+  return null;
+}
+
 /** Mensaje para mostrar en UI: cuerpo de error, red sin respuesta, o texto genérico. */
 export function formatApiRequestError(
   err: unknown,
@@ -78,8 +92,22 @@ export function formatApiRequestError(
   const fromApi = readApiErrorMessage(err);
   if (fromApi) return fromApi;
 
-  if (axios.isAxiosError(err) && !err.response) {
-    return labels.offline ?? labels.generic;
+  if (axios.isAxiosError(err)) {
+    if (!err.response) {
+      return labels.offline ?? labels.generic;
+    }
+    if (err.response.status === 401) {
+      return 'Sesión expirada o no autorizada. Vuelve a iniciar sesión.';
+    }
+    const data = err.response.data;
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
+      const fromProblem = messageFromProblemDetails(data as Record<string, unknown>);
+      if (fromProblem) return fromProblem;
+    }
+  }
+
+  if (err instanceof Error && err.message.trim()) {
+    return err.message.trim();
   }
 
   return labels.generic;

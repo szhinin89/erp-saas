@@ -81,13 +81,12 @@ export function ProtectedRoute() {
     !!user?.subscriberId &&
     normalizeUuid(user.subscriberId) !== normalizeUuid(GLOBAL_SUBSCRIBER_ID);
 
-  const isPlatformUser = user?.userType === 'Platform' && user?.platformRole === 'SuperAdmin';
-
   if (path.startsWith('/superadmin') && !isGlobalPlatform) {
     return <Navigate to={hasSubscriber ? '/saas/overview' : '/login'} replace />;
   }
 
-  if (path.startsWith('/saas/') && (isPlatformUser || !hasSubscriber)) {
+  // Sin suscriptor activo (global): /saas/* no aplica; con impersonación sí (hasSubscriber).
+  if (path.startsWith('/saas/') && !hasSubscriber) {
     return <Navigate to="/superadmin/overview" replace />;
   }
 

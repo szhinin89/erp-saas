@@ -10,6 +10,10 @@ import { SuperAdminCrudTemplate } from '../../templates/SuperAdminCrudTemplate';
 import { StatCard } from '../../components/zh/StatCard';
 import { RuntimeModeBadge } from '../../components/RuntimeModeBadge';
 import { formatApiRequestError } from '../../modules/lib/apiError';
+import { getAccessToken } from '../../lib/session/authTokenMemory';
+import { restoreSessionFromCookie } from '../../lib/session/restoreSessionFromCookie';
+import { syncSessionEntitlements } from '../../lib/syncSessionEntitlements';
+import { storeImpersonationSubscriberName } from '../../modules/superadmin/superAdminPanelUtils';
 import { useI18n } from '../../i18n/i18n';
 import './SuperAdminOverviewPage.css';
 
@@ -35,8 +39,9 @@ function planBadgeClass(planCode: string | null | undefined): string {
   return                          'badge sa-plan-badge--default';
 }
 
-function storeImpersonationSubscriberName(name: string) {
-  localStorage.setItem('superadmin-impersonation-subscriber-name', name);
+function resolveSubscriberId(subscriber: SuperAdminSubscriber): string {
+  const raw = subscriber.id ?? (subscriber as { Id?: string }).Id ?? '';
+  return raw.trim();
 }
 
 export function SuperAdminOverviewPage() {
@@ -77,13 +82,29 @@ export function SuperAdminOverviewPage() {
 
   const handleSwitch = async (subscriber: SuperAdminSubscriber) => {
     if (!subscriber.isActive || switching) return;
+    const subscriberId = resolveSubscriberId(subscriber);
+    if (!subscriberId) {
+      setError('Identificador de suscriptor inválido.');
+      return;
+    }
     setSwitching(subscriber.id);
     setError('');
     try {
-      const auth = await superAdminService.switchSubscriber(subscriber.id);
+      if (!getAccessToken()) {
+        const restored = await restoreSessionFromCookie();
+        if (!restored || !getAccessToken()) {
+          throw new Error('Sesión expirada. Vuelve a iniciar sesión.');
+        }
+      }
+      const auth = await superAdminService.switchSubscriber(subscriberId);
       storeImpersonationSubscriberName(subscriber.name);
       clearPermissions();
       login(auth);
+      try {
+        await syncSessionEntitlements();
+      } catch {
+        // AppLayout reintenta permisos/menú si hace falta.
+      }
       navigate('/saas/overview');
     } catch (e) {
       setError(formatApiRequestError(e, {

@@ -226,6 +226,14 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> SwitchSubscriber([FromBody] SwitchSubscriberCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
+        if (result.IsSuccess)
+        {
+            if (result.Value?.RefreshToken is not null && result.Value.RefreshTokenExpiry is not null)
+                SetRefreshCookie(result.Value.RefreshToken, result.Value.RefreshTokenExpiry.Value);
+
+            return this.ApiOk(result.Value);
+        }
+
         return this.ToOkOrBadRequest(result);
     }
 

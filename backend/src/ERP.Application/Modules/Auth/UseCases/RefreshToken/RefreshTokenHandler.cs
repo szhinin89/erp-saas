@@ -53,6 +53,41 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
             if (platformUser is null || !platformUser.IsPlatformSuperAdmin)
                 return Result<AuthResponseDto>.Failure("Usuario no válido.");
 
+            if (v.SubscriberId != Guid.Empty)
+            {
+                var impersonatedTenant = await _tenantRepository.GetByIdAsync(v.SubscriberId, ct);
+                if (impersonatedTenant is null || !impersonatedTenant.IsActive)
+                    return Result<AuthResponseDto>.Failure("Suscriptor no encontrado o inactivo.");
+
+                var impersonatedCompanyId = v.CompanyId is Guid impersonatedCid && impersonatedCid != Guid.Empty
+                    ? impersonatedCid
+                    : Guid.Empty;
+                var impersonatedAccessToken = impersonatedCompanyId != Guid.Empty
+                    ? _accessTokenService.GenerateSessionToken(platformUser, v.SubscriberId, "SuperAdmin", impersonatedCompanyId)
+                    : _accessTokenService.GenerateSessionToken(
+                        platformUser.Id,
+                        platformUser.Email.Value,
+                        platformUser.FullName,
+                        v.SubscriberId,
+                        "SuperAdmin",
+                        companyId: default,
+                        userType: platformUser.UserType,
+                        platformRole: platformUser.PlatformRole);
+
+                var impersonatedModules = await _sessionModules.GetEnabledModuleKeysAsync(v.SubscriberId, ct);
+                return Result<AuthResponseDto>.Success(new AuthResponseDto(
+                    platformUser.Id, platformUser.FullName, platformUser.Email.Value,
+                    "SuperAdmin", v.SubscriberId, impersonatedAccessToken,
+                    impersonatedTenant.PlanCode, impersonatedModules)
+                {
+                    CompanyId = impersonatedCompanyId != Guid.Empty ? impersonatedCompanyId : null,
+                    RefreshToken = v.NewToken,
+                    RefreshTokenExpiry = v.NewExpiry,
+                    UserType = platformUser.UserType.ToString(),
+                    PlatformRole = platformUser.PlatformRole?.ToString(),
+                });
+            }
+
             var platformToken = _accessTokenService.GeneratePlatformSessionToken(platformUser);
             return Result<AuthResponseDto>.Success(new AuthResponseDto(
                 platformUser.Id, platformUser.FullName, platformUser.Email.Value,

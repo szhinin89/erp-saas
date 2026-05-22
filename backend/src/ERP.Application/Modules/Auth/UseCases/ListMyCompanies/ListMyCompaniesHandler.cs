@@ -34,6 +34,23 @@ public sealed class ListMyCompaniesHandler : IRequestHandler<ListMyCompaniesQuer
         if (subscriberId == Guid.Empty)
             return Result<IReadOnlyList<AccessibleCompanyDto>>.Failure("Contexto de suscriptor no establecido.");
 
+        if (IsSuperAdminInSubscriberContext())
+        {
+            var adminCompanies = await _companyRepository.GetActiveBySubscriberIdAsync(subscriberId, ct);
+            var adminItems = adminCompanies
+                .Select(c => new AccessibleCompanyDto(
+                    c.Id,
+                    c.SubscriberId,
+                    c.LegalName,
+                    c.TradeName ?? c.LegalName,
+                    c.Ruc,
+                    "SuperAdmin"))
+                .OrderBy(x => x.LegalName)
+                .ToList();
+
+            return Result<IReadOnlyList<AccessibleCompanyDto>>.Success(adminItems);
+        }
+
         var memberships = await _accessRepository.GetActiveCompanyUserMembershipsForUserSystemAsync(_currentUser.UserId, ct);
         if (memberships.Count == 0)
             return Result<IReadOnlyList<AccessibleCompanyDto>>.Success(Array.Empty<AccessibleCompanyDto>());
@@ -60,4 +77,8 @@ public sealed class ListMyCompaniesHandler : IRequestHandler<ListMyCompaniesQuer
 
         return Result<IReadOnlyList<AccessibleCompanyDto>>.Success(items);
     }
+
+    private bool IsSuperAdminInSubscriberContext() =>
+        string.Equals(_currentUser.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase)
+        && _currentSubscriber.SubscriberId != Guid.Empty;
 }

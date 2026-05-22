@@ -4,16 +4,25 @@ import { useAuthStore } from '../../store/authStore';
 import { usePermissionsStore } from '../../store/permissionsStore';
 import { superAdminService, type SuperAdminSubscriber } from '../../modules/superadmin/api/superAdminService';
 import { storeImpersonationSubscriberName } from '../../modules/superadmin/superAdminPanelUtils';
+import { formatApiRequestError } from '../../modules/lib/apiError';
+import { getAccessToken } from '../../lib/session/authTokenMemory';
+import { restoreSessionFromCookie } from '../../lib/session/restoreSessionFromCookie';
+import { syncSessionEntitlements } from '../../lib/syncSessionEntitlements';
 import { LoadingState, EmptyState } from '../../components/PageShell';
 import { ZHPageNotice } from '../../components/zh/ZHPageNotice';
 import './SuperAdminSubscribersPage.css';
 
 type TargetPage = '/saas/overview' | '/saas/companies' | '/saas/billing';
 
+function resolveSubscriberId(subscriber: SuperAdminSubscriber): string {
+  const raw = subscriber.id ?? (subscriber as { Id?: string }).Id ?? '';
+  return raw.trim();
+}
+
 export function SuperAdminSubscribersPage() {
   const navigate  = useNavigate();
   const { login } = useAuthStore();
-  const clearPerms = usePermissionsStore((s) => s.clear);
+  const clearPermissions = usePermissionsStore((s) => s.clearPermissions);
 
   const [items, setItems]       = useState<SuperAdminSubscriber[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -23,7 +32,7 @@ export function SuperAdminSubscribersPage() {
 
   useEffect(() => {
     superAdminService.getSubscribers()
-      .then((res) => setItems(res.data?.responseObject ?? []))
+      .then((list) => setItems(list ?? []))
       .catch(() => setError('No se pudo cargar la lista de suscriptores.'))
       .finally(() => setLoading(false));
   }, []);
@@ -38,15 +47,36 @@ export function SuperAdminSubscribersPage() {
 
   const handleSwitch = async (subscriber: SuperAdminSubscriber, target: TargetPage) => {
     if (switching) return;
+    const subscriberId = resolveSubscriberId(subscriber);
+    if (!subscriberId) {
+      setError('Identificador de suscriptor inválido.');
+      return;
+    }
     setSwitching(subscriber.id);
+    setError('');
     try {
-      const auth = await superAdminService.switchSubscriber(subscriber.id);
+      if (!getAccessToken()) {
+        const restored = await restoreSessionFromCookie();
+        if (!restored || !getAccessToken()) {
+          throw new Error('Sesión expirada. Vuelve a iniciar sesión.');
+        }
+      }
+      const auth = await superAdminService.switchSubscriber(subscriberId);
       storeImpersonationSubscriberName(subscriber.name);
-      clearPerms();
-      login(auth!);
+      clearPermissions();
+      login(auth);
+      try {
+        await syncSessionEntitlements();
+      } catch {
+        // AppLayout reintenta permisos/menú si hace falta.
+      }
       navigate(target);
-    } catch {
-      setError(`No se pudo cambiar al suscriptor "${subscriber.name}".`);
+    } catch (err) {
+      setError(
+        formatApiRequestError(err, {
+          generic: `No se pudo cambiar al suscriptor "${subscriber.name}".`,
+        }),
+      );
     } finally {
       setSwitching(null);
     }

@@ -143,6 +143,39 @@ public sealed class PlatformSubscriberCompaniesFlowTests
     }
 
     [Fact]
+    public async Task PlatformSuperAdmin_switch_subscriber_via_auth_endpoint_returns_session_token()
+    {
+        var (factory, client, _) = await CreatePlatformClientAsync();
+        await using var _ = factory;
+
+        var slug = "switch-" + Guid.NewGuid().ToString("N")[..8];
+        var create = await client.PostAsJsonAsync("/api/platform/subscribers", new
+        {
+            subscriberName = "Switch Target",
+            subscriberSlug = slug,
+            adminFirstName = "Ad",
+            adminLastName = "Min",
+            adminEmail = $"sw-{slug}@test.local",
+            adminPassword = "SecurePass123!",
+            planCode = "starter",
+        });
+        create.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var created = await create.Content.ReadFromJsonAsync<JsonElement>();
+        var subscriberId = Guid.Parse(created.GetProperty("responseObject").GetProperty("subscriberId").GetString()!);
+
+        var switchRes = await client.PostAsJsonAsync("/api/auth/switch-subscriber", new { subscriberId });
+        switchRes.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await switchRes.Content.ReadFromJsonAsync<JsonElement>();
+        body.GetProperty("success").GetBoolean().Should().BeTrue();
+        var session = body.GetProperty("responseObject");
+        session.GetProperty("token").GetString().Should().NotBeNullOrWhiteSpace();
+        session.GetProperty("subscriberId").GetString().Should().Be(subscriberId.ToString());
+        session.GetProperty("userType").GetString().Should().Be("Platform");
+    }
+
+    [Fact]
     public async Task GlobalPlatformSuperAdmin_cannot_access_ERP_sales_without_company_context()
     {
         var (factory, client, _) = await CreatePlatformClientAsync();
