@@ -1891,6 +1891,34 @@ body {
       </div>
     </div>
 
+    <!-- S16 -->
+    <div class="sec-item open" data-section="s16">
+      <div class="sec-head" onclick="toggleSec('s16')">
+        <h4>16. QA Regression Bot — framework de regresión automatizada (2026-05-22)</h4>
+        <span class="sec-pct-badge" id="pct-s16">—</span>
+        <span class="sec-chevron">›</span>
+      </div>
+      <div class="sec-strip"><div class="sec-strip-fill" id="bar-s16" style="background:var(--success)"></div></div>
+      <div class="sec-body">
+        <!-- CI BASE -->
+        <div class="ci"><input type="checkbox" checked data-sec="s16" data-val="1" onchange="recalc()"><div class="ci-text"><strong>QA Regression Bot — workflow GitHub Actions full-stack</strong><p class="note">qa-regression.yml: levanta Postgres + Redis + API + frontend preview en CI. Ejecuta qa-bot/run.js. Publica artefactos JSON/Markdown en fallo. Branch protection: require status check "QA Regression Bot".</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s16" data-val="1" onchange="recalc()"><div class="ci-text"><strong>qa-bot/run.js — runner HTTP de regresión inicial</strong><p class="note">Runner monolítico original con suites de smoke, auth/permissions, tenant checks. Ahora actúa como thin shim delegando en qa-engine/.</p></div><span class="ci-badge s-done">Implementado</span></div>
+
+        <!-- QA ENGINE -->
+        <div class="ci"><input type="checkbox" checked data-sec="s16" data-val="1" onchange="recalc()"><div class="ci-text"><strong>qa-engine/core/ — núcleo del framework de QA</strong><p class="note">runner.js (orquesta suites), http.js (cliente HTTP con retry), readiness.js (espera servicio disponible), behavior.js (assertions), config.js (env/vars), logger.js (output estructurado), correlation.js (trace IDs entre requests).</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s16" data-val="1" onchange="recalc()"><div class="ci-text"><strong>qa-engine/suites/ — 7 suites de regresión modulares</strong><p class="note">auth/: login, token refresh, logout. permissions/: perm:* policies, plan gates. security/: IDOR, session tokens, subscriber ownership. tenant/: aislamiento cross-tenant. cache/: invalidación de permisos. endpoints/: smoke de endpoints principales. infra/: health checks, DB, Redis.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s16" data-val="1" onchange="recalc()"><div class="ci-text"><strong>qa-engine/seed/ — reset determinístico y seeding</strong><p class="note">seedEngine.js: crea tenants + usuarios + datos mínimos para cada suite. manifest.js: declaración de qué fixtures necesita cada suite. session.js: obtiene y cachea tokens de sesión por actor (superadmin, admin, user).</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s16" data-val="1" onchange="recalc()"><div class="ci-text"><strong>qa-engine/diff/ — comparación de baseline</strong><p class="note">compare.js: compara resultados de run actual contra baseline JSON guardado. Detecta regresiones nuevas y tests que pasaron a verde. Incluye comparación a nivel de campo para detectar cambios parciales.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s16" data-val="1" onchange="recalc()"><div class="ci-text"><strong>qa-engine/reporting/ — output estructurado</strong><p class="note">writer.js: genera reporte JSON + Markdown con sección de diagnóstico. Compatible con GitHub Actions artifacts. Incluye resumen ejecutivo, fallos por suite, comparación baseline.</p></div><span class="ci-badge s-done">Implementado</span></div>
+
+        <!-- DIAGNOSTICS ENGINE -->
+        <div class="ci"><input type="checkbox" checked data-sec="s16" data-val="1" onchange="recalc()"><div class="ci-text"><strong>qa-engine/diagnostics/ — motor de análisis inteligente de fallos</strong><p class="note">rootCauseEngine.js: correlaciona fallos entre suites para identificar causa raíz común. failureClassifier.js: categoriza por tipo (auth, network, config, tenant, etc.). flakinessDetector.js: distingue tests flaky de tests genuinamente rotos via historial. trendAnalyzer.js: detecta regresiones vs mejoras entre runs. riskScorer.js: puntúa riesgo de cada suite. explainer.js: genera resúmenes legibles. types.js: tipos compartidos.</p></div><span class="ci-badge s-done">Implementado</span></div>
+
+        <!-- CI REFINEMENTS -->
+        <div class="ci"><input type="checkbox" checked data-sec="s16" data-val="1" onchange="recalc()"><div class="ci-text"><strong>CI triggers ajustados + reports/ en .gitignore</strong><p class="note">qa-regression.yml: trigger solo main en push, PRs contra main/develop/release/*. Elimina hotfix/* y master redundantes. .gitignore: agrega reports/ para artefactos CI del QA engine.</p></div><span class="ci-badge s-done">Implementado</span></div>
+      </div>
+    </div>
+
   </div><!-- /secs-list -->
 
   <!-- ── RIESGOS ERP ── -->
@@ -2487,9 +2515,9 @@ body {
     </div>
     <div class="kpi-card blue">
       <div class="kpi-label">CI Quality</div>
-      <div class="kpi-value blue">92%</div>
-      <div class="pbar thin"><div class="pbar-fill blue" style="width:92%"></div></div>
-      <div class="kpi-sub">11 checks · NetArchTest · PS1</div>
+      <div class="kpi-value blue">95%</div>
+      <div class="pbar thin"><div class="pbar-fill blue" style="width:95%"></div></div>
+      <div class="kpi-sub">11 arch checks · QA bot · NetArchTest</div>
     </div>
     <div class="kpi-card amber">
       <div class="kpi-label">ADR Coverage</div>
@@ -2654,9 +2682,9 @@ body {
       <div class="mod-tags"><span class="badge badge-success">Compose dev</span><span class="badge badge-warning">Prod config</span></div>
     </div>
     <div class="mod-card">
-      <div class="mod-head"><div class="mod-name">⚙ GitHub Actions</div><div class="mod-pct tc-green">85%</div></div>
-      <div class="pbar thin mb12"><div class="pbar-fill green" style="width:85%"></div></div>
-      <div class="mod-tags"><span class="badge badge-success">CI arch</span><span class="badge badge-warning">CD</span></div>
+      <div class="mod-head"><div class="mod-name">⚙ GitHub Actions</div><div class="mod-pct tc-green">92%</div></div>
+      <div class="pbar thin mb12"><div class="pbar-fill green" style="width:92%"></div></div>
+      <div class="mod-tags"><span class="badge badge-success">CI arch</span><span class="badge badge-success">QA bot</span><span class="badge badge-warning">CD</span></div>
     </div>
     <div class="mod-card">
       <div class="mod-head"><div class="mod-name">📊 Monitoring</div><div class="mod-pct tc-amber">20%</div></div>
@@ -2702,9 +2730,9 @@ body {
    PROJECT DATA — editar aquí para actualizar dashboard
 ═══════════════════════════════════════════════════════════ */
 const D = {
-  version: 'v24 — Permission Pipeline + AI Foundation',
+  version: 'v25 — QA Regression Bot + Diagnostics Engine',
   updated: '2026-05-22',
-  sections: ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15'],
+  sections: ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15','s16'],
 };
 
 /* ═══════════════════════════════════════════════════════════
