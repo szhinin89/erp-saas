@@ -1,351 +1,47 @@
 ---
 description: >-
-  ZH Technologies ERP — reglas unificadas: flujo jerárquico, arquitectura erp-saas,
-  validación 4 capas, ZH Form, tabs de entidad, copy/menú/nav, i18n Kichwa Cañar (qu).
+  ZH Technologies ERP — adaptador Cursor hacia AI-RULES (fuente canónica).
+  Flujo jerárquico, arquitectura, validación, ZH Form, SaaS, i18n qu.
 alwaysApply: true
 ---
 
-# Reglas del proyecto ERP (unificado)
+# Reglas del proyecto ERP (adaptador Cursor)
 
-## Consolidación de reglas (leer primero)
+**Fuente canónica:** [`AI-RULES/README.md`](../../AI-RULES/README.md) — **no duplicar reglas aquí.**
 
-- Esta regla es transversal y de contexto general.
-- Para cambios especificos, aplicar tambien:
-  - `docs/ARCHITECTURE-RULES.md` (normativa bloqueante PR)
-  - `rules-consolidated-map.mdc` (precedencia y mapa)
-  - `backend-api-contracts.mdc` (controllers y status HTTP)
-  - `backend-clean-architecture-strict.mdc` (capas)
-  - `backend-cqrs-validation-result.mdc` (Application)
-  - `backend-multitenancy-jwt-source.mdc` (tenant)
-  - `frontend-modules-i18n-validation.mdc` (frontend)
-  - `saas-navigation-no-sensitive-url.mdc` (navegacion SaaS)
-  - `stack-tools-source-of-truth.mdc` (stack permitido)
+## Precedencia
 
-## Índice (orden de lectura recomendado)
+1. [AI-RULES/HIERARCHY.md](../../AI-RULES/HIERARCHY.md)
+2. [AI-RULES/PR-RULES-CATALOG.md](../../AI-RULES/PR-RULES-CATALOG.md) (B-xx/F-xx bloqueante)
+3. Reglas `.mdc` con `globs` más específicas
+4. Mapa: `rules-consolidated-map.mdc`
 
-1. [Flujo jerarquico (implementar una feature)](#sec-flow)
-2. [Antes de actuar](#sec-before)
-3. [Ambito real del monorepo erp-saas](#sec-scope)
-4. [Reglas de arquitectura que no se rompen](#sec-arch)
-5. [Patrón de referencia: módulo Accounting](#sec-accounting)
-6. [Validación en 4 capas (obligatorio)](#sec-validation)
-7. [ZH Form System (frontend)](#sec-zh-form)
-8. [Formularios de entidad con pestañas (`zh-form-tabs`)](#sec-entity-tabs)
-9. [Copy UX — menú, drawer, pestañas, PageShell](#sec-copy-ux)
-10. [Menú estático: rutas únicas por pantalla](#sec-nav)
-11. [SaaS: IDs de tenant fuera de la URL (sessionStorage)](#sec-saas-url-context)
-12. [SaaS: asignación a planes al crear módulo o formulario](#sec-saas-plan-assign)
-13. [Idioma Kichwa de Cañar (locale `qu`)](#sec-kichwa)
+## Índice canónico (leer según tarea)
 
----
+| Tarea | Archivo |
+|-------|---------|
+| Flujo feature / monorepo | [CORE-ARCHITECTURE.md](../../AI-RULES/CORE-ARCHITECTURE.md) |
+| Backend | [BACKEND-RULES.md](../../AI-RULES/BACKEND-RULES.md) |
+| Frontend / ZH Form / tabs | [FRONTEND-RULES.md](../../AI-RULES/FRONTEND-RULES.md) |
+| SaaS / planes / URL | [SAAS-RULES.md](../../AI-RULES/SAAS-RULES.md) |
+| Auth / tenant | [SECURITY.md](../../AI-RULES/SECURITY.md) |
+| Stack | [STACK.md](../../AI-RULES/STACK.md) |
+| Validación 4 capas / CI | [ENFORCEMENT.md](../../AI-RULES/ENFORCEMENT.md) |
+| Naming | [NAMING.md](../../AI-RULES/NAMING.md) |
 
-<a id="sec-flow"></a>
+## Reglas operativas Cursor (mínimas)
 
-## Flujo jerarquico (implementar una feature)
+1. **Antes de actuar:** `CONTEXT.md` + comprobar si el archivo ya existe.
+2. **Frontend:** ZH Form → tabs Datos→listado → Copy UX; claves `{modulo}.tabList` en es/en/qu.
+3. **Backend:** Validator + dominio + EF; `ApiResultExtensions`; `Result<T>`.
+4. **SaaS:** sin UUID tenant en URL → `saas-navigation-no-sensitive-url.mdc`.
+5. **Módulo nuevo:** preguntar planes SaaS antes de cerrar.
+6. **Al terminar:** sync docs → `docs-progress-status-sync.mdc`.
 
-Orden lógico para **no** saltarse capas ni contradecir UI:
+## Adaptadores por área (globs)
 
-| Paso | Qué revisar primero | Sección |
-|------|---------------------|---------|
-| 0 | Contexto del repo y archivos existentes | [Antes de actuar](#sec-before) + `CONTEXT.md` + `CLAUDE.md` |
-| 1 | Dónde vive el código en este monorepo | [Ambito real del monorepo](#sec-scope) |
-| 2 | Límites de capas, tenant, DTOs, soft delete | [Arquitectura](#sec-arch) |
-| 3 | Cómo se organiza un módulo vertical | [Patrón Accounting](#sec-accounting) |
-| 4 | Contrato de validación extremo a extremo | [Validación en 4 capas](#sec-validation) |
-| 5 | Tokens y componentes ZH (base visual) | [ZH Form System](#sec-zh-form) |
-| 6 | Layout pestañas Datos vs listado (estructura de página) | [Formularios de entidad (tabs)](#sec-entity-tabs) |
-| 7 | Textos, `PageShell`, drawer, botones por pestaña | [Copy UX](#sec-copy-ux) |
-| 8 | Añadir ruta al menú sin duplicar `to` | [Menú estático](#sec-nav) |
-| 9 | Enlace o pantalla que pase contexto de tenant entre rutas | [SaaS: IDs fuera de la URL](#sec-saas-url-context) + `.cursor/rules/saas-navigation-no-sensitive-url.mdc` |
-| 10 | Cualquier clave i18n nueva | [Kichwa de Cañar](#sec-kichwa) |
-| 11 | Nuevo módulo o formulario comercializable | [SaaS: planes al crear módulo o formulario](#sec-saas-plan-assign) |
+- `backend-api-contracts.mdc`, `backend-clean-architecture-strict.mdc`, `backend-cqrs-validation-result.mdc`, `backend-multitenancy-jwt-source.mdc`
+- `frontend-modules-i18n-validation.mdc`, `frontend-no-native-dialogs.mdc`
+- `stack-tools-source-of-truth.mdc`
 
-**Regla práctica:** en frontend, **no** bajar a Copy UX (claves `*.tabList`, `PageShell`) sin haber alineado antes **ZH Form** + **orden de tabs**; en backend, **no** exponer endpoints sin **Validator** + reglas de dominio/EF acordes a [Validación en 4 capas](#sec-validation). Si el cambio es **módulo o pantalla con suscripción**, aplicar también [SaaS: planes](#sec-saas-plan-assign).
-
----
-
-<a id="sec-before"></a>
-
-## Antes de actuar
-
-1. Lee **`CLAUDE.md`** (reglas) y **`CONTEXT.md`** (índice). Reglas bloqueantes PR → **`docs/ARCHITECTURE-RULES.md`**. Contexto arquitectónico → `docs/ARCHITECTURE.md`; estado → `docs/STATUS.md`; desarrollo → `docs/DEVELOPMENT.md`.
-2. Identifica si el archivo que vas a crear o modificar **ya existe**.
-3. Si ya existe → **no** lo regeneres; cambia solo lo necesario.
-4. Define un **plan breve** antes de escribir código (no bloquear al usuario salvo ambigüedad real).
-
-### Mapa rápido de temas (todo en este archivo)
-
-- **Arranque local, DB, comandos, API** → `docs/DEVELOPMENT.md` y `docs/STATUS.md`.
-- **Validación** → [Validación en 4 capas](#sec-validation).
-- **Formularios / pantallas** → [ZH Form](#sec-zh-form) → [Tabs entidad](#sec-entity-tabs) → [Copy UX](#sec-copy-ux).
-- **Menú** → [Rutas únicas](#sec-nav); copy del menú en [Copy UX](#sec-copy-ux).
-- **Tenant en URL / deep links** → [SaaS: IDs fuera de la URL](#sec-saas-url-context).
-- **Suscripción / planes / módulo nuevo** → [SaaS: planes al crear módulo o formulario](#sec-saas-plan-assign).
-- **Tercer idioma** → [Kichwa de Cañar](#sec-kichwa).
-
----
-
-<a id="sec-scope"></a>
-
-## Ambito real del monorepo erp-saas
-
-Estructura **real** (prevalece sobre diagramas desactualizados en otros documentos):
-
-- **Backend (.NET 10):** `backend/src/ERP.Domain`, `ERP.Application`, `ERP.Infrastructure`, `ERP.API`. Módulos de negocio bajo `ERP.Domain/Modules/<Nombre>`, `ERP.Application/Modules/<Nombre>`, etc. (p. ej. `Accounting`, `Customers`, `Branches`).
-- **Frontend:** `frontend/` — Vite + React; i18n en `frontend/src/i18n/locales/` (`es`, `en`, `qu`).
-- **Docs humanas:** `CLAUDE.md` (reglas); `CONTEXT.md` (índice); `docs/ARCHITECTURE.md`; `docs/STATUS.md`; `docs/DEVELOPMENT.md`; `docs/DATABASE.md`.
-- **Reglas Cursor:** `erp-saas/.cursor/rules/erp-unified-rules.mdc` (este archivo) y `saas-navigation-no-sensitive-url.mdc` (IDs de tenant y contexto entre rutas).
-
----
-
-<a id="sec-arch"></a>
-
-## Reglas de arquitectura que no se rompen
-
-- Entidades de dominio: jerarquía **`ERP.Domain.Common`** (`BaseEntity` con `Id`/`TenantId`; agregados `AggregateRoot` → `AuditableEntity` → **`MasterEntity`** o **`DocumentEntity`**; hijos de valor pueden heredar `BaseEntity` directo). **No** existe un proyecto `ERP.Shared` en este monorepo — no confundir con otros repos.
-- Toda query de datos de tenant filtra por **`TenantId`** (y convenciones de filtro global del `DbContext` donde apliquen).
-- **Sin** lógica de negocio en Controllers ni en Infrastructure más allá de persistencia y servicios técnicos.
-- **Sin** entidades de dominio en la API — solo DTOs / contratos de respuesta.
-- **Soft delete:** `IsActive = false`; nunca DELETE físico de negocio salvo decisión explícita de producto.
-- **Sin** dependencias directas entre módulos de aplicación; comunicación vía contratos, MediatR u orquestación explícita.
-- **Sin** AutoMapper — mapeos manuales en handlers/casos de uso.
-
----
-
-<a id="sec-accounting"></a>
-
-## Patrón de referencia: módulo Accounting
-
-Para un **módulo nuevo**, copiar la **vertical por capas** del módulo **Accounting** existente:
-
-- `ERP.Domain/Modules/Accounting/` — entidades, value objects, interfaces de dominio.
-- `ERP.Application/Modules/Accounting/` — commands/queries, handlers, validators, DTOs.
-- `ERP.Infrastructure` — `IEntityTypeConfiguration`, repositorios, `ErpDbContext` (según el patrón ya usado en el repo).
-- `ERP.API` — controllers delgados, autorización, sin reglas de negocio.
-
-Si la feature es solo frontend o solo API, aplica igualmente las capas que toquen (p. ej. solo Zod en UI para un mock, pero no “validar solo en front” para datos persistidos).
-
----
-
-<a id="sec-validation"></a>
-
-## Validación en 4 capas (obligatorio)
-
-**Stack de referencia:** Backend .NET 10 (Clean Architecture, FluentValidation, MediatR), Frontend React (React Hook Form, Zod), PostgreSQL + EF Core.
-
-**Principio:** toda validación que afecte datos persistidos se refleja en **las 4 capas**. No omitir ninguna por conveniencia.
-
-### Capa 1 — Frontend (Zod + React Hook Form)
-
-- Schema Zod en `frontend/src/schemas/[modulo]/[entidad]Schema.ts`.
-- `zodResolver` + `useForm`; errores por campo visibles.
-- **Prohibido:** validaciones solo en JSX sin schema.
-
-### Capa 2 — Application (FluentValidation + MediatR)
-
-- Cada Command/Query con su `[Nombre]Validator` en la misma carpeta.
-- Unicidad con `MustAsync` contra repositorio cuando aplique.
-- `ValidationBehavior` en el pipeline de MediatR.
-- **Prohibido:** Command/Query sin validator cuando hay reglas aplicables.
-
-### Capa 3 — Domain (guard clauses + factories)
-
-- Entidades **no** instanciadas con `new` público; usar `Entidad.Create(...)`.
-- `DomainException` en invariantes.
-- **Prohibido:** setters públicos que rompan invariantes; `new Entidad()` fuera de factories.
-
-### Capa 4 — Base de datos (EF Core)
-
-- `IEntityTypeConfiguration` por entidad mapeada.
-- `IsRequired`, `HasMaxLength`, `HasColumnType` alineados al dominio.
-- Índices únicos **compuestos con `TenantId`** donde haya unicidad por tenant.
-- **Prohibido:** unicidad “global” sin `TenantId` en entidades multi-tenant.
-
-### Prohibiciones absolutas
-
-- Validar **solo** en frontend para datos que se guardan en servidor.
-- Lógica de negocio en Controllers.
-- Setters públicos indiscriminados en dominio.
-
-### Convención de errores
-
-- **Frontend:** mensajes en **español** junto al campo.
-- **Application:** `ValidationException` (campo + mensaje).
-- **Domain:** `DomainException` vía middleware.
-- **API:** contrato `ApiResponse<T>` (éxito y error), sin `ProblemDetails` personalizado en controllers.
-- **Status de validación:** `ValidationException` => **422** (`UnprocessableEntity`) desde `ExceptionMiddleware`.
-- **Status de negocio/entrada inválida:** **400** (`BadRequest`) cuando falla un `Result<T>` o guard clause de request.
-
-### Contrato API (backend) — obligatorio
-
-- En controllers de `ERP.API`, usar `ApiResultExtensions` (`ToOkOrBadRequest`, `ToCreatedOrBadRequest`, `ToOkOrNotFound`, `ToOkOrUnauthorized` y helpers `Api*`).
-- No crear `new ApiResponse<...>` manual en controllers salvo caso excepcional documentado.
-- Para endpoints con `[Authorize]`, declarar explícitamente `[ProducesResponseType(StatusCodes.Status401Unauthorized)]`; si aplica rol/policy restringida, también `403`.
-- Para create/update/commands con validación de entrada, declarar `400` y `422` en `ProducesResponseType` (cuando aplique por contrato del endpoint).
-- Para búsquedas por id, declarar `404` cuando la entidad puede no existir.
-
----
-
-<a id="sec-zh-form"></a>
-
-## ZH Form System (frontend)
-
-**Fuente de verdad visual:** `frontend/src/styles/design-tokens.css` (tokens), `frontend/src/styles/zh-ui.css` (componentes globales), `frontend/src/styles/page-template.css` (layout de página). Los tokens usan `--color-primary`, `--color-surface-*`, `--space-*`, etc. — NO usar variables antiguas `--zh-blue*`. Componentes ZH en `frontend/src/components/zh/ZHForm.tsx` y `ZHForm.css`.
-
-### Qué significa “basarse en la plantilla”
-
-- **No** formularios con CSS ad-hoc (`.companies-form`, `.primary-btn`, etc.).
-- **No** hardcodear colores, radios o sombras; usar variables/tokens.
-- **Sí** `PageShell`, `TableCard`, `Modal` como contenedores si el interior es ZH.
-
-### Componentes mínimos
-
-`ZHFormHeader`, `ZHMultiTenantHeader` (marca `/zh-logo.png`), `ZHFormBody`, `ZHFormSection`, `ZHGrid`, `ZHField`, `ZHFormAlert`, `ZHFormActions`, `ZHToggle`, `ZHBtn` — o equivalentes ya existentes en `components/zh/`.
-
-### Tokens (extracto)
-
-`--color-primary`, `--color-surface-*`, `--color-text-primary/secondary`, `--color-border`, `--color-error`, `--color-success`, `--color-warning`, `--space-1…6`, `--radius-md/lg`, `--text-body-md-size`, etc. Ver `frontend/src/styles/design-tokens.css` para la lista completa.
-
-### Implementación
-
-- Formulario **completo** (modal, wizard): `ZHFormHeader` → `ZHFormBody` → `ZHFormActions`.
-- **Patrón catálogo** (`PageShell` + `TableCard` + `.zh-form-tabs`): **no** duplicar `ZHFormHeader` si `PageShell` ya da título/contexto; ver [Tabs entidad](#sec-entity-tabs) y [Copy UX](#sec-copy-ux).
-- Tenant: badge y `hidden` `tenantId` cuando aplique.
-- Marca ZH solo vía componentes (`ZHMultiTenantHeader`), no texto manual “ZH Technologies”.
-- Errores: `ZHFormAlert` / `hintType`; readonly con estilo dashed (tokens), no inline arbitrario.
-- Nuevo patrón visual: **extender** `ZHForm.tsx` / `ZHForm.css` una vez, luego reutilizar.
-
-### Banner SuperAdmin (impersonación)
-
-Usuario `SuperAdmin` con `tenantId` real (no `00000000-...`): banner **plegable**, compacto; detalle de empresa y “Volver al panel global” solo expandido.
-
-### Si falta un componente de plantilla
-
-Extender `ZHForm.tsx` + `ZHForm.css`; no HTML/CSS suelto en la página.
-
----
-
-<a id="sec-entity-tabs"></a>
-
-## Formularios de entidad con `zh-form-tabs`
-
-**Alcance:** `frontend/src/pages/**/*.tsx` — catálogos con **ficha** + **listado** en `.zh-form-tabs`.
-
-### Tab por defecto
-
-- Estado inicial: pestaña de ficha **`'data'`** o **`'general'`** (productos) — **no** `'list'` salvo excepción documentada en comentario (borrador, dirty guard, etc.).
-
-### Dos pestañas (orden fijo)
-
-1. **Primera:** alta/edición — `common.formTab.data` (o equivalente). Formulario visible al entrar en Datos sin clic extra. Contenido **dentro** del mismo `TableCard`; evitar doble caja `ZHCardSection` + `ZHFormBody` encima; **no** `ZHFormHeader` / `ZHModalHeader` si `PageShell` basta.
-2. **Segunda:** listado — tabla, filtros, acciones por fila; i18n **`{módulo}.tabList`**, **no** `app.nav.*` en esa pestaña. Convenciones de botones y barra: [Copy UX](#sec-copy-ux).
-
-Orden del **tablist** y del **DOM:** Datos → extras → listado (`*.tabList` al final).
-
-#### `PageShell` y listado
-
-- Barra **crear / guardar** solo en ficha/datos; listado sin esas acciones globales. Detalle en [Copy UX](#sec-copy-ux).
-
-### Más de dos pestañas
-
-Confirmar con el usuario el orden (ej. imágenes, fiscal). Referencia: `ProductsPage` (Datos → Imágenes → `products.tabList`).
-
-| # | Rol |
-|---|-----|
-| 1 | Formulario |
-| 2 | Listado |
-| 3+ | Acordado explícitamente |
-
----
-
-<a id="sec-copy-ux"></a>
-
-## Copy UX — menú, drawer, pestañas, PageShell
-
-**Alcance:** `frontend/src/pages/**/*.tsx`, `frontend/src/nav/navConfig.ts`, `AppLayout`, claves `app.nav.*` y `*.tabList`.
-
-### Checklist pantalla con `.zh-form-tabs` + `PageShell` + `TableCard`
-
-1. Listado: clave **`{módulo}.tabList`** (tres idiomas); no `app.nav.*` en esa pestaña; no `*.tabView` en código nuevo.
-2. `PageShell` **`action`** (crear/submit): **solo** en pestaña de datos principal (`tab === 'data'`, `formTab === 'general'`, etc. — ver `ProductsPage`, `BranchesPage`, …).
-3. `ZHDirtyBar`: misma condición de pestaña que el `action`; en altas puede `saveLabel` de “Crear”.
-4. Tras cambio de `location.pathname`, cerrar drawer en `AppLayout`.
-5. Estructura de tabs: sección [Formularios de entidad](#sec-entity-tabs).
-6. Pestaña listado: `ZHSearchBar` (búsqueda, chips, conteo); botón nueva fila / volver a datos alineado a productos/sucursales (`*.list.newAction` o verbo de alta); sin lógica de API dentro de la barra.
-
-### Menú lateral (`app.nav.*`)
-
-Nombre del módulo **sin** prefijo “Ver”/“View”; excepciones: textos de permisos/ayuda que no son ítem de menú.
-
-### Drawer
-
-Al navegar, cerrar sidebar para no tapar el formulario.
-
-### Pestañas Datos + listado + extras
-
-Orden de copy: Datos (`common.formTab.data`) → `{módulo}.tab.*` → listado con **`{módulo}.tabList`**. Estilos: `ZHFormTabs.css` (import en `main.tsx`).
-
-### `PageShell` y `ZHFormActions`
-
-No dejar solo “Cancelar” en pie con `hideSave`/`hideDraft` sin primario visible; preferir ghost Cancelar en `action` del shell junto al primario (ver Sucursales).
-
-### Botones y cabecera
-
-Verbos de dominio en altas; **«Guardar cambios»** en edición (`common.saveChanges`). Cabecera `PageShell`: verbo + objeto; confirmaciones explícitas cuando toque.
-
----
-
-<a id="sec-nav"></a>
-
-## Menú estático: rutas únicas por pantalla
-
-**Alcance:** `frontend/src/nav/**/*.ts` — `buildNavGroups` / `navConfig.ts` (no Favoritos dinámicos).
-
-- Cada `to` **como máximo una vez** entre grupos estáticos.
-- **Excepción:** Favoritos en `localStorage` pueden repetir `to`.
-- Al añadir ítem: mover o reutilizar `to`; no duplicar entre grupos.
-- **SuperAdmin (plataforma):** rutas `/superadmin/*` y `/companies` **no** deben persistirse en `ui_nav_items`; enlaces solo en `getSuperAdminPanelNavExtras` / `buildGlobalSuperAdminNavGroups` (`navConfig.ts`). El menú en BD es por módulos de clientes/tenant; el API de sesión filtra esas rutas si aún existieran en datos antiguos.
-
-Tras editar `navConfig`, verificar `to` únicos por `id` de grupo. El copy de menú y tabs está en [Copy UX](#sec-copy-ux) y [Tabs entidad](#sec-entity-tabs).
-
----
-
-<a id="sec-saas-url-context"></a>
-
-## SaaS: IDs de tenant fuera de la URL (`sessionStorage`)
-
-**Regla de producto:** no colocar **UUID de tenant** (ni tokens) en `search` de la barra de direcciones. Eso reduce fuga por historial, referrer y enlaces copiados.
-
-**Implementación de referencia:** `frontend/src/navigation/companiesTenantDetailNav.ts` — claves `erp.saas.companies.detailTenantId` y `erp.saas.companies.subscriptionTenantId`, funciones `goToCompaniesTenantDetail` / `goToCompaniesTenantSubscription`, lectura y migración desde queries legacy en `CompaniesPage`.
-
-**Al extender el producto:** nuevos deep links entre rutas con contexto de tenant deben seguir el mismo criterio (nueva clave con prefijo `erp.saas.` o store), no nuevos `?tenantId=`. Detalle operativo: **`.cursor/rules/saas-navigation-no-sensitive-url.mdc`** (`alwaysApply`).
-
----
-
-<a id="sec-saas-plan-assign"></a>
-
-## SaaS: asignación a planes al crear módulo o formulario
-
-**Alcance:** cualquier trabajo que añada **módulo** (navegación, permiso raíz, pantalla nueva de producto) o **formulario/pantalla** (ruta, `navConfig`, permiso de vista, CRUD).
-
-### Regla obligatoria (agente y desarrolladores)
-
-1. **Antes de dar por cerrada** la implementación de un **módulo** nuevo: **preguntar explícitamente** en qué **planes SaaS** debe incluirse la feature comercial (`SaasFeatureDefinition` tipo **Module** + filas en `saas_plan_features` vía SuperAdmin **Planes SaaS** o API `PUT .../saas-plans/{id}/features`). No asumir “todos los planes” sin confirmación del usuario/product owner.
-2. **Si el módulo ya está mapeado a una feature/planes** y el cambio es solo un **formulario/pantalla** nueva (tipo **Form** u otro `ResourceRef` distinto): **preguntar en qué planes** debe habilitarse **ese formulario** (puede diferir del módulo padre: p. ej. solo Professional+).
-3. Flujo técnico mínimo: crear o localizar **`SaasFeatureDefinition`** (`kind` + `resourceRef` coherente con permiso/ruta) → **asignar a planes** elegidos → recién entonces enlazar menú/permisos en código.
-
-La pantalla **SuperAdmin → Planes SaaS** valida al alta de definición **Module**/**Form**: debe marcarse **al menos un plan**; el backend ya persiste en BD (sin hardcode de catálogo en código).
-
----
-
-<a id="sec-kichwa"></a>
-
-## Idioma Kichwa de Cañar (locale `qu`)
-
-**Alcance:** `frontend/src/i18n/**/*`.
-
-- Contenido: **Kichwa de Cañar, Ecuador**; no “quechua” genérico ni mezcla con Perú/Bolivia sin revisión.
-- Código técnico: locale **`qu`**, archivo **`qu.json`**.
-- Nuevas claves: **siempre** `es.json`, `en.json`, `qu.json`.
-- Selector: `app.langMenu.*`; nombre largo: `app.language.kichwa`.
-- Referencias: `dictionaries.ts`, `LanguageSwitcher.tsx`.
+**Anti-drift:** editar reglas solo en `AI-RULES/*`. Este archivo solo enlaza.

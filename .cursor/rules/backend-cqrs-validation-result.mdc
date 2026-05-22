@@ -4,7 +4,9 @@ globs: backend/src/ERP.Application/**/*.cs
 alwaysApply: false
 ---
 
-# CQRS y validación (ERP backend)
+# CQRS y validación (adaptador Cursor)
+
+**Canónico:** [`AI-RULES/BACKEND-RULES.md`](../../AI-RULES/BACKEND-RULES.md) · [`AI-RULES/ENFORCEMENT.md`](../../AI-RULES/ENFORCEMENT.md)
 
 - Commands/Queries deben pasar por MediatR (evitar handlers inyectados directo en controller).
 - Cada command/query con entrada de usuario debe tener validator (FluentValidation).

@@ -1,5 +1,5 @@
 {
-  "$schemaNote": "Archivos legacy permitidos temporalmente. Nuevos archivos NO deben añadirse aquí sin ADR. Ver docs/ARCHITECTURE-RULES.md.",
+  "$schemaNote": "Archivos legacy permitidos temporalmente. Nuevos archivos NO deben añadirse aquí sin ADR. Ver AI-RULES/PR-RULES-CATALOG.md.",
   "handlerHandleMaxLines150": [],
   "tsxMaxLines500": [],
   "tsxPageWrapperMaxLines15": [],

@@ -1,16 +1,9 @@
-# Architecture Rules (entrada raíz)
+# Architecture Rules (adaptador raíz)
 
-**Normativa bloqueante para PRs y agentes IA.**
+**Normativa bloqueante PR:** [`AI-RULES/PR-RULES-CATALOG.md`](AI-RULES/PR-RULES-CATALOG.md)
 
-Documento completo: **[`docs/ARCHITECTURE-RULES.md`](docs/ARCHITECTURE-RULES.md)**
+Entrada alternativa: [`docs/ARCHITECTURE-RULES.md`](docs/ARCHITECTURE-RULES.md)
 
-Enforcement automatizado:
+Índice reglas IA: [`AI-RULES/README.md`](AI-RULES/README.md)
 
-| Herramienta | Ruta |
-|-------------|------|
-| Stack allowlist | `scripts/ci/verify-stack-allowlist.ps1` |
-| Architecture guardrails | `tools/architecture/check-architecture-guardrails.ps1` |
-| Handler size | `tools/quality/check-handler-size.ps1` |
-| NetArchTest | `backend/src/ERP.Architecture.Tests` |
-
-No introducir herramientas fuera del stack oficial (`docs/DEVELOPMENT.md#stack-oficial`).
+Enforcement: [`AI-RULES/ENFORCEMENT.md`](AI-RULES/ENFORCEMENT.md)

@@ -4,7 +4,9 @@ globs: frontend/src/**/*.{ts,tsx}
 alwaysApply: false
 ---
 
-# Frontend rules (React + TS)
+# Frontend rules (adaptador Cursor)
+
+**Canónico:** [`AI-RULES/FRONTEND-RULES.md`](../../AI-RULES/FRONTEND-RULES.md)
 
 - Organizar por módulos (`src/modules/{feature}/...`) y `shared/` para reutilizables.
 - Evitar lógica de negocio en componentes; mover a hooks/servicios/casos de uso UI.

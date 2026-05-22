@@ -1,32 +1,16 @@
-# Auth Rules
+# Auth Rules (adaptador)
 
-> Canónico: [`docs/IDENTITY.md`](docs/IDENTITY.md) · Detalle rotation: [`security/auth/refresh-rotation.md`](security/auth/refresh-rotation.md)
+> **Canónico:** [`AI-RULES/SECURITY.md`](AI-RULES/SECURITY.md) · Detalle: [`docs/IDENTITY.md`](docs/IDENTITY.md)
 
-## Tokens
+## Resumen
 
 | Token | Almacenamiento | Rotación |
 |-------|----------------|----------|
-| Access JWT | Memoria SPA (+ espejo Zustand no persistido) | Corta (config JWT) |
-| Refresh opaco | Cookie **httpOnly** `Path=/api` | Cada uso (family chain) |
+| Access JWT | Memoria SPA | Corta |
+| Refresh opaco | Cookie httpOnly `Path=/api` | Family chain |
 
-## Refresh rotation
+- Refresh rotation: Web Locks + BroadcastChannel; ver `authRefreshManager`
+- Login unificado: `/api/auth/login` (detalle en `docs/IDENTITY.md`)
+- Prohibido: refresh en localStorage/sessionStorage; `?tenantId=` en URLs
 
-- **FamilyId** por sesión/dispositivo
-- Reuso benigno (< grace) → 401 sin revocar familia
-- Reuso sospechoso → `RevokeFamilyAsync` (no logout global)
-- Multi-tab: Web Locks `erp-refresh` + BroadcastChannel `erp.auth`
-- **Nunca** compartir refresh token entre tabs
-
-## Logout
-
-`fullLogout()` — stores, sessionStorage, BC `logout`, cookie vía API.
-
-## Platform
-
-SuperAdmin: `/api/platform/auth/login` · cookie compatible con `/api/auth/refresh`.
-
-## Prohibido
-
-- Refresh token en localStorage/sessionStorage
-- `?tenantId=` en URLs compartibles
-- Revocar todos los tokens del usuario en replay de una sola familia
+Detalle completo: [`AI-RULES/SECURITY.md`](AI-RULES/SECURITY.md).

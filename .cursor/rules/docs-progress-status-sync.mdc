@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Sincronización de documentación de avance
 
+**Canónico:** [`AI-RULES/ENFORCEMENT.md`](../../AI-RULES/ENFORCEMENT.md#sincronización-docs-de-avance)
+
 Si editas **`docs/STATUS.md`**, trata el cambio como **actualización de estado del producto**, no como edición aislada.
 
 ## Fuente de verdad

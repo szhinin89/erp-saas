@@ -4,7 +4,9 @@ globs: backend/src/**/*.cs
 alwaysApply: false
 ---
 
-# Multi-tenancy backend (obligatorio)
+# Multi-tenancy backend (adaptador Cursor)
+
+**Canónico:** [`AI-RULES/SECURITY.md`](../../AI-RULES/SECURITY.md) · [`AI-RULES/BACKEND-RULES.md`](../../AI-RULES/BACKEND-RULES.md#multi-tenant-backend)
 
 - `TenantId` se obtiene desde JWT/contexto (`CurrentTenantService` / `ICurrentTenant`).
 - No aceptar `TenantId` desde body/query para operaciones tenant-scoped.

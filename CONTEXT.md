@@ -8,17 +8,18 @@
 
 | Qué necesito | Archivo | Contenido |
 |--------------|---------|-----------|
+| **Reglas IA (canónico)** | [`AI-RULES/README.md`](./AI-RULES/README.md) | Fuente única: arquitectura, FE/BE, SaaS, enforcement, PR |
 | **Verdad arquitectónica (baseline)** | [`SYSTEM_TRUTH.md`](./SYSTEM_TRUTH.md) | Estructura oficial, módulos, evolución |
 | **Gates bloqueantes** | [`ARCHITECTURE_GATES.md`](./ARCHITECTURE_GATES.md) | Reglas prohibidas/obligatorias + CI |
 | **Baseline sellada** | [`RELEASES/`](./RELEASES/) | `architecture-v1.0`, `frontend-governance-v1.0` |
 | **Frontend baseline (UI)** | [`docs/FRONTEND_ARCHITECTURE_BASELINE.md`](./docs/FRONTEND_ARCHITECTURE_BASELINE.md) | Shells, templates, CSS, governance |
 | **Frontend QA checklist** | [`docs/FRONTEND_QA_CHECKLIST.md`](./docs/FRONTEND_QA_CHECKLIST.md) | Validación manual pre-release |
 | **Entrada GitHub / visión producto** | [`README.md`](./README.md) | Monorepo, stack, CI, troubleshooting |
-| **Reglas de código (agentes)** | [`CLAUDE.md`](./CLAUDE.md) | Convenciones implementación |
+| **Reglas de código (agentes)** | [`CLAUDE.md`](./CLAUDE.md) | Adaptador → [`AI-RULES/`](./AI-RULES/README.md) |
 | **Arquitectura (entrada)** | [`ARCHITECTURE.md`](./ARCHITECTURE.md) | → [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) |
 | **Estado delivery** | [`docs/STATUS.md`](./docs/STATUS.md) | Fuente de verdad MVP |
-| **Reglas PR (entrada)** | [`ARCHITECTURE_RULES.md`](./ARCHITECTURE_RULES.md) | → [`docs/ARCHITECTURE-RULES.md`](./docs/ARCHITECTURE-RULES.md) |
-| **Backend / Frontend / Auth / DB** | [`BACKEND_RULES.md`](./BACKEND_RULES.md), [`FRONTEND_RULES.md`](./FRONTEND_RULES.md), [`AUTH_RULES.md`](./AUTH_RULES.md), [`DATABASE_RULES.md`](./DATABASE_RULES.md) | Reglas por capa |
+| **Reglas PR (entrada)** | [`ARCHITECTURE_RULES.md`](./ARCHITECTURE_RULES.md) | → [`AI-RULES/PR-RULES-CATALOG.md`](./AI-RULES/PR-RULES-CATALOG.md) |
+| **Backend / Frontend / Auth / DB** | [`BACKEND_RULES.md`](./BACKEND_RULES.md), [`FRONTEND_RULES.md`](./FRONTEND_RULES.md), [`AUTH_RULES.md`](./AUTH_RULES.md), [`DATABASE_RULES.md`](./DATABASE_RULES.md) | Adaptadores → [`AI-RULES/`](./AI-RULES/README.md) |
 | **Contribución** | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | PR, tests, prohibiciones |
 | **Features** | [`FEATURES.md`](./FEATURES.md) | Módulos producto |
 | **Prioridades** | [`docs/ROADMAP.md`](./docs/ROADMAP.md) | Fases pendientes |
@@ -36,6 +37,7 @@
 
 ```
 erp-saas/
+├── AI-RULES/         → fuente canónica reglas IA (README.md)
 ├── backend/          → backend/README.md
 ├── frontend/         → baseline UI: `docs/FRONTEND_ARCHITECTURE_BASELINE.md`, `docs/frontend-layout-conventions.md`
 ├── infrastructure/   → Docker, postgres, deployment

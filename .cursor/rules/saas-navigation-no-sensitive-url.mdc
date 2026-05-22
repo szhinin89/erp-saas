@@ -7,6 +7,8 @@ alwaysApply: true
 
 # Navegación SaaS: sin IDs sensibles en la URL
 
+**Canónico:** [`AI-RULES/SAAS-RULES.md`](../../AI-RULES/SAAS-RULES.md#ids-de-tenant-fuera-de-la-url)
+
 ## Objetivo
 
 Evitar que **GUID de tenant**, tokens u otros identificadores sensibles aparezcan en `location.search` o en enlaces compartibles (historial, capturas, referrers). La ruta canónica sigue siendo limpia (p. ej. `/companies`).

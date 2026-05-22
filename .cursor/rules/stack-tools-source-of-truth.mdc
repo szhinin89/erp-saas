@@ -3,18 +3,16 @@ description: Restringe propuestas al stack oficial del proyecto
 alwaysApply: true
 ---
 
-# Stack permitido (fuente de verdad)
+# Stack permitido (adaptador Cursor)
 
-Fuente de verdad obligatoria: `docs/DEVELOPMENT.md` (sección Stack oficial).
+**Canónico:** [`AI-RULES/STACK.md`](../../AI-RULES/STACK.md) · Detalle versiones: [`docs/DEVELOPMENT.md#stack-oficial`](../../docs/DEVELOPMENT.md#stack-oficial)
 
 ## Reglas operativas
 
-- No proponer, generar ni configurar herramientas fuera de la lista oficial sin autorización explícita del usuario.
-- Si una necesidad no está cubierta por el stack actual, pedir confirmación primero y ofrecer alternativas dentro del stack listado.
-- Antes de crear migraciones, scripts o configuración nueva, verificar que la herramienta correspondiente esté en `docs/DEVELOPMENT.md` (Stack oficial).
-- En documentación/comentarios de operación, asumir entorno oficial: Docker Compose (PostgreSQL + Redis), CI en GitHub Actions, pruebas con xUnit/Playwright y flujo actual del repo.
-- Si surge una sugerencia fuera del inventario, detenerse, advertirlo y consultar antes de continuar.
+- No proponer herramientas fuera de la lista oficial sin autorización explícita del usuario.
+- Si una necesidad no está cubierta, pedir confirmación y ofrecer alternativas dentro del stack.
+- Antes de migraciones/scripts/config nueva, verificar herramienta en `docs/DEVELOPMENT.md`.
+- Entorno oficial: Docker Compose (PostgreSQL + Redis), CI GitHub Actions, xUnit/Playwright.
+- CI: `scripts/ci/verify-stack-allowlist.ps1` + `scripts/stack-allowlist.json`.
 
-## Nota de ejecución
-
-Si hay conflicto entre costumbre previa y este archivo, prevalece este criterio hasta nueva instrucción del usuario.
+Si hay conflicto, prevalece [`AI-RULES/STACK.md`](../../AI-RULES/STACK.md) hasta nueva instrucción del usuario.

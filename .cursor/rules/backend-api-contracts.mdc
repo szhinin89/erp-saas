@@ -6,7 +6,9 @@ alwaysApply: false
 
 # Backend API Contracts
 
-- Usar `ApiResultExtensions` para construir respuestas (`ToOkOrBadRequest`, `ToCreatedOrBadRequest`, `ToOkOrNotFound`, `ToOkOrUnauthorized`, `ApiOk`, `ApiBadRequest`, etc.).
+**Canónico:** [`AI-RULES/BACKEND-RULES.md`](../../AI-RULES/BACKEND-RULES.md#controllers--apiresultextensions-obligatorio)
+
+- Usar `ApiResultExtensions` (`ToOkOrBadRequest`, `ToCreatedOrBadRequest`, `ToOkOrNotFound`, `ToOkOrUnauthorized`, `ApiOk`, `ApiBadRequest`, etc.).
 - Evitar `new ApiResponse<...>` manual en controllers.
 - No lógica de negocio en controller; solo orquestación HTTP + llamada a handler/mediator.
 

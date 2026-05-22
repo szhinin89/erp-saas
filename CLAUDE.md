@@ -1,250 +1,60 @@
-# REGLAS DEL PROYECTO — ERP SaaS ZH Technologies
+# ERP SaaS ZH Technologies — Guía para Claude Code
 
-Reglas de implementación. Reglas normativas bloqueantes (PR) → **`docs/ARCHITECTURE-RULES.md`**. Contexto arquitectónico → `docs/ARCHITECTURE.md`. Estado → `docs/STATUS.md`. Desarrollo → `docs/DEVELOPMENT.md`.
-
-## ⚡ Regla obligatoria al terminar cualquier tarea
-
-**Al completar un proceso o funcionalidad, actualizar la documentación de avance** (regla completa: `.cursor/rules/docs-progress-status-sync.mdc`):
-
-1. **`PROGRESS.html`:** marcar ítem, actualizar `#last-updated`, badge y `data-val` si aplica.
-2. **`docs/STATUS.md`:** resumen, tablas de módulos, pendientes MVP, tests y fecha.
-3. **Propagar** a `docs/STATUS.md`, `docs/ROADMAP.md` y `README.md` si cambió alcance, rutas, endpoints o permisos.
-4. Verificar coherencia (mismo % MVP, mismos pendientes, mismas fechas).
+Onboarding rápido. **Reglas completas:** [`AI-RULES/`](AI-RULES/README.md) (fuente canónica única).
 
 ---
 
-**Arranque local, Docker, EF, scripts y tests:** [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) (no duplicar aquí).
+## Source of Truth
+
+| Tema | Canónico |
+|------|----------|
+| Índice y anti-drift | [AI-RULES/README.md](AI-RULES/README.md) |
+| Precedencia | [AI-RULES/HIERARCHY.md](AI-RULES/HIERARCHY.md) |
+| Multi-agente | [AI-RULES/AGENT-COMPATIBILITY.md](AI-RULES/AGENT-COMPATIBILITY.md) |
+| Arquitectura core | [AI-RULES/CORE-ARCHITECTURE.md](AI-RULES/CORE-ARCHITECTURE.md) |
+| Backend | [AI-RULES/BACKEND-RULES.md](AI-RULES/BACKEND-RULES.md) |
+| Frontend | [AI-RULES/FRONTEND-RULES.md](AI-RULES/FRONTEND-RULES.md) |
+| SaaS | [AI-RULES/SAAS-RULES.md](AI-RULES/SAAS-RULES.md) |
+| Seguridad / auth | [AI-RULES/SECURITY.md](AI-RULES/SECURITY.md) |
+| Stack permitido | [AI-RULES/STACK.md](AI-RULES/STACK.md) → [docs/DEVELOPMENT.md#stack-oficial](docs/DEVELOPMENT.md#stack-oficial) |
+| Naming | [AI-RULES/NAMING.md](AI-RULES/NAMING.md) |
+| Enforcement / 4 capas | [AI-RULES/ENFORCEMENT.md](AI-RULES/ENFORCEMENT.md) |
+| PR bloqueante (B-xx/F-xx) | [AI-RULES/PR-RULES-CATALOG.md](AI-RULES/PR-RULES-CATALOG.md) |
 
 ---
 
-## Reglas de backend — lo que no se rompe
+## Contexto del repo (no reglas)
 
-### Capas (dependencias solo hacia abajo)
-```
-ERP.API → ERP.Application → ERP.Domain ← ERP.Infrastructure
-```
-- `ERP.Domain`: cero dependencias de frameworks externos
-- `ERP.API`: solo HTTP; cero entidades de dominio en contratos; cero lógica de negocio
-- `ERP.Application`: solo casos de uso; cero acceso a HTTP ni BD directo
-- `ERP.Infrastructure`: implementa contratos; cero reglas de negocio
-
-### Patrones obligatorios
-
-**Entidades — siempre factory, nunca `new` público:**
-```csharp
-var p = Producto.Create("X", tenantId, actorId);  // ✅
-var p = new Producto { Nombre = "X" };             // ❌
-```
-
-**Soft delete — nunca DELETE físico en entidades de negocio:**
-```csharp
-entidad.Disable();    // IsActive = false  ✅
-db.Remove(entidad);   // ❌ prohibido en entidades de negocio
-```
-- En UI: el botón es siempre "Anular" o "Deshabilitar", nunca "Eliminar".
-- En API: no exponer endpoint DELETE que borre registros de negocio.
-- Aplica a: productos, clientes, proveedores, usuarios, perfiles, órdenes, y cualquier entidad de negocio.
-
-**Excepciones documentadas (DELETE físico permitido):**
-| Entidad | Motivo |
-|---------|--------|
-| `ExpenseCategory` (mapeos gasto→cuenta contable) | Tabla de configuración contable, no documento de negocio |
-| `SaasPlan` | Catálogo de planes del producto; solo si no hay suscripciones activas (validado en `DeletePlanAsync`) |
-
-**Sin AutoMapper — mapeos manuales en handlers.**
-
-**Sin dependencias cruzadas entre módulos:**
-```csharp
-// ✅ Usar contrato de dominio
-ICustomerRepository repo  
-
-// ❌ Importar handler de otro módulo
-using ERP.Application.Modules.Customers.UseCases.GetCustomer;
-```
-
-**Resultado — `Result<T>`, nunca lanzar al controller:**
-```csharp
-return Result<ProductDto>.Failure("Código duplicado.");  // ✅
-throw new Exception("Código duplicado.");               // ❌
-```
-
-### Controllers — ApiResultExtensions (obligatorio)
-```csharp
-return this.ToOkOrBadRequest(result, "OK");      // ✅
-return this.ToCreatedOrBadRequest(result, "Creado");
-return this.ToOkOrNotFound(result);
-
-return Ok(new ApiResponse<T> { … });             // ❌ nunca manual
-```
-
-### Status HTTP
-
-| Caso | Status |
-|------|--------|
-| Éxito lectura | 200 |
-| Éxito creación | 201 |
-| Regla de negocio / entrada inválida | 400 |
-| Sin autenticación | 401 |
-| Sin permiso | 403 |
-| No encontrado | 404 |
-| `ValidationException` FluentValidation | **422** (ExceptionMiddleware) |
-
-Declarar `[ProducesResponseType]` por cada status que aplique.
-
-### Multi-tenant — reglas
-
-- Toda entidad de negocio tiene `TenantId: Guid` con query filter en `OnModelCreating`.
-- Índices únicos compuestos siempre incluyen `TenantId`: `(TenantId, Code)`.
-- Nunca unicidad global en entidades multi-tenant.
-- Al agregar entidad con `TenantId`: registrar filtro en `ErpDbContext.OnModelCreating`.
+| Necesidad | Documento |
+|-----------|-----------|
+| Índice maestro | [CONTEXT.md](CONTEXT.md) |
+| Estado MVP | [docs/STATUS.md](docs/STATUS.md) |
+| Arranque local, Docker, tests | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) |
+| Arquitectura descriptiva | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 
 ---
 
-## Reglas de frontend
+## Antes de actuar
 
-### Estructura de módulo (patrón obligatorio)
-```
-modules/{dominio}/
-├── api/          ← service.ts (llamadas HTTP)
-├── schemas/      ← schema Zod
-├── hooks/        ← useAsync + estado
-└── pages/        ← página + CSS único (prefijo propio)
-```
-
-### Permisos en UI (solo conveniencia — autorización real en backend)
-```typescript
-const isAdmin = role === 'Admin' || role === 'SuperAdmin';
-const canView   = isAdmin || hasPerm('modulo.recurso.view');
-const canCreate = isAdmin || hasPerm('modulo.recurso.create');
-```
-
-### Formularios — componentes obligatorios
-```tsx
-import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
-
-<ZHField label="RUC" required error={errors.ruc?.message}>
-  <input className="zh-input" {...register('ruc')} />
-</ZHField>
-<ZHBtn variant="primary" size="md" type="submit">Guardar</ZHBtn>
-```
+1. Verificar si el archivo **ya existe** → editar, no regenerar.
+2. Seguir [flujo jerárquico](AI-RULES/CORE-ARCHITECTURE.md#flujo-jerárquico-implementar-una-feature).
+3. **No inventar reglas** fuera de `AI-RULES/*` sin confirmación del usuario.
 
 ---
 
-## Reglas CSS — no duplicar nunca
+## Al terminar una tarea
 
-### Jerarquía de 3 niveles
-```
-design-tokens.css    → variables (--color-*, --space-*, --text-*)
-zh-ui.css            → componentes globales (.table, .badge, .zh-btn…)
-page-template.css    → layout global (.pg-page, .pg-kpi, .pg-section…)
-{pagina}-page.css    → SOLO clases únicas de esa pantalla
-```
-
-**Antes de escribir CSS local:** verificar si ya existe la clase en `zh-ui.css` o `page-template.css`.
-
-### Prefijos por página
-| Página | Prefijo |
-|--------|---------|
-| Proveedores | `prv-*` |
-| Clientes | `cls-*` |
-| Productos | `prd-*` |
-| Dashboard | `dsh-*` |
-| Reportes | `rpt-*` |
-| SuperAdmin Planes | `sap-*` |
-| SuperAdmin (overview, suscriptores) | `sa-*` |
-| SaaS (overview, billing) | `saas-*` |
-| Inventario | `inv-*` |
-| Compras | `pur-*` |
-| Contabilidad | `acc-*` |
-
-### Clases más usadas (no recrear)
-```
-Layout:    .pg-page  .pg-header-row  .pg-section  .pg-kpis  .pg-kpi  .pg-kpi--h
-           .pg-table-controls  .pg-search  .pg-form-grid  .pg-form-grid--2/3/4
-Tabla:     .table
-Badges:    .badge  .badge--green/red/gray/orange/blue  .badge--md  .badge--upper
-Estado:    .zh-status  .zh-status--active/suspended/inactive/pending
-Botones:   .zh-btn  .zh-btn--primary/ghost/destructive  .zh-btn--sm/md/lg
-Modal:     .zh-modal-overlay  .zh-modal  .zh-modal-header  .zh-modal-body
-Tabs:      .zh-form-tabs  (botones con .is-active)
-Input:     .zh-input
-Avatar:    .zh-avatar  .zh-avatar--square
-Checkbox:  .zh-inline-check
-KPI icon:  .pg-kpi-icon--primary/success/warning/error
-```
+Actualizar docs de avance → [AI-RULES/ENFORCEMENT.md#sincronización-docs-de-avance](AI-RULES/ENFORCEMENT.md#sincronización-docs-de-avance).
 
 ---
 
-## Validación en 4 capas (obligatorio para datos persistidos)
+## Convenciones esenciales (resumen — detalle en canónico)
 
-| Capa | Herramienta | Clave |
-|------|-------------|-------|
-| Frontend | Zod + react-hook-form | Schema en `schemas/{modulo}/`; `zodResolver`; error visible por campo |
-| Application | FluentValidation + MediatR | `[Nombre]Validator` por Command/Query; `ValidationBehavior` en pipeline |
-| Domain | Guard clauses + factories | `DomainException` en invariantes; `Create(...)` |
-| BD | EF Core `IEntityTypeConfiguration` | `IsRequired`, `HasMaxLength`; índices únicos con `TenantId` |
+- Capas: `ERP.API → Application → Domain ← Infrastructure`
+- Validación 4 capas para datos persistidos
+- Soft delete; factories `Create(...)`; sin AutoMapper
+- Frontend: módulos `modules/{dominio}/`, ZH Form, i18n es/en/qu
+- SaaS: IDs tenant en `sessionStorage` (`erp.saas.*`), no en URL
+- Stack: solo herramientas en `docs/DEVELOPMENT.md#stack-oficial`
 
-**Prohibido:** validar solo en frontend para datos que se guardan en servidor.
-
----
-
-## i18n — Kichwa de Cañar
-
-- Toda clave nueva va en **los tres archivos**: `es.json`, `en.json`, `qu.json`.
-- Contenido `qu`: Kichwa de Cañar, Ecuador — no quechua genérico.
-- Prohibido texto duro visible al usuario en UI.
-
----
-
-## Menú de navegación
-
-- Cada `to` aparece **máximo una vez** entre grupos estáticos.
-- Rutas `/superadmin/*` y `/companies`: solo en `getSuperAdminPanelNavExtras`, nunca en BD.
-- Al añadir ruta: registrar alias en `MENU_ROUTE_ALIASES` si tiene variante legacy.
-
----
-
-## ICE (Impuesto a Consumos Especiales) — diferido
-
-No implementar hasta que el cliente lo requiera. El dominio ya tiene la base:
-- `Product.AppliesExciseTax` + `Product.ExciseTaxId` existen en entidad
-- `TaxRateType.Excise` existe en el enum
-- Cuando se implemente: agregar `IceCode`, `IcePercentage`, `IceAmount` a `SalesBillLine` y `SalesNoteLine`, y emitir `<impuesto><codigo>3</codigo>` junto al IVA en el XML SRI.
-
----
-
-## SaaS — reglas específicas
-
-- **IDs de tenant fuera de la URL:** usar `sessionStorage` con clave `erp.saas.*`, nunca `?tenantId=`.
-- **Módulo nuevo:** preguntar en qué planes SaaS debe incluirse antes de dar por cerrado. No asumir "todos los planes".
-- **Tarifas SRI:** no existe formulario para crear tarifas — vienen de `sri_vat_rate`. El endpoint `POST /api/tax-rates` fue eliminado. Usar `GET /api/tax-rates` para poblar dropdowns.
-
----
-
-## Restricciones estructurales
-
-- No existe `ERP.Shared` en este monorepo. No confundir con otros repos.
-- El código compartido debe vivir:
-  - dentro de su módulo correspondiente (`modules/{dominio}/`), o
-  - en una librería explícitamente aprobada (ver `docs/DEVELOPMENT.md#stack-oficial`).
-- Evitar crear carpetas `shared/` genéricas sin ownership claro.
-- **`pages/*.tsx`** son solo wrappers de enrutamiento (≤ 15 líneas, cero hooks React, cero lógica). La implementación real vive en `modules/{dominio}/pages/`.
-
----
-
-## CI y ramas
-
-| Rama | Uso |
-|------|-----|
-| `main` | Integración estable |
-| `development` | Features diarias |
-| `release/*` | Estabilización |
-| `hotfix/*` | Correcciones urgentes |
-
-Tests antes de merge:
-```powershell
-cd backend
-dotnet test src/ERP.API.Tests/ERP.API.Tests.csproj
-dotnet test src/ERP.Application.Tests/ERP.Application.Tests.csproj
-cd frontend && npx tsc --noEmit && npm run build
-```
+**NO duplicar reglas aquí.** Editar siempre el archivo canónico en `AI-RULES/`.

@@ -1,16 +1,15 @@
-# Backend Rules
+# Backend Rules (adaptador)
 
-> Canónico: [`CLAUDE.md`](CLAUDE.md) · [`docs/ARCHITECTURE-RULES.md`](docs/ARCHITECTURE-RULES.md) (sección Backend)
+> **Canónico:** [`AI-RULES/BACKEND-RULES.md`](AI-RULES/BACKEND-RULES.md) · PR B-xx: [`AI-RULES/PR-RULES-CATALOG.md`](AI-RULES/PR-RULES-CATALOG.md)
 
-## Obligatorio
+## Resumen
 
-1. **Capas:** API → Application → Domain ← Infrastructure (sin atajos).
-2. **Entidades:** factory `Create(...)`, soft delete `Disable()`, nunca DELETE físico de negocio.
-3. **CQRS:** MediatR + FluentValidation por command/query.
-4. **Controllers:** `ApiResultExtensions` únicamente; declarar `ProducesResponseType`.
-5. **Multi-tenant:** `SubscriberId` + filtros EF; índices únicos con tenant.
-6. **Sin AutoMapper;** sin lógica de negocio en Infrastructure/API.
-7. **Tests:** `dotnet test backend/src/ERP.slnx` antes de merge.
+1. Capas: API → Application → Domain ← Infrastructure
+2. Entidades: factory `Create(...)`, soft delete `Disable()`
+3. CQRS: MediatR + FluentValidation
+4. Controllers: `ApiResultExtensions`; `ProducesResponseType`
+5. Multi-tenant: `TenantId` desde JWT; índices únicos con tenant
+6. Sin AutoMapper; sin lógica de negocio en Infrastructure/API
 
 ## Estructura
 
@@ -22,6 +21,4 @@ backend/
 └── docs/         # Notas backend específicas
 ```
 
-## Módulo nuevo
-
-Copiar vertical **Accounting** → Domain / Application / Infrastructure / API.
+Módulo nuevo: copiar vertical **Accounting**. Detalle: [`AI-RULES/CORE-ARCHITECTURE.md`](AI-RULES/CORE-ARCHITECTURE.md).

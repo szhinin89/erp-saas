@@ -6,6 +6,8 @@ alwaysApply: false
 
 # Frontend sin dialogs nativos
 
+**Canónico:** [`AI-RULES/FRONTEND-RULES.md`](../../AI-RULES/FRONTEND-RULES.md#diálogos)
+
 ## Regla
 
 - No usar `window.prompt`, `window.confirm`, `window.alert`, ni sus aliases globales (`prompt`, `confirm`, `alert`) en UI.

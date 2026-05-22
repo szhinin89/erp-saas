@@ -4,7 +4,9 @@ globs: backend/src/**/*.cs
 alwaysApply: false
 ---
 
-# Backend Clean Architecture (estricto)
+# Backend Clean Architecture (adaptador Cursor)
+
+**Canónico:** [`AI-RULES/BACKEND-RULES.md`](../../AI-RULES/BACKEND-RULES.md) · [`AI-RULES/CORE-ARCHITECTURE.md`](../../AI-RULES/CORE-ARCHITECTURE.md)
 
 - Respetar capas: `ERP.API -> ERP.Application -> ERP.Domain <- ERP.Infrastructure`.
 - `ERP.Domain` no debe depender de librerías externas de aplicación/infra/API.

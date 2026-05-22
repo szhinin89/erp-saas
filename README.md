@@ -12,6 +12,7 @@ ERP **SaaS multi-tenant** para Ecuador: facturación electrónica **SRI**, inven
 | [`ARCHITECTURE_GATES.md`](ARCHITECTURE_GATES.md) | Gates bloqueantes PR / CI / agentes |
 | [`RELEASES/RELEASE-ARCHITECTURE-v1.0.md`](RELEASES/RELEASE-ARCHITECTURE-v1.0.md) | Release baseline arquitectura |
 | [`CONTEXT.md`](CONTEXT.md) | Índice maestro |
+| [`AI-RULES/README.md`](AI-RULES/README.md) | **Reglas IA canónicas** (Cursor, Claude, PR) |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Arquitectura (entrada) |
 | [`docs/STATUS.md`](docs/STATUS.md) | Estado delivery |
 | [`FEATURES.md`](FEATURES.md) | Módulos producto |
@@ -21,6 +22,7 @@ ERP **SaaS multi-tenant** para Ecuador: facturación electrónica **SRI**, inven
 
 ```
 erp-saas/
+├── AI-RULES/          # Reglas canónicas multi-agente IA
 ├── backend/           # .NET — src/, tests en ERP.*.Tests
 ├── frontend/          # React SPA — src/, e2e/
 ├── infrastructure/    # Docker, postgres, deploy templates
@@ -78,10 +80,11 @@ Tag Git: **`architecture-v1.0`** — estructura y gobernanza congeladas. Evoluci
 
 | Archivo | Ámbito |
 |---------|--------|
+| [`AI-RULES/README.md`](AI-RULES/README.md) | **Fuente canónica** reglas IA |
 | [`SYSTEM_TRUTH.md`](SYSTEM_TRUTH.md) | Estructura y módulos oficiales |
 | [`ARCHITECTURE_GATES.md`](ARCHITECTURE_GATES.md) | Gates CI / review |
-| [`CLAUDE.md`](CLAUDE.md) | Agentes / implementación |
-| [`ARCHITECTURE_RULES.md`](ARCHITECTURE_RULES.md) | PR bloqueantes |
+| [`CLAUDE.md`](CLAUDE.md) | Adaptador Claude → `AI-RULES/` |
+| [`ARCHITECTURE_RULES.md`](ARCHITECTURE_RULES.md) | PR bloqueantes → `AI-RULES/PR-RULES-CATALOG.md` |
 | [`BACKEND_RULES.md`](BACKEND_RULES.md) | .NET |
 | [`FRONTEND_RULES.md`](FRONTEND_RULES.md) | React |
 | [`AUTH_RULES.md`](AUTH_RULES.md) | Sesión / tokens |

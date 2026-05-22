@@ -5,28 +5,32 @@ alwaysApply: true
 
 # Rule Map (consolidado)
 
+**Canónico:** [`AI-RULES/HIERARCHY.md`](../../AI-RULES/HIERARCHY.md) · [`AI-RULES/README.md`](../../AI-RULES/README.md)
+
 Usar este orden de precedencia cuando varias reglas apliquen al mismo cambio:
 
-1. **`docs/ARCHITECTURE-RULES.md`** — reglas normativas bloqueantes (PR, auditoría).
-2. Regla de alcance mas especifico (por `globs`) gana sobre regla general.
-3. Si hay conflicto, aplicar la regla mas estricta de seguridad/tenant/contrato API.
-4. Mantener consistencia con `erp-unified-rules.mdc` como guia transversal.
+1. **`AI-RULES/PR-RULES-CATALOG.md`** — reglas normativas bloqueantes (PR, auditoría). Entrada: `docs/ARCHITECTURE-RULES.md`.
+2. Regla de alcance más específico (por `globs`) gana sobre regla general.
+3. Si hay conflicto, aplicar la regla más estricta de seguridad/tenant/contrato API.
+4. **`AI-RULES/*`** por área prevalece sobre adaptadores si hay contradicción.
 
-## Reglas por area
+## Reglas por área
 
-- **Normativa enterprise (PR bloqueante):** `docs/ARCHITECTURE-RULES.md`
-- Backend API controllers: `backend-api-contracts.mdc`
-- Arquitectura backend: `backend-clean-architecture-strict.mdc`
-- CQRS/validacion en Application: `backend-cqrs-validation-result.mdc`
-- Multi-tenant y TenantId: `backend-multitenancy-jwt-source.mdc`
-- Frontend modular + i18n + validacion: `frontend-modules-i18n-validation.mdc`
-- Frontend dialogs estandar (sin prompt/confirm nativos): `frontend-no-native-dialogs.mdc`
-- Navegacion SaaS sin IDs en URL: `saas-navigation-no-sensitive-url.mdc`
-- Stack permitido y fuente de verdad de herramientas: `stack-tools-source-of-truth.mdc`
-- Sincronizacion docs de avance (PROGRESS + STATUS): `docs-progress-status-sync.mdc`
+| Área | Canónico | Adaptador Cursor |
+|------|----------|------------------|
+| Normativa PR | `AI-RULES/PR-RULES-CATALOG.md` | `docs/ARCHITECTURE-RULES.md` |
+| Arquitectura core | `AI-RULES/CORE-ARCHITECTURE.md` | `erp-unified-rules.mdc` |
+| Backend API | `AI-RULES/BACKEND-RULES.md` | `backend-api-contracts.mdc` |
+| Backend capas | `AI-RULES/BACKEND-RULES.md` | `backend-clean-architecture-strict.mdc` |
+| CQRS/validación | `AI-RULES/BACKEND-RULES.md`, `ENFORCEMENT.md` | `backend-cqrs-validation-result.mdc` |
+| Multi-tenant | `AI-RULES/SECURITY.md` | `backend-multitenancy-jwt-source.mdc` |
+| Frontend | `AI-RULES/FRONTEND-RULES.md` | `frontend-modules-i18n-validation.mdc` |
+| Diálogos | `AI-RULES/FRONTEND-RULES.md` | `frontend-no-native-dialogs.mdc` |
+| SaaS URL | `AI-RULES/SAAS-RULES.md` | `saas-navigation-no-sensitive-url.mdc` |
+| Stack | `AI-RULES/STACK.md` | `stack-tools-source-of-truth.mdc` |
+| Docs avance | `AI-RULES/ENFORCEMENT.md` | `docs-progress-status-sync.mdc` |
 
 ## Nota de mantenimiento
 
-- Evitar duplicar la misma regla en varios archivos.
-- Cuando una regla crezca demasiado, moverla a una regla especifica por area.
-- Documentación Markdown del producto: mapa único en **`CONTEXT.md`** (raíz del repo); no abrir nuevos índices en paralelo.
+- **NO duplicar reglas** — editar `AI-RULES/*`; adaptadores solo enlazan.
+- Mapa humano: **`CONTEXT.md`** (raíz); no abrir índices paralelos.

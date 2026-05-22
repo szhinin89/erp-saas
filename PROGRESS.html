@@ -107,7 +107,7 @@
   <div class="header">
     <div class="header-title">
       <h1>ERP SaaS — Estado de Avance</h1>
-      <p>ZH Technologies · Revisión: <span id="last-updated">2026-05-21 (v19 — architecture baseline v1.0 remediation: lint/E2E/SuperAdmin/SYSTEM_TRUTH)</span></p>
+      <p>ZH Technologies · Revisión: <span id="last-updated">2026-05-21 (v20 — AI-RULES: fuente canónica multi-agente Cursor + Claude)</span></p>
       <div class="global-bar"><div class="global-bar-fill" id="global-bar-fill"></div></div>
     </div>
     <div class="header-kpi">
@@ -397,7 +397,8 @@
         <div class="item"><input type="checkbox" data-sec="s14" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Frontend audit P1: `fullLogout()` centralizado</strong><p class="note">Claves sessionStorage unificadas (`lib/session/sessionStorageKeys`), limpieza stores + `erp.saas.*` + transporte API en logout/401.</p></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s14" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Frontend audit P2: products/customers — fuente única en `modules/*`</strong><p class="note">`apiEnvelope.ts` compartido; `customerCatalogService` + `customerCatalogFormSchema`; adapters `@deprecated` en `services/` y `schemas/catalog/`; imports directos al módulo en catálogo y NC.</p></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s14" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Frontend audit P3–P7: modular + lazy + ZH + pendientes</strong><p class="note">Catálogo/bodegas/auth/superadmin en `modules/*`; `catalogService`/`warehouseService`/`accessService`; lazy routes; `ZHCard`; wrappers en `pages/`; UI legacy usa clases ZH.</p></div><span class="status-badge s-done">Implementado</span></div>
-        <div class="item"><input type="checkbox" data-sec="s14" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Architecture guardrails CI</strong><p class="note"><code>tools/quality/check-handler-size.ps1</code>, <code>tools/architecture/check-architecture-guardrails.ps1</code>, <code>tools/architecture/architecture-grandfather.json</code>, <code>ERP.Architecture.Tests</code> (NetArchTest), ESLint max-lines warn, chunk index en CI. Ver <code>docs/ARCHITECTURE-RULES.md</code>.</p></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s14" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>AI-RULES: fuente canónica multi-agente (Cursor + Claude)</strong><p class="note">Carpeta <code>AI-RULES/</code> (12 archivos: CORE, BACKEND, FRONTEND, SAAS, SECURITY, STACK, NAMING, ENFORCEMENT, PR-RULES-CATALOG, HIERARCHY, AGENT-COMPATIBILITY). Adaptadores livianos: <code>CLAUDE.md</code>, <code>erp-unified-rules.mdc</code>, stubs raíz, <code>docs/ARCHITECTURE-RULES.md</code>. Política anti-drift: no duplicar reglas fuera del canónico.</p></div><span class="status-badge s-done">Implementado</span></div>
+        <div class="item"><input type="checkbox" data-sec="s14" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Architecture guardrails CI</strong><p class="note"><code>tools/quality/check-handler-size.ps1</code>, <code>tools/architecture/check-architecture-guardrails.ps1</code>, <code>tools/architecture/architecture-grandfather.json</code>, <code>ERP.Architecture.Tests</code> (NetArchTest), ESLint max-lines warn, chunk index en CI. Catálogo PR: <code>AI-RULES/PR-RULES-CATALOG.md</code>.</p></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s14" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Post-audit wave 6: handlers C-03 (Handle ≤150)</strong><p class="note">Refactor `CrearVenta`, `CreateProduct`, `UpdateProduct`, `EmitirFactura`, `EnviarNotaSri`; helper `ProductCommandMutationHelper`. `handlerHandleMaxLines150` vacío en grandfather.</p></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s14" data-val="1" checked onchange="recalc()"><div class="item-text"><strong>Post-audit wave 6: lazy routes + chunk index</strong><p class="note">`accessRoutes`, `companiesRoutes`, `companyManagementRoutes`, `publicRoutes`, `ModulePlaceholderPage`; `lazyNamedPage` genérico por props. Build: index ~362 KB (&lt;650 KB guardrail).</p></div><span class="status-badge s-done">Implementado</span></div>
         <div class="item"><input type="checkbox" data-sec="s14" data-val="0" onchange="recalc()"><div class="item-text"><strong>Pendiente: invalidar caché entitlements al cambiar commercial_plan_features</strong><p class="note">Tras bootstrap de features nuevas (LOGISTICS), el suscriptor puede necesitar re-login o esperar TTL (~5 min) del snapshot cacheado.</p></div><span class="status-badge s-partial">Parcial</span></div>
@@ -426,7 +427,7 @@
   </div>
 
   <div class="footer">
-    ERP SaaS — ZH Technologies · Actualizado: <span id="footer-date">2026-05-21 (v17)</span> ·
+    ERP SaaS — ZH Technologies · Actualizado: <span id="footer-date">2026-05-21 (v20)</span> ·
     <em>Regla: al completar cualquier tarea, marcar el ítem y actualizar la fecha en este archivo.</em>
   </div>
 

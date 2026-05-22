@@ -4,17 +4,18 @@
 
 ## Orden de lectura (canónico)
 
-1. [`CONTEXT.md`](../CONTEXT.md) — índice maestro del monorepo
-2. [`docs/ARCHITECTURE-RULES.md`](../docs/ARCHITECTURE-RULES.md) — reglas normativas bloqueantes (PR, auditoría)
-3. [`CLAUDE.md`](../CLAUDE.md) — reglas de implementación para agentes
-4. [`docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md) — arranque, stack, tests
-5. [`.cursor/rules/erp-unified-rules.mdc`](../.cursor/rules/erp-unified-rules.mdc) — validación 4 capas, ZH Form, i18n `qu`, navegación SaaS
+1. [`AI-RULES/README.md`](../AI-RULES/README.md) — **fuente única** reglas arquitectura/implementación
+2. [`CONTEXT.md`](../CONTEXT.md) — índice maestro del monorepo
+3. [`AI-RULES/PR-RULES-CATALOG.md`](../AI-RULES/PR-RULES-CATALOG.md) — reglas normativas bloqueantes (PR)
+4. [`CLAUDE.md`](../CLAUDE.md) — adaptador Claude → `AI-RULES/`
+5. [`docs/DEVELOPMENT.md`](../docs/DEVELOPMENT.md) — arranque, stack, tests
+6. [`.cursor/rules/erp-unified-rules.mdc`](../.cursor/rules/erp-unified-rules.mdc) — adaptador Cursor → `AI-RULES/`
 
 ## Reglas duras
 
 - Multi-tenant: contexto desde JWT; filtros EF; sin `company_id` del body como autoridad.
 - Navegación: sin UUID sensibles en URL; `sessionStorage` con prefijo `erp.saas.*`.
 - Estado del producto: **`docs/STATUS.md`** (única fuente de delivery).
-- No crear documentos fuera de `docs/` salvo stubs mínimos en `.github/` o `.cursor/`.
+- **NO duplicar reglas** — editar solo `AI-RULES/*`.
 
 **Última revisión:** 2026-05-21

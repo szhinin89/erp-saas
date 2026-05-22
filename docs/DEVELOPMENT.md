@@ -130,7 +130,7 @@ Scripts SQL puntuales: [`scripts/db/sql/`](../scripts/db/sql/) (ver [`scripts/db
 
 ## Stack oficial
 
-Fuente de verdad para agentes (`.cursor/rules/stack-tools-source-of-truth.mdc`).
+Fuente de verdad para agentes: [`AI-RULES/STACK.md`](../AI-RULES/STACK.md) · `.cursor/rules/stack-tools-source-of-truth.mdc`.
 
 ### Runtime
 

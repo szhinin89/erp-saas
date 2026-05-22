@@ -2,24 +2,25 @@
 
 **Single source of truth** for delivery state. Updated: **2026-05-21**.
 
-## Documentation map (canonical — 7 files in `docs/` + índices)
+## Documentation map (canonical — `AI-RULES/` + 7 files in `docs/` + índices)
 
 | Topic | File |
 |-------|------|
+| **Agent rules (canonical)** | `AI-RULES/README.md` |
 | Index | `CONTEXT.md` |
 | Repo structure (2026-05) | `README.md`, `infrastructure/`, `scripts/`, `tools/` |
 | Product summary | `README.md` |
-| Agent rules | `CLAUDE.md`, `.cursor/rules/` |
+| Agent adapters | `CLAUDE.md`, `.cursor/rules/` → `AI-RULES/*` |
 | Delivery state | `docs/STATUS.md` (this file) |
 | Priorities | `docs/ROADMAP.md` |
 | Architecture | `docs/ARCHITECTURE.md` |
-| Architecture rules (PR blocking) | `docs/ARCHITECTURE-RULES.md` |
+| Architecture rules (PR blocking) | `AI-RULES/PR-RULES-CATALOG.md` (entry: `docs/ARCHITECTURE-RULES.md`) |
 | Development + stack | `docs/DEVELOPMENT.md` |
 | Identity + security | `docs/IDENTITY.md` |
 | SaaS plans + billing | `docs/SAAS-COMMERCIAL.md` |
 | Database | `docs/DATABASE.md` |
 
-Consolidated 2026-05-21: former `MULTITENANCY`, `SCOPES`, `SECURITY`, `BILLING`, `DATABASE/*`, etc. merged into the files above.
+Consolidated 2026-05-21: former `MULTITENANCY`, `SCOPES`, `SECURITY`, `BILLING`, `DATABASE/*`, etc. merged into the files above. **2026-05-21:** `AI-RULES/` centralizes implementation rules for Cursor, Claude and future agents.
 
 ## Architecture (current)
 
@@ -45,6 +46,7 @@ Consolidated 2026-05-21: former `MULTITENANCY`, `SCOPES`, `SECURITY`, `BILLING`,
 | Post-audit P2 + wave 4 (services eliminados, AppLayout/Companies split) | ✅ (2026-05-21) |
 | Post-audit wave 5 (PR-7 TSX: catálogo, clientes, contabilidad, menu builder, superadmin) | ✅ (2026-05-21) |
 | Post-audit wave 6 (handlers C-03, lazy routes, grandfather vacío) | ✅ (2026-05-21) |
+| **AI-RULES multi-agent governance** (`AI-RULES/*` canonical; `CLAUDE.md` + `.mdc` adapters) | ✅ (2026-05-21) |
 
 Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 
