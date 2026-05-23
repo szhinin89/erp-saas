@@ -76,8 +76,8 @@ public sealed class CompanyScopeBehavior<TRequest, TResponse> : IPipelineBehavio
 
     private static bool RequiresCompanyScope(TRequest request)
     {
-        if (request is ICompanyScopedRequest)
-            return true;
+        if (request is ICompanyScopedRequest)    return true;
+        if (request is IRequiresCompanyContext)  return true;
 
         var ns = request.GetType().Namespace ?? string.Empty;
         return CompanyScopedNamespacePrefixes.Any(p => ns.StartsWith(p, StringComparison.Ordinal));
