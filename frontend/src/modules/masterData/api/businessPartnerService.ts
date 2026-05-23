@@ -104,6 +104,9 @@ export const businessPartnerService = {
   ) =>
     apiPatch<boolean>(`${BUSINESS_PARTNERS_API}/${encodeURIComponent(id)}/company-settings`, body),
 
+  addRole: (id: string, asCustomer: boolean, asSupplier: boolean) =>
+    apiPatch<boolean>(`${BUSINESS_PARTNERS_API}/${encodeURIComponent(id)}/add-role`, { asCustomer, asSupplier }),
+
   updateCustomerNotes: (id: string, notes: string | null) =>
     apiPatch<boolean>(`${BUSINESS_PARTNERS_API}/${encodeURIComponent(id)}/customer-notes`, { notes }),
 

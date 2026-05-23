@@ -109,6 +109,17 @@ export function MasterDataCustomersPage() {
                       Activar
                     </ZHBtn>
                   )}
+                  {page.canUpdate && !bp.isSupplier && (
+                    <ZHBtn
+                      variant="ghost"
+                      size="sm"
+                      disabled={page.saving}
+                      onClick={() => void page.addAsSupplier(bp.id)}
+                      title="Agregar también como proveedor"
+                    >
+                      + Proveedor
+                    </ZHBtn>
+                  )}
                   {page.canDisable && bp.isActive && (
                     <ZHBtn
                       variant="ghost"

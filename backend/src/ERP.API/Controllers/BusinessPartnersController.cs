@@ -3,6 +3,7 @@ using ERP.API.Extensions;
 using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.UseCases.ActivateBusinessPartner;
+using ERP.Application.MasterData.UseCases.AddBusinessPartnerRole;
 using ERP.Application.MasterData.UseCases.CreateBusinessPartner;
 using ERP.Application.MasterData.UseCases.DisableBusinessPartner;
 using ERP.Application.MasterData.UseCases.GetBusinessPartner;
@@ -182,6 +183,23 @@ public sealed class BusinessPartnersController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
+    /// <summary>
+    /// Agrega rol Cliente y/o Proveedor a un BusinessPartner existente.
+    /// Idempotente: si el perfil ya existe no falla.
+    /// </summary>
+    [HttpPatch("{id:guid}/add-role")]
+    [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.Update}")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddRole(
+        [FromRoute] Guid id,
+        [FromBody] AddBusinessPartnerRoleRequest body,
+        CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new AddBusinessPartnerRoleCommand(id, body.AsCustomer, body.AsSupplier), ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
     /// <summary>Actualiza las notas del perfil de cliente.</summary>
     [HttpPatch("{id:guid}/customer-notes")]
     [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.Update}")]
@@ -249,6 +267,12 @@ public sealed class UpdateBusinessPartnerRequest
     public string? Email                { get; set; }
     public string? Phone                { get; set; }
     public string? CountryCode          { get; set; }
+}
+
+public sealed class AddBusinessPartnerRoleRequest
+{
+    public bool AsCustomer { get; set; }
+    public bool AsSupplier { get; set; }
 }
 
 public sealed class UpdateCustomerNotesRequest

@@ -153,6 +153,9 @@ export const businessPartnerFacade = {
     body: { creditLimit?: number | null; paymentDays: number; isBlocked: boolean },
   ) => businessPartnerService.upsertCompanySettings(id, body),
 
+  addRole: (id: string, asCustomer: boolean, asSupplier: boolean) =>
+    businessPartnerService.addRole(id, asCustomer, asSupplier),
+
   updateCustomerNotes: (id: string, notes: string | null) =>
     businessPartnerService.updateCustomerNotes(id, notes),
 

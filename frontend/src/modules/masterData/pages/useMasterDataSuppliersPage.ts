@@ -176,6 +176,19 @@ export function useMasterDataSuppliersPage() {
     }
   };
 
+  const addAsCustomer = async (id: string) => {
+    setSaving(true);
+    setInlineError(null);
+    try {
+      await businessPartnerFacade.addRole(id, true, false);
+      listState.refetch();
+    } catch (err) {
+      setInlineError(formatApiError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const saveSupplierProfile = async (id: string, body: UpdateSupplierProfileBody) => {
     setSaving(true);
     clearModalError();
@@ -219,6 +232,7 @@ export function useMasterDataSuppliersPage() {
     settingsData,
     openSettings,
     closeSettings,
+    addAsCustomer,
     supplierProfileBp,
     openSupplierProfile,
     closeSupplierProfile,
