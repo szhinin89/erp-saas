@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useCompanyScopedAsync } from '../../../hooks/useCompanyScopedAsync';
 import { useDebounce } from '../../../hooks/useDebounce';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
@@ -22,6 +22,8 @@ export function useMasterDataCustomersPage() {
   const [search, setSearch]             = useState('');
   const debouncedSearch                 = useDebounce(search, 300);
   const [showInactive, setShowInactive] = useState(false);
+  const [page, setPage]                 = useState(1);
+  const PAGE_SIZE                       = 50;
   const [modalOpen, setModalOpen]       = useState(false);
   const [editBp, setEditBp]             = useState<BusinessPartnerDto | null>(null);
   const [settingsBp, setSettingsBp]     = useState<BusinessPartnerDto | null>(null);
@@ -38,20 +40,23 @@ export function useMasterDataCustomersPage() {
 
   const listState = useCompanyScopedAsync(
     () =>
-      businessPartnerFacade.searchBusinessPartners({
+      businessPartnerFacade.searchBusinessPartnersPaged({
         q: debouncedSearch || undefined,
         isActive: showInactive ? undefined : true,
         isCustomer: true,
-        take: 200,
+        skip: (page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
       }),
     canView,
-    [debouncedSearch, showInactive],
+    [debouncedSearch, showInactive, page],
   );
 
-  const customers = useMemo(
-    () => (listState.data ?? []).filter((bp) => bp.isCustomer),
-    [listState.data],
-  );
+  const customers  = listState.data?.items ?? [];
+  const totalCount = listState.data?.totalCount ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  const setSearchReset = (v: string) => { setSearch(v); setPage(1); };
+  const setShowInactiveReset = (v: boolean) => { setShowInactive(v); setPage(1); };
 
   const clearModalError = () => setModalError(null);
 
@@ -213,9 +218,13 @@ export function useMasterDataCustomersPage() {
     canDisable,
     canConfigure,
     search,
-    setSearch,
+    setSearch: setSearchReset,
     showInactive,
-    setShowInactive,
+    setShowInactive: setShowInactiveReset,
+    page,
+    setPage,
+    totalCount,
+    totalPages,
     customers,
     loading:     listState.loading,
     listError:   listState.error ?? listError,

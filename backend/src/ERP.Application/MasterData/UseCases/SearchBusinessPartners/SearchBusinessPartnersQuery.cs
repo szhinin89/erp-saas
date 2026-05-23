@@ -10,4 +10,4 @@ public sealed record SearchBusinessPartnersQuery(
     bool?   IsCustomer = null,
     bool?   IsSupplier = null,
     int     Skip       = 0,
-    int     Take       = 50) : IRequest<Result<IReadOnlyList<BusinessPartnerDto>>>, ISubscriberOnlyRequest;
+    int     Take       = 50) : IRequest<Result<PagedResult<BusinessPartnerDto>>>, ISubscriberOnlyRequest;

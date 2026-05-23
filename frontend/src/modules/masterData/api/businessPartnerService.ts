@@ -2,6 +2,7 @@ import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '../../lib/apiEnvel
 import type {
   BusinessPartnerApiRow,
   BusinessPartnerDto,
+  BusinessPartnerPagedResult,
   CompanyBpSettingsDto,
   CreateBusinessPartnerBody,
   SearchBusinessPartnersParams,
@@ -65,15 +66,25 @@ function buildSearchQuery(params: SearchBusinessPartnersParams): string {
   return qs ? `?${qs}` : '';
 }
 
+type PagedApiResponse = { items: BusinessPartnerApiRow[]; pageNumber: number; pageSize: number; totalCount: number };
+
 export const businessPartnerService = {
-  search: async (params: SearchBusinessPartnersParams = {}): Promise<BusinessPartnerDto[]> => {
-    const rows = await apiGet<BusinessPartnerApiRow[]>(
+  searchPaged: async (params: SearchBusinessPartnersParams = {}): Promise<BusinessPartnerPagedResult> => {
+    const raw = await apiGet<PagedApiResponse>(
       `${BUSINESS_PARTNERS_API}${buildSearchQuery(params)}`,
     );
-    let list = (rows ?? []).map(normalizeRow);
-    if (params.isCustomer === true) list = list.filter((x) => x.isCustomer);
-    if (params.isSupplier === true) list = list.filter((x) => x.isSupplier);
-    return list;
+    const items = (raw?.items ?? []).map(normalizeRow);
+    return {
+      items,
+      pageNumber:  raw?.pageNumber  ?? 1,
+      pageSize:    raw?.pageSize    ?? params.take ?? 50,
+      totalCount:  raw?.totalCount  ?? items.length,
+    };
+  },
+
+  search: async (params: SearchBusinessPartnersParams = {}): Promise<BusinessPartnerDto[]> => {
+    const paged = await businessPartnerService.searchPaged(params);
+    return paged.items;
   },
 
   getById: async (id: string): Promise<BusinessPartnerDto> => {

@@ -23,7 +23,7 @@ public interface IBusinessPartnerRepository
         string identificationNumber,
         CancellationToken ct = default);
 
-    /// <summary>Lista con filtros opcionales para búsqueda/paginación futura.</summary>
+    /// <summary>Lista con filtros opcionales y paginación.</summary>
     Task<IReadOnlyList<BusinessPartner>> SearchAsync(
         string?  query      = null,
         bool?    isActive   = true,
@@ -31,6 +31,14 @@ public interface IBusinessPartnerRepository
         bool?    isSupplier = null,
         int      skip       = 0,
         int      take       = 50,
+        CancellationToken ct = default);
+
+    /// <summary>Total de registros que coinciden con los filtros (sin Skip/Take).</summary>
+    Task<int> CountAsync(
+        string?  query      = null,
+        bool?    isActive   = true,
+        bool?    isCustomer = null,
+        bool?    isSupplier = null,
         CancellationToken ct = default);
 
     /// <summary>Verdadero si ya existe un BP con esa identificación en el subscriber activo.</summary>

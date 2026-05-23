@@ -26,14 +26,8 @@ public sealed class BusinessPartnerRepository : IBusinessPartnerRepository
                   x.Identification.Type   == identificationType &&
                   x.Identification.Number == identificationNumber, ct);
 
-    public async Task<IReadOnlyList<BusinessPartner>> SearchAsync(
-        string?  query      = null,
-        bool?    isActive   = true,
-        bool?    isCustomer = null,
-        bool?    isSupplier = null,
-        int      skip       = 0,
-        int      take       = 50,
-        CancellationToken ct = default)
+    private IQueryable<BusinessPartner> BuildSearchQuery(
+        string? query, bool? isActive, bool? isCustomer, bool? isSupplier)
     {
         var q = _db.BusinessPartners.AsNoTracking();
 
@@ -59,11 +53,33 @@ public sealed class BusinessPartnerRepository : IBusinessPartnerRepository
                 x.Identification.Number.Contains(lower));
         }
 
-        return await q
+        return q;
+    }
+
+    public async Task<IReadOnlyList<BusinessPartner>> SearchAsync(
+        string?  query      = null,
+        bool?    isActive   = true,
+        bool?    isCustomer = null,
+        bool?    isSupplier = null,
+        int      skip       = 0,
+        int      take       = 50,
+        CancellationToken ct = default)
+    {
+        return await BuildSearchQuery(query, isActive, isCustomer, isSupplier)
             .OrderBy(x => x.LegalName)
             .Skip(skip)
             .Take(Math.Clamp(take, 1, 200))
             .ToListAsync(ct);
+    }
+
+    public Task<int> CountAsync(
+        string?  query      = null,
+        bool?    isActive   = true,
+        bool?    isCustomer = null,
+        bool?    isSupplier = null,
+        CancellationToken ct = default)
+    {
+        return BuildSearchQuery(query, isActive, isCustomer, isSupplier).CountAsync(ct);
     }
 
     public Task<bool> ExistsByIdentificationAsync(

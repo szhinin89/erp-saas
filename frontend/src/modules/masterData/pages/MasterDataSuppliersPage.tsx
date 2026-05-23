@@ -139,6 +139,20 @@ export function MasterDataSuppliersPage() {
         </table>
       </div>
 
+      {page.totalPages > 1 && (
+        <div className="md-pagination">
+          <ZHBtn variant="ghost" size="sm" disabled={page.page <= 1} onClick={() => page.setPage(page.page - 1)}>
+            ‹ Anterior
+          </ZHBtn>
+          <span className="md-pagination-info">
+            Pág. {page.page} / {page.totalPages} ({page.totalCount} registros)
+          </span>
+          <ZHBtn variant="ghost" size="sm" disabled={page.page >= page.totalPages} onClick={() => page.setPage(page.page + 1)}>
+            Siguiente ›
+          </ZHBtn>
+        </div>
+      )}
+
       <p className="md-legacy-hint">
         Listado legacy: <a href="/purchases/suppliers">/purchases/suppliers</a>
       </p>

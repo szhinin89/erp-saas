@@ -7,7 +7,7 @@ using MediatR;
 namespace ERP.Application.MasterData.UseCases.SearchBusinessPartners;
 
 public sealed class SearchBusinessPartnersHandler
-    : IRequestHandler<SearchBusinessPartnersQuery, Result<IReadOnlyList<BusinessPartnerDto>>>
+    : IRequestHandler<SearchBusinessPartnersQuery, Result<PagedResult<BusinessPartnerDto>>>
 {
     private readonly IBusinessPartnerRepository _repo;
     private readonly IBusinessPartnerOperationalLinkEnricher _linkEnricher;
@@ -20,11 +20,19 @@ public sealed class SearchBusinessPartnersHandler
         _linkEnricher = linkEnricher;
     }
 
-    public async Task<Result<IReadOnlyList<BusinessPartnerDto>>> Handle(
+    public async Task<Result<PagedResult<BusinessPartnerDto>>> Handle(
         SearchBusinessPartnersQuery request, CancellationToken ct)
     {
-        var results = await _repo.SearchAsync(request.Query, request.IsActive, request.IsCustomer, request.IsSupplier, request.Skip, request.Take, ct);
+        var take = Math.Clamp(request.Take, 1, 200);
+        var pageNumber = take > 0 ? (request.Skip / take) + 1 : 1;
+
+        var (results, total) = await (
+            _repo.SearchAsync(request.Query, request.IsActive, request.IsCustomer, request.IsSupplier, request.Skip, take, ct),
+            _repo.CountAsync(request.Query, request.IsActive, request.IsCustomer, request.IsSupplier, ct)
+        );
+
         var enriched = await _linkEnricher.EnrichAsync(results, ct);
-        return Result<IReadOnlyList<BusinessPartnerDto>>.Success(enriched);
+        return Result<PagedResult<BusinessPartnerDto>>.Success(
+            new PagedResult<BusinessPartnerDto>(enriched, pageNumber, take, total));
     }
 }

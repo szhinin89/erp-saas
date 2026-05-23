@@ -16,6 +16,7 @@ import { businessPartnerService } from './businessPartnerService';
 import { isMasterDataFallbackError } from './masterDataErrors';
 import type {
   BusinessPartnerDto,
+  BusinessPartnerPagedResult,
   CompanyBpSettingsDto,
   CreateBusinessPartnerBody,
   UpdateBusinessPartnerBody,
@@ -133,6 +134,9 @@ export const businessPartnerFacade = {
 
   searchBusinessPartners: (params?: Parameters<typeof businessPartnerService.search>[0]) =>
     businessPartnerService.search(params),
+
+  searchBusinessPartnersPaged: (params?: Parameters<typeof businessPartnerService.searchPaged>[0]): Promise<BusinessPartnerPagedResult> =>
+    businessPartnerService.searchPaged(params),
 
   getBusinessPartner: (id: string) => businessPartnerService.getById(id),
 

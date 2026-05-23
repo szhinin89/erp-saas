@@ -42,7 +42,7 @@ public sealed class BusinessPartnersController : ControllerBase
     /// <summary>Busca BusinessPartners del subscriber activo.</summary>
     [HttpGet]
     [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.View}")]
-    [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BusinessPartnerDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PagedResult<BusinessPartnerDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Search(
         [FromQuery] string? q          = null,
         [FromQuery] bool?   isActive   = true,

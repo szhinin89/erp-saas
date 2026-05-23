@@ -70,6 +70,13 @@ export type UpdateSupplierProfileBody = {
   paymentTerms?: string | null;
 };
 
+export type BusinessPartnerPagedResult = {
+  items: BusinessPartnerDto[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+};
+
 /** Respuesta cruda del API (camelCase o PascalCase). */
 export type BusinessPartnerApiRow = {
   id?: string;

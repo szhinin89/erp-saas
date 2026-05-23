@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useCompanyScopedAsync } from '../../../hooks/useCompanyScopedAsync';
 import { useDebounce } from '../../../hooks/useDebounce';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
@@ -23,6 +23,8 @@ export function useMasterDataSuppliersPage() {
   const [search, setSearch]                         = useState('');
   const debouncedSearch                             = useDebounce(search, 300);
   const [showInactive, setShowInactive]             = useState(false);
+  const [page, setPage]                             = useState(1);
+  const PAGE_SIZE                                   = 50;
   const [modalOpen, setModalOpen]                   = useState(false);
   const [editBp, setEditBp]                         = useState<BusinessPartnerDto | null>(null);
   const [settingsBp, setSettingsBp]                 = useState<BusinessPartnerDto | null>(null);
@@ -36,20 +38,23 @@ export function useMasterDataSuppliersPage() {
 
   const listState = useCompanyScopedAsync(
     () =>
-      businessPartnerFacade.searchBusinessPartners({
+      businessPartnerFacade.searchBusinessPartnersPaged({
         q: debouncedSearch || undefined,
         isActive: showInactive ? undefined : true,
         isSupplier: true,
-        take: 200,
+        skip: (page - 1) * PAGE_SIZE,
+        take: PAGE_SIZE,
       }),
     canView,
-    [debouncedSearch, showInactive],
+    [debouncedSearch, showInactive, page],
   );
 
-  const suppliers = useMemo(
-    () => (listState.data ?? []).filter((bp) => bp.isSupplier),
-    [listState.data],
-  );
+  const suppliers  = listState.data?.items ?? [];
+  const totalCount = listState.data?.totalCount ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  const setSearchReset = (v: string) => { setSearch(v); setPage(1); };
+  const setShowInactiveReset = (v: boolean) => { setShowInactive(v); setPage(1); };
 
   const clearModalError = () => setModalError(null);
 
@@ -210,9 +215,13 @@ export function useMasterDataSuppliersPage() {
     canDisable,
     canConfigure,
     search,
-    setSearch,
+    setSearch: setSearchReset,
     showInactive,
-    setShowInactive,
+    setShowInactive: setShowInactiveReset,
+    page,
+    setPage,
+    totalCount,
+    totalPages,
     suppliers,
     loading:     listState.loading,
     listError:   listState.error ?? listError,
