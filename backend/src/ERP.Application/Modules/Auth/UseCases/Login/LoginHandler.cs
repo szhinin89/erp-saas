@@ -52,8 +52,8 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         if (identityUser is null)
             return Result<AuthResponseDto>.Failure("No estás registrado a una empresa. Comunícate con el administrador.");
 
-        if (identityUser.IsPlatformSuperAdmin)
-            return await LoginPlatformSuperAdminAsync(identityUser, command.Password, ct);
+        if (identityUser.IsPrimaryPlatformOperator)
+            return await LoginPlatformOperatorAsync(identityUser, command.Password, ct);
 
         if (!identityUser.IsActive)
             return Result<AuthResponseDto>.Failure("Usuario inactivo.");
@@ -144,13 +144,13 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         });
     }
 
-    private async Task<Result<AuthResponseDto>> LoginPlatformSuperAdminAsync(
+    private async Task<Result<AuthResponseDto>> LoginPlatformOperatorAsync(
         IdentityUser platformUser,
         string password,
         CancellationToken ct)
     {
-        if (!_deployment.IsSuperAdminPanelEnabled)
-            return Result<AuthResponseDto>.Failure(DeploymentAuthMessages.SuperAdminPanelDisabled);
+        if (!_deployment.IsPlatformPanelEnabled)
+            return Result<AuthResponseDto>.Failure(DeploymentAuthMessages.PlatformPanelDisabled);
 
         if (!platformUser.IsActive)
             return Result<AuthResponseDto>.Failure("Usuario inactivo.");
@@ -169,7 +169,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
             platformUser.Id,
             platformUser.FullName,
             platformUser.Email.Value,
-            "SuperAdmin",
+            PlatformAuthConstants.JwtPlatformOperatorRole,
             Guid.Empty,
             token,
             PlanCode: null,

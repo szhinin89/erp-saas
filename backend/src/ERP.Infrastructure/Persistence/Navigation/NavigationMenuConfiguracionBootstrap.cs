@@ -96,7 +96,7 @@ public static class NavigationMenuConfiguracionBootstrap
                     20,
                     null,
                     null,
-                    requireSuperAdminPanel: false,
+                    requirePlatformPanel: false,
                     isActive: true));
             try
             {
@@ -305,7 +305,7 @@ public static class NavigationMenuConfiguracionBootstrap
             ["sortOrder"]             = 5,
             ["moduleKey"]             = null,
             ["roles"]                 = null,
-            ["requireSuperAdminPanel"]= false,
+            ["requirePlatformPanel"]= false,
             ["menuBarLayout"]         = "horizontal",
             ["items"]                 = new JsonArray(),
         };

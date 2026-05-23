@@ -3,13 +3,16 @@
  * Never used for security enforcement — API is authoritative.
  */
 
+import { TENANT_ADMIN_JWT_ROLES } from '../constants/platformAuth';
 import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore, normalizePolicyPermissionKey } from '../store/permissionsStore';
 
 export { normalizePolicyPermissionKey };
 
+export { JWT_PLATFORM_OPERATOR_ROLE } from '../constants/platformAuth';
+
 /** Roles that receive wildcard permissions from backend (`*`). */
-export const TENANT_ADMIN_ROLES = ['Admin', 'SuperAdmin'] as const;
+export const TENANT_ADMIN_ROLES = TENANT_ADMIN_JWT_ROLES;
 
 export function isTenantAdminRole(role?: string | null): boolean {
   if (!role) return false;

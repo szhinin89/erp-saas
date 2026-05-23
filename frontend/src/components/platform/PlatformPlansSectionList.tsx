@@ -39,7 +39,7 @@ export function PlatformPlansSectionList({
   if (plans.length === 0) {
     return (
       <ZHCard>
-        <EmptyState message={t('superadmin.plans.empty')} />
+        <EmptyState message={t('platform.plans.empty')} />
       </ZHCard>
     );
   }
@@ -52,18 +52,18 @@ export function PlatformPlansSectionList({
         {plans.map((plan, index) => {
           const tier = planVisualTier(plan.code);
           const codeKey = plan.code.trim().toLowerCase();
-          const taglineKey = `superadmin.plansCard.tagline.${codeKey}`;
+          const taglineKey = `platform.plansCard.tagline.${codeKey}`;
           const taglineResolved = t(taglineKey);
           const taglineText =
-            taglineResolved !== taglineKey ? taglineResolved : t('superadmin.plansCard.taglineFallback');
+            taglineResolved !== taglineKey ? taglineResolved : t('platform.plansCard.taglineFallback');
           const subscriberCount = planSubscriberStats.counts.get(codeKey) ?? 0;
           const usagePct =
             planSubscriberStats.max > 0 ? Math.round((subscriberCount / planSubscriberStats.max) * 100) : 0;
           const billingCycle = (plan.billingCycle ?? 'monthly').toLowerCase();
-          const billingKey = `superadmin.plansCard.billingSuffix.${billingCycle}`;
+          const billingKey = `platform.plansCard.billingSuffix.${billingCycle}`;
           const billingSuffix = t(billingKey);
           const billingLabel =
-            billingSuffix !== billingKey ? billingSuffix : t('superadmin.plansCard.billingSuffix.monthly');
+            billingSuffix !== billingKey ? billingSuffix : t('platform.plansCard.billingSuffix.monthly');
 
           return (
             <article
@@ -80,7 +80,7 @@ export function PlatformPlansSectionList({
               <div className="sap-pricing-card-inner">
                 <div className="sap-pricing-topBadges">
                   {plan.isRecommended ? (
-                    <span className="sap-pricing-ribbon">{t('superadmin.plansCard.mostPopular')}</span>
+                    <span className="sap-pricing-ribbon">{t('platform.plansCard.mostPopular')}</span>
                   ) : null}
                   <span className="badge badge--upper mono sap-pricing-planBadge">{plan.shortLabel ?? plan.code.toUpperCase()}</span>
                 </div>
@@ -113,7 +113,7 @@ export function PlatformPlansSectionList({
                 <div className="sap-pricing-usage">
                   <div className="sap-pricing-usageLine">
                     <span>
-                      {subscriberCount} {t('superadmin.plansCard.subscribersUnit')}
+                      {subscriberCount} {t('platform.plansCard.subscribersUnit')}
                     </span>
                     <span className="sap-pricing-usagePct">{usagePct}%</span>
                   </div>
@@ -133,9 +133,9 @@ export function PlatformPlansSectionList({
                 <div className="sap-pricing-metaRow subtle">
                   <Badge label={plan.isActive ? t('common.active') : t('common.inactive')} variant={plan.isActive ? 'green' : 'gray'} />
                   {plan.isPubliclyVisible ? (
-                    <Badge label={t('superadmin.plansAdmin.public')} variant="green" />
+                    <Badge label={t('platform.plansAdmin.public')} variant="green" />
                   ) : (
-                    <Badge label={t('superadmin.plansAdmin.hidden')} variant="gray" />
+                    <Badge label={t('platform.plansAdmin.hidden')} variant="gray" />
                   )}
                   <span className="mono">{plan.code}</span>
                 </div>
@@ -146,14 +146,14 @@ export function PlatformPlansSectionList({
                     </ZHBtn>
                     <NavLink
                       className="zh-btn zh-btn--ghost zh-btn--md sap-pricing-linkBtn"
-                      to={`/superadmin/plans?plan=${encodeURIComponent(plan.code)}`}
+                      to={`/platform/plans?plan=${encodeURIComponent(plan.code)}`}
                     >
-                      {t('superadmin.plansCard.viewSubscribers')}
+                      {t('platform.plansCard.viewSubscribers')}
                     </NavLink>
                   </div>
                   <div className="sap-pricing-footerExtra">
                     <ZHBtn variant="ghost" size="sm" type="button" onClick={() => onMovePlan(index, -1)} disabled={busy || index === 0}>
-                      {t('superadmin.plansAdmin.up')}
+                      {t('platform.plansAdmin.up')}
                     </ZHBtn>
                     <ZHBtn
                       variant="ghost"
@@ -162,7 +162,7 @@ export function PlatformPlansSectionList({
                       onClick={() => onMovePlan(index, 1)}
                       disabled={busy || index === plans.length - 1}
                     >
-                      {t('superadmin.plansAdmin.down')}
+                      {t('platform.plansAdmin.down')}
                     </ZHBtn>
                     <ZHBtn
                       variant="ghost"
@@ -171,7 +171,7 @@ export function PlatformPlansSectionList({
                       onClick={() => onSetRecommended(plan.id)}
                       disabled={busy || plan.isRecommended}
                     >
-                      {t('superadmin.plansAdmin.recommend')}
+                      {t('platform.plansAdmin.recommend')}
                     </ZHBtn>
                     <ZHBtn variant="destructive" size="sm" type="button" onClick={() => onDeletePlan(plan.id)} disabled={busy}>
                       {t('common.delete')}
@@ -190,9 +190,9 @@ export function PlatformPlansSectionList({
             <span className="material-symbols-outlined">loyalty</span>
           </div>
           <div>
-            <p className="sap-plans-summary-label">{t('superadmin.plansDashboard.summary.label')}</p>
+            <p className="sap-plans-summary-label">{t('platform.plansDashboard.summary.label')}</p>
             <p className="sap-plans-summary-value">
-              {subscribers.length} {t('superadmin.plansDashboard.summary.subscriptions')}
+              {subscribers.length} {t('platform.plansDashboard.summary.subscriptions')}
             </p>
           </div>
         </div>
@@ -202,7 +202,7 @@ export function PlatformPlansSectionList({
             <p className="sap-plans-summary-stat-value">{formatPlanMoney(approxMrr, defaultCurrency)}</p>
           </div>
           <div className="sap-plans-summary-stat">
-            <p className="sap-plans-summary-stat-label">{t('superadmin.plansDashboard.kpi.inactiveRatio')}</p>
+            <p className="sap-plans-summary-stat-label">{t('platform.plansDashboard.kpi.inactiveRatio')}</p>
             <p className="sap-plans-summary-stat-value">{inactivePct}%</p>
           </div>
           <div className="sap-plans-summary-stat">

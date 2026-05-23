@@ -16,7 +16,7 @@ public sealed class AppFeatureAttribute : Attribute
     public string? ParentPermission { get; }
     public int SortOrder { get; }
     public bool IsVisibleInMenu { get; set; } = true;
-    public bool IsSuperAdmin { get; set; }
+    public bool IsPlatformOnlyFeature { get; set; }
 
     public AppFeatureAttribute(string name, string permission, string? icon = null, string? path = null, string? parentPermission = null, int sortOrder = 0)
     {

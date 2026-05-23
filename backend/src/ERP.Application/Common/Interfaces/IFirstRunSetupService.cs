@@ -8,7 +8,7 @@ public sealed record FirstRunTokenIssueResult(
 
 public sealed record FirstRunResetResult(
     string Message,
-    int RemovedSuperAdmins,
+    int RemovedPlatformOperators,
     string SetupToken,
     DateTime ExpiresAtUtc);
 

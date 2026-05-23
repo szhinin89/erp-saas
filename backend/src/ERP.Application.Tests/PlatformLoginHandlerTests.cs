@@ -18,7 +18,7 @@ public class PlatformLoginHandlerTests
         const string password = "Secret123!";
         const string hash = "hashed";
 
-        var user = IdentityUser.CreatePlatformSuperAdmin("Super", "Admin", email, hash, Guid.NewGuid());
+        var user = IdentityUser.CreatePlatformOperator("Super", "Admin", email, hash, Guid.NewGuid());
 
         var accessRepo = new Mock<IAccessRepository>(MockBehavior.Strict);
         var tokenService = new Mock<IAccessTokenService>(MockBehavior.Strict);
@@ -26,8 +26,8 @@ public class PlatformLoginHandlerTests
         var passwordHasher = new Mock<IPasswordHasher>(MockBehavior.Strict);
         var refresh = new Mock<IRefreshTokenService>(MockBehavior.Strict);
 
-        deployment.SetupGet(d => d.IsSuperAdminPanelEnabled).Returns(true);
-        accessRepo.Setup(r => r.GetPlatformSuperAdminByEmailAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        deployment.SetupGet(d => d.IsPlatformPanelEnabled).Returns(true);
+        accessRepo.Setup(r => r.GetPlatformUserByEmailAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(user);
         passwordHasher.Setup(h => h.VerifyPassword(password, hash)).Returns(true);
         tokenService.Setup(t => t.GeneratePlatformSessionToken(user)).Returns("platform-jwt");
         refresh.Setup(r => r.CreateAsync(user.Id, Guid.Empty, null, RefreshUserType.Platform, It.IsAny<CancellationToken>()))
@@ -45,7 +45,7 @@ public class PlatformLoginHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value!.Token.Should().Be("platform-jwt");
         result.Value.UserType.Should().Be("Platform");
-        result.Value.PlatformRole.Should().Be("SuperAdmin");
+        result.Value.PlatformRole.Should().Be(nameof(ERP.Domain.Access.Enums.PlatformRole.PlatformOperator));
         result.Value.EnabledModules.Should().BeEquivalentTo(SubscriberSubscriptionCatalog.AllModuleKeys);
     }
 }

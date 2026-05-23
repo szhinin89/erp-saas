@@ -1,5 +1,6 @@
 using System.Reflection;
 using ERP.API.Attributes;
+using ERP.Application.Common;
 using ERP.Domain.Modules.Menu.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
@@ -29,7 +30,7 @@ public sealed class AppFeatureDiscoveryService
         string? ParentPermission,
         int SortOrder,
         bool IsVisibleInMenu,
-        bool IsSuperAdmin);
+        bool IsPlatformOnlyFeature);
 
     public async Task<int> SyncFeaturesAsync(CancellationToken ct = default)
     {
@@ -81,7 +82,7 @@ public sealed class AppFeatureDiscoveryService
                 r.ParentPermission,
                 r.SortOrder,
                 r.IsVisibleInMenu,
-                r.IsSuperAdmin))
+                r.IsPlatformOnlyFeature))
             .ToList();
 
         return await _repository.SyncDiscoveredFeaturesAsync(syncRows, ct);
@@ -93,7 +94,7 @@ public sealed class AppFeatureDiscoveryService
     private static bool ShouldExclude(string permission)
     {
         var p = (permission ?? string.Empty).Trim();
-        return p.StartsWith("SuperAdmin", StringComparison.OrdinalIgnoreCase);
+        return p.StartsWith(PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase);
     }
 
     private static DiscoveryRow ToRow(AppFeatureAttribute a, string? parentPermissionExplicit)
@@ -108,7 +109,7 @@ public sealed class AppFeatureDiscoveryService
             parent,
             a.SortOrder,
             a.IsVisibleInMenu,
-            a.IsSuperAdmin);
+            a.IsPlatformOnlyFeature);
     }
 
     private static bool IsHttpAction(MethodInfo m)

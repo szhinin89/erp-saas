@@ -13,6 +13,7 @@ import { useAccessStore } from '../../../store/accessStore';
 import { loginSchema, type LoginFormValues } from '../../../schemas/auth/loginSchema';
 import { useDeployment } from '../../../deployment/DeploymentContext';
 import { GLOBAL_SUBSCRIBER_ID } from '../../../constants/subscriberIds';
+import { isJwtPlatformOperatorRole } from '../../../constants/platformAuth';
 import { formatApiRequestError, readApiErrorMessage } from '../../lib/apiError';
 import './LoginPage.css';
 
@@ -36,7 +37,7 @@ function isDefinitiveTenantLoginError(err: unknown): boolean {
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { superAdminPanelEnabled } = useDeployment();
+  const { platformPanelEnabled } = useDeployment();
   const login              = useAuthStore((s) => s.login);
   const clearPermissions   = usePermissionsStore((s) => s.clearPermissions);
   const setBootstrap       = useAccessStore((s) => s.setBootstrap);
@@ -58,11 +59,11 @@ export function LoginPage() {
 
   /* ── Auth helpers ─────────────────────────────────────────── */
 
-  const enterSuperAdminDashboard = (auth: AuthResponse) => {
+  const enterPlatformDashboard = (auth: AuthResponse) => {
     clearBootstrap();
     clearPermissions();
     login(auth);
-    navigate('/superadmin/overview', { replace: true });
+    navigate('/platform/overview', { replace: true });
   };
 
   const enterSubscriberDashboard = async (auth: AuthResponse) => {
@@ -92,18 +93,18 @@ export function LoginPage() {
         const payload = await authService.loginUser(credentials);
 
         if (payload?.token) {
-          const isGlobalSuperAdmin =
-            payload.role === 'SuperAdmin' &&
+          const isGlobalPlatformOperator =
+            isJwtPlatformOperatorRole(payload.role) &&
             (!payload.subscriberId ||
               normalizeUuid(payload.subscriberId) === normalizeUuid(GLOBAL_SUBSCRIBER_ID) ||
               payload.userType === 'Platform');
 
-          if (superAdminPanelEnabled && isGlobalSuperAdmin) {
-            enterSuperAdminDashboard(payload);
+          if (platformPanelEnabled && isGlobalPlatformOperator) {
+            enterPlatformDashboard(payload);
             return;
           }
 
-          if (!payload.companyId && payload.role !== 'SuperAdmin') {
+          if (!payload.companyId && !isJwtPlatformOperatorRole(payload.role)) {
             clearBootstrap();
             clearPermissions();
             login(payload);
@@ -121,11 +122,11 @@ export function LoginPage() {
       }
 
       /* ── 2. Login platform (operadores globales) ── */
-      if (superAdminPanelEnabled) {
+      if (platformPanelEnabled) {
         try {
           const platformPayload = await authService.loginPlatform(credentials);
           if (platformPayload?.token) {
-            enterSuperAdminDashboard(platformPayload);
+            enterPlatformDashboard(platformPayload);
             return;
           }
         } catch (platformErr) {

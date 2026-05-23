@@ -28,7 +28,7 @@ public record SessionResponseDto(
     public Guid? CompanyId { get; init; }
 }
 
-public record SuperAdminSubscriberItemDto(
+public record PlatformSubscriberItemDto(
     Guid Id,
     string Name,
     string Slug,

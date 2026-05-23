@@ -7,17 +7,17 @@ function normalizeUuid(uuid: string): string {
   return uuid.replace(/-/g, '').toLowerCase();
 }
 
-/** Ruta inicial según modo: Platform → superadmin; Subscriber → cuenta SaaS. */
+/** Ruta inicial según modo: Platform → platform; Subscriber → cuenta SaaS. */
 export function HomeRedirect() {
   const user = useAuthStore((s) => s.user);
-  const { isSuperAdmin } = usePlatformGate();
+  const { isPlatformOperator } = usePlatformGate();
 
   const isGlobalPlatform =
-    isSuperAdmin &&
+    isPlatformOperator &&
     normalizeUuid(user?.subscriberId ?? '') === normalizeUuid(GLOBAL_SUBSCRIBER_ID);
 
   if (isGlobalPlatform) {
-    return <Navigate to="/superadmin/overview" replace />;
+    return <Navigate to="/platform/overview" replace />;
   }
 
   const hasSubscriber =

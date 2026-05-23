@@ -37,10 +37,10 @@ public class UpsertCompanyUserMembershipHandler : IRequestHandler<UpsertCompanyU
 
     public async Task<Result<object>> Handle(UpsertCompanyUserMembershipCommand command, CancellationToken ct)
     {
-        if (string.Equals(command.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(command.Role, PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase))
         {
             return Result<object>.Failure(
-                "Solo puede existir un SuperAdmin por servidor (tabla users). No se asigna por membresía IAM.");
+                "Solo puede existir un operador platform primario por servidor. No se asigna por membresía IAM.");
         }
 
         var tenant = await _subscriberRepository.GetByIdAsync(command.SubscriberId, ct);

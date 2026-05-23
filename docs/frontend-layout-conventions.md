@@ -1,4 +1,4 @@
-# Convenciones de layout frontend (ERP + SuperAdmin)
+# Convenciones de layout frontend (ERP + Platform)
 
 **Baseline arquitectónico (lectura obligatoria):** [`FRONTEND_ARCHITECTURE_BASELINE.md`](./FRONTEND_ARCHITECTURE_BASELINE.md)
 
@@ -15,13 +15,13 @@ Las páginas **no** montan navegación ni `LayoutFrame`. Solo renderizan el cont
 | Contexto | Shell | Frame | Plantilla | Contenido |
 |----------|--------|-------|-----------|-----------|
 | Tenant ERP | `AppLayout` | `LayoutFrame` (`variant="tenant"`) | `ErpPageTemplate` o `PageShell` | Módulo / tabs |
-| Plataforma | `SuperAdminLayout` | `LayoutFrame` (`variant="platform"`) | `SuperAdminCrudTemplate` | Sección SA |
+| Plataforma | `PlatformLayout` | `LayoutFrame` (`variant="platform"`) | `PlatformCrudTemplate` | Sección platform |
 | Auth | — | — | `zh-auth-*` | Login / selectores |
 | Reportes | `AppLayout` → Frame | — | `ReportPageTemplate` | KPIs + gráfico |
 
 ```
 Tenant:    AppLayout → LayoutFrame → ErpPageTemplate | PageShell → contenido
-Platform:  SuperAdminLayout → LayoutFrame → SuperAdminCrudTemplate → contenido
+Platform:  PlatformLayout → LayoutFrame → PlatformCrudTemplate → contenido
 ```
 
 ### LayoutFrame
@@ -36,11 +36,11 @@ Platform:  SuperAdminLayout → LayoutFrame → SuperAdminCrudTemplate → conte
 - Envuelve `PageShell` + opcional `.pg-page`
 - **Usar por defecto** en pantallas tenant nuevas o migradas (ventas, compras, inventario, config, etc.)
 
-### SuperAdminCrudTemplate
+### PlatformCrudTemplate
 
-- Archivo: `frontend/src/templates/SuperAdminCrudTemplate.tsx`
-- Envuelve `SuperAdminPageTemplate` con `hideHeader` en rutas bajo topbar
-- **Usar por defecto** en `/superadmin/*`
+- Archivo: `frontend/src/templates/PlatformCrudTemplate.tsx`
+- Envuelve `PlatformPageTemplate` con `hideHeader` en rutas bajo topbar
+- **Usar por defecto** en `/platform/*`
 
 ---
 
@@ -74,7 +74,7 @@ Ambos son **clase A** en `PAGE-AUDIT.md`. No duplicar título con `pg-header-row
 | Ubicación | Responsabilidad |
 |-----------|-----------------|
 | `sa-topbar-title` | Título de ruta (único H1 de shell) |
-| `SuperAdminCrudTemplate` | Cabecera de página oculta (`hideHeader` / `shellLayout`) |
+| `PlatformCrudTemplate` | Cabecera de página oculta (`hideHeader` / `shellLayout`) |
 | `ZHScreenHeading` en página | Subtítulo / KPI — **no** repetir texto del topbar |
 
 ### Aislamiento menu builder (platform)
@@ -186,7 +186,7 @@ En `src/pages/**` y `src/modules/**/pages/**` (salvo excepciones):
 ## Prevención de drift
 
 1. Pantalla tenant nueva → `ErpPageTemplate` + utilidades `pg-*`.
-2. Pantalla SuperAdmin nueva → `SuperAdminCrudTemplate`.
+2. Pantalla SuperAdmin nueva → `PlatformCrudTemplate`.
 3. Antes de PR UI: `rg 'style=\{\{'` en el módulo tocado; actualizar `PAGE-AUDIT.md` si cambia deuda.
 4. No introducir `pg-header-row` en páginas con `PageShell`/`ErpPageTemplate`.
 5. Revisar coherencia con `.cursor/rules/erp-unified-rules.mdc` (ZH Form, tabs, Copy UX).

@@ -3,14 +3,17 @@ import { useEffect, useRef, useState, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
-import { platformService } from '../modules/platform/api/platformService';
 import { LoadingState } from './PageShell';
 import { ZHAppSubscriberHeader } from './zh/ZHAppSubscriberHeader';
 import { CompanySwitcher } from './CompanySwitcher';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { GLOBAL_SUBSCRIBER_ID } from '../constants/subscriberIds';
+import { isJwtPlatformOperatorRole } from '../constants/platformAuth';
 import { fullLogout } from '../lib/session/fullLogout';
-import { SUPERADMIN_IMPERSONATION_NAME_KEY } from '../lib/session/sessionStorageKeys';
+import {
+  exitPlatformImpersonation,
+  hasPlatformImpersonationReturnPath,
+} from '../navigation/platformImpersonationNav';
 import { MainMenuList } from './AppLayoutMainMenu';
 import { PlatformImpersonationBanner } from './PlatformImpersonationBanner';
 import { LayoutFrame } from './layout/LayoutFrame';
@@ -22,12 +25,12 @@ export function AppLayout() {
   const { clearPermissions } = usePermissionsStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const [superadminReturningGlobal, setSuperadminReturningGlobal] = useState(false);
+  const [platformReturning, setPlatformReturning] = useState(false);
 
   const {
     user,
     t,
-    isGlobalSuperAdmin,
+    isGlobalPlatformOperator,
     sessionMenuResolved,
     mainMenuGroups,
     showPlanVerticalNav,
@@ -89,24 +92,44 @@ export function AppLayout() {
     navigate('/login');
   };
 
-  const returnToGlobal = async () => {
-    if (superadminReturningGlobal) return;
-    setSuperadminReturningGlobal(true);
+  const returnToSubscriberSheet = async () => {
+    if (platformReturning) return;
+    setPlatformReturning(true);
     try {
-      const auth = await platformService.switchSubscriber(GLOBAL_SUBSCRIBER_ID);
-      localStorage.removeItem(SUPERADMIN_IMPERSONATION_NAME_KEY);
-      login(auth);
-      clearPermissions();
-      navigate('/superadmin/overview');
+      await exitPlatformImpersonation({
+        destination: 'return-path',
+        navigate,
+        login,
+        clearPermissions,
+      });
     } catch {
-      navigate('/superadmin/overview');
+      navigate('/platform/subscribers');
     } finally {
-      setSuperadminReturningGlobal(false);
+      setPlatformReturning(false);
+    }
+  };
+
+  const returnToGlobal = async () => {
+    if (platformReturning) return;
+    setPlatformReturning(true);
+    try {
+      await exitPlatformImpersonation({
+        destination: 'global-overview',
+        navigate,
+        login,
+        clearPermissions,
+      });
+    } catch {
+      navigate('/platform/overview');
+    } finally {
+      setPlatformReturning(false);
     }
   };
 
   const showImpersonationBanner =
-    user?.role === 'SuperAdmin' && user.subscriberId && user.subscriberId !== GLOBAL_SUBSCRIBER_ID;
+    isJwtPlatformOperatorRole(user?.role) &&
+    user?.subscriberId &&
+    user.subscriberId !== GLOBAL_SUBSCRIBER_ID;
 
   return (
     <div className="layout app-layout">
@@ -118,8 +141,10 @@ export function AppLayout() {
             <PlatformImpersonationBanner
               subscriberId={user.subscriberId}
               t={t}
+              hasReturnPath={hasPlatformImpersonationReturnPath()}
+              onReturnToSubscriberSheet={returnToSubscriberSheet}
               onReturnToGlobal={returnToGlobal}
-              returningGlobal={superadminReturningGlobal}
+              returning={platformReturning}
             />
           ) : null
         }
@@ -127,10 +152,10 @@ export function AppLayout() {
           <div className="app-subscriberHeaderWrap">
             <ZHAppSubscriberHeader
               onLogout={handleLogout}
-              leftExtra={!isGlobalSuperAdmin ? <CompanySwitcher /> : null}
+              leftExtra={!isGlobalPlatformOperator ? <CompanySwitcher /> : null}
               rightExtra={<LanguageSwitcher />}
               bottomLeft={
-                !isGlobalSuperAdmin && user && !sessionMenuResolved ? (
+                !isGlobalPlatformOperator && user && !sessionMenuResolved ? (
                   <div className="app-mainmenu app-mainmenu--loading" role="status" aria-live="polite" aria-busy="true">
                     <LoadingState />
                   </div>
@@ -154,7 +179,7 @@ export function AppLayout() {
                             isFavorite={isFavorite}
                             toggleFavorite={toggleFavorite}
                             t={t}
-                            showFavoriteStars={!isGlobalSuperAdmin}
+                            showFavoriteStars={!isGlobalPlatformOperator}
                           />
                         </div>
                       ))}
@@ -213,7 +238,7 @@ export function AppLayout() {
                 isFavorite={isFavorite}
                 toggleFavorite={toggleFavorite}
                 t={t}
-                showFavoriteStars={!isGlobalSuperAdmin}
+                showFavoriteStars={!isGlobalPlatformOperator}
               />
             </div>,
             document.body,

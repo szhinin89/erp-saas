@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { JWT_PLATFORM_OPERATOR_ROLE } from '../../constants/platformAuth';
 import { normalizeAuthResponse } from './normalizeAuthResponse';
 
 describe('normalizeAuthResponse', () => {
@@ -7,7 +8,7 @@ describe('normalizeAuthResponse', () => {
       UserId: 'u1',
       FullName: 'Admin',
       Email: 'a@x.com',
-      Role: 'SuperAdmin',
+      Role: JWT_PLATFORM_OPERATOR_ROLE,
       SubscriberId: 's1',
       Token: 'jwt-here',
       PlanCode: 'starter',

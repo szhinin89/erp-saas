@@ -94,10 +94,10 @@ public class SubscriberUpsertCompanyUserMembershipHandler : IRequestHandler<Subs
         if (subscriberId == Guid.Empty)
             return Result<object>.Failure("Subscriber inválido.");
 
-        if (string.Equals(cmd.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(cmd.Role, PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase))
         {
             return Result<object>.Failure(
-                "Solo puede existir un SuperAdmin por servidor (tabla users). No se asigna por membresía IAM.");
+                "Solo puede existir un operador platform primario por servidor. No se asigna por membresía IAM.");
         }
 
         var email = cmd.Email.Trim().ToLowerInvariant();

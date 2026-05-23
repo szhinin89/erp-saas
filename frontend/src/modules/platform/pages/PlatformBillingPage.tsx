@@ -94,7 +94,7 @@ export function PlatformBillingPage() {
             </div>
           </div>
 
-          <button type="button" className="zh-btn zh-btn--ghost zh-btn--md" onClick={() => navigate('/superadmin/subscribers')}>
+          <button type="button" className="zh-btn zh-btn--ghost zh-btn--md" onClick={() => navigate('/platform/subscribers')}>
             Ir a suscriptores
           </button>
         </>

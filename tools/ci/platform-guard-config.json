@@ -6,19 +6,25 @@
     { "id": "superadmin-controller", "pattern": "SuperAdminController", "hint": "Remove legacy SuperAdminController" },
     { "id": "superadmin-service", "pattern": "SuperAdminService", "hint": "Use platform services under /api/platform" },
     { "id": "use-superadmin-hook", "pattern": "useSuperAdmin", "hint": "Use usePlatformGate / platform hooks" },
+    { "id": "is-superadmin-identifier", "pattern": "isSuperAdmin", "hint": "Use isPlatformOperator / isJwtPlatformOperatorRole", "scanRoots": ["frontend"] },
     { "id": "legacy-platform", "pattern": "LEGACY_PLATFORM", "hint": "Remove LEGACY_PLATFORM_* constants" },
     { "id": "legacy-superadmin", "pattern": "LEGACY_SUPERADMIN", "hint": "Remove LEGACY_SUPERADMIN_* constants" },
     { "id": "superadmin-service-camel", "pattern": "superAdminService", "hint": "Use platformService from modules/platform/api" },
     { "id": "iam-superadmin-api", "pattern": "/api/admin/iam/superadmin", "hint": "Use /api/platform/subscribers" },
     { "id": "company-service", "pattern": "companyService", "hint": "Use subscriberService (platform) or tenantSubscriberService (runtime)", "scanRoots": ["frontend"] },
     { "id": "company-service-get-subscribers", "pattern": "companyService.getSubscribers", "hint": "Use platformService.getSubscribers", "scanRoots": ["frontend"] },
-    { "id": "subscribers-controller-frontend", "pattern": "SubscribersController", "hint": "Use platformService / subscriberService — no direct controller refs in frontend", "scanRoots": ["frontend"] }
+    { "id": "subscribers-controller-frontend", "pattern": "SubscribersController", "hint": "Use platformService — no direct controller refs in frontend", "scanRoots": ["frontend"] },
+    { "id": "subscriber-service-wrapper", "pattern": "export const subscriberService", "hint": "Use platformService only for Platform Control Plane", "scanRoots": ["frontend"] },
+    { "id": "subscriber-service-import", "pattern": "import { subscriberService", "hint": "Use platformService only for Platform Control Plane", "scanRoots": ["frontend"] },
+    { "id": "menu-service-wrapper", "pattern": "menuService", "hint": "Use platformService only for Platform Control Plane", "scanRoots": ["frontend"] }
   ],
   "forbiddenImportPaths": [
     { "id": "legacy-module-superadmin", "pattern": "modules/superadmin", "hint": "Use modules/platform" },
     { "id": "legacy-components-superadmin", "pattern": "components/superadmin", "hint": "Use components/platform" },
     { "id": "legacy-pages-superadmin", "pattern": "pages/SuperAdmin", "hint": "Use pages/Platform" },
-    { "id": "legacy-company-service", "pattern": "companies/api/companyService", "hint": "Use modules/platform/api/subscriberService" }
+    { "id": "legacy-company-service", "pattern": "companies/api/companyService", "hint": "Use modules/platform/api/platformService" },
+    { "id": "legacy-subscriber-service", "pattern": "platform/api/subscriberService", "hint": "Use modules/platform/api/platformService" },
+    { "id": "legacy-menu-service", "pattern": "platform/api/menuService", "hint": "Use modules/platform/api/platformService" }
   ],
   "forbiddenFrontendImportTokens": [
     { "id": "superadmin-service-import", "pattern": "superadminService", "hint": "Use platformService" },
@@ -61,6 +67,7 @@
     "/api/subscribers/"
   ],
   "allowedUiRoutePrefixes": [
+    "/platform",
     "/superadmin",
     "/saas",
     "/login",

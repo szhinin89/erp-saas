@@ -9,7 +9,7 @@ import { adminNavigationToSessionMenu } from '../../modules/platform/adminNaviga
 import type { MenuPreviewLayout } from '../menu-builder/MenuPreview';
 import type { EditorMainTab } from './platformMenuBuilderUtils';
 
-export type SuperAdminMenuBuilderSharedEffectsParams = {
+export type PlatformMenuBuilderSharedEffectsParams = {
   crmWorkspace: boolean;
   planId: string;
   plans: CommercialPlanAdmin[];
@@ -26,7 +26,7 @@ export type SuperAdminMenuBuilderSharedEffectsParams = {
   planSwitchClock: React.MutableRefObject<number>;
 };
 
-export function usePlatformMenuBuilderSharedEffects(params: SuperAdminMenuBuilderSharedEffectsParams): void {
+export function usePlatformMenuBuilderSharedEffects(params: PlatformMenuBuilderSharedEffectsParams): void {
   const {
     crmWorkspace,
     planId,

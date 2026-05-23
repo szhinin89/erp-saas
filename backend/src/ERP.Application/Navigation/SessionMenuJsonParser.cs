@@ -47,7 +47,7 @@ public static class SessionMenuJsonParser
                     g.SortOrder,
                     string.IsNullOrWhiteSpace(g.ModuleKey) ? null : g.ModuleKey.Trim(),
                     g.Roles is { Count: > 0 } ? g.Roles : null,
-                    g.RequireSuperAdminPanel,
+                    g.RequirePlatformPanel,
                     items,
                     NormalizeMenuBarLayout(g.MenuBarLayout)));
             }
@@ -212,7 +212,7 @@ public static class SessionMenuJsonParser
         public int SortOrder { get; set; }
         public string? ModuleKey { get; set; }
         public List<string>? Roles { get; set; }
-        public bool RequireSuperAdminPanel { get; set; }
+        public bool RequirePlatformPanel { get; set; }
         public List<MenuItemJson>? Items { get; set; }
         public string? MenuBarLayout { get; set; }
     }

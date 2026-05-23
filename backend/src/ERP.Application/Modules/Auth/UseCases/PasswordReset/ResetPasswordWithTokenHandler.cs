@@ -47,7 +47,9 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
         if (stored is null || !stored.IsValid)
             return Result<bool>.Failure(InvalidTokenMessage);
 
-        var isPlatformKind = stored.UserKind is PasswordResetToken.KindPlatform or PasswordResetToken.KindSuperAdmin;
+        var isPlatformKind = stored.UserKind is PasswordResetToken.KindPlatform
+            or PasswordResetToken.KindPlatformOperator
+            or PasswordResetToken.KindLegacyPlatformOperator;
         if (!isPlatformKind)
         {
             if (!stored.SubscriberId.HasValue)
@@ -62,7 +64,7 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
         if (identity is null)
             return Result<bool>.Failure(InvalidTokenMessage);
 
-        if (isPlatformKind && !identity.IsPlatformSuperAdmin)
+        if (isPlatformKind && !identity.IsPrimaryPlatformOperator)
             return Result<bool>.Failure(InvalidTokenMessage);
 
         if (stored.UserKind == PasswordResetToken.KindLegacy)

@@ -1,3 +1,4 @@
+using ERP.Application.Common;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -20,16 +21,16 @@ public class AccessTokenService : IAccessTokenService
 
     public string GenerateBootstrapToken(IdentityUser user, IReadOnlyList<Guid> subscriberIds)
     {
-        if (user.IsPlatformSuperAdmin)
+        if (user.IsPrimaryPlatformOperator)
         {
             return GenerateBootstrapToken(
                 userId: user.Id,
                 email: user.Email.Value,
                 fullName: user.FullName,
-                role: "SuperAdmin",
+                role: PlatformAuthConstants.JwtPlatformOperatorRole,
                 subscriberIds: subscriberIds,
                 userType: IdentityUserType.Platform,
-                platformRole: PlatformRole.SuperAdmin);
+                platformRole: PlatformRole.PlatformOperator);
         }
 
         return GenerateBootstrapToken(
@@ -75,11 +76,11 @@ public class AccessTokenService : IAccessTokenService
 
     private static string MapPlatformRoleToJwtRole(PlatformRole role) => role switch
     {
-        PlatformRole.SuperAdmin => "SuperAdmin",
+        PlatformRole.PlatformOperator => PlatformAuthConstants.JwtPlatformOperatorRole,
         PlatformRole.Support => "Support",
         PlatformRole.BillingAdmin => "BillingAdmin",
         PlatformRole.Auditor => "Auditor",
-        _ => "SuperAdmin",
+        _ => PlatformAuthConstants.JwtPlatformOperatorRole,
     };
 
     public string GenerateBootstrapToken(

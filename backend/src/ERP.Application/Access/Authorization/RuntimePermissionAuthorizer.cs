@@ -38,7 +38,7 @@ public sealed class RuntimePermissionAuthorizer : IRuntimePermissionAuthorizer
 
         var subscriberId = _currentSubscriber.SubscriberId;
 
-        if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase) && subscriberId == Guid.Empty)
+        if (string.Equals(role, PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase) && subscriberId == Guid.Empty)
             return true;
 
         if (await _subscriberRepository.GetByIdAsync(subscriberId, ct) is null)
@@ -46,7 +46,7 @@ public sealed class RuntimePermissionAuthorizer : IRuntimePermissionAuthorizer
 
         var planAllows = await _entitlements.AllowsPermissionAsync(subscriberId, permissionKey, ct);
 
-        if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase)
+        if (PlatformAuthConstants.IsJwtPlatformOperatorRole(role)
             || string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
             return planAllows;
 

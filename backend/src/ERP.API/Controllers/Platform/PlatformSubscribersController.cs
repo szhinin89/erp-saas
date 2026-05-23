@@ -1,7 +1,7 @@
 using ERP.API.Extensions;
 using ERP.API.Contracts;
 using ERP.Application.Access.DTOs;
-using ERP.Application.Access.UseCases.SuperAdminSubscribers;
+using ERP.Application.Access.UseCases.PlatformSubscribers;
 using ERP.Application.Navigation;
 using ERP.Application.Platform.Subscribers.UseCases;
 using ERP.Application.Subscribers.DTOs;
@@ -23,7 +23,7 @@ namespace ERP.API.Controllers.Platform;
 /// </summary>
 [ApiController]
 [Route("api/platform/subscribers")]
-[Authorize(Roles = "SuperAdmin")]
+[Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
 [Tags("Platform")]
 public sealed class PlatformSubscribersController : ControllerBase
 {
@@ -55,8 +55,8 @@ public sealed class PlatformSubscribersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> List(CancellationToken ct)
     {
-        var result = await _mediator.Send(new GetSuperAdminSubscribersQuery(), ct);
-        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<SuperAdminSubscriberItemDto>());
+        var result = await _mediator.Send(new GetPlatformSubscribersQuery(), ct);
+        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<PlatformSubscriberItemDto>());
     }
 
     /// <summary>Crea suscriptor + billing + empresa default + admin inicial (orquestación transaccional).</summary>
@@ -64,7 +64,7 @@ public sealed class PlatformSubscribersController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<SessionResponseDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Create([FromBody] SuperAdminCreateSubscriberWithAdminCommand command, CancellationToken ct)
+    public async Task<IActionResult> Create([FromBody] PlatformCreateSubscriberWithAdminCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");

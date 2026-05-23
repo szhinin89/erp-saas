@@ -14,14 +14,17 @@ export const PLATFORM_API = {
   settings: '/api/platform/settings',
 } as const;
 
-/** Canonical Platform Control Plane UI routes (shell at `/superadmin/*`). */
+/** Canonical Platform Control Plane UI routes (shell at `/platform/*`). */
 export const PLATFORM_UI = {
-  overview: '/superadmin/overview',
-  subscribers: '/superadmin/subscribers',
-  subscriberDetail: (id: string) => `/superadmin/subscribers/${encodeURIComponent(id.trim())}`,
-  plans: '/superadmin/plans',
-  users: '/superadmin/users',
-  billing: '/superadmin/billing',
-  observability: '/superadmin/observability',
-  audit: '/superadmin/audit',
+  overview: '/platform/overview',
+  subscribers: '/platform/subscribers',
+  subscriberDetail: (id: string) => `/platform/subscribers/${encodeURIComponent(id.trim())}`,
+  plans: '/platform/plans',
+  users: '/platform/users',
+  billing: '/platform/billing',
+  observability: '/platform/observability',
+  audit: '/platform/audit',
 } as const;
+
+/** Legacy bookmark prefix (redirect only — do not link in UI). */
+export { PLATFORM_UI_LEGACY_PATH_PREFIX as PLATFORM_UI_LEGACY_PREFIX } from '../../../constants/platformAuth';

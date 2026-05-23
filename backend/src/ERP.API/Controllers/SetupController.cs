@@ -3,7 +3,7 @@ using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
 using ERP.Application.Auth.DTOs;
-using ERP.Application.Auth.UseCases.ClaimInitialSuperAdmin;
+using ERP.Application.Auth.UseCases.ClaimInitialPlatformOperator;
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -41,8 +41,8 @@ public sealed class SetupController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> ClaimInitialSuperAdmin(
-        [FromBody] ClaimInitialSuperAdminCommand command,
+    public async Task<IActionResult> ClaimInitialPlatformOperator(
+        [FromBody] ClaimInitialPlatformOperatorCommand command,
         CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
@@ -56,8 +56,8 @@ public sealed class SetupController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> ClaimInitialSuperAdminAlias(
-        [FromBody] ClaimInitialSuperAdminCommand command,
+    public async Task<IActionResult> ClaimInitialPlatformOperatorAlias(
+        [FromBody] ClaimInitialPlatformOperatorCommand command,
         CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
@@ -79,7 +79,7 @@ public sealed class SetupController : ControllerBase
         return this.ApiOk(new
         {
             result.Message,
-            result.RemovedSuperAdmins,
+            result.RemovedPlatformOperators,
             result.SetupToken,
             result.ExpiresAtUtc
         });

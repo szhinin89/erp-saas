@@ -58,8 +58,8 @@ export function NavigationMenuEditorTreePanel({
 
   return (
     <div className="nm-splitMain">
-      <section className="nm-barEditor" aria-label={t('superadmin.navigationMenu.groups')}>
-        <h2 className="nm-sectionTitle">{t('superadmin.navigationMenu.groups')}</h2>
+      <section className="nm-barEditor" aria-label={t('platform.navigationMenu.groups')}>
+        <h2 className="nm-sectionTitle">{t('platform.navigationMenu.groups')}</h2>
         <NavigationBarMenuEditor
           groups={menu.groups}
           disabled={saving || creatingItem}
@@ -89,7 +89,7 @@ export function NavigationMenuEditorTreePanel({
           </span>
           <ZHInlineRowRight>
             <ZHBtn type="button" variant="secondary" disabled={saving || creatingItem} onClick={openEditNavItem}>
-              {t('superadmin.navigationMenu.editItem')}
+              {t('platform.navigationMenu.editItem')}
             </ZHBtn>
             <ZHBtn
               type="button"
@@ -97,7 +97,7 @@ export function NavigationMenuEditorTreePanel({
               disabled={saving || creatingItem}
               onClick={() => setDeleteOpen(true)}
             >
-              {t('superadmin.navigationMenu.deleteItem')}
+              {t('platform.navigationMenu.deleteItem')}
             </ZHBtn>
           </ZHInlineRowRight>
         </div>

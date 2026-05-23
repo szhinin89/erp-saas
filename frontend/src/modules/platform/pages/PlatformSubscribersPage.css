@@ -59,6 +59,19 @@
   justify-content: flex-end;
 }
 
+.sa-sub-row {
+  cursor: pointer;
+}
+
+.sa-sub-row:hover {
+  background: color-mix(in srgb, var(--color-primary, #1e3a5f) 6%, transparent);
+}
+
+.sa-sub-row:focus-visible {
+  outline: 2px solid var(--color-primary, #1e3a5f);
+  outline-offset: -2px;
+}
+
 .sa-subscribers-footer {
   font-size: var(--text-sm, 0.875rem);
   padding-top: 4px;

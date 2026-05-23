@@ -32,7 +32,7 @@ public sealed class ListCompaniesHandler : IRequestHandler<ListCompaniesQuery, R
             return Result<IReadOnlyList<CompanyListItemDto>>.Failure(subResult.Error!);
 
         var subscriberId = subResult.Value!;
-        if (string.Equals(_currentUser.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(_currentUser.Role, PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase))
         {
             var adminRows = await _companies.GetActiveBySubscriberIdAsync(subscriberId, ct);
             var adminItems = adminRows
@@ -47,7 +47,7 @@ public sealed class ListCompaniesHandler : IRequestHandler<ListCompaniesQuery, R
                     c.Timezone,
                     c.CurrencyCode,
                     c.IsActive,
-                    "SuperAdmin"))
+                    PlatformAuthConstants.JwtPlatformOperatorRole))
                 .ToList();
 
             return Result<IReadOnlyList<CompanyListItemDto>>.Success(adminItems);

@@ -1,6 +1,9 @@
+import { readPlatformPanelEnabled } from '../constants/platformAuth';
+
 /** Respuesta de GET /api/public/deployment (sin Bearer). */
 export type DeploymentInfo = {
-  superAdminPanelEnabled: boolean;
+  /** Panel Platform Control Plane habilitado en esta instancia. */
+  platformPanelEnabled: boolean;
   maxActiveSubscribers?: number | null;
   maxIdentityUsers?: number | null;
   dedicatedSingleClientInstance?: boolean;
@@ -15,6 +18,10 @@ function resolveApiBase(): string {
   return v.length > 0 ? v : '';
 }
 
+function readPlatformPanelEnabledFromResponse(obj: Record<string, unknown> | undefined): boolean {
+  return readPlatformPanelEnabled(obj);
+}
+
 /**
  * Obtiene la configuración pública del despliegue (cacheada en memoria por pestaña).
  */
@@ -27,7 +34,7 @@ export async function fetchDeploymentConfig(): Promise<DeploymentInfo> {
       const res = await fetch(url, { credentials: 'omit' });
       if (!res.ok) {
         cached = {
-          superAdminPanelEnabled: true,
+          platformPanelEnabled: true,
           maxActiveSubscribers: null,
           maxIdentityUsers: null,
           dedicatedSingleClientInstance: false,
@@ -47,17 +54,13 @@ export async function fetchDeploymentConfig(): Promise<DeploymentInfo> {
         return typeof v === 'number' && Number.isFinite(v) ? v : null;
       };
 
-      const enabled =
-        obj && typeof obj === 'object' && typeof obj.superAdminPanelEnabled === 'boolean'
-          ? obj.superAdminPanelEnabled
-          : true;
       const dedicated =
         obj && typeof obj === 'object' && typeof obj.dedicatedSingleClientInstance === 'boolean'
           ? obj.dedicatedSingleClientInstance
           : false;
 
       cached = {
-        superAdminPanelEnabled: enabled,
+        platformPanelEnabled: readPlatformPanelEnabledFromResponse(obj),
         maxActiveSubscribers: readNum('maxActiveSubscribers'),
         maxIdentityUsers: readNum('maxIdentityUsers'),
         dedicatedSingleClientInstance: dedicated,

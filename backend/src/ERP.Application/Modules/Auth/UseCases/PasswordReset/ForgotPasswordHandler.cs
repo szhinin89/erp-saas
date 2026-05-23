@@ -62,9 +62,9 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
         if (!identity.IsActive)
             return Result<bool>.Failure(NoAccountMessage);
 
-        if (identity.IsPlatformSuperAdmin)
+        if (identity.IsPrimaryPlatformOperator)
         {
-            if (!_deployment.IsSuperAdminPanelEnabled)
+            if (!_deployment.IsPlatformPanelEnabled)
                 return Result<bool>.Failure(NoAccountMessage);
 
             await IssueTokenAndSendAsync(

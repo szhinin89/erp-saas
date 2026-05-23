@@ -15,12 +15,10 @@ type Props = Pick<
   | 'subscribers'
   | 'q'
   | 'setQ'
-  | 'switching'
   | 'filtered'
   | 'planLabelForSubscriber'
   | 'openCreateSubscriber'
   | 'openSubscriptionModal'
-  | 'handleSwitch'
 >;
 
 export function PlatformPanelCompaniesTab({
@@ -31,30 +29,28 @@ export function PlatformPanelCompaniesTab({
   subscribers,
   q,
   setQ,
-  switching,
   filtered,
   planLabelForSubscriber,
   openCreateSubscriber,
   openSubscriptionModal,
-  handleSwitch,
 }: Props) {
   return (
     <ZHCard
-      title={t('superadmin.subscriberPicker')}
+      title={t('platform.subscriberPicker')}
       actions={
-        <ZHBtn variant="primary" size="sm" onClick={openCreateSubscriber} disabled={loading || switching !== null}>
-          {t('superadmin.createSubscriber')}
+        <ZHBtn variant="primary" size="sm" onClick={openCreateSubscriber} disabled={loading}>
+          {t('platform.createSubscriber')}
         </ZHBtn>
       }
     >
       <div className="sa-search-row">
-        <ZHField label={t('superadmin.searchPlaceholder')}>
+        <ZHField label={t('platform.searchPlaceholder')}>
           <input
             className="zh-input"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={t('superadmin.searchPlaceholder')}
-            disabled={loading || switching !== null}
+            placeholder={t('platform.searchPlaceholder')}
+            disabled={loading}
           />
         </ZHField>
       </div>
@@ -62,7 +58,7 @@ export function PlatformPanelCompaniesTab({
       {loading ? (
         <LoadingState />
       ) : error && subscribers.length === 0 ? (
-        <EmptyState message={t('superadmin.sectionLoadHint')} />
+        <EmptyState message={t('platform.sectionLoadHint')} />
       ) : filtered.length === 0 ? (
         <EmptyState message={t('common.noData')} />
       ) : (
@@ -87,13 +83,13 @@ export function PlatformPanelCompaniesTab({
               </div>
               <div className="sa-subscriberPlanModules">
                 <div className="sa-subscriberPlanRow subtle">
-                  <span className="sa-subscriberPlanKey">{t('superadmin.subscriberRow.plan')}:</span>{' '}
+                  <span className="sa-subscriberPlanKey">{t('platform.subscriberRow.plan')}:</span>{' '}
                   <strong className="mono">
-                    {planLabelForSubscriber(subscriber.planCode) || t('superadmin.subscriberRow.planUnset')}
+                    {planLabelForSubscriber(subscriber.planCode) || t('platform.subscriberRow.planUnset')}
                   </strong>
                 </div>
                 <div className="sa-subscriberModulesRow">
-                  <span className="sa-subscriberModulesKey subtle">{t('superadmin.subscriberRow.modules')}:</span>{' '}
+                  <span className="sa-subscriberModulesKey subtle">{t('platform.subscriberRow.modules')}:</span>{' '}
                   <CompanyModuleChips
                     company={{
                       enabledModules: subscriber.enabledModules,
@@ -107,27 +103,16 @@ export function PlatformPanelCompaniesTab({
                   <ZHBtn
                     variant="secondary"
                     size="sm"
-                    disabled={switching !== null}
                     onClick={() => openSubscriptionModal(subscriber)}
                   >
-                    {t('superadmin.subscriberRow.changeSubscription')}
-                  </ZHBtn>
-                  <ZHBtn
-                    variant="secondary"
-                    size="sm"
-                    disabled={switching !== null}
-                    onClick={() => goToSubscriberDetail(navigate, subscriber.id)}
-                  >
-                    {t('superadmin.subscriberRow.companyData')}
+                    {t('platform.subscriberRow.changeSubscription')}
                   </ZHBtn>
                   <ZHBtn
                     variant="primary"
                     size="sm"
-                    onClick={() => void handleSwitch(subscriber)}
-                    disabled={switching !== null || !subscriber.isActive}
-                    title={!subscriber.isActive ? t('superadmin.subscriberRow.enterDisabledInactive') : undefined}
+                    onClick={() => goToSubscriberDetail(navigate, subscriber.id)}
                   >
-                    {switching === subscriber.id ? t('superadmin.switching') : t('superadmin.enter')}
+                    {t('platform.subscriberRow.openSheet')}
                   </ZHBtn>
                 </ZHInlineRowRight>
               </div>

@@ -51,7 +51,7 @@
 | `PLATFORM_UI.*` | Rutas `/superadmin/*` | **BAJO** | URL shell estable (no API) |
 | i18n `superadmin.*` | Labels UI | **BAJO** | Pendiente rename a `platform.*` |
 | `usePlatformGate().isSuperAdmin` | JWT claim | **BAJO** | Rol backend `SuperAdmin` |
-| `requireSuperAdminPanel` | DTO nav | **BAJO** | Flag deployment |
+| `requirePlatformPanel` | DTO nav | **BAJO** | Flag deployment |
 | `superAdminPanelEnabled` | `App.tsx`, deployment | **BAJO** | Feature flag name |
 | `localStorage` `superadmin-impersonation-*` | `platformPanelUtils.ts` | **BAJO** | Compat sesión |
 | Copy “SuperAdmin” en UI | `PlatformUsersPage`, overview | **BAJO** | Texto producto |
@@ -61,9 +61,9 @@
 | Antes | Ahora |
 |-------|-------|
 | `modules/superadmin/` | `modules/platform/` |
-| `superAdminService.ts` | `platformService.ts` |
-| `SuperAdminLayout` | `PlatformLayout` |
-| `useSuperAdminGate` | `usePlatformGate` |
+| `platformService.ts` | `platformService.ts` |
+| `PlatformLayout` | `PlatformLayout` |
+| `usePlatformGateGate` | `usePlatformGate` |
 
 ## Duplicación de servicios
 

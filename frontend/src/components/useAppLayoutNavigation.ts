@@ -4,25 +4,26 @@ import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n/i18n';
 import { usePermissionsUi } from '../access/usePermissionsUi';
 import { shouldUseNavAdminBypass, hasUnrestrictedPermissionSnapshot } from '../access/permissionUi';
+import { GLOBAL_SUBSCRIBER_ID } from '../constants/subscriberIds';
+import { isJwtPlatformOperatorRole } from '../constants/platformAuth';
 import { normalizeModuleKey } from '../constants/subscriptionModules';
 import { syncSessionEntitlements } from '../lib/syncSessionEntitlements';
 import { accessService } from '../modules/auth/api/accessService';
 import { useDeployment } from '../deployment/DeploymentContext';
 import {
-  buildGlobalSuperAdminNavGroups,
+  buildGlobalPlatformNavGroups,
   buildNavGroups,
   ensureSalesNextToInventory,
   flattenAccessIntoSecurity,
   flattenSaaSIntoHome,
   isPlanBuilderSessionMenu,
   mapSessionMenuToNavGroups,
-  mergeSuperAdminNavExtrasIntoHome,
+  mergePlatformNavExtrasIntoHome,
   ensureSubscriberHomeOverview,
   expandPlanCustomRootsToBarGroups,
   sortNavGroupsForMainBar,
   type NavItem,
 } from '../nav/navConfig';
-import { GLOBAL_SUBSCRIBER_ID } from '../constants/subscriberIds';
 import type { SessionMenuGroupDto } from '../types/access';
 import { readPlanCustomMenuBarLayout } from './menu-builder/menuBuilderTypes';
 import { navSubtreeMatchesPath } from './AppLayoutMainMenu';
@@ -36,7 +37,7 @@ export type MainMenuGroup = {
 };
 
 export function useAppLayoutNavigation() {
-  const { superAdminPanelEnabled } = useDeployment();
+  const { platformPanelEnabled } = useDeployment();
   const { user } = useAuthStore();
   const { permissions, enabledModules, hasHydrated: permsHydrated, canShow } = usePermissionsUi();
   const location = useLocation();
@@ -44,8 +45,8 @@ export function useAppLayoutNavigation() {
   const [sessionMenuDto, setSessionMenuDto] = useState<SessionMenuGroupDto[] | undefined>(undefined);
   const [sessionMenuResolved, setSessionMenuResolved] = useState(false);
 
-  const isGlobalSuperAdmin = useMemo(
-    () => (user?.role ?? '') === 'SuperAdmin' && (user?.subscriberId ?? '') === GLOBAL_SUBSCRIBER_ID,
+  const isGlobalPlatformOperator = useMemo(
+    () => isJwtPlatformOperatorRole(user?.role) && (user?.subscriberId ?? '') === GLOBAL_SUBSCRIBER_ID,
     [user?.role, user?.subscriberId],
   );
 
@@ -57,7 +58,7 @@ export function useAppLayoutNavigation() {
       });
       return;
     }
-    if (isGlobalSuperAdmin) {
+    if (isGlobalPlatformOperator) {
       startTransition(() => {
         setSessionMenuDto(undefined);
         setSessionMenuResolved(true);
@@ -83,7 +84,7 @@ export function useAppLayoutNavigation() {
     return () => {
       cancelled = true;
     };
-  }, [user, isGlobalSuperAdmin, user?.subscriberId]);
+  }, [user, isGlobalPlatformOperator, user?.subscriberId]);
 
   const restrictedPlanMenu = useMemo(
     () => isPlanBuilderSessionMenu(sessionMenuDto),
@@ -96,10 +97,10 @@ export function useAppLayoutNavigation() {
   }, [sessionMenuDto]);
 
   const groups = useMemo(() => {
-    const opts = { superAdminPanelEnabled };
-    if (isGlobalSuperAdmin) {
-      if (!superAdminPanelEnabled) return [];
-      return buildGlobalSuperAdminNavGroups(t, opts);
+    const opts = { platformPanelEnabled };
+    if (isGlobalPlatformOperator) {
+      if (!platformPanelEnabled) return [];
+      return buildGlobalPlatformNavGroups(t, opts);
     }
     if (!sessionMenuResolved) {
       return [];
@@ -109,7 +110,7 @@ export function useAppLayoutNavigation() {
         ? mapSessionMenuToNavGroups(sessionMenuDto, t, opts)
         : buildNavGroups(t, opts);
     const raw = ensureSubscriberHomeOverview(
-      mergeSuperAdminNavExtrasIntoHome(fromApi, t, opts),
+      mergePlatformNavExtrasIntoHome(fromApi, t, opts),
       t,
     );
     if (restrictedPlanMenu) {
@@ -126,8 +127,8 @@ export function useAppLayoutNavigation() {
     sessionMenuDto,
     sessionMenuResolved,
     t,
-    superAdminPanelEnabled,
-    isGlobalSuperAdmin,
+    platformPanelEnabled,
+    isGlobalPlatformOperator,
     restrictedPlanMenu,
     planMenuBarLayout,
   ]);
@@ -135,9 +136,10 @@ export function useAppLayoutNavigation() {
   useEffect(() => {
     let cancelled = false;
     const subscriberId = user?.subscriberId ?? '';
-    const globalSa = (user?.role ?? '') === 'SuperAdmin' && subscriberId === GLOBAL_SUBSCRIBER_ID;
+    const globalPlatformOperator =
+      isJwtPlatformOperatorRole(user?.role) && subscriberId === GLOBAL_SUBSCRIBER_ID;
 
-    if (!user || globalSa) return;
+    if (!user || globalPlatformOperator) return;
     if (permissions.length > 0 && enabledModules.length > 0) return;
 
     void Promise.resolve().then(async () => {
@@ -190,7 +192,7 @@ export function useAppLayoutNavigation() {
   const visibleGroups = useMemo(() => {
     const byRole = groups.filter((g) => !g.roles || (user?.role ? g.roles.includes(user.role) : false));
 
-    if (isGlobalSuperAdmin) {
+    if (isGlobalPlatformOperator) {
       return byRole.filter((g) => g.items.length > 0);
     }
 
@@ -239,7 +241,7 @@ export function useAppLayoutNavigation() {
     return bySubscription
       .map((g) => ({ ...g, items: filterNavItemsDeep(g.items) }))
       .filter((g) => g.items.length > 0);
-  }, [groups, user, isGlobalSuperAdmin, enabledModules, permissions, permsHydrated, canShow]);
+  }, [groups, user, isGlobalPlatformOperator, enabledModules, permissions, permsHydrated, canShow]);
 
   const activeGroupIds = useMemo(() => {
     const path = location.pathname;
@@ -267,7 +269,7 @@ export function useAppLayoutNavigation() {
   return {
     user,
     t,
-    isGlobalSuperAdmin,
+    isGlobalPlatformOperator,
     sessionMenuResolved,
     mainMenuGroups,
     showPlanVerticalNav,

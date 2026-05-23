@@ -26,10 +26,10 @@ public sealed class PlatformSubscriberCompaniesFlowTests
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
             await TestDataFactory.SeedCommercialPlansAndLimitsAsync(db);
-            superAdminId = await TestDataFactory.SeedPlatformSuperAdminAsync(db, factory.MutableUser);
+            superAdminId = await TestDataFactory.SeedPlatformOperatorAsync(db, factory.MutableUser);
         }
 
-        var token = TestJwtFactory.CreatePlatformSuperAdminJwt(superAdminId);
+        var token = TestJwtFactory.CreatePlatformOperatorJwt(superAdminId);
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return (factory, client, superAdminId);

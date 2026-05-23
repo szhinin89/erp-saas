@@ -5,13 +5,13 @@
 
 ## Resumen ejecutivo
 
-Tras Phase 4 (eliminación API legacy) y Phase 5 (hardening frontend + CI), el control plane opera **exclusivamente** vía `/api/platform/*`. No quedan rutas activas `/api/superadmin/*`, `superadmin-login`, ni imports `superAdminService`.
+Tras Phase 4 (eliminación API legacy) y Phase 5 (hardening frontend + CI), el control plane opera **exclusivamente** vía `/api/platform/*`. No quedan rutas activas `/api/superadmin/*`, `superadmin-login`, ni imports `platformService`.
 
 ## Superficie eliminada (Phase 4 + 5)
 
 | Categoría | Antes | Después |
 |-----------|-------|---------|
-| API client | `superAdminService.ts` | `platformService.ts` |
+| API client | `platformService.ts` | `platformService.ts` |
 | Constantes UI | `SUPERADMIN_UI`, `LEGACY_PLATFORM_API` | `PLATFORM_UI`, `PLATFORM_API` |
 | Router platform | `superAdminShellRoutes`, `adminRoutes`, `CompaniesLegacyRedirect` | `platformRoutes.tsx` (única fuente) |
 | Nav helpers | `companiesSubscriberDetailNav.ts` | `platformSubscriberDetailNav.ts` |

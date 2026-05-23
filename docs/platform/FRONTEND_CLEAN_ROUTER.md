@@ -64,7 +64,7 @@ ProtectedRoute
 | `modules/superadmin/` | `modules/platform/` |
 | `components/superadmin/` | `components/platform/` |
 | `pages/SuperAdmin/` | `pages/Platform/` |
-| `SuperAdminLayout`, `SuperAdminCrudTemplate`, `useSuperAdminGate` | `PlatformLayout`, `PlatformCrudTemplate`, `usePlatformGate` |
+| `PlatformLayout`, `PlatformCrudTemplate`, `usePlatformGateGate` | `PlatformLayout`, `PlatformCrudTemplate`, `usePlatformGate` |
 
 ## Guards
 

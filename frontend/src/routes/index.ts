@@ -5,7 +5,7 @@ import { accessRoutes } from './accessRoutes';
 import { mainRoutes } from './mainRoutes';
 
 export interface AppRoutesConfig {
-  superAdminPanelEnabled: boolean;
+  platformPanelEnabled: boolean;
 }
 
 /**

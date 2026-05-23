@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../../store/authStore';
-import { usePermissionsStore } from '../../../store/permissionsStore';
 import { platformService, type PlatformSubscriber } from '../api/platformService';
+import { goToSubscriberDetail } from '../../../navigation/platformSubscriberDetailNav';
 import { LoadingState, EmptyState } from '../../../components/PageShell';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHScreenHeading } from '../../../components/zh/ZHLayout';
@@ -10,10 +9,6 @@ import { PlatformCrudTemplate } from '../../../templates/PlatformCrudTemplate';
 import { StatCard } from '../../../components/zh/StatCard';
 import { RuntimeModeBadge } from '../../../components/RuntimeModeBadge';
 import { formatApiRequestError } from '../../../modules/lib/apiError';
-import { getAccessToken } from '../../../lib/session/authTokenMemory';
-import { restoreSessionFromCookie } from '../../../lib/session/restoreSessionFromCookie';
-import { syncSessionEntitlements } from '../../../lib/syncSessionEntitlements';
-import { storeImpersonationSubscriberName } from '../platformPanelUtils';
 import { useI18n } from '../../../i18n/i18n';
 import './PlatformOverviewPage.css';
 
@@ -39,22 +34,14 @@ function planBadgeClass(planCode: string | null | undefined): string {
   return                          'badge sa-plan-badge--default';
 }
 
-function resolveSubscriberId(subscriber: PlatformSubscriber): string {
-  const raw = subscriber.id ?? (subscriber as { Id?: string }).Id ?? '';
-  return raw.trim();
-}
-
 export function PlatformOverviewPage() {
   const navigate = useNavigate();
   const { t } = useI18n();
-  const { login } = useAuthStore();
-  const clearPermissions = usePermissionsStore((s) => s.clearPermissions);
 
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState('');
-  const [metrics,   setMetrics]   = useState<Metrics | null>(null);
-  const [subscribers,   setSubscribers]   = useState<PlatformSubscriber[]>([]);
-  const [switching, setSwitching] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
+  const [subscribers, setSubscribers] = useState<PlatformSubscriber[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -80,42 +67,6 @@ export function PlatformOverviewPage() {
 
   const previewSubscribers = useMemo(() => subscribers.slice(0, 5), [subscribers]);
 
-  const handleSwitch = async (subscriber: PlatformSubscriber) => {
-    if (!subscriber.isActive || switching) return;
-    const subscriberId = resolveSubscriberId(subscriber);
-    if (!subscriberId) {
-      setError('Identificador de suscriptor inválido.');
-      return;
-    }
-    setSwitching(subscriber.id);
-    setError('');
-    try {
-      if (!getAccessToken()) {
-        const restored = await restoreSessionFromCookie();
-        if (!restored || !getAccessToken()) {
-          throw new Error('Sesión expirada. Vuelve a iniciar sesión.');
-        }
-      }
-      const auth = await platformService.switchSubscriber(subscriberId);
-      storeImpersonationSubscriberName(subscriber.name);
-      clearPermissions();
-      login(auth);
-      try {
-        await syncSessionEntitlements();
-      } catch {
-        // AppLayout reintenta permisos/menú si hace falta.
-      }
-      navigate('/saas/overview');
-    } catch (e) {
-      setError(formatApiRequestError(e, {
-        offline: t('common.apiUnreachable'),
-        generic: t('common.errorGeneric'),
-      }));
-    } finally {
-      setSwitching(null);
-    }
-  };
-
   const inactiveCount = metrics
     ? metrics.totals.totalSubscribers - metrics.totals.activeSubscribers
     : 0;
@@ -125,11 +76,11 @@ export function PlatformOverviewPage() {
     : 0;
 
   return (
-    <PlatformCrudTemplate title={t('superadmin.title')}>
+    <PlatformCrudTemplate title={t('platform.title')}>
       <ZHScreenHeading
-        kicker={t('superadmin.overview.kicker')}
-        title={t('superadmin.overview.title')}
-        subtitle={t('superadmin.overview.subtitle')}
+        kicker={t('platform.overview.kicker')}
+        title={t('platform.overview.title')}
+        subtitle={t('platform.overview.subtitle')}
         right={
           <div className="pg-flex-row-8-wrap">
             <RuntimeModeBadge />
@@ -145,10 +96,10 @@ export function PlatformOverviewPage() {
             <button
               className="zh-btn zh-btn--primary"
               type="button"
-              onClick={() => navigate('/superadmin/subscribers')}
+              onClick={() => navigate('/platform/subscribers')}
             >
               <span className="material-symbols-outlined">add</span>
-              {t('superadmin.createSubscriber')}
+              {t('platform.createSubscriber')}
             </button>
           </div>
         }
@@ -162,21 +113,21 @@ export function PlatformOverviewPage() {
       ) : metrics ? (
         <div className="pg-kpis">
           <StatCard
-            label={t('superadmin.totalSubscribers')}
+            label={t('platform.totalSubscribers')}
             value={metrics.totals.totalSubscribers.toLocaleString('es')}
             icon="apartment"
             tone="primary"
             hint={`${metrics.totals.activeSubscribers} ${t('common.active').toLowerCase()}`}
           />
           <StatCard
-            label={t('superadmin.totalUsers')}
+            label={t('platform.totalUsers')}
             value={metrics.totals.totalUsers.toLocaleString('es')}
             icon="groups"
             tone="secondary"
             hint={`${metrics.totals.activeUsers} ${t('common.active').toLowerCase()}`}
           />
           <StatCard
-            label={t('superadmin.activeSubscribers')}
+            label={t('platform.activeSubscribers')}
             value={`${
               metrics.totals.totalSubscribers
                 ? Math.round((metrics.totals.activeSubscribers / metrics.totals.totalSubscribers) * 100)
@@ -184,7 +135,7 @@ export function PlatformOverviewPage() {
             }%`}
             icon="payments"
             tone="tertiary"
-            hint={t('superadmin.overview.activeRatioHint', {
+            hint={t('platform.overview.activeRatioHint', {
               total: metrics.totals.totalSubscribers,
             })}
           />
@@ -256,13 +207,12 @@ export function PlatformOverviewPage() {
                       </td>
                       <td className="pg-table-actions">
                         <button
-                          className="zh-btn zh-btn--primary zh-btn--sm pg-btn-ml-auto"
+                          className="zh-btn zh-btn--secondary zh-btn--sm pg-btn-ml-auto"
                           type="button"
-                          disabled={!subscriber.isActive || !!switching}
-                          onClick={() => void handleSwitch(subscriber)}
+                          onClick={() => goToSubscriberDetail(navigate, subscriber.id)}
                         >
-                          {switching === subscriber.id ? t('superadmin.switching') : 'Entrar como empresa'}
-                          <span className="material-symbols-outlined">login</span>
+                          {t('platform.subscriberRow.openSheet')}
+                          <span className="material-symbols-outlined">description</span>
                         </button>
                       </td>
                     </tr>
@@ -287,7 +237,7 @@ export function PlatformOverviewPage() {
                       <button
                         className="sa-page-num-btn"
                         type="button"
-                        onClick={() => navigate('/superadmin/subscribers')}
+                        onClick={() => navigate('/platform/subscribers')}
                       >
                         …
                       </button>
@@ -296,7 +246,7 @@ export function PlatformOverviewPage() {
                   <button
                     className="sa-page-nav-btn"
                     type="button"
-                    onClick={() => navigate('/superadmin/subscribers')}
+                    onClick={() => navigate('/platform/subscribers')}
                   >
                     <span className="material-symbols-outlined">chevron_right</span>
                   </button>
@@ -304,7 +254,7 @@ export function PlatformOverviewPage() {
                 <button
                   className="zh-btn zh-btn--secondary zh-btn--sm"
                   type="button"
-                  onClick={() => navigate('/superadmin/subscribers')}
+                  onClick={() => navigate('/platform/subscribers')}
                 >
                   Ver todas
                 </button>

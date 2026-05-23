@@ -2,6 +2,7 @@ import {
   clearCompaniesDetailSubscriberId,
   clearCompaniesSubscriptionSubscriberId,
 } from '../../navigation/platformSubscriberDetailNav';
+import { clearPlatformImpersonationReturnPath } from '../../navigation/platformImpersonationNav';
 import {
   resetRefreshSessionFlight,
   broadcastAuthLogout,
@@ -16,7 +17,7 @@ import {
   AUTH_STORAGE_KEY,
   PERMISSIONS_STORAGE_KEY,
   SAAS_SESSION_STORAGE_PREFIX,
-  SUPERADMIN_IMPERSONATION_NAME_KEY,
+  clearPlatformImpersonationName,
 } from './sessionStorageKeys';
 
 export type FullLogoutOptions = {
@@ -34,13 +35,14 @@ export function clearPersistedSessionArtifacts(): void {
     localStorage.removeItem(AUTH_STORAGE_KEY);
     localStorage.removeItem(PERMISSIONS_STORAGE_KEY);
     localStorage.removeItem(ACCESS_BOOTSTRAP_STORAGE_KEY);
-    localStorage.removeItem(SUPERADMIN_IMPERSONATION_NAME_KEY);
+    clearPlatformImpersonationName();
   } catch {
     /* storage disabled */
   }
 
   clearCompaniesDetailSubscriberId();
   clearCompaniesSubscriptionSubscriberId();
+  clearPlatformImpersonationReturnPath();
 
   try {
     for (let i = sessionStorage.length - 1; i >= 0; i -= 1) {

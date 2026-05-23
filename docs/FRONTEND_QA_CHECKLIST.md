@@ -108,17 +108,19 @@ Marcar: ✅ OK · ⚠️ defecto menor · ❌ bloqueante
 
 ---
 
-## Platform (SuperAdmin)
+## Platform (control plane)
 
 | Ruta | Checks |
 |------|--------|
-| `/superadmin` | Overview KPIs, sin título duplicado |
-| `/companies` | Panel empresas, tabs, sin UUID en URL |
-| `/superadmin/plans` | Planes SaaS |
+| `/platform/overview` | Overview KPIs, sin título duplicado |
+| `/platform/subscribers` | Listado, **Abrir ficha**, sin atajos sueltos de impersonación |
+| `/platform/subscribers/:id` | Ficha + **Entrar al tenant** (impersonación con retorno) |
+| `/platform/plans` | Planes SaaS |
 | Hub menú/planes | Menu builder CRM: 3 columnas, drag árbol, preview horizontal/vertical |
 | | Modales crear plan / wizard |
 | | Auditoría scroll, export/import |
 | | Plan card bajo preview |
+| `/superadmin/*` (legacy) | Redirect a `/platform/*` equivalente |
 
 ---
 

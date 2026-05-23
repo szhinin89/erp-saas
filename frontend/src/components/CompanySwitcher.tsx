@@ -7,6 +7,7 @@ import { logDevSessionContext } from '../lib/session/devSessionLog';
 import { syncSessionEntitlements } from '../lib/syncSessionEntitlements';
 import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
+import { isJwtPlatformOperatorRole } from '../constants/platformAuth';
 import type { AccessibleCompany } from '../types/access';
 import type { AuthResponse } from '../types/auth';
 
@@ -19,7 +20,7 @@ export function CompanySwitcher() {
   const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
-    if (!user?.subscriberId || user.role === 'SuperAdmin') return;
+    if (!user?.subscriberId || isJwtPlatformOperatorRole(user.role)) return;
     let cancelled = false;
     (async () => {
       try {
@@ -32,7 +33,7 @@ export function CompanySwitcher() {
     return () => { cancelled = true; };
   }, [user?.subscriberId, user?.role]);
 
-  if (!user?.subscriberId || user.role === 'SuperAdmin' || companies.length <= 1) {
+  if (!user?.subscriberId || isJwtPlatformOperatorRole(user.role) || companies.length <= 1) {
     return null;
   }
 

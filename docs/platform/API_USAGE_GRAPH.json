@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-23T17:27:08.541Z",
+  "generatedAt": "2026-05-23T18:17:51.570Z",
   "summary": {
     "total": 77,
     "allowed": 77,
@@ -473,8 +473,7 @@
     {
       "endpoint": "/api/platform/subscribers",
       "files": [
-        "frontend/src/modules/platform/api/platformApiPaths.ts",
-        "frontend/src/modules/platform/api/subscriberService.ts"
+        "frontend/src/modules/platform/api/platformApiPaths.ts"
       ],
       "legacy": false,
       "allowed": true

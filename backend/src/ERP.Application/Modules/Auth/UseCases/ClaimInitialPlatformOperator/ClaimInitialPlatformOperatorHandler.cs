@@ -6,9 +6,9 @@ using ERP.Domain.Access.Entities;
 using ERP.Domain.Access.Interfaces;
 using MediatR;
 
-namespace ERP.Application.Auth.UseCases.ClaimInitialSuperAdmin;
+namespace ERP.Application.Auth.UseCases.ClaimInitialPlatformOperator;
 
-public sealed class ClaimInitialSuperAdminHandler : IRequestHandler<ClaimInitialSuperAdminCommand, Result<AuthResponseDto>>
+public sealed class ClaimInitialPlatformOperatorHandler : IRequestHandler<ClaimInitialPlatformOperatorCommand, Result<AuthResponseDto>>
 {
     private const int MinPasswordLength = 10;
 
@@ -18,7 +18,7 @@ public sealed class ClaimInitialSuperAdminHandler : IRequestHandler<ClaimInitial
     private readonly IPasswordHasher _passwordHasher;
     private readonly IRefreshTokenService _refreshTokenService;
 
-    public ClaimInitialSuperAdminHandler(
+    public ClaimInitialPlatformOperatorHandler(
         IAccessRepository accessRepository,
         IAccessTokenService accessTokenService,
         IFirstRunSetupService firstRunSetupService,
@@ -33,14 +33,14 @@ public sealed class ClaimInitialSuperAdminHandler : IRequestHandler<ClaimInitial
     }
 
     public async Task<Result<AuthResponseDto>> Handle(
-        ClaimInitialSuperAdminCommand command,
+        ClaimInitialPlatformOperatorCommand command,
         CancellationToken ct)
     {
         if (!await _firstRunSetupService.ValidateSetupTokenAsync(command.SetupToken, ct))
             return Result<AuthResponseDto>.Failure("Token de instalación inválido o no configurado.");
 
-        if (await _accessRepository.AnyPlatformSuperAdminAsync(ct))
-            return Result<AuthResponseDto>.Failure("Ya existe un SuperAdmin en el sistema.");
+        if (await _accessRepository.AnyPrimaryPlatformOperatorAsync(ct))
+            return Result<AuthResponseDto>.Failure("Ya existe un operador platform en el sistema.");
 
         var email = command.Email.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(email))
@@ -61,7 +61,7 @@ public sealed class ClaimInitialSuperAdminHandler : IRequestHandler<ClaimInitial
         {
             var passwordHash = _passwordHasher.HashPassword(password);
             var newId = Guid.NewGuid();
-            user = IdentityUser.CreatePlatformSuperAdmin(
+            user = IdentityUser.CreatePlatformOperator(
                 command.FirstName.Trim(),
                 command.LastName.Trim(),
                 email,
@@ -85,7 +85,7 @@ public sealed class ClaimInitialSuperAdminHandler : IRequestHandler<ClaimInitial
             user.Id,
             user.FullName,
             user.Email.Value,
-            "SuperAdmin",
+            PlatformAuthConstants.JwtPlatformOperatorRole,
             Guid.Empty,
             token,
             PlanCode: null,

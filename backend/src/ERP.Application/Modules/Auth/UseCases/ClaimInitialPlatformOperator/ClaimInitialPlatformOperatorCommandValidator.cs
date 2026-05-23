@@ -1,10 +1,10 @@
 using FluentValidation;
 
-namespace ERP.Application.Auth.UseCases.ClaimInitialSuperAdmin;
+namespace ERP.Application.Auth.UseCases.ClaimInitialPlatformOperator;
 
-public sealed class ClaimInitialSuperAdminCommandValidator : AbstractValidator<ClaimInitialSuperAdminCommand>
+public sealed class ClaimInitialPlatformOperatorCommandValidator : AbstractValidator<ClaimInitialPlatformOperatorCommand>
 {
-    public ClaimInitialSuperAdminCommandValidator()
+    public ClaimInitialPlatformOperatorCommandValidator()
     {
         RuleFor(x => x.SetupToken)
             .NotEmpty().WithMessage("El token de instalación es obligatorio.")

@@ -6,8 +6,12 @@ import {
   type UpdateSubscriberCompanyFormValues,
 } from '../../../../schemas/saas/companySchema';
 import { formatApiRequestError } from '../../../lib/apiError';
-import { platformService, type PlatformSubscriber, type SubscriberEntitlementsSnapshot } from '../../api/platformService';
-import { subscriberService, type SubscriberDetailDto } from '../../api/subscriberService';
+import {
+  platformService,
+  type PlatformSubscriber,
+  type PlatformSubscriberDetailDto,
+  type SubscriberEntitlementsSnapshot,
+} from '../../api/platformService';
 
 export const ELECTRONIC_BILLING_TRIAL_KEY = 'billing.electronic.trial_enabled';
 
@@ -25,7 +29,7 @@ const emptyDetailForm = (): UpdateSubscriberCompanyFormValues => ({
 
 export function useSubscriberDetailPage(subscriberId: string | undefined) {
   const [subscriber, setSubscriber] = useState<PlatformSubscriber | null>(null);
-  const [detail, setDetail] = useState<SubscriberDetailDto | null>(null);
+  const [detail, setDetail] = useState<PlatformSubscriberDetailDto | null>(null);
   const [entitlements, setEntitlements] = useState<SubscriberEntitlementsSnapshot | null>(null);
   const [tenantUsers, setTenantUsers] = useState<Array<{ id: string; email: string; firstName: string; lastName: string; isActive: boolean; userType: string }>>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +58,7 @@ export function useSubscriberDetailPage(subscriberId: string | undefined) {
     if (!subscriberId) return;
     setDetailLoading(true);
     try {
-      const d = await subscriberService.getSubscriber(subscriberId);
+      const d = await platformService.getSubscriber(subscriberId);
       setDetail(d);
       form.reset({
         subscriberName: d.name,
@@ -68,8 +72,8 @@ export function useSubscriberDetailPage(subscriberId: string | undefined) {
         priority: d.priority,
       });
       const [resolved, globals, menu] = await Promise.all([
-        subscriberService.resolveSubscriberConfig(subscriberId, ELECTRONIC_BILLING_TRIAL_KEY),
-        subscriberService.listSubscriberGlobalConfig(subscriberId),
+        platformService.resolveSubscriberConfig(subscriberId, ELECTRONIC_BILLING_TRIAL_KEY),
+        platformService.listSubscriberGlobalConfig(subscriberId),
         platformService.getSubscriberResolvedMenu(subscriberId),
       ]);
       const rv = resolved?.value?.trim().toLowerCase();
@@ -110,7 +114,7 @@ export function useSubscriberDetailPage(subscriberId: string | undefined) {
     setSaveOk(false);
     setSaveError(null);
     try {
-      const updated = await subscriberService.updateSubscriberCompany(subscriberId, {
+      const updated = await platformService.updateSubscriberCompany(subscriberId, {
         name: values.subscriberName,
         slug: values.subscriberSlug,
         ruc: values.ruc?.trim() || null,
@@ -137,7 +141,7 @@ export function useSubscriberDetailPage(subscriberId: string | undefined) {
     setSaveOk(false);
     setSaveError(null);
     try {
-      const updated = await subscriberService.updateSubscriberGlobalParameters(subscriberId, {
+      const updated = await platformService.updateSubscriberGlobalParameters(subscriberId, {
         electronicBillingTrialEnabled,
       });
       setDetail(updated);

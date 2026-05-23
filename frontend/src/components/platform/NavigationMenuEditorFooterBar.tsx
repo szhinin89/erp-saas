@@ -12,10 +12,10 @@ export function NavigationMenuEditorFooterBar({ t, saving, creatingItem, load, h
     <div className="nm-footerBar">
       <ZHInlineRowRight>
         <ZHBtn type="button" variant="secondary" disabled={saving || creatingItem} onClick={() => void load()}>
-          {t('superadmin.navigationMenu.reload')}
+          {t('platform.navigationMenu.reload')}
         </ZHBtn>
         <ZHBtn type="button" variant="primary" disabled={saving || creatingItem} onClick={() => void handleSave()}>
-          {saving ? t('common.saving') : t('superadmin.navigationMenu.save')}
+          {saving ? t('common.saving') : t('platform.navigationMenu.save')}
         </ZHBtn>
       </ZHInlineRowRight>
     </div>

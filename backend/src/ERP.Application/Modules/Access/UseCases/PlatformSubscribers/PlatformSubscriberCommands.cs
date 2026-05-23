@@ -3,9 +3,9 @@ using ERP.Application.Common;
 using ERP.Application.Access.DTOs;
 using ERP.Domain.Subscribers.Entities;
 
-namespace ERP.Application.Access.UseCases.SuperAdminSubscribers;
+namespace ERP.Application.Access.UseCases.PlatformSubscribers;
 
-public record SuperAdminCreateSubscriberWithAdminCommand(
+public record PlatformCreateSubscriberWithAdminCommand(
     string SubscriberName,
     string SubscriberSlug,
     string AdminFirstName,
@@ -29,5 +29,5 @@ public record SuperAdminCreateSubscriberWithAdminCommand(
     string? Timezone = "America/Guayaquil"
 ) : IRequest<Result<SessionResponseDto>>;
 
-public record GetSuperAdminSubscribersQuery : IRequest<Result<IReadOnlyList<SuperAdminSubscriberItemDto>>>;
+public record GetPlatformSubscribersQuery : IRequest<Result<IReadOnlyList<PlatformSubscriberItemDto>>>;
 

@@ -60,7 +60,7 @@ export interface SessionMenuItemDto {
   moduleKey: string | null;
   permissionKey: string | null;
   permissionKeysAny: string[] | null;
-  /** Restringe el ítem por rol (p. ej. `SuperAdmin`); viene de `roles_csv` en BD. */
+  /** Restringe el ítem por rol JWT (p. ej. operador platform); viene de `roles_csv` en BD. */
   itemRoles?: string[] | null;
   /** Submenú recursivo (misma definición en BD). */
   children?: SessionMenuItemDto[] | null;
@@ -76,7 +76,10 @@ export interface SessionMenuGroupDto {
   sortOrder: number;
   moduleKey: string | null;
   roles: string[] | null;
-  requireSuperAdminPanel: boolean;
+  /** Si true, el grupo solo aplica con panel platform habilitado. */
+  requirePlatformPanel?: boolean;
+  /** Alias legacy del API. */
+  requireSuperAdminPanel?: boolean;
   items: SessionMenuItemDto[];
   /** `horizontal` | `vertical` desde el constructor de menú (plan/empresa). */
   menuBarLayout?: string | null;

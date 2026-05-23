@@ -12,7 +12,7 @@ type Props = Pick<
   | 'loading'
   | 'metrics'
   | 'subscribers'
-  | 'isSuperAdmin'
+  | 'isPlatformOperator'
   | 'activePlans'
   | 'selectHomeTab'
   | 'openCreateSubscriber'
@@ -23,19 +23,19 @@ export function PlatformPanelOverviewTab({
   loading,
   metrics,
   subscribers,
-  isSuperAdmin,
+  isPlatformOperator,
   activePlans,
   selectHomeTab,
   openCreateSubscriber,
 }: Props) {
   return (
     <div className="sa-overviewKpi">
-      {!loading && subscribers.length === 0 && isSuperAdmin ? (
-        <ZHCard title={t('superadmin.welcomeNoSubscribersTitle')}>
-          <p className="subtle sa-welcome-note">{t('superadmin.welcomeNoSubscribersBody')}</p>
+      {!loading && subscribers.length === 0 && isPlatformOperator ? (
+        <ZHCard title={t('platform.welcomeNoSubscribersTitle')}>
+          <p className="subtle sa-welcome-note">{t('platform.welcomeNoSubscribersBody')}</p>
           <ZHInlineRowRight>
             <ZHBtn variant="secondary" size="sm" onClick={() => selectHomeTab('plans')}>
-              {t('superadmin.welcomeGoPlans')}
+              {t('platform.welcomeGoPlans')}
             </ZHBtn>
             <ZHBtn
               variant="primary"
@@ -45,9 +45,9 @@ export function PlatformPanelOverviewTab({
                 openCreateSubscriber();
               }}
               disabled={activePlans.length === 0}
-              title={activePlans.length === 0 ? t('superadmin.createSubscriber.error.noPlans') : undefined}
+              title={activePlans.length === 0 ? t('platform.createSubscriber.error.noPlans') : undefined}
             >
-              {t('superadmin.welcomeCreateFirstCompany')}
+              {t('platform.welcomeCreateFirstCompany')}
             </ZHBtn>
           </ZHInlineRowRight>
         </ZHCard>
@@ -58,22 +58,22 @@ export function PlatformPanelOverviewTab({
         </ZHCard>
       ) : metrics ? (
         <ZHKpiPanel
-          title={t('superadmin.metrics')}
+          title={t('platform.metrics')}
           items={[
-            { label: t('superadmin.totalSubscribers'), value: String(metrics.totals.totalSubscribers), tone: 'neutral' },
-            { label: t('superadmin.activeSubscribers'), value: String(metrics.totals.activeSubscribers), tone: 'info' },
-            { label: t('superadmin.totalUsers'), value: String(metrics.totals.totalUsers), tone: 'neutral' },
-            { label: t('superadmin.activeUsers'), value: String(metrics.totals.activeUsers), tone: 'success' },
+            { label: t('platform.totalSubscribers'), value: String(metrics.totals.totalSubscribers), tone: 'neutral' },
+            { label: t('platform.activeSubscribers'), value: String(metrics.totals.activeSubscribers), tone: 'info' },
+            { label: t('platform.totalUsers'), value: String(metrics.totals.totalUsers), tone: 'neutral' },
+            { label: t('platform.activeUsers'), value: String(metrics.totals.activeUsers), tone: 'success' },
           ]}
         />
       ) : null}
-      {isSuperAdmin ? <PlatformGrowthSection /> : null}
-      <ZHCard title="Dashboard SuperAdmin">
-        <p className="subtle sa-overviewHubIntro">Acceso rápido a todos los módulos de administración global.</p>
-        <div className="sa-overviewHubGrid" role="list" aria-label="Módulos de SuperAdmin">
+      {isPlatformOperator ? <PlatformGrowthSection /> : null}
+      <ZHCard title={t('platform.overview.hubTitle')}>
+        <p className="subtle sa-overviewHubIntro">{t('platform.overview.hubIntro')}</p>
+        <div className="sa-overviewHubGrid" role="list" aria-label={t('platform.overview.hubAria')}>
           <article className="sa-overviewHubCard" role="listitem">
             <div className="sa-overviewHubCardTop">
-              <div className="sa-overviewHubCardTitle">🏢 {t('superadmin.tabCompanies')}</div>
+              <div className="sa-overviewHubCardTitle">🏢 {t('platform.tabCompanies')}</div>
               {metrics ? <span className="badge badge--gray">{metrics.totals.totalSubscribers} subscribers</span> : null}
             </div>
             <p className="subtle sa-overviewHubCardBody">Gestiona empresas, suscripciones y acceso a subscriber.</p>
@@ -83,7 +83,7 @@ export function PlatformPanelOverviewTab({
           </article>
           <article className="sa-overviewHubCard" role="listitem">
             <div className="sa-overviewHubCardTop">
-              <div className="sa-overviewHubCardTitle">💳 {t('superadmin.tabPlans')}</div>
+              <div className="sa-overviewHubCardTitle">💳 {t('platform.tabPlans')}</div>
               {activePlans.length > 0 ? <span className="badge badge--gray">{activePlans.length} activos</span> : null}
             </div>
             <p className="subtle sa-overviewHubCardBody">Configura planes, precios y asignaciones comerciales.</p>
@@ -103,7 +103,7 @@ export function PlatformPanelOverviewTab({
           </article>
           <article className="sa-overviewHubCard" role="listitem">
             <div className="sa-overviewHubCardTop">
-              <div className="sa-overviewHubCardTitle">🧭 {t('superadmin.shell.menuAndPlans')}</div>
+              <div className="sa-overviewHubCardTitle">🧭 {t('platform.shell.menuAndPlans')}</div>
               {metrics ? <span className="badge badge--gray">{metrics.totals.activeUsers} usuarios activos</span> : null}
             </div>
             <p className="subtle sa-overviewHubCardBody">Define menú maestro, activaciones por plan y vista previa.</p>

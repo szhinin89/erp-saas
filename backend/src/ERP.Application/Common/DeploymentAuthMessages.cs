@@ -7,9 +7,9 @@ public static class DeploymentAuthMessages
 {
     public const string ForbiddenPrefix = "FORBIDDEN:";
 
-    public static string SuperAdminPanelDisabledUserMessage =>
-        "El panel global de SuperAdmin está deshabilitado en este despliegue. Use usuarios Admin de cada empresa.";
+    public static string PlatformPanelDisabledUserMessage =>
+        "El panel global de operadores platform está deshabilitado en este despliegue. Use usuarios Admin de cada empresa.";
 
-    public static string SuperAdminPanelDisabled =>
-        ForbiddenPrefix + " " + SuperAdminPanelDisabledUserMessage;
+    public static string PlatformPanelDisabled =>
+        ForbiddenPrefix + " " + PlatformPanelDisabledUserMessage;
 }

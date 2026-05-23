@@ -124,7 +124,7 @@ export function usePlatformMenuBuilder(crmWorkspace: boolean) {
   const hydratingPlanRef = useRef(false);
   const planSwitchClock = useRef(0);
 
-  const visualLabelKey = t('superadmin.menuBuilder.visualGroupLabel');
+  const visualLabelKey = t('platform.menuBuilder.visualGroupLabel');
   const visualTreeIds = useMemo(() => {
     const all: string[] = [];
     const walk = (nodes: EditorMenuItem[]) => {

@@ -1,4 +1,4 @@
-/* menu-plan-composer — SuperAdmin CRM workspace + legacy mode
+/* menu-plan-composer — Platform CRM workspace + legacy mode
    Global classes used: pg-page, pg-section, pg-section-header, pg-section-header-left,
    pg-section-icon, pg-section-label, pg-actions-bar, pg-actions-buttons, pg-table-controls,
    pg-search, zh-form-tabs, zh-btn, zh-inline-check, zh-modal, zh-modal-overlay,
@@ -250,7 +250,7 @@
   resize: vertical;
 }
 
-/* ── smb-* — SuperAdmin Menu Builder CRM (platform-only) ─── */
+/* ── smb-* — Platform Menu Builder CRM (platform-only) ─── */
 
 .smb-workspace-subtitle {
   margin: 0;

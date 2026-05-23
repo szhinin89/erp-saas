@@ -42,7 +42,7 @@ public sealed class DirectPasswordResetHandler : IRequestHandler<DirectPasswordR
 
         var normalizedEmail = command.Email.Trim().ToLowerInvariant();
         var user = await _accessRepository.GetUserByEmailAsync(normalizedEmail, ct);
-        if (user is null || user.IsPlatformSuperAdmin)
+        if (user is null || user.IsPrimaryPlatformOperator)
             return Result<bool>.Failure("Usuario no encontrado.");
 
         var defaultCompany = await _companyProvisioning.EnsureDefaultCompanyAsync(tenant, ct);

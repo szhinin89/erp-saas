@@ -5,14 +5,14 @@ using System.Net.Mime;
 namespace ERP.API.Middleware;
 
 /// <summary>
-/// Cuando <c>Deployment:SuperAdminPanelEnabled</c> es false, bloquea cualquier uso autenticado con rol SuperAdmin
-/// y el login dedicado, para que solo operen usuarios por empresa (Admin, etc.) tras la puesta en marcha.
+/// Cuando <c>Deployment:PlatformPanelEnabled</c> es false, bloquea login platform y sesiones con rol
+/// <see cref="PlatformAuthConstants.JwtPlatformOperatorRole"/> para instancias solo tenant.
 /// </summary>
-public sealed class SuperAdminPanelLockMiddleware(RequestDelegate next)
+public sealed class PlatformPanelLockMiddleware(RequestDelegate next)
 {
     public async Task InvokeAsync(HttpContext context, IDeploymentFeatureFlags deployment)
     {
-        if (deployment.IsSuperAdminPanelEnabled)
+        if (deployment.IsPlatformPanelEnabled)
         {
             await next(context);
             return;
@@ -36,7 +36,7 @@ public sealed class SuperAdminPanelLockMiddleware(RequestDelegate next)
         }
 
         if (context.User?.Identity?.IsAuthenticated == true &&
-            context.User.IsInRole("SuperAdmin"))
+            context.User.IsInRole(PlatformAuthConstants.JwtPlatformOperatorRole))
         {
             await WriteForbiddenAsync(context);
             return;
@@ -51,7 +51,7 @@ public sealed class SuperAdminPanelLockMiddleware(RequestDelegate next)
         context.Response.ContentType = MediaTypeNames.Application.Json;
         var body = new ApiResponse<object>(
             Success: false,
-            Message: DeploymentAuthMessages.SuperAdminPanelDisabledUserMessage,
+            Message: DeploymentAuthMessages.PlatformPanelDisabledUserMessage,
             ResponseObject: new { });
         await context.Response.WriteAsJsonAsync(body);
     }

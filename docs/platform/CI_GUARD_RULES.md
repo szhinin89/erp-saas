@@ -41,8 +41,8 @@ dotnet test backend/src/ERP.Architecture.Tests -c Release --filter "FullyQualifi
 - `/api/superadmin/`
 - `superadmin-login`
 - `SuperAdminController`
-- `SuperAdminService` / `superAdminService`
-- `useSuperAdmin`
+- `SuperAdminService` / `platformService`
+- `usePlatformGate`
 - `LEGACY_PLATFORM`
 - `LEGACY_SUPERADMIN`
 - `/api/admin/iam/superadmin`

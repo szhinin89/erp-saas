@@ -25,12 +25,12 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
     {
         var state = await GetOrCreateStateAsync(ct);
 
-        var hasSuperAdmin = await _platform
+        var hasPlatformOperator = await _platform
             .Unfiltered(_db.IdentityUsers, PlatformQueryReason.CrossTenantSystem)
             .AnyAsync(
-                u => u.UserType == IdentityUserType.Platform && u.PlatformRole == PlatformRole.SuperAdmin,
+                u => u.UserType == IdentityUserType.Platform && u.PlatformRole == PlatformRole.PlatformOperator,
                 ct);
-        if (hasSuperAdmin && state.IsFirstRun)
+        if (hasPlatformOperator && state.IsFirstRun)
         {
             state.CompleteFirstRun(SystemActorId);
             await _db.SaveChangesAsync(ct);
@@ -85,18 +85,18 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
 
     public async Task<FirstRunResetResult> ResetForDevelopmentAsync(CancellationToken ct = default)
     {
-        var superAdmins = await _platform
+        var platformOperators = await _platform
             .Unfiltered(_db.IdentityUsers, PlatformQueryReason.CrossTenantSystem)
-            .Where(u => u.UserType == IdentityUserType.Platform && u.PlatformRole == PlatformRole.SuperAdmin)
+            .Where(u => u.UserType == IdentityUserType.Platform && u.PlatformRole == PlatformRole.PlatformOperator)
             .ToListAsync(ct);
-        var superAdminIds = superAdmins.Select(x => x.Id).ToArray();
+        var superAdminIds = platformOperators.Select(x => x.Id).ToArray();
 
-        if (superAdmins.Count > 0)
-            _db.IdentityUsers.RemoveRange(superAdmins);
+        if (platformOperators.Count > 0)
+            _db.IdentityUsers.RemoveRange(platformOperators);
 
         var superAdminRefreshTokens = await _db.RefreshTokens
             .Where(rt =>
-                rt.UserType == RefreshToken.TypeSuperAdmin
+                rt.UserType == RefreshToken.TypePlatformOperator
                 || rt.UserType == RefreshToken.TypePlatform
                 || superAdminIds.Contains(rt.UserId))
             .ToListAsync(ct);
@@ -113,7 +113,7 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
 
         return new FirstRunResetResult(
             Message: "First-run state reset",
-            RemovedSuperAdmins: superAdmins.Count,
+            RemovedPlatformOperators: platformOperators.Count,
             SetupToken: token.PlainToken,
             ExpiresAtUtc: token.ExpiresAtUtc.Value);
     }

@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SUBSCRIBER_MODULE_KEYS } from '../../constants/subscriptionModules';
 import { platformService, type CreateSubscriberWithAdminBody, type PlatformPlanCatalogEntry, type PlatformSubscriber } from './api/platformService';
-import { useAuthStore } from '../../store/authStore';
-import { usePermissionsStore } from '../../store/permissionsStore';
 import { usePlatformGate } from '../../hooks/usePlatformGate';
 import { useI18n } from '../../i18n/i18n';
 import { formatApiRequestError } from '../lib/apiError';
@@ -13,7 +11,6 @@ import {
   defaultModuleChecksAllOn,
   normalizeEnabledModulesForApi,
   slugifySubscriberName,
-  storeImpersonationSubscriberName,
   type PlatformHomeTab,
 } from './platformPanelUtils';
 
@@ -25,9 +22,7 @@ export type UsePlatformPanelPageParams = {
 export function usePlatformPanelPage({ embeddedTab, shellLayout }: UsePlatformPanelPageParams = {}) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { login } = useAuthStore();
-  const clearPermissions = usePermissionsStore((s) => s.clearPermissions);
-  const { isSuperAdmin, hasSelectedSubscriber } = usePlatformGate();
+  const { isPlatformOperator, hasSelectedSubscriber } = usePlatformGate();
   const { t } = useI18n();
 
   const tabParam = searchParams.get('tab');
@@ -40,10 +35,10 @@ export function usePlatformPanelPage({ embeddedTab, shellLayout }: UsePlatformPa
   const selectHomeTab = useCallback(
     (tab: PlatformHomeTab) => {
       if (shellLayout) {
-        if (tab === 'overview') void navigate('/superadmin/overview');
-        else if (tab === 'companies') void navigate('/superadmin/subscribers');
-        else if (tab === 'plans') void navigate('/superadmin/menu-plans?tab=plans');
-        else if (tab === 'menus') void navigate('/superadmin/menu-plans?tab=menu');
+        if (tab === 'overview') void navigate('/platform/overview');
+        else if (tab === 'companies') void navigate('/platform/subscribers');
+        else if (tab === 'plans') void navigate('/platform/menu-plans?tab=plans');
+        else if (tab === 'menus') void navigate('/platform/menu-plans?tab=menu');
         return;
       }
       if (tab === 'overview') setSearchParams({}, { replace: true });
@@ -57,7 +52,6 @@ export function usePlatformPanelPage({ embeddedTab, shellLayout }: UsePlatformPa
   const [metrics, setMetrics] = useState<Awaited<ReturnType<typeof platformService.getMetrics>> | null>(null);
   const [subscribers, setSubscribers] = useState<PlatformSubscriber[]>([]);
   const [q, setQ] = useState('');
-  const [switching, setSwitching] = useState<string | null>(null);
   const [plans, setPlans] = useState<PlatformPlanCatalogEntry[]>([]);
 
   const [createSubscriberOpen, setCreateSubscriberOpen] = useState(false);
@@ -162,23 +156,6 @@ export function usePlatformPanelPage({ embeddedTab, shellLayout }: UsePlatformPa
 
   const moduleLabel = useCallback((key: string) => t(`companies.subscription.module.${key}`, key), [t]);
 
-  const handleSwitch = async (subscriber: PlatformSubscriber) => {
-    if (!subscriber.isActive) return;
-    setSwitching(subscriber.id);
-    setError('');
-    try {
-      const auth = await platformService.switchSubscriber(subscriber.id);
-      storeImpersonationSubscriberName(subscriber.name);
-      clearPermissions();
-      login(auth);
-      navigate('/saas/overview');
-    } catch (e) {
-      setError(formatApiRequestError(e, { offline: t('common.apiUnreachable'), generic: t('common.errorGeneric') }));
-    } finally {
-      setSwitching(null);
-    }
-  };
-
   const openCreateSubscriber = () => {
     setCreateError('');
     setCreatePlanCode('');
@@ -224,18 +201,18 @@ export function usePlatformPanelPage({ embeddedTab, shellLayout }: UsePlatformPa
       const adminEmail = createForm.adminEmail.trim().toLowerCase();
 
       if (activePlans.length === 0) {
-        setCreateError(t('superadmin.createSubscriber.error.noPlans'));
+        setCreateError(t('platform.createSubscriber.error.noPlans'));
         return;
       }
       if (!createPlanCode.trim()) {
-        setCreateError(t('superadmin.createSubscriber.error.planRequired'));
+        setCreateError(t('platform.createSubscriber.error.planRequired'));
         return;
       }
 
       if (createRestrictModules) {
         const n = SUBSCRIBER_MODULE_KEYS.filter((k) => createModuleChecks[k]).length;
         if (n === 0) {
-          setCreateError(t('superadmin.createSubscriber.error.noModulesSelected'));
+          setCreateError(t('platform.createSubscriber.error.noModulesSelected'));
           return;
         }
       }
@@ -274,7 +251,7 @@ export function usePlatformPanelPage({ embeddedTab, shellLayout }: UsePlatformPa
       if (subRestrict) {
         const n = SUBSCRIBER_MODULE_KEYS.filter((k) => subModuleChecks[k]).length;
         if (n === 0) {
-          setSubError(t('superadmin.changeSubscription.error.noModulesSelected'));
+          setSubError(t('platform.changeSubscription.error.noModulesSelected'));
           return;
         }
       }
@@ -298,7 +275,7 @@ export function usePlatformPanelPage({ embeddedTab, shellLayout }: UsePlatformPa
   return {
     t,
     navigate,
-    isSuperAdmin,
+    isPlatformOperator,
     hasSelectedSubscriber,
     homeTab,
     selectHomeTab,
@@ -309,12 +286,10 @@ export function usePlatformPanelPage({ embeddedTab, shellLayout }: UsePlatformPa
     subscribers,
     q,
     setQ,
-    switching,
     activePlans,
     filtered,
     planLabelForSubscriber,
     moduleLabel,
-    handleSwitch,
     openCreateSubscriber,
     openSubscriptionModal,
     createSubscriberOpen,

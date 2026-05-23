@@ -1,3 +1,4 @@
+using ERP.Application.Common;
 using ERP.Domain.Access.Entities;
 using ERP.Infrastructure.Persistence;
 
@@ -24,15 +25,15 @@ internal static class TestDataFactory
         await CommercialPlanLimitsBootstrap.EnsureDefaultsAsync(db, ct);
     }
 
-    internal static async Task<Guid> SeedPlatformSuperAdminAsync(
+    internal static async Task<Guid> SeedPlatformOperatorAsync(
         ErpDbContext db,
         MutableCurrentUser factoryUser,
         CancellationToken ct = default)
     {
         var userId = Guid.NewGuid();
-        var user = IdentityUser.CreatePlatformSuperAdmin(
+        var user = IdentityUser.CreatePlatformOperator(
             "Platform",
-            "SuperAdmin",
+            "Operator",
             $"superadmin-{userId:N}@test.local",
             passwordHash: "$2a$11$test.hash.only.for.integration.tests",
             createdBy: userId);

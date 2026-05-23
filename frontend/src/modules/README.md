@@ -22,7 +22,7 @@ modules/{domain}/
 | `branches` | `api/branchService.ts` | `pages/BranchesPage.tsx` | wrapper en `pages/BranchesPage.tsx` |
 | `accounting` | `api/accountingService.ts`, `accountingConfigService.ts` | `pages/AccountingPage.tsx` | |
 | `dashboard` | — | `pages/DashboardPage.tsx` | |
-| `platform` | `api/platformService.ts` | shell `/superadmin/*` + `/api/platform/*` |
+| `platform` | `api/platformService.ts` | shell `/platform/*` + `/api/platform/*` |
 | `products` | ✅ | ✅ | referencia |
 | `customers` | ✅ | ✅ | referencia |
 

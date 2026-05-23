@@ -39,13 +39,13 @@ async function safeGet<T>(url: string, params?: Record<string, string | undefine
 }
 
 export const configService = {
-  /** Config global del suscriptor activo (JWT). Admin / SuperAdmin en tenant. */
+  /** Config global del suscriptor activo (JWT). Admin u operador platform en tenant. */
   async loadCurrentSubscriberConfig(): Promise<ConfigEntry[]> {
     const rows = await safeGet<unknown[]>('/api/settings/config/global');
     return normalizeList(rows ?? []);
   },
 
-  /** Config de un tenant concreto vía panel global SuperAdmin (JWT global). */
+  /** Config de un tenant concreto vía panel platform (JWT global). */
   async loadTenantConfig(subscriberId: string): Promise<ConfigEntry[]> {
     const fallbackGlobal = await safeGet<unknown[]>(
       `${platformConfigBase(subscriberId)}/global`,

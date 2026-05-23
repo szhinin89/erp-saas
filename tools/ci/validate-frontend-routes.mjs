@@ -16,11 +16,11 @@ const ROUTER_FILES = [
 
 const FORBIDDEN_IMPORT_TOKENS = [
   { id: 'legacy-superadmin-import', pattern: 'superadminService', hint: 'Use platformService' },
-  { id: 'legacy-superadmin-import-camel', pattern: 'superAdminService', hint: 'Use platformService' },
+  { id: 'legacy-superadmin-import-camel', pattern: 'platformService', hint: 'Use platformService' },
   { id: 'legacy-module-path', pattern: 'modules/superadmin', hint: 'Use modules/platform' },
   { id: 'legacy-components-path', pattern: 'components/superadmin', hint: 'Use components/platform' },
   { id: 'legacy-pages-path', pattern: 'pages/SuperAdmin', hint: 'Use pages/Platform' },
-  { id: 'legacy-use-superadmin', pattern: 'useSuperAdmin', hint: 'Use usePlatformGate' },
+  { id: 'legacy-use-superadmin', pattern: 'usePlatformGate', hint: 'Use usePlatformGate' },
 ];
 
 export function runValidateFrontendRoutes() {
@@ -76,12 +76,12 @@ export function runValidateFrontendRoutes() {
       message: 'Platform shell must use PlatformLayout',
     });
   }
-  if (!/\/superadmin/.test(platformRoutesText)) {
+  if (!/\/platform/.test(platformRoutesText)) {
     violations.push({
       check: 'frontend-routes',
       rule: 'platform-ui-route-missing',
       file: 'frontend/src/routes/platformRoutes.tsx',
-      message: 'Canonical UI route prefix /superadmin/* must remain in platformRoutes.tsx',
+      message: 'Canonical UI route prefix /platform/* must remain in platformRoutes.tsx',
     });
   }
 

@@ -28,8 +28,8 @@ export function MenuBuilderPreviewPanel({
     <aside className="menu-builder-panel menu-builder-panel--preview">
       {!crmUi ? (
         <header className="menu-builder-panel__head">
-          <h4 className="menu-builder-panel__title">{panelTitle ?? t('superadmin.menuBuilder.livePreview')}</h4>
-          <p className="menu-builder-panel__hint">{t('superadmin.menuBuilder.previewHintShort')}</p>
+          <h4 className="menu-builder-panel__title">{panelTitle ?? t('platform.menuBuilder.livePreview')}</h4>
+          <p className="menu-builder-panel__hint">{t('platform.menuBuilder.previewHintShort')}</p>
         </header>
       ) : null}
       <div className="menu-builder-panel__body">

@@ -52,7 +52,7 @@ function formatGrowthMoney(value: number, currencyHint: string): string {
 
 type GrowthTab = 'volumes' | 'monetary';
 
-/** Crecimiento (cantidades + MRR): mismos filtros y gráficos que antes en `/superadmin/growth`. */
+/** Crecimiento (cantidades + MRR): mismos filtros y gráficos que antes en `/platform/growth`. */
 export function PlatformGrowthSection() {
   const { t } = useI18n();
   const init = useMemo(() => computeLast3Months(), []);
@@ -104,49 +104,49 @@ export function PlatformGrowthSection() {
   return (
     <div className="sa-growthSection">
       {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
-      <p className="subtle sa-growthIntro">{t('superadmin.growth.subtitle')}</p>
+      <p className="subtle sa-growthIntro">{t('platform.growth.subtitle')}</p>
       <Card>
-        <ZHCardSection title={`${t('superadmin.growth.from')} / ${t('superadmin.growth.to')}`}>
-          <p className="subtle sag-hint">{t('superadmin.growth.defaultRangeHint')}</p>
+        <ZHCardSection title={`${t('platform.growth.from')} / ${t('platform.growth.to')}`}>
+          <p className="subtle sag-hint">{t('platform.growth.defaultRangeHint')}</p>
           <ZHGridRow cols={2}>
-            <ZHField label={t('superadmin.growth.from')}>
+            <ZHField label={t('platform.growth.from')}>
               <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} disabled={loading} />
             </ZHField>
-            <ZHField label={t('superadmin.growth.to')}>
+            <ZHField label={t('platform.growth.to')}>
               <input type="date" value={to} onChange={(e) => setTo(e.target.value)} disabled={loading} />
             </ZHField>
           </ZHGridRow>
           <ZHGridRow cols={2}>
-            <ZHField label={t('superadmin.growth.granularity')}>
+            <ZHField label={t('platform.growth.granularity')}>
               <select
                 value={granularity}
                 onChange={(e) => setGranularity(e.target.value as typeof granularity)}
                 disabled={loading}
               >
-                <option value="auto">{t('superadmin.growth.granularityAuto')}</option>
-                <option value="day">{t('superadmin.growth.granularityDay')}</option>
-                <option value="week">{t('superadmin.growth.granularityWeek')}</option>
-                <option value="month">{t('superadmin.growth.granularityMonth')}</option>
+                <option value="auto">{t('platform.growth.granularityAuto')}</option>
+                <option value="day">{t('platform.growth.granularityDay')}</option>
+                <option value="week">{t('platform.growth.granularityWeek')}</option>
+                <option value="month">{t('platform.growth.granularityMonth')}</option>
               </select>
             </ZHField>
             <ZHField label=" ">
               <ZHInlineRowRight>
                 <ZHBtn variant="secondary" type="button" onClick={applyLast3Months} disabled={loading}>
-                  {t('superadmin.growth.last3Months')}
+                  {t('platform.growth.last3Months')}
                 </ZHBtn>
                 <ZHBtn variant="primary" type="button" onClick={() => void load()} disabled={loading}>
-                  {t('superadmin.growth.apply')}
+                  {t('platform.growth.apply')}
                 </ZHBtn>
               </ZHInlineRowRight>
             </ZHField>
           </ZHGridRow>
           {dataCounts ? (
             <p className="subtle sag-meta">
-              {t('superadmin.growth.usedGranularity')}: <strong>{dataCounts.granularity}</strong>
+              {t('platform.growth.usedGranularity')}: <strong>{dataCounts.granularity}</strong>
               {tab === 'monetary' && dataMoney ? (
                 <>
                   {' · '}
-                  {t('superadmin.growth.currencyHint')}: <strong>{dataMoney.currencyHint}</strong>
+                  {t('platform.growth.currencyHint')}: <strong>{dataMoney.currencyHint}</strong>
                 </>
               ) : null}
             </p>
@@ -154,7 +154,7 @@ export function PlatformGrowthSection() {
         </ZHCardSection>
       </Card>
 
-      <div className="sag-tabs" role="tablist" aria-label={t('superadmin.growth.tabsAria')}>
+      <div className="sag-tabs" role="tablist" aria-label={t('platform.growth.tabsAria')}>
         <button
           type="button"
           role="tab"
@@ -163,7 +163,7 @@ export function PlatformGrowthSection() {
           onClick={() => setTab('volumes')}
           disabled={loading}
         >
-          {t('superadmin.growth.tabVolumes')}
+          {t('platform.growth.tabVolumes')}
         </button>
         <button
           type="button"
@@ -173,12 +173,12 @@ export function PlatformGrowthSection() {
           onClick={() => setTab('monetary')}
           disabled={loading}
         >
-          {t('superadmin.growth.tabMonetary')}
+          {t('platform.growth.tabMonetary')}
         </button>
       </div>
 
       {tab === 'monetary' ? (
-        <p className="subtle sag-disclaimer">{t('superadmin.growth.moneyDisclaimer')}</p>
+        <p className="subtle sag-disclaimer">{t('platform.growth.moneyDisclaimer')}</p>
       ) : null}
 
       {loading ? (
@@ -187,12 +187,12 @@ export function PlatformGrowthSection() {
         </Card>
       ) : chartRows.length === 0 ? (
         <Card>
-          <EmptyState message={t('superadmin.growth.empty')} />
+          <EmptyState message={t('platform.growth.empty')} />
         </Card>
       ) : tab === 'volumes' ? (
         <>
           <Card>
-            <ZHCardSection title={t('superadmin.growth.chartNewTitle')}>
+            <ZHCardSection title={t('platform.growth.chartNewTitle')}>
               <div className="sag-chart">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={chartRows} margin={{ top: 8, right: 8, bottom: 48, left: 8 }}>
@@ -201,16 +201,16 @@ export function PlatformGrowthSection() {
                     <YAxis allowDecimals={false} width={40} />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="newSubscribers" name={t('superadmin.growth.legend.subscribers')} fill="#0ea5e9" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="newIdentityUsers" name={t('superadmin.growth.legend.users')} fill="#6366f1" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="newCompanyUserMemberships" name={t('superadmin.growth.legend.company_user_memberships')} fill="#14b8a6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="newSubscribers" name={t('platform.growth.legend.subscribers')} fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="newIdentityUsers" name={t('platform.growth.legend.users')} fill="#6366f1" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="newCompanyUserMemberships" name={t('platform.growth.legend.company_user_memberships')} fill="#14b8a6" radius={[4, 4, 0, 0]} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
             </ZHCardSection>
           </Card>
           <Card>
-            <ZHCardSection title={t('superadmin.growth.chartCumulativeTitle')}>
+            <ZHCardSection title={t('platform.growth.chartCumulativeTitle')}>
               <div className="sag-chart">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={chartRows} margin={{ top: 8, right: 8, bottom: 48, left: 8 }}>
@@ -222,7 +222,7 @@ export function PlatformGrowthSection() {
                     <Line
                       type="monotone"
                       dataKey="cumulativeSubscribers"
-                      name={t('superadmin.growth.legend.subscribers')}
+                      name={t('platform.growth.legend.subscribers')}
                       stroke="#0ea5e9"
                       strokeWidth={2}
                       dot={{ r: 3 }}
@@ -230,7 +230,7 @@ export function PlatformGrowthSection() {
                     <Line
                       type="monotone"
                       dataKey="cumulativeIdentityUsers"
-                      name={t('superadmin.growth.legend.users')}
+                      name={t('platform.growth.legend.users')}
                       stroke="#6366f1"
                       strokeWidth={2}
                       dot={{ r: 3 }}
@@ -238,7 +238,7 @@ export function PlatformGrowthSection() {
                     <Line
                       type="monotone"
                       dataKey="cumulativeCompanyUserMemberships"
-                      name={t('superadmin.growth.legend.company_user_memberships')}
+                      name={t('platform.growth.legend.company_user_memberships')}
                       stroke="#14b8a6"
                       strokeWidth={2}
                       dot={{ r: 3 }}
@@ -251,12 +251,12 @@ export function PlatformGrowthSection() {
         </>
       ) : moneyRows.length === 0 ? (
         <Card>
-          <EmptyState message={t('superadmin.growth.empty')} />
+          <EmptyState message={t('platform.growth.empty')} />
         </Card>
       ) : (
         <>
           <Card>
-            <ZHCardSection title={t('superadmin.growth.chartMoneyNewTitle')}>
+            <ZHCardSection title={t('platform.growth.chartMoneyNewTitle')}>
               <div className="sag-chart">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={moneyRows} margin={{ top: 8, right: 8, bottom: 48, left: 8 }}>
@@ -271,7 +271,7 @@ export function PlatformGrowthSection() {
                     <Legend />
                     <Bar
                       dataKey="newMrrApprox"
-                      name={t('superadmin.growth.legend.newMrr')}
+                      name={t('platform.growth.legend.newMrr')}
                       fill="#0ea5e9"
                       radius={[4, 4, 0, 0]}
                     />
@@ -281,7 +281,7 @@ export function PlatformGrowthSection() {
             </ZHCardSection>
           </Card>
           <Card>
-            <ZHCardSection title={t('superadmin.growth.chartMoneyCumulativeTitle')}>
+            <ZHCardSection title={t('platform.growth.chartMoneyCumulativeTitle')}>
               <div className="sag-chart">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={moneyRows} margin={{ top: 8, right: 8, bottom: 48, left: 8 }}>
@@ -297,7 +297,7 @@ export function PlatformGrowthSection() {
                     <Line
                       type="monotone"
                       dataKey="cumulativeMrrApprox"
-                      name={t('superadmin.growth.legend.cumulativeMrr')}
+                      name={t('platform.growth.legend.cumulativeMrr')}
                       stroke="#6366f1"
                       strokeWidth={2}
                       dot={{ r: 3 }}

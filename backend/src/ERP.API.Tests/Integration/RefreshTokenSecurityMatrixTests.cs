@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Contracts;
 using ERP.API.Tests.Support;
 using ERP.Application.Auth.DTOs;
+using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
 using ERP.Infrastructure.Persistence;
@@ -277,7 +278,7 @@ public sealed class RefreshTokenSecurityMatrixTests
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
             var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
             var actorId = Guid.NewGuid();
-            var user = IdentityUser.CreatePlatformSuperAdmin(
+            var user = IdentityUser.CreatePlatformOperator(
                 "Platform", "Refresh", email, hasher.HashPassword(password), actorId);
             await db.IdentityUsers.AddAsync(user);
             await db.SaveChangesAsync();
@@ -301,7 +302,7 @@ public sealed class RefreshTokenSecurityMatrixTests
         var payload = await refresh.Content.ReadFromJsonAsync<ApiResponse<AuthResponseDto>>(
             RefreshTokenHttpTestSupport.JsonOpts);
         payload!.Success.Should().BeTrue();
-        payload.ResponseObject.Role.Should().Be("SuperAdmin");
+        payload.ResponseObject.Role.Should().Be(PlatformAuthConstants.JwtPlatformOperatorRole);
         payload.ResponseObject.Token.Should().NotBeNullOrWhiteSpace();
     }
 

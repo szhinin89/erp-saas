@@ -12,7 +12,7 @@ Actualizar al migrar pantallas. Convenciones: [`docs/frontend-layout-conventions
 | **B** | `pg-page` + cabecera manual (`pg-header-row` o `ZHScreenHeading`) |
 | **C** | Shell custom (`dsh-page`, `zh-auth-*`, `sap-*`) |
 
-## A — Conformes (tenant + SuperAdmin)
+## A — Conformes (tenant + platform)
 
 ### Shell y plantillas
 - `AppLayout` + `LayoutFrame` + rutas tenant
@@ -85,7 +85,7 @@ Actualizar al migrar pantallas. Convenciones: [`docs/frontend-layout-conventions
 - `pages/saas/SaasOverviewPage.tsx`
 - `pages/saas/SaasBillingPage.tsx`
 
-### SuperAdmin
+### Platform (control plane)
 - `modules/platform/pages/PlatformPanelPage.tsx`
 - `pages/Platform/PlatformOverviewPage.tsx`
 - `pages/Platform/SuperAdminPlansPage.tsx`
@@ -108,7 +108,7 @@ Ninguna pantalla de módulo tenant listada arriba conserva `pg-header-row` en el
 ## C — Excepciones válidas
 
 - **Auth:** `LoginPage`, `ForgotPasswordPage`, `ResetPasswordPage`, `PasswordResetPage`, `SubscriberSelectPage`, `CompanySelectPage`
-- **SuperAdmin:** `SuperAdminPlansSection` — subcabecera `sap-dash-head` bajo topbar de ruta
+- **Platform:** `PlatformPlansSection` — subcabecera `sap-dash-head` bajo topbar de ruta
 - **Reportes:** `components/ReportPageTemplate.tsx` — plantilla de dominio con `pg-header-row` interno (consumida por `SalesReportPage`)
 
 ## Utilidades compartidas
@@ -149,7 +149,7 @@ Reutilización transversal: `pg-pad-40`, `pg-overflow-x`, `pg-th/td-right`, `pg-
 | **Micro-deuda tenant pages** | — *(CompanyConfig, CreditNotes, CrearGasto, Carriers, CrearAjuste — 2026-05-21)* |
 | **SRI / cascade / clientes / sucursales / CrearCompra / Billing** | — *(completados)* |
 | **Contabilidad tabs** | — *(completado)* |
-| **SuperAdmin CRM menu** | — *(2026-05-21: `smp-*` + `smb-*`, 0 inline estructural en CRM)* |
+| **Platform CRM menu** | — *(2026-05-21: `smp-*` + `smb-*`, 0 inline estructural en CRM)* |
 | **Componentes base** | `Modal`, `ZHConfirmModal`, `ZHPromptModal` — prop `style` | Excepción API |
 | **Árbol contable** | `AccountTreeSelect` indent dinámico | Excepción válida |
 | **Auth** | `SubscriberSelectPage` (~2) | Clase C |

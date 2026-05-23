@@ -58,14 +58,14 @@ export function PlatformMenuBuilderLegacyPanel(props: PlatformMenuBuilderLegacyP
 
   return (
     <Card>
-      <ZHCardSection title={t('superadmin.menuBuilder.title')}>
-        <p className="subtle">{t('superadmin.menuBuilder.subtitle')}</p>
+      <ZHCardSection title={t('platform.menuBuilder.title')}>
+        <p className="subtle">{t('platform.menuBuilder.subtitle')}</p>
 
         <div className="menu-builder-page-catalog">
-          <h3 className="menu-builder-page-catalog__title">{t('superadmin.menuBuilder.treeTitle')}</h3>
+          <h3 className="menu-builder-page-catalog__title">{t('platform.menuBuilder.treeTitle')}</h3>
           <div className="menu-builder-page-catalog__actions">
             <ZHBtn variant="ghost" size="md" type="button" onClick={() => void syncCatalog()} disabled={busy}>
-              {t('superadmin.menuBuilder.syncCatalog')}
+              {t('platform.menuBuilder.syncCatalog')}
             </ZHBtn>
             <ZHBtn variant="ghost" size="md" type="button" onClick={() => void reloadArbol()} disabled={busy}>
               {t('common.refresh')}
@@ -91,7 +91,7 @@ export function PlatformMenuBuilderLegacyPanel(props: PlatformMenuBuilderLegacyP
               setEditorMainTab('visual');
             }}
           >
-            {t('superadmin.menuBuilder.tabVisual')}
+            {t('platform.menuBuilder.tabVisual')}
           </button>
           <button
             type="button"
@@ -99,7 +99,7 @@ export function PlatformMenuBuilderLegacyPanel(props: PlatformMenuBuilderLegacyP
             className={editorMainTab === 'json' ? 'is-active' : ''}
             onClick={() => setEditorMainTab('json')}
           >
-            {t('superadmin.menuBuilder.tabJson')}
+            {t('platform.menuBuilder.tabJson')}
           </button>
         </div>
 
@@ -120,10 +120,10 @@ export function PlatformMenuBuilderLegacyPanel(props: PlatformMenuBuilderLegacyP
 
         <div className="zh-form-tabs menu-plan-composer__legacyTabs" role="tablist">
           <button type="button" role="tab" className={sub === 'plan' ? 'is-active' : ''} onClick={() => setSub('plan')}>
-            {t('superadmin.menuBuilder.byPlan')}
+            {t('platform.menuBuilder.byPlan')}
           </button>
           <button type="button" role="tab" className={sub === 'subscriber' ? 'is-active' : ''} onClick={() => setSub('subscriber')}>
-            {t('superadmin.menuBuilder.bySubscriber')}
+            {t('platform.menuBuilder.bySubscriber')}
           </button>
         </div>
 
@@ -132,7 +132,7 @@ export function PlatformMenuBuilderLegacyPanel(props: PlatformMenuBuilderLegacyP
         {sub === 'plan' ? (
           <>
             <ZHGridRow cols={1}>
-              <ZHField label={t('superadmin.menuBuilder.planSelect')}>
+              <ZHField label={t('platform.menuBuilder.planSelect')}>
                 <select className="zh-input" value={planId} onChange={(e) => setPlanId(e.target.value)} disabled={busy}>
                   <option value="">{t('common.select')}</option>
                   {plans.map((p) => (
@@ -144,10 +144,10 @@ export function PlatformMenuBuilderLegacyPanel(props: PlatformMenuBuilderLegacyP
               </ZHField>
             </ZHGridRow>
             <div className="subtle menu-plan-composer__legacySubtleLabel">
-              {t('superadmin.menuBuilder.copyFromTitle')}
+              {t('platform.menuBuilder.copyFromTitle')}
             </div>
             <ZHGridRow cols={1}>
-              <ZHField label={t('superadmin.menuBuilder.copySourcePlan')}>
+              <ZHField label={t('platform.menuBuilder.copySourcePlan')}>
                 <select
                   className="zh-input"
                   value={copySourcePlanId}
@@ -173,7 +173,7 @@ export function PlatformMenuBuilderLegacyPanel(props: PlatformMenuBuilderLegacyP
                   onChange={(e) => setCopyMenu(e.target.checked)}
                   disabled={busy}
                 />
-                <span>{t('superadmin.menuBuilder.copyMenuCheck')}</span>
+                <span>{t('platform.menuBuilder.copyMenuCheck')}</span>
               </label>
             </ZHGridRow>
             <ZHInlineRowRight>
@@ -184,13 +184,13 @@ export function PlatformMenuBuilderLegacyPanel(props: PlatformMenuBuilderLegacyP
                 onClick={() => void runCopyFromPlan()}
                 disabled={busy || !planId || !copySourcePlanId}
               >
-                {t('superadmin.menuBuilder.copyExecute')}
+                {t('platform.menuBuilder.copyExecute')}
               </ZHBtn>
             </ZHInlineRowRight>
           </>
         ) : (
           <ZHGridRow cols={1}>
-            <ZHField label={t('superadmin.menuBuilder.subscriberSelect')}>
+            <ZHField label={t('platform.menuBuilder.subscriberSelect')}>
               <select className="zh-input" value={subscriberId} onChange={(e) => setSubscriberId(e.target.value)} disabled={busy}>
                 <option value="">{t('common.select')}</option>
                 {props.subscribers.map((x) => (
@@ -202,7 +202,7 @@ export function PlatformMenuBuilderLegacyPanel(props: PlatformMenuBuilderLegacyP
             </ZHField>
             {subscriberMenuFlags ? (
               <p className="subtle menu-plan-composer__legacySubtleHelp">
-                {t('superadmin.menuBuilder.hintFlags')}{' '}
+                {t('platform.menuBuilder.hintFlags')}{' '}
                 <strong>
                   {subscriberMenuFlags.hasCustomMenu ? 'custom ' : ''}
                   {subscriberMenuFlags.usedPlanMenu ? 'plan ' : ''}
@@ -214,7 +214,7 @@ export function PlatformMenuBuilderLegacyPanel(props: PlatformMenuBuilderLegacyP
         )}
 
         {editorMainTab === 'json' ? (
-          <ZHField label={t('superadmin.menuBuilder.jsonLabel')}>
+          <ZHField label={t('platform.menuBuilder.jsonLabel')}>
             <textarea
               className="zh-input menu-plan-composer__legacyJsonTextarea"
               rows={18}
@@ -228,30 +228,30 @@ export function PlatformMenuBuilderLegacyPanel(props: PlatformMenuBuilderLegacyP
 
         <ZHInlineRowRight>
           <ZHBtn variant="ghost" size="md" type="button" onClick={() => void fillFromGlobal()} disabled={busy}>
-            {t('superadmin.menuBuilder.loadGlobal')}
+            {t('platform.menuBuilder.loadGlobal')}
           </ZHBtn>
           {sub === 'plan' ? (
             <>
               <ZHBtn variant="ghost" size="md" type="button" onClick={() => void loadPlanSaved()} disabled={busy || !planId}>
-                {t('superadmin.menuBuilder.loadSavedPlan')}
+                {t('platform.menuBuilder.loadSavedPlan')}
               </ZHBtn>
               <ZHBtn variant="ghost" size="md" type="button" onClick={() => void clearPlan()} disabled={busy || !planId}>
-                {t('superadmin.menuBuilder.clearPlan')}
+                {t('platform.menuBuilder.clearPlan')}
               </ZHBtn>
               <ZHBtn variant="primary" size="md" type="button" onClick={() => void savePlan()} disabled={busy || !planId}>
-                {t('superadmin.menuBuilder.savePlan')}
+                {t('platform.menuBuilder.savePlan')}
               </ZHBtn>
             </>
           ) : (
             <>
               <ZHBtn variant="ghost" size="md" type="button" onClick={() => void loadTenantResolved()} disabled={busy || !subscriberId}>
-                {t('superadmin.menuBuilder.loadResolvedSubscriber')}
+                {t('platform.menuBuilder.loadResolvedSubscriber')}
               </ZHBtn>
               <ZHBtn variant="ghost" size="md" type="button" onClick={() => void resetSubscriber()} disabled={busy || !subscriberId}>
-                {t('superadmin.menuBuilder.resetSubscriber')}
+                {t('platform.menuBuilder.resetSubscriber')}
               </ZHBtn>
               <ZHBtn variant="primary" size="md" type="button" onClick={() => void saveSubscriber()} disabled={busy || !subscriberId}>
-                {t('superadmin.menuBuilder.saveSubscriber')}
+                {t('platform.menuBuilder.saveSubscriber')}
               </ZHBtn>
             </>
           )}

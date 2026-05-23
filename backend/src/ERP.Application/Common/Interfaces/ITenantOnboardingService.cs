@@ -4,7 +4,7 @@ namespace ERP.Application.Common.Interfaces;
 /// Orchestrates all default data creation when a new tenant/company is registered.
 ///
 /// Called automatically by:
-///   - <c>SuperAdminCreateSubscriberWithAdminHandler</c>
+///   - <c>PlatformCreateSubscriberWithAdminHandler</c>
 ///   - <c>RegisterSubscriberWithAdminHandler</c>
 ///
 /// Add new onboarding steps by adding a private method to

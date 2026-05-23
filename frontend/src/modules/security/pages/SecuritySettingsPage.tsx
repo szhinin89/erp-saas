@@ -4,6 +4,7 @@ import { ZHCard } from '../../../components/zh/ZHCard';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { useAuthStore } from '../../../store/authStore';
 import { securityService, type SecurityAdminMatrix, type SecurityUser } from '../api/securityService';
+import { isJwtPlatformOperatorRole } from '../../../constants/platformAuth';
 import { formatApiError } from '../../lib/formatApiError';
 import { useI18n } from '../../../i18n/i18n';
 import './SecuritySettingsPage.css';
@@ -65,7 +66,7 @@ export function SecuritySettingsPage() {
     };
   }, []);
 
-  const isSuperAdmin = (user?.role ?? '') === 'SuperAdmin';
+  const isPlatformOperator = isJwtPlatformOperatorRole(user?.role);
 
   const rows = useMemo(() => {
     if (!matrix) return [];
@@ -116,7 +117,7 @@ export function SecuritySettingsPage() {
     }
   };
 
-  if (!isSuperAdmin) {
+  if (!isPlatformOperator) {
     return <NoAccessPage title={t('security.title')} />;
   }
 

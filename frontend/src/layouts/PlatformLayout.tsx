@@ -4,7 +4,17 @@ import { useAuthStore } from '../store/authStore';
 import { useI18n } from '../i18n/i18n';
 import { usePlatformGate } from '../hooks/usePlatformGate';
 import { fullLogout } from '../lib/session/fullLogout';
-import { SUPERADMIN_IMPERSONATION_NAME_KEY } from '../lib/session/sessionStorageKeys';
+import { usePermissionsStore } from '../store/permissionsStore';
+import {
+  clearPlatformImpersonationReturnPath,
+  exitPlatformImpersonation,
+  hasPlatformImpersonationReturnPath,
+  readPlatformImpersonationReturnPath,
+} from '../navigation/platformImpersonationNav';
+import {
+  clearPlatformImpersonationName,
+  readPlatformImpersonationName,
+} from '../lib/session/sessionStorageKeys';
 import { RuntimeModeBadge } from '../components/RuntimeModeBadge';
 import { LayoutFrame } from '../components/layout/LayoutFrame';
 import { PLATFORM_UI } from '../modules/platform/api/platformApiPaths';
@@ -12,31 +22,37 @@ import './PlatformLayout.css';
 
 export function PlatformLayout() {
   const { t } = useI18n();
-  const { isSuperAdmin } = usePlatformGate();
+  const { isPlatformOperator, hasSelectedSubscriber } = usePlatformGate();
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, login } = useAuthStore();
+  const clearPermissions = usePermissionsStore((s) => s.clearPermissions);
+  const [impersonationExitBusy, setImpersonationExitBusy] = useState(false);
 
-  const [impersonationName, setImpersonationName] = useState(
-    () => localStorage.getItem(SUPERADMIN_IMPERSONATION_NAME_KEY) ?? '',
-  );
+  const [impersonationName, setImpersonationName] = useState(() => readPlatformImpersonationName() ?? '');
 
   useEffect(() => {
-    if (location.pathname !== '/superadmin') return;
+    if (location.pathname !== '/platform') return;
     navigate(PLATFORM_UI.overview, { replace: true });
   }, [location.pathname, navigate]);
+
+  useEffect(() => {
+    if (!isPlatformOperator || hasSelectedSubscriber) return;
+    clearPlatformImpersonationName();
+    setImpersonationName('');
+  }, [isPlatformOperator, hasSelectedSubscriber]);
 
   const pageTitle = useMemo(() => {
     const p = location.pathname;
     if (p.includes('/subscribers/') && p !== PLATFORM_UI.subscribers) return 'Suscriptor';
     if (p.includes('/subscribers')) return 'Suscriptores';
-    if (p.includes('/plans')) return t('superadmin.shell.plans');
+    if (p.includes('/plans')) return t('platform.shell.plans');
     if (p.includes('/users')) return 'Platform users';
     if (p.includes('/billing')) return 'Platform billing';
     if (p.includes('/observability')) return 'Observability';
     if (p.includes('/audit')) return 'Audit log';
-    if (p.includes('/overview')) return t('superadmin.title');
-    return t('superadmin.title');
+    if (p.includes('/overview')) return t('platform.title');
+    return t('platform.title');
   }, [location.pathname, t]);
 
   const handleLogout = () => {
@@ -44,16 +60,36 @@ export function PlatformLayout() {
     navigate('/login');
   };
 
-  const exitImpersonation = () => {
-    localStorage.removeItem(SUPERADMIN_IMPERSONATION_NAME_KEY);
-    setImpersonationName('');
-    navigate(PLATFORM_UI.overview);
+  const exitImpersonation = async () => {
+    if (impersonationExitBusy) return;
+    setImpersonationExitBusy(true);
+    try {
+      if (hasSelectedSubscriber) {
+        const destination = hasPlatformImpersonationReturnPath() ? 'return-path' : 'global-overview';
+        await exitPlatformImpersonation({
+          destination,
+          navigate,
+          login,
+          clearPermissions,
+        });
+      } else {
+        clearPlatformImpersonationName();
+        const storedReturnPath = readPlatformImpersonationReturnPath();
+        clearPlatformImpersonationReturnPath();
+        navigate(storedReturnPath ?? PLATFORM_UI.overview);
+      }
+      setImpersonationName('');
+    } catch {
+      navigate(PLATFORM_UI.overview);
+    } finally {
+      setImpersonationExitBusy(false);
+    }
   };
 
   const showBanner = !!impersonationName;
   const userInitial = (user?.fullName ?? user?.email ?? 'SA').charAt(0).toUpperCase();
 
-  if (!isSuperAdmin) {
+  if (!isPlatformOperator) {
     return <Navigate to="/login" replace />;
   }
 
@@ -67,7 +103,7 @@ export function PlatformLayout() {
           <div className="sa-banner-left">
             <span className="material-symbols-outlined">person_search</span>
             <span>
-              Modo Impersonación: visualizando <strong>{impersonationName}</strong> como SuperAdmin
+              Modo impersonación: visualizando <strong>{impersonationName}</strong> como operador platform
             </span>
           </div>
           <button className="sa-banner-btn" onClick={exitImpersonation}>
@@ -77,7 +113,7 @@ export function PlatformLayout() {
         </div>
       )}
 
-      <aside className="sa-sidebar" aria-label="Navegación SuperAdmin">
+      <aside className="sa-sidebar" aria-label="Navegación platform">
         <div className="sa-sidebar-logo">
           <div className="sa-sidebar-logo-icon" aria-hidden="true">
             <span className="material-symbols-outlined">shield_person</span>
@@ -91,7 +127,7 @@ export function PlatformLayout() {
         <nav className="sa-sidebar-nav">
           <NavLink to={PLATFORM_UI.overview} className={navLinkClass} end>
             <span className="sa-nav-icon material-symbols-outlined">dashboard</span>
-            <span>{t('superadmin.tabOverview')}</span>
+            <span>{t('platform.tabOverview')}</span>
           </NavLink>
 
           <NavLink to={PLATFORM_UI.subscribers} className={navLinkClass}>
@@ -101,7 +137,7 @@ export function PlatformLayout() {
 
           <NavLink to={PLATFORM_UI.plans} className={navLinkClass} end={false}>
             <span className="sa-nav-icon material-symbols-outlined">loyalty</span>
-            <span>{t('superadmin.shell.plans')}</span>
+            <span>{t('platform.shell.plans')}</span>
           </NavLink>
 
           <NavLink to={PLATFORM_UI.users} className={navLinkClass}>
@@ -168,7 +204,7 @@ export function PlatformLayout() {
 
           <div className="sa-topbar-user">
             <div className="sa-topbar-user-info">
-              <span className="sa-topbar-user-name">Super Admin</span>
+              <span className="sa-topbar-user-name">Platform Admin</span>
               <span className="sa-topbar-user-sub">{user?.email ?? ''}</span>
             </div>
             <div className="sa-topbar-avatar" aria-hidden="true">{userInitial}</div>

@@ -15,7 +15,7 @@ public sealed class AppFeature
     public Guid?    ParentId      { get; private set; }
     public int      SortOrder     { get; private set; }
     public bool     IsVisibleInMenu { get; private set; }
-    public bool     IsSuperAdmin  { get; private set; }
+    public bool     IsPlatformOnlyFeature  { get; private set; }
     public DateTime CreatedAtUtc  { get; private set; }
     public DateTime UpdatedAtUtc  { get; private set; }
 
@@ -46,7 +46,7 @@ public sealed class AppFeature
             ParentId        = parentId,
             SortOrder       = sortOrder,
             IsVisibleInMenu = isVisibleInMenu,
-            IsSuperAdmin    = isSuperAdmin,
+            IsPlatformOnlyFeature    = isSuperAdmin,
             CreatedAtUtc    = utcNow,
             UpdatedAtUtc    = utcNow,
         };
@@ -68,7 +68,7 @@ public sealed class AppFeature
         ParentId        = parentId;
         SortOrder       = sortOrder;
         IsVisibleInMenu = isVisibleInMenu;
-        IsSuperAdmin    = isSuperAdmin;
+        IsPlatformOnlyFeature    = isSuperAdmin;
         UpdatedAtUtc    = utcNow;
     }
 }

@@ -21,23 +21,28 @@ public sealed class PublicDeploymentController : ControllerBase
     public PublicDeploymentController(IDeploymentFeatureFlags deployment) =>
         _deployment = deployment;
 
-    /// <summary>Indica si el panel global SuperAdmin está habilitado en esta instancia.</summary>
+    /// <summary>Indica si el panel platform está habilitado en esta instancia.</summary>
     [HttpGet("deployment")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<DeploymentInfoDto>), StatusCodes.Status200OK)]
     public IActionResult GetDeployment()
         => this.ApiOk(
             new DeploymentInfoDto(
-                SuperAdminPanelEnabled: _deployment.IsSuperAdminPanelEnabled,
+                PlatformPanelEnabled: _deployment.IsPlatformPanelEnabled,
                 MaxActiveSubscribers: _deployment.MaxActiveSubscribers,
                 MaxIdentityUsers: _deployment.MaxIdentityUsers,
                 DedicatedSingleClientInstance: _deployment.IsDedicatedSingleClientInstance,
                 MaxUsersPerSubscriber: _deployment.MaxUsersPerSubscriber));
 }
 
+/// <param name="PlatformPanelEnabled">Alias legacy JSON — mismo valor que <see cref="PlatformPanelEnabled"/>.</param>
 public sealed record DeploymentInfoDto(
-    bool SuperAdminPanelEnabled,
+    bool PlatformPanelEnabled,
     int? MaxActiveSubscribers,
     int? MaxIdentityUsers,
     bool DedicatedSingleClientInstance,
-    int? MaxUsersPerSubscriber);
+    int? MaxUsersPerSubscriber)
+{
+    /// <summary>Flag canónico para el SPA (preferir en clientes nuevos).</summary>
+    public bool PlatformPanelEnabled => PlatformPanelEnabled;
+}

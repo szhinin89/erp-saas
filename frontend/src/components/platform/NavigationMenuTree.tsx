@@ -66,7 +66,7 @@ export function NavMenuItemLevels({
 }: NavMenuItemLevelsProps) {
   function renderLevel(levelItems: AdminNavItemRow[], depth: number, insidePanel: boolean): ReactNode {
     if (!levelItems.length) {
-      return <p className="nm-emptyBranch">{t('superadmin.navigationMenu.emptyGroup')}</p>;
+      return <p className="nm-emptyBranch">{t('platform.navigationMenu.emptyGroup')}</p>;
     }
 
     return (
@@ -104,7 +104,7 @@ export function NavMenuItemLevels({
                     type="button"
                     className={`nm-chevron${expanded ? ' is-open' : ''}`}
                     aria-expanded={expanded}
-                    aria-label={t('superadmin.navigationMenu.toggleSubmenu')}
+                    aria-label={t('platform.navigationMenu.toggleSubmenu')}
                     disabled={disabled}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -132,7 +132,7 @@ export function NavMenuItemLevels({
                   <button
                     type="button"
                     className="nm-miniBtn"
-                    aria-label={t('superadmin.navigationMenu.outdent')}
+                    aria-label={t('platform.navigationMenu.outdent')}
                     disabled={disabled || !canOutdent}
                     onClick={() => onOutdentItem(groupId, it.id)}
                   >
@@ -141,7 +141,7 @@ export function NavMenuItemLevels({
                   <button
                     type="button"
                     className="nm-miniBtn"
-                    aria-label={t('superadmin.navigationMenu.indent')}
+                    aria-label={t('platform.navigationMenu.indent')}
                     disabled={disabled || !canIndent}
                     onClick={() => onIndentItem(groupId, it.id)}
                   >
@@ -150,7 +150,7 @@ export function NavMenuItemLevels({
                   <button
                     type="button"
                     className="nm-miniBtn"
-                    aria-label={t('superadmin.navigationMenu.up')}
+                    aria-label={t('platform.navigationMenu.up')}
                     disabled={disabled || ii === 0}
                     onClick={() => onMoveItem(groupId, it.id, -1)}
                   >
@@ -159,7 +159,7 @@ export function NavMenuItemLevels({
                   <button
                     type="button"
                     className="nm-miniBtn"
-                    aria-label={t('superadmin.navigationMenu.down')}
+                    aria-label={t('platform.navigationMenu.down')}
                     disabled={disabled || ii >= levelItems.length - 1}
                     onClick={() => onMoveItem(groupId, it.id, 1)}
                   >
@@ -169,7 +169,7 @@ export function NavMenuItemLevels({
                     <button
                       type="button"
                       className="nm-miniBtn nm-miniBtn--add"
-                      aria-label={t('superadmin.navigationMenu.addChildItem')}
+                      aria-label={t('platform.navigationMenu.addChildItem')}
                       disabled={disabled}
                       onClick={() => onRequestAddChildItem(it.id)}
                     >
@@ -189,7 +189,7 @@ export function NavMenuItemLevels({
                     type="button"
                     className={`nm-star${pinOn ? ' is-on' : ''}`}
                     aria-pressed={pinOn}
-                    aria-label={t('superadmin.navigationMenu.pinToggle')}
+                    aria-label={t('platform.navigationMenu.pinToggle')}
                     disabled={disabled}
                     onClick={() => onTogglePin(it.id)}
                   >
@@ -217,13 +217,13 @@ export function NavMenuItemLevels({
     <div className="nm-groupItemsWrap">
       <div className="nm-groupItemToolbar">
         <button type="button" className="nm-textLink" disabled={disabled} onClick={onExpandAllItems}>
-          {t('superadmin.navigationMenu.expandAll')}
+          {t('platform.navigationMenu.expandAll')}
         </button>
         <span className="nm-dot" aria-hidden>
           ·
         </span>
         <button type="button" className="nm-textLink" disabled={disabled} onClick={onCollapseAllItems}>
-          {t('superadmin.navigationMenu.collapseAll')}
+          {t('platform.navigationMenu.collapseAll')}
         </button>
         {onRequestAddRootItem ? (
           <>
@@ -231,18 +231,18 @@ export function NavMenuItemLevels({
               ·
             </span>
             <button type="button" className="nm-textLink" disabled={disabled} onClick={onRequestAddRootItem}>
-              {t('superadmin.navigationMenu.addRootItem')}
+              {t('platform.navigationMenu.addRootItem')}
             </button>
           </>
         ) : null}
       </div>
-      <nav className="nm-groupItemsNav" aria-label={t('superadmin.navigationMenu.itemsInsideGroup')}>
+      <nav className="nm-groupItemsNav" aria-label={t('platform.navigationMenu.itemsInsideGroup')}>
         {items.length === 0 ? (
           <div className="nm-emptyGroupBody">
-            <p className="nm-emptyBranch">{t('superadmin.navigationMenu.emptyGroup')}</p>
+            <p className="nm-emptyBranch">{t('platform.navigationMenu.emptyGroup')}</p>
             {onRequestAddRootItem ? (
               <button type="button" className="nm-textLink" disabled={disabled} onClick={onRequestAddRootItem}>
-                {t('superadmin.navigationMenu.addFirstItem')}
+                {t('platform.navigationMenu.addFirstItem')}
               </button>
             ) : null}
           </div>
@@ -316,7 +316,7 @@ export function NavigationBarMenuEditor({
                 aria-expanded={groupOpen}
                 aria-controls={`nm-group-body-${g.id}`}
                 id={`nm-group-head-${g.id}`}
-                aria-label={t('superadmin.navigationMenu.toggleGroupItems')}
+                aria-label={t('platform.navigationMenu.toggleGroupItems')}
                 disabled={disabled}
                 onClick={() =>
                   setExpandedGroups((prev) => ({
@@ -338,7 +338,7 @@ export function NavigationBarMenuEditor({
                 <button
                   type="button"
                   className="nm-miniBtn"
-                  aria-label={t('superadmin.navigationMenu.up')}
+                  aria-label={t('platform.navigationMenu.up')}
                   disabled={disabled || gi === 0}
                   onClick={() => onMoveGroup(gi, -1)}
                 >
@@ -347,7 +347,7 @@ export function NavigationBarMenuEditor({
                 <button
                   type="button"
                   className="nm-miniBtn"
-                  aria-label={t('superadmin.navigationMenu.down')}
+                  aria-label={t('platform.navigationMenu.down')}
                   disabled={disabled || gi >= groups.length - 1}
                   onClick={() => onMoveGroup(gi, 1)}
                 >

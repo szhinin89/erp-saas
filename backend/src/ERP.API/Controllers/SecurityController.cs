@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using ERP.API.Controllers.Platform;
+using MediatR;
 using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
@@ -17,7 +18,7 @@ namespace ERP.API.Controllers;
 [AppFeature("Security API", "perm:security.api", "🧩", null, null, 989, IsVisibleInMenu = false)]
 [Route("api/[controller]")]
 [Authorize(Policy = "Session")]
-[Authorize(Roles = "SuperAdmin")]
+[Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
 [Produces("application/json")]
 public class SecurityController : ControllerBase
 {

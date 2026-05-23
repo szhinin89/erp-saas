@@ -284,7 +284,7 @@ export function useMenuBuilderController({
         const node = funcionalidadToEditorItem(f);
         if (gap) {
           if (!parentAcceptsLibraryDrop(gap.parent)) {
-            onBuilderMessage?.(t('superadmin.menuBuilder.dropOnLeafBlocked'));
+            onBuilderMessage?.(t('platform.menuBuilder.dropOnLeafBlocked'));
             return;
           }
           onTreeChange(insertChildAt(tree, gap.parent, gap.index, node));
@@ -294,7 +294,7 @@ export function useMenuBuilderController({
           const loc = findLocation(tree, overTree);
           if (!loc) return;
           if (!parentAcceptsLibraryDrop(loc.parent)) {
-            onBuilderMessage?.(t('superadmin.menuBuilder.dropOnLeafBlocked'));
+            onBuilderMessage?.(t('platform.menuBuilder.dropOnLeafBlocked'));
             return;
           }
           onTreeChange(insertChildAt(tree, loc.parent, loc.index, node));

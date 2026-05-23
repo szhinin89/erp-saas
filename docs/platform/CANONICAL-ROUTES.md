@@ -1,7 +1,7 @@
 # Platform Control Plane — Rutas canónicas
 
-**Fecha:** 2026-05-23 · **Phase 5 COMPLETE** (hardening + CI guard)  
-**Ownership:** Platform SaaS (Super Admin global) — **no** ERP Runtime operativo.
+**Fecha:** 2026-05-23 · **Phase 5 COMPLETE** (naming platform + CI guard)  
+**Ownership:** Platform Control Plane (operador global) — **no** ERP Runtime operativo.
 
 ## API canónica (única superficie control plane)
 
@@ -21,31 +21,38 @@
 | `GET/POST /api/platform/features/*` | Feature tree | Sync catálogo platform |
 | `GET/PUT /api/platform/settings/instance-quota` | Deployment | Cuotas de instancia (`App_Data/instance-quota.json`) |
 
-## UI canónica (Super Admin shell)
+## UI canónica (shell platform)
 
 | Ruta | Pantalla |
 |------|----------|
-| `/superadmin/overview` | Dashboard platform |
-| `/superadmin/subscribers` | Listado suscriptores |
-| `/superadmin/subscribers/:id` | Ficha única — 9 tabs (ver abajo) |
-| `/superadmin/plans` | Planes + tab `?tab=menu` (menu builder fusionado) |
-| `/superadmin/users` | Platform users (listado, revoke sessions) |
-| `/superadmin/billing` | Billing agregado SaaS |
-| `/superadmin/observability` | Métricas + legacy usage histórico |
-| `/superadmin/audit` | Audit log platform |
+| `/platform/overview` | Dashboard platform |
+| `/platform/subscribers` | Listado suscriptores |
+| `/platform/subscribers/:id` | Ficha única — tabs (ver abajo) |
+| `/platform/plans` | Planes + tab `?tab=menu` (menu builder fusionado) |
+| `/platform/users` | Platform users (listado, revoke sessions) |
+| `/platform/billing` | Billing agregado SaaS |
+| `/platform/observability` | Métricas + legacy usage histórico |
+| `/platform/audit` | Audit log platform |
+
+Constantes frontend: `PLATFORM_UI` en `frontend/src/modules/platform/api/platformApiPaths.ts`.
 
 ### Subscriber detail — tabs canónicos
 
 `?tab=` opcional: `overview` · `subscription` · `entitlements` · `companies` · `users` · `configuration` · `menu-overrides` · `audit` · `metrics`
 
+Flujo UX: listado → **Abrir ficha** → sección **Entrar al tenant** (impersonación con retorno a ficha).
+
 ## Legacy UI → redirect (compat bookmarks)
 
 | Legacy | Redirect |
 |--------|----------|
-| `/companies` | `/superadmin/subscribers` o `/superadmin/subscribers/:id` si `sessionStorage` legacy |
-| `/superadmin/companies` | `/superadmin/subscribers` |
-| `/superadmin/menu-plans` | `/superadmin/plans?tab=menu` |
-| `/superadmin/navigation-menu` | `/superadmin/plans?tab=menu` |
+| `/superadmin/*` | `/platform/*` (misma subruta) |
+| `/companies` | `/platform/subscribers` o ficha vía `sessionStorage` |
+| `/superadmin/companies` | `/platform/subscribers` |
+| `/superadmin/menu-plans` | `/platform/plans?tab=menu` |
+| `/superadmin/navigation-menu` | `/platform/plans?tab=menu` |
+
+Implementación: `PlatformLegacyUiRedirect` en `frontend/src/routes/platformRoutes.tsx`.
 
 ## Phase 4 — API legacy eliminada
 
@@ -59,9 +66,9 @@ Controllers eliminados: `SuperAdminController`, `SuperAdminConfigController`, `S
 
 ## Separación Platform vs ERP Runtime
 
-- **Platform:** JWT global SuperAdmin, rutas `/superadmin/*`, API `/api/platform/*`.
+- **Platform:** JWT operador platform (`SuperAdmin` en JWT — ver `platformAuth.ts`), rutas `/platform/*`, API `/api/platform/*`.
 - **Runtime:** JWT con `subscriberId` + `companyId`, módulos ERP (`/sales`, `/masterdata`, …).
-- **Impersonación:** `switch-subscriber` → contexto tenant → `/saas/*` (no confundir con platform shell).
+- **Impersonación:** `switch-subscriber` → contexto tenant → `/saas/*` (banner con retorno a ficha platform).
 - **Intacto (Phase 4):** query filters multiempresa, `switch-company`, tablas legacy BD, `/api/subscribers/*` runtime (entitlements, public-settings, tenant admin).
 
-Ver también: [ROUTE-MIGRATION.md](./ROUTE-MIGRATION.md), [PHASE4-LEGACY-REMOVAL-COMPLETE.md](./PHASE4-LEGACY-REMOVAL-COMPLETE.md), [LEGACY_SURFACE_REPORT.md](./LEGACY_SURFACE_REPORT.md).
+Ver también: [ROUTE-MIGRATION.md](./ROUTE-MIGRATION.md), [PHASE4-LEGACY-REMOVAL-COMPLETE.md](./PHASE4-LEGACY-REMOVAL-COMPLETE.md), [LEGACY_ALIAS_MAP.md](./LEGACY_ALIAS_MAP.md), [LEGACY_SURFACE_REPORT.md](./LEGACY_SURFACE_REPORT.md).

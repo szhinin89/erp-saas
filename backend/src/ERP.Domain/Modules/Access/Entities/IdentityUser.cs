@@ -67,7 +67,7 @@ public class IdentityUser : SystemAuditableEntity
         return user;
     }
 
-    public static IdentityUser CreatePlatformSuperAdmin(
+    public static IdentityUser CreatePlatformOperator(
         string firstName,
         string lastName,
         string email,
@@ -86,7 +86,7 @@ public class IdentityUser : SystemAuditableEntity
             PasswordHash = passwordHash,
             IsActive = true,
             UserType = IdentityUserType.Platform,
-            PlatformRole = Enums.PlatformRole.SuperAdmin,
+            PlatformRole = Enums.PlatformRole.PlatformOperator,
             SubscriberId = null,
             SecurityStamp = Guid.NewGuid().ToString("N"),
             RequirePasswordReset = requirePasswordReset,
@@ -129,8 +129,8 @@ public class IdentityUser : SystemAuditableEntity
         && PlatformRole is not null
         && IsActive;
 
-    public bool IsPlatformSuperAdmin =>
-        IsPlatformOperator && PlatformRole == Enums.PlatformRole.SuperAdmin;
+    public bool IsPrimaryPlatformOperator =>
+        IsPlatformOperator && PlatformRole == Enums.PlatformRole.PlatformOperator;
 
     public string FullName => $"{FirstName} {LastName}";
 

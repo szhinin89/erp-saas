@@ -38,7 +38,7 @@ export function runValidatePlatformImports() {
         /\brequire\s*\(/.test(line) ||
         /\bimport\s*\(/.test(line);
 
-      if (!isImportLike && !/superadminService|superAdminService/i.test(line)) return;
+      if (!isImportLike && !/superadminService|platformService/i.test(line)) return;
 
       for (const rule of pathRules) {
         if (matchesForbidden(line, rule.pattern)) {

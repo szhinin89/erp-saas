@@ -9,57 +9,57 @@ using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Subscribers.Interfaces;
 using MediatR;
 
-namespace ERP.Application.Admin.UseCases.SuperAdminGlobal;
+namespace ERP.Application.Admin.UseCases.PlatformGlobal;
 
 public sealed record GetInstanceQuotaQuery : IRequest<Result<InstanceQuotaFileModel>>;
 
 public sealed record UpdateInstanceQuotaCommand(InstanceQuotaFileModel Body) : IRequest<Result<bool>>;
 
-public sealed record SuperAdminMetricsDto(
-    SuperAdminMetricsTotalsDto Totals,
-    IReadOnlyList<SuperAdminRecentSubscriberDto> RecentSubscribers);
+public sealed record PlatformMetricsDto(
+    PlatformMetricsTotalsDto Totals,
+    IReadOnlyList<PlatformRecentSubscriberDto> RecentSubscribers);
 
-public sealed record SuperAdminMetricsTotalsDto(
+public sealed record PlatformMetricsTotalsDto(
     int TotalSubscribers,
     int ActiveSubscribers,
     int TotalUsers,
     int ActiveUsers);
 
-public sealed record SuperAdminRecentSubscriberDto(
+public sealed record PlatformRecentSubscriberDto(
     Guid Id,
     string Name,
     string Slug,
     bool IsActive,
     DateTime CreatedAt);
 
-public sealed record GetSuperAdminMetricsQuery : IRequest<Result<SuperAdminMetricsDto>>;
+public sealed record GetPlatformMetricsQuery : IRequest<Result<PlatformMetricsDto>>;
 
-public sealed record GetSuperAdminPlansCatalogQuery : IRequest<Result<object>>;
+public sealed record GetPlatformPlansCatalogQuery : IRequest<Result<object>>;
 
-public sealed record GetSuperAdminGrowthAnalyticsQuery(
+public sealed record GetPlatformGrowthAnalyticsQuery(
     string? From,
     string? To,
     string? Granularity) : IRequest<Result<GrowthAnalyticsResponseDto>>;
 
-public sealed record GetSuperAdminGrowthMonetaryQuery(
+public sealed record GetPlatformGrowthMonetaryQuery(
     string? From,
     string? To,
     string? Granularity) : IRequest<Result<GrowthMonetaryResponseDto>>;
 
-public sealed record GetSuperAdminNavigationMenuQuery : IRequest<Result<AdminNavigationMenuResponse>>;
+public sealed record GetPlatformNavigationMenuQuery : IRequest<Result<AdminNavigationMenuResponse>>;
 
-public sealed record ReorderSuperAdminNavigationGroupsCommand(IReadOnlyList<Guid> OrderedGroupIds) : IRequest<Result<bool>>;
+public sealed record ReorderPlatformNavigationGroupsCommand(IReadOnlyList<Guid> OrderedGroupIds) : IRequest<Result<bool>>;
 
-public sealed record ReorderSuperAdminNavigationItemLevelsCommand(IReadOnlyList<NavItemSiblingOrderDto> Levels)
+public sealed record ReorderPlatformNavigationItemLevelsCommand(IReadOnlyList<NavItemSiblingOrderDto> Levels)
     : IRequest<Result<bool>>;
 
-public sealed record CreateSuperAdminNavigationMenuItemCommand(CreateNavItemRequest Body) : IRequest<Result<Guid>>;
+public sealed record CreatePlatformNavigationMenuItemCommand(CreateNavItemRequest Body) : IRequest<Result<Guid>>;
 
-public sealed record UpdateSuperAdminNavigationMenuItemCommand(Guid ItemId, UpdateNavItemRequest Body) : IRequest<Result<bool>>;
+public sealed record UpdatePlatformNavigationMenuItemCommand(Guid ItemId, UpdateNavItemRequest Body) : IRequest<Result<bool>>;
 
-public sealed record DeleteSuperAdminNavigationMenuItemCommand(Guid ItemId) : IRequest<Result<bool>>;
+public sealed record DeletePlatformNavigationMenuItemCommand(Guid ItemId) : IRequest<Result<bool>>;
 
-public sealed record RevokeSuperAdminUserSessionsCommand(Guid UserId, Guid SubscriberId) : IRequest<Result<string>>;
+public sealed record RevokePlatformUserSessionsCommand(Guid UserId, Guid SubscriberId) : IRequest<Result<string>>;
 
 public sealed class GetInstanceQuotaHandler : IRequestHandler<GetInstanceQuotaQuery, Result<InstanceQuotaFileModel>>
 {
@@ -101,12 +101,12 @@ public sealed class UpdateInstanceQuotaHandler : IRequestHandler<UpdateInstanceQ
     }
 }
 
-public sealed class GetSuperAdminMetricsHandler : IRequestHandler<GetSuperAdminMetricsQuery, Result<SuperAdminMetricsDto>>
+public sealed class GetPlatformMetricsHandler : IRequestHandler<GetPlatformMetricsQuery, Result<PlatformMetricsDto>>
 {
     private readonly ISubscriberRepository _subscriberRepository;
     private readonly IAccessRepository _accessRepository;
 
-    public GetSuperAdminMetricsHandler(
+    public GetPlatformMetricsHandler(
         ISubscriberRepository subscriberRepository,
         IAccessRepository accessRepository)
     {
@@ -114,7 +114,7 @@ public sealed class GetSuperAdminMetricsHandler : IRequestHandler<GetSuperAdminM
         _accessRepository = accessRepository;
     }
 
-    public async Task<Result<SuperAdminMetricsDto>> Handle(GetSuperAdminMetricsQuery request, CancellationToken ct)
+    public async Task<Result<PlatformMetricsDto>> Handle(GetPlatformMetricsQuery request, CancellationToken ct)
     {
         var subscribers = await _subscriberRepository.GetAllAsync(ct);
         var activeSubscribers = subscribers.Count(t => t.IsActive);
@@ -127,43 +127,43 @@ public sealed class GetSuperAdminMetricsHandler : IRequestHandler<GetSuperAdminM
         var recentSubscribers = subscribers
             .OrderByDescending(t => t.CreatedAt)
             .Take(10)
-            .Select(t => new SuperAdminRecentSubscriberDto(t.Id, t.Name, t.Slug, t.IsActive, t.CreatedAt))
+            .Select(t => new PlatformRecentSubscriberDto(t.Id, t.Name, t.Slug, t.IsActive, t.CreatedAt))
             .ToList();
 
-        return Result<SuperAdminMetricsDto>.Success(new SuperAdminMetricsDto(
-            new SuperAdminMetricsTotalsDto(totalSubscribers, activeSubscribers, totalUsers, activeUsers),
+        return Result<PlatformMetricsDto>.Success(new PlatformMetricsDto(
+            new PlatformMetricsTotalsDto(totalSubscribers, activeSubscribers, totalUsers, activeUsers),
             recentSubscribers));
     }
 }
 
-public sealed class GetSuperAdminPlansCatalogHandler : IRequestHandler<GetSuperAdminPlansCatalogQuery, Result<object>>
+public sealed class GetPlatformPlansCatalogHandler : IRequestHandler<GetPlatformPlansCatalogQuery, Result<object>>
 {
     private readonly ICommercialCatalogQuery _saasCatalogQuery;
 
-    public GetSuperAdminPlansCatalogHandler(ICommercialCatalogQuery saasCatalogQuery) =>
+    public GetPlatformPlansCatalogHandler(ICommercialCatalogQuery saasCatalogQuery) =>
         _saasCatalogQuery = saasCatalogQuery;
 
-    public async Task<Result<object>> Handle(GetSuperAdminPlansCatalogQuery request, CancellationToken ct)
+    public async Task<Result<object>> Handle(GetPlatformPlansCatalogQuery request, CancellationToken ct)
     {
         var plans = await _saasCatalogQuery.GetPlansWithFeaturesAsync(ct);
         return Result<object>.Success(new { plans });
     }
 }
 
-public sealed class GetSuperAdminGrowthAnalyticsHandler
-    : IRequestHandler<GetSuperAdminGrowthAnalyticsQuery, Result<GrowthAnalyticsResponseDto>>
+public sealed class GetPlatformGrowthAnalyticsHandler
+    : IRequestHandler<GetPlatformGrowthAnalyticsQuery, Result<GrowthAnalyticsResponseDto>>
 {
     private readonly IGrowthAnalyticsReader _growthAnalytics;
 
-    public GetSuperAdminGrowthAnalyticsHandler(IGrowthAnalyticsReader growthAnalytics) =>
+    public GetPlatformGrowthAnalyticsHandler(IGrowthAnalyticsReader growthAnalytics) =>
         _growthAnalytics = growthAnalytics;
 
     public async Task<Result<GrowthAnalyticsResponseDto>> Handle(
-        GetSuperAdminGrowthAnalyticsQuery request,
+        GetPlatformGrowthAnalyticsQuery request,
         CancellationToken ct)
     {
         var (ok, err, fromUtc, toUtc, granularity) =
-            SuperAdminGrowthRangeParser.Parse(request.From, request.To, request.Granularity);
+            PlatformGrowthRangeParser.Parse(request.From, request.To, request.Granularity);
         if (!ok)
             return Result<GrowthAnalyticsResponseDto>.Failure(err!);
 
@@ -172,20 +172,20 @@ public sealed class GetSuperAdminGrowthAnalyticsHandler
     }
 }
 
-public sealed class GetSuperAdminGrowthMonetaryHandler
-    : IRequestHandler<GetSuperAdminGrowthMonetaryQuery, Result<GrowthMonetaryResponseDto>>
+public sealed class GetPlatformGrowthMonetaryHandler
+    : IRequestHandler<GetPlatformGrowthMonetaryQuery, Result<GrowthMonetaryResponseDto>>
 {
     private readonly IGrowthAnalyticsReader _growthAnalytics;
 
-    public GetSuperAdminGrowthMonetaryHandler(IGrowthAnalyticsReader growthAnalytics) =>
+    public GetPlatformGrowthMonetaryHandler(IGrowthAnalyticsReader growthAnalytics) =>
         _growthAnalytics = growthAnalytics;
 
     public async Task<Result<GrowthMonetaryResponseDto>> Handle(
-        GetSuperAdminGrowthMonetaryQuery request,
+        GetPlatformGrowthMonetaryQuery request,
         CancellationToken ct)
     {
         var (ok, err, fromUtc, toUtc, granularity) =
-            SuperAdminGrowthRangeParser.Parse(request.From, request.To, request.Granularity);
+            PlatformGrowthRangeParser.Parse(request.From, request.To, request.Granularity);
         if (!ok)
             return Result<GrowthMonetaryResponseDto>.Failure(err!);
 
@@ -194,16 +194,16 @@ public sealed class GetSuperAdminGrowthMonetaryHandler
     }
 }
 
-public sealed class GetSuperAdminNavigationMenuHandler
-    : IRequestHandler<GetSuperAdminNavigationMenuQuery, Result<AdminNavigationMenuResponse>>
+public sealed class GetPlatformNavigationMenuHandler
+    : IRequestHandler<GetPlatformNavigationMenuQuery, Result<AdminNavigationMenuResponse>>
 {
     private readonly INavigationMenuAdminService _navigationMenuAdmin;
 
-    public GetSuperAdminNavigationMenuHandler(INavigationMenuAdminService navigationMenuAdmin) =>
+    public GetPlatformNavigationMenuHandler(INavigationMenuAdminService navigationMenuAdmin) =>
         _navigationMenuAdmin = navigationMenuAdmin;
 
     public async Task<Result<AdminNavigationMenuResponse>> Handle(
-        GetSuperAdminNavigationMenuQuery request,
+        GetPlatformNavigationMenuQuery request,
         CancellationToken ct)
     {
         var menu = await _navigationMenuAdmin.GetMenuTreeAsync(ct);
@@ -211,14 +211,14 @@ public sealed class GetSuperAdminNavigationMenuHandler
     }
 }
 
-public sealed class ReorderSuperAdminNavigationGroupsHandler : IRequestHandler<ReorderSuperAdminNavigationGroupsCommand, Result<bool>>
+public sealed class ReorderPlatformNavigationGroupsHandler : IRequestHandler<ReorderPlatformNavigationGroupsCommand, Result<bool>>
 {
     private readonly INavigationMenuAdminService _navigationMenuAdmin;
 
-    public ReorderSuperAdminNavigationGroupsHandler(INavigationMenuAdminService navigationMenuAdmin) =>
+    public ReorderPlatformNavigationGroupsHandler(INavigationMenuAdminService navigationMenuAdmin) =>
         _navigationMenuAdmin = navigationMenuAdmin;
 
-    public async Task<Result<bool>> Handle(ReorderSuperAdminNavigationGroupsCommand request, CancellationToken ct)
+    public async Task<Result<bool>> Handle(ReorderPlatformNavigationGroupsCommand request, CancellationToken ct)
     {
         if (request.OrderedGroupIds is not { Count: > 0 })
             return Result<bool>.Failure("orderedGroupIds requerido.");
@@ -228,15 +228,15 @@ public sealed class ReorderSuperAdminNavigationGroupsHandler : IRequestHandler<R
     }
 }
 
-public sealed class ReorderSuperAdminNavigationItemLevelsHandler
-    : IRequestHandler<ReorderSuperAdminNavigationItemLevelsCommand, Result<bool>>
+public sealed class ReorderPlatformNavigationItemLevelsHandler
+    : IRequestHandler<ReorderPlatformNavigationItemLevelsCommand, Result<bool>>
 {
     private readonly INavigationMenuAdminService _navigationMenuAdmin;
 
-    public ReorderSuperAdminNavigationItemLevelsHandler(INavigationMenuAdminService navigationMenuAdmin) =>
+    public ReorderPlatformNavigationItemLevelsHandler(INavigationMenuAdminService navigationMenuAdmin) =>
         _navigationMenuAdmin = navigationMenuAdmin;
 
-    public async Task<Result<bool>> Handle(ReorderSuperAdminNavigationItemLevelsCommand request, CancellationToken ct)
+    public async Task<Result<bool>> Handle(ReorderPlatformNavigationItemLevelsCommand request, CancellationToken ct)
     {
         if (request.Levels is not { Count: > 0 })
             return Result<bool>.Failure("levels requerido.");
@@ -246,15 +246,15 @@ public sealed class ReorderSuperAdminNavigationItemLevelsHandler
     }
 }
 
-public sealed class CreateSuperAdminNavigationMenuItemHandler
-    : IRequestHandler<CreateSuperAdminNavigationMenuItemCommand, Result<Guid>>
+public sealed class CreatePlatformNavigationMenuItemHandler
+    : IRequestHandler<CreatePlatformNavigationMenuItemCommand, Result<Guid>>
 {
     private readonly INavigationMenuAdminService _navigationMenuAdmin;
 
-    public CreateSuperAdminNavigationMenuItemHandler(INavigationMenuAdminService navigationMenuAdmin) =>
+    public CreatePlatformNavigationMenuItemHandler(INavigationMenuAdminService navigationMenuAdmin) =>
         _navigationMenuAdmin = navigationMenuAdmin;
 
-    public async Task<Result<Guid>> Handle(CreateSuperAdminNavigationMenuItemCommand request, CancellationToken ct)
+    public async Task<Result<Guid>> Handle(CreatePlatformNavigationMenuItemCommand request, CancellationToken ct)
     {
         var (ok, newId, err) = await _navigationMenuAdmin.CreateNavItemAsync(request.Body, ct);
         if (!ok || newId is null)
@@ -264,42 +264,42 @@ public sealed class CreateSuperAdminNavigationMenuItemHandler
     }
 }
 
-public sealed class UpdateSuperAdminNavigationMenuItemHandler
-    : IRequestHandler<UpdateSuperAdminNavigationMenuItemCommand, Result<bool>>
+public sealed class UpdatePlatformNavigationMenuItemHandler
+    : IRequestHandler<UpdatePlatformNavigationMenuItemCommand, Result<bool>>
 {
     private readonly INavigationMenuAdminService _navigationMenuAdmin;
 
-    public UpdateSuperAdminNavigationMenuItemHandler(INavigationMenuAdminService navigationMenuAdmin) =>
+    public UpdatePlatformNavigationMenuItemHandler(INavigationMenuAdminService navigationMenuAdmin) =>
         _navigationMenuAdmin = navigationMenuAdmin;
 
-    public async Task<Result<bool>> Handle(UpdateSuperAdminNavigationMenuItemCommand request, CancellationToken ct)
+    public async Task<Result<bool>> Handle(UpdatePlatformNavigationMenuItemCommand request, CancellationToken ct)
     {
         var (ok, err) = await _navigationMenuAdmin.UpdateNavItemAsync(request.ItemId, request.Body, ct);
         return ok ? Result<bool>.Success(true) : Result<bool>.Failure(err ?? "Error");
     }
 }
 
-public sealed class DeleteSuperAdminNavigationMenuItemHandler
-    : IRequestHandler<DeleteSuperAdminNavigationMenuItemCommand, Result<bool>>
+public sealed class DeletePlatformNavigationMenuItemHandler
+    : IRequestHandler<DeletePlatformNavigationMenuItemCommand, Result<bool>>
 {
     private readonly INavigationMenuAdminService _navigationMenuAdmin;
 
-    public DeleteSuperAdminNavigationMenuItemHandler(INavigationMenuAdminService navigationMenuAdmin) =>
+    public DeletePlatformNavigationMenuItemHandler(INavigationMenuAdminService navigationMenuAdmin) =>
         _navigationMenuAdmin = navigationMenuAdmin;
 
-    public async Task<Result<bool>> Handle(DeleteSuperAdminNavigationMenuItemCommand request, CancellationToken ct)
+    public async Task<Result<bool>> Handle(DeletePlatformNavigationMenuItemCommand request, CancellationToken ct)
     {
         var (ok, err) = await _navigationMenuAdmin.DeleteNavItemAsync(request.ItemId, ct);
         return ok ? Result<bool>.Success(true) : Result<bool>.Failure(err ?? "Error");
     }
 }
 
-public sealed class RevokeSuperAdminUserSessionsHandler : IRequestHandler<RevokeSuperAdminUserSessionsCommand, Result<string>>
+public sealed class RevokePlatformUserSessionsHandler : IRequestHandler<RevokePlatformUserSessionsCommand, Result<string>>
 {
     private readonly IAccessRepository _accessRepository;
     private readonly IRefreshTokenService _refreshTokenService;
 
-    public RevokeSuperAdminUserSessionsHandler(
+    public RevokePlatformUserSessionsHandler(
         IAccessRepository accessRepository,
         IRefreshTokenService refreshTokenService)
     {
@@ -307,7 +307,7 @@ public sealed class RevokeSuperAdminUserSessionsHandler : IRequestHandler<Revoke
         _refreshTokenService = refreshTokenService;
     }
 
-    public async Task<Result<string>> Handle(RevokeSuperAdminUserSessionsCommand request, CancellationToken ct)
+    public async Task<Result<string>> Handle(RevokePlatformUserSessionsCommand request, CancellationToken ct)
     {
         var user = await _accessRepository.GetUserByIdAsync(request.UserId, ct);
         if (user is null)
@@ -323,7 +323,7 @@ public sealed class RevokeSuperAdminUserSessionsHandler : IRequestHandler<Revoke
     }
 }
 
-internal static class SuperAdminGrowthRangeParser
+internal static class PlatformGrowthRangeParser
 {
     internal static (bool Ok, string? Error, DateTime FromUtc, DateTime ToUtc, string Granularity) Parse(
         string? from,

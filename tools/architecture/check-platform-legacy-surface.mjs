@@ -13,6 +13,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '../..');
 const SCAN_ROOT = path.join(REPO_ROOT, 'frontend/src');
 
+/** Archivos donde el literal JWT o rutas legacy están permitidos. */
+const SUPERADMIN_LITERAL_ALLOW = new Set([
+  'frontend/src/constants/platformAuth.ts',
+]);
+
 /** @type {{ id: string, pattern: RegExp, hint: string }[]} */
 const FORBIDDEN = [
   { id: 'superadmin-login', pattern: /superadmin-login/, hint: 'Use POST /api/platform/auth/login' },
@@ -21,6 +26,8 @@ const FORBIDDEN = [
   { id: 'legacy-platform-api', pattern: /LEGACY_PLATFORM/, hint: 'Remove LEGACY_PLATFORM_* constants' },
   { id: 'superadmin-service-import', pattern: /superAdminService/, hint: 'Use platformService from platformService.ts' },
   { id: 'legacy-platform-path-const', pattern: /LEGACY_PLATFORM_API/, hint: 'Use PLATFORM_API only' },
+  { id: 'is-superadmin-identifier', pattern: /\bisSuperAdmin\b/, hint: 'Use isPlatformOperator / isJwtPlatformOperatorRole' },
+  { id: 'superadmin-jwt-literal', pattern: /['"]SuperAdmin['"]/, hint: 'Use JWT_PLATFORM_OPERATOR_ROLE from constants/platformAuth.ts' },
 ];
 
 function walk(dir, out = []) {
@@ -43,6 +50,7 @@ export function runCheckPlatformLegacySurface() {
       if (trimmed.startsWith('//') || trimmed.startsWith('*')) return;
       for (const rule of FORBIDDEN) {
         if (rule.pattern.test(line)) {
+          if (rule.id === 'superadmin-jwt-literal' && SUPERADMIN_LITERAL_ALLOW.has(rel)) continue;
           addViolation(result, {
             rule: rule.id,
             file: rel,

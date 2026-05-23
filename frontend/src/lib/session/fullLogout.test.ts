@@ -26,7 +26,7 @@ import {
   AUTH_PROFILE_STORAGE_KEY,
   AUTH_STORAGE_KEY,
   PERMISSIONS_STORAGE_KEY,
-  SUPERADMIN_IMPERSONATION_NAME_KEY,
+  PLATFORM_IMPERSONATION_NAME_KEY,
 } from './sessionStorageKeys';
 import { clearPersistedSessionArtifacts, fullLogout } from './fullLogout';
 
@@ -48,7 +48,7 @@ describe('fullLogout', () => {
     sessionStorage.setItem(PERMISSIONS_STORAGE_KEY, '{}');
     sessionStorage.setItem(ACCESS_BOOTSTRAP_STORAGE_KEY, '{}');
     localStorage.setItem(AUTH_STORAGE_KEY, '{}');
-    localStorage.setItem(SUPERADMIN_IMPERSONATION_NAME_KEY, 'Acme');
+    localStorage.setItem(PLATFORM_IMPERSONATION_NAME_KEY, 'Acme');
     sessionStorage.setItem('erp.saas.companies.detailSubscriberId', 'uuid');
     sessionStorage.setItem('erp.saas.other', 'x');
     sessionStorage.setItem('unrelated', 'keep');
@@ -59,7 +59,7 @@ describe('fullLogout', () => {
     expect(sessionStorage.getItem(PERMISSIONS_STORAGE_KEY)).toBeNull();
     expect(sessionStorage.getItem(ACCESS_BOOTSTRAP_STORAGE_KEY)).toBeNull();
     expect(localStorage.getItem(AUTH_STORAGE_KEY)).toBeNull();
-    expect(localStorage.getItem(SUPERADMIN_IMPERSONATION_NAME_KEY)).toBeNull();
+    expect(localStorage.getItem(PLATFORM_IMPERSONATION_NAME_KEY)).toBeNull();
     expect(sessionStorage.getItem('erp.saas.companies.detailSubscriberId')).toBeNull();
     expect(sessionStorage.getItem('erp.saas.other')).toBeNull();
     expect(sessionStorage.getItem('unrelated')).toBe('keep');

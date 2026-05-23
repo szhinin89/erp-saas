@@ -47,7 +47,7 @@ public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Resu
         if (!valid)
             return Result<BootstrapLoginResponseDto>.Failure("Credenciales inválidas. Si olvidaste tus datos, comunícate con el administrador.");
 
-        if (user.IsPlatformSuperAdmin)
+        if (user.IsPrimaryPlatformOperator)
         {
             var subscribersAll = await _subscriberRepository.GetAllAsync(ct);
             var activeTenants = subscribersAll.Where(t => t.IsActive).ToList();
@@ -56,7 +56,7 @@ public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Resu
             var superBootstrapToken = _tokenService.GenerateBootstrapToken(user, superSubscriberIds);
             var superAccessible = activeTenants
                 .OrderBy(t => t.Name)
-                .Select(t => new AccessibleSubscriberDto(t.Id, t.Name, t.Slug, "SuperAdmin"))
+                .Select(t => new AccessibleSubscriberDto(t.Id, t.Name, t.Slug, PlatformAuthConstants.JwtPlatformOperatorRole))
                 .ToList();
 
             return Result<BootstrapLoginResponseDto>.Success(new BootstrapLoginResponseDto(

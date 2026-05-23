@@ -51,7 +51,7 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
         var modules = await _sessionModules.GetEnabledModuleKeysAsync(_currentSubscriber.SubscriberId, ct);
 
         var role = _currentUser.Role ?? string.Empty;
-        if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(role, PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase))
             return Result<MyPermissionsDto>.Success(new MyPermissionsDto(new[] { "*" }, plan, modules));
 
         if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))

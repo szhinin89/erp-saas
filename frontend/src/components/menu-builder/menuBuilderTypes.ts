@@ -319,7 +319,7 @@ export function editorTreeToSessionGroups(
         sortOrder: (sortIdx + 1) * 10,
         moduleKey: code,
         roles: null,
-        requireSuperAdminPanel: false,
+        requirePlatformPanel: false,
         items: folder.children.map((n, i) => editorNodeToSessionItem(n, i)),
         menuBarLayout: null,
       };
@@ -335,7 +335,7 @@ export function editorTreeToSessionGroups(
       sortOrder: 5,
       moduleKey: null,
       roles: null,
-      requireSuperAdminPanel: false,
+      requirePlatformPanel: false,
       items: items.map((n, i) => editorNodeToSessionItem(n, i)),
       menuBarLayout,
     },

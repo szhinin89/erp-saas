@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import { useAuthStore } from '../../store/authStore';
+import { isJwtPlatformOperatorRole } from '../../constants/platformAuth';
 import { GLOBAL_SUBSCRIBER_ID } from '../../constants/subscriberIds';
 import { getAccessToken } from '../../lib/session/authTokenMemory';
 import { configService } from './configService';
@@ -188,7 +189,7 @@ export function ConfigProvider({ children }: { children: React.ReactNode }) {
     !subscriberId ||
     subscriberId.replace(/-/g, '').toLowerCase() === GLOBAL_SUBSCRIBER_ID.replace(/-/g, '').toLowerCase();
   const canReadSessionConfig =
-    (role === 'superadmin' || role === 'admin') && !isGlobalSubscriber;
+    (isJwtPlatformOperatorRole(user?.role) || role === 'admin') && !isGlobalSubscriber;
   const shouldLoad = canReadSessionConfig;
   /** Tras F5 el perfil hidrata antes que el access token (cookie refresh en SessionBootstrap). */
   const sessionReady = hasHydrated && (!isAuthenticated || getAccessToken() !== null);

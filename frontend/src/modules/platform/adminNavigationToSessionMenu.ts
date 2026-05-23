@@ -1,9 +1,10 @@
 import type { AdminNavigationMenu, AdminNavItemRow } from './api/platformService';
 import type { SessionMenuGroupDto, SessionMenuItemDto } from '../../types/access';
+import { readsRequirePlatformPanel } from '../../constants/platformAuth';
 
 function isPlatformRoute(path: string): boolean {
   const p = (path ?? '').trim();
-  return p.startsWith('/superadmin');
+  return p.startsWith('/platform');
 }
 
 function mapAdminItems(items: AdminNavItemRow[] | null | undefined): SessionMenuItemDto[] {
@@ -32,7 +33,7 @@ function mapAdminItems(items: AdminNavItemRow[] | null | undefined): SessionMenu
 /** Convierte el árbol administrable `ui_nav_*` al formato de sesión (como GET /api/me/menu). */
 export function adminNavigationToSessionMenu(menu: AdminNavigationMenu): SessionMenuGroupDto[] {
   return menu.groups
-    .filter((g) => g.isActive && !g.requireSuperAdminPanel)
+    .filter((g) => g.isActive && !readsRequirePlatformPanel(g))
     .map((g) => ({
       code: g.code,
       icon: g.icon,
@@ -40,7 +41,7 @@ export function adminNavigationToSessionMenu(menu: AdminNavigationMenu): Session
       sortOrder: g.sortOrder,
       moduleKey: g.moduleKey,
       roles: g.roles,
-      requireSuperAdminPanel: false,
+      requirePlatformPanel: false,
       items: mapAdminItems(g.rootItems),
     }))
     .filter((g) => g.items.length > 0);

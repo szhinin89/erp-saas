@@ -16,7 +16,6 @@ import {
   type AdminNavItemRow,
   type NavItemSiblingOrderLevel,
 } from '../../modules/platform/api/platformService';
-import { menuService } from '../../modules/platform/api/menuService';
 import { formatApiError } from '../../modules/lib/formatApiError';
 import { editorToMenuItems, sessionGroupsToEditorTree } from '../menu-builder/menuBuilderTypes';
 import type { MenuPreviewLayout } from '../menu-builder/MenuPreview';
@@ -26,7 +25,7 @@ import { parseNavRowKey } from './navigationMenuEditorUtils';
 
 export function useNavigationMenuEditorPanel(splitWorkspace: boolean) {
   const { t } = useI18n();
-  const { isSuperAdmin, hasSelectedSubscriber } = usePlatformGate();
+  const { isPlatformOperator, hasSelectedSubscriber } = usePlatformGate();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -67,7 +66,7 @@ export function useNavigationMenuEditorPanel(splitWorkspace: boolean) {
   }, []);
 
   useEffect(() => {
-    if (!isSuperAdmin || hasSelectedSubscriber) return;
+    if (!isPlatformOperator || hasSelectedSubscriber) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -82,7 +81,7 @@ export function useNavigationMenuEditorPanel(splitWorkspace: boolean) {
     return () => {
       cancelled = true;
     };
-  }, [isSuperAdmin, hasSelectedSubscriber, load]);
+  }, [isPlatformOperator, hasSelectedSubscriber, load]);
 
   const moveGroup = (index: number, delta: number) => {
     setMenu((prev) => {
@@ -191,11 +190,11 @@ export function useNavigationMenuEditorPanel(splitWorkspace: boolean) {
     const displayLabel = createDisplayLabel.trim();
     const routePath = createRoutePath.trim();
     if (!displayLabel) {
-      setError(t('superadmin.navigationMenu.createItemErrorDisplayRequired'));
+      setError(t('platform.navigationMenu.createItemErrorDisplayRequired'));
       return;
     }
     if (!routePath.startsWith('/')) {
-      setError(t('superadmin.navigationMenu.createItemErrorRoute'));
+      setError(t('platform.navigationMenu.createItemErrorRoute'));
       return;
     }
     setCreatingItem(true);
@@ -306,17 +305,17 @@ export function useNavigationMenuEditorPanel(splitWorkspace: boolean) {
     const displayLabel = editDisplayLabel.trim();
     const routePath = editRoutePath.trim();
     if (!displayLabel) {
-      setError(t('superadmin.navigationMenu.createItemErrorDisplayRequired'));
+      setError(t('platform.navigationMenu.createItemErrorDisplayRequired'));
       return;
     }
     if (!routePath.startsWith('/')) {
-      setError(t('superadmin.navigationMenu.createItemErrorRoute'));
+      setError(t('platform.navigationMenu.createItemErrorRoute'));
       return;
     }
     setSavingEdit(true);
     setError('');
     try {
-      await menuService.updateMenuItem(selection.item.id, {
+      await platformService.updateNavigationMenuItem(selection.item.id, {
         displayLabel,
         routePath,
         moduleKey: editModuleKey.trim() || null,
@@ -338,7 +337,7 @@ export function useNavigationMenuEditorPanel(splitWorkspace: boolean) {
     setDeletingItem(true);
     setError('');
     try {
-      await menuService.deleteMenuItem(selection.item.id);
+      await platformService.deleteNavigationMenuItem(selection.item.id);
       setDeleteOpen(false);
       setSelectedKey(null);
       await load();
@@ -351,7 +350,7 @@ export function useNavigationMenuEditorPanel(splitWorkspace: boolean) {
 
   return {
     t,
-    isSuperAdmin,
+    isPlatformOperator,
     hasSelectedSubscriber,
     loading,
     saving,

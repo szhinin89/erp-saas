@@ -63,8 +63,8 @@ Legacy **mantener** hasta métricas de uso en cero (ver Observability → Legacy
 
 | Servicio | Rol | Phase 3 |
 |----------|-----|---------|
-| `superAdminService.ts` | Facade platform (canónico) | Mantener |
-| `companyService.ts` | CRUD ficha suscriptor (platform paths) | Fusionar helpers en `superAdminService` opcional |
+| `platformService.ts` | Facade platform (canónico) | Mantener |
+| `companyService.ts` | CRUD ficha suscriptor (platform paths) | Fusionar helpers en `platformService` opcional |
 | `platformApiPaths.ts` `LEGACY_*` | Documentación + auth refresh compat | Eliminar cuando backend legacy off |
 | `companiesSubscriberDetailNav.ts` | sessionStorage + redirect compat | Mantener hasta cero hits `/companies` |
 | `useCompaniesPage.ts` | Hook legacy CompaniesPage | Eliminar con página |

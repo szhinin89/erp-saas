@@ -63,7 +63,7 @@
 | Antes (legacy) | Ahora | Status |
 |----------------|-------|--------|
 | Rutas `/api/superadmin/*` | `/api/platform/*` | ✅ Eliminado |
-| `superAdminService.ts` | `platformService.ts` | ✅ Eliminado |
+| `platformService.ts` | `platformService.ts` | ✅ Eliminado |
 
 ## FK / relaciones principales
 

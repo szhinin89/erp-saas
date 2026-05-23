@@ -14,8 +14,8 @@ export type PlatformCrudTemplateProps = PlatformPageTemplateProps & {
 };
 
 /**
- * Plantilla CRUD/listado SuperAdmin: guards de rol/subscriber + PageShell opcional.
- * Usar en todas las rutas `/superadmin/*` (LayoutFrame ya está en PlatformLayout).
+ * Plantilla CRUD/listado platform: guards de rol/subscriber + PageShell opcional.
+ * Usar en todas las rutas `/platform/*` (LayoutFrame ya está en PlatformLayout).
  *
  * @see docs/frontend-layout-conventions.md
  */

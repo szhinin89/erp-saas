@@ -112,7 +112,7 @@ function PreviewEmpty() {
   return (
     <div className="smp-empty">
       <span className="smp-empty-icon">◇</span>
-      {t('superadmin.menuBuilder.previewEmpty')}
+      {t('platform.menuBuilder.previewEmpty')}
     </div>
   );
 }

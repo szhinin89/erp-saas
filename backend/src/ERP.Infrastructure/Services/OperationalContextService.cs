@@ -33,5 +33,5 @@ public sealed class OperationalContextService : IOperationalContext
 
     public bool IsPlatformAdmin =>
         _subscriber.SubscriberId == Guid.Empty &&
-        string.Equals(_user.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
+        string.Equals(_user.Role, PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase);
 }

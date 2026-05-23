@@ -1,4 +1,4 @@
-/* AppLayout — main app shell, nav menu, superadmin banner */
+/* AppLayout — main app shell, nav menu, platform impersonation banner */
 
 /* ── Tenant header wrapper ────────────────────────────────── */
 .app-subscriberHeaderWrap {
@@ -7,21 +7,25 @@
   z-index: 40;
 }
 
-/* ── Superadmin impersonation banner ──────────────────────── */
-/* Shown when a SuperAdmin has entered a tenant's dashboard */
-.superadmin-banner {
+/* ── Platform impersonation banner ─────────────────────────── */
+/* Shown when a platform operator has entered a tenant dashboard */
+.platform-impersonation-banner {
   background: var(--color-secondary-container);
   color: var(--color-on-secondary-container);
   border-bottom: 1px solid var(--color-border);
   font-size: var(--text-label-md-size);
   font-weight: var(--text-label-md-weight);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
-.superadmin-banner-toggle {
+.platform-impersonation-banner-toggle {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: 8px var(--space-6);
   background: none;
   border: none;
@@ -33,9 +37,9 @@
   text-align: left;
   transition: background var(--transition);
 }
-.superadmin-banner-toggle:hover { background: rgba(0,0,0,0.04); }
+.platform-impersonation-banner-toggle:hover { background: rgba(0,0,0,0.04); }
 
-.superadmin-banner-dot {
+.platform-impersonation-banner-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -43,9 +47,9 @@
   flex-shrink: 0;
 }
 
-.superadmin-banner-title { font-weight: 700; }
+.platform-impersonation-banner-title { font-weight: 700; }
 
-.superadmin-banner-subscriberInline {
+.platform-impersonation-banner-subscriberInline {
   font-weight: 600;
   color: var(--color-primary);
   overflow: hidden;
@@ -54,15 +58,16 @@
   max-width: 200px;
 }
 
-.superadmin-banner-subscriberIdInline {
+.platform-impersonation-banner-subscriberIdInline {
   font-size: var(--text-label-sm-size);
   color: var(--color-on-surface-variant);
   opacity: 0.7;
 }
 
-.superadmin-banner-caret { margin-left: auto; flex-shrink: 0; }
+.platform-impersonation-banner-caret { margin-left: auto; flex-shrink: 0; }
 
-.superadmin-banner-details {
+.platform-impersonation-banner-details {
+  width: 100%;
   padding: var(--space-3) var(--space-6);
   border-top: 1px solid var(--color-border);
   display: flex;
@@ -72,18 +77,25 @@
   background: rgba(255,255,255,0.5);
 }
 
-.superadmin-banner-subscriber {
+.platform-impersonation-banner-actions {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.platform-impersonation-banner-subscriber {
   font-weight: 700;
   color: var(--color-primary);
   font-size: 13px;
 }
 
-.superadmin-banner-subscriberId {
+.platform-impersonation-banner-subscriberId {
   font-size: var(--text-label-sm-size);
   color: var(--color-text-secondary);
 }
 
-.superadmin-banner-btn {
+.platform-impersonation-banner-btn {
   margin-left: auto;
   padding: 6px var(--space-4);
   background: var(--color-primary);
@@ -96,10 +108,24 @@
   cursor: pointer;
   transition: background var(--transition);
 }
-.superadmin-banner-btn:hover:not(:disabled) {
+.platform-impersonation-banner-btn--compact {
+  margin-left: 0;
+  margin-right: var(--space-4);
+  flex-shrink: 0;
+}
+.platform-impersonation-banner-actions .platform-impersonation-banner-btn,
+.platform-impersonation-banner-btn--primary {
+  margin-left: 0;
+}
+.platform-impersonation-banner-actions .platform-impersonation-banner-btn:not(.platform-impersonation-banner-btn--primary) {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+.platform-impersonation-banner-btn:hover:not(:disabled) {
   background: color-mix(in srgb, var(--color-primary) 85%, #000);
 }
-.superadmin-banner-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.platform-impersonation-banner-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ── Main menu — horizontal nav bar ──────────────────────── */
 /* Renders as bottomLeft inside ZHAppTenantHeader → zh-subscriber-status */

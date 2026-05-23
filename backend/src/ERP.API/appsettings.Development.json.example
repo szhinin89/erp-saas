@@ -35,8 +35,8 @@
     }
   },
   "Deployment": {
-    "SuperAdminPanelEnabled": true,
-    "InitialSuperAdminSetupToken": "",
+    "PlatformPanelEnabled": true,
+    "InitialPlatformOperatorSetupToken": "",
     "DedicatedSingleClientInstance": false,
     "MaxUsersPerTenant": ""
   },

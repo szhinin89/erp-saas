@@ -21,7 +21,7 @@ export function normalizeEnabledModulesForApi(
 }
 
 export function storeImpersonationSubscriberName(name: string) {
-  localStorage.setItem('superadmin-impersonation-subscriber-name', name);
+  localStorage.setItem('platform-impersonation-subscriber-name', name);
 }
 
 export function slugifySubscriberName(name: string) {

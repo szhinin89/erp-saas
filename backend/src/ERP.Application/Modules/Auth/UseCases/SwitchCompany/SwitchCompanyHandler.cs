@@ -57,13 +57,13 @@ public sealed class SwitchCompanyHandler : IRequestHandler<SwitchCompanyCommand,
         if (user is null || !user.IsActive)
             return Result<AuthResponseDto>.Failure("Usuario no válido.");
 
-        var isSuperAdminInTenant = string.Equals(_currentUser.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
+        var isPlatformOperatorInTenant = string.Equals(_currentUser.Role, PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase);
         string sessionRole;
         string refreshUserType;
 
-        if (isSuperAdminInTenant)
+        if (isPlatformOperatorInTenant)
         {
-            sessionRole = "SuperAdmin";
+            sessionRole = PlatformAuthConstants.JwtPlatformOperatorRole;
             refreshUserType = RefreshUserType.Platform;
         }
         else

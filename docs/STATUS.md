@@ -68,7 +68,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 | Item | Estado |
 |------|--------|
 | `MenuBuilder` + `NavigationMenuEditorPanel` modularizados (controller + subpaneles) | ✅ |
-| `SuperAdminPanelPage` + `SuperAdminPlansSection` en hook + tabs/modales | ✅ |
+| `PlatformPanelPage` + `PlatformPlansSection` en hook + tabs/modales | ✅ |
 | `AccountingPage`, `BranchesPage`, `CustomersPage`, `SriConfigPage`, `BodegasPage` | ✅ |
 | `CatalogPages`, `CatalogStructurePage`, categorías/subcategorías | ✅ |
 | `architecture-grandfather.json`: `tsxMaxLines500` vacío | ✅ (`tools/architecture/`) |
@@ -104,16 +104,16 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 
 | Item | Estado |
 |------|--------|
-| `useSuperAdminMenuBuilder` (~844 → ~371 líneas) + effects/actions/persist extraídos | ✅ |
-| `SuperAdminMenuBuilderCrmWorkspace` (~934 → ~259 líneas) + panels/preview/audit/modals | ✅ |
+| `usePlatformGateMenuBuilder` (~844 → ~371 líneas) + effects/actions/persist extraídos | ✅ |
+| `PlatformMenuBuilderCrmWorkspace` (~934 → ~259 líneas) + panels/preview/audit/modals | ✅ |
 | Test `syncSessionEntitlements` con stub `sessionStorage`/`localStorage` | ✅ |
-| Grandfather: `SuperAdminMenuBuilderCrmWorkspace` retirado de PR-7 | ✅ |
+| Grandfather: `PlatformMenuBuilderCrmWorkspace` retirado de PR-7 | ✅ |
 
 ### Post-audit wave 2 (2026-05-21)
 
 | Item | Estado |
 |------|--------|
-| `SuperAdminMenuBuilderSection` dividido en entry + hook + CRM/legacy panels | ✅ |
+| `PlatformMenuBuilderSection` dividido en entry + hook + CRM/legacy panels | ✅ |
 | Imports `services/` → `modules/*/api` (cero consumidores directos en `src/`) | ✅ |
 | `ProfilesPage`, `SubscriberAccessPage`, `SecuritySettingsPage` en `modules/` + wrappers delgados | ✅ |
 | Re-exports `@deprecated` en `frontend/src/services/` para compatibilidad | ✅ (carpeta eliminada 2026-05-21) |
@@ -124,6 +124,8 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 | Component | Status |
 |-----------|--------|
 | Subscribers / plans / features | ✅ |
+| Platform UI naming + API JSON aliases + middleware rename | ✅ (2026-05-23) |
+| Subscriber ficha unificada + impersonación con retorno | ✅ (2026-05-23) |
 | Company management API + UI (`/saas/companies`) | ✅ |
 | Switch company + JWT claims | ✅ |
 | Commercial limits (companies, users, branches, warehouses) | ✅ |
@@ -161,9 +163,10 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 | Core ERP modules (sales, purchases, inventory, settings) | ✅ |
 | **`fullLogout()` centralizado** (stores + localStorage + `erp.saas.*`) | ✅ |
 | **Products/customers — fuente única en `modules/*`** (`apiEnvelope`, adapters `@deprecated`) | ✅ |
-| **Consolidación modular P3** (auth, branches, accounting, dashboard, superadmin API + pages) | ✅ |
+| **Consolidación modular P3** (auth, branches, accounting, dashboard, platform API + pages) | ✅ |
 | **Catálogo + bodegas + auth UI** en `modules/catalog`, `modules/inventario/warehouses`, `modules/auth/pages` | ✅ |
-| **Lazy routes P4** (`routes/lazyPage.tsx`, main/catalog/superadmin split) | ✅ |
+| **Lazy routes P4** (`routes/lazyPage.tsx`, main/catalog/platform split) | ✅ |
+| **Platform naming cleanup** (`/platform/*`, `platformAuth.ts`, sin `isSuperAdmin`) | ✅ (2026-05-23) |
 | **ZH UI estándar** (`components/ui` delega clases ZH; catálogo usa `ZHCard`/`ZHSearchBar`) | ✅ |
 | Company management module | ✅ |
 | SaaS billing pages | ⏳ |
@@ -190,7 +193,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 | Company isolation (app layer) | ✅ |
 | SRI certificate password encryption (Data Protection) | ✅ |
 | RLS (DB layer) | ✅ |
-| SuperAdmin platform bypass | ✅ controlled |
+| Platform operator bypass (JWT global) | ✅ controlled |
 | Permissions cache in handler hot path | ⏳ service exists, wiring partial |
 | SPA session cleanup (`fullLogout`) | ✅ frontend |
 
@@ -219,7 +222,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 
 ## MVP commercial (~85–90%)
 
-**Done:** Core ERP operational flows, SuperAdmin, plans, multi-company foundation.
+**Done:** Core ERP operational flows, platform control plane, plans, multi-company foundation.
 
 **Blocking / high priority:**
 

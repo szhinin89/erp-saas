@@ -72,7 +72,7 @@ export const PLATFORM_API = {
 | Entidad | Subscriber | Tenant (solo en JWT claim legacy) |
 | API prefix | `/api/platform` | `/api/superadmin`, `/api/subscribers` (control plane) |
 | Frontend module | `modules/platform` | `modules/superadmin`, `companyService` |
-| Service | `platformService`, `subscriberService` | `superAdminService`, `companyService` |
+| Service | `platformService`, `subscriberService` | `platformService`, `companyService` |
 
 ## CI como guardián del contrato
 

@@ -1,6 +1,6 @@
 /**
  * @deprecated Legacy UI kit — usar componentes ZH en `components/zh/ZHForm.tsx` y utilidades en `styles/zh-ui.css`.
- * Se mantiene temporalmente para pantallas no migradas (company-management, SuperAdminPanel, catálogos legacy).
+ * Se mantiene temporalmente para pantallas no migradas (company-management, Platform panel, catálogos legacy).
  */
 export { Button } from './Button';
 export { Input } from './Input';

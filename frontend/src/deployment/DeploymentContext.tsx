@@ -9,7 +9,7 @@ const DeploymentContext = createContext<DeploymentState | null>(null);
 export function DeploymentProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DeploymentState>({
     loaded: false,
-    superAdminPanelEnabled: true,
+    platformPanelEnabled: true,
     maxActiveSubscribers: null,
     maxIdentityUsers: null,
     dedicatedSingleClientInstance: false,
@@ -22,7 +22,7 @@ export function DeploymentProvider({ children }: { children: ReactNode }) {
       if (!cancelled) {
         setState({
           loaded: true,
-          superAdminPanelEnabled: info.superAdminPanelEnabled,
+          platformPanelEnabled: info.platformPanelEnabled,
           maxActiveSubscribers: info.maxActiveSubscribers ?? null,
           maxIdentityUsers: info.maxIdentityUsers ?? null,
           dedicatedSingleClientInstance: info.dedicatedSingleClientInstance ?? false,

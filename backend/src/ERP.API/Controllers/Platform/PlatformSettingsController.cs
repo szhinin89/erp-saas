@@ -1,6 +1,6 @@
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.Application.Admin.UseCases.SuperAdminGlobal;
+using ERP.Application.Admin.UseCases.PlatformGlobal;
 using ERP.Application.Common;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -14,7 +14,7 @@ namespace ERP.API.Controllers.Platform;
 /// </summary>
 [ApiController]
 [Route("api/platform/settings")]
-[Authorize(Roles = "SuperAdmin")]
+[Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
 [Tags("Platform")]
 [Produces("application/json")]
 public sealed class PlatformSettingsController : ControllerBase

@@ -1,4 +1,5 @@
 using ERP.API.Contracts;
+using ERP.API.Controllers.Platform;
 using ERP.API.Extensions;
 using ERP.Application.Admin;
 using ERP.Application.Common;
@@ -26,9 +27,9 @@ public sealed class SubscriberConfigController : ControllerBase
         _currentSubscriber = currentSubscriber;
     }
 
-    /// <summary>Config global del suscriptor en contexto de sesión (Admin o SuperAdmin impersonando).</summary>
+    /// <summary>Config global del suscriptor en contexto de sesión (Admin o operador platform impersonando).</summary>
     [HttpGet("global")]
-    [Authorize(Roles = "Admin,SuperAdmin")]
+    [Authorize(Roles = $"Admin,{PlatformAuthorizationRoles.PlatformOperator}")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<ConfigEntryDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

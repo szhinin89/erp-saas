@@ -19,7 +19,7 @@ public sealed record AppFeatureSyncRow(
     string? ParentPermission,
     int SortOrder,
     bool IsVisibleInMenu,
-    bool IsSuperAdmin);
+    bool IsPlatformOnlyFeature);
 
 public interface IAppFeatureRepository
 {

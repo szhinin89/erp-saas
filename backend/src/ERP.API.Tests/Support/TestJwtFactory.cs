@@ -1,3 +1,4 @@
+using ERP.Application.Common;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -43,7 +44,7 @@ internal static class TestJwtFactory
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public static string CreatePlatformSuperAdminJwt(Guid userId, string email = "superadmin@test.local")
+    public static string CreatePlatformOperatorJwt(Guid userId, string email = "superadmin@test.local")
     {
         var claims = new List<Claim>
         {
@@ -51,11 +52,11 @@ internal static class TestJwtFactory
             new(JwtRegisteredClaimNames.Email, email),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new("subscriber_id", Guid.Empty.ToString()),
-            new("full_name", "Platform SuperAdmin"),
-            new(ClaimTypes.Role, "SuperAdmin"),
+            new("full_name", "Platform Operator"),
+            new(ClaimTypes.Role, PlatformAuthConstants.JwtPlatformOperatorRole),
             new("token_type", "session"),
             new("user_type", "Platform"),
-            new("platform_role", "SuperAdmin"),
+            new("platform_role", nameof(ERP.Domain.Access.Enums.PlatformRole.PlatformOperator)),
         };
 
         var key = new SymmetricSecurityKey(

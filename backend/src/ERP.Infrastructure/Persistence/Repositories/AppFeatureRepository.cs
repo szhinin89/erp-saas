@@ -70,7 +70,7 @@ public sealed class AppFeatureRepository : IAppFeatureRepository
 
                 if (tracked.TryGetValue(r.Permission, out var entity))
                 {
-                    entity.SyncFromDiscovery(r.Name, r.Icon, r.Path, parentId, r.SortOrder, r.IsVisibleInMenu, r.IsSuperAdmin, utc);
+                    entity.SyncFromDiscovery(r.Name, r.Icon, r.Path, parentId, r.SortOrder, r.IsVisibleInMenu, r.IsPlatformOnlyFeature, utc);
                 }
                 else
                 {
@@ -82,7 +82,7 @@ public sealed class AppFeatureRepository : IAppFeatureRepository
                         parentId,
                         r.SortOrder,
                         r.IsVisibleInMenu,
-                        r.IsSuperAdmin,
+                        r.IsPlatformOnlyFeature,
                         utc);
                     _db.AppFeatures.Add(created);
                     tracked[r.Permission] = created;

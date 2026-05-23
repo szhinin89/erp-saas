@@ -1,4 +1,4 @@
-/* Utilidades para páginas legacy en src/pages/ (SuperAdmin + SaaS). Preferir tokens ZH en código nuevo. */
+/* Utilidades para páginas legacy en src/pages/ (Platform + SaaS). Preferir tokens ZH en código nuevo. */
 .pg-table-actions {
   text-align: right;
 }

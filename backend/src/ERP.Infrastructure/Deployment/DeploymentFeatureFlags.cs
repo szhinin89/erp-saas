@@ -7,7 +7,7 @@ namespace ERP.Infrastructure.Deployment;
 
 public sealed class DeploymentFeatureFlags : IDeploymentFeatureFlags
 {
-    private const string InitialSuperAdminSetupTokenKey = "Deployment:InitialSuperAdminSetupToken";
+    private const string InitialPlatformOperatorSetupTokenKey = "Deployment:InitialPlatformOperatorSetupToken";
 
     private readonly IConfiguration _configuration;
     private readonly InstanceQuotaFileStore _instanceQuotaFile;
@@ -18,14 +18,18 @@ public sealed class DeploymentFeatureFlags : IDeploymentFeatureFlags
         _instanceQuotaFile = instanceQuotaFile;
     }
 
-    public bool IsSuperAdminPanelEnabled
+    public bool IsPlatformPanelEnabled
     {
         get
         {
-            var v = _configuration["Deployment:SuperAdminPanelEnabled"];
-            if (string.IsNullOrWhiteSpace(v))
+            var platform = _configuration["Deployment:PlatformPanelEnabled"];
+            if (!string.IsNullOrWhiteSpace(platform) && bool.TryParse(platform, out var platformParsed))
+                return platformParsed;
+
+            var legacy = _configuration["Deployment:SuperAdminPanelEnabled"];
+            if (string.IsNullOrWhiteSpace(legacy))
                 return true;
-            return bool.TryParse(v, out var parsed) && parsed;
+            return bool.TryParse(legacy, out var legacyParsed) && legacyParsed;
         }
     }
 
@@ -53,9 +57,9 @@ public sealed class DeploymentFeatureFlags : IDeploymentFeatureFlags
         ReadPositiveCap("Deployment:MaxUsersPerTenant"));
 
     /// <inheritdoc />
-    public bool AuthorizeInitialSuperAdminSetup(string? submittedToken)
+    public bool AuthorizeInitialPlatformOperatorSetup(string? submittedToken)
     {
-        var expected = _configuration[InitialSuperAdminSetupTokenKey];
+        var expected = _configuration[InitialPlatformOperatorSetupTokenKey];
         if (string.IsNullOrWhiteSpace(expected) || string.IsNullOrWhiteSpace(submittedToken))
             return false;
 

@@ -44,17 +44,17 @@ El producto está **listo para QA funcional intensivo en staging**, con arquitec
 
 | Flujo | Estado | Evidencia |
 |-------|--------|-----------|
-| Login platform (`/api/platform/auth/login`) | ✅ OK | Gated por `Deployment:SuperAdminPanelEnabled` |
-| Panel global (`/superadmin/*`) | ✅ OK | `SuperAdminLayout` + `LayoutFrame` |
+| Login platform (`/api/platform/auth/login`) | ✅ OK | Gated por `Deployment:PlatformPanelEnabled` |
+| Panel global (`/superadmin/*`) | ✅ OK | `PlatformLayout` + `LayoutFrame` |
 | Crear suscriptor + admin | ✅ OK | `SubscriberProvisioningOrchestrator` transaccional |
 | Empresa default auto | ✅ OK | `CompanyProvisioningService.CreateDefaultCompanyForSubscriberAsync` |
 | Planes SaaS / features | ✅ OK | SuperAdmin planes + `SaasFeatureDefinition` |
-| Listado suscriptores | ⚠️ Medio | `SuperAdminSubscribersPage` fuera de `SuperAdminCrudTemplate`; N+1 en list handler |
+| Listado suscriptores | ⚠️ Medio | `PlatformSubscribersPage` fuera de `PlatformCrudTemplate`; N+1 en list handler |
 | Impersonación tenant | 🔴 Crítico | Ver §3.2 — se pierde contexto al refresh |
 
 ### 1.2 Creación de suscriptor
 
-**Flujo:** `SuperAdminCreateSubscriberWithAdminHandler` → orchestrator → `Subscriber` + `SubscriberBillingAccount` + `Company` default + `IdentityUser` Admin + membership + onboarding (sucursal/bodega).
+**Flujo:** `PlatformCreateSubscriberWithAdminHandler` → orchestrator → `Subscriber` + `SubscriberBillingAccount` + `Company` default + `IdentityUser` Admin + membership + onboarding (sucursal/bodega).
 
 - Transacción `Serializable` en `ProvisionCoreAsync`.
 - RUC opcional → provisional `TMP-EC-*` si vacío.
@@ -135,7 +135,7 @@ El producto está **listo para QA funcional intensivo en staging**, con arquitec
 
 #### C2. Logout solo en cliente
 - **Impacto:** Refresh token httpOnly sigue válido hasta expiración (30 días) tras “cerrar sesión”.
-- **Archivos:** `fullLogout.ts`, `AppLayout.tsx`, `SuperAdminLayout.tsx` — ninguno llama API.
+- **Archivos:** `fullLogout.ts`, `AppLayout.tsx`, `PlatformLayout.tsx` — ninguno llama API.
 - **Repro:** Logout → reutilizar cookie `erp_refresh_token` → sesión restaurada.
 - **Fix seguro:** `await POST /api/auth/logout` con `credentials: 'include'` antes de `fullLogout()`.
 
@@ -156,12 +156,12 @@ El producto está **listo para QA funcional intensivo en staging**, con arquitec
 |----|----------|-----------|
 | M1 | Count companies bajo filter platform → count=0 → bypass limit | `CompanyRepository.CountActiveBySubscriberIdAsync` |
 | M2 | Bootstrap multi-subscriber sin refresh cookie | `Access/UseCases/SwitchTenant/SwitchTenantHandler.cs` |
-| M3 | Platform APIs con `Roles=SuperAdmin` vs `GlobalSuperAdmin` durante impersonación | `PlatformSubscribersController.cs` |
+| M3 | Platform APIs con `Roles=SuperAdmin` vs `GlobalPlatformOperator` durante impersonación | `PlatformSubscribersController.cs` |
 | M4 | Formularios documento sin Zod+RHF (4 capas incumplidas en UI) | `CreateInvoicePage`, `CrearCompraPage`, `CrearGastoPage`, etc. |
 | M5 | Batch módulos nuevos sin i18n (es/en/qu) | stock, kardex, cash/bank, geography, activity, retenciones |
 | M6 | `BillingSettingsPage` usa `alert()` nativo | `BillingSettingsPage.tsx` |
 | M7 | Acciones destructivas sin `ZHConfirmModal` | withholding send/approve, accounting disable |
-| M8 | N+1 SuperAdmin list subscribers | `GetSuperAdminSubscribersHandler` |
+| M8 | N+1 SuperAdmin list subscribers | `GetPlatformSubscribersHandler` |
 | M9 | RUC empresa default no editable en UI (solo create) | `CompanyManagementFormPage.tsx` taxId disabled en edit |
 | M10 | Health ready incluye probe SRI externo | `Program.cs` + `appsettings.Production.json` |
 | M11 | Redis → memory cache silencioso (multi-instance inconsistente) | `Program.cs` |
@@ -307,7 +307,7 @@ Implementación enterprise-grade. Ver gaps memberships / platform count.
 ### Sprint QA-P1 (1 semana)
 6. M4–M7 Frontend validation + i18n batch nuevo  
 7. M2 Bootstrap refresh  
-8. M3 GlobalSuperAdmin policy  
+8. M3 GlobalPlatformOperator policy  
 9. M9 RUC provisional editable  
 10. Actualizar `FRONTEND_QA_CHECKLIST.md` + Playwright smoke extendido  
 

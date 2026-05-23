@@ -23,9 +23,9 @@ export function MenuBuilderLibraryPanel({
   return (
     <aside className="menu-builder-panel menu-builder-panel--library">
       <header className="menu-builder-panel__head">
-        <h4 className="menu-builder-panel__title">{panelTitle ?? t('superadmin.menuBuilder.libraryTitle')}</h4>
-        <p className="menu-builder-panel__hint" title={t('superadmin.menuBuilder.libraryHint')}>
-          {crmUi ? 'Arrastra y suelta hacia el árbol maestro.' : t('superadmin.menuBuilder.libraryHintShort')}
+        <h4 className="menu-builder-panel__title">{panelTitle ?? t('platform.menuBuilder.libraryTitle')}</h4>
+        <p className="menu-builder-panel__hint" title={t('platform.menuBuilder.libraryHint')}>
+          {crmUi ? 'Arrastra y suelta hacia el árbol maestro.' : t('platform.menuBuilder.libraryHintShort')}
         </p>
         {crmUi && crmLibraryStack ? <div className="menu-builder-panel__crmStack">{crmLibraryStack}</div> : null}
       </header>

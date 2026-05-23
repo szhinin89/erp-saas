@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Claims;
+using ERP.Application.Common;
 using Hangfire.Dashboard;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +10,7 @@ namespace ERP.API.Hangfire;
 
 /// <summary>
 /// Autorización del dashboard Hangfire: localhost, prefijos de IP y/o SuperAdmin global
-/// (mismo criterio que <see cref="Authorization.GlobalSuperAdminHandler"/>).
+/// (mismo criterio que <see cref="Authorization.GlobalPlatformOperatorHandler"/>).
 /// </summary>
 public sealed class HangfireDashboardAuthorizationFilter : IDashboardAuthorizationFilter
 {
@@ -33,7 +34,7 @@ public sealed class HangfireDashboardAuthorizationFilter : IDashboardAuthorizati
                 return true;
         }
 
-        if (section.GetValue("RequireGlobalSuperAdmin", true))
+        if (section.GetValue("RequireGlobalPlatformOperator", true))
         {
             var user = http.User;
             if (user.Identity?.IsAuthenticated != true)
@@ -43,7 +44,7 @@ public sealed class HangfireDashboardAuthorizationFilter : IDashboardAuthorizati
             var tenantClaim = user.FindFirst("subscriber_id")?.Value ?? string.Empty;
             var tenantEmpty = !Guid.TryParse(tenantClaim, out var tid) || tid == Guid.Empty;
 
-            return string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase)
+            return PlatformAuthConstants.IsJwtPlatformOperatorRole(role)
                    && tenantEmpty;
         }
 

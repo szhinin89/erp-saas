@@ -11,7 +11,7 @@ namespace ERP.Application.Auth.UseCases.SwitchSubscriber;
 
 /// <summary>
 /// Flujo Platform: SuperAdmin global selecciona un subscriber para impersonar.
-/// Solo accesible con token Platform (IsPlatformSuperAdmin = true).
+/// Solo accesible con token Platform (IsPrimaryPlatformOperator = true).
 /// Retorna <c>AuthResponseDto</c> con refresh token completo.
 /// No confundir con <see cref="ERP.Application.Access.UseCases.SwitchSubscriber.SwitchSubscriberHandler"/>
 /// que sirve el flujo ERP (Company Admin, bootstrap → session, retorna SessionResponseDto).
@@ -50,9 +50,9 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
         if (_currentUser.UserId != Guid.Empty)
             user = await _accessRepository.GetUserByIdAsync(_currentUser.UserId, ct);
         if (user is null && !string.IsNullOrWhiteSpace(_currentUser.Email))
-            user = await _accessRepository.GetPlatformSuperAdminByEmailAsync(_currentUser.Email, ct);
+            user = await _accessRepository.GetPlatformOperatorByEmailAsync(_currentUser.Email, ct);
 
-        if (user is null || !user.IsPlatformSuperAdmin)
+        if (user is null || !user.IsPrimaryPlatformOperator)
             return Result<AuthResponseDto>.Failure("No autorizado.");
 
         if (command.SubscriberId == Guid.Empty)
@@ -65,7 +65,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
                 user.Id,
                 user.FullName,
                 user.Email.Value,
-                "SuperAdmin",
+                PlatformAuthConstants.JwtPlatformOperatorRole,
                 Guid.Empty,
                 globalToken,
                 PlanCode: null,
@@ -87,7 +87,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
             user.Email.Value,
             user.FullName,
             tenant.Id,
-            "SuperAdmin",
+            PlatformAuthConstants.JwtPlatformOperatorRole,
             companyId: default,
             userType: user.UserType,
             platformRole: user.PlatformRole);
@@ -100,7 +100,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
             user.Id,
             user.FullName,
             user.Email.Value,
-            "SuperAdmin",
+            PlatformAuthConstants.JwtPlatformOperatorRole,
             tenant.Id,
             token,
             tenant.PlanCode,

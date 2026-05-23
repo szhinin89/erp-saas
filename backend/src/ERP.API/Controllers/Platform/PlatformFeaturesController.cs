@@ -12,7 +12,7 @@ namespace ERP.API.Controllers.Platform;
 /// <summary>Platform Layer — catálogo AppFeatures para menu builder.</summary>
 [ApiController]
 [Route("api/platform/features")]
-[Authorize(Roles = "SuperAdmin")]
+[Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
 [Tags("Platform")]
 [Produces("application/json")]
 public sealed class PlatformFeaturesController : ControllerBase

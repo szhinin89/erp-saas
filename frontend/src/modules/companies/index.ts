@@ -1,13 +1,13 @@
-/** @deprecated Use `subscriberService` (platform) or `tenantSubscriberService` (ERP runtime). */
+/** @deprecated Use `platformService` (control plane) or `tenantSubscriberService` (ERP runtime). */
 export {
-  subscriberService,
-  type SubscriberDetailDto,
-  type UpdateSubscriberCompanyBody,
-  type UpdateSubscriberGlobalParametersBody,
-  type ConfigEntryDto,
-  type ResolvedConfigValueDto,
-  type UpsertConfigBody,
-} from '../platform/api/subscriberService';
+  platformService,
+  type PlatformSubscriberDetailDto as SubscriberDetailDto,
+  type UpdatePlatformSubscriberCompanyBody as UpdateSubscriberCompanyBody,
+  type UpdatePlatformSubscriberGlobalParametersBody as UpdateSubscriberGlobalParametersBody,
+  type PlatformConfigEntryDto as ConfigEntryDto,
+  type PlatformResolvedConfigValueDto as ResolvedConfigValueDto,
+  type UpsertPlatformConfigBody as UpsertConfigBody,
+} from '../platform/api/platformService';
 
 export { tenantSubscriberService, type TenantSubscriberDetailDto } from '../subscribers/api/tenantSubscriberService';
 

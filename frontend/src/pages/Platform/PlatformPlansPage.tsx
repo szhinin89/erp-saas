@@ -41,10 +41,10 @@ export function PlatformPlansPage() {
 
   return (
     <PlatformCrudTemplate
-      title={t('superadmin.shell.plans')}
-      subtitle={t('superadmin.menuPlansHub.subtitle')}
+      title={t('platform.shell.plans')}
+      subtitle={t('platform.menuPlansHub.subtitle')}
     >
-      <div className="zh-form-tabs" role="tablist" aria-label={t('superadmin.menuPlansHub.tabListLabel')}>
+      <div className="zh-form-tabs" role="tablist" aria-label={t('platform.menuPlansHub.tabListLabel')}>
         <button
           type="button"
           role="tab"
@@ -53,7 +53,7 @@ export function PlatformPlansPage() {
           onClick={() => setTab('plans')}
         >
           <span className="material-symbols-outlined pg-icon-16">loyalty</span>
-          {t('superadmin.shell.plans')}
+          {t('platform.shell.plans')}
         </button>
         <button
           type="button"
@@ -63,7 +63,7 @@ export function PlatformPlansPage() {
           onClick={() => setTab('menu')}
         >
           <span className="material-symbols-outlined pg-icon-16">folder_managed</span>
-          {t('superadmin.menuPlansHub.tabMenuBuilder')}
+          {t('platform.menuPlansHub.tabMenuBuilder')}
         </button>
       </div>
 
@@ -74,7 +74,7 @@ export function PlatformPlansPage() {
           {auditLines.length > 0 && (
             <p className="subtle pg-mt-md">
               Auditoría local del builder ({auditLines.length} entradas). Log canónico:{' '}
-              <a className="zh-link" href="/superadmin/audit">/superadmin/audit</a>.
+              <a className="zh-link" href="/platform/audit">/platform/audit</a>.
             </p>
           )}
         </>

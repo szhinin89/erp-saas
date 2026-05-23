@@ -8,6 +8,12 @@ import { PLATFORM_API } from './platformApiPaths';
 /** Rutas canónicas Platform Layer (SaaS / subscribers). */
 export const PLATFORM_SUBSCRIBERS_API = PLATFORM_API.subscribers;
 
+const platformSubscriberPath = (subscriberId: string) =>
+  `${PLATFORM_API.subscribers}/${encodeURIComponent(subscriberId)}`;
+
+const platformConfigPath = (subscriberId: string) =>
+  `${PLATFORM_API.config}/${encodeURIComponent(subscriberId)}`;
+
 export function parsePlatformSubscriberList(
   responseObject: PlatformSubscriber[] | { subscribers?: PlatformSubscriber[] } | null | undefined,
 ): PlatformSubscriber[] {
@@ -195,7 +201,9 @@ export type AdminNavGroupRow = {
   sortOrder: number;
   moduleKey: string | null;
   roles: string[] | null;
-  requireSuperAdminPanel: boolean;
+  requirePlatformPanel?: boolean;
+  /** Alias legacy del API. */
+  requireSuperAdminPanel?: boolean;
   isActive: boolean;
   rootItems: AdminNavItemRow[];
 };
@@ -362,6 +370,78 @@ export type LegacyEndpointUsageSummary = {
   lastCallerIp?: string | null;
 };
 
+export type PlatformSubscriberDetailDto = {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+  createdAt: string;
+  ruc: string | null;
+  shortName: string | null;
+  tradeName: string | null;
+  dinardap: string | null;
+  logoUrl: string | null;
+  displayOrder: number;
+  priority: number;
+  electronicBillingTrialEnabled: boolean;
+  planCode: string | null;
+  enabledModules: string[];
+  hasModuleRestrictions: boolean;
+  currency: string;
+  language: string;
+  timezone: string;
+  invoicePrefix: string | null;
+  defaultCreditDays: number;
+};
+
+/** @deprecated Use PlatformSubscriberDetailDto */
+export type SubscriberDetailDto = PlatformSubscriberDetailDto;
+
+export type UpdatePlatformSubscriberCompanyBody = {
+  name: string;
+  slug: string;
+  ruc?: string | null;
+  shortName?: string | null;
+  tradeName?: string | null;
+  dinardap?: string | null;
+  logoUrl?: string | null;
+  displayOrder: number;
+  priority: number;
+};
+
+export type UpdatePlatformSubscriberGlobalParametersBody = {
+  electronicBillingTrialEnabled: boolean;
+};
+
+export type PlatformConfigEntryDto = {
+  id: string;
+  subscriberId: string;
+  scope: 'global' | 'module' | 'feature' | string;
+  module: string | null;
+  feature: string | null;
+  key: string;
+  value: string;
+  dataType: string;
+  updatedAt: string | null;
+  updatedBy: string | null;
+};
+
+export type PlatformResolvedConfigValueDto = {
+  subscriberId: string;
+  key: string;
+  module: string | null;
+  feature: string | null;
+  scopeResolved: 'global' | 'module' | 'feature' | string;
+  value: string;
+  dataType: string;
+};
+
+export type UpsertPlatformConfigBody = {
+  key: string;
+  value: string;
+  dataType: string;
+};
+
 export type LegacyEndpointUsageDashboard = {
   topEndpoints: LegacyEndpointUsageSummary[];
   topUiRoutes?: Array<{ routeKey: string; totalHits: number; lastHitUtc?: string | null; lastReferrer?: string | null }>;
@@ -391,6 +471,64 @@ export const platformService = {
     api
       .post<ApiResponse<SessionResponse>>(PLATFORM_API.subscribers, body)
       .then((r) => r.data.responseObject),
+
+  getSubscriber: (subscriberId: string) =>
+    api
+      .get<ApiResponse<PlatformSubscriberDetailDto>>(platformSubscriberPath(subscriberId))
+      .then((r) => {
+        const o = r.data.responseObject;
+        if (!o) throw new Error('empty');
+        return o;
+      }),
+
+  updateSubscriberCompany: (subscriberId: string, body: UpdatePlatformSubscriberCompanyBody) =>
+    api
+      .patch<ApiResponse<PlatformSubscriberDetailDto>>(`${platformSubscriberPath(subscriberId)}/company`, {
+        name: body.name,
+        slug: body.slug,
+        ruc: body.ruc,
+        shortName: body.shortName,
+        tradeName: body.tradeName,
+        dinardap: body.dinardap,
+        logoUrl: body.logoUrl,
+        displayOrder: body.displayOrder,
+        priority: body.priority,
+      })
+      .then((r) => {
+        const o = r.data.responseObject;
+        if (!o) throw new Error('empty');
+        return o;
+      }),
+
+  updateSubscriberGlobalParameters: (subscriberId: string, body: UpdatePlatformSubscriberGlobalParametersBody) =>
+    api
+      .patch<ApiResponse<PlatformSubscriberDetailDto>>(`${platformSubscriberPath(subscriberId)}/global-parameters`, body)
+      .then((r) => {
+        const o = r.data.responseObject;
+        if (!o) throw new Error('empty');
+        return o;
+      }),
+
+  resolveSubscriberConfig: (subscriberId: string, key: string, module?: string | null, feature?: string | null) =>
+    api
+      .get<ApiResponse<PlatformResolvedConfigValueDto | null>>(`${platformConfigPath(subscriberId)}/resolve`, {
+        params: { key, module: module ?? undefined, feature: feature ?? undefined },
+      })
+      .then((r) => r.data.responseObject),
+
+  listSubscriberGlobalConfig: (subscriberId: string) =>
+    api
+      .get<ApiResponse<PlatformConfigEntryDto[]>>(`${platformConfigPath(subscriberId)}/global`)
+      .then((r) => r.data.responseObject ?? []),
+
+  upsertSubscriberGlobalConfig: (subscriberId: string, body: UpsertPlatformConfigBody) =>
+    api
+      .put<ApiResponse<PlatformConfigEntryDto>>(`${platformConfigPath(subscriberId)}/global`, body)
+      .then((r) => {
+        const o = r.data.responseObject;
+        if (!o) throw new Error('empty');
+        return o;
+      }),
 
   getSubscriberEntitlements: (subscriberId: string) =>
     api

@@ -8,7 +8,7 @@ namespace ERP.Application.Platform;
 /// Mapeo físico → lógico (sin mover archivos aún):
 /// <list type="bullet">
 ///   <item><c>Modules/Platform/Companies</c> → Platform.Companies</item>
-///   <item><c>Modules/Access/UseCases/SuperAdminSubscribers</c> → Platform.Subscribers</item>
+///   <item><c>Modules/Access/UseCases/PlatformSubscribers</c> → Platform.Subscribers</item>
 ///   <item><c>Modules/Tenants</c> (settings, subscription) → Platform.Subscribers</item>
 ///   <item><c>Subscriptions/*</c> → Platform.Billing / Platform.Plans</item>
 /// </list>

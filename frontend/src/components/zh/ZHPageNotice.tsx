@@ -18,7 +18,7 @@ export type ZHPageNoticeProps = {
  * Mismo formato visual en todo el ERP (icono + colores por variante).
  *
  * @example Éxito tras guardar
- * `<ZHPageNotice variant="success" message={t('superadmin.navigationMenu.saved')} />`
+ * `<ZHPageNotice variant="success" message={t('platform.navigationMenu.saved')} />`
  *
  * @example Error con prefijo + detalle API
  * `<ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} />`

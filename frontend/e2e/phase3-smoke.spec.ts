@@ -37,8 +37,8 @@ test.describe('Phase 3 — Platform smoke', () => {
     await page.locator('#lp-email').fill(PLATFORM_EMAIL);
     await page.locator('#lp-password').fill(PLATFORM_PASSWORD);
     await page.getByRole('button', { name: /Iniciar sesión/i }).click();
-    await page.waitForURL(/\/superadmin\/(overview|subscribers)/, { timeout: 45_000 });
-    await page.goto('/superadmin/subscribers');
+    await page.waitForURL(/\/platform\/(overview|subscribers)/, { timeout: 45_000 });
+    await page.goto('/platform/subscribers');
     await expect(page.getByRole('heading', { name: /Suscriptores|Subscribers/i })).toBeVisible({ timeout: 30_000 });
   });
 
@@ -120,6 +120,6 @@ test.describe('Phase 3 — Tenant login UI', () => {
     await page.locator('#lp-email').fill(DEMO_EMAIL);
     await page.locator('#lp-password').fill(DEMO_PASSWORD);
     await page.getByRole('button', { name: /Iniciar sesión/i }).click();
-    await page.waitForURL(/\/(select-company|dashboard|superadmin)/, { timeout: 45_000 });
+    await page.waitForURL(/\/(select-company|dashboard|platform)/, { timeout: 45_000 });
   });
 });

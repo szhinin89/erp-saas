@@ -1,6 +1,6 @@
 namespace ERP.Application.Navigation.DTOs;
 
-/// <summary>Árbol de menú para edición SuperAdmin (incluye ids y jerarquía recursiva).</summary>
+/// <summary>Árbol de menú para edición platform (incluye ids y jerarquía recursiva).</summary>
 public sealed record AdminNavigationMenuResponse(IReadOnlyList<AdminNavGroupRowDto> Groups);
 
 public sealed record AdminNavGroupRowDto(
@@ -11,9 +11,13 @@ public sealed record AdminNavGroupRowDto(
     int SortOrder,
     string? ModuleKey,
     IReadOnlyList<string>? Roles,
-    bool RequireSuperAdminPanel,
+    bool RequirePlatformPanel,
     bool IsActive,
-    IReadOnlyList<AdminNavItemRowDto> RootItems);
+    IReadOnlyList<AdminNavItemRowDto> RootItems)
+{
+    /// <summary>Alias JSON canónico — mismo valor que <see cref="RequirePlatformPanel"/>.</summary>
+    public bool RequirePlatformPanel => RequirePlatformPanel;
+}
 
 public sealed record AdminNavItemRowDto(
     Guid Id,

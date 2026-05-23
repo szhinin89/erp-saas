@@ -13,7 +13,7 @@ import { formatApiRequestError } from '../../modules/lib/apiError';
 import { adminNavigationToSessionMenu } from '../../modules/platform/adminNavigationToSessionMenu';
 import { buildPersistableMenuJson } from './platformMenuBuilderPersist';
 
-export type SuperAdminMenuBuilderActionsParams = {
+export type PlatformMenuBuilderActionsParams = {
   crmWorkspace: boolean;
   t: (key: string) => string;
   planId: string;
@@ -44,7 +44,7 @@ export type SuperAdminMenuBuilderActionsParams = {
   planSwitchClock: React.MutableRefObject<number>;
 };
 
-export function usePlatformMenuBuilderActions(params: SuperAdminMenuBuilderActionsParams) {
+export function usePlatformMenuBuilderActions(params: PlatformMenuBuilderActionsParams) {
   const {
     crmWorkspace,
     t,
@@ -296,11 +296,11 @@ export function usePlatformMenuBuilderActions(params: SuperAdminMenuBuilderActio
 
   const runCopyFromPlan = async () => {
     if (!planId || !copySourcePlanId || copySourcePlanId === planId) {
-      setErr(t('superadmin.menuBuilder.copyPickPlans'));
+      setErr(t('platform.menuBuilder.copyPickPlans'));
       return;
     }
     if (!copyMenu) {
-      setErr(t('superadmin.menuBuilder.copyPickOptions'));
+      setErr(t('platform.menuBuilder.copyPickOptions'));
       return;
     }
     setBusy(true);

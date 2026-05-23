@@ -31,7 +31,7 @@ QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Asegura que los user-secrets del API ganen a appsettings (p. ej. InitialSuperAdminSetupToken vacío en JSON).
+// Asegura que los user-secrets del API ganen a appsettings (p. ej. InitialPlatformOperatorSetupToken vacío en JSON).
 builder.Configuration.AddUserSecrets(typeof(Program).Assembly, optional: true);
 
 // Alias opcional en hosting: DB_CONNECTION_STRING → ConnectionStrings:DefaultConnection
@@ -216,7 +216,7 @@ builder.Services.AddSingleton(sp =>
 // Authorization: por defecto SOLO permite tokens de sesión (no bootstrap).
 builder.Services.AddSingleton<IAuthorizationHandler, TokenTypeHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionHandler>();
-builder.Services.AddScoped<IAuthorizationHandler, GlobalSuperAdminHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, GlobalPlatformOperatorHandler>();
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddAuthorization(options =>
 {
@@ -228,10 +228,10 @@ builder.Services.AddAuthorization(options =>
         policy.RequireAuthenticatedUser()
               .AddRequirements(new TokenTypeRequirement("bootstrap")));
 
-    options.AddPolicy("GlobalSuperAdmin", policy =>
+    options.AddPolicy("GlobalPlatformOperator", policy =>
         policy.RequireAuthenticatedUser()
               .AddRequirements(new TokenTypeRequirement("session"))
-              .AddRequirements(new GlobalSuperAdminRequirement()));
+              .AddRequirements(new GlobalPlatformOperatorRequirement()));
 
     // Si el endpoint tiene [Authorize] sin policy, exigimos token de sesión.
     // IMPORTANTE: NO usar FallbackPolicy, porque eso protegería endpoints que
@@ -301,13 +301,13 @@ if (!app.Environment.IsEnvironment("Testing")
     {
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("==================================================");
-        Console.WriteLine("FIRST-RUN DETECTADO: crear SUPER ADMIN inicial");
+        Console.WriteLine("FIRST-RUN DETECTADO: crear operador platform inicial");
         Console.WriteLine("Ejecuta desde la máquina del servidor (mismo body en /api/setup/claim-initial-superadmin):");
         Console.WriteLine(
             "curl -X POST https://localhost:5001/api/setup/superadmin " +
             "-H \"Content-Type: application/json\" " +
-            "-d '{\"setupToken\":\"" + setupResult.PlainToken + "\",\"firstName\":\"Super\",\"lastName\":\"Admin\",\"email\":\"superadmin@erp.com\",\"password\":\"CAMBIAR-ESTA-CLAVE\"}'");
-        Console.WriteLine("Documentación: docs/DEVELOPMENT.md | script: .\\scripts\\setup\\Crear-SuperAdmin.ps1");
+            "-d '{\"setupToken\":\"" + setupResult.PlainToken + "\",\"firstName\":\"Platform\",\"lastName\":\"Operator\",\"email\":\"platform@erp.com\",\"password\":\"CAMBIAR-ESTA-CLAVE\"}'");
+        Console.WriteLine("Documentación: docs/DEVELOPMENT.md | script: .\\scripts\\setup\\Crear-PlatformOperator.ps1");
         Console.WriteLine("Token expira en: " + setupResult.ExpiresAtUtc?.ToString("u"));
         Console.WriteLine("==================================================");
         Console.ResetColor();
@@ -375,7 +375,7 @@ if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"
 app.UseAuthentication();
 app.UseSecurityCorrelation();           // SubscriberId/CompanyId/UserId en log scope
 app.UseMiddleware<EnterpriseDiagnosticMiddleware>();
-app.UseMiddleware<SuperAdminPanelLockMiddleware>();
+app.UseMiddleware<PlatformPanelLockMiddleware>();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.UseMiddleware<ForbiddenAccessLoggingMiddleware>();

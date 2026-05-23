@@ -9,10 +9,10 @@ using ERP.Domain.Exceptions;
 using ERP.Domain.Subscribers.Interfaces;
 using MediatR;
 
-namespace ERP.Application.Access.UseCases.SuperAdminSubscribers;
+namespace ERP.Application.Access.UseCases.PlatformSubscribers;
 
 /// <summary>Alta de empresa + Admin en <c>identity_users</c>/<c>company_user_memberships</c>; transaccional vía orchestrator.</summary>
-public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperAdminCreateSubscriberWithAdminCommand, Result<SessionResponseDto>>
+public class PlatformCreateSubscriberWithAdminHandler : IRequestHandler<PlatformCreateSubscriberWithAdminCommand, Result<SessionResponseDto>>
 {
     private readonly ISubscriberRepository _subscriberRepository;
     private readonly IAccessRepository _accessRepository;
@@ -23,7 +23,7 @@ public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperA
     private readonly ISessionModulesResolver _sessionModules;
     private readonly ISubscriberProvisioningOrchestrator _provisioning;
 
-    public SuperAdminCreateSubscriberWithAdminHandler(
+    public PlatformCreateSubscriberWithAdminHandler(
         ISubscriberRepository subscriberRepository,
         IAccessRepository accessRepository,
         IAccessTokenService tokenService,
@@ -43,10 +43,10 @@ public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperA
         _provisioning = provisioning;
     }
 
-    public Task<Result<SessionResponseDto>> HandleAsync(SuperAdminCreateSubscriberWithAdminCommand command, CancellationToken ct = default)
+    public Task<Result<SessionResponseDto>> HandleAsync(PlatformCreateSubscriberWithAdminCommand command, CancellationToken ct = default)
         => Handle(command, ct);
 
-    public async Task<Result<SessionResponseDto>> Handle(SuperAdminCreateSubscriberWithAdminCommand command, CancellationToken ct)
+    public async Task<Result<SessionResponseDto>> Handle(PlatformCreateSubscriberWithAdminCommand command, CancellationToken ct)
     {
         var slug = command.SubscriberSlug.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(slug))
@@ -122,7 +122,7 @@ public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperA
     }
 
     private async Task<Result<SessionResponseDto>> HandleLinkExistingAdminAsync(
-        SuperAdminCreateSubscriberWithAdminCommand command,
+        PlatformCreateSubscriberWithAdminCommand command,
         string slug,
         string email,
         CancellationToken ct)
@@ -243,14 +243,14 @@ public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperA
     }
 }
 
-public class GetSuperAdminSubscribersHandler : IRequestHandler<GetSuperAdminSubscribersQuery, Result<IReadOnlyList<SuperAdminSubscriberItemDto>>>
+public class GetPlatformSubscribersHandler : IRequestHandler<GetPlatformSubscribersQuery, Result<IReadOnlyList<PlatformSubscriberItemDto>>>
 {
     private readonly ISubscriberRepository _subscriberRepository;
     private readonly ISubscriberMenuAdminService _subscriberMenuAdmin;
     private readonly ISessionModulesResolver _sessionModules;
     private readonly IAccessRepository _accessRepository;
 
-    public GetSuperAdminSubscribersHandler(
+    public GetPlatformSubscribersHandler(
         ISubscriberRepository subscriberRepository,
         ISubscriberMenuAdminService tenantMenuAdmin,
         ISessionModulesResolver sessionModules,
@@ -262,19 +262,19 @@ public class GetSuperAdminSubscribersHandler : IRequestHandler<GetSuperAdminSubs
         _accessRepository = accessRepository;
     }
 
-    public async Task<Result<IReadOnlyList<SuperAdminSubscriberItemDto>>> Handle(GetSuperAdminSubscribersQuery request, CancellationToken ct)
+    public async Task<Result<IReadOnlyList<PlatformSubscriberItemDto>>> Handle(GetPlatformSubscribersQuery request, CancellationToken ct)
     {
         var withCustom = await _subscriberMenuAdmin.GetSubscriberIdsWithCustomMenuAsync(ct);
         var ordered = (await _subscriberRepository.GetAllAsync(ct))
             .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
-        var subscribers = new List<SuperAdminSubscriberItemDto>(ordered.Count);
+        var subscribers = new List<PlatformSubscriberItemDto>(ordered.Count);
         foreach (var t in ordered)
         {
             var modules = await _sessionModules.GetEnabledModuleKeysAsync(t.Id, ct);
             var (totalUsers, activeUsers) = await _accessRepository.CountDistinctIdentityUsersForSubscriberAsync(t.Id, ct);
-            subscribers.Add(new SuperAdminSubscriberItemDto(
+            subscribers.Add(new PlatformSubscriberItemDto(
                 t.Id,
                 t.Name,
                 t.Slug,
@@ -288,6 +288,6 @@ public class GetSuperAdminSubscribersHandler : IRequestHandler<GetSuperAdminSubs
                 activeUsers));
         }
 
-        return Result<IReadOnlyList<SuperAdminSubscriberItemDto>>.Success(subscribers);
+        return Result<IReadOnlyList<PlatformSubscriberItemDto>>.Success(subscribers);
     }
 }

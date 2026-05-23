@@ -54,10 +54,10 @@ export function NavigationMenuEditItemDialog({
       }}
     >
       <dialog className="nm-createDialog" open aria-labelledby="nm-edit-title">
-        <h3 id="nm-edit-title">{t('superadmin.navigationMenu.editItemTitle')}</h3>
+        <h3 id="nm-edit-title">{t('platform.navigationMenu.editItemTitle')}</h3>
         <form onSubmit={(e: FormEvent) => void handleEditNavItemSubmit(e)}>
           <div className="nm-createField">
-            <label htmlFor="nm-edit-label">{t('superadmin.navigationMenu.createItemDisplayLabel')}</label>
+            <label htmlFor="nm-edit-label">{t('platform.navigationMenu.createItemDisplayLabel')}</label>
             <input
               id="nm-edit-label"
               value={editDisplayLabel}
@@ -68,7 +68,7 @@ export function NavigationMenuEditItemDialog({
             />
           </div>
           <div className="nm-createField">
-            <label htmlFor="nm-edit-route">{t('superadmin.navigationMenu.createItemRoutePath')}</label>
+            <label htmlFor="nm-edit-route">{t('platform.navigationMenu.createItemRoutePath')}</label>
             <input
               id="nm-edit-route"
               value={editRoutePath}
@@ -78,7 +78,7 @@ export function NavigationMenuEditItemDialog({
             />
           </div>
           <div className="nm-createField">
-            <label htmlFor="nm-edit-mod">{t('superadmin.navigationMenu.createItemModuleKey')}</label>
+            <label htmlFor="nm-edit-mod">{t('platform.navigationMenu.createItemModuleKey')}</label>
             <input
               id="nm-edit-mod"
               value={editModuleKey}
@@ -88,7 +88,7 @@ export function NavigationMenuEditItemDialog({
             />
           </div>
           <div className="nm-createField">
-            <label htmlFor="nm-edit-perm">{t('superadmin.navigationMenu.createItemPermissionKey')}</label>
+            <label htmlFor="nm-edit-perm">{t('platform.navigationMenu.createItemPermissionKey')}</label>
             <input
               id="nm-edit-perm"
               value={editPermissionKey}
@@ -98,22 +98,22 @@ export function NavigationMenuEditItemDialog({
             />
           </div>
           <div className="nm-createField">
-            <label htmlFor="nm-edit-feat">{t('superadmin.navigationMenu.editFeatureId')}</label>
+            <label htmlFor="nm-edit-feat">{t('platform.navigationMenu.editFeatureId')}</label>
             <input
               id="nm-edit-feat"
               value={editFeatureId}
               onChange={(e) => setEditFeatureId(e.target.value)}
               disabled={savingEdit}
               autoComplete="off"
-              placeholder={t('superadmin.navigationMenu.editFeatureIdHint')}
+              placeholder={t('platform.navigationMenu.editFeatureIdHint')}
             />
           </div>
           <div className="nm-createActions">
             <ZHBtn type="button" variant="secondary" disabled={savingEdit} onClick={closeEditNavItem}>
-              {t('superadmin.navigationMenu.createItemCancel')}
+              {t('platform.navigationMenu.createItemCancel')}
             </ZHBtn>
             <ZHBtn type="submit" variant="primary" disabled={savingEdit}>
-              {savingEdit ? t('common.saving') : t('superadmin.navigationMenu.saveItem')}
+              {savingEdit ? t('common.saving') : t('platform.navigationMenu.saveItem')}
             </ZHBtn>
           </div>
         </form>

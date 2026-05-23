@@ -1,11 +1,12 @@
 import type { SessionMenuGroupDto, SessionMenuItemDto } from '../types/access';
+import { NAV_PLATFORM_OPERATOR_ROLE, readsRequirePlatformPanel, TENANT_ADMIN_JWT_ROLES } from '../constants/platformAuth';
 import { normalizePolicyPermissionKey } from '../store/permissionsStore';
 
 export type NavItem = {
   to: string;
   label: string;
   icon?: string;
-  /** Si está definido, el ítem solo se muestra si el rol del usuario está en la lista (p. ej. solo SuperAdmin). */
+  /** Si está definido, el ítem solo se muestra si el rol del usuario está en la lista (p. ej. solo operador platform). */
   roles?: string[];
   /** Clave de módulo contratado (inventario, accounting, saas, access). Si falta, no se filtra por suscripción. */
   moduleKey?: string;
@@ -146,9 +147,9 @@ function mapSessionMenuItem(it: SessionMenuItemDto, t: TranslateFn, inheritedRou
   };
 }
 
-/** Rutas de administración de plataforma: no deben venir del menú en BD (solo enlaces estáticos para SuperAdmin). */
+/** Rutas de administración de plataforma: no deben venir del menú en BD (solo enlaces estáticos para operador platform). */
 function isPlatformAdminMenuRoute(routePath: string): boolean {
-  return routePath.startsWith('/superadmin');
+  return routePath.startsWith('/platform');
 }
 
 function filterPlatformAdminRoutesFromSessionItems(items: SessionMenuItemDto[]): SessionMenuItemDto[] {
@@ -170,16 +171,16 @@ function filterPlatformAdminRoutesFromSessionMenuDto(dto: SessionMenuGroupDto[])
     .filter((g) => g.items.length > 0);
 }
 
-/** Convierte la respuesta del API en el mismo shape que `buildNavGroups` (incl. filtro panel superadmin). */
+/** Convierte la respuesta del API en el mismo shape que `buildNavGroups` (incl. filtro panel platform). */
 export function mapSessionMenuToNavGroups(
   dto: SessionMenuGroupDto[],
   t: TranslateFn,
-  options?: { superAdminPanelEnabled?: boolean },
+  options?: { platformPanelEnabled?: boolean },
 ): NavGroup[] {
-  const superOn = options?.superAdminPanelEnabled ?? true;
+  const superOn = options?.platformPanelEnabled ?? true;
   const cleaned = filterPlatformAdminRoutesFromSessionMenuDto(dto);
   const mapped = cleaned
-    .filter((g) => !g.requireSuperAdminPanel || superOn)
+    .filter((g) => !readsRequirePlatformPanel(g) || superOn)
     .map((g) => ({
       id: g.code,
       label: t(g.labelKey),
@@ -243,49 +244,49 @@ function collectNavTos(items: NavItem[]): string[] {
 }
 
 /**
- * Menú único para SuperAdmin en contexto global (sin subscriber operativo).
+ * Menú único para operador platform en contexto global (sin subscriber operativo).
  * Solo rutas de plataforma; no incluye inventario, contabilidad, etc.
  */
-export function buildGlobalSuperAdminNavGroups(
+export function buildGlobalPlatformNavGroups(
   t: TranslateFn,
-  options?: { superAdminPanelEnabled?: boolean },
+  options?: { platformPanelEnabled?: boolean },
 ): NavGroup[] {
-  const items = getSuperAdminPanelNavExtras(t, options);
+  const items = getPlatformPanelNavExtras(t, options);
   if (!items.length) return [];
   return sortNavGroupsForMainBar([
     {
-      id: 'superadmin',
-      label: t('app.nav.group.superadmin'),
+      id: 'platform',
+      label: t('app.nav.group.platform'),
       icon: '◆',
       sortOrder: 0,
-      roles: ['SuperAdmin'],
+      roles: [NAV_PLATFORM_OPERATOR_ROLE],
       items,
     },
   ]);
 }
 
 /**
- * Enlaces del panel SuperAdmin: siempre estáticos (navConfig), no filas de <c>ui_nav_items</c>,
+ * Enlaces del panel platform: siempre estáticos (navConfig), no filas de <c>ui_nav_items</c>,
  * para no mezclar la plataforma con el menú por-tenant/empresa en BD.
  */
-export function getSuperAdminPanelNavExtras(
+export function getPlatformPanelNavExtras(
   t: TranslateFn,
-  options?: { superAdminPanelEnabled?: boolean },
+  options?: { platformPanelEnabled?: boolean },
 ): NavItem[] {
-  const superAdminOn = options?.superAdminPanelEnabled ?? true;
-  if (!superAdminOn) return [];
+  const platformPanelOn = options?.platformPanelEnabled ?? true;
+  if (!platformPanelOn) return [];
   return [
-    { to: '/superadmin/overview', label: t('app.nav.superadmin'), roles: ['SuperAdmin'] },
+    { to: '/platform/overview', label: t('app.nav.platform'), roles: [NAV_PLATFORM_OPERATOR_ROLE] },
   ];
 }
 
-/** Cuando el menú viene de BD, añade en Inicio los enlaces estáticos de SuperAdmin que falten (misma ruta = no duplicar). */
-export function mergeSuperAdminNavExtrasIntoHome(
+/** Cuando el menú viene de BD, añade en Inicio los enlaces estáticos de platform que falten (misma ruta = no duplicar). */
+export function mergePlatformNavExtrasIntoHome(
   groups: NavGroup[],
   t: TranslateFn,
-  options?: { superAdminPanelEnabled?: boolean },
+  options?: { platformPanelEnabled?: boolean },
 ): NavGroup[] {
-  const extras = getSuperAdminPanelNavExtras(t, options);
+  const extras = getPlatformPanelNavExtras(t, options);
   if (!extras.length) return groups;
 
   const homeIdx = groups.findIndex((g) => g.id === 'home');
@@ -304,9 +305,9 @@ export function mergeSuperAdminNavExtrasIntoHome(
 
 export function buildNavGroups(
   t: TranslateFn,
-  options?: { superAdminPanelEnabled?: boolean },
+  options?: { platformPanelEnabled?: boolean },
 ): NavGroup[] {
-  const superAdminOn = options?.superAdminPanelEnabled ?? true;
+  const platformPanelOn = options?.platformPanelEnabled ?? true;
   const groups: NavGroup[] = [
     {
       id: 'home',
@@ -315,7 +316,7 @@ export function buildNavGroups(
       sortOrder: defaultBarRank('home') * 10,
       items: [
         { to: '/dashboard', label: t('app.nav.erpDashboard') },
-        ...getSuperAdminPanelNavExtras(t, options),
+        ...getPlatformPanelNavExtras(t, options),
       ],
     },
     {
@@ -404,7 +405,7 @@ export function buildNavGroups(
           label: t('app.nav.branches'),
           moduleKey: 'saas',
           permissionKey: 'settings.branches.view',
-          roles: ['Admin', 'SuperAdmin'],
+          roles: [...TENANT_ADMIN_JWT_ROLES],
         },
       ],
     },
@@ -413,7 +414,7 @@ export function buildNavGroups(
       label: t('app.nav.group.security'),
       icon: '🛡️',
       sortOrder: defaultBarRank('security') * 10,
-      items: [{ to: '/security', label: t('app.nav.security'), roles: ['SuperAdmin'] }],
+      items: [{ to: '/security', label: t('app.nav.security'), roles: [NAV_PLATFORM_OPERATOR_ROLE] }],
     },
   ];
 
@@ -428,14 +429,14 @@ export function buildNavGroups(
     }
   }
 
-  if (!superAdminOn) {
+  if (!platformPanelOn) {
     return sortNavGroupsForMainBar(
       groups.map((g) => {
         if (g.id !== 'security') return g;
         return {
           ...g,
           items: g.items.filter(
-            (it) => !(it.roles?.includes('SuperAdmin') && !it.roles?.includes('Admin')),
+            (it) => !(it.roles?.includes(NAV_PLATFORM_OPERATOR_ROLE) && !it.roles?.includes('Admin')),
           ),
         };
       }),
@@ -451,7 +452,9 @@ export function flattenAccessIntoSecurity(groups: NavGroup[]): NavGroup[] {
   if (!access) return groups;
 
   const security = groups.find((g) => g.id === 'security');
-  const liftRoles = access.roles?.filter(Boolean).length ? [...(access.roles ?? [])] : ['Admin', 'SuperAdmin'];
+  const liftRoles = access.roles?.filter(Boolean).length
+    ? [...(access.roles ?? [])]
+    : [...TENANT_ADMIN_JWT_ROLES];
   const lifted: NavItem[] = access.items.map((it) => ({
     ...it,
     roles: it.roles?.length ? [...new Set([...it.roles, ...liftRoles])] : [...liftRoles],
@@ -506,7 +509,9 @@ export function flattenSaaSIntoHome(groups: NavGroup[]): NavGroup[] {
   const saas = groups.find((g) => g.id === 'saas');
   if (!saas) return groups;
 
-  const liftRoles = saas.roles?.filter(Boolean).length ? [...(saas.roles ?? [])] : ['SuperAdmin'];
+  const liftRoles = saas.roles?.filter(Boolean).length
+    ? [...(saas.roles ?? [])]
+    : [NAV_PLATFORM_OPERATOR_ROLE];
   const lifted: NavItem[] = saas.items.map((it) => ({
     ...it,
     roles: it.roles?.length ? [...new Set([...it.roles, ...liftRoles])] : [...liftRoles],
@@ -531,7 +536,7 @@ export function flattenSaaSIntoHome(groups: NavGroup[]): NavGroup[] {
 export function ensureSalesNextToInventory(
   groups: NavGroup[],
   t: TranslateFn,
-  _options?: { superAdminPanelEnabled?: boolean },
+  _options?: { platformPanelEnabled?: boolean },
 ): NavGroup[] {
   void _options;
   if (groups.some((g) => g.id === 'sales')) {
@@ -577,7 +582,7 @@ const GROUPS_FILL_FROM_STATIC: readonly string[] = ['purchases', 'hr', 'configur
 export function mergeMissingStaticNavGroups(
   groups: NavGroup[],
   t: TranslateFn,
-  options?: { superAdminPanelEnabled?: boolean },
+  options?: { platformPanelEnabled?: boolean },
 ): NavGroup[] {
   const staticFull = buildNavGroups(t, options);
   let out = [...groups];

@@ -20,6 +20,10 @@ public sealed record SessionMenuGroupDto(
     int SortOrder,
     string? ModuleKey,
     IReadOnlyList<string>? Roles,
-    bool RequireSuperAdminPanel,
+    bool RequirePlatformPanel,
     IReadOnlyList<SessionMenuItemDto> Items,
-    string? MenuBarLayout = null);
+    string? MenuBarLayout = null)
+{
+    /// <summary>Alias JSON canónico — mismo valor que <see cref="RequirePlatformPanel"/>.</summary>
+    public bool RequirePlatformPanel => RequirePlatformPanel;
+}

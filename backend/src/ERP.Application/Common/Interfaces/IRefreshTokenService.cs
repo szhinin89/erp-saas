@@ -4,9 +4,14 @@ namespace ERP.Application.Common.Interfaces;
 public static class RefreshUserType
 {
     public const string Platform   = "Platform";
-    public const string SuperAdmin = "SuperAdmin";
+    public const string PlatformOperator = "PlatformOperator";
+    /// <summary>Alias legacy persistido en BD.</summary>
+    public const string LegacyPlatformOperator = "SuperAdmin";
     public const string Identity   = "Identity";
     public const string Legacy     = "Legacy";
+
+    public static bool IsPlatformRefreshUserType(string? userType) =>
+        userType is Platform or PlatformOperator or LegacyPlatformOperator;
 }
 
 public interface IRefreshTokenService

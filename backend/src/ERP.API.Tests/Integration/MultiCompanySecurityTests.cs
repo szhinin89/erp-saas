@@ -123,7 +123,7 @@ public sealed class MultiCompanySecurityTests : IAsyncLifetime
 
         // JWT de SuperAdmin platform: subscriber_id=Empty, sin company_id
         var superAdminId = Guid.NewGuid();
-        var token = TestJwtFactory.CreatePlatformSuperAdminJwt(superAdminId);
+        var token = TestJwtFactory.CreatePlatformOperatorJwt(superAdminId);
         using var client = _factory.CreateAuthenticatedClient(token);
 
         var res = await client.GetAsync("/api/sales/customers?take=100");

@@ -18,7 +18,7 @@ No existe un design system paralelo: tokens (`design-tokens.css`), componentes g
 | Bounded context | Ruta típica | Shell |
 |-----------------|-------------|--------|
 | **Tenant ERP** | `/dashboard`, `/ventas`, … | `AppLayout` |
-| **Plataforma SuperAdmin** | `/superadmin/*`, `/companies` | `SuperAdminLayout` |
+| **Plataforma (control plane)** | `/platform/*` (+ redirect `/superadmin/*`) | `PlatformLayout` |
 | **Auth / onboarding** | `/login`, `/select-subscriber` | `zh-auth-*` (excepción) |
 | **Reportes** | `/reportes/*` | `AppLayout` + `ReportPageTemplate` |
 
@@ -36,9 +36,9 @@ Tenant:
                 └── pg-page / TableCard / zh-form-tabs / contenido
 
 Platform:
-  SuperAdminLayout
+  PlatformLayout
     └── LayoutFrame (variant="platform")
-          └── SuperAdminCrudTemplate
+          └── PlatformCrudTemplate
                 └── pg-page / secciones / Menu Builder
 
 Auth:
@@ -53,10 +53,10 @@ Reportes:
 
 | Capa | Archivo | Responsabilidad |
 |------|---------|-----------------|
-| **Shell** | `components/AppLayout.tsx`, `layouts/SuperAdminLayout.tsx` | Sidebar/topbar, banner impersonación, `<Outlet />` |
+| **Shell** | `components/AppLayout.tsx`, `layouts/PlatformLayout.tsx` | Sidebar/topbar, banner impersonación, `<Outlet />` |
 | **Frame** | `components/layout/LayoutFrame.tsx` | Padding, max-width, scroll del contenido (`--shell-content-*`) |
 | **Plantilla tenant** | `templates/ErpPageTemplate.tsx` | `PageShell` + título/acción + `.pg-page` opcional |
-| **Plantilla platform** | `templates/SuperAdminCrudTemplate.tsx` | Cabecera oculta bajo topbar SA |
+| **Plantilla platform** | `templates/PlatformCrudTemplate.tsx` | Cabecera oculta bajo topbar platform |
 | **Plantilla reportes** | `components/ReportPageTemplate.tsx` | KPIs, filtros, gráfico (dominio reportes) |
 | **Página** | `modules/**/pages/*.tsx` | Estado local, hooks, JSX de negocio (sin shell) |
 
@@ -69,14 +69,14 @@ Reportes:
 ### AppLayout (tenant)
 
 - Menú lateral desde API de sesión (filtrado por permisos y plan SaaS).
-- Banner SuperAdmin en impersonación.
+- Banner impersonación platform en contexto tenant.
 - Monta `LayoutFrame` con `variant="tenant"` alrededor del `<Outlet />`.
 
-### SuperAdminLayout (platform)
+### PlatformLayout (control plane)
 
 - Sidebar y topbar de plataforma (`sa-topbar-title` = H1 de ruta).
 - `LayoutFrame` con `variant="platform"`.
-- Rutas `/companies` y panel global sin UUID en URL (ver reglas SaaS).
+- Rutas `/platform/*`; bookmarks `/superadmin/*` redirigen. Sin UUID tenant en URL (reglas SaaS).
 
 ### LayoutFrame
 
@@ -103,9 +103,9 @@ Catálogos con `.zh-form-tabs` ya estabilizados: `CompaniesPage`, `CategoriesCat
 
 Mismo nivel de conformidad (clase **A** en `PAGE-AUDIT.md`).
 
-### SuperAdminCrudTemplate (default platform)
+### PlatformCrudTemplate (default platform)
 
-Todas las rutas `/superadmin/*` y hub menú/planes. `hideHeader` evita duplicar título con topbar.
+Todas las rutas `/platform/*` y hub menú/planes. `hideHeader` evita duplicar título con topbar.
 
 ### ReportPageTemplate
 
@@ -144,7 +144,7 @@ Todas las rutas `/superadmin/*` y hub menú/planes. `hideHeader` evita duplicar 
 | `adj-*` | Ajustes inventario |
 | `bod-*` | Bodegas |
 | `dsh-*` | Dashboard |
-| `sap-*` | SuperAdmin planes |
+| `sap-*` | Platform planes / menu builder |
 | `rpt-*` | Reportes |
 | `smp-*` | Menu Preview simulado (**platform only**) |
 | `smb-*` | Menu Builder CRM (**platform only**) |
@@ -230,7 +230,7 @@ Playwright smoke: `.github/workflows/frontend-ci.yml`.
 
 1. Elegir shell según contexto (tenant vs platform vs auth).
 2. Tenant producto → `ErpPageTemplate` salvo que replique patrón `CompaniesPage` (tabs + `PageShell`).
-3. Platform → `SuperAdminCrudTemplate`; no repetir título del topbar.
+3. Platform → `PlatformCrudTemplate`; no repetir título del topbar.
 4. Crear `*-page.css` con prefijo de dominio si hay estilos no cubiertos por `pg-*` / `zh-ui`.
 5. Tablas → `pg-overflow-x`; estados vacío/carga → `pg-pad-40`.
 6. Añadir ruta a `PAGE-AUDIT.md` y claves i18n en `es` / `en` / `qu`.

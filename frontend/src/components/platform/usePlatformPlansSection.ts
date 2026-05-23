@@ -22,7 +22,7 @@ import {
 
 export function usePlatformPlansSection() {
   const { t } = useI18n();
-  const { isSuperAdmin } = usePlatformGate();
+  const { isPlatformOperator } = usePlatformGate();
 
   const [plans, setPlans] = useState<CommercialPlanAdmin[]>([]);
   const [publicPlans, setPublicPlans] = useState<SaasPublicPlan[]>([]);
@@ -136,7 +136,7 @@ export function usePlatformPlansSection() {
   }, [filteredTenantsForTable, planByCode]);
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!isPlatformOperator) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -156,10 +156,10 @@ export function usePlatformPlansSection() {
     return () => {
       cancelled = true;
     };
-  }, [isSuperAdmin, loadAll, t]);
+  }, [isPlatformOperator, loadAll, t]);
 
   useEffect(() => {
-    if (!isSuperAdmin) return;
+    if (!isPlatformOperator) return;
     const tick = () => {
       if (document.visibilityState !== 'visible') return;
       void loadAll().catch(() => undefined);
@@ -173,7 +173,7 @@ export function usePlatformPlansSection() {
       window.clearInterval(id);
       document.removeEventListener('visibilitychange', onVis);
     };
-  }, [isSuperAdmin, loadAll]);
+  }, [isPlatformOperator, loadAll]);
 
   const openCreatePlan = useCallback(() => {
     setPlanForm(emptyPlanForm());

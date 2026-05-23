@@ -17,13 +17,13 @@ export type NavigationMenuEditorPanelProps = {
 };
 
 /**
- * Editor global del menú principal (grupos de barra + ítems). Misma API que la antigua página solo SuperAdmin.
+ * Editor global del menú principal (grupos de barra + ítems). Misma API que la antigua página solo platform.
  */
 export function NavigationMenuEditorPanel({ splitWorkspace = false }: NavigationMenuEditorPanelProps) {
   const state = useNavigationMenuEditorPanel(splitWorkspace);
   const {
     t,
-    isSuperAdmin,
+    isPlatformOperator,
     hasSelectedSubscriber,
     loading,
     error,
@@ -36,14 +36,14 @@ export function NavigationMenuEditorPanel({ splitWorkspace = false }: Navigation
     handleDeleteNavItem,
   } = state;
 
-  if (!isSuperAdmin || hasSelectedSubscriber) {
-    return <p className="zh-help-text subtle">{t('superadmin.sectionLoadHint')}</p>;
+  if (!isPlatformOperator || hasSelectedSubscriber) {
+    return <p className="zh-help-text subtle">{t('platform.sectionLoadHint')}</p>;
   }
 
   return (
     <>
       {error ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={error} /> : null}
-      {success ? <ZHPageNotice variant="success" message={t('superadmin.navigationMenu.saved')} /> : null}
+      {success ? <ZHPageNotice variant="success" message={t('platform.navigationMenu.saved')} /> : null}
 
       <ZHCard>
         {loading ? (
@@ -62,12 +62,12 @@ export function NavigationMenuEditorPanel({ splitWorkspace = false }: Navigation
 
             {deleteOpen && selection ? (
               <ZHConfirmModal
-                title={t('superadmin.navigationMenu.deleteItemTitle')}
+                title={t('platform.navigationMenu.deleteItemTitle')}
                 message={
                   <>
-                    {t('superadmin.navigationMenu.deleteItemConfirmPrefix')}{' '}
+                    {t('platform.navigationMenu.deleteItemConfirmPrefix')}{' '}
                     <strong>{countNavSubtreeNodes(selection.item)}</strong>{' '}
-                    {t('superadmin.navigationMenu.deleteItemConfirmSuffix')}
+                    {t('platform.navigationMenu.deleteItemConfirmSuffix')}
                   </>
                 }
                 loading={deletingItem}
@@ -77,7 +77,7 @@ export function NavigationMenuEditorPanel({ splitWorkspace = false }: Navigation
             ) : null}
           </div>
         ) : (
-          <div className="empty-state">{t('superadmin.sectionLoadHint')}</div>
+          <div className="empty-state">{t('platform.sectionLoadHint')}</div>
         )}
       </ZHCard>
     </>

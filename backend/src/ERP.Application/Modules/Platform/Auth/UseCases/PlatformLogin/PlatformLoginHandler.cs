@@ -32,8 +32,8 @@ public sealed class PlatformLoginHandler : IRequestHandler<PlatformLoginCommand,
 
     public async Task<Result<AuthResponseDto>> Handle(PlatformLoginCommand command, CancellationToken ct)
     {
-        if (!_deployment.IsSuperAdminPanelEnabled)
-            return Result<AuthResponseDto>.Failure(DeploymentAuthMessages.SuperAdminPanelDisabled);
+        if (!_deployment.IsPlatformPanelEnabled)
+            return Result<AuthResponseDto>.Failure(DeploymentAuthMessages.PlatformPanelDisabled);
 
         var email = command.Email.Trim();
         if (string.IsNullOrWhiteSpace(email))
@@ -54,11 +54,11 @@ public sealed class PlatformLoginHandler : IRequestHandler<PlatformLoginCommand,
 
         var jwtRole = user.PlatformRole switch
         {
-            Domain.Access.Enums.PlatformRole.SuperAdmin => "SuperAdmin",
+            Domain.Access.Enums.PlatformRole.PlatformOperator => PlatformAuthConstants.JwtPlatformOperatorRole,
             Domain.Access.Enums.PlatformRole.Support => "Support",
             Domain.Access.Enums.PlatformRole.BillingAdmin => "BillingAdmin",
             Domain.Access.Enums.PlatformRole.Auditor => "Auditor",
-            _ => "SuperAdmin",
+            _ => PlatformAuthConstants.JwtPlatformOperatorRole,
         };
 
         var token = _accessTokenService.GeneratePlatformSessionToken(user);

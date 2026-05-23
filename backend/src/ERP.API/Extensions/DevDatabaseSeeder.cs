@@ -312,13 +312,13 @@ internal static class DevDatabaseSeeder
 
         if (existing is not null)
         {
-            if (existing.UserType == IdentityUserType.Platform && existing.PlatformRole == PlatformRole.SuperAdmin)
+            if (existing.UserType == IdentityUserType.Platform && existing.PlatformRole == PlatformRole.PlatformOperator)
                 existing.SetPasswordHash(passwordHasher.HashPassword(password), SeederActorId);
             await db.SaveChangesAsync(ct);
             return;
         }
 
-        db.IdentityUsers.Add(IdentityUser.CreatePlatformSuperAdmin(
+        db.IdentityUsers.Add(IdentityUser.CreatePlatformOperator(
             "Super",
             "Admin",
             email,

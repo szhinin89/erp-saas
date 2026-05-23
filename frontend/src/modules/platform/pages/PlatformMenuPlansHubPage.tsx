@@ -73,10 +73,10 @@ export function PlatformMenuPlansHubPage() {
 
   return (
     <PlatformCrudTemplate
-      title={t('superadmin.shell.menuAndPlans')}
-      subtitle={t('superadmin.menuPlansHub.subtitle')}
+      title={t('platform.shell.menuAndPlans')}
+      subtitle={t('platform.menuPlansHub.subtitle')}
     >
-        <div className="zh-form-tabs" role="tablist" aria-label={t('superadmin.menuPlansHub.tabListLabel')}>
+        <div className="zh-form-tabs" role="tablist" aria-label={t('platform.menuPlansHub.tabListLabel')}>
           <button
             type="button"
             role="tab"
@@ -86,7 +86,7 @@ export function PlatformMenuPlansHubPage() {
             onClick={() => setTab('menuBuilder')}
           >
             <span className="material-symbols-outlined pg-icon-16">folder_managed</span>
-            {t('superadmin.menuPlansHub.tabMenuBuilder')}
+            {t('platform.menuPlansHub.tabMenuBuilder')}
           </button>
           <button
             type="button"
@@ -97,7 +97,7 @@ export function PlatformMenuPlansHubPage() {
             onClick={() => setTab('auditoriaGlobal')}
           >
             <span className="material-symbols-outlined pg-icon-16">history</span>
-            {t('superadmin.menuPlansHub.tabAuditoria')}
+            {t('platform.menuPlansHub.tabAuditoria')}
           </button>
         </div>
 
@@ -116,7 +116,7 @@ export function PlatformMenuPlansHubPage() {
               <div className="pg-section-header">
                 <div className="pg-section-header-left">
                   <span className="material-symbols-outlined pg-section-icon">history</span>
-                  <h2 className="pg-section-label">{t('superadmin.menuPlansHub.auditTitle')}</h2>
+                  <h2 className="pg-section-label">{t('platform.menuPlansHub.auditTitle')}</h2>
                 </div>
                 <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm" onClick={loadAudit}>
                   <span className="material-symbols-outlined pg-icon-16">refresh</span>
@@ -126,7 +126,7 @@ export function PlatformMenuPlansHubPage() {
 
               {auditLines.length === 0 ? (
                 <p className="subtle pg-audit-empty">
-                  {t('superadmin.menuPlansHub.auditEmpty')}
+                  {t('platform.menuPlansHub.auditEmpty')}
                 </p>
               ) : (
                 <div className="pg-audit-scroll">

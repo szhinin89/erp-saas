@@ -1,3 +1,4 @@
+using ERP.API.Controllers.Platform;
 using Microsoft.AspNetCore.RateLimiting;
 using ERP.API.Auth;
 using MediatR;
@@ -200,7 +201,7 @@ public class AuthController : ControllerBase
 
     /// <summary>Cambia el subscriber_id del JWT para el SuperAdmin.</summary>
     [HttpPost("switch-subscriber")]
-    [Microsoft.AspNetCore.Authorization.Authorize(Roles = "SuperAdmin")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]

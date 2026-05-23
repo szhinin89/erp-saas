@@ -18,13 +18,13 @@ public class AccessRepository : IAccessRepository
         _platform = platform;
     }
 
-    public Task<IdentityUser?> GetPlatformSuperAdminByEmailAsync(string email, CancellationToken ct = default)
+    public Task<IdentityUser?> GetPlatformOperatorByEmailAsync(string email, CancellationToken ct = default)
     {
         var normalized = NormalizeEmail(email);
         return _db.IdentityUsers.FirstOrDefaultAsync(
             u => u.EmailNormalized == normalized
                  && u.UserType == IdentityUserType.Platform
-                 && u.PlatformRole == PlatformRole.SuperAdmin,
+                 && u.PlatformRole == PlatformRole.PlatformOperator,
             ct);
     }
 
@@ -38,9 +38,9 @@ public class AccessRepository : IAccessRepository
             ct);
     }
 
-    public Task<bool> AnyPlatformSuperAdminAsync(CancellationToken ct = default)
+    public Task<bool> AnyPrimaryPlatformOperatorAsync(CancellationToken ct = default)
         => _db.IdentityUsers.AnyAsync(
-            u => u.UserType == IdentityUserType.Platform && u.PlatformRole == PlatformRole.SuperAdmin,
+            u => u.UserType == IdentityUserType.Platform && u.PlatformRole == PlatformRole.PlatformOperator,
             ct);
 
     public Task<int> CountActivePlatformUsersAsync(CancellationToken ct = default)

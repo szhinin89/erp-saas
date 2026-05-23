@@ -109,6 +109,20 @@ public sealed class PlatformControlPlaneGuardTests
     }
 
     [Fact]
+    public void Platform_frontend_must_not_define_duplicate_api_wrappers()
+    {
+        var frontendRoot = Path.Combine(ResolveBackendSrcRoot(), "..", "..", "frontend", "src");
+        var forbidden = new[]
+        {
+            Path.Combine(frontendRoot, "modules", "platform", "api", "subscriberService.ts"),
+            Path.Combine(frontendRoot, "modules", "platform", "api", "menuService.ts"),
+        };
+
+        var violations = forbidden.Where(File.Exists).Select(f => Path.GetFileName(f)).ToList();
+        violations.Should().BeEmpty("Platform Control Plane must use a single platformService.ts client");
+    }
+
+    [Fact]
     public void Runtime_subscriber_entitlements_endpoint_must_remain_on_api_subscribers()
     {
         var backendRoot = ResolveBackendSrcRoot();

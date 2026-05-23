@@ -66,20 +66,20 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
             var email = _currentUser.Email;
             var fullName = _currentUser.FullName;
 
-            if (!string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase)
+            if (!string.Equals(role, PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase)
                 || string.IsNullOrWhiteSpace(email)
                 || string.IsNullOrWhiteSpace(fullName))
                 return Result<SessionResponseDto>.Failure("Unauthorized");
 
             if (command.SubscriberId == Guid.Empty)
             {
-                var superSessionGlobal = _tokenService.GenerateSessionToken(userId, email, fullName, Guid.Empty, "SuperAdmin");
+                var superSessionGlobal = _tokenService.GenerateSessionToken(userId, email, fullName, Guid.Empty, PlatformAuthConstants.JwtPlatformOperatorRole);
                 return Result<SessionResponseDto>.Success(new SessionResponseDto(
                     UserId: userId,
                     FullName: fullName,
                     Email: email,
                     SubscriberId: Guid.Empty,
-                    Role: "SuperAdmin",
+                    Role: PlatformAuthConstants.JwtPlatformOperatorRole,
                     Token: superSessionGlobal,
                     PlanCode: null,
                     EnabledModules: SubscriberSubscriptionCatalog.AllModuleKeys));
@@ -89,7 +89,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
             if (tenantSa is null || !tenantSa.IsActive)
                 return Result<SessionResponseDto>.Failure("Unauthorized");
 
-            var superSessionSubscriber = _tokenService.GenerateSessionToken(userId, email, fullName, command.SubscriberId, "SuperAdmin");
+            var superSessionSubscriber = _tokenService.GenerateSessionToken(userId, email, fullName, command.SubscriberId, PlatformAuthConstants.JwtPlatformOperatorRole);
             await _configService.WarmupTenantAsync(command.SubscriberId, ct);
             var superModules = await _sessionModules.GetEnabledModuleKeysAsync(command.SubscriberId, ct);
 
@@ -98,7 +98,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
                 FullName: fullName,
                 Email: email,
                 SubscriberId: command.SubscriberId,
-                Role: "SuperAdmin",
+                Role: PlatformAuthConstants.JwtPlatformOperatorRole,
                 Token: superSessionSubscriber,
                 tenantSa.PlanCode,
                 superModules));

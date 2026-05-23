@@ -19,12 +19,17 @@ export type PlatformPanelPageProps = {
   shellLayout?: boolean;
 };
 
+/**
+ * @deprecated Shell monolítico legacy. Rutas canónicas: `PlatformOverviewPage`, `PlatformSubscribersPage`,
+ * `PlatformSubscriberDetailPage`, `PlatformPlansPage`, etc. bajo `/platform/*`.
+ * Conservado para re-exports y `PlatformCompaniesShellPage` (sin ruta activa en router).
+ */
 export function PlatformPanelPage({ embeddedTab, shellLayout }: PlatformPanelPageProps = {}) {
   const panel = usePlatformPanelPage({ embeddedTab, shellLayout });
   const {
     t,
     navigate,
-    isSuperAdmin,
+    isPlatformOperator,
     hasSelectedSubscriber,
     homeTab,
     selectHomeTab,
@@ -37,10 +42,8 @@ export function PlatformPanelPage({ embeddedTab, shellLayout }: PlatformPanelPag
     planLabelForSubscriber,
     q,
     setQ,
-    switching,
     openCreateSubscriber,
     openSubscriptionModal,
-    handleSwitch,
     createSubscriberOpen,
     setCreateSubscriberOpen,
     createBusy,
@@ -72,12 +75,12 @@ export function PlatformPanelPage({ embeddedTab, shellLayout }: PlatformPanelPag
 
   return (
     <PlatformCrudTemplate
-      title={shellLayout ? t('superadmin.tabCompanies') : t('superadmin.title')}
+      title={shellLayout ? t('platform.tabCompanies') : t('platform.title')}
       shellLayout={!!shellLayout}
-      subtitle={isSuperAdmin && !hasSelectedSubscriber ? t('superadmin.subtitle') : undefined}
+      subtitle={isPlatformOperator && !hasSelectedSubscriber ? t('platform.subtitle') : undefined}
       subscriberGuardAction={
         <ZHBtn variant="primary" size="sm" onClick={() => navigate('/saas/overview')}>
-          {t('superadmin.goToSubscriber')}
+          {t('platform.goToSubscriber')}
         </ZHBtn>
       }
     >
@@ -86,7 +89,7 @@ export function PlatformPanelPage({ embeddedTab, shellLayout }: PlatformPanelPag
       <ZHDashboardScaffold>
         {!shellLayout ? (
           <div className="sa-panelTabsWrap">
-            <div className="zh-form-tabs sa-panelTabs" role="tablist" aria-label={t('superadmin.title')}>
+            <div className="zh-form-tabs sa-panelTabs" role="tablist" aria-label={t('platform.title')}>
               <button
                 type="button"
                 role="tab"
@@ -94,7 +97,7 @@ export function PlatformPanelPage({ embeddedTab, shellLayout }: PlatformPanelPag
                 className={homeTab === 'overview' ? 'is-active' : ''}
                 onClick={() => selectHomeTab('overview')}
               >
-                {t('superadmin.tabOverview')}
+                {t('platform.tabOverview')}
               </button>
               <button
                 type="button"
@@ -103,7 +106,7 @@ export function PlatformPanelPage({ embeddedTab, shellLayout }: PlatformPanelPag
                 className={homeTab === 'companies' ? 'is-active' : ''}
                 onClick={() => selectHomeTab('companies')}
               >
-                {t('superadmin.tabCompanies')}
+                {t('platform.tabCompanies')}
               </button>
               <button
                 type="button"
@@ -112,7 +115,7 @@ export function PlatformPanelPage({ embeddedTab, shellLayout }: PlatformPanelPag
                 className={homeTab === 'plans' ? 'is-active' : ''}
                 onClick={() => selectHomeTab('plans')}
               >
-                {t('superadmin.tabPlans')}
+                {t('platform.tabPlans')}
               </button>
               <button
                 type="button"
@@ -121,7 +124,7 @@ export function PlatformPanelPage({ embeddedTab, shellLayout }: PlatformPanelPag
                 className={homeTab === 'menus' ? 'is-active' : ''}
                 onClick={() => selectHomeTab('menus')}
               >
-                {t('superadmin.tabMenus')}
+                {t('platform.tabMenus')}
               </button>
             </div>
           </div>
@@ -133,7 +136,7 @@ export function PlatformPanelPage({ embeddedTab, shellLayout }: PlatformPanelPag
             loading={loading}
             metrics={metrics}
             subscribers={subscribers}
-            isSuperAdmin={isSuperAdmin}
+            isPlatformOperator={isPlatformOperator}
             activePlans={activePlans}
             selectHomeTab={selectHomeTab}
             openCreateSubscriber={openCreateSubscriber}
@@ -147,17 +150,15 @@ export function PlatformPanelPage({ embeddedTab, shellLayout }: PlatformPanelPag
             subscribers={subscribers}
             q={q}
             setQ={setQ}
-            switching={switching}
             filtered={filtered}
             planLabelForSubscriber={planLabelForSubscriber}
             openCreateSubscriber={openCreateSubscriber}
             openSubscriptionModal={openSubscriptionModal}
-            handleSwitch={handleSwitch}
           />
         ) : homeTab === 'plans' ? (
-          <>{isSuperAdmin ? <PlatformPlansSection /> : null}</>
+          <>{isPlatformOperator ? <PlatformPlansSection /> : null}</>
         ) : (
-          <>{isSuperAdmin ? <PlatformMenuBuilderSection /> : null}</>
+          <>{isPlatformOperator ? <PlatformMenuBuilderSection /> : null}</>
         )}
       </ZHDashboardScaffold>
 

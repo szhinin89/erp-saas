@@ -22,7 +22,7 @@ import {
   type SubMode,
 } from './platformMenuBuilderUtils';
 
-export type SuperAdminMenuBuilderCrmEffectsParams = {
+export type PlatformMenuBuilderCrmEffectsParams = {
   crmWorkspace: boolean;
   planId: string;
   setPlanId: (v: string) => void;
@@ -52,7 +52,7 @@ export type SuperAdminMenuBuilderCrmEffectsParams = {
   planSwitchClock: React.MutableRefObject<number>;
 };
 
-export function usePlatformMenuBuilderCrmEffects(params: SuperAdminMenuBuilderCrmEffectsParams): void {
+export function usePlatformMenuBuilderCrmEffects(params: PlatformMenuBuilderCrmEffectsParams): void {
   const {
     crmWorkspace,
     planId,

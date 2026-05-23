@@ -47,10 +47,10 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
             return Result<AuthResponseDto>.Failure(v.Error ?? "Refresh token inválido.");
         }
 
-        if (v.UserType is RefreshUserType.Platform or RefreshUserType.SuperAdmin)
+        if (RefreshUserType.IsPlatformRefreshUserType(v.UserType))
         {
             var platformUser = await _accessRepository.GetUserByIdAsync(v.UserId, ct);
-            if (platformUser is null || !platformUser.IsPlatformSuperAdmin)
+            if (platformUser is null || !platformUser.IsPrimaryPlatformOperator)
                 return Result<AuthResponseDto>.Failure("Usuario no válido.");
 
             if (v.SubscriberId != Guid.Empty)
@@ -63,13 +63,13 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
                     ? impersonatedCid
                     : Guid.Empty;
                 var impersonatedAccessToken = impersonatedCompanyId != Guid.Empty
-                    ? _accessTokenService.GenerateSessionToken(platformUser, v.SubscriberId, "SuperAdmin", impersonatedCompanyId)
+                    ? _accessTokenService.GenerateSessionToken(platformUser, v.SubscriberId, PlatformAuthConstants.JwtPlatformOperatorRole, impersonatedCompanyId)
                     : _accessTokenService.GenerateSessionToken(
                         platformUser.Id,
                         platformUser.Email.Value,
                         platformUser.FullName,
                         v.SubscriberId,
-                        "SuperAdmin",
+                        PlatformAuthConstants.JwtPlatformOperatorRole,
                         companyId: default,
                         userType: platformUser.UserType,
                         platformRole: platformUser.PlatformRole);
@@ -77,7 +77,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
                 var impersonatedModules = await _sessionModules.GetEnabledModuleKeysAsync(v.SubscriberId, ct);
                 return Result<AuthResponseDto>.Success(new AuthResponseDto(
                     platformUser.Id, platformUser.FullName, platformUser.Email.Value,
-                    "SuperAdmin", v.SubscriberId, impersonatedAccessToken,
+                    PlatformAuthConstants.JwtPlatformOperatorRole, v.SubscriberId, impersonatedAccessToken,
                     impersonatedTenant.PlanCode, impersonatedModules)
                 {
                     CompanyId = impersonatedCompanyId != Guid.Empty ? impersonatedCompanyId : null,
@@ -91,7 +91,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
             var platformToken = _accessTokenService.GeneratePlatformSessionToken(platformUser);
             return Result<AuthResponseDto>.Success(new AuthResponseDto(
                 platformUser.Id, platformUser.FullName, platformUser.Email.Value,
-                "SuperAdmin", Guid.Empty, platformToken,
+                PlatformAuthConstants.JwtPlatformOperatorRole, Guid.Empty, platformToken,
                 PlanCode: null,
                 SubscriberSubscriptionCatalog.AllModuleKeys)
             {

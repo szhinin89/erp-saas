@@ -150,7 +150,7 @@ export function PlatformMenuBuilderCrmWorkspace(props: PlatformMenuBuilderCrmWor
         <div className="pg-section-header">
           <div className="pg-section-header-left">
             <span className="material-symbols-outlined pg-section-icon">settings_accessibility</span>
-            <h2 className="pg-section-label">Panel SuperAdmin</h2>
+            <h2 className="pg-section-label">Panel platform</h2>
             <p className="subtle smb-workspace-subtitle">
               Gestión completa de menús, planes comerciales y configuración global
             </p>

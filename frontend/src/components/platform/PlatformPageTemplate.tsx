@@ -18,7 +18,7 @@ export type PlatformPageTemplateProps = {
   requireGlobal?: boolean;
   /** Acción en barra del título cuando `requireGlobal` y el usuario está dentro de un subscriber. */
   subscriberGuardAction?: ReactNode;
-  /** Clave i18n cuando el rol no es SuperAdmin. */
+  /** Clave i18n cuando el usuario no es operador platform. */
   accessDeniedKey?: string;
   /** Subtítulo en cabecera si acceso denegado; por defecto igual que `accessDeniedKey`. */
   accessDeniedSubtitleKey?: string;
@@ -28,7 +28,7 @@ export type PlatformPageTemplateProps = {
 };
 
 /**
- * Plantilla común para pantallas SuperAdmin: sin rol, sin contexto global (opcional), luego contenido.
+ * Plantilla común para pantallas platform: sin rol, sin contexto global (opcional), luego contenido.
  * En shell con topbar: preferir PlatformCrudTemplate (hideHeader) — docs/frontend-layout-conventions.md
  */
 export function PlatformPageTemplate({
@@ -38,16 +38,16 @@ export function PlatformPageTemplate({
   action,
   requireGlobal = true,
   subscriberGuardAction,
-  accessDeniedKey = 'superadmin.noAccess',
+  accessDeniedKey = 'platform.noAccess',
   accessDeniedSubtitleKey,
   hideHeader = false,
   children,
 }: PlatformPageTemplateProps) {
   const { t } = useI18n();
-  const { isSuperAdmin, hasSelectedSubscriber } = usePlatformGate();
+  const { isPlatformOperator, hasSelectedSubscriber } = usePlatformGate();
   const k = kicker ?? t('app.nav.group.home');
 
-  if (!isSuperAdmin) {
+  if (!isPlatformOperator) {
     const deniedSubKey = accessDeniedSubtitleKey ?? accessDeniedKey;
     return (
       <PageShell kicker={k} title={title} subtitle={t(deniedSubKey)}>
@@ -60,12 +60,12 @@ export function PlatformPageTemplate({
 
   if (requireGlobal && hasSelectedSubscriber) {
     const defaultAction = (
-      <NavLink to="/superadmin/overview">{t('superadmin.backToGlobal')}</NavLink>
+      <NavLink to="/platform/overview">{t('platform.backToGlobal')}</NavLink>
     );
     return (
       <PageShell kicker={k} title={title} action={subscriberGuardAction ?? defaultAction}>
         <Card>
-          <EmptyState message={t('superadmin.alreadyInSubscriber')} />
+          <EmptyState message={t('platform.alreadyInSubscriber')} />
         </Card>
       </PageShell>
     );

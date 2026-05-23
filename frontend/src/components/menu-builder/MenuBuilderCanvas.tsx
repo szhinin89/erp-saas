@@ -62,18 +62,18 @@ export function MenuBuilderCanvas({
       <header className="menu-builder-panel__head">
         {crmUi ? (
           <div className="menu-builder-panel__crmTitleRow">
-            <h4 className="menu-builder-panel__title">{panelTitle ?? t('superadmin.menuBuilder.canvasTitle')}</h4>
+            <h4 className="menu-builder-panel__title">{panelTitle ?? t('platform.menuBuilder.canvasTitle')}</h4>
             {crmToolbar}
           </div>
         ) : (
-          <h4 className="menu-builder-panel__title">{panelTitle ?? t('superadmin.menuBuilder.canvasTitle')}</h4>
+          <h4 className="menu-builder-panel__title">{panelTitle ?? t('platform.menuBuilder.canvasTitle')}</h4>
         )}
         {crmUi && crmMasterStack ? <div className="menu-builder-panel__crmStack">{crmMasterStack}</div> : null}
         <div className="menu-builder-panel__headRow">
-          <p className="menu-builder-panel__hint" title={t('superadmin.menuBuilder.canvasHint')}>
+          <p className="menu-builder-panel__hint" title={t('platform.menuBuilder.canvasHint')}>
             {crmUi
               ? 'Reordena arrastrando o con las flechas; deshacer/rehacer solo afecta esta sesión.'
-              : t('superadmin.menuBuilder.canvasHintShort')}
+              : t('platform.menuBuilder.canvasHintShort')}
           </p>
           <div className="menu-builder-panel__headActions">
             <button
@@ -82,7 +82,7 @@ export function MenuBuilderCanvas({
               onClick={onAddRootFolder}
               aria-label="Agregar carpeta en la raíz del árbol"
             >
-              {crmUi ? '📁 Carpeta raíz' : t('superadmin.menuBuilder.addRootFolder')}
+              {crmUi ? '📁 Carpeta raíz' : t('platform.menuBuilder.addRootFolder')}
             </button>
             {crmUi && onAddRootForm ? (
               <button
@@ -106,7 +106,7 @@ export function MenuBuilderCanvas({
               </span>
               {crmUi
                 ? 'Arrastra formularios desde la columna derecha o añade carpeta/formulario raíz.'
-                : t('superadmin.menuBuilder.canvasEmpty')}
+                : t('platform.menuBuilder.canvasEmpty')}
             </div>
           ) : null}
           <SortableTreeBranch

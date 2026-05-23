@@ -28,5 +28,5 @@ public sealed class HttpSessionContext : ISessionContext
 
     public bool IsPlatformAdmin =>
         _subscriber.SubscriberId == Guid.Empty
-        && string.Equals(_user.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase);
+        && string.Equals(_user.Role, PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase);
 }

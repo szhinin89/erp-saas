@@ -16,7 +16,7 @@ public sealed class UiNavGroup
     public string? ModuleKey { get; private set; }
     /// <summary>Roles permitidos separados por coma; null o vacío = todos.</summary>
     public string? RolesCsv { get; private set; }
-    public bool RequireSuperAdminPanel { get; private set; }
+    public bool RequirePlatformPanel { get; private set; }
     public bool IsActive { get; private set; }
 
     private UiNavGroup() { }
@@ -29,7 +29,7 @@ public sealed class UiNavGroup
         int sortOrder,
         string? moduleKey,
         string? rolesCsv,
-        bool requireSuperAdminPanel,
+        bool requirePlatformPanel,
         bool isActive = true)
     {
         return new UiNavGroup
@@ -41,7 +41,7 @@ public sealed class UiNavGroup
             SortOrder = sortOrder,
             ModuleKey = string.IsNullOrWhiteSpace(moduleKey) ? null : moduleKey.Trim().ToLowerInvariant(),
             RolesCsv = string.IsNullOrWhiteSpace(rolesCsv) ? null : rolesCsv.Trim(),
-            RequireSuperAdminPanel = requireSuperAdminPanel,
+            RequirePlatformPanel = requirePlatformPanel,
             IsActive = isActive,
         };
     }

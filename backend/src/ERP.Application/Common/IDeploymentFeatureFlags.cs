@@ -7,9 +7,9 @@ namespace ERP.Application.Common;
 public interface IDeploymentFeatureFlags
 {
     /// <summary>
-    /// Si es false, no se permite login global ni operaciones de panel SuperAdmin (config <c>Deployment:SuperAdminPanelEnabled</c>).
+    /// Si es false, no se permite login global ni operaciones de panel SuperAdmin (config <c>Deployment:PlatformPanelEnabled</c>).
     /// </summary>
-    bool IsSuperAdminPanelEnabled { get; }
+    bool IsPlatformPanelEnabled { get; }
 
     /// <summary>
     /// Tope de empresas (subscribers) activas en la instancia; null = sin límite explícito (ilimitado salvo <see cref="IsDedicatedSingleClientInstance"/>).
@@ -33,9 +33,9 @@ public interface IDeploymentFeatureFlags
     int? MaxUsersPerSubscriber { get; }
 
     /// <summary>
-    /// Validación alternativa por configuración (<c>Deployment:InitialSuperAdminSetupToken</c>).
+    /// Validación alternativa por configuración (<c>Deployment:InitialPlatformOperatorSetupToken</c>).
     /// <b>No</b> la usa hoy el flujo de alta en <c>POST /api/setup/superadmin</c> (ese flujo usa <c>IFirstRunSetupService</c> / token en BD).
     /// Se mantiene por compatibilidad o futuros usos; ver docs/DEVELOPMENT.md (first-run SuperAdmin).
     /// </summary>
-    bool AuthorizeInitialSuperAdminSetup(string? submittedToken);
+    bool AuthorizeInitialPlatformOperatorSetup(string? submittedToken);
 }

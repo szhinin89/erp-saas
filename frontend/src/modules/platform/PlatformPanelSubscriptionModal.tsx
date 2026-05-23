@@ -51,17 +51,17 @@ export function PlatformPanelSubscriptionModal({
       size="lg"
       header={
         <ZHModalHeader
-          title={t('superadmin.changeSubscription.title')}
-          subtitle={t('superadmin.changeSubscription.subtitle').replace('{name}', subModalSubscriber.name)}
+          title={t('platform.changeSubscription.title')}
+          subtitle={t('platform.changeSubscription.subtitle').replace('{name}', subModalSubscriber.name)}
           onClose={() => (subBusy ? undefined : setSubModalOpen(false))}
         />
       }
     >
       {subError ? <ZHPageNotice variant="error" message={t('common.errorPrefix')} detail={subError} /> : null}
       <ZHGridRow cols={2}>
-        <ZHField label={t('superadmin.createSubscriber.field.planCode')}>
+        <ZHField label={t('platform.createSubscriber.field.planCode')}>
           <select className="zh-input" value={subPlanCode} onChange={(e) => setSubPlanCode(e.target.value)} disabled={subBusy}>
-            <option value="">{t('superadmin.createSubscriber.planOptional')}</option>
+            <option value="">{t('platform.createSubscriber.planOptional')}</option>
             {activePlans.map((p) => (
               <option key={p.id} value={p.code}>
                 {p.name.trim() ? `${p.name} (${p.code})` : p.code}
@@ -82,9 +82,9 @@ export function PlatformPanelSubscriptionModal({
           }}
           disabled={subBusy}
         />
-        {t('superadmin.createSubscriber.field.restrictModules')}
+        {t('platform.createSubscriber.field.restrictModules')}
       </label>
-      {subRestrict ? <p className="subtle sa-modules-hint">{t('superadmin.createSubscriber.modulesHint')}</p> : null}
+      {subRestrict ? <p className="subtle sa-modules-hint">{t('platform.createSubscriber.modulesHint')}</p> : null}
       {subRestrict ? (
         <div className="sa-moduleChecks">
           {SUBSCRIBER_MODULE_KEYS.map((k) => (

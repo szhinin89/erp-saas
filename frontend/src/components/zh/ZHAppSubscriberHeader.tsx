@@ -3,11 +3,13 @@ import { createPortal } from 'react-dom';
 import { useAuthStore } from '../../store/authStore';
 import { useI18n } from '../../i18n/i18n';
 import { RuntimeModeBadge } from '../RuntimeModeBadge';
-import { SUPERADMIN_IMPERSONATION_NAME_KEY } from '../../lib/session/sessionStorageKeys';
+import { GLOBAL_SUBSCRIBER_ID } from '../../constants/subscriberIds';
+import { isJwtPlatformOperatorRole } from '../../constants/platformAuth';
+import { readPlatformImpersonationName } from '../../lib/session/sessionStorageKeys';
 import './ZHForm.css';
 
 function getImpersonationSubscriberName(): string | null {
-  return localStorage.getItem(SUPERADMIN_IMPERSONATION_NAME_KEY);
+  return readPlatformImpersonationName();
 }
 
 function initials(name: string) {
@@ -29,26 +31,26 @@ export function ZHAppSubscriberHeader(props: {
   const popoverRef = useRef<HTMLDivElement | null>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
 
-  const isGlobalSuperAdmin =
-    (user?.role ?? '') === 'SuperAdmin' &&
-    (user?.subscriberId ?? '') === '00000000-0000-0000-0000-000000000000';
+  const isGlobalPlatformOperator =
+    isJwtPlatformOperatorRole(user?.role) &&
+    (user?.subscriberId ?? '') === GLOBAL_SUBSCRIBER_ID;
   const isImpersonatingSubscriber =
-    (user?.role ?? '') === 'SuperAdmin' &&
+    isJwtPlatformOperatorRole(user?.role) &&
     !!user?.subscriberId &&
-    user.subscriberId !== '00000000-0000-0000-0000-000000000000';
+    user.subscriberId !== GLOBAL_SUBSCRIBER_ID;
 
   const subscriberName = useMemo(() => {
     if (!user) return '';
-    if (isGlobalSuperAdmin) return user.fullName || t('superadmin.title');
-    if (isImpersonatingSubscriber) return getImpersonationSubscriberName() ?? t('superadmin.subscriber.unknown');
+    if (isGlobalPlatformOperator) return user.fullName || t('platform.title');
+    if (isImpersonatingSubscriber) return getImpersonationSubscriberName() ?? t('platform.subscriber.unknown');
     return t('app.subscriber.defaultName');
-  }, [isGlobalSuperAdmin, isImpersonatingSubscriber, t, user]);
+  }, [isGlobalPlatformOperator, isImpersonatingSubscriber, t, user]);
 
   const subtitle = useMemo(() => {
     if (!user) return '';
-    if (isGlobalSuperAdmin) return t('superadmin.subtitle');
+    if (isGlobalPlatformOperator) return t('platform.subtitle');
     return user.email;
-  }, [isGlobalSuperAdmin, t, user]);
+  }, [isGlobalPlatformOperator, t, user]);
 
   useEffect(() => {
     if (!userMenuOpen) return;

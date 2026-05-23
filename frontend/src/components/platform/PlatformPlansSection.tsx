@@ -18,8 +18,8 @@ export function PlatformPlansSection() {
       <div className="sap-dash-head">
         <div className="sap-dash-headRow">
           <div className="sap-dash-headText">
-            <p className="sap-dash-eyebrow">{s.t('superadmin.plansDashboard.eyebrow')}</p>
-            <p className="subtle sap-dash-lead">{s.t('superadmin.plansAdmin.subtitle')}</p>
+            <p className="sap-dash-eyebrow">{s.t('platform.plansDashboard.eyebrow')}</p>
+            <p className="subtle sap-dash-lead">{s.t('platform.plansAdmin.subtitle')}</p>
           </div>
           <div className="sap-dash-actions">
             <ZHBtn
@@ -29,19 +29,19 @@ export function PlatformPlansSection() {
               onClick={s.exportTenantsCsv}
               disabled={s.busy || s.filteredTenantsForTable.length === 0}
             >
-              {s.t('superadmin.plansDashboard.exportCsv')}
+              {s.t('platform.plansDashboard.exportCsv')}
             </ZHBtn>
             <ZHBtn variant="ghost" size="md" type="button" onClick={() => void s.loadAll()} disabled={s.busy}>
-              {s.t('superadmin.plansAdmin.refresh')}
+              {s.t('platform.plansAdmin.refresh')}
             </ZHBtn>
             <ZHBtn variant="primary" size="md" type="button" onClick={s.openCreatePlan} disabled={s.busy}>
-              {s.t('superadmin.plansDashboard.newPlan')}
+              {s.t('platform.plansDashboard.newPlan')}
             </ZHBtn>
           </div>
         </div>
         <p className="subtle sap-publicHint">
-          {s.t('superadmin.plansAdmin.publicHintPrefix')} <strong>{s.publicPlans.length}</strong>{' '}
-          {s.t('superadmin.plansAdmin.publicHintSuffix')}
+          {s.t('platform.plansAdmin.publicHintPrefix')} <strong>{s.publicPlans.length}</strong>{' '}
+          {s.t('platform.plansAdmin.publicHintSuffix')}
         </p>
       </div>
 
@@ -57,24 +57,24 @@ export function PlatformPlansSection() {
                 <p className="pg-kpi-value">{s.totals?.activeSubscribers ?? s.subscribers.length}</p>
                 <p className="pg-kpi-unit">
                   {s.totals
-                    ? s.t('superadmin.plansDashboard.kpi.activeSubscribersSub').replace('{{total}}', String(s.totals.totalSubscribers))
+                    ? s.t('platform.plansDashboard.kpi.activeSubscribersSub').replace('{{total}}', String(s.totals.totalSubscribers))
                     : '—'}
                 </p>
-                <p className="pg-kpi-label">{s.t('superadmin.plansDashboard.kpi.activeSubscribers')}</p>
+                <p className="pg-kpi-label">{s.t('platform.plansDashboard.kpi.activeSubscribers')}</p>
               </div>
             </div>
             <div className="pg-kpi sap-kpi--success">
               <div className="pg-kpi-bottom">
                 <p className="pg-kpi-value">{formatPlanMoney(s.approxMrr, s.defaultCurrency)}</p>
-                <p className="pg-kpi-unit">{s.t('superadmin.plansDashboard.kpi.mrrSub')}</p>
-                <p className="pg-kpi-label">{s.t('superadmin.plansDashboard.kpi.mrr')}</p>
+                <p className="pg-kpi-unit">{s.t('platform.plansDashboard.kpi.mrrSub')}</p>
+                <p className="pg-kpi-label">{s.t('platform.plansDashboard.kpi.mrr')}</p>
               </div>
             </div>
             <div className="pg-kpi sap-kpi--neutral">
               <div className="pg-kpi-bottom">
                 <p className="pg-kpi-value">{s.activePlansCount}</p>
                 <p className="pg-kpi-unit">{s.activePlanNames || '—'}</p>
-                <p className="pg-kpi-label">{s.t('superadmin.plansDashboard.kpi.catalogPlans')}</p>
+                <p className="pg-kpi-label">{s.t('platform.plansDashboard.kpi.catalogPlans')}</p>
               </div>
             </div>
             <div className="pg-kpi sap-kpi--warn">
@@ -82,10 +82,10 @@ export function PlatformPlansSection() {
                 <p className="pg-kpi-value">{s.inactivePct}%</p>
                 <p className="pg-kpi-unit">
                   {s.totals
-                    ? s.t('superadmin.plansDashboard.kpi.inactiveSub').replace('{{n}}', String(s.inactiveSubscribers))
+                    ? s.t('platform.plansDashboard.kpi.inactiveSub').replace('{{n}}', String(s.inactiveSubscribers))
                     : '—'}
                 </p>
-                <p className="pg-kpi-label">{s.t('superadmin.plansDashboard.kpi.inactiveRatio')}</p>
+                <p className="pg-kpi-label">{s.t('platform.plansDashboard.kpi.inactiveRatio')}</p>
               </div>
             </div>
           </div>
@@ -134,8 +134,8 @@ export function PlatformPlansSection() {
 
       {s.deletePlanId ? (
         <ZHConfirmModal
-          title={s.t('superadmin.plansAdmin.deleteTitle')}
-          message={s.t('superadmin.plansAdmin.deleteMessage')}
+          title={s.t('platform.plansAdmin.deleteTitle')}
+          message={s.t('platform.plansAdmin.deleteMessage')}
           confirmLabel={s.t('common.delete')}
           loading={s.busy}
           onCancel={() => s.setDeletePlanId(null)}

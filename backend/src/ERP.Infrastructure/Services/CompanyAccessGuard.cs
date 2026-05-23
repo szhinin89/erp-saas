@@ -72,14 +72,14 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
         if (requireActiveCompany && !company.IsActive)
             return Result<CompanyAccessContext>.Failure("La empresa está inactiva.");
 
-        if (string.Equals(_currentUser.Role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(_currentUser.Role, PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase))
         {
             var tenantSubscriber = await _subscribers.GetByIdAsync(subscriberId, ct);
             return Result<CompanyAccessContext>.Success(new CompanyAccessContext(
                 _currentUser.UserId,
                 subscriberId,
                 companyId,
-                "SuperAdmin",
+                PlatformAuthConstants.JwtPlatformOperatorRole,
                 tenantSubscriber?.IsActive ?? false,
                 company.IsActive));
         }

@@ -57,7 +57,7 @@ public class LoginHandlerTests
             .ReturnsAsync(new[] { "inventory" });
 
         var deployment = new Mock<IDeploymentFeatureFlags>();
-        deployment.Setup(d => d.IsSuperAdminPanelEnabled).Returns(true);
+        deployment.Setup(d => d.IsPlatformPanelEnabled).Returns(true);
 
         var handler = new LoginHandler(
             tenantRepo.Object,
@@ -88,7 +88,7 @@ public class LoginHandlerTests
         var password = "Secret123!";
         var passwordHash = "hashed-password";
 
-        var platformUser = IdentityUser.CreatePlatformSuperAdmin("Super", "Admin", email, passwordHash, Guid.NewGuid());
+        var platformUser = IdentityUser.CreatePlatformOperator("Super", "Admin", email, passwordHash, Guid.NewGuid());
 
         var accessRepo = new Mock<IAccessRepository>(MockBehavior.Strict);
         var accessTokenService = new Mock<IAccessTokenService>(MockBehavior.Strict);
@@ -98,7 +98,7 @@ public class LoginHandlerTests
 
         accessRepo.Setup(r => r.GetUserByEmailAsync(email, It.IsAny<CancellationToken>())).ReturnsAsync(platformUser);
         passwordHasher.Setup(h => h.VerifyPassword(password, passwordHash)).Returns(true);
-        deployment.Setup(d => d.IsSuperAdminPanelEnabled).Returns(true);
+        deployment.Setup(d => d.IsPlatformPanelEnabled).Returns(true);
         accessTokenService.Setup(s => s.GeneratePlatformSessionToken(platformUser)).Returns("platform-token");
         refreshTokenService
             .Setup(s => s.CreateAsync(platformUser.Id, Guid.Empty, null, RefreshUserType.Platform, It.IsAny<CancellationToken>()))
@@ -119,7 +119,7 @@ public class LoginHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Token.Should().Be("platform-token");
-        result.Value.Role.Should().Be("SuperAdmin");
+        result.Value.Role.Should().Be(PlatformAuthConstants.JwtPlatformOperatorRole);
         result.Value.SubscriberId.Should().Be(Guid.Empty);
         result.Value.UserType.Should().Be("Platform");
     }

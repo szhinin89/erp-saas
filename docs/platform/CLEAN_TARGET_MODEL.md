@@ -20,7 +20,7 @@ Domain Entity  →  DB table (snake_case plural)  →  API root  →  frontend m
 | `IdentityUser` (platform) | `identity_users` | `/api/platform/users` | `PlatformUsersPage` |
 | SaaS billing | `saas_billing_*` | `/api/platform/billing` | `PlatformBillingPage` |
 | Config | `config_*` | `/api/platform/config` | `configService` |
-| Nav menu | `ui_nav_*` | `/api/platform/navigation-menu` | `menuService` |
+| Nav menu | `ui_nav_*` | `/api/platform/navigation-menu` | `platformService` |
 | Metrics | _(read model)_ | `/api/platform/metrics` | `PlatformOverviewPage` |
 | Observability | `legacy_usage_*` | `/api/platform/observability` | `PlatformObservabilityPage` |
 | Settings | _(KV)_ | `/api/platform/settings` | _(pendiente UI)_ |
@@ -44,18 +44,25 @@ Domain Entity  →  DB table (snake_case plural)  →  API root  →  frontend m
 | API segment | kebab-case plural English | `/api/platform/subscribers` |
 | Frontend service | camelCase + `Service` | `platformService` |
 | Frontend types | `Platform*` prefix | `PlatformSubscriber` |
-| UI routes | `/superadmin/*` (shell estable) o migrar a `/platform/*` en fase futura |
+| UI routes | `/platform/*` (canónico); `/superadmin/*` redirect legacy |
+| JWT platform operator | literal legacy `SuperAdmin` | `PlatformAuthConstants` / `platformAuth.ts` |
+| Deployment flag JSON | `platformPanelEnabled` (+ alias `superAdminPanelEnabled`) | GET `/api/public/deployment` |
+| Nav menu flag JSON | `requirePlatformPanel` (+ alias `requirePlatformPanel`) | menú sesión / admin |
 
-## Acciones de convergencia pendientes
+## Acciones de convergencia
 
-1. **Renombrar archivos dominio** `SaasPlan.cs` → `CommercialPlan.cs`, etc.
-2. **Deprecar** `SubscribersController` para operadores globales (mantener scope tenant Admin).
-3. **Consolidar** `companyService` subscriber methods → `platformService` only.
-4. **Migrar i18n** `superadmin.*` → `platform.*` (cosmético).
-5. **Retirar** tablas `legacy_usage_*` cuando observability legacy = 0.
-6. **Opcional:** UI routes `/superadmin/*` → `/platform/*` (breaking URL).
+| # | Acción | Estado |
+|---|--------|--------|
+| 1 | Renombrar archivos dominio `SaasPlan.cs` → `CommercialPlan.cs`, etc. | ⏳ backlog cosmético |
+| 2 | Deprecar `SubscribersController` para operadores globales | ✅ runtime-only |
+| 3 | Consolidar `companyService` → `platformService` | ✅ |
+| 4 | i18n `platform.*` | ✅ (2026-05-23) |
+| 5 | Retirar tablas `legacy_usage_*` cuando observability legacy = 0 | ⏳ |
+| 6 | UI `/platform/*` + redirect `/superadmin/*` | ✅ (2026-05-23) |
+| 7 | Alias JSON API `platformPanelEnabled` / `requirePlatformPanel` | ✅ (2026-05-23) |
+| 8 | Renombrar namespace `PlatformSubscribers` → `PlatformSubscribers` | ⏳ backlog |
 
 ## Validación target
 
-El Platform Control Plane es **válido operativamente hoy** con drift **MEDIO/BAJO** documentado.  
-Es **válido arquitectónicamente** cuando se completen items 1–3 arriba.
+El Platform Control Plane es **válido operativamente** con drift **BAJO** documentado.  
+Pendiente no bloqueante: renames físicos de archivos dominio (item 1) y namespace Application (item 8).

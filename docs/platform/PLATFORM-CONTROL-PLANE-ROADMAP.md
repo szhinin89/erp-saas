@@ -26,7 +26,7 @@
 | Health Checks | ✅ Implementado | 8 health checks (DB, Security, MasterData, QueryFilters...) |
 | OpenTelemetry | ✅ Implementado | Prometheus scrape en `/metrics` |
 | Platform Auth | ✅ Implementado | `PlatformAuthController` + token type `platform` |
-| RBAC Platform | ✅ Implementado | `GlobalSuperAdmin` policy, `Roles = "SuperAdmin"` |
+| RBAC Platform | ✅ Implementado | `GlobalPlatformOperator` policy, `Roles = PlatformAuthorizationRoles.PlatformOperator` |
 | EF Migration | ✅ Nuevo | `20260523131502_AddPlatformControlPlane` |
 | Tests Domain (lifecycle) | ✅ Nuevo | 29 nuevos tests en `ERP.Domain.Tests.Platform` |
 | Tests Application (handlers) | ✅ Nuevo | 11 nuevos tests en `ERP.Application.Tests.Platform` |

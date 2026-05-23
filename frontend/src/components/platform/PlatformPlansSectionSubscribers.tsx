@@ -36,23 +36,23 @@ export function PlatformPlansSectionSubscribers({
 
   return (
     <ZHCard>
-      <ZHCardSection title={t('superadmin.plansDashboard.subscribersSectionTitle')}>
+      <ZHCardSection title={t('platform.plansDashboard.subscribersSectionTitle')}>
         <div className="sap-subscriber-toolbar">
           <input
             type="search"
             className="zh-input sap-subscriber-search"
             value={subscriberSearch}
             onChange={(e) => setSubscriberSearch(e.target.value)}
-            placeholder={t('superadmin.plansDashboard.subscriberSearchPlaceholder')}
-            aria-label={t('superadmin.plansDashboard.subscriberSearchPlaceholder')}
+            placeholder={t('platform.plansDashboard.subscriberSearchPlaceholder')}
+            aria-label={t('platform.plansDashboard.subscriberSearchPlaceholder')}
           />
           <select
             className="zh-input sap-subscriber-select"
             value={subscriberPlanFilter}
             onChange={(e) => setSubscriberPlanFilter(e.target.value)}
-            aria-label={t('superadmin.plansDashboard.filterPlan')}
+            aria-label={t('platform.plansDashboard.filterPlan')}
           >
-            <option value="">{t('superadmin.plansDashboard.filterAllPlans')}</option>
+            <option value="">{t('platform.plansDashboard.filterAllPlans')}</option>
             {plans.map((p) => (
               <option key={p.id} value={p.code.trim().toLowerCase()}>
                 {p.shortLabel ?? p.name} ({p.code})
@@ -63,27 +63,27 @@ export function PlatformPlansSectionSubscribers({
             className="zh-input sap-subscriber-select"
             value={subscriberStatusFilter}
             onChange={(e) => setSubscriberStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
-            aria-label={t('superadmin.plansDashboard.filterStatus')}
+            aria-label={t('platform.plansDashboard.filterStatus')}
           >
-            <option value="all">{t('superadmin.plansDashboard.filterAllStatuses')}</option>
-            <option value="active">{t('superadmin.plansDashboard.statusActive')}</option>
-            <option value="inactive">{t('superadmin.plansDashboard.statusInactive')}</option>
+            <option value="all">{t('platform.plansDashboard.filterAllStatuses')}</option>
+            <option value="active">{t('platform.plansDashboard.statusActive')}</option>
+            <option value="inactive">{t('platform.plansDashboard.statusInactive')}</option>
           </select>
         </div>
         {filteredTenants.length === 0 ? (
-          <EmptyState message={t('superadmin.plansDashboard.subscribersEmpty')} />
+          <EmptyState message={t('platform.plansDashboard.subscribersEmpty')} />
         ) : (
           <div className="sap-subscriber-tableWrap">
             <table className="table">
               <thead>
                 <tr>
-                  <th>{t('superadmin.plansDashboard.col.company')}</th>
-                  <th>{t('superadmin.plansDashboard.col.plan')}</th>
-                  <th>{t('superadmin.plansDashboard.col.users')}</th>
-                  <th>{t('superadmin.plansDashboard.col.sinceExpires')}</th>
-                  <th>{t('superadmin.plansDashboard.col.mrr')}</th>
-                  <th>{t('superadmin.plansDashboard.col.status')}</th>
-                  <th>{t('superadmin.plansDashboard.col.actions')}</th>
+                  <th>{t('platform.plansDashboard.col.company')}</th>
+                  <th>{t('platform.plansDashboard.col.plan')}</th>
+                  <th>{t('platform.plansDashboard.col.users')}</th>
+                  <th>{t('platform.plansDashboard.col.sinceExpires')}</th>
+                  <th>{t('platform.plansDashboard.col.mrr')}</th>
+                  <th>{t('platform.plansDashboard.col.status')}</th>
+                  <th>{t('platform.plansDashboard.col.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -109,14 +109,14 @@ export function PlatformPlansSectionSubscribers({
                       </td>
                       <td className="sap-subscriber-dates">
                         <div>{new Date(tn.createdAt).toLocaleDateString()}</div>
-                        <div className="subtle">{t('superadmin.plansDashboard.expiresNotTracked')}</div>
+                        <div className="subtle">{t('platform.plansDashboard.expiresNotTracked')}</div>
                       </td>
                       <td className="mono">{showMrr && p ? formatPlanMoney(mrrVal, p.currency) : '—'}</td>
                       <td>
                         <span className={tn.isActive ? 'zh-status zh-status--active' : 'zh-status zh-status--suspended'}>
                           {tn.isActive
-                            ? t('superadmin.plansDashboard.statusActive')
-                            : t('superadmin.plansDashboard.statusSuspended')}
+                            ? t('platform.plansDashboard.statusActive')
+                            : t('platform.plansDashboard.statusSuspended')}
                         </span>
                       </td>
                       <td>

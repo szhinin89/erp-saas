@@ -290,7 +290,7 @@ export function usePlatformMenuBuilderCrmWorkspaceHandlers(params: PlatformMenuB
       tree: visualTree,
       auditLines,
     };
-    downloadJsonFile(makeExportFileName('superadmin-crm-workspace'), payload);
+    downloadJsonFile(makeExportFileName('platform-crm-workspace'), payload);
     appendAudit('Snapshot exportado (workspace completo)');
   };
 
@@ -300,7 +300,7 @@ export function usePlatformMenuBuilderCrmWorkspaceHandlers(params: PlatformMenuB
       exportedAt: new Date().toISOString(),
       auditLines,
     };
-    downloadJsonFile(makeExportFileName('superadmin-crm-audit'), payload);
+    downloadJsonFile(makeExportFileName('platform-crm-audit'), payload);
     appendAudit('Auditoría exportada');
   };
 

@@ -55,8 +55,8 @@ export function PlatformPanelCreateSubscriberModal({
       size="lg"
       header={
         <ZHModalHeader
-          title={t('superadmin.createSubscriber')}
-          subtitle={t('superadmin.createSubscriberSubtitle')}
+          title={t('platform.createSubscriber')}
+          subtitle={t('platform.createSubscriberSubtitle')}
           onClose={() => (createBusy ? undefined : setCreateSubscriberOpen(false))}
         />
       }
@@ -65,12 +65,12 @@ export function PlatformPanelCreateSubscriberModal({
 
       {/* ── Sección 1: Datos del suscriptor ── */}
       <div className="sa-form-section">
-        <p className="sa-form-section__title">{t('superadmin.createSubscriber.section.subscriber')}</p>
-        <p className="sa-form-section__hint">{t('superadmin.createSubscriber.section.subscriberHint')}</p>
+        <p className="sa-form-section__title">{t('platform.createSubscriber.section.subscriber')}</p>
+        <p className="sa-form-section__hint">{t('platform.createSubscriber.section.subscriberHint')}</p>
       </div>
 
       <ZHGridRow cols={2}>
-        <ZHField label={t('superadmin.createSubscriber.field.name')} required>
+        <ZHField label={t('platform.createSubscriber.field.name')} required>
           <input
             className="zh-input"
             value={createForm.subscriberName}
@@ -85,7 +85,7 @@ export function PlatformPanelCreateSubscriberModal({
             disabled={createBusy}
           />
         </ZHField>
-        <ZHField label={t('superadmin.createSubscriber.field.slug')} hint={t('superadmin.createSubscriber.field.slugHint')}>
+        <ZHField label={t('platform.createSubscriber.field.slug')} hint={t('platform.createSubscriber.field.slugHint')}>
           <input
             className="zh-input"
             value={createForm.subscriberSlug}
@@ -96,16 +96,16 @@ export function PlatformPanelCreateSubscriberModal({
         </ZHField>
       </ZHGridRow>
       <ZHGridRow cols={3}>
-        <ZHField label={t('superadmin.createSubscriber.field.ruc')}>
+        <ZHField label={t('platform.createSubscriber.field.ruc')}>
           <input
             className="zh-input"
             value={createForm.ruc ?? ''}
             onChange={(e) => setCreateForm((s) => ({ ...s, ruc: e.target.value }))}
-            placeholder={t('superadmin.createSubscriber.field.rucPlaceholder')}
+            placeholder={t('platform.createSubscriber.field.rucPlaceholder')}
             disabled={createBusy}
           />
         </ZHField>
-        <ZHField label={t('superadmin.createSubscriber.field.countryCode')}>
+        <ZHField label={t('platform.createSubscriber.field.countryCode')}>
           <input
             className="zh-input"
             value={createForm.countryCode ?? 'ECU'}
@@ -113,7 +113,7 @@ export function PlatformPanelCreateSubscriberModal({
             disabled={createBusy}
           />
         </ZHField>
-        <ZHField label={t('superadmin.createSubscriber.field.timezone')}>
+        <ZHField label={t('platform.createSubscriber.field.timezone')}>
           <input
             className="zh-input"
             value={createForm.timezone ?? 'America/Guayaquil'}
@@ -123,7 +123,7 @@ export function PlatformPanelCreateSubscriberModal({
         </ZHField>
       </ZHGridRow>
       <ZHGridRow cols={2}>
-        <ZHField label={t('superadmin.createSubscriber.field.planCode')} required>
+        <ZHField label={t('platform.createSubscriber.field.planCode')} required>
           <select
             className="zh-input"
             value={createPlanCode}
@@ -133,8 +133,8 @@ export function PlatformPanelCreateSubscriberModal({
           >
             <option value="">
               {activePlans.length === 0
-                ? t('superadmin.createSubscriber.planSelectNoPlans')
-                : t('superadmin.createSubscriber.planSelectPlaceholder')}
+                ? t('platform.createSubscriber.planSelectNoPlans')
+                : t('platform.createSubscriber.planSelectPlaceholder')}
             </option>
             {activePlans.map((p) => (
               <option key={p.id} value={p.code}>
@@ -156,10 +156,10 @@ export function PlatformPanelCreateSubscriberModal({
           }}
           disabled={createBusy}
         />
-        {t('superadmin.createSubscriber.field.restrictModules')}
+        {t('platform.createSubscriber.field.restrictModules')}
       </label>
       {createRestrictModules ? (
-        <p className="subtle sa-modules-hint">{t('superadmin.createSubscriber.modulesHint')}</p>
+        <p className="subtle sa-modules-hint">{t('platform.createSubscriber.modulesHint')}</p>
       ) : null}
       {createRestrictModules ? (
         <div className="sa-moduleChecks">
@@ -183,12 +183,12 @@ export function PlatformPanelCreateSubscriberModal({
       ) : null}
       {/* ── Sección 2: Administrador inicial ── */}
       <div className="sa-form-section">
-        <p className="sa-form-section__title">{t('superadmin.createSubscriber.section.admin')}</p>
-        <p className="sa-form-section__hint">{t('superadmin.createSubscriber.section.adminHint')}</p>
+        <p className="sa-form-section__title">{t('platform.createSubscriber.section.admin')}</p>
+        <p className="sa-form-section__hint">{t('platform.createSubscriber.section.adminHint')}</p>
       </div>
 
       <ZHGridRow cols={2}>
-        <ZHField label={t('superadmin.createSubscriber.field.adminFirstName')} required>
+        <ZHField label={t('platform.createSubscriber.field.adminFirstName')} required>
           <input
             className="zh-input"
             value={createForm.adminFirstName}
@@ -196,7 +196,7 @@ export function PlatformPanelCreateSubscriberModal({
             disabled={createBusy}
           />
         </ZHField>
-        <ZHField label={t('superadmin.createSubscriber.field.adminLastName')}>
+        <ZHField label={t('platform.createSubscriber.field.adminLastName')}>
           <input
             className="zh-input"
             value={createForm.adminLastName}
@@ -206,7 +206,7 @@ export function PlatformPanelCreateSubscriberModal({
         </ZHField>
       </ZHGridRow>
       <ZHGridRow cols={2}>
-        <ZHField label={t('superadmin.createSubscriber.field.adminEmail')}>
+        <ZHField label={t('platform.createSubscriber.field.adminEmail')}>
           <input
             className="zh-input"
             value={createForm.adminEmail}
@@ -214,16 +214,16 @@ export function PlatformPanelCreateSubscriberModal({
             disabled={createBusy}
           />
         </ZHField>
-        <ZHField label={t('superadmin.createSubscriber.field.passwordResetMode')}>
+        <ZHField label={t('platform.createSubscriber.field.passwordResetMode')}>
           <select
             className="zh-input"
             value={String(createForm.passwordResetMode ?? 0)}
             onChange={(e) => setCreateForm((s) => ({ ...s, passwordResetMode: Number(e.target.value) }))}
             disabled={createBusy}
           >
-            <option value={0}>{t('superadmin.createSubscriber.passwordResetMode.disabled')}</option>
-            <option value={2}>{t('superadmin.createSubscriber.passwordResetMode.email')}</option>
-            <option value={1}>{t('superadmin.createSubscriber.passwordResetMode.admin')}</option>
+            <option value={0}>{t('platform.createSubscriber.passwordResetMode.disabled')}</option>
+            <option value={2}>{t('platform.createSubscriber.passwordResetMode.email')}</option>
+            <option value={1}>{t('platform.createSubscriber.passwordResetMode.admin')}</option>
           </select>
         </ZHField>
       </ZHGridRow>
@@ -234,10 +234,10 @@ export function PlatformPanelCreateSubscriberModal({
           onChange={(e) => setCreateForm((s) => ({ ...s, linkExistingAdmin: e.target.checked }))}
           disabled={createBusy}
         />
-        {t('superadmin.createSubscriber.field.linkExistingAdmin')}
+        {t('platform.createSubscriber.field.linkExistingAdmin')}
       </label>
       {!createForm.linkExistingAdmin ? (
-        <ZHField label={t('superadmin.createSubscriber.field.adminPassword')}>
+        <ZHField label={t('platform.createSubscriber.field.adminPassword')}>
           <input
             className="zh-input"
             type="password"

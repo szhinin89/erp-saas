@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ERP.API.Controllers.Platform;
+using System;
 using ERP.API.Authorization;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
@@ -11,7 +12,7 @@ using ERP.Application.Access.UseCases.UpsertCompanyUserMembership;
 using ERP.Application.Access.UseCases.RevokeCompanyUserMembership;
 using ERP.Application.Access.UseCases.Profiles;
 using ERP.Application.Access.UseCases.SubscriberAccess;
-using ERP.Application.Access.UseCases.SuperAdminSubscribers;
+using ERP.Application.Access.UseCases.PlatformSubscribers;
 using ERP.Application.Access.UseCases.Permissions;
 using ERP.Application.Navigation.DTOs;
 using ERP.Application.Navigation.UseCases.GetSessionMenu;
@@ -99,14 +100,14 @@ public class AccessController : ControllerBase
     [HttpPost("register-subscriber")]
     [Obsolete("Legacy IAM route register-tenant. Prefer register-subscriber.")]
     [HttpPost("register-tenant")]
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
     [ApiExplorerSettings(IgnoreApi = true)]
     [ProducesResponseType(typeof(ApiResponse<SessionResponseDto?>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> RegisterTenant([FromBody] SuperAdminCreateSubscriberWithAdminCommand command, CancellationToken ct)
+    public async Task<IActionResult> RegisterTenant([FromBody] PlatformCreateSubscriberWithAdminCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
@@ -119,7 +120,7 @@ public class AccessController : ControllerBase
     /// <response code="401">Token ausente o inválido.</response>
     /// <response code="403">No es SuperAdmin.</response>
     [HttpPost("company_user_memberships/grant")]
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -138,7 +139,7 @@ public class AccessController : ControllerBase
     /// <response code="401">Token ausente o inválido.</response>
     /// <response code="403">No es SuperAdmin.</response>
     [HttpPost("company_user_memberships/revoke")]
-    [Authorize(Roles = "SuperAdmin")]
+    [Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

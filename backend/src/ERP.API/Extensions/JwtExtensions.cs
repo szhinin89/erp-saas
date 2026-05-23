@@ -1,6 +1,8 @@
 using System.Text;
+using ERP.Application.Common;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 
 namespace ERP.API.Extensions;
 
@@ -34,6 +36,29 @@ public static class JwtExtensions
                     ValidAudience            = audience,
                     IssuerSigningKey         = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(secretKey))
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = ctx =>
+                    {
+                        if (ctx.Principal?.Identity is not ClaimsIdentity identity)
+                            return Task.CompletedTask;
+
+                        foreach (var claim in identity.FindAll(ClaimTypes.Role).ToList())
+                        {
+                            if (PlatformAuthConstants.IsJwtPlatformOperatorRole(claim.Value)
+                                && !identity.HasClaim(c => c.Type == ClaimTypes.Role
+                                    && c.Value == PlatformAuthConstants.JwtPlatformOperatorRole))
+                            {
+                                identity.AddClaim(new Claim(
+                                    ClaimTypes.Role,
+                                    PlatformAuthConstants.JwtPlatformOperatorRole));
+                            }
+                        }
+
+                        return Task.CompletedTask;
+                    },
                 };
             });
 

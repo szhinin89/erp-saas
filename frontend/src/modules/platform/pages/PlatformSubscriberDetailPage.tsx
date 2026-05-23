@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { platformService } from '../api/platformService';
-import { storeImpersonationSubscriberName } from '../platformPanelUtils';
 import { useAuthStore } from '../../../store/authStore';
 import { usePermissionsStore } from '../../../store/permissionsStore';
 import { formatApiRequestError } from '../../../modules/lib/apiError';
-import { getAccessToken } from '../../../lib/session/authTokenMemory';
-import { restoreSessionFromCookie } from '../../../lib/session/restoreSessionFromCookie';
-import { syncSessionEntitlements } from '../../../lib/syncSessionEntitlements';
+import {
+  buildSubscriberDetailReturnPath,
+  startPlatformImpersonation,
+  type SaasImpersonationTarget,
+} from '../../../navigation/platformImpersonationNav';
 import { LoadingState } from '../../../components/PageShell';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHFormSection, ZHGrid, ZHField, ZHBtn } from '../../../components/zh/ZHForm';
@@ -50,7 +51,7 @@ export function PlatformSubscriberDetailPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const tab = useMemo(() => parseTab(searchParams.get('tab')), [searchParams]);
-  const { isSuperAdmin } = usePlatformGate();
+  const { isPlatformOperator } = usePlatformGate();
   const { login } = useAuthStore();
   const clearPermissions = usePermissionsStore((s) => s.clearPermissions);
 
@@ -102,23 +103,22 @@ export function PlatformSubscriberDetailPage() {
     }
   };
 
-  const handleImpersonate = async (target: '/saas/overview' | '/saas/companies' | '/saas/billing') => {
-    if (!subscriber || actionBusy) return;
+  const handleImpersonate = async (target: SaasImpersonationTarget) => {
+    if (!subscriber || actionBusy || !subscriber.isActive) return;
     setActionBusy(true);
     setActionError(null);
     try {
-      if (!getAccessToken()) {
-        const restored = await restoreSessionFromCookie();
-        if (!restored || !getAccessToken()) throw new Error('Sesión expirada.');
-      }
-      const auth = await platformService.switchSubscriber(subscriber.id);
-      storeImpersonationSubscriberName(subscriber.name);
-      clearPermissions();
-      login(auth);
-      try { await syncSessionEntitlements(); } catch { /* */ }
-      navigate(target);
+      await startPlatformImpersonation({
+        subscriberId: subscriber.id,
+        subscriberName: subscriber.name,
+        target,
+        returnPath: buildSubscriberDetailReturnPath(subscriber.id, tab),
+        navigate,
+        login,
+        clearPermissions,
+      });
     } catch (e) {
-      setActionError(formatApiRequestError(e, { generic: 'No se pudo impersonar.' }));
+      setActionError(formatApiRequestError(e, { generic: 'No se pudo entrar al tenant.' }));
     } finally {
       setActionBusy(false);
     }
@@ -132,7 +132,7 @@ export function PlatformSubscriberDetailPage() {
     return (
       <div className="sa-detail-page">
         <ZHPageNotice variant="error" message={error ?? 'Suscriptor no encontrado.'} />
-        <ZHBtn variant="ghost" size="md" onClick={() => navigate('/superadmin/subscribers')}>Volver</ZHBtn>
+        <ZHBtn variant="ghost" size="md" onClick={() => navigate('/platform/subscribers')}>Volver</ZHBtn>
       </div>
     );
   }
@@ -143,7 +143,7 @@ export function PlatformSubscriberDetailPage() {
   return (
     <div className="sa-detail-page">
       <div className="sa-detail-header">
-        <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm sa-detail-back" onClick={() => navigate('/superadmin/subscribers')}>
+        <button type="button" className="zh-btn zh-btn--ghost zh-btn--sm sa-detail-back" onClick={() => navigate('/platform/subscribers')}>
           <span className="material-symbols-outlined">arrow_back</span>
           Suscriptores
         </button>
@@ -185,11 +185,36 @@ export function PlatformSubscriberDetailPage() {
             </div>
           </div>
           <div className="sa-detail-card">
-            <h3 className="sa-detail-card-title">Impersonación</h3>
+            <h3 className="sa-detail-card-title">Entrar al tenant</h3>
+            <p className="subtle sa-detail-impersonation-hint">
+              Abre el runtime del suscriptor. Al salir podrás volver a esta ficha desde el banner superior.
+            </p>
             <div className="sa-detail-impersonation-btns">
-              <ZHBtn variant="ghost" size="md" disabled={actionBusy} onClick={() => void handleImpersonate('/saas/overview')}>Cuenta SaaS</ZHBtn>
-              <ZHBtn variant="ghost" size="md" disabled={actionBusy} onClick={() => void handleImpersonate('/saas/companies')}>Empresas ERP</ZHBtn>
-              <ZHBtn variant="ghost" size="md" disabled={actionBusy} onClick={() => void handleImpersonate('/saas/billing')}>Facturación</ZHBtn>
+              <ZHBtn
+                variant="primary"
+                size="md"
+                disabled={actionBusy || !subscriber.isActive}
+                title={!subscriber.isActive ? 'El suscriptor está inactivo.' : undefined}
+                onClick={() => void handleImpersonate('/saas/overview')}
+              >
+                Resumen del tenant
+              </ZHBtn>
+              <ZHBtn
+                variant="ghost"
+                size="md"
+                disabled={actionBusy || !subscriber.isActive}
+                onClick={() => void handleImpersonate('/saas/companies')}
+              >
+                Empresas ERP
+              </ZHBtn>
+              <ZHBtn
+                variant="ghost"
+                size="md"
+                disabled={actionBusy || !subscriber.isActive}
+                onClick={() => void handleImpersonate('/saas/billing')}
+              >
+                Facturación del tenant
+              </ZHBtn>
             </div>
           </div>
         </div>
@@ -280,7 +305,7 @@ export function PlatformSubscriberDetailPage() {
             <ZHBtn variant="primary" size="sm" className="pg-mt-sm" disabled={page.saving} onClick={() => void page.saveGlobalParameters()}>Guardar parámetros</ZHBtn>
             <p className="subtle">Claves globales: {page.globalConfigCount}</p>
           </div>
-          <ConfigManagementPanel subscriberId={subscriberId} canManage={isSuperAdmin} title="Config por alcance" subtitle="Global / module / feature" />
+          <ConfigManagementPanel subscriberId={subscriberId} canManage={isPlatformOperator} title="Config por alcance" subtitle="Global / module / feature" />
         </div>
       )}
 
@@ -288,7 +313,7 @@ export function PlatformSubscriberDetailPage() {
         <div className="sa-detail-body sa-detail-card">
           <p>Menú personalizado: {page.menuFlags?.hasCustomMenu ? 'Sí' : 'No'} · Plan menu: {page.menuFlags?.usedPlanMenu ? 'Sí' : 'No'}</p>
           <ZHBtn variant="ghost" size="md" onClick={() => void page.resetCustomMenu()}>Restablecer menú custom</ZHBtn>
-          <p className="subtle pg-mt-md">Editor global: <a className="zh-link" href="/superadmin/plans?tab=menu">Plans → Menu builder</a></p>
+          <p className="subtle pg-mt-md">Editor global: <a className="zh-link" href="/platform/plans?tab=menu">Plans → Menu builder</a></p>
         </div>
       )}
 
@@ -308,7 +333,7 @@ export function PlatformSubscriberDetailPage() {
         <div className="sa-detail-body sa-detail-card">
           <p>Usuarios activos: {subscriber.activeUsers} / {subscriber.totalUsers}</p>
           <p>Módulos: {subscriber.hasModuleRestrictions ? subscriber.enabledModules?.join(', ') : 'Sin restricción'}</p>
-          <ZHBtn variant="ghost" size="sm" onClick={() => navigate('/superadmin/observability')}>Ver observability global</ZHBtn>
+          <ZHBtn variant="ghost" size="sm" onClick={() => navigate('/platform/observability')}>Ver observability global</ZHBtn>
         </div>
       )}
     </div>

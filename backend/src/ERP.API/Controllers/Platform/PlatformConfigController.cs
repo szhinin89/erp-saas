@@ -13,7 +13,7 @@ namespace ERP.API.Controllers.Platform;
 /// </summary>
 [ApiController]
 [Route("api/platform/config")]
-[Authorize(Roles = "SuperAdmin")]
+[Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
 [Tags("Platform")]
 [Produces("application/json")]
 public sealed class PlatformConfigController : ControllerBase

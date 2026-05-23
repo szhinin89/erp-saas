@@ -7,16 +7,18 @@ namespace ERP.Domain.Auth.Entities;
 public sealed class PasswordResetToken
 {
     public const string KindPlatform = "Platform";
-    public const string KindSuperAdmin = "SuperAdmin";
+    public const string KindPlatformOperator = "PlatformOperator";
+    /// <summary>Alias legacy persistido en BD.</summary>
+    public const string KindLegacyPlatformOperator = "SuperAdmin";
     public const string KindIdentity = "Identity";
     public const string KindLegacy = "Legacy";
 
     public Guid Id { get; private set; }
     public string TokenHash { get; private set; } = null!;
     public Guid UserId { get; private set; }
-    /// <summary>Tipo de cuenta: <see cref="KindSuperAdmin"/>, <see cref="KindIdentity"/>, <see cref="KindLegacy"/>.</summary>
+    /// <summary>Tipo de cuenta: <see cref="KindPlatform"/>, <see cref="KindPlatformOperator"/>, <see cref="KindIdentity"/>, <see cref="KindLegacy"/>.</summary>
     public string UserKind { get; private set; } = null!;
-    /// <summary>Empresa asociada; null solo para SuperAdmin global.</summary>
+    /// <summary>Empresa asociada; null solo para operador platform global.</summary>
     public Guid? SubscriberId { get; private set; }
     public DateTime ExpiresAt { get; private set; }
     public bool Used { get; private set; }

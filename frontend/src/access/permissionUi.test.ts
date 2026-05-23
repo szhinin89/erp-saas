@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { JWT_PLATFORM_OPERATOR_ROLE } from '../constants/platformAuth';
 import {
   canShowPermissionKey,
   hasUnrestrictedPermissionSnapshot,
@@ -9,9 +10,9 @@ describe('permissionUi', () => {
   const has = (keys: string[]) => (key: string) =>
     keys.includes('*') || keys.some((p) => p === key);
 
-  it('isTenantAdminRole recognizes Admin and SuperAdmin', () => {
+  it('isTenantAdminRole recognizes Admin and platform operator JWT role', () => {
     expect(isTenantAdminRole('Admin')).toBe(true);
-    expect(isTenantAdminRole('SuperAdmin')).toBe(true);
+    expect(isTenantAdminRole(JWT_PLATFORM_OPERATOR_ROLE)).toBe(true);
     expect(isTenantAdminRole('User')).toBe(false);
   });
 

@@ -1,8 +1,8 @@
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Admin;
-using ERP.Application.Admin.UseCases.SuperAdminGlobal;
-using ERP.Application.Platform.Metrics;
+using ERP.Application.Admin.UseCases.PlatformGlobal;
+using PlatformMetrics = ERP.Application.Platform.Metrics;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -15,7 +15,7 @@ namespace ERP.API.Controllers.Platform;
 /// </summary>
 [ApiController]
 [Route("api/platform/metrics")]
-[Authorize(Roles = "SuperAdmin")]
+[Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
 [Tags("Platform")]
 public sealed class PlatformMetricsController : ControllerBase
 {
@@ -28,10 +28,10 @@ public sealed class PlatformMetricsController : ControllerBase
     /// distribución por plan y distribución de ciclo de vida.
     /// </summary>
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<PlatformMetricsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PlatformMetrics.PlatformMetricsDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMetrics(CancellationToken ct)
     {
-        var result = await _mediator.Send(new GetPlatformMetricsQuery(), ct);
+        var result = await _mediator.Send(new PlatformMetrics.GetPlatformMetricsQuery(), ct);
         return this.ToOkOrBadRequest(result);
     }
 
@@ -44,7 +44,7 @@ public sealed class PlatformMetricsController : ControllerBase
         [FromQuery] string? granularity,
         CancellationToken ct)
     {
-        var result = await _mediator.Send(new GetSuperAdminGrowthAnalyticsQuery(from, to, granularity), ct);
+        var result = await _mediator.Send(new GetPlatformGrowthAnalyticsQuery(from, to, granularity), ct);
         return this.ToOkOrBadRequest(result, "OK");
     }
 
@@ -56,7 +56,7 @@ public sealed class PlatformMetricsController : ControllerBase
         [FromQuery] string? granularity,
         CancellationToken ct)
     {
-        var result = await _mediator.Send(new GetSuperAdminGrowthMonetaryQuery(from, to, granularity), ct);
+        var result = await _mediator.Send(new GetPlatformGrowthMonetaryQuery(from, to, granularity), ct);
         return this.ToOkOrBadRequest(result, "OK");
     }
 }

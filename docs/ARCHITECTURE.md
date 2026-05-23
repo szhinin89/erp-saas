@@ -22,7 +22,7 @@ Dependencias: API → Application → Domain; Infrastructure implementa ports.
 ## Jerarquía multi-tenant
 
 ```
-GlobalSuperAdmin (platform)
+GlobalPlatformOperator (platform)
   └── Subscriber (contrato SaaS: plan, billing, límites)
         └── Company (entidad fiscal / operativa)
               └── CompanyUserMembership
@@ -31,7 +31,7 @@ GlobalSuperAdmin (platform)
 
 | Actor | Clave scope | Paga / gobernado | Opera ERP |
 |-------|-------------|------------------|-----------|
-| GlobalSuperAdmin | — (platform) | — | bypass RLS vía `app.is_platform_admin` |
+| GlobalPlatformOperator | — (platform) | — | bypass RLS vía `app.is_platform_admin` |
 | Subscriber | `subscriber_id` | sí | vía companies |
 | Company | `company_id` | no | sí (JWT) |
 

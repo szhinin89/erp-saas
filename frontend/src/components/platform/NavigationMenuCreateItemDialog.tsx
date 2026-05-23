@@ -45,15 +45,15 @@ export function NavigationMenuCreateItemDialog({
       }}
     >
       <dialog className="nm-createDialog" open aria-labelledby="nm-create-title">
-        <h3 id="nm-create-title">{t('superadmin.navigationMenu.createItemTitle')}</h3>
+        <h3 id="nm-create-title">{t('platform.navigationMenu.createItemTitle')}</h3>
         <p className="nm-createHint">
           {createTarget.parentItemId
-            ? t('superadmin.navigationMenu.createItemHintChild')
-            : t('superadmin.navigationMenu.createItemHintRoot')}
+            ? t('platform.navigationMenu.createItemHintChild')
+            : t('platform.navigationMenu.createItemHintRoot')}
         </p>
         <form onSubmit={(e: FormEvent) => void handleCreateNavItemSubmit(e)}>
           <div className="nm-createField">
-            <label htmlFor="nm-create-label">{t('superadmin.navigationMenu.createItemDisplayLabel')}</label>
+            <label htmlFor="nm-create-label">{t('platform.navigationMenu.createItemDisplayLabel')}</label>
             <input
               id="nm-create-label"
               value={createDisplayLabel}
@@ -64,7 +64,7 @@ export function NavigationMenuCreateItemDialog({
             />
           </div>
           <div className="nm-createField">
-            <label htmlFor="nm-create-route">{t('superadmin.navigationMenu.createItemRoutePath')}</label>
+            <label htmlFor="nm-create-route">{t('platform.navigationMenu.createItemRoutePath')}</label>
             <input
               id="nm-create-route"
               value={createRoutePath}
@@ -74,7 +74,7 @@ export function NavigationMenuCreateItemDialog({
             />
           </div>
           <div className="nm-createField">
-            <label htmlFor="nm-create-mod">{t('superadmin.navigationMenu.createItemModuleKey')}</label>
+            <label htmlFor="nm-create-mod">{t('platform.navigationMenu.createItemModuleKey')}</label>
             <input
               id="nm-create-mod"
               value={createModuleKey}
@@ -84,7 +84,7 @@ export function NavigationMenuCreateItemDialog({
             />
           </div>
           <div className="nm-createField">
-            <label htmlFor="nm-create-perm">{t('superadmin.navigationMenu.createItemPermissionKey')}</label>
+            <label htmlFor="nm-create-perm">{t('platform.navigationMenu.createItemPermissionKey')}</label>
             <input
               id="nm-create-perm"
               value={createPermissionKey}
@@ -95,10 +95,10 @@ export function NavigationMenuCreateItemDialog({
           </div>
           <div className="nm-createActions">
             <ZHBtn type="button" variant="secondary" disabled={creatingItem} onClick={closeCreateNavItem}>
-              {t('superadmin.navigationMenu.createItemCancel')}
+              {t('platform.navigationMenu.createItemCancel')}
             </ZHBtn>
             <ZHBtn type="submit" variant="primary" disabled={creatingItem}>
-              {creatingItem ? t('superadmin.navigationMenu.createItemCreating') : t('superadmin.navigationMenu.createItemSubmit')}
+              {creatingItem ? t('platform.navigationMenu.createItemCreating') : t('platform.navigationMenu.createItemSubmit')}
             </ZHBtn>
           </div>
         </form>

@@ -95,7 +95,7 @@ export function PlatformUsersPage() {
           </div>
         </>
       )}
-      <p className="subtle pg-mt-md">Roles: SuperAdmin, Support, BillingAdmin (BillingManager), Auditor.</p>
+      <p className="subtle pg-mt-md">Roles: Platform operator, Support, BillingAdmin (BillingManager), Auditor.</p>
     </PlatformCrudTemplate>
   );
 }

@@ -35,7 +35,7 @@ SET menu_config = (
                         'moduleKey',         'admin',
                         'permissionKey',     null,
                         'permissionKeysAny', null,
-                        'itemRoles',         jsonb_build_array('SuperAdmin', 'Admin'),
+                        'itemRoles',         jsonb_build_array('PlatformOperator', 'Admin', 'SuperAdmin'),
                         'children',          null,
                         'icon',              '🔒'
                     )

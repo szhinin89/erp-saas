@@ -22,14 +22,14 @@ export function PlatformPlansSectionFormModal({ mode, planForm, setPlanForm, bus
       size="lg"
       header={
         <ZHModalHeader
-          title={mode === 'create' ? t('superadmin.plansAdmin.modalCreate') : t('superadmin.plansAdmin.modalEdit')}
-          subtitle={t('superadmin.plansAdmin.modalSubtitle')}
+          title={mode === 'create' ? t('platform.plansAdmin.modalCreate') : t('platform.plansAdmin.modalEdit')}
+          subtitle={t('platform.plansAdmin.modalSubtitle')}
           onClose={onClose}
         />
       }
     >
       <ZHGridRow cols={2}>
-        <ZHField label={t('superadmin.plansAdmin.field.code')}>
+        <ZHField label={t('platform.plansAdmin.field.code')}>
           <input
             className="zh-input"
             value={planForm.code}
@@ -37,7 +37,7 @@ export function PlatformPlansSectionFormModal({ mode, planForm, setPlanForm, bus
             disabled={mode === 'edit'}
           />
         </ZHField>
-        <ZHField label={t('superadmin.plansAdmin.field.shortLabel')}>
+        <ZHField label={t('platform.plansAdmin.field.shortLabel')}>
           <input
             className="zh-input"
             value={planForm.shortLabel}
@@ -46,18 +46,18 @@ export function PlatformPlansSectionFormModal({ mode, planForm, setPlanForm, bus
           />
         </ZHField>
       </ZHGridRow>
-      <ZHField label={t('superadmin.plansAdmin.field.name')}>
+      <ZHField label={t('platform.plansAdmin.field.name')}>
         <input className="zh-input" value={planForm.name} onChange={(e) => setPlanForm((s) => ({ ...s, name: e.target.value }))} />
       </ZHField>
       <ZHGridRow cols={2}>
-        <ZHField label={t('superadmin.plansAdmin.field.price')}>
+        <ZHField label={t('platform.plansAdmin.field.price')}>
           <input
             className="zh-input"
             value={planForm.priceAmount}
             onChange={(e) => setPlanForm((s) => ({ ...s, priceAmount: e.target.value }))}
           />
         </ZHField>
-        <ZHField label={t('superadmin.plansAdmin.field.currency')}>
+        <ZHField label={t('platform.plansAdmin.field.currency')}>
           <input
             className="zh-input"
             value={planForm.currency}
@@ -67,19 +67,19 @@ export function PlatformPlansSectionFormModal({ mode, planForm, setPlanForm, bus
         </ZHField>
       </ZHGridRow>
       <ZHGridRow cols={2}>
-        <ZHField label={t('superadmin.plansAdmin.field.billing')}>
+        <ZHField label={t('platform.plansAdmin.field.billing')}>
           <select
             className="zh-input"
             value={planForm.billingCycle}
             onChange={(e) => setPlanForm((s) => ({ ...s, billingCycle: e.target.value }))}
           >
-            <option value="monthly">{t('superadmin.plansAdmin.cycle.monthly')}</option>
-            <option value="quarterly">{t('superadmin.plansAdmin.cycle.quarterly')}</option>
-            <option value="yearly">{t('superadmin.plansAdmin.cycle.yearly')}</option>
-            <option value="one_time">{t('superadmin.plansAdmin.cycle.oneTime')}</option>
+            <option value="monthly">{t('platform.plansAdmin.cycle.monthly')}</option>
+            <option value="quarterly">{t('platform.plansAdmin.cycle.quarterly')}</option>
+            <option value="yearly">{t('platform.plansAdmin.cycle.yearly')}</option>
+            <option value="one_time">{t('platform.plansAdmin.cycle.oneTime')}</option>
           </select>
         </ZHField>
-        <ZHField label={t('superadmin.plansAdmin.field.sort')}>
+        <ZHField label={t('platform.plansAdmin.field.sort')}>
           <input
             className="zh-input"
             value={planForm.sortOrder}
@@ -87,7 +87,7 @@ export function PlatformPlansSectionFormModal({ mode, planForm, setPlanForm, bus
           />
         </ZHField>
       </ZHGridRow>
-      <ZHField label={t('superadmin.plansAdmin.field.billingRef')}>
+      <ZHField label={t('platform.plansAdmin.field.billingRef')}>
         <input
           className="zh-input"
           value={planForm.externalBillingRef}
@@ -101,7 +101,7 @@ export function PlatformPlansSectionFormModal({ mode, planForm, setPlanForm, bus
           checked={planForm.isActive}
           onChange={(e) => setPlanForm((s) => ({ ...s, isActive: e.target.checked }))}
         />
-        {t('superadmin.plansAdmin.field.active')}
+        {t('platform.plansAdmin.field.active')}
       </label>
       <label className="zh-inline-check">
         <input
@@ -109,7 +109,7 @@ export function PlatformPlansSectionFormModal({ mode, planForm, setPlanForm, bus
           checked={planForm.isPubliclyVisible}
           onChange={(e) => setPlanForm((s) => ({ ...s, isPubliclyVisible: e.target.checked }))}
         />
-        {t('superadmin.plansAdmin.field.public')}
+        {t('platform.plansAdmin.field.public')}
       </label>
       {mode === 'create' ? (
         <label className="zh-inline-check">
@@ -118,7 +118,7 @@ export function PlatformPlansSectionFormModal({ mode, planForm, setPlanForm, bus
             checked={planForm.isRecommended}
             onChange={(e) => setPlanForm((s) => ({ ...s, isRecommended: e.target.checked }))}
           />
-          {t('superadmin.plansAdmin.field.recommendedCreate')}
+          {t('platform.plansAdmin.field.recommendedCreate')}
         </label>
       ) : (
         <label className="zh-inline-check">
@@ -127,7 +127,7 @@ export function PlatformPlansSectionFormModal({ mode, planForm, setPlanForm, bus
             checked={planForm.isRecommended}
             onChange={(e) => setPlanForm((s) => ({ ...s, isRecommended: e.target.checked }))}
           />
-          {t('superadmin.plansAdmin.field.recommendedEdit')}
+          {t('platform.plansAdmin.field.recommendedEdit')}
         </label>
       )}
       <ZHInlineRowRight>

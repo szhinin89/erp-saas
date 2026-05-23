@@ -43,7 +43,7 @@ public sealed class NavigationMenuAdminService : INavigationMenuAdminService
                 g.SortOrder,
                 g.ModuleKey,
                 ParseRoles(g.RolesCsv),
-                g.RequireSuperAdminPanel,
+                g.RequirePlatformPanel,
                 g.IsActive,
                 BuildAdminItemTree(list, null)));
         }

@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { GLOBAL_SUBSCRIBER_ID } from '../constants/subscriberIds';
+import { isJwtPlatformOperatorRole } from '../constants/platformAuth';
 import { useDeployment } from '../deployment/DeploymentContext';
 import { usePlatformGate } from '../hooks/usePlatformGate';
 import { fullLogout } from '../lib/session/fullLogout';
@@ -48,8 +49,8 @@ function requiresCompanyContext(path: string): boolean {
 }
 
 export function ProtectedRoute() {
-  const { superAdminPanelEnabled } = useDeployment();
-  const { isSuperAdmin } = usePlatformGate();
+  const { platformPanelEnabled } = useDeployment();
+  const { isPlatformOperator } = usePlatformGate();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const user = useAuthStore((s) => s.user);
@@ -59,35 +60,35 @@ export function ProtectedRoute() {
 
   const token = getAccessToken();
 
-  if (!superAdminPanelEnabled && (user?.role ?? '') === 'SuperAdmin') {
+  if (!platformPanelEnabled && isJwtPlatformOperatorRole(user?.role)) {
     fullLogout();
     return <Navigate to="/login" replace />;
   }
 
   const path = location.pathname;
   const isGlobalPlatform =
-    isSuperAdmin &&
+    isPlatformOperator &&
     normalizeUuid(user?.subscriberId ?? '') === normalizeUuid(GLOBAL_SUBSCRIBER_ID);
 
-  if (superAdminPanelEnabled && isGlobalPlatform) {
+  if (platformPanelEnabled && isGlobalPlatform) {
     const allowed =
-      path.startsWith('/superadmin') ||
+      path.startsWith('/platform') ||
       path === '/companies' ||
       path.startsWith('/companies/');
-    return allowed ? <Outlet /> : <Navigate to="/superadmin/overview" replace />;
+    return allowed ? <Outlet /> : <Navigate to="/platform/overview" replace />;
   }
 
   const hasSubscriber =
     !!user?.subscriberId &&
     normalizeUuid(user.subscriberId) !== normalizeUuid(GLOBAL_SUBSCRIBER_ID);
 
-  if (path.startsWith('/superadmin') && !isGlobalPlatform) {
+  if (path.startsWith('/platform') && !isGlobalPlatform) {
     return <Navigate to={hasSubscriber ? '/saas/overview' : '/login'} replace />;
   }
 
   // Sin suscriptor activo (global): /saas/* no aplica; con impersonación sí (hasSubscriber).
   if (path.startsWith('/saas/') && !hasSubscriber) {
-    return <Navigate to="/superadmin/overview" replace />;
+    return <Navigate to="/platform/overview" replace />;
   }
 
   const needsCompany =

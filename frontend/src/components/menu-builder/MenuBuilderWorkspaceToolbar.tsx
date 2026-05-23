@@ -20,46 +20,46 @@ export function MenuBuilderWorkspaceToolbar({
   const { t } = useI18n();
 
   return (
-    <div className="menu-builder-toolbar" role="toolbar" aria-label={t('superadmin.menuBuilder.visualMode')}>
-      <span className="menu-builder-toolbar__label">{t('superadmin.menuBuilder.visualMode')}</span>
+    <div className="menu-builder-toolbar" role="toolbar" aria-label={t('platform.menuBuilder.visualMode')}>
+      <span className="menu-builder-toolbar__label">{t('platform.menuBuilder.visualMode')}</span>
       <button
         type="button"
         className={`zh-btn zh-btn--sm ${viewMode === 'split' ? 'zh-btn--primary' : 'zh-btn--ghost'}`}
         onClick={() => onViewModeChange('split')}
       >
-        {t('superadmin.menuBuilder.modeSplit')}
+        {t('platform.menuBuilder.modeSplit')}
       </button>
       <button
         type="button"
         className={`zh-btn zh-btn--sm ${viewMode === 'editor' ? 'zh-btn--primary' : 'zh-btn--ghost'}`}
         onClick={() => onViewModeChange('editor')}
       >
-        {t('superadmin.menuBuilder.modeEditor')}
+        {t('platform.menuBuilder.modeEditor')}
       </button>
       <button
         type="button"
         className={`zh-btn zh-btn--sm ${viewMode === 'preview' ? 'zh-btn--primary' : 'zh-btn--ghost'}`}
         onClick={() => onViewModeChange('preview')}
       >
-        {t('superadmin.menuBuilder.modePreview')}
+        {t('platform.menuBuilder.modePreview')}
       </button>
       {showPreview ? (
         <>
           <span className="menu-builder-toolbar__sep" aria-hidden />
-          <span className="menu-builder-toolbar__label">{t('superadmin.menuBuilder.previewLayout')}</span>
+          <span className="menu-builder-toolbar__label">{t('platform.menuBuilder.previewLayout')}</span>
           <button
             type="button"
             className={`zh-btn zh-btn--sm ${previewLayout === 'vertical' ? 'zh-btn--secondary' : 'zh-btn--ghost'}`}
             onClick={() => onPreviewLayoutChange('vertical')}
           >
-            {t('superadmin.menuBuilder.layoutVertical')}
+            {t('platform.menuBuilder.layoutVertical')}
           </button>
           <button
             type="button"
             className={`zh-btn zh-btn--sm ${previewLayout === 'horizontal' ? 'zh-btn--secondary' : 'zh-btn--ghost'}`}
             onClick={() => onPreviewLayoutChange('horizontal')}
           >
-            {t('superadmin.menuBuilder.layoutHorizontal')}
+            {t('platform.menuBuilder.layoutHorizontal')}
           </button>
         </>
       ) : null}
