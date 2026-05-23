@@ -1,0 +1,9 @@
+# MasterData Infrastructure Layer — placeholder
+#
+# Próximas fases:
+#   BP-2: BusinessPartnerRepository : IBusinessPartnerRepository
+#   BP-3: CustomerProfileRepository : ICustomerProfileRepository
+#   BP-4: SupplierProfileRepository : ISupplierProfileRepository
+#   BP-2: EF Configuration: BusinessPartnerConfiguration.cs
+#   BP-2: DbSet<BusinessPartner> en ErpDbContext
+#   BP-2: Migración DB: create table master_business_partners

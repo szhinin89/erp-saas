@@ -1,0 +1,9 @@
+# MasterData Application Layer — placeholder
+#
+# Próximas fases:
+#   BP-2: CreateBusinessPartnerCommand + Handler
+#   BP-2: GetBusinessPartnerQuery + Handler
+#   BP-2: SearchBusinessPartnersQuery + Handler
+#   BP-3: CreateCustomerProfileCommand
+#   BP-4: CreateSupplierProfileCommand
+#   BP-5: UpsertCompanyBusinessPartnerSettingsCommand
