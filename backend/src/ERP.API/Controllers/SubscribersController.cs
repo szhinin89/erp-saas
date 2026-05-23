@@ -17,7 +17,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>
 /// ERP Runtime — tenant Admin y endpoints públicos del suscriptor.
-/// Control plane SaaS (SuperAdmin): exclusivamente <c>/api/platform/subscribers</c>.
+/// Control plane SaaS (operador platform): exclusivamente <c>/api/platform/subscribers</c>.
 /// </summary>
 [ApiController]
 [AppFeature("Tenants API", "perm:subscribers.api", "🧩", null, null, 990, IsVisibleInMenu = false)]

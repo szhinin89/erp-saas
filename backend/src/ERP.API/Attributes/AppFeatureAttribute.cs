@@ -10,7 +10,7 @@ public sealed class AppFeatureAttribute : Attribute
     public string Name { get; }
     public string? Icon { get; }
     public string? Path { get; }
-    /// <summary>Unique key (e.g. <c>perm:ventas.view</c>). Do not use <c>SuperAdmin</c> prefix if it must be excluded from the tenant catalog.</summary>
+    /// <summary>Unique key (e.g. <c>perm:ventas.view</c>). Do not use <c>operador platform</c> prefix if it must be excluded from the tenant catalog.</summary>
     public string Permission { get; }
     /// <summary>Parent permission in the catalog (same value as <see cref="Permission"/> of the parent).</summary>
     public string? ParentPermission { get; }

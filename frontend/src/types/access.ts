@@ -78,8 +78,6 @@ export interface SessionMenuGroupDto {
   roles: string[] | null;
   /** Si true, el grupo solo aplica con panel platform habilitado. */
   requirePlatformPanel?: boolean;
-  /** Alias legacy del API. */
-  requireSuperAdminPanel?: boolean;
   items: SessionMenuItemDto[];
   /** `horizontal` | `vertical` desde el constructor de menú (plan/empresa). */
   menuBarLayout?: string | null;

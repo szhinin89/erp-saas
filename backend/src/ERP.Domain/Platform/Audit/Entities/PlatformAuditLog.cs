@@ -1,7 +1,7 @@
 namespace ERP.Domain.Platform.Audit.Entities;
 
 /// <summary>
-/// Registro append-only de acciones realizadas por operadores de plataforma (SuperAdmin).
+/// Registro append-only de acciones realizadas por operadores de plataforma (operador platform).
 /// NO filtrado por SubscriberId — es un log global de control plane.
 /// Cubre: cambios de plan, suspend/activate, switch-subscriber, login failures, config changes.
 /// </summary>

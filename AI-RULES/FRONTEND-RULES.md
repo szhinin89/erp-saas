@@ -23,7 +23,9 @@ frontend/src/modules/{dominio}/
 ## Permisos en UI (conveniencia — autorización real en backend)
 
 ```typescript
-const isAdmin = role === 'Admin' || role === 'SuperAdmin';
+import { isJwtPlatformOperatorRole } from '../constants/platformAuth';
+
+const isAdmin = role === 'Admin' || isJwtPlatformOperatorRole(role);
 const canView   = isAdmin || hasPerm('modulo.recurso.view');
 const canCreate = isAdmin || hasPerm('modulo.recurso.create');
 ```
@@ -62,9 +64,9 @@ import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 <ZHBtn variant="primary" size="md" type="submit">Guardar</ZHBtn>
 ```
 
-### Banner SuperAdmin (impersonación)
+### Banner operador platform (impersonación)
 
-Usuario SuperAdmin con `tenantId` real: banner plegable compacto; detalle empresa y "Volver al panel global" solo expandido.
+Operador platform con `tenantId` real: banner plegable compacto; detalle empresa y "Volver al panel global" solo expandido.
 
 ---
 
@@ -121,7 +123,7 @@ Verbos de dominio en altas; **«Guardar cambios»** en edición (`common.saveCha
 **Alcance:** `frontend/src/nav/**` — `navConfig.ts`.
 
 - Cada `to` **máximo una vez** entre grupos estáticos (excepción: Favoritos en `localStorage`).
-- Rutas `/superadmin/*` y `/companies`: solo en `getSuperAdminPanelNavExtras` / `buildGlobalSuperAdminNavGroups`; **no** en BD `ui_nav_items`.
+- Rutas `/platform/*` y redirect legacy `/superadmin/*` (solo en `platformRoutes.tsx`); extras de nav en `getPlatformPanelNavExtras` / `buildGlobalPlatformNavGroups`; **no** en BD `ui_nav_items`.
 - Al añadir ruta: alias en `MENU_ROUTE_ALIASES` si hay variante legacy.
 
 ---

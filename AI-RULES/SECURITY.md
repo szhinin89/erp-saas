@@ -9,7 +9,7 @@ Canónico para identidad y aislamiento. Detalle descriptivo: `docs/IDENTITY.md`,
 - `TenantId` / `SubscriberId` desde **JWT/contexto**, nunca como autoridad desde body/query en operaciones tenant-scoped.
 - Filtros globales EF por tenant en lecturas.
 - Índices únicos con `TenantId` cuando la unicidad es por empresa.
-- Cross-tenant solo en flujos plataforma/SuperAdmin autorizados.
+- Cross-tenant solo en flujos plataforma / operador platform autorizados.
 - Frontend: no enviar `tenantId` en formularios tenant-scoped.
 - URLs: no UUID tenant en query — ver [SAAS-RULES.md](./SAAS-RULES.md).
 
@@ -47,7 +47,7 @@ Canónico para identidad y aislamiento. Detalle descriptivo: `docs/IDENTITY.md`,
 
 ## Login
 
-- Login unificado tenant vía `/api/auth/login` (incluye SuperAdmin platform cuando aplica).
+- Login unificado tenant vía `/api/auth/login` (incluye operador platform cuando aplica).
 - Logout: `fullLogout()` — stores, sessionStorage, BC `logout`, cookie vía API.
 
 Detalle endpoints y claims: `docs/IDENTITY.md`.

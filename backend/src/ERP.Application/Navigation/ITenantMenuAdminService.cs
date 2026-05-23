@@ -3,7 +3,7 @@ using ERP.Application.Navigation.DTOs;
 
 namespace ERP.Application.Navigation;
 
-/// <summary>SuperAdmin: menú efectivo por empresa y CRUD de <c>subscriber_custom_menus</c>.</summary>
+/// <summary>Operador platform: menú efectivo por empresa y CRUD de <c>subscriber_custom_menus</c>.</summary>
 public interface ISubscriberMenuAdminService
 {
     Task<Result<SubscriberMenuResolvedDto>> GetResolvedMenuForTenantAsync(Guid subscriberId, CancellationToken ct = default);

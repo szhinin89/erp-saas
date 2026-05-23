@@ -76,4 +76,4 @@ Strategy per wave:
 - OC recepción física sin factura
 - Liquidación de compra (tipo 03)
 - Partitioning `electronic_doc` / `stock_movement` at scale
-- SuperAdmin impersonation audit log
+- Impersonación operador platform audit log

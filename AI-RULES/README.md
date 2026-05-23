@@ -16,6 +16,7 @@ Cursor, Claude y futuros agentes deben leer **estos archivos** antes de inventar
 | [BACKEND-RULES.md](./BACKEND-RULES.md) | .NET, CQRS, API, multi-tenant backend |
 | [FRONTEND-RULES.md](./FRONTEND-RULES.md) | React, ZH Form, tabs, i18n, CSS, navegación UI |
 | [SAAS-RULES.md](./SAAS-RULES.md) | Planes comerciales, URLs sin IDs sensibles |
+| [Platform naming (equipo)](../docs/platform/TEAM-NAMING-GUIDE.md) | Rutas `/platform/*`, operador platform, prohibiciones `SuperAdmin` |
 | [SECURITY.md](./SECURITY.md) | Auth, JWT, tokens, aislamiento tenant |
 | [STACK.md](./STACK.md) | Herramientas permitidas (detalle en `docs/DEVELOPMENT.md`) |
 | [NAMING.md](./NAMING.md) | Convenciones de nombres (BD, código, i18n, CSS) |

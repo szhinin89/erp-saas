@@ -35,8 +35,8 @@ public sealed class SetupController : ControllerBase
         _environment = environment;
     }
 
-    /// <summary>Crea el primer SuperAdmin usando el token efímero de first-run.</summary>
-    [HttpPost("superadmin")]
+    /// <summary>Crea el primer operador platform usando el token efímero de first-run.</summary>
+    [HttpPost("platform-operator")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -49,20 +49,17 @@ public sealed class SetupController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Alias de compatibilidad para scripts/automatizaciones previas.</summary>
-    [HttpPost("claim-initial-superadmin")]
+    /// <summary>Alias estable para scripts/automatizaciones.</summary>
+    [HttpPost("claim-initial-platform-operator")]
     [AllowAnonymous]
     [ApiExplorerSettings(IgnoreApi = true)]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> ClaimInitialPlatformOperatorAlias(
+    public Task<IActionResult> ClaimInitialPlatformOperatorAlias(
         [FromBody] ClaimInitialPlatformOperatorCommand command,
         CancellationToken ct)
-    {
-        var result = await _mediator.Send(command, ct);
-        return this.ToOkOrBadRequest(result);
-    }
+        => ClaimInitialPlatformOperator(command, ct);
 
     /// <summary>SOLO DESARROLLO: reinicia first-run para pruebas automáticas.</summary>
     [HttpPost("/api/dev/reset-first-run")]

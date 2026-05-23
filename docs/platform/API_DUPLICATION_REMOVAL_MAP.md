@@ -1,3 +1,4 @@
+> **Documento histórico (Phase 2–5).** No usar como referencia de implementación. Rutas y naming actuales: [TEAM-NAMING-GUIDE.md](./TEAM-NAMING-GUIDE.md) · [CANONICAL-ROUTES.md](./CANONICAL-ROUTES.md).
 # API Duplication Removal Map
 
 **Objetivo:** eliminar ambigüedad entre `/api/subscribers/*` (legacy control plane) y `/api/platform/subscribers/*` (canónico).

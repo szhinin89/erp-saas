@@ -12,31 +12,31 @@ using ERP.Infrastructure.Persistence;
 namespace ERP.API.Tests.Integration;
 
 /// <summary>
-/// Platform → Subscriber → Companies (multiempresa) + bloqueo ERP en modo global SuperAdmin.
+/// Platform → Subscriber → Companies (multiempresa) + bloqueo ERP en modo global platform operator.
 /// </summary>
 public sealed class PlatformSubscriberCompaniesFlowTests
 {
-    private static async Task<(IntegrationTestWebAppFactory Factory, HttpClient Client, Guid SuperAdminId)> CreatePlatformClientAsync()
+    private static async Task<(IntegrationTestWebAppFactory Factory, HttpClient Client, Guid PlatformOperatorId)> CreatePlatformClientAsync()
     {
         var factory = new IntegrationTestWebAppFactory();
         factory.MutableSubscriber.SubscriberId = Guid.Empty;
 
-        Guid superAdminId;
+        Guid platformOperatorId;
         using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
             await TestDataFactory.SeedCommercialPlansAndLimitsAsync(db);
-            superAdminId = await TestDataFactory.SeedPlatformOperatorAsync(db, factory.MutableUser);
+            platformOperatorId = await TestDataFactory.SeedPlatformOperatorAsync(db, factory.MutableUser);
         }
 
-        var token = TestJwtFactory.CreatePlatformOperatorJwt(superAdminId);
+        var token = TestJwtFactory.CreatePlatformOperatorJwt(platformOperatorId);
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        return (factory, client, superAdminId);
+        return (factory, client, platformOperatorId);
     }
 
     [Fact]
-    public async Task PlatformSuperAdmin_creates_subscriber_with_default_company_and_membership()
+    public async Task PlatformOperator_creates_subscriber_with_default_company_and_membership()
     {
         var (factory, client, _) = await CreatePlatformClientAsync();
         await using var _ = factory;
@@ -143,7 +143,7 @@ public sealed class PlatformSubscriberCompaniesFlowTests
     }
 
     [Fact]
-    public async Task PlatformSuperAdmin_switch_subscriber_via_auth_endpoint_returns_session_token()
+    public async Task PlatformOperator_switch_subscriber_via_auth_endpoint_returns_session_token()
     {
         var (factory, client, _) = await CreatePlatformClientAsync();
         await using var _ = factory;
@@ -176,7 +176,7 @@ public sealed class PlatformSubscriberCompaniesFlowTests
     }
 
     [Fact]
-    public async Task GlobalPlatformSuperAdmin_cannot_access_ERP_sales_without_company_context()
+    public async Task GlobalPlatformOperator_cannot_access_ERP_sales_without_company_context()
     {
         var (factory, client, _) = await CreatePlatformClientAsync();
         await using var _ = factory;

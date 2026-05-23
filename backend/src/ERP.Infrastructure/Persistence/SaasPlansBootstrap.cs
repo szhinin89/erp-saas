@@ -6,7 +6,7 @@ namespace ERP.Infrastructure.Persistence;
 
 /// <summary>
 /// Inserta y actualiza el catálogo de planes comerciales en el arranque.
-/// Idempotente: no duplica ni sobreescribe JSON personalizado por el SuperAdmin.
+/// Idempotente: no duplica ni sobreescribe JSON personalizado por el operador platform.
 /// Planes: Starter · Business · Professional · Enterprise.
 /// </summary>
 public static class CommercialPlansBootstrap
@@ -69,7 +69,7 @@ public static class CommercialPlansBootstrap
             // Plan ya existe: inyectar MenuConfigJson si:
             //   a) está vacío/null, o
             //   b) tiene estructura "plan-custom" plana (JSON de migración incorrecto).
-            // No sobreescribir JSON personalizado guardado por el SuperAdmin.
+            // No sobreescribir JSON personalizado guardado por el operador platform.
             var hasPlanCustom = existing.MenuConfigJson?.Contains("plan-custom") == true;
             if (seed.MenuConfigJson is not null &&
                 (string.IsNullOrWhiteSpace(existing.MenuConfigJson) || hasPlanCustom))
@@ -189,7 +189,7 @@ public static class CommercialPlansBootstrap
               {"routePath": "/admin/roles",    "labelKey": "app.nav.item.admin.roles",    "displayLabel": "Perfiles (Roles)", "sortOrder": 10, "moduleKey": "admin", "permissionKey": "perm:admin.roles.view",    "permissionKeysAny": null, "itemRoles": null,               "children": null, "icon": "👥"},
               {"routePath": "/admin/users",    "labelKey": "app.nav.item.admin.users",    "displayLabel": "Acceso usuarios",  "sortOrder": 20, "moduleKey": "admin", "permissionKey": "perm:admin.users.view",    "permissionKeysAny": null, "itemRoles": null,               "children": null, "icon": "👤"},
               {"routePath": "/admin/activity", "labelKey": "app.nav.item.admin.activity", "displayLabel": "Actividad",        "sortOrder": 30, "moduleKey": "admin", "permissionKey": "perm:admin.activity.view", "permissionKeysAny": null, "itemRoles": null,               "children": null, "icon": "📜"},
-              {"routePath": "/admin/security", "labelKey": "app.nav.item.admin.security", "displayLabel": "Seguridad",        "sortOrder": 40, "moduleKey": "admin", "permissionKey": null,                        "permissionKeysAny": null, "itemRoles": [PlatformAuthConstants.JwtPlatformOperatorRole, "Admin"], "children": null, "icon": "🔒"}
+              {"routePath": "/admin/security", "labelKey": "app.nav.item.admin.security", "displayLabel": "Seguridad",        "sortOrder": 40, "moduleKey": "admin", "permissionKey": null,                        "permissionKeysAny": null, "itemRoles": ["PlatformOperator", "Admin"], "children": null, "icon": "🔒"}
             ]
           }
         ]

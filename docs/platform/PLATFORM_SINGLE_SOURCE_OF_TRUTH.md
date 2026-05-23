@@ -1,3 +1,4 @@
+> **Documento histórico (Phase 2–5).** No usar como referencia de implementación. Rutas y naming actuales: [TEAM-NAMING-GUIDE.md](./TEAM-NAMING-GUIDE.md) · [CANONICAL-ROUTES.md](./CANONICAL-ROUTES.md).
 # Platform Single Source of Truth
 
 Documento normativo del contrato end-to-end del Platform Control Plane tras consolidación final.
@@ -71,7 +72,7 @@ export const PLATFORM_API = {
 |----------|-----------------|--------|
 | Entidad | Subscriber | Tenant (solo en JWT claim legacy) |
 | API prefix | `/api/platform` | `/api/superadmin`, `/api/subscribers` (control plane) |
-| Frontend module | `modules/platform` | `modules/superadmin`, `companyService` |
+| Frontend module | `modules/platform` | `modules/platform`, `companyService` |
 | Service | `platformService`, `subscriberService` | `platformService`, `companyService` |
 
 ## CI como guardián del contrato

@@ -15,7 +15,7 @@ namespace ERP.Infrastructure.Services;
 
 /// <summary>
 /// Config por tenant: consultas sin filtro global vía <see cref="IPlatformQueryAccessor"/> y filtran por
-/// <c>subscriberId</c> en el predicado para ser correctas con JWT SuperAdmin (<c>subscriber_id</c> ambiente vacío).
+/// <c>subscriberId</c> en el predicado para ser correctas con JWT operador platform (<c>subscriber_id</c> ambiente vacío).
 /// </summary>
 public sealed class ConfigService : IConfigService
 {

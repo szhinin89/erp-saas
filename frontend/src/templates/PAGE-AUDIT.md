@@ -88,7 +88,7 @@ Actualizar al migrar pantallas. Convenciones: [`docs/frontend-layout-conventions
 ### Platform (control plane)
 - `modules/platform/pages/PlatformPanelPage.tsx`
 - `pages/Platform/PlatformOverviewPage.tsx`
-- `pages/Platform/SuperAdminPlansPage.tsx`
+- `pages/Platform/PlatformPlansPage.tsx`
 - `pages/Platform/PlatformMenuPlansHubPage.tsx`
 - `pages/Platform/PlatformCompaniesShellPage.tsx`
 

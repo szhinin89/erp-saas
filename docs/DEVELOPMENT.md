@@ -78,7 +78,7 @@ cd ../../../frontend
 npm run dev
 ```
 
-- First-run SuperAdmin: banner en consola API o `.\scripts\setup\Crear-SuperAdmin.ps1`
+- First-run operador platform: banner en consola API o `.\scripts\setup\Crear-PlatformOperator.ps1` — ver [`docs/platform/TEAM-NAMING-GUIDE.md`](platform/TEAM-NAMING-GUIDE.md)
 - Copiar `appsettings.Development.json.example` → `appsettings.Development.json`
 - PostgreSQL: `Host=localhost;Port=5435;Database=dberpsaas`
 
@@ -90,7 +90,7 @@ Solo **9** scripts `.ps1` en el repo (+ `tools/architecture/architecture-grandfa
 
 | Script | Uso |
 |--------|-----|
-| `scripts/setup/Crear-SuperAdmin.ps1` | Alta SuperAdmin first-run interactiva |
+| `scripts/setup/Crear-PlatformOperator.ps1` | Alta operador platform first-run interactiva |
 | `scripts/dev/dev-restart.ps1` | Entorno dev (Docker, EF, API, Vite) |
 | `scripts/ci/run-e2e.ps1` | Playwright E2E |
 | `scripts/ci/verify-stack-allowlist.ps1` | CI: NuGet, npm, Docker, Actions, patrones, **scripts** |
@@ -220,7 +220,7 @@ Demo (`Development:SeedDemoTenant: true`): `admin@erp.com` / `Admin123!`, API `:
 | 5 | ERP sin `company_id` → 403 |
 | 6 | `GET /api/saas/billing/account` con permiso |
 | 7 | Crear company sobre `MAX_COMPANIES` → 403 |
-| 8 | SuperAdmin bypass controlado |
+| 8 | Operador platform bypass controlado |
 
 ---
 

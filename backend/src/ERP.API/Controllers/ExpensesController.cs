@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ERP.API;
@@ -18,7 +18,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>
 /// Facturas de gasto (registro manual o importaciÃ³n XML del SRI Ecuador).
-/// Flujo de estados: Borrador â†’ Validado â†’ IsApproved | Rechazado. Requiere permisos <c>expenses.invoices.*</c> en el perfil (los roles Admin/SuperAdmin los omiten).
+/// Flujo de estados: Borrador â†’ Validado â†’ IsApproved | Rechazado. Requiere permisos <c>expenses.invoices.*</c> en el perfil (los roles Admin/operador platform los omiten).
 /// </summary>
 [AppFeature("Gastos", "perm:expenses.invoices.view", "ðŸ’¸", "/expenses", null, 55)]
 [ApiController]

@@ -35,14 +35,9 @@ public sealed class PublicDeploymentController : ControllerBase
                 MaxUsersPerSubscriber: _deployment.MaxUsersPerSubscriber));
 }
 
-/// <param name="PlatformPanelEnabled">Alias legacy JSON — mismo valor que <see cref="PlatformPanelEnabled"/>.</param>
 public sealed record DeploymentInfoDto(
     bool PlatformPanelEnabled,
     int? MaxActiveSubscribers,
     int? MaxIdentityUsers,
     bool DedicatedSingleClientInstance,
-    int? MaxUsersPerSubscriber)
-{
-    /// <summary>Flag canónico para el SPA (preferir en clientes nuevos).</summary>
-    public bool PlatformPanelEnabled => PlatformPanelEnabled;
-}
+    int? MaxUsersPerSubscriber);

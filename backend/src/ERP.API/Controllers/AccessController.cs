@@ -1,4 +1,4 @@
-﻿using ERP.API.Controllers.Platform;
+using ERP.API.Controllers.Platform;
 using System;
 using ERP.API.Authorization;
 using ERP.API.Attributes;
@@ -89,7 +89,7 @@ public class AccessController : ControllerBase
 
     /// <summary>
     /// Alias legacy de alta de empresa.
-    /// Ruta oficial: <c>POST /api/access/superadmin/subscribers</c>.
+    /// Ruta canónica: <c>POST /api/platform/subscribers</c>.
     /// </summary>
     /// <remarks>
     /// Crea el tenant, crea el usuario global (email único en el sistema) y le asigna una membresía Admin
@@ -114,11 +114,11 @@ public class AccessController : ControllerBase
     }
 
     /// <summary>Otorga o actualiza acceso (membership) de un usuario a una empresa.</summary>
-    /// <remarks>Solo SuperAdmin puede gestionar membresías cruzadas.</remarks>
+    /// <remarks>Solo operador platform puede gestionar membresías cruzadas.</remarks>
     /// <response code="200">CompanyUserMembership creada/actualizada.</response>
     /// <response code="400">Usuario no existe o payload inválido.</response>
     /// <response code="401">Token ausente o inválido.</response>
-    /// <response code="403">No es SuperAdmin.</response>
+    /// <response code="403">No es operador platform.</response>
     [HttpPost("company_user_memberships/grant")]
     [Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -133,11 +133,11 @@ public class AccessController : ControllerBase
     }
 
     /// <summary>Revoca acceso (desactiva membership) de un usuario a una empresa.</summary>
-    /// <remarks>Solo SuperAdmin puede revocar membresías cruzadas.</remarks>
+    /// <remarks>Solo operador platform puede revocar membresías cruzadas.</remarks>
     /// <response code="200">CompanyUserMembership revocada (idempotente).</response>
     /// <response code="400">Usuario no existe o payload inválido.</response>
     /// <response code="401">Token ausente o inválido.</response>
-    /// <response code="403">No es SuperAdmin.</response>
+    /// <response code="403">No es operador platform.</response>
     [HttpPost("company_user_memberships/revoke")]
     [Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]

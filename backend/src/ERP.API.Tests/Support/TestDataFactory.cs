@@ -34,7 +34,7 @@ internal static class TestDataFactory
         var user = IdentityUser.CreatePlatformOperator(
             "Platform",
             "Operator",
-            $"superadmin-{userId:N}@test.local",
+            $"platform-operator-{userId:N}@test.local",
             passwordHash: "$2a$11$test.hash.only.for.integration.tests",
             createdBy: userId);
         db.IdentityUsers.Add(user);

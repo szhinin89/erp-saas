@@ -39,7 +39,7 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthRespo
         CancellationToken ct)
     {
         if (string.Equals(command.Role, PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.Ordinal))
-            return Result<AuthResponseDto>.Failure("Use el flujo de setup platform para SuperAdmin.");
+            return Result<AuthResponseDto>.Failure("Use el flujo de setup platform para operador platform.");
 
         var tenant = await _subscriberRepository.GetByIdAsync(command.SubscriberId, ct);
         if (tenant is null || !tenant.IsActive)

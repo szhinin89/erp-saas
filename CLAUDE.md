@@ -15,6 +15,7 @@ Onboarding rápido. **Reglas completas:** [`AI-RULES/`](AI-RULES/README.md) (fue
 | Backend | [AI-RULES/BACKEND-RULES.md](AI-RULES/BACKEND-RULES.md) |
 | Frontend | [AI-RULES/FRONTEND-RULES.md](AI-RULES/FRONTEND-RULES.md) |
 | SaaS | [AI-RULES/SAAS-RULES.md](AI-RULES/SAAS-RULES.md) |
+| Platform naming (equipo) | [docs/platform/TEAM-NAMING-GUIDE.md](docs/platform/TEAM-NAMING-GUIDE.md) |
 | Seguridad / auth | [AI-RULES/SECURITY.md](AI-RULES/SECURITY.md) |
 | Stack permitido | [AI-RULES/STACK.md](AI-RULES/STACK.md) → [docs/DEVELOPMENT.md#stack-oficial](docs/DEVELOPMENT.md#stack-oficial) |
 | Naming | [AI-RULES/NAMING.md](AI-RULES/NAMING.md) |

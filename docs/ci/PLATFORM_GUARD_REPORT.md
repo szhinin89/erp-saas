@@ -31,6 +31,6 @@ _No violations detected._
 ## Design
 
 - Preventive, mandatory, fail-fast guard for Platform Control Plane.
-- Legacy SuperAdmin API surface must not reappear.
+- Legacy platform API surface must not reappear.
 - Config: `tools/ci/platform-guard-config.json`
 

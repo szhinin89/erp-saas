@@ -40,14 +40,14 @@ Consolidated 2026-05-21: former `MULTITENANCY`, `SCOPES`, `SECURITY`, `BILLING`,
 | Architecture guardrails CI (scripts + NetArchTest) | ✅ (2026-05-21) |
 | **Frontend architecture checks (Node ESM)** | ✅ (2026-05-21) |
 | **Architecture governance v2** (ADRs, backend Node checks, score, PR annotations) | ✅ (2026-05-21) |
-| Architecture baseline v1.0 remediation (lint, E2E smoke, SuperAdminController, SYSTEM_TRUTH) | ✅ (2026-05-21) |
+| Architecture baseline v1.0 remediation (lint, E2E smoke, legacy platform controller, SYSTEM_TRUTH) | ✅ (2026-05-21) |
 | Post-audit remediation (session SEC, Sales unify, Kardex CQRS, Cash validators) | ✅ (2026-05-21) |
 | Post-audit wave 2 (menu builder split, services→modules, access/security pages) | ✅ (2026-05-21) |
 | Post-audit wave 3 (menu builder modular split, test sessionStorage) | ✅ (2026-05-21) |
 | Enterprise monorepo root (`infrastructure/`, `scripts/`, `tools/`, docs stubs) | ✅ (2026-05-21) |
 | Post-reorg stabilization (paths, CI green, company-scoped inventory movements) | ✅ (2026-05-21) |
 | Post-audit P2 + wave 4 (services eliminados, AppLayout/Companies split) | ✅ (2026-05-21) |
-| Post-audit wave 5 (PR-7 TSX: catálogo, clientes, contabilidad, menu builder, superadmin) | ✅ (2026-05-21) |
+| Post-audit wave 5 (PR-7 TSX: catálogo, clientes, contabilidad, menu builder, platform shell) | ✅ (2026-05-21) |
 | Post-audit wave 6 (handlers C-03, lazy routes, grandfather vacío) | ✅ (2026-05-21) |
 | **AI-RULES multi-agent governance** (`AI-RULES/*` canonical; `CLAUDE.md` + `.mdc` adapters) | ✅ (2026-05-21) |
 
@@ -166,7 +166,7 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 | **Consolidación modular P3** (auth, branches, accounting, dashboard, platform API + pages) | ✅ |
 | **Catálogo + bodegas + auth UI** en `modules/catalog`, `modules/inventario/warehouses`, `modules/auth/pages` | ✅ |
 | **Lazy routes P4** (`routes/lazyPage.tsx`, main/catalog/platform split) | ✅ |
-| **Platform naming cleanup** (`/platform/*`, `platformAuth.ts`, sin `isSuperAdmin`) | ✅ (2026-05-23) |
+| **Platform naming cleanup** (`/platform/*`, `platformAuth.ts`, sin `isPlatformOperator`) | ✅ (2026-05-23) |
 | **ZH UI estándar** (`components/ui` delega clases ZH; catálogo usa `ZHCard`/`ZHSearchBar`) | ✅ |
 | Company management module | ✅ |
 | SaaS billing pages | ⏳ |
@@ -263,7 +263,7 @@ cd ../ERP.API
 dotnet run
 ```
 
-First-run super admin: banner en consola al arrancar API, o **`scripts/setup/Crear-SuperAdmin.ps1`**.
+First-run operador platform: banner en consola al arrancar API, o **`scripts/setup/Crear-PlatformOperator.ps1`**.
 
 ## Related
 

@@ -199,7 +199,7 @@ public class AuthController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Cambia el subscriber_id del JWT para el SuperAdmin.</summary>
+    /// <summary>Cambia el subscriber_id del JWT para el operador platform.</summary>
     [HttpPost("switch-subscriber")]
     [Microsoft.AspNetCore.Authorization.Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]

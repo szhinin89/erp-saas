@@ -7,7 +7,7 @@ using MediatR;
 
 namespace ERP.Application.Platform.Auth.UseCases.PlatformLogin;
 
-/// <summary>Login canónico para operadores platform (SuperAdmin global).</summary>
+/// <summary>Login canónico para operadores platform (operador platform global).</summary>
 public sealed class PlatformLoginHandler : IRequestHandler<PlatformLoginCommand, Result<AuthResponseDto>>
 {
     private readonly IAccessRepository _accessRepository;

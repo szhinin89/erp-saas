@@ -31,7 +31,7 @@ Plantilla: `docker-compose.prod.yml` + `infrastructure/docker/compose.base.yml`.
 - Prometheus scrape `/metrics` (flag `Observability:EnablePrometheus`).
 - Health: `/health/live`, `/health/ready`, `/health/security-context`.
 - Correlation: header `X-Correlation-Id` (middleware existente).
-- Legacy strangler dashboard: `/superadmin/observability` → PostgreSQL persistente.
+- Legacy strangler dashboard: `/platform/observability` → PostgreSQL persistente.
 
 ---
 

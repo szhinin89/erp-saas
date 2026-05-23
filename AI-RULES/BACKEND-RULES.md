@@ -112,7 +112,7 @@ Declarar `[ProducesResponseType]` por cada status que aplique.
 - Entidades multi-tenant: `TenantId` + filtro global en `OnModelCreating`.
 - Índices únicos compuestos con `TenantId`: `(TenantId, Code)`.
 - Nunca unicidad global sin `TenantId`.
-- Solo flujos plataforma/SuperAdmin cross-tenant, con autorización explícita.
+- Solo flujos plataforma / operador platform cross-tenant, con autorización explícita.
 
 ---
 

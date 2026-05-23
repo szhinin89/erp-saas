@@ -44,7 +44,7 @@ internal static class TestJwtFactory
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public static string CreatePlatformOperatorJwt(Guid userId, string email = "superadmin@test.local")
+    public static string CreatePlatformOperatorJwt(Guid userId, string email = "platform-operator@test.local")
     {
         var claims = new List<Claim>
         {

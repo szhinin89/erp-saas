@@ -1,5 +1,6 @@
 using ERP.Domain.Access.Entities;
 using ERP.Domain.Auth.ValueObjects;
+using ERP.Infrastructure.Persistence.Conversions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -39,7 +40,7 @@ public class IdentityUserConfiguration : IEntityTypeConfiguration<IdentityUser>
 
         builder.Property(u => u.PlatformRole)
             .HasColumnName("platform_role")
-            .HasConversion<string>()
+            .HasConversion(new PlatformRoleValueConverter())
             .HasMaxLength(32);
 
 #pragma warning disable CS0618 // SubscriberId obsoleto — requerido por EF para mapear columna legacy

@@ -11,7 +11,7 @@ public sealed class UiNavItem
     public Guid? ParentItemId { get; private set; }
     public string RoutePath { get; private set; } = null!;
     public string LabelKey { get; private set; } = null!;
-    /// <summary>Texto mostrado si no se usa solo i18n (<c>LabelKey</c>). Opcional; p. ej. ítems creados desde SuperAdmin.</summary>
+    /// <summary>Texto mostrado si no se usa solo i18n (<c>LabelKey</c>). Opcional; p. ej. ítems creados desde panel platform.</summary>
     public string? DisplayLabel { get; private set; }
     public int SortOrder { get; private set; }
     public string? ModuleKey { get; private set; }

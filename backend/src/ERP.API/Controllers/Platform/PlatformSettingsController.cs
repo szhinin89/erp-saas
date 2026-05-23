@@ -10,7 +10,7 @@ namespace ERP.API.Controllers.Platform;
 
 /// <summary>
 /// Platform Layer — parámetros de instancia (cuotas de despliegue).
-/// Sucesor de <c>GET/PUT /api/superadmin/instance-quota</c> (Phase 4).
+/// Sucesor de <c>GET/PUT /api/platform/instance-quota</c> (Phase 4).
 /// </summary>
 [ApiController]
 [Route("api/platform/settings")]

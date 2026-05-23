@@ -31,7 +31,7 @@ dotnet test backend/src/ERP.Architecture.Tests -c Release --filter "FullyQualifi
 | # | Check | Ámbito |
 |---|-------|--------|
 | 1 | `static-forbidden-patterns` | `frontend/src` + `backend/src` (sin `docs/`) |
-| 2 | `platform-imports` | imports legacy (`modules/superadmin`, `superadminService`, …) |
+| 2 | `platform-imports` | imports legacy (`modules/platform`, `superadminService`, …) |
 | 3 | `frontend-routes` | `platformRoutes.tsx`, `App.tsx` |
 | 4 | `api-endpoints` | allowlist de prefijos `/api/*` usados en frontend |
 | 5 | `PlatformControlPlaneGuardTests` | rutas backend — prohibido `/api/superadmin` |

@@ -9,7 +9,7 @@ namespace ERP.API.Services;
 
 /// <summary>
 /// Discovers <see cref="AppFeatureAttribute"/> on controllers/actions and syncs the <c>AppFeatures</c> table.
-/// Skips rows whose <see cref="AppFeatureAttribute.Permission"/> starts with <c>SuperAdmin</c> (case-insensitive).
+/// Skips rows whose <see cref="AppFeatureAttribute.Permission"/> starts with <c>operador platform</c> (case-insensitive).
 /// </summary>
 public sealed class AppFeatureDiscoveryService
 {
@@ -94,7 +94,8 @@ public sealed class AppFeatureDiscoveryService
     private static bool ShouldExclude(string permission)
     {
         var p = (permission ?? string.Empty).Trim();
-        return p.StartsWith(PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase);
+        return p.StartsWith(PlatformAuthConstants.JwtPlatformOperatorRole, StringComparison.OrdinalIgnoreCase)
+            || p.StartsWith(PlatformAuthConstants.LegacyPlatformOperatorWireRole, StringComparison.OrdinalIgnoreCase);
     }
 
     private static DiscoveryRow ToRow(AppFeatureAttribute a, string? parentPermissionExplicit)

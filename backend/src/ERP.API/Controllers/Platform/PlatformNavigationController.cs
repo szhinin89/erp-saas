@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers.Platform;
 
-/// <summary>Platform Layer — menú ERP global editable por SuperAdmin.</summary>
+/// <summary>Platform Layer — menú ERP global editable por operador platform.</summary>
 [ApiController]
 [Route("api/platform/navigation-menu")]
 [Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]

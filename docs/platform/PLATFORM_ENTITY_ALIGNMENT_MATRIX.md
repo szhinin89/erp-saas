@@ -56,7 +56,7 @@
 | 100% entidades Platform tienen mapping DB | ✅ |
 | 100% endpoints Platform tienen entidad asociada | ✅ (métricas/observability = agregados read-model) |
 | 100% frontend Platform usa solo API Platform | ⚠️ **98%** — ver `PLATFORM_FRONTEND_DRIFT_REPORT.md` |
-| 0 referencias SuperAdmin legacy API | ✅ (CI guard) |
+| 0 referencias legacy API platform | ✅ (CI guard) |
 | 0 drift naming crítico | ⚠️ Ver MEDIO items arriba |
 
 ## Target model (1:1:1:1)

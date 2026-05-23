@@ -1,3 +1,4 @@
+> **Documento histórico (Phase 2–5).** No usar como referencia de implementación. Rutas y naming actuales: [TEAM-NAMING-GUIDE.md](./TEAM-NAMING-GUIDE.md) · [CANONICAL-ROUTES.md](./CANONICAL-ROUTES.md).
 # Platform Control Plane — Frontend Drift Report
 
 **Fecha:** 2026-05-23  
@@ -50,7 +51,7 @@
 |-----------|--------|-----------|-------|
 | `PLATFORM_UI.*` | Rutas `/superadmin/*` | **BAJO** | URL shell estable (no API) |
 | i18n `superadmin.*` | Labels UI | **BAJO** | Pendiente rename a `platform.*` |
-| `usePlatformGate().isSuperAdmin` | JWT claim | **BAJO** | Rol backend `SuperAdmin` |
+| `usePlatformGate().isPlatformOperator` | JWT claim | **BAJO** | Rol backend `SuperAdmin` |
 | `requirePlatformPanel` | DTO nav | **BAJO** | Flag deployment |
 | `superAdminPanelEnabled` | `App.tsx`, deployment | **BAJO** | Feature flag name |
 | `localStorage` `superadmin-impersonation-*` | `platformPanelUtils.ts` | **BAJO** | Compat sesión |
@@ -60,7 +61,7 @@
 
 | Antes | Ahora |
 |-------|-------|
-| `modules/superadmin/` | `modules/platform/` |
+| `modules/platform/` | `modules/platform/` |
 | `platformService.ts` | `platformService.ts` |
 | `PlatformLayout` | `PlatformLayout` |
 | `usePlatformGateGate` | `usePlatformGate` |
@@ -84,14 +85,14 @@
 
 | Ruta UI | Componente | API backing |
 |---------|------------|-------------|
-| `/superadmin/overview` | `PlatformOverviewPage` | metrics + subscribers |
-| `/superadmin/subscribers` | `PlatformSubscribersPage` | subscribers |
-| `/superadmin/subscribers/:id` | `PlatformSubscriberDetailPage` | subscribers + config |
-| `/superadmin/plans` | `PlatformPlansPage` | plans + navigation |
-| `/superadmin/users` | `PlatformUsersPage` | users |
-| `/superadmin/billing` | `PlatformBillingPage` | billing |
-| `/superadmin/observability` | `PlatformObservabilityPage` | observability |
-| `/superadmin/audit` | `PlatformAuditPage` | audit |
+| `/platform/overview` | `PlatformOverviewPage` | metrics + subscribers |
+| `/platform/subscribers` | `PlatformSubscribersPage` | subscribers |
+| `/platform/subscribers/:id` | `PlatformSubscriberDetailPage` | subscribers + config |
+| `/platform/plans` | `PlatformPlansPage` | plans + navigation |
+| `/platform/users` | `PlatformUsersPage` | users |
+| `/platform/billing` | `PlatformBillingPage` | billing |
+| `/platform/observability` | `PlatformObservabilityPage` | observability |
+| `/platform/audit` | `PlatformAuditPage` | audit |
 
 Bookmark redirect: `/companies/*` → `platformBookmarkRedirectRoutes()` ✅
 
@@ -116,6 +117,6 @@ _Ninguno_ — CI guard PASS, 0 legacy API.
 |----------|-----------|
 | 100% platform UI vía `platformService` (+ thin facades) | ⚠️ 98% |
 | 0 `/api/superadmin/*` | ✅ |
-| 0 imports `modules/superadmin` | ✅ |
+| 0 imports `modules/platform` | ✅ |
 | Router único `platformRoutes.tsx` | ✅ |
 | 0 drift naming crítico | ✅ (solo BAJO/MEDIO cosmetic) |

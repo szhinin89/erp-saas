@@ -1,13 +1,13 @@
 namespace ERP.Application.Common;
 
 /// <summary>
-/// Banderas de despliegue leídas de configuración (p. ej. instancia on-prem con panel SuperAdmin cerrado tras la puesta en marcha).
+/// Banderas de despliegue leídas de configuración (p. ej. instancia on-prem con panel platform cerrado tras la puesta en marcha).
 /// Los topes numéricos pueden sobrescribirse con <c>App_Data/instance-quota.json</c> (ver <see cref="InstanceQuotaFileModel"/>).
 /// </summary>
 public interface IDeploymentFeatureFlags
 {
     /// <summary>
-    /// Si es false, no se permite login global ni operaciones de panel SuperAdmin (config <c>Deployment:PlatformPanelEnabled</c>).
+    /// Si es false, no se permite login global ni operaciones de panel platform (config <c>Deployment:PlatformPanelEnabled</c>).
     /// </summary>
     bool IsPlatformPanelEnabled { get; }
 
@@ -34,8 +34,8 @@ public interface IDeploymentFeatureFlags
 
     /// <summary>
     /// Validación alternativa por configuración (<c>Deployment:InitialPlatformOperatorSetupToken</c>).
-    /// <b>No</b> la usa hoy el flujo de alta en <c>POST /api/setup/superadmin</c> (ese flujo usa <c>IFirstRunSetupService</c> / token en BD).
-    /// Se mantiene por compatibilidad o futuros usos; ver docs/DEVELOPMENT.md (first-run SuperAdmin).
+    /// <b>No</b> la usa hoy el flujo de alta en <c>POST /api/setup/platform-operator</c> (ese flujo usa <c>IFirstRunSetupService</c> / token en BD).
+    /// Se mantiene por compatibilidad o futuros usos; ver docs/DEVELOPMENT.md (first-run operador platform).
     /// </summary>
     bool AuthorizeInitialPlatformOperatorSetup(string? submittedToken);
 }

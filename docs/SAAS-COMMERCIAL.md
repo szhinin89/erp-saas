@@ -127,7 +127,7 @@ Claves: `entitlements:version:{subscriberId}`, `entitlements:snapshot:{subscribe
 
 ## Gestión de empresas fiscales (`company`)
 
-Empresas bajo un subscriber (RUC, branding). Distinto del panel SuperAdmin que administra **subscribers** (`/companies` en UI legacy).
+Empresas bajo un subscriber (RUC, branding). Distinto del panel platform que administra **subscribers** (`/companies` en UI legacy).
 
 | Use case | Permiso |
 |----------|---------|
@@ -139,4 +139,4 @@ API: `GET/POST/PUT /api/companies/*`, `POST /api/auth/switch-company`.
 
 Frontend: `/saas/companies`, `/select-company`, `CompanySwitcher`.
 
-Provisioning SuperAdmin: `SubscriberProvisioningOrchestrator` (transacción Serializable: subscriber → billing → company → user → membership → onboarding).
+Provisioning operador platform: `SubscriberProvisioningOrchestrator` (transacción Serializable: subscriber → billing → company → user → membership → onboarding).

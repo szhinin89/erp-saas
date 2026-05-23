@@ -9,7 +9,7 @@ public sealed class RefreshToken
 {
     public const int ExpiryDays = 30;
 
-    /// <summary>"Platform" | "PlatformOperator" | "Identity" | "Legacy" (acepta legacy "SuperAdmin").</summary>
+    /// <summary>"Platform" | "PlatformOperator" | "Identity" | "Legacy" (acepta legacy wire role).</summary>
     public const string TypePlatform   = "Platform";
     public const string TypePlatformOperator = "PlatformOperator";
     public const string TypeIdentity   = "Identity";

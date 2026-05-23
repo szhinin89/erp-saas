@@ -45,11 +45,11 @@ internal static class DevDatabaseSeeder
 
         const string adminEmail = "admin@erp.com";
         const string adminPassword = "Admin123!";
-        const string platformSuperEmail = "superadmin@erp.com";
-        const string platformSuperPassword = "Admin123!";
+        const string platformOperatorEmail = "platform@erp.com";
+        const string platformOperatorPassword = "Admin123!";
         const string subscriberSlug = "subscriber-demo";
 
-        await EnsureDevPlatformSuperAdminAsync(db, platform, passwordHasher, platformSuperEmail, platformSuperPassword, ct);
+        await EnsureDevPlatformOperatorAsync(db, platform, passwordHasher, platformOperatorEmail, platformOperatorPassword, ct);
 
         var existingAdmins = await platform
             .Unfiltered(db.IdentityUsers, PlatformQueryReason.DevOnly)
@@ -297,7 +297,7 @@ internal static class DevDatabaseSeeder
         }
     }
 
-    private static async Task EnsureDevPlatformSuperAdminAsync(
+    private static async Task EnsureDevPlatformOperatorAsync(
         ErpDbContext db,
         IPlatformQueryAccessor platform,
         IPasswordHasher passwordHasher,

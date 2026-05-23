@@ -1,3 +1,4 @@
+> **Documento histórico (Phase 2–5).** No usar como referencia de implementación. Rutas y naming actuales: [TEAM-NAMING-GUIDE.md](./TEAM-NAMING-GUIDE.md) · [CANONICAL-ROUTES.md](./CANONICAL-ROUTES.md).
 # Platform SaaS Control Plane — Roadmap y Estado
 
 **Fecha:** 2026-05-23  
@@ -77,7 +78,7 @@ El proyecto usa un **monolito modular** con un único `ErpDbContext`. La separac
 | UI canónica `/superadmin/*` (8 rutas) | ✅ Shell + redirects legacy |
 | API canónica `/api/platform/*` (8 prefijos) | ✅ auth, subscribers, plans, config, metrics, audit, users (summary) |
 | `[DeprecatedApi]` legacy controllers | ✅ superadmin, IAM, planes/empresas ES, subscription patch |
-| Subscriber detail page wired | ✅ `/superadmin/subscribers/:id` |
+| Subscriber detail page wired | ✅ `/platform/subscribers/:id` |
 | Menu builder fusionado en Plans | ✅ `?tab=menu` |
 | Docs CANONICAL-ROUTES + ROUTE-MIGRATION | ✅ |
 

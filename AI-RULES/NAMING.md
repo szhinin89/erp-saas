@@ -51,8 +51,8 @@ Antes de crear tablas: declarar scope — `docs/ARCHITECTURE.md#scopes`.
 | Productos | `prd-*` |
 | Dashboard | `dsh-*` |
 | Reportes | `rpt-*` |
-| SuperAdmin Planes | `sap-*` |
-| SuperAdmin overview/suscriptores | `sa-*` |
+| Platform Planes (shell) | `sap-*` |
+| Platform overview/suscriptores | `sa-*` |
 | SaaS overview/billing | `saas-*` |
 | Inventario | `inv-*` |
 | Compras | `pur-*` |

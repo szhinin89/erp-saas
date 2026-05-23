@@ -118,7 +118,7 @@ Complementa filtros en aplicación. Variables por conexión:
 |----------|-----------|
 | `app.subscriber_id` | Aislamiento subscriber |
 | `app.company_id` | Aislamiento company |
-| `app.is_platform_admin` | Bypass SuperAdmin (`'true'`) |
+| `app.is_platform_admin` | Bypass operador platform (`'true'`) |
 
 Componentes: `ISessionContext`, `HttpSessionContext`, `DbSessionContextApplicator`, `PostgreSqlSessionContextInterceptor`.
 
@@ -144,7 +144,7 @@ RLS **no reemplaza** `CompanyScopeBehavior`, filtros EF, guards JWT.
 |---------|---------|
 | Resultado vacío tenant | variables sesión |
 | Job sin filas | contexto job |
-| SuperAdmin bloqueado | `app.is_platform_admin` |
+| Operador platform bloqueado | `app.is_platform_admin` |
 
 ---
 

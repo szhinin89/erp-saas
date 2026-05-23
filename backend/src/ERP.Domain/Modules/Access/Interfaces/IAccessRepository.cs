@@ -6,7 +6,7 @@ public interface IAccessRepository
 {
     Task<IdentityUser?> GetPlatformOperatorByEmailAsync(string email, CancellationToken ct = default);
 
-    /// <summary>Cualquier operador platform activo (SuperAdmin, Support, BillingAdmin, Auditor).</summary>
+    /// <summary>Cualquier operador platform activo (operador platform, Support, BillingAdmin, Auditor).</summary>
     Task<IdentityUser?> GetPlatformUserByEmailAsync(string email, CancellationToken ct = default);
     Task<bool> AnyPrimaryPlatformOperatorAsync(CancellationToken ct = default);
     Task<int> CountActivePlatformUsersAsync(CancellationToken ct = default);

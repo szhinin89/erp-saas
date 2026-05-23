@@ -1,7 +1,7 @@
 import type { APIRequestContext } from '@playwright/test';
 import { API_BASE, type AuthPayload } from './api';
 
-export const PLATFORM_EMAIL = process.env.E2E_PLATFORM_EMAIL ?? 'superadmin@erp.com';
+export const PLATFORM_EMAIL = process.env.E2E_PLATFORM_EMAIL ?? 'platform@erp.com';
 export const PLATFORM_PASSWORD = process.env.E2E_PLATFORM_PASSWORD ?? 'Admin123!';
 
 function readPayload(body: Record<string, unknown>) {

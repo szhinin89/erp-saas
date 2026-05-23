@@ -5,7 +5,7 @@ namespace ERP.Architecture.Tests;
 
 /// <summary>
 /// Platform Control Plane — backend API surface enforcement.
-/// Fails if legacy <c>/api/superadmin</c> routes or SuperAdmin legacy controllers reappear.
+/// Fails if legacy <c>/api/superadmin</c> routes or legacy platform controllers reappear.
 /// </summary>
 public sealed class PlatformControlPlaneGuardTests
 {
@@ -28,7 +28,7 @@ public sealed class PlatformControlPlaneGuardTests
 
             if (Path.GetFileName(file).Contains("SuperAdmin", StringComparison.OrdinalIgnoreCase))
             {
-                violations.Add($"{rel}: legacy SuperAdmin controller file name");
+                violations.Add($"{rel}: legacy platform controller file name");
             }
 
             foreach (Match match in RouteAttributeRegex.Matches(text))
@@ -60,7 +60,7 @@ public sealed class PlatformControlPlaneGuardTests
             }
         }
 
-        violations.Should().BeEmpty("legacy SuperAdmin API surface must not exist; use /api/platform/*");
+        violations.Should().BeEmpty("legacy platform API surface must not exist; use /api/platform/*");
     }
 
     [Fact]

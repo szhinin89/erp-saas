@@ -1,6 +1,6 @@
 # SaaS — reglas comerciales y navegación
 
-Producto multi-tenant comercial. Detalle billing: `docs/SAAS-COMMERCIAL.md`.
+Producto multi-tenant comercial. Detalle billing: `docs/SAAS-COMMERCIAL.md`. Naming platform: [`docs/platform/TEAM-NAMING-GUIDE.md`](../docs/platform/TEAM-NAMING-GUIDE.md).
 
 ---
 
@@ -14,7 +14,7 @@ Producto multi-tenant comercial. Detalle billing: `docs/SAAS-COMMERCIAL.md`.
 
 | Clave sessionStorage | Uso |
 |---------------------|-----|
-| `erp.saas.companies.detailTenantId` | Ficha Datos empresa (Super Admin) |
+| `erp.saas.companies.detailTenantId` | Ficha Datos empresa (operador platform) |
 | `erp.saas.companies.subscriptionTenantId` | Pestaña Plan y módulos |
 
 Funciones: `goToCompaniesTenantDetail`, `goToCompaniesTenantSubscription` → `navigate('/companies')` sin query.
@@ -39,11 +39,11 @@ Cursor hint operativo: `.cursor/rules/saas-navigation-no-sensitive-url.mdc`.
 2. **Formulario nuevo** bajo módulo existente: **preguntar** planes del formulario (puede diferir del módulo padre).
 3. Flujo: `SaasFeatureDefinition` (`kind` + `resourceRef`) → asignar planes → enlazar menú/permisos.
 
-SuperAdmin → Planes SaaS exige **≥1 plan** al alta Module/Form.
+Operador platform → Planes SaaS exige **≥1 plan** al alta Module/Form.
 
 ---
 
-## Impersonación SuperAdmin
+## Impersonación operador platform
 
 Ver banner en [FRONTEND-RULES.md](./FRONTEND-RULES.md#zh-form-system).
 

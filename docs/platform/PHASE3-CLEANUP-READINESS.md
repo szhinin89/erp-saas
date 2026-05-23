@@ -1,3 +1,4 @@
+> **Documento histórico (Phase 2–5).** No usar como referencia de implementación. Rutas y naming actuales: [TEAM-NAMING-GUIDE.md](./TEAM-NAMING-GUIDE.md) · [CANONICAL-ROUTES.md](./CANONICAL-ROUTES.md).
 # Phase 3 — Cleanup readiness report
 
 **Fecha:** 2026-05-23  
@@ -88,7 +89,7 @@ cd frontend && npm run build
 # Full E2E: GitHub Actions → E2E Manual (workflow_dispatch)
 ```
 
-Credenciales E2E platform (seed dev): `superadmin@erp.com` / `Admin123!`  
+Credenciales E2E platform (seed dev): `platform@erp.com` / `Admin123!`  
 Tenant demo: `admin@erp.com` / `Admin123!`
 
 Ver también: [PRODUCTION-READINESS.md](./PRODUCTION-READINESS.md), [PHASE2-CLEANUP-AUDIT.md](./PHASE2-CLEANUP-AUDIT.md).

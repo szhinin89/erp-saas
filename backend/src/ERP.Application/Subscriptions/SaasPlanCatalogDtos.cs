@@ -1,6 +1,6 @@
 namespace ERP.Application.Subscriptions;
 
-/// <summary>Vista de solo lectura del catálogo de planes (panel SuperAdmin y consistencia interna).</summary>
+/// <summary>Vista de solo lectura del catálogo de planes (panel platform y consistencia interna).</summary>
 public sealed record CommercialPlanFeatureCatalogItem(
     string FeatureCode,
     string FeatureName,

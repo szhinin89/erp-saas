@@ -21,4 +21,4 @@ alwaysApply: false
 ## API y seguridad
 
 - Endpoints tenant-scoped deben depender de claims del token, no del payload.
-- Sólo flujos de plataforma/superadmin pueden operar cross-tenant y deben estar autorizados.
+- Sólo flujos de plataforma / operador platform pueden operar cross-tenant y deben estar autorizados.

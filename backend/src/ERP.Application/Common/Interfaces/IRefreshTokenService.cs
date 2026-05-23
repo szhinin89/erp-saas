@@ -6,12 +6,12 @@ public static class RefreshUserType
     public const string Platform   = "Platform";
     public const string PlatformOperator = "PlatformOperator";
     /// <summary>Alias legacy persistido en BD.</summary>
-    public const string LegacyPlatformOperator = "SuperAdmin";
+    public const string LegacyPlatformOperatorStoredType = PlatformAuthConstants.LegacyPlatformOperatorWireRole;
     public const string Identity   = "Identity";
     public const string Legacy     = "Legacy";
 
     public static bool IsPlatformRefreshUserType(string? userType) =>
-        userType is Platform or PlatformOperator or LegacyPlatformOperator;
+        userType is Platform or PlatformOperator or LegacyPlatformOperatorStoredType;
 }
 
 public interface IRefreshTokenService

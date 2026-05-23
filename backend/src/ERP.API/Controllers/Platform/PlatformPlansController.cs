@@ -8,7 +8,7 @@ namespace ERP.API.Controllers.Platform;
 
 /// <summary>
 /// Platform Layer — CRUD de planes comerciales SaaS.
-/// Canonical successor of /api/superadmin/commercial-plans.
+/// Canonical successor of /api/platform/commercial-plans.
 /// </summary>
 [ApiController]
 [Route("api/platform/plans")]

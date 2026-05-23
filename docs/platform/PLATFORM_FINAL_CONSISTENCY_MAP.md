@@ -16,7 +16,7 @@
 | Frontend routing | **CLEAN** | `platformRoutes.tsx` → `/platform/*` (+ redirect `/superadmin/*`) |
 | Domain ↔ DB | **PARTIAL (cosmetic)** | Class/table aligned; legacy **file names** (`SaasPlan.cs`) |
 | i18n keys | **CLEAN** | Namespace `platform.*` (es/en/qu) |
-| JWT / role | **Intentional** | Role claim `SuperAdmin` in `platformAuth.ts` only |
+| JWT / role | **Intentional** | Role claim canónico `PlatformOperator`; wire legacy solo en `platformAuth.ts` |
 
 ---
 
@@ -39,7 +39,7 @@
 | `PlatformObservabilityController` | `/api/platform/observability` | Legacy telemetry + health |
 | `PlatformSettingsController` | `/api/platform/settings` | Instance quota |
 
-**Forbidden (verified 0):** `/api/superadmin/*`, duplicate SuperAdmin controllers.
+**Forbidden (verified 0):** `/api/superadmin/*`, duplicate legacy platform controllers.
 
 ### 2.2 Application services (Platform)
 
@@ -79,7 +79,7 @@
 
 | Middleware | Role |
 |------------|------|
-| `SuperAdminPanelLockMiddleware` | Gates platform panel by deployment flag |
+| `PlatformPanelLockMiddleware` | Gates platform panel by deployment flag |
 | `DeprecatedApiAttribute` | RFC 8594 for any future legacy surface |
 | `EnterpriseDiagnosticMiddleware` | Whitelists `/api/platform`, `/api/subscribers` runtime |
 
@@ -168,8 +168,8 @@ No dedicated Zustand store for Platform — session via `authStore`, panel state
 | `platformService` / `companyService` | **0** in platform code |
 | `subscriberService` / `menuService` wrappers | **Removed** |
 | Direct `/api/platform` outside `platformService` | **0** in platform modules |
-| Imports `modules/superadmin` | **0** |
-| `isSuperAdmin` / bare `'SuperAdmin'` outside `platformAuth.ts` | **0** (CI guard) |
+| Imports `modules/platform` | **0** |
+| `isPlatformOperator` / bare `'SuperAdmin'` outside `platformAuth.ts` | **0** (CI guard) |
 
 ---
 
@@ -192,7 +192,7 @@ No dedicated Zustand store for Platform — session via `authStore`, panel state
 
 | Removed | Replaced by |
 |---------|-------------|
-| `POST /api/subscribers` (SuperAdmin create) | `POST /api/platform/subscribers` |
+| `POST /api/subscribers` (operador platform create) | `POST /api/platform/subscribers` |
 | `PATCH /api/subscribers/{id}/global-parameters` | `PATCH /api/platform/subscribers/{id}/global-parameters` |
 | `PATCH /api/subscribers/{id}/subscription` | `PATCH /api/platform/subscribers/{id}/plan` |
 | `companyService.ts` | `platformService` + `tenantSubscriberService` (runtime) |
@@ -207,7 +207,7 @@ No dedicated Zustand store for Platform — session via `authStore`, panel state
 
 | Guard | Enforces |
 |-------|----------|
-| `run-platform-guard.mjs` | No legacy SuperAdmin API, no `companyService`, no `subscriberService`/`menuService` |
+| `run-platform-guard.mjs` | No legacy platform API, no `companyService`, no `subscriberService`/`menuService` |
 | `validate-subscriber-api-surface.mjs` | `/api/subscribers` only in runtime whitelist files |
 | `PlatformControlPlaneGuardTests.cs` | No `/api/superadmin`, no duplicate wrappers, runtime entitlements preserved |
 
@@ -231,8 +231,8 @@ _None — all functional drift resolved._
 - Merged `subscriberService` + `menuService` into **`platformService.ts`**
 - Updated `useSubscriberDetailPage`, `useNavigationMenuEditorPanel`
 - Extended CI guards + architecture test for single client
-- Confirmed backend runtime-only `SubscribersController` (no SuperAdmin control-plane routes)
-- **2026-05-23:** UI routes `/platform/*`, i18n `platform.*`, `platformAuth.ts`, flujo suscriptor unificado, CI `isSuperAdmin` + JWT literal guard
+- Confirmed backend runtime-only `SubscribersController` (no legacy control-plane routes)
+- **2026-05-23:** UI routes `/platform/*`, i18n `platform.*`, `platformAuth.ts`, flujo suscriptor unificado, CI `isPlatformOperator` + JWT literal guard
 - **2026-05-23:** API JSON aliases `platformPanelEnabled` / `requirePlatformPanel`; `PlatformPanelLockMiddleware`; `PlatformAuthConstants.cs`
 
 ---
@@ -242,7 +242,7 @@ _None — all functional drift resolved._
 - [x] 1 entity → 1 API resource → 1 frontend service method family
 - [x] 1 frontend HTTP client (`platformService.ts`)
 - [x] 1 API namespace for control plane (`/api/platform/*`)
-- [x] 0 duplication with `/api/subscribers/*` for SuperAdmin
+- [x] 0 duplication with `/api/subscribers/*` for operador platform
 - [x] 0 `/api/superadmin/*`
 - [x] ERP runtime untouched (`/api/subscribers/entitlements/me`, tenant Admin APIs)
 

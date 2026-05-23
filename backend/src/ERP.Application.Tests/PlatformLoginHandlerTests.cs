@@ -12,7 +12,7 @@ namespace ERP.Application.Tests;
 public class PlatformLoginHandlerTests
 {
     [Fact]
-    public async Task Handle_returns_success_for_platform_superadmin()
+    public async Task Handle_returns_success_for_platform_operator()
     {
         const string email = "super@erp.local";
         const string password = "Secret123!";

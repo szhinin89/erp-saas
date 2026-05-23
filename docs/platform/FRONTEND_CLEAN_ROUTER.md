@@ -1,3 +1,4 @@
+> **Documento histórico (Phase 2–5).** No usar como referencia de implementación. Rutas y naming actuales: [TEAM-NAMING-GUIDE.md](./TEAM-NAMING-GUIDE.md) · [CANONICAL-ROUTES.md](./CANONICAL-ROUTES.md).
 # Frontend — Router platform limpio
 
 **Fuente única:** [`frontend/src/routes/platformRoutes.tsx`](../../frontend/src/routes/platformRoutes.tsx)
@@ -6,7 +7,7 @@
 
 ```
 ProtectedRoute
-├── platformShellRoutes()          → /superadmin/*
+├── platformShellRoutes()          → /platform/*
 ├── platformBookmarkRedirectRoutes() → /companies/*  (bookmark only)
 └── AppLayout
     ├── mainRoutes                 → ERP runtime
@@ -15,29 +16,29 @@ ProtectedRoute
     └── accessRoutes
 ```
 
-## Platform shell (`/superadmin/*`)
+## Platform shell (`/platform/*`)
 
 | Ruta | Componente | Notas |
 |------|------------|-------|
-| `/superadmin/overview` | `PlatformOverviewPage` | Dashboard |
-| `/superadmin/subscribers` | `PlatformSubscribersPage` | Listado suscriptores |
-| `/superadmin/subscribers/:id` | `PlatformSubscriberDetailPage` | Ficha 9 tabs |
-| `/superadmin/plans` | `PlatformPlansPage` | Planes + `?tab=menu` |
-| `/superadmin/users` | `PlatformUsersPage` | Operadores platform |
-| `/superadmin/billing` | `PlatformBillingPage` | Billing agregado |
-| `/superadmin/observability` | `PlatformObservabilityPage` | Métricas |
-| `/superadmin/audit` | `PlatformAuditPage` | Audit log |
+| `/platform/overview` | `PlatformOverviewPage` | Dashboard |
+| `/platform/subscribers` | `PlatformSubscribersPage` | Listado suscriptores |
+| `/platform/subscribers/:id` | `PlatformSubscriberDetailPage` | Ficha 9 tabs |
+| `/platform/plans` | `PlatformPlansPage` | Planes + `?tab=menu` |
+| `/platform/users` | `PlatformUsersPage` | Operadores platform |
+| `/platform/billing` | `PlatformBillingPage` | Billing agregado |
+| `/platform/observability` | `PlatformObservabilityPage` | Métricas |
+| `/platform/audit` | `PlatformAuditPage` | Audit log |
 
 ## Redirects internos (bookmarks viejos del shell)
 
 | Legacy path | Target |
 |-------------|--------|
-| `/superadmin/companies` | `/superadmin/subscribers` |
+| `/superadmin/companies` | `/platform/subscribers` |
 | `/superadmin/navigation-menu` | `/superadmin/plans?tab=menu` |
 | `/superadmin/menu-plans` | `/superadmin/plans?tab=menu` |
 | `/superadmin/menu-builder` | `/superadmin/plans?tab=menu` |
 | `/superadmin/features` | `/superadmin/plans?tab=plans` |
-| `/superadmin/forms`, `/superadmin/growth` | `/superadmin/overview` |
+| `/superadmin/forms`, `/superadmin/growth` | `/platform/overview` |
 
 ## Bookmark externo
 
@@ -61,12 +62,12 @@ ProtectedRoute
 
 | Antes | Después |
 |-------|---------|
-| `modules/superadmin/` | `modules/platform/` |
+| `modules/platform/` | `modules/platform/` |
 | `components/superadmin/` | `components/platform/` |
-| `pages/SuperAdmin/` | `pages/Platform/` |
+| `pages/Platform/` | `pages/Platform/` |
 | `PlatformLayout`, `PlatformCrudTemplate`, `usePlatformGateGate` | `PlatformLayout`, `PlatformCrudTemplate`, `usePlatformGate` |
 
 ## Guards
 
-- `ProtectedRoute`: operador global solo en `/superadmin/*` y redirect `/companies/*`
+- `ProtectedRoute`: operador global solo en `/platform/*` y redirect `/companies/*`
 - Impersonación: `platformService.switchSubscriber()` → `/saas/*` runtime

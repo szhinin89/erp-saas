@@ -24,6 +24,7 @@ alwaysApply: true
 | Backend | [BACKEND-RULES.md](../../AI-RULES/BACKEND-RULES.md) |
 | Frontend / ZH Form / tabs | [FRONTEND-RULES.md](../../AI-RULES/FRONTEND-RULES.md) |
 | SaaS / planes / URL | [SAAS-RULES.md](../../AI-RULES/SAAS-RULES.md) |
+| Platform naming (equipo) | [TEAM-NAMING-GUIDE.md](../../docs/platform/TEAM-NAMING-GUIDE.md) |
 | Auth / tenant | [SECURITY.md](../../AI-RULES/SECURITY.md) |
 | Stack | [STACK.md](../../AI-RULES/STACK.md) |
 | Validación 4 capas / CI | [ENFORCEMENT.md](../../AI-RULES/ENFORCEMENT.md) |
@@ -34,7 +35,7 @@ alwaysApply: true
 1. **Antes de actuar:** `CONTEXT.md` + comprobar si el archivo ya existe.
 2. **Frontend:** ZH Form → tabs Datos→listado → Copy UX; claves `{modulo}.tabList` en es/en/qu.
 3. **Backend:** Validator + dominio + EF; `ApiResultExtensions`; `Result<T>`.
-4. **SaaS:** sin UUID tenant en URL → `saas-navigation-no-sensitive-url.mdc`.
+4. **SaaS:** IDs tenant en `sessionStorage` (`erp.saas.*`), no en URL; panel platform = `/platform/*` (ver `TEAM-NAMING-GUIDE.md`, no `SuperAdmin` en nombres).
 5. **Módulo nuevo:** preguntar planes SaaS antes de cerrar.
 6. **Al terminar:** sync docs → `docs-progress-status-sync.mdc`; validar → `npm run architecture:check` (desde `frontend/`).
 

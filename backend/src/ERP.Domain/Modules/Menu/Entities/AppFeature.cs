@@ -29,7 +29,7 @@ public sealed class AppFeature
         Guid?    parentId,
         int      sortOrder,
         bool     isVisibleInMenu,
-        bool     isSuperAdmin,
+        bool     isPlatformOnlyFeature,
         DateTime utcNow)
     {
         var p = (permission ?? string.Empty).Trim();
@@ -46,7 +46,7 @@ public sealed class AppFeature
             ParentId        = parentId,
             SortOrder       = sortOrder,
             IsVisibleInMenu = isVisibleInMenu,
-            IsPlatformOnlyFeature    = isSuperAdmin,
+            IsPlatformOnlyFeature    = isPlatformOnlyFeature,
             CreatedAtUtc    = utcNow,
             UpdatedAtUtc    = utcNow,
         };
@@ -59,7 +59,7 @@ public sealed class AppFeature
         Guid?    parentId,
         int      sortOrder,
         bool     isVisibleInMenu,
-        bool     isSuperAdmin,
+        bool     isPlatformOnlyFeature,
         DateTime utcNow)
     {
         Name            = (name ?? string.Empty).Trim();
@@ -68,7 +68,7 @@ public sealed class AppFeature
         ParentId        = parentId;
         SortOrder       = sortOrder;
         IsVisibleInMenu = isVisibleInMenu;
-        IsPlatformOnlyFeature    = isSuperAdmin;
+        IsPlatformOnlyFeature    = isPlatformOnlyFeature;
         UpdatedAtUtc    = utcNow;
     }
 }

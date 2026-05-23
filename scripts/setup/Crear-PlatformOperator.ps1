@@ -126,7 +126,7 @@ function Test-ApiReachable {
     return $false
 }
 
-function Invoke-SetupSuperAdmin {
+function Invoke-SetupPlatformOperator {
     param(
         [Parameter(Mandatory)][string] $ApiBase,
         [Parameter(Mandatory)][string] $SetupToken,
@@ -136,7 +136,7 @@ function Invoke-SetupSuperAdmin {
         [Parameter(Mandatory)][string] $Password
     )
 
-    $uri = "$($ApiBase.TrimEnd('/'))/api/setup/superadmin"
+    $uri = "$($ApiBase.TrimEnd('/'))/api/setup/platform-operator"
     $body = @{
         setupToken = $SetupToken.Trim()
         firstName  = $FirstName.Trim()
@@ -189,7 +189,7 @@ if (-not (Test-ApiReachable -ApiBase $apiUrl)) {
 }
 
 # ------------------------------------------------------------
-# 2. Datos del SuperAdmin
+# 2. Datos del operador platform
 # ------------------------------------------------------------
 Write-Info "Ingresa los datos del operador platform:"
 do {
@@ -235,11 +235,8 @@ Write-Info "Copia el token del bloque FIRST-RUN en la consola del proceso ERP.AP
 Write-Info "Development: POST $apiUrl/api/dev/reset-first-run devuelve setupToken en JSON."
 
 $setupTokenDefault = $env:ERP_PLATFORM_OPERATOR_SETUP_TOKEN
-if ([string]::IsNullOrWhiteSpace($setupTokenDefault)) {
-    $setupTokenDefault = $env:ERP_SUPERADMIN_SETUP_TOKEN
-}
 if (-not [string]::IsNullOrWhiteSpace($env:Deployment__InitialPlatformOperatorSetupToken)) {
-    Write-Warn "Se ignoró Deployment__InitialPlatformOperatorSetupToken (no valida POST /api/setup/superadmin)."
+    Write-Warn "Se ignoró Deployment__InitialPlatformOperatorSetupToken (no valida POST /api/setup/platform-operator)."
 }
 
 if ([string]::IsNullOrWhiteSpace($setupTokenDefault)) {
@@ -247,7 +244,7 @@ if ([string]::IsNullOrWhiteSpace($setupTokenDefault)) {
     $setupToken = Read-Host "Pega aquí el token (ej. base64 ...==)"
 }
 else {
-    Write-Info "ERP_PLATFORM_OPERATOR_SETUP_TOKEN (o ERP_SUPERADMIN_SETUP_TOKEN legacy) detectado."
+    Write-Info "ERP_PLATFORM_OPERATOR_SETUP_TOKEN detectado."
     $setupToken = Read-Host "Pega el token o pulsa Enter para usar ERP_PLATFORM_OPERATOR_SETUP_TOKEN"
     if ([string]::IsNullOrWhiteSpace($setupToken)) {
         $setupToken = $setupTokenDefault
@@ -264,7 +261,7 @@ if ([string]::IsNullOrWhiteSpace($setupToken)) {
 # ------------------------------------------------------------
 $setupTokenFromResponse = $null
 try {
-    $response = Invoke-SetupSuperAdmin `
+    $response = Invoke-SetupPlatformOperator `
         -ApiBase $apiUrl `
         -SetupToken $setupToken `
         -FirstName $firstName `

@@ -12,7 +12,7 @@ namespace ERP.API.Controllers;
 [ApiController]
 [Route("api/internal/spa-menu-catalog")]
 [ApiExplorerSettings(IgnoreApi = true)]
-[Authorize] // requiere sesión; SuperAdmin sync usa credenciales de admin
+[Authorize] // requiere sesión; operador platform sync usa credenciales de admin
 public sealed class SpaMenuCatalogController : ControllerBase
 {
     [HttpGet("profiles")]

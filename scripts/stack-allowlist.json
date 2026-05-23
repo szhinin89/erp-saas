@@ -106,7 +106,6 @@
   ],
   "scriptsAllowed": [
     "scripts/setup/Crear-PlatformOperator.ps1",
-    "scripts/setup/Crear-SuperAdmin.ps1",
     "scripts/dev/dev-restart.ps1",
     "scripts/ci/run-e2e.ps1",
     "scripts/ci/verify-stack-allowlist.ps1",

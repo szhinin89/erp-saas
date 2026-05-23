@@ -67,7 +67,7 @@ Ambos son **clase A** en `PAGE-AUDIT.md`. No duplicar título con `pg-header-row
 
 ---
 
-## SuperAdmin (plataforma)
+## Platform shell (plataforma)
 
 ### Política de títulos
 
@@ -82,7 +82,7 @@ Ambos son **clase A** en `PAGE-AUDIT.md`. No duplicar título con `pg-header-row
 | Prefijo | Archivo | Uso |
 |---------|---------|-----|
 | `smp-*` | `menu-builder/menu-preview-sim.css` | Simulación navegador en `MenuPreview` |
-| `smb-*` | `superadmin/menu-plan-composer.css` | CRM workspace, audit, modales, toggles |
+| `smb-*` | `platform/menu-plan-composer.css` | CRM workspace, audit, modales, toggles |
 
 **No** importar `smp-*` / `smb-*` en módulos tenant. Inline permitido en `MenuPreview` solo para indentación dinámica por profundidad del árbol (`paddingLeft` calculado).
 
@@ -116,7 +116,7 @@ Ambos son **clase A** en `PAGE-AUDIT.md`. No duplicar título con `pg-header-row
 | `adj-*` | Ajustes inventario |
 | `bod-*` | Bodegas |
 | `dsh-*` | Dashboard |
-| `sap-*` | SuperAdmin planes |
+| `sap-*` | Platform planes |
 | `rpt-*` | Reportes (`ReportPageTemplate.css`) |
 | `smp-*` | Menu Builder — preview simulado (platform) |
 | `smb-*` | Menu Builder — CRM workspace (platform) |
@@ -143,7 +143,7 @@ Alineado con `LayoutFrame` (`--shell-content-padding-compact`) y la mayoría de 
 |------------|-------|--------|
 | **1024px** | `DashboardPage.css`, `ventas-facturas-page.css` | KPIs / soporte en layouts previos |
 | **760px** | `suppliers-page.css` | Formulario proveedores más estrecho |
-| **640px / 480px** | Auth, SuperAdmin panel, filtros reportes | Shells o utilidades puntuales |
+| **640px / 480px** | Auth, panel platform, filtros reportes | Shells o utilidades puntuales |
 
 **No refactorizar** todos los breakpoints en un solo valor sin ticket dedicado. Pantallas nuevas: preferir **980px** + `pg-overflow-x` en tablas anchas.
 
@@ -173,7 +173,7 @@ En `src/pages/**` y `src/modules/**/pages/**` (salvo excepciones):
 | `Modal`, `ZHConfirmModal`, `ZHPromptModal` | Prop `style` / `maxWidth` de API del componente |
 | `AccountTreeSelect` | Indent dinámico por nivel (`width` en árbol) |
 | `ZHAppSubscriberHeader` | Posición fixed del menú (coordenadas calculadas) |
-| `MenuPreview` + SuperAdmin menu builder | Herramienta plataforma aislada |
+| `MenuPreview` + platform menu builder | Herramienta plataforma aislada |
 | Gráficos SVG demo | Preferir clases `rpt-*` cuando sea posible |
 
 ### Enforcement ESLint
@@ -186,7 +186,7 @@ En `src/pages/**` y `src/modules/**/pages/**` (salvo excepciones):
 ## Prevención de drift
 
 1. Pantalla tenant nueva → `ErpPageTemplate` + utilidades `pg-*`.
-2. Pantalla SuperAdmin nueva → `PlatformCrudTemplate`.
+2. Pantalla platform nueva → `PlatformCrudTemplate`.
 3. Antes de PR UI: `rg 'style=\{\{'` en el módulo tocado; actualizar `PAGE-AUDIT.md` si cambia deuda.
 4. No introducir `pg-header-row` en páginas con `PageShell`/`ErpPageTemplate`.
 5. Revisar coherencia con `.cursor/rules/erp-unified-rules.mdc` (ZH Form, tabs, Copy UX).

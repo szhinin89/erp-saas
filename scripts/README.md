@@ -6,7 +6,7 @@ Scripts PowerShell **canónicos** (lista en [`stack-allowlist.json`](stack-allow
 
 | Ruta | Rol |
 |------|-----|
-| [`setup/Crear-SuperAdmin.ps1`](setup/Crear-SuperAdmin.ps1) | Alta SuperAdmin first-run |
+| [`setup/Crear-PlatformOperator.ps1`](setup/Crear-PlatformOperator.ps1) | Alta operador platform first-run |
 | [`dev/dev-restart.ps1`](dev/dev-restart.ps1) | Docker + EF + API + Vite |
 | [`ci/run-e2e.ps1`](ci/run-e2e.ps1) | Playwright E2E completo |
 | [`ci/verify-stack-allowlist.ps1`](ci/verify-stack-allowlist.ps1) | Auditoría stack CI |

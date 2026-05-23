@@ -21,7 +21,7 @@ namespace ERP.API.Tests.Integration;
 ///
 /// ESCENARIOS CUBIERTOS:
 ///   S1. JWT sin company_id → endpoint ERP operativo retorna 0 rows (fail-closed)
-///   S2. SuperAdmin platform (subscriber_id=Empty) → datos ERP inaccesibles
+///   S2. Operador platform (subscriber_id=Empty) → datos ERP inaccesibles
 ///   S3. Usuario CompanyA no puede ver clientes de CompanyB
 ///   S4. SwitchCompany sin membership válida → 403
 ///   S5. JWT de SubscriberX no accede a datos de SubscriberY
@@ -114,16 +114,16 @@ public sealed class MultiCompanySecurityTests : IAsyncLifetime
         }
     }
 
-    // ── S2: SuperAdmin platform no accede a datos ERP ────────────────────────────
+    // ── S2: Operador platform no accede a datos ERP ──────────────────────────────
 
     [Fact]
-    public async Task S2_platform_superadmin_jwt_cannot_read_erp_operational_data()
+    public async Task S2_platform_operator_jwt_cannot_read_erp_operational_data()
     {
         await SeedSubscriberAsync("Sub-S2", "sub-s2");
 
-        // JWT de SuperAdmin platform: subscriber_id=Empty, sin company_id
-        var superAdminId = Guid.NewGuid();
-        var token = TestJwtFactory.CreatePlatformOperatorJwt(superAdminId);
+        // JWT operador platform: subscriber_id=Empty, sin company_id
+        var platformOperatorId = Guid.NewGuid();
+        var token = TestJwtFactory.CreatePlatformOperatorJwt(platformOperatorId);
         using var client = _factory.CreateAuthenticatedClient(token);
 
         var res = await client.GetAsync("/api/sales/customers?take=100");
@@ -139,7 +139,7 @@ public sealed class MultiCompanySecurityTests : IAsyncLifetime
             var json = await res.Content.ReadFromJsonAsync<JsonElement>();
             if (json.TryGetProperty("responseObject", out var ro) && ro.ValueKind == JsonValueKind.Array)
                 ro.GetArrayLength().Should().Be(0,
-                    "SuperAdmin sin subscriber no debe ver ningún registro ERP operativo");
+                    "Operador platform sin subscriber no debe ver ningún registro ERP operativo");
         }
     }
 

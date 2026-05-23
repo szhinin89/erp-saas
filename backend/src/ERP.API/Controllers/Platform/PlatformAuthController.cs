@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERP.API.Controllers.Platform;
 
-/// <summary>Autenticación canónica de operadores platform (SuperAdmin global).</summary>
+/// <summary>Autenticación canónica de operadores platform (operador platform global).</summary>
 [ApiController]
 [Route("api/platform/auth")]
 [Produces("application/json")]

@@ -1,4 +1,4 @@
-﻿using ERP.API.Controllers.Platform;
+using ERP.API.Controllers.Platform;
 using MediatR;
 using ERP.API.Contracts;
 using ERP.API.Attributes;
@@ -12,7 +12,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>
 /// Configuración de seguridad (matrices de delegación y permisos).
-/// Acceso restringido: solo SuperAdmin.
+/// Acceso restringido: solo operador platform.
 /// </summary>
 [ApiController]
 [AppFeature("Security API", "perm:security.api", "🧩", null, null, 989, IsVisibleInMenu = false)]

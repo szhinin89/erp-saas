@@ -302,9 +302,9 @@ if (!app.Environment.IsEnvironment("Testing")
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("==================================================");
         Console.WriteLine("FIRST-RUN DETECTADO: crear operador platform inicial");
-        Console.WriteLine("Ejecuta desde la máquina del servidor (mismo body en /api/setup/claim-initial-superadmin):");
+        Console.WriteLine("Ejecuta desde la máquina del servidor (mismo body en /api/setup/claim-initial-platform-operator):");
         Console.WriteLine(
-            "curl -X POST https://localhost:5001/api/setup/superadmin " +
+            "curl -X POST https://localhost:5001/api/setup/platform-operator " +
             "-H \"Content-Type: application/json\" " +
             "-d '{\"setupToken\":\"" + setupResult.PlainToken + "\",\"firstName\":\"Platform\",\"lastName\":\"Operator\",\"email\":\"platform@erp.com\",\"password\":\"CAMBIAR-ESTA-CLAVE\"}'");
         Console.WriteLine("Documentación: docs/DEVELOPMENT.md | script: .\\scripts\\setup\\Crear-PlatformOperator.ps1");

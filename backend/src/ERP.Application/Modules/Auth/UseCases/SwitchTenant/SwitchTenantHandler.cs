@@ -10,7 +10,7 @@ using MediatR;
 namespace ERP.Application.Auth.UseCases.SwitchSubscriber;
 
 /// <summary>
-/// Flujo Platform: SuperAdmin global selecciona un subscriber para impersonar.
+/// Flujo Platform: operador platform global selecciona un subscriber para impersonar.
 /// Solo accesible con token Platform (IsPrimaryPlatformOperator = true).
 /// Retorna <c>AuthResponseDto</c> con refresh token completo.
 /// No confundir con <see cref="ERP.Application.Access.UseCases.SwitchSubscriber.SwitchSubscriberHandler"/>

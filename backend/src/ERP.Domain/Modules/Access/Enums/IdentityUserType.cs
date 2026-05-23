@@ -2,7 +2,7 @@ namespace ERP.Domain.Access.Enums;
 
 public enum IdentityUserType
 {
-    /// <summary>Operador de plataforma (SuperAdmin global). Sin subscriber operativo.</summary>
+    /// <summary>Operador de plataforma (operador platform global). Sin subscriber operativo.</summary>
     Platform = 0,
 
     /// <summary>

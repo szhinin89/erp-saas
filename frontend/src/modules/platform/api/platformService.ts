@@ -202,8 +202,6 @@ export type AdminNavGroupRow = {
   moduleKey: string | null;
   roles: string[] | null;
   requirePlatformPanel?: boolean;
-  /** Alias legacy del API. */
-  requireSuperAdminPanel?: boolean;
   isActive: boolean;
   rootItems: AdminNavItemRow[];
 };

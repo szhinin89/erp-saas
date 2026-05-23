@@ -8,7 +8,7 @@ namespace ERP.API.Controllers.Platform;
 
 /// <summary>
 /// Platform Layer — auditoría append-only del control plane.
-/// Canonical successor of localStorage audit in SuperAdmin menu hub.
+/// Canonical successor of localStorage audit in operador platform menu hub.
 /// </summary>
 [ApiController]
 [Route("api/platform/audit")]

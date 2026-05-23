@@ -3,7 +3,7 @@ using ERP.Domain.Common;
 namespace ERP.Domain.Auth.Entities;
 
 /// <summary>
-/// Estado global (no multi-tenant) para bootstrap seguro de la primera cuenta SuperAdmin.
+/// Estado global (no multi-tenant) para bootstrap seguro de la primera cuenta operador platform.
 /// Columnas: <c>is_first_run</c>, <c>setup_token_hash</c>, <c>setup_token_expiry_utc</c>, <c>completed_at</c> + auditoría.
 /// </summary>
 public sealed class FirstRunSetupState : SystemAuditableEntity
@@ -11,7 +11,7 @@ public sealed class FirstRunSetupState : SystemAuditableEntity
     public bool IsFirstRun { get; private set; }
     public string? SetupTokenHash { get; private set; }
     public DateTime? SetupTokenExpiryUtc { get; private set; }
-    /// <summary>UTC en que se completó el first-run (SuperAdmin creado). Null mientras siga activo o sin completar.</summary>
+    /// <summary>UTC en que se completó el first-run (operador platform creado). Null mientras siga activo o sin completar.</summary>
     public DateTime? CompletedAt { get; private set; }
 
     private FirstRunSetupState() { }

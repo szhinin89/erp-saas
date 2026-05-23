@@ -9,7 +9,7 @@ namespace ERP.API.Controllers.Platform;
 
 /// <summary>
 /// Platform Layer — configuración por suscriptor (global, módulo, feature).
-/// Canonical successor of /api/superadmin/config.
+/// Canonical successor of /api/platform/config.
 /// </summary>
 [ApiController]
 [Route("api/platform/config")]

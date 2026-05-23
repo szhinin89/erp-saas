@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace ERP.API.Hangfire;
 
 /// <summary>
-/// Autorización del dashboard Hangfire: localhost, prefijos de IP y/o SuperAdmin global
+/// Autorización del dashboard Hangfire: localhost, prefijos de IP y/o operador platform global
 /// (mismo criterio que <see cref="Authorization.GlobalPlatformOperatorHandler"/>).
 /// </summary>
 public sealed class HangfireDashboardAuthorizationFilter : IDashboardAuthorizationFilter

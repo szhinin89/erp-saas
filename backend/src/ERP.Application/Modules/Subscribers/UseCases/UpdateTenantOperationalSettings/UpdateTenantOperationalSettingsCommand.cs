@@ -7,7 +7,7 @@ namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberOperationalSettin
 /// <summary>
 /// Actualiza los parámetros operativos de la empresa: moneda, idioma, zona horaria,
 /// prefijo de factura y días de crédito por defecto.
-/// Accesible por el administrador de la propia empresa o por SuperAdmin.
+/// Accesible por el administrador de la propia empresa o por operador platform.
 /// </summary>
 public record UpdateSubscriberOperationalSettingsCommand(
     Guid SubscriberId,

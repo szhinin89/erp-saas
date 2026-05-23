@@ -1,3 +1,4 @@
+> **Documento histórico (Phase 2–5).** No usar como referencia de implementación. Rutas y naming actuales: [TEAM-NAMING-GUIDE.md](./TEAM-NAMING-GUIDE.md) · [CANONICAL-ROUTES.md](./CANONICAL-ROUTES.md).
 # Phase 2 — Cleanup audit (Platform Control Plane)
 
 **Fecha:** 2026-05-23  
@@ -14,7 +15,7 @@
 | Subscriber detail (9 tabs) | ✅ absorbe ficha `CompaniesPage` |
 | Frontend platform → `/api/platform/*` | ✅ (sin consumo activo de `/api/superadmin/*` en shell) |
 | Deprecation instrumentation | ✅ logs + `X-Deprecated-Endpoint` + tracker in-memory |
-| Legacy usage dashboard | ✅ `/superadmin/observability` |
+| Legacy usage dashboard | ✅ `/platform/observability` |
 | Platform Users UI | ✅ listado + revoke sessions |
 | Billing foundation UI | ✅ resumen agregado |
 | Observability UI | ✅ health index + legacy endpoints |
@@ -75,7 +76,7 @@ Legacy **mantener** hasta métricas de uso en cero (ver Observability → Legacy
 ## Instrumentación deprecación
 
 - **Filtro:** `DeprecatedApiAttribute` → header `X-Deprecated-Endpoint`, log warning, registro en `ILegacyEndpointUsageTracker`.
-- **Dashboard:** `GET /api/platform/observability/legacy-endpoints` + UI en `/superadmin/observability`.
+- **Dashboard:** `GET /api/platform/observability/legacy-endpoints` + UI en `/platform/observability`.
 - **Criterio borrado endpoint:** 0 calls en ventana acordada (30–60d) + CI verde sin alias.
 
 ---

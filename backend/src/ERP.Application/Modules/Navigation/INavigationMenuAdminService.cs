@@ -2,7 +2,7 @@ using ERP.Application.Navigation.DTOs;
 
 namespace ERP.Application.Navigation;
 
-/// <summary>Lectura y reordenamiento del menú principal (tablas <c>ui_nav_*</c>) para SuperAdmin.</summary>
+/// <summary>Lectura y reordenamiento del menú principal (tablas <c>ui_nav_*</c>) para operador platform.</summary>
 public interface INavigationMenuAdminService
 {
     Task<AdminNavigationMenuResponse> GetMenuTreeAsync(CancellationToken ct = default);

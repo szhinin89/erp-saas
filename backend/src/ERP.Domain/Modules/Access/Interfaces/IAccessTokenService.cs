@@ -8,7 +8,7 @@ public interface IAccessTokenService
     string GenerateBootstrapToken(IdentityUser user, IReadOnlyList<Guid> subscriberIds);
     string GenerateSessionToken(IdentityUser user, Guid subscriberId, string role, Guid companyId = default);
 
-    /// <summary>JWT de operador platform (SuperAdmin global).</summary>
+    /// <summary>JWT de operador platform (operador platform global).</summary>
     string GeneratePlatformSessionToken(IdentityUser platformUser);
 
     string GenerateBootstrapToken(

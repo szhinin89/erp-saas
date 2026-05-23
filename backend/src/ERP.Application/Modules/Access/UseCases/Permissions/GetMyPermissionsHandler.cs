@@ -11,7 +11,7 @@ namespace ERP.Application.Access.UseCases.Permissions;
 /// <summary>
 /// Devuelve permisos efectivos del usuario autenticado para UI (runtime read).
 /// Usuarios regulares: <see cref="IEffectivePermissionKeysProvider"/> (auth path).
-/// Admin/SuperAdmin: wildcard (UX; la API sigue filtrando por plan vía <see cref="Authorization.IRuntimePermissionAuthorizer"/>).
+/// Admin/Operador platform: wildcard (UX; la API sigue filtrando por plan vía <see cref="Authorization.IRuntimePermissionAuthorizer"/>).
 /// </summary>
 public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Result<MyPermissionsDto>>
 {

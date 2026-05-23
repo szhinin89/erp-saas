@@ -9,7 +9,7 @@ namespace ERP.API.Attributes;
 /// MVC action filter que verifica que el suscriptor autenticado tenga la feature comercial
 /// habilitada en su plan antes de ejecutar el endpoint.
 /// Devuelve HTTP 402 (Payment Required) cuando el plan no incluye la feature.
-/// Skipped si el request no tiene subscriber_id (SuperAdmin / Platform tokens).
+/// Skipped si el request no tiene subscriber_id (operador platform / Platform tokens).
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
 public sealed class RequireEntitlementAttribute : Attribute, IAsyncActionFilter
@@ -27,7 +27,7 @@ public sealed class RequireEntitlementAttribute : Attribute, IAsyncActionFilter
     {
         var subscriberIdClaim = context.HttpContext.User.FindFirst("subscriber_id")?.Value;
 
-        // Platform tokens (SuperAdmin) no tienen subscriber_id → bypass
+        // Platform tokens (operador platform) no tienen subscriber_id → bypass
         if (string.IsNullOrEmpty(subscriberIdClaim) || !Guid.TryParse(subscriberIdClaim, out var subscriberId))
         {
             await next();

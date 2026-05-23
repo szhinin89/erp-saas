@@ -4,7 +4,7 @@ Monorepo enterprise: **backend** (.NET 10, Clean Architecture, PostgreSQL) + **f
 
 ## Visión
 
-ERP **SaaS multi-tenant** para Ecuador: facturación electrónica **SRI**, inventario, contabilidad, panel **SuperAdmin**, planes comerciales e i18n **es / en / Kichwa (`qu`)**.
+ERP **SaaS multi-tenant** para Ecuador: facturación electrónica **SRI**, inventario, contabilidad, panel **platform**, planes comerciales e i18n **es / en / Kichwa (`qu`)**.
 
 | Documento | Contenido |
 |-----------|-----------|
@@ -52,7 +52,7 @@ dotnet run --project ERP.API --launch-profile http   # http://localhost:5003
 cd frontend && npm run dev                             # http://localhost:5173
 ```
 
-SuperAdmin first-run: **`.\scripts\setup\Crear-SuperAdmin.ps1`**
+Operador platform first-run: **`.\scripts\setup\Crear-PlatformOperator.ps1`**
 
 Config: copiar `backend/src/ERP.API/appsettings.Development.json.example` → `appsettings.Development.json`.
 

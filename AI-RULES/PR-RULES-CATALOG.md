@@ -340,7 +340,7 @@ return await _db.Products.Where(p => p.TenantId == _tenant.Id).ToListAsync();
 ## M-02 — IgnoreQueryFilters solo vía PlatformQueryAccessor
 
 ### RULE
-**Prohibido** `.IgnoreQueryFilters()` directo en Application, API o handlers. En Infrastructure, solo a través de `IPlatformQueryAccessor` con `PlatformQueryReason` documentado (SuperAdmin, billing platform, migración). Cada uso requiere comentario de razón y test de autorización.
+**Prohibido** `.IgnoreQueryFilters()` directo en Application, API o handlers. En Infrastructure, solo a través de `IPlatformQueryAccessor` con `PlatformQueryReason` documentado (operador platform, billing platform, migración). Cada uso requiere comentario de razón y test de autorización.
 
 ### WHY
 `IgnoreQueryFilters` sin control centralizado ha causado fugas cross-tenant en SaaS industry-wide.
@@ -352,7 +352,7 @@ var all = await _db.Customers.IgnoreQueryFilters().ToListAsync();
 
 ### GOOD
 ```csharp
-await _platform.RunAsync(PlatformQueryReason.SuperAdminMetrics, async () => {
+await _platform.RunAsync(PlatformQueryReason.PlatformMetrics, async () => {
   return await _db.Subscribers.ToListAsync(ct);
 });
 ```
@@ -765,7 +765,7 @@ Tab `products.tabList`; `PageShell action={tab === 'data' ? ... : undefined}`.
 ## P-01 — Lazy loading de rutas
 
 ### RULE
-Toda ruta de módulo pesado (> 30 KB estimado o página > 400 líneas) se registra con `lazyNamedPage` (`frontend/src/routes/lazyPage.tsx`). Obligatorio para: SuperAdmin shell, Accounting, Dashboard, catálogos inventario, Companies panel. **Prohibido** import estático de estas páginas en `mainRoutes.tsx` / `catalogRoutes.tsx`.
+Toda ruta de módulo pesado (> 30 KB estimado o página > 400 líneas) se registra con `lazyNamedPage` (`frontend/src/routes/lazyPage.tsx`). Obligatorio para: shell platform, Accounting, Dashboard, catálogos inventario, Companies panel. **Prohibido** import estático de estas páginas en `mainRoutes.tsx` / `catalogRoutes.tsx`.
 
 ### WHY
 Bundle inicial > 500 KB bloqueó First Load en auditoría.
@@ -792,7 +792,7 @@ const AccountingPage = lazyNamedPage(() => import('../pages/AccountingPage'), 'A
 Listas > 50 filas, árboles de cuentas/menú, y celdas con formateo costoso usan `memo`, `useMemo`, `useCallback` en el componente hijo estable. **Prohibido** pasar funciones inline no memoizadas a `react-window`/virtualización si causa re-render completo medible.
 
 ### WHY
-Menú SuperAdmin y plan de cuentas degradaron interacción sin memo.
+Menú platform y plan de cuentas degradaron interacción sin memo.
 
 ### BAD
 ```tsx

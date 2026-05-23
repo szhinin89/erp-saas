@@ -20,7 +20,7 @@ public interface IOperationalContext
     /// <summary>Id del usuario autenticado. <see cref="Guid.Empty"/> si no autenticado.</summary>
     Guid UserId { get; }
 
-    /// <summary>Rol del usuario (Admin, SuperAdmin, User, etc.). Vacío si no autenticado.</summary>
+    /// <summary>Rol del usuario (Admin, operador platform, User, etc.). Vacío si no autenticado.</summary>
     string Role { get; }
 
     /// <summary>True cuando <see cref="SubscriberId"/> es válido (no Empty).</summary>
@@ -32,6 +32,6 @@ public interface IOperationalContext
     /// <summary>True cuando el usuario está autenticado con JWT válido.</summary>
     bool IsAuthenticated { get; }
 
-    /// <summary>True cuando el usuario es SuperAdmin global sin suscriptor operativo (bypass RLS controlado).</summary>
+    /// <summary>True cuando el usuario es operador platform global sin suscriptor operativo (bypass RLS controlado).</summary>
     bool IsPlatformAdmin { get; }
 }

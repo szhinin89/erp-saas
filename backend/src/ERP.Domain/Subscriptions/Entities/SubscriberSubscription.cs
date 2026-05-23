@@ -38,7 +38,7 @@ public sealed class SubscriberSubscription : AuditableEntity
         SetUpdated(updatedBy);
     }
 
-    /// <summary>Cambia de plan sin borrar la fila (sync / SuperAdmin).</summary>
+    /// <summary>Cambia de plan sin borrar la fila (sync / operador platform).</summary>
     public void ReassignPlan(Guid planId, Guid updatedBy)
     {
         PlanId = planId;

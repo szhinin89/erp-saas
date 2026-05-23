@@ -11,7 +11,7 @@ public static class SubscriberSubscriptionCatalog
 {
     private static readonly IReadOnlyList<string> EmptyModules = Array.Empty<string>();
 
-    /// <summary>Claves conocidas para validación de entrada SuperAdmin (legacy español).</summary>
+    /// <summary>Claves conocidas para validación de entrada operador platform (legacy español).</summary>
     public static readonly IReadOnlyList<string> AllModuleKeys = new[]
     {
         "access",

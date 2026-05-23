@@ -1,8 +1,10 @@
 # Platform Control Plane — Legacy Alias Map
 
-**Propósito:** mapa de aliases históricos SuperAdmin/SaaS → Platform canónico.
+**Propósito:** registro histórico de aliases SuperAdmin/SaaS → Platform canónico.
 
-**Para desarrolladores nuevos:** en código de producto usar siempre **platform / operador platform**. El literal JWT `SuperAdmin` vive **solo** en `frontend/src/constants/platformAuth.ts` (y tests que validan el contrato auth).
+**Implementación actual:** [`TEAM-NAMING-GUIDE.md`](./TEAM-NAMING-GUIDE.md) · [`CANONICAL-ROUTES.md`](./CANONICAL-ROUTES.md)
+
+**Para desarrolladores:** en código de producto usar siempre **platform / operador platform / `PlatformOperator`**. Los literales wire legacy (`SuperAdmin` en JWT antiguo, keys JSON antiguas) viven **solo** en `PlatformAuthConstants.cs` y `frontend/src/constants/platformAuth.ts`.
 
 ## API routes
 
@@ -10,6 +12,7 @@
 |--------------------|----------|--------|
 | `/api/superadmin/*` | `/api/platform/*` | ✅ Eliminado Phase 4 |
 | `POST /api/auth/superadmin-login` | `POST /api/platform/auth/login` | ✅ Eliminado |
+| `POST /api/setup/superadmin` | `POST /api/setup/platform-operator` | ✅ Eliminado |
 | `/api/admin/iam/superadmin/subscribers*` | `/api/platform/subscribers` | ✅ Bloqueado |
 
 ## Backend types / files
@@ -18,7 +21,7 @@
 |--------------|----------|--------|
 | `SuperAdminController` | `Platform*Controller` | ✅ Eliminado |
 | `SuperAdminService` | Application + Platform controllers | ✅ Eliminado |
-| JWT literal `SuperAdmin` | `PlatformOperator` (`PlatformAuthConstants`) | ✅ Canónico; legacy aceptado en lectura |
+| JWT literal `SuperAdmin` | `PlatformOperator` (`PlatformAuthConstants.JwtPlatformOperatorRole`) | ✅ Canónico; wire legacy solo lectura |
 | `SuperAdminPanelLockMiddleware` | `PlatformPanelLockMiddleware` | ✅ Renombrado |
 | `SaasPlan` (file) | `CommercialPlan` (class) | ⚠️ Archivo pendiente rename |
 | `TenantSaasSubscription` (file) | `SubscriberSubscription` (class) | ⚠️ Archivo pendiente rename |
@@ -32,12 +35,11 @@
 | `modules/superadmin/` | `modules/platform/` | ✅ Renombrado Phase 5b |
 | `components/superadmin/` | `components/platform/` | ✅ Renombrado |
 | `pages/SuperAdmin/` | `pages/Platform/` | ✅ Renombrado |
-| `platformService.ts` | `platformService.ts` | ✅ Eliminado |
-| `usePlatformGateGate` / `isSuperAdmin` | `usePlatformGate` / `isPlatformOperator` | ✅ Renombrado (2026-05-23) |
-| `PlatformLayout` | `PlatformLayout` | ✅ Renombrado |
+| `superAdminService` | `platformService` | ✅ Eliminado |
+| `useSuperAdmin` / `isSuperAdmin` | `usePlatformGate` / `isPlatformOperator` | ✅ Renombrado (2026-05-23) |
 | `SUPERADMIN_UI` | `PLATFORM_UI` (`/platform/*`) | ✅ Renombrado |
 | i18n `superadmin.*` | `platform.*` | ✅ Migrado (2026-05-23) |
-| `LEGACY_PLATFORM_API` | `PLATFORM_API` | ✅ Eliminado |
+| `Crear-SuperAdmin.ps1` | `Crear-PlatformOperator.ps1` | ✅ Eliminado alias script |
 
 ## Frontend — contrato auth (única fuente)
 
@@ -45,12 +47,12 @@ Archivo: `frontend/src/constants/platformAuth.ts`
 
 | Constante / helper | Uso |
 |--------------------|-----|
-| `JWT_PLATFORM_OPERATOR_ROLE` | Literal JWT del backend (`SuperAdmin`) |
-| `isJwtPlatformOperatorRole()` | Comparación de rol en UI |
+| `JWT_PLATFORM_OPERATOR_ROLE` | Rol canónico (`PlatformOperator`) |
+| `isJwtPlatformOperatorRole()` | Comparación de rol (canónico + wire legacy interno) |
 | `NAV_PLATFORM_OPERATOR_ROLE` | Arrays `roles` en navegación |
 | `DEPLOYMENT_API_PLATFORM_PANEL_FLAG` | Lee `platformPanelEnabled` del API público |
 | `NAV_API_PLATFORM_PANEL_FLAG` | Campo JSON menú `requirePlatformPanel` |
-| `readsRequirePlatformPanel()` | Lee flag menú (canónico + legacy) |
+| `readsRequirePlatformPanel()` | Lee flag menú (canónico + legacy wire) |
 | `PLATFORM_UI_LEGACY_PATH_PREFIX` | Redirect `/superadmin/*` → `/platform/*` |
 
 ## UI / producto (alias activos intencionales)
@@ -58,10 +60,10 @@ Archivo: `frontend/src/constants/platformAuth.ts`
 | Alias activo | Canónico conceptual | Migración |
 |--------------|---------------------|-----------|
 | URL `/superadmin/*` | Redirect a `/platform/*` | ✅ Redirect en `platformRoutes.tsx` |
-| JWT role `SuperAdmin` | `PlatformOperator` | ✅ Legacy aceptado en tokens/menús |
+| JWT wire `SuperAdmin` | `PlatformOperator` | ✅ Solo lectura en tokens/BD viejos |
 | Flag `superAdminPanelEnabled` | `platformPanelEnabled` | ✅ Alias JSON en GET `/api/public/deployment` |
-| JSON `requirePlatformPanel` | `requirePlatformPanel` | ✅ Alias JSON en menú sesión/admin |
-| CSS prefix `sa-*` | Platform shell styles | Cosmético |
+| JSON `requireSuperAdminPanel` | `requirePlatformPanel` | ✅ Alias JSON en menú sesión/admin |
+| CSS prefix `sa-*` | Platform shell styles | Cosmético (prefijo histórico) |
 
 ## DB (sin rename destructivo)
 
@@ -69,7 +71,8 @@ Archivo: `frontend/src/constants/platformAuth.ts`
 |-----------------|--------------|-------|
 | Tenant | `subscribers` | Terminología unificada a Subscriber |
 | SaaS plan | `commercial_plans` | No `saas_plans` |
-| SuperAdmin audit | `platform_audit_logs` | Renombrado Phase 4 |
+| Platform audit | `platform_audit_logs` | Renombrado Phase 4 |
+| Columna `require_superadmin_panel` | `ui_nav_groups` | Nombre columna legacy; propiedad EF `RequirePlatformPanel` |
 
 ## CI enforcement
 
@@ -77,4 +80,4 @@ Patrones bloqueados en build: ver [`CI_GUARD_RULES.md`](./CI_GUARD_RULES.md) y `
 
 - `isSuperAdmin` — prohibido en `frontend/src`
 - Literal `'SuperAdmin'` — solo permitido en `platformAuth.ts`
-- Imports `modules/superadmin`, `usePlatformGate`, `/api/superadmin/` — prohibidos
+- Imports `modules/superadmin`, `useSuperAdmin`, `/api/superadmin/` — prohibidos

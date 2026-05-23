@@ -40,15 +40,15 @@ El producto está **listo para QA funcional intensivo en staging**, con arquitec
 
 ## 1. Flujos críticos end-to-end
 
-### 1.1 SuperAdmin
+### 1.1 Operador platform
 
 | Flujo | Estado | Evidencia |
 |-------|--------|-----------|
 | Login platform (`/api/platform/auth/login`) | ✅ OK | Gated por `Deployment:PlatformPanelEnabled` |
-| Panel global (`/superadmin/*`) | ✅ OK | `PlatformLayout` + `LayoutFrame` |
+| Panel global (`/platform/*`) | ✅ OK | `PlatformLayout` + `LayoutFrame` |
 | Crear suscriptor + admin | ✅ OK | `SubscriberProvisioningOrchestrator` transaccional |
 | Empresa default auto | ✅ OK | `CompanyProvisioningService.CreateDefaultCompanyForSubscriberAsync` |
-| Planes SaaS / features | ✅ OK | SuperAdmin planes + `SaasFeatureDefinition` |
+| Planes SaaS / features | ✅ OK | Platform planes + `SaasFeatureDefinition` |
 | Listado suscriptores | ⚠️ Medio | `PlatformSubscribersPage` fuera de `PlatformCrudTemplate`; N+1 en list handler |
 | Impersonación tenant | 🔴 Crítico | Ver §3.2 — se pierde contexto al refresh |
 
@@ -94,7 +94,7 @@ El producto está **listo para QA funcional intensivo en staging**, con arquitec
 
 ### 1.6 Permisos y roles
 
-- `PermissionHandler`: SuperAdmin en tenant → todos los permisos del plan.
+- `PermissionHandler`: Operador platform en tenant → todos los permisos del plan.
 - Frontend: `usePermissionsStore` + checks `hasPerm` / `isAdmin`.
 - **Gap:** `POST /api/auth/register` acepta `Role` del body sin whitelist → puede crear `Admin`.
 
@@ -123,7 +123,7 @@ El producto está **listo para QA funcional intensivo en staging**, con arquitec
 
 #### C1. Registro público sin autenticación
 - **Endpoint:** `POST /api/auth/register` — sin `[Authorize]`.
-- **Impacto:** Cualquiera con `subscriberId` conocido crea usuario con rol `Admin` (solo bloquea `SuperAdmin`).
+- **Impacto:** Cualquiera con `subscriberId` conocido crea usuario con rol `Admin` (solo bloquea operador platform).
 - **Archivos:** `AuthController.cs`, `RegisterHandler.cs`, `RegisterCommandValidator.cs` (no whitelist de roles).
 - **Repro:**
   ```http
@@ -131,7 +131,7 @@ El producto está **listo para QA funcional intensivo en staging**, con arquitec
   { "firstName":"X","lastName":"Y","email":"a@b.com","password":"Password1!",
     "subscriberId":"<uuid-tenant>","role":"Admin" }
   ```
-- **Fix seguro:** `[Authorize(Roles=SuperAdmin)]` o eliminar endpoint; restringir `Role` a `"User"` + token invitación.
+- **Fix seguro:** `[Authorize(Roles=PlatformOperator)]` o eliminar endpoint; restringir `Role` a `"User"` + token invitación.
 
 #### C2. Logout solo en cliente
 - **Impacto:** Refresh token httpOnly sigue válido hasta expiración (30 días) tras “cerrar sesión”.
@@ -139,7 +139,7 @@ El producto está **listo para QA funcional intensivo en staging**, con arquitec
 - **Repro:** Logout → reutilizar cookie `erp_refresh_token` → sesión restaurada.
 - **Fix seguro:** `await POST /api/auth/logout` con `credentials: 'include'` antes de `fullLogout()`.
 
-#### C3. Impersonación SuperAdmin no persiste en refresh
+#### C3. Impersonación operador platform no persiste en refresh
 - **Impacto:** Tras 60 min o reload, vuelve a contexto platform global.
 - **Archivos:** `SwitchSubscriberHandler.cs` (Auth), `RefreshTokenHandler.cs` líneas 50–67.
 - **Repro:** Platform login → switch-subscriber → esperar refresh → tenant context lost.
@@ -156,12 +156,12 @@ El producto está **listo para QA funcional intensivo en staging**, con arquitec
 |----|----------|-----------|
 | M1 | Count companies bajo filter platform → count=0 → bypass limit | `CompanyRepository.CountActiveBySubscriberIdAsync` |
 | M2 | Bootstrap multi-subscriber sin refresh cookie | `Access/UseCases/SwitchTenant/SwitchTenantHandler.cs` |
-| M3 | Platform APIs con `Roles=SuperAdmin` vs `GlobalPlatformOperator` durante impersonación | `PlatformSubscribersController.cs` |
+| M3 | Platform APIs con `Roles=PlatformOperator` vs `GlobalPlatformOperator` durante impersonación | `PlatformSubscribersController.cs` |
 | M4 | Formularios documento sin Zod+RHF (4 capas incumplidas en UI) | `CreateInvoicePage`, `CrearCompraPage`, `CrearGastoPage`, etc. |
 | M5 | Batch módulos nuevos sin i18n (es/en/qu) | stock, kardex, cash/bank, geography, activity, retenciones |
 | M6 | `BillingSettingsPage` usa `alert()` nativo | `BillingSettingsPage.tsx` |
 | M7 | Acciones destructivas sin `ZHConfirmModal` | withholding send/approve, accounting disable |
-| M8 | N+1 SuperAdmin list subscribers | `GetPlatformSubscribersHandler` |
+| M8 | N+1 operador platform list subscribers | `GetPlatformSubscribersHandler` |
 | M9 | RUC empresa default no editable en UI (solo create) | `CompanyManagementFormPage.tsx` taxId disabled en edit |
 | M10 | Health ready incluye probe SRI externo | `Program.cs` + `appsettings.Production.json` |
 | M11 | Redis → memory cache silencioso (multi-instance inconsistente) | `Program.cs` |
@@ -193,7 +193,7 @@ El producto está **listo para QA funcional intensivo en staging**, con arquitec
 
 ### 3.2 Impersonación 🔴
 
-Ver C3. SuperAdmin en tenant ve todas las companies del subscriber (sin `company_id` en JWT — by design).
+Ver C3. Operador platform en tenant ve todas las companies del subscriber (sin `company_id` en JWT — by design).
 
 ### 3.3 Límites de plan ⚠️
 
@@ -202,7 +202,7 @@ Parcialmente implementado. Ver C4, M1.
 ### 3.4 Menú dinámico ✅
 
 - Sesión resuelve módulos habilitados por plan.
-- SuperAdmin panel routes fuera de BD menú tenant.
+- panel platform routes fuera de BD menú tenant.
 - Favoritos en localStorage (excepción documentada).
 
 ### 3.5 Claims JWT ✅
@@ -219,7 +219,7 @@ Implementación enterprise-grade. Ver gaps memberships / platform count.
 
 ### 3.8 First-run & seeds ✅
 
-- `IFirstRunSetupService` en startup (token SuperAdmin inicial).
+- `IFirstRunSetupService` en startup (token operador platform inicial).
 - Demo seed opt-in: `Development:SeedDemoTenant`.
 - Bootstrap commercial plan limits en startup.
 
@@ -230,7 +230,7 @@ Implementación enterprise-grade. Ver gaps memberships / platform count.
 ### Pantallas prioritarias (manual, desktop + ≤980px)
 
 - [ ] Login → dashboard → logout (verificar cookie post-fix P0)
-- [ ] SuperAdmin: crear suscriptor → impersonar → operar 61 min
+- [ ] Operador platform: crear suscriptor → impersonar → operar 61 min
 - [ ] Multi-subscriber bootstrap → reload
 - [ ] Switch company
 - [ ] `/inventory/stock`, `/inventory/kardex` (export Excel/PDF)
@@ -284,7 +284,7 @@ Implementación enterprise-grade. Ver gaps memberships / platform count.
 |---|--------|----------|---------|
 | 1 | Wire `POST /api/auth/logout` en `fullLogout` | S | Seguridad |
 | 2 | `[Authorize]` + role whitelist en register | S | Seguridad |
-| 3 | Refresh cookie en switch-subscriber impersonación | M | SuperAdmin UX |
+| 3 | Refresh cookie en switch-subscriber impersonación | M | Operador platform UX |
 | 4 | `ICommercialPlanLimitService` en create branch/warehouse/user | M | SaaS billing |
 | 5 | i18n batch 8 pantallas nuevas | M | Compliance es/en/qu |
 | 6 | `className="sr-only"` en file inputs (patrón BillingSettings) | S | ESLint ✅ hecho en NC compras |

@@ -82,9 +82,9 @@ public class LoginHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_returns_platform_session_for_superadmin_via_unified_login()
+    public async Task HandleAsync_returns_platform_session_for_platform_operator_via_unified_login()
     {
-        var email = "superadmin@zh.local";
+        var email = "platform-operator@zh.local";
         var password = "Secret123!";
         var passwordHash = "hashed-password";
 

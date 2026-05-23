@@ -94,7 +94,7 @@ Solo `subscriber_id`. Ver [SAAS-COMMERCIAL.md](./SAAS-COMMERCIAL.md).
 
 ### Platform (sin tenant)
 
-SuperAdmin global: `subscriber_id` vacío, `app.is_platform_admin=true`. `PlatformQueryReason` si `IgnoreQueryFilters()`.
+operador platform global: `subscriber_id` vacío, `app.is_platform_admin=true`. `PlatformQueryReason` si `IgnoreQueryFilters()`.
 
 ---
 
@@ -182,7 +182,7 @@ Markers: `PlatformLayerBoundary`, `IamLayerBoundary`, `ErpRuntimeLayerBoundary`.
 | Billing SaaS | `/api/saas/billing/*` |
 | Entitlements | `/api/saas/entitlements` |
 | ERP | `/api/{module}/*` |
-| SuperAdmin legacy | `/api/superadmin/*`, `/api/admin/*` (alias en deprecación) |
+| Platform API legacy (eliminado) | `/api/superadmin/*`, `/api/admin/*` (alias en deprecación) |
 
 Aliases legacy documentados en código `[Obsolete]`; nuevas integraciones usan rutas `/api/platform/*`.
 

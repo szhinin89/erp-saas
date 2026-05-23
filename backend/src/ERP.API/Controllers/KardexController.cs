@@ -200,7 +200,7 @@ public sealed class KardexController : ControllerBase
     /// <summary>
     /// Recalcula los snapshots diarios del kardex bajo demanda.
     /// Ãštil para reconstruir el historial tras migraciÃ³n o correcciones manuales.
-    /// Requiere rol SuperAdmin o Administrador.
+    /// Requiere rol operador platform o Administrador.
     /// </summary>
     [HttpPost("recalcular")]
     [Authorize(Policy = "perm:inventory.kardex.view")]

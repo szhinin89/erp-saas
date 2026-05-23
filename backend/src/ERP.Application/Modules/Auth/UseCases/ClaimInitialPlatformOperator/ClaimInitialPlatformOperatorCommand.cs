@@ -5,8 +5,8 @@ using ERP.Application.Auth.DTOs;
 namespace ERP.Application.Auth.UseCases.ClaimInitialPlatformOperator;
 
 /// <summary>
-/// Crea el único SuperAdmin en <c>users</c> con <c>subscriber_id = Guid.Empty</c> (operador de plataforma, sin empresa previa).
-/// Las empresas se crean después con el panel SuperAdmin autenticado.
+/// Crea el único operador platform en <c>users</c> con <c>subscriber_id = Guid.Empty</c> (operador de plataforma, sin empresa previa).
+/// Las empresas se crean después con el panel platform autenticado.
 /// </summary>
 public sealed record ClaimInitialPlatformOperatorCommand(
     string SetupToken,

@@ -66,9 +66,9 @@ Controllers eliminados: `SuperAdminController`, `SuperAdminConfigController`, `S
 
 ## Separación Platform vs ERP Runtime
 
-- **Platform:** JWT operador platform (`SuperAdmin` en JWT — ver `platformAuth.ts`), rutas `/platform/*`, API `/api/platform/*`.
+- **Platform:** JWT operador platform (`PlatformOperator` — ver `platformAuth.ts` / `PlatformAuthConstants`), rutas `/platform/*`, API `/api/platform/*`.
 - **Runtime:** JWT con `subscriberId` + `companyId`, módulos ERP (`/sales`, `/masterdata`, …).
 - **Impersonación:** `switch-subscriber` → contexto tenant → `/saas/*` (banner con retorno a ficha platform).
 - **Intacto (Phase 4):** query filters multiempresa, `switch-company`, tablas legacy BD, `/api/subscribers/*` runtime (entitlements, public-settings, tenant admin).
 
-Ver también: [ROUTE-MIGRATION.md](./ROUTE-MIGRATION.md), [PHASE4-LEGACY-REMOVAL-COMPLETE.md](./PHASE4-LEGACY-REMOVAL-COMPLETE.md), [LEGACY_ALIAS_MAP.md](./LEGACY_ALIAS_MAP.md), [LEGACY_SURFACE_REPORT.md](./LEGACY_SURFACE_REPORT.md).
+Ver también: [TEAM-NAMING-GUIDE.md](./TEAM-NAMING-GUIDE.md), [ROUTE-MIGRATION.md](./ROUTE-MIGRATION.md), [PHASE4-LEGACY-REMOVAL-COMPLETE.md](./PHASE4-LEGACY-REMOVAL-COMPLETE.md), [LEGACY_ALIAS_MAP.md](./LEGACY_ALIAS_MAP.md), [LEGACY_SURFACE_REPORT.md](./LEGACY_SURFACE_REPORT.md).

@@ -89,19 +89,19 @@ public sealed class FirstRunSetupService : IFirstRunSetupService
             .Unfiltered(_db.IdentityUsers, PlatformQueryReason.CrossTenantSystem)
             .Where(u => u.UserType == IdentityUserType.Platform && u.PlatformRole == PlatformRole.PlatformOperator)
             .ToListAsync(ct);
-        var superAdminIds = platformOperators.Select(x => x.Id).ToArray();
+        var platformOperatorIds = platformOperators.Select(x => x.Id).ToArray();
 
         if (platformOperators.Count > 0)
             _db.IdentityUsers.RemoveRange(platformOperators);
 
-        var superAdminRefreshTokens = await _db.RefreshTokens
+        var platformOperatorRefreshTokens = await _db.RefreshTokens
             .Where(rt =>
                 rt.UserType == RefreshToken.TypePlatformOperator
                 || rt.UserType == RefreshToken.TypePlatform
-                || superAdminIds.Contains(rt.UserId))
+                || platformOperatorIds.Contains(rt.UserId))
             .ToListAsync(ct);
-        if (superAdminRefreshTokens.Count > 0)
-            _db.RefreshTokens.RemoveRange(superAdminRefreshTokens);
+        if (platformOperatorRefreshTokens.Count > 0)
+            _db.RefreshTokens.RemoveRange(platformOperatorRefreshTokens);
 
         var state = await GetOrCreateStateAsync(ct);
         state.ReopenFirstRun(SystemActorId);

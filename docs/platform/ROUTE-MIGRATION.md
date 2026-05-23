@@ -1,3 +1,4 @@
+> **Documento histórico (Phase 2–5).** No usar como referencia de implementación. Rutas y naming actuales: [TEAM-NAMING-GUIDE.md](./TEAM-NAMING-GUIDE.md) · [CANONICAL-ROUTES.md](./CANONICAL-ROUTES.md).
 # Platform Control Plane — Guía de migración
 
 ## Objetivo
@@ -9,7 +10,7 @@ Consolidar el control plane en rutas **canónicas** sin romper contratos legacy 
 - `X-Deprecated-Endpoint: <legacy-path>`
 - `Link: </api/platform/...>; rel="successor-version"` (cuando aplica)
 
-Además: **log warning** + registro en `ILegacyEndpointUsageTracker` (dashboard en `/superadmin/observability`).
+Además: **log warning** + registro en `ILegacyEndpointUsageTracker` (dashboard en `/platform/observability`).
 
 ## Frontend — Phase 2 (aplicado)
 
@@ -17,7 +18,7 @@ Además: **log warning** + registro en `ILegacyEndpointUsageTracker` (dashboard 
 2. **Growth analytics / navigation / features / plans catalog:** migrados a platform metrics, navigation-menu, features, plans.
 **Phase 4 (2026-05-23):** strangler cerrado — controllers legacy eliminados. Ver [PHASE4-LEGACY-REMOVAL-COMPLETE.md](./PHASE4-LEGACY-REMOVAL-COMPLETE.md).
 4. **Navegación:** shell Super Admin unificado; `/companies` redirige vía `CompaniesLegacyRedirect`.
-5. **Ficha suscriptor:** `/superadmin/subscribers/:subscriberId` con 9 tabs — reemplaza `CompaniesPage`.
+5. **Ficha suscriptor:** `/platform/subscribers/:subscriberId` con 9 tabs — reemplaza `CompaniesPage`.
 6. **Users / Billing / Observability:** páginas reales (no placeholders).
 
 **Runtime ERP sin cambios:** `entitlements/me`, `public-settings`, `switch-subscriber`, `/api/companies/*`.
@@ -56,7 +57,7 @@ Comprobar:
 
 - [x] `GET /api/platform/subscribers` lista suscriptores
 - [x] `GET /api/platform/observability/legacy-endpoints` dashboard
-- [x] `/companies` → `/superadmin/subscribers`
+- [x] `/companies` → `/platform/subscribers`
 - [x] `/superadmin/menu-plans` → `/superadmin/plans?tab=menu`
 - [x] Ficha suscriptor 9 tabs compila y carga entitlements
 - [ ] Smoke manual: impersonación, switch-company, BP pickers (regresión manual)

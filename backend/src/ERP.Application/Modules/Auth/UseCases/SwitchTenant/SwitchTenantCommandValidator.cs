@@ -6,7 +6,7 @@ public sealed class SwitchSubscriberCommandValidator : AbstractValidator<SwitchS
 {
     public SwitchSubscriberCommandValidator()
     {
-        // Guid.Empty is valid: SuperAdmin sends it to return to the global panel.
-        // Business validation (tenant exists, user is SuperAdmin) is handled in the handler.
+        // Guid.Empty is valid: operador platform sends it to return to the global panel.
+        // Business validation (tenant exists, user is operador platform) is handled in the handler.
     }
 }
