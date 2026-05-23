@@ -1,7 +1,7 @@
 import {
   clearCompaniesDetailSubscriberId,
   clearCompaniesSubscriptionSubscriberId,
-} from '../../navigation/companiesSubscriberDetailNav';
+} from '../../navigation/platformSubscriberDetailNav';
 import {
   resetRefreshSessionFlight,
   broadcastAuthLogout,

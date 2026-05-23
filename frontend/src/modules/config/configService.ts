@@ -1,7 +1,7 @@
 import { api } from '../lib/api';
 import type { ApiResponse } from '../../types/api';
 import type { ConfigDeleteInput, ConfigEntry, ConfigScope, ConfigUpsertInput } from './types';
-import { PLATFORM_API } from '../superadmin/api/platformApiPaths';
+import { PLATFORM_API } from '../platform/api/platformApiPaths';
 
 const platformConfigBase = (subscriberId: string) =>
   `${PLATFORM_API.config}/${encodeURIComponent(subscriberId)}`;

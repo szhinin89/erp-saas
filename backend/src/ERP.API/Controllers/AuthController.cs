@@ -13,7 +13,6 @@ using ERP.Application.Auth.UseCases.Login;
 using ERP.Application.Auth.UseCases.Logout;
 using ERP.Application.Auth.UseCases.PasswordReset;
 using ERP.Application.Auth.UseCases.RefreshToken;
-using ERP.Application.Auth.UseCases.SuperAdminLogin;
 using ERP.Application.Auth.UseCases.SwitchSubscriber;
 using ERP.Application.Auth.UseCases.SwitchCompany;
 using ERP.Application.Auth.UseCases.ListMyCompanies;
@@ -124,26 +123,6 @@ public class AuthController : ControllerBase
     {
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result);
-    }
-
-    /// <summary>Login global de SuperAdmin: email + password (sin SubscriberId).</summary>
-    [HttpPost("superadmin-login")]
-    [DeprecatedApi("/api/platform/auth/login")]
-    [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> SuperAdminLogin([FromBody] SuperAdminLoginCommand command, CancellationToken ct)
-    {
-        var result = await _mediator.Send(command, ct);
-        if (result.IsSuccess)
-        {
-            if (result.Value?.RefreshToken is not null && result.Value.RefreshTokenExpiry is not null)
-                SetRefreshCookie(result.Value.RefreshToken, result.Value.RefreshTokenExpiry.Value);
-
-            return this.ApiOk(result.Value);
-        }
-
-        return MapAuthFailure(result.Error);
     }
 
     /// <summary>Renueva el access token usando un refresh token válido.</summary>

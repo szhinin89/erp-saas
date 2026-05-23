@@ -153,12 +153,11 @@ function Invoke-PlatformLogin {
     param(
         [Parameter(Mandatory)][string] $ApiBase,
         [Parameter(Mandatory)][string] $Email,
-        [Parameter(Mandatory)][string] $Password,
-        [switch] $UseLegacyRoute
+        [Parameter(Mandatory)][string] $Password
     )
 
     $base = $ApiBase.TrimEnd('/')
-    $uri = if ($UseLegacyRoute) { "$base/api/auth/superadmin-login" } else { "$base/api/platform/auth/login" }
+    $uri = "$base/api/platform/auth/login"
     $body = @{
         email    = $Email.Trim()
         password = $Password
@@ -318,28 +317,24 @@ if ($loginOk) {
     Write-Success "JWT recibido en la respuesta del setup; alta confirmada."
 }
 
-foreach ($attempt in @(
-        @{ Label = "platform"; Legacy = $false },
-        @{ Label = "legacy superadmin-login"; Legacy = $true }
-    )) {
-    if ($loginOk) { break }
+if (-not $loginOk) {
     try {
-        Write-Info "Intento login ($($attempt.Label))..."
-        $loginResponse = Invoke-PlatformLogin -ApiBase $apiUrl -Email $email -Password $plainPassword -UseLegacyRoute:$attempt.Legacy
+        Write-Info "Intento login platform..."
+        $loginResponse = Invoke-PlatformLogin -ApiBase $apiUrl -Email $email -Password $plainPassword
         $tokenValue = Get-AuthTokenFromResponse $loginResponse
 
         if ((Get-ApiSuccess $loginResponse) -and -not [string]::IsNullOrWhiteSpace($tokenValue)) {
             $loginOk = $true
-            Write-Success "Login verificado ($($attempt.Label))."
+            Write-Success "Login verificado (POST /api/platform/auth/login)."
             $t = [string]$tokenValue
             Write-Info "JWT (primeros 50 caracteres): $($t.Substring(0, [Math]::Min(50, $t.Length)))..."
         }
         else {
-            Write-Warn "Login $($attempt.Label): sin token. message=$(Get-ApiMessage $loginResponse)"
+            Write-Warn "Login platform: sin token. message=$(Get-ApiMessage $loginResponse)"
         }
     }
     catch {
-        Write-Warn "Login $($attempt.Label) falló: $($_.Exception.Message)"
+        Write-Warn "Login platform falló: $($_.Exception.Message)"
         $raw = Read-HttpErrorBody $_
         if ($raw) { Write-Warn "Detalle: $raw" }
     }

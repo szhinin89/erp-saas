@@ -7,14 +7,12 @@ import { useDeployment } from './deployment/DeploymentContext';
 import { ConfigProvider } from './modules/config';
 import {
   publicRoutes,
-  adminRoutes,
   mainRoutes,
   catalogRoutes,
   companyManagementRoutes,
   accessRoutes,
 } from './routes';
-import { superAdminShellRoutes } from './routes/superAdminShellRoutes';
-import { CompaniesLegacyRedirect } from './routes/CompaniesLegacyRedirect';
+import { platformShellRoutes, platformBookmarkRedirectRoutes } from './routes/platformRoutes';
 import { SessionBootstrap } from './components/SessionBootstrap';
 
 function AppRoutes() {
@@ -26,11 +24,10 @@ function AppRoutes() {
         {publicRoutes}
 
         <Route element={<ProtectedRoute />}>
-          {superAdminPanelEnabled ? superAdminShellRoutes() : null}
-          <Route path="/companies/*" element={<CompaniesLegacyRedirect />} />
+          {superAdminPanelEnabled ? platformShellRoutes() : null}
+          {superAdminPanelEnabled ? platformBookmarkRedirectRoutes() : null}
           <Route element={<AppLayout />}>
             <Route index element={<HomeRedirect />} />
-            {adminRoutes(superAdminPanelEnabled)}
             {mainRoutes}
             {catalogRoutes}
             {companyManagementRoutes}

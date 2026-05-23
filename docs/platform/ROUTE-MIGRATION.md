@@ -15,7 +15,7 @@ Además: **log warning** + registro en `ILegacyEndpointUsageTracker` (dashboard 
 
 1. **API client** (`superAdminService.ts`, `companyService.ts`): platform shell → **solo** `/api/platform/*`.
 2. **Growth analytics / navigation / features / plans catalog:** migrados a platform metrics, navigation-menu, features, plans.
-3. **Auth platform:** `POST /api/platform/auth/login` (legacy `superadmin-login` solo en `authRefreshPolicy` compat).
+**Phase 4 (2026-05-23):** strangler cerrado — controllers legacy eliminados. Ver [PHASE4-LEGACY-REMOVAL-COMPLETE.md](./PHASE4-LEGACY-REMOVAL-COMPLETE.md).
 4. **Navegación:** shell Super Admin unificado; `/companies` redirige vía `CompaniesLegacyRedirect`.
 5. **Ficha suscriptor:** `/superadmin/subscribers/:subscriberId` con 9 tabs — reemplaza `CompaniesPage`.
 6. **Users / Billing / Observability:** páginas reales (no placeholders).

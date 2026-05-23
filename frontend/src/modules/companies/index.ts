@@ -1,2 +1,6 @@
-export { CompaniesPage } from './pages/CompaniesPage';
-export { default } from './pages/CompaniesPage';
+export { companyService } from './api/companyService';
+export type {
+  CompanyItem,
+  CreateCompanyWithAdminRequest,
+  SubscriberDetailDto,
+} from './api/companyService';

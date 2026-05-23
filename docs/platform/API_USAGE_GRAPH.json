@@ -1,0 +1,581 @@
+{
+  "generatedAt": "2026-05-23T16:56:08.728Z",
+  "summary": {
+    "total": 75,
+    "platform": 14,
+    "runtime": 60,
+    "public": 1,
+    "legacyViolations": 0
+  },
+  "legacyViolations": [],
+  "platformEndpoints": [
+    {
+      "endpoint": "/api/platform/*",
+      "files": [
+        "frontend/src/modules/platform/api/platformService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/platform/audit",
+      "files": [
+        "frontend/src/modules/platform/api/platformApiPaths.ts",
+        "frontend/src/modules/platform/api/platformService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/platform/auth",
+      "files": [
+        "frontend/src/modules/platform/api/platformApiPaths.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/platform/auth/login",
+      "files": [
+        "frontend/src/modules/auth/api/authService.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.test.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/platform/billing",
+      "files": [
+        "frontend/src/modules/platform/api/platformApiPaths.ts",
+        "frontend/src/modules/platform/api/platformService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/platform/config",
+      "files": [
+        "frontend/src/modules/companies/api/companyService.ts",
+        "frontend/src/modules/config/configService.ts",
+        "frontend/src/modules/platform/api/platformApiPaths.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/platform/features",
+      "files": [
+        "frontend/src/modules/platform/api/platformApiPaths.ts",
+        "frontend/src/modules/platform/api/platformService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/platform/metrics",
+      "files": [
+        "frontend/src/modules/platform/api/platformApiPaths.ts",
+        "frontend/src/modules/platform/api/platformService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/platform/navigation-menu",
+      "files": [
+        "frontend/src/modules/platform/api/platformApiPaths.ts",
+        "frontend/src/modules/platform/api/platformService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/platform/observability",
+      "files": [
+        "frontend/src/modules/platform/api/platformApiPaths.ts",
+        "frontend/src/modules/platform/api/platformService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/platform/plans",
+      "files": [
+        "frontend/src/modules/platform/api/platformApiPaths.ts",
+        "frontend/src/modules/platform/api/platformService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/platform/settings",
+      "files": [
+        "frontend/src/modules/platform/api/platformApiPaths.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/platform/subscribers",
+      "files": [
+        "frontend/src/modules/companies/api/companyService.ts",
+        "frontend/src/modules/platform/api/platformApiPaths.ts",
+        "frontend/src/modules/platform/api/platformService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/platform/users",
+      "files": [
+        "frontend/src/modules/platform/api/platformApiPaths.ts",
+        "frontend/src/modules/platform/api/platformService.ts"
+      ],
+      "legacy": false
+    }
+  ],
+  "runtimeEndpoints": [
+    {
+      "endpoint": "/api/admin/iam/bootstrap-login",
+      "files": [
+        "frontend/src/modules/auth/api/accessService.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/admin/iam/me/permissions",
+      "files": [
+        "frontend/src/access/usePermissionsUi.ts",
+        "frontend/src/modules/auth/api/accessService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/admin/iam/profiles",
+      "files": [
+        "frontend/src/modules/access/api/profileService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/admin/iam/register-subscriber",
+      "files": [
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/admin/iam/register-tenant",
+      "files": [
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/admin/iam/subscriber/company_user_memberships",
+      "files": [
+        "frontend/src/modules/access/api/subscriberAccessService.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/admin/iam/switch-subscriber",
+      "files": [
+        "frontend/src/modules/auth/api/accessService.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/auth/forgot-password",
+      "files": [
+        "frontend/src/modules/auth/pages/ForgotPasswordPage.tsx",
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/auth/login",
+      "files": [
+        "frontend/src/modules/auth/api/authService.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.test.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/auth/my-companies",
+      "files": [
+        "frontend/src/modules/auth/api/authService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/auth/password-reset",
+      "files": [
+        "frontend/src/modules/auth/pages/PasswordResetPage.tsx",
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/auth/refresh",
+      "files": [
+        "frontend/src/modules/auth/api/authService.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.test.ts",
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/auth/register",
+      "files": [
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/auth/reset-password",
+      "files": [
+        "frontend/src/modules/auth/pages/ResetPasswordPage.tsx",
+        "frontend/src/modules/lib/authRefreshPolicy.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/auth/switch-company",
+      "files": [
+        "frontend/src/modules/auth/api/authService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/auth/switch-subscriber",
+      "files": [
+        "frontend/src/modules/lib/authRefreshPolicy.ts",
+        "frontend/src/modules/platform/api/platformService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/cash/bank/cajas-chicas",
+      "files": [
+        "frontend/src/modules/cash/bank/api/cashBankService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/cash/bank/cuentas-bancarias",
+      "files": [
+        "frontend/src/modules/cash/bank/api/cashBankService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/companies",
+      "files": [
+        "frontend/src/modules/company-management/api/companyManagementService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/companies/current",
+      "files": [
+        "frontend/src/modules/company-management/api/companyManagementService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/expenses/manual",
+      "files": [
+        "frontend/src/modules/gastos/api/gastosService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/finance/accounts",
+      "files": [
+        "frontend/src/modules/accounting/api/accountingService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/finance/accounts/balance-comprobacion",
+      "files": [
+        "frontend/src/modules/accounting/api/accountingService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/finance/accounts/journal-entries",
+      "files": [
+        "frontend/src/modules/accounting/api/accountingService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/finance/config",
+      "files": [
+        "frontend/src/modules/accounting/api/accountingConfigService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/finance/config/gastos",
+      "files": [
+        "frontend/src/modules/accounting/api/accountingConfigService.ts",
+        "frontend/src/modules/gastos/api/gastosService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/inventory/adjustments",
+      "files": [
+        "frontend/src/modules/inventario/ajustes/api/ajusteService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/inventory/brands",
+      "files": [
+        "frontend/src/modules/catalog/api/catalogService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/inventory/categories",
+      "files": [
+        "frontend/src/modules/catalog/api/catalogService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/inventory/product-lines",
+      "files": [
+        "frontend/src/modules/catalog/api/catalogService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/inventory/product-types",
+      "files": [
+        "frontend/src/modules/catalog/api/catalogService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/inventory/products",
+      "files": [
+        "frontend/src/modules/compras/ordenes/pages/CrearOrdenCompraPage.tsx",
+        "frontend/src/modules/inventario/ajustes/pages/CrearAjustePage.tsx",
+        "frontend/src/modules/inventario/kardex/pages/KardexPage.tsx",
+        "frontend/src/modules/inventario/stock/pages/StockPage.tsx",
+        "frontend/src/modules/inventario/transferencias/pages/CrearTransferenciaPage.tsx",
+        "frontend/src/modules/products/api/productService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/inventory/subcategories",
+      "files": [
+        "frontend/src/modules/catalog/api/catalogService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/inventory/tariffs",
+      "files": [
+        "frontend/src/modules/catalog/api/catalogService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/inventory/transfers",
+      "files": [
+        "frontend/src/modules/inventario/transferencias/api/transferenciaService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/inventory/units",
+      "files": [
+        "frontend/src/modules/catalog/api/catalogService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/inventory/warehouses",
+      "files": [
+        "frontend/src/modules/inventario/transferencias/api/transferenciaService.ts",
+        "frontend/src/modules/inventario/warehouses/api/warehouseService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/logistics/carriers",
+      "files": [
+        "frontend/src/modules/logistica/transportistas/api/carrierService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/master/business-partners",
+      "files": [
+        "frontend/src/modules/lib/api.ts",
+        "frontend/src/modules/masterData/api/businessPartnerFacade.ts",
+        "frontend/src/modules/masterData/api/businessPartnerService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/me/menu",
+      "files": [
+        "frontend/src/modules/auth/api/accessService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/purchases/credit-notes",
+      "files": [
+        "frontend/src/modules/compras/credit-notes/api/purchaseCreditNotesService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/purchases/invoices/manual",
+      "files": [
+        "frontend/src/modules/compras/facturas/api/comprasService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/purchases/orders",
+      "files": [
+        "frontend/src/modules/compras/ordenes/api/ordenCompraService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/purchases/orders/pendientes-por-facturar",
+      "files": [
+        "frontend/src/modules/compras/ordenes/api/ordenCompraService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/purchases/suppliers",
+      "files": [
+        "frontend/src/modules/compras/suppliers/api/supplierService.ts",
+        "frontend/src/modules/masterData/api/businessPartnerFacade.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/saas/billing/account",
+      "files": [
+        "frontend/src/modules/saas/billing/api/saasBillingService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/saas/billing/invoices",
+      "files": [
+        "frontend/src/modules/saas/billing/api/saasBillingService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/sales/credit-notes",
+      "files": [
+        "frontend/src/modules/ventas/api/creditNotesService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/sales/customers",
+      "files": [
+        "frontend/src/modules/customers/api/customerCatalogService.ts",
+        "frontend/src/modules/customers/api/customerService.ts",
+        "frontend/src/modules/masterData/api/businessPartnerFacade.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/sales/invoices",
+      "files": [
+        "frontend/src/modules/lib/authRefreshPolicy.test.ts",
+        "frontend/src/modules/ventas/api/ventasFacturasService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/sales/withholding-received",
+      "files": [
+        "frontend/src/modules/ventas/api/withholdingReceivedService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/security/admin-matrix",
+      "files": [
+        "frontend/src/modules/security/api/securityService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/security/admin-scopes",
+      "files": [
+        "frontend/src/modules/security/api/securityService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/settings/branches",
+      "files": [
+        "frontend/src/modules/branches/api/branchService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/settings/config/global",
+      "files": [
+        "frontend/src/modules/config/configService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/settings/geography/countries",
+      "files": [
+        "frontend/src/modules/branches/api/branchService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/settings/ride",
+      "files": [
+        "frontend/src/modules/configuracion/facturacion/api/billingSettingsService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/settings/sri",
+      "files": [
+        "frontend/src/modules/configuracion/sri/api/sriService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/subscribers/entitlements/me",
+      "files": [
+        "frontend/src/modules/auth/api/entitlementsService.ts"
+      ],
+      "legacy": false
+    },
+    {
+      "endpoint": "/api/taxrates",
+      "files": [
+        "frontend/src/modules/catalog/api/catalogService.ts"
+      ],
+      "legacy": false
+    }
+  ],
+  "publicEndpoints": [
+    {
+      "endpoint": "/api/public/plans",
+      "files": [
+        "frontend/src/modules/platform/api/platformService.ts"
+      ],
+      "legacy": false
+    }
+  ]
+}

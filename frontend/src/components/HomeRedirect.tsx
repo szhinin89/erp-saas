@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { GLOBAL_SUBSCRIBER_ID } from '../constants/subscriberIds';
-import { useSuperAdminGate } from '../hooks/useSuperAdminGate';
+import { usePlatformGate } from '../hooks/usePlatformGate';
 
 function normalizeUuid(uuid: string): string {
   return uuid.replace(/-/g, '').toLowerCase();
@@ -10,7 +10,7 @@ function normalizeUuid(uuid: string): string {
 /** Ruta inicial según modo: Platform → superadmin; Subscriber → cuenta SaaS. */
 export function HomeRedirect() {
   const user = useAuthStore((s) => s.user);
-  const { isSuperAdmin } = useSuperAdminGate();
+  const { isSuperAdmin } = usePlatformGate();
 
   const isGlobalPlatform =
     isSuperAdmin &&

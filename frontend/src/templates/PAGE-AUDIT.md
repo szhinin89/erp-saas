@@ -8,7 +8,7 @@ Actualizar al migrar pantallas. Convenciones: [`docs/frontend-layout-conventions
 
 | Clase | Significado |
 |-------|-------------|
-| **A** | `PageShell` / `ErpPageTemplate` / `SuperAdminCrudTemplate` / `ReportPage` |
+| **A** | `PageShell` / `ErpPageTemplate` / `PlatformCrudTemplate` / `ReportPage` |
 | **B** | `pg-page` + cabecera manual (`pg-header-row` o `ZHScreenHeading`) |
 | **C** | Shell custom (`dsh-page`, `zh-auth-*`, `sap-*`) |
 
@@ -16,8 +16,8 @@ Actualizar al migrar pantallas. Convenciones: [`docs/frontend-layout-conventions
 
 ### Shell y plantillas
 - `AppLayout` + `LayoutFrame` + rutas tenant
-- `SuperAdminLayout` + `LayoutFrame` + `SuperAdminCrudTemplate`
-- `templates/ErpPageTemplate.tsx`, `templates/SuperAdminCrudTemplate.tsx`
+- `PlatformLayout` + `LayoutFrame` + `PlatformCrudTemplate`
+- `templates/ErpPageTemplate.tsx`, `templates/PlatformCrudTemplate.tsx`
 
 ### Ya conformes (referencia previa)
 - `modules/companies/pages/CompaniesPage.tsx`
@@ -86,11 +86,11 @@ Actualizar al migrar pantallas. Convenciones: [`docs/frontend-layout-conventions
 - `pages/saas/SaasBillingPage.tsx`
 
 ### SuperAdmin
-- `modules/superadmin/pages/SuperAdminPanelPage.tsx`
-- `pages/SuperAdmin/SuperAdminOverviewPage.tsx`
-- `pages/SuperAdmin/SuperAdminPlansPage.tsx`
-- `pages/SuperAdmin/SuperAdminMenuPlansHubPage.tsx`
-- `pages/SuperAdmin/SuperAdminCompaniesShellPage.tsx`
+- `modules/platform/pages/PlatformPanelPage.tsx`
+- `pages/Platform/PlatformOverviewPage.tsx`
+- `pages/Platform/SuperAdminPlansPage.tsx`
+- `pages/Platform/PlatformMenuPlansHubPage.tsx`
+- `pages/Platform/PlatformCompaniesShellPage.tsx`
 
 ## B — Pendiente (sin `pg-header-row` en páginas de producto)
 

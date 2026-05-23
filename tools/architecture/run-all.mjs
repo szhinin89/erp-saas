@@ -6,6 +6,7 @@ import { runCheckImportBoundaries } from './check-import-boundaries.mjs';
 import { runCheckModuleBoundaries } from './check-module-boundaries.mjs';
 import { runCheckCssPrefixes } from './check-css-prefixes.mjs';
 import { runCheckNoCrossLayer } from './check-no-cross-layer.mjs';
+import { runCheckPlatformLegacySurface } from './check-platform-legacy-surface.mjs';
 import { runCheckBackendLayering } from './check-backend-layering.mjs';
 import { runCheckBackendCleanArchitecture } from './check-backend-clean-architecture.mjs';
 import { runCheckBackendControllerThin } from './check-backend-controller-thin.mjs';
@@ -23,6 +24,7 @@ export const CHECKS = [
   { name: 'module-boundaries', run: runCheckModuleBoundaries },
   { name: 'css-prefixes', run: runCheckCssPrefixes },
   { name: 'no-cross-layer', run: runCheckNoCrossLayer },
+  { name: 'platform-legacy-surface', run: runCheckPlatformLegacySurface },
   { name: 'backend-layering', run: runCheckBackendLayering },
   { name: 'backend-clean-architecture', run: runCheckBackendCleanArchitecture },
   { name: 'backend-controller-thin', run: runCheckBackendControllerThin },

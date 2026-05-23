@@ -1,5 +1,4 @@
 import { logDevApiRequest } from '../../../lib/observability/devApiLog';
-import { api } from '../../../modules/lib/api';
 import { customerService, type Customer } from '../../customers/api/customerService';
 import { supplierService, type Supplier } from '../../compras/suppliers/api/supplierService';
 import { mapBusinessPartnerToCustomerPickerRow } from '../adapters/businessPartnerCustomerAdapter';
@@ -47,15 +46,8 @@ async function searchSuppliersViaMaster(search?: string): Promise<SupplierPicker
   return bps.map(mapBusinessPartnerToSupplierPickerRow);
 }
 
-function trackLegacyMasterData(sourceKey: string, detail?: string) {
-  void api
-    .post('/api/platform/observability/legacy-masterdata', { sourceKey, detail })
-    .catch(() => undefined);
-}
-
 function legacyCustomersToPickerRows(customers: Customer[]): CustomerPickerRow[] {
   logDevApiRequest({ endpoint: '/api/sales/customers', mode: 'legacy', method: 'GET' });
-  trackLegacyMasterData('customers-picker-legacy', 'sales/customers');
   return customers.map((c) => ({
     ...c,
     pickerMeta: {
@@ -69,7 +61,6 @@ function legacyCustomersToPickerRows(customers: Customer[]): CustomerPickerRow[]
 
 function legacySuppliersToPickerRows(suppliers: Supplier[]): SupplierPickerRow[] {
   logDevApiRequest({ endpoint: '/api/purchases/suppliers', mode: 'legacy', method: 'GET' });
-  trackLegacyMasterData('suppliers-picker-legacy', 'purchases/suppliers');
   return suppliers.map((s) => ({
     ...s,
     pickerMeta: {

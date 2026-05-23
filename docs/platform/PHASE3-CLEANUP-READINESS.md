@@ -42,7 +42,7 @@ Requiere **0 hits 30–60d** en `/api/platform/observability/legacy-endpoints`.
 |--------|----------|
 | `CompaniesPage` | 0 hits beacon `/companies` + 0 sessionStorage legacy |
 | `/companies` redirect | Idem |
-| `SuperAdminPlaceholderPage` | Sin rutas activas |
+| `PlatformPlaceholderPage` | Sin rutas activas |
 
 ---
 

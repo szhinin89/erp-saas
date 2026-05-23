@@ -15,9 +15,9 @@ export type LayoutFrameProps = {
 
 /**
  * Shared content-area frame for tenant and platform shells.
- * Navigation, sidebars and auth stay in AppLayout / SuperAdminLayout.
+ * Navigation, sidebars and auth stay in AppLayout / PlatformLayout.
  *
- * @architecture Do not import from route pages — only AppLayout / SuperAdminLayout.
+ * @architecture Do not import from route pages — only AppLayout / PlatformLayout.
  * @see docs/frontend-layout-conventions.md
  */
 export function LayoutFrame({

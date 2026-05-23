@@ -2,7 +2,6 @@
 export const PUBLIC_AUTH_PATHS = [
   '/api/auth/login',
   '/api/platform/auth/login',
-  '/api/auth/superadmin-login',
   '/api/auth/register',
   '/api/auth/password-reset',
   '/api/auth/forgot-password',

@@ -1,6 +1,6 @@
 import { useDraggable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import type { FuncionalidadArbolDto } from '../../modules/superadmin/api/superAdminService';
+import type { FuncionalidadArbolDto } from '../../modules/platform/api/platformService';
 import { libDragId } from './treeOps';
 
 type Props = {

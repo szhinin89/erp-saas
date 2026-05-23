@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { FuncionalidadArbolDto } from '../../modules/superadmin/api/superAdminService';
+import type { FuncionalidadArbolDto } from '../../modules/platform/api/platformService';
 import type { MenuPreviewLayout } from './MenuPreview';
 import type { EditorMenuItem, MenuItem } from './menuBuilderTypes';
 import type { ParentRef } from './treeOps';

@@ -7,7 +7,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { useI18n } from '../../i18n/i18n';
-import type { FuncionalidadArbolDto } from '../../modules/superadmin/api/superAdminService';
+import type { FuncionalidadArbolDto } from '../../modules/platform/api/platformService';
 import {
   buildFuncionalidadMaps,
   createFolderEditorItem,

@@ -21,7 +21,6 @@ public sealed class EnterpriseDiagnosticMiddleware
         "/api/setup",
         "/api/platform",
         "/api/public",
-        "/api/superadmin",
         "/api/subscribers/entitlements",
         "/api/subscribers",        // gestión SaaS de subscribers
         "/api/dev",

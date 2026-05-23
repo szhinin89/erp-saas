@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
-import { superAdminService } from '../modules/superadmin/api/superAdminService';
+import { platformService } from '../modules/platform/api/platformService';
 import { LoadingState } from './PageShell';
 import { ZHAppSubscriberHeader } from './zh/ZHAppSubscriberHeader';
 import { CompanySwitcher } from './CompanySwitcher';
@@ -12,7 +12,7 @@ import { GLOBAL_SUBSCRIBER_ID } from '../constants/subscriberIds';
 import { fullLogout } from '../lib/session/fullLogout';
 import { SUPERADMIN_IMPERSONATION_NAME_KEY } from '../lib/session/sessionStorageKeys';
 import { MainMenuList } from './AppLayoutMainMenu';
-import { SuperAdminImpersonationBanner } from './SuperAdminImpersonationBanner';
+import { PlatformImpersonationBanner } from './PlatformImpersonationBanner';
 import { LayoutFrame } from './layout/LayoutFrame';
 import { useAppLayoutNavigation } from './useAppLayoutNavigation';
 import './AppLayout.css';
@@ -93,7 +93,7 @@ export function AppLayout() {
     if (superadminReturningGlobal) return;
     setSuperadminReturningGlobal(true);
     try {
-      const auth = await superAdminService.switchSubscriber(GLOBAL_SUBSCRIBER_ID);
+      const auth = await platformService.switchSubscriber(GLOBAL_SUBSCRIBER_ID);
       localStorage.removeItem(SUPERADMIN_IMPERSONATION_NAME_KEY);
       login(auth);
       clearPermissions();
@@ -115,7 +115,7 @@ export function AppLayout() {
         className="app-layout__frame"
         banner={
           showImpersonationBanner ? (
-            <SuperAdminImpersonationBanner
+            <PlatformImpersonationBanner
               subscriberId={user.subscriberId}
               t={t}
               onReturnToGlobal={returnToGlobal}

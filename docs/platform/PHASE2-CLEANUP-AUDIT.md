@@ -52,10 +52,10 @@ Legacy **mantener** hasta métricas de uso en cero (ver Observability → Legacy
 | Legacy | Destino | Eliminación Phase 3 |
 |--------|---------|---------------------|
 | `/companies/*` | `CompaniesLegacyRedirect` → subscribers o ficha | Cuando hits = 0 (60d) |
-| `modules/companies/pages/CompaniesPage.tsx` | Duplicada por `SuperAdminSubscriberDetailPage` | Deprecar export; no borrar hasta métricas |
+| `modules/companies/pages/CompaniesPage.tsx` | Duplicada por `PlatformSubscriberDetailPage` | Deprecar export; no borrar hasta métricas |
 | `pages/CompaniesPage.tsx` re-export | Compat imports viejos | Phase 3 |
 | `/superadmin/features`, `/growth`, `/forms` | Redirect overview/plans | Phase 3 |
-| `SuperAdminPlaceholderPage.tsx` | Sin rutas activas | Borrar si orphan confirmado |
+| `PlatformPlaceholderPage.tsx` | Sin rutas activas | Borrar si orphan confirmado |
 
 ---
 
@@ -68,7 +68,7 @@ Legacy **mantener** hasta métricas de uso en cero (ver Observability → Legacy
 | `platformApiPaths.ts` `LEGACY_*` | Documentación + auth refresh compat | Eliminar cuando backend legacy off |
 | `companiesSubscriberDetailNav.ts` | sessionStorage + redirect compat | Mantener hasta cero hits `/companies` |
 | `useCompaniesPage.ts` | Hook legacy CompaniesPage | Eliminar con página |
-| `SuperAdminPanelCompaniesTab.tsx` | Tab panel legacy | Revisar callers overview |
+| `PlatformPanelCompaniesTab.tsx` | Tab panel legacy | Revisar callers overview |
 
 ---
 

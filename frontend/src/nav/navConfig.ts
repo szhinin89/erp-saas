@@ -148,7 +148,6 @@ function mapSessionMenuItem(it: SessionMenuItemDto, t: TranslateFn, inheritedRou
 
 /** Rutas de administración de plataforma: no deben venir del menú en BD (solo enlaces estáticos para SuperAdmin). */
 function isPlatformAdminMenuRoute(routePath: string): boolean {
-  if (routePath === '/companies') return true;
   return routePath.startsWith('/superadmin');
 }
 

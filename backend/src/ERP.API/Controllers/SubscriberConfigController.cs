@@ -9,7 +9,7 @@ namespace ERP.API.Controllers;
 
 /// <summary>
 /// Lectura de configuración jerárquica del suscriptor activo (JWT).
-/// Escritura administrativa cross-tenant: <see cref="SuperAdminConfigController"/>.
+/// Escritura administrativa cross-tenant: <see cref="Platform.PlatformConfigController"/>.
 /// </summary>
 [ApiController]
 [Route("api/settings/config")]

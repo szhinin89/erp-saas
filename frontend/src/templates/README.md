@@ -3,7 +3,7 @@
 | Archivo | Uso |
 |---------|-----|
 | `ErpPageTemplate.tsx` | Pantallas tenant bajo `AppLayout` |
-| `SuperAdminCrudTemplate.tsx` | Pantallas `/superadmin/*` bajo `SuperAdminLayout` |
+| `PlatformCrudTemplate.tsx` | Pantallas `/superadmin/*` bajo `PlatformLayout` |
 
 Documentación: [`docs/frontend-layout-conventions.md`](../../docs/frontend-layout-conventions.md).
 

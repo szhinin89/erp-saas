@@ -1,4 +1,4 @@
-import type { FuncionalidadArbolDto } from '../../modules/superadmin/api/superAdminService';
+import type { FuncionalidadArbolDto } from '../../modules/platform/api/platformService';
 
 type Props = {
   previewForm: FuncionalidadArbolDto;

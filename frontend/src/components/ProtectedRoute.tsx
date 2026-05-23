@@ -2,7 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { GLOBAL_SUBSCRIBER_ID } from '../constants/subscriberIds';
 import { useDeployment } from '../deployment/DeploymentContext';
-import { useSuperAdminGate } from '../hooks/useSuperAdminGate';
+import { usePlatformGate } from '../hooks/usePlatformGate';
 import { fullLogout } from '../lib/session/fullLogout';
 import { getAccessToken } from '../lib/session/authTokenMemory';
 
@@ -49,7 +49,7 @@ function requiresCompanyContext(path: string): boolean {
 
 export function ProtectedRoute() {
   const { superAdminPanelEnabled } = useDeployment();
-  const { isSuperAdmin } = useSuperAdminGate();
+  const { isSuperAdmin } = usePlatformGate();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const hasHydrated = useAuthStore((s) => s.hasHydrated);
   const user = useAuthStore((s) => s.user);

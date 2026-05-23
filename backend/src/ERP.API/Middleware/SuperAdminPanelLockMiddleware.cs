@@ -29,7 +29,7 @@ public sealed class SuperAdminPanelLockMiddleware(RequestDelegate next)
         }
 
         if (HttpMethods.IsPost(context.Request.Method) &&
-            path.Equals("/api/auth/superadmin-login", StringComparison.OrdinalIgnoreCase))
+            path.Equals("/api/platform/auth/login", StringComparison.OrdinalIgnoreCase))
         {
             await WriteForbiddenAsync(context);
             return;

@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && node ../tools/architecture/check-platform-legacy-surface.mjs && node ../tools/architecture/extract-api-usage-graph.mjs && vite build",
+    "platform:guard": "node ../tools/architecture/check-platform-legacy-surface.mjs",
+    "platform:api-graph": "node ../tools/architecture/extract-api-usage-graph.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test:unit": "vitest run",

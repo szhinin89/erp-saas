@@ -13,7 +13,6 @@ using ERP.Application.Access.UseCases.Profiles;
 using ERP.Application.Access.UseCases.SubscriberAccess;
 using ERP.Application.Access.UseCases.SuperAdminSubscribers;
 using ERP.Application.Access.UseCases.Permissions;
-using ERP.Application.Navigation;
 using ERP.Application.Navigation.DTOs;
 using ERP.Application.Navigation.UseCases.GetSessionMenu;
 using ERP.Application.Common;
@@ -39,16 +38,13 @@ namespace ERP.API.Controllers;
 public class AccessController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly ISubscriberMenuAdminService _subscriberMenuAdmin;
     private readonly IAuthorizationService _authorization;
 
     public AccessController(
         IMediator mediator,
-        ISubscriberMenuAdminService tenantMenuAdmin,
         IAuthorizationService authorization)
     {
         _mediator = mediator;
-        _subscriberMenuAdmin = tenantMenuAdmin;
         _authorization = authorization;
     }
 
@@ -152,97 +148,6 @@ public class AccessController : ControllerBase
     {
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result, "OK", () => new { });
-    }
-
-    // ── SuperAdmin: empresas ────────────────────────────────────────
-
-    /// <summary>SuperAdmin: lista empresas activas para administración.</summary>
-    /// <remarks>Incluye <c>planCode</c>, <c>enabledModules</c> efectivos y <c>hasModuleRestrictions</c>.</remarks>
-    /// <remarks>Legacy — usar <c>GET /api/platform/subscribers</c>.</remarks>
-    [Obsolete("Legacy IAM route. Use GET /api/platform/subscribers instead.")]
-    [DeprecatedApi("/api/platform/subscribers")]
-    [HttpGet("superadmin/subscribers")]
-    [Authorize(Roles = "SuperAdmin")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> SuperAdminSubscribers(CancellationToken ct)
-    {
-        var result = await _mediator.Send(new GetSuperAdminSubscribersQuery(), ct);
-        return this.ToOkOrBadRequest(result, "OK", () => Array.Empty<SuperAdminSubscriberItemDto>());
-    }
-
-    /// <summary>SuperAdmin: crea empresa + Admin inicial (solo para esa empresa).</summary>
-    /// <remarks>Legacy — usar <c>POST /api/platform/subscribers</c>.</remarks>
-    [Obsolete("Legacy IAM route. Use POST /api/platform/subscribers instead.")]
-    [DeprecatedApi("/api/platform/subscribers")]
-    [HttpPost("superadmin/subscribers")]
-    [Authorize(Roles = "SuperAdmin")]
-    [ProducesResponseType(typeof(ApiResponse<SessionResponseDto?>), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> SuperAdminCreateSubscriber([FromBody] SuperAdminCreateSubscriberWithAdminCommand command, CancellationToken ct)
-    {
-        var result = await _mediator.Send(command, ct);
-        return this.ToCreatedOrBadRequest(result, "Creado");
-    }
-
-    public sealed record TenantMenuPutBody(string MenuConfigJson);
-
-    /// <summary>SuperAdmin: menú efectivo de la empresa (personalizado, del plan o global).</summary>
-    /// <remarks>Legacy — usar <c>GET /api/platform/subscribers/{subscriberId}/menu</c>.</remarks>
-    [Obsolete("Legacy IAM route. Use GET /api/platform/subscribers/{subscriberId}/menu instead.")]
-    [DeprecatedApi("/api/platform/subscribers")]
-    [HttpGet("superadmin/subscribers/{subscriberId:guid}/menu")]
-    [Authorize(Roles = "SuperAdmin")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SuperAdminGetTenantMenu(Guid subscriberId, CancellationToken ct)
-    {
-        var r = await _subscriberMenuAdmin.GetResolvedMenuForTenantAsync(subscriberId, ct);
-        if (!r.IsSuccess)
-            return this.ApiBadRequest(r.Error ?? "Error");
-        var v = r.Value!;
-        return this.ApiOk(new
-        {
-            menu = v.Menu,
-            hasCustomMenu = v.HasCustomMenu,
-            usedPlanMenu = v.UsedPlanMenu,
-            usedGlobalFallback = v.UsedGlobalFallback,
-        });
-    }
-
-    /// <summary>SuperAdmin: guarda menú personalizado por empresa (JSON = <c>SessionMenuGroupDto[]</c>).</summary>
-    /// <remarks>Legacy — usar <c>PUT /api/platform/subscribers/{subscriberId}/menu</c>.</remarks>
-    [Obsolete("Legacy IAM route. Use PUT /api/platform/subscribers/{subscriberId}/menu instead.")]
-    [DeprecatedApi("/api/platform/subscribers")]
-    [HttpPut("superadmin/subscribers/{subscriberId:guid}/menu")]
-    [Authorize(Roles = "SuperAdmin")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SuperAdminPutTenantMenu(Guid subscriberId, [FromBody] TenantMenuPutBody body, CancellationToken ct)
-    {
-        var r = await _subscriberMenuAdmin.UpsertSubscriberCustomMenuAsync(subscriberId, body.MenuConfigJson, ct);
-        return r.IsSuccess
-            ? this.ApiOk(new { }, "Guardado")
-            : this.ApiBadRequest(r.Error ?? "Error");
-    }
-
-    /// <summary>SuperAdmin: elimina menú personalizado; la empresa vuelve al menú del plan o global.</summary>
-    /// <remarks>Legacy — usar <c>DELETE /api/platform/subscribers/{subscriberId}/menu</c>.</remarks>
-    [Obsolete("Legacy IAM route. Use DELETE /api/platform/subscribers/{subscriberId}/menu instead.")]
-    [DeprecatedApi("/api/platform/subscribers")]
-    [HttpDelete("superadmin/subscribers/{subscriberId:guid}/menu")]
-    [Authorize(Roles = "SuperAdmin")]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> SuperAdminDeleteTenantMenu(Guid subscriberId, CancellationToken ct)
-    {
-        var r = await _subscriberMenuAdmin.DeleteSubscriberCustomMenuAsync(subscriberId, ct);
-        return r.IsSuccess
-            ? this.ApiOk(new { }, "Restablecido")
-            : this.ApiBadRequest(r.Error ?? "Error");
     }
 
     // ── Admin del tenant: accesos ───────────────────────────────────

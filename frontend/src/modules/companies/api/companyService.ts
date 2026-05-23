@@ -1,8 +1,8 @@
 import { api } from '../../lib/api';
 import type { ApiResponse } from '../../../types/api';
 import type { SessionResponse } from '../../../types/access';
-import { PLATFORM_API } from '../../superadmin/api/platformApiPaths';
-import { parsePlatformSubscriberList, type SuperAdminSubscriber } from '../../superadmin/api/superAdminService';
+import { PLATFORM_API } from '../../platform/api/platformApiPaths';
+import { parsePlatformSubscriberList, type PlatformSubscriber } from '../../platform/api/platformService';
 
 const platformSubscriber = (subscriberId: string) =>
   `${PLATFORM_API.subscribers}/${encodeURIComponent(subscriberId)}`;
@@ -112,7 +112,7 @@ export type SubscriberDetailDto = {
 export const companyService = {
   list: () =>
     api
-      .get<ApiResponse<SuperAdminSubscriber[]>>(PLATFORM_API.subscribers)
+      .get<ApiResponse<PlatformSubscriber[]>>(PLATFORM_API.subscribers)
       .then((r) => {
         const rows = parsePlatformSubscriberList(r.data.responseObject);
         return rows.map(
