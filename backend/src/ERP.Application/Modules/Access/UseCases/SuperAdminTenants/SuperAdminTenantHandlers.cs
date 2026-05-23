@@ -246,7 +246,7 @@ public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperA
 public class GetSuperAdminSubscribersHandler : IRequestHandler<GetSuperAdminSubscribersQuery, Result<IReadOnlyList<SuperAdminSubscriberItemDto>>>
 {
     private readonly ISubscriberRepository _tenantRepository;
-    private readonly ISubscriberMenuAdminService _tenantMenuAdmin;
+    private readonly ISubscriberMenuAdminService _subscriberMenuAdmin;
     private readonly ISessionModulesResolver _sessionModules;
     private readonly IAccessRepository _accessRepository;
 
@@ -257,14 +257,14 @@ public class GetSuperAdminSubscribersHandler : IRequestHandler<GetSuperAdminSubs
         IAccessRepository accessRepository)
     {
         _tenantRepository = tenantRepository;
-        _tenantMenuAdmin = tenantMenuAdmin;
+        _subscriberMenuAdmin = tenantMenuAdmin;
         _sessionModules = sessionModules;
         _accessRepository = accessRepository;
     }
 
     public async Task<Result<IReadOnlyList<SuperAdminSubscriberItemDto>>> Handle(GetSuperAdminSubscribersQuery request, CancellationToken ct)
     {
-        var withCustom = await _tenantMenuAdmin.GetSubscriberIdsWithCustomMenuAsync(ct);
+        var withCustom = await _subscriberMenuAdmin.GetSubscriberIdsWithCustomMenuAsync(ct);
         var ordered = (await _tenantRepository.GetAllAsync(ct))
             .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();

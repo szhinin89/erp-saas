@@ -16,10 +16,10 @@ namespace ERP.API.Controllers;
 [Produces("application/json")]
 public sealed class SuperAdminEmpresasMenuController : ControllerBase
 {
-    private readonly ISubscriberMenuAdminService _tenantMenuAdmin;
+    private readonly ISubscriberMenuAdminService _subscriberMenuAdmin;
 
     public SuperAdminEmpresasMenuController(ISubscriberMenuAdminService tenantMenuAdmin) =>
-        _tenantMenuAdmin = tenantMenuAdmin;
+        _subscriberMenuAdmin = tenantMenuAdmin;
 
     public sealed record EmpresaMenuPutBody(string MenuConfigJson);
 
@@ -28,7 +28,7 @@ public sealed class SuperAdminEmpresasMenuController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetMenu(Guid empresaId, CancellationToken ct)
     {
-        var r = await _tenantMenuAdmin.GetResolvedMenuForTenantAsync(empresaId, ct);
+        var r = await _subscriberMenuAdmin.GetResolvedMenuForTenantAsync(empresaId, ct);
         if (!r.IsSuccess)
             return this.ApiBadRequest(r.Error ?? "Error");
         var v = r.Value!;
@@ -46,7 +46,7 @@ public sealed class SuperAdminEmpresasMenuController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> PutMenu(Guid empresaId, [FromBody] EmpresaMenuPutBody body, CancellationToken ct)
     {
-        var r = await _tenantMenuAdmin.UpsertSubscriberCustomMenuAsync(empresaId, body.MenuConfigJson, ct);
+        var r = await _subscriberMenuAdmin.UpsertSubscriberCustomMenuAsync(empresaId, body.MenuConfigJson, ct);
         return r.IsSuccess
             ? this.ApiOk(new { }, "Guardado")
             : this.ApiBadRequest(r.Error ?? "Error");
@@ -57,7 +57,7 @@ public sealed class SuperAdminEmpresasMenuController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> DeleteMenu(Guid empresaId, CancellationToken ct)
     {
-        var r = await _tenantMenuAdmin.DeleteSubscriberCustomMenuAsync(empresaId, ct);
+        var r = await _subscriberMenuAdmin.DeleteSubscriberCustomMenuAsync(empresaId, ct);
         return r.IsSuccess
             ? this.ApiOk(new { }, "Restablecido")
             : this.ApiBadRequest(r.Error ?? "Error");

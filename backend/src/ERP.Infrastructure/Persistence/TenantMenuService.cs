@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERP.Infrastructure.Persistence;
 
-public sealed class SubscriberMenuService : ITenantSessionMenuResolver, ISubscriberMenuAdminService
+public sealed class SubscriberMenuService : ISubscriberSessionMenuResolver, ISubscriberMenuAdminService
 {
     private readonly ErpDbContext _db;
     private readonly INavigationMenuReader _reader;
@@ -17,7 +17,7 @@ public sealed class SubscriberMenuService : ITenantSessionMenuResolver, ISubscri
         _reader = reader;
     }
 
-    public async Task<IReadOnlyList<SessionMenuGroupDto>> ResolveForTenantAsync(Guid subscriberId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<SessionMenuGroupDto>> ResolveForSubscriberAsync(Guid subscriberId, CancellationToken ct = default)
     {
         if (subscriberId == Guid.Empty)
         {
@@ -48,14 +48,14 @@ public sealed class SubscriberMenuService : ITenantSessionMenuResolver, ISubscri
         return SubscriberIamMenuMerger.EnsureCompanyIamGroup(global);
     }
 
-    public async Task<Result<TenantMenuResolvedDto>> GetResolvedMenuForTenantAsync(Guid subscriberId, CancellationToken ct = default)
+    public async Task<Result<SubscriberMenuResolvedDto>> GetResolvedMenuForTenantAsync(Guid subscriberId, CancellationToken ct = default)
     {
         if (subscriberId == Guid.Empty)
-            return Result<TenantMenuResolvedDto>.Failure("Subscriber inválido.");
+            return Result<SubscriberMenuResolvedDto>.Failure("Subscriber inválido.");
 
         var exists = await _db.Subscribers.AsNoTracking().AnyAsync(t => t.Id == subscriberId, ct);
         if (!exists)
-            return Result<TenantMenuResolvedDto>.Failure("Empresa no encontrada.");
+            return Result<SubscriberMenuResolvedDto>.Failure("Empresa no encontrada.");
 
         var custom = await _db.SubscriberCustomMenus.AsNoTracking()
             .FirstOrDefaultAsync(x => x.SubscriberId == subscriberId, ct);
@@ -63,7 +63,7 @@ public sealed class SubscriberMenuService : ITenantSessionMenuResolver, ISubscri
             SessionMenuJsonParser.TryDeserialize(custom.MenuConfigJson, out var customMenu) &&
             customMenu is { Count: > 0 })
         {
-            return Result<TenantMenuResolvedDto>.Success(new TenantMenuResolvedDto(
+            return Result<SubscriberMenuResolvedDto>.Success(new SubscriberMenuResolvedDto(
                 SubscriberIamMenuMerger.EnsureCompanyIamGroup(customMenu), HasCustomMenu: true, UsedPlanMenu: false, UsedGlobalFallback: false));
         }
 
@@ -76,13 +76,13 @@ public sealed class SubscriberMenuService : ITenantSessionMenuResolver, ISubscri
                 SessionMenuJsonParser.TryDeserialize(pj, out var planMenu) &&
                 planMenu is { Count: > 0 })
             {
-                return Result<TenantMenuResolvedDto>.Success(new TenantMenuResolvedDto(
+                return Result<SubscriberMenuResolvedDto>.Success(new SubscriberMenuResolvedDto(
                     SubscriberIamMenuMerger.EnsureCompanyIamGroup(planMenu), HasCustomMenu: false, UsedPlanMenu: true, UsedGlobalFallback: false));
             }
         }
 
         var global = await _reader.GetActiveMenuAsync(ct);
-        return Result<TenantMenuResolvedDto>.Success(new TenantMenuResolvedDto(
+        return Result<SubscriberMenuResolvedDto>.Success(new SubscriberMenuResolvedDto(
             SubscriberIamMenuMerger.EnsureCompanyIamGroup(global), HasCustomMenu: false, UsedPlanMenu: false, UsedGlobalFallback: true));
     }
 

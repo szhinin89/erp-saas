@@ -6,7 +6,7 @@ namespace ERP.Application.Navigation;
 /// <summary>SuperAdmin: menú efectivo por empresa y CRUD de <c>subscriber_custom_menus</c>.</summary>
 public interface ISubscriberMenuAdminService
 {
-    Task<Result<TenantMenuResolvedDto>> GetResolvedMenuForTenantAsync(Guid subscriberId, CancellationToken ct = default);
+    Task<Result<SubscriberMenuResolvedDto>> GetResolvedMenuForTenantAsync(Guid subscriberId, CancellationToken ct = default);
 
     Task<Result<object?>> UpsertSubscriberCustomMenuAsync(Guid subscriberId, string menuConfigJson, CancellationToken ct = default);
 
@@ -15,7 +15,7 @@ public interface ISubscriberMenuAdminService
     Task<IReadOnlySet<Guid>> GetSubscriberIdsWithCustomMenuAsync(CancellationToken ct = default);
 }
 
-public sealed record TenantMenuResolvedDto(
+public sealed record SubscriberMenuResolvedDto(
     IReadOnlyList<SessionMenuGroupDto> Menu,
     bool HasCustomMenu,
     bool UsedPlanMenu,

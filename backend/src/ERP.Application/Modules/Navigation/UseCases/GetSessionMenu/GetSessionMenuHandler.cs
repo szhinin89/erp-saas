@@ -8,9 +8,9 @@ namespace ERP.Application.Navigation.UseCases.GetSessionMenu;
 public sealed class GetSessionMenuHandler : IRequestHandler<GetSessionMenuQuery, Result<IReadOnlyList<SessionMenuGroupDto>>>
 {
     private readonly ICurrentSubscriber _currentSubscriber;
-    private readonly ITenantSessionMenuResolver _menuResolver;
+    private readonly ISubscriberSessionMenuResolver _menuResolver;
 
-    public GetSessionMenuHandler(ICurrentSubscriber currentSubscriber, ITenantSessionMenuResolver menuResolver)
+    public GetSessionMenuHandler(ICurrentSubscriber currentSubscriber, ISubscriberSessionMenuResolver menuResolver)
     {
         _currentSubscriber = currentSubscriber;
         _menuResolver = menuResolver;
@@ -21,7 +21,7 @@ public sealed class GetSessionMenuHandler : IRequestHandler<GetSessionMenuQuery,
 
     public async Task<Result<IReadOnlyList<SessionMenuGroupDto>>> Handle(GetSessionMenuQuery request, CancellationToken ct)
     {
-        var menu = await _menuResolver.ResolveForTenantAsync(_currentSubscriber.SubscriberId, ct);
+        var menu = await _menuResolver.ResolveForSubscriberAsync(_currentSubscriber.SubscriberId, ct);
         return Result<IReadOnlyList<SessionMenuGroupDto>>.Success(menu);
     }
 }

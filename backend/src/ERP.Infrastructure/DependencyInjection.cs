@@ -190,7 +190,7 @@ public static class DependencyInjection
         services.AddScoped<IConfigService, ConfigService>();
         services.AddScoped<INavigationMenuReader, NavigationMenuReader>();
         services.AddScoped<SubscriberMenuService>();
-        services.AddScoped<ITenantSessionMenuResolver>(sp => sp.GetRequiredService<SubscriberMenuService>());
+        services.AddScoped<ISubscriberSessionMenuResolver>(sp => sp.GetRequiredService<SubscriberMenuService>());
         services.AddScoped<ISubscriberMenuAdminService>(sp => sp.GetRequiredService<SubscriberMenuService>());
         services.AddScoped<INavigationMenuAdminService, NavigationMenuAdminService>();
         services.AddScoped<IGrowthAnalyticsReader, GrowthAnalyticsReader>();

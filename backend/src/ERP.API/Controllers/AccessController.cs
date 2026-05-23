@@ -38,7 +38,7 @@ namespace ERP.API.Controllers;
 public class AccessController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly ISubscriberMenuAdminService _tenantMenuAdmin;
+    private readonly ISubscriberMenuAdminService _subscriberMenuAdmin;
     private readonly IAuthorizationService _authorization;
 
     public AccessController(
@@ -47,7 +47,7 @@ public class AccessController : ControllerBase
         IAuthorizationService authorization)
     {
         _mediator = mediator;
-        _tenantMenuAdmin = tenantMenuAdmin;
+        _subscriberMenuAdmin = tenantMenuAdmin;
         _authorization = authorization;
     }
 
@@ -197,7 +197,7 @@ public class AccessController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SuperAdminGetTenantMenu(Guid subscriberId, CancellationToken ct)
     {
-        var r = await _tenantMenuAdmin.GetResolvedMenuForTenantAsync(subscriberId, ct);
+        var r = await _subscriberMenuAdmin.GetResolvedMenuForTenantAsync(subscriberId, ct);
         if (!r.IsSuccess)
             return this.ApiBadRequest(r.Error ?? "Error");
         var v = r.Value!;
@@ -219,7 +219,7 @@ public class AccessController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SuperAdminPutTenantMenu(Guid subscriberId, [FromBody] TenantMenuPutBody body, CancellationToken ct)
     {
-        var r = await _tenantMenuAdmin.UpsertSubscriberCustomMenuAsync(subscriberId, body.MenuConfigJson, ct);
+        var r = await _subscriberMenuAdmin.UpsertSubscriberCustomMenuAsync(subscriberId, body.MenuConfigJson, ct);
         return r.IsSuccess
             ? this.ApiOk(new { }, "Guardado")
             : this.ApiBadRequest(r.Error ?? "Error");
@@ -233,7 +233,7 @@ public class AccessController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> SuperAdminDeleteTenantMenu(Guid subscriberId, CancellationToken ct)
     {
-        var r = await _tenantMenuAdmin.DeleteSubscriberCustomMenuAsync(subscriberId, ct);
+        var r = await _subscriberMenuAdmin.DeleteSubscriberCustomMenuAsync(subscriberId, ct);
         return r.IsSuccess
             ? this.ApiOk(new { }, "Restablecido")
             : this.ApiBadRequest(r.Error ?? "Error");
