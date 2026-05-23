@@ -105,6 +105,7 @@ public static class DependencyInjection
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
         services.AddScoped<ICustomerProfileRepository, CustomerProfileRepository>();
         services.AddScoped<ISupplierProfileRepository, SupplierProfileRepository>();
+        services.AddScoped<ICompanyBpSettingsRepository, CompanyBpSettingsRepository>();
         services.AddScoped<DistributedPermissionsCacheService>();
         services.AddScoped<ResilientPermissionsCacheService>();
         services.AddScoped<IPermissionsCacheBackend>(sp => sp.GetRequiredService<ResilientPermissionsCacheService>());

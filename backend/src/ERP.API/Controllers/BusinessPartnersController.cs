@@ -5,6 +5,7 @@ using ERP.Application.MasterData.UseCases.CreateBusinessPartner;
 using ERP.Application.MasterData.UseCases.DisableBusinessPartner;
 using ERP.Application.MasterData.UseCases.GetBusinessPartner;
 using ERP.Application.MasterData.UseCases.SearchBusinessPartners;
+using ERP.Application.MasterData.UseCases.UpsertCompanyBpSettings;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -93,6 +94,36 @@ public sealed class BusinessPartnersController : ControllerBase
         var result = await _mediator.Send(new DisableBusinessPartnerCommand(id), ct);
         return this.ToOkOrBadRequest(result);
     }
+
+    /// <summary>
+    /// Crea o actualiza las condiciones comerciales de un BusinessPartner para la Company activa.
+    /// Requiere company_id en el JWT. Los campos (CreditLimit, PaymentDays, IsBlocked) son por empresa.
+    /// </summary>
+    [HttpPatch("{id:guid}/company-settings")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpsertCompanySettings(
+        [FromRoute] Guid id,
+        [FromBody] UpsertCompanyBpSettingsRequest body,
+        CancellationToken ct = default)
+    {
+        var command = new UpsertCompanyBpSettingsCommand(
+            id,
+            body.CreditLimit,
+            body.PaymentDays,
+            body.IsBlocked);
+
+        var result = await _mediator.Send(command, ct);
+        return this.ToOkOrBadRequest(result);
+    }
+}
+
+public sealed class UpsertCompanyBpSettingsRequest
+{
+    public decimal? CreditLimit  { get; set; }
+    public short    PaymentDays  { get; set; }
+    public bool     IsBlocked    { get; set; }
 }
 
 public sealed class CreateBusinessPartnerRequest
