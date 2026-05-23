@@ -1,8 +1,6 @@
 import { api } from '../../lib/api';
 import type { ApiResponse } from '../../../types/api';
-import type { SessionResponse } from '../../../types/access';
-import { PLATFORM_API } from '../../platform/api/platformApiPaths';
-import { parsePlatformSubscriberList, type PlatformSubscriber } from '../../platform/api/platformService';
+import { PLATFORM_API } from './platformApiPaths';
 
 const platformSubscriber = (subscriberId: string) =>
   `${PLATFORM_API.subscribers}/${encodeURIComponent(subscriberId)}`;
@@ -10,34 +8,28 @@ const platformSubscriber = (subscriberId: string) =>
 const platformConfig = (subscriberId: string) =>
   `${PLATFORM_API.config}/${encodeURIComponent(subscriberId)}`;
 
-export type CompanyItem = {
+export type SubscriberDetailDto = {
   id: string;
   name: string;
   slug: string;
-  isActive?: boolean;
-  planCode?: string | null;
-  enabledModules?: string[];
-  hasModuleRestrictions?: boolean;
-};
-
-export type CreateCompanyWithAdminRequest = {
-  subscriberName: string;
-  subscriberSlug: string;
-  ruc?: string | null;
-  shortName?: string | null;
-  tradeName?: string | null;
-  dinardap?: string | null;
-  logoUrl?: string | null;
-  displayOrder?: number;
-  priority?: number;
-  adminFirstName: string;
-  adminLastName: string;
-  adminEmail: string;
-  adminPassword: string;
-  linkExistingAdmin?: boolean;
-  passwordResetMode?: number;
-  planCode?: string | null;
-  enabledModules?: string[] | null;
+  isActive: boolean;
+  createdAt: string;
+  ruc: string | null;
+  shortName: string | null;
+  tradeName: string | null;
+  dinardap: string | null;
+  logoUrl: string | null;
+  displayOrder: number;
+  priority: number;
+  electronicBillingTrialEnabled: boolean;
+  planCode: string | null;
+  enabledModules: string[];
+  hasModuleRestrictions: boolean;
+  currency: string;
+  language: string;
+  timezone: string;
+  invoicePrefix: string | null;
+  defaultCreditDays: number;
 };
 
 export type UpdateSubscriberCompanyBody = {
@@ -85,49 +77,8 @@ export type UpsertConfigBody = {
   dataType: string;
 };
 
-export type SubscriberDetailDto = {
-  id: string;
-  name: string;
-  slug: string;
-  isActive: boolean;
-  createdAt: string;
-  ruc: string | null;
-  shortName: string | null;
-  tradeName: string | null;
-  dinardap: string | null;
-  logoUrl: string | null;
-  displayOrder: number;
-  priority: number;
-  electronicBillingTrialEnabled: boolean;
-  planCode: string | null;
-  enabledModules: string[];
-  hasModuleRestrictions: boolean;
-  currency: string;
-  language: string;
-  timezone: string;
-  invoicePrefix: string | null;
-  defaultCreditDays: number;
-};
-
-export const companyService = {
-  list: () =>
-    api
-      .get<ApiResponse<PlatformSubscriber[]>>(PLATFORM_API.subscribers)
-      .then((r) => {
-        const rows = parsePlatformSubscriberList(r.data.responseObject);
-        return rows.map(
-          (s): CompanyItem => ({
-            id: s.id,
-            name: s.name,
-            slug: s.slug,
-            isActive: s.isActive,
-            planCode: s.planCode,
-            enabledModules: s.enabledModules,
-            hasModuleRestrictions: s.hasModuleRestrictions,
-          }),
-        );
-      }),
-
+/** Platform Control Plane — canonical `/api/platform/subscribers` + config. */
+export const subscriberService = {
   getSubscriber: (subscriberId: string) =>
     api
       .get<ApiResponse<SubscriberDetailDto>>(platformSubscriber(subscriberId))
@@ -136,9 +87,6 @@ export const companyService = {
         if (!o) throw new Error('empty');
         return o;
       }),
-
-  create: (req: CreateCompanyWithAdminRequest) =>
-    api.post<ApiResponse<SessionResponse>>(PLATFORM_API.subscribers, req).then((r) => r.data.responseObject),
 
   updateSubscriberCompany: (subscriberId: string, body: UpdateSubscriberCompanyBody) =>
     api
@@ -153,21 +101,6 @@ export const companyService = {
         displayOrder: body.displayOrder,
         priority: body.priority,
       })
-      .then((r) => {
-        const o = r.data.responseObject;
-        if (!o) throw new Error('empty');
-        return o;
-      }),
-
-  updateSubscriberOperationalSettings: (subscriberId: string, body: {
-    currency: string;
-    language: string;
-    timezone: string;
-    invoicePrefix?: string | null;
-    defaultCreditDays: number;
-  }) =>
-    api
-      .patch<ApiResponse<SubscriberDetailDto>>(`${platformSubscriber(subscriberId)}/operational-settings`, body)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');

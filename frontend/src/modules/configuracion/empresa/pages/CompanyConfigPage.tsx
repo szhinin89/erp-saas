@@ -7,7 +7,7 @@ import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { useI18n } from '../../../../i18n/i18n';
 import { useAsync } from '../../../../hooks/useAsync';
-import { companyService } from '../../../companies/api/companyService';
+import { tenantSubscriberService } from '../../../subscribers/api/tenantSubscriberService';
 import { catalogService, type CatalogItem } from '../../../catalog/api/catalogService';
 import { formatApiError } from '../../../lib/formatApiError';
 import { usePermissionsUi } from '../../../../access/usePermissionsUi';
@@ -55,7 +55,7 @@ export function CompanyConfigPage() {
   const [saved,     setSaved]     = useState(false);
 
   const subscriberState = useAsync(
-    () => subscriberId ? companyService.getSubscriber(subscriberId) : Promise.resolve(null),
+    () => subscriberId ? tenantSubscriberService.getSubscriber(subscriberId) : Promise.resolve(null),
     !!subscriberId,
   );
 
@@ -88,7 +88,7 @@ export function CompanyConfigPage() {
     setSaved(false);
     setSaving(true);
     try {
-      await companyService.updateSubscriberCompany(subscriberId, {
+      await tenantSubscriberService.updateSubscriberCompany(subscriberId, {
         name:         values.companyName,
         slug:         subscriberState.data?.slug ?? '',
         ruc:          values.ruc  || null,
@@ -100,7 +100,7 @@ export function CompanyConfigPage() {
         priority:     subscriberState.data?.priority     ?? 0,
       });
 
-      await companyService.updateSubscriberOperationalSettings(subscriberId, {
+      await tenantSubscriberService.updateSubscriberOperationalSettings(subscriberId, {
         currency:          values.currency,
         language:          values.language,
         timezone:          values.timezone,

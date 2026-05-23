@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { companyService, type SubscriberDetailDto } from '../../../companies/api/companyService';
 import {
   updateSubscriberCompanySchema,
   type UpdateSubscriberCompanyFormValues,
 } from '../../../../schemas/saas/companySchema';
 import { formatApiRequestError } from '../../../lib/apiError';
 import { platformService, type PlatformSubscriber, type SubscriberEntitlementsSnapshot } from '../../api/platformService';
+import { subscriberService, type SubscriberDetailDto } from '../../api/subscriberService';
 
 export const ELECTRONIC_BILLING_TRIAL_KEY = 'billing.electronic.trial_enabled';
 
@@ -54,7 +54,7 @@ export function useSubscriberDetailPage(subscriberId: string | undefined) {
     if (!subscriberId) return;
     setDetailLoading(true);
     try {
-      const d = await companyService.getSubscriber(subscriberId);
+      const d = await subscriberService.getSubscriber(subscriberId);
       setDetail(d);
       form.reset({
         subscriberName: d.name,
@@ -68,8 +68,8 @@ export function useSubscriberDetailPage(subscriberId: string | undefined) {
         priority: d.priority,
       });
       const [resolved, globals, menu] = await Promise.all([
-        companyService.resolveSubscriberConfig(subscriberId, ELECTRONIC_BILLING_TRIAL_KEY),
-        companyService.listSubscriberGlobalConfig(subscriberId),
+        subscriberService.resolveSubscriberConfig(subscriberId, ELECTRONIC_BILLING_TRIAL_KEY),
+        subscriberService.listSubscriberGlobalConfig(subscriberId),
         platformService.getSubscriberResolvedMenu(subscriberId),
       ]);
       const rv = resolved?.value?.trim().toLowerCase();
@@ -110,7 +110,7 @@ export function useSubscriberDetailPage(subscriberId: string | undefined) {
     setSaveOk(false);
     setSaveError(null);
     try {
-      const updated = await companyService.updateSubscriberCompany(subscriberId, {
+      const updated = await subscriberService.updateSubscriberCompany(subscriberId, {
         name: values.subscriberName,
         slug: values.subscriberSlug,
         ruc: values.ruc?.trim() || null,
@@ -137,7 +137,7 @@ export function useSubscriberDetailPage(subscriberId: string | undefined) {
     setSaveOk(false);
     setSaveError(null);
     try {
-      const updated = await companyService.updateSubscriberGlobalParameters(subscriberId, {
+      const updated = await subscriberService.updateSubscriberGlobalParameters(subscriberId, {
         electronicBillingTrialEnabled,
       });
       setDetail(updated);

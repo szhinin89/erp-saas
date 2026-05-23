@@ -87,6 +87,40 @@ public sealed class PlatformControlPlaneGuardTests
         violations.Should().BeEmpty("Platform controllers must live under api/platform/*");
     }
 
+    [Fact]
+    public void SubscribersController_must_not_expose_platform_control_plane_routes()
+    {
+        var backendRoot = ResolveBackendSrcRoot();
+        var file = Path.Combine(backendRoot, "ERP.API", "Controllers", "SubscribersController.cs");
+        File.Exists(file).Should().BeTrue();
+
+        var text = File.ReadAllText(file);
+        var forbidden = new[]
+        {
+            "HttpPost",
+            "HttpPatch(\"{id:guid}/global-parameters\")",
+            "HttpPatch(\"{id:guid}/subscription\")",
+            "[DeprecatedApi(",
+        };
+
+        var violations = forbidden.Where(marker => text.Contains(marker, StringComparison.Ordinal)).ToList();
+        violations.Should().BeEmpty(
+            "SubscribersController is ERP runtime only; platform control plane lives under /api/platform/subscribers");
+    }
+
+    [Fact]
+    public void Runtime_subscriber_entitlements_endpoint_must_remain_on_api_subscribers()
+    {
+        var backendRoot = ResolveBackendSrcRoot();
+        var file = Path.Combine(backendRoot, "ERP.API", "Controllers", "SaasEntitlementsController.cs");
+        if (!File.Exists(file))
+            return;
+
+        var text = File.ReadAllText(file);
+        text.Should().Contain("api/subscribers/entitlements",
+            "GET /api/subscribers/entitlements/me is ERP runtime — must not move to platform");
+    }
+
     private static string ResolveBackendSrcRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);

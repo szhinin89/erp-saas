@@ -10,6 +10,7 @@ import { runForbiddenPatternScan } from './scan-forbidden-patterns.mjs';
 import { runValidatePlatformImports } from './validate-platform-imports.mjs';
 import { runValidateFrontendRoutes } from './validate-frontend-routes.mjs';
 import { runValidateApiEndpoints } from './validate-api-endpoints.mjs';
+import { runValidateSubscriberApiSurface } from './validate-subscriber-api-surface.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPORT_PATH = path.join(REPO_ROOT, 'docs/ci/PLATFORM_GUARD_REPORT.md');
@@ -19,6 +20,7 @@ const CHECKS = [
   runValidatePlatformImports,
   runValidateFrontendRoutes,
   runValidateApiEndpoints,
+  runValidateSubscriberApiSurface,
 ];
 
 export function runPlatformGuard() {

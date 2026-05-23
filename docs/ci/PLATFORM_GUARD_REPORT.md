@@ -1,6 +1,6 @@
 # Platform Control Plane — CI Guard Report
 
-**Generated:** 2026-05-23T17:06:11.113Z
+**Generated:** 2026-05-23T17:27:08.647Z
 **Status:** PASS
 **Violations:** 0
 
@@ -12,6 +12,7 @@
 | platform-imports | PASS | 0 |
 | frontend-routes | PASS | 0 |
 | api-endpoints | PASS | 0 |
+| subscriber-api-surface | PASS | 0 |
 
 ## Violations
 
@@ -20,8 +21,8 @@ _No violations detected._
 
 ```json
 {
-  "total": 75,
-  "allowed": 75,
+  "total": 77,
+  "allowed": 77,
   "legacyViolations": 0,
   "allowlistViolations": 0
 }

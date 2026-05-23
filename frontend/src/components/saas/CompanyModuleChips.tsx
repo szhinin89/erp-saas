@@ -1,12 +1,12 @@
 import { useI18n } from '../../i18n/i18n';
 import { SUBSCRIBER_MODULE_KEYS, moduleKeysMatch } from '../../constants/subscriptionModules';
-import type { CompanyItem } from '../../modules/companies/api/companyService';
+import type { PlatformSubscriber } from '../../modules/platform/api/platformService';
 import './CompanyModuleChips.css';
 
 export function CompanyModuleChips({
   company,
 }: {
-  company: Pick<CompanyItem, 'enabledModules' | 'hasModuleRestrictions'> | CompanyItem;
+  company: Pick<PlatformSubscriber, 'enabledModules' | 'hasModuleRestrictions'> | PlatformSubscriber;
 }) {
   const { t } = useI18n();
 

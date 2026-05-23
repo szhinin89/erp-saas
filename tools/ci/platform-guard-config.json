@@ -9,12 +9,16 @@
     { "id": "legacy-platform", "pattern": "LEGACY_PLATFORM", "hint": "Remove LEGACY_PLATFORM_* constants" },
     { "id": "legacy-superadmin", "pattern": "LEGACY_SUPERADMIN", "hint": "Remove LEGACY_SUPERADMIN_* constants" },
     { "id": "superadmin-service-camel", "pattern": "superAdminService", "hint": "Use platformService from modules/platform/api" },
-    { "id": "iam-superadmin-api", "pattern": "/api/admin/iam/superadmin", "hint": "Use /api/platform/subscribers" }
+    { "id": "iam-superadmin-api", "pattern": "/api/admin/iam/superadmin", "hint": "Use /api/platform/subscribers" },
+    { "id": "company-service", "pattern": "companyService", "hint": "Use subscriberService (platform) or tenantSubscriberService (runtime)", "scanRoots": ["frontend"] },
+    { "id": "company-service-get-subscribers", "pattern": "companyService.getSubscribers", "hint": "Use platformService.getSubscribers", "scanRoots": ["frontend"] },
+    { "id": "subscribers-controller-frontend", "pattern": "SubscribersController", "hint": "Use platformService / subscriberService — no direct controller refs in frontend", "scanRoots": ["frontend"] }
   ],
   "forbiddenImportPaths": [
     { "id": "legacy-module-superadmin", "pattern": "modules/superadmin", "hint": "Use modules/platform" },
     { "id": "legacy-components-superadmin", "pattern": "components/superadmin", "hint": "Use components/platform" },
-    { "id": "legacy-pages-superadmin", "pattern": "pages/SuperAdmin", "hint": "Use pages/Platform" }
+    { "id": "legacy-pages-superadmin", "pattern": "pages/SuperAdmin", "hint": "Use pages/Platform" },
+    { "id": "legacy-company-service", "pattern": "companies/api/companyService", "hint": "Use modules/platform/api/subscriberService" }
   ],
   "forbiddenFrontendImportTokens": [
     { "id": "superadmin-service-import", "pattern": "superadminService", "hint": "Use platformService" },
@@ -44,6 +48,18 @@
     "/api/taxrates",
     "/api/public"
   ],
+  "subscriberRuntimeApiAllowFiles": [
+    "frontend/src/modules/auth/api/entitlementsService.ts",
+    "frontend/src/modules/subscribers/api/tenantSubscriberService.ts",
+    "frontend/src/modules/auth/pages/PasswordResetPage.tsx",
+    "frontend/src/access/README.md",
+    "frontend/src/modules/masterData/README.md",
+    "frontend/e2e/helpers/api.ts"
+  ],
+  "subscriberRuntimeApiAllowPaths": [
+    "/api/subscribers/entitlements/me",
+    "/api/subscribers/"
+  ],
   "allowedUiRoutePrefixes": [
     "/superadmin",
     "/saas",
@@ -70,6 +86,7 @@
     "tools/ci/scan-forbidden-patterns.mjs",
     "tools/ci/platform-guard-config.json",
     "tools/ci/run-platform-guard.mjs",
+    "tools/ci/validate-subscriber-api-surface.mjs",
     "tools/architecture/check-platform-legacy-surface.mjs",
     "tools/architecture/extract-api-usage-graph.mjs"
   ],

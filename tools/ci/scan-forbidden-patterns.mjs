@@ -24,9 +24,12 @@ export function runForbiddenPatternScan() {
 
   for (const [label, relRoot] of Object.entries(config.scanRoots)) {
     const root = path.join(REPO_ROOT, relRoot);
+    const rules = (config.forbiddenPatterns ?? []).filter(
+      (rule) => !rule.scanRoots || rule.scanRoots.includes(label),
+    );
     for (const file of walkSourceFiles(root, extensions, exclude, excludeFiles)) {
       violations.push(
-        ...scanFileForPatterns(file, config.forbiddenPatterns, `static-scan-${label}`),
+        ...scanFileForPatterns(file, rules, `static-scan-${label}`),
       );
     }
   }

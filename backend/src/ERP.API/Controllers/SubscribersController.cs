@@ -4,12 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
-using ERP.API.Filters;
-using ERP.Application.Subscribers.UseCases.CreateSubscriber;
-using ERP.Application.Subscribers.UseCases.UpdateSubscriberGlobalParameters;
 using ERP.Application.Subscribers.UseCases.UpdatePasswordResetMode;
 using ERP.Application.Subscribers.UseCases.UpdateSubscriberSaasProfile;
-using ERP.Application.Subscribers.UseCases.UpdateSubscriberSubscription;
 using ERP.Application.Subscribers.UseCases.UpdateSubscriberOperationalSettings;
 using ERP.Application.Common;
 using ERP.Application.Subscriptions;
@@ -20,8 +16,8 @@ using System.Security.Claims;
 namespace ERP.API.Controllers;
 
 /// <summary>
-/// Gestión de subscribers (empresas).
-/// Restringido: solo accesible por administradores del sistema.
+/// ERP Runtime — tenant Admin y endpoints públicos del suscriptor.
+/// Control plane SaaS (SuperAdmin): exclusivamente <c>/api/platform/subscribers</c>.
 /// </summary>
 [ApiController]
 [AppFeature("Tenants API", "perm:subscribers.api", "🧩", null, null, 990, IsVisibleInMenu = false)]
@@ -47,7 +43,7 @@ public class SubscribersController : ControllerBase
         _currentSubscriber = currentSubscriber;
     }
 
-    /// <summary>Obtiene el detalle de un tenant (SuperAdmin o Admin de la misma cuenta).</summary>
+    /// <summary>Obtiene el detalle del suscriptor (Admin de la propia cuenta).</summary>
     [HttpGet("{id:guid}")]
     [Authorize(Policy = "Session")]
     [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
@@ -55,7 +51,7 @@ public class SubscribersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct)
     {
-        if (!CanAccessSubscriber(id))
+        if (!CanAccessOwnSubscriber(id))
             return Forbid();
 
         var tenant = await _subscriberRepository.GetByIdAsync(id, ct);
@@ -66,7 +62,7 @@ public class SubscribersController : ControllerBase
         return this.ApiOk(SubscriberDto.FromTenant(tenant, modules));
     }
 
-    /// <summary>Actualiza datos comerciales/legales de la empresa (SuperAdmin o Admin de la misma cuenta).</summary>
+    /// <summary>Actualiza datos comerciales/legales (Admin de la propia cuenta).</summary>
     [HttpPatch("{id:guid}/company")]
     [Authorize(Policy = "Session")]
     [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
@@ -78,7 +74,7 @@ public class SubscribersController : ControllerBase
         [FromBody] UpdateSubscriberCompanyRequest body,
         CancellationToken ct)
     {
-        if (!CanAccessSubscriber(id))
+        if (!CanAccessOwnSubscriber(id))
             return Forbid();
 
         var command = new UpdateSubscriberSaasProfileCommand(
@@ -87,36 +83,6 @@ public class SubscribersController : ControllerBase
 
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result);
-    }
-
-    /// <summary>Actualiza parámetros globales de la empresa (SuperAdmin).</summary>
-    [HttpPatch("{id:guid}/global-parameters")]
-    [DeprecatedApi("/api/platform/subscribers")]
-    [Authorize(Roles = "SuperAdmin")]
-    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpdateGlobalParameters(
-        [FromRoute] Guid id,
-        [FromBody] UpdateSubscriberGlobalParametersBody body,
-        CancellationToken ct)
-    {
-        var result = await _mediator.Send(new UpdateSubscriberGlobalParametersCommand(id, body.ElectronicBillingTrialEnabled), ct);
-        return this.ToOkOrBadRequest(result);
-    }
-
-    /// <summary>Crea un nuevo tenant (empresa) en el sistema.</summary>
-    [HttpPost]
-    [Authorize(Roles = "SuperAdmin")]
-    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> Create([FromBody] CreateSubscriberCommand command, CancellationToken ct)
-    {
-        var result = await _mediator.Send(command, ct);
-        return this.ToCreatedOrBadRequest(result, "Creado");
     }
 
     /// <summary>Retorna configuración pública mínima del tenant (sin datos sensibles).</summary>
@@ -156,9 +122,8 @@ public class SubscribersController : ControllerBase
     }
 
     /// <summary>
-    /// Actualiza los parámetros operativos de la empresa: moneda, idioma, zona horaria,
-    /// prefijo de factura y días de crédito por defecto.
-    /// Accesible por el administrador de la propia empresa o por SuperAdmin.
+    /// Actualiza parámetros operativos: moneda, idioma, zona horaria, prefijo de factura y días de crédito.
+    /// Accesible por el Admin de la propia cuenta.
     /// </summary>
     [HttpPatch("{id:guid}/operational-settings")]
     [Authorize(Policy = "Session")]
@@ -172,7 +137,7 @@ public class SubscribersController : ControllerBase
         [FromBody] UpdateSubscriberOperationalSettingsRequest body,
         CancellationToken ct)
     {
-        if (!CanAccessSubscriber(id))
+        if (!CanAccessOwnSubscriber(id))
             return Forbid();
 
         var command = new UpdateSubscriberOperationalSettingsCommand(
@@ -187,41 +152,14 @@ public class SubscribersController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
-    /// <summary>Actualiza el código de plan del tenant y los módulos habilitados.</summary>
-    [HttpPatch("{id:guid}/subscription")]
-    [DeprecatedApi("/api/platform/subscribers")]
-    [Authorize(Roles = "SuperAdmin")]
-    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpdateSubscription(
-        [FromRoute] Guid id,
-        [FromBody] UpdateSubscriberSubscriptionBody body,
-        CancellationToken ct)
-    {
-        var result = await _mediator.Send(new UpdateSubscriberSubscriptionCommand(id, body.PlanCode, body.EnabledModules), ct);
-        return this.ToOkOrBadRequest(result);
-    }
-
-    private bool CanAccessSubscriber(Guid subscriberId)
+    private bool CanAccessOwnSubscriber(Guid subscriberId)
     {
         var role = User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
-        if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
-            return true;
+        if (!string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
+            return false;
 
-        if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase))
-            return _currentSubscriber.SubscriberId == subscriberId;
-
-        return false;
+        return _currentSubscriber.SubscriberId == subscriberId;
     }
-}
-
-public sealed class UpdateSubscriberSubscriptionBody
-{
-    public string? PlanCode { get; set; }
-    public List<string>? EnabledModules { get; set; }
 }
 
 public sealed class UpdateSubscriberCompanyRequest
@@ -235,11 +173,6 @@ public sealed class UpdateSubscriberCompanyRequest
     public string? LogoUrl { get; set; }
     public int DisplayOrder { get; set; }
     public int Priority { get; set; }
-}
-
-public sealed class UpdateSubscriberGlobalParametersBody
-{
-    public bool ElectronicBillingTrialEnabled { get; set; }
 }
 
 public sealed class UpdateSubscriberOperationalSettingsRequest

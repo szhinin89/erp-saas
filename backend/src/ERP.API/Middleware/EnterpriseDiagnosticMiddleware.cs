@@ -22,7 +22,7 @@ public sealed class EnterpriseDiagnosticMiddleware
         "/api/platform",
         "/api/public",
         "/api/subscribers/entitlements",
-        "/api/subscribers",        // gestión SaaS de subscribers
+        "/api/subscribers",        // ERP runtime: tenant Admin + public-settings
         "/api/dev",
         "/api/health",
         "/hangfire",

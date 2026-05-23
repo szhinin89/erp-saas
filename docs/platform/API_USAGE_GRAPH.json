@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-05-23T17:06:11.108Z",
+  "generatedAt": "2026-05-23T17:27:08.541Z",
   "summary": {
-    "total": 75,
-    "allowed": 75,
+    "total": 77,
+    "allowed": 77,
     "legacyViolations": 0,
     "allowlistViolations": 0
   },
@@ -473,7 +473,8 @@
     {
       "endpoint": "/api/platform/subscribers",
       "files": [
-        "frontend/src/modules/platform/api/platformApiPaths.ts"
+        "frontend/src/modules/platform/api/platformApiPaths.ts",
+        "frontend/src/modules/platform/api/subscriberService.ts"
       ],
       "legacy": false,
       "allowed": true
@@ -638,6 +639,22 @@
       "endpoint": "/api/settings/sri",
       "files": [
         "frontend/src/modules/configuracion/sri/api/sriService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/subscribers",
+      "files": [
+        "frontend/src/modules/subscribers/api/tenantSubscriberService.ts"
+      ],
+      "legacy": false,
+      "allowed": true
+    },
+    {
+      "endpoint": "/api/subscribers/*",
+      "files": [
+        "frontend/src/modules/subscribers/api/tenantSubscriberService.ts"
       ],
       "legacy": false,
       "allowed": true
