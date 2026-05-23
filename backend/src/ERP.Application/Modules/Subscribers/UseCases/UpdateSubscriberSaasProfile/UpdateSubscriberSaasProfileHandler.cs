@@ -3,15 +3,15 @@ using ERP.Application.Common;
 using ERP.Application.Subscribers.DTOs;
 using ERP.Domain.Subscribers.Interfaces;
 
-namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberCompany;
+namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberSaasProfile;
 
-public sealed class UpdateSubscriberCompanyHandler : IRequestHandler<UpdateSubscriberCompanyCommand, Result<SubscriberDto>>
+public sealed class UpdateSubscriberSaasProfileHandler : IRequestHandler<UpdateSubscriberSaasProfileCommand, Result<SubscriberDto>>
 {
     private readonly ISubscriberRepository _repository;
     private readonly ICurrentUser _currentUser;
     private readonly ICurrentSubscriber _currentSubscriber;
 
-    public UpdateSubscriberCompanyHandler(
+    public UpdateSubscriberSaasProfileHandler(
         ISubscriberRepository repository,
         ICurrentUser currentUser,
         ICurrentSubscriber currentSubscriber)
@@ -21,7 +21,7 @@ public sealed class UpdateSubscriberCompanyHandler : IRequestHandler<UpdateSubsc
         _currentSubscriber = currentSubscriber;
     }
 
-    public async Task<Result<SubscriberDto>> Handle(UpdateSubscriberCompanyCommand command, CancellationToken ct)
+    public async Task<Result<SubscriberDto>> Handle(UpdateSubscriberSaasProfileCommand command, CancellationToken ct)
     {
         var tenant = await _repository.GetByIdAsync(command.SubscriberId, ct);
         if (tenant is null)
@@ -45,7 +45,7 @@ public sealed class UpdateSubscriberCompanyHandler : IRequestHandler<UpdateSubsc
         if (string.IsNullOrWhiteSpace(name))
             return Result<SubscriberDto>.Failure("El nombre de la empresa es obligatorio.");
 
-        tenant.UpdateCompanyData(
+        tenant.UpdateSaasProfile(
             name,
             slug,
             command.Ruc,

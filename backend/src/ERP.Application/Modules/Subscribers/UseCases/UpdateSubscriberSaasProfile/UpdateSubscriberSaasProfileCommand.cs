@@ -2,9 +2,9 @@ using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Subscribers.DTOs;
 
-namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberCompany;
+namespace ERP.Application.Subscribers.UseCases.UpdateSubscriberSaasProfile;
 
-public record UpdateSubscriberCompanyCommand(
+public record UpdateSubscriberSaasProfileCommand(
     Guid SubscriberId,
     string Name,
     string Slug,

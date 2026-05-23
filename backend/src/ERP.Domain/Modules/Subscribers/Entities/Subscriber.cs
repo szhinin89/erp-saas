@@ -12,10 +12,14 @@ public class Subscriber : AuditableEntity
     /// <summary>Código comercial del plan (p. ej. starter). Entitlements en <c>SubscriberSubscription</c>.</summary>
     public string? PlanCode { get; private set; }
 
+    // FIXME(phase5-db): Ruc pertenece a Company (entidad legal). Mover en migración DB futura.
     public string? Ruc { get; private set; }
     public string? ShortName { get; private set; }
+    // FIXME(phase5-db): TradeName pertenece a Company. Mover en migración DB futura.
     public string? TradeName { get; private set; }
+    // FIXME(phase5-db): Dinardap pertenece a Company (registro fiscal). Mover en migración DB futura.
     public string? Dinardap { get; private set; }
+    // FIXME(phase5-db): LogoUrl pertenece a Company (branding). Mover en migración DB futura.
     public string? LogoUrl { get; private set; }
 
     public int DisplayOrder { get; private set; }
@@ -23,10 +27,14 @@ public class Subscriber : AuditableEntity
 
     public bool ElectronicBillingTrialEnabled { get; private set; }
 
+    // FIXME(phase5-db): Currency duplicado con Company.CurrencyCode. Consolidar en Company.
     public string Currency { get; private set; } = "USD";
     public string Language { get; private set; } = "es";
+    // FIXME(phase5-db): Timezone duplicado con Company.Timezone. Consolidar en Company.
     public string Timezone { get; private set; } = "America/Guayaquil";
+    // FIXME(phase5-db): InvoicePrefix pertenece a Company (prefijo de comprobantes SRI).
     public string? InvoicePrefix { get; private set; }
+    // FIXME(phase5-db): DefaultCreditDays es parámetro operativo de Company.
     public int DefaultCreditDays { get; private set; } = 30;
 
     private Subscriber() { }
@@ -73,7 +81,11 @@ public class Subscriber : AuditableEntity
         SetUpdated(updatedBy);
     }
 
-    public void UpdateCompanyData(
+    /// <summary>
+    /// Actualiza el perfil SaaS del suscriptor (nombre de plataforma, slug, ordering y campos
+    /// fiscales heredados pendientes de migración a <c>Company</c>).
+    /// </summary>
+    public void UpdateSaasProfile(
         string name,
         string slug,
         string? ruc,
@@ -96,6 +108,13 @@ public class Subscriber : AuditableEntity
         Priority = priority;
         SetUpdated(updatedBy);
     }
+
+    /// <summary>Alias backward-compat. Usar <see cref="UpdateSaasProfile"/> en código nuevo.</summary>
+    [Obsolete("Use UpdateSaasProfile(). UpdateCompanyData is a misnomer — this method updates SaaS account profile, not the Company entity. Will be removed in phase5-db cleanup.")]
+    public void UpdateCompanyData(
+        string name, string slug, string? ruc, string? shortName, string? tradeName,
+        string? dinardap, string? logoUrl, int displayOrder, int priority, Guid updatedBy)
+        => UpdateSaasProfile(name, slug, ruc, shortName, tradeName, dinardap, logoUrl, displayOrder, priority, updatedBy);
 
     public void UpdateGlobalParameters(bool electronicBillingTrialEnabled, Guid updatedBy)
     {

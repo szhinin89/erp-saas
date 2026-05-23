@@ -7,7 +7,7 @@ using ERP.API.Extensions;
 using ERP.Application.Subscribers.UseCases.CreateSubscriber;
 using ERP.Application.Subscribers.UseCases.UpdateSubscriberGlobalParameters;
 using ERP.Application.Subscribers.UseCases.UpdatePasswordResetMode;
-using ERP.Application.Subscribers.UseCases.UpdateSubscriberCompany;
+using ERP.Application.Subscribers.UseCases.UpdateSubscriberSaasProfile;
 using ERP.Application.Subscribers.UseCases.UpdateSubscriberSubscription;
 using ERP.Application.Subscribers.UseCases.UpdateSubscriberOperationalSettings;
 using ERP.Application.Common;
@@ -80,7 +80,7 @@ public class SubscribersController : ControllerBase
         if (!CanAccessSubscriber(id))
             return Forbid();
 
-        var command = new UpdateSubscriberCompanyCommand(
+        var command = new UpdateSubscriberSaasProfileCommand(
             id, body.Name, body.Slug, body.Ruc, body.ShortName,
             body.TradeName, body.Dinardap, body.LogoUrl, body.DisplayOrder, body.Priority);
 
