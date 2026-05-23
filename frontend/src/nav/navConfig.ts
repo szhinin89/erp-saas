@@ -80,7 +80,6 @@ const MENU_ROUTE_ALIASES: Record<string, string> = {
   '/logistica/bodegas': '/inventory/warehouses',
   '/inventory/stock': '/inventory/stock',
   '/ventas': '/sales/invoices',
-  '/sales/customers': '/sales/customers',
   '/catalog/units': '/inventory/units',
   '/catalog/types': '/inventory/product-types',
   '/catalog/subcategories': '/inventory/catalog-structure',
@@ -343,7 +342,6 @@ export function buildNavGroups(
       moduleKey: 'ventas',
       sortOrder: defaultBarRank('sales') * 10,
       items: [
-        { to: '/sales/customers', label: t('app.nav.catalog.customers'), permissionKey: 'sales.customers.view' },
         { to: '/sales/invoices', label: t('app.nav.sales.invoices'), permissionKey: 'sales.invoices.view' },
       ],
     },
@@ -541,35 +539,6 @@ export function ensureSalesNextToInventory(
   void _options;
   if (groups.some((g) => g.id === 'sales')) {
     return sortNavGroupsForMainBar(groups);
-  }
-
-  const inventory = groups.find((g) => g.id === 'inventario' || g.id === 'catalog');
-  if (inventory) {
-    const custIdx = inventory.items.findIndex(
-      (it) => it.to === '/sales/customers' || it.to === '/inventario/customers' || it.to === '/catalog/customers',
-    );
-    if (custIdx >= 0) {
-      const customerItem = inventory.items[custIdx]!;
-      const newInventoryItems = inventory.items.filter((_, i) => i !== custIdx);
-      const newInventory: NavGroup = { ...inventory, items: newInventoryItems };
-      const salesGroup: NavGroup = {
-        id: 'sales',
-        label: t('app.nav.group.sales'),
-        icon: '🛒',
-        moduleKey: 'ventas',
-        sortOrder: defaultBarRank('sales') * 10,
-        items: [
-          { ...customerItem, moduleKey: 'ventas' },
-          { to: '/sales/invoices', label: t('app.nav.sales.invoices'), permissionKey: 'sales.invoices.view' },
-        ],
-      };
-      const withoutInventory = groups.filter((g) => g.id !== inventory.id);
-      const next =
-        newInventory.items.length > 0
-          ? [...withoutInventory, newInventory, salesGroup]
-          : [...withoutInventory, salesGroup];
-      return sortNavGroupsForMainBar(next);
-    }
   }
 
   return sortNavGroupsForMainBar(groups);

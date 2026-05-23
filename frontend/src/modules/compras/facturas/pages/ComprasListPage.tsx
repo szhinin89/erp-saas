@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
-import { supplierService, type Supplier } from '../../suppliers/api/supplierService';
+import { businessPartnerService } from '../../../masterData/api/businessPartnerService';
 import { comprasService, type CompraDto, type EstadoCompra } from '../api/comprasService';
 import './compras-facturas-page.css';
 import { usePermissionsUi } from '../../../../access/usePermissionsUi';
@@ -24,9 +24,9 @@ export function ComprasListPage() {
   const canView  = canShow('purchases.invoices.view');
   const canCreate = canShow('purchases.invoices.create');
 
-  const [rows,        setRows]        = useState<CompraDto[]>([]);
-  const [suppliers,   setSuppliers]   = useState<Supplier[]>([]);
-  const [loading,     setLoading]     = useState(true);
+  const [rows,          setRows]          = useState<CompraDto[]>([]);
+  const [supplierMap,   setSupplierMap]   = useState<Map<string, string>>(new Map());
+  const [loading,       setLoading]       = useState(true);
   const [msg,         setMsg]         = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [q,           setQ]           = useState('');
   const [actionId,    setActionId]    = useState<string | null>(null);
@@ -36,12 +36,14 @@ export function ComprasListPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [data, provs] = await Promise.all([
+      const [data, bps] = await Promise.all([
         comprasService.list(),
-        supplierService.getAll(),
+        businessPartnerService.search({ isSupplier: true, isActive: true, take: 200 }),
       ]);
       setRows(data);
-      setSuppliers(provs);
+      const m = new Map<string, string>();
+      bps.forEach((bp) => { if (bp.legacySupplierId) m.set(bp.legacySupplierId, bp.legalName); });
+      setSupplierMap(m);
     } catch (e) {
       setMsg({ type: 'error', text: e instanceof Error ? e.message : 'Error al cargar compras' });
     } finally {
@@ -50,12 +52,6 @@ export function ComprasListPage() {
   }, []);
 
   useEffect(() => { if (canView) void load(); }, [canView, load]);
-
-  const supplierMap = useMemo(() => {
-    const m = new Map<string, string>();
-    suppliers.forEach((s) => m.set(s.id, s.legalName));
-    return m;
-  }, [suppliers]);
 
   const filtered = useMemo(() => {
     const qn = q.trim().toLowerCase();

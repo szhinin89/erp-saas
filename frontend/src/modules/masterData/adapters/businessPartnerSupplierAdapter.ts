@@ -1,9 +1,7 @@
-import type { Supplier } from '../../compras/suppliers/api/supplierService';
 import type { BusinessPartnerDto } from '../types/businessPartner.types';
-import type { SupplierPickerRow } from '../types/pickerRow.types';
+import type { SupplierPickerRow, SupplierPickerShape } from '../types/pickerRow.types';
 import { resolveSupplierOperationalMeta } from '../api/operationalLinkResolver';
 
-/** Opción mínima para selectores de compras (órdenes / facturas). */
 export type SupplierPickerOption = {
   id: string;
   razonSocial: string;
@@ -15,7 +13,7 @@ export type SupplierPickerOption = {
 export function mapBusinessPartnerToSupplierPickerRow(bp: BusinessPartnerDto): SupplierPickerRow {
   const pickerMeta = resolveSupplierOperationalMeta(bp);
   const legacyId = pickerMeta.legacyOperationalId ?? bp.id;
-  const supplier: Supplier = {
+  const shape: SupplierPickerShape = {
     id: legacyId,
     taxId: bp.identificationNumber,
     legalName: bp.legalName,
@@ -30,19 +28,7 @@ export function mapBusinessPartnerToSupplierPickerRow(bp: BusinessPartnerDto): S
     isActive: bp.isActive,
     createdAt: new Date(0).toISOString(),
   };
-  return { ...supplier, pickerMeta };
-}
-
-/** @deprecated Usar `mapBusinessPartnerToSupplierPickerRow`. */
-export function mapBusinessPartnerToLegacySupplier(
-  bp: BusinessPartnerDto,
-  legacyId?: string,
-): Supplier {
-  const row = mapBusinessPartnerToSupplierPickerRow({
-    ...bp,
-    legacySupplierId: legacyId ?? bp.legacySupplierId,
-  });
-  return row;
+  return { ...shape, pickerMeta };
 }
 
 export function mapBusinessPartnerToSupplierPickerOption(bp: BusinessPartnerDto): SupplierPickerOption {

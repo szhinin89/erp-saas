@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { EmptyState, LoadingState, NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
-import { supplierService, type Supplier } from '../../compras/suppliers/api/supplierService';
+import { businessPartnerService } from '../../masterData/api/businessPartnerService';
 import { gastosService, type GastoDto, type EstadoGasto } from '../api/gastosService';
 import './gastos-page.css';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
@@ -24,8 +24,8 @@ export function GastosListPage() {
   const canView  = canShow('expenses.invoices.view');
   const canCreate = canShow('expenses.invoices.create');
 
-  const [rows,       setRows]       = useState<GastoDto[]>([]);
-  const [suppliers,  setSuppliers]  = useState<Supplier[]>([]);
+  const [rows,         setRows]         = useState<GastoDto[]>([]);
+  const [supplierMap,  setSupplierMap]  = useState<Map<string, string>>(new Map());
   const [loading,    setLoading]    = useState(true);
   const [msg,        setMsg]        = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [q,          setQ]          = useState('');
@@ -36,12 +36,14 @@ export function GastosListPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [data, provs] = await Promise.all([
+      const [data, bps] = await Promise.all([
         gastosService.list(),
-        supplierService.getAll(),
+        businessPartnerService.search({ isSupplier: true, isActive: true, take: 200 }),
       ]);
       setRows(data);
-      setSuppliers(provs);
+      const m = new Map<string, string>();
+      bps.forEach((bp) => { if (bp.legacySupplierId) m.set(bp.legacySupplierId, bp.legalName); });
+      setSupplierMap(m);
     } catch (e) {
       setMsg({ type: 'error', text: e instanceof Error ? e.message : 'Error al cargar gastos' });
     } finally {
@@ -50,12 +52,6 @@ export function GastosListPage() {
   }, []);
 
   useEffect(() => { if (canView) void load(); }, [canView, load]);
-
-  const supplierMap = useMemo(() => {
-    const m = new Map<string, string>();
-    suppliers.forEach((s) => m.set(s.id, s.legalName));
-    return m;
-  }, [suppliers]);
 
   const filtered = useMemo(() => {
     const qn = q.trim().toLowerCase();
