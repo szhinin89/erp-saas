@@ -27,6 +27,8 @@ public interface IBusinessPartnerRepository
     Task<IReadOnlyList<BusinessPartner>> SearchAsync(
         string?  query      = null,
         bool?    isActive   = true,
+        bool?    isCustomer = null,
+        bool?    isSupplier = null,
         int      skip       = 0,
         int      take       = 50,
         CancellationToken ct = default);

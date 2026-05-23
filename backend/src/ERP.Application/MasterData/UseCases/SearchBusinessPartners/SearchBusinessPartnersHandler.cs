@@ -23,7 +23,7 @@ public sealed class SearchBusinessPartnersHandler
     public async Task<Result<IReadOnlyList<BusinessPartnerDto>>> Handle(
         SearchBusinessPartnersQuery request, CancellationToken ct)
     {
-        var results = await _repo.SearchAsync(request.Query, request.IsActive, request.Skip, request.Take, ct);
+        var results = await _repo.SearchAsync(request.Query, request.IsActive, request.IsCustomer, request.IsSupplier, request.Skip, request.Take, ct);
         var enriched = await _linkEnricher.EnrichAsync(results, ct);
         return Result<IReadOnlyList<BusinessPartnerDto>>.Success(enriched);
     }

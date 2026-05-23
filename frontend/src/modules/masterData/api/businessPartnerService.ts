@@ -56,6 +56,8 @@ function buildSearchQuery(params: SearchBusinessPartnersParams): string {
   const q = new URLSearchParams();
   if (params.q?.trim()) q.set('q', params.q.trim());
   if (params.isActive !== undefined) q.set('isActive', String(params.isActive));
+  if (params.isCustomer !== undefined) q.set('isCustomer', String(params.isCustomer));
+  if (params.isSupplier !== undefined) q.set('isSupplier', String(params.isSupplier));
   if (params.skip !== undefined) q.set('skip', String(params.skip));
   if (params.take !== undefined) q.set('take', String(params.take));
   const qs = q.toString();

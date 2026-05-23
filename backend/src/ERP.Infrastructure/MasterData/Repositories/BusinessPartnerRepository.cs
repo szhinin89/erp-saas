@@ -27,16 +27,28 @@ public sealed class BusinessPartnerRepository : IBusinessPartnerRepository
                   x.Identification.Number == identificationNumber, ct);
 
     public async Task<IReadOnlyList<BusinessPartner>> SearchAsync(
-        string?  query    = null,
-        bool?    isActive = true,
-        int      skip     = 0,
-        int      take     = 50,
+        string?  query      = null,
+        bool?    isActive   = true,
+        bool?    isCustomer = null,
+        bool?    isSupplier = null,
+        int      skip       = 0,
+        int      take       = 50,
         CancellationToken ct = default)
     {
         var q = _db.BusinessPartners.AsNoTracking();
 
         if (isActive.HasValue)
             q = q.Where(x => x.IsActive == isActive.Value);
+
+        if (isCustomer == true)
+            q = q.Where(x => x.CustomerProfile != null);
+        else if (isCustomer == false)
+            q = q.Where(x => x.CustomerProfile == null);
+
+        if (isSupplier == true)
+            q = q.Where(x => x.SupplierProfile != null);
+        else if (isSupplier == false)
+            q = q.Where(x => x.SupplierProfile == null);
 
         if (!string.IsNullOrWhiteSpace(query))
         {

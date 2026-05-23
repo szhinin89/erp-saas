@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useCompanyScopedAsync } from '../../../hooks/useCompanyScopedAsync';
+import { useDebounce } from '../../../hooks/useDebounce';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
 import { businessPartnerFacade } from '../api/businessPartnerFacade';
 import type {
@@ -19,6 +20,7 @@ export function useMasterDataCustomersPage() {
   const canConfigure = canShow('masterdata.businesspartners.configure-company');
 
   const [search, setSearch]             = useState('');
+  const debouncedSearch                 = useDebounce(search, 300);
   const [showInactive, setShowInactive] = useState(false);
   const [modalOpen, setModalOpen]       = useState(false);
   const [editBp, setEditBp]             = useState<BusinessPartnerDto | null>(null);
@@ -37,13 +39,13 @@ export function useMasterDataCustomersPage() {
   const listState = useCompanyScopedAsync(
     () =>
       businessPartnerFacade.searchBusinessPartners({
-        q: search || undefined,
+        q: debouncedSearch || undefined,
         isActive: showInactive ? undefined : true,
         isCustomer: true,
         take: 200,
       }),
     canView,
-    [search, showInactive],
+    [debouncedSearch, showInactive],
   );
 
   const customers = useMemo(

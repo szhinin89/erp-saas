@@ -43,13 +43,15 @@ public sealed class BusinessPartnersController : ControllerBase
     [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.View}")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BusinessPartnerDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Search(
-        [FromQuery] string? q        = null,
-        [FromQuery] bool?   isActive = true,
-        [FromQuery] int     skip     = 0,
-        [FromQuery] int     take     = 50,
+        [FromQuery] string? q          = null,
+        [FromQuery] bool?   isActive   = true,
+        [FromQuery] bool?   isCustomer = null,
+        [FromQuery] bool?   isSupplier = null,
+        [FromQuery] int     skip       = 0,
+        [FromQuery] int     take       = 50,
         CancellationToken ct = default)
     {
-        var result = await _mediator.Send(new SearchBusinessPartnersQuery(q, isActive, skip, take), ct);
+        var result = await _mediator.Send(new SearchBusinessPartnersQuery(q, isActive, isCustomer, isSupplier, skip, take), ct);
         return this.ToOkOrBadRequest(result);
     }
 
