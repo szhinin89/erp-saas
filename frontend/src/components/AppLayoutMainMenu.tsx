@@ -2,6 +2,13 @@ import { Fragment, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { NavItem } from '../nav/navConfig';
 
+function NavIcon({ icon }: { icon: string }) {
+  const isMaterialSymbol = /^[a-z][a-z0-9_]*$/.test(icon);
+  return isMaterialSymbol
+    ? <span className="app-mainmenu-itemIcon material-symbols-outlined" aria-hidden="true">{icon}</span>
+    : <span className="app-mainmenu-itemIcon" aria-hidden="true">{icon}</span>;
+}
+
 /** True si la ruta actual coincide con este ítem o con algún descendiente (menú anidado). */
 export function navSubtreeMatchesPath(it: NavItem, pathname: string): boolean {
   if (it.to) {
@@ -40,7 +47,7 @@ function MainMenuBranchRow({
           aria-expanded={expanded}
           onClick={() => setExpanded((v) => !v)}
         >
-          {it.icon ? <span className="app-mainmenu-itemIcon" aria-hidden="true">{it.icon}</span> : null}
+          {it.icon ? <NavIcon icon={it.icon} /> : null}
           <span className="app-mainmenu-branchLabel">{it.label}</span>
           <span className="app-mainmenu-branchCaret" aria-hidden>
             {expanded ? '▾' : '▸'}
@@ -123,12 +130,12 @@ export function MainMenuList({
                     onClose();
                   }}
                 >
-                  {it.icon ? <span className="app-mainmenu-itemIcon" aria-hidden="true">{it.icon}</span> : null}
+                  {it.icon ? <NavIcon icon={it.icon} /> : null}
                   <span>{it.label}</span>
                 </button>
               ) : (
                 <span className="app-mainmenu-link app-mainmenu-parent" title={t('app.layout.menuMissingRoute')}>
-                  {it.icon ? <span className="app-mainmenu-itemIcon" aria-hidden="true">{it.icon}</span> : null}
+                  {it.icon ? <NavIcon icon={it.icon} /> : null}
                   <span>{it.label}</span>
                 </span>
               )}
