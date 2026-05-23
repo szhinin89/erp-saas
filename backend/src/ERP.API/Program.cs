@@ -313,6 +313,7 @@ if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"
     app.UseHttpsRedirection();
 
 app.UseAuthentication();
+app.UseSecurityCorrelation();           // SubscriberId/CompanyId/UserId en log scope
 app.UseMiddleware<EnterpriseDiagnosticMiddleware>();
 app.UseMiddleware<SuperAdminPanelLockMiddleware>();
 app.UseAuthorization();

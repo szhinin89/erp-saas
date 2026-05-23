@@ -1,5 +1,6 @@
 using ERP.API.Contracts;
 using ERP.API.Extensions;
+using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
 using ERP.Application.MasterData.UseCases.CreateBusinessPartner;
 using ERP.Application.MasterData.UseCases.DisableBusinessPartner;
@@ -17,6 +18,7 @@ namespace ERP.API.Controllers;
 ///
 /// Scope: subscriber (no company). Un mismo RUC/CI existe una sola vez por Subscriber.
 /// Todos los endpoints filtran por subscriber_id del JWT via EF query filter global.
+/// RBAC: permisos granulares masterdata.businesspartners.* — no Session genérica.
 ///
 /// Ver docs/arch/BUSINESSPARTNER-ADR.md para decisiones de dominio.
 /// </summary>
@@ -33,6 +35,7 @@ public sealed class BusinessPartnersController : ControllerBase
 
     /// <summary>Busca BusinessPartners del subscriber activo.</summary>
     [HttpGet]
+    [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.View}")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyList<BusinessPartnerDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Search(
         [FromQuery] string? q        = null,
@@ -47,6 +50,7 @@ public sealed class BusinessPartnersController : ControllerBase
 
     /// <summary>Obtiene un BusinessPartner por Id.</summary>
     [HttpGet("{id:guid}")]
+    [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.View}")]
     [ProducesResponseType(typeof(ApiResponse<BusinessPartnerDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById([FromRoute] Guid id, CancellationToken ct = default)
@@ -63,6 +67,7 @@ public sealed class BusinessPartnersController : ControllerBase
     /// Retorna error 400 si el número de identificación ya existe para este subscriber.
     /// </summary>
     [HttpPost]
+    [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.Create}")]
     [ProducesResponseType(typeof(ApiResponse<BusinessPartnerDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
@@ -87,6 +92,7 @@ public sealed class BusinessPartnersController : ControllerBase
 
     /// <summary>Desactiva un BusinessPartner. Soft delete — no elimina el registro.</summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.Disable}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Disable([FromRoute] Guid id, CancellationToken ct = default)
@@ -100,6 +106,7 @@ public sealed class BusinessPartnersController : ControllerBase
     /// Requiere company_id en el JWT. Los campos (CreditLimit, PaymentDays, IsBlocked) son por empresa.
     /// </summary>
     [HttpPatch("{id:guid}/company-settings")]
+    [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.ConfigureCompany}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

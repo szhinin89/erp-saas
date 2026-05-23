@@ -132,6 +132,19 @@ public static class Permissions
         public const string View = "finance.journal.view";
     }
 
+    // ── MasterData ──────────────────────────────────────────────────────────────
+    public static class MasterDataBusinessPartner
+    {
+        public const string View             = "masterdata.businesspartners.view";
+        public const string Create           = "masterdata.businesspartners.create";
+        public const string Update           = "masterdata.businesspartners.update";
+        public const string Disable          = "masterdata.businesspartners.disable";
+        public const string ConfigureCompany = "masterdata.businesspartners.configure-company";
+
+        public static IReadOnlyList<string> All =>
+            [View, Create, Update, Disable, ConfigureCompany];
+    }
+
     // ── Admin ────────────────────────────────────────────────────────────────────
     public static class AdminRole
     {
