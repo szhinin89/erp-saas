@@ -92,9 +92,10 @@ public static class DependencyInjection
         services.AddScoped<IPlatformQueryAccessor, PlatformQueryAccessor>();
         services.AddScoped<ISubscriptionFeatureOverridesService, SubscriptionFeatureOverridesService>();
         services.AddScoped<ICurrentSubscriber, CurrentSubscriberService>();
+        services.AddScoped<ICurrentCompany, CurrentCompanyService>();
         services.AddScoped<ISessionContext, HttpSessionContext>();
         services.AddScoped<IDbSessionContextApplicator, DbSessionContextApplicator>();
-        services.AddScoped<ICurrentCompany, CurrentCompanyService>();
+        services.AddScoped<IOperationalContext, OperationalContextService>();
         services.AddScoped<DistributedPermissionsCacheService>();
         services.AddScoped<ResilientPermissionsCacheService>();
         services.AddScoped<IPermissionsCacheBackend>(sp => sp.GetRequiredService<ResilientPermissionsCacheService>());
