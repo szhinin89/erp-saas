@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
+using ERP.API.Filters;
 using ERP.Application.Subscribers.UseCases.CreateSubscriber;
 using ERP.Application.Subscribers.UseCases.UpdateSubscriberGlobalParameters;
 using ERP.Application.Subscribers.UseCases.UpdatePasswordResetMode;
@@ -90,6 +91,7 @@ public class SubscribersController : ControllerBase
 
     /// <summary>Actualiza parámetros globales de la empresa (SuperAdmin).</summary>
     [HttpPatch("{id:guid}/global-parameters")]
+    [DeprecatedApi("/api/platform/subscribers")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -187,6 +189,7 @@ public class SubscribersController : ControllerBase
 
     /// <summary>Actualiza el código de plan del tenant y los módulos habilitados.</summary>
     [HttpPatch("{id:guid}/subscription")]
+    [DeprecatedApi("/api/platform/subscribers")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

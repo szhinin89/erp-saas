@@ -145,7 +145,7 @@ export function SuperAdminOverviewPage() {
             <button
               className="zh-btn zh-btn--primary"
               type="button"
-              onClick={() => navigate('/superadmin/companies')}
+              onClick={() => navigate('/superadmin/subscribers')}
             >
               <span className="material-symbols-outlined">add</span>
               {t('superadmin.createSubscriber')}
@@ -287,7 +287,7 @@ export function SuperAdminOverviewPage() {
                       <button
                         className="sa-page-num-btn"
                         type="button"
-                        onClick={() => navigate('/superadmin/companies')}
+                        onClick={() => navigate('/superadmin/subscribers')}
                       >
                         …
                       </button>
@@ -296,7 +296,7 @@ export function SuperAdminOverviewPage() {
                   <button
                     className="sa-page-nav-btn"
                     type="button"
-                    onClick={() => navigate('/superadmin/companies')}
+                    onClick={() => navigate('/superadmin/subscribers')}
                   >
                     <span className="material-symbols-outlined">chevron_right</span>
                   </button>
@@ -304,7 +304,7 @@ export function SuperAdminOverviewPage() {
                 <button
                   className="zh-btn zh-btn--secondary zh-btn--sm"
                   type="button"
-                  onClick={() => navigate('/superadmin/companies')}
+                  onClick={() => navigate('/superadmin/subscribers')}
                 >
                   Ver todas
                 </button>

@@ -1,11 +1,14 @@
 import { api } from '../../lib/api';
 import type { ApiResponse } from '../../../types/api';
 import type { SessionResponse } from '../../../types/access';
-import {
-  PLATFORM_SUBSCRIBERS_API,
-  parsePlatformSubscriberList,
-  type SuperAdminSubscriber,
-} from '../../superadmin/api/superAdminService';
+import { PLATFORM_API } from '../../superadmin/api/platformApiPaths';
+import { parsePlatformSubscriberList, type SuperAdminSubscriber } from '../../superadmin/api/superAdminService';
+
+const platformSubscriber = (subscriberId: string) =>
+  `${PLATFORM_API.subscribers}/${encodeURIComponent(subscriberId)}`;
+
+const platformConfig = (subscriberId: string) =>
+  `${PLATFORM_API.config}/${encodeURIComponent(subscriberId)}`;
 
 export type CompanyItem = {
   id: string;
@@ -109,7 +112,7 @@ export type SubscriberDetailDto = {
 export const companyService = {
   list: () =>
     api
-      .get<ApiResponse<SuperAdminSubscriber[]>>(PLATFORM_SUBSCRIBERS_API)
+      .get<ApiResponse<SuperAdminSubscriber[]>>(PLATFORM_API.subscribers)
       .then((r) => {
         const rows = parsePlatformSubscriberList(r.data.responseObject);
         return rows.map(
@@ -127,7 +130,7 @@ export const companyService = {
 
   getSubscriber: (subscriberId: string) =>
     api
-      .get<ApiResponse<SubscriberDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}`)
+      .get<ApiResponse<SubscriberDetailDto>>(platformSubscriber(subscriberId))
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');
@@ -135,11 +138,21 @@ export const companyService = {
       }),
 
   create: (req: CreateCompanyWithAdminRequest) =>
-    api.post<ApiResponse<SessionResponse>>(PLATFORM_SUBSCRIBERS_API, req).then((r) => r.data.responseObject),
+    api.post<ApiResponse<SessionResponse>>(PLATFORM_API.subscribers, req).then((r) => r.data.responseObject),
 
   updateSubscriberCompany: (subscriberId: string, body: UpdateSubscriberCompanyBody) =>
     api
-      .patch<ApiResponse<SubscriberDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}/company`, body)
+      .patch<ApiResponse<SubscriberDetailDto>>(`${platformSubscriber(subscriberId)}/company`, {
+        name: body.name,
+        slug: body.slug,
+        ruc: body.ruc,
+        shortName: body.shortName,
+        tradeName: body.tradeName,
+        dinardap: body.dinardap,
+        logoUrl: body.logoUrl,
+        displayOrder: body.displayOrder,
+        priority: body.priority,
+      })
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');
@@ -154,7 +167,7 @@ export const companyService = {
     defaultCreditDays: number;
   }) =>
     api
-      .patch<ApiResponse<SubscriberDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}/operational-settings`, body)
+      .patch<ApiResponse<SubscriberDetailDto>>(`${platformSubscriber(subscriberId)}/operational-settings`, body)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');
@@ -163,7 +176,7 @@ export const companyService = {
 
   updateSubscriberGlobalParameters: (subscriberId: string, body: UpdateSubscriberGlobalParametersBody) =>
     api
-      .patch<ApiResponse<SubscriberDetailDto>>(`/api/subscribers/${encodeURIComponent(subscriberId)}/global-parameters`, body)
+      .patch<ApiResponse<SubscriberDetailDto>>(`${platformSubscriber(subscriberId)}/global-parameters`, body)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');
@@ -172,19 +185,19 @@ export const companyService = {
 
   resolveSubscriberConfig: (subscriberId: string, key: string, module?: string | null, feature?: string | null) =>
     api
-      .get<ApiResponse<ResolvedConfigValueDto | null>>(`/api/superadmin/config/${encodeURIComponent(subscriberId)}/resolve`, {
+      .get<ApiResponse<ResolvedConfigValueDto | null>>(`${platformConfig(subscriberId)}/resolve`, {
         params: { key, module: module ?? undefined, feature: feature ?? undefined },
       })
       .then((r) => r.data.responseObject),
 
   listSubscriberGlobalConfig: (subscriberId: string) =>
     api
-      .get<ApiResponse<ConfigEntryDto[]>>(`/api/superadmin/config/${encodeURIComponent(subscriberId)}/global`)
+      .get<ApiResponse<ConfigEntryDto[]>>(`${platformConfig(subscriberId)}/global`)
       .then((r) => r.data.responseObject ?? []),
 
   upsertSubscriberGlobalConfig: (subscriberId: string, body: UpsertConfigBody) =>
     api
-      .put<ApiResponse<ConfigEntryDto>>(`/api/superadmin/config/${encodeURIComponent(subscriberId)}/global`, body)
+      .put<ApiResponse<ConfigEntryDto>>(`${platformConfig(subscriberId)}/global`, body)
       .then((r) => {
         const o = r.data.responseObject;
         if (!o) throw new Error('empty');

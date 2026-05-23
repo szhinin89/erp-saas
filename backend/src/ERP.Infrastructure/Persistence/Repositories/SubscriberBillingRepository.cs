@@ -76,4 +76,15 @@ public sealed class SubscriberBillingRepository : ISubscriberBillingRepository
 
     public Task SaveChangesAsync(CancellationToken ct = default)
         => _db.SaveChangesAsync(ct);
+
+    public async Task<IReadOnlyList<SaasBillingInvoice>> GetRecentInvoicesPlatformAsync(int take, CancellationToken ct = default)
+        => await _db.SaasBillingInvoices.AsNoTracking()
+            .OrderByDescending(x => x.IssuedAtUtc ?? x.CreatedAt)
+            .Take(Math.Clamp(take, 1, 200))
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<SubscriberBillingAccount>> GetPastDueAccountsAsync(CancellationToken ct = default)
+        => await _db.SubscriberBillingAccounts.AsNoTracking()
+            .Where(x => x.Status == BillingAccountStatus.PastDue)
+            .ToListAsync(ct);
 }

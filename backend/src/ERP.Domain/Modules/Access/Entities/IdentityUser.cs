@@ -95,10 +95,42 @@ public class IdentityUser : SystemAuditableEntity
         return user;
     }
 
-    public bool IsPlatformSuperAdmin =>
+    public static IdentityUser CreatePlatformUser(
+        string firstName,
+        string lastName,
+        string email,
+        string passwordHash,
+        PlatformRole platformRole,
+        Guid createdBy,
+        bool requirePasswordReset = false)
+    {
+        var normalized = NormalizeEmail(email);
+        var user = new IdentityUser
+        {
+            Id = Guid.NewGuid(),
+            FirstName = firstName.Trim(),
+            LastName = lastName.Trim(),
+            Email = new Email(normalized),
+            EmailNormalized = normalized,
+            PasswordHash = passwordHash,
+            IsActive = true,
+            UserType = IdentityUserType.Platform,
+            PlatformRole = platformRole,
+            SubscriberId = null,
+            SecurityStamp = Guid.NewGuid().ToString("N"),
+            RequirePasswordReset = requirePasswordReset,
+        };
+        user.SetCreated(createdBy);
+        return user;
+    }
+
+    public bool IsPlatformOperator =>
         UserType == IdentityUserType.Platform
-        && PlatformRole == Enums.PlatformRole.SuperAdmin
+        && PlatformRole is not null
         && IsActive;
+
+    public bool IsPlatformSuperAdmin =>
+        IsPlatformOperator && PlatformRole == Enums.PlatformRole.SuperAdmin;
 
     public string FullName => $"{FirstName} {LastName}";
 

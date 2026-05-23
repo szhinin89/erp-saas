@@ -42,4 +42,8 @@ public interface ISubscriberBillingRepository
     Task AddProviderSubscriptionAsync(PaymentProviderSubscription subscription, CancellationToken ct = default);
 
     Task SaveChangesAsync(CancellationToken ct = default);
+
+    Task<IReadOnlyList<SaasBillingInvoice>> GetRecentInvoicesPlatformAsync(int take, CancellationToken ct = default);
+
+    Task<IReadOnlyList<SubscriberBillingAccount>> GetPastDueAccountsAsync(CancellationToken ct = default);
 }

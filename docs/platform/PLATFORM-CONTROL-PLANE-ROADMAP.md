@@ -70,6 +70,38 @@ El proyecto usa un **monolito modular** con un único `ErpDbContext`. La separac
 
 ---
 
+## Phase 1.5 — Consolidation & Canonicalization (2026-05-23)
+
+| Item | Estado |
+|------|--------|
+| UI canónica `/superadmin/*` (8 rutas) | ✅ Shell + redirects legacy |
+| API canónica `/api/platform/*` (8 prefijos) | ✅ auth, subscribers, plans, config, metrics, audit, users (summary) |
+| `[DeprecatedApi]` legacy controllers | ✅ superadmin, IAM, planes/empresas ES, subscription patch |
+| Subscriber detail page wired | ✅ `/superadmin/subscribers/:id` |
+| Menu builder fusionado en Plans | ✅ `?tab=menu` |
+| Docs CANONICAL-ROUTES + ROUTE-MIGRATION | ✅ |
+
+**Pendiente Phase 3:** eliminación física de controllers legacy (gated por métricas), billing automation, enabledModules platform PATCH.
+
+---
+
+## Phase 2 — Canonicalization + Runtime Separation (2026-05-23)
+
+| Item | Estado |
+|------|--------|
+| Subscriber detail 9 tabs (absorbe CompaniesPage) | ✅ |
+| Frontend platform → `/api/platform/*` only | ✅ |
+| Deprecation instrumentation + legacy dashboard | ✅ |
+| Platform Users / Billing / Observability UI | ✅ |
+| Growth analytics → `/api/platform/metrics/growth-*` | ✅ |
+| Navigation / features → platform controllers | ✅ |
+| Cleanup audit doc | ✅ [PHASE2-CLEANUP-AUDIT.md](./PHASE2-CLEANUP-AUDIT.md) |
+| Build + API/Architecture tests | ✅ |
+
+**Pendiente Phase 3:** ver deuda en PHASE2-CLEANUP-AUDIT.md (roles extendidos, impersonation logs UI, billing detalle, tracker persistente).
+
+---
+
 ## Roadmap de migración futura
 
 ### Phase 2 — Per-Plan Rate Limits (próximo sprint)

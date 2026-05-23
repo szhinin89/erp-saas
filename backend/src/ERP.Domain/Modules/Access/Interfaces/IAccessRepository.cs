@@ -5,6 +5,9 @@ namespace ERP.Domain.Access.Interfaces;
 public interface IAccessRepository
 {
     Task<IdentityUser?> GetPlatformSuperAdminByEmailAsync(string email, CancellationToken ct = default);
+
+    /// <summary>Cualquier operador platform activo (SuperAdmin, Support, BillingAdmin, Auditor).</summary>
+    Task<IdentityUser?> GetPlatformUserByEmailAsync(string email, CancellationToken ct = default);
     Task<bool> AnyPlatformSuperAdminAsync(CancellationToken ct = default);
     Task<int> CountActivePlatformUsersAsync(CancellationToken ct = default);
     Task<int> CountActiveCompanyUsersAsync(CancellationToken ct = default);

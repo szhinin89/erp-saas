@@ -55,22 +55,32 @@ public class AccessTokenService : IAccessTokenService
 
     public string GeneratePlatformSessionToken(IdentityUser platformUser)
     {
-        if (!platformUser.IsPlatformSuperAdmin)
-            throw new InvalidOperationException("Solo operadores platform SuperAdmin pueden usar tokens platform.");
+        if (!platformUser.IsPlatformOperator)
+            throw new InvalidOperationException("Solo operadores platform pueden usar tokens platform.");
 
+        var jwtRole = MapPlatformRoleToJwtRole(platformUser.PlatformRole!.Value);
         var expMinutes = int.Parse(_configuration["Jwt:ExpirationMinutes"] ?? "60");
         return GenerateToken(
             userId: platformUser.Id,
             email: platformUser.Email.Value,
             fullName: platformUser.FullName,
             subscriberId: Guid.Empty,
-            role: "SuperAdmin",
+            role: jwtRole,
             tokenType: "session",
             expiresAtUtc: DateTime.UtcNow.AddMinutes(expMinutes),
             userType: IdentityUserType.Platform,
-            platformRole: PlatformRole.SuperAdmin,
+            platformRole: platformUser.PlatformRole,
             extraClaims: []);
     }
+
+    private static string MapPlatformRoleToJwtRole(PlatformRole role) => role switch
+    {
+        PlatformRole.SuperAdmin => "SuperAdmin",
+        PlatformRole.Support => "Support",
+        PlatformRole.BillingAdmin => "BillingAdmin",
+        PlatformRole.Auditor => "Auditor",
+        _ => "SuperAdmin",
+    };
 
     public string GenerateBootstrapToken(
         Guid userId,

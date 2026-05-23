@@ -2,6 +2,7 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Access.Entities;
+using ERP.Domain.Access.Enums;
 using ERP.Domain.Branches.Entities;
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
@@ -44,7 +45,11 @@ internal static class DevDatabaseSeeder
 
         const string adminEmail = "admin@erp.com";
         const string adminPassword = "Admin123!";
+        const string platformSuperEmail = "superadmin@erp.com";
+        const string platformSuperPassword = "Admin123!";
         const string subscriberSlug = "subscriber-demo";
+
+        await EnsureDevPlatformSuperAdminAsync(db, platform, passwordHasher, platformSuperEmail, platformSuperPassword, ct);
 
         var existingAdmins = await platform
             .Unfiltered(db.IdentityUsers, PlatformQueryReason.DevOnly)
@@ -290,6 +295,36 @@ internal static class DevDatabaseSeeder
             db.AccessProfilePermissions.AddRange(permissions);
             await db.SaveChangesAsync(ct);
         }
+    }
+
+    private static async Task EnsureDevPlatformSuperAdminAsync(
+        ErpDbContext db,
+        IPlatformQueryAccessor platform,
+        IPasswordHasher passwordHasher,
+        string email,
+        string password,
+        CancellationToken ct)
+    {
+        var normalized = email.Trim().ToLowerInvariant();
+        var existing = await platform
+            .Unfiltered(db.IdentityUsers, PlatformQueryReason.DevOnly)
+            .FirstOrDefaultAsync(u => u.EmailNormalized == normalized, ct);
+
+        if (existing is not null)
+        {
+            if (existing.UserType == IdentityUserType.Platform && existing.PlatformRole == PlatformRole.SuperAdmin)
+                existing.SetPasswordHash(passwordHasher.HashPassword(password), SeederActorId);
+            await db.SaveChangesAsync(ct);
+            return;
+        }
+
+        db.IdentityUsers.Add(IdentityUser.CreatePlatformSuperAdmin(
+            "Super",
+            "Admin",
+            email,
+            passwordHasher.HashPassword(password),
+            SeederActorId));
+        await db.SaveChangesAsync(ct);
     }
 }
 

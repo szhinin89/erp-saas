@@ -120,6 +120,21 @@ export function LoginPage() {
         }
       }
 
+      /* ── 2. Login platform (operadores globales) ── */
+      if (superAdminPanelEnabled) {
+        try {
+          const platformPayload = await authService.loginPlatform(credentials);
+          if (platformPayload?.token) {
+            enterSuperAdminDashboard(platformPayload);
+            return;
+          }
+        } catch (platformErr) {
+          if (isDefinitiveTenantLoginError(platformErr)) {
+            throw platformErr;
+          }
+        }
+      }
+
       /* ── 3. Bootstrap (multi-suscriptor / flujo IAM legacy) ── */
       const bootstrap = await accessService.bootstrapLogin(credentials);
       setBootstrap(bootstrap);

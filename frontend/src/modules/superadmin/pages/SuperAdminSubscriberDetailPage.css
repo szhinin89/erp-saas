@@ -180,3 +180,14 @@
   flex: 1;
   max-width: 20rem;
 }
+
+.sa-detail-tabs--scroll {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.sa-detail-tabs--scroll .sa-detail-tab {
+  flex-shrink: 0;
+}

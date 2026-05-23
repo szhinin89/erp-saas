@@ -9,6 +9,6 @@ export function adminRoutes(superAdminPanelEnabled: boolean) {
   }
 
   return [
-    <Route key="superadmin-nav" path="/superadmin/navigation-menu" element={<Navigate to="/companies?mainNavigation=1" replace />} />,
+    <Route key="superadmin-nav" path="/superadmin/navigation-menu" element={<Navigate to="/superadmin/plans?tab=menu" replace />} />,
   ];
 }

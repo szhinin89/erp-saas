@@ -28,6 +28,7 @@ public sealed class PlatformAuditLog
         public const string ConfigChanged = "platform.config_changed";
         public const string FeatureOverrideSet = "entitlement.feature_override_set";
         public const string FeatureOverrideRemoved = "entitlement.feature_override_removed";
+        public const string SessionRevoked = "platform.session_revoked";
     }
 
     public Guid Id { get; private set; }

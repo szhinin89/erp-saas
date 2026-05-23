@@ -41,7 +41,7 @@ export function useSuperAdminPanelPage({ embeddedTab, shellLayout }: UseSuperAdm
     (tab: SuperAdminHomeTab) => {
       if (shellLayout) {
         if (tab === 'overview') void navigate('/superadmin/overview');
-        else if (tab === 'companies') void navigate('/superadmin/companies');
+        else if (tab === 'companies') void navigate('/superadmin/subscribers');
         else if (tab === 'plans') void navigate('/superadmin/menu-plans?tab=plans');
         else if (tab === 'menus') void navigate('/superadmin/menu-plans?tab=menu');
         return;

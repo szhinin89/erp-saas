@@ -32,6 +32,7 @@ using ERP.Domain.Modules.Auxiliary.Entities;
 using ERP.Application.Common;
 using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Platform.Audit.Entities;
+using ERP.Domain.Platform.Observability.Entities;
 
 namespace ERP.Infrastructure.Persistence;
 
@@ -429,6 +430,8 @@ public class ErpDbContext : DbContext
 
     // ── Platform Audit (global, no tenant filter) ──────────────────────────
     public DbSet<PlatformAuditLog> PlatformAuditLogs => Set<PlatformAuditLog>();
+    public DbSet<LegacyUsageStat> LegacyUsageStats => Set<LegacyUsageStat>();
+    public DbSet<LegacyUsageHit> LegacyUsageHits => Set<LegacyUsageHit>();
 
     /// <summary>
     /// Evaluada en cada query, no al compilar el modelo.

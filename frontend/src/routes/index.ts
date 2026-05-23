@@ -1,7 +1,6 @@
 import { publicRoutes } from './publicRoutes';
 import { adminRoutes } from './adminRoutes';
 import { catalogRoutes } from './catalogRoutes';
-import { companiesRoutes } from './companiesRoutes';
 import { companyManagementRoutes } from './companyManagementRoutes';
 import { accessRoutes } from './accessRoutes';
 import { mainRoutes } from './mainRoutes';
@@ -36,7 +35,6 @@ export function getAppRoutes(config: AppRoutesConfig) {
     ...adminRoutes(config.superAdminPanelEnabled),
     ...mainRoutes,
     ...catalogRoutes,
-    ...companiesRoutes,
     ...companyManagementRoutes,
     ...accessRoutes,
   ];

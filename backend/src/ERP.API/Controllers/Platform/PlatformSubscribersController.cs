@@ -4,7 +4,13 @@ using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.SuperAdminSubscribers;
 using ERP.Application.Navigation;
 using ERP.Application.Platform.Subscribers.UseCases;
+using ERP.Application.Subscribers.DTOs;
+using ERP.Application.Subscribers.UseCases.UpdateSubscriberGlobalParameters;
+using ERP.Application.Subscribers.UseCases.UpdateSubscriberOperationalSettings;
+using ERP.Application.Subscribers.UseCases.UpdateSubscriberSaasProfile;
 using ERP.Application.Subscriptions;
+using ERP.Domain.Access.Interfaces;
+using ERP.Domain.Subscribers.Interfaces;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -24,15 +30,24 @@ public sealed class PlatformSubscribersController : ControllerBase
     private readonly IMediator _mediator;
     private readonly ISubscriberMenuAdminService _subscriberMenuAdmin;
     private readonly ISubscriberEntitlementsService _entitlements;
+    private readonly ISubscriberRepository _subscribers;
+    private readonly ISessionModulesResolver _sessionModules;
+    private readonly IAccessRepository _access;
 
     public PlatformSubscribersController(
         IMediator mediator,
         ISubscriberMenuAdminService tenantMenuAdmin,
-        ISubscriberEntitlementsService entitlements)
+        ISubscriberEntitlementsService entitlements,
+        ISubscriberRepository subscribers,
+        ISessionModulesResolver sessionModules,
+        IAccessRepository access)
     {
         _mediator = mediator;
         _subscriberMenuAdmin = tenantMenuAdmin;
         _entitlements = entitlements;
+        _subscribers = subscribers;
+        _sessionModules = sessionModules;
+        _access = access;
     }
 
     /// <summary>Lista suscriptores SaaS para administración de plataforma.</summary>
@@ -53,6 +68,88 @@ public sealed class PlatformSubscribersController : ControllerBase
     {
         var result = await _mediator.Send(command, ct);
         return this.ToCreatedOrBadRequest(result, "Creado");
+    }
+
+    /// <summary>Detalle del suscriptor para el control plane (perfil SaaS + módulos).</summary>
+    [HttpGet("{subscriberId:guid}")]
+    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(Guid subscriberId, CancellationToken ct)
+    {
+        var tenant = await _subscribers.GetByIdAsync(subscriberId, ct);
+        if (tenant is null)
+            return this.ApiNotFound("Suscriptor no encontrado.");
+
+        var modules = await _sessionModules.GetEnabledModuleKeysAsync(subscriberId, ct);
+        return this.ApiOk(SubscriberDto.FromTenant(tenant, modules));
+    }
+
+    public sealed record UpdatePlatformSubscriberCompanyBody(
+        string Name,
+        string Slug,
+        string? Ruc,
+        string? ShortName,
+        string? TradeName,
+        string? Dinardap,
+        string? LogoUrl,
+        int DisplayOrder,
+        int Priority);
+
+    /// <summary>Actualiza datos comerciales/legales del suscriptor.</summary>
+    [HttpPatch("{subscriberId:guid}/company")]
+    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateCompany(Guid subscriberId, [FromBody] UpdatePlatformSubscriberCompanyBody body, CancellationToken ct)
+    {
+        var command = new UpdateSubscriberSaasProfileCommand(
+            subscriberId, body.Name, body.Slug, body.Ruc, body.ShortName,
+            body.TradeName, body.Dinardap, body.LogoUrl, body.DisplayOrder, body.Priority);
+        return this.ToOkOrBadRequest(await _mediator.Send(command, ct));
+    }
+
+    public sealed record UpdatePlatformGlobalParametersBody(bool ElectronicBillingTrialEnabled);
+
+    [HttpPatch("{subscriberId:guid}/global-parameters")]
+    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateGlobalParameters(Guid subscriberId, [FromBody] UpdatePlatformGlobalParametersBody body, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new UpdateSubscriberGlobalParametersCommand(subscriberId, body.ElectronicBillingTrialEnabled), ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    public sealed record UpdatePlatformOperationalSettingsBody(
+        string Currency,
+        string Language,
+        string Timezone,
+        string? InvoicePrefix,
+        int DefaultCreditDays);
+
+    [HttpPatch("{subscriberId:guid}/operational-settings")]
+    [ProducesResponseType(typeof(ApiResponse<SubscriberDto?>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateOperationalSettings(Guid subscriberId, [FromBody] UpdatePlatformOperationalSettingsBody body, CancellationToken ct)
+    {
+        var command = new UpdateSubscriberOperationalSettingsCommand(
+            subscriberId, body.Currency, body.Language, body.Timezone, body.InvoicePrefix, body.DefaultCreditDays);
+        return this.ToOkOrBadRequest(await _mediator.Send(command, ct));
+    }
+
+    /// <summary>Usuarios identity activos del suscriptor (tenant admins/operators).</summary>
+    [HttpGet("{subscriberId:guid}/users")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> ListTenantUsers(Guid subscriberId, CancellationToken ct)
+    {
+        var users = await _access.GetActiveIdentityUsersForSubscriberAsync(subscriberId, ct);
+        return this.ApiOk(new
+        {
+            users = users.Select(u => new
+            {
+                u.Id,
+                Email = u.Email.Value,
+                u.FirstName,
+                u.LastName,
+                u.IsActive,
+                userType = u.UserType.ToString(),
+            }),
+        });
     }
 
     public sealed record SubscriberMenuPutBody(string MenuConfigJson);

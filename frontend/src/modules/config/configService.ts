@@ -1,6 +1,10 @@
 import { api } from '../lib/api';
 import type { ApiResponse } from '../../types/api';
 import type { ConfigDeleteInput, ConfigEntry, ConfigScope, ConfigUpsertInput } from './types';
+import { PLATFORM_API } from '../superadmin/api/platformApiPaths';
+
+const platformConfigBase = (subscriberId: string) =>
+  `${PLATFORM_API.config}/${encodeURIComponent(subscriberId)}`;
 
 function normalizeEntry(raw: Partial<ConfigEntry>): ConfigEntry | null {
   const scope = (raw.scope ?? '').toString().trim().toLowerCase() as ConfigScope;
@@ -44,7 +48,7 @@ export const configService = {
   /** Config de un tenant concreto vía panel global SuperAdmin (JWT global). */
   async loadTenantConfig(subscriberId: string): Promise<ConfigEntry[]> {
     const fallbackGlobal = await safeGet<unknown[]>(
-      `/api/superadmin/config/${encodeURIComponent(subscriberId)}/global`,
+      `${platformConfigBase(subscriberId)}/global`,
     );
     return normalizeList(fallbackGlobal ?? []);
   },
@@ -55,7 +59,7 @@ export const configService = {
 
     if (input.scope === 'global') {
       const res = await api.put<ApiResponse<ConfigEntry>>(
-        `/api/superadmin/config/${encodeURIComponent(subscriberId)}/global`,
+        `${platformConfigBase(subscriberId)}/global`,
         payload,
       );
       const normalized = normalizeEntry(res.data.responseObject ?? undefined);
@@ -65,7 +69,7 @@ export const configService = {
     if (input.scope === 'module') {
       const moduleName = (input.module ?? '').trim();
       const res = await api.put<ApiResponse<ConfigEntry>>(
-        `/api/superadmin/config/${encodeURIComponent(subscriberId)}/module/${encodeURIComponent(moduleName)}`,
+        `${platformConfigBase(subscriberId)}/module/${encodeURIComponent(moduleName)}`,
         payload,
       );
       const normalized = normalizeEntry(res.data.responseObject ?? undefined);
@@ -74,7 +78,7 @@ export const configService = {
     }
     const featureName = (input.feature ?? '').trim();
     const res = await api.put<ApiResponse<ConfigEntry>>(
-      `/api/superadmin/config/${encodeURIComponent(subscriberId)}/feature/${encodeURIComponent(featureName)}`,
+      `${platformConfigBase(subscriberId)}/feature/${encodeURIComponent(featureName)}`,
       payload,
     );
     const normalized = normalizeEntry(res.data.responseObject ?? undefined);
@@ -85,19 +89,19 @@ export const configService = {
   async deleteConfig(subscriberId: string, input: ConfigDeleteInput): Promise<void> {
     const key = input.key.trim();
     if (input.scope === 'global') {
-      await api.delete(`/api/superadmin/config/${encodeURIComponent(subscriberId)}/global/${encodeURIComponent(key)}`);
+      await api.delete(`${platformConfigBase(subscriberId)}/global/${encodeURIComponent(key)}`);
       return;
     }
     if (input.scope === 'module') {
       const moduleName = (input.module ?? '').trim();
       await api.delete(
-        `/api/superadmin/config/${encodeURIComponent(subscriberId)}/module/${encodeURIComponent(moduleName)}/${encodeURIComponent(key)}`,
+        `${platformConfigBase(subscriberId)}/module/${encodeURIComponent(moduleName)}/${encodeURIComponent(key)}`,
       );
       return;
     }
     const featureName = (input.feature ?? '').trim();
     await api.delete(
-      `/api/superadmin/config/${encodeURIComponent(subscriberId)}/feature/${encodeURIComponent(featureName)}/${encodeURIComponent(key)}`,
+      `${platformConfigBase(subscriberId)}/feature/${encodeURIComponent(featureName)}/${encodeURIComponent(key)}`,
     );
   },
 };

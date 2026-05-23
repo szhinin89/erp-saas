@@ -1,5 +1,7 @@
 using ERP.API.Contracts;
 using ERP.API.Extensions;
+using ERP.Application.Admin;
+using ERP.Application.Admin.UseCases.SuperAdminGlobal;
 using ERP.Application.Platform.Metrics;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -31,5 +33,30 @@ public sealed class PlatformMetricsController : ControllerBase
     {
         var result = await _mediator.Send(new GetPlatformMetricsQuery(), ct);
         return this.ToOkOrBadRequest(result);
+    }
+
+    /// <summary>Series temporales de crecimiento (suscriptores, usuarios).</summary>
+    [HttpGet("growth-analytics")]
+    [ProducesResponseType(typeof(ApiResponse<GrowthAnalyticsResponseDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetGrowthAnalytics(
+        [FromQuery] string? from,
+        [FromQuery] string? to,
+        [FromQuery] string? granularity,
+        CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetSuperAdminGrowthAnalyticsQuery(from, to, granularity), ct);
+        return this.ToOkOrBadRequest(result, "OK");
+    }
+
+    [HttpGet("growth-analytics-monetary")]
+    [ProducesResponseType(typeof(ApiResponse<GrowthMonetaryResponseDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetGrowthMonetary(
+        [FromQuery] string? from,
+        [FromQuery] string? to,
+        [FromQuery] string? granularity,
+        CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetSuperAdminGrowthMonetaryQuery(from, to, granularity), ct);
+        return this.ToOkOrBadRequest(result, "OK");
     }
 }

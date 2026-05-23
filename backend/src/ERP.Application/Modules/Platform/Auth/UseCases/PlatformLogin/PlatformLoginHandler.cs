@@ -39,7 +39,7 @@ public sealed class PlatformLoginHandler : IRequestHandler<PlatformLoginCommand,
         if (string.IsNullOrWhiteSpace(email))
             return Result<AuthResponseDto>.Failure("Email requerido.");
 
-        var user = await _accessRepository.GetPlatformSuperAdminByEmailAsync(email, ct);
+        var user = await _accessRepository.GetPlatformUserByEmailAsync(email, ct);
         if (user is null)
             return Result<AuthResponseDto>.Failure("Credenciales inválidas.");
 
@@ -52,6 +52,15 @@ public sealed class PlatformLoginHandler : IRequestHandler<PlatformLoginCommand,
         if (!_passwordHasher.VerifyPassword(command.Password, user.PasswordHash))
             return Result<AuthResponseDto>.Failure("Credenciales inválidas.");
 
+        var jwtRole = user.PlatformRole switch
+        {
+            Domain.Access.Enums.PlatformRole.SuperAdmin => "SuperAdmin",
+            Domain.Access.Enums.PlatformRole.Support => "Support",
+            Domain.Access.Enums.PlatformRole.BillingAdmin => "BillingAdmin",
+            Domain.Access.Enums.PlatformRole.Auditor => "Auditor",
+            _ => "SuperAdmin",
+        };
+
         var token = _accessTokenService.GeneratePlatformSessionToken(user);
         var (refresh, refreshExpiry) = await _refreshTokenService.CreateAsync(
             user.Id, Guid.Empty, null, RefreshUserType.Platform, ct);
@@ -60,7 +69,7 @@ public sealed class PlatformLoginHandler : IRequestHandler<PlatformLoginCommand,
             user.Id,
             user.FullName,
             user.Email.Value,
-            "SuperAdmin",
+            jwtRole,
             Guid.Empty,
             token,
             PlanCode: null,

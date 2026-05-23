@@ -2,6 +2,7 @@ using System;
 using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
+using ERP.API.Filters;
 using ERP.Application.Navigation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,6 +15,7 @@ namespace ERP.API.Controllers;
 [Route("api/superadmin/empresas")]
 [Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]
+[DeprecatedApi("/api/platform/subscribers")]
 public sealed class SuperAdminEmpresasMenuController : ControllerBase
 {
     private readonly ISubscriberMenuAdminService _subscriberMenuAdmin;

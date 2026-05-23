@@ -28,6 +28,16 @@ public class AccessRepository : IAccessRepository
             ct);
     }
 
+    public Task<IdentityUser?> GetPlatformUserByEmailAsync(string email, CancellationToken ct = default)
+    {
+        var normalized = NormalizeEmail(email);
+        return _db.IdentityUsers.FirstOrDefaultAsync(
+            u => u.EmailNormalized == normalized
+                 && u.UserType == IdentityUserType.Platform
+                 && u.PlatformRole != null,
+            ct);
+    }
+
     public Task<bool> AnyPlatformSuperAdminAsync(CancellationToken ct = default)
         => _db.IdentityUsers.AnyAsync(
             u => u.UserType == IdentityUserType.Platform && u.PlatformRole == PlatformRole.SuperAdmin,

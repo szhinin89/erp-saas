@@ -1,6 +1,7 @@
 import type { NavigateFunction } from 'react-router-dom';
+import { SUPERADMIN_UI } from '../modules/superadmin/api/platformApiPaths';
 
-/** Clave en `sessionStorage` para el subscriber cuya ficha se muestra en SuperAdmin → Empresas → Datos. */
+/** Clave legacy en `sessionStorage` (compat redirect desde `/companies`). */
 export const COMPANIES_DETAIL_SUBSCRIBER_STORAGE_KEY = 'erp.saas.companies.detailSubscriberId';
 
 const COMPANIES_SUBSCRIPTION_LEGACY_STORAGE_KEY = 'erp.saas.companies.subscriptionSubscriberId';
@@ -38,9 +39,14 @@ export function clearCompaniesSubscriptionSubscriberId(): void {
   }
 }
 
-/** Abre `/companies` con el subscriber seleccionado en la pestaña Datos. */
-export function goToCompaniesSubscriberDetail(navigate: NavigateFunction, subscriberId: string): void {
+/** Abre la ficha canónica del suscriptor en Super Admin. */
+export function goToSubscriberDetail(navigate: NavigateFunction, subscriberId: string): void {
   clearCompaniesSubscriptionSubscriberId();
   persistCompaniesDetailSubscriberId(subscriberId);
-  navigate('/companies');
+  navigate(SUPERADMIN_UI.subscriberDetail(subscriberId));
+}
+
+/** @deprecated Usar goToSubscriberDetail — mantiene compat con callers legacy. */
+export function goToCompaniesSubscriberDetail(navigate: NavigateFunction, subscriberId: string): void {
+  goToSubscriberDetail(navigate, subscriberId);
 }

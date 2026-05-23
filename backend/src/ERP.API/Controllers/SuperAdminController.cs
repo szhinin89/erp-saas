@@ -50,6 +50,7 @@ public sealed class SuperAdminController : ControllerBase
     }
 
     [HttpGet("plans")]
+    [DeprecatedApi("/api/platform/plans")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -74,6 +75,7 @@ public sealed class SuperAdminController : ControllerBase
     }
 
     [HttpGet("metrics")]
+    [DeprecatedApi("/api/platform/metrics")]
     [ProducesResponseType(typeof(ApiResponse<SuperAdminMetricsDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -84,6 +86,7 @@ public sealed class SuperAdminController : ControllerBase
     }
 
     [HttpGet("growth-analytics")]
+    [DeprecatedApi("/api/platform/metrics/growth-analytics")]
     [ProducesResponseType(typeof(ApiResponse<GrowthAnalyticsResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetGrowthAnalytics(
@@ -97,6 +100,7 @@ public sealed class SuperAdminController : ControllerBase
     }
 
     [HttpGet("growth-analytics-monetary")]
+    [DeprecatedApi("/api/platform/metrics/growth-analytics-monetary")]
     [ProducesResponseType(typeof(ApiResponse<GrowthMonetaryResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetGrowthMonetary(
@@ -110,6 +114,7 @@ public sealed class SuperAdminController : ControllerBase
     }
 
     [HttpGet("navigation-menu")]
+    [DeprecatedApi("/api/platform/navigation-menu")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetNavigationMenu(CancellationToken ct)
     {
@@ -120,6 +125,7 @@ public sealed class SuperAdminController : ControllerBase
     }
 
     [HttpPut("navigation-menu/groups/reorder")]
+    [DeprecatedApi("/api/platform/navigation-menu/groups/reorder")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ReorderNavigationGroups(
@@ -133,6 +139,7 @@ public sealed class SuperAdminController : ControllerBase
     }
 
     [HttpPut("navigation-menu/items/reorder-levels")]
+    [DeprecatedApi("/api/platform/navigation-menu/items/reorder-levels")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ReorderNavigationItemLevels(
@@ -146,6 +153,7 @@ public sealed class SuperAdminController : ControllerBase
     }
 
     [HttpPost("navigation-menu/items")]
+    [DeprecatedApi("/api/platform/navigation-menu/items")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateNavigationMenuItem([FromBody] CreateNavItemRequest body, CancellationToken ct)
@@ -157,6 +165,7 @@ public sealed class SuperAdminController : ControllerBase
     }
 
     [HttpPut("navigation-menu/items/{itemId:guid}")]
+    [DeprecatedApi("/api/platform/navigation-menu/items/{itemId}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateNavigationMenuItem(
@@ -171,6 +180,7 @@ public sealed class SuperAdminController : ControllerBase
     }
 
     [HttpDelete("navigation-menu/items/{itemId:guid}")]
+    [DeprecatedApi("/api/platform/navigation-menu/items/{itemId}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteNavigationMenuItem(Guid itemId, CancellationToken ct)
@@ -182,6 +192,7 @@ public sealed class SuperAdminController : ControllerBase
     }
 
     [HttpDelete("users/{userId:guid}/sessions")]
+    [DeprecatedApi("/api/platform/users/{userId}/sessions")]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RevokeUserSessions(

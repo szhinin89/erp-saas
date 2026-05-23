@@ -3,6 +3,7 @@ using ERP.API.Authorization;
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
+using ERP.API.Filters;
 using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.BootstrapLogin;
 using ERP.Application.Access.UseCases.SwitchSubscriber;
@@ -159,6 +160,7 @@ public class AccessController : ControllerBase
     /// <remarks>Incluye <c>planCode</c>, <c>enabledModules</c> efectivos y <c>hasModuleRestrictions</c>.</remarks>
     /// <remarks>Legacy — usar <c>GET /api/platform/subscribers</c>.</remarks>
     [Obsolete("Legacy IAM route. Use GET /api/platform/subscribers instead.")]
+    [DeprecatedApi("/api/platform/subscribers")]
     [HttpGet("superadmin/subscribers")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -173,6 +175,7 @@ public class AccessController : ControllerBase
     /// <summary>SuperAdmin: crea empresa + Admin inicial (solo para esa empresa).</summary>
     /// <remarks>Legacy — usar <c>POST /api/platform/subscribers</c>.</remarks>
     [Obsolete("Legacy IAM route. Use POST /api/platform/subscribers instead.")]
+    [DeprecatedApi("/api/platform/subscribers")]
     [HttpPost("superadmin/subscribers")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<SessionResponseDto?>), StatusCodes.Status201Created)]
@@ -191,6 +194,7 @@ public class AccessController : ControllerBase
     /// <summary>SuperAdmin: menú efectivo de la empresa (personalizado, del plan o global).</summary>
     /// <remarks>Legacy — usar <c>GET /api/platform/subscribers/{subscriberId}/menu</c>.</remarks>
     [Obsolete("Legacy IAM route. Use GET /api/platform/subscribers/{subscriberId}/menu instead.")]
+    [DeprecatedApi("/api/platform/subscribers")]
     [HttpGet("superadmin/subscribers/{subscriberId:guid}/menu")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -213,6 +217,7 @@ public class AccessController : ControllerBase
     /// <summary>SuperAdmin: guarda menú personalizado por empresa (JSON = <c>SessionMenuGroupDto[]</c>).</summary>
     /// <remarks>Legacy — usar <c>PUT /api/platform/subscribers/{subscriberId}/menu</c>.</remarks>
     [Obsolete("Legacy IAM route. Use PUT /api/platform/subscribers/{subscriberId}/menu instead.")]
+    [DeprecatedApi("/api/platform/subscribers")]
     [HttpPut("superadmin/subscribers/{subscriberId:guid}/menu")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
@@ -228,6 +233,7 @@ public class AccessController : ControllerBase
     /// <summary>SuperAdmin: elimina menú personalizado; la empresa vuelve al menú del plan o global.</summary>
     /// <remarks>Legacy — usar <c>DELETE /api/platform/subscribers/{subscriberId}/menu</c>.</remarks>
     [Obsolete("Legacy IAM route. Use DELETE /api/platform/subscribers/{subscriberId}/menu instead.")]
+    [DeprecatedApi("/api/platform/subscribers")]
     [HttpDelete("superadmin/subscribers/{subscriberId:guid}/menu")]
     [Authorize(Roles = "SuperAdmin")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]

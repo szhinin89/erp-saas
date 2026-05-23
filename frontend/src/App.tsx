@@ -10,11 +10,11 @@ import {
   adminRoutes,
   mainRoutes,
   catalogRoutes,
-  companiesRoutes,
   companyManagementRoutes,
   accessRoutes,
 } from './routes';
 import { superAdminShellRoutes } from './routes/superAdminShellRoutes';
+import { CompaniesLegacyRedirect } from './routes/CompaniesLegacyRedirect';
 import { SessionBootstrap } from './components/SessionBootstrap';
 
 function AppRoutes() {
@@ -27,12 +27,12 @@ function AppRoutes() {
 
         <Route element={<ProtectedRoute />}>
           {superAdminPanelEnabled ? superAdminShellRoutes() : null}
+          <Route path="/companies/*" element={<CompaniesLegacyRedirect />} />
           <Route element={<AppLayout />}>
             <Route index element={<HomeRedirect />} />
             {adminRoutes(superAdminPanelEnabled)}
             {mainRoutes}
             {catalogRoutes}
-            {companiesRoutes}
             {companyManagementRoutes}
             {accessRoutes}
           </Route>

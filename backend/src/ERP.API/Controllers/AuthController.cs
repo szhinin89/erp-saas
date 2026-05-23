@@ -7,6 +7,7 @@ using ERP.API.Attributes;
 using ERP.API.Contracts;
 using AccessibleCompanyDto = ERP.Application.Auth.DTOs.AccessibleCompanyDto;
 using ERP.API.Extensions;
+using ERP.API.Filters;
 using ERP.Application.Auth.UseCases.Register;
 using ERP.Application.Auth.UseCases.Login;
 using ERP.Application.Auth.UseCases.Logout;
@@ -127,6 +128,7 @@ public class AuthController : ControllerBase
 
     /// <summary>Login global de SuperAdmin: email + password (sin SubscriberId).</summary>
     [HttpPost("superadmin-login")]
+    [DeprecatedApi("/api/platform/auth/login")]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto?>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]

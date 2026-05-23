@@ -1,6 +1,7 @@
 ﻿using ERP.API.Contracts;
 using ERP.API.Attributes;
 using ERP.API.Extensions;
+using ERP.API.Filters;
 using ERP.API.Services;
 using ERP.Application.Common;
 using ERP.Application.Navigation.DTOs;
@@ -16,6 +17,7 @@ namespace ERP.API.Controllers;
 [Route("api/superadmin/AppFeatures")]
 [Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]
+[DeprecatedApi("/api/platform/features")]
 public sealed class SuperAdminAppFeaturesController : ControllerBase
 {
     private readonly IMediator _mediator;

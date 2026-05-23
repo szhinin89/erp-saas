@@ -146,7 +146,7 @@ export function SuperAdminPlansSectionList({
                     </ZHBtn>
                     <NavLink
                       className="zh-btn zh-btn--ghost zh-btn--md sap-pricing-linkBtn"
-                      to={`/companies?plan=${encodeURIComponent(plan.code)}`}
+                      to={`/superadmin/plans?plan=${encodeURIComponent(plan.code)}`}
                     >
                       {t('superadmin.plansCard.viewSubscribers')}
                     </NavLink>

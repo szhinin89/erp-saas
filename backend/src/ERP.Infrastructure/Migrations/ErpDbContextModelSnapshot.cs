@@ -1947,6 +1947,73 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("accounts", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.AccountingPeriod", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
+
+                    b.Property<Guid?>("ClosedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("closed_by");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<bool>("IsClosed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_closed");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("integer")
+                        .HasColumnName("month");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer")
+                        .HasColumnName("year");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId", "IsClosed")
+                        .HasDatabaseName("ix_accounting_periods_subscriber_closed");
+
+                    b.HasIndex("SubscriberId", "Year", "Month")
+                        .IsUnique()
+                        .HasDatabaseName("uq_accounting_periods_subscriber_year_month");
+
+                    b.ToTable("accounting_periods", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.AccountingSetup", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2037,6 +2104,198 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("accounting_setup", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.AccountsPayableEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("BusinessPartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_partner_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("due_date");
+
+                    b.Property<DateTime>("IssueDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("issue_date");
+
+                    b.Property<decimal>("OriginalAmount")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("original_amount");
+
+                    b.Property<decimal>("PaidAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("paid_amount");
+
+                    b.Property<Guid?>("PurchBillId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purch_bill_id");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reference");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("supplier_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PurchBillId")
+                        .HasDatabaseName("ix_ap_entries_purch_bill")
+                        .HasFilter("purch_bill_id IS NOT NULL");
+
+                    b.HasIndex("SubscriberId", "CompanyId", "Status")
+                        .HasDatabaseName("ix_ap_entries_subscriber_company_status");
+
+                    b.HasIndex("SubscriberId", "DueDate", "Status")
+                        .HasDatabaseName("ix_ap_entries_subscriber_due_status");
+
+                    b.ToTable("ap_entries", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.AccountsReceivableEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("BusinessPartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_partner_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasColumnName("currency");
+
+                    b.Property<Guid>("CustomerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("customer_id");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("due_date");
+
+                    b.Property<DateTime>("IssueDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("issue_date");
+
+                    b.Property<decimal>("OriginalAmount")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("original_amount");
+
+                    b.Property<decimal>("PaidAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasDefaultValue(0m)
+                        .HasColumnName("paid_amount");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("reference");
+
+                    b.Property<Guid?>("SalesBillId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("sales_bill_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SalesBillId")
+                        .HasDatabaseName("ix_ar_entries_sales_bill")
+                        .HasFilter("sales_bill_id IS NOT NULL");
+
+                    b.HasIndex("SubscriberId", "CompanyId", "Status")
+                        .HasDatabaseName("ix_ar_entries_subscriber_company_status");
+
+                    b.HasIndex("SubscriberId", "DueDate", "Status")
+                        .HasDatabaseName("ix_ar_entries_subscriber_due_status");
+
+                    b.ToTable("ar_entries", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.ExpenseCategory", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2091,6 +2350,10 @@ namespace ERP.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<Guid?>("AccountingPeriodId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("accounting_period_id");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2180,6 +2443,80 @@ namespace ERP.Infrastructure.Migrations
                     b.HasIndex("JournalEntryId");
 
                     b.ToTable("journal_entry_lines", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Modules.Accounting.Entities.PaymentApplication", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid?>("ApEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ap_entry_id");
+
+                    b.Property<DateTime>("ApplicationDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("application_date");
+
+                    b.Property<Guid?>("ArEntryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("ar_entry_id");
+
+                    b.Property<Guid>("CompanyId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("company_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<string>("PaymentReference")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("payment_reference");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApEntryId")
+                        .HasDatabaseName("ix_payment_applications_ap_entry")
+                        .HasFilter("ap_entry_id IS NOT NULL");
+
+                    b.HasIndex("ArEntryId")
+                        .HasDatabaseName("ix_payment_applications_ar_entry")
+                        .HasFilter("ar_entry_id IS NOT NULL");
+
+                    b.HasIndex("SubscriberId", "ApplicationDate")
+                        .HasDatabaseName("ix_payment_applications_subscriber_date");
+
+                    b.ToTable("payment_applications", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Modules.Auxiliary.Entities.RetryControl", b =>
@@ -4406,6 +4743,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("approved_by");
 
+                    b.Property<Guid?>("BusinessPartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_partner_id");
+
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -4712,6 +5053,12 @@ namespace ERP.Infrastructure.Migrations
                         .HasPrecision(18, 6)
                         .HasColumnType("numeric(18,6)")
                         .HasColumnName("reserved_quantity");
+
+                    b.Property<uint>("RowVersion")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
@@ -5148,6 +5495,80 @@ namespace ERP.Infrastructure.Migrations
                     b.ToTable("stock_movement", (string)null);
                 });
 
+            modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.StockReservation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid?>("OrderId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("order_id");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("product_id");
+
+                    b.Property<decimal>("Quantity")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("SubscriberId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("subscriber_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by");
+
+                    b.Property<Guid>("WarehouseId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("warehouse_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubscriberId", "OrderId")
+                        .HasDatabaseName("ix_stock_reservations_order")
+                        .HasFilter("order_id IS NOT NULL");
+
+                    b.HasIndex("SubscriberId", "ExpiresAt", "Status")
+                        .HasDatabaseName("ix_stock_reservations_expiry");
+
+                    b.HasIndex("SubscriberId", "ProductId", "WarehouseId", "Status")
+                        .HasDatabaseName("ix_stock_reservations_product_warehouse_status");
+
+                    b.ToTable("stock_reservations", (string)null);
+                });
+
             modelBuilder.Entity("ERP.Domain.Modules.Inventory.Entities.StockTransfer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5575,6 +5996,10 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid?>("ApprovedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("approved_by");
+
+                    b.Property<Guid?>("BusinessPartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_partner_id");
 
                     b.Property<Guid>("CompanyId")
                         .HasColumnType("uuid")
@@ -6280,6 +6705,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("approved_by");
 
+                    b.Property<Guid?>("BusinessPartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_partner_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -6950,6 +7379,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("approved_by");
 
+                    b.Property<Guid?>("BusinessPartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_partner_id");
+
                     b.Property<Guid?>("CompanyId")
                         .HasColumnType("uuid")
                         .HasColumnName("company_id");
@@ -7127,6 +7560,10 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid?>("ApprovedBy")
                         .HasColumnType("uuid")
                         .HasColumnName("approved_by");
+
+                    b.Property<Guid?>("BusinessPartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_partner_id");
 
                     b.Property<DateTime?>("ClosedAt")
                         .HasColumnType("timestamp with time zone")
@@ -7563,6 +8000,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("character varying(300)")
                         .HasColumnName("address");
 
+                    b.Property<Guid?>("BusinessPartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_partner_id");
+
                     b.Property<string>("CountryCode")
                         .HasMaxLength(3)
                         .HasColumnType("character(3)")
@@ -7666,6 +8107,10 @@ namespace ERP.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
                         .HasColumnName("address_line");
+
+                    b.Property<Guid?>("BusinessPartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_partner_id");
 
                     b.Property<Guid?>("CompanyId")
                         .HasColumnType("uuid")
@@ -7787,6 +8232,10 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("BranchId")
                         .HasColumnType("uuid")
                         .HasColumnName("branch_id");
+
+                    b.Property<Guid?>("BusinessPartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_partner_id");
 
                     b.Property<Guid?>("CompanyId")
                         .HasColumnType("uuid")
@@ -8169,6 +8618,10 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid?>("BranchId")
                         .HasColumnType("uuid")
                         .HasColumnName("branch_id");
+
+                    b.Property<Guid?>("BusinessPartnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("business_partner_id");
 
                     b.Property<Guid?>("CompanyId")
                         .HasColumnType("uuid")
@@ -10875,6 +11328,82 @@ namespace ERP.Infrastructure.Migrations
                         .HasDatabaseName("ix_platform_audit_target_subscriber");
 
                     b.ToTable("platform_audit_logs", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Platform.Observability.Entities.LegacyUsageHit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CallerIp")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Detail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTimeOffset>("HitAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Successor")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<string>("UsageKey")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HitAtUtc");
+
+                    b.ToTable("legacy_usage_hits", (string)null);
+                });
+
+            modelBuilder.Entity("ERP.Domain.Platform.Observability.Entities.LegacyUsageStat", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("LastCallerIp")
+                        .HasMaxLength(45)
+                        .HasColumnType("character varying(45)");
+
+                    b.Property<string>("LastDetail")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTimeOffset>("LastHitUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Successor")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<long>("TotalHits")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("UsageKey")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Category", "UsageKey")
+                        .IsUnique();
+
+                    b.ToTable("legacy_usage_stats", (string)null);
                 });
 
             modelBuilder.Entity("ERP.Domain.Products.Entities.Brand", b =>

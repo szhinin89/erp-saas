@@ -149,6 +149,15 @@ export function SuperAdminSubscribersPage() {
                       <div className="sa-sub-actions">
                         <button
                           type="button"
+                          className="zh-btn zh-btn--primary zh-btn--sm"
+                          title="Ficha del suscriptor"
+                          onClick={() => navigate(`/superadmin/subscribers/${encodeURIComponent(s.id)}`)}
+                        >
+                          <span className="material-symbols-outlined">open_in_new</span>
+                          Ficha
+                        </button>
+                        <button
+                          type="button"
                           className="zh-btn zh-btn--ghost zh-btn--sm"
                           title="Cuenta SaaS"
                           disabled={busy}
