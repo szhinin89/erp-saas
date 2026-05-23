@@ -1,9 +1,12 @@
-import { apiDelete, apiGet, apiPatch, apiPost } from '../../lib/apiEnvelope';
+import { apiDelete, apiGet, apiPatch, apiPost, apiPut } from '../../lib/apiEnvelope';
 import type {
   BusinessPartnerApiRow,
   BusinessPartnerDto,
+  CompanyBpSettingsDto,
   CreateBusinessPartnerBody,
   SearchBusinessPartnersParams,
+  UpdateBusinessPartnerBody,
+  UpdateSupplierProfileBody,
 } from '../types/businessPartner.types';
 
 /** Ruta canónica backend (`BusinessPartnersController`). */
@@ -75,9 +78,28 @@ export const businessPartnerService = {
 
   disable: (id: string) => apiDelete<boolean>(`${BUSINESS_PARTNERS_API}/${encodeURIComponent(id)}`),
 
+  update: (id: string, body: UpdateBusinessPartnerBody) =>
+    apiPut<boolean>(`${BUSINESS_PARTNERS_API}/${encodeURIComponent(id)}`, body),
+
+  activate: (id: string) =>
+    apiPatch<boolean>(`${BUSINESS_PARTNERS_API}/${encodeURIComponent(id)}/activate`, {}),
+
+  getCompanySettings: async (id: string): Promise<CompanyBpSettingsDto | null> => {
+    const raw = await apiGet<CompanyBpSettingsDto | null>(
+      `${BUSINESS_PARTNERS_API}/${encodeURIComponent(id)}/company-settings`,
+    );
+    return raw ?? null;
+  },
+
   upsertCompanySettings: (
     id: string,
     body: { creditLimit?: number | null; paymentDays: number; isBlocked: boolean },
   ) =>
     apiPatch<boolean>(`${BUSINESS_PARTNERS_API}/${encodeURIComponent(id)}/company-settings`, body),
+
+  updateCustomerNotes: (id: string, notes: string | null) =>
+    apiPatch<boolean>(`${BUSINESS_PARTNERS_API}/${encodeURIComponent(id)}/customer-notes`, { notes }),
+
+  updateSupplierProfile: (id: string, body: UpdateSupplierProfileBody) =>
+    apiPatch<boolean>(`${BUSINESS_PARTNERS_API}/${encodeURIComponent(id)}/supplier-profile`, body),
 };

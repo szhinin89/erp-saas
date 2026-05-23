@@ -22,8 +22,4 @@ public sealed record SessionMenuGroupDto(
     IReadOnlyList<string>? Roles,
     bool RequirePlatformPanel,
     IReadOnlyList<SessionMenuItemDto> Items,
-    string? MenuBarLayout = null)
-{
-    /// <summary>Alias JSON canónico — mismo valor que <see cref="RequirePlatformPanel"/>.</summary>
-    public bool RequirePlatformPanel => RequirePlatformPanel;
-}
+    string? MenuBarLayout = null);

@@ -1,54 +1,77 @@
 import { useState } from 'react';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
-import type { CreateBusinessPartnerBody } from '../types/businessPartner.types';
+import type { CreateBusinessPartnerBody, UpdateBusinessPartnerBody } from '../types/businessPartner.types';
 
-type Props = {
-  title: string;
-  saving: boolean;
+type CreateMode = {
+  mode?: 'create';
   defaultAsCustomer?: boolean;
   defaultAsSupplier?: boolean;
-  onClose: () => void;
   onSubmit: (body: CreateBusinessPartnerBody) => void;
+  onUpdate?: never;
+  initialValues?: never;
 };
 
-export function MasterDataBpFormModal({
-  title,
-  saving,
-  defaultAsCustomer = false,
-  defaultAsSupplier = false,
-  onClose,
-  onSubmit,
-}: Props) {
-  const [identificationType, setIdentificationType] = useState('RUC');
-  const [identificationNumber, setIdentificationNumber] = useState('');
-  const [legalName, setLegalName] = useState('');
-  const [tradeName, setTradeName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+type EditMode = {
+  mode: 'edit';
+  defaultAsCustomer?: never;
+  defaultAsSupplier?: never;
+  onSubmit?: never;
+  onUpdate: (body: UpdateBusinessPartnerBody) => void;
+  initialValues: UpdateBusinessPartnerBody;
+};
+
+type Props = (CreateMode | EditMode) & {
+  title: string;
+  saving: boolean;
+  onClose: () => void;
+};
+
+export function MasterDataBpFormModal(props: Props) {
+  const isEdit = props.mode === 'edit';
+
+  const [identificationType, setIdentificationType] = useState(
+    props.initialValues?.identificationType ?? 'RUC',
+  );
+  const [identificationNumber, setIdentificationNumber] = useState(
+    props.initialValues?.identificationNumber ?? '',
+  );
+  const [legalName, setLegalName] = useState(props.initialValues?.legalName ?? '');
+  const [tradeName, setTradeName] = useState(props.initialValues?.tradeName ?? '');
+  const [email, setEmail] = useState(props.initialValues?.email ?? '');
+  const [phone, setPhone] = useState(props.initialValues?.phone ?? '');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
+    const body = {
       identificationType,
       identificationNumber: identificationNumber.trim(),
       legalName: legalName.trim(),
-      tradeName: tradeName.trim() || null,
-      email: email.trim() || null,
-      phone: phone.trim() || null,
-      asCustomer: defaultAsCustomer,
-      asSupplier: defaultAsSupplier,
-    });
+      tradeName: (tradeName as string).trim() || null,
+      email: (email as string).trim() || null,
+      phone: (phone as string).trim() || null,
+    };
+    if (isEdit) {
+      props.onUpdate(body);
+    } else {
+      props.onSubmit!({
+        ...body,
+        asCustomer: props.defaultAsCustomer ?? false,
+        asSupplier: props.defaultAsSupplier ?? false,
+      });
+    }
   };
 
   return (
     <div className="md-modal-backdrop" role="dialog" aria-modal="true">
       <form className="md-modal" onSubmit={handleSubmit}>
-        <h2>{title}</h2>
+        <h2>{props.title}</h2>
         <div className="pg-form-grid pg-form-grid--2">
           <ZHField label="Tipo ID" required>
             <select className="zh-input" value={identificationType} onChange={(e) => setIdentificationType(e.target.value)}>
               <option value="RUC">RUC</option>
               <option value="CI">CI</option>
+              <option value="PASSPORT">PASSPORT</option>
+              <option value="OTHER">OTHER</option>
             </select>
           </ZHField>
           <ZHField label="Número" required>
@@ -58,21 +81,21 @@ export function MasterDataBpFormModal({
             <input className="zh-input" value={legalName} onChange={(e) => setLegalName(e.target.value)} required />
           </ZHField>
           <ZHField label="Nombre comercial">
-            <input className="zh-input" value={tradeName} onChange={(e) => setTradeName(e.target.value)} />
+            <input className="zh-input" value={tradeName as string} onChange={(e) => setTradeName(e.target.value)} />
           </ZHField>
           <ZHField label="Email">
-            <input className="zh-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <input className="zh-input" type="email" value={email as string} onChange={(e) => setEmail(e.target.value)} />
           </ZHField>
           <ZHField label="Teléfono">
-            <input className="zh-input" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <input className="zh-input" value={phone as string} onChange={(e) => setPhone(e.target.value)} />
           </ZHField>
         </div>
         <div className="md-modal-actions">
-          <ZHBtn variant="ghost" type="button" onClick={onClose}>
+          <ZHBtn variant="ghost" type="button" onClick={props.onClose}>
             Cancelar
           </ZHBtn>
-          <ZHBtn variant="primary" type="submit" disabled={saving}>
-            {saving ? 'Guardando…' : 'Crear'}
+          <ZHBtn variant="primary" type="submit" disabled={props.saving}>
+            {props.saving ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear'}
           </ZHBtn>
         </div>
       </form>

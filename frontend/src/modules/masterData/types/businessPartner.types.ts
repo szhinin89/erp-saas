@@ -37,6 +37,31 @@ export type CreateBusinessPartnerBody = {
   asSupplier: boolean;
 };
 
+export type UpdateBusinessPartnerBody = {
+  identificationType: string;
+  identificationNumber: string;
+  legalName: string;
+  tradeName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  countryCode?: string | null;
+};
+
+export type CompanyBpSettingsDto = {
+  businessPartnerId: string;
+  creditLimit?: number | null;
+  paymentDays: number;
+  isBlocked: boolean;
+  creditCurrencyCode?: string | null;
+};
+
+export type UpdateSupplierProfileBody = {
+  defaultTaxSupportCode?: string | null;
+  defaultRetentionVatCode?: string | null;
+  defaultRetentionIncomeCode?: string | null;
+  paymentTerms?: string | null;
+};
+
 /** Respuesta cruda del API (camelCase o PascalCase). */
 export type BusinessPartnerApiRow = {
   id?: string;

@@ -5,6 +5,7 @@ import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { useMasterDataSuppliersPage } from './useMasterDataSuppliersPage';
 import { MasterDataBpFormModal } from './MasterDataBpFormModal';
 import { MasterDataCompanySettingsModal } from './MasterDataCompanySettingsModal';
+import { MasterDataSupplierProfileModal } from './MasterDataSupplierProfileModal';
 import './masterdata-pages.css';
 
 export function MasterDataSuppliersPage() {
@@ -83,9 +84,29 @@ export function MasterDataSuppliersPage() {
                 </td>
                 <td>{bp.isActive ? 'Activo' : 'Inactivo'}</td>
                 <td className="md-actions">
+                  {page.canUpdate && (
+                    <ZHBtn variant="ghost" size="sm" onClick={() => page.openEdit(bp)}>
+                      Editar
+                    </ZHBtn>
+                  )}
+                  {page.canUpdate && bp.isSupplier && (
+                    <ZHBtn variant="ghost" size="sm" onClick={() => page.setSupplierProfileBp(bp)}>
+                      SRI
+                    </ZHBtn>
+                  )}
                   {page.canConfigure && (
-                    <ZHBtn variant="ghost" size="sm" onClick={() => page.setSettingsBp(bp)}>
+                    <ZHBtn variant="ghost" size="sm" onClick={() => void page.openSettings(bp)}>
                       Empresa
+                    </ZHBtn>
+                  )}
+                  {page.canUpdate && !bp.isActive && (
+                    <ZHBtn
+                      variant="ghost"
+                      size="sm"
+                      disabled={page.saving}
+                      onClick={() => void page.activateSupplier(bp.id)}
+                    >
+                      Activar
                     </ZHBtn>
                   )}
                   {page.canDisable && bp.isActive && (
@@ -119,12 +140,40 @@ export function MasterDataSuppliersPage() {
         />
       )}
 
+      {page.editBp && (
+        <MasterDataBpFormModal
+          mode="edit"
+          title="Editar BusinessPartner"
+          saving={page.saving}
+          initialValues={{
+            identificationType: page.editBp.identificationType,
+            identificationNumber: page.editBp.identificationNumber,
+            legalName: page.editBp.legalName,
+            tradeName: page.editBp.tradeName,
+            email: page.editBp.email,
+            phone: page.editBp.phone,
+          }}
+          onClose={() => page.setEditBp(null)}
+          onUpdate={(body) => void page.updateSupplier(page.editBp!.id, body)}
+        />
+      )}
+
       {page.settingsBp && page.canConfigure && (
         <MasterDataCompanySettingsModal
           partner={page.settingsBp}
+          initialSettings={page.settingsData}
           saving={page.saving}
           onClose={() => page.setSettingsBp(null)}
           onSave={(payload) => void page.saveCompanySettings(page.settingsBp!.id, payload)}
+        />
+      )}
+
+      {page.supplierProfileBp && (
+        <MasterDataSupplierProfileModal
+          partner={page.supplierProfileBp}
+          saving={page.saving}
+          onClose={() => page.setSupplierProfileBp(null)}
+          onSave={(body) => void page.saveSupplierProfile(page.supplierProfileBp!.id, body)}
         />
       )}
     </ErpPageTemplate>

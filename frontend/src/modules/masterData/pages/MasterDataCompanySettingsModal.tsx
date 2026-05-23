@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
-import type { BusinessPartnerDto } from '../types/businessPartner.types';
+import type { BusinessPartnerDto, CompanyBpSettingsDto } from '../types/businessPartner.types';
 
 type Props = {
   partner: BusinessPartnerDto;
+  initialSettings?: CompanyBpSettingsDto | null;
   saving: boolean;
   onClose: () => void;
   onSave: (payload: { creditLimit?: number | null; paymentDays: number; isBlocked: boolean }) => void;
 };
 
-export function MasterDataCompanySettingsModal({ partner, saving, onClose, onSave }: Props) {
-  const [paymentDays, setPaymentDays] = useState('30');
-  const [creditLimit, setCreditLimit] = useState('');
-  const [isBlocked, setIsBlocked] = useState(false);
+export function MasterDataCompanySettingsModal({ partner, initialSettings, saving, onClose, onSave }: Props) {
+  const [paymentDays, setPaymentDays] = useState(String(initialSettings?.paymentDays ?? 30));
+  const [creditLimit, setCreditLimit] = useState(
+    initialSettings?.creditLimit != null ? String(initialSettings.creditLimit) : '',
+  );
+  const [isBlocked, setIsBlocked] = useState(initialSettings?.isBlocked ?? false);
 
   return (
     <div className="md-modal-backdrop" role="dialog" aria-modal="true">

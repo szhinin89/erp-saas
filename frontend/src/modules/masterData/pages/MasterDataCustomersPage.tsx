@@ -85,9 +85,24 @@ export function MasterDataCustomersPage() {
                 </td>
                 <td>{bp.isActive ? 'Activo' : 'Inactivo'}</td>
                 <td className="md-actions">
+                  {page.canUpdate && (
+                    <ZHBtn variant="ghost" size="sm" onClick={() => page.openEdit(bp)}>
+                      Editar
+                    </ZHBtn>
+                  )}
                   {page.canConfigure && (
-                    <ZHBtn variant="ghost" size="sm" onClick={() => page.setSettingsBp(bp)}>
+                    <ZHBtn variant="ghost" size="sm" onClick={() => void page.openSettings(bp)}>
                       Empresa
+                    </ZHBtn>
+                  )}
+                  {page.canUpdate && !bp.isActive && (
+                    <ZHBtn
+                      variant="ghost"
+                      size="sm"
+                      disabled={page.saving}
+                      onClick={() => void page.activateCustomer(bp.id)}
+                    >
+                      Activar
                     </ZHBtn>
                   )}
                   {page.canDisable && bp.isActive && (
@@ -121,9 +136,28 @@ export function MasterDataCustomersPage() {
         />
       )}
 
+      {page.editBp && (
+        <MasterDataBpFormModal
+          mode="edit"
+          title="Editar BusinessPartner"
+          saving={page.saving}
+          initialValues={{
+            identificationType: page.editBp.identificationType,
+            identificationNumber: page.editBp.identificationNumber,
+            legalName: page.editBp.legalName,
+            tradeName: page.editBp.tradeName,
+            email: page.editBp.email,
+            phone: page.editBp.phone,
+          }}
+          onClose={() => page.setEditBp(null)}
+          onUpdate={(body) => void page.updateCustomer(page.editBp!.id, body)}
+        />
+      )}
+
       {page.settingsBp && page.canConfigure && (
         <MasterDataCompanySettingsModal
           partner={page.settingsBp}
+          initialSettings={page.settingsData}
           saving={page.saving}
           onClose={page.closeSettings}
           onSave={(payload) => void page.saveCompanySettings(page.settingsBp!.id, payload)}

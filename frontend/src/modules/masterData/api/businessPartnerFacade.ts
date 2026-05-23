@@ -14,7 +14,13 @@ import type { CustomerPickerRow } from '../types/pickerRow.types';
 import type { SupplierPickerRow } from '../types/pickerRow.types';
 import { businessPartnerService } from './businessPartnerService';
 import { isMasterDataFallbackError } from './masterDataErrors';
-import type { BusinessPartnerDto, CreateBusinessPartnerBody } from '../types/businessPartner.types';
+import type {
+  BusinessPartnerDto,
+  CompanyBpSettingsDto,
+  CreateBusinessPartnerBody,
+  UpdateBusinessPartnerBody,
+  UpdateSupplierProfileBody,
+} from '../types/businessPartner.types';
 
 async function searchCustomersViaMaster(search?: string): Promise<CustomerPickerRow[]> {
   logDevApiRequest({
@@ -134,10 +140,24 @@ export const businessPartnerFacade = {
 
   disableBusinessPartner: (id: string) => businessPartnerService.disable(id),
 
+  updateBusinessPartner: (id: string, body: UpdateBusinessPartnerBody) =>
+    businessPartnerService.update(id, body),
+
+  activateBusinessPartner: (id: string) => businessPartnerService.activate(id),
+
+  getCompanySettings: (id: string): Promise<CompanyBpSettingsDto | null> =>
+    businessPartnerService.getCompanySettings(id),
+
   upsertCompanySettings: (
     id: string,
     body: { creditLimit?: number | null; paymentDays: number; isBlocked: boolean },
   ) => businessPartnerService.upsertCompanySettings(id, body),
+
+  updateCustomerNotes: (id: string, notes: string | null) =>
+    businessPartnerService.updateCustomerNotes(id, notes),
+
+  updateSupplierProfile: (id: string, body: UpdateSupplierProfileBody) =>
+    businessPartnerService.updateSupplierProfile(id, body),
 
   /** CRUD legacy — delegación explícita para módulos no migrados. */
   legacy: {
@@ -146,4 +166,12 @@ export const businessPartnerFacade = {
   },
 };
 
-export type { BusinessPartnerDto, SupplierPickerOption, CustomerPickerRow, SupplierPickerRow };
+export type {
+  BusinessPartnerDto,
+  CompanyBpSettingsDto,
+  UpdateBusinessPartnerBody,
+  UpdateSupplierProfileBody,
+  SupplierPickerOption,
+  CustomerPickerRow,
+  SupplierPickerRow,
+};

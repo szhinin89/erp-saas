@@ -2,10 +2,15 @@ using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Common;
 using ERP.Application.MasterData.DTOs;
+using ERP.Application.MasterData.UseCases.ActivateBusinessPartner;
 using ERP.Application.MasterData.UseCases.CreateBusinessPartner;
 using ERP.Application.MasterData.UseCases.DisableBusinessPartner;
 using ERP.Application.MasterData.UseCases.GetBusinessPartner;
+using ERP.Application.MasterData.UseCases.GetCompanyBpSettings;
 using ERP.Application.MasterData.UseCases.SearchBusinessPartners;
+using ERP.Application.MasterData.UseCases.UpdateBusinessPartner;
+using ERP.Application.MasterData.UseCases.UpdateCustomerNotes;
+using ERP.Application.MasterData.UseCases.UpdateSupplierProfile;
 using ERP.Application.MasterData.UseCases.UpsertCompanyBpSettings;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -90,6 +95,31 @@ public sealed class BusinessPartnersController : ControllerBase
         return this.ToOkOrBadRequest(result);
     }
 
+    /// <summary>Actualiza los datos de perfil e identificación de un BusinessPartner.</summary>
+    [HttpPut("{id:guid}")]
+    [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.Update}")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(
+        [FromRoute] Guid id,
+        [FromBody] UpdateBusinessPartnerRequest body,
+        CancellationToken ct = default)
+    {
+        var command = new UpdateBusinessPartnerCommand(
+            id,
+            body.IdentificationType,
+            body.IdentificationNumber,
+            body.LegalName,
+            body.TradeName,
+            body.Email,
+            body.Phone,
+            body.CountryCode);
+
+        var result = await _mediator.Send(command, ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
     /// <summary>Desactiva un BusinessPartner. Soft delete — no elimina el registro.</summary>
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.Disable}")]
@@ -98,6 +128,31 @@ public sealed class BusinessPartnersController : ControllerBase
     public async Task<IActionResult> Disable([FromRoute] Guid id, CancellationToken ct = default)
     {
         var result = await _mediator.Send(new DisableBusinessPartnerCommand(id), ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    /// <summary>Reactiva un BusinessPartner previamente desactivado.</summary>
+    [HttpPatch("{id:guid}/activate")]
+    [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.Update}")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Activate([FromRoute] Guid id, CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new ActivateBusinessPartnerCommand(id), ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    /// <summary>
+    /// Obtiene las condiciones comerciales de un BP para la Company activa.
+    /// Retorna null si no se han configurado aún.
+    /// </summary>
+    [HttpGet("{id:guid}/company-settings")]
+    [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.View}")]
+    [ProducesResponseType(typeof(ApiResponse<CompanyBpSettingsDto?>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetCompanySettings([FromRoute] Guid id, CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new GetCompanyBpSettingsQuery(id), ct);
         return this.ToOkOrBadRequest(result);
     }
 
@@ -124,6 +179,43 @@ public sealed class BusinessPartnersController : ControllerBase
         var result = await _mediator.Send(command, ct);
         return this.ToOkOrBadRequest(result);
     }
+
+    /// <summary>Actualiza las notas del perfil de cliente.</summary>
+    [HttpPatch("{id:guid}/customer-notes")]
+    [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.Update}")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateCustomerNotes(
+        [FromRoute] Guid id,
+        [FromBody] UpdateCustomerNotesRequest body,
+        CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new UpdateCustomerNotesCommand(id, body.Notes), ct);
+        return this.ToOkOrBadRequest(result);
+    }
+
+    /// <summary>Actualiza los campos SRI del perfil de proveedor.</summary>
+    [HttpPatch("{id:guid}/supplier-profile")]
+    [Authorize(Policy = $"perm:{Permissions.MasterDataBusinessPartner.Update}")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateSupplierProfile(
+        [FromRoute] Guid id,
+        [FromBody] UpdateSupplierProfileRequest body,
+        CancellationToken ct = default)
+    {
+        var command = new UpdateSupplierProfileCommand(
+            id,
+            body.DefaultTaxSupportCode,
+            body.DefaultRetentionVatCode,
+            body.DefaultRetentionIncomeCode,
+            body.PaymentTerms);
+
+        var result = await _mediator.Send(command, ct);
+        return this.ToOkOrBadRequest(result);
+    }
 }
 
 public sealed class UpsertCompanyBpSettingsRequest
@@ -144,4 +236,28 @@ public sealed class CreateBusinessPartnerRequest
     public string? CountryCode          { get; set; }
     public bool    AsCustomer           { get; set; }
     public bool    AsSupplier           { get; set; }
+}
+
+public sealed class UpdateBusinessPartnerRequest
+{
+    public string  IdentificationType   { get; set; } = "";
+    public string  IdentificationNumber { get; set; } = "";
+    public string  LegalName            { get; set; } = "";
+    public string? TradeName            { get; set; }
+    public string? Email                { get; set; }
+    public string? Phone                { get; set; }
+    public string? CountryCode          { get; set; }
+}
+
+public sealed class UpdateCustomerNotesRequest
+{
+    public string? Notes { get; set; }
+}
+
+public sealed class UpdateSupplierProfileRequest
+{
+    public string? DefaultTaxSupportCode      { get; set; }
+    public string? DefaultRetentionVatCode    { get; set; }
+    public string? DefaultRetentionIncomeCode { get; set; }
+    public string? PaymentTerms               { get; set; }
 }
