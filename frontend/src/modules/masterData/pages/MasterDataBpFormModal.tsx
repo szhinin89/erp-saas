@@ -38,10 +38,11 @@ export function MasterDataBpFormModal(props: Props) {
   const [identificationNumber, setIdentificationNumber] = useState(
     props.initialValues?.identificationNumber ?? '',
   );
-  const [legalName, setLegalName]   = useState(props.initialValues?.legalName ?? '');
-  const [tradeName, setTradeName]   = useState(props.initialValues?.tradeName ?? '');
-  const [email, setEmail]           = useState(props.initialValues?.email ?? '');
-  const [phone, setPhone]           = useState(props.initialValues?.phone ?? '');
+  const [legalName, setLegalName]     = useState(props.initialValues?.legalName ?? '');
+  const [tradeName, setTradeName]     = useState(props.initialValues?.tradeName ?? '');
+  const [email, setEmail]             = useState(props.initialValues?.email ?? '');
+  const [phone, setPhone]             = useState(props.initialValues?.phone ?? '');
+  const [countryCode, setCountryCode] = useState(props.initialValues?.countryCode ?? 'EC');
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -72,9 +73,10 @@ export function MasterDataBpFormModal(props: Props) {
       identificationType,
       identificationNumber: identificationNumber.trim(),
       legalName: legalName.trim(),
-      tradeName: (tradeName as string).trim() || null,
-      email:     (email as string).trim()     || null,
-      phone:     (phone as string).trim()     || null,
+      tradeName:   (tradeName as string).trim()   || null,
+      email:       (email as string).trim()       || null,
+      phone:       (phone as string).trim()       || null,
+      countryCode: countryCode.trim()             || null,
     };
     if (isEdit) {
       props.onUpdate(body);
@@ -155,6 +157,16 @@ export function MasterDataBpFormModal(props: Props) {
               disabled={props.saving}
             />
             {fieldErrors.phone && <span className="md-field-error">{fieldErrors.phone}</span>}
+          </ZHField>
+          <ZHField label="País (código ISO)">
+            <input
+              className="zh-input mono"
+              value={countryCode}
+              onChange={(e) => setCountryCode(e.target.value.toUpperCase().slice(0, 2))}
+              disabled={props.saving}
+              placeholder="EC"
+              maxLength={2}
+            />
           </ZHField>
         </div>
 
