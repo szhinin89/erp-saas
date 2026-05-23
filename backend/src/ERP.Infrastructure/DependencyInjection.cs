@@ -25,6 +25,8 @@ using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Cash.Interfaces;
 using ERP.Application.Access;
 using ERP.Application.Access.Caching;
+using ERP.Domain.MasterData.Interfaces;
+using ERP.Infrastructure.MasterData.Repositories;
 using ERP.Application.Subscriptions;
 using ERP.Application.Subscriptions.Caching;
 using ERP.Infrastructure.Access.Caching;
@@ -98,6 +100,11 @@ public static class DependencyInjection
         services.AddScoped<IDbSessionContextApplicator, DbSessionContextApplicator>();
         services.AddScoped<IOperationalContext, OperationalContextService>();
         services.AddScoped<IMembershipAuthority, MembershipAuthority>();
+
+        // ── MasterData BC ────────────────────────────────────────────────
+        services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
+        services.AddScoped<ICustomerProfileRepository, CustomerProfileRepository>();
+        services.AddScoped<ISupplierProfileRepository, SupplierProfileRepository>();
         services.AddScoped<DistributedPermissionsCacheService>();
         services.AddScoped<ResilientPermissionsCacheService>();
         services.AddScoped<IPermissionsCacheBackend>(sp => sp.GetRequiredService<ResilientPermissionsCacheService>());

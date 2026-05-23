@@ -30,6 +30,7 @@ using ERP.Domain.Modules.ElectronicDocuments.Entities;
 using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Auxiliary.Entities;
 using ERP.Application.Common;
+using ERP.Domain.MasterData.Entities;
 
 namespace ERP.Infrastructure.Persistence;
 
@@ -261,6 +262,13 @@ public class ErpDbContext : DbContext
     public DbSet<Branch> Branches => Set<Branch>();
     public DbSet<UserActivity> UserActivities => Set<UserActivity>();
     public DbSet<Customer> Customers => Set<Customer>();
+
+    // ── MasterData BC ─────────────────────────────────────────────────────
+    public DbSet<BusinessPartner>                BusinessPartners               => Set<BusinessPartner>();
+    public DbSet<CustomerProfile>                CustomerProfiles               => Set<CustomerProfile>();
+    public DbSet<SupplierProfile>                SupplierProfiles               => Set<SupplierProfile>();
+    public DbSet<CompanyBusinessPartnerSettings> CompanyBusinessPartnerSettings => Set<CompanyBusinessPartnerSettings>();
+
     // ── Sales (traditional) ───────────────────────────────────────────────
     public DbSet<SalesBill>           SalesBills          => Set<SalesBill>();
     public DbSet<SalesBillLine>       SalesBillLines      => Set<SalesBillLine>();
