@@ -9,6 +9,11 @@ namespace ERP.Infrastructure.Persistence;
 
 /// <summary>
 /// Filtros globales ERP: suscriptor + empresa operativa (company scope).
+///
+/// Semántica fail-closed: si FilterSubscriberId == Guid.Empty (no hay contexto de
+/// suscriptor activo) el filtro evalúa a false y EF no retorna ninguna fila.
+/// Esto protege contra queries accidentales sin contexto de seguridad.
+/// Para consultas legítimas sin filtro usar IPlatformQueryAccessor.Unfiltered().
 /// </summary>
 internal static class EnterpriseQueryFilterConfigurator
 {
@@ -46,10 +51,20 @@ internal static class EnterpriseQueryFilterConfigurator
 
     private static LambdaExpression BuildSubscriberFilter(Type clrType, ErpDbContext dbContext)
     {
-        var parameter = Expression.Parameter(clrType, "e");
+        var parameter     = Expression.Parameter(clrType, "e");
+        var dbConstant    = Expression.Constant(dbContext);
+
+        // Fail-closed: si no hay suscriptor en contexto → ninguna fila (body = false).
+        // Evita que Guid.Empty actúe como wildcard accidental.
+        var currentSubscriber    = Expression.Property(dbConstant, nameof(ErpDbContext.FilterSubscriberId));
+        var emptyGuid            = Expression.Constant(Guid.Empty);
+        var hasSubscriberContext  = Expression.NotEqual(currentSubscriber, emptyGuid);
+
         var subscriberProperty = Expression.Property(parameter, nameof(ISubscriberScopedEntity.SubscriberId));
-        var currentSubscriber = Expression.Property(Expression.Constant(dbContext), nameof(ErpDbContext.FilterSubscriberId));
-        var body = Expression.Equal(subscriberProperty, currentSubscriber);
+        var subscriberMatch    = Expression.Equal(subscriberProperty, currentSubscriber);
+
+        // WHERE FilterSubscriberId != Guid.Empty AND subscriber_id = FilterSubscriberId
+        var body = Expression.AndAlso(hasSubscriberContext, subscriberMatch);
         return Expression.Lambda(body, parameter);
     }
 
@@ -68,9 +83,15 @@ internal static class EnterpriseQueryFilterConfigurator
         var parameter = Expression.Parameter(clrType, "e");
         var dbConstant = Expression.Constant(dbContext);
 
+        // Fail-closed: si no hay suscriptor en contexto → ninguna fila.
+        var currentSubscriber    = Expression.Property(dbConstant, nameof(ErpDbContext.FilterSubscriberId));
+        var emptyGuid            = Expression.Constant(Guid.Empty);
+        var hasSubscriberContext  = Expression.NotEqual(currentSubscriber, emptyGuid);
+
         var subscriberProperty = Expression.Property(parameter, nameof(ISubscriberScopedEntity.SubscriberId));
-        var currentSubscriber = Expression.Property(dbConstant, nameof(ErpDbContext.FilterSubscriberId));
-        var subscriberMatch = Expression.Equal(subscriberProperty, currentSubscriber);
+        var subscriberMatch    = Expression.AndAlso(
+            hasSubscriberContext,
+            Expression.Equal(subscriberProperty, currentSubscriber));
 
         var companyProperty = Expression.Property(parameter, companyPropertyName);
         var hasCompanyContext = Expression.Property(dbConstant, nameof(ErpDbContext.FilterHasCompanyContext));
