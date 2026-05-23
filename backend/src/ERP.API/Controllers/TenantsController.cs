@@ -30,18 +30,18 @@ namespace ERP.API.Controllers;
 public class SubscribersController : ControllerBase
 {
     private readonly IMediator _mediator;
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly ISessionModulesResolver _sessionModules;
     private readonly ICurrentSubscriber _currentSubscriber;
 
     public SubscribersController(
         IMediator mediator,
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         ISessionModulesResolver sessionModules,
         ICurrentSubscriber currentSubscriber)
     {
         _mediator = mediator;
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _sessionModules = sessionModules;
         _currentSubscriber = currentSubscriber;
     }
@@ -57,7 +57,7 @@ public class SubscribersController : ControllerBase
         if (!CanAccessSubscriber(id))
             return Forbid();
 
-        var tenant = await _tenantRepository.GetByIdAsync(id, ct);
+        var tenant = await _subscriberRepository.GetByIdAsync(id, ct);
         if (tenant is null)
             return this.ApiNotFound("Empresa no encontrada.");
 
@@ -124,7 +124,7 @@ public class SubscribersController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPublicSettings([FromRoute] Guid id, CancellationToken ct)
     {
-        var tenant = await _tenantRepository.GetByIdAsync(id, ct);
+        var tenant = await _subscriberRepository.GetByIdAsync(id, ct);
         if (tenant is null || !tenant.IsActive)
             return this.ApiNotFound("Empresa no encontrada.");
 

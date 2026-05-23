@@ -11,7 +11,7 @@ namespace ERP.Application.Access.UseCases.RegisterSubscriberWithAdmin;
 
 public class RegisterSubscriberWithAdminHandler : IRequestHandler<RegisterSubscriberWithAdminCommand, Result<SessionResponseDto>>
 {
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly IAccessRepository _accessRepository;
     private readonly IAccessTokenService _tokenService;
     private readonly IDeploymentFeatureFlags _deployment;
@@ -19,14 +19,14 @@ public class RegisterSubscriberWithAdminHandler : IRequestHandler<RegisterSubscr
     private readonly ISubscriberProvisioningOrchestrator _provisioning;
 
     public RegisterSubscriberWithAdminHandler(
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         IAccessRepository accessRepository,
         IAccessTokenService tokenService,
         IDeploymentFeatureFlags deployment,
         ISessionModulesResolver sessionModules,
         ISubscriberProvisioningOrchestrator provisioning)
     {
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _accessRepository = accessRepository;
         _tokenService = tokenService;
         _deployment = deployment;
@@ -43,10 +43,10 @@ public class RegisterSubscriberWithAdminHandler : IRequestHandler<RegisterSubscr
         if (string.IsNullOrWhiteSpace(slug))
             return Result<SessionResponseDto>.Failure("Slug inválido.");
 
-        if (await _tenantRepository.GetBySlugAsync(slug, ct) is not null)
+        if (await _subscriberRepository.GetBySlugAsync(slug, ct) is not null)
             return Result<SessionResponseDto>.Failure("El slug ya está en uso.");
 
-        var tenantQuota = await DeploymentQuota.GetBlockingReasonIfAtActiveSubscriberCapAsync(_deployment, _tenantRepository, ct);
+        var tenantQuota = await DeploymentQuota.GetBlockingReasonIfAtActiveSubscriberCapAsync(_deployment, _subscriberRepository, ct);
         if (tenantQuota is not null)
             return Result<SessionResponseDto>.Failure(tenantQuota);
 

@@ -13,7 +13,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
 {
     private readonly ICurrentUser _currentUser;
     private readonly IAccessRepository _accessRepository;
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly IAccessTokenService _accessTokenService;
     private readonly ISessionModulesResolver _sessionModules;
     private readonly IRefreshTokenService _refreshTokenService;
@@ -21,14 +21,14 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
     public SwitchSubscriberHandler(
         ICurrentUser currentUser,
         IAccessRepository accessRepository,
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         IAccessTokenService accessTokenService,
         ISessionModulesResolver sessionModules,
         IRefreshTokenService refreshTokenService)
     {
         _currentUser = currentUser;
         _accessRepository = accessRepository;
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _accessTokenService = accessTokenService;
         _sessionModules = sessionModules;
         _refreshTokenService = refreshTokenService;
@@ -71,7 +71,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
             });
         }
 
-        var tenant = await _tenantRepository.GetByIdAsync(command.SubscriberId, ct);
+        var tenant = await _subscriberRepository.GetByIdAsync(command.SubscriberId, ct);
         if (tenant is null || !tenant.IsActive)
             return Result<AuthResponseDto>.Failure("Empresa no encontrada o inactiva.");
 

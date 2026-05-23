@@ -8,20 +8,20 @@ namespace ERP.Application.Access.Authorization;
 public sealed class RuntimePermissionAuthorizer : IRuntimePermissionAuthorizer
 {
     private readonly ICurrentSubscriber _currentSubscriber;
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly ISubscriberEntitlementsService _entitlements;
     private readonly ICompanyContextProvider _companyContext;
     private readonly IEffectivePermissionKeysProvider _permissionKeys;
 
     public RuntimePermissionAuthorizer(
         ICurrentSubscriber currentSubscriber,
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         ISubscriberEntitlementsService entitlements,
         ICompanyContextProvider companyContext,
         IEffectivePermissionKeysProvider permissionKeys)
     {
         _currentSubscriber = currentSubscriber;
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _entitlements = entitlements;
         _companyContext = companyContext;
         _permissionKeys = permissionKeys;
@@ -41,7 +41,7 @@ public sealed class RuntimePermissionAuthorizer : IRuntimePermissionAuthorizer
         if (string.Equals(role, "SuperAdmin", StringComparison.OrdinalIgnoreCase) && subscriberId == Guid.Empty)
             return true;
 
-        if (await _tenantRepository.GetByIdAsync(subscriberId, ct) is null)
+        if (await _subscriberRepository.GetByIdAsync(subscriberId, ct) is null)
             return false;
 
         var planAllows = await _entitlements.AllowsPermissionAsync(subscriberId, permissionKey, ct);

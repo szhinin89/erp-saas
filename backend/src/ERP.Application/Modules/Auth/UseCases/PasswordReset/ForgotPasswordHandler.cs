@@ -20,7 +20,7 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
     public const string TenantResetDisabledMessage = "La recuperación de contraseña no está habilitada para esta empresa.";
 
     private readonly IAccessRepository _accessRepository;
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly ICompanyRepository _companyRepository;
     private readonly IPasswordResetTokenRepository _tokenRepository;
     private readonly IPasswordResetLinkSender _linkSender;
@@ -30,7 +30,7 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
 
     public ForgotPasswordHandler(
         IAccessRepository accessRepository,
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         ICompanyRepository companyRepository,
         IPasswordResetTokenRepository tokenRepository,
         IPasswordResetLinkSender linkSender,
@@ -39,7 +39,7 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
         IValidator<ForgotPasswordCommand> validator)
     {
         _accessRepository = accessRepository;
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _companyRepository = companyRepository;
         _tokenRepository = tokenRepository;
         _linkSender = linkSender;
@@ -91,7 +91,7 @@ public sealed class ForgotPasswordHandler : IRequestHandler<ForgotPasswordComman
         var company = (await _companyRepository.GetByIdsAsync(
             new[] { memberships[0].CompanyId }, ct)).FirstOrDefault();
         var subscriberId = company?.SubscriberId ?? Guid.Empty;
-        var tenant = await _tenantRepository.GetByIdAsync(subscriberId, ct);
+        var tenant = await _subscriberRepository.GetByIdAsync(subscriberId, ct);
         if (tenant is null || !tenant.IsActive)
             return Result<bool>.Failure(NoAccountMessage);
 

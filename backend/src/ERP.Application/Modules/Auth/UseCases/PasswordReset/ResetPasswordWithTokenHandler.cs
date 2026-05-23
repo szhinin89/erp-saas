@@ -15,7 +15,7 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
 
     private readonly IPasswordResetTokenRepository _tokenRepository;
     private readonly IAccessRepository _accessRepository;
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IRefreshTokenService _refreshTokenService;
     private readonly IValidator<ResetPasswordWithTokenCommand> _validator;
@@ -23,14 +23,14 @@ public sealed class ResetPasswordWithTokenHandler : IRequestHandler<ResetPasswor
     public ResetPasswordWithTokenHandler(
         IPasswordResetTokenRepository tokenRepository,
         IAccessRepository accessRepository,
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         IPasswordHasher passwordHasher,
         IRefreshTokenService refreshTokenService,
         IValidator<ResetPasswordWithTokenCommand> validator)
     {
         _tokenRepository = tokenRepository;
         _accessRepository = accessRepository;
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _passwordHasher = passwordHasher;
         _refreshTokenService = refreshTokenService;
         _validator = validator;

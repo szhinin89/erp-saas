@@ -14,7 +14,7 @@ namespace ERP.Application.Access.UseCases.SuperAdminSubscribers;
 /// <summary>Alta de empresa + Admin en <c>identity_users</c>/<c>company_user_memberships</c>; transaccional vía orchestrator.</summary>
 public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperAdminCreateSubscriberWithAdminCommand, Result<SessionResponseDto>>
 {
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly IAccessRepository _accessRepository;
     private readonly IAccessTokenService _tokenService;
     private readonly ICurrentUser _currentUser;
@@ -24,7 +24,7 @@ public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperA
     private readonly ISubscriberProvisioningOrchestrator _provisioning;
 
     public SuperAdminCreateSubscriberWithAdminHandler(
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         IAccessRepository accessRepository,
         IAccessTokenService tokenService,
         ICurrentUser currentUser,
@@ -33,7 +33,7 @@ public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperA
         ISessionModulesResolver sessionModules,
         ISubscriberProvisioningOrchestrator provisioning)
     {
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _accessRepository = accessRepository;
         _tokenService = tokenService;
         _currentUser = currentUser;
@@ -52,14 +52,14 @@ public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperA
         if (string.IsNullOrWhiteSpace(slug))
             return Result<SessionResponseDto>.Failure("Slug inválido.");
 
-        if (await _tenantRepository.GetBySlugAsync(slug, ct) is not null)
+        if (await _subscriberRepository.GetBySlugAsync(slug, ct) is not null)
             return Result<SessionResponseDto>.Failure("El slug ya está en uso.");
 
         var email = command.AdminEmail.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(email))
             return Result<SessionResponseDto>.Failure("El email del administrador es obligatorio.");
 
-        var tenantQuota = await DeploymentQuota.GetBlockingReasonIfAtActiveSubscriberCapAsync(_deployment, _tenantRepository, ct);
+        var tenantQuota = await DeploymentQuota.GetBlockingReasonIfAtActiveSubscriberCapAsync(_deployment, _subscriberRepository, ct);
         if (tenantQuota is not null)
             return Result<SessionResponseDto>.Failure(tenantQuota);
 
@@ -245,18 +245,18 @@ public class SuperAdminCreateSubscriberWithAdminHandler : IRequestHandler<SuperA
 
 public class GetSuperAdminSubscribersHandler : IRequestHandler<GetSuperAdminSubscribersQuery, Result<IReadOnlyList<SuperAdminSubscriberItemDto>>>
 {
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly ISubscriberMenuAdminService _subscriberMenuAdmin;
     private readonly ISessionModulesResolver _sessionModules;
     private readonly IAccessRepository _accessRepository;
 
     public GetSuperAdminSubscribersHandler(
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         ISubscriberMenuAdminService tenantMenuAdmin,
         ISessionModulesResolver sessionModules,
         IAccessRepository accessRepository)
     {
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _subscriberMenuAdmin = tenantMenuAdmin;
         _sessionModules = sessionModules;
         _accessRepository = accessRepository;
@@ -265,7 +265,7 @@ public class GetSuperAdminSubscribersHandler : IRequestHandler<GetSuperAdminSubs
     public async Task<Result<IReadOnlyList<SuperAdminSubscriberItemDto>>> Handle(GetSuperAdminSubscribersQuery request, CancellationToken ct)
     {
         var withCustom = await _subscriberMenuAdmin.GetSubscriberIdsWithCustomMenuAsync(ct);
-        var ordered = (await _tenantRepository.GetAllAsync(ct))
+        var ordered = (await _subscriberRepository.GetAllAsync(ct))
             .OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
 

@@ -10,20 +10,20 @@ namespace ERP.Application.Auth.UseCases.PasswordReset;
 
 public sealed class DirectPasswordResetHandler : IRequestHandler<DirectPasswordResetCommand, Result<bool>>
 {
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly IAccessRepository _accessRepository;
     private readonly ICompanyProvisioningService _companyProvisioning;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IRefreshTokenService _refreshTokenService;
 
     public DirectPasswordResetHandler(
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         IAccessRepository accessRepository,
         ICompanyProvisioningService companyProvisioning,
         IPasswordHasher passwordHasher,
         IRefreshTokenService refreshTokenService)
     {
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _accessRepository = accessRepository;
         _companyProvisioning = companyProvisioning;
         _passwordHasher = passwordHasher;
@@ -32,7 +32,7 @@ public sealed class DirectPasswordResetHandler : IRequestHandler<DirectPasswordR
 
     public async Task<Result<bool>> Handle(DirectPasswordResetCommand command, CancellationToken ct)
     {
-        var tenant = await _tenantRepository.GetByIdAsync(command.SubscriberId, ct);
+        var tenant = await _subscriberRepository.GetByIdAsync(command.SubscriberId, ct);
 
         if (tenant is null || !tenant.IsActive)
             return Result<bool>.Failure("Empresa no encontrada o inactiva.");

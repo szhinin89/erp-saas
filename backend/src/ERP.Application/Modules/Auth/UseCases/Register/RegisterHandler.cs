@@ -12,7 +12,7 @@ namespace ERP.Application.Auth.UseCases.Register;
 public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthResponseDto>>
 {
     private readonly IAccessRepository _accessRepository;
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly IAccessTokenService _accessTokenService;
     private readonly ICompanyProvisioningService _companyProvisioning;
     private readonly IPasswordHasher _passwordHasher;
@@ -20,14 +20,14 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthRespo
 
     public RegisterHandler(
         IAccessRepository accessRepository,
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         IAccessTokenService accessTokenService,
         ICompanyProvisioningService companyProvisioning,
         IPasswordHasher passwordHasher,
         ISessionModulesResolver sessionModules)
     {
         _accessRepository = accessRepository;
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _accessTokenService = accessTokenService;
         _companyProvisioning = companyProvisioning;
         _passwordHasher = passwordHasher;
@@ -41,7 +41,7 @@ public class RegisterHandler : IRequestHandler<RegisterCommand, Result<AuthRespo
         if (string.Equals(command.Role, "SuperAdmin", StringComparison.Ordinal))
             return Result<AuthResponseDto>.Failure("Use el flujo de setup platform para SuperAdmin.");
 
-        var tenant = await _tenantRepository.GetByIdAsync(command.SubscriberId, ct);
+        var tenant = await _subscriberRepository.GetByIdAsync(command.SubscriberId, ct);
         if (tenant is null || !tenant.IsActive)
             return Result<AuthResponseDto>.Failure("El tenant no existe.");
 

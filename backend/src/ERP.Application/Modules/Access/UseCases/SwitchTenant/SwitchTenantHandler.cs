@@ -14,7 +14,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
     private readonly IAccessRepository _accessRepository;
     private readonly IAccessTokenService _tokenService;
     private readonly ICurrentUser _currentUser;
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly ICompanyRepository _companyRepository;
     private readonly IConfigService _configService;
     private readonly ISessionModulesResolver _sessionModules;
@@ -24,7 +24,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
         IAccessRepository accessRepository,
         IAccessTokenService tokenService,
         ICurrentUser currentUser,
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         ICompanyRepository companyRepository,
         IConfigService configService,
         ISessionModulesResolver sessionModules,
@@ -33,7 +33,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
         _accessRepository = accessRepository;
         _tokenService = tokenService;
         _currentUser = currentUser;
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _companyRepository = companyRepository;
         _configService = configService;
         _sessionModules = sessionModules;
@@ -78,7 +78,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
                     EnabledModules: SubscriberSubscriptionCatalog.AllModuleKeys));
             }
 
-            var tenantSa = await _tenantRepository.GetByIdAsync(command.SubscriberId, ct);
+            var tenantSa = await _subscriberRepository.GetByIdAsync(command.SubscriberId, ct);
             if (tenantSa is null || !tenantSa.IsActive)
                 return Result<SessionResponseDto>.Failure("Unauthorized");
 
@@ -100,7 +100,7 @@ public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, 
         if (!user.IsActive)
             return Result<SessionResponseDto>.Failure("Unauthorized");
 
-        var tenant = await _tenantRepository.GetByIdAsync(command.SubscriberId, ct);
+        var tenant = await _subscriberRepository.GetByIdAsync(command.SubscriberId, ct);
         if (tenant is null || !tenant.IsActive)
             return Result<SessionResponseDto>.Failure("No tienes acceso a este suscriptor.");
 

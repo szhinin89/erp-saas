@@ -11,20 +11,20 @@ namespace ERP.Application.Access.UseCases.BootstrapLogin;
 public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Result<BootstrapLoginResponseDto>>
 {
     private readonly IAccessRepository _accessRepository;
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly ICompanyRepository _companyRepository;
     private readonly IAccessTokenService _tokenService;
     private readonly IPasswordHasher _passwordHasher;
 
     public BootstrapLoginHandler(
         IAccessRepository accessRepository,
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         ICompanyRepository companyRepository,
         IAccessTokenService tokenService,
         IPasswordHasher passwordHasher)
     {
         _accessRepository = accessRepository;
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _companyRepository = companyRepository;
         _tokenService = tokenService;
         _passwordHasher = passwordHasher;
@@ -49,7 +49,7 @@ public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Resu
 
         if (user.IsPlatformSuperAdmin)
         {
-            var subscribersAll = await _tenantRepository.GetAllAsync(ct);
+            var subscribersAll = await _subscriberRepository.GetAllAsync(ct);
             var activeTenants = subscribersAll.Where(t => t.IsActive).ToList();
             var superSubscriberIds = activeTenants.Select(t => t.Id).ToList();
 
@@ -75,7 +75,7 @@ public class BootstrapLoginHandler : IRequestHandler<BootstrapLoginCommand, Resu
         var companies = await _companyRepository.GetByIdsAsync(companyIds, ct);
         var membershipByCompany = memberships.ToDictionary(m => m.CompanyId);
         var subscriberIds = companies.Select(c => c.SubscriberId).Distinct().ToList();
-        var subscribers = await _tenantRepository.GetAllAsync(ct);
+        var subscribers = await _subscriberRepository.GetAllAsync(ct);
         var subscriberById = subscribers.ToDictionary(t => t.Id);
 
         var membershipAccessible = companies

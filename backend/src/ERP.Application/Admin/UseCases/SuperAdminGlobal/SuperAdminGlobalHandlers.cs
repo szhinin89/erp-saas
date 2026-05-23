@@ -103,20 +103,20 @@ public sealed class UpdateInstanceQuotaHandler : IRequestHandler<UpdateInstanceQ
 
 public sealed class GetSuperAdminMetricsHandler : IRequestHandler<GetSuperAdminMetricsQuery, Result<SuperAdminMetricsDto>>
 {
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly IAccessRepository _accessRepository;
 
     public GetSuperAdminMetricsHandler(
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         IAccessRepository accessRepository)
     {
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _accessRepository = accessRepository;
     }
 
     public async Task<Result<SuperAdminMetricsDto>> Handle(GetSuperAdminMetricsQuery request, CancellationToken ct)
     {
-        var subscribers = await _tenantRepository.GetAllAsync(ct);
+        var subscribers = await _subscriberRepository.GetAllAsync(ct);
         var activeSubscribers = subscribers.Count(t => t.IsActive);
         var totalSubscribers = subscribers.Count;
 

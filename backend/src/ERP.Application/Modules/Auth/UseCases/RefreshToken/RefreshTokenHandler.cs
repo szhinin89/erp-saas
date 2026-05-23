@@ -14,7 +14,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
 {
     private readonly IRefreshTokenService _refreshTokenService;
     private readonly IAccessRepository _accessRepository;
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly IAccessTokenService _accessTokenService;
     private readonly ISessionModulesResolver _sessionModules;
     private readonly ICompanyRepository _companyRepository;
@@ -22,14 +22,14 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
     public RefreshTokenHandler(
         IRefreshTokenService refreshTokenService,
         IAccessRepository accessRepository,
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         IAccessTokenService accessTokenService,
         ISessionModulesResolver sessionModules,
         ICompanyRepository companyRepository)
     {
         _refreshTokenService = refreshTokenService;
         _accessRepository = accessRepository;
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _accessTokenService = accessTokenService;
         _sessionModules = sessionModules;
         _companyRepository = companyRepository;
@@ -55,7 +55,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
 
             if (v.SubscriberId != Guid.Empty)
             {
-                var impersonatedTenant = await _tenantRepository.GetByIdAsync(v.SubscriberId, ct);
+                var impersonatedTenant = await _subscriberRepository.GetByIdAsync(v.SubscriberId, ct);
                 if (impersonatedTenant is null || !impersonatedTenant.IsActive)
                     return Result<AuthResponseDto>.Failure("Suscriptor no encontrado o inactivo.");
 
@@ -109,7 +109,7 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
         if (user is null || !user.IsActive)
             return Result<AuthResponseDto>.Failure("Usuario no válido.");
 
-        var tenant = await _tenantRepository.GetByIdAsync(v.SubscriberId, ct);
+        var tenant = await _subscriberRepository.GetByIdAsync(v.SubscriberId, ct);
         if (tenant is null || !tenant.IsActive)
             return Result<AuthResponseDto>.Failure("Suscriptor no encontrado o inactivo.");
 

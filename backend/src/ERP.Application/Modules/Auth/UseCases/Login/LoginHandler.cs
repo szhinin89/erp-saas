@@ -12,7 +12,7 @@ namespace ERP.Application.Auth.UseCases.Login;
 
 public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto>>
 {
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly ICompanyRepository _companyRepository;
     private readonly IAccessRepository _accessRepository;
     private readonly IAccessTokenService _accessTokenService;
@@ -23,7 +23,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
     private readonly IDeploymentFeatureFlags _deployment;
 
     public LoginHandler(
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         ICompanyRepository companyRepository,
         IAccessRepository accessRepository,
         IAccessTokenService accessTokenService,
@@ -33,7 +33,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         ICompanyProvisioningService companyProvisioning,
         IDeploymentFeatureFlags deployment)
     {
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _companyRepository = companyRepository;
         _accessRepository = accessRepository;
         _accessTokenService = accessTokenService;
@@ -83,7 +83,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
             return Result<AuthResponseDto>.Failure("No estás registrado a una empresa. Comunícate con el administrador.");
 
         var subscriberId = subscriberGroups[0].Key;
-        var subscriber = await _tenantRepository.GetByIdAsync(subscriberId, ct);
+        var subscriber = await _subscriberRepository.GetByIdAsync(subscriberId, ct);
         if (subscriber is null || !subscriber.IsActive)
             return Result<AuthResponseDto>.Failure("Suscriptor inactivo o no encontrado.");
 

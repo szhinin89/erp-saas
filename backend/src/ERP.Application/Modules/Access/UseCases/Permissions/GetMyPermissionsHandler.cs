@@ -17,7 +17,7 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
 {
     private readonly ICurrentUser _currentUser;
     private readonly ICurrentSubscriber _currentSubscriber;
-    private readonly ISubscriberRepository _tenantRepository;
+    private readonly ISubscriberRepository _subscriberRepository;
     private readonly ISessionModulesResolver _sessionModules;
     private readonly IEffectivePermissionKeysProvider _permissionKeys;
     private readonly ICompanyContextProvider _companyContext;
@@ -25,14 +25,14 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
     public GetMyPermissionsHandler(
         ICurrentUser currentUser,
         ICurrentSubscriber currentSubscriber,
-        ISubscriberRepository tenantRepository,
+        ISubscriberRepository subscriberRepository,
         ISessionModulesResolver sessionModules,
         IEffectivePermissionKeysProvider permissionKeys,
         ICompanyContextProvider companyContext)
     {
         _currentUser = currentUser;
         _currentSubscriber = currentSubscriber;
-        _tenantRepository = tenantRepository;
+        _subscriberRepository = subscriberRepository;
         _sessionModules = sessionModules;
         _permissionKeys = permissionKeys;
         _companyContext = companyContext;
@@ -46,7 +46,7 @@ public class GetMyPermissionsHandler : IRequestHandler<GetMyPermissionsQuery, Re
         if (!_currentUser.IsAuthenticated || !_currentSubscriber.IsAuthenticated)
             return Result<MyPermissionsDto>.Failure("No autenticado.");
 
-        var tenant = await _tenantRepository.GetByIdAsync(_currentSubscriber.SubscriberId, ct);
+        var tenant = await _subscriberRepository.GetByIdAsync(_currentSubscriber.SubscriberId, ct);
         var plan = tenant?.PlanCode;
         var modules = await _sessionModules.GetEnabledModuleKeysAsync(_currentSubscriber.SubscriberId, ct);
 
