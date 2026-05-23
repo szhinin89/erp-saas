@@ -7,6 +7,7 @@ export type BusinessPartnerDto = {
   identificationNumber: string;
   email?: string | null;
   phone?: string | null;
+  countryCode?: string | null;
   isCustomer: boolean;
   isSupplier: boolean;
   isActive: boolean;
@@ -85,6 +86,8 @@ export type BusinessPartnerApiRow = {
   Email?: string | null;
   phone?: string | null;
   Phone?: string | null;
+  countryCode?: string | null;
+  CountryCode?: string | null;
   isActive?: boolean;
   IsActive?: boolean;
   isCustomer?: boolean;

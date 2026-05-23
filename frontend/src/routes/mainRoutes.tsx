@@ -29,6 +29,10 @@ const MasterDataSuppliersPage = lazyNamedPage(
   () => import('../modules/masterData/pages/MasterDataSuppliersPage'),
   'MasterDataSuppliersPage',
 );
+const MasterDataBusinessPartnerDetailPage = lazyNamedPage(
+  () => import('../modules/masterData/pages/MasterDataBusinessPartnerDetailPage'),
+  'MasterDataBusinessPartnerDetailPage',
+);
 const CompanyConfigPage = lazyNamedPage(
   () => import('../modules/configuracion/empresa/pages/CompanyConfigPage'),
   'CompanyConfigPage',
@@ -68,6 +72,7 @@ export const mainRoutes = [
   <Route key="sales-invoices-new" path="/sales/invoices/new" element={<CreateInvoicePage />} />,
   <Route key="sales-customers" path="/sales/customers" element={<CustomersPage />} />,
   <Route key="masterdata-customers" path="/masterdata/customers" element={<MasterDataCustomersPage />} />,
+  <Route key="masterdata-bp-detail" path="/masterdata/business-partners/:id" element={<MasterDataBusinessPartnerDetailPage />} />,
   // Legacy redirects
   <Route key="ventas-facturas" path="/ventas/facturas" element={<Navigate to="/sales/invoices" replace />} />,
   <Route key="ventas-facturas-nueva" path="/ventas/facturas/nueva" element={<Navigate to="/sales/invoices/new" replace />} />,

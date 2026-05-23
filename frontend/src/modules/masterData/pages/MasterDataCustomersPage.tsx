@@ -2,6 +2,7 @@ import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
+import { useNavigate } from 'react-router-dom';
 import { useMasterDataCustomersPage } from './useMasterDataCustomersPage';
 import { MasterDataBpFormModal } from './MasterDataBpFormModal';
 import { MasterDataCompanySettingsModal } from './MasterDataCompanySettingsModal';
@@ -10,6 +11,7 @@ import './masterdata-pages.css';
 
 export function MasterDataCustomersPage() {
   const page = useMasterDataCustomersPage();
+  const navigate = useNavigate();
 
   if (!page.canView) {
     return <NoAccessPage title="Clientes (MasterData)" />;
@@ -84,6 +86,9 @@ export function MasterDataCustomersPage() {
                 </td>
                 <td>{bp.isActive ? 'Activo' : 'Inactivo'}</td>
                 <td className="md-actions">
+                  <ZHBtn variant="ghost" size="sm" onClick={() => navigate(`/masterdata/business-partners/${bp.id}`)}>
+                    Ver
+                  </ZHBtn>
                   {page.canUpdate && (
                     <ZHBtn variant="ghost" size="sm" onClick={() => page.openEdit(bp)}>
                       Editar

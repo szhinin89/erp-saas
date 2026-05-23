@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
@@ -10,6 +11,7 @@ import './masterdata-pages.css';
 
 export function MasterDataSuppliersPage() {
   const page = useMasterDataSuppliersPage();
+  const navigate = useNavigate();
 
   if (!page.canView) {
     return <NoAccessPage title="Proveedores (MasterData)" />;
@@ -81,6 +83,9 @@ export function MasterDataSuppliersPage() {
                 </td>
                 <td>{bp.isActive ? 'Activo' : 'Inactivo'}</td>
                 <td className="md-actions">
+                  <ZHBtn variant="ghost" size="sm" onClick={() => navigate(`/masterdata/business-partners/${bp.id}`)}>
+                    Ver
+                  </ZHBtn>
                   {page.canUpdate && (
                     <ZHBtn variant="ghost" size="sm" onClick={() => page.openEdit(bp)}>
                       Editar

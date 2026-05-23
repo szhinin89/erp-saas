@@ -135,3 +135,48 @@
   border-color: var(--zh-danger, #dc2626) !important;
   outline-color: var(--zh-danger, #dc2626);
 }
+
+/* ── BP Detail Page ───────────────────────────────────────── */
+.md-detail-section {
+  margin-bottom: 1.5rem;
+}
+
+.md-detail-section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--zh-muted, #6b7280);
+  margin: 0 0 0.5rem;
+  border-bottom: 1px solid var(--zh-border, #e5e7eb);
+  padding-bottom: 0.25rem;
+}
+
+.md-detail-row {
+  display: flex;
+  gap: 1rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--zh-border-light, #f3f4f6);
+}
+
+.md-detail-label {
+  flex: 0 0 180px;
+  font-size: 0.85rem;
+  color: var(--zh-muted, #6b7280);
+}
+
+.md-detail-value {
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.md-detail-empty {
+  color: var(--zh-muted, #6b7280);
+  font-style: normal;
+}
+
+.md-detail-roles {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}

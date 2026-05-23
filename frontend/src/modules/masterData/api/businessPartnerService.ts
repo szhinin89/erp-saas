@@ -37,6 +37,7 @@ function normalizeRow(row: BusinessPartnerApiRow): BusinessPartnerDto {
     tradeName:            row.tradeName   ?? row.TradeName   ?? null,
     email:                row.email       ?? row.Email       ?? null,
     phone:                row.phone       ?? row.Phone       ?? null,
+    countryCode:          row.countryCode ?? row.CountryCode ?? null,
     isActive:             row.isActive    ?? row.IsActive    ?? true,
     isCustomer:           row.isCustomer  ?? row.IsCustomer  ?? false,
     isSupplier:           row.isSupplier  ?? row.IsSupplier  ?? false,
