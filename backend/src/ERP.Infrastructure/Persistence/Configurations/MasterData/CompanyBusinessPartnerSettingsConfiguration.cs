@@ -20,6 +20,10 @@ public sealed class CompanyBusinessPartnerSettingsConfiguration
         builder.Property(x => x.PaymentDays).HasColumnName("payment_days").HasDefaultValue((short)0);
         builder.Property(x => x.IsBlocked).HasColumnName("is_blocked").IsRequired().HasDefaultValue(false);
         builder.Property(x => x.PriceListId).HasColumnName("price_list_id");
+
+        // ── Audit fields (from AuditableEntity) ───────────────────────────
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
+        builder.Property(x => x.CreatedBy).HasColumnName("created_by").IsRequired();
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 

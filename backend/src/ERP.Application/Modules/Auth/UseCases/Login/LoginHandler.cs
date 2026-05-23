@@ -90,8 +90,12 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
         var companiesInSubscriber = subscriberGroups[0].ToList();
         if (companiesInSubscriber.Count > 1)
         {
+            // Sin company seleccionada: rol "User" neutral (company-específico se emite en SwitchCompany).
+            // No usar role de la primera company — el dictionary no es ordenado y el rol puede ser
+            // diferente por empresa. SwitchCompany emitirá el JWT correcto con membership.Role real.
+            const string pendingCompanyRole = "User";
             var tokenWithoutCompany = _accessTokenService.GenerateSessionToken(
-                identityUser, subscriberId, membershipByCompany[companiesInSubscriber[0].Id].Role);
+                identityUser, subscriberId, pendingCompanyRole);
             var (refreshMulti, refreshExpiryMulti) = await _refreshTokenService.CreateAsync(
                 identityUser.Id, subscriberId, null, RefreshUserType.Identity, ct);
             var modulesMulti = await _sessionModules.GetEnabledModuleKeysAsync(subscriberId, ct);
@@ -100,7 +104,7 @@ public class LoginHandler : IRequestHandler<LoginCommand, Result<AuthResponseDto
                 identityUser.Id,
                 identityUser.FullName,
                 identityUser.Email.Value,
-                membershipByCompany[companiesInSubscriber[0].Id].Role,
+                pendingCompanyRole,
                 subscriberId,
                 tokenWithoutCompany,
                 subscriber.PlanCode,

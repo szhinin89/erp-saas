@@ -142,13 +142,15 @@ public sealed class RefreshTokenHandler : IRequestHandler<RefreshTokenCommand, R
             }
             else
             {
-                membership = memberships.First(m => m.CompanyId == inSubscriber[0].Id);
+                // N companies: rol neutral "User" — igual que LoginHandler.
+                // SwitchCompany emitirá el JWT correcto con membership.Role real.
+                const string pendingCompanyRole = "User";
                 var accessTokenPartial = _accessTokenService.GenerateSessionToken(
-                    user, v.SubscriberId, membership.Role);
+                    user, v.SubscriberId, pendingCompanyRole);
                 var modulesPartial = await _sessionModules.GetEnabledModuleKeysAsync(v.SubscriberId, ct);
                 return Result<AuthResponseDto>.Success(new AuthResponseDto(
                     user.Id, user.FullName, user.Email.Value,
-                    membership.Role, v.SubscriberId, accessTokenPartial,
+                    pendingCompanyRole, v.SubscriberId, accessTokenPartial,
                     tenant.PlanCode, modulesPartial)
                 {
                     CompanyId = null,

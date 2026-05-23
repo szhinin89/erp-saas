@@ -6,11 +6,12 @@ namespace ERP.Domain.MasterData.Entities;
 /// Condiciones comerciales específicas de un BusinessPartner en una Company concreta.
 ///
 /// SCOPE: ICompanyScopedEntity + ISubscriberScopedEntity.
-/// Esta es la ÚNICA entidad de MasterData que tiene CompanyId.
+/// Query filter: fail-closed en ambas dimensiones (subscriber + company).
+/// Sin company context en el JWT → 0 filas retornadas.
 ///
 /// Separación de responsabilidades:
-///   BusinessPartner         → identidad fiscal (quién es)
-///   CompanyBusinessPartnerSettings → condiciones comerciales por empresa (cómo opera con nosotros)
+///   BusinessPartner                    → identidad fiscal (quién es)
+///   CompanyBusinessPartnerSettings     → condiciones comerciales por empresa (cómo opera con nosotros)
 ///
 /// Ejemplos de uso:
 ///   - La misma persona jurídica puede tener CreditLimit diferente en Company A y Company B
@@ -20,9 +21,8 @@ namespace ERP.Domain.MasterData.Entities;
 /// Cardinalidad: 0..N por BusinessPartner (una por cada Company que lo usa)
 /// Unicidad: (company_id, business_partner_id) es única
 /// </summary>
-public sealed class CompanyBusinessPartnerSettings : ISubscriberScopedEntity, ICompanyScopedEntity
+public sealed class CompanyBusinessPartnerSettings : AuditableEntity, ISubscriberScopedEntity, ICompanyScopedEntity
 {
-    public Guid    Id                { get; private set; }
     public Guid    SubscriberId      { get; private set; }
     public Guid    CompanyId         { get; private set; }
     public Guid    BusinessPartnerId { get; private set; }
@@ -38,9 +38,6 @@ public sealed class CompanyBusinessPartnerSettings : ISubscriberScopedEntity, IC
 
     /// <summary>FK a lista de precios específica para este BP en esta empresa (futuro).</summary>
     public Guid?    PriceListId  { get; private set; }
-
-    public DateTime UpdatedAt    { get; private set; }
-    public Guid     UpdatedBy    { get; private set; }
 
     // Navegación
     public BusinessPartner? BusinessPartner { get; private set; }
@@ -64,7 +61,7 @@ public sealed class CompanyBusinessPartnerSettings : ISubscriberScopedEntity, IC
         if (businessPartnerId == Guid.Empty)
             throw new ArgumentException("BusinessPartnerId es obligatorio.", nameof(businessPartnerId));
 
-        return new CompanyBusinessPartnerSettings
+        var s = new CompanyBusinessPartnerSettings
         {
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
@@ -74,9 +71,9 @@ public sealed class CompanyBusinessPartnerSettings : ISubscriberScopedEntity, IC
             PaymentDays       = paymentDays < 0 ? (short)0 : paymentDays,
             IsBlocked         = isBlocked,
             PriceListId       = priceListId,
-            UpdatedAt         = DateTime.UtcNow,
-            UpdatedBy         = createdBy,
         };
+        s.SetCreated(createdBy);
+        return s;
     }
 
     public void Update(
@@ -90,21 +87,18 @@ public sealed class CompanyBusinessPartnerSettings : ISubscriberScopedEntity, IC
         PaymentDays = paymentDays < 0 ? (short)0 : paymentDays;
         IsBlocked   = isBlocked;
         PriceListId = priceListId;
-        UpdatedAt   = DateTime.UtcNow;
-        UpdatedBy   = updatedBy;
+        SetUpdated(updatedBy);
     }
 
     public void Block(Guid updatedBy)
     {
         IsBlocked = true;
-        UpdatedAt = DateTime.UtcNow;
-        UpdatedBy = updatedBy;
+        SetUpdated(updatedBy);
     }
 
     public void Unblock(Guid updatedBy)
     {
         IsBlocked = false;
-        UpdatedAt = DateTime.UtcNow;
-        UpdatedBy = updatedBy;
+        SetUpdated(updatedBy);
     }
 }

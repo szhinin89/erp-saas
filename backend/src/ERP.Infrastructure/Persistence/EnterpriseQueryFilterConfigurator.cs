@@ -10,10 +10,18 @@ namespace ERP.Infrastructure.Persistence;
 /// <summary>
 /// Filtros globales ERP: suscriptor + empresa operativa (company scope).
 ///
-/// Semántica fail-closed: si FilterSubscriberId == Guid.Empty (no hay contexto de
-/// suscriptor activo) el filtro evalúa a false y EF no retorna ninguna fila.
-/// Esto protege contra queries accidentales sin contexto de seguridad.
+/// Semántica fail-closed aplicada en dos capas:
+///   1. Subscriber: si FilterSubscriberId == Guid.Empty → 0 filas (nunca actúa como wildcard).
+///   2. Company (ICompanyScopedEntity): si no hay company context → 0 filas.
+///      Esta semántica difiere de ICompanyOperationalEntity (entidades en migración),
+///      donde "sin company context = ver todas las companies del subscriber" es intencional.
+///
 /// Para consultas legítimas sin filtro usar IPlatformQueryAccessor.Unfiltered().
+///
+/// Tabla de semánticas:
+///   ISubscriberScopedEntity            → fail-closed subscriber
+///   ICompanyOperationalEntity          → fail-closed subscriber + pass-all-companies si sin ctx
+///   ICompanyScopedEntity + ISubscriber → fail-closed subscriber + fail-closed company
 /// </summary>
 internal static class EnterpriseQueryFilterConfigurator
 {
@@ -69,43 +77,68 @@ internal static class EnterpriseQueryFilterConfigurator
     }
 
     private static LambdaExpression BuildCompanyOperationalFilter(Type clrType, ErpDbContext dbContext)
-        => BuildScopedFilter(clrType, dbContext, nameof(ICompanyOperationalEntity.CompanyId), typeof(Guid?));
+        => BuildOperationalScopedFilter(clrType, dbContext);
 
     private static LambdaExpression BuildCompanyScopedFilter(Type clrType, ErpDbContext dbContext)
-        => BuildScopedFilter(clrType, dbContext, nameof(ICompanyScopedEntity.CompanyId), typeof(Guid));
+        => BuildStrictCompanyScopedFilter(clrType, dbContext);
 
-    private static LambdaExpression BuildScopedFilter(
-        Type clrType,
-        ErpDbContext dbContext,
-        string companyPropertyName,
-        Type companyPropertyType)
+    /// <summary>
+    /// ICompanyOperationalEntity — entidades en migración (CompanyId nullable).
+    /// Semántica: sin company context → ver todas las companies del subscriber.
+    /// Usado para Product, Warehouse, StockMovement durante transición a company-scope.
+    /// WHERE subscriber_ok AND (NOT hasCompany OR company_id = currentCompany)
+    /// </summary>
+    private static LambdaExpression BuildOperationalScopedFilter(Type clrType, ErpDbContext dbContext)
     {
-        var parameter = Expression.Parameter(clrType, "e");
+        var parameter  = Expression.Parameter(clrType, "e");
         var dbConstant = Expression.Constant(dbContext);
 
-        // Fail-closed: si no hay suscriptor en contexto → ninguna fila.
-        var currentSubscriber    = Expression.Property(dbConstant, nameof(ErpDbContext.FilterSubscriberId));
-        var emptyGuid            = Expression.Constant(Guid.Empty);
-        var hasSubscriberContext  = Expression.NotEqual(currentSubscriber, emptyGuid);
+        var currentSubscriber   = Expression.Property(dbConstant, nameof(ErpDbContext.FilterSubscriberId));
+        var emptyGuid           = Expression.Constant(Guid.Empty);
+        var hasSubscriberCtx    = Expression.NotEqual(currentSubscriber, emptyGuid);
+        var subscriberProp      = Expression.Property(parameter, nameof(ISubscriberScopedEntity.SubscriberId));
+        var subscriberMatch     = Expression.AndAlso(hasSubscriberCtx,
+                                    Expression.Equal(subscriberProp, currentSubscriber));
 
-        var subscriberProperty = Expression.Property(parameter, nameof(ISubscriberScopedEntity.SubscriberId));
-        var subscriberMatch    = Expression.AndAlso(
-            hasSubscriberContext,
-            Expression.Equal(subscriberProperty, currentSubscriber));
+        var companyProp    = Expression.Property(parameter, nameof(ICompanyOperationalEntity.CompanyId));
+        var hasCompanyCtx  = Expression.Property(dbConstant, nameof(ErpDbContext.FilterHasCompanyContext));
+        var currentCompany = Expression.Property(dbConstant, nameof(ErpDbContext.FilterCompanyId));
+        var companyNullable = Expression.Convert(currentCompany, typeof(Guid?));
+        var companyMatch   = Expression.Equal(companyProp, companyNullable);
+        var noCompanyCtx   = Expression.Not(hasCompanyCtx);
+        var companyScope   = Expression.OrElse(noCompanyCtx, companyMatch);
 
-        var companyProperty = Expression.Property(parameter, companyPropertyName);
-        var hasCompanyContext = Expression.Property(dbConstant, nameof(ErpDbContext.FilterHasCompanyContext));
-        var currentCompanyId = Expression.Property(dbConstant, nameof(ErpDbContext.FilterCompanyId));
+        return Expression.Lambda(Expression.AndAlso(subscriberMatch, companyScope), parameter);
+    }
 
-        Expression currentComparable = companyPropertyType == typeof(Guid?)
-            ? Expression.Convert(currentCompanyId, typeof(Guid?))
-            : currentCompanyId;
+    /// <summary>
+    /// ICompanyScopedEntity + ISubscriberScopedEntity — entidades con company_id obligatorio (Guid).
+    /// Semántica fail-closed en AMBAS dimensiones:
+    ///   sin subscriber context → 0 filas
+    ///   sin company context    → 0 filas  (diferencia clave vs BuildOperationalScopedFilter)
+    /// WHERE subscriber_ok AND company_ok
+    /// Para queries cross-company legítimas (admin, consolidación) usar IPlatformQueryAccessor.Unfiltered().
+    /// </summary>
+    private static LambdaExpression BuildStrictCompanyScopedFilter(Type clrType, ErpDbContext dbContext)
+    {
+        var parameter  = Expression.Parameter(clrType, "e");
+        var dbConstant = Expression.Constant(dbContext);
 
-        var companyMatch = Expression.Equal(companyProperty, currentComparable);
-        var noCompanyContext = Expression.Not(hasCompanyContext);
-        var companyScope = Expression.OrElse(noCompanyContext, companyMatch);
+        // Subscriber: fail-closed
+        var currentSubscriber = Expression.Property(dbConstant, nameof(ErpDbContext.FilterSubscriberId));
+        var emptyGuid         = Expression.Constant(Guid.Empty);
+        var hasSubscriberCtx  = Expression.NotEqual(currentSubscriber, emptyGuid);
+        var subscriberProp    = Expression.Property(parameter, nameof(ISubscriberScopedEntity.SubscriberId));
+        var subscriberMatch   = Expression.AndAlso(hasSubscriberCtx,
+                                  Expression.Equal(subscriberProp, currentSubscriber));
 
-        var body = Expression.AndAlso(subscriberMatch, companyScope);
-        return Expression.Lambda(body, parameter);
+        // Company: fail-closed — si no hay company context → 0 filas
+        var hasCompanyCtx  = Expression.Property(dbConstant, nameof(ErpDbContext.FilterHasCompanyContext));
+        var currentCompany = Expression.Property(dbConstant, nameof(ErpDbContext.FilterCompanyId));
+        var companyProp    = Expression.Property(parameter, nameof(ICompanyScopedEntity.CompanyId));
+        var companyMatch   = Expression.AndAlso(hasCompanyCtx,
+                               Expression.Equal(companyProp, currentCompany));
+
+        return Expression.Lambda(Expression.AndAlso(subscriberMatch, companyMatch), parameter);
     }
 }
