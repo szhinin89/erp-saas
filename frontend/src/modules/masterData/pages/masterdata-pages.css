@@ -123,3 +123,15 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+.md-field-error {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--zh-danger, #dc2626);
+}
+
+.zh-input--error {
+  border-color: var(--zh-danger, #dc2626) !important;
+  outline-color: var(--zh-danger, #dc2626);
+}

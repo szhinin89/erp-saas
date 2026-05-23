@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
+import { businessPartnerSchema } from '../../../schemas/masterData/businessPartnerSchema';
 import type { CreateBusinessPartnerBody, UpdateBusinessPartnerBody } from '../types/businessPartner.types';
 
 type CreateMode = {
@@ -42,8 +43,31 @@ export function MasterDataBpFormModal(props: Props) {
   const [email, setEmail]           = useState(props.initialValues?.email ?? '');
   const [phone, setPhone]           = useState(props.initialValues?.phone ?? '');
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const parsed = businessPartnerSchema.safeParse({
+      identificationType,
+      identificationNumber: identificationNumber.trim(),
+      legalName: legalName.trim(),
+      tradeName: (tradeName as string).trim() || undefined,
+      email:     (email as string).trim()     || undefined,
+      phone:     (phone as string).trim()     || undefined,
+    });
+
+    if (!parsed.success) {
+      const errs: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0] as string;
+        if (!errs[field]) errs[field] = issue.message;
+      }
+      setFieldErrors(errs);
+      return;
+    }
+
+    setFieldErrors({});
     const body = {
       identificationType,
       identificationNumber: identificationNumber.trim(),
@@ -77,7 +101,7 @@ export function MasterDataBpFormModal(props: Props) {
             <select
               className="zh-input"
               value={identificationType}
-              onChange={(e) => setIdentificationType(e.target.value)}
+              onChange={(e) => { setIdentificationType(e.target.value); setFieldErrors((p) => ({ ...p, identificationType: '' })); }}
               disabled={props.saving}
             >
               <option value="RUC">RUC</option>
@@ -85,24 +109,25 @@ export function MasterDataBpFormModal(props: Props) {
               <option value="PASSPORT">PASSPORT</option>
               <option value="OTHER">OTHER</option>
             </select>
+            {fieldErrors.identificationType && <span className="md-field-error">{fieldErrors.identificationType}</span>}
           </ZHField>
           <ZHField label="Número" required>
             <input
-              className="zh-input mono"
+              className={`zh-input mono${fieldErrors.identificationNumber ? ' zh-input--error' : ''}`}
               value={identificationNumber}
-              onChange={(e) => setIdentificationNumber(e.target.value)}
+              onChange={(e) => { setIdentificationNumber(e.target.value); setFieldErrors((p) => ({ ...p, identificationNumber: '' })); }}
               disabled={props.saving}
-              required
             />
+            {fieldErrors.identificationNumber && <span className="md-field-error">{fieldErrors.identificationNumber}</span>}
           </ZHField>
           <ZHField label="Razón social" required>
             <input
-              className="zh-input"
+              className={`zh-input${fieldErrors.legalName ? ' zh-input--error' : ''}`}
               value={legalName}
-              onChange={(e) => setLegalName(e.target.value)}
+              onChange={(e) => { setLegalName(e.target.value); setFieldErrors((p) => ({ ...p, legalName: '' })); }}
               disabled={props.saving}
-              required
             />
+            {fieldErrors.legalName && <span className="md-field-error">{fieldErrors.legalName}</span>}
           </ZHField>
           <ZHField label="Nombre comercial">
             <input
@@ -114,20 +139,22 @@ export function MasterDataBpFormModal(props: Props) {
           </ZHField>
           <ZHField label="Email">
             <input
-              className="zh-input"
+              className={`zh-input${fieldErrors.email ? ' zh-input--error' : ''}`}
               type="email"
               value={email as string}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setFieldErrors((p) => ({ ...p, email: '' })); }}
               disabled={props.saving}
             />
+            {fieldErrors.email && <span className="md-field-error">{fieldErrors.email}</span>}
           </ZHField>
           <ZHField label="Teléfono">
             <input
-              className="zh-input"
+              className={`zh-input${fieldErrors.phone ? ' zh-input--error' : ''}`}
               value={phone as string}
-              onChange={(e) => setPhone(e.target.value)}
+              onChange={(e) => { setPhone(e.target.value); setFieldErrors((p) => ({ ...p, phone: '' })); }}
               disabled={props.saving}
             />
+            {fieldErrors.phone && <span className="md-field-error">{fieldErrors.phone}</span>}
           </ZHField>
         </div>
 
