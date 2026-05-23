@@ -1,10 +1,9 @@
-using ERP.Application.Platform.Observability;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace ERP.API.Filters;
 
 /// <summary>
-/// RFC 8594 deprecation headers + Phase 2 usage telemetry for strangler migration.
+/// RFC 8594 deprecation headers for legacy API surfaces during strangler migration.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class DeprecatedApiAttribute : Attribute, IActionFilter
@@ -27,9 +26,6 @@ public sealed class DeprecatedApiAttribute : Attribute, IActionFilter
         headers["X-Deprecated-Endpoint"] = path;
         if (_successor is not null)
             headers["Link"] = $"<{_successor}>; rel=\"successor-version\"";
-
-        var tracker = http.RequestServices.GetService<ILegacyEndpointUsageTracker>();
-        tracker?.Record(path, method, _successor, http.Connection.RemoteIpAddress?.ToString());
 
         var logger = http.RequestServices.GetService<ILoggerFactory>()?.CreateLogger("DeprecatedApi");
         logger?.LogWarning(

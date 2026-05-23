@@ -359,15 +359,6 @@ export type PlatformUserRow = {
   isActive: boolean;
 };
 
-export type LegacyEndpointUsageSummary = {
-  endpoint: string;
-  method: string;
-  totalHits: number;
-  lastHitUtc?: string | null;
-  successor?: string | null;
-  lastCallerIp?: string | null;
-};
-
 export type PlatformSubscriberDetailDto = {
   id: string;
   name: string;
@@ -438,24 +429,6 @@ export type UpsertPlatformConfigBody = {
   key: string;
   value: string;
   dataType: string;
-};
-
-export type LegacyEndpointUsageDashboard = {
-  topEndpoints: LegacyEndpointUsageSummary[];
-  topUiRoutes?: Array<{ routeKey: string; totalHits: number; lastHitUtc?: string | null; lastReferrer?: string | null }>;
-  topMasterDataSources?: Array<{ sourceKey: string; totalHits: number; lastHitUtc?: string | null; lastDetail?: string | null }>;
-  recentHits: Array<{
-    endpoint: string;
-    method: string;
-    successor?: string | null;
-    atUtc: string;
-    callerIp?: string | null;
-  }>;
-  totalEndpointHits?: number;
-  totalUiHits?: number;
-  totalMasterDataHits?: number;
-  totalHits: number;
-  migrationCompletePercent?: number;
 };
 
 /** Platform Control Plane HTTP client — canonical `/api/platform/*` only. */
@@ -785,11 +758,6 @@ export const platformService = {
       .delete<ApiResponse<string>>(`${PLATFORM_API.users}/${encodeURIComponent(userId)}/sessions`, {
         params: { subscriberId },
       })
-      .then((r) => r.data.responseObject),
-
-  getLegacyEndpointUsage: () =>
-    api
-      .get<ApiResponse<LegacyEndpointUsageDashboard>>(`${PLATFORM_API.observability}/legacy-endpoints`)
       .then((r) => r.data.responseObject),
 
   getObservabilityHealthIndex: () =>

@@ -82,8 +82,9 @@ No crear identificadores con estos nombres; solo parsear datos viejos o redirect
 | JSON `superAdminPanelEnabled` | `platformAuth.ts` → `LEGACY_WIRE` | GET deployment antiguo |
 | JSON `requireSuperAdminPanel` | `platformAuth.ts` → `LEGACY_WIRE` | Menú API antiguo |
 | URL `/superadmin/*` | `platformRoutes.tsx` | Redirect → `/platform/*` |
-| Config `Deployment:SuperAdminPanelEnabled` | `DeploymentFeatureFlags.cs` | Env legacy |
-| Columna BD `require_superadmin_panel` | EF mapping | Sin rename de esquema |
+| Config `Deployment:SuperAdminPanelEnabled` | `DeploymentFeatureFlags.cs` | Env legacy (preferir `Deployment:PlatformPanelEnabled`) |
+
+**Esquema BD (2026-05-23, pre-producción):** columnas canónicas `is_platform_only_feature`, `require_platform_panel`. Tras este cambio, recrear BD local (`dotnet ef database drop` + `dotnet ef database update`).
 
 ---
 

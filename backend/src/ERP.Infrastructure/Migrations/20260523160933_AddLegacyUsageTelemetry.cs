@@ -156,41 +156,6 @@ namespace ERP.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "legacy_usage_hits",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Category = table.Column<int>(type: "integer", nullable: false),
-                    UsageKey = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
-                    Successor = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
-                    HitAtUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    CallerIp = table.Column<string>(type: "character varying(45)", maxLength: 45, nullable: true),
-                    Detail = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_legacy_usage_hits", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "legacy_usage_stats",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Category = table.Column<int>(type: "integer", nullable: false),
-                    UsageKey = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: false),
-                    Successor = table.Column<string>(type: "character varying(512)", maxLength: 512, nullable: true),
-                    TotalHits = table.Column<long>(type: "bigint", nullable: false),
-                    LastHitUtc = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LastCallerIp = table.Column<string>(type: "character varying(45)", maxLength: 45, nullable: true),
-                    LastDetail = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_legacy_usage_stats", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "payment_applications",
                 columns: table => new
                 {
@@ -280,17 +245,6 @@ namespace ERP.Infrastructure.Migrations
                 columns: new[] { "subscriber_id", "due_date", "status" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_legacy_usage_hits_HitAtUtc",
-                table: "legacy_usage_hits",
-                column: "HitAtUtc");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_legacy_usage_stats_Category_UsageKey",
-                table: "legacy_usage_stats",
-                columns: new[] { "Category", "UsageKey" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "ix_payment_applications_ap_entry",
                 table: "payment_applications",
                 column: "ap_entry_id",
@@ -335,12 +289,6 @@ namespace ERP.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "ar_entries");
-
-            migrationBuilder.DropTable(
-                name: "legacy_usage_hits");
-
-            migrationBuilder.DropTable(
-                name: "legacy_usage_stats");
 
             migrationBuilder.DropTable(
                 name: "payment_applications");

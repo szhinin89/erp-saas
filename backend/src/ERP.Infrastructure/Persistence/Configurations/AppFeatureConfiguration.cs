@@ -18,7 +18,7 @@ public sealed class AppFeatureConfiguration : IEntityTypeConfiguration<AppFeatur
         builder.Property(x => x.ParentId).HasColumnName("parent_id");
         builder.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
         builder.Property(x => x.IsVisibleInMenu).HasColumnName("is_visible_in_menu").IsRequired();
-        builder.Property(x => x.IsPlatformOnlyFeature).HasColumnName("is_super_admin").IsRequired();
+        builder.Property(x => x.IsPlatformOnlyFeature).HasColumnName("is_platform_only_feature").IsRequired();
         builder.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
         builder.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc").IsRequired();
 

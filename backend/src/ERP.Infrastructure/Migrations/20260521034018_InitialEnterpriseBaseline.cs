@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -87,7 +87,7 @@ namespace ERP.Infrastructure.Migrations
                     parent_id = table.Column<Guid>(type: "uuid", nullable: true),
                     sort_order = table.Column<int>(type: "integer", nullable: false),
                     is_visible_in_menu = table.Column<bool>(type: "boolean", nullable: false),
-                    is_super_admin = table.Column<bool>(type: "boolean", nullable: false),
+                    is_platform_only_feature = table.Column<bool>(type: "boolean", nullable: false),
                     created_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     updated_at_utc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
                 },
@@ -1485,7 +1485,7 @@ namespace ERP.Infrastructure.Migrations
                     sort_order = table.Column<int>(type: "integer", nullable: false),
                     module_key = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
                     roles_csv = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    require_superadmin_panel = table.Column<bool>(type: "boolean", nullable: false),
+                    require_platform_panel = table.Column<bool>(type: "boolean", nullable: false),
                     is_active = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>

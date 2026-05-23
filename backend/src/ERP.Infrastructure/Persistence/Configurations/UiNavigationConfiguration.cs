@@ -18,7 +18,7 @@ public sealed class UiNavGroupConfiguration : IEntityTypeConfiguration<UiNavGrou
         builder.Property(x => x.SortOrder).HasColumnName("sort_order");
         builder.Property(x => x.ModuleKey).HasColumnName("module_key").HasMaxLength(64);
         builder.Property(x => x.RolesCsv).HasColumnName("roles_csv").HasMaxLength(200);
-        builder.Property(x => x.RequirePlatformPanel).HasColumnName("require_superadmin_panel");
+        builder.Property(x => x.RequirePlatformPanel).HasColumnName("require_platform_panel");
         builder.Property(x => x.IsActive).HasColumnName("is_active");
     }
 }

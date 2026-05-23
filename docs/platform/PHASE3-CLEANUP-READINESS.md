@@ -11,7 +11,7 @@
 | Prioridad | Entrega | Estado |
 |-----------|---------|--------|
 | 1 | Playwright `phase3-smoke.spec.ts` + helpers platform | ✅ (full stack vía `e2e-manual.yml`) |
-| 2 | Telemetría legacy PostgreSQL (`legacy_usage_stats`, `legacy_usage_hits`) | ✅ |
+| 2 | Telemetría legacy PostgreSQL (`legacy_usage_stats`, `legacy_usage_hits`) | ✅ retirada 2026-05-23 |
 | 2 | Beacons UI + MasterData fallback | ✅ |
 | 3 | Platform login multi-rol + Users UI revoke + impersonation history | ✅ parcial |
 | 4 | Billing platform invoices/overdue APIs + UI | ✅ foundation |
@@ -24,7 +24,8 @@
 
 ## Endpoints removibles (gated — NO eliminar aún)
 
-Requiere **0 hits 30–60d** en `/api/platform/observability/legacy-endpoints`.
+Telemetría `legacy_usage_*` y rutas `/api/platform/observability/legacy-*` **eliminadas** (2026-05-23).  
+`DeprecatedApiAttribute` conserva solo headers RFC 8594 + log warning.
 
 | Legacy | Canónico |
 |--------|----------|

@@ -79,6 +79,7 @@ npm run dev
 ```
 
 - First-run operador platform: banner en consola API o `.\scripts\setup\Crear-PlatformOperator.ps1` — ver [`docs/platform/TEAM-NAMING-GUIDE.md`](platform/TEAM-NAMING-GUIDE.md)
+- Tras cambios de esquema platform (pre-producción): recrear BD local — `dotnet ef database drop --project backend/src/ERP.Infrastructure --startup-project backend/src/ERP.API -f` y luego `dotnet ef database update`
 - Copiar `appsettings.Development.json.example` → `appsettings.Development.json`
 - PostgreSQL: `Host=localhost;Port=5435;Database=dberpsaas`
 

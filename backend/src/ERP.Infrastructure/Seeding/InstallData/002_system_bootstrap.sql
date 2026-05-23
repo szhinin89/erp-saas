@@ -108,10 +108,10 @@ COMMENT ON FUNCTION erp_seed_tenant_default_profiles(UUID, UUID) IS
 -- ----------------------------------------------------------------------------
 -- Fallback global del menú de navegación: 9 grupos ordenados por sort_order.
 -- Los planes SaaS pueden sobrescribir esta estructura con menu_config_json
--- personalizado (gestionado desde SuperAdmin → Planes → Menu Builder).
+-- personalizado (gestionado desde panel platform → Planes → Menu Builder).
 -- ============================================================================
 
-INSERT INTO ui_nav_groups ("Id", code, icon, label_key, sort_order, module_key, require_superadmin_panel, is_active)
+INSERT INTO ui_nav_groups ("Id", code, icon, label_key, sort_order, module_key, require_platform_panel, is_active)
 VALUES
   (gen_random_uuid(), 'sales',     '🧾', 'app.nav.group.sales',     10, 'sales',     false, true),
   (gen_random_uuid(), 'purchases', '🛒', 'app.nav.group.purchases',  20, 'purchases', false, true),

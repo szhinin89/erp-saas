@@ -22,7 +22,7 @@ Domain Entity  →  DB table (snake_case plural)  →  API root  →  frontend m
 | Config | `config_*` | `/api/platform/config` | `configService` |
 | Nav menu | `ui_nav_*` | `/api/platform/navigation-menu` | `platformService` |
 | Metrics | _(read model)_ | `/api/platform/metrics` | `PlatformOverviewPage` |
-| Observability | `legacy_usage_*` | `/api/platform/observability` | `PlatformObservabilityPage` |
+| Observability | _(métricas + health)_ | `/api/platform/observability` | `PlatformObservabilityPage` |
 | Settings | _(KV)_ | `/api/platform/settings` | _(pendiente UI)_ |
 | Auth | _(session)_ | `/api/platform/auth/login` | `authService` / login |
 
@@ -57,7 +57,7 @@ Domain Entity  →  DB table (snake_case plural)  →  API root  →  frontend m
 | 2 | Deprecar `SubscribersController` para operadores globales | ✅ runtime-only |
 | 3 | Consolidar `companyService` → `platformService` | ✅ |
 | 4 | i18n `platform.*` | ✅ (2026-05-23) |
-| 5 | Retirar tablas `legacy_usage_*` cuando observability legacy = 0 | ⏳ |
+| 5 | Retirar tablas `legacy_usage_*` y telemetría strangler | ✅ (2026-05-23) |
 | 6 | UI `/platform/*` + redirect `/superadmin/*` | ✅ (2026-05-23) |
 | 7 | Alias JSON API `platformPanelEnabled` / `requirePlatformPanel` | ✅ (2026-05-23) |
 | 8 | Renombrar namespace `PlatformSubscribers` → `PlatformSubscribers` | ⏳ backlog |

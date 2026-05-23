@@ -72,7 +72,7 @@ Archivo: `frontend/src/constants/platformAuth.ts`
 | Tenant | `subscribers` | Terminología unificada a Subscriber |
 | SaaS plan | `commercial_plans` | No `saas_plans` |
 | Platform audit | `platform_audit_logs` | Renombrado Phase 4 |
-| Columna `require_superadmin_panel` | `ui_nav_groups` | Nombre columna legacy; propiedad EF `RequirePlatformPanel` |
+| Columna `ui_nav_groups.require_platform_panel` | Grupo visible solo con panel platform; propiedad EF `RequirePlatformPanel` |
 
 ## CI enforcement
 

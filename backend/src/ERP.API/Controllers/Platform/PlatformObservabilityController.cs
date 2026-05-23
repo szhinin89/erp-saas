@@ -1,7 +1,6 @@
 using ERP.API.Contracts;
 using ERP.API.Extensions;
 using ERP.Application.Platform.Metrics;
-using ERP.Application.Platform.Observability;
 using ERP.Domain.Billing.Enums;
 using ERP.Domain.Subscribers.Entities;
 using ERP.Domain.Subscribers.Interfaces;
@@ -19,69 +18,29 @@ namespace ERP.API.Controllers.Platform;
 [Tags("Platform")]
 public sealed class PlatformObservabilityController : ControllerBase
 {
-    private readonly ILegacyEndpointUsageTracker _legacyUsage;
-    private readonly ILegacyUsageTelemetryStore _telemetryStore;
     private readonly IMediator _mediator;
     private readonly ISubscriberRepository _subscribers;
     private readonly ISubscriberBillingRepository _billing;
     private readonly IConfiguration _config;
 
     public PlatformObservabilityController(
-        ILegacyEndpointUsageTracker legacyUsage,
-        ILegacyUsageTelemetryStore telemetryStore,
         IMediator mediator,
         ISubscriberRepository subscribers,
         ISubscriberBillingRepository billing,
         IConfiguration config)
     {
-        _legacyUsage = legacyUsage;
-        _telemetryStore = telemetryStore;
         _mediator = mediator;
         _subscribers = subscribers;
         _billing = billing;
         _config = config;
     }
 
-    /// <summary>Dashboard de uso legacy (endpoints, UI, masterdata) — PostgreSQL persistente.</summary>
-    [HttpGet("legacy-endpoints")]
-    [ProducesResponseType(typeof(ApiResponse<LegacyStranglerDashboard>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> LegacyEndpoints(
-        [FromQuery] int top = 50,
-        [FromQuery] int recent = 100,
-        CancellationToken ct = default)
-        => this.ApiOk(await _telemetryStore.GetDashboardAsync(top, recent, ct));
-
-    /// <summary>Beacon desde UI legacy (rutas redirect, páginas coexistencia).</summary>
-    [HttpPost("legacy-ui")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status204NoContent)]
-    public IActionResult RecordLegacyUi([FromBody] LegacyUiBeaconRequest body)
-    {
-        if (string.IsNullOrWhiteSpace(body.RouteKey))
-            return this.ApiBadRequest("routeKey requerido.");
-        _legacyUsage.RecordUiRoute(body.RouteKey, body.Referrer);
-        return NoContent();
-    }
-
-    /// <summary>Beacon masterdata fallback (facade → legacy customers/suppliers).</summary>
-    [HttpPost("legacy-masterdata")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public IActionResult RecordLegacyMasterData([FromBody] LegacyMasterDataBeaconRequest body)
-    {
-        if (string.IsNullOrWhiteSpace(body.SourceKey))
-            return this.ApiBadRequest("sourceKey requerido.");
-        _legacyUsage.RecordMasterData(body.SourceKey, body.Detail);
-        return NoContent();
-    }
-
-    /// <summary>Dashboard operativo: tenants, lifecycle, billing risk, strangler migration.</summary>
+    /// <summary>Dashboard operativo: tenants, lifecycle, billing risk.</summary>
     [HttpGet("dashboard")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Dashboard(CancellationToken ct)
     {
         var metricsResult = await _mediator.Send(new GetPlatformMetricsQuery(), ct);
-        var strangler = await _telemetryStore.GetDashboardAsync(10, 20, ct);
         var all = await _subscribers.GetAllAsync(ct);
 
         var overdue = 0;
@@ -106,8 +65,6 @@ public sealed class PlatformObservabilityController : ControllerBase
             suspendedTenants = all.Count(s => s.LifecycleStatus == SubscriberLifecycleStatus.Suspended),
             graceTenants = all.Count(s => s.LifecycleStatus == SubscriberLifecycleStatus.GracePeriod),
             overdueAccounts = pastDueAccounts,
-            legacyMigrationPercent = strangler.MigrationCompletePercent,
-            legacyTotalHits = strangler.TotalHits,
             metrics = metricsResult.IsSuccess ? metricsResult.Value : null,
             prometheus = _config.GetValue("Observability:EnablePrometheus", true) ? "/metrics" : null,
             healthChecks = new[]
@@ -143,8 +100,4 @@ public sealed class PlatformObservabilityController : ControllerBase
             correlationHeader = "X-Correlation-Id",
         });
     }
-
-    public sealed record LegacyUiBeaconRequest(string RouteKey, string? Referrer);
-
-    public sealed record LegacyMasterDataBeaconRequest(string SourceKey, string? Detail);
 }
