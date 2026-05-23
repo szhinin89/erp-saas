@@ -1,57 +1,70 @@
-# CI Guard Rules — Platform Legacy Surface
+# Platform Control Plane — CI Hard Gates
 
-**Phase 5** · Bloqueante en `npm run build` y `npm run architecture:check`
+**Orquestador:** `tools/ci/run-platform-guard.mjs`  
+**Config:** `tools/ci/platform-guard-config.json`  
+**Reporte:** `docs/ci/PLATFORM_GUARD_REPORT.md` (generado en CI)
 
-## Scripts
+## Ejecución local
 
-| Script | Comando | Rol |
-|--------|---------|-----|
-| Legacy surface guard | `node tools/architecture/check-platform-legacy-surface.mjs` | Escanea `frontend/src` |
-| API usage graph | `node tools/architecture/extract-api-usage-graph.mjs` | Genera `docs/platform/API_USAGE_GRAPH.json` |
-| Wrapper npm | `npm run platform:guard` | Solo guard |
-| Wrapper npm | `npm run platform:api-graph` | Solo graph |
-| Build | `npm run build` | tsc → guard → graph → vite |
+```bash
+cd frontend
+npm run platform:guard
+```
 
-## Tokens prohibidos (`frontend/src`)
+Scripts individuales:
 
-El build **falla** si cualquier línea de código (no comentarios `//` o `*`) contiene:
+| Script | Comando |
+|--------|---------|
+| Full guard | `npm run platform:guard` |
+| Static scan | `npm run platform:scan` |
+| Import guard | `npm run platform:imports` |
+| API allowlist | `npm run platform:api-endpoints` |
 
-| Token / patrón | Motivo |
-|----------------|--------|
-| `superadmin-login` | Auth legacy eliminado |
-| `/api/superadmin/` | Control plane legacy |
-| `/api/admin/iam/superadmin` | IAM platform duplicado |
-| `LEGACY_PLATFORM` | Constantes strangler |
-| `LEGACY_PLATFORM_API` | Constantes strangler |
-| `superAdminService` | Client renombrado a `platformService` |
+Backend (xUnit):
 
-## API graph validation
+```bash
+dotnet test backend/src/ERP.Architecture.Tests -c Release --filter "FullyQualifiedName~PlatformControlPlaneGuardTests"
+```
 
-`extract-api-usage-graph.mjs` extrae literales `/api/...` y falla si alguno coincide con:
+## Checks (fail-fast)
+
+| # | Check | Ámbito |
+|---|-------|--------|
+| 1 | `static-forbidden-patterns` | `frontend/src` + `backend/src` (sin `docs/`) |
+| 2 | `platform-imports` | imports legacy (`modules/superadmin`, `superadminService`, …) |
+| 3 | `frontend-routes` | `platformRoutes.tsx`, `App.tsx` |
+| 4 | `api-endpoints` | allowlist de prefijos `/api/*` usados en frontend |
+| 5 | `PlatformControlPlaneGuardTests` | rutas backend — prohibido `/api/superadmin` |
+
+## Patrones prohibidos (case-insensitive, comentarios excluidos)
 
 - `/api/superadmin/`
 - `superadmin-login`
+- `SuperAdminController`
+- `SuperAdminService` / `superAdminService`
+- `useSuperAdmin`
+- `LEGACY_PLATFORM`
+- `LEGACY_SUPERADMIN`
 - `/api/admin/iam/superadmin`
 
-Salida: [`API_USAGE_GRAPH.json`](./API_USAGE_GRAPH.json) con buckets `platformEndpoints`, `runtimeEndpoints`, `publicEndpoints`.
+## Allowlist API (frontend)
 
-## Integración architecture:check
+Prefijos permitidos en `platform-guard-config.json` → `allowedApiPrefixes`:
 
-En [`tools/architecture/run-all.mjs`](../../tools/architecture/run-all.mjs):
+- Control plane: `/api/platform`, `/api/subscribers`
+- Auth: `/api/auth`, `/api/admin/iam`
+- ERP runtime: `/api/master`, `/api/sales`, `/api/purchases`, `/api/inventory`, …
 
-```javascript
-{ name: 'platform-legacy-surface', run: runCheckPlatformLegacySurface }
-```
+**FAIL** si un endpoint literal en frontend no cae en la allowlist o coincide con prefijos prohibidos.
 
-## Extender reglas
+## CI integration
 
-1. Añadir patrón en `FORBIDDEN` de `check-platform-legacy-surface.mjs`
-2. Si aplica a endpoints, añadir en `LEGACY_PATTERNS` de `extract-api-usage-graph.mjs`
-3. Documentar aquí y en `LEGACY_SURFACE_REPORT.md`
+| Workflow | Step |
+|----------|------|
+| `architecture.yml` | `npm run platform:guard` (hard-gate) |
+| `frontend-ci.yml` | `npm run platform:guard` + incluido en `npm run build` |
+| `backend-ci.yml` | `dotnet test` + `npm run platform:guard` |
 
-## Exclusiones intencionales
+## Principio
 
-- **`docs/**`** — histórico de migración
-- **Comentarios** en código — ignorados por el guard
-- **`/superadmin/*` UI paths** — shell canónico (no son API)
-- **`/api/companies/*`** — runtime ERP tenant (fuera de control plane)
+Preventivo · obligatorio · fail-fast (sin warnings que pasen el pipeline).

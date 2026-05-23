@@ -1,0 +1,77 @@
+{
+  "$schema": "./platform-guard-config.schema.json",
+  "forbiddenPatterns": [
+    { "id": "api-superadmin-path", "pattern": "/api/superadmin/", "hint": "Use /api/platform/*" },
+    { "id": "superadmin-login", "pattern": "superadmin-login", "hint": "Use POST /api/platform/auth/login" },
+    { "id": "superadmin-controller", "pattern": "SuperAdminController", "hint": "Remove legacy SuperAdminController" },
+    { "id": "superadmin-service", "pattern": "SuperAdminService", "hint": "Use platform services under /api/platform" },
+    { "id": "use-superadmin-hook", "pattern": "useSuperAdmin", "hint": "Use usePlatformGate / platform hooks" },
+    { "id": "legacy-platform", "pattern": "LEGACY_PLATFORM", "hint": "Remove LEGACY_PLATFORM_* constants" },
+    { "id": "legacy-superadmin", "pattern": "LEGACY_SUPERADMIN", "hint": "Remove LEGACY_SUPERADMIN_* constants" },
+    { "id": "superadmin-service-camel", "pattern": "superAdminService", "hint": "Use platformService from modules/platform/api" },
+    { "id": "iam-superadmin-api", "pattern": "/api/admin/iam/superadmin", "hint": "Use /api/platform/subscribers" }
+  ],
+  "forbiddenImportPaths": [
+    { "id": "legacy-module-superadmin", "pattern": "modules/superadmin", "hint": "Use modules/platform" },
+    { "id": "legacy-components-superadmin", "pattern": "components/superadmin", "hint": "Use components/platform" },
+    { "id": "legacy-pages-superadmin", "pattern": "pages/SuperAdmin", "hint": "Use pages/Platform" }
+  ],
+  "forbiddenFrontendImportTokens": [
+    { "id": "superadmin-service-import", "pattern": "superadminService", "hint": "Use platformService" },
+    { "id": "superadmin-service-import-camel", "pattern": "superAdminService", "hint": "Use platformService" }
+  ],
+  "forbiddenApiRoutePrefixes": [
+    "/api/superadmin"
+  ],
+  "allowedApiPrefixes": [
+    "/api/platform",
+    "/api/subscribers",
+    "/api/auth",
+    "/api/master",
+    "/api/sales",
+    "/api/purchases",
+    "/api/admin/iam",
+    "/api/companies",
+    "/api/cash",
+    "/api/expenses",
+    "/api/finance",
+    "/api/inventory",
+    "/api/logistics",
+    "/api/me",
+    "/api/saas",
+    "/api/security",
+    "/api/settings",
+    "/api/taxrates",
+    "/api/public"
+  ],
+  "allowedUiRoutePrefixes": [
+    "/superadmin",
+    "/saas",
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+    "/select-subscriber",
+    "/select-company"
+  ],
+  "scanRoots": {
+    "frontend": "frontend/src",
+    "backend": "backend/src"
+  },
+  "excludeDirectories": [
+    "docs",
+    "node_modules",
+    "bin",
+    "obj",
+    "dist"
+  ],
+  "excludeFiles": [
+    "backend/src/ERP.Architecture.Tests/PlatformControlPlaneGuardTests.cs",
+    "tools/ci/scan-forbidden-patterns.mjs",
+    "tools/ci/platform-guard-config.json",
+    "tools/ci/run-platform-guard.mjs",
+    "tools/architecture/check-platform-legacy-surface.mjs",
+    "tools/architecture/extract-api-usage-graph.mjs"
+  ],
+  "sourceExtensions": [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cs"]
+}

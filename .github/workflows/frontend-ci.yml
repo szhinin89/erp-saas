@@ -27,6 +27,16 @@ jobs:
       - name: ESLint
         working-directory: frontend
         run: npm run lint
+      - name: Platform Control Plane guard (hard-gate)
+        working-directory: frontend
+        run: npm run platform:guard
+      - name: Upload Platform guard report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: platform-guard-report
+          path: docs/ci/PLATFORM_GUARD_REPORT.md
+          if-no-files-found: error
       - name: Typecheck + production build
         working-directory: frontend
         run: npm run build
