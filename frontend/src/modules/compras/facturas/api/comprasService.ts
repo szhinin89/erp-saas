@@ -21,6 +21,7 @@ export interface CompraLineaDto {
 export interface CompraDto {
   id: string;
   supplierId: string;
+  businessPartnerId?: string | null;
   invoiceNumber: string;
   accessKey: string | null;
   xmlPath: string | null;
@@ -59,6 +60,7 @@ export interface CompraLineaInput {
 
 export interface CrearCompraManualRequest {
   supplierId: string;
+  businessPartnerId?: string | null;
   invoiceNumber: string;
   invoiceDate: string;
   dueDate: string | null;
@@ -94,6 +96,7 @@ export const comprasService = {
     const res = await api.post<ApiResponse<CompraDto>>('/api/purchases/invoices/manual', {
       modo: 2, // Manual
       supplierId: payload.supplierId,
+      businessPartnerId: payload.businessPartnerId ?? null,
       invoiceNumber: payload.invoiceNumber,
       invoiceDate: payload.invoiceDate,
       dueDate: payload.dueDate,

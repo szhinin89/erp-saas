@@ -46,6 +46,7 @@ public sealed class SalesBill : AuditableEntity, ISubscriberScopedEntity, ICompa
     public DateTime? AuthDate          { get; private set; }
     public string?   ErrorMessage      { get; private set; }
     public Guid?     JournalEntryId    { get; private set; }
+    public Guid?     BusinessPartnerId { get; private set; }
 
     public Customer Cliente { get; private set; } = null!;
     public Warehouse Warehouse { get; private set; } = null!;
@@ -176,6 +177,8 @@ public sealed class SalesBill : AuditableEntity, ISubscriberScopedEntity, ICompa
         Status = "Anulado";
         SetUpdated(userId);
     }
+
+    public void SetBusinessPartner(Guid? businessPartnerId) => BusinessPartnerId = businessPartnerId;
 
     public void AddLine(SalesBillLine line)
     {

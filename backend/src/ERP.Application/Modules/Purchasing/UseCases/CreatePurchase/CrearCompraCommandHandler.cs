@@ -108,6 +108,9 @@ public sealed class CreatePurchaseCommandHandler
                 parsed.IssueDate, null,
                 "Contado", null, userId);
 
+            if (command.BusinessPartnerId.HasValue)
+                compra.SetBusinessPartner(command.BusinessPartnerId);
+
             foreach (var item in parsed.Items)
             {
                 compra.AddLine(
@@ -190,6 +193,9 @@ public sealed class CreatePurchaseCommandHandler
             command.InvoiceNumber!, null, null,
             command.InvoiceDate!.Value, command.DueDate,
             command.PaymentTerms!, command.Notes, userId);
+
+        if (command.BusinessPartnerId.HasValue)
+            compra.SetBusinessPartner(command.BusinessPartnerId);
 
         foreach (var d in command.Lines!)
         {

@@ -30,6 +30,7 @@ public sealed class PurchaseDocument : AuditableEntity, ISubscriberScopedEntity,
     public Guid?                ReferenceDocumentId { get; private set; }
     public string?              Reason              { get; private set; }
     public Guid?                JournalEntryId      { get; private set; }
+    public Guid?                BusinessPartnerId   { get; private set; }
     public Guid?                ValidatedBy         { get; private set; }
     public DateTime?            ValidatedAt         { get; private set; }
     public Guid?                ApprovedBy          { get; private set; }
@@ -46,6 +47,8 @@ public sealed class PurchaseDocument : AuditableEntity, ISubscriberScopedEntity,
 
     /// <summary>Rehidratación desde capa de persistencia / mapper.</summary>
     public static PurchaseDocument Rehydrate() => new();
+
+    public void SetBusinessPartner(Guid? businessPartnerId) => BusinessPartnerId = businessPartnerId;
 
     public void AddLine(PurchaseDetail line)
     {

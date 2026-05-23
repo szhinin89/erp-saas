@@ -49,6 +49,7 @@ public sealed class SalesDocumentConfiguration : IEntityTypeConfiguration<SalesD
         builder.Property(e => e.RemittanceKey).HasColumnName("remittance_key").HasMaxLength(49);
         builder.Property(e => e.GuideDocNum).HasColumnName("guide_doc_num").HasMaxLength(20);
         builder.Property(e => e.JournalEntryId).HasColumnName("journal_entry_id");
+        builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id");
         builder.Property(e => e.CreatedAt).HasColumnName("created_at");
         builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
         builder.Property(e => e.CreatedBy).HasColumnName("created_by");

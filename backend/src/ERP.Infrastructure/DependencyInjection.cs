@@ -62,6 +62,7 @@ using ERP.Infrastructure.Persistence.Outbox;
 using ERP.Application.Common.Persistence;
 using ERP.Application.Common.Security;
 using ERP.Infrastructure.Observability;
+using ERP.Application.Modules.Dashboard;
 
 namespace ERP.Infrastructure;
 
@@ -106,6 +107,12 @@ public static class DependencyInjection
         services.AddScoped<IOperationalContext, OperationalContextService>();
         services.AddScoped<IMembershipAuthority, MembershipAuthority>();
 
+        // ── AR / AP ───────────────────────────────────────────────────────
+        services.AddScoped<IArApRepository, ArApRepository>();
+
+        // ── Dashboard KPIs ────────────────────────────────────────────────
+        services.AddScoped<IDashboardKpiReader, DashboardKpiReader>();
+
         // ── MasterData BC ────────────────────────────────────────────────
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
         services.AddScoped<IBusinessPartnerOperationalLinkEnricher, BusinessPartnerOperationalLinkEnricher>();
@@ -145,6 +152,10 @@ public static class DependencyInjection
         services.AddScoped<ISupplierRepository, SupplierRepository>();
         services.AddScoped<IXmlFacturaParser, SriFacturaParser>();
         services.AddScoped<IFileStorage, LocalFileStorage>();
+        services.AddSingleton<ERP.Application.Common.Interfaces.SRI.IElectronicDocumentBuilder,
+            ERP.Infrastructure.Services.Sri.ElectronicDocumentBuilderAdapter>();
+        services.AddSingleton<ERP.Application.Common.Interfaces.SRI.IElectronicDocumentSigner,
+            ERP.Infrastructure.Services.Sri.ElectronicDocumentSignerAdapter>();
 
         // SRI Ecuador — switch Simulado/Real via appsettings.json "Sri:UseRealService"
         // En desarrollo/pruebas: Sri:UseRealService = false (simulado, sin certificado real)
@@ -204,6 +215,7 @@ public static class DependencyInjection
         services.Configure<SaasEntitlementsCacheOptions>(
             configuration.GetSection(SaasEntitlementsCacheOptions.SectionName));
         services.AddScoped<ISubscriberEntitlementsService, SubscriberEntitlementsService>();
+        services.AddScoped<ERP.Application.Platform.Audit.IPlatformAuditLogger, ERP.Infrastructure.Platform.Audit.PlatformAuditLogger>();
         services.AddScoped<CommercialCatalogQuery>();
         services.AddScoped<ICommercialCatalogQuery>(sp => sp.GetRequiredService<CommercialCatalogQuery>());
         services.AddScoped<ISaasPublicPlansQuery>(sp => sp.GetRequiredService<CommercialCatalogQuery>());

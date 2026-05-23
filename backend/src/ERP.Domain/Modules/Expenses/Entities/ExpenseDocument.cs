@@ -7,6 +7,7 @@ namespace ERP.Domain.Modules.Expenses.Entities;
 public sealed class ExpenseDocument : MasterEntity, ISubscriberScopedEntity
 {
     public Guid?              SupplierId        { get; private set; }
+    public Guid?              BusinessPartnerId { get; private set; }
     public ExpenseDocumentType DocType          { get; private set; } = ExpenseDocumentType.Invoice;
     public string?            DocNumber         { get; private set; }
     public string?            AccessKey         { get; private set; }
@@ -32,6 +33,8 @@ public sealed class ExpenseDocument : MasterEntity, ISubscriberScopedEntity
     public ICollection<ExpenseDetail> Details { get; set; } = [];
 
     private ExpenseDocument() { }
+
+    public void SetBusinessPartner(Guid? businessPartnerId) => BusinessPartnerId = businessPartnerId;
 
     /// <summary>Rehidratación desde capa de persistencia / mapper.</summary>
     public static ExpenseDocument Rehydrate() => new();

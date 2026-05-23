@@ -7,6 +7,8 @@ namespace ERP.Domain.Modules.Sales.Entities;
 public sealed class Customer : MasterEntity, ISubscriberScopedEntity, ICompanyOperationalEntity
 {
     public Guid? CompanyId { get; private set; }
+    /// <summary>Vínculo al BusinessPartner unificado (null mientras no se migre el registro).</summary>
+    public Guid? BusinessPartnerId { get; private set; }
     public const int IdentificationTypeMaxLen = 20;
     public const int IdentificationNumberMaxLen = 32;
     public const int LegalNameMaxLen = 200;
@@ -132,6 +134,8 @@ public sealed class Customer : MasterEntity, ISubscriberScopedEntity, ICompanyOp
     {
         return CustomerIdentification.NormalizeNumber(identificationNumber);
     }
+
+    public void LinkBusinessPartner(Guid businessPartnerId) => BusinessPartnerId = businessPartnerId;
 
     private static string? NullIfWhiteSpace(string? s)
     {

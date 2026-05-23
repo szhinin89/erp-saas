@@ -14,6 +14,8 @@ public sealed class Supplier : MasterEntity, ISubscriberScopedEntity
     public const int AddressMaxLen      = 300;
     public const int PaymentTermsMaxLen = 30;
 
+    /// <summary>Vínculo al BusinessPartner unificado (null mientras no se migre el registro).</summary>
+    public Guid?   BusinessPartnerId { get; private set; }
     public string  PersonType      { get; private set; } = null!;
     public string  LegalName       { get; private set; } = null!;
     public string  Ruc             { get; private set; } = null!;
@@ -98,6 +100,8 @@ public sealed class Supplier : MasterEntity, ISubscriberScopedEntity
         CreditLimit    = creditLimit;
         SetUpdated(updatedBy);
     }
+
+    public void LinkBusinessPartner(Guid businessPartnerId) => BusinessPartnerId = businessPartnerId;
 
     private static void ValidateType(string type)
     {

@@ -6,7 +6,7 @@ namespace ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
 
 public enum PurchaseCreationMode { Xml = 1, Manual = 2 }
 
-/// <summary>Datos de una línea de detalle en modo Manual.</summary>
+/// <summary>Datos de una lï¿½nea de detalle en modo Manual.</summary>
 public sealed record PurchaseLineInput(
     string  Description,
     string? ProductCode,
@@ -17,12 +17,12 @@ public sealed record PurchaseLineInput(
     decimal VatPct);
 
 /// <summary>
-/// Distribución de la cantidad de un detalle (<see cref="ItemIndex"/>) hacia una Warehouse.
-/// <see cref="ProductoId"/> opcional: si viene, enlaza inventario aunque la línea (p. ej. XML) no tenga producto.
+/// Distribuciï¿½n de la cantidad de un detalle (<see cref="ItemIndex"/>) hacia una Warehouse.
+/// <see cref="ProductoId"/> opcional: si viene, enlaza inventario aunque la lï¿½nea (p. ej. XML) no tenga producto.
 /// </summary>
 public sealed record WarehouseAllocationRequest(int ItemIndex, Guid    WarehouseId, decimal Quantity, Guid?     ProductId = null);
 
-/// <summary>Crea una factura de compra. <c>WarehouseAllocations</c> es opcional; si viene, la suma por ítem debe igualar la cantidad de cada detalle.</summary>
+/// <summary>Crea una factura de compra. <c>WarehouseAllocations</c> es opcional; si viene, la suma por ï¿½tem debe igualar la cantidad de cada detalle.</summary>
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
 public sealed record CreatePurchaseCommand(
     PurchaseCreationMode Modo,
@@ -39,5 +39,7 @@ public sealed record CreatePurchaseCommand(
     string?   PaymentTerms,
     string? Notes,
     IReadOnlyList<PurchaseLineInput>? Lines,
-    IReadOnlyList<WarehouseAllocationRequest>? WarehouseAllocations
+    IReadOnlyList<WarehouseAllocationRequest>? WarehouseAllocations,
+    /// <summary>Dual-write: FK hacia BusinessPartner unificado. Null para registros no migrados aÃºn.</summary>
+    Guid? BusinessPartnerId = null
 ) : IRequest<Result<PurchBillDto>>, ICompanyScopedRequest;

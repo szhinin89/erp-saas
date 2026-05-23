@@ -13,6 +13,7 @@ public sealed class SupplierConfiguration : IEntityTypeConfiguration<Supplier>
         builder.HasKey(p => p.Id);
         builder.Property(p => p.Id).HasColumnName("id");
         builder.Property(p => p.SubscriberId).HasColumnName("subscriber_id").IsRequired();
+        builder.Property(p => p.BusinessPartnerId).HasColumnName("business_partner_id");
         builder.Property(p => p.PersonType).HasColumnName("person_type").HasMaxLength(10).IsRequired();
         builder.Property(p => p.LegalName).HasColumnName("legal_name").HasMaxLength(Supplier.LegalNameMaxLen).IsRequired();
         builder.Property(p => p.Ruc).HasColumnName("ruc").HasMaxLength(Supplier.RucMaxLen).IsRequired();

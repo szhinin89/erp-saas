@@ -15,6 +15,7 @@ public sealed class PurchaseOrder : AuditableEntity, ISubscriberScopedEntity
     public int       Sequential        { get; private set; }
     public string    OrderNumber       { get; private set; } = null!;
     public Guid      SupplierId        { get; private set; }
+    public Guid?     BusinessPartnerId { get; private set; }
     public DateTime  IssueDate         { get; private set; }
     public DateTime  RequiredDate      { get; private set; }
     public string    Status            { get; private set; } = "Draft";
@@ -62,6 +63,8 @@ public sealed class PurchaseOrder : AuditableEntity, ISubscriberScopedEntity
         o.SetCreated(createdBy);
         return o;
     }
+
+    public void SetBusinessPartner(Guid? businessPartnerId) => BusinessPartnerId = businessPartnerId;
 
     public void AddLine(PurchaseOrderLine line)
     {

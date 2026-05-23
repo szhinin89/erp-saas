@@ -17,6 +17,7 @@ public sealed class PurchBill : AuditableEntity, ISubscriberScopedEntity
     private readonly List<PurchBillLine> _lines = new();
 
     public Guid           SupplierId        { get; private set; }
+    public Guid?          BusinessPartnerId { get; private set; }
     public string         InvoiceNumber     { get; private set; } = null!;
     public string?        AccessKey         { get; private set; }
     public string?        XmlPath           { get; private set; }
@@ -159,6 +160,8 @@ public sealed class PurchBill : AuditableEntity, ISubscriberScopedEntity
         RejectionReason = reason.Trim();
         SetUpdated(userId);
     }
+
+    public void SetBusinessPartner(Guid? businessPartnerId) => BusinessPartnerId = businessPartnerId;
 
     private void RecalculateTotals()
     {

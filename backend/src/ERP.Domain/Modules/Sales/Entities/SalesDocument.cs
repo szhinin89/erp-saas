@@ -47,6 +47,7 @@ public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity, IC
     public string?            RemittanceKey         { get; private set; }
     public string?            GuideDocNum           { get; private set; }
     public Guid?              JournalEntryId        { get; private set; }
+    public Guid?              BusinessPartnerId     { get; private set; }
 
     public Customer?              Cliente     { get; private set; }
     public Warehouse?             Warehouse   { get; private set; }
@@ -172,6 +173,8 @@ public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity, IC
         Status = "Anulado";
         SetUpdated(userId);
     }
+
+    public void SetBusinessPartner(Guid? businessPartnerId) => BusinessPartnerId = businessPartnerId;
 
     public void AddLine(SalesDetail line)
     {

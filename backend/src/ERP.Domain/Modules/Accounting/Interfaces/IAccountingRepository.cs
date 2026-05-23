@@ -50,4 +50,9 @@ public interface IAccountingRepository
             DateTime desde,
             DateTime hasta,
             CancellationToken ct = default);
+
+    // ── Accounting Periods ────────────────────────────────────────────────
+    Task<AccountingPeriod?> GetPeriodAsync(Guid subscriberId, int year, int month, CancellationToken ct = default);
+    Task AddPeriodAsync(AccountingPeriod period, CancellationToken ct = default);
+    Task<IReadOnlyList<AccountingPeriod>> GetPeriodsAsync(Guid subscriberId, CancellationToken ct = default);
 }

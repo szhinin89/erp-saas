@@ -34,12 +34,22 @@ public sealed class CreateJournalEntryCommandHandler : IRequestHandler<CreateJou
         var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
+        // Period-locking check: if a period exists for the entry date and it's closed, reject
+        var period = await _repository.GetPeriodAsync(
+            subscriberId, command.Date.Year, command.Date.Month, ct);
+        if (period is { IsClosed: true })
+            return Result<JournalEntryDto>.Failure(
+                $"El período contable {period.Name} está cerrado. No se pueden registrar asientos en períodos cerrados.");
+
         var entry = JournalEntry.Create(
             subscriberId,
             command.Reference,
             command.Date,
             command.Description,
             userId);
+
+        if (period is not null)
+            entry.SetPeriod(period.Id);
 
         foreach (var accountId in command.Lines.Select(l => l.AccountId).Distinct())
         {

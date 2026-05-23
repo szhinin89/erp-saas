@@ -35,6 +35,7 @@ public sealed class PurchaseDocumentConfiguration : IEntityTypeConfiguration<Pur
         builder.Property(e => e.Notes).HasColumnName("notes").HasMaxLength(1000);
         builder.Property(e => e.XmlPath).HasColumnName("xml_path").HasMaxLength(500);
         builder.Property(e => e.JournalEntryId).HasColumnName("journal_entry_id");
+        builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id");
         builder.Property(e => e.ValidatedBy).HasColumnName("validated_by");
         builder.Property(e => e.ValidatedAt).HasColumnName("validated_at");
         builder.Property(e => e.ApprovedBy).HasColumnName("approved_by");

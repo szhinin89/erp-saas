@@ -12,10 +12,13 @@ public class JournalEntry : DocumentEntity
     public string Reference { get; private set; } = null!;
     public DateTime Date { get; private set; }
     public string Description { get; private set; } = null!;
+    public Guid? AccountingPeriodId { get; private set; }
 
     public IReadOnlyList<JournalEntryLine> Lines => _lines.AsReadOnly();
 
     private JournalEntry() { }
+
+    public void SetPeriod(Guid accountingPeriodId) => AccountingPeriodId = accountingPeriodId;
 
     public static JournalEntry Create(
         Guid subscriberId,

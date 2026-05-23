@@ -48,7 +48,8 @@ export function CrearCompraPage() {
 
   const suppliersState = useCompanyScopedAsync(() => businessPartnerFacade.searchSuppliersForPicker());
 
-  const [supplierId,    setSupplierId]    = useState('');
+  const [supplierId,          setSupplierId]          = useState('');
+  const [businessPartnerId,   setBusinessPartnerId]   = useState<string | null>(null);
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDate,   setInvoiceDate]   = useState(TODAY);
   const [dueDate,       setDueDate]       = useState('');
@@ -93,6 +94,7 @@ export function CrearCompraPage() {
     try {
       await comprasService.crearManual({
         supplierId,
+        businessPartnerId,
         invoiceNumber: invoiceNumber.trim(),
         invoiceDate,
         dueDate: dueDate || null,
@@ -141,7 +143,13 @@ export function CrearCompraPage() {
               <select
                 className="zh-input"
                 value={supplierId}
-                onChange={(e) => setSupplierId(e.target.value)}
+                onChange={(e) => {
+                  const selected = (suppliersState.data ?? []).find(
+                    (s) => (s.pickerMeta.legacyOperationalId ?? '') === e.target.value
+                  );
+                  setSupplierId(e.target.value);
+                  setBusinessPartnerId(selected?.pickerMeta.businessPartnerId ?? null);
+                }}
                 disabled={suppliersState.loading}
               >
                 <option value="">-- Seleccionar proveedor --</option>

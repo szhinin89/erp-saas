@@ -18,6 +18,7 @@ public class JournalEntryConfiguration : IEntityTypeConfiguration<JournalEntry>
         builder.Property(e => e.Date).HasColumnName("date").IsRequired();
         builder.Property(e => e.Description).HasColumnName("description").HasMaxLength(500);
         builder.Property(e => e.Status).HasColumnName("is_posted").IsRequired();
+        builder.Property(e => e.AccountingPeriodId).HasColumnName("accounting_period_id");
         builder.Property(e => e.CreatedAt).HasColumnName("created_at");
         builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
         builder.Property(e => e.CreatedBy).HasColumnName("created_by");

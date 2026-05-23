@@ -13,6 +13,7 @@ public sealed class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(x => x.CompanyId).HasColumnName("company_id");
+        builder.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id");
 
         builder.Property(x => x.IdentificationType)
             .HasColumnName("identification_type")

@@ -29,10 +29,11 @@ export function CreateInvoicePage() {
   const navigate  = useNavigate();
   const canCreate = canShow('sales.invoices.create');
 
-  const [customerId,    setCustomerId]    = useState('');
-  const [customerRuc,   setCustomerRuc]   = useState('');
-  const [customerAddr,  setCustomerAddr]  = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerId,        setCustomerId]        = useState('');
+  const [businessPartnerId, setBusinessPartnerId] = useState<string | null>(null);
+  const [customerRuc,       setCustomerRuc]       = useState('');
+  const [customerAddr,      setCustomerAddr]      = useState('');
+  const [customerEmail,     setCustomerEmail]     = useState('');
   const [warehouseId,   setWarehouseId]   = useState('');
   const [issueDate,     setIssueDate]     = useState(TODAY);
   const [currency,      setCurrency]      = useState('USD');
@@ -50,6 +51,7 @@ export function CreateInvoicePage() {
 
   useEffect(() => {
     setCustomerId('');
+    setBusinessPartnerId(null);
     setCustomerRuc('');
     setCustomerAddr('');
     setCustomerEmail('');
@@ -79,6 +81,7 @@ export function CreateInvoicePage() {
     const c = (clientsState.data ?? []).find((x) => x.id === id);
     if (!c || !c.pickerMeta.selectable || !c.pickerMeta.legacyOperationalId) return;
     setCustomerId(c.pickerMeta.legacyOperationalId);
+    setBusinessPartnerId(c.pickerMeta.businessPartnerId ?? null);
     setCustomerRuc(c.identificationNumber);
     setCustomerAddr(c.address ?? '');
     setCustomerEmail(c.email ?? '');
@@ -110,6 +113,7 @@ export function CreateInvoicePage() {
     try {
       const id = await ventasFacturasService.create({
         customerId,
+        businessPartnerId,
         warehouseId,
         branchId: warehouse.branchId,
         items: validLines
@@ -141,7 +145,7 @@ export function CreateInvoicePage() {
         const validLines = lines.filter((l) => l.description.trim() && l.quantity > 0 && l.productId);
         if (validLines.length === 0) { setError('Agregue al menos un ítem con producto seleccionado.'); setSaving(false); return; }
         id = await ventasFacturasService.create({
-          customerId, warehouseId,
+          customerId, businessPartnerId, warehouseId,
           branchId: warehouse.branchId,
           items: validLines.map((l) => ({ productId: l.productId!, quantity: l.quantity, unitPrice: l.unitPrice })),
         });

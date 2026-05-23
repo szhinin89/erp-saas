@@ -22,6 +22,7 @@ public sealed class CurrentStockConfiguration : IEntityTypeConfiguration<Current
         builder.Ignore(s => s.AverageCost);
         builder.Property(s => s.TotalStockValue).HasColumnName("total_stock_value").HasPrecision(18, 6).IsRequired();
         builder.Property(s => s.LastUpdatedAt).HasColumnName("last_updated_at").IsRequired();
+        builder.Property(s => s.RowVersion).HasColumnName("xmin").HasColumnType("xid").IsRowVersion();
         builder.Property(s => s.CreatedAt).HasColumnName("created_at");
         builder.Property(s => s.UpdatedAt).HasColumnName("updated_at");
         builder.Property(s => s.CreatedBy).HasColumnName("created_by");

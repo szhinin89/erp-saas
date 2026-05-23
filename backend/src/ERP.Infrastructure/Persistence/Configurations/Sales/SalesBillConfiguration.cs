@@ -38,6 +38,7 @@ public sealed class SalesBillConfiguration : IEntityTypeConfiguration<SalesBill>
         builder.Property(e => e.AuthDate).HasColumnName("auth_date");
         builder.Property(e => e.ErrorMessage).HasColumnName("error_message").HasMaxLength(SalesBill.ErrorMaxLen);
         builder.Property(e => e.JournalEntryId).HasColumnName("journal_entry_id");
+        builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id");
         builder.Property(e => e.CreatedAt).HasColumnName("created_at");
         builder.Property(e => e.UpdatedAt).HasColumnName("updated_at");
         builder.Property(e => e.CreatedBy).HasColumnName("created_by");

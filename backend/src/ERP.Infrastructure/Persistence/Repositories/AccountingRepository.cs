@@ -218,4 +218,19 @@ public class AccountingRepository : IAccountingRepository
             .Select(g => (g.Key, g.Sum(x => x.Debit), g.Sum(x => x.Credit)))
             .ToList();
     }
+
+    public async Task<AccountingPeriod?> GetPeriodAsync(
+        Guid subscriberId, int year, int month, CancellationToken ct = default)
+        => await _context.AccountingPeriods
+            .FirstOrDefaultAsync(p => p.SubscriberId == subscriberId && p.Year == year && p.Month == month, ct);
+
+    public async Task AddPeriodAsync(AccountingPeriod period, CancellationToken ct = default)
+        => await _context.AccountingPeriods.AddAsync(period, ct);
+
+    public async Task<IReadOnlyList<AccountingPeriod>> GetPeriodsAsync(
+        Guid subscriberId, CancellationToken ct = default)
+        => await _context.AccountingPeriods
+            .Where(p => p.SubscriberId == subscriberId)
+            .OrderByDescending(p => p.Year).ThenByDescending(p => p.Month)
+            .ToListAsync(ct);
 }

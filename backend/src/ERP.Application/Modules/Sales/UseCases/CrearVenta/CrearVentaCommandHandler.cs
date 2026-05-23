@@ -331,6 +331,9 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             companyId:         companyId
         );
 
+        if (command.BusinessPartnerId.HasValue)
+            factura.SetBusinessPartner(command.BusinessPartnerId);
+
         foreach (var detalle in detalles)
         {
             detalle.AssignBillId(factura.Id);

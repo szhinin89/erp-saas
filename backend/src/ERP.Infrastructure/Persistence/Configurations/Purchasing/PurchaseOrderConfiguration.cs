@@ -16,6 +16,7 @@ public sealed class PurchaseOrderConfiguration : IEntityTypeConfiguration<Purcha
         builder.Property(e => e.Sequential).HasColumnName("sequential").IsRequired();
         builder.Property(e => e.OrderNumber).HasColumnName("order_number").HasMaxLength(PurchaseOrder.NumberMaxLen).IsRequired();
         builder.Property(e => e.SupplierId).HasColumnName("supplier_id").IsRequired();
+        builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id");
         builder.Property(e => e.IssueDate).HasColumnName("issue_date").IsRequired();
         builder.Property(e => e.RequiredDate).HasColumnName("required_date").IsRequired();
         builder.Property(e => e.Status).HasColumnName("status").HasMaxLength(PurchaseOrder.StatusMaxLen).IsRequired();

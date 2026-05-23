@@ -5,6 +5,7 @@ export interface VentasFacturaDto {
   id: string;
   clienteId: string;
   clienteNombre: string;
+  businessPartnerId?: string | null;
   bodegaId: string;
   sucursalId: string;
   establecimiento: string;
@@ -41,6 +42,7 @@ export interface CreateSaleRequest {
   warehouseId: string;
   branchId: string;
   items: CreateSaleItemDto[];
+  businessPartnerId?: string | null;
 }
 
 export interface StockDisponibleDto {

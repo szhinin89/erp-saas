@@ -31,6 +31,7 @@ using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.Auxiliary.Entities;
 using ERP.Application.Common;
 using ERP.Domain.MasterData.Entities;
+using ERP.Domain.Platform.Audit.Entities;
 
 namespace ERP.Infrastructure.Persistence;
 
@@ -328,6 +329,7 @@ public class ErpDbContext : DbContext
 
     // ── Inventory ─────────────────────────────────────────────────────────
     public DbSet<CurrentStock>        CurrentStocks        => Set<CurrentStock>();
+    public DbSet<StockReservation>    StockReservations    => Set<StockReservation>();
     public DbSet<StockMovement>       StockMovements       => Set<StockMovement>();
     public DbSet<KardexSnapshot>      KardexSnapshots      => Set<KardexSnapshot>();
     public DbSet<KardexReport>        KardexReports        => Set<KardexReport>();
@@ -416,6 +418,17 @@ public class ErpDbContext : DbContext
     // Durable log of every domain event. No tenant filter — all subscribers.
     // Background processor marks events as processed; future: forwards to external bus.
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
+
+    // ── Accounting Periods ────────────────────────────────────────────────
+    public DbSet<AccountingPeriod> AccountingPeriods => Set<AccountingPeriod>();
+
+    // ── AR / AP ───────────────────────────────────────────────────────────
+    public DbSet<AccountsReceivableEntry> ArEntries           => Set<AccountsReceivableEntry>();
+    public DbSet<AccountsPayableEntry>    ApEntries           => Set<AccountsPayableEntry>();
+    public DbSet<PaymentApplication>      PaymentApplications => Set<PaymentApplication>();
+
+    // ── Platform Audit (global, no tenant filter) ──────────────────────────
+    public DbSet<PlatformAuditLog> PlatformAuditLogs => Set<PlatformAuditLog>();
 
     /// <summary>
     /// Evaluada en cada query, no al compilar el modelo.

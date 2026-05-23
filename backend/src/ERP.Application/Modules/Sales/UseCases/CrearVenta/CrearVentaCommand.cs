@@ -15,7 +15,9 @@ public record CreateSaleCommand(
     /// <summary>Plazo en días (0 = contado).</summary>
     short            PaymentDays       = 0,
     /// <summary>Observaciones libres que se emiten en &lt;infoAdicional&gt; del XML SRI.</summary>
-    string?          Notes             = null
+    string?          Notes             = null,
+    /// <summary>Dual-write: FK hacia BusinessPartner unificado. Null para registros no migrados aún.</summary>
+    Guid?            BusinessPartnerId = null
 ) : IRequest<Result<Guid>>, ICompanyScopedRequest;
 
 public record SaleItemDto(
