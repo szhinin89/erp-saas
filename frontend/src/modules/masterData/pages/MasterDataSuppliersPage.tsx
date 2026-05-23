@@ -22,13 +22,14 @@ export function MasterDataSuppliersPage() {
       subtitle="Fuente canónica BusinessPartner + SupplierProfile. CRUD operacional legacy sigue en Compras → Proveedores."
       action={
         page.canCreate ? (
-          <ZHBtn variant="primary" onClick={() => page.setModalOpen(true)}>
+          <ZHBtn variant="primary" onClick={page.openCreate}>
             Nuevo proveedor MD
           </ZHBtn>
         ) : undefined
       }
     >
-      {page.error && <ZHPageNotice variant="error" message="Error" detail={page.error} />}
+      {page.listError   && <ZHPageNotice variant="error" message="Error al cargar"    detail={page.listError}   />}
+      {page.inlineError && <ZHPageNotice variant="error" message="Error en la acción" detail={page.inlineError} />}
 
       <div className="md-page-toolbar">
         <ZHField label="Buscar">
@@ -62,14 +63,10 @@ export function MasterDataSuppliersPage() {
           </thead>
           <tbody>
             {page.loading && (
-              <tr>
-                <td colSpan={5}>Cargando…</td>
-              </tr>
+              <tr><td colSpan={5}>Cargando…</td></tr>
             )}
             {!page.loading && page.suppliers.length === 0 && (
-              <tr>
-                <td colSpan={5}>Sin registros.</td>
-              </tr>
+              <tr><td colSpan={5}>Sin registros.</td></tr>
             )}
             {page.suppliers.map((bp) => (
               <tr key={bp.id}>
@@ -90,7 +87,7 @@ export function MasterDataSuppliersPage() {
                     </ZHBtn>
                   )}
                   {page.canUpdate && bp.isSupplier && (
-                    <ZHBtn variant="ghost" size="sm" onClick={() => page.setSupplierProfileBp(bp)}>
+                    <ZHBtn variant="ghost" size="sm" onClick={() => page.openSupplierProfile(bp)}>
                       SRI
                     </ZHBtn>
                   )}
@@ -134,8 +131,9 @@ export function MasterDataSuppliersPage() {
         <MasterDataBpFormModal
           title="Nuevo BusinessPartner (proveedor)"
           saving={page.saving}
+          error={page.modalError}
           defaultAsSupplier
-          onClose={() => page.setModalOpen(false)}
+          onClose={page.closeCreate}
           onSubmit={(body) => void page.createSupplier(body)}
         />
       )}
@@ -145,15 +143,16 @@ export function MasterDataSuppliersPage() {
           mode="edit"
           title="Editar BusinessPartner"
           saving={page.saving}
+          error={page.modalError}
           initialValues={{
-            identificationType: page.editBp.identificationType,
+            identificationType:   page.editBp.identificationType,
             identificationNumber: page.editBp.identificationNumber,
-            legalName: page.editBp.legalName,
-            tradeName: page.editBp.tradeName,
-            email: page.editBp.email,
-            phone: page.editBp.phone,
+            legalName:            page.editBp.legalName,
+            tradeName:            page.editBp.tradeName,
+            email:                page.editBp.email,
+            phone:                page.editBp.phone,
           }}
-          onClose={() => page.setEditBp(null)}
+          onClose={page.closeEdit}
           onUpdate={(body) => void page.updateSupplier(page.editBp!.id, body)}
         />
       )}
@@ -163,7 +162,8 @@ export function MasterDataSuppliersPage() {
           partner={page.settingsBp}
           initialSettings={page.settingsData}
           saving={page.saving}
-          onClose={() => page.setSettingsBp(null)}
+          error={page.modalError}
+          onClose={page.closeSettings}
           onSave={(payload) => void page.saveCompanySettings(page.settingsBp!.id, payload)}
         />
       )}
@@ -172,7 +172,8 @@ export function MasterDataSuppliersPage() {
         <MasterDataSupplierProfileModal
           partner={page.supplierProfileBp}
           saving={page.saving}
-          onClose={() => page.setSupplierProfileBp(null)}
+          error={page.modalError}
+          onClose={page.closeSupplierProfile}
           onSave={(body) => void page.saveSupplierProfile(page.supplierProfileBp!.id, body)}
         />
       )}

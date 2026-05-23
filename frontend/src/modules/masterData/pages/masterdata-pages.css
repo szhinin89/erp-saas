@@ -97,6 +97,28 @@
   margin-top: 1rem;
 }
 
+.md-modal-notice {
+  margin-bottom: 0.75rem;
+}
+
+.md-modal--wide {
+  max-width: 680px;
+}
+
+.md-notes-textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.md-notes-counter {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--zh-muted, #6b7280);
+  text-align: right;
+}
+
 .vf-create-client-option--disabled {
   opacity: 0.55;
   cursor: not-allowed;

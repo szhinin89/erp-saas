@@ -5,6 +5,7 @@ import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { useMasterDataCustomersPage } from './useMasterDataCustomersPage';
 import { MasterDataBpFormModal } from './MasterDataBpFormModal';
 import { MasterDataCompanySettingsModal } from './MasterDataCompanySettingsModal';
+import { MasterDataCustomerNotesModal } from './MasterDataCustomerNotesModal';
 import './masterdata-pages.css';
 
 export function MasterDataCustomersPage() {
@@ -27,7 +28,9 @@ export function MasterDataCustomersPage() {
         ) : undefined
       }
     >
-      {page.error && <ZHPageNotice variant="error" message="Error" detail={page.error} />}
+      {/* Errores de carga de lista y acciones inline (disable/activate) */}
+      {page.listError   && <ZHPageNotice variant="error" message="Error al cargar"   detail={page.listError}   />}
+      {page.inlineError && <ZHPageNotice variant="error" message="Error en la acción" detail={page.inlineError} />}
 
       <div className="md-page-toolbar">
         <ZHField label="Buscar">
@@ -61,14 +64,10 @@ export function MasterDataCustomersPage() {
           </thead>
           <tbody>
             {page.loading && (
-              <tr>
-                <td colSpan={5}>Cargando…</td>
-              </tr>
+              <tr><td colSpan={5}>Cargando…</td></tr>
             )}
             {!page.loading && page.customers.length === 0 && (
-              <tr>
-                <td colSpan={5}>Sin registros.</td>
-              </tr>
+              <tr><td colSpan={5}>Sin registros.</td></tr>
             )}
             {page.customers.map((bp) => (
               <tr key={bp.id}>
@@ -88,6 +87,11 @@ export function MasterDataCustomersPage() {
                   {page.canUpdate && (
                     <ZHBtn variant="ghost" size="sm" onClick={() => page.openEdit(bp)}>
                       Editar
+                    </ZHBtn>
+                  )}
+                  {page.canUpdate && (
+                    <ZHBtn variant="ghost" size="sm" onClick={() => page.openNotes(bp)}>
+                      Notas
                     </ZHBtn>
                   )}
                   {page.canConfigure && (
@@ -130,8 +134,9 @@ export function MasterDataCustomersPage() {
         <MasterDataBpFormModal
           title="Nuevo BusinessPartner (cliente)"
           saving={page.saving}
+          error={page.modalError}
           defaultAsCustomer
-          onClose={() => page.setModalOpen(false)}
+          onClose={page.closeCreate}
           onSubmit={(body) => void page.createCustomer(body)}
         />
       )}
@@ -141,16 +146,27 @@ export function MasterDataCustomersPage() {
           mode="edit"
           title="Editar BusinessPartner"
           saving={page.saving}
+          error={page.modalError}
           initialValues={{
-            identificationType: page.editBp.identificationType,
+            identificationType:   page.editBp.identificationType,
             identificationNumber: page.editBp.identificationNumber,
-            legalName: page.editBp.legalName,
-            tradeName: page.editBp.tradeName,
-            email: page.editBp.email,
-            phone: page.editBp.phone,
+            legalName:            page.editBp.legalName,
+            tradeName:            page.editBp.tradeName,
+            email:                page.editBp.email,
+            phone:                page.editBp.phone,
           }}
-          onClose={() => page.setEditBp(null)}
+          onClose={page.closeEdit}
           onUpdate={(body) => void page.updateCustomer(page.editBp!.id, body)}
+        />
+      )}
+
+      {page.notesBp && (
+        <MasterDataCustomerNotesModal
+          partner={page.notesBp}
+          saving={page.saving}
+          error={page.modalError}
+          onClose={page.closeNotes}
+          onSave={(notes) => void page.saveNotes(page.notesBp!.id, notes)}
         />
       )}
 
@@ -159,6 +175,7 @@ export function MasterDataCustomersPage() {
           partner={page.settingsBp}
           initialSettings={page.settingsData}
           saving={page.saving}
+          error={page.modalError}
           onClose={page.closeSettings}
           onSave={(payload) => void page.saveCompanySettings(page.settingsBp!.id, payload)}
         />

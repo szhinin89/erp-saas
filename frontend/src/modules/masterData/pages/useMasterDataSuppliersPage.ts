@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useCompanyScopedAsync } from '../../../hooks/useCompanyScopedAsync';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
 import { businessPartnerFacade } from '../api/businessPartnerFacade';
@@ -13,21 +13,24 @@ import { formatApiError } from '../../lib/formatApiError';
 
 export function useMasterDataSuppliersPage() {
   const { canShow } = usePermissionsUi();
-  const canView = canShow('masterdata.businesspartners.view');
-  const canCreate = canShow('masterdata.businesspartners.create');
-  const canUpdate = canShow('masterdata.businesspartners.update');
-  const canDisable = canShow('masterdata.businesspartners.disable');
+  const canView      = canShow('masterdata.businesspartners.view');
+  const canCreate    = canShow('masterdata.businesspartners.create');
+  const canUpdate    = canShow('masterdata.businesspartners.update');
+  const canDisable   = canShow('masterdata.businesspartners.disable');
   const canConfigure = canShow('masterdata.businesspartners.configure-company');
 
-  const [search, setSearch] = useState('');
-  const [showInactive, setShowInactive] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editBp, setEditBp] = useState<BusinessPartnerDto | null>(null);
-  const [settingsBp, setSettingsBp] = useState<BusinessPartnerDto | null>(null);
-  const [settingsData, setSettingsData] = useState<CompanyBpSettingsDto | null>(null);
-  const [supplierProfileBp, setSupplierProfileBp] = useState<BusinessPartnerDto | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [search, setSearch]                         = useState('');
+  const [showInactive, setShowInactive]             = useState(false);
+  const [modalOpen, setModalOpen]                   = useState(false);
+  const [editBp, setEditBp]                         = useState<BusinessPartnerDto | null>(null);
+  const [settingsBp, setSettingsBp]                 = useState<BusinessPartnerDto | null>(null);
+  const [settingsData, setSettingsData]             = useState<CompanyBpSettingsDto | null>(null);
+  const [supplierProfileBp, setSupplierProfileBp]   = useState<BusinessPartnerDto | null>(null);
+  const [saving, setSaving]                         = useState(false);
+
+  const [listError, setListError]     = useState<string | null>(null);
+  const [inlineError, setInlineError] = useState<string | null>(null);
+  const [modalError, setModalError]   = useState<string | null>(null);
 
   const listState = useCompanyScopedAsync(
     () =>
@@ -46,13 +49,33 @@ export function useMasterDataSuppliersPage() {
     [listState.data],
   );
 
+  const clearModalError = () => setModalError(null);
+
+  const openCreate = () => {
+    clearModalError();
+    setInlineError(null);
+    setModalOpen(true);
+  };
+
+  const closeCreate = useCallback(() => {
+    setModalOpen(false);
+    clearModalError();
+  }, []);
+
   const openEdit = (bp: BusinessPartnerDto) => {
-    setActionError(null);
+    clearModalError();
+    setInlineError(null);
     setEditBp(bp);
   };
 
+  const closeEdit = useCallback(() => {
+    setEditBp(null);
+    clearModalError();
+  }, []);
+
   const openSettings = async (bp: BusinessPartnerDto) => {
-    setActionError(null);
+    clearModalError();
+    setInlineError(null);
     setSettingsBp(bp);
     try {
       const data = await businessPartnerFacade.getCompanySettings(bp.id);
@@ -62,15 +85,32 @@ export function useMasterDataSuppliersPage() {
     }
   };
 
+  const closeSettings = useCallback(() => {
+    setSettingsBp(null);
+    setSettingsData(null);
+    clearModalError();
+  }, []);
+
+  const openSupplierProfile = (bp: BusinessPartnerDto) => {
+    clearModalError();
+    setInlineError(null);
+    setSupplierProfileBp(bp);
+  };
+
+  const closeSupplierProfile = useCallback(() => {
+    setSupplierProfileBp(null);
+    clearModalError();
+  }, []);
+
   const createSupplier = async (body: CreateBusinessPartnerBody) => {
     setSaving(true);
-    setActionError(null);
+    clearModalError();
     try {
       await businessPartnerFacade.createBusinessPartner({ ...body, asCustomer: false, asSupplier: true });
       setModalOpen(false);
       listState.refetch();
     } catch (err) {
-      setActionError(formatApiError(err));
+      setModalError(formatApiError(err));
     } finally {
       setSaving(false);
     }
@@ -78,13 +118,13 @@ export function useMasterDataSuppliersPage() {
 
   const updateSupplier = async (id: string, body: UpdateBusinessPartnerBody) => {
     setSaving(true);
-    setActionError(null);
+    clearModalError();
     try {
       await businessPartnerFacade.updateBusinessPartner(id, body);
       setEditBp(null);
       listState.refetch();
     } catch (err) {
-      setActionError(formatApiError(err));
+      setModalError(formatApiError(err));
     } finally {
       setSaving(false);
     }
@@ -92,12 +132,12 @@ export function useMasterDataSuppliersPage() {
 
   const disableSupplier = async (id: string) => {
     setSaving(true);
-    setActionError(null);
+    setInlineError(null);
     try {
       await businessPartnerFacade.disableBusinessPartner(id);
       listState.refetch();
     } catch (err) {
-      setActionError(formatApiError(err));
+      setInlineError(formatApiError(err));
     } finally {
       setSaving(false);
     }
@@ -105,12 +145,12 @@ export function useMasterDataSuppliersPage() {
 
   const activateSupplier = async (id: string) => {
     setSaving(true);
-    setActionError(null);
+    setInlineError(null);
     try {
       await businessPartnerFacade.activateBusinessPartner(id);
       listState.refetch();
     } catch (err) {
-      setActionError(formatApiError(err));
+      setInlineError(formatApiError(err));
     } finally {
       setSaving(false);
     }
@@ -121,13 +161,14 @@ export function useMasterDataSuppliersPage() {
     payload: { creditLimit?: number | null; paymentDays: number; isBlocked: boolean },
   ) => {
     setSaving(true);
-    setActionError(null);
+    clearModalError();
     try {
       await businessPartnerFacade.upsertCompanySettings(id, payload);
       setSettingsBp(null);
       setSettingsData(null);
+      listState.refetch();
     } catch (err) {
-      setActionError(formatApiError(err));
+      setModalError(formatApiError(err));
     } finally {
       setSaving(false);
     }
@@ -135,12 +176,13 @@ export function useMasterDataSuppliersPage() {
 
   const saveSupplierProfile = async (id: string, body: UpdateSupplierProfileBody) => {
     setSaving(true);
-    setActionError(null);
+    clearModalError();
     try {
       await businessPartnerFacade.updateSupplierProfile(id, body);
       setSupplierProfileBp(null);
+      listState.refetch();
     } catch (err) {
-      setActionError(formatApiError(err));
+      setModalError(formatApiError(err));
     } finally {
       setSaving(false);
     }
@@ -157,13 +199,16 @@ export function useMasterDataSuppliersPage() {
     showInactive,
     setShowInactive,
     suppliers,
-    loading: listState.loading,
-    error: listState.error ?? actionError,
+    loading:     listState.loading,
+    listError:   listState.error ?? listError,
+    inlineError,
+    modalError,
     modalOpen,
-    setModalOpen,
+    openCreate,
+    closeCreate,
     editBp,
-    setEditBp,
     openEdit,
+    closeEdit,
     createSupplier,
     updateSupplier,
     disableSupplier,
@@ -171,10 +216,11 @@ export function useMasterDataSuppliersPage() {
     settingsBp,
     settingsData,
     openSettings,
-    setSettingsBp,
-    saveCompanySettings,
+    closeSettings,
     supplierProfileBp,
-    setSupplierProfileBp,
+    openSupplierProfile,
+    closeSupplierProfile,
+    saveCompanySettings,
     saveSupplierProfile,
     saving,
   };

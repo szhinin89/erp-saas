@@ -16,10 +16,19 @@ public sealed record BusinessPartnerDto(
     bool    IsCustomer,
     bool    IsSupplier,
     DateTime CreatedAt,
-    Guid?   CustomerProfileId = null,
-    Guid?   SupplierProfileId = null,
-    Guid?   LegacyCustomerId  = null,
-    Guid?   LegacySupplierId  = null)
+    // Profile IDs
+    Guid?   CustomerProfileId              = null,
+    Guid?   SupplierProfileId              = null,
+    // Legacy operational links
+    Guid?   LegacyCustomerId              = null,
+    Guid?   LegacySupplierId              = null,
+    // Customer profile data
+    string? CustomerNotes                  = null,
+    // Supplier profile SRI defaults
+    string? DefaultTaxSupportCode          = null,
+    string? DefaultRetentionVatCode        = null,
+    string? DefaultRetentionIncomeCode     = null,
+    string? SupplierPaymentTerms           = null)
 {
     public static BusinessPartnerDto From(BusinessPartner bp) => new(
         bp.Id,

@@ -14,6 +14,13 @@ export type BusinessPartnerDto = {
   supplierProfileId?: string | null;
   legacyCustomerId?: string | null;
   legacySupplierId?: string | null;
+  // Customer profile data
+  customerNotes?: string | null;
+  // Supplier SRI defaults
+  defaultTaxSupportCode?: string | null;
+  defaultRetentionVatCode?: string | null;
+  defaultRetentionIncomeCode?: string | null;
+  supplierPaymentTerms?: string | null;
 };
 
 export type SearchBusinessPartnersParams = {
@@ -92,4 +99,16 @@ export type BusinessPartnerApiRow = {
   LegacyCustomerId?: string | null;
   legacySupplierId?: string | null;
   LegacySupplierId?: string | null;
+  // Customer profile data
+  customerNotes?: string | null;
+  CustomerNotes?: string | null;
+  // Supplier SRI defaults
+  defaultTaxSupportCode?: string | null;
+  DefaultTaxSupportCode?: string | null;
+  defaultRetentionVatCode?: string | null;
+  DefaultRetentionVatCode?: string | null;
+  defaultRetentionIncomeCode?: string | null;
+  DefaultRetentionIncomeCode?: string | null;
+  supplierPaymentTerms?: string | null;
+  SupplierPaymentTerms?: string | null;
 };

@@ -12,20 +12,27 @@ import { formatApiError } from '../../lib/formatApiError';
 
 export function useMasterDataCustomersPage() {
   const { canShow } = usePermissionsUi();
-  const canView = canShow('masterdata.businesspartners.view');
-  const canCreate = canShow('masterdata.businesspartners.create');
-  const canUpdate = canShow('masterdata.businesspartners.update');
-  const canDisable = canShow('masterdata.businesspartners.disable');
+  const canView      = canShow('masterdata.businesspartners.view');
+  const canCreate    = canShow('masterdata.businesspartners.create');
+  const canUpdate    = canShow('masterdata.businesspartners.update');
+  const canDisable   = canShow('masterdata.businesspartners.disable');
   const canConfigure = canShow('masterdata.businesspartners.configure-company');
 
-  const [search, setSearch] = useState('');
+  const [search, setSearch]             = useState('');
   const [showInactive, setShowInactive] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editBp, setEditBp] = useState<BusinessPartnerDto | null>(null);
-  const [settingsBp, setSettingsBp] = useState<BusinessPartnerDto | null>(null);
+  const [modalOpen, setModalOpen]       = useState(false);
+  const [editBp, setEditBp]             = useState<BusinessPartnerDto | null>(null);
+  const [settingsBp, setSettingsBp]     = useState<BusinessPartnerDto | null>(null);
   const [settingsData, setSettingsData] = useState<CompanyBpSettingsDto | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [saving, setSaving]             = useState(false);
+  const [notesBp, setNotesBp]           = useState<BusinessPartnerDto | null>(null);
+
+  // Errores de carga de lista — banner en la página
+  const [listError, setListError]   = useState<string | null>(null);
+  // Errores de acciones inline (disable/activate) — banner en la página
+  const [inlineError, setInlineError] = useState<string | null>(null);
+  // Errores de guardado en modal — banner DENTRO del modal activo
+  const [modalError, setModalError] = useState<string | null>(null);
 
   const listState = useCompanyScopedAsync(
     () =>
@@ -44,18 +51,23 @@ export function useMasterDataCustomersPage() {
     [listState.data],
   );
 
+  const clearModalError = () => setModalError(null);
+
   const openCreate = () => {
-    setActionError(null);
+    clearModalError();
+    setInlineError(null);
     setModalOpen(true);
   };
 
   const openEdit = (bp: BusinessPartnerDto) => {
-    setActionError(null);
+    clearModalError();
+    setInlineError(null);
     setEditBp(bp);
   };
 
   const openSettings = async (bp: BusinessPartnerDto) => {
-    setActionError(null);
+    clearModalError();
+    setInlineError(null);
     setSettingsBp(bp);
     try {
       const data = await businessPartnerFacade.getCompanySettings(bp.id);
@@ -67,13 +79,13 @@ export function useMasterDataCustomersPage() {
 
   const createCustomer = async (body: CreateBusinessPartnerBody) => {
     setSaving(true);
-    setActionError(null);
+    clearModalError();
     try {
       await businessPartnerFacade.createBusinessPartner({ ...body, asCustomer: true, asSupplier: false });
       setModalOpen(false);
       listState.refetch();
     } catch (err) {
-      setActionError(formatApiError(err));
+      setModalError(formatApiError(err));
     } finally {
       setSaving(false);
     }
@@ -81,26 +93,27 @@ export function useMasterDataCustomersPage() {
 
   const updateCustomer = async (id: string, body: UpdateBusinessPartnerBody) => {
     setSaving(true);
-    setActionError(null);
+    clearModalError();
     try {
       await businessPartnerFacade.updateBusinessPartner(id, body);
       setEditBp(null);
       listState.refetch();
     } catch (err) {
-      setActionError(formatApiError(err));
+      setModalError(formatApiError(err));
     } finally {
       setSaving(false);
     }
   };
 
+  // Acciones inline — sin modal: error va al banner de página
   const disableCustomer = async (id: string) => {
     setSaving(true);
-    setActionError(null);
+    setInlineError(null);
     try {
       await businessPartnerFacade.disableBusinessPartner(id);
       listState.refetch();
     } catch (err) {
-      setActionError(formatApiError(err));
+      setInlineError(formatApiError(err));
     } finally {
       setSaving(false);
     }
@@ -108,12 +121,12 @@ export function useMasterDataCustomersPage() {
 
   const activateCustomer = async (id: string) => {
     setSaving(true);
-    setActionError(null);
+    setInlineError(null);
     try {
       await businessPartnerFacade.activateBusinessPartner(id);
       listState.refetch();
     } catch (err) {
-      setActionError(formatApiError(err));
+      setInlineError(formatApiError(err));
     } finally {
       setSaving(false);
     }
@@ -124,13 +137,39 @@ export function useMasterDataCustomersPage() {
     payload: { creditLimit?: number | null; paymentDays: number; isBlocked: boolean },
   ) => {
     setSaving(true);
-    setActionError(null);
+    clearModalError();
     try {
       await businessPartnerFacade.upsertCompanySettings(id, payload);
       setSettingsBp(null);
       setSettingsData(null);
+      listState.refetch();
     } catch (err) {
-      setActionError(formatApiError(err));
+      setModalError(formatApiError(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openNotes = (bp: BusinessPartnerDto) => {
+    clearModalError();
+    setInlineError(null);
+    setNotesBp(bp);
+  };
+
+  const closeNotes = useCallback(() => {
+    setNotesBp(null);
+    clearModalError();
+  }, []);
+
+  const saveNotes = async (id: string, notes: string | null) => {
+    setSaving(true);
+    clearModalError();
+    try {
+      await businessPartnerFacade.updateCustomerNotes(id, notes);
+      setNotesBp(null);
+      listState.refetch();
+    } catch (err) {
+      setModalError(formatApiError(err));
     } finally {
       setSaving(false);
     }
@@ -139,6 +178,17 @@ export function useMasterDataCustomersPage() {
   const closeSettings = useCallback(() => {
     setSettingsBp(null);
     setSettingsData(null);
+    clearModalError();
+  }, []);
+
+  const closeCreate = useCallback(() => {
+    setModalOpen(false);
+    clearModalError();
+  }, []);
+
+  const closeEdit = useCallback(() => {
+    setEditBp(null);
+    clearModalError();
   }, []);
 
   return {
@@ -152,13 +202,15 @@ export function useMasterDataCustomersPage() {
     showInactive,
     setShowInactive,
     customers,
-    loading: listState.loading,
-    error: listState.error ?? actionError,
+    loading:     listState.loading,
+    listError:   listState.error ?? listError,
+    inlineError,
+    modalError,
     modalOpen,
-    setModalOpen,
-    editBp,
-    setEditBp,
+    closeCreate,
     openCreate,
+    editBp,
+    closeEdit,
     openEdit,
     createCustomer,
     updateCustomer,
@@ -169,6 +221,10 @@ export function useMasterDataCustomersPage() {
     openSettings,
     saveCompanySettings,
     closeSettings,
+    notesBp,
+    openNotes,
+    closeNotes,
+    saveNotes,
     saving,
     refetch: listState.refetch,
   };

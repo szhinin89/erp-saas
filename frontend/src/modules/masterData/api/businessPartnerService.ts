@@ -30,20 +30,25 @@ function pickGuid(row: BusinessPartnerApiRow, ...keys: (keyof BusinessPartnerApi
 
 function normalizeRow(row: BusinessPartnerApiRow): BusinessPartnerDto {
   return {
-    id: pickStr(row, 'id', 'Id'),
-    identificationType: pickStr(row, 'identificationType', 'IdentificationType'),
+    id:                   pickStr(row, 'id', 'Id'),
+    identificationType:   pickStr(row, 'identificationType', 'IdentificationType'),
     identificationNumber: pickStr(row, 'identificationNumber', 'IdentificationNumber'),
-    legalName: pickStr(row, 'legalName', 'LegalName'),
-    tradeName: row.tradeName ?? row.TradeName ?? null,
-    email: row.email ?? row.Email ?? null,
-    phone: row.phone ?? row.Phone ?? null,
-    isActive: row.isActive ?? row.IsActive ?? true,
-    isCustomer: row.isCustomer ?? row.IsCustomer ?? false,
-    isSupplier: row.isSupplier ?? row.IsSupplier ?? false,
-    customerProfileId: pickGuid(row, 'customerProfileId', 'CustomerProfileId'),
-    supplierProfileId: pickGuid(row, 'supplierProfileId', 'SupplierProfileId'),
-    legacyCustomerId: pickGuid(row, 'legacyCustomerId', 'LegacyCustomerId'),
-    legacySupplierId: pickGuid(row, 'legacySupplierId', 'LegacySupplierId'),
+    legalName:            pickStr(row, 'legalName', 'LegalName'),
+    tradeName:            row.tradeName   ?? row.TradeName   ?? null,
+    email:                row.email       ?? row.Email       ?? null,
+    phone:                row.phone       ?? row.Phone       ?? null,
+    isActive:             row.isActive    ?? row.IsActive    ?? true,
+    isCustomer:           row.isCustomer  ?? row.IsCustomer  ?? false,
+    isSupplier:           row.isSupplier  ?? row.IsSupplier  ?? false,
+    customerProfileId:    pickGuid(row, 'customerProfileId', 'CustomerProfileId'),
+    supplierProfileId:    pickGuid(row, 'supplierProfileId', 'SupplierProfileId'),
+    legacyCustomerId:     pickGuid(row, 'legacyCustomerId',  'LegacyCustomerId'),
+    legacySupplierId:     pickGuid(row, 'legacySupplierId',  'LegacySupplierId'),
+    customerNotes:              row.customerNotes              ?? row.CustomerNotes              ?? null,
+    defaultTaxSupportCode:      row.defaultTaxSupportCode      ?? row.DefaultTaxSupportCode      ?? null,
+    defaultRetentionVatCode:    row.defaultRetentionVatCode    ?? row.DefaultRetentionVatCode    ?? null,
+    defaultRetentionIncomeCode: row.defaultRetentionIncomeCode ?? row.DefaultRetentionIncomeCode ?? null,
+    supplierPaymentTerms:       row.supplierPaymentTerms       ?? row.SupplierPaymentTerms       ?? null,
   };
 }
 

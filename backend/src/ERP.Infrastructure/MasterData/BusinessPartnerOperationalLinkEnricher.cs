@@ -61,10 +61,15 @@ public sealed class BusinessPartnerOperationalLinkEnricher : IBusinessPartnerOpe
 
             return BusinessPartnerDto.From(bp) with
             {
-                CustomerProfileId = cp?.Id,
-                SupplierProfileId = sp?.Id,
-                LegacyCustomerId  = legacyCustomer?.Id,
-                LegacySupplierId  = legacySupplier?.Id,
+                CustomerProfileId              = cp?.Id,
+                SupplierProfileId              = sp?.Id,
+                LegacyCustomerId               = legacyCustomer?.Id,
+                LegacySupplierId               = legacySupplier?.Id,
+                CustomerNotes                  = cp?.Notes,
+                DefaultTaxSupportCode          = sp?.DefaultTaxSupportCode,
+                DefaultRetentionVatCode        = sp?.DefaultRetentionVatCode,
+                DefaultRetentionIncomeCode     = sp?.DefaultRetentionIncomeCode,
+                SupplierPaymentTerms           = sp?.PaymentTerms,
             };
         }).ToList();
     }
