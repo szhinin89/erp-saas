@@ -27,7 +27,7 @@ jobs:
         run: dotnet --info
       - name: Restore, build, test
         run: dotnet test backend/src/ERP.slnx -c Release --verbosity minimal
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: npm
