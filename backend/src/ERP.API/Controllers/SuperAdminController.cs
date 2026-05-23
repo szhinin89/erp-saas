@@ -1,6 +1,7 @@
 using ERP.API.Attributes;
 using ERP.API.Contracts;
 using ERP.API.Extensions;
+using ERP.API.Filters;
 using ERP.Application.Access.DTOs;
 using ERP.Application.Access.UseCases.SuperAdminSubscribers;
 using ERP.Application.Admin;
@@ -22,6 +23,7 @@ namespace ERP.API.Controllers;
 [Route("api/superadmin")]
 [Authorize(Policy = "GlobalSuperAdmin")]
 [Produces("application/json")]
+[DeprecatedApi("/api/platform/subscribers")]
 public sealed class SuperAdminController : ControllerBase
 {
     private readonly IMediator _mediator;

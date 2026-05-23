@@ -195,6 +195,7 @@ if (hangfireEnabled)
     builder.Services.AddScoped<ISriRetryJob, SriRetryJob>();
     builder.Services.AddScoped<IProcessOutboxJob, ProcessOutboxJob>();
     builder.Services.AddScoped<IMasterDataReconciliationJob, MasterDataReconciliationJob>();
+    builder.Services.AddScoped<ICheckSubscriptionExpiryJob, CheckSubscriptionExpiryJob>();
 }
 
 // Opciones del Kardex: registrar tanto como IOptions<> (convención .NET)
@@ -410,6 +411,11 @@ if (hangfireEnabled)
         "masterdata-reconciliation",
         x => x.ExecuteAsync(CancellationToken.None),
         Cron.Daily(hour: 3));
+
+    RecurringJob.AddOrUpdate<ICheckSubscriptionExpiryJob>(
+        "check-subscription-expiry",
+        x => x.ExecuteAsync(CancellationToken.None),
+        Cron.Hourly()); // verifica cada hora
 }
 
 app.UseSerilogRequestLogging();

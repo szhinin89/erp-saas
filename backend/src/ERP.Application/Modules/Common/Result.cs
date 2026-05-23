@@ -51,4 +51,12 @@ public class Result<T>
     /// <summary>Regla de negocio / validación de dominio (HTTP 422).</summary>
     public static Result<T> ValidationFailure(string error, string? errorCode = ResultErrorCodes.ValidationFailure)
         => new(error, errorCode ?? ResultErrorCodes.ValidationFailure);
+
+    /// <summary>Entidad no encontrada (HTTP 404).</summary>
+    public static Result<T> NotFound(string error)
+        => new(error, ResultErrorCodes.NotFound);
+
+    /// <summary>Acceso denegado (HTTP 403).</summary>
+    public static Result<T> Forbidden(string error)
+        => new(error, ResultErrorCodes.Forbidden);
 }

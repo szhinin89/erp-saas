@@ -35,6 +35,16 @@ public class SubscriberConfiguration : IEntityTypeConfiguration<Subscriber>
         builder.Property(t => t.Timezone).HasColumnName("timezone").HasMaxLength(100).IsRequired().HasDefaultValue("America/Guayaquil");
         builder.Property(t => t.InvoicePrefix).HasColumnName("invoice_prefix").HasMaxLength(20);
         builder.Property(t => t.DefaultCreditDays).HasColumnName("default_credit_days").IsRequired().HasDefaultValue(30);
+
+        // Lifecycle (control plane)
+        builder.Property(t => t.LifecycleStatus).HasColumnName("lifecycle_status").IsRequired().HasDefaultValue(SubscriberLifecycleStatus.Active);
+        builder.Property(t => t.SuspendedReason).HasColumnName("suspended_reason").HasMaxLength(500);
+        builder.Property(t => t.TrialEndsAtUtc).HasColumnName("trial_ends_at_utc");
+        builder.Property(t => t.GracePeriodEndsAtUtc).HasColumnName("grace_period_ends_at_utc");
+        builder.Property(t => t.SuspendedAtUtc).HasColumnName("suspended_at_utc");
+
+        builder.Ignore(t => t.IsOperational);
+
         builder.Property(t => t.CreatedAt).HasColumnName("created_at");
         builder.Property(t => t.UpdatedAt).HasColumnName("updated_at");
         builder.Property(t => t.CreatedBy).HasColumnName("created_by");

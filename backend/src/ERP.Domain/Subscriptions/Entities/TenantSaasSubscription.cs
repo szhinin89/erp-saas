@@ -46,4 +46,35 @@ public sealed class SubscriberSubscription : AuditableEntity
             Status = SubscriptionStatus.Active;
         SetUpdated(updatedBy);
     }
+
+    public void Suspend(Guid updatedBy)
+    {
+        Status = SubscriptionStatus.Suspended;
+        SetUpdated(updatedBy);
+    }
+
+    public void StartTrial(DateTime trialEndsAtUtc, Guid updatedBy)
+    {
+        Status = SubscriptionStatus.Trial;
+        CurrentPeriodEndUtc = trialEndsAtUtc;
+        SetUpdated(updatedBy);
+    }
+
+    public void EnterGracePeriod(DateTime gracePeriodEndsAtUtc, Guid updatedBy)
+    {
+        Status = SubscriptionStatus.GracePeriod;
+        CurrentPeriodEndUtc = gracePeriodEndsAtUtc;
+        SetUpdated(updatedBy);
+    }
+
+    public void Reactivate(Guid updatedBy)
+    {
+        Status = SubscriptionStatus.Active;
+        SetUpdated(updatedBy);
+    }
+
+    public bool IsAccessible =>
+        Status is SubscriptionStatus.Active
+            or SubscriptionStatus.Trial
+            or SubscriptionStatus.GracePeriod;
 }

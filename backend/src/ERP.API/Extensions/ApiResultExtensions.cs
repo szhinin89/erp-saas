@@ -83,6 +83,12 @@ public static class ApiResultExtensions
         if (string.Equals(errorCode, ResultErrorCodes.ValidationFailure, StringComparison.Ordinal))
             return controller.ApiUnprocessableEntity(message);
 
+        if (string.Equals(errorCode, ResultErrorCodes.NotFound, StringComparison.Ordinal))
+            return controller.ApiNotFound(message);
+
+        if (string.Equals(errorCode, ResultErrorCodes.Forbidden, StringComparison.Ordinal))
+            return controller.ApiForbidden(message);
+
         return controller.BadRequest(new ApiResponse<object>(false, message, new { code = errorCode }));
     }
 

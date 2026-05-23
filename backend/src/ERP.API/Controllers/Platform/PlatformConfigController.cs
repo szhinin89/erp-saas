@@ -1,26 +1,27 @@
 using ERP.API.Contracts;
-using ERP.API.Attributes;
 using ERP.API.Extensions;
-using ERP.API.Filters;
 using ERP.Application.Admin;
 using ERP.Application.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ERP.API.Controllers;
+namespace ERP.API.Controllers.Platform;
 
+/// <summary>
+/// Platform Layer — configuración por suscriptor (global, módulo, feature).
+/// Canonical successor of /api/superadmin/config.
+/// </summary>
 [ApiController]
-[AppFeature("SuperAdmin Config", "perm:superadmin.config.admin", "🧩", null, null, 991, IsVisibleInMenu = false, IsSuperAdmin = true)]
-[Route("api/superadmin/config")]
-[Authorize(Policy = "GlobalSuperAdmin")]
+[Route("api/platform/config")]
+[Authorize(Roles = "SuperAdmin")]
+[Tags("Platform")]
 [Produces("application/json")]
-[DeprecatedApi("/api/platform/config")]
-public sealed class SuperAdminConfigController : ControllerBase
+public sealed class PlatformConfigController : ControllerBase
 {
     private readonly IConfigService _configService;
     private readonly ICurrentUser _currentUser;
 
-    public SuperAdminConfigController(IConfigService configService, ICurrentUser currentUser)
+    public PlatformConfigController(IConfigService configService, ICurrentUser currentUser)
     {
         _configService = configService;
         _currentUser = currentUser;
@@ -28,7 +29,12 @@ public sealed class SuperAdminConfigController : ControllerBase
 
     [HttpGet("{subscriberId:guid}/resolve")]
     [ProducesResponseType(typeof(ApiResponse<ResolvedConfigValueDto?>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Resolve([FromRoute] Guid subscriberId, [FromQuery] string key, [FromQuery] string? module, [FromQuery] string? feature, CancellationToken ct)
+    public async Task<IActionResult> Resolve(
+        [FromRoute] Guid subscriberId,
+        [FromQuery] string key,
+        [FromQuery] string? module,
+        [FromQuery] string? feature,
+        CancellationToken ct)
     {
         var value = await _configService.GetValueAsync(subscriberId, key, module, feature, null, ct);
         return this.ApiOk(value);
@@ -45,7 +51,6 @@ public sealed class SuperAdminConfigController : ControllerBase
     [HttpPut("{subscriberId:guid}/global")]
     [ProducesResponseType(typeof(ApiResponse<ConfigEntryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> UpsertGlobal([FromRoute] Guid subscriberId, [FromBody] UpsertGlobalConfigBody body, CancellationToken ct)
     {
         try
@@ -78,8 +83,11 @@ public sealed class SuperAdminConfigController : ControllerBase
     [HttpPut("{subscriberId:guid}/module/{module}")]
     [ProducesResponseType(typeof(ApiResponse<ConfigEntryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpsertModule([FromRoute] Guid subscriberId, [FromRoute] string module, [FromBody] UpsertScopedConfigBody body, CancellationToken ct)
+    public async Task<IActionResult> UpsertModule(
+        [FromRoute] Guid subscriberId,
+        [FromRoute] string module,
+        [FromBody] UpsertScopedConfigBody body,
+        CancellationToken ct)
     {
         try
         {
@@ -94,7 +102,11 @@ public sealed class SuperAdminConfigController : ControllerBase
 
     [HttpDelete("{subscriberId:guid}/module/{module}/{key}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> DeleteModule([FromRoute] Guid subscriberId, [FromRoute] string module, [FromRoute] string key, CancellationToken ct)
+    public async Task<IActionResult> DeleteModule(
+        [FromRoute] Guid subscriberId,
+        [FromRoute] string module,
+        [FromRoute] string key,
+        CancellationToken ct)
     {
         _ = await _configService.DeleteModuleAsync(subscriberId, module, key, ct);
         return this.ApiOk(new { });
@@ -111,8 +123,11 @@ public sealed class SuperAdminConfigController : ControllerBase
     [HttpPut("{subscriberId:guid}/feature/{feature}")]
     [ProducesResponseType(typeof(ApiResponse<ConfigEntryDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<IActionResult> UpsertFeature([FromRoute] Guid subscriberId, [FromRoute] string feature, [FromBody] UpsertScopedConfigBody body, CancellationToken ct)
+    public async Task<IActionResult> UpsertFeature(
+        [FromRoute] Guid subscriberId,
+        [FromRoute] string feature,
+        [FromBody] UpsertScopedConfigBody body,
+        CancellationToken ct)
     {
         try
         {
@@ -127,18 +142,19 @@ public sealed class SuperAdminConfigController : ControllerBase
 
     [HttpDelete("{subscriberId:guid}/feature/{feature}/{key}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> DeleteFeature([FromRoute] Guid subscriberId, [FromRoute] string feature, [FromRoute] string key, CancellationToken ct)
+    public async Task<IActionResult> DeleteFeature(
+        [FromRoute] Guid subscriberId,
+        [FromRoute] string feature,
+        [FromRoute] string key,
+        CancellationToken ct)
     {
         _ = await _configService.DeleteFeatureAsync(subscriberId, feature, key, ct);
         return this.ApiOk(new { });
     }
 
-    private Guid CurrentUserIdOrEmpty()
-    {
-        return _currentUser.UserId == Guid.Empty ? Guid.Empty : _currentUser.UserId;
-    }
+    private Guid CurrentUserIdOrEmpty() =>
+        _currentUser.UserId == Guid.Empty ? Guid.Empty : _currentUser.UserId;
 
     public sealed record UpsertGlobalConfigBody(string Key, string Value, string DataType = "string");
     public sealed record UpsertScopedConfigBody(string Key, string Value, string DataType = "string");
 }
-

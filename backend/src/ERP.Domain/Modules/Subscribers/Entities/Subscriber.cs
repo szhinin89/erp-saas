@@ -7,10 +7,23 @@ public class Subscriber : AuditableEntity
     public string Name { get; private set; } = null!;
     public string Slug { get; private set; } = null!;
     public bool IsActive { get; private set; }
+    public SubscriberLifecycleStatus LifecycleStatus { get; private set; } = SubscriberLifecycleStatus.Active;
     public PasswordResetMode PasswordResetMode { get; private set; } = PasswordResetMode.Disabled;
 
     /// <summary>Código comercial del plan (p. ej. starter). Entitlements en <c>SubscriberSubscription</c>.</summary>
     public string? PlanCode { get; private set; }
+
+    /// <summary>Motivo de suspensión/desactivación (opcional, para auditoría).</summary>
+    public string? SuspendedReason { get; private set; }
+
+    /// <summary>Fin del período de prueba (trial). Null = sin trial activo.</summary>
+    public DateTime? TrialEndsAtUtc { get; private set; }
+
+    /// <summary>Fin del período de gracia tras vencimiento. Null = no aplica.</summary>
+    public DateTime? GracePeriodEndsAtUtc { get; private set; }
+
+    /// <summary>Fecha de última suspensión (audit trail).</summary>
+    public DateTime? SuspendedAtUtc { get; private set; }
 
     // FIXME(phase5-db): Ruc pertenece a Company (entidad legal). Mover en migración DB futura.
     public string? Ruc { get; private set; }
@@ -141,6 +154,40 @@ public class Subscriber : AuditableEntity
     public void Deactivate(Guid updatedBy)
     {
         IsActive = false;
+        LifecycleStatus = SubscriberLifecycleStatus.Inactive;
+        SetUpdated(updatedBy);
+    }
+
+    public void Activate(Guid updatedBy)
+    {
+        IsActive = true;
+        LifecycleStatus = SubscriberLifecycleStatus.Active;
+        SuspendedReason = null;
+        SuspendedAtUtc = null;
+        GracePeriodEndsAtUtc = null;
+        SetUpdated(updatedBy);
+    }
+
+    public void Suspend(string? reason, Guid updatedBy)
+    {
+        IsActive = false;
+        LifecycleStatus = SubscriberLifecycleStatus.Suspended;
+        SuspendedReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+        SuspendedAtUtc = DateTime.UtcNow;
+        SetUpdated(updatedBy);
+    }
+
+    public void SetTrial(DateTime trialEndsAtUtc, Guid updatedBy)
+    {
+        TrialEndsAtUtc = trialEndsAtUtc;
+        LifecycleStatus = SubscriberLifecycleStatus.Trial;
+        SetUpdated(updatedBy);
+    }
+
+    public void EnterGracePeriod(DateTime gracePeriodEndsAtUtc, Guid updatedBy)
+    {
+        GracePeriodEndsAtUtc = gracePeriodEndsAtUtc;
+        LifecycleStatus = SubscriberLifecycleStatus.GracePeriod;
         SetUpdated(updatedBy);
     }
 
@@ -149,6 +196,11 @@ public class Subscriber : AuditableEntity
         PasswordResetMode = mode;
         SetUpdated(updatedBy);
     }
+
+    public bool IsOperational =>
+        LifecycleStatus is SubscriberLifecycleStatus.Active
+            or SubscriberLifecycleStatus.Trial
+            or SubscriberLifecycleStatus.GracePeriod;
 }
 
 public enum PasswordResetMode
@@ -157,4 +209,13 @@ public enum PasswordResetMode
     Direct = 1,
     Email = 2,
     Phone = 3,
+}
+
+public enum SubscriberLifecycleStatus
+{
+    Active = 0,
+    Trial = 1,
+    GracePeriod = 2,
+    Suspended = 3,
+    Inactive = 4,
 }
