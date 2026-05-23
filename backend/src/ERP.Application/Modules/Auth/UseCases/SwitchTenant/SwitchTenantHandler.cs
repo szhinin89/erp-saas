@@ -9,6 +9,13 @@ using MediatR;
 
 namespace ERP.Application.Auth.UseCases.SwitchSubscriber;
 
+/// <summary>
+/// Flujo Platform: SuperAdmin global selecciona un subscriber para impersonar.
+/// Solo accesible con token Platform (IsPlatformSuperAdmin = true).
+/// Retorna <c>AuthResponseDto</c> con refresh token completo.
+/// No confundir con <see cref="ERP.Application.Access.UseCases.SwitchSubscriber.SwitchSubscriberHandler"/>
+/// que sirve el flujo ERP (Company Admin, bootstrap → session, retorna SessionResponseDto).
+/// </summary>
 public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, Result<AuthResponseDto>>
 {
     private readonly ICurrentUser _currentUser;

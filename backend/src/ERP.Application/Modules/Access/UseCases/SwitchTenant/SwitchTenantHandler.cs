@@ -9,6 +9,13 @@ using ERP.Domain.Subscribers.Interfaces;
 
 namespace ERP.Application.Access.UseCases.SwitchSubscriber;
 
+/// <summary>
+/// Paso 2 del login ERP: bootstrap token + subscriberId → session token.
+/// Contexto: Company Admin y SuperAdmin impersonando un subscriber ERP.
+/// Retorna <c>SessionResponseDto</c> (API de acceso legacy, usado por el frontend actual).
+/// No confundir con <see cref="ERP.Application.Auth.UseCases.SwitchSubscriber.SwitchSubscriberHandler"/>
+/// que sirve el flujo Platform (SuperAdmin global, retorna AuthResponseDto con refresh token).
+/// </summary>
 public class SwitchSubscriberHandler : IRequestHandler<SwitchSubscriberCommand, Result<SessionResponseDto>>
 {
     private readonly IAccessRepository _accessRepository;

@@ -18,6 +18,13 @@ public class IdentityUser : SystemAuditableEntity
     public bool IsActive { get; private set; }
     public IdentityUserType UserType { get; private set; }
     public PlatformRole? PlatformRole { get; private set; }
+    /// <summary>
+    /// Legado: asociación directa usuario→subscriber para usuarios single-tenant.
+    /// En arquitectura multi-empresa la relación canónica es:
+    /// IdentityUser → CompanyUserMembership → Company → Subscriber.
+    /// No usar en guards, policies ni handlers de autorización nuevos.
+    /// </summary>
+    [Obsolete("Use CompanyUserMembership chain instead. Kept for backward compat with single-tenant user records.")]
     public Guid? SubscriberId { get; private set; }
     public string SecurityStamp { get; private set; } = null!;
     public bool RequirePasswordReset { get; private set; }

@@ -42,7 +42,9 @@ public class IdentityUserConfiguration : IEntityTypeConfiguration<IdentityUser>
             .HasConversion<string>()
             .HasMaxLength(32);
 
+#pragma warning disable CS0618 // SubscriberId obsoleto — requerido por EF para mapear columna legacy
         builder.Property(u => u.SubscriberId).HasColumnName("subscriber_id");
+#pragma warning restore CS0618
         builder.Property(u => u.SecurityStamp).HasColumnName("security_stamp").HasMaxLength(64).IsRequired();
         builder.Property(u => u.RequirePasswordReset).HasColumnName("require_password_reset").IsRequired().HasDefaultValue(false);
 
