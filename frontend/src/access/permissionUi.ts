@@ -22,33 +22,31 @@ export function hasUnrestrictedPermissionSnapshot(permissions: readonly string[]
 }
 
 /**
- * UI rendering check for a permission key (backend snapshot + legacy empty-snapshot parity).
- * Prefer {@link usePermissionsUi} in React components.
+ * UI rendering check for a permission key (backend snapshot).
+ * Deny-by-default si snapshot vacío; sin fallback implícito por rol Admin.
  */
 export function canShowPermissionKey(
   permissionKey: string,
   snapshot: {
     permissions: readonly string[];
     has: (key: string) => boolean;
-    role?: string | null;
-    adminFallbackRoles?: readonly string[];
+    permissionsSyncing?: boolean;
   },
 ): boolean {
+  if (snapshot.permissionsSyncing) return false;
   if (snapshot.has(permissionKey)) return true;
-  const fallbackRoles = snapshot.adminFallbackRoles ?? TENANT_ADMIN_ROLES;
-  if (snapshot.permissions.length === 0 && snapshot.role && fallbackRoles.includes(snapshot.role)) {
-    return true;
-  }
+  if (snapshot.permissions.length === 0) return false;
   return false;
 }
 
-/** Nav-only: tenant admins see full menu groups (legacy UI parity; modules still from backend). */
+/** Nav-only: tenant admins see full menu groups when backend envió wildcard. */
 export function shouldUseNavAdminBypass(role?: string | null): boolean {
-  return isTenantAdminRole(role);
+  const { permissions } = usePermissionsStore.getState();
+  return hasUnrestrictedPermissionSnapshot(permissions) && isTenantAdminRole(role);
 }
 
 export function readPermissionUiSnapshot() {
-  const { permissions, has, hasHydrated, enabledModules, planCode, planName } =
+  const { permissions, has, hasHydrated, enabledModules, planCode, planName, permissionsSyncing } =
     usePermissionsStore.getState();
   const role = useAuthStore.getState().user?.role ?? '';
   return {
@@ -59,6 +57,7 @@ export function readPermissionUiSnapshot() {
     planCode,
     planName,
     role,
+    permissionsSyncing,
     hasUnrestrictedAccess: hasUnrestrictedPermissionSnapshot(permissions),
     isTenantAdmin: isTenantAdminRole(role),
   };

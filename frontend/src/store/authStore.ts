@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { logDevSessionContext } from '../lib/session/devSessionLog';
 import { AUTH_PROFILE_STORAGE_KEY } from '../lib/session/sessionStorageKeys';
 import { clearAccessToken, getAccessToken, setAccessToken } from '../lib/session/authTokenMemory';
 import type { AuthResponse } from '../types/auth';
@@ -11,8 +12,11 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   hasHydrated: boolean;
+  /** Incrementa en cada switch-company / login operativo para invalidar caches UI. */
+  companySessionVersion: number;
   login: (response: AuthResponse) => void;
   updateTokens: (accessToken: string, refreshToken: string | null) => void;
+  incrementCompanySession: () => void;
   logout: () => void;
 }
 
@@ -22,16 +26,28 @@ interface AuthState {
  */
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user:            null,
       token:           null,
       isAuthenticated: false,
       hasHydrated:     false,
+      companySessionVersion: 0,
 
       login: (response: AuthResponse) => {
         const { token, ...user } = response;
+        const prevCompany = get().user?.companyId ?? null;
+        const nextCompany = user.companyId ?? null;
         setAccessToken(token);
-        set({ user, token, isAuthenticated: true });
+        set((state) => ({
+          user,
+          token,
+          isAuthenticated: true,
+          companySessionVersion:
+            nextCompany && nextCompany !== prevCompany
+              ? state.companySessionVersion + 1
+              : state.companySessionVersion,
+        }));
+        logDevSessionContext('login');
       },
 
       updateTokens: (accessToken) => {
@@ -39,9 +55,13 @@ export const useAuthStore = create<AuthState>()(
         set({ token: accessToken });
       },
 
+      incrementCompanySession: () => {
+        set((state) => ({ companySessionVersion: state.companySessionVersion + 1 }));
+      },
+
       logout: () => {
         clearAccessToken();
-        set({ user: null, token: null, isAuthenticated: false });
+        set({ user: null, token: null, isAuthenticated: false, companySessionVersion: 0 });
       },
     }),
     {

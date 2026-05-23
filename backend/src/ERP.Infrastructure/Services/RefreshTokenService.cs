@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
+using ERP.Application.Common.Security;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
 
@@ -17,17 +18,20 @@ public sealed class RefreshTokenService : IRefreshTokenService
     private readonly IRefreshTokenRepository _repo;
     private readonly RefreshTokenRateLimiter _rateLimiter;
     private readonly AuthOptions _authOptions;
+    private readonly ISecurityMetrics _metrics;
     private readonly ILogger<RefreshTokenService> _logger;
 
     public RefreshTokenService(
         IRefreshTokenRepository repo,
         RefreshTokenRateLimiter rateLimiter,
         IOptions<AuthOptions> authOptions,
+        ISecurityMetrics metrics,
         ILogger<RefreshTokenService> logger)
     {
         _repo         = repo;
         _rateLimiter  = rateLimiter;
         _authOptions  = authOptions.Value;
+        _metrics      = metrics;
         _logger       = logger;
     }
 
@@ -71,6 +75,7 @@ public sealed class RefreshTokenService : IRefreshTokenService
         if (stored is null)
         {
             LogAudit(RefreshTokenAuditEvents.RefreshRotationFailed, null, null, null, "Token no encontrado");
+            _metrics.RecordJwtRefreshRevoked(RefreshTags(null, null, "invalid_token"));
             return RefreshTokenValidationResult.Fail("Refresh token no válido.");
         }
 
@@ -144,6 +149,8 @@ public sealed class RefreshTokenService : IRefreshTokenService
 
         var revokedCount = await _repo.RevokeFamilyAsync(stored.FamilyId, "Reutilización detectada", ct);
 
+        _metrics.RecordJwtRefreshRevoked(RefreshTags(stored.SubscriberId, stored.CompanyId, "token_reuse_family_revoked"));
+
         _logger.LogWarning(
             "{Event} userId={UserId} subscriberId={SubscriberId} familyId={FamilyId} tokenId={TokenId} revokedCount={RevokedCount}",
             RefreshTokenAuditEvents.RefreshFamilyRevoked,
@@ -188,7 +195,16 @@ public sealed class RefreshTokenService : IRefreshTokenService
 
         stored.Revoke(reason);
         await _repo.SaveChangesAsync(ct);
+
+        _metrics.RecordJwtRefreshRevoked(RefreshTags(stored.SubscriberId, stored.CompanyId, "explicit_revoke"));
     }
+
+    private static SecurityMetricTags RefreshTags(Guid? subscriberId, Guid? companyId, string requestType)
+        => new(
+            SubscriberId: subscriberId,
+            CompanyId: companyId,
+            Endpoint: "/api/auth/refresh",
+            RequestType: requestType);
 
     private async Task<bool> CheckRateLimitsAsync(RefreshToken stored, CancellationToken ct)
     {

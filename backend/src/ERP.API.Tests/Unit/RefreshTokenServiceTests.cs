@@ -7,6 +7,7 @@ using ERP.Application.Common.Config;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Auth.Entities;
 using ERP.Domain.Auth.Interfaces;
+using ERP.Application.Common.Security;
 using ERP.Infrastructure.Services;
 
 namespace ERP.API.Tests.Unit;
@@ -164,7 +165,7 @@ public sealed class RefreshTokenServiceTests
             Microsoft.Extensions.Options.Options.Create(new MemoryDistributedCacheOptions()));
         var rateLimiter = new RefreshTokenRateLimiter(cache, NullLogger<RefreshTokenRateLimiter>.Instance);
         var options = Options.Create(new AuthOptions { RefreshRotationGraceSeconds = 5 });
-        return new RefreshTokenService(repo, rateLimiter, options, NullLogger<RefreshTokenService>.Instance);
+        return new RefreshTokenService(repo, rateLimiter, options, new NoOpSecurityMetrics(), NullLogger<RefreshTokenService>.Instance);
     }
 
     private sealed class FakeRefreshTokenRepository : IRefreshTokenRepository
@@ -221,5 +222,18 @@ public sealed class RefreshTokenServiceTests
         }
 
         public Task SaveChangesAsync(CancellationToken ct = default) => Task.CompletedTask;
+    }
+
+    private sealed class NoOpSecurityMetrics : ISecurityMetrics
+    {
+        public void RecordCrossCompanyDenied(SecurityMetricTags? tags = null) { }
+        public void RecordMembershipValidationFailed(SecurityMetricTags? tags = null) { }
+        public void RecordInvalidCompanyContext(SecurityMetricTags? tags = null) { }
+        public void RecordJwtRefreshRevoked(SecurityMetricTags? tags = null) { }
+        public void RecordPermissionDenied(SecurityMetricTags? tags = null) { }
+        public void RecordMasterDataDualWriteFailed(SecurityMetricTags? tags = null) { }
+        public void RecordMasterDataSyncInconsistency(SecurityMetricTags? tags = null) { }
+        public void RecordBackgroundContextLeakDetected(SecurityMetricTags? tags = null) { }
+        public void RecordNamespaceFallbackUsed(SecurityMetricTags? tags = null) { }
     }
 }

@@ -32,6 +32,7 @@ function statusBadge(s: ActivityStatus) {
 export function DashboardPage() {
   const { t, locale } = useI18n();
   const user = useAuthStore((s) => s.user);
+  const companySessionVersion = useAuthStore((s) => s.companySessionVersion);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,6 +57,7 @@ export function DashboardPage() {
 
   return (
     <ErpPageTemplate
+      key={`dashboard-${companySessionVersion}`}
       title={welcomeTitle}
       subtitle={today}
       kicker={t('dashboard.title')}

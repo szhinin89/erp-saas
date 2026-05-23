@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.DTOs;
 
@@ -8,4 +8,4 @@ namespace ERP.Application.Modules.Accounting.UseCases.ConfiguracionContable;
 public sealed record CreateExpenseCategoryCommand(
     string Category,
     Guid ExpenseAccountId
-) : IRequest<Result<ExpenseCategoryDto>>;
+) : IRequest<Result<ExpenseCategoryDto>>, ICompanyScopedRequest;

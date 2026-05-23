@@ -46,6 +46,12 @@ Onboarding rápido. **Reglas completas:** [`AI-RULES/`](AI-RULES/README.md) (fue
 
 Actualizar docs de avance → [AI-RULES/ENFORCEMENT.md#sincronización-docs-de-avance](AI-RULES/ENFORCEMENT.md#sincronización-docs-de-avance).
 
+## Hardening multiempresa (resumen)
+
+- Scope explícito en MediatR: `ICompanyScopedRequest` / `ISubscriberScopedRequest` / `IPlatformScopedRequest`
+- Concurrencia PG: `IDatabaseExceptionTranslator` → nunca 500 por UNIQUE
+- Métricas: `docs/observability/METRICS.md` · Seguridad: `docs/security/MULTI-TENANT-HARDENING.md`
+
 ---
 
 ## Convenciones esenciales (resumen — detalle en canónico)

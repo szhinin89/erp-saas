@@ -1,4 +1,5 @@
 using ERP.Application.Common;
+using ERP.Application.Common.Security;
 using ERP.Application.Modules.Platform.Companies;
 using ERP.Domain.Access.Interfaces;
 using ERP.Domain.Modules.Company.Interfaces;
@@ -14,6 +15,7 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
     private readonly ICurrentSubscriber _currentSubscriber;
     private readonly ICurrentCompany _currentCompany;
     private readonly ISubscriberRepository _subscribers;
+    private readonly ISecurityMetrics _metrics;
 
     public CompanyAccessGuard(
         IAccessRepository access,
@@ -21,7 +23,8 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
         ICurrentUser currentUser,
         ICurrentSubscriber currentSubscriber,
         ICurrentCompany currentCompany,
-        ISubscriberRepository subscribers)
+        ISubscriberRepository subscribers,
+        ISecurityMetrics metrics)
     {
         _access = access;
         _companies = companies;
@@ -29,6 +32,7 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
         _currentSubscriber = currentSubscriber;
         _currentCompany = currentCompany;
         _subscribers = subscribers;
+        _metrics = metrics;
     }
 
     public async Task<Result<Guid>> RequireActiveSubscriberAsync(CancellationToken ct = default)
@@ -60,7 +64,10 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
 
         var company = await _companies.GetByIdAsync(companyId, ct);
         if (company is null || company.SubscriberId != subscriberId)
+        {
+            _metrics.RecordCrossCompanyDenied();
             return Result<CompanyAccessContext>.Failure("Empresa no encontrada o no pertenece al suscriptor activo.");
+        }
 
         if (requireActiveCompany && !company.IsActive)
             return Result<CompanyAccessContext>.Failure("La empresa está inactiva.");
@@ -79,7 +86,10 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
 
         var membership = await _access.GetCompanyUserMembershipAsync(companyId, _currentUser.UserId, ct);
         if (membership is null || !membership.IsActive)
+        {
+            _metrics.RecordMembershipValidationFailed();
             return Result<CompanyAccessContext>.Failure("No tiene acceso a esta empresa.");
+        }
 
         var subscriber = await _subscribers.GetByIdAsync(subscriberId, ct);
 
@@ -95,7 +105,10 @@ public sealed class CompanyAccessGuard : ICompanyAccessGuard
     public Task<Result<CompanyAccessContext>> RequireCurrentCompanyAsync(CancellationToken ct = default)
     {
         if (!_currentCompany.HasCompanyContext)
+        {
+            _metrics.RecordInvalidCompanyContext();
             return Task.FromResult(Result<CompanyAccessContext>.Failure("No hay empresa operativa seleccionada."));
+        }
 
         return RequireMembershipAsync(_currentCompany.CompanyId, requireActiveCompany: true, ct);
     }

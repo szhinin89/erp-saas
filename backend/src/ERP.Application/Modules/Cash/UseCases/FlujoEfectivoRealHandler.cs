@@ -8,7 +8,7 @@ using ERP.Domain.Modules.Accounting.Interfaces;
 namespace ERP.Application.Modules.Cash.UseCases;
 
 public sealed record GetFlujoEfectivoRealQuery(DateTime DateFrom, DateTime DateTo)
-    : IRequest<Result<IReadOnlyList<DailyCashFlowDto>>>;
+    : IRequest<Result<IReadOnlyList<DailyCashFlowDto>>>, ICompanyScopedRequest;
 
 public sealed class GetFlujoEfectivoRealQueryHandler
     : IRequestHandler<GetFlujoEfectivoRealQuery, Result<IReadOnlyList<DailyCashFlowDto>>>

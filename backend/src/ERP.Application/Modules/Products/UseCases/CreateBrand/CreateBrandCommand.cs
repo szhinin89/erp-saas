@@ -9,4 +9,4 @@ public record CreateBrandCommand(
     string Name,
     string? Manufacturer     = null,
     string? CountryOfOrigin  = null
-) : IRequest<Result<BrandDto>>;
+) : IRequest<Result<BrandDto>>, ICompanyScopedRequest;

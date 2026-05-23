@@ -15,4 +15,4 @@ public sealed record CreateCustomerCommand(
     string? Phone,
     string? Email,
     string? Notes,
-    bool IsActive) : IRequest<Result<CustomerDto>>;
+    bool IsActive) : IRequest<Result<CustomerDto>>, ICompanyScopedRequest;

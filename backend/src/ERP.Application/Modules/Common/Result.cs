@@ -39,4 +39,16 @@ public class Result<T>
 
     public static Result<T> Success(T value) => new(value);
     public static Result<T> Failure(string error, string? errorCode = null) => new(error, errorCode);
+
+    /// <summary>Conflicto de concurrencia o unicidad (HTTP 409).</summary>
+    public static Result<T> Conflict(string error, string? errorCode = ResultErrorCodes.Conflict)
+        => new(error, errorCode ?? ResultErrorCodes.Conflict);
+
+    /// <summary>Violación UNIQUE en PostgreSQL (HTTP 409).</summary>
+    public static Result<T> UniqueViolation(string error, string? constraintName = null)
+        => new(error, ResultErrorCodes.UniqueViolation);
+
+    /// <summary>Regla de negocio / validación de dominio (HTTP 422).</summary>
+    public static Result<T> ValidationFailure(string error, string? errorCode = ResultErrorCodes.ValidationFailure)
+        => new(error, errorCode ?? ResultErrorCodes.ValidationFailure);
 }

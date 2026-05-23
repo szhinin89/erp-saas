@@ -14,4 +14,4 @@ public sealed record BalanceComprobacionLineDto(
 public sealed record GetBalanceComprobacionQuery(
     DateTime Desde,
     DateTime Hasta)
-    : IRequest<Result<IReadOnlyList<BalanceComprobacionLineDto>>>;
+    : IRequest<Result<IReadOnlyList<BalanceComprobacionLineDto>>>, ICompanyScopedRequest;

@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERP.Application.Sales.UseCases.ListPendingSriRetry;
 
-public sealed record ListPendingSriRetryQuery : IRequest<Result<IReadOnlyList<SalesBillRetryCandidate>>>;
+public sealed record ListPendingSriRetryQuery : IRequest<Result<IReadOnlyList<SalesBillRetryCandidate>>>, IPlatformScopedRequest;
 
 public sealed class ListPendingSriRetryQueryHandler
     : IRequestHandler<ListPendingSriRetryQuery, Result<IReadOnlyList<SalesBillRetryCandidate>>>

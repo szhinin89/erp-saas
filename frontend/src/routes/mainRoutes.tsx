@@ -21,6 +21,14 @@ const SuppliersPage = lazyNamedPage(
   () => import('../modules/compras/suppliers/pages/SuppliersPage'),
   'SuppliersPage',
 );
+const MasterDataCustomersPage = lazyNamedPage(
+  () => import('../modules/masterData/pages/MasterDataCustomersPage'),
+  'MasterDataCustomersPage',
+);
+const MasterDataSuppliersPage = lazyNamedPage(
+  () => import('../modules/masterData/pages/MasterDataSuppliersPage'),
+  'MasterDataSuppliersPage',
+);
 const CompanyConfigPage = lazyNamedPage(
   () => import('../modules/configuracion/empresa/pages/CompanyConfigPage'),
   'CompanyConfigPage',
@@ -59,6 +67,7 @@ export const mainRoutes = [
   <Route key="sales-invoices" path="/sales/invoices" element={<VentasFacturasPage />} />,
   <Route key="sales-invoices-new" path="/sales/invoices/new" element={<CreateInvoicePage />} />,
   <Route key="sales-customers" path="/sales/customers" element={<CustomersPage />} />,
+  <Route key="masterdata-customers" path="/masterdata/customers" element={<MasterDataCustomersPage />} />,
   // Legacy redirects
   <Route key="ventas-facturas" path="/ventas/facturas" element={<Navigate to="/sales/invoices" replace />} />,
   <Route key="ventas-facturas-nueva" path="/ventas/facturas/nueva" element={<Navigate to="/sales/invoices/new" replace />} />,
@@ -79,6 +88,7 @@ export const mainRoutes = [
   <Route key="purchases-invoices" path="/purchases/invoices" element={<ComprasListPage />} />,
   <Route key="purchases-invoices-new" path="/purchases/invoices/new" element={<CrearCompraPage />} />,
   <Route key="purchases-suppliers" path="/purchases/suppliers" element={<SuppliersPage />} />,
+  <Route key="masterdata-suppliers" path="/masterdata/suppliers" element={<MasterDataSuppliersPage />} />,
   // Legacy redirects
   <Route key="compras-facturas" path="/compras/facturas" element={<Navigate to="/purchases/invoices" replace />} />,
   <Route key="compras-facturas-new" path="/compras/facturas/nueva" element={<Navigate to="/purchases/invoices/new" replace />} />,

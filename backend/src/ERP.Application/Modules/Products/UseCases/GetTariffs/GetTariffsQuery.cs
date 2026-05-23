@@ -4,4 +4,4 @@ using ERP.Application.Products.DTOs;
 
 namespace ERP.Application.Products.UseCases.GetTariffs;
 
-public sealed record GetTariffsQuery(bool OnlyActive) : IRequest<Result<IReadOnlyList<TariffDto>>>;
+public sealed record GetTariffsQuery(bool OnlyActive) : IRequest<Result<IReadOnlyList<TariffDto>>>, ICompanyScopedRequest;

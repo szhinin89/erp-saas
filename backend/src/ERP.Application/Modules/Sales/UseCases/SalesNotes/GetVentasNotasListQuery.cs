@@ -6,7 +6,7 @@ using ERP.Domain.Modules.Sales.Interfaces;
 namespace ERP.Application.Sales.UseCases.Notas;
 
 public record GetSalesNotesListQuery(Guid? OriginalBillId, string? Status)
-    : IRequest<Result<IReadOnlyList<SalesNoteListItemDto>>>;
+    : IRequest<Result<IReadOnlyList<SalesNoteListItemDto>>>, ICompanyScopedRequest;
 
 
 public sealed class GetSalesNotesListQueryHandler

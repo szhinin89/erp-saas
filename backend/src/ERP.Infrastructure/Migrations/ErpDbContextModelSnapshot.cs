@@ -1829,6 +1829,21 @@ namespace ERP.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
+                    b.Property<string>("DefaultRetentionIncomeCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("default_retention_income_code");
+
+                    b.Property<string>("DefaultRetentionVatCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("default_retention_vat_code");
+
+                    b.Property<string>("DefaultTaxSupportCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("default_tax_support_code");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active");
@@ -1841,11 +1856,6 @@ namespace ERP.Infrastructure.Migrations
                     b.Property<Guid>("SubscriberId")
                         .HasColumnType("uuid")
                         .HasColumnName("subscriber_id");
-
-                    b.Property<string>("TaxSupportCode")
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)")
-                        .HasColumnName("tax_support_code");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")

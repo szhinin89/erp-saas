@@ -6,7 +6,7 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 namespace ERP.Application.Modules.Purchasing.UseCases.Retenciones;
 
 public sealed record GetPurchaseIssuedRetentionsListQuery(Guid? SupplierId)
-    : IRequest<Result<IReadOnlyList<IssuedRetentionListItemDto>>>;
+    : IRequest<Result<IReadOnlyList<IssuedRetentionListItemDto>>>, ICompanyScopedRequest;
 
 public sealed class GetPurchaseIssuedRetentionsListQueryHandler
     : IRequestHandler<GetPurchaseIssuedRetentionsListQuery, Result<IReadOnlyList<IssuedRetentionListItemDto>>>

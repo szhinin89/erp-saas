@@ -23,6 +23,8 @@ interface PermissionsState {
   enabledFeatures: string[];
   limits: Record<string, number | null>;
   hasModuleRestrictions: boolean;
+  /** true mientras `syncSessionEntitlements` está en vuelo (post-login / switch). */
+  permissionsSyncing: boolean;
   setPermissionSnapshot: (payload: {
     permissions: string[];
     planCode?: string | null;
@@ -37,6 +39,7 @@ interface PermissionsState {
     limits?: Record<string, number | null>;
     hasModuleRestrictions: boolean;
   }) => void;
+  setPermissionsSyncing: (syncing: boolean) => void;
   clearPermissions: () => void;
   has: (permissionKey: string) => boolean;
   hasHydrated: boolean;
@@ -52,6 +55,7 @@ export const usePermissionsStore = create<PermissionsState>()(
       enabledFeatures: [],
       limits: {},
       hasModuleRestrictions: true,
+      permissionsSyncing: false,
       hasHydrated: false,
       setPermissionSnapshot: ({ permissions, planCode = null, enabledModules = [] }) =>
         set({
@@ -77,6 +81,7 @@ export const usePermissionsStore = create<PermissionsState>()(
           limits: limits ?? {},
           hasModuleRestrictions,
         }),
+      setPermissionsSyncing: (syncing) => set({ permissionsSyncing: syncing }),
       clearPermissions: () =>
         set({
           permissions: [],
@@ -90,7 +95,6 @@ export const usePermissionsStore = create<PermissionsState>()(
       has: (permissionKey) => {
         if (permissionKey.startsWith('session:')) return true;
         const perms = get().permissions;
-        // Wildcard from backend (Admin/SuperAdmin UX snapshot — not a client-side security rule).
         if (perms.includes('*')) return true;
         const want = normalizePolicyPermissionKey(permissionKey);
         return perms.some((p) => normalizePolicyPermissionKey(p) === want);
@@ -99,6 +103,15 @@ export const usePermissionsStore = create<PermissionsState>()(
     {
       name: PERMISSIONS_STORAGE_KEY,
       storage: createJSONStorage(() => zustandSessionStorage),
+      partialize: (state) => ({
+        permissions: state.permissions,
+        planCode: state.planCode,
+        planName: state.planName,
+        enabledModules: state.enabledModules,
+        enabledFeatures: state.enabledFeatures,
+        limits: state.limits,
+        hasModuleRestrictions: state.hasModuleRestrictions,
+      }),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         state.hasHydrated = true;

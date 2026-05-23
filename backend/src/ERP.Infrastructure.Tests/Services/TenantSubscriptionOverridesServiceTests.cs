@@ -1,3 +1,4 @@
+using ERP.Application.Access.Caching;
 using ERP.Application.Common;
 using ERP.Application.Common.Config;
 using ERP.Application.Subscriptions;
@@ -89,7 +90,7 @@ public sealed class SubscriptionFeatureOverridesServiceTests
     }
 
     private static SubscriptionFeatureOverridesService CreateSut(ErpDbContext ctx) =>
-        new(ctx, CreatePlatform(ctx));
+        new(ctx, CreatePlatform(ctx), new Moq.Mock<IPermissionsCacheInvalidator>().Object);
 
     private static PlatformQueryAccessor CreatePlatform(ErpDbContext ctx) =>
         new(NullLogger<PlatformQueryAccessor>.Instance, Microsoft.Extensions.Options.Options.Create(new SaasEntitlementsOptions()));
@@ -97,7 +98,7 @@ public sealed class SubscriptionFeatureOverridesServiceTests
     private static SubscriberEntitlementsService CreateEntitlements(ErpDbContext ctx)
     {
         var platform = CreatePlatform(ctx);
-        var companyRepo = new ERP.Infrastructure.Persistence.Repositories.CompanyRepository(ctx);
+        var companyRepo = new ERP.Infrastructure.Persistence.Repositories.CompanyRepository(ctx, platform);
         var planLimits = new ERP.Infrastructure.Services.CommercialPlanLimitService(
             ctx,
             platform,

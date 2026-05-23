@@ -7,6 +7,13 @@ using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Domain.Modules.Sales.Interfaces;
 
+using Moq;
+using ERP.Domain.MasterData.Interfaces;
+using ERP.Application.Common.Persistence;
+using ERP.Application.Common.Security;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 namespace ERP.Application.Tests.Customers;
 
 public class CustomerHandlersIntegrationTests
@@ -22,7 +29,15 @@ public class CustomerHandlersIntegrationTests
         var company = new TestCurrentCompany(Guid.NewGuid());
         var user = new TestCurrentUser(userId);
 
-        var handler = new CreateCustomerCommandHandler(repo, activity, tenant, company, user);
+        var bpRepo = new Mock<IBusinessPartnerRepository>(MockBehavior.Loose);
+        var cpRepo = new Mock<ICustomerProfileRepository>(MockBehavior.Loose);
+        var dbExceptions = new Mock<IDatabaseExceptionTranslator>(MockBehavior.Loose);
+        var metrics = new Mock<ISecurityMetrics>(MockBehavior.Loose);
+        var logger = NullLogger<CreateCustomerCommandHandler>.Instance;
+
+        var handler = new CreateCustomerCommandHandler(
+            repo, activity, tenant, company, user,
+            bpRepo.Object, cpRepo.Object, dbExceptions.Object, metrics.Object, logger);
 
         var result = await handler.Handle(new CreateCustomerCommand(
             IdentificationType: "RUC",

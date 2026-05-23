@@ -13,4 +13,4 @@ public sealed record CreateAccountCommand(
     AccountNature Nature,
     Guid? ParentId,
     bool AllowsMovements = true
-) : IRequest<Result<AccountDto>>;
+) : IRequest<Result<AccountDto>>, ICompanyScopedRequest;

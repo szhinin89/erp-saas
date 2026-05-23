@@ -65,5 +65,38 @@ describe('syncSessionEntitlements', () => {
     expect(state.enabledFeatures).toEqual(['CUSTOMERS']);
     expect(state.limits).toEqual({ CUSTOMERS: 100 });
     expect(state.permissions).toEqual(['sales.invoices.view']);
+    expect(state.permissionsSyncing).toBe(false);
+  });
+
+  it('sets permissionsSyncing during fetch', async () => {
+    let resolvePerms!: () => void;
+    const permsPromise = new Promise<{
+      permissions: string[];
+      planCode: string | null;
+      enabledModules: string[];
+    }>((resolve) => {
+      resolvePerms = () =>
+        resolve({
+          permissions: ['sales.customers.view'],
+          planCode: null,
+          enabledModules: [],
+        });
+    });
+
+    vi.mocked(entitlementsService.getMe).mockResolvedValue({
+      planCode: 'starter',
+      planName: 'Starter',
+      enabledModules: ['sales'],
+      enabledFeatures: [],
+      limits: {},
+      hasModuleRestrictions: false,
+    });
+    vi.mocked(accessService.getMyPermissions).mockImplementation(() => permsPromise);
+
+    const syncPromise = syncSessionEntitlements();
+    expect(usePermissionsStore.getState().permissionsSyncing).toBe(true);
+    resolvePerms();
+    await syncPromise;
+    expect(usePermissionsStore.getState().permissionsSyncing).toBe(false);
   });
 });

@@ -17,4 +17,4 @@ public record CreateWarehouseCommand(
     string?  Longitude,
     decimal? Capacity,
     decimal? DailyDispatchGoal
-) : IRequest<Result<WarehouseDto>>;
+) : IRequest<Result<WarehouseDto>>, ICompanyScopedRequest;

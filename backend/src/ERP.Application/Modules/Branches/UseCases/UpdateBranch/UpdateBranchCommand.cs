@@ -24,4 +24,4 @@ public sealed record UpdateBranchCommand(
     decimal? DailySalesGoal,
     string?  RechargeOption,
     bool     IsActive,
-    bool     IsMainBranch) : IRequest<Result<BranchDto>>;
+    bool     IsMainBranch) : IRequest<Result<BranchDto>>, ICompanyScopedRequest;

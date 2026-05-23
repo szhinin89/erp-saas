@@ -41,7 +41,12 @@
     "coverlet.collector",
     "Microsoft.NET.Test.Sdk",
     "xunit.runner.visualstudio",
-    "NetArchTest.Rules"
+    "NetArchTest.Rules",
+    "OpenTelemetry.Extensions.Hosting",
+    "OpenTelemetry.Instrumentation.AspNetCore",
+    "OpenTelemetry.Exporter.Prometheus.AspNetCore",
+    "Testcontainers",
+    "Testcontainers.PostgreSql"
   ],
   "npmAllowed": [
     "react",
@@ -93,7 +98,6 @@
     "Terraform",
     "RabbitMQ",
     "Kafka",
-    "Prometheus",
     "Datadog",
     "UseSqlServer",
     "SqlServerCache",

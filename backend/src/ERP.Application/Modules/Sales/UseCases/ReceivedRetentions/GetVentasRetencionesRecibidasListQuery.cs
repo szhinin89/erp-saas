@@ -5,7 +5,7 @@ using ERP.Domain.Modules.Sales.Interfaces;
 
 namespace ERP.Application.Sales.UseCases.RetencionesRecibidas;
 
-public record GetSalesRetentionsReceivedListQuery : IRequest<Result<IReadOnlyList<SalesRetentionListItemDto>>>;
+public record GetSalesRetentionsReceivedListQuery : IRequest<Result<IReadOnlyList<SalesRetentionListItemDto>>>, ICompanyScopedRequest;
 
 
 public sealed class GetSalesRetentionsReceivedListQueryHandler

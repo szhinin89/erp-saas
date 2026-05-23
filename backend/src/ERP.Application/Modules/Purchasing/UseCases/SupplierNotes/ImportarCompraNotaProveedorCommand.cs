@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 
@@ -9,4 +9,4 @@ public sealed record ImportPurchaseSupplierNoteCommand(
     string? XmlFileName,
     Guid?   PurchBillId,
     Guid?   ExpenseInvoiceId
-) : IRequest<Result<SupplierPurchaseNoteDto>>;
+) : IRequest<Result<SupplierPurchaseNoteDto>>, ICompanyScopedRequest;

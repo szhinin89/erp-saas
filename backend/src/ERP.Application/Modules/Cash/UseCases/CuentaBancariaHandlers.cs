@@ -7,7 +7,7 @@ using ERP.Domain.Modules.Cash.Interfaces;
 
 namespace ERP.Application.Modules.Cash.UseCases;
 
-public sealed record ListCuentasBancariasQuery : IRequest<Result<IReadOnlyList<BankAccountDto>>>;
+public sealed record ListCuentasBancariasQuery : IRequest<Result<IReadOnlyList<BankAccountDto>>>, ICompanyScopedRequest;
 
 public sealed class ListCuentasBancariasQueryHandler
     : IRequestHandler<ListCuentasBancariasQuery, Result<IReadOnlyList<BankAccountDto>>>
@@ -41,7 +41,7 @@ public sealed record CrearBankAccountCommand(
     string AccountType,
     string Currency,
     decimal InitialBalance,
-    Guid? LedgerAccountId) : IRequest<Result<BankAccountDto>>;
+    Guid? LedgerAccountId) : IRequest<Result<BankAccountDto>>, ICompanyScopedRequest;
 
 public sealed class CrearBankAccountCommandHandler
     : IRequestHandler<CrearBankAccountCommand, Result<BankAccountDto>>
@@ -91,7 +91,7 @@ public sealed class CrearBankAccountCommandHandler
 }
 
 public sealed record ListExtractosPorCuentaQuery(Guid BankAccountId)
-    : IRequest<Result<IReadOnlyList<BankStatementDto>>>;
+    : IRequest<Result<IReadOnlyList<BankStatementDto>>>, ICompanyScopedRequest;
 
 public sealed class ListExtractosPorCuentaQueryHandler
     : IRequestHandler<ListExtractosPorCuentaQuery, Result<IReadOnlyList<BankStatementDto>>>

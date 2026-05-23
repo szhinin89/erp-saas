@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 
@@ -13,4 +13,4 @@ public record GetStockAdjustmentsListQuery(
     string?   Status,
     DateTime? DateFrom,
     DateTime? DateTo
-) : IRequest<Result<StockAdjustmentsPagedResult>>;
+) : IRequest<Result<StockAdjustmentsPagedResult>>, ICompanyScopedRequest;

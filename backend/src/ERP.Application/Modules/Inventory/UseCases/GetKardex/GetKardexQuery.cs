@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 
@@ -9,4 +9,4 @@ public sealed record GetKardexQuery(
     Guid    WarehouseId,
     DateTime? DateFrom,
     DateTime? DateTo)
-    : IRequest<Result<KardexResponse>>;
+    : IRequest<Result<KardexResponse>>, ICompanyScopedRequest;

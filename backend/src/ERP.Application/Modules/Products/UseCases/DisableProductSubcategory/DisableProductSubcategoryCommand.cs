@@ -4,4 +4,4 @@ using ERP.Application.Products.DTOs;
 
 namespace ERP.Application.Products.UseCases.DisableProductSubcategory;
 
-public record DisableProductSubcategoryCommand(Guid Id) : IRequest<Result<ProductSubcategoryDto>>;
+public record DisableProductSubcategoryCommand(Guid Id) : IRequest<Result<ProductSubcategoryDto>>, ICompanyScopedRequest;

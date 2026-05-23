@@ -4,5 +4,5 @@ using MediatR;
 
 namespace ERP.Application.Products.UseCases.DisableProductType;
 
-public record DisableProductTypeCommand(Guid ProductTypeId) : IRequest<Result<ProductTypeDto>>;
-public record EnableProductTypeCommand(Guid ProductTypeId) : IRequest<Result<ProductTypeDto>>;
+public record DisableProductTypeCommand(Guid ProductTypeId) : IRequest<Result<ProductTypeDto>>, ICompanyScopedRequest;
+public record EnableProductTypeCommand(Guid ProductTypeId) : IRequest<Result<ProductTypeDto>>, ICompanyScopedRequest;

@@ -1,0 +1,103 @@
+.md-page-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+
+.md-page-check {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+}
+
+.md-table-wrap {
+  overflow-x: auto;
+}
+
+.md-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.md-table th,
+.md-table td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--zh-border, #e5e7eb);
+  text-align: left;
+}
+
+.md-actions {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.md-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.md-badge--ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.md-badge--warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.md-legacy-hint {
+  margin-top: 1rem;
+  font-size: 0.8125rem;
+  color: var(--zh-muted, #6b7280);
+}
+
+.md-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.md-modal {
+  background: var(--zh-surface, #fff);
+  padding: 1.25rem;
+  border-radius: 8px;
+  max-width: 520px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.md-modal h2 {
+  margin: 0 0 1rem;
+  font-size: 1.125rem;
+}
+
+.md-modal-sub {
+  margin: -0.5rem 0 1rem;
+  font-size: 0.875rem;
+  color: var(--zh-muted, #6b7280);
+}
+
+.md-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.vf-create-client-option--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

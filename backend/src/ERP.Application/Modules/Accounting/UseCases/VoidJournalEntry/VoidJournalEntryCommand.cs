@@ -8,4 +8,4 @@ namespace ERP.Application.Modules.Accounting.UseCases.VoidJournalEntry;
 public sealed record VoidJournalEntryCommand(
     Guid Id,
     string Reason
-) : IRequest<Result<JournalEntryDto>>;
+) : IRequest<Result<JournalEntryDto>>, ICompanyScopedRequest;

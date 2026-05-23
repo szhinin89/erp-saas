@@ -36,6 +36,16 @@
   background: var(--color-surface-container);
 }
 
+.vf-create-client-option--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.vf-create-client-option--disabled:hover,
+.vf-create-client-option--disabled:focus-visible {
+  background: none;
+}
+
 .vf-create-client-option-id {
   margin-left: var(--space-2);
   font-size: var(--text-label-sm-size, 12px);

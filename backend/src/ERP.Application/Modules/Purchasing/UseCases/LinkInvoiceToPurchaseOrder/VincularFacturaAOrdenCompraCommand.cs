@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 
@@ -8,4 +8,4 @@ namespace ERP.Application.Modules.Purchasing.UseCases.VincularFacturaAOrdenCompr
 public sealed record LinkInvoiceToPurchaseOrderCommand(
     Guid OrdenCompraId,
     Guid PurchBillId
-) : IRequest<Result<PurchaseOrderDto>>;
+) : IRequest<Result<PurchaseOrderDto>>, ICompanyScopedRequest;

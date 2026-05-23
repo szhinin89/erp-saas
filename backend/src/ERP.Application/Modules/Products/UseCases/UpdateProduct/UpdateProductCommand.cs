@@ -59,5 +59,5 @@ public record UpdateProductCommand(
     IReadOnlyList<TariffDetailInput>? TariffDetails = null,
     IReadOnlyList<SubstituteInput>? Substitutes = null,
     IReadOnlyList<CustomFieldInput>? CustomFields = null
-) : IRequest<Result<ProductDto>>;
+) : IRequest<Result<ProductDto>>, ICompanyScopedRequest;
 

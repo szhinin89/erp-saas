@@ -1,5 +1,7 @@
 using MediatR;
 using ERP.Application.Common;
+using ERP.Application.Common.Persistence;
+using ERP.Application.Common.Security;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
@@ -21,23 +23,32 @@ public sealed class CreateSupplierCommandHandler
     private readonly ICurrentUser               _user;
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly ISupplierProfileRepository _spRepo;
+    private readonly IDatabaseExceptionTranslator _dbExceptions;
+    private readonly ISecurityMetrics _metrics;
+    private readonly ICurrentCompany _company;
     private readonly ILogger<CreateSupplierCommandHandler> _logger;
 
     public CreateSupplierCommandHandler(
         ISupplierRepository        repo,
         IUserActivityRepository    activity,
         ICurrentSubscriber         tenant,
+        ICurrentCompany            company,
         ICurrentUser               user,
         IBusinessPartnerRepository bpRepo,
         ISupplierProfileRepository spRepo,
+        IDatabaseExceptionTranslator dbExceptions,
+        ISecurityMetrics metrics,
         ILogger<CreateSupplierCommandHandler> logger)
     {
         _repo     = repo;
         _activity = activity;
         _tenant   = tenant;
+        _company  = company;
         _user     = user;
         _bpRepo   = bpRepo;
         _spRepo   = spRepo;
+        _dbExceptions = dbExceptions;
+        _metrics  = metrics;
         _logger   = logger;
     }
 
@@ -116,9 +127,25 @@ public sealed class CreateSupplierCommandHandler
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex,
-                "BP-4 dual-write falló para RUC {Ruc} en subscriber {Sub}. Supplier legacy guardado correctamente.",
-                supplier.Ruc, subscriberId);
+            _metrics.RecordMasterDataDualWriteFailed(new SecurityMetricTags(
+                SubscriberId: subscriberId,
+                CompanyId: _company.CompanyId,
+                RequestType: nameof(CreateSupplierCommand)));
+
+            if (_dbExceptions.TryGetUniqueViolation(ex, out var violation))
+            {
+                UniqueViolationLogger.LogUniqueViolation(
+                    _logger, "BP-4 dual-write", violation, subscriberId, _company.CompanyId);
+                _metrics.RecordMasterDataSyncInconsistency(new SecurityMetricTags(
+                    SubscriberId: subscriberId,
+                    RequestType: "BP-4-race"));
+            }
+            else
+            {
+                _logger.LogWarning(ex,
+                    "BP-4 dual-write falló para RUC {Ruc} en subscriber {Sub}. Supplier legacy guardado correctamente.",
+                    supplier.Ruc, subscriberId);
+            }
         }
     }
 

@@ -41,6 +41,9 @@ public sealed class SecurityCorrelationMiddleware
                         ?? user.FindFirst("sub")?.Value
                         ?? "none";
         var tokenType    = user.FindFirst("token_type")?.Value    ?? "none";
+        var sessionId    = user.FindFirst("session_id")?.Value
+                        ?? user.FindFirst("sid")?.Value
+                        ?? "none";
         var requestId    = context.TraceIdentifier;
 
         using (_logger.BeginScope(new Dictionary<string, object>
@@ -48,6 +51,7 @@ public sealed class SecurityCorrelationMiddleware
             ["SubscriberId"] = subscriberId,
             ["CompanyId"]    = companyId,
             ["UserId"]       = userId,
+            ["SessionId"]    = sessionId,
             ["TokenType"]    = tokenType,
             ["RequestId"]    = requestId,
         }))

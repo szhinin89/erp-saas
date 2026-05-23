@@ -5,8 +5,8 @@ import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
 import { useI18n } from '../../../i18n/i18n';
-import { useAsync } from '../../../hooks/useAsync';
-import { customerService } from '../../../modules/customers/api/customerService';
+import { useCompanyScopedAsync } from '../../../hooks/useCompanyScopedAsync';
+import { businessPartnerFacade } from '../../masterData/api/businessPartnerFacade';
 import { warehouseService, type WarehouseDto } from '../../inventario/warehouses/api/warehouseService';
 import { formatApiError } from '../../lib/formatApiError';
 import { ventasFacturasService } from '../api/ventasFacturasService';
@@ -17,6 +17,7 @@ import {
   type InvoiceLineValues,
 } from '../schemas/createInvoiceSchema';
 import './create-invoice-page.css';
+import { useAuthStore } from '../../../store/authStore';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
 
 const TODAY = new Date().toISOString().split('T')[0]!;
@@ -43,8 +44,17 @@ export function CreateInvoicePage() {
   const [error,   setError]   = useState<string | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
 
-  const clientsState    = useAsync(() => customerService.getAll());
-  const warehousesState = useAsync<WarehouseDto[]>(() => warehouseService.list('active'));
+  const companySessionVersion = useAuthStore((s) => s.companySessionVersion);
+  const clientsState    = useCompanyScopedAsync(() => businessPartnerFacade.searchCustomersForPicker());
+  const warehousesState = useCompanyScopedAsync<WarehouseDto[]>(() => warehouseService.list('active'));
+
+  useEffect(() => {
+    setCustomerId('');
+    setCustomerRuc('');
+    setCustomerAddr('');
+    setCustomerEmail('');
+    setClientSearch('');
+  }, [companySessionVersion]);
 
   useEffect(() => {
     const bodegas = warehousesState.data;
@@ -67,8 +77,8 @@ export function CreateInvoicePage() {
 
   const handleSelectClient = (id: string) => {
     const c = (clientsState.data ?? []).find((x) => x.id === id);
-    if (!c) return;
-    setCustomerId(c.id);
+    if (!c || !c.pickerMeta.selectable || !c.pickerMeta.legacyOperationalId) return;
+    setCustomerId(c.pickerMeta.legacyOperationalId);
     setCustomerRuc(c.identificationNumber);
     setCustomerAddr(c.address ?? '');
     setCustomerEmail(c.email ?? '');
@@ -223,15 +233,20 @@ export function CreateInvoicePage() {
                   <div className="vf-create-client-dropdown" role="listbox">
                     {filteredClients.slice(0, 8).map((c) => (
                       <button
-                        key={c.id}
+                        key={`${c.pickerMeta.businessPartnerId}-${c.id}`}
                         type="button"
-                        className="vf-create-client-option"
+                        className={`vf-create-client-option${c.pickerMeta.selectable ? '' : ' vf-create-client-option--disabled'}`}
                         role="option"
-                        onMouseDown={() => handleSelectClient(c.id)}
+                        disabled={!c.pickerMeta.selectable}
+                        title={c.pickerMeta.warningMessage}
+                        onMouseDown={() => {
+                          if (c.pickerMeta.selectable) handleSelectClient(c.id);
+                        }}
                       >
                         <strong>{c.fullName}</strong>
                         <span className="vf-create-client-option-id">
                           {c.identificationNumber}
+                          {!c.pickerMeta.selectable && ' · sin vínculo operacional'}
                         </span>
                       </button>
                     ))}

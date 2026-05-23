@@ -3,6 +3,9 @@ import { fullLogout } from '../../lib/session/fullLogout';
 import { clearAccessToken, getAccessToken } from '../../lib/session/authTokenMemory';
 import { shouldAttemptTokenRefresh } from './authRefreshPolicy';
 import { refreshSessionToken } from '../../lib/session/refreshSessionToken';
+import { getCorrelationId } from '../../lib/observability/requestContext';
+import { logDevApiRequest } from '../../lib/observability/devApiLog';
+import { useAuthStore } from '../../store/authStore';
 
 /**
  * Cliente HTTP centralizado.
@@ -26,11 +29,31 @@ export function resetAuthTransportState() {
   /* cola duplicada eliminada — refreshSessionToken dedupe en authRefreshManager */
 }
 
+function inferRequestMode(url: string): 'masterdata' | 'legacy' {
+  return url.includes('/api/master/business-partners') ? 'masterdata' : 'legacy';
+}
+
 api.interceptors.request.use((config) => {
   const token = getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  const correlationId = getCorrelationId();
+  config.headers['x-correlation-id'] = correlationId;
+
+  const { companySessionVersion } = useAuthStore.getState();
+  config.headers['x-company-session-version'] = String(companySessionVersion);
+
+  if (import.meta.env.DEV) {
+    const url = String(config.url ?? '');
+    logDevApiRequest({
+      endpoint: url,
+      mode: inferRequestMode(url),
+      method: (config.method ?? 'get').toUpperCase(),
+    });
+  }
+
   return config;
 });
 

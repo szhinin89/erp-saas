@@ -53,7 +53,7 @@ public sealed class SriRetryJob : ISriRetryJob
         {
             var subscriberId = grupo.Key;
 
-            JobSubscriberContext.Current = subscriberId;
+            using var jobCtx = JobExecutionContext.Begin(subscriberId);
             try
             {
                 foreach (var bill in grupo)
@@ -83,9 +83,9 @@ public sealed class SriRetryJob : ISriRetryJob
                     }
                 }
             }
-            finally
+            catch (Exception ex)
             {
-                JobSubscriberContext.Current = Guid.Empty;
+                _logger.LogError(ex, "SriRetryJob: error procesando subscriber {SubscriberId}", subscriberId);
             }
         }
     }

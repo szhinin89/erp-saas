@@ -4,4 +4,4 @@ using ERP.Application.Products.DTOs;
 
 namespace ERP.Application.Products.UseCases.EnableProduct;
 
-public record EnableProductCommand(Guid Id) : IRequest<Result<ProductDto>>;
+public record EnableProductCommand(Guid Id) : IRequest<Result<ProductDto>>, ICompanyScopedRequest;

@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Modules.Purchasing.Enums;
@@ -11,4 +11,4 @@ public record GetPurchasesQuery(
     DateTime?      DateFrom,
     DateTime?      DateTo,
     string?       Search
-) : IRequest<Result<IReadOnlyList<PurchBillDto>>>;
+) : IRequest<Result<IReadOnlyList<PurchBillDto>>>, ICompanyScopedRequest;

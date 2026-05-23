@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Application.Modules.Cash.Services;
@@ -6,7 +6,7 @@ using ERP.Application.Modules.Cash.Services;
 namespace ERP.Application.Modules.Cash.UseCases;
 
 public sealed record SugerirReconciliationQuery(Guid ExtractoId)
-    : IRequest<Result<IReadOnlyList<ReconciliationSuggestionDto>>>;
+    : IRequest<Result<IReadOnlyList<ReconciliationSuggestionDto>>>, ICompanyScopedRequest;
 
 public sealed class SugerirReconciliationQueryHandler
     : IRequestHandler<SugerirReconciliationQuery, Result<IReadOnlyList<ReconciliationSuggestionDto>>>
@@ -22,7 +22,7 @@ public sealed class SugerirReconciliationQueryHandler
 }
 
 public sealed record ConciliarBankTransactionCommand(Guid MovimientoId, Guid JournalEntryId)
-    : IRequest<Result<bool>>;
+    : IRequest<Result<bool>>, ICompanyScopedRequest;
 
 public sealed class ConciliarBankTransactionCommandHandler
     : IRequestHandler<ConciliarBankTransactionCommand, Result<bool>>

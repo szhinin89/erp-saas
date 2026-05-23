@@ -12,7 +12,7 @@ public sealed record CreateJournalEntryCommand(
     DateTime Date,
     string Description,
     IReadOnlyList<JournalEntryLineCommand> Lines
-) : IRequest<Result<JournalEntryDto>>;
+) : IRequest<Result<JournalEntryDto>>, ICompanyScopedRequest;
 
 public record JournalEntryLineCommand(
     Guid AccountId,

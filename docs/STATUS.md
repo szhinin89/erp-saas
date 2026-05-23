@@ -1,6 +1,6 @@
 # Project Status
 
-**Single source of truth** for delivery state. Updated: **2026-05-21**.
+**Single source of truth** for delivery state. Updated: **2026-05-23**.
 
 ## Documentation map (canonical — `AI-RULES/` + 7 files in `docs/` + índices)
 
@@ -228,6 +228,18 @@ Details: [ARCHITECTURE.md](./ARCHITECTURE.md), [DATABASE.md](./DATABASE.md).
 3. Playwright enterprise E2E con API en CI (smoke ya verde)
 
 See [ROADMAP.md](./ROADMAP.md) for prioritized backlog.
+
+### Enterprise hardening — MasterData + security (2026-05-23)
+
+| Item | Estado |
+|------|--------|
+| Explicit scope markers (`ICompanyScopedRequest` / CI AR-SEC-4) | ✅ |
+| PostgreSQL unique violation → `Result.Conflict` (409) | ✅ |
+| Testcontainers concurrency tests | ✅ (`Category=PostgreSql`) |
+| Security metrics wired (refresh, 403, dual-write, namespace fallback) | ✅ |
+| MasterData reconciliation (READ-ONLY) + health + Hangfire job | ✅ |
+| SRI foundation (`SupplierProfile` retention defaults) | ✅ |
+| Docs: [security/MULTI-TENANT-HARDENING.md](./security/MULTI-TENANT-HARDENING.md), [observability/METRICS.md](./observability/METRICS.md) | ✅ |
 
 ## Risks
 

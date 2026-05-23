@@ -4,4 +4,4 @@ using MediatR;
 
 namespace ERP.Application.Products.UseCases.UpdateProductType;
 
-public record UpdateProductTypeCommand(Guid ProductTypeId, string Code, string Name) : IRequest<Result<ProductTypeDto>>;
+public record UpdateProductTypeCommand(Guid ProductTypeId, string Code, string Name) : IRequest<Result<ProductTypeDto>>, ICompanyScopedRequest;

@@ -6,4 +6,4 @@ namespace ERP.Application.Modules.Sales.UseCases.ListarClientes;
 
 [RequireFeature(SubscriptionFeatureCodes.Sales)]
 public sealed record GetCustomersQuery(bool? ActiveFilter, string? Search)
-    : IRequest<Result<IReadOnlyList<CustomerDto>>>;
+    : IRequest<Result<IReadOnlyList<CustomerDto>>>, ICompanyScopedRequest;

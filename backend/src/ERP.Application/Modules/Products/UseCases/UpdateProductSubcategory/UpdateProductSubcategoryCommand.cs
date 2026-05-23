@@ -4,4 +4,4 @@ using ERP.Application.Products.DTOs;
 
 namespace ERP.Application.Products.UseCases.UpdateProductSubcategory;
 
-public record UpdateProductSubcategoryCommand(Guid Id, string Code, string Name, Guid CategoryId) : IRequest<Result<ProductSubcategoryDto>>;
+public record UpdateProductSubcategoryCommand(Guid Id, string Code, string Name, Guid CategoryId) : IRequest<Result<ProductSubcategoryDto>>, ICompanyScopedRequest;

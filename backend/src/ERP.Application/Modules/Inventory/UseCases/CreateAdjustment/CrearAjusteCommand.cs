@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 
@@ -11,4 +11,4 @@ public record CreateStockAdjustmentCommand(
     decimal AdjustmentQty,
     string  Reason,
     string? Notes
-) : IRequest<Result<StockAdjustmentDto>>;
+) : IRequest<Result<StockAdjustmentDto>>, ICompanyScopedRequest;

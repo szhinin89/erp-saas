@@ -4,4 +4,4 @@ using ERP.Application.Products.DTOs;
 
 namespace ERP.Application.Products.UseCases.GetProductSubcategories;
 
-public record GetProductSubcategoriesQuery(Guid? LineId, Guid? CategoryId, bool? ActiveFilter, string? Search) : IRequest<Result<IReadOnlyList<ProductSubcategoryListItemDto>>>;
+public record GetProductSubcategoriesQuery(Guid? LineId, Guid? CategoryId, bool? ActiveFilter, string? Search) : IRequest<Result<IReadOnlyList<ProductSubcategoryListItemDto>>>, ICompanyScopedRequest;

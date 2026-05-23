@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 
@@ -11,7 +11,7 @@ public record CreateTransferCommand(
     string? Reason,
     string? Notes,
     List<TransferItemDto>  Items
-) : IRequest<Result<TransferDto>>;
+) : IRequest<Result<TransferDto>>, ICompanyScopedRequest;
 
 public record TransferItemDto(Guid ProductId, decimal Quantity);
 

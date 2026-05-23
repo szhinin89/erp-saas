@@ -8,4 +8,4 @@ namespace ERP.Application.Products.UseCases.GetTaxRates;
 public sealed record GetTaxRatesQuery(
     TaxRateType? Type,
     bool OnlyActive
-) : IRequest<Result<IReadOnlyList<TaxRateDto>>>;
+) : IRequest<Result<IReadOnlyList<TaxRateDto>>>, ICompanyScopedRequest;

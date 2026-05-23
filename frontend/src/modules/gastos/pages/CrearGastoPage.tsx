@@ -4,8 +4,8 @@ import { NoAccessPage } from '../../../components/PageShell';
 import { ErpPageTemplate } from '../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../components/zh/ZHForm';
-import { useAsync } from '../../../hooks/useAsync';
-import { supplierService } from '../../compras/suppliers/api/supplierService';
+import { useCompanyScopedAsync } from '../../../hooks/useCompanyScopedAsync';
+import { businessPartnerFacade } from '../../masterData/api/businessPartnerFacade';
 import { gastosService, type ExpenseCategoryDto } from '../api/gastosService';
 import './gastos-page.css';
 import { usePermissionsUi } from '../../../access/usePermissionsUi';
@@ -17,8 +17,8 @@ export function CrearGastoPage() {
   const navigate  = useNavigate();
   const canCreate = canShow('expenses.invoices.create');
 
-  const suppliersState  = useAsync(() => supplierService.getAll());
-  const categoriasState = useAsync(() => gastosService.getCategorias());
+  const suppliersState  = useCompanyScopedAsync(() => businessPartnerFacade.searchSuppliersForPicker());
+  const categoriasState = useCompanyScopedAsync(() => gastosService.getCategorias());
 
   const [supplierId,    setSupplierId]    = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
@@ -130,7 +130,14 @@ export function CrearGastoPage() {
               >
                 <option value="">-- Sin proveedor (opcional) --</option>
                 {(suppliersState.data ?? []).map((s) => (
-                  <option key={s.id} value={s.id}>{s.legalName} ({s.taxId})</option>
+                  <option
+                    key={s.pickerMeta.businessPartnerId}
+                    value={s.pickerMeta.legacyOperationalId ?? ''}
+                    disabled={!s.pickerMeta.selectable}
+                  >
+                    {s.legalName} ({s.taxId})
+                    {!s.pickerMeta.selectable ? ' — sin vínculo operacional' : ''}
+                  </option>
                 ))}
               </select>
             </ZHField>

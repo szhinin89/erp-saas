@@ -10,5 +10,5 @@ public record CreateTaxRateCommand(
     string Name,
     TaxRateType Type,
     decimal Percentage
-) : IRequest<Result<TaxRateDto>>;
+) : IRequest<Result<TaxRateDto>>, ICompanyScopedRequest;
 

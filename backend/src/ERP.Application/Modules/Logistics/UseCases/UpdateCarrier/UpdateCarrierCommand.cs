@@ -12,4 +12,4 @@ public record UpdateCarrierCommand(
     string  LegalName,
     string  LicensePlate,
     string? Phone,
-    string? Email) : IRequest<Result<CarrierDto>>;
+    string? Email) : IRequest<Result<CarrierDto>>, ICompanyScopedRequest;

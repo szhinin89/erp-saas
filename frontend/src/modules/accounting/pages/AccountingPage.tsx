@@ -38,7 +38,7 @@ export function AccountingPage() {
     fetchBalance,
   } = ctx;
 
-  if (!permsHydrated && !skipPermissionHydrationWait) {
+  if ((!permsHydrated || ctx.permissionsSyncing) && !skipPermissionHydrationWait) {
     return (
       <ErpPageTemplate kicker={t('app.nav.group.accounting')} title={t('app.nav.accounting')}>
         <div className="acc-page-loading">

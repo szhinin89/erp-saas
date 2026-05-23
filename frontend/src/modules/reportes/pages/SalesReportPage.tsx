@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuthStore } from '../../../store/authStore';
 import {
   ReportPage,
   ReportKpiCard,
@@ -31,6 +32,7 @@ const DEMO_ROWS = [
 ];
 
 export function SalesReportPage() {
+  const companySessionVersion = useAuthStore((s) => s.companySessionVersion);
   const [period, setPeriod] = useState<RptPeriod>('day');
   const [search, setSearch] = useState('');
 
@@ -40,6 +42,7 @@ export function SalesReportPage() {
 
   return (
     <ReportPage
+      key={`sales-report-${companySessionVersion}`}
       breadcrumb={['ERP', 'REPORTES']}
       title="Reporte de Ventas"
       subtitle="Análisis detallado de rendimiento comercial y transacciones."

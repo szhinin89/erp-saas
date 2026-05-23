@@ -5,4 +5,4 @@ using ERP.Application.Modules.Branches.DTOs;
 namespace ERP.Application.Modules.Branches.UseCases.GetBranchById;
 
 [RequireFeature(SubscriptionFeatureCodes.Access)]
-public sealed record GetBranchByIdQuery(Guid Id) : IRequest<Result<BranchDetailDto>>;
+public sealed record GetBranchByIdQuery(Guid Id) : IRequest<Result<BranchDetailDto>>, ICompanyScopedRequest;

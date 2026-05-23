@@ -7,4 +7,4 @@ namespace ERP.Application.Modules.Accounting.UseCases.GetAccounts;
 public sealed record GetAccountsQuery(
     int PageNumber,
     int PageSize
-) : IRequest<Result<PagedResult<AccountDto>>>;
+) : IRequest<Result<PagedResult<AccountDto>>>, ICompanyScopedRequest;

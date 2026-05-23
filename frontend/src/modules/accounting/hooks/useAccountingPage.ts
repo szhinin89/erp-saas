@@ -35,7 +35,12 @@ export const EMPTY_ACCOUNT_FORM: CreateAccountFormValues = {
 export function useAccountingPage() {
   const { t } = useI18n();
   const subscriberId = useAuthStore((s) => s.user?.subscriberId ?? '');
-  const { canShow, hasHydrated: permsHydrated, skipPermissionHydrationWait } = usePermissionsUi();
+  const {
+    canShow,
+    hasHydrated: permsHydrated,
+    permissionsSyncing,
+    skipPermissionHydrationWait,
+  } = usePermissionsUi();
 
   const canViewAccounts = canShow('finance.accounts.view');
   const canCreateAccount = canShow('finance.accounts.create');
@@ -281,6 +286,7 @@ export function useAccountingPage() {
     t,
     subscriberId,
     skipPermissionHydrationWait,
+    permissionsSyncing,
     permsHydrated,
     canUseModule,
     canViewAccounts,

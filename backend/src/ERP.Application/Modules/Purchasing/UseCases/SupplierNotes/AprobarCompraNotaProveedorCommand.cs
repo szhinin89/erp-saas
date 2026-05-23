@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 
@@ -8,4 +8,4 @@ public sealed record ApprovePurchaseSupplierNoteCommand(
     Guid    NotaId,
     string?   AuthNumber,
     DateTime? AuthDate
-) : IRequest<Result<SupplierPurchaseNoteDto>>;
+) : IRequest<Result<SupplierPurchaseNoteDto>>, ICompanyScopedRequest;

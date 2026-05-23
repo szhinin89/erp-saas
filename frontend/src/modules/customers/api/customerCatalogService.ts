@@ -43,7 +43,11 @@ function listQuery(activeStatus: CatalogActiveStatus, search?: string) {
   return `?${q.toString()}`;
 }
 
-/** API catálogo — DTO alineado al contrato `/api/sales/customers` (forma legalName/tradeName). */
+/**
+ * API catálogo legacy — `/api/sales/customers`.
+ * Lecturas nuevas para pickers: usar `businessPartnerFacade` (ver `modules/masterData/SERVICE-REGISTRY.md`).
+ * CRUD de esta pantalla sigue aquí hasta cutover MasterData.
+ */
 export const customerCatalogService = {
   list: (activeStatus: CatalogActiveStatus = 'all', search?: string) =>
     apiGet<CustomerDto[]>(`/api/sales/customers${listQuery(activeStatus, search)}`),

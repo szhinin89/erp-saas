@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../modules/auth/api/authService';
 import { companyManagementService } from '../modules/company-management/api/companyManagementService';
+import { bumpCompanyOperationalSession } from '../lib/session/companySession';
+import { logDevSessionContext } from '../lib/session/devSessionLog';
 import { syncSessionEntitlements } from '../lib/syncSessionEntitlements';
 import { useAuthStore } from '../store/authStore';
 import { usePermissionsStore } from '../store/permissionsStore';
@@ -59,6 +61,8 @@ export function CompanySwitcher() {
       };
       clearPermissions();
       login(auth);
+      bumpCompanyOperationalSession();
+      logDevSessionContext('switch-company');
       await syncSessionEntitlements();
       void companyManagementService.getCurrent();
       navigate('/dashboard', { replace: true });

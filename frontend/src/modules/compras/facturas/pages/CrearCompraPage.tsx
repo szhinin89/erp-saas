@@ -4,8 +4,8 @@ import { NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
-import { useAsync } from '../../../../hooks/useAsync';
-import { supplierService } from '../../suppliers/api/supplierService';
+import { useCompanyScopedAsync } from '../../../../hooks/useCompanyScopedAsync';
+import { businessPartnerFacade } from '../../../masterData/api/businessPartnerFacade';
 import { comprasService, type CompraLineaInput } from '../api/comprasService';
 import './compras-facturas-page.css';
 import { usePermissionsUi } from '../../../../access/usePermissionsUi';
@@ -46,7 +46,7 @@ export function CrearCompraPage() {
   const navigate  = useNavigate();
   const canCreate = canShow('purchases.invoices.create');
 
-  const suppliersState = useAsync(() => supplierService.getAll());
+  const suppliersState = useCompanyScopedAsync(() => businessPartnerFacade.searchSuppliersForPicker());
 
   const [supplierId,    setSupplierId]    = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
@@ -146,7 +146,14 @@ export function CrearCompraPage() {
               >
                 <option value="">-- Seleccionar proveedor --</option>
                 {(suppliersState.data ?? []).map((s) => (
-                  <option key={s.id} value={s.id}>{s.legalName} ({s.taxId})</option>
+                  <option
+                    key={s.pickerMeta.businessPartnerId}
+                    value={s.pickerMeta.legacyOperationalId ?? ''}
+                    disabled={!s.pickerMeta.selectable}
+                  >
+                    {s.legalName} ({s.taxId})
+                    {!s.pickerMeta.selectable ? ' — sin vínculo operacional' : ''}
+                  </option>
                 ))}
               </select>
             </ZHField>

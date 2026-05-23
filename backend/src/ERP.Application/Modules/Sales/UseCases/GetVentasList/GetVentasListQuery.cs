@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Sales.DTOs;
 
@@ -13,4 +13,4 @@ public record GetSalesListQuery(
     DateTime? DateTo  = null,
     string?   Status      = null,
     string?   Search      = null
-) : IRequest<Result<SalesPagedResult>>;
+) : IRequest<Result<SalesPagedResult>>, ICompanyScopedRequest;

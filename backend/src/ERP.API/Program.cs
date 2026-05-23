@@ -21,6 +21,9 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using QuestPDF.Infrastructure;
 using System.Threading.RateLimiting;
 using Serilog;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using Hangfire.Common;
 
 // Licencia Community: libre para proyectos con ingresos anuales < 1 M USD.
 // Cambiar a LicenseType.Professional si aplica.
@@ -131,10 +134,30 @@ builder.Services.AddDataProtection();
 builder.Services.AddApplication();
 builder.Services.AddScoped<AppFeatureDiscoveryService>();
 
+// OpenTelemetry metrics (Prometheus scrape en /metrics cuando Observability:EnablePrometheus=true)
+var observabilityEnabled = builder.Configuration.GetValue("Observability:EnablePrometheus", true);
+if (observabilityEnabled && !builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddOpenTelemetry()
+        .ConfigureResource(r => r.AddService("ERP.SaaS"))
+        .WithMetrics(m => m
+            .AddAspNetCoreInstrumentation()
+            .AddMeter("ERP.Security")
+            .AddPrometheusExporter());
+}
+
 // Health: live = proceso arriba; ready = BD, Redis (si hay), URL externa opcional (SRI)
 var healthChecks = builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live"])
-    .AddCheck<ErpDbContextReadyHealthCheck>("database", tags: ["ready"]);
+    .AddCheck<ErpDbContextReadyHealthCheck>("database", tags: ["ready"])
+    .AddCheck<SecurityContextHealthCheck>("security-context", tags: ["security"])
+    .AddCheck<MembershipConsistencyHealthCheck>("membership-consistency", tags: ["security", "ready"])
+    .AddCheck<MasterDataSyncHealthCheck>("masterdata-sync", tags: ["security", "ready"])
+    .AddCheck<BackgroundContextHealthCheck>("background-context", tags: ["security"])
+    .AddCheck<QueryFilterEnforcementHealthCheck>("query-filter-enforcement", tags: ["security"])
+    .AddCheck<MasterDataReconciliationHealthCheck>("masterdata-reconciliation", tags: ["security", "ready"]);
+
+builder.Services.AddHostedService<ErpScopeMarkerStartupValidator>();
 
 var enableRedisHealthCheck = builder.Configuration.GetValue("HealthChecks:EnableRedis", true);
 if (!builder.Environment.IsEnvironment("Testing")
@@ -167,9 +190,11 @@ if (hangfireEnabled)
     builder.Services.AddHangfire(configuration =>
         configuration.UsePostgreSqlStorage(options =>
             options.UseNpgsqlConnection(hangfireConn)));
+    GlobalJobFilters.Filters.Add(new HangfireTenantContextFilter());
     builder.Services.AddHangfireServer();
     builder.Services.AddScoped<ISriRetryJob, SriRetryJob>();
     builder.Services.AddScoped<IProcessOutboxJob, ProcessOutboxJob>();
+    builder.Services.AddScoped<IMasterDataReconciliationJob, MasterDataReconciliationJob>();
 }
 
 // Opciones del Kardex: registrar tanto como IOptions<> (convención .NET)
@@ -309,6 +334,40 @@ app.MapHealthChecks("/health/ready", new HealthCheckOptions
     ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
 });
 
+app.MapHealthChecks("/health/security-context", new HealthCheckOptions
+{
+    Predicate = r => r.Name == "security-context",
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+app.MapHealthChecks("/health/membership-consistency", new HealthCheckOptions
+{
+    Predicate = r => r.Name == "membership-consistency",
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+app.MapHealthChecks("/health/masterdata-sync", new HealthCheckOptions
+{
+    Predicate = r => r.Name == "masterdata-sync",
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+app.MapHealthChecks("/health/background-context", new HealthCheckOptions
+{
+    Predicate = r => r.Name == "background-context",
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+app.MapHealthChecks("/health/query-filter-enforcement", new HealthCheckOptions
+{
+    Predicate = r => r.Name == "query-filter-enforcement",
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+app.MapHealthChecks("/health/masterdata-reconciliation", new HealthCheckOptions
+{
+    Predicate = r => r.Name == "masterdata-reconciliation",
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse,
+});
+
+if (observabilityEnabled && !app.Environment.IsEnvironment("Testing"))
+    app.MapPrometheusScrapingEndpoint("/metrics");
+
 if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
     app.UseHttpsRedirection();
 
@@ -346,6 +405,11 @@ if (hangfireEnabled)
         "process-outbox",
         x => x.ExecuteAsync(CancellationToken.None),
         "* * * * *"); // cada minuto
+
+    RecurringJob.AddOrUpdate<IMasterDataReconciliationJob>(
+        "masterdata-reconciliation",
+        x => x.ExecuteAsync(CancellationToken.None),
+        Cron.Daily(hour: 3));
 }
 
 app.UseSerilogRequestLogging();

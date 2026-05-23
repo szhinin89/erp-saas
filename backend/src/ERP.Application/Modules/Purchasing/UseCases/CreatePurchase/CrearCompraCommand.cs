@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 
@@ -6,7 +6,7 @@ namespace ERP.Application.Modules.Purchasing.UseCases.CrearCompra;
 
 public enum PurchaseCreationMode { Xml = 1, Manual = 2 }
 
-/// <summary>Datos de una línea de detalle en modo Manual.</summary>
+/// <summary>Datos de una l�nea de detalle en modo Manual.</summary>
 public sealed record PurchaseLineInput(
     string  Description,
     string? ProductCode,
@@ -17,21 +17,21 @@ public sealed record PurchaseLineInput(
     decimal VatPct);
 
 /// <summary>
-/// Distribución de la cantidad de un detalle (<see cref="ItemIndex"/>) hacia una Warehouse.
-/// <see cref="ProductoId"/> opcional: si viene, enlaza inventario aunque la línea (p. ej. XML) no tenga producto.
+/// Distribuci�n de la cantidad de un detalle (<see cref="ItemIndex"/>) hacia una Warehouse.
+/// <see cref="ProductoId"/> opcional: si viene, enlaza inventario aunque la l�nea (p. ej. XML) no tenga producto.
 /// </summary>
 public sealed record WarehouseAllocationRequest(int ItemIndex, Guid    WarehouseId, decimal Quantity, Guid?     ProductId = null);
 
-/// <summary>Crea una factura de compra. <c>WarehouseAllocations</c> es opcional; si viene, la suma por ítem debe igualar la cantidad de cada detalle.</summary>
+/// <summary>Crea una factura de compra. <c>WarehouseAllocations</c> es opcional; si viene, la suma por �tem debe igualar la cantidad de cada detalle.</summary>
 [RequireFeature(SubscriptionFeatureCodes.Inventory)]
 public sealed record CreatePurchaseCommand(
     PurchaseCreationMode Modo,
 
-    // ── XML ──────────────────────────────────────────────────────────────
+    // -- XML --------------------------------------------------------------
     byte[]? XmlContent,
     string? XmlFileName,
 
-    // ── Manual ───────────────────────────────────────────────────────────
+    // -- Manual -----------------------------------------------------------
     Guid?     SupplierId,
     string?   InvoiceNumber,
     DateTime? InvoiceDate,
@@ -40,4 +40,4 @@ public sealed record CreatePurchaseCommand(
     string? Notes,
     IReadOnlyList<PurchaseLineInput>? Lines,
     IReadOnlyList<WarehouseAllocationRequest>? WarehouseAllocations
-) : IRequest<Result<PurchBillDto>>;
+) : IRequest<Result<PurchBillDto>>, ICompanyScopedRequest;

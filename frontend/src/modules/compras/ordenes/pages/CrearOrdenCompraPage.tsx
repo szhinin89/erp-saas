@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { NoAccessPage } from '../../../../components/PageShell';
 import { ErpPageTemplate } from '../../../../templates/ErpPageTemplate';
 import { ZHBtn, ZHField } from '../../../../components/zh/ZHForm';
 import { ZHPageNotice } from '../../../../components/zh/ZHPageNotice';
 import { useOrdenCompraAcciones } from '../hooks/useOrdenesCompra';
+import { useAuthStore } from '../../../../store/authStore';
+import { businessPartnerFacade } from '../../../masterData/api/businessPartnerFacade';
 import { api } from '../../../lib/api';
 import type { ApiResponse } from '../../../../types/api';
 import type { ItemOrdenCompraRequest } from '../api/ordenCompraService';
 import './orden-compra-page.css';
 import { usePermissionsUi } from '../../../../access/usePermissionsUi';
 
-interface ProveedorOpcion { id: string; razonSocial: string; }
+import type { SupplierPickerOption } from '../../../masterData/api/businessPartnerFacade';
 interface ProductoOpcion  { id: string; shortName: string; isActive: boolean; }
 
 interface ItemRow {
@@ -28,17 +30,21 @@ export function CrearOrdenCompraPage() {
   const navigate  = useNavigate();
   const canCreate = canShow('purchases.orders.create');
 
-  const [proveedores, setProveedores] = useState<ProveedorOpcion[]>([]);
+  const companySessionVersion = useAuthStore((s) => s.companySessionVersion);
+  const [proveedorId,      setProveedorId]      = useState('');
+  const [proveedores, setProveedores] = useState<SupplierPickerOption[]>([]);
   const [productos,   setProductos]   = useState<ProductoOpcion[]>([]);
 
-  useEffect(() => {
-    api.get<ApiResponse<ProveedorOpcion[]>>('/api/purchases/suppliers')
-      .then((r) => setProveedores(r.data.responseObject ?? []));
+  const loadPickerData = useCallback(() => {
+    setProveedorId('');
+    void businessPartnerFacade.searchSupplierPickerOptions().then(setProveedores);
     api.get<ApiResponse<ProductoOpcion[]>>('/api/inventory/products')
       .then((r) => setProductos((r.data.responseObject ?? []).filter((p) => p.isActive)));
   }, []);
 
-  const [proveedorId,      setProveedorId]      = useState('');
+  useEffect(() => {
+    loadPickerData();
+  }, [loadPickerData, companySessionVersion]);
   const [fechaRequerida,   setFechaRequerida]   = useState('');
   const [bodegaDestinoId]                       = useState('');
   const [direccionEntrega, setDireccionEntrega] = useState('');
@@ -116,7 +122,16 @@ export function CrearOrdenCompraPage() {
                 <select className="zh-input" value={proveedorId}
                   onChange={(e) => setProveedorId(e.target.value)} required>
                   <option value="">Seleccionar proveedor…</option>
-                  {proveedores.map((p) => <option key={p.id} value={p.id}>{p.razonSocial}</option>)}
+                  {proveedores.map((p) => (
+                    <option
+                      key={p.id}
+                      value={p.selectable ? p.id : ''}
+                      disabled={!p.selectable}
+                    >
+                      {p.razonSocial}
+                      {!p.selectable ? ' — sin vínculo operacional' : ''}
+                    </option>
+                  ))}
                 </select>
               </ZHField>
 

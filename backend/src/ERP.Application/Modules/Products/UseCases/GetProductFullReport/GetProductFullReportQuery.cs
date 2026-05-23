@@ -4,4 +4,4 @@ using ERP.Application.Products.DTOs;
 
 namespace ERP.Application.Products.UseCases.GetProductFullReport;
 
-public sealed record GetProductFullReportQuery(Guid Id) : IRequest<Result<ProductFullReportDto>>;
+public sealed record GetProductFullReportQuery(Guid Id) : IRequest<Result<ProductFullReportDto>>, ICompanyScopedRequest;

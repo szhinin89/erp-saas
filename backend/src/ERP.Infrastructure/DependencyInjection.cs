@@ -25,7 +25,9 @@ using ERP.Domain.Modules.Expenses.Interfaces;
 using ERP.Domain.Modules.Cash.Interfaces;
 using ERP.Application.Access;
 using ERP.Application.Access.Caching;
+using ERP.Application.MasterData;
 using ERP.Domain.MasterData.Interfaces;
+using ERP.Infrastructure.MasterData;
 using ERP.Infrastructure.MasterData.Repositories;
 using ERP.Application.Subscriptions;
 using ERP.Application.Subscriptions.Caching;
@@ -57,6 +59,9 @@ using ERP.Domain.Modules.Cash;
 using ERP.Domain.Modules.Menu.Interfaces;
 using ERP.Infrastructure.Options;
 using ERP.Infrastructure.Persistence.Outbox;
+using ERP.Application.Common.Persistence;
+using ERP.Application.Common.Security;
+using ERP.Infrastructure.Observability;
 
 namespace ERP.Infrastructure;
 
@@ -103,6 +108,7 @@ public static class DependencyInjection
 
         // ── MasterData BC ────────────────────────────────────────────────
         services.AddScoped<IBusinessPartnerRepository, BusinessPartnerRepository>();
+        services.AddScoped<IBusinessPartnerOperationalLinkEnricher, BusinessPartnerOperationalLinkEnricher>();
         services.AddScoped<ICustomerProfileRepository, CustomerProfileRepository>();
         services.AddScoped<ISupplierProfileRepository, SupplierProfileRepository>();
         services.AddScoped<ICompanyBpSettingsRepository, CompanyBpSettingsRepository>();
@@ -114,6 +120,10 @@ public static class DependencyInjection
         services.AddScoped<ICompanyProvisioningService, CompanyProvisioningService>();
         services.AddScoped<ISubscriberProvisioningOrchestrator, SubscriberProvisioningOrchestrator>();
         services.AddScoped<ISubscriberIntegrityRepairService, SubscriberIntegrityRepairService>();
+        services.AddSingleton<ISecurityMetrics, SecurityMetrics>();
+        services.AddSingleton<IDatabaseExceptionTranslator, PostgresDatabaseExceptionTranslator>();
+        services.AddScoped<ERP.Application.MasterData.Reconciliation.IMasterDataReconciliationService,
+            MasterData.Reconciliation.BusinessPartnerReconciliationService>();
         services.AddScoped<ERP.Application.Modules.Platform.Companies.ICompanyAccessGuard, CompanyAccessGuard>();
         services.AddScoped<ICompanyRepository, CompanyRepository>();
         services.AddScoped<ICurrentUser, CurrentUserService>();

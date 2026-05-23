@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useAuthStore } from '../store/authStore';
 import { formatApiError } from '../modules/lib/formatApiError';
 
 interface AsyncState<T> {
@@ -11,12 +12,14 @@ interface AsyncState<T> {
 
 /**
  * Hook genérico para ejecutar una función async y exponer su estado (loading/error/data).
- * La función `fn` se vuelve a ejecutar cada vez que se llama a `refetch`.
- *
- * Cancela la actualización de estado si el componente se desmonta antes de que
- * la promise resuelva, evitando el warning "Can't perform state update on unmounted component".
+ * Incluye `companySessionVersion` en deps para refetch tras switch-company.
  */
-export function useAsync<T>(fn: () => Promise<T>, enabled = true): AsyncState<T> {
+export function useAsync<T>(
+  fn: () => Promise<T>,
+  enabled = true,
+  extraDeps: readonly unknown[] = [],
+): AsyncState<T> {
+  const companySessionVersion = useAuthStore((s) => s.companySessionVersion);
   const [data, setData]       = useState<T | null>(null);
   const [loading, setLoading] = useState(enabled);
   const [error, setError]     = useState<string | null>(null);
@@ -31,6 +34,7 @@ export function useAsync<T>(fn: () => Promise<T>, enabled = true): AsyncState<T>
         if (!cancelled) {
           setLoading(false);
           setError(null);
+          setData(null);
         }
       });
       return () => {
@@ -55,7 +59,7 @@ export function useAsync<T>(fn: () => Promise<T>, enabled = true): AsyncState<T>
 
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tick, enabled]);
+  }, [tick, enabled, companySessionVersion, ...extraDeps]);
 
   return { data, loading, error, refetch };
 }

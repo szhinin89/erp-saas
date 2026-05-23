@@ -13,4 +13,4 @@ public sealed record UpdateAccountCommand(
     AccountNature Nature,
     Guid? ParentId,
     bool? AllowsMovements = null
-) : IRequest<Result<AccountDto>>;
+) : IRequest<Result<AccountDto>>, ICompanyScopedRequest;

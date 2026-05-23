@@ -4,4 +4,4 @@ using ERP.Application.Products.DTOs;
 
 namespace ERP.Application.Products.UseCases.UpdateProductLine;
 
-public record UpdateProductLineCommand(Guid Id, string Code, string Name) : IRequest<Result<ProductLineDto>>;
+public record UpdateProductLineCommand(Guid Id, string Code, string Name) : IRequest<Result<ProductLineDto>>, ICompanyScopedRequest;

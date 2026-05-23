@@ -7,7 +7,7 @@ public sealed record EnqueueKardexReportCommand(
     Guid ProductId,
     Guid WarehouseId,
     DateTime? StartDate,
-    DateTime? EndDate) : IRequest<Result<EnqueueKardexReportResult>>;
+    DateTime? EndDate) : IRequest<Result<EnqueueKardexReportResult>>, ICompanyScopedRequest;
 
 public sealed record EnqueueKardexReportResult(
     Guid JobId,

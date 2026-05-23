@@ -21,18 +21,26 @@ namespace ERP.Domain.MasterData.Entities;
 /// </summary>
 public sealed class SupplierProfile : AuditableEntity, ISubscriberScopedEntity
 {
-    public const int TaxSupportCodeMaxLen = 10;
-    public const int PaymentTermsMaxLen   = 30;
+    public const int TaxSupportCodeMaxLen        = 10;
+    public const int RetentionVatCodeMaxLen      = 10;
+    public const int RetentionIncomeCodeMaxLen   = 10;
+    public const int PaymentTermsMaxLen          = 30;
 
     public Guid    SubscriberId      { get; private set; }
     public Guid    BusinessPartnerId { get; private set; }
     public bool    IsActive          { get; private set; } = true;
 
-    /// <summary>Código SRI de sustento tributario (ej. "01" = Crédito Tributario).</summary>
-    public string? TaxSupportCode    { get; private set; }
+    /// <summary>Default SRI: código de sustento tributario (overrideable por transacción).</summary>
+    public string? DefaultTaxSupportCode { get; private set; }
+
+    /// <summary>Default SRI: código retención IVA (overrideable por transacción).</summary>
+    public string? DefaultRetentionVatCode { get; private set; }
+
+    /// <summary>Default SRI: código retención renta (overrideable por transacción).</summary>
+    public string? DefaultRetentionIncomeCode { get; private set; }
 
     /// <summary>Condición de pago acordada con el proveedor (ej. "30D", "COD").</summary>
-    public string? PaymentTerms      { get; private set; }
+    public string? PaymentTerms { get; private set; }
 
     // Navegación
     public BusinessPartner? BusinessPartner { get; private set; }
@@ -43,8 +51,10 @@ public sealed class SupplierProfile : AuditableEntity, ISubscriberScopedEntity
         Guid    subscriberId,
         Guid    businessPartnerId,
         Guid    createdBy,
-        string? taxSupportCode = null,
-        string? paymentTerms   = null)
+        string? defaultTaxSupportCode = null,
+        string? defaultRetentionVatCode = null,
+        string? defaultRetentionIncomeCode = null,
+        string? paymentTerms = null)
     {
         if (subscriberId == Guid.Empty)
             throw new ArgumentException("SubscriberId es obligatorio.", nameof(subscriberId));
@@ -57,17 +67,26 @@ public sealed class SupplierProfile : AuditableEntity, ISubscriberScopedEntity
             SubscriberId      = subscriberId,
             BusinessPartnerId = businessPartnerId,
             IsActive          = true,
-            TaxSupportCode    = Trim(taxSupportCode, TaxSupportCodeMaxLen),
-            PaymentTerms      = Trim(paymentTerms, PaymentTermsMaxLen),
+            DefaultTaxSupportCode      = Trim(defaultTaxSupportCode, TaxSupportCodeMaxLen),
+            DefaultRetentionVatCode    = Trim(defaultRetentionVatCode, RetentionVatCodeMaxLen),
+            DefaultRetentionIncomeCode = Trim(defaultRetentionIncomeCode, RetentionIncomeCodeMaxLen),
+            PaymentTerms               = Trim(paymentTerms, PaymentTermsMaxLen),
         };
         p.SetCreated(createdBy);
         return p;
     }
 
-    public void Update(string? taxSupportCode, string? paymentTerms, Guid updatedBy)
+    public void Update(
+        string? defaultTaxSupportCode,
+        string? defaultRetentionVatCode,
+        string? defaultRetentionIncomeCode,
+        string? paymentTerms,
+        Guid updatedBy)
     {
-        TaxSupportCode = Trim(taxSupportCode, TaxSupportCodeMaxLen);
-        PaymentTerms   = Trim(paymentTerms, PaymentTermsMaxLen);
+        DefaultTaxSupportCode      = Trim(defaultTaxSupportCode, TaxSupportCodeMaxLen);
+        DefaultRetentionVatCode    = Trim(defaultRetentionVatCode, RetentionVatCodeMaxLen);
+        DefaultRetentionIncomeCode = Trim(defaultRetentionIncomeCode, RetentionIncomeCodeMaxLen);
+        PaymentTerms               = Trim(paymentTerms, PaymentTermsMaxLen);
         SetUpdated(updatedBy);
     }
 

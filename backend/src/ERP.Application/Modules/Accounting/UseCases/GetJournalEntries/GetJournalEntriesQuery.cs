@@ -7,4 +7,4 @@ namespace ERP.Application.Modules.Accounting.UseCases.GetJournalEntries;
 public sealed record GetJournalEntriesQuery(
     int PageNumber,
     int PageSize
-) : IRequest<Result<PagedResult<JournalEntryDto>>>;
+) : IRequest<Result<PagedResult<JournalEntryDto>>>, ICompanyScopedRequest;

@@ -1,5 +1,7 @@
 using MediatR;
 using ERP.Application.Common;
+using ERP.Application.Common.Persistence;
+using ERP.Application.Common.Security;
 using ERP.Application.Modules.Sales.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
@@ -20,6 +22,8 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
     private readonly ICurrentUser               _user;
     private readonly IBusinessPartnerRepository _bpRepo;
     private readonly ICustomerProfileRepository _cpRepo;
+    private readonly IDatabaseExceptionTranslator _dbExceptions;
+    private readonly ISecurityMetrics _metrics;
     private readonly ILogger<CreateCustomerCommandHandler> _logger;
 
     public CreateCustomerCommandHandler(
@@ -30,6 +34,8 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
         ICurrentUser               user,
         IBusinessPartnerRepository bpRepo,
         ICustomerProfileRepository cpRepo,
+        IDatabaseExceptionTranslator dbExceptions,
+        ISecurityMetrics metrics,
         ILogger<CreateCustomerCommandHandler> logger)
     {
         _repo     = repo;
@@ -39,6 +45,8 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
         _user     = user;
         _bpRepo   = bpRepo;
         _cpRepo   = cpRepo;
+        _dbExceptions = dbExceptions;
+        _metrics  = metrics;
         _logger   = logger;
     }
 
@@ -142,10 +150,25 @@ public sealed class CreateCustomerCommandHandler : IRequestHandler<CreateCustome
         }
         catch (Exception ex)
         {
-            // Best-effort: loggear sin propagar — Customer legacy ya fue guardado
-            _logger.LogWarning(ex,
-                "BP-3 dual-write falló para {Type} {Number} en subscriber {Sub}. Customer legacy guardado correctamente.",
-                command.IdentificationType, command.IdentificationNumber, subscriberId);
+            _metrics.RecordMasterDataDualWriteFailed(new SecurityMetricTags(
+                SubscriberId: subscriberId,
+                CompanyId: _company.CompanyId,
+                RequestType: nameof(CreateCustomerCommand)));
+
+            if (_dbExceptions.TryGetUniqueViolation(ex, out var violation))
+            {
+                UniqueViolationLogger.LogUniqueViolation(
+                    _logger, "BP-3 dual-write", violation, subscriberId, _company.CompanyId);
+                _metrics.RecordMasterDataSyncInconsistency(new SecurityMetricTags(
+                    SubscriberId: subscriberId,
+                    RequestType: "BP-3-race"));
+            }
+            else
+            {
+                _logger.LogWarning(ex,
+                    "BP-3 dual-write falló para {Type} {Number} en subscriber {Sub}. Customer legacy guardado correctamente.",
+                    command.IdentificationType, command.IdentificationNumber, subscriberId);
+            }
         }
     }
 }

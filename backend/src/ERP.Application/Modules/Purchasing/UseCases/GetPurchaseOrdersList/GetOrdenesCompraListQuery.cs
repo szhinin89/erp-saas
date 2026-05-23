@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 
@@ -12,4 +12,4 @@ public record GetPurchaseOrdersListQuery(
     string?   Status,
     DateTime? DateFrom,
     DateTime? DateTo
-) : IRequest<Result<PurchaseOrdersPagedResult>>;
+) : IRequest<Result<PurchaseOrdersPagedResult>>, ICompanyScopedRequest;

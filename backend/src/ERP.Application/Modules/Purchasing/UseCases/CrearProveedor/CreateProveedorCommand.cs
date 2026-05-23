@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 
@@ -13,4 +13,4 @@ public sealed record CreateSupplierCommand(
     string? Phone,
     string? Address,
     string  PaymentTerms
-) : IRequest<Result<SupplierDto>>;
+) : IRequest<Result<SupplierDto>>, ICompanyScopedRequest;

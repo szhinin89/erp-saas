@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Inventory.DTOs;
 
@@ -13,4 +13,4 @@ public record GetTransfersListQuery(
     string?   Status          = null,
     DateTime? DateFrom      = null,
     DateTime? DateTo      = null
-) : IRequest<Result<TransfersPagedResult>>;
+) : IRequest<Result<TransfersPagedResult>>, ICompanyScopedRequest;

@@ -14,7 +14,7 @@ public sealed record ImportarBankStatementCommand(
     DateTime PeriodTo,
     decimal OpeningBalance,
     decimal ClosingBalance,
-    IReadOnlyList<StatementParseRow> Rows) : IRequest<Result<BankStatementDto>>;
+    IReadOnlyList<StatementParseRow> Rows) : IRequest<Result<BankStatementDto>>, ICompanyScopedRequest;
 
 public sealed class ImportarBankStatementCommandHandler
     : IRequestHandler<ImportarBankStatementCommand, Result<BankStatementDto>>

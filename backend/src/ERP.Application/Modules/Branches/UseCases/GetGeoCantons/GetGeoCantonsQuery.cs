@@ -4,4 +4,4 @@ using ERP.Application.Modules.Branches.DTOs;
 
 namespace ERP.Application.Modules.Branches.UseCases.GetGeoCantons;
 
-public record GetGeoCantonsQuery(string ProvinceId) : IRequest<Result<IReadOnlyList<GeographyItemDto>>>;
+public record GetGeoCantonsQuery(string ProvinceId) : IRequest<Result<IReadOnlyList<GeographyItemDto>>>, ICompanyScopedRequest;

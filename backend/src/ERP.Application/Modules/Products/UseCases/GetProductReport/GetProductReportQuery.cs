@@ -9,4 +9,4 @@ public sealed record GetProductReportQuery(
     ProductReportFilter Filter,
     int PageNumber,
     int PageSize
-) : IRequest<Result<PagedResult<ProductReportItemDto>>>;
+) : IRequest<Result<PagedResult<ProductReportItemDto>>>, ICompanyScopedRequest;

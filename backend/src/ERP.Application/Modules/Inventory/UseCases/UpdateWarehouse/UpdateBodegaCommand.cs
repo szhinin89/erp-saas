@@ -18,4 +18,4 @@ public record UpdateWarehouseCommand(
     string?  Longitude,
     decimal? Capacity,
     decimal? DailyDispatchGoal
-) : IRequest<Result<WarehouseDto>>;
+) : IRequest<Result<WarehouseDto>>, ICompanyScopedRequest;

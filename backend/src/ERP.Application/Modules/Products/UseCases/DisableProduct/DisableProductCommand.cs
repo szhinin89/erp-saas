@@ -4,4 +4,4 @@ using ERP.Application.Products.DTOs;
 
 namespace ERP.Application.Products.UseCases.DisableProduct;
 
-public record DisableProductCommand(Guid Id) : IRequest<Result<ProductDto>>;
+public record DisableProductCommand(Guid Id) : IRequest<Result<ProductDto>>, ICompanyScopedRequest;

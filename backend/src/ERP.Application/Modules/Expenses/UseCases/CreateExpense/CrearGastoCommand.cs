@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Expenses.DTOs;
 
@@ -20,4 +20,4 @@ public sealed record CreateExpenseCommand(
     decimal?  VatTotal,
     decimal?  Total,
     string?   Notes
-) : IRequest<Result<ExpenseInvoiceDto>>;
+) : IRequest<Result<ExpenseInvoiceDto>>, ICompanyScopedRequest;

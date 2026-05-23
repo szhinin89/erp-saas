@@ -15,7 +15,11 @@ public sealed record BusinessPartnerDto(
     bool    IsActive,
     bool    IsCustomer,
     bool    IsSupplier,
-    DateTime CreatedAt)
+    DateTime CreatedAt,
+    Guid?   CustomerProfileId = null,
+    Guid?   SupplierProfileId = null,
+    Guid?   LegacyCustomerId  = null,
+    Guid?   LegacySupplierId  = null)
 {
     public static BusinessPartnerDto From(BusinessPartner bp) => new(
         bp.Id,
@@ -31,4 +35,7 @@ public sealed record BusinessPartnerDto(
         bp.CustomerProfile is not null,
         bp.SupplierProfile is not null,
         bp.CreatedAt);
+
+    public bool HasOperationalCustomerLink => LegacyCustomerId.HasValue && LegacyCustomerId != Guid.Empty;
+    public bool HasOperationalSupplierLink => LegacySupplierId.HasValue && LegacySupplierId != Guid.Empty;
 }

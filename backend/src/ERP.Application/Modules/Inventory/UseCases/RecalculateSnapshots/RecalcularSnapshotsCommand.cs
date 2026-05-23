@@ -1,4 +1,4 @@
-ï»¿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 
 namespace ERP.Application.Inventory.UseCases.RecalcularSnapshots;
@@ -7,13 +7,13 @@ namespace ERP.Application.Inventory.UseCases.RecalcularSnapshots;
 /// Recalcula los snapshots diarios del kardex para el tenant actual.
 /// Se puede filtrar por producto y/o Warehouse.
 /// Si no se proporciona <c>Hasta</c>, calcula hasta ayer.
-/// Retorna el nÃºmero de snapshots generados o actualizados.
+/// Retorna el número de snapshots generados o actualizados.
 ///
 /// Nota operativa: este comando debe ejecutarse antes de activar
-/// <c>UseScalableMode=true</c> en producciÃ³n para preparar los saldos periÃ³dicos.
+/// <c>UseScalableMode=true</c> en producción para preparar los saldos periódicos.
 /// </summary>
 public sealed record RecalcularSnapshotsCommand(
     Guid?     ProductId = null,
     Guid?     WarehouseId   = null,
     DateTime? DateTo     = null
-) : IRequest<Result<int>>;
+) : IRequest<Result<int>>, ICompanyScopedRequest;

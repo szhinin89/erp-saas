@@ -4,4 +4,4 @@ using ERP.Application.Products.DTOs;
 
 namespace ERP.Application.Products.UseCases.GetBrands;
 
-public sealed record GetBrandsQuery(bool OnlyActive) : IRequest<Result<IReadOnlyList<BrandDto>>>;
+public sealed record GetBrandsQuery(bool OnlyActive) : IRequest<Result<IReadOnlyList<BrandDto>>>, ICompanyScopedRequest;

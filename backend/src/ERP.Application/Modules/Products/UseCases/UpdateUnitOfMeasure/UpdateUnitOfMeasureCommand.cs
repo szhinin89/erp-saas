@@ -8,4 +8,4 @@ public record UpdateUnitOfMeasureCommand(
     Guid UnitOfMeasureId,
     string Code,
     string Name,
-    string? Symbol = null) : IRequest<Result<UnitOfMeasureDto>>;
+    string? Symbol = null) : IRequest<Result<UnitOfMeasureDto>>, ICompanyScopedRequest;

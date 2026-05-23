@@ -5,6 +5,11 @@ using ERP.Application.Modules.Sales.UseCases.CrearCliente;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
+using ERP.Application.Common.Persistence;
+using ERP.Application.Common.Security;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace ERP.Application.Tests;
 
@@ -43,8 +48,15 @@ public sealed class CreateCustomerHandlerTests
         company.SetupGet(c => c.HasCompanyContext).Returns(true);
         company.SetupGet(c => c.IsAuthenticated).Returns(true);
 
+        var bpRepo = new Mock<IBusinessPartnerRepository>(MockBehavior.Loose);
+        var cpRepo = new Mock<ICustomerProfileRepository>(MockBehavior.Loose);
+        var dbExceptions = new Mock<IDatabaseExceptionTranslator>(MockBehavior.Loose);
+        var metrics = new Mock<ISecurityMetrics>(MockBehavior.Loose);
+        var logger = NullLogger<CreateCustomerCommandHandler>.Instance;
+
         var handler = new CreateCustomerCommandHandler(
-            repo.Object, activity.Object, tenant.Object, company.Object, user.Object);
+            repo.Object, activity.Object, tenant.Object, company.Object, user.Object,
+            bpRepo.Object, cpRepo.Object, dbExceptions.Object, metrics.Object, logger);
 
         var cmd = new CreateCustomerCommand(
             IdentificationType: "RUC",
@@ -89,8 +101,15 @@ public sealed class CreateCustomerHandlerTests
         var company = new Mock<ICurrentCompany>(MockBehavior.Strict);
         company.SetupGet(c => c.HasCompanyContext).Returns(false);
 
+        var bpRepo = new Mock<IBusinessPartnerRepository>(MockBehavior.Loose);
+        var cpRepo = new Mock<ICustomerProfileRepository>(MockBehavior.Loose);
+        var dbExceptions = new Mock<IDatabaseExceptionTranslator>(MockBehavior.Loose);
+        var metrics = new Mock<ISecurityMetrics>(MockBehavior.Loose);
+        var logger = NullLogger<CreateCustomerCommandHandler>.Instance;
+
         var handler = new CreateCustomerCommandHandler(
-            repo.Object, activity.Object, tenant.Object, company.Object, user.Object);
+            repo.Object, activity.Object, tenant.Object, company.Object, user.Object,
+            bpRepo.Object, cpRepo.Object, dbExceptions.Object, metrics.Object, logger);
 
         var result = await handler.Handle(new CreateCustomerCommand(
             "RUC", "1234567890001", "Dup", null, null, null, null, null, true), CancellationToken.None);
@@ -115,8 +134,15 @@ public sealed class CreateCustomerHandlerTests
         var company = new Mock<ICurrentCompany>(MockBehavior.Strict);
         company.SetupGet(c => c.HasCompanyContext).Returns(false);
 
+        var bpRepo = new Mock<IBusinessPartnerRepository>(MockBehavior.Loose);
+        var cpRepo = new Mock<ICustomerProfileRepository>(MockBehavior.Loose);
+        var dbExceptions = new Mock<IDatabaseExceptionTranslator>(MockBehavior.Loose);
+        var metrics = new Mock<ISecurityMetrics>(MockBehavior.Loose);
+        var logger = NullLogger<CreateCustomerCommandHandler>.Instance;
+
         var handler = new CreateCustomerCommandHandler(
-            repo.Object, activity.Object, tenant.Object, company.Object, user.Object);
+            repo.Object, activity.Object, tenant.Object, company.Object, user.Object,
+            bpRepo.Object, cpRepo.Object, dbExceptions.Object, metrics.Object, logger);
 
         var result = await handler.Handle(new CreateCustomerCommand(
             "RUC", "1234567890001", "X", null, null, null, "not-an-email", null, true), CancellationToken.None);

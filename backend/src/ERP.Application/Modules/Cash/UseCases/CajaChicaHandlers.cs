@@ -7,7 +7,7 @@ using ERP.Domain.Modules.Cash.Interfaces;
 
 namespace ERP.Application.Modules.Cash.UseCases;
 
-public sealed record ListCashesChicasQuery : IRequest<Result<IReadOnlyList<PettyCashDto>>>;
+public sealed record ListCashesChicasQuery : IRequest<Result<IReadOnlyList<PettyCashDto>>>, ICompanyScopedRequest;
 
 public sealed class ListCashesChicasQueryHandler : IRequestHandler<ListCashesChicasQuery, Result<IReadOnlyList<PettyCashDto>>>
 {
@@ -33,7 +33,7 @@ public sealed record CrearPettyCashCommand(
     string Name,
     decimal AssignedBalance,
     Guid? ReplenishBankAccountId,
-    Guid? LedgerAccountId) : IRequest<Result<PettyCashDto>>;
+    Guid? LedgerAccountId) : IRequest<Result<PettyCashDto>>, ICompanyScopedRequest;
 
 public sealed class CrearPettyCashCommandHandler : IRequestHandler<CrearPettyCashCommand, Result<PettyCashDto>>
 {
@@ -79,7 +79,7 @@ public sealed record CrearGastoPettyCashCommand(
     string Concept,
     decimal Amount,
     string VoucherType,
-    string? VoucherNumber) : IRequest<Result<PettyCashExpenseDto>>;
+    string? VoucherNumber) : IRequest<Result<PettyCashExpenseDto>>, ICompanyScopedRequest;
 
 public sealed class CrearGastoPettyCashCommandHandler
     : IRequestHandler<CrearGastoPettyCashCommand, Result<PettyCashExpenseDto>>
@@ -146,7 +146,7 @@ public sealed record CrearCashCountCommand(
     Guid PettyCashId,
     DateTime CountDate,
     decimal PhysicalCash,
-    string? Notes) : IRequest<Result<PettyCashCountDto>>;
+    string? Notes) : IRequest<Result<PettyCashCountDto>>, ICompanyScopedRequest;
 
 public sealed class CrearCashCountCommandHandler : IRequestHandler<CrearCashCountCommand, Result<PettyCashCountDto>>
 {
@@ -193,7 +193,7 @@ public sealed class CrearCashCountCommandHandler : IRequestHandler<CrearCashCoun
     }
 }
 
-public sealed record AprobarCashCountCommand(Guid ArqueoId) : IRequest<Result<PettyCashCountDto>>;
+public sealed record AprobarCashCountCommand(Guid ArqueoId) : IRequest<Result<PettyCashCountDto>>, ICompanyScopedRequest;
 
 public sealed class AprobarCashCountCommandHandler : IRequestHandler<AprobarCashCountCommand, Result<PettyCashCountDto>>
 {
@@ -242,7 +242,7 @@ public sealed class AprobarCashCountCommandHandler : IRequestHandler<AprobarCash
     }
 }
 
-public sealed record ReposicionPettyCashCommand(Guid PettyCashId, decimal Amount) : IRequest<Result<PettyCashDto>>;
+public sealed record ReposicionPettyCashCommand(Guid PettyCashId, decimal Amount) : IRequest<Result<PettyCashDto>>, ICompanyScopedRequest;
 
 public sealed class ReposicionPettyCashCommandHandler
     : IRequestHandler<ReposicionPettyCashCommand, Result<PettyCashDto>>

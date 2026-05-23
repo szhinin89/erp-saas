@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../api/authService';
+import { bumpCompanyOperationalSession } from '../../../lib/session/companySession';
+import { logDevSessionContext } from '../../../lib/session/devSessionLog';
 import { syncSessionEntitlements } from '../../../lib/syncSessionEntitlements';
 import { useAuthStore } from '../../../store/authStore';
 import { usePermissionsStore } from '../../../store/permissionsStore';
@@ -70,6 +72,8 @@ export function CompanySelectPage() {
       };
       clearPermissions();
       login(auth);
+      bumpCompanyOperationalSession();
+      logDevSessionContext('switch-company');
       await syncSessionEntitlements();
       navigate('/dashboard', { replace: true });
     } catch (err: unknown) {

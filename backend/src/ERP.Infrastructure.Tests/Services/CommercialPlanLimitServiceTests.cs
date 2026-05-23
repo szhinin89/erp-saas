@@ -60,7 +60,7 @@ public sealed class CommercialPlanLimitServiceTests
         var platform = new PlatformQueryAccessor(
             NullLogger<PlatformQueryAccessor>.Instance,
             Microsoft.Extensions.Options.Options.Create(new SaasEntitlementsOptions()));
-        var companyRepo = new CompanyRepository(ctx);
+        var companyRepo = new CompanyRepository(ctx, platform);
         return new CommercialPlanLimitService(
             ctx,
             platform,

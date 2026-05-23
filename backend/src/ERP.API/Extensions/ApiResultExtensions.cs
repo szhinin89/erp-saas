@@ -75,8 +75,13 @@ public static class ApiResultExtensions
     private static IActionResult MapFailure(ControllerBase controller, string? error, string? errorCode)
     {
         var message = error ?? "Error";
-        if (string.Equals(errorCode, CompanyRucAlreadyExistsException.ErrorCode, StringComparison.Ordinal))
+        if (string.Equals(errorCode, CompanyRucAlreadyExistsException.ErrorCode, StringComparison.Ordinal)
+            || string.Equals(errorCode, ResultErrorCodes.UniqueViolation, StringComparison.Ordinal)
+            || string.Equals(errorCode, ResultErrorCodes.Conflict, StringComparison.Ordinal))
             return controller.ApiConflict(message, errorCode);
+
+        if (string.Equals(errorCode, ResultErrorCodes.ValidationFailure, StringComparison.Ordinal))
+            return controller.ApiUnprocessableEntity(message);
 
         return controller.BadRequest(new ApiResponse<object>(false, message, new { code = errorCode }));
     }

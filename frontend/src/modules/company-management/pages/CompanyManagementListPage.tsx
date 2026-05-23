@@ -11,7 +11,7 @@ import { CurrentCompanyCard } from './CurrentCompanyCard';
 
 export function CompanyManagementListPage() {
   const { t } = useI18n();
-  const { canShow } = usePermissionsUi({ adminOnlyFallback: true });
+  const { canShow } = usePermissionsUi();
   const canCreate = canShow('saas.companies.create');
   const [items, setItems] = useState<CompanyListItem[]>([]);
   const [loading, setLoading] = useState(true);

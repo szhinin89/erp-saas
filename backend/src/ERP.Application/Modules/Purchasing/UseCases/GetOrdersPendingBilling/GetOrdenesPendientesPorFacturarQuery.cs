@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 
@@ -6,4 +6,4 @@ namespace ERP.Application.Modules.Purchasing.UseCases.GetOrdenesPendientesPorFac
 
 [RequireFeature(SubscriptionFeatureCodes.Purchases)]
 public sealed record GetOrdersPendingBillingQuery
-    : IRequest<Result<IReadOnlyList<PurchaseOrderDto>>>;
+    : IRequest<Result<IReadOnlyList<PurchaseOrderDto>>>, ICompanyScopedRequest;

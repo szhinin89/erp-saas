@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Accounting.DTOs;
 
@@ -15,4 +15,4 @@ public sealed record UpsertConfigurationContableCommand(
     Guid? VatSalesAccountId,
     Guid? CashAccountId,
     Guid? BankAccountId
-) : IRequest<Result<AccountingSetupDto>>;
+) : IRequest<Result<AccountingSetupDto>>, ICompanyScopedRequest;

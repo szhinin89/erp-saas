@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 
 namespace ERP.Application.Sales.UseCases.Notas;
@@ -9,4 +9,4 @@ public sealed record CreateSalesNoteCommand(
     Guid   OriginalBillId,
     string NoteType,
     string Reason,
-    IReadOnlyList<CrearSalesNoteItemDto> Items) : IRequest<Result<Guid>>;
+    IReadOnlyList<CrearSalesNoteItemDto> Items) : IRequest<Result<Guid>>, ICompanyScopedRequest;

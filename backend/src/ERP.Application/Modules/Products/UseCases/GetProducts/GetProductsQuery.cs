@@ -4,4 +4,4 @@ using ERP.Application.Products.DTOs;
 
 namespace ERP.Application.Products.UseCases.GetProducts;
 
-public sealed record GetProductsQuery : IRequest<Result<IReadOnlyList<ProductDto>>>;
+public sealed record GetProductsQuery : IRequest<Result<IReadOnlyList<ProductDto>>>, ICompanyScopedRequest;

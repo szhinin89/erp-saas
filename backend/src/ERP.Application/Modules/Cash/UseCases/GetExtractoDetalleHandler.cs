@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Cash.DTOs;
 using ERP.Domain.Modules.Cash.Interfaces;
@@ -9,7 +9,7 @@ public sealed record ExtractoDetalleDto(
     BankStatementDto Cabecera,
     IReadOnlyList<BankTransactionDto> Rows);
 
-public sealed record GetExtractoDetalleQuery(Guid ExtractoId) : IRequest<Result<ExtractoDetalleDto>>;
+public sealed record GetExtractoDetalleQuery(Guid ExtractoId) : IRequest<Result<ExtractoDetalleDto>>, ICompanyScopedRequest;
 
 public sealed class GetExtractoDetalleQueryHandler : IRequestHandler<GetExtractoDetalleQuery, Result<ExtractoDetalleDto>>
 {

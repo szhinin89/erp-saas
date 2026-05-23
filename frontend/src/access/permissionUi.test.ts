@@ -25,7 +25,6 @@ describe('permissionUi', () => {
       canShowPermissionKey('sales.invoices.view', {
         permissions: ['*'],
         has: has(['*']),
-        role: 'Admin',
       }),
     ).toBe(true);
   });
@@ -35,44 +34,26 @@ describe('permissionUi', () => {
       canShowPermissionKey('sales.invoices.view', {
         permissions: ['sales.invoices.view'],
         has: has(['sales.invoices.view']),
-        role: 'User',
       }),
     ).toBe(true);
   });
 
-  it('canShowPermissionKey empty snapshot tenant admin fallback (UI parity)', () => {
+  it('canShowPermissionKey denies empty snapshot (no Admin fallback)', () => {
     expect(
       canShowPermissionKey('sales.invoices.view', {
         permissions: [],
         has: has([]),
-        role: 'Admin',
-      }),
-    ).toBe(true);
-    expect(
-      canShowPermissionKey('sales.invoices.view', {
-        permissions: [],
-        has: has([]),
-        role: 'User',
       }),
     ).toBe(false);
   });
 
-  it('canShowPermissionKey admin-only fallback option', () => {
+  it('canShowPermissionKey denies while permissions are syncing', () => {
     expect(
-      canShowPermissionKey('saas.companies.create', {
-        permissions: [],
-        has: has([]),
-        role: 'SuperAdmin',
-        adminFallbackRoles: ['Admin'],
+      canShowPermissionKey('sales.invoices.view', {
+        permissions: ['sales.invoices.view'],
+        has: has(['sales.invoices.view']),
+        permissionsSyncing: true,
       }),
     ).toBe(false);
-    expect(
-      canShowPermissionKey('saas.companies.create', {
-        permissions: [],
-        has: has([]),
-        role: 'Admin',
-        adminFallbackRoles: ['Admin'],
-      }),
-    ).toBe(true);
   });
 });

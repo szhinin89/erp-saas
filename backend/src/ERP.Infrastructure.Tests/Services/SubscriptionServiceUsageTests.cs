@@ -69,7 +69,7 @@ public sealed class SubscriptionServiceUsageTests
         var platform = new PlatformQueryAccessor(
             NullLogger<PlatformQueryAccessor>.Instance,
             Microsoft.Extensions.Options.Options.Create(new SaasEntitlementsOptions()));
-        var companyRepo = new ERP.Infrastructure.Persistence.Repositories.CompanyRepository(ctx);
+        var companyRepo = new ERP.Infrastructure.Persistence.Repositories.CompanyRepository(ctx, platform);
         var planLimits = new CommercialPlanLimitService(
             ctx,
             platform,

@@ -15,9 +15,15 @@ public sealed class SupplierProfileConfiguration : IEntityTypeConfiguration<Supp
         builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
         builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
-        builder.Property(x => x.TaxSupportCode)
-               .HasColumnName("tax_support_code")
+        builder.Property(x => x.DefaultTaxSupportCode)
+               .HasColumnName("default_tax_support_code")
                .HasMaxLength(SupplierProfile.TaxSupportCodeMaxLen);
+        builder.Property(x => x.DefaultRetentionVatCode)
+               .HasColumnName("default_retention_vat_code")
+               .HasMaxLength(SupplierProfile.RetentionVatCodeMaxLen);
+        builder.Property(x => x.DefaultRetentionIncomeCode)
+               .HasColumnName("default_retention_income_code")
+               .HasMaxLength(SupplierProfile.RetentionIncomeCodeMaxLen);
         builder.Property(x => x.PaymentTerms)
                .HasColumnName("payment_terms")
                .HasMaxLength(SupplierProfile.PaymentTermsMaxLen);

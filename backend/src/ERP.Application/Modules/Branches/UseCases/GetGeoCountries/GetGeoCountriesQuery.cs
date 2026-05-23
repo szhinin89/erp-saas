@@ -4,4 +4,4 @@ using ERP.Application.Modules.Branches.DTOs;
 
 namespace ERP.Application.Modules.Branches.UseCases.GetGeoCountries;
 
-public record GetGeoCountriesQuery : IRequest<Result<IReadOnlyList<GeographyItemDto>>>;
+public record GetGeoCountriesQuery : IRequest<Result<IReadOnlyList<GeographyItemDto>>>, ICompanyScopedRequest;

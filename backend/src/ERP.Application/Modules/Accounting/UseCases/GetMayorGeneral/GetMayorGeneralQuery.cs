@@ -15,4 +15,4 @@ public sealed record GetMayorGeneralQuery(
     Guid     AccountId,
     DateTime Desde,
     DateTime Hasta)
-    : IRequest<Result<IReadOnlyList<MayorGeneralLineDto>>>;
+    : IRequest<Result<IReadOnlyList<MayorGeneralLineDto>>>, ICompanyScopedRequest;

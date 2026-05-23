@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using ERP.Application.Common;
 
 using ERP.Application.Modules.Expenses.DTOs;
@@ -13,4 +13,4 @@ public record GetExpensesQuery(
     DateTime?    DateFrom,
     DateTime?    DateTo,
     string?      Search
-) : IRequest<Result<IReadOnlyList<ExpenseInvoiceDto>>>;
+) : IRequest<Result<IReadOnlyList<ExpenseInvoiceDto>>>, ICompanyScopedRequest;

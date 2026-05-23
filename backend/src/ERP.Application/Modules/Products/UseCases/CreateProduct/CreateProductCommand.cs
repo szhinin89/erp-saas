@@ -55,7 +55,7 @@ public sealed record CreateProductCommand(
     IReadOnlyList<SubstituteInput>? Substitutes = null,
     IReadOnlyList<CustomFieldInput>? CustomFields = null,
     bool IsForSale = true
-) : IRequest<Result<ProductDto>>;
+) : IRequest<Result<ProductDto>>, ICompanyScopedRequest;
 
 public record BarcodeInput(string Code, int Type);
 public record SupplierCodeInput(Guid SupplierId, string Code, bool IsDefault = false);

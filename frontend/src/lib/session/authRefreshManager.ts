@@ -2,6 +2,7 @@ import axios, { type AxiosError } from 'axios';
 import { useAuthStore } from '../../store/authStore';
 import { getAccessToken, setAccessToken } from './authTokenMemory';
 import { readEnvelopePayload } from '../../modules/lib/apiEnvelope';
+import { logDevSessionContext } from './devSessionLog';
 import { normalizeAuthResponse } from '../../modules/auth/normalizeAuthResponse';
 import type { ApiResponse } from '../../types/api';
 
@@ -139,6 +140,7 @@ async function postRefresh(): Promise<string> {
   }
   setAccessToken(session.token);
   useAuthStore.getState().login(session);
+  logDevSessionContext('refresh');
   return session.token;
 }
 
