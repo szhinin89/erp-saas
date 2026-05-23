@@ -93,14 +93,6 @@ export function PlatformOverviewPage() {
               <span className="material-symbols-outlined">refresh</span>
               {t('common.refresh')}
             </button>
-            <button
-              className="zh-btn zh-btn--primary"
-              type="button"
-              onClick={() => navigate('/platform/subscribers')}
-            >
-              <span className="material-symbols-outlined">add</span>
-              {t('platform.createSubscriber')}
-            </button>
           </div>
         }
       />

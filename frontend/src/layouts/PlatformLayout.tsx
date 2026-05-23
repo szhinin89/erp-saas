@@ -164,15 +164,6 @@ export function PlatformLayout() {
         </nav>
 
         <div className="sa-sidebar-footer">
-          <button
-            className="sa-sidebar-new-btn"
-            type="button"
-            onClick={() => navigate(PLATFORM_UI.subscribers)}
-          >
-            <span className="material-symbols-outlined">add_circle</span>
-            Nuevo suscriptor
-          </button>
-
           <button className="sa-sidebar-util-link" type="button" onClick={handleLogout}>
             <span className="material-symbols-outlined">logout</span>
             <span>{t('app.logout')}</span>
@@ -218,14 +209,6 @@ export function PlatformLayout() {
         </LayoutFrame>
       </div>
 
-      <button
-        className="sa-fab"
-        type="button"
-        aria-label="Nuevo suscriptor"
-        onClick={() => navigate(PLATFORM_UI.subscribers)}
-      >
-        <span className="material-symbols-outlined">add</span>
-      </button>
     </div>
   );
 }
