@@ -10,8 +10,7 @@ public class PurchaseInvoice
 {
     public Guid     Id              { get; set; }
     public Guid     CompanyId       { get; set; }
-    public Guid     SupplierId      { get; set; }
-    public Guid?    BusinessPartnerId { get; set; }
+    public Guid     BusinessPartnerId { get; set; }
     /// <summary>Número de factura del proveedor: "001-001-000000123".</summary>
     public string   InvoiceNumber   { get; set; } = null!;
     /// <summary>Clave de acceso SRI (49 dígitos) si la recibimos electrónicamente.</summary>

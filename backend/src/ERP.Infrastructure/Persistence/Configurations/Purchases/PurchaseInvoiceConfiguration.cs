@@ -14,7 +14,6 @@ public class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<PurchaseInv
         builder.Property(x => x.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
         builder.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
-        builder.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id");
         builder.Property(x => x.InvoiceNumber).HasColumnName("invoice_number").HasMaxLength(50).IsRequired();
         builder.Property(x => x.AccessKey).HasColumnName("access_key").HasMaxLength(49).IsFixedLength();
         builder.Property(x => x.XmlPath).HasColumnName("xml_path").HasMaxLength(500);
@@ -41,7 +40,7 @@ public class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<PurchaseInv
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("NOW()");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
 
-        // Unicidad: mismo número de factura por Supplier; clave de acceso única por empresa
+        // Unicidad: mismo nï¿½mero de factura por Supplier; clave de acceso ï¿½nica por empresa
         builder.HasIndex(x => new { x.CompanyId, x.BusinessPartnerId, x.InvoiceNumber })
             .IsUnique().HasDatabaseName("uq_pi_number");
         builder.HasIndex(x => new { x.CompanyId, x.AccessKey })
