@@ -403,7 +403,7 @@ public sealed class UnifiedDocumentSync : IUnifiedDocumentSync
 
     private static readonly string[] SalesDocumentScalarProperties =
     [
-        nameof(SalesDocument.CompanyId), nameof(SalesDocument.BranchId), nameof(SalesDocument.CustomerId),
+        nameof(SalesDocument.CompanyId), nameof(SalesDocument.BranchId), nameof(SalesDocument.BusinessPartnerId),
         nameof(SalesDocument.WarehouseId), nameof(SalesDocument.SalespersonId), nameof(SalesDocument.DocType),
         nameof(SalesDocument.DocNumber), nameof(SalesDocument.EstabCode), nameof(SalesDocument.EmPointCode),
         nameof(SalesDocument.Sequential), nameof(SalesDocument.AccessKey), nameof(SalesDocument.IssueDate),
@@ -431,7 +431,7 @@ public sealed class UnifiedDocumentSync : IUnifiedDocumentSync
 
     private static readonly string[] PurchaseDocumentScalarProperties =
     [
-        nameof(PurchaseDocument.CompanyId), nameof(PurchaseDocument.SupplierId), nameof(PurchaseDocument.DocType),
+        nameof(PurchaseDocument.CompanyId), nameof(PurchaseDocument.BusinessPartnerId), nameof(PurchaseDocument.DocType),
         nameof(PurchaseDocument.DocNumber), nameof(PurchaseDocument.AccessKey), nameof(PurchaseDocument.IssueDate),
         nameof(PurchaseDocument.RequiredDate), nameof(PurchaseDocument.DueDate), nameof(PurchaseDocument.Subtotal),
         nameof(PurchaseDocument.VatTotal), nameof(PurchaseDocument.Total), nameof(PurchaseDocument.TotalNotesApplied),
@@ -458,7 +458,7 @@ public sealed class UnifiedDocumentSync : IUnifiedDocumentSync
 
     private static readonly string[] SalesWithholdingScalarProperties =
     [
-        nameof(SalesWithholding.CompanyId), nameof(SalesWithholding.CustomerId), nameof(SalesWithholding.Direction),
+        nameof(SalesWithholding.CompanyId), nameof(SalesWithholding.BusinessPartnerId), nameof(SalesWithholding.Direction),
         nameof(SalesWithholding.SalesDocumentId), nameof(SalesWithholding.IssuerRuc), nameof(SalesWithholding.IssuerName),
         nameof(SalesWithholding.VoucherType), nameof(SalesWithholding.AccessKey), nameof(SalesWithholding.IssueDate),
         nameof(SalesWithholding.EstabCode), nameof(SalesWithholding.EmPointCode), nameof(SalesWithholding.Sequential),
@@ -472,7 +472,7 @@ public sealed class UnifiedDocumentSync : IUnifiedDocumentSync
 
     private static readonly string[] PurchaseWithholdingScalarProperties =
     [
-        nameof(PurchaseWithholding.CompanyId), nameof(PurchaseWithholding.SupplierId), nameof(PurchaseWithholding.Direction),
+        nameof(PurchaseWithholding.CompanyId), nameof(PurchaseWithholding.BusinessPartnerId), nameof(PurchaseWithholding.Direction),
         nameof(PurchaseWithholding.PurchaseDocumentId), nameof(PurchaseWithholding.VoucherType),
         nameof(PurchaseWithholding.AccessKey), nameof(PurchaseWithholding.IssueDate),
         nameof(PurchaseWithholding.EstabCode), nameof(PurchaseWithholding.EmPointCode), nameof(PurchaseWithholding.Sequential),
@@ -486,7 +486,7 @@ public sealed class UnifiedDocumentSync : IUnifiedDocumentSync
 
     private static readonly string[] ExpenseDocumentScalarProperties =
     [
-        nameof(ExpenseDocument.SupplierId), nameof(ExpenseDocument.DocType),
+        nameof(ExpenseDocument.BusinessPartnerId), nameof(ExpenseDocument.DocType),
         nameof(ExpenseDocument.DocNumber), nameof(ExpenseDocument.AccessKey), nameof(ExpenseDocument.IssueDate),
         nameof(ExpenseDocument.Concept), nameof(ExpenseDocument.Category), nameof(ExpenseDocument.Subtotal),
         nameof(ExpenseDocument.TaxTotal), nameof(ExpenseDocument.Total), nameof(ExpenseDocument.TotalNotesApplied),

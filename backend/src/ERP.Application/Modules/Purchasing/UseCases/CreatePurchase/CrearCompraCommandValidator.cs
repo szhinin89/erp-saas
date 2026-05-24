@@ -17,8 +17,8 @@ public sealed class CreatePurchaseCommandValidator : AbstractValidator<CreatePur
         // ── Manual ───────────────────────────────────────────────────────
         When(x => x.Modo == PurchaseCreationMode.Manual, () =>
         {
-            RuleFor(x => x.SupplierId)
-                .NotEmpty().WithMessage("El Supplier es obligatorio en modo manual.");
+            RuleFor(x => x.BusinessPartnerId)
+                .NotEmpty().WithMessage("El proveedor es obligatorio en modo manual.");
 
             RuleFor(x => x.InvoiceNumber)
                 .NotEmpty().WithMessage("El número de factura es obligatorio en modo manual.")

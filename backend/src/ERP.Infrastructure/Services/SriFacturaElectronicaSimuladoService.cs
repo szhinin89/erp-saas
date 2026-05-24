@@ -50,9 +50,9 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
                     new XElement("dirEstablecimiento", config.MainAddress),
                     new XElement("obligadoContabilidad", config.RequiresAccounting ? "SI" : "NO"),
                     new XElement("tipoIdentificacionComprador", "04"), // RUC por defecto
-                    new XElement("razonSocialComprador", factura.Cliente.LegalName),
-                    new XElement("identificacionComprador", factura.Cliente.IdentificationNumber),
-                    new XElement("direccionComprador", factura.Cliente.AddressLine ?? ""),
+                    new XElement("razonSocialComprador", "CONSUMIDOR FINAL"),
+                    new XElement("identificacionComprador", "9999999999"),
+                    new XElement("direccionComprador", ""),
                     new XElement("totalSinImpuestos", factura.Subtotal.ToString("F2")),
                     new XElement("totalDescuento", "0.00"),
                     new XElement("totalConImpuestos",
@@ -88,8 +88,8 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
                 ),
                 new XElement("infoAdicional",
                     new XElement("campoAdicional",
-                        new XAttribute("nombre", "Email"),
-                        factura.Cliente.Email ?? ""
+                        new XAttribute("nombre", "Info"),
+                        "-"
                     )
                 )
             )
@@ -136,8 +136,8 @@ public sealed class SriFacturaElectronicaSimuladoService : ISriFacturaElectronic
             new XElement("issueDate", nota.IssueDate.ToString("dd/MM/yyyy")),
             new XElement("dirEstablecimiento", config.MainAddress),
             new XElement("tipoIdentificacionComprador", "04"),
-            new XElement("razonSocialComprador", facturaOriginal.Cliente.LegalName),
-            new XElement("identificacionComprador", facturaOriginal.Cliente.IdentificationNumber),
+            new XElement("razonSocialComprador", "CONSUMIDOR FINAL"),
+            new XElement("identificacionComprador", "9999999999"),
             new XElement("contribuyenteEspecial", ""),
             new XElement("obligadoContabilidad", config.RequiresAccounting ? "SI" : "NO"),
             new XElement("tipoEmision", config.EmissionType),

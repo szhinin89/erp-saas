@@ -8,7 +8,7 @@ namespace ERP.Application.Sales.UseCases.GetVentasList;
 public record GetSalesListQuery(
     int       PageNumber  = 1,
     int       PageSize    = 20,
-    Guid?     CustomerId  = null,
+    Guid?     BusinessPartnerId = null,
     DateTime? DateFrom  = null,
     DateTime? DateTo  = null,
     string?   Status      = null,

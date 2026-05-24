@@ -82,7 +82,7 @@ public sealed class RegistrarSalesRetentionCommandHandler
 
             var ret = SalesRetention.Create(
                 subscriberId,
-                factura.CustomerId,
+                factura.BusinessPartnerId,
                 clave,
                 issueDate,
                 total,

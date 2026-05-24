@@ -5,7 +5,7 @@ using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
-using ERP.Domain.Modules.Purchasing.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.AprobarOrdenCompra;
@@ -14,7 +14,7 @@ public sealed class ApproveOrderPurchaseCommandHandler
     : IRequestHandler<ApproveOrderPurchaseCommand, Result<PurchaseOrderDto>>
 {
     private readonly IPurchaseOrderRepository  _ordenRepo;
-    private readonly ISupplierRepository    _proveedorRepo;
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentSubscriber          _currentSubscriber;
     private readonly ICurrentUser            _currentUser;
@@ -22,14 +22,14 @@ public sealed class ApproveOrderPurchaseCommandHandler
 
     public ApproveOrderPurchaseCommandHandler(
         IPurchaseOrderRepository ordenRepo,
-        ISupplierRepository proveedorRepo,
+        IBusinessPartnerRepository bpRepo,
         IUserActivityRepository activity,
         ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<ApproveOrderPurchaseCommandHandler> logger)
     {
-        _ordenRepo     = ordenRepo;
-        _proveedorRepo = proveedorRepo;
+        _ordenRepo = ordenRepo;
+        _bpRepo    = bpRepo;
         _activity      = activity;
         _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
@@ -61,8 +61,8 @@ public sealed class ApproveOrderPurchaseCommandHandler
         await _ordenRepo.SaveChangesAsync(ct);
         _logger.LogInformation("OC aprobada: {Numero}", orden.OrderNumber);
 
-        var Supplier = await _proveedorRepo.GetByIdAsync(subscriberId, orden.SupplierId, ct);
+        var bp = await _bpRepo.GetByIdAsync(orden.BusinessPartnerId, ct);
         return Result<PurchaseOrderDto>.Success(
-            CreatePurchaseOrderCommandHandler.ToDto(orden, Supplier?.LegalName ?? orden.SupplierId.ToString()));
+            CreatePurchaseOrderCommandHandler.ToDto(orden, bp?.LegalName ?? orden.BusinessPartnerId.ToString()));
     }
 }

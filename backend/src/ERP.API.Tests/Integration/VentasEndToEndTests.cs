@@ -31,7 +31,7 @@ public sealed class VentasEndToEndTests
             db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial, ct: CancellationToken.None);
 
-        var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var clienteId  = db.BusinessPartners.First(c => c.SubscriberId == seed.SubscriberId).Id;
         var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
         return (mediator, db, seed, clienteId, sucursalId);
     }

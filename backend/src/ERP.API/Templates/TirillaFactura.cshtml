@@ -136,19 +136,12 @@
         <table class="customer-meta small">
             <tr>
                 <td>Cliente:</td>
-                <td class="bold">@(!string.IsNullOrWhiteSpace(Model.Venta.Cliente.TradeName) ? Model.Venta.Cliente.TradeName : Model.Venta.Cliente.LegalName)</td>
+                <td class="bold">@(Model.Buyer?.TradeName ?? Model.Buyer?.LegalName ?? "CONSUMIDOR FINAL")</td>
             </tr>
             <tr>
-                <td>IdentificaciÃ³n:</td>
-                <td>@Model.Venta.Cliente.IdentificationType @Model.Venta.Cliente.IdentificationNumber</td>
+                <td>Identificación:</td>
+                <td>@(Model.Buyer?.Identification.Type ?? "") @(Model.Buyer?.Identification.Number ?? "9999999999")</td>
             </tr>
-            @if (!string.IsNullOrWhiteSpace(Model.Venta.Cliente.AddressLine))
-            {
-                <tr>
-                    <td>DirecciÃ³n:</td>
-                    <td>@Model.Venta.Cliente.AddressLine</td>
-                </tr>
-            }
         </table>
 
         <div class="line"></div>

@@ -6,8 +6,8 @@ public sealed class CreatePurchaseOrderCommandValidator : AbstractValidator<Crea
 {
     public CreatePurchaseOrderCommandValidator()
     {
-        RuleFor(x => x.SupplierId)
-            .NotEmpty().WithMessage("El Supplier es obligatorio.");
+        RuleFor(x => x.BusinessPartnerId)
+            .NotEmpty().WithMessage("El proveedor es obligatorio.");
 
         RuleFor(x => x.RequiredDate)
             .NotEmpty().WithMessage("La fecha requerida es obligatoria.");

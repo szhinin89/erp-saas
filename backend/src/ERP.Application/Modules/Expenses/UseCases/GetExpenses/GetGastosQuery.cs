@@ -9,7 +9,7 @@ namespace ERP.Application.Modules.Expenses.UseCases.GetGastos;
 [RequireFeature(SubscriptionFeatureCodes.Gastos)]
 public record GetExpensesQuery(
     ExpenseStatus? Status,
-    Guid?        SupplierId,
+    Guid?        BusinessPartnerId,
     DateTime?    DateFrom,
     DateTime?    DateTo,
     string?      Search

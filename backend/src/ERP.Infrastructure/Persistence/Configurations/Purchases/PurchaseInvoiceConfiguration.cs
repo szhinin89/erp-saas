@@ -1,4 +1,4 @@
-ï»¿using ERP.Domain.Modules.Purchases.Entities;
+using ERP.Domain.Modules.Purchases.Entities;
 using ERP.Domain.Modules.SriCatalogs.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -13,7 +13,7 @@ public class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<PurchaseInv
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
-        builder.Property(x => x.SupplierId).HasColumnName("supplier_id").IsRequired();
+        builder.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
         builder.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id");
         builder.Property(x => x.InvoiceNumber).HasColumnName("invoice_number").HasMaxLength(50).IsRequired();
         builder.Property(x => x.AccessKey).HasColumnName("access_key").HasMaxLength(49).IsFixedLength();
@@ -41,13 +41,13 @@ public class PurchaseInvoiceConfiguration : IEntityTypeConfiguration<PurchaseInv
         builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("NOW()");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
 
-        // Unicidad: mismo nÃºmero de factura por Supplier; clave de acceso Ãºnica por empresa
-        builder.HasIndex(x => new { x.CompanyId, x.SupplierId, x.InvoiceNumber })
+        // Unicidad: mismo número de factura por Supplier; clave de acceso única por empresa
+        builder.HasIndex(x => new { x.CompanyId, x.BusinessPartnerId, x.InvoiceNumber })
             .IsUnique().HasDatabaseName("uq_pi_number");
         builder.HasIndex(x => new { x.CompanyId, x.AccessKey })
             .IsUnique().HasFilter("access_key IS NOT NULL").HasDatabaseName("uq_pi_key");
         builder.HasIndex(x => new { x.CompanyId, x.Status }).HasDatabaseName("idx_pi_company");
-        builder.HasIndex(x => new { x.CompanyId, x.SupplierId, x.Status }).HasDatabaseName("idx_pi_supplier");
+        builder.HasIndex(x => new { x.CompanyId, x.BusinessPartnerId, x.Status }).HasDatabaseName("idx_pi_supplier");
         builder.HasIndex(x => new { x.CompanyId, x.InvoiceDate }).HasDatabaseName("idx_pi_date");
 
         builder.HasOne(x => x.TaxSupport)

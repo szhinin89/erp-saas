@@ -7,8 +7,8 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Interfaces;
-using ERP.Domain.Modules.Purchasing.Entities;
-using ERP.Domain.Modules.Purchasing.Interfaces;
+using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Interfaces;
 
 namespace ERP.Application.Modules.Expenses.UseCases.CrearGasto;
 
@@ -16,7 +16,7 @@ public sealed class CreateExpenseCommandHandler
     : IRequestHandler<CreateExpenseCommand, Result<ExpenseInvoiceDto>>
 {
     private readonly IExpenseInvoiceRepository   _gastos;
-    private readonly ISupplierRepository    _proveedorRepo;
+    private readonly IBusinessPartnerRepository  _bpRepo;
     private readonly IXmlFacturaParser       _parser;
     private readonly IFileStorage            _storage;
     private readonly IUserActivityRepository _activity;
@@ -27,7 +27,7 @@ public sealed class CreateExpenseCommandHandler
 
     public CreateExpenseCommandHandler(
         IExpenseInvoiceRepository gastos,
-        ISupplierRepository proveedorRepo,
+        IBusinessPartnerRepository bpRepo,
         IXmlFacturaParser parser,
         IFileStorage storage,
         IUserActivityRepository activity,
@@ -36,8 +36,8 @@ public sealed class CreateExpenseCommandHandler
         IUnitOfWork unitOfWork,
         ILogger<CreateExpenseCommandHandler> logger)
     {
-        _gastos        = gastos;
-        _proveedorRepo = proveedorRepo;
+        _gastos = gastos;
+        _bpRepo = bpRepo;
         _parser        = parser;
         _storage       = storage;
         _activity      = activity;
@@ -79,7 +79,7 @@ public sealed class CreateExpenseCommandHandler
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            var Supplier = await ObtenerOCrearProveedor(
+            var bp = await ObtenerOCrearBusinessPartner(
                 subscriberId, parsed.SupplierRuc, parsed.SupplierLegalName, userId, ct);
 
             var xmlPath = $"facturas/gastos/{parsed.AccessKey}.xml";
@@ -95,7 +95,7 @@ public sealed class CreateExpenseCommandHandler
             {
                 gasto = ExpenseInvoice.CreateFromXml(
                     subscriberId,
-                    Supplier.Id,
+                    bp.Id,
                     parsed.AccessKey,
                     parsed.InvoiceNumber,
                     parsed.IssueDate,
@@ -124,7 +124,7 @@ public sealed class CreateExpenseCommandHandler
                 subscriberId, userId, _user.Email, _user.FullName,
                 module: "gastos", action: "gasto.crear.xml",
                 entityType: "ExpenseInvoice", entityId: gasto.Id,
-                description: $"{parsed.InvoiceNumber} — {Supplier.LegalName}"), ct);
+                description: $"{parsed.InvoiceNumber} — {bp.LegalName}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
@@ -152,14 +152,14 @@ public sealed class CreateExpenseCommandHandler
             return Result<ExpenseInvoiceDto>.Failure(
                 $"Los gastos con total estrictamente mayor a {ExpenseInvoice.RequiresXmlThreshold} deben registrarse con comprobante XML.");
 
-        Guid? proveedorId = command.SupplierId;
-        if (proveedorId.HasValue)
+        Guid? bpId = command.BusinessPartnerId;
+        if (bpId.HasValue)
         {
-            var p = await _proveedorRepo.GetByIdAsync(subscriberId, proveedorId.Value, ct);
+            var p = await _bpRepo.GetByIdAsync(bpId.Value, ct);
             if (p is null)
-                return Result<ExpenseInvoiceDto>.Failure("Supplier no encontrado en el tenant.");
+                return Result<ExpenseInvoiceDto>.Failure("Proveedor no encontrado.");
             if (!p.IsActive)
-                return Result<ExpenseInvoiceDto>.Failure("El Supplier está deshabilitado.");
+                return Result<ExpenseInvoiceDto>.Failure("El proveedor está deshabilitado.");
         }
 
         ExpenseInvoice gasto;
@@ -167,7 +167,7 @@ public sealed class CreateExpenseCommandHandler
         {
             gasto = ExpenseInvoice.CreateManual(
                 subscriberId,
-                proveedorId,
+                bpId,
                 command.IssueDate!.Value,
                 command.Concept!,
                 command.Category!,
@@ -210,22 +210,14 @@ public sealed class CreateExpenseCommandHandler
         }
     }
 
-    private async Task<Supplier> ObtenerOCrearProveedor(
+    private async Task<BusinessPartner> ObtenerOCrearBusinessPartner(
         Guid subscriberId, string ruc, string razonSocial, Guid userId, CancellationToken ct)
     {
-        var existentes = await _proveedorRepo.GetAsync(
-            subscriberId, activeFilter: null, search: ruc, personType: null, ct);
-
-        var existente = existentes.FirstOrDefault(p => p.Ruc == ruc);
+        var existente = await _bpRepo.GetByIdentificationAsync("RUC", ruc, ct);
         if (existente is not null) return existente;
 
-        var tipo = ruc[2] - '0' is >= 0 and <= 5 ? Supplier.TypeNatural : Supplier.TypeLegal;
-        var nuevo = Supplier.Create(
-            subscriberId, tipo, razonSocial, ruc,
-            email: null, phone: null, address: null,
-            paymentTerms: "Contado", userId);
-
-        await _proveedorRepo.AddAsync(nuevo, ct);
+        var nuevo = BusinessPartner.Create(subscriberId, "RUC", ruc, razonSocial, userId);
+        await _bpRepo.AddAsync(nuevo, ct);
         return nuevo;
     }
 
@@ -233,7 +225,7 @@ public sealed class CreateExpenseCommandHandler
         g.Id,
         g.AccessKey,
         g.IssueDate,
-        g.SupplierId,
+        g.BusinessPartnerId,
         g.InvoiceNumber,
         g.Concept,
         g.Category,

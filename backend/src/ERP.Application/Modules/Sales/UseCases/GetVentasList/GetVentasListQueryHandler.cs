@@ -27,7 +27,7 @@ public sealed class GetSalesListQueryHandler
             _currentSubscriber.SubscriberId,
             pageNumber,
             pageSize,
-            query.CustomerId,
+            query.BusinessPartnerId,
             query.DateFrom,
             query.DateTo,
             query.Status,
@@ -40,8 +40,8 @@ public sealed class GetSalesListQueryHandler
 
     private static SalesBillDto ToDto(SalesBill f) => new(
         f.Id,
-        f.CustomerId,
-        f.Cliente?.LegalName ?? f.CustomerId.ToString(),
+        f.BusinessPartnerId,
+        f.BusinessPartnerId.ToString(),
         f.WarehouseId,
         f.BranchId,
         f.EstabCode,

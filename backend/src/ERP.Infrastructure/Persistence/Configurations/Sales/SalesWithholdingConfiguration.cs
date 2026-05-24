@@ -15,7 +15,7 @@ public sealed class SalesWithholdingConfiguration : IEntityTypeConfiguration<Sal
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.CompanyId).HasColumnName("company_id");
-        builder.Property(e => e.CustomerId).HasColumnName("customer_id");
+        builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id");
         builder.Property(e => e.Direction)
             .HasColumnName("direction")
             .HasMaxLength(10)
@@ -46,7 +46,7 @@ public sealed class SalesWithholdingConfiguration : IEntityTypeConfiguration<Sal
         builder.Property(e => e.CreatedBy).HasColumnName("created_by");
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasOne(e => e.Customer).WithMany().HasForeignKey(e => e.CustomerId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<ERP.Domain.MasterData.Entities.BusinessPartner>().WithMany().HasForeignKey(e => e.BusinessPartnerId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(e => e.SalesDocument).WithMany().HasForeignKey(e => e.SalesDocumentId).OnDelete(DeleteBehavior.SetNull);
         builder.HasMany(e => e.Lines).WithOne().HasForeignKey(d => d.SalesWithholdingId).OnDelete(DeleteBehavior.Cascade);
 

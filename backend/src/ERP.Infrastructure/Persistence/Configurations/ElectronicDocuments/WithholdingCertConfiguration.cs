@@ -12,7 +12,7 @@ public class WithholdingCertConfiguration : IEntityTypeConfiguration<Withholding
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
-        builder.Property(x => x.SupplierId).HasColumnName("supplier_id");
+        builder.Property(x => x.SupplierId).HasColumnName("business_partner_id");
         builder.Property(x => x.SupplierRuc).HasColumnName("supplier_ruc").HasMaxLength(13).IsFixedLength().IsRequired();
         builder.Property(x => x.SupplierName).HasColumnName("supplier_name").HasMaxLength(200).IsRequired();
         builder.Property(x => x.PurchaseInvId).HasColumnName("purchase_inv_id");

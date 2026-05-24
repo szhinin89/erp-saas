@@ -2,7 +2,7 @@
 
 public sealed record IssuedRetentionListItemDto(
     Guid Id,
-    Guid    SupplierId,
+    Guid    BusinessPartnerId,
     string    AccessKey,
     string    Status,
     decimal TotalRetained,

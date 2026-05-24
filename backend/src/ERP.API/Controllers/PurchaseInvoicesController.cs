@@ -116,7 +116,7 @@ public sealed class PurchaseInvoicesController : ControllerBase
             Modo: PurchaseCreationMode.Xml,
             XmlContent: content,
             XmlFileName: xmlFile.FileName,
-            SupplierId: null, InvoiceNumber: null, InvoiceDate: null,
+            BusinessPartnerId: null, InvoiceNumber: null, InvoiceDate: null,
             DueDate: null, PaymentTerms: null,
             Notes: null, Lines: null,
             WarehouseAllocations: null);

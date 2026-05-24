@@ -11,7 +11,7 @@ public sealed class SalesRetention : AuditableEntity, ISubscriberScopedEntity
 
     private readonly List<SalesRetentionLine> _lines = new();
 
-    public Guid      CustomerId     { get; private set; }
+    public Guid      BusinessPartnerId { get; private set; }
     public string    VoucherType    { get; private set; } = "RETENTION";
     public string    AccessKey      { get; private set; } = null!;
     public DateTime  IssueDate      { get; private set; }
@@ -21,14 +21,13 @@ public sealed class SalesRetention : AuditableEntity, ISubscriberScopedEntity
     public string?   XmlPath        { get; private set; }
     public Guid?     JournalEntryId { get; private set; }
 
-    public Customer Customer { get; private set; } = null!;
     public IReadOnlyList<SalesRetentionLine> Lines => _lines.AsReadOnly();
 
     private SalesRetention() { }
 
     public static SalesRetention Create(
         Guid     subscriberId,
-        Guid     customerId,
+        Guid     businessPartnerId,
         string   accessKey,
         DateTime issueDate,
         decimal  totalRetained,
@@ -39,8 +38,8 @@ public sealed class SalesRetention : AuditableEntity, ISubscriberScopedEntity
         var r = new SalesRetention
         {
             Id             = Guid.NewGuid(),
-            SubscriberId       = subscriberId,
-            CustomerId     = customerId,
+            SubscriberId      = subscriberId,
+            BusinessPartnerId = businessPartnerId,
             AccessKey      = accessKey.Trim(),
             IssueDate      = issueDate,
             TotalRetained  = totalRetained,

@@ -7,7 +7,7 @@ namespace ERP.Application.Modules.Purchasing.UseCases.GetCompras;
 
 public record GetPurchasesQuery(
     PurchaseStatus? Status,
-    Guid?          SupplierId,
+    Guid?          BusinessPartnerId,
     DateTime?      DateFrom,
     DateTime?      DateTo,
     string?       Search

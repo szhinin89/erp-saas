@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
@@ -6,8 +6,8 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Products.Interfaces;
-using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
 
@@ -15,7 +15,7 @@ public sealed class CreatePurchaseOrderCommandHandler
     : IRequestHandler<CreatePurchaseOrderCommand, Result<PurchaseOrderDto>>
 {
     private readonly IPurchaseOrderRepository  _ordenRepo;
-    private readonly ISupplierRepository    _proveedorRepo;
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IProductRepository      _productRepo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentSubscriber          _currentSubscriber;
@@ -24,7 +24,7 @@ public sealed class CreatePurchaseOrderCommandHandler
 
     public CreatePurchaseOrderCommandHandler(
         IPurchaseOrderRepository ordenRepo,
-        ISupplierRepository proveedorRepo,
+        IBusinessPartnerRepository bpRepo,
         IProductRepository productRepo,
         IUserActivityRepository activity,
         ICurrentSubscriber currentSubscriber,
@@ -32,7 +32,7 @@ public sealed class CreatePurchaseOrderCommandHandler
         ILogger<CreatePurchaseOrderCommandHandler> logger)
     {
         _ordenRepo     = ordenRepo;
-        _proveedorRepo = proveedorRepo;
+        _bpRepo = bpRepo;
         _productRepo   = productRepo;
         _activity      = activity;
         _currentSubscriber = currentSubscriber;
@@ -46,9 +46,9 @@ public sealed class CreatePurchaseOrderCommandHandler
         var subscriberId = _currentSubscriber.SubscriberId;
         var userId   = _currentUser.UserId;
 
-        var Supplier = await _proveedorRepo.GetByIdAsync(subscriberId, command.SupplierId, ct);
-        if (Supplier is null || !Supplier.IsActive)
-            return Result<PurchaseOrderDto>.Failure("El Supplier no existe o no está activo.");
+        var bp = await _bpRepo.GetByIdAsync(command.BusinessPartnerId, ct);
+        if (bp is null || !bp.IsActive)
+            return Result<PurchaseOrderDto>.Failure("El Supplier no existe o no estÃ¡ activo.");
 
         // Validar productos y construir detalles
         var productosValidados = new Dictionary<Guid, ERP.Domain.Products.Entities.Product>();
@@ -58,7 +58,7 @@ public sealed class CreatePurchaseOrderCommandHandler
             var producto = await _productRepo.GetByIdAsync(item.ProductId, subscriberId, ct);
             if (producto is null || !producto.IsActive)
                 return Result<PurchaseOrderDto>.Failure(
-                    $"El producto {item.ProductId} no existe o no está activo.");
+                    $"El producto {item.ProductId} no existe o no estÃ¡ activo.");
             productosValidados[item.ProductId] = producto;
         }
 
@@ -66,7 +66,7 @@ public sealed class CreatePurchaseOrderCommandHandler
 
         var orden = PurchaseOrder.Create(
             subscriberId, secuencial,
-            command.SupplierId, command.RequiredDate,
+            command.BusinessPartnerId, command.RequiredDate,
             command.TargetWarehouseId, command.DeliveryAddress, command.Notes,
             userId);
 
@@ -92,14 +92,14 @@ public sealed class CreatePurchaseOrderCommandHandler
 
         _logger.LogInformation("OC creada: {Numero} ({Id})", orden.OrderNumber, orden.Id);
 
-        return Result<PurchaseOrderDto>.Success(ToDto(orden, Supplier.LegalName));
+        return Result<PurchaseOrderDto>.Success(ToDto(orden, bp.LegalName));
     }
 
     internal static PurchaseOrderDto ToDto(
         PurchaseOrder o, string proveedorNombre,
         IReadOnlyList<string>? advertencias = null) => new(
         o.Id, o.OrderNumber,
-        o.SupplierId, proveedorNombre,
+        o.BusinessPartnerId, proveedorNombre,
         o.IssueDate, o.RequiredDate,
         o.Status, o.Currency,
         o.Subtotal, o.TaxTotal, o.Total,

@@ -14,7 +14,7 @@ public sealed class IssuedRetention : AuditableEntity, ISubscriberScopedEntity
 
     private readonly List<PurchRetentionLine> _lines = new();
 
-    public Guid      SupplierId          { get; private set; }
+    public Guid      BusinessPartnerId   { get; private set; }
     public Guid?     PurchBillId         { get; private set; }
     public string    VoucherType         { get; private set; } = "RETENTION";
     public string    AccessKey           { get; private set; } = null!;
@@ -31,14 +31,13 @@ public sealed class IssuedRetention : AuditableEntity, ISubscriberScopedEntity
     public Guid?     JournalEntryId      { get; private set; }
     public decimal   TotalRetained       { get; private set; }
 
-    public Supplier Supplier { get; private set; } = null!;
     public IReadOnlyList<PurchRetentionLine> Lines => _lines.AsReadOnly();
 
     private IssuedRetention() { }
 
     public static IssuedRetention Create(
         Guid     subscriberId,
-        Guid     supplierId,
+        Guid     businessPartnerId,
         Guid?    purchBillId,
         string   accessKey,
         DateTime issueDate,
@@ -50,8 +49,8 @@ public sealed class IssuedRetention : AuditableEntity, ISubscriberScopedEntity
         var r = new IssuedRetention
         {
             Id                = Guid.NewGuid(),
-            SubscriberId          = subscriberId,
-            SupplierId        = supplierId,
+            SubscriberId      = subscriberId,
+            BusinessPartnerId = businessPartnerId,
             PurchBillId       = purchBillId,
             AccessKey         = accessKey.Trim(),
             IssueDate         = issueDate,

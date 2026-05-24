@@ -8,7 +8,7 @@ public class SupplierNote
 {
     public Guid     Id             { get; set; }
     public Guid     CompanyId      { get; set; }
-    public Guid     SupplierId     { get; set; }
+    public Guid     BusinessPartnerId     { get; set; }
     public Guid?    InvoiceId      { get; set; }
     public string   NoteNumber     { get; set; } = null!;
     public string?  AccessKey      { get; set; }

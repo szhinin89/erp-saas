@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
@@ -28,7 +28,7 @@ public sealed class OrdenCompraValidatorPipelineTests
 
         await act.Should()
             .ThrowAsync<FluentValidation.ValidationException>()
-            .WithMessage("*ítem*");
+            .WithMessage("*Ã­tem*");
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public sealed class OrdenCompraValidatorPipelineTests
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
         var act = async () => await mediator.Send(new CreatePurchaseOrderCommand(
-            SupplierId: Guid.Empty,
+            BusinessPartnerId: Guid.Empty,
             DateTime.UtcNow.AddDays(10),
             null, null, null,
             Items: [new PurchaseOrderItemRequest(Guid.NewGuid(), 5m, 10m, 15m)]),

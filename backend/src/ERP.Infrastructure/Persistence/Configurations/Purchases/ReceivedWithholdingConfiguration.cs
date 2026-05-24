@@ -12,7 +12,7 @@ public class ReceivedWithholdingConfiguration : IEntityTypeConfiguration<Receive
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
-        builder.Property(x => x.CustomerId).HasColumnName("customer_id");
+        builder.Property(x => x.CustomerId).HasColumnName("business_partner_id");
         builder.Property(x => x.AccessKey).HasColumnName("access_key").HasMaxLength(49).IsFixedLength();
         builder.Property(x => x.IssuerRuc).HasColumnName("issuer_ruc").HasMaxLength(13).IsFixedLength().IsRequired();
         builder.Property(x => x.IssuerName).HasColumnName("issuer_name").HasMaxLength(200).IsRequired();

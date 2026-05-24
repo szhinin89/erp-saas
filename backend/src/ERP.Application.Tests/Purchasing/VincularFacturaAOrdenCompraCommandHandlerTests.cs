@@ -7,7 +7,7 @@ using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Events;
 using ERP.Domain.Modules.Purchasing.Enums;
 using ERP.Domain.Modules.Purchasing.Interfaces;
-using ERP.Domain.Modules.Purchasing.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 
@@ -197,7 +197,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
         public Mock<IPurchBillRepository>      CompraRepo { get; } = new();
         public Mock<IUnitOfWork>           UnitOfWork  { get; } = new();
 
-        private readonly Mock<ISupplierRepository>    _proveedorRepo = new();
+        private readonly Mock<IBusinessPartnerRepository> _bpRepo = new();
         private readonly Mock<IUserActivityRepository> _activity      = new();
         private readonly Mock<ICurrentSubscriber>          _tenant        = new();
         private readonly Mock<ICurrentUser>            _user          = new();
@@ -245,8 +245,8 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
             CompraRepo.Setup(x => x.GetByIdAsync(SubscriberId, factura.Id, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(factura);
 
-            _proveedorRepo.Setup(x => x.GetByIdAsync(SubscriberId, ProveedorId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync((ERP.Domain.Modules.Purchasing.Entities.Supplier?)null);
+            _bpRepo.Setup(x => x.GetByIdAsync(ProveedorId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync((ERP.Domain.MasterData.Entities.BusinessPartner?)null);
 
             _activity.Setup(x => x.AddAsync(
                     It.IsAny<ERP.Domain.Audit.Entities.UserActivity>(), It.IsAny<CancellationToken>()))
@@ -296,7 +296,7 @@ public sealed class VincularFacturaAOrdenCompraCommandHandlerTests
             var handler = new LinkInvoiceToPurchaseOrderCommandHandler(
                 OrdenRepo.Object,
                 CompraRepo.Object,
-                _proveedorRepo.Object,
+                _bpRepo.Object,
                 _activity.Object,
                 _tenant.Object,
                 _user.Object,

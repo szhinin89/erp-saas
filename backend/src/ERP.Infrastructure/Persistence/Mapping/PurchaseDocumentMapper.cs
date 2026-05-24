@@ -11,7 +11,7 @@ public static class PurchaseDocumentMapper
         var doc = PurchaseDocument.Rehydrate();
         Set(doc, nameof(PurchaseDocument.Id), bill.Id);
         Set(doc, nameof(PurchaseDocument.SubscriberId), bill.SubscriberId);
-        Set(doc, nameof(PurchaseDocument.SupplierId), bill.SupplierId);
+        Set(doc, nameof(PurchaseDocument.BusinessPartnerId), bill.BusinessPartnerId);
         Set(doc, nameof(PurchaseDocument.DocType), PurchaseDocumentType.Invoice);
         Set(doc, nameof(PurchaseDocument.DocNumber), bill.InvoiceNumber);
         Set(doc, nameof(PurchaseDocument.AccessKey), bill.AccessKey);
@@ -48,7 +48,7 @@ public static class PurchaseDocumentMapper
     {
         var bill = PurchBill.Create(
             doc.SubscriberId,
-            doc.SupplierId ?? Guid.Empty,
+            doc.BusinessPartnerId ?? Guid.Empty,
             doc.DocNumber,
             doc.AccessKey,
             doc.XmlPath,
@@ -113,7 +113,7 @@ public static class PurchaseDocumentMapper
 
         Set(doc, nameof(PurchaseDocument.Id), note.Id);
         Set(doc, nameof(PurchaseDocument.SubscriberId), note.SubscriberId);
-        Set(doc, nameof(PurchaseDocument.SupplierId), note.SupplierId);
+        Set(doc, nameof(PurchaseDocument.BusinessPartnerId), note.BusinessPartnerId);
         Set(doc, nameof(PurchaseDocument.DocType), PurchaseDocumentTypeExtensions.FromSupplierNoteType(note.NoteType));
         Set(doc, nameof(PurchaseDocument.DocNumber), $"{note.EstabCode}-{note.EmPointCode}-{note.Sequential}");
         Set(doc, nameof(PurchaseDocument.AccessKey), note.AccessKey);
@@ -144,7 +144,7 @@ public static class PurchaseDocumentMapper
     {
         var note = PurchNote.Create(
             doc.SubscriberId,
-            doc.SupplierId ?? Guid.Empty,
+            doc.BusinessPartnerId ?? Guid.Empty,
             purchBillId,
             expenseInvoiceId,
             doc.DocType == PurchaseDocumentType.CreditNote ? "CREDIT" : "DEBIT",

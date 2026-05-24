@@ -5,7 +5,7 @@ using ERP.Application.Modules.Purchasing.DTOs;
 namespace ERP.Application.Modules.Purchasing.UseCases.NotasProveedor;
 
 public sealed record GetPurchaseSupplierNotesQuery(
-    Guid? SupplierId,
+    Guid? BusinessPartnerId,
     Guid?   PurchBillId,
     Guid?   ExpenseInvoiceId,
     string?   Status

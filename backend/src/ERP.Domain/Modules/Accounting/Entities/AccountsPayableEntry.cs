@@ -15,8 +15,7 @@ public sealed class AccountsPayableEntry : AuditableEntity, ISubscriberScopedEnt
     public const string StatusCancelled     = "Cancelled";
 
     public Guid     CompanyId          { get; private set; }
-    public Guid     SupplierId         { get; private set; }
-    public Guid?    BusinessPartnerId  { get; private set; }
+    public Guid     BusinessPartnerId  { get; private set; }
     public Guid?    PurchBillId        { get; private set; }
     public string   Reference          { get; private set; } = null!;
     public DateTime IssueDate          { get; private set; }
@@ -36,15 +35,14 @@ public sealed class AccountsPayableEntry : AuditableEntity, ISubscriberScopedEnt
     public static AccountsPayableEntry Create(
         Guid     subscriberId,
         Guid     companyId,
-        Guid     supplierId,
+        Guid     businessPartnerId,
         string   reference,
         DateTime issueDate,
         DateTime dueDate,
         decimal  amount,
         Guid     createdBy,
-        Guid?    purchBillId        = null,
-        Guid?    businessPartnerId  = null,
-        string   currency           = "USD")
+        Guid?    purchBillId = null,
+        string   currency    = "USD")
     {
         if (amount <= 0)
             throw new ArgumentException("El monto debe ser mayor a cero.", nameof(amount));
@@ -58,7 +56,6 @@ public sealed class AccountsPayableEntry : AuditableEntity, ISubscriberScopedEnt
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
             CompanyId         = companyId,
-            SupplierId        = supplierId,
             BusinessPartnerId = businessPartnerId,
             PurchBillId       = purchBillId,
             Reference         = reference.Trim(),

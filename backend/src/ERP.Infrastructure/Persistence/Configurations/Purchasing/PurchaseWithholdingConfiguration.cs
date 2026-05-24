@@ -15,7 +15,7 @@ public sealed class PurchaseWithholdingConfiguration : IEntityTypeConfiguration<
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.CompanyId).HasColumnName("company_id");
-        builder.Property(e => e.SupplierId).HasColumnName("supplier_id").IsRequired();
+        builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
         builder.Property(e => e.Direction)
             .HasColumnName("direction")
             .HasMaxLength(10)
@@ -44,7 +44,7 @@ public sealed class PurchaseWithholdingConfiguration : IEntityTypeConfiguration<
         builder.Property(e => e.CreatedBy).HasColumnName("created_by");
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasOne(e => e.Supplier).WithMany().HasForeignKey(e => e.SupplierId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<ERP.Domain.MasterData.Entities.BusinessPartner>().WithMany().HasForeignKey(e => e.BusinessPartnerId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(e => e.PurchaseDocument).WithMany().HasForeignKey(e => e.PurchaseDocumentId).OnDelete(DeleteBehavior.SetNull);
         builder.HasMany(e => e.Lines).WithOne().HasForeignKey(d => d.PurchaseWithholdingId).OnDelete(DeleteBehavior.Cascade);
 

@@ -262,8 +262,6 @@ public class ErpDbContext : DbContext
     public DbSet<GeoParish> GeoParishes => Set<GeoParish>();
     public DbSet<Branch> Branches => Set<Branch>();
     public DbSet<UserActivity> UserActivities => Set<UserActivity>();
-    public DbSet<Customer> Customers => Set<Customer>();
-
     // ── MasterData BC ─────────────────────────────────────────────────────
     public DbSet<BusinessPartner>                BusinessPartners               => Set<BusinessPartner>();
     public DbSet<CustomerProfile>                CustomerProfiles               => Set<CustomerProfile>();
@@ -292,9 +290,6 @@ public class ErpDbContext : DbContext
 
     // ── Logistics / Warehouses ────────────────────────────────────────────
     public DbSet<Warehouse> Warehouses => Set<Warehouse>();
-
-    // ── Suppliers ────────────────────────────────────────────────────────
-    public DbSet<Supplier> Suppliers => Set<Supplier>();
 
     // ── Purchasing (traditional) ──────────────────────────────────────────
     public DbSet<PurchBill>           PurchBills            => Set<PurchBill>();

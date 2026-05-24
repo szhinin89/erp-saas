@@ -11,7 +11,6 @@ public sealed class PurchaseDocument : AuditableEntity, ISubscriberScopedEntity,
     private readonly List<PurchaseDetail> _lines = new();
 
     public Guid?                CompanyId           { get; private set; }
-    public Guid?                SupplierId          { get; private set; }
     public PurchaseDocumentType DocType             { get; private set; } = PurchaseDocumentType.Invoice;
     public string               DocNumber           { get; private set; } = null!;
     public string?              AccessKey           { get; private set; }
@@ -47,8 +46,6 @@ public sealed class PurchaseDocument : AuditableEntity, ISubscriberScopedEntity,
 
     /// <summary>Rehidratación desde capa de persistencia / mapper.</summary>
     public static PurchaseDocument Rehydrate() => new();
-
-    public void SetBusinessPartner(Guid? businessPartnerId) => BusinessPartnerId = businessPartnerId;
 
     public void AddLine(PurchaseDetail line)
     {

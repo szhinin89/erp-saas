@@ -30,8 +30,8 @@ public sealed class GetSaleByIdQueryHandler
 
         return Result<SalesBillDetailDto?>.Success(new SalesBillDetailDto(
             factura.Id,
-            factura.CustomerId,
-            factura.Cliente?.LegalName ?? factura.CustomerId.ToString(),
+            factura.BusinessPartnerId,
+            factura.BusinessPartnerId.ToString(),
             factura.WarehouseId,
             factura.BranchId,
             factura.DocType,

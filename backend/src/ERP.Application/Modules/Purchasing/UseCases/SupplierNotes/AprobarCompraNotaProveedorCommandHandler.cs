@@ -231,7 +231,7 @@ public sealed class ApprovePurchaseSupplierNoteCommandHandler
 
     private static SupplierPurchaseNoteDto ToDto(PurchNote n) => new(
         n.Id,
-        n.SupplierId,
+        n.BusinessPartnerId,
         n.PurchBillId,
         n.ExpenseInvoiceId,
         n.NoteType,

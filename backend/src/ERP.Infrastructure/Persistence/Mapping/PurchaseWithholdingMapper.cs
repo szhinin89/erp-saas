@@ -11,7 +11,7 @@ public static class PurchaseWithholdingMapper
         var w = PurchaseWithholding.Rehydrate();
         Set(w, nameof(PurchaseWithholding.Id), retention.Id);
         Set(w, nameof(PurchaseWithholding.SubscriberId), retention.SubscriberId);
-        Set(w, nameof(PurchaseWithholding.SupplierId), retention.SupplierId);
+        Set(w, nameof(PurchaseWithholding.BusinessPartnerId), retention.BusinessPartnerId);
         Set(w, nameof(PurchaseWithholding.Direction), WithholdingDirection.Issued);
         Set(w, nameof(PurchaseWithholding.PurchaseDocumentId), retention.PurchBillId);
         Set(w, nameof(PurchaseWithholding.VoucherType), retention.VoucherType);
@@ -55,7 +55,7 @@ public static class PurchaseWithholdingMapper
     {
         var retention = IssuedRetention.Create(
             w.SubscriberId,
-            w.SupplierId,
+            w.BusinessPartnerId,
             w.PurchaseDocumentId,
             w.AccessKey,
             w.IssueDate,

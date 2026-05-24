@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using FluentAssertions;
 using MediatR;
@@ -26,7 +26,7 @@ using ERP.Infrastructure.Persistence;
 
 namespace ERP.API.Tests.Integration;
 
-/// <summary>Â§6.1 escenarios NC/ND, retenciÃ³n emitida (compras) y retenciÃ³n recibida (ventas).</summary>
+/// <summary>Ã‚Â§6.1 escenarios NC/ND, retenciÃƒÂ³n emitida (compras) y retenciÃƒÂ³n recibida (ventas).</summary>
 public sealed class NotasYRetencionesEndToEndTests
 {
     private static CreateSaleCommand BuildCrearVenta(
@@ -91,7 +91,7 @@ public sealed class NotasYRetencionesEndToEndTests
               <detalles>
                 <detalle>
                   <codigoPrincipal>{codigoPrincipal}</codigoPrincipal>
-                  <descripcion>Item integraciÃ³n</descripcion>
+                  <descripcion>Item integraciÃƒÂ³n</descripcion>
                   <cantidad>{quantity.ToString(CultureInfo.InvariantCulture)}</cantidad>
                   <precioUnitario>{unitPrice.ToString(CultureInfo.InvariantCulture)}</precioUnitario>
                   <descuento>0</descuento>
@@ -118,7 +118,7 @@ public sealed class NotasYRetencionesEndToEndTests
         var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 10m, ct: CancellationToken.None);
 
-        var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var clienteId  = db.BusinessPartners.First(c => c.SubscriberId == seed.SubscriberId).Id;
         var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         var venta = await mediator.Send(
@@ -137,7 +137,7 @@ public sealed class NotasYRetencionesEndToEndTests
             new CreateSalesNoteCommand(
                 venta.Value,
                 "CREDIT",
-                "DevoluciÃ³n parcial",
+                "DevoluciÃƒÂ³n parcial",
                 new[] { new CrearSalesNoteItemDto(seed.ProductId, 1m, 25m) }),
             CancellationToken.None);
         crearNota.IsSuccess.Should().BeTrue(crearNota.Error);
@@ -172,7 +172,7 @@ public sealed class NotasYRetencionesEndToEndTests
         var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockInicial: 10m, ct: CancellationToken.None);
 
-        var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var clienteId  = db.BusinessPartners.First(c => c.SubscriberId == seed.SubscriberId).Id;
         var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
         var cuentaVentas = db.Accounts.First(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "4.1.99");
 
@@ -223,7 +223,7 @@ public sealed class NotasYRetencionesEndToEndTests
                 PurchaseCreationMode.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xmlCompra),
                 XmlFileName: "factura.xml",
-                SupplierId: null,
+                BusinessPartnerId: null,
                 InvoiceNumber: null,
                 InvoiceDate: null,
                 DueDate: null,
@@ -300,7 +300,7 @@ public sealed class NotasYRetencionesEndToEndTests
                 PurchaseCreationMode.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xmlCompra),
                 XmlFileName: "factura.xml",
-                SupplierId: null,
+                BusinessPartnerId: null,
                 InvoiceNumber: null,
                 InvoiceDate: null,
                 DueDate: null,
@@ -375,7 +375,7 @@ public sealed class NotasYRetencionesEndToEndTests
                 PurchaseCreationMode.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xmlCompra),
                 XmlFileName: "factura.xml",
-                SupplierId: null,
+                BusinessPartnerId: null,
                 InvoiceNumber: null,
                 InvoiceDate: null,
                 DueDate: null,
@@ -388,7 +388,7 @@ public sealed class NotasYRetencionesEndToEndTests
         await mediator.Send(new ValidatePurchaseCommand(compraRes.Value!.Id), CancellationToken.None);
         await mediator.Send(new ApprovePurchaseCommand(compraRes.Value.Id), CancellationToken.None);
 
-        var proveedorId = db.PurchBills.First(c => c.Id == compraRes.Value.Id).SupplierId;
+        var proveedorId = db.PurchBills.First(c => c.Id == compraRes.Value.Id).BusinessPartnerId;
         var cuentaPasivo = db.Accounts.First(a => a.SubscriberId == seed.SubscriberId && a.Code.Value == "2.1.99");
 
         var gastoRes = await mediator.Send(
@@ -396,7 +396,7 @@ public sealed class NotasYRetencionesEndToEndTests
                 ExpenseCreationMode.Manual,
                 XmlContent: null,
                 XmlFileName: null,
-                SupplierId: proveedorId,
+                BusinessPartnerId: proveedorId,
                 IssueDate: DateTime.UtcNow.Date,
                 Concept: "Servicio de soporte",
                 Category: "Viajes",
@@ -482,7 +482,7 @@ public sealed class NotasYRetencionesEndToEndTests
                 PurchaseCreationMode.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xml),
                 XmlFileName: "factura.xml",
-                SupplierId: null,
+                BusinessPartnerId: null,
                 InvoiceNumber: null,
                 InvoiceDate: null,
                 DueDate: null,
@@ -533,10 +533,10 @@ public sealed class NotasYRetencionesEndToEndTests
         db.Accounts.Add(Account.Create(
             tid, "2.3.01", "IVA IMPUESTOS por pagar pruebas", AccountType.Liability, AccountNature.Credit, userId));
         db.Accounts.Add(Account.Create(
-            tid, "1.2.01", "Clientes por COBRAR integraciÃ³n", AccountType.Asset, AccountNature.Debit, userId));
+            tid, "1.2.01", "Clientes por COBRAR integraciÃƒÂ³n", AccountType.Asset, AccountNature.Debit, userId));
         await db.SaveChangesAsync(CancellationToken.None);
 
-        var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var clienteId  = db.BusinessPartners.First(c => c.SubscriberId == seed.SubscriberId).Id;
         var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         var venta = await mediator.Send(

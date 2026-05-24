@@ -24,7 +24,7 @@ public sealed class GetPurchasesNotesSupplierQueryHandler
     {
         var list = await _repo.GetPurchNotesAsync(
             _tenant.SubscriberId,
-            query.SupplierId,
+            query.BusinessPartnerId,
             query.PurchBillId,
             query.ExpenseInvoiceId,
             query.Status,
@@ -32,7 +32,7 @@ public sealed class GetPurchasesNotesSupplierQueryHandler
 
         IReadOnlyList<SupplierPurchaseNoteDto> dtos = list.Select(n => new SupplierPurchaseNoteDto(
             n.Id,
-            n.SupplierId,
+            n.BusinessPartnerId,
             n.PurchBillId,
             n.ExpenseInvoiceId,
             n.NoteType,

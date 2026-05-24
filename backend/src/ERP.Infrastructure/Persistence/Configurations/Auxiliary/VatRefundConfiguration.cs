@@ -12,7 +12,7 @@ public class VatRefundConfiguration : IEntityTypeConfiguration<VatRefund>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
-        builder.Property(x => x.CustomerId).HasColumnName("customer_id").IsRequired();
+        builder.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
         builder.Property(x => x.SalesDocId).HasColumnName("sales_doc_id").IsRequired();
         builder.Property(x => x.RefundAmount).HasColumnName("refund_amount").HasPrecision(18, 4);
         builder.Property(x => x.AppliedDate).HasColumnName("applied_date");

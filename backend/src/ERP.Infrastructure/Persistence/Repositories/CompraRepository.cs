@@ -95,7 +95,7 @@ public sealed class PurchBillRepository : IPurchBillRepository
             if (estado.HasValue)
                 q = q.Where(c => c.Status == estado.Value.ToString());
             if (proveedorId.HasValue)
-                q = q.Where(c => c.SupplierId == proveedorId.Value);
+                q = q.Where(c => c.BusinessPartnerId == proveedorId.Value);
             if (desde.HasValue)
                 q = q.Where(c => c.IssueDate >= desde.Value.Date);
             if (hasta.HasValue)
@@ -116,7 +116,7 @@ public sealed class PurchBillRepository : IPurchBillRepository
         var legacy = _context.PurchBills.Where(c => c.SubscriberId == subscriberId);
 
         if (estado.HasValue)        legacy = legacy.Where(c => c.Status == estado.Value);
-        if (proveedorId.HasValue)   legacy = legacy.Where(c => c.SupplierId == proveedorId.Value);
+        if (proveedorId.HasValue)   legacy = legacy.Where(c => c.BusinessPartnerId == proveedorId.Value);
         if (desde.HasValue)         legacy = legacy.Where(c => c.InvoiceDate >= desde.Value.Date);
         if (hasta.HasValue)         legacy = legacy.Where(c => c.InvoiceDate <= hasta.Value.Date);
 
@@ -160,7 +160,6 @@ public sealed class PurchBillRepository : IPurchBillRepository
         if (UseUnified)
         {
             var w = await _context.PurchaseWithholdings
-                .Include(r => r.Supplier)
                 .Include(r => r.Lines)
                 .FirstOrDefaultAsync(r => r.SubscriberId == subscriberId && r.Id == id, ct);
             if (w is null) return null;
@@ -170,7 +169,6 @@ public sealed class PurchBillRepository : IPurchBillRepository
         }
 
         return await _context.IssuedRetentions
-            .Include(r => r.Supplier)
             .Include(r => r.Lines)
             .FirstOrDefaultAsync(r => r.SubscriberId == subscriberId && r.Id == id, ct);
     }
@@ -183,20 +181,18 @@ public sealed class PurchBillRepository : IPurchBillRepository
         if (UseUnified)
         {
             var q = _context.PurchaseWithholdings
-                .Include(r => r.Supplier)
                 .Where(r => r.SubscriberId == subscriberId
                     && r.Direction == WithholdingDirection.Issued);
             if (proveedorId.HasValue)
-                q = q.Where(r => r.SupplierId == proveedorId.Value);
+                q = q.Where(r => r.BusinessPartnerId == proveedorId.Value);
             var docs = await q.OrderByDescending(r => r.IssueDate).ToListAsync(ct);
             return docs.Select(PurchaseWithholdingMapper.ToLegacyRetention).ToList();
         }
 
         var legacy = _context.IssuedRetentions
-            .Include(r => r.Supplier)
             .Where(r => r.SubscriberId == subscriberId);
         if (proveedorId.HasValue)
-            legacy = legacy.Where(r => r.SupplierId == proveedorId.Value);
+            legacy = legacy.Where(r => r.BusinessPartnerId == proveedorId.Value);
         return await legacy.OrderByDescending(r => r.IssueDate).ToListAsync(ct);
     }
 
@@ -255,7 +251,7 @@ public sealed class PurchBillRepository : IPurchBillRepository
         {
             var q = NoteDocumentsQuery(subscriberId);
             if (proveedorId.HasValue)
-                q = q.Where(n => n.SupplierId == proveedorId.Value);
+                q = q.Where(n => n.BusinessPartnerId == proveedorId.Value);
             if (PurchBillId.HasValue)
                 q = q.Where(n => n.ReferenceDocumentId == PurchBillId.Value);
             if (ExpenseInvoiceId.HasValue)
@@ -274,7 +270,7 @@ public sealed class PurchBillRepository : IPurchBillRepository
         }
 
         var legacy = _context.PurchNotes.Where(n => n.SubscriberId == subscriberId);
-        if (proveedorId.HasValue) legacy = legacy.Where(n => n.SupplierId == proveedorId.Value);
+        if (proveedorId.HasValue) legacy = legacy.Where(n => n.BusinessPartnerId == proveedorId.Value);
         if (PurchBillId.HasValue) legacy = legacy.Where(n => n.PurchBillId == PurchBillId.Value);
         if (ExpenseInvoiceId.HasValue) legacy = legacy.Where(n => n.ExpenseInvoiceId == ExpenseInvoiceId.Value);
         if (!string.IsNullOrWhiteSpace(estado))

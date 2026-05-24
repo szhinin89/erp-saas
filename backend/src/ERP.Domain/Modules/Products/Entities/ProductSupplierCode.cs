@@ -5,8 +5,8 @@ namespace ERP.Domain.Products.Entities;
 /// <summary>Código del producto asignado por un proveedor específico (1:N por producto).</summary>
 public class ProductSupplierCode : BaseEntity
 {
-    public Guid ProductId  { get; private set; }
-    public Guid SupplierId { get; private set; }
+    public Guid ProductId         { get; private set; }
+    public Guid BusinessPartnerId { get; private set; }
     public string Code     { get; private set; } = null!;
     public bool IsDefault  { get; private set; }
     public bool IsActive   { get; private set; } = true;
@@ -14,13 +14,13 @@ public class ProductSupplierCode : BaseEntity
     private ProductSupplierCode() { }
 
     internal static ProductSupplierCode Create(
-        Guid productId, Guid subscriberId, Guid supplierId, string code, bool isDefault = false)
+        Guid productId, Guid subscriberId, Guid businessPartnerId, string code, bool isDefault = false)
         => new()
         {
-            Id         = Guid.NewGuid(),
-            SubscriberId   = subscriberId,
-            ProductId  = productId,
-            SupplierId = supplierId,
+            Id                = Guid.NewGuid(),
+            SubscriberId      = subscriberId,
+            ProductId         = productId,
+            BusinessPartnerId = businessPartnerId,
             Code       = code.Trim(),
             IsDefault  = isDefault,
             IsActive   = true,

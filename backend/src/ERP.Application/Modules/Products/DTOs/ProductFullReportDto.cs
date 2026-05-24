@@ -70,7 +70,7 @@ public record ProductFullReportDto(
 );
 
 public record ProductBarcodeDto(Guid Id, string Code, int Type);
-public record ProductSupplierCodeDto(Guid Id, Guid SupplierId, string Code, bool IsDefault);
+public record ProductSupplierCodeDto(Guid Id, Guid BusinessPartnerId, string Code, bool IsDefault);
 public record ProductUnitConversionDto(Guid Id, Guid AlternateUnitId, decimal ConversionFactor);
 public record ProductColorDto(Guid Id, string Name, string? HexCode);
 public record ProductSizeDto(Guid Id, string Name, int SortOrder);

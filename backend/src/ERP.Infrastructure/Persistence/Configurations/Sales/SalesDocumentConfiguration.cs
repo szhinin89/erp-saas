@@ -16,7 +16,7 @@ public sealed class SalesDocumentConfiguration : IEntityTypeConfiguration<SalesD
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.CompanyId).HasColumnName("company_id");
         builder.Property(e => e.BranchId).HasColumnName("branch_id");
-        builder.Property(e => e.CustomerId).HasColumnName("customer_id");
+        builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id");
         builder.Property(e => e.WarehouseId).HasColumnName("warehouse_id");
         builder.Property(e => e.SalespersonId).HasColumnName("salesperson_id");
         builder.Property(e => e.DocType)
@@ -55,7 +55,7 @@ public sealed class SalesDocumentConfiguration : IEntityTypeConfiguration<SalesD
         builder.Property(e => e.CreatedBy).HasColumnName("created_by");
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasOne(e => e.Cliente).WithMany().HasForeignKey(e => e.CustomerId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<ERP.Domain.MasterData.Entities.BusinessPartner>().WithMany().HasForeignKey(e => e.BusinessPartnerId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(e => e.Warehouse).WithMany().HasForeignKey(e => e.WarehouseId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(e => e.Reference).WithMany().HasForeignKey(e => e.ReferenceDocumentId).OnDelete(DeleteBehavior.Restrict);
 
@@ -73,7 +73,7 @@ public sealed class SalesDocumentConfiguration : IEntityTypeConfiguration<SalesD
             .HasDatabaseName("ix_sales_document_subscriber_company");
         builder.HasIndex(e => new { e.SubscriberId, e.IssueDate, e.Status, e.DocType })
             .HasDatabaseName("ix_sales_document_subscriber_date_status_type");
-        builder.HasIndex(e => new { e.SubscriberId, e.CustomerId, e.IssueDate })
+        builder.HasIndex(e => new { e.SubscriberId, e.BusinessPartnerId, e.IssueDate })
             .HasDatabaseName("ix_sales_document_subscriber_customer_date");
         builder.HasIndex(e => new { e.SubscriberId, e.AccessKey })
             .IsUnique()

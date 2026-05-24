@@ -79,7 +79,7 @@ public sealed class RejectExpenseCommandHandler
         g.Id,
         g.AccessKey,
         g.IssueDate,
-        g.SupplierId,
+        g.BusinessPartnerId,
         g.InvoiceNumber,
         g.Concept,
         g.Category,

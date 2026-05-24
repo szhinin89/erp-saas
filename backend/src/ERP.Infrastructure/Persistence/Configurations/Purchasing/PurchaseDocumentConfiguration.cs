@@ -15,7 +15,7 @@ public sealed class PurchaseDocumentConfiguration : IEntityTypeConfiguration<Pur
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.CompanyId).HasColumnName("company_id");
-        builder.Property(e => e.SupplierId).HasColumnName("supplier_id");
+        builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id");
         builder.Property(e => e.DocType)
             .HasColumnName("doc_type")
             .HasMaxLength(20)

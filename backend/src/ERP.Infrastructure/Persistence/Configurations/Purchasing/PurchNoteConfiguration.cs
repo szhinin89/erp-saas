@@ -14,7 +14,7 @@ public sealed class PurchNoteConfiguration : IEntityTypeConfiguration<PurchNote>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
-        builder.Property(x => x.SupplierId).HasColumnName("supplier_id").IsRequired();
+        builder.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
         builder.Property(x => x.PurchBillId).HasColumnName("purch_bill_id");
         builder.Property(x => x.ExpenseInvoiceId).HasColumnName("expense_invoice_id");
         builder.Property(x => x.NoteType).HasColumnName("note_type").HasMaxLength(PurchNote.NoteTypeMaxLen).IsRequired();
@@ -38,11 +38,11 @@ public sealed class PurchNoteConfiguration : IEntityTypeConfiguration<PurchNote>
         builder.Property(x => x.UpdatedBy).HasColumnName("updated_by");
 
         builder.HasIndex(x => new { x.SubscriberId, x.AccessKey }).IsUnique().HasDatabaseName("uq_purch_note_access_key");
-        builder.HasIndex(x => new { x.SubscriberId, x.SupplierId, x.Status }).HasDatabaseName("ix_purch_note_subscriber_supplier_status");
+        builder.HasIndex(x => new { x.SubscriberId, x.BusinessPartnerId, x.Status }).HasDatabaseName("ix_purch_note_subscriber_supplier_status");
         builder.HasIndex(x => x.PurchBillId).HasDatabaseName("ix_purch_note_bill_id");
         builder.HasIndex(x => x.ExpenseInvoiceId).HasDatabaseName("ix_purch_note_expense_id");
 
-        builder.HasOne(x => x.Supplier).WithMany().HasForeignKey(x => x.SupplierId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<ERP.Domain.MasterData.Entities.BusinessPartner>().WithMany().HasForeignKey(x => x.BusinessPartnerId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.PurchBill).WithMany().HasForeignKey(x => x.PurchBillId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(x => x.ExpenseInv).WithMany().HasForeignKey(x => x.ExpenseInvoiceId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(x => x.Lines).WithOne().HasForeignKey(d => d.PurchNoteId).OnDelete(DeleteBehavior.Cascade);

@@ -1,9 +1,10 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
 using ERP.Domain.Modules.Purchasing.Interfaces;
-using ERP.Domain.Modules.Purchasing.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.GetOrdenCompraById;
 
@@ -11,16 +12,16 @@ public sealed class GetPurchaseOrderByIdQueryHandler
     : IRequestHandler<GetPurchaseOrderByIdQuery, Result<PurchaseOrderDetailDto?>>
 {
     private readonly IPurchaseOrderRepository _repo;
-    private readonly ISupplierRepository   _proveedorRepo;
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly ICurrentSubscriber         _currentSubscriber;
 
     public GetPurchaseOrderByIdQueryHandler(
         IPurchaseOrderRepository repo,
-        ISupplierRepository proveedorRepo,
+        IBusinessPartnerRepository bpRepo,
         ICurrentSubscriber currentSubscriber)
     {
         _repo          = repo;
-        _proveedorRepo = proveedorRepo;
+        _bpRepo = bpRepo;
         _currentSubscriber = currentSubscriber;
     }
 
@@ -33,7 +34,7 @@ public sealed class GetPurchaseOrderByIdQueryHandler
         if (orden is null)
             return Result<PurchaseOrderDetailDto?>.Success(null);
 
-        var Supplier   = await _proveedorRepo.GetByIdAsync(subscriberId, orden.SupplierId, ct);
+        var bp = await _bpRepo.GetByIdAsync(orden.BusinessPartnerId, ct);
         var vinculadas  = await _repo.GetBillLinksAsync(subscriberId, orden.Id, ct);
 
         var lines = orden.Lines.Select(d => new PurchaseOrderLineDto(
@@ -47,7 +48,7 @@ public sealed class GetPurchaseOrderByIdQueryHandler
 
         return Result<PurchaseOrderDetailDto?>.Success(new PurchaseOrderDetailDto(
             orden.Id, orden.OrderNumber,
-            orden.SupplierId, Supplier?.LegalName ?? orden.SupplierId.ToString(),
+            orden.BusinessPartnerId, bp?.LegalName ?? orden.BusinessPartnerId.ToString(),
             orden.IssueDate, orden.RequiredDate,
             orden.Status, orden.Currency,
             orden.Subtotal, orden.TaxTotal, orden.Total,

@@ -5,6 +5,7 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Configuration.Entities;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 using ERP.Infrastructure.Persistence;
 
@@ -44,39 +45,49 @@ public sealed class RideGeneratorService : IRideGeneratorService
     {
         var factura = await _db.Set<SalesBill>()
             .AsNoTracking()
-            .Include(f => f.Cliente)
             .Include(f => f.Lines)
             .FirstOrDefaultAsync(f => f.Id == salesBillId, ct)
             ?? throw new KeyNotFoundException($"Factura {salesBillId} no encontrada.");
+
+        var buyer = await _db.Set<BusinessPartner>()
+            .AsNoTracking()
+            .FirstOrDefaultAsync(b => b.Id == factura.BusinessPartnerId, ct);
 
         var cfg      = await LoadBillingSettings(factura.SubscriberId, ct);
         var esPrueba = IsAmbientePrueba(factura.AccessKey);
 
         _logger.LogDebug("[RIDE] Generando PDF factura {Id} ({Doc})", factura.Id, factura.AccessKey);
 
-        return BuildFacturaPdf(factura, cfg, esPrueba);
+        return BuildFacturaPdf(factura, buyer, cfg, esPrueba);
     }
 
     public async Task<byte[]> GenerateNotaPdfAsync(Guid salesNoteId, CancellationToken ct = default)
     {
         var nota = await _db.Set<SalesNote>()
             .AsNoTracking()
-            .Include(n => n.OriginalBill).ThenInclude(b => b.Cliente)
+            .Include(n => n.OriginalBill)
             .Include(n => n.Lines)
             .FirstOrDefaultAsync(n => n.Id == salesNoteId, ct)
             ?? throw new KeyNotFoundException($"Nota {salesNoteId} no encontrada.");
+
+        var buyerPartnerId = nota.OriginalBill?.BusinessPartnerId;
+        var buyer = buyerPartnerId.HasValue && buyerPartnerId.Value != Guid.Empty
+            ? await _db.Set<BusinessPartner>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(b => b.Id == buyerPartnerId.Value, ct)
+            : null;
 
         var cfg      = await LoadBillingSettings(nota.SubscriberId, ct);
         var esPrueba = IsAmbientePrueba(nota.AccessKey);
 
         _logger.LogDebug("[RIDE] Generando PDF nota {Id} ({Doc})", nota.Id, nota.AccessKey);
 
-        return BuildNotaPdf(nota, cfg, esPrueba);
+        return BuildNotaPdf(nota, buyer, cfg, esPrueba);
     }
 
     // ── Generadores QuestPDF ──────────────────────────────────────────────────
 
-    private byte[] BuildFacturaPdf(SalesBill f, BillingSettings cfg, bool esPrueba)
+    private byte[] BuildFacturaPdf(SalesBill f, BusinessPartner? buyer, BillingSettings cfg, bool esPrueba)
     {
         var lines   = f.Lines.ToList();
         var numDoc  = $"{f.EstabCode}-{f.EmPointCode}-{f.Sequential.PadLeft(9, '0')}";
@@ -167,23 +178,18 @@ public sealed class RideGeneratorService : IRideGeneratorService
                     c.Item().Row(r =>
                     {
                         r.ConstantItem(60).Text("Razón Social:").Bold().FontSize(7.5f);
-                        r.RelativeItem().Text(f.Cliente.LegalName).FontSize(7.5f);
+                        r.RelativeItem().Text(buyer?.LegalName ?? "CONSUMIDOR FINAL").FontSize(7.5f);
                     });
                     c.Item().Row(r =>
                     {
                         r.ConstantItem(60).Text("RUC / CI:").Bold().FontSize(7.5f);
-                        r.RelativeItem().Text(f.Cliente.IdentificationNumber).FontSize(7.5f);
-                        if (!string.IsNullOrWhiteSpace(f.Cliente.AddressLine))
-                        {
-                            r.ConstantItem(50).Text("Dirección:").Bold().FontSize(7.5f);
-                            r.RelativeItem().Text(f.Cliente.AddressLine).FontSize(7.5f);
-                        }
+                        r.RelativeItem().Text(buyer?.Identification.Number ?? "9999999999").FontSize(7.5f);
                     });
-                    if (!string.IsNullOrWhiteSpace(f.Cliente.Email))
+                    if (!string.IsNullOrWhiteSpace(buyer?.Email))
                         c.Item().Row(r =>
                         {
                             r.ConstantItem(60).Text("Email:").Bold().FontSize(7.5f);
-                            r.RelativeItem().Text(f.Cliente.Email).FontSize(7.5f);
+                            r.RelativeItem().Text(buyer.Email).FontSize(7.5f);
                         });
                 });
 
@@ -287,7 +293,7 @@ public sealed class RideGeneratorService : IRideGeneratorService
         })).GeneratePdf();
     }
 
-    private byte[] BuildNotaPdf(SalesNote n, BillingSettings cfg, bool esPrueba)
+    private byte[] BuildNotaPdf(SalesNote n, BusinessPartner? buyer, BillingSettings cfg, bool esPrueba)
     {
         var esCredito = n.NoteType.Equals("CREDITO", StringComparison.OrdinalIgnoreCase);
         var docLabel  = esCredito ? "NOTA DE CRÉDITO" : "NOTA DE DÉBITO";
@@ -353,8 +359,8 @@ public sealed class RideGeneratorService : IRideGeneratorService
                 {
                     r.RelativeItem().Column(c =>
                     {
-                        c.Item().Text($"Cliente: {n.OriginalBill.Cliente.LegalName}").Bold().FontSize(8);
-                        c.Item().Text($"RUC/CI:  {n.OriginalBill.Cliente.IdentificationNumber}").FontSize(8);
+                        c.Item().Text($"Cliente: {buyer?.LegalName ?? "CONSUMIDOR FINAL"}").Bold().FontSize(8);
+                        c.Item().Text($"RUC/CI:  {buyer?.Identification.Number ?? "9999999999"}").FontSize(8);
                     });
                     r.ConstantItem(120).Column(c =>
                     {

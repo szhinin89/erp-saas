@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
@@ -8,7 +8,8 @@ using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Enums;
 using ERP.Domain.Modules.Purchasing.Interfaces;
-using ERP.Domain.Modules.Purchasing.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.VincularFacturaAOrdenCompra;
 
@@ -17,7 +18,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
 {
     private readonly IPurchaseOrderRepository  _ordenRepo;
     private readonly IPurchBillRepository       _compraRepo;
-    private readonly ISupplierRepository    _proveedorRepo;
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentSubscriber          _currentSubscriber;
     private readonly ICurrentUser            _currentUser;
@@ -27,7 +28,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
     public LinkInvoiceToPurchaseOrderCommandHandler(
         IPurchaseOrderRepository ordenRepo,
         IPurchBillRepository compraRepo,
-        ISupplierRepository proveedorRepo,
+        IBusinessPartnerRepository bpRepo,
         IUserActivityRepository activity,
         ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
@@ -36,7 +37,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
     {
         _ordenRepo     = ordenRepo;
         _compraRepo    = compraRepo;
-        _proveedorRepo = proveedorRepo;
+        _bpRepo = bpRepo;
         _activity      = activity;
         _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
@@ -68,14 +69,14 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
             return Result<PurchaseOrderDto>.Failure(
                 "Solo se pueden vincular facturas en estado IsApproved.");
 
-        // 3. Verificar que no esté ya vinculada a esta OC
+        // 3. Verificar que no estÃ© ya vinculada a esta OC
         var yaVinculada = await _ordenRepo.BillAlreadyLinkedAsync(
             subscriberId, command.OrdenCompraId, command.PurchBillId, ct);
         if (yaVinculada)
-            return Result<PurchaseOrderDto>.Failure("Esta factura ya está vinculada a la orden de compra.");
+            return Result<PurchaseOrderDto>.Failure("Esta factura ya estÃ¡ vinculada a la orden de compra.");
 
-        // 4. Matching por ProductoId, validación de cantidades y detección de discrepancias de precio
-        const decimal ToleranciaPrecioPct = 0.01m; // 1 % — diferencias menores se ignoran
+        // 4. Matching por ProductoId, validaciÃ³n de cantidades y detecciÃ³n de discrepancias de precio
+        const decimal ToleranciaPrecioPct = 0.01m; // 1 % â€” diferencias menores se ignoran
         var advertencias = new List<string>();
 
         await _unitOfWork.BeginTransactionAsync(ct);
@@ -83,7 +84,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
         {
             foreach (var detalleFactura in factura.Lines)
             {
-                // Saltear líneas sin producto en catálogo (servicios, fletes, etc.)
+                // Saltear lÃ­neas sin producto en catÃ¡logo (servicios, fletes, etc.)
                 if (detalleFactura.ProductId is null) continue;
 
                 var detalleOrden = orden.Lines
@@ -93,7 +94,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
                 {
                     await _unitOfWork.RollbackAsync(ct);
                     return Result<PurchaseOrderDto>.Failure(
-                        $"El producto '{detalleFactura.Description}' de la factura no está incluido en esta orden de compra.");
+                        $"El producto '{detalleFactura.Description}' de la factura no estÃ¡ incluido en esta orden de compra.");
                 }
 
                 var nuevoFacturado = detalleOrden.InvoicedQty + detalleFactura.Quantity;
@@ -106,7 +107,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
                         $"Pendiente por facturar: {detalleOrden.PendingToInvoice:F3}.");
                 }
 
-                // Validación de precio: advertencia si la diferencia supera la tolerancia
+                // ValidaciÃ³n de precio: advertencia si la diferencia supera la tolerancia
                 if (detalleOrden.UnitCost > 0)
                 {
                     var diferenciaPct = Math.Abs(detalleFactura.UnitPrice - detalleOrden.UnitCost)
@@ -119,7 +120,7 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
                                     $"({diferenciaPct:P1} diferencia).";
                         advertencias.Add(aviso);
                         _logger.LogWarning(
-                            "OC {OC} – {Aviso}", orden.OrderNumber, aviso);
+                            "OC {OC} â€“ {Aviso}", orden.OrderNumber, aviso);
                     }
                 }
 
@@ -127,11 +128,11 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
                 detalleFactura.LinkPurchaseOrderLine(detalleOrden.Id, userId);
             }
 
-            // 5. Crear la vinculación
+            // 5. Crear la vinculaciÃ³n
             var vinculo = PurchaseOrderBill.Create(subscriberId, orden.Id, factura.Id, userId);
             await _ordenRepo.AddOrderBillLinkAsync(vinculo, ct);
 
-            // 6. Actualizar estado de la OC según cobertura
+            // 6. Actualizar estado de la OC segÃºn cobertura
             var todoFacturado = orden.Lines.All(d => d.InvoicedQty >= d.OrderedQty);
             if (todoFacturado)
                 orden.Close(userId);
@@ -139,8 +140,8 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
                 orden.MarkPartiallyReceived(userId);
 
             var actividadDesc = advertencias.Count > 0
-                ? $"{orden.OrderNumber} ← {factura.InvoiceNumber} | ⚠ {advertencias.Count} advertencia(s) de precio"
-                : $"{orden.OrderNumber} ← {factura.InvoiceNumber}";
+                ? $"{orden.OrderNumber} â† {factura.InvoiceNumber} | âš  {advertencias.Count} advertencia(s) de precio"
+                : $"{orden.OrderNumber} â† {factura.InvoiceNumber}";
 
             await _activity.AddAsync(UserActivity.Create(
                 subscriberId, userId, _currentUser.Email, _currentUser.FullName,
@@ -155,11 +156,11 @@ public sealed class LinkInvoiceToPurchaseOrderCommandHandler
                 "Factura {Factura} vinculada a OC {OC}. Estado: {Estado}. Warnings: {N}",
                 factura.InvoiceNumber, orden.OrderNumber, orden.Status, advertencias.Count);
 
-            var Supplier = await _proveedorRepo.GetByIdAsync(subscriberId, orden.SupplierId, ct);
+            var bp = await _bpRepo.GetByIdAsync(orden.BusinessPartnerId, ct);
             return Result<PurchaseOrderDto>.Success(
                 CreatePurchaseOrderCommandHandler.ToDto(
                     orden,
-                    Supplier?.LegalName ?? orden.SupplierId.ToString(),
+                    bp?.LegalName ?? orden.BusinessPartnerId.ToString(),
                     advertencias));
         }
         catch (Exception ex)

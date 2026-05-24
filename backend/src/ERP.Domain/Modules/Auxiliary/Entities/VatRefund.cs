@@ -8,7 +8,7 @@ public class VatRefund
 {
     public Guid     Id           { get; set; }
     public Guid     CompanyId    { get; set; }
-    public Guid     CustomerId   { get; set; }
+    public Guid     BusinessPartnerId   { get; set; }
     public Guid     SalesDocId   { get; set; }
     public decimal  RefundAmount { get; set; }
     public DateOnly? AppliedDate { get; set; }

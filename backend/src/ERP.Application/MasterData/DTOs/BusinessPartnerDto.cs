@@ -19,9 +19,6 @@ public sealed record BusinessPartnerDto(
     // Profile IDs
     Guid?   CustomerProfileId              = null,
     Guid?   SupplierProfileId              = null,
-    // Legacy operational links
-    Guid?   LegacyCustomerId              = null,
-    Guid?   LegacySupplierId              = null,
     // Customer profile data
     string? CustomerNotes                  = null,
     // Supplier profile SRI defaults
@@ -44,7 +41,4 @@ public sealed record BusinessPartnerDto(
         bp.CustomerProfile is not null,
         bp.SupplierProfile is not null,
         bp.CreatedAt);
-
-    public bool HasOperationalCustomerLink => LegacyCustomerId.HasValue && LegacyCustomerId != Guid.Empty;
-    public bool HasOperationalSupplierLink => LegacySupplierId.HasValue && LegacySupplierId != Guid.Empty;
 }

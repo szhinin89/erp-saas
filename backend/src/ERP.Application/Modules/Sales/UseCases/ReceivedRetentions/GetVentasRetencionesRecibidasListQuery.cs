@@ -28,7 +28,7 @@ public sealed class GetSalesRetentionsReceivedListQueryHandler
     {
         var list = await _ventasRepository.GetRetentionsAsync(_currentSubscriber.SubscriberId, ct);
         var dto = list.Select(r => new SalesRetentionListItemDto(
-            r.Id, r.CustomerId, r.AccessKey, r.IssueDate, r.TotalRetained, r.SalesBillId)).ToList();
+            r.Id, r.BusinessPartnerId, r.AccessKey, r.IssueDate, r.TotalRetained, r.SalesBillId)).ToList();
         return Result<IReadOnlyList<SalesRetentionListItemDto>>.Success(dto);
     }
 }

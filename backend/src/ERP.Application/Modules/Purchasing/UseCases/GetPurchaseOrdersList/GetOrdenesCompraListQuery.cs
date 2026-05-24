@@ -8,7 +8,7 @@ namespace ERP.Application.Modules.Purchasing.UseCases.GetOrdenesCompraList;
 public record GetPurchaseOrdersListQuery(
     int       PageNumber,
     int       PageSize,
-    Guid? SupplierId,
+    Guid? BusinessPartnerId,
     string?   Status,
     DateTime? DateFrom,
     DateTime? DateTo

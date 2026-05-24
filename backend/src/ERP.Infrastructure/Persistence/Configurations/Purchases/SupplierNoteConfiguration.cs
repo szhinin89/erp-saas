@@ -12,7 +12,7 @@ public class SupplierNoteConfiguration : IEntityTypeConfiguration<SupplierNote>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id").HasDefaultValueSql("gen_random_uuid()");
         builder.Property(x => x.CompanyId).HasColumnName("company_id").IsRequired();
-        builder.Property(x => x.SupplierId).HasColumnName("supplier_id").IsRequired();
+        builder.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
         builder.Property(x => x.InvoiceId).HasColumnName("invoice_id");
         builder.Property(x => x.NoteNumber).HasColumnName("note_number").HasMaxLength(50).IsRequired();
         builder.Property(x => x.AccessKey).HasColumnName("access_key").HasMaxLength(49).IsFixedLength();
@@ -27,7 +27,7 @@ public class SupplierNoteConfiguration : IEntityTypeConfiguration<SupplierNote>
         builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("NOW()");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
 
-        builder.HasIndex(x => new { x.CompanyId, x.SupplierId, x.NoteNumber })
+        builder.HasIndex(x => new { x.CompanyId, x.BusinessPartnerId, x.NoteNumber })
             .IsUnique().HasDatabaseName("uq_sup_note");
 
         builder.HasOne(x => x.Invoice)

@@ -52,7 +52,6 @@ public sealed class SalesRepository : ISalesRepository
         if (UseUnified)
         {
             var doc = await ScopedDocuments(subscriberId)
-                .Include(d => d.Cliente)
                 .Include(d => d.Lines)
                 .Include(d => d.Electronic)
                 .Where(d => d.Id == id
@@ -65,7 +64,6 @@ public sealed class SalesRepository : ISalesRepository
         }
 
         return await ScopedBills(subscriberId)
-            .Include(f => f.Cliente)
             .Include(f => f.Lines)
             .FirstOrDefaultAsync(f => f.Id == id, ct);
     }
@@ -91,7 +89,7 @@ public sealed class SalesRepository : ISalesRepository
             return docs.Select(SalesDocumentMapper.ToLegacyBill).ToList();
         }
 
-        IQueryable<SalesBill> legacyQuery = ScopedBills(subscriberId).Include(f => f.Cliente);
+        IQueryable<SalesBill> legacyQuery = ScopedBills(subscriberId);
 
         if (fechaDesde.HasValue)
             legacyQuery = legacyQuery.Where(f => f.IssueDate >= fechaDesde.Value);
@@ -119,7 +117,7 @@ public sealed class SalesRepository : ISalesRepository
             var query = InvoiceDocumentsQuery(subscriberId);
 
             if (clienteId.HasValue)
-                query = query.Where(f => f.CustomerId == clienteId.Value);
+                query = query.Where(f => f.BusinessPartnerId == clienteId.Value);
             if (fechaDesde.HasValue)
                 query = query.Where(f => f.IssueDate >= fechaDesde.Value);
             if (fechaHasta.HasValue)
@@ -142,10 +140,10 @@ public sealed class SalesRepository : ISalesRepository
             return (docs.Select(SalesDocumentMapper.ToLegacyBill).ToList(), totalCount);
         }
 
-        IQueryable<SalesBill> legacyQuery = ScopedBills(subscriberId).Include(f => f.Cliente);
+        IQueryable<SalesBill> legacyQuery = ScopedBills(subscriberId);
 
         if (clienteId.HasValue)
-            legacyQuery = legacyQuery.Where(f => f.CustomerId == clienteId.Value);
+            legacyQuery = legacyQuery.Where(f => f.BusinessPartnerId == clienteId.Value);
         if (fechaDesde.HasValue)
             legacyQuery = legacyQuery.Where(f => f.IssueDate >= fechaDesde.Value);
         if (fechaHasta.HasValue)
@@ -170,7 +168,6 @@ public sealed class SalesRepository : ISalesRepository
 
     private IQueryable<SalesDocument> InvoiceDocumentsQuery(Guid subscriberId) =>
         ScopedDocuments(subscriberId)
-            .Include(f => f.Cliente)
             .Include(f => f.Electronic)
             .Where(f => f.DocType == SalesDocumentType.Invoice || f.DocType == SalesDocumentType.Proforma);
 
@@ -189,8 +186,7 @@ public sealed class SalesRepository : ISalesRepository
                 .Include(n => n.Lines)
                 .Include(n => n.Electronic)
                 .Include(n => n.Reference)
-                    .ThenInclude(f => f!.Cliente)
-                .FirstOrDefaultAsync(n => n.Id == id, ct);
+                    .FirstOrDefaultAsync(n => n.Id == id, ct);
             if (doc is null) return null;
             var note = SalesDocumentMapper.ToLegacyNote(doc);
             if (UseUnified) _documentSync.StageSalesNote(note);
@@ -199,8 +195,7 @@ public sealed class SalesRepository : ISalesRepository
 
         return await _context.SalesNotes
             .Include(n => n.OriginalBill)
-                .ThenInclude(f => f!.Cliente)
-            .Include(n => n.Lines)
+                .Include(n => n.Lines)
             .FirstOrDefaultAsync(n => n.SubscriberId == subscriberId && n.Id == id, ct);
     }
 
@@ -214,8 +209,7 @@ public sealed class SalesRepository : ISalesRepository
         {
             IQueryable<SalesDocument> q = ScopedDocuments(subscriberId)
                 .Where(n => n.DocType == SalesDocumentType.CreditNote || n.DocType == SalesDocumentType.DebitNote)
-                .Include(n => n.Reference)
-                    .ThenInclude(f => f!.Cliente);
+                .Include(n => n.Reference);
 
             if (facturaOriginalId.HasValue)
                 q = q.Where(n => n.ReferenceDocumentId == facturaOriginalId.Value);
@@ -228,8 +222,7 @@ public sealed class SalesRepository : ISalesRepository
 
         var legacy = _context.SalesNotes
             .Include(n => n.OriginalBill)
-                .ThenInclude(f => f!.Cliente)
-            .Where(n => n.SubscriberId == subscriberId);
+                .Where(n => n.SubscriberId == subscriberId);
 
         if (facturaOriginalId.HasValue)
             legacy = legacy.Where(n => n.OriginalBillId == facturaOriginalId.Value);
@@ -257,7 +250,6 @@ public sealed class SalesRepository : ISalesRepository
         if (UseUnified)
         {
             var docs = await _context.SalesWithholdings
-                .Include(r => r.Customer)
                 .Include(r => r.Lines)
                 .Where(r => r.SubscriberId == subscriberId
                     && r.Direction == ERP.Domain.Common.WithholdingDirection.Received)
@@ -267,7 +259,6 @@ public sealed class SalesRepository : ISalesRepository
         }
 
         return await _context.SalesRetentions
-            .Include(r => r.Customer)
             .Include(r => r.Lines)
             .Where(r => r.SubscriberId == subscriberId)
             .OrderByDescending(r => r.IssueDate)

@@ -13,7 +13,7 @@ public sealed class IssuedRetentionConfiguration : IEntityTypeConfiguration<Issu
         builder.HasKey(e => e.Id);
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
-        builder.Property(e => e.SupplierId).HasColumnName("supplier_id").IsRequired();
+        builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
         builder.Property(e => e.PurchBillId).HasColumnName("purch_bill_id");
         builder.Property(e => e.VoucherType).HasColumnName("voucher_type").HasMaxLength(30).IsRequired();
         builder.Property(e => e.AccessKey).HasColumnName("access_key").HasMaxLength(IssuedRetention.AccessKeyLen).IsRequired();
@@ -34,7 +34,7 @@ public sealed class IssuedRetentionConfiguration : IEntityTypeConfiguration<Issu
         builder.Property(e => e.CreatedBy).HasColumnName("created_by");
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasOne(e => e.Supplier).WithMany().HasForeignKey(e => e.SupplierId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<ERP.Domain.MasterData.Entities.BusinessPartner>().WithMany().HasForeignKey(e => e.BusinessPartnerId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<PurchBill>().WithMany().HasForeignKey(e => e.PurchBillId).OnDelete(DeleteBehavior.SetNull);
         builder.HasMany(e => e.Lines).WithOne().HasForeignKey(d => d.IssuedRetentionId).OnDelete(DeleteBehavior.Cascade);
 

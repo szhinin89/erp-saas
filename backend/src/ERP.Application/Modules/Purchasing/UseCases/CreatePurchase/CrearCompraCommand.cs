@@ -32,14 +32,12 @@ public sealed record CreatePurchaseCommand(
     string? XmlFileName,
 
     // -- Manual -----------------------------------------------------------
-    Guid?     SupplierId,
+    Guid?     BusinessPartnerId,
     string?   InvoiceNumber,
     DateTime? InvoiceDate,
     DateTime? DueDate,
     string?   PaymentTerms,
-    string? Notes,
+    string?   Notes,
     IReadOnlyList<PurchaseLineInput>? Lines,
-    IReadOnlyList<WarehouseAllocationRequest>? WarehouseAllocations,
-    /// <summary>Dual-write: FK hacia BusinessPartner unificado. Null para registros no migrados aún.</summary>
-    Guid? BusinessPartnerId = null
+    IReadOnlyList<WarehouseAllocationRequest>? WarehouseAllocations
 ) : IRequest<Result<PurchBillDto>>, ICompanyScopedRequest;

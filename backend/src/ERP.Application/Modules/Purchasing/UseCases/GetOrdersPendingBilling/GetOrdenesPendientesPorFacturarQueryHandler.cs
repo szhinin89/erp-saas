@@ -1,9 +1,10 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
 using ERP.Domain.Modules.Purchasing.Interfaces;
-using ERP.Domain.Modules.Purchasing.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.GetOrdenesPendientesPorFacturar;
 
@@ -11,16 +12,16 @@ public sealed class GetOrdersPendingBillingQueryHandler
     : IRequestHandler<GetOrdersPendingBillingQuery, Result<IReadOnlyList<PurchaseOrderDto>>>
 {
     private readonly IPurchaseOrderRepository _repo;
-    private readonly ISupplierRepository   _proveedorRepo;
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly ICurrentSubscriber         _currentSubscriber;
 
     public GetOrdersPendingBillingQueryHandler(
         IPurchaseOrderRepository repo,
-        ISupplierRepository proveedorRepo,
+        IBusinessPartnerRepository bpRepo,
         ICurrentSubscriber currentSubscriber)
     {
         _repo          = repo;
-        _proveedorRepo = proveedorRepo;
+        _bpRepo = bpRepo;
         _currentSubscriber = currentSubscriber;
     }
 
@@ -30,16 +31,16 @@ public sealed class GetOrdersPendingBillingQueryHandler
         var subscriberId = _currentSubscriber.SubscriberId;
         var ordenes  = await _repo.GetPendingToInvoiceAsync(subscriberId, ct);
 
-        var proveedorIds = ordenes.Select(o => o.SupplierId).Distinct().ToList();
+        var proveedorIds = ordenes.Select(o => o.BusinessPartnerId).Distinct().ToList();
         var proveedores  = new Dictionary<Guid, string>();
         foreach (var pid in proveedorIds)
         {
-            var p = await _proveedorRepo.GetByIdAsync(subscriberId, pid, ct);
+            var p = await _bpRepo.GetByIdAsync(pid, ct);
             proveedores[pid] = p?.LegalName ?? pid.ToString();
         }
 
         var dtos = ordenes
-            .Select(o => CreatePurchaseOrderCommandHandler.ToDto(o, proveedores.GetValueOrDefault(o.SupplierId, "")))
+            .Select(o => CreatePurchaseOrderCommandHandler.ToDto(o, proveedores.GetValueOrDefault(o.BusinessPartnerId, "")))
             .ToList();
 
         return Result<IReadOnlyList<PurchaseOrderDto>>.Success(dtos);

@@ -14,7 +14,7 @@ public sealed class AccountsReceivableEntryConfiguration : IEntityTypeConfigurat
         builder.Property(e => e.Id).HasColumnName("id");
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.CompanyId).HasColumnName("company_id").IsRequired();
-        builder.Property(e => e.CustomerId).HasColumnName("customer_id").IsRequired();
+        builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
         builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id");
         builder.Property(e => e.SalesBillId).HasColumnName("sales_bill_id");
         builder.Property(e => e.Reference).HasColumnName("reference").HasMaxLength(100).IsRequired();

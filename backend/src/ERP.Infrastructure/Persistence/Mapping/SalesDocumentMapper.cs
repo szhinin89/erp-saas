@@ -12,7 +12,7 @@ public static class SalesDocumentMapper
         var doc = SalesDocument.CreateInvoice(
             bill.SubscriberId,
             bill.BranchId,
-            bill.CustomerId,
+            bill.BusinessPartnerId,
             bill.WarehouseId,
             bill.EstabCode,
             bill.EmPointCode,
@@ -82,7 +82,7 @@ public static class SalesDocumentMapper
         var bill = SalesBill.Create(
             doc.SubscriberId,
             doc.BranchId ?? Guid.Empty,
-            doc.CustomerId ?? Guid.Empty,
+            doc.BusinessPartnerId ?? Guid.Empty,
             doc.WarehouseId ?? Guid.Empty,
             doc.DocType.ToLegacySriCode(),
             doc.EstabCode ?? "",
@@ -160,7 +160,7 @@ public static class SalesDocumentMapper
         if (originalBill is not null)
         {
             Set(doc, nameof(SalesDocument.BranchId), originalBill.BranchId);
-            Set(doc, nameof(SalesDocument.CustomerId), originalBill.CustomerId);
+            Set(doc, nameof(SalesDocument.BusinessPartnerId), originalBill.BusinessPartnerId);
             Set(doc, nameof(SalesDocument.WarehouseId), originalBill.WarehouseId);
         }
 

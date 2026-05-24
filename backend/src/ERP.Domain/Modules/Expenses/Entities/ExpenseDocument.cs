@@ -6,7 +6,6 @@ namespace ERP.Domain.Modules.Expenses.Entities;
 /// <summary>Cabecera unificada de gastos (tabla expense_document).</summary>
 public sealed class ExpenseDocument : MasterEntity, ISubscriberScopedEntity
 {
-    public Guid?              SupplierId        { get; private set; }
     public Guid?              BusinessPartnerId { get; private set; }
     public ExpenseDocumentType DocType          { get; private set; } = ExpenseDocumentType.Invoice;
     public string?            DocNumber         { get; private set; }

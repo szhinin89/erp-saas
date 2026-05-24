@@ -17,7 +17,7 @@ public record PurchaseBillLineDto(
 
 public record PurchBillDto(
     Guid          Id,
-    Guid    SupplierId,
+    Guid    BusinessPartnerId,
     string        InvoiceNumber,
     string?       AccessKey,
     string?       XmlPath,
@@ -34,7 +34,7 @@ public record PurchBillDto(
 
 public record PurchBillDetailDto(
     Guid          Id,
-    Guid    SupplierId,
+    Guid    BusinessPartnerId,
     string        InvoiceNumber,
     string?       AccessKey,
     string?       XmlPath,
@@ -59,7 +59,7 @@ public record PurchBillDetailDto(
 
 public record SupplierPurchaseNoteDto(
     Guid      Id,
-    Guid    SupplierId,
+    Guid    BusinessPartnerId,
     Guid?     PurchBillId,
     Guid?     ExpenseInvoiceId,
     string    NoteType,

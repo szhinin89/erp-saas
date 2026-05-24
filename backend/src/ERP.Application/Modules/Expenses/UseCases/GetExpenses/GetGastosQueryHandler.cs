@@ -25,7 +25,7 @@ public sealed class GetExpensesQueryHandler
         var list = await _repo.GetAsync(
             _tenant.SubscriberId,
             query.Status,
-            query.SupplierId,
+            query.BusinessPartnerId,
             query.DateFrom,
             query.DateTo,
             query.Search,
@@ -39,7 +39,7 @@ public sealed class GetExpensesQueryHandler
         g.Id,
         g.AccessKey,
         g.IssueDate,
-        g.SupplierId,
+        g.BusinessPartnerId,
         g.InvoiceNumber,
         g.Concept,
         g.Category,

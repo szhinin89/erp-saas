@@ -20,7 +20,7 @@ public record LinkedPurchaseBillDto(
 public record PurchaseOrderDto(
     Guid      Id,
     string    OrderNumber,
-    Guid    SupplierId,
+    Guid    BusinessPartnerId,
     string    SupplierName,
     DateTime  IssueDate,
     DateTime  RequiredDate,
@@ -48,7 +48,7 @@ public record PurchaseOrderDto(
 public record PurchaseOrderDetailDto(
     Guid      Id,
     string    OrderNumber,
-    Guid    SupplierId,
+    Guid    BusinessPartnerId,
     string    SupplierName,
     DateTime  IssueDate,
     DateTime  RequiredDate,

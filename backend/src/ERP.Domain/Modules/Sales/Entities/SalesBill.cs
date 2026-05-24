@@ -20,9 +20,9 @@ public sealed class SalesBill : AuditableEntity, ISubscriberScopedEntity, ICompa
 
     private readonly List<SalesBillLine> _lines = new();
 
-    public Guid      BranchId          { get; private set; }
-    public Guid      CustomerId        { get; private set; }
-    public Guid      WarehouseId       { get; private set; }
+    public Guid      BranchId            { get; private set; }
+    public Guid      BusinessPartnerId  { get; private set; }
+    public Guid      WarehouseId         { get; private set; }
     public string    DocType           { get; private set; } = "01";
     public string    EstabCode         { get; private set; } = null!;
     public string    EmPointCode       { get; private set; } = null!;
@@ -46,9 +46,7 @@ public sealed class SalesBill : AuditableEntity, ISubscriberScopedEntity, ICompa
     public DateTime? AuthDate          { get; private set; }
     public string?   ErrorMessage      { get; private set; }
     public Guid?     JournalEntryId    { get; private set; }
-    public Guid?     BusinessPartnerId { get; private set; }
 
-    public Customer Cliente { get; private set; } = null!;
     public Warehouse Warehouse { get; private set; } = null!;
     public IReadOnlyList<SalesBillLine> Lines => _lines.AsReadOnly();
 
@@ -57,7 +55,7 @@ public sealed class SalesBill : AuditableEntity, ISubscriberScopedEntity, ICompa
     public static SalesBill Create(
         Guid      subscriberId,
         Guid      branchId,
-        Guid      customerId,
+        Guid      businessPartnerId,
         Guid      warehouseId,
         string    docType,
         string    estabCode,
@@ -84,10 +82,10 @@ public sealed class SalesBill : AuditableEntity, ISubscriberScopedEntity, ICompa
         {
             Id                = Guid.NewGuid(),
             SubscriberId          = subscriberId,
-            CompanyId         = companyId,
-            BranchId          = branchId,
-            CustomerId        = customerId,
-            WarehouseId       = warehouseId,
+            CompanyId           = companyId,
+            BranchId            = branchId,
+            BusinessPartnerId  = businessPartnerId,
+            WarehouseId         = warehouseId,
             DocType           = string.IsNullOrWhiteSpace(docType) ? "01" : docType.Trim(),
             EstabCode         = estabCode.Trim(),
             EmPointCode       = emPointCode.Trim(),
@@ -177,8 +175,6 @@ public sealed class SalesBill : AuditableEntity, ISubscriberScopedEntity, ICompa
         Status = "Anulado";
         SetUpdated(userId);
     }
-
-    public void SetBusinessPartner(Guid? businessPartnerId) => BusinessPartnerId = businessPartnerId;
 
     public void AddLine(SalesBillLine line)
     {

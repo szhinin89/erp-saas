@@ -224,7 +224,7 @@ public sealed class IssueElectronicInvoiceCommandHandler
                 subtotal:    factura.Subtotal,
                 vatTotal:         factura.VatTotal,
                 total:       factura.Total,
-                description: $"Venta {numeroFactura} — cliente {factura.CustomerId}",
+                description: $"Venta {numeroFactura} — cliente {factura.BusinessPartnerId}",
                 ct);
 
             if (!asientoResult.IsSuccess)

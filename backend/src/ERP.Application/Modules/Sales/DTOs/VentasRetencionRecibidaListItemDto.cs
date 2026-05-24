@@ -2,7 +2,7 @@
 
 public sealed record SalesRetentionListItemDto(
     Guid Id,
-    Guid      CustomerId,
+    Guid      BusinessPartnerId,
     string    AccessKey,
     DateTime  IssueDate,
     decimal RetainedAmount,

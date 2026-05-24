@@ -12,7 +12,7 @@ public sealed record CreateExpenseCommand(
     ExpenseCreationMode Modo,
     byte[]?           XmlContent,
     string?           XmlFileName,
-    Guid?     SupplierId,
+    Guid?     BusinessPartnerId,
     DateTime? IssueDate,
     string?   Concept,
     string?   Category,

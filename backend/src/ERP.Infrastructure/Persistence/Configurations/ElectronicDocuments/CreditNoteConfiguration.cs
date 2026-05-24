@@ -22,7 +22,7 @@ public class CreditNoteConfiguration : IEntityTypeConfiguration<CreditNote>
         builder.Property(x => x.BuyerIdType).HasColumnName("buyer_id_type").HasMaxLength(5);
         builder.Property(x => x.BuyerIdNumber).HasColumnName("buyer_id_number").HasMaxLength(32);
         builder.Property(x => x.BuyerName).HasColumnName("buyer_name").HasMaxLength(200);
-        builder.Property(x => x.CustomerId).HasColumnName("customer_id");
+        builder.Property(x => x.CustomerId).HasColumnName("business_partner_id");
         builder.Property(x => x.Reason).HasColumnName("reason").HasMaxLength(300).IsRequired();
 
         builder.HasIndex(x => x.OrigDocId).HasDatabaseName("idx_cn_orig");

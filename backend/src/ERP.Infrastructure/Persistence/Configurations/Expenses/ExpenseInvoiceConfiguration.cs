@@ -15,7 +15,7 @@ public sealed class ExpenseInvoiceConfiguration : IEntityTypeConfiguration<Expen
         builder.Property(g => g.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(g => g.AccessKey).HasColumnName("access_key").HasMaxLength(ExpenseInvoice.AccessKeyLen);
         builder.Property(g => g.XmlPath).HasColumnName("xml_path").HasMaxLength(ExpenseInvoice.XmlPathMaxLen);
-        builder.Property(g => g.SupplierId).HasColumnName("supplier_id");
+        builder.Property(g => g.BusinessPartnerId).HasColumnName("business_partner_id");
         builder.Property(g => g.InvoiceNumber).HasColumnName("invoice_number").HasMaxLength(ExpenseInvoice.InvoiceNumberMaxLen);
         builder.Property(g => g.IssueDate).HasColumnName("issue_date").IsRequired();
         builder.Property(g => g.Concept).HasColumnName("concept").HasMaxLength(ExpenseInvoice.ConceptMaxLen).IsRequired();

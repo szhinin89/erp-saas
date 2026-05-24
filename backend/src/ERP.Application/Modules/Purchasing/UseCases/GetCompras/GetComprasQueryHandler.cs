@@ -21,7 +21,7 @@ public sealed class GetPurchasesQueryHandler
         GetPurchasesQuery query, CancellationToken ct)
     {
         var list = await _repo.GetAsync(
-            _tenant.SubscriberId, query.Status, query.SupplierId,
+            _tenant.SubscriberId, query.Status, query.BusinessPartnerId,
             query.DateFrom, query.DateTo, query.Search, ct);
 
         var dtos = list.Select(ToDto).ToList();
@@ -29,7 +29,7 @@ public sealed class GetPurchasesQueryHandler
     }
 
     private static PurchBillDto ToDto(ERP.Domain.Modules.Purchasing.Entities.PurchBill c) => new(
-        c.Id, c.SupplierId, c.InvoiceNumber, c.AccessKey, c.XmlPath,
+        c.Id, c.BusinessPartnerId, c.InvoiceNumber, c.AccessKey, c.XmlPath,
         c.InvoiceDate, c.DueDate, c.Status, c.PaymentTerms,
         c.Subtotal, c.VatTotal, c.Total, c.Notes, c.JournalEntryId, c.CreatedAt);
 }

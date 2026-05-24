@@ -16,8 +16,7 @@ public sealed class PurchBill : AuditableEntity, ISubscriberScopedEntity
 
     private readonly List<PurchBillLine> _lines = new();
 
-    public Guid           SupplierId        { get; private set; }
-    public Guid?          BusinessPartnerId { get; private set; }
+    public Guid           BusinessPartnerId { get; private set; }
     public string         InvoiceNumber     { get; private set; } = null!;
     public string?        AccessKey         { get; private set; }
     public string?        XmlPath           { get; private set; }
@@ -45,7 +44,7 @@ public sealed class PurchBill : AuditableEntity, ISubscriberScopedEntity
 
     public static PurchBill Create(
         Guid      subscriberId,
-        Guid      supplierId,
+        Guid      businessPartnerId,
         string    invoiceNumber,
         string?   accessKey,
         string?   xmlPath,
@@ -57,10 +56,10 @@ public sealed class PurchBill : AuditableEntity, ISubscriberScopedEntity
     {
         var b = new PurchBill
         {
-            Id            = Guid.NewGuid(),
+            Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
-            SupplierId    = supplierId,
-            InvoiceNumber = invoiceNumber.Trim(),
+            BusinessPartnerId = businessPartnerId,
+            InvoiceNumber     = invoiceNumber.Trim(),
             AccessKey     = string.IsNullOrWhiteSpace(accessKey) ? null : accessKey.Trim(),
             XmlPath       = string.IsNullOrWhiteSpace(xmlPath) ? null : xmlPath.Trim(),
             InvoiceDate   = invoiceDate,
@@ -160,8 +159,6 @@ public sealed class PurchBill : AuditableEntity, ISubscriberScopedEntity
         RejectionReason = reason.Trim();
         SetUpdated(userId);
     }
-
-    public void SetBusinessPartner(Guid? businessPartnerId) => BusinessPartnerId = businessPartnerId;
 
     private void RecalculateTotals()
     {

@@ -107,7 +107,7 @@ public sealed class ExpensesController : ControllerBase
             Modo: ExpenseCreationMode.Xml,
             XmlContent: content,
             XmlFileName: xmlFile.FileName,
-            SupplierId: null,
+            BusinessPartnerId: null,
             IssueDate: null,
             Concept: null,
             Category: categoriaGasto,

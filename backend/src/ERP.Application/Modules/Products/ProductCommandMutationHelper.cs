@@ -59,7 +59,7 @@ internal static class ProductCommandMutationHelper
 
         if (command.SupplierCodes is { Count: > 0 })
             product.ReplaceSupplierCodes(
-                command.SupplierCodes.Select(s => (s.SupplierId, s.Code, s.IsDefault)),
+                command.SupplierCodes.Select(s => (s.BusinessPartnerId, s.Code, s.IsDefault)),
                 userId);
 
         if (command.UnitConversions is { Count: > 0 })
@@ -135,7 +135,7 @@ internal static class ProductCommandMutationHelper
 
         if (command.SupplierCodes is not null)
             product.ReplaceSupplierCodes(
-                command.SupplierCodes.Select(s => (s.SupplierId, s.Code, s.IsDefault)),
+                command.SupplierCodes.Select(s => (s.BusinessPartnerId, s.Code, s.IsDefault)),
                 userId);
 
         if (command.UnitConversions is not null)

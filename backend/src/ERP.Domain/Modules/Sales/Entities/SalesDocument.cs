@@ -20,7 +20,7 @@ public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity, IC
 
     public Guid?              CompanyId             { get; private set; }
     public Guid?              BranchId              { get; private set; }
-    public Guid?              CustomerId            { get; private set; }
+    public Guid?              BusinessPartnerId     { get; private set; }
     public Guid?              WarehouseId           { get; private set; }
     public Guid?              SalespersonId         { get; private set; }
     public SalesDocumentType  DocType               { get; private set; } = SalesDocumentType.Invoice;
@@ -47,9 +47,7 @@ public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity, IC
     public string?            RemittanceKey         { get; private set; }
     public string?            GuideDocNum           { get; private set; }
     public Guid?              JournalEntryId        { get; private set; }
-    public Guid?              BusinessPartnerId     { get; private set; }
 
-    public Customer?              Cliente     { get; private set; }
     public Warehouse?             Warehouse   { get; private set; }
     public SalesDocument?         Reference   { get; private set; }
     public SalesElectronicDoc?    Electronic  { get; private set; }
@@ -63,7 +61,7 @@ public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity, IC
     public static SalesDocument CreateInvoice(
         Guid subscriberId,
         Guid branchId,
-        Guid customerId,
+        Guid businessPartnerId,
         Guid warehouseId,
         string estabCode,
         string emPointCode,
@@ -83,10 +81,10 @@ public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity, IC
         var doc = new SalesDocument
         {
             Id                = Guid.NewGuid(),
-            SubscriberId          = subscriberId,
+            SubscriberId      = subscriberId,
             CompanyId         = companyId,
             BranchId          = branchId,
-            CustomerId        = customerId,
+            BusinessPartnerId = businessPartnerId,
             WarehouseId       = warehouseId,
             DocType           = SalesDocumentType.Invoice,
             EstabCode         = estabCode.Trim(),
@@ -173,8 +171,6 @@ public sealed class SalesDocument : AuditableEntity, ISubscriberScopedEntity, IC
         Status = "Anulado";
         SetUpdated(userId);
     }
-
-    public void SetBusinessPartner(Guid? businessPartnerId) => BusinessPartnerId = businessPartnerId;
 
     public void AddLine(SalesDetail line)
     {

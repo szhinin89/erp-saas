@@ -76,7 +76,7 @@ public sealed class GenerateIssuedRetentionCommandHandler
                 configSri.EmPointCode, configSri.EmissionType, secuencial, fecha, "07");
 
             var ret = IssuedRetention.Create(
-                subscriberId, compra.SupplierId, compra.Id, clave, fecha,
+                subscriberId, compra.BusinessPartnerId, compra.Id, clave, fecha,
                 configSri.EstabCode, configSri.EmPointCode, secuencial, userId);
 
             foreach (var cfg in configs)

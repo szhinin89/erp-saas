@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +9,7 @@ using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
 using ERP.Application.Modules.Purchasing.UseCases.EnviarOrdenCompra;
 using ERP.Application.Modules.Purchasing.UseCases.GetOrdenCompraById;
 using ERP.Application.Modules.Purchasing.UseCases.VincularFacturaAOrdenCompra;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Events;
 using ERP.Domain.Products.Entities;
@@ -17,9 +18,9 @@ using ERP.Infrastructure.Persistence;
 namespace ERP.API.Tests.Integration;
 
 /// <summary>
-/// Prueba de integraciÃ³n del flujo manual completo de OC con dos productos:
-/// Crear â†’ Enviar â†’ Aprobar â†’ Vincular parcial â†’ RecibidaParcial â†’ Vincular resto â†’ Cerrada
-/// Luego intento de vincular mÃ¡s cantidad â†’ falla.
+/// Prueba de integraciÃƒÂ³n del flujo manual completo de OC con dos productos:
+/// Crear Ã¢â€ â€™ Enviar Ã¢â€ â€™ Aprobar Ã¢â€ â€™ Vincular parcial Ã¢â€ â€™ RecibidaParcial Ã¢â€ â€™ Vincular resto Ã¢â€ â€™ Cerrada
+/// Luego intento de vincular mÃƒÂ¡s cantidad Ã¢â€ â€™ falla.
 /// </summary>
 public sealed class OrdenCompraFlujoCompletoTests
 {
@@ -31,7 +32,7 @@ public sealed class OrdenCompraFlujoCompletoTests
         var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-        // â”€â”€ Seed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ Seed Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         var seed = await IntegrationSeedData.SeedAsync(
             db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
@@ -40,13 +41,16 @@ public sealed class OrdenCompraFlujoCompletoTests
         var productoAId = seed.ProductId; // Producto A (ya en seed)
         var productoBId = await SeedSegundoProductoAsync(db, seed); // Producto B
 
-        var proveedor = Supplier.Create(
-            subscriberId, "Legal", "Supplier Test S.A.",
-            seed.ProveedorRuc, null, null, null, "30 dias", userId);
-        db.Suppliers.Add(proveedor);
+        var proveedor = BusinessPartner.Create(
+            subscriberId:         subscriberId,
+            identificationType:   "RUC",
+            identificationNumber: seed.ProveedorRuc,
+            legalName:            "Supplier Test S.A.",
+            createdBy:            userId);
+        db.BusinessPartners.Add(proveedor);
         await db.SaveChangesAsync(CancellationToken.None);
 
-        // â”€â”€ PASO 1: Crear OC con Producto A (10 uds Ã— $5) y Producto B (5 uds Ã— $10) â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ PASO 1: Crear OC con Producto A (10 uds Ãƒâ€” $5) y Producto B (5 uds Ãƒâ€” $10) Ã¢â€â‚¬Ã¢â€â‚¬
         var crear = await mediator.Send(new CreatePurchaseOrderCommand(
             proveedor.Id,
             DateTime.UtcNow.AddDays(30),
@@ -69,17 +73,17 @@ public sealed class OrdenCompraFlujoCompletoTests
         oc.VatTotal.Should().Be(15m);
         oc.Total.Should().Be(115m);
 
-        // â”€â”€ PASO 2: Enviar OC â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ PASO 2: Enviar OC Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         var enviar = await mediator.Send(new SendOrderPurchaseCommand(oc.Id), CancellationToken.None);
         enviar.IsSuccess.Should().BeTrue(enviar.Error);
         enviar.Value!.Status.Should().Be("Sent");
 
-        // â”€â”€ PASO 3: Aprobar OC â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ PASO 3: Aprobar OC Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         var aprobar = await mediator.Send(new ApproveOrderPurchaseCommand(oc.Id), CancellationToken.None);
         aprobar.IsSuccess.Should().BeTrue(aprobar.Error);
         aprobar.Value!.Status.Should().Be("Approved");
 
-        // â”€â”€ PASO 4: Factura 1 â€” A:6 uds, B:5 uds (parcial en A, total en B) â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ PASO 4: Factura 1 Ã¢â‚¬â€ A:6 uds, B:5 uds (parcial en A, total en B) Ã¢â€â‚¬Ã¢â€â‚¬
         var factura1 = BuildFacturaAprobada(subscriberId, proveedor.Id,
             productoAId, cantidadA: 6m,
             productoBId, cantidadB: 5m,
@@ -90,9 +94,9 @@ public sealed class OrdenCompraFlujoCompletoTests
 
         vincular1.IsSuccess.Should().BeTrue(vincular1.Error);
         vincular1.Value!.Status.Should().Be("PartiallyReceived",
-            "B ya estÃ¡ completo pero A tiene 4 pendientes â†’ RecibidaParcial");
+            "B ya estÃƒÂ¡ completo pero A tiene 4 pendientes Ã¢â€ â€™ RecibidaParcial");
 
-        // Verificar detalles vÃ­a GetById
+        // Verificar detalles vÃƒÂ­a GetById
         var detalle1 = (await mediator.Send(new GetPurchaseOrderByIdQuery(oc.Id), CancellationToken.None)).Value!;
         var lineaA1  = detalle1.Lines.First(d => d.ProductId == productoAId);
         var lineaB1  = detalle1.Lines.First(d => d.ProductId == productoBId);
@@ -102,7 +106,7 @@ public sealed class OrdenCompraFlujoCompletoTests
         lineaB1.InvoicedQuantity.Should().Be(5m,  "se facturaron 5 de B");
         lineaB1.PendingBillingQuantity.Should().Be(0m,  "B completamente cubierto");
 
-        // â”€â”€ PASO 5: Factura 2 â€” A:4 uds (completa el pedido de A) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ PASO 5: Factura 2 Ã¢â‚¬â€ A:4 uds (completa el pedido de A) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         var factura2 = BuildFacturaAprobada(subscriberId, proveedor.Id,
             productoAId, cantidadA: 4m,
             productoBId: null, cantidadB: 0m, // solo producto A
@@ -113,7 +117,7 @@ public sealed class OrdenCompraFlujoCompletoTests
 
         vincular2.IsSuccess.Should().BeTrue(vincular2.Error);
         vincular2.Value!.Status.Should().Be("Closed",
-            "A ya tiene 10/10, B tiene 5/5 â†’ OC cierra completamente");
+            "A ya tiene 10/10, B tiene 5/5 Ã¢â€ â€™ OC cierra completamente");
 
         // Verificar cantidades finales
         var detalleFinal = (await mediator.Send(new GetPurchaseOrderByIdQuery(oc.Id), CancellationToken.None)).Value!;
@@ -124,7 +128,7 @@ public sealed class OrdenCompraFlujoCompletoTests
         // Verificar facturas vinculadas
         detalleFinal.LinkedInvoices.Should().HaveCount(2);
 
-        // â”€â”€ PASO 6: Intentar vincular mÃ¡s cantidad de A â†’ debe fallar â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ PASO 6: Intentar vincular mÃƒÂ¡s cantidad de A Ã¢â€ â€™ debe fallar Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         var facturaExtra = BuildFacturaAprobada(subscriberId, proveedor.Id,
             productoAId, cantidadA: 1m,
             productoBId: null, cantidadB: 0m,
@@ -134,17 +138,17 @@ public sealed class OrdenCompraFlujoCompletoTests
             new LinkInvoiceToPurchaseOrderCommand(oc.Id, facturaExtra.Id), CancellationToken.None);
 
         vincularExtra.IsSuccess.Should().BeFalse(
-            "la OC estÃ¡ Cerrada â€” no puede recibir mÃ¡s facturas");
+            "la OC estÃƒÂ¡ Cerrada Ã¢â‚¬â€ no puede recibir mÃƒÂ¡s facturas");
         vincularExtra.Error.Should().Contain("PartiallyReceived",
             "el handler rechaza OC fuera de estado Approved/PartiallyReceived");
     }
 
-    // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Helpers Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     private static async Task<Guid> SeedSegundoProductoAsync(
         ErpDbContext db, IntegrationSeedData.SeedResult seed)
     {
-        // Reusar las mismas taxonomÃ­as del primer producto
+        // Reusar las mismas taxonomÃƒÂ­as del primer producto
         var line     = db.ProductLines.First(l => l.SubscriberId == seed.SubscriberId);
         var category = db.ProductCategories.First(c => c.SubscriberId == seed.SubscriberId);
         var sub      = db.ProductSubcategories.First(s => s.SubscriberId == seed.SubscriberId);

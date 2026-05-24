@@ -1,6 +1,7 @@
 using System.Text;
 using System.Xml.Linq;
 using ERP.Domain.Configuration.Entities;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Sales.Entities;
 
 namespace ERP.Infrastructure.Services.Sri;
@@ -24,7 +25,8 @@ public static class SriXmlFacturaBuilder
     public static string BuildFactura(
         SalesBill            factura,
         List<SalesBillLine>  lineas,
-        SriSettings          cfg)
+        SriSettings          cfg,
+        BusinessPartner?     buyer = null)
     {
         var totalDescuento = 0m;
         var detElements    = lineas.Select(l =>
@@ -53,10 +55,10 @@ public static class SriXmlFacturaBuilder
                     new XElement("dirEstablecimiento",  cfg.MainAddress),
                     ContribEspecialElement(cfg),
                     new XElement("obligadoContabilidad", cfg.RequiresAccounting ? "SI" : "NO"),
-                    new XElement("tipoIdentificacionComprador", IdTypeCode(factura.Cliente)),
-                    new XElement("razonSocialComprador", factura.Cliente.LegalName),
-                    new XElement("identificacionComprador", factura.Cliente.IdentificationNumber),
-                    new XElement("direccionComprador",  factura.Cliente.AddressLine ?? ""),
+                    new XElement("tipoIdentificacionComprador", SriIdTypeCode(buyer)),
+                    new XElement("razonSocialComprador", buyer?.LegalName ?? "CONSUMIDOR FINAL"),
+                    new XElement("identificacionComprador", buyer?.Identification.Number ?? "9999999999"),
+                    new XElement("direccionComprador",  ""),
                     new XElement("totalSinImpuestos",   F2(factura.Subtotal)),
                     new XElement("totalDescuento",      F2(factura.TotalDiscount)),
                     new XElement("totalConImpuestos",   gruposIva),
@@ -72,7 +74,7 @@ public static class SriXmlFacturaBuilder
 
                 new XElement("detalles", detElements),
 
-                BuildInfoAdicional(factura)));
+                BuildInfoAdicional(buyer, factura.Notes)));
 
         return ToUtf8String(doc);
     }
@@ -82,7 +84,8 @@ public static class SriXmlFacturaBuilder
         SalesBill           factOrig,
         SalesNote           nota,
         List<SalesNoteLine> lineas,
-        SriSettings         cfg)
+        SriSettings         cfg,
+        BusinessPartner?    buyer = null)
     {
         var esCredito = nota.NoteType.Equals("CREDITO", StringComparison.OrdinalIgnoreCase);
         var rootName  = esCredito ? "notaCredito" : "notaDebito";
@@ -112,9 +115,9 @@ public static class SriXmlFacturaBuilder
                 new XElement(infoName,
                     new XElement("fechaEmision",            nota.IssueDate.ToString("dd/MM/yyyy")),
                     new XElement("dirEstablecimiento",      cfg.MainAddress),
-                    new XElement("tipoIdentificacionComprador", IdTypeCode(factOrig.Cliente)),
-                    new XElement("razonSocialComprador",    factOrig.Cliente.LegalName),
-                    new XElement("identificacionComprador", factOrig.Cliente.IdentificationNumber),
+                    new XElement("tipoIdentificacionComprador", SriIdTypeCode(buyer)),
+                    new XElement("razonSocialComprador",    buyer?.LegalName ?? "CONSUMIDOR FINAL"),
+                    new XElement("identificacionComprador", buyer?.Identification.Number ?? "9999999999"),
                     ContribEspecialElement(cfg),
                     new XElement("obligadoContabilidad",    cfg.RequiresAccounting ? "SI" : "NO"),
                     new XElement("codDocModificado",        factOrig.DocType.Trim()),
@@ -223,23 +226,19 @@ public static class SriXmlFacturaBuilder
     /// Construye el bloque &lt;infoAdicional&gt; con los campos disponibles.
     /// El SRI permite múltiples &lt;campoAdicional&gt;; se omiten los vacíos.
     /// </summary>
-    private static XElement BuildInfoAdicional(SalesBill factura)
+    private static XElement BuildInfoAdicional(BusinessPartner? buyer, string? notes)
     {
         var campos = new List<XElement>();
 
-        if (!string.IsNullOrWhiteSpace(factura.Cliente.Email))
-            campos.Add(CampoAdicional("Email", factura.Cliente.Email));
+        if (!string.IsNullOrWhiteSpace(buyer?.Email))
+            campos.Add(CampoAdicional("Email", buyer.Email!));
 
-        if (!string.IsNullOrWhiteSpace(factura.Cliente.Phone))
-            campos.Add(CampoAdicional("Telefono", factura.Cliente.Phone));
+        if (!string.IsNullOrWhiteSpace(buyer?.Phone))
+            campos.Add(CampoAdicional("Telefono", buyer.Phone!));
 
-        if (!string.IsNullOrWhiteSpace(factura.Cliente.AddressLine))
-            campos.Add(CampoAdicional("DireccionComprador", factura.Cliente.AddressLine));
+        if (!string.IsNullOrWhiteSpace(notes))
+            campos.Add(CampoAdicional("Observaciones", notes));
 
-        if (!string.IsNullOrWhiteSpace(factura.Notes))
-            campos.Add(CampoAdicional("Observaciones", factura.Notes));
-
-        // El SRI requiere al menos un campoAdicional; si no hay datos, emitir uno vacío
         if (campos.Count == 0)
             campos.Add(CampoAdicional("Info", "-"));
 
@@ -255,8 +254,7 @@ public static class SriXmlFacturaBuilder
 
     // ── Helpers identificación comprador ─────────────────────────────────────
 
-    private static string IdTypeCode(Customer cliente)
-        => cliente.SriIdTypeCode; // "04"=RUC, "05"=CI, "06"=Pasaporte, "08"=Otro
+    private static string SriIdTypeCode(BusinessPartner? bp) => bp?.Identification.SriCode ?? "07";
 
     // ── Formato ───────────────────────────────────────────────────────────────
 

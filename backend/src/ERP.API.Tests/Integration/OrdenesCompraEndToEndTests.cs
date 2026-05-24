@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
@@ -8,6 +8,7 @@ using ERP.Application.Modules.Purchasing.UseCases.CancelarOrdenCompra;
 using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
 using ERP.Application.Modules.Purchasing.UseCases.EnviarOrdenCompra;
 using ERP.Application.Modules.Purchasing.UseCases.VincularFacturaAOrdenCompra;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Events;
 using ERP.Infrastructure.Persistence;
@@ -15,7 +16,7 @@ using ERP.Infrastructure.Persistence;
 namespace ERP.API.Tests.Integration;
 
 /// <summary>
-/// Pruebas de integraciÃ³n del flujo completo de Ã“rdenes de Compra (OC).
+/// Pruebas de integraciÃƒÂ³n del flujo completo de Ãƒâ€œrdenes de Compra (OC).
 /// Usan EF InMemory; no persisten entre tests.
 /// </summary>
 public sealed class OrdenesCompraEndToEndTests
@@ -155,7 +156,7 @@ public sealed class OrdenesCompraEndToEndTests
         vincular.Value!.Status.Should().Be("PartiallyReceived");
     }
 
-    // â”€â”€ Seed â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Seed Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     private static async Task<(Guid ProveedorId, Guid ProductoId)> SeedAsync(
         ErpDbContext db, IntegrationTestWebAppFactory factory)
@@ -163,11 +164,13 @@ public sealed class OrdenesCompraEndToEndTests
         var seed = await IntegrationSeedData.SeedAsync(
             db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
 
-        var proveedor = Supplier.Create(
-            seed.SubscriberId, "Legal", "Supplier Test S.A.",
-            seed.ProveedorRuc, email: null, phone: null, address: null,
-            "30 dias", seed.UserId);
-        db.Suppliers.Add(proveedor);
+        var proveedor = BusinessPartner.Create(
+            subscriberId:         seed.SubscriberId,
+            identificationType:   "RUC",
+            identificationNumber: seed.ProveedorRuc,
+            legalName:            "Supplier Test S.A.",
+            createdBy:            seed.UserId);
+        db.BusinessPartners.Add(proveedor);
         await db.SaveChangesAsync(CancellationToken.None);
 
         return (proveedor.Id, seed.ProductId);

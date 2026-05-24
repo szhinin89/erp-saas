@@ -16,7 +16,7 @@ public sealed class SalesBillConfiguration : IEntityTypeConfiguration<SalesBill>
         builder.Property(e => e.SubscriberId).HasColumnName("subscriber_id").IsRequired();
         builder.Property(e => e.CompanyId).HasColumnName("company_id");
         builder.Property(e => e.BranchId).HasColumnName("branch_id").IsRequired();
-        builder.Property(e => e.CustomerId).HasColumnName("customer_id").IsRequired();
+        builder.Property(e => e.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
         builder.Property(e => e.WarehouseId).HasColumnName("warehouse_id").IsRequired();
         builder.Property(e => e.DocType).HasColumnName("doc_type").HasMaxLength(SalesBill.DocTypeMaxLen).IsRequired();
         builder.Property(e => e.EstabCode).HasColumnName("estab_code").HasMaxLength(SalesBill.EstabMaxLen).IsRequired();
@@ -44,7 +44,7 @@ public sealed class SalesBillConfiguration : IEntityTypeConfiguration<SalesBill>
         builder.Property(e => e.CreatedBy).HasColumnName("created_by");
         builder.Property(e => e.UpdatedBy).HasColumnName("updated_by");
 
-        builder.HasOne(e => e.Cliente).WithMany().HasForeignKey(e => e.CustomerId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<ERP.Domain.MasterData.Entities.BusinessPartner>().WithMany().HasForeignKey(e => e.BusinessPartnerId).IsRequired(false).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(e => e.Warehouse).WithMany().HasForeignKey(e => e.WarehouseId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(e => e.Lines).WithOne().HasForeignKey(d => d.SalesBillId).OnDelete(DeleteBehavior.Cascade);
 

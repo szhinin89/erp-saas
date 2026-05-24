@@ -1,9 +1,10 @@
-using MediatR;
+﻿using MediatR;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
 using ERP.Domain.Modules.Purchasing.Interfaces;
-using ERP.Domain.Modules.Purchasing.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.GetOrdenesCompraList;
 
@@ -11,16 +12,16 @@ public sealed class GetPurchaseOrdersListQueryHandler
     : IRequestHandler<GetPurchaseOrdersListQuery, Result<PurchaseOrdersPagedResult>>
 {
     private readonly IPurchaseOrderRepository _repo;
-    private readonly ISupplierRepository   _proveedorRepo;
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly ICurrentSubscriber         _currentSubscriber;
 
     public GetPurchaseOrdersListQueryHandler(
         IPurchaseOrderRepository repo,
-        ISupplierRepository proveedorRepo,
+        IBusinessPartnerRepository bpRepo,
         ICurrentSubscriber currentSubscriber)
     {
         _repo          = repo;
-        _proveedorRepo = proveedorRepo;
+        _bpRepo = bpRepo;
         _currentSubscriber = currentSubscriber;
     }
 
@@ -31,19 +32,19 @@ public sealed class GetPurchaseOrdersListQueryHandler
 
         var (items, total) = await _repo.GetPagedAsync(
             subscriberId, query.PageNumber, query.PageSize,
-            query.SupplierId, query.Status, query.DateFrom, query.DateTo, ct);
+            query.BusinessPartnerId, query.Status, query.DateFrom, query.DateTo, ct);
 
-        // Batch de proveedores únicos para evitar N+1
-        var proveedorIds = items.Select(o => o.SupplierId).Distinct().ToList();
+        // Batch de proveedores Ãºnicos para evitar N+1
+        var proveedorIds = items.Select(o => o.BusinessPartnerId).Distinct().ToList();
         var proveedores  = new Dictionary<Guid, string>();
         foreach (var pid in proveedorIds)
         {
-            var p = await _proveedorRepo.GetByIdAsync(subscriberId, pid, ct);
+            var p = await _bpRepo.GetByIdAsync(pid, ct);
             proveedores[pid] = p?.LegalName ?? pid.ToString();
         }
 
         var dtos = items.Select(o =>
-            CreatePurchaseOrderCommandHandler.ToDto(o, proveedores.GetValueOrDefault(o.SupplierId, ""))).ToList();
+            CreatePurchaseOrderCommandHandler.ToDto(o, proveedores.GetValueOrDefault(o.BusinessPartnerId, ""))).ToList();
 
         return Result<PurchaseOrdersPagedResult>.Success(
             new PurchaseOrdersPagedResult(dtos, total, query.PageNumber, query.PageSize));

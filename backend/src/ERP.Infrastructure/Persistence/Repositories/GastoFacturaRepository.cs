@@ -76,7 +76,7 @@ public sealed class ExpenseInvoiceRepository : IExpenseInvoiceRepository
             if (estado.HasValue)
                 q = q.Where(g => g.Status == estado.Value);
             if (proveedorId.HasValue)
-                q = q.Where(g => g.SupplierId == proveedorId.Value);
+                q = q.Where(g => g.BusinessPartnerId == proveedorId.Value);
             if (desde.HasValue)
                 q = q.Where(g => g.IssueDate >= desde.Value.Date);
             if (hasta.HasValue)
@@ -98,7 +98,7 @@ public sealed class ExpenseInvoiceRepository : IExpenseInvoiceRepository
         var legacy = _context.ExpenseInvoices.Where(g => g.SubscriberId == subscriberId);
 
         if (estado.HasValue)       legacy = legacy.Where(g => g.Status == estado.Value);
-        if (proveedorId.HasValue) legacy = legacy.Where(g => g.SupplierId == proveedorId.Value);
+        if (proveedorId.HasValue) legacy = legacy.Where(g => g.BusinessPartnerId == proveedorId.Value);
         if (desde.HasValue)        legacy = legacy.Where(g => g.IssueDate >= desde.Value.Date);
         if (hasta.HasValue)        legacy = legacy.Where(g => g.IssueDate <= hasta.Value.Date);
 

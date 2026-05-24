@@ -1,7 +1,7 @@
 using ERP.Domain.Modules.Accounting.Entities;
 using ERP.Domain.Modules.Accounting.Enums;
 using ERP.Domain.Configuration.Entities;
-using ERP.Domain.Modules.Sales.Entities;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
 using ERP.Domain.Modules.Inventory.Enums;
 using ERP.Infrastructure.Persistence;
@@ -35,19 +35,13 @@ internal static class VentasEndToEndHelpers
         db.Accounts.Add(revenue);
 
         // Cliente activo
-        var cliente = Customer.Create(
-            subscriberId,
-            identificationType:   "RUC",
+        var cliente = BusinessPartner.Create(
+            subscriberId:        subscriberId,
+            identificationType:  "RUC",
             identificationNumber: "9999999999001",
-            legalName:            "Cliente Test S.A.",
-            tradeName:            null,
-            addressLine:          "Av. Test 123",
-            phone:                null,
-            email:                null,
-            notes:                null,
-            createdBy:            userId,
-            companyId:            seed.CompanyId);
-        db.Customers.Add(cliente);
+            legalName:           "Cliente Test S.A.",
+            createdBy:           userId);
+        db.BusinessPartners.Add(cliente);
 
         // SriSettings (Environment 1 = pruebas)
         var sri = SriSettings.Create(

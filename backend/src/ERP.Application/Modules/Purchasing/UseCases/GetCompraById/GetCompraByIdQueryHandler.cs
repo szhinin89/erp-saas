@@ -29,7 +29,7 @@ public sealed class GetPurchaseByIdQueryHandler
             d.Subtotal, d.VatPct, d.VatAmount, d.Total)).ToList();
 
         return Result<PurchBillDetailDto?>.Success(new PurchBillDetailDto(
-            c.Id, c.SupplierId, c.InvoiceNumber, c.AccessKey, c.XmlPath,
+            c.Id, c.BusinessPartnerId, c.InvoiceNumber, c.AccessKey, c.XmlPath,
             c.InvoiceDate, c.DueDate, c.Status, c.PaymentTerms,
             c.Subtotal, c.VatTotal, c.Total, c.Notes,
             c.ValidatedBy, c.ValidatedAt, c.ApprovedBy, c.ApprovedAt,

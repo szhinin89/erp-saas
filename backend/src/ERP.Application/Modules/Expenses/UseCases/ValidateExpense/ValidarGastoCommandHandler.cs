@@ -5,8 +5,8 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Expenses.Entities;
 using ERP.Domain.Modules.Expenses.Enums;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Expenses.Interfaces;
-using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Expenses.UseCases.ValidarGasto;
 
@@ -14,7 +14,7 @@ public sealed class ValidateExpenseCommandHandler
     : IRequestHandler<ValidateExpenseCommand, Result<ExpenseInvoiceDto>>
 {
     private readonly IExpenseInvoiceRepository   _repo;
-    private readonly ISupplierRepository      _proveedorRepo;
+    private readonly IBusinessPartnerRepository  _bpRepo;
     private readonly IUserActivityRepository   _activity;
     private readonly ICurrentSubscriber            _tenant;
     private readonly ICurrentUser              _user;
@@ -22,14 +22,14 @@ public sealed class ValidateExpenseCommandHandler
 
     public ValidateExpenseCommandHandler(
         IExpenseInvoiceRepository repo,
-        ISupplierRepository proveedorRepo,
+        IBusinessPartnerRepository bpRepo,
         IUserActivityRepository activity,
         ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork)
     {
-        _repo          = repo;
-        _proveedorRepo = proveedorRepo;
+        _repo   = repo;
+        _bpRepo = bpRepo;
         _activity      = activity;
         _tenant        = tenant;
         _user          = user;
@@ -49,11 +49,11 @@ public sealed class ValidateExpenseCommandHandler
             return Result<ExpenseInvoiceDto>.Failure(
                 $"Solo se puede validar un gasto en Borrador (estado actual: {gasto.Status}).");
 
-        if (gasto.SupplierId.HasValue)
+        if (gasto.BusinessPartnerId.HasValue)
         {
-            var Supplier = await _proveedorRepo.GetByIdAsync(subscriberId, gasto.SupplierId.Value, ct);
-            if (Supplier is null || !Supplier.IsActive)
-                return Result<ExpenseInvoiceDto>.Failure("El Supplier del gasto no existe o está deshabilitado.");
+            var bp = await _bpRepo.GetByIdAsync(gasto.BusinessPartnerId.Value, ct);
+            if (bp is null || !bp.IsActive)
+                return Result<ExpenseInvoiceDto>.Failure("El proveedor del gasto no existe o está deshabilitado.");
         }
 
         var totalCalc = gasto.Subtotal + gasto.TaxTotal;
@@ -104,7 +104,7 @@ public sealed class ValidateExpenseCommandHandler
         g.Id,
         g.AccessKey,
         g.IssueDate,
-        g.SupplierId,
+        g.BusinessPartnerId,
         g.InvoiceNumber,
         g.Concept,
         g.Category,

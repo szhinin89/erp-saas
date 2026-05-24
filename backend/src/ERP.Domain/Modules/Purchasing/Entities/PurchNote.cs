@@ -18,7 +18,7 @@ public sealed class PurchNote : AuditableEntity, ISubscriberScopedEntity
 
     private readonly List<PurchNoteLine> _lines = new();
 
-    public Guid      SupplierId       { get; private set; }
+    public Guid      BusinessPartnerId { get; private set; }
     public Guid?     PurchBillId      { get; private set; }
     public Guid?     ExpenseInvoiceId { get; private set; }
     public string    NoteType         { get; private set; } = null!;
@@ -37,7 +37,6 @@ public sealed class PurchNote : AuditableEntity, ISubscriberScopedEntity
     public DateTime? AuthDate         { get; private set; }
     public Guid?     JournalEntryId   { get; private set; }
 
-    public Supplier         Supplier    { get; private set; } = null!;
     public PurchBill?       PurchBill   { get; private set; }
     public ExpenseInvoice?  ExpenseInv  { get; private set; }
     public IReadOnlyList<PurchNoteLine> Lines => _lines.AsReadOnly();
@@ -46,7 +45,7 @@ public sealed class PurchNote : AuditableEntity, ISubscriberScopedEntity
 
     public static PurchNote Create(
         Guid     subscriberId,
-        Guid     supplierId,
+        Guid     businessPartnerId,
         Guid?    purchBillId,
         Guid?    expenseInvoiceId,
         string   noteType,
@@ -67,9 +66,9 @@ public sealed class PurchNote : AuditableEntity, ISubscriberScopedEntity
 
         var n = new PurchNote
         {
-            Id               = Guid.NewGuid(),
-            SubscriberId         = subscriberId,
-            SupplierId       = supplierId,
+            Id                = Guid.NewGuid(),
+            SubscriberId      = subscriberId,
+            BusinessPartnerId = businessPartnerId,
             PurchBillId      = purchBillId,
             ExpenseInvoiceId = expenseInvoiceId,
             NoteType         = nt,

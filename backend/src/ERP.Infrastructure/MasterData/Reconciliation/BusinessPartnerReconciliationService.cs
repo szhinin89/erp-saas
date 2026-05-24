@@ -1,7 +1,5 @@
 using ERP.Application.Common;
 using ERP.Application.MasterData.Reconciliation;
-using ERP.Domain.MasterData.ValueObjects;
-using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -72,90 +70,11 @@ public sealed class BusinessPartnerReconciliationService : IMasterDataReconcilia
         }
     }
 
-    private async IAsyncEnumerable<MasterDataReconciliationIssue> DetectLegacyWithoutProfilesAsync(
+    private static async IAsyncEnumerable<MasterDataReconciliationIssue> DetectLegacyWithoutProfilesAsync(
         [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
-        var customers = await _platform.Unfiltered(_db.Customers.AsNoTracking(), PlatformQueryReason.PlatformMetrics)
-            .Where(c => c.IsActive)
-            .Take(500)
-            .ToListAsync(ct);
-
-        foreach (var c in customers)
-        {
-            var idType = c.IdentificationType;
-            var idNum = c.IdentificationNumber;
-            var bp = await _platform.Unfiltered(_db.BusinessPartners.AsNoTracking(), PlatformQueryReason.PlatformMetrics)
-                .FirstOrDefaultAsync(b =>
-                    b.SubscriberId == c.SubscriberId &&
-                    b.Identification.Type == idType &&
-                    b.Identification.Number == idNum, ct);
-
-            if (bp is null)
-            {
-                yield return new MasterDataReconciliationIssue(
-                    "legacy_customer_without_bp",
-                    "info",
-                    $"Customer activo sin BusinessPartner ({idType} {idNum}).",
-                    c.SubscriberId,
-                    c.Id);
-                continue;
-            }
-
-            var hasProfile = await _platform.Unfiltered(_db.CustomerProfiles.AsNoTracking(), PlatformQueryReason.PlatformMetrics)
-                .AnyAsync(p => p.BusinessPartnerId == bp.Id, ct);
-
-            if (!hasProfile)
-            {
-                yield return new MasterDataReconciliationIssue(
-                    "customer_without_profile",
-                    "warning",
-                    "BusinessPartner existe pero falta CustomerProfile.",
-                    c.SubscriberId,
-                    bp.Id);
-            }
-        }
-
-        var suppliers = await _platform.Unfiltered(_db.Suppliers.AsNoTracking(), PlatformQueryReason.PlatformMetrics)
-            .Where(s => s.IsActive)
-            .Take(500)
-            .ToListAsync(ct);
-
-        foreach (var s in suppliers)
-        {
-            var idType = s.PersonType == Supplier.TypeLegal
-                ? TaxIdentification.TypeRuc
-                : TaxIdentification.TypeCi;
-
-            var bp = await _platform.Unfiltered(_db.BusinessPartners.AsNoTracking(), PlatformQueryReason.PlatformMetrics)
-                .FirstOrDefaultAsync(b =>
-                    b.SubscriberId == s.SubscriberId &&
-                    b.Identification.Type == idType &&
-                    b.Identification.Number == s.Ruc, ct);
-
-            if (bp is null)
-            {
-                yield return new MasterDataReconciliationIssue(
-                    "legacy_supplier_without_bp",
-                    "info",
-                    $"Supplier activo sin BusinessPartner ({s.Ruc}).",
-                    s.SubscriberId,
-                    s.Id);
-                continue;
-            }
-
-            var hasProfile = await _platform.Unfiltered(_db.SupplierProfiles.AsNoTracking(), PlatformQueryReason.PlatformMetrics)
-                .AnyAsync(p => p.BusinessPartnerId == bp.Id, ct);
-
-            if (!hasProfile)
-            {
-                yield return new MasterDataReconciliationIssue(
-                    "supplier_without_profile",
-                    "warning",
-                    "BusinessPartner existe pero falta SupplierProfile.",
-                    s.SubscriberId,
-                    bp.Id);
-            }
-        }
+        await Task.CompletedTask;
+        yield break;
     }
 
     private async IAsyncEnumerable<MasterDataReconciliationIssue> DetectDuplicateIdentificationsAsync(

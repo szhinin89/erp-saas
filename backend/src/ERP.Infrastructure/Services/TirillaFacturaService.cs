@@ -38,7 +38,6 @@ public sealed class TirillaFacturaService : ITirillaFacturaService
     public async Task<string> GenerarHtmlFacturaAsync(Guid     salesBillId, CancellationToken ct = default)
     {
         var venta = await _dbContext.Set<ERP.Domain.Modules.Sales.Entities.SalesBill>()
-            .Include(v => v.Cliente)
             .Include(v => v.Lines)
             .FirstOrDefaultAsync(v => v.Id == salesBillId && v.Status == "Autorizado", ct);
 
@@ -54,9 +53,13 @@ public sealed class TirillaFacturaService : ITirillaFacturaService
             config = BillingSettings.CreateDefault(venta.SubscriberId, Guid.Empty);
         }
 
+        var buyer = await _dbContext.Set<ERP.Domain.MasterData.Entities.BusinessPartner>()
+            .FirstOrDefaultAsync(b => b.Id == venta.BusinessPartnerId, ct);
+
         var model = new FacturaTirillaModel
         {
             Venta = venta,
+            Buyer = buyer,
             Configuracion = config,
             EsPrueba = string.IsNullOrWhiteSpace(venta.AccessKey) || !venta.AccessKey.StartsWith("1")
         };

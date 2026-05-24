@@ -11,7 +11,7 @@ public static class SalesWithholdingMapper
         var w = SalesWithholding.Rehydrate();
         Set(w, nameof(SalesWithholding.Id), retention.Id);
         Set(w, nameof(SalesWithholding.SubscriberId), retention.SubscriberId);
-        Set(w, nameof(SalesWithholding.CustomerId), retention.CustomerId);
+        Set(w, nameof(SalesWithholding.BusinessPartnerId), retention.BusinessPartnerId);
         Set(w, nameof(SalesWithholding.Direction), WithholdingDirection.Received);
         Set(w, nameof(SalesWithholding.SalesDocumentId), retention.SalesBillId);
         Set(w, nameof(SalesWithholding.VoucherType), retention.VoucherType);
@@ -48,7 +48,7 @@ public static class SalesWithholdingMapper
     {
         var retention = SalesRetention.Create(
             w.SubscriberId,
-            w.CustomerId ?? Guid.Empty,
+            w.BusinessPartnerId ?? Guid.Empty,
             w.AccessKey,
             w.IssueDate,
             w.TotalRetained,

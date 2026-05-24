@@ -15,7 +15,7 @@ public sealed class PurchaseWithholding : AuditableEntity, ISubscriberScopedEnti
     private readonly List<PurchaseWithholdingLine> _lines = new();
 
     public Guid?                CompanyId            { get; private set; }
-    public Guid                 SupplierId           { get; private set; }
+    public Guid                 BusinessPartnerId    { get; private set; }
     public WithholdingDirection Direction            { get; private set; } = WithholdingDirection.Issued;
     public Guid?                PurchaseDocumentId   { get; private set; }
     public string               VoucherType          { get; private set; } = "RETENTION";
@@ -34,7 +34,6 @@ public sealed class PurchaseWithholding : AuditableEntity, ISubscriberScopedEnti
     public string?              ErrorMessage         { get; private set; }
     public Guid?                JournalEntryId       { get; private set; }
 
-    public Supplier? Supplier { get; private set; }
     public PurchaseDocument? PurchaseDocument { get; private set; }
     public IReadOnlyList<PurchaseWithholdingLine> Lines => _lines.AsReadOnly();
 

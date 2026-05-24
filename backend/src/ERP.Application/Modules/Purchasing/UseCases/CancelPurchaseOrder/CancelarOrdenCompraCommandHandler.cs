@@ -1,4 +1,4 @@
-using MediatR;
+﻿using MediatR;
 using Microsoft.Extensions.Logging;
 using ERP.Application.Common;
 using ERP.Application.Modules.Purchasing.DTOs;
@@ -6,7 +6,8 @@ using ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Purchasing.Interfaces;
-using ERP.Domain.Modules.Purchasing.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.CancelarOrdenCompra;
 
@@ -14,7 +15,7 @@ public sealed class CancelOrderPurchaseCommandHandler
     : IRequestHandler<CancelOrderPurchaseCommand, Result<PurchaseOrderDto>>
 {
     private readonly IPurchaseOrderRepository  _ordenRepo;
-    private readonly ISupplierRepository    _proveedorRepo;
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentSubscriber          _currentSubscriber;
     private readonly ICurrentUser            _currentUser;
@@ -22,14 +23,14 @@ public sealed class CancelOrderPurchaseCommandHandler
 
     public CancelOrderPurchaseCommandHandler(
         IPurchaseOrderRepository ordenRepo,
-        ISupplierRepository proveedorRepo,
+        IBusinessPartnerRepository bpRepo,
         IUserActivityRepository activity,
         ICurrentSubscriber currentSubscriber,
         ICurrentUser currentUser,
         ILogger<CancelOrderPurchaseCommandHandler> logger)
     {
         _ordenRepo     = ordenRepo;
-        _proveedorRepo = proveedorRepo;
+        _bpRepo = bpRepo;
         _activity      = activity;
         _currentSubscriber = currentSubscriber;
         _currentUser   = currentUser;
@@ -61,8 +62,8 @@ public sealed class CancelOrderPurchaseCommandHandler
         await _ordenRepo.SaveChangesAsync(ct);
         _logger.LogInformation("OC cancelada: {Numero}", orden.OrderNumber);
 
-        var Supplier = await _proveedorRepo.GetByIdAsync(subscriberId, orden.SupplierId, ct);
+        var bp = await _bpRepo.GetByIdAsync(orden.BusinessPartnerId, ct);
         return Result<PurchaseOrderDto>.Success(
-            CreatePurchaseOrderCommandHandler.ToDto(orden, Supplier?.LegalName ?? orden.SupplierId.ToString()));
+            CreatePurchaseOrderCommandHandler.ToDto(orden, bp?.LegalName ?? orden.BusinessPartnerId.ToString()));
     }
 }

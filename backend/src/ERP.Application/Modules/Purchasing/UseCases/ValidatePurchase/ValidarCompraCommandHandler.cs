@@ -5,7 +5,7 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Enums;
-using ERP.Domain.Modules.Purchasing.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.ValidarCompra;
@@ -14,7 +14,7 @@ public sealed class ValidatePurchaseCommandHandler
     : IRequestHandler<ValidatePurchaseCommand, Result<PurchBillDto>>
 {
     private readonly IPurchBillRepository       _repo;
-    private readonly ISupplierRepository    _proveedorRepo;
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IUserActivityRepository _activity;
     private readonly ICurrentSubscriber          _tenant;
     private readonly ICurrentUser            _user;
@@ -22,14 +22,14 @@ public sealed class ValidatePurchaseCommandHandler
 
     public ValidatePurchaseCommandHandler(
         IPurchBillRepository repo,
-        ISupplierRepository proveedorRepo,
+        IBusinessPartnerRepository bpRepo,
         IUserActivityRepository activity,
         ICurrentSubscriber tenant,
         ICurrentUser user,
         IUnitOfWork unitOfWork)
     {
-        _repo          = repo;
-        _proveedorRepo = proveedorRepo;
+        _repo   = repo;
+        _bpRepo = bpRepo;
         _activity      = activity;
         _tenant        = tenant;
         _user          = user;
@@ -50,10 +50,9 @@ public sealed class ValidatePurchaseCommandHandler
             return Result<PurchBillDto>.Failure(
                 $"Solo se puede validar una compra en Borrador (estado actual: {compra.Status}).");
 
-        // 1. Verificar Supplier activo
-        var Supplier = await _proveedorRepo.GetByIdAsync(subscriberId, compra.SupplierId, ct);
-        if (Supplier is null || !Supplier.IsActive)
-            return Result<PurchBillDto>.Failure("El Supplier de la compra no existe o está deshabilitado.");
+        var bp = await _bpRepo.GetByIdAsync(compra.BusinessPartnerId, ct);
+        if (bp is null || !bp.IsActive)
+            return Result<PurchBillDto>.Failure("El proveedor de la compra no existe o está deshabilitado.");
 
         // 2. Validar que tenga detalles
         if (compra.Lines.Count == 0)
@@ -99,7 +98,7 @@ public sealed class ValidatePurchaseCommandHandler
     }
 
     private static PurchBillDto ToDto(ERP.Domain.Modules.Purchasing.Entities.PurchBill c) => new(
-        c.Id, c.SupplierId, c.InvoiceNumber, c.AccessKey, c.XmlPath,
+        c.Id, c.BusinessPartnerId, c.InvoiceNumber, c.AccessKey, c.XmlPath,
         c.InvoiceDate, c.DueDate, c.Status, c.PaymentTerms,
         c.Subtotal, c.VatTotal, c.Total, c.Notes, c.JournalEntryId, c.CreatedAt);
 }

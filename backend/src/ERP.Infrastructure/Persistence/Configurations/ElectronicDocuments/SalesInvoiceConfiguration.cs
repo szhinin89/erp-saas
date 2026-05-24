@@ -19,7 +19,7 @@ public class SalesInvoiceConfiguration : IEntityTypeConfiguration<SalesInvoice>
         builder.Property(x => x.BuyerAddress).HasColumnName("buyer_address").HasMaxLength(500);
         builder.Property(x => x.BuyerEmail).HasColumnName("buyer_email").HasMaxLength(120);
         builder.Property(x => x.BuyerPhone).HasColumnName("buyer_phone").HasMaxLength(40);
-        builder.Property(x => x.CustomerId).HasColumnName("customer_id");
+        builder.Property(x => x.CustomerId).HasColumnName("business_partner_id");
         builder.Property(x => x.WarehouseId).HasColumnName("warehouse_id");
         builder.Property(x => x.SalespersonId).HasColumnName("salesperson_id");
         builder.Property(x => x.DeliveryDate).HasColumnName("delivery_date");

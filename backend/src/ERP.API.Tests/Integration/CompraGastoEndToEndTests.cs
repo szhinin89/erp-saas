@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,7 +36,7 @@ public sealed class CompraGastoEndToEndTests
                 PurchaseCreationMode.Xml,
                 XmlContent: Encoding.UTF8.GetBytes(xml),
                 XmlFileName: "factura.xml",
-                SupplierId: null,
+                BusinessPartnerId: null,
                 InvoiceNumber: null,
                 InvoiceDate: null,
                 DueDate: null,
@@ -83,9 +83,9 @@ public sealed class CompraGastoEndToEndTests
                 ExpenseCreationMode.Manual,
                 XmlContent: null,
                 XmlFileName: null,
-                SupplierId: null,
+                BusinessPartnerId: null,
                 IssueDate: DateTime.UtcNow.Date,
-                Concept: "Taxi integraciÃ³n",
+                Concept: "Taxi integraciÃƒÂ³n",
                 Category: "Viajes",
                 Subtotal: 10m,
                 VatTotal: 2m,

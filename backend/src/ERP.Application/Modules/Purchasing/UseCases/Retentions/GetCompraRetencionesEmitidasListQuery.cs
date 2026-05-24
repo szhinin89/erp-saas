@@ -5,7 +5,7 @@ using ERP.Domain.Modules.Purchasing.Interfaces;
 
 namespace ERP.Application.Modules.Purchasing.UseCases.Retenciones;
 
-public sealed record GetPurchaseIssuedRetentionsListQuery(Guid? SupplierId)
+public sealed record GetPurchaseIssuedRetentionsListQuery(Guid? BusinessPartnerId)
     : IRequest<Result<IReadOnlyList<IssuedRetentionListItemDto>>>, ICompanyScopedRequest;
 
 public sealed class GetPurchaseIssuedRetentionsListQueryHandler
@@ -27,9 +27,9 @@ public sealed class GetPurchaseIssuedRetentionsListQueryHandler
         CancellationToken ct)
     {
         var items = await _compraRepository.GetIssuedRetentionsAsync(
-            _currentSubscriber.SubscriberId, request.SupplierId, ct);
+            _currentSubscriber.SubscriberId, request.BusinessPartnerId, ct);
         var dto = items.Select(r => new IssuedRetentionListItemDto(
-            r.Id, r.SupplierId, r.AccessKey, r.Status, r.TotalRetained, r.IssueDate)).ToList();
+            r.Id, r.BusinessPartnerId, r.AccessKey, r.Status, r.TotalRetained, r.IssueDate)).ToList();
         return Result<IReadOnlyList<IssuedRetentionListItemDto>>.Success(dto);
     }
 }

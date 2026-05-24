@@ -6,7 +6,7 @@ public sealed record ExpenseInvoiceDto(
     Guid         Id,
     string?      AccessKey,
     DateTime  IssueDate,
-    Guid? SupplierId,
+    Guid? BusinessPartnerId,
     string?      InvoiceNumber,
     string       Description,
     string       ExpenseCategory,

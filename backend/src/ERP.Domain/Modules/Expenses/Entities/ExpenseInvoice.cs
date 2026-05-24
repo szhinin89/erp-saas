@@ -18,7 +18,7 @@ public sealed class ExpenseInvoice : MasterEntity, ISubscriberScopedEntity
 
     public string?       AccessKey          { get; private set; }
     public DateTime      IssueDate          { get; private set; }
-    public Guid?         SupplierId         { get; private set; }
+    public Guid?         BusinessPartnerId  { get; private set; }
     public string?       InvoiceNumber      { get; private set; }
     public string        Concept            { get; private set; } = null!;
     public string        Category           { get; private set; } = null!;
@@ -44,7 +44,7 @@ public sealed class ExpenseInvoice : MasterEntity, ISubscriberScopedEntity
 
     public static ExpenseInvoice CreateManual(
         Guid     subscriberId,
-        Guid?    supplierId,
+        Guid?    businessPartnerId,
         DateTime issueDate,
         string   concept,
         string   category,
@@ -61,9 +61,9 @@ public sealed class ExpenseInvoice : MasterEntity, ISubscriberScopedEntity
 
         var g = new ExpenseInvoice
         {
-            Id         = Guid.NewGuid(),
-            SubscriberId   = subscriberId,
-            SupplierId = supplierId,
+            Id                = Guid.NewGuid(),
+            SubscriberId      = subscriberId,
+            BusinessPartnerId = businessPartnerId,
             IssueDate  = issueDate,
             Concept    = concept.Trim(),
             Category   = category.Trim(),
@@ -79,7 +79,7 @@ public sealed class ExpenseInvoice : MasterEntity, ISubscriberScopedEntity
 
     public static ExpenseInvoice CreateFromXml(
         Guid     subscriberId,
-        Guid     supplierId,
+        Guid     businessPartnerId,
         string   accessKey,
         string?  invoiceNumber,
         DateTime issueDate,
@@ -97,9 +97,9 @@ public sealed class ExpenseInvoice : MasterEntity, ISubscriberScopedEntity
 
         var g = new ExpenseInvoice
         {
-            Id            = Guid.NewGuid(),
+            Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
-            SupplierId    = supplierId,
+            BusinessPartnerId = businessPartnerId,
             AccessKey     = accessKey.Trim(),
             InvoiceNumber = Trim(invoiceNumber),
             IssueDate     = issueDate,

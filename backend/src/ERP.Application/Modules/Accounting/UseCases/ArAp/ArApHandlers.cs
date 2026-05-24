@@ -21,17 +21,16 @@ public sealed class CreateArEntryCommandHandler : IRequestHandler<CreateArEntryC
     public async Task<Result<Guid>> Handle(CreateArEntryCommand cmd, CancellationToken ct)
     {
         var entry = AccountsReceivableEntry.Create(
-            subscriberId:      _subscriber.SubscriberId,
-            companyId:         cmd.CompanyId,
-            customerId:        cmd.CustomerId,
-            reference:         cmd.Reference,
-            issueDate:         cmd.IssueDate,
-            dueDate:           cmd.DueDate,
-            amount:            cmd.Amount,
-            createdBy:         _user.UserId,
-            salesBillId:       cmd.SalesBillId,
+            subscriberId:     _subscriber.SubscriberId,
+            companyId:        cmd.CompanyId,
             businessPartnerId: cmd.BusinessPartnerId,
-            currency:          cmd.Currency);
+            reference:        cmd.Reference,
+            issueDate:        cmd.IssueDate,
+            dueDate:          cmd.DueDate,
+            amount:           cmd.Amount,
+            createdBy:        _user.UserId,
+            salesBillId:      cmd.SalesBillId,
+            currency:         cmd.Currency);
 
         await _repo.AddArEntryAsync(entry, ct);
         await _repo.SaveChangesAsync(ct);
@@ -103,7 +102,7 @@ public sealed class GetArAgingReportQueryHandler : IRequestHandler<GetArAgingRep
             var d61To90  = days is > 60 and <= 90 ? remaining : 0m;
             var over90   = days > 90              ? remaining : 0m;
 
-            return new ArAgingLineDto(e.Id, e.CustomerId, e.Reference, e.DueDate,
+            return new ArAgingLineDto(e.Id, e.BusinessPartnerId, e.Reference, e.DueDate,
                 current, d1To30, d31To60, d61To90, over90, remaining);
         }).ToList();
 
@@ -137,17 +136,16 @@ public sealed class CreateApEntryCommandHandler : IRequestHandler<CreateApEntryC
     public async Task<Result<Guid>> Handle(CreateApEntryCommand cmd, CancellationToken ct)
     {
         var entry = AccountsPayableEntry.Create(
-            subscriberId:      _subscriber.SubscriberId,
-            companyId:         cmd.CompanyId,
-            supplierId:        cmd.SupplierId,
-            reference:         cmd.Reference,
-            issueDate:         cmd.IssueDate,
-            dueDate:           cmd.DueDate,
-            amount:            cmd.Amount,
-            createdBy:         _user.UserId,
-            purchBillId:       cmd.PurchBillId,
+            subscriberId:     _subscriber.SubscriberId,
+            companyId:        cmd.CompanyId,
             businessPartnerId: cmd.BusinessPartnerId,
-            currency:          cmd.Currency);
+            reference:        cmd.Reference,
+            issueDate:        cmd.IssueDate,
+            dueDate:          cmd.DueDate,
+            amount:           cmd.Amount,
+            createdBy:        _user.UserId,
+            purchBillId:      cmd.PurchBillId,
+            currency:         cmd.Currency);
 
         await _repo.AddApEntryAsync(entry, ct);
         await _repo.SaveChangesAsync(ct);
@@ -219,7 +217,7 @@ public sealed class GetApAgingReportQueryHandler : IRequestHandler<GetApAgingRep
             var d61To90  = days is > 60 and <= 90 ? remaining : 0m;
             var over90   = days > 90              ? remaining : 0m;
 
-            return new ApAgingLineDto(e.Id, e.SupplierId, e.Reference, e.DueDate,
+            return new ApAgingLineDto(e.Id, e.BusinessPartnerId, e.Reference, e.DueDate,
                 current, d1To30, d31To60, d61To90, over90, remaining);
         }).ToList();
 

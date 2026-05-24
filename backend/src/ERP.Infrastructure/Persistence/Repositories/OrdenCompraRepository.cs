@@ -44,7 +44,7 @@ public sealed class PurchaseOrderRepository : IPurchaseOrderRepository
             .Where(o => o.SubscriberId == subscriberId);
 
         if (proveedorId.HasValue)
-            query = query.Where(o => o.SupplierId == proveedorId.Value);
+            query = query.Where(o => o.BusinessPartnerId == proveedorId.Value);
         if (!string.IsNullOrEmpty(estado))
             query = query.Where(o => o.Status == estado);
         if (fechaDesde.HasValue)

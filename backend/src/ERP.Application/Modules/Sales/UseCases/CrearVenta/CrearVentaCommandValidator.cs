@@ -6,7 +6,7 @@ public sealed class CreateSaleCommandValidator : AbstractValidator<CreateSaleCom
 {
     public CreateSaleCommandValidator()
     {
-        RuleFor(x => x.CustomerId)
+        RuleFor(x => x.BusinessPartnerId)
             .NotEmpty().WithMessage("El ID del cliente es obligatorio.");
 
         RuleFor(x => x.WarehouseId)

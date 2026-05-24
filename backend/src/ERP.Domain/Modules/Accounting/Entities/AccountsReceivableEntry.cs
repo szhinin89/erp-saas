@@ -15,8 +15,7 @@ public sealed class AccountsReceivableEntry : AuditableEntity, ISubscriberScoped
     public const string StatusCancelled     = "Cancelled";
 
     public Guid     CompanyId          { get; private set; }
-    public Guid     CustomerId         { get; private set; }
-    public Guid?    BusinessPartnerId  { get; private set; }
+    public Guid     BusinessPartnerId  { get; private set; }
     public Guid?    SalesBillId        { get; private set; }
     public string   Reference          { get; private set; } = null!;
     public DateTime IssueDate          { get; private set; }
@@ -36,15 +35,14 @@ public sealed class AccountsReceivableEntry : AuditableEntity, ISubscriberScoped
     public static AccountsReceivableEntry Create(
         Guid     subscriberId,
         Guid     companyId,
-        Guid     customerId,
+        Guid     businessPartnerId,
         string   reference,
         DateTime issueDate,
         DateTime dueDate,
         decimal  amount,
         Guid     createdBy,
-        Guid?    salesBillId       = null,
-        Guid?    businessPartnerId = null,
-        string   currency          = "USD")
+        Guid?    salesBillId = null,
+        string   currency    = "USD")
     {
         if (amount <= 0)
             throw new ArgumentException("El monto debe ser mayor a cero.", nameof(amount));
@@ -58,7 +56,6 @@ public sealed class AccountsReceivableEntry : AuditableEntity, ISubscriberScoped
             Id                = Guid.NewGuid(),
             SubscriberId      = subscriberId,
             CompanyId         = companyId,
-            CustomerId        = customerId,
             BusinessPartnerId = businessPartnerId,
             SalesBillId       = salesBillId,
             Reference         = reference.Trim(),

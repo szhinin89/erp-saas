@@ -6,9 +6,9 @@ using ERP.Application.Modules.Purchasing;
 using ERP.Application.Modules.Purchasing.DTOs;
 using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
+using ERP.Domain.MasterData.Entities;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
-using ERP.Domain.Modules.Purchasing.Entities;
-using ERP.Domain.Modules.Purchasing.Interfaces;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 
@@ -18,7 +18,7 @@ public sealed class CreatePurchaseCommandHandler
     : IRequestHandler<CreatePurchaseCommand, Result<PurchBillDto>>
 {
     private readonly IPurchBillRepository       _compraRepo;
-    private readonly ISupplierRepository    _proveedorRepo;
+    private readonly IBusinessPartnerRepository _bpRepo;
     private readonly IWarehouseRepository        _bodegaRepo;
     private readonly IXmlFacturaParser       _parser;
     private readonly IFileStorage            _storage;
@@ -30,7 +30,7 @@ public sealed class CreatePurchaseCommandHandler
 
     public CreatePurchaseCommandHandler(
         IPurchBillRepository repo,
-        ISupplierRepository proveedorRepo,
+        IBusinessPartnerRepository bpRepo,
         IWarehouseRepository bodegaRepo,
         IXmlFacturaParser parser,
         IFileStorage storage,
@@ -40,8 +40,8 @@ public sealed class CreatePurchaseCommandHandler
         IUnitOfWork unitOfWork,
         ILogger<CreatePurchaseCommandHandler> logger)
     {
-        _compraRepo    = repo;
-        _proveedorRepo = proveedorRepo;
+        _compraRepo = repo;
+        _bpRepo     = bpRepo;
         _bodegaRepo    = bodegaRepo;
         _parser        = parser;
         _storage       = storage;
@@ -92,24 +92,21 @@ public sealed class CreatePurchaseCommandHandler
         await _unitOfWork.BeginTransactionAsync(ct);
         try
         {
-            // 3. Buscar o crear Supplier por RUC
-            var Supplier = await ObtenerOCrearProveedor(
+            // 3. Buscar o crear BusinessPartner por RUC
+            var bp = await ObtenerOCrearBusinessPartner(
                 subscriberId, parsed.SupplierRuc, parsed.SupplierLegalName, userId, ct);
 
-            // 4. Guardar archivo XML (fuera de SQL; si falla el commit, puede quedar huérfano en almacén)
+            // 4. Guardar archivo XML
             var xmlPath = $"facturas/compras/{parsed.AccessKey}.xml";
             using (var xmlStream = new MemoryStream(command.XmlContent!))
                 await _storage.SaveAsync(xmlPath, xmlStream, ct);
 
             // 5. Crear PurchBill
             var compra = PurchBill.Create(
-                subscriberId, Supplier.Id,
+                subscriberId, bp.Id,
                 parsed.InvoiceNumber, parsed.AccessKey, xmlPath,
                 parsed.IssueDate, null,
                 "Contado", null, userId);
-
-            if (command.BusinessPartnerId.HasValue)
-                compra.SetBusinessPartner(command.BusinessPartnerId);
 
             foreach (var item in parsed.Items)
             {
@@ -155,7 +152,7 @@ public sealed class CreatePurchaseCommandHandler
                 subscriberId, userId, _user.Email, _user.FullName,
                 module: "compras", action: "compra.crear.xml",
                 entityType: "PurchBill", entityId: compra.Id,
-                description: $"{parsed.InvoiceNumber} — {Supplier.LegalName}"), ct);
+                description: $"{parsed.InvoiceNumber} — {bp.LegalName}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
@@ -182,20 +179,17 @@ public sealed class CreatePurchaseCommandHandler
         var subscriberId = _tenant.SubscriberId;
         var userId   = _user.UserId;
 
-        var Supplier = await _proveedorRepo.GetByIdAsync(subscriberId, command.SupplierId!.Value, ct);
-        if (Supplier is null)
-            return Result<PurchBillDto>.Failure("Supplier no encontrado en el tenant.");
-        if (!Supplier.IsActive)
-            return Result<PurchBillDto>.Failure("El Supplier está deshabilitado.");
+        var bp = await _bpRepo.GetByIdAsync(command.BusinessPartnerId!.Value, ct);
+        if (bp is null)
+            return Result<PurchBillDto>.Failure("Proveedor no encontrado.");
+        if (!bp.IsActive)
+            return Result<PurchBillDto>.Failure("El proveedor está deshabilitado.");
 
         var compra = PurchBill.Create(
-            subscriberId, Supplier.Id,
+            subscriberId, bp.Id,
             command.InvoiceNumber!, null, null,
             command.InvoiceDate!.Value, command.DueDate,
             command.PaymentTerms!, command.Notes, userId);
-
-        if (command.BusinessPartnerId.HasValue)
-            compra.SetBusinessPartner(command.BusinessPartnerId);
 
         foreach (var d in command.Lines!)
         {
@@ -235,7 +229,7 @@ public sealed class CreatePurchaseCommandHandler
                 subscriberId, userId, _user.Email, _user.FullName,
                 module: "compras", action: "compra.crear.manual",
                 entityType: "PurchBill", entityId: compra.Id,
-                description: $"{compra.InvoiceNumber} — {Supplier.LegalName}"), ct);
+                description: $"{compra.InvoiceNumber} — {bp.LegalName}"), ct);
 
             await _unitOfWork.SaveChangesAsync(ct);
             await _unitOfWork.CommitAsync(ct);
@@ -256,28 +250,20 @@ public sealed class CreatePurchaseCommandHandler
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
-    private async Task<Supplier> ObtenerOCrearProveedor(
+    private async Task<BusinessPartner> ObtenerOCrearBusinessPartner(
         Guid subscriberId, string ruc, string razonSocial, Guid userId, CancellationToken ct)
     {
-        var existentes = await _proveedorRepo.GetAsync(
-            subscriberId, activeFilter: null, search: ruc, personType: null, ct);
-
-        var existente = existentes.FirstOrDefault(p => p.Ruc == ruc);
+        var existente = await _bpRepo.GetByIdentificationAsync("RUC", ruc, ct);
         if (existente is not null) return existente;
 
-        // Crear Supplier básico (el usuario podrá completar los datos después)
-        var tipo = ruc[2] - '0' is >= 0 and <= 5 ? Supplier.TypeNatural : Supplier.TypeLegal;
-        var nuevo = Supplier.Create(
-            subscriberId, tipo, razonSocial, ruc,
-            email: null, phone: null, address: null,
-            paymentTerms: "Contado", userId);
-
-        await _proveedorRepo.AddAsync(nuevo, ct);
+        var nuevo = BusinessPartner.Create(
+            subscriberId, "RUC", ruc, razonSocial, userId);
+        await _bpRepo.AddAsync(nuevo, ct);
         return nuevo;
     }
 
     private static PurchBillDto ToDto(PurchBill c) => new(
-        c.Id, c.SupplierId, c.InvoiceNumber, c.AccessKey, c.XmlPath,
+        c.Id, c.BusinessPartnerId, c.InvoiceNumber, c.AccessKey, c.XmlPath,
         c.InvoiceDate, c.DueDate, c.Status, c.PaymentTerms,
         c.Subtotal, c.VatTotal, c.Total, c.Notes, c.JournalEntryId, c.CreatedAt);
 }

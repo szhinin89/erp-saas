@@ -1,4 +1,4 @@
-using FluentAssertions;
+﻿using FluentAssertions;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using ERP.API.Tests.Support;
@@ -13,9 +13,9 @@ using ERP.Infrastructure.Persistence;
 namespace ERP.API.Tests.Unit;
 
 /// <summary>
-/// Pruebas de la lÃ³gica de validaciÃ³n de stock en CreateSaleCommandHandler.
+/// Pruebas de la lÃƒÂ³gica de validaciÃƒÂ³n de stock en CreateSaleCommandHandler.
 /// Usan la misma infraestructura in-memory de IntegrationTestWebAppFactory
-/// pero con datos mÃ­nimos y enfocados en el comportamiento de stock.
+/// pero con datos mÃƒÂ­nimos y enfocados en el comportamiento de stock.
 /// </summary>
 public sealed class StockValidationHandlerTests
 {
@@ -87,7 +87,7 @@ public sealed class StockValidationHandlerTests
         var db       = scope.ServiceProvider.GetRequiredService<ErpDbContext>();
         var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-        // Sin llamar a SeedMinimalDataAsync con stock â€” producto existe pero no tiene CurrentStocks
+        // Sin llamar a SeedMinimalDataAsync con stock Ã¢â‚¬â€ producto existe pero no tiene CurrentStocks
         var (clienteId, bodegaId, sucursalId, productoId) =
             await SeedMinimalDataAsync(db, factory, stockUnidades: 0m, crearStockActual: false);
 
@@ -111,17 +111,17 @@ public sealed class StockValidationHandlerTests
         var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, ct: CancellationToken.None);
 
-        var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var clienteId  = db.BusinessPartners.First(c => c.SubscriberId == seed.SubscriberId).Id;
         var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         // Producto 1 con 10 unidades (OK), Producto 2 sin stock (falla)
-        var prod2Id = seed.ProductId; // mismo producto â€” pedimos 100 con solo 10 en stock
+        var prod2Id = seed.ProductId; // mismo producto Ã¢â‚¬â€ pedimos 100 con solo 10 en stock
 
         var result = await mediator.Send(
             new CreateSaleCommand(clienteId, seed.WarehouseId, sucursalId,
                 new List<SaleItemDto>
                 {
-                    new(seed.ProductId, Quantity: 1m,   UnitPrice: 10m), // OK (10 â‰¥ 1)
+                    new(seed.ProductId, Quantity: 1m,   UnitPrice: 10m), // OK (10 Ã¢â€°Â¥ 1)
                     new(prod2Id,        Quantity: 100m,  UnitPrice: 10m), // FALLA (10 < 100)
                 }),
             CancellationToken.None);
@@ -130,7 +130,7 @@ public sealed class StockValidationHandlerTests
         result.Error.Should().Contain("Stock insuficiente");
     }
 
-    // â”€â”€ Setup helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Ã¢â€â‚¬Ã¢â€â‚¬ Setup helpers Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     private static async Task<(Guid ClienteId, Guid BodegaId, Guid SucursalId, Guid ProductoId)>
         SeedMinimalDataAsync(
@@ -142,7 +142,7 @@ public sealed class StockValidationHandlerTests
         var seed = await IntegrationSeedData.SeedAsync(db, factory.MutableSubscriber, factory.MutableUser, CancellationToken.None, factory.MutableCompany);
         await VentasEndToEndHelpers.SeedVentasPrerequisitesAsync(db, seed, stockUnidades, crearStockActual, CancellationToken.None);
 
-        var clienteId  = db.Customers.First(c => c.SubscriberId == seed.SubscriberId).Id;
+        var clienteId  = db.BusinessPartners.First(c => c.SubscriberId == seed.SubscriberId).Id;
         var sucursalId = db.Branches.First(b => b.SubscriberId == seed.SubscriberId).Id;
 
         return (clienteId, seed.WarehouseId, sucursalId, seed.ProductId);

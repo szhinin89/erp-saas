@@ -75,7 +75,7 @@ public sealed class RejectPurchaseCommandHandler
     }
 
     private static PurchBillDto ToDto(ERP.Domain.Modules.Purchasing.Entities.PurchBill c) => new(
-        c.Id, c.SupplierId, c.InvoiceNumber, c.AccessKey, c.XmlPath,
+        c.Id, c.BusinessPartnerId, c.InvoiceNumber, c.AccessKey, c.XmlPath,
         c.InvoiceDate, c.DueDate, c.Status, c.PaymentTerms,
         c.Subtotal, c.VatTotal, c.Total, c.Notes, c.JournalEntryId, c.CreatedAt);
 }

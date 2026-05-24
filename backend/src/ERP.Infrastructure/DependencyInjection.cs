@@ -147,9 +147,7 @@ public static class DependencyInjection
         services.AddScoped<IBranchRepository, BranchRepository>();
         services.AddScoped<IGeographyReadRepository, GeographyReadRepository>();
         services.AddScoped<IUserActivityRepository, UserActivityRepository>();
-        services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IWarehouseRepository, WarehouseRepository>();
-        services.AddScoped<ISupplierRepository, SupplierRepository>();
         services.AddScoped<IXmlFacturaParser, SriFacturaParser>();
         services.AddScoped<IFileStorage, LocalFileStorage>();
         services.AddSingleton<ERP.Application.Common.Interfaces.SRI.IElectronicDocumentBuilder,

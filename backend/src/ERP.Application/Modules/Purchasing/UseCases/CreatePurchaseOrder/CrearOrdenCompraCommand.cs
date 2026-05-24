@@ -6,7 +6,7 @@ namespace ERP.Application.Modules.Purchasing.UseCases.CrearOrdenCompra;
 
 [RequireFeature(SubscriptionFeatureCodes.Purchases)]
 public sealed record CreatePurchaseOrderCommand(
-    Guid    SupplierId,
+    Guid    BusinessPartnerId,
     DateTime                      RequiredDate,
     Guid?                         TargetWarehouseId,
     string?                       DeliveryAddress,

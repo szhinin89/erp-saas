@@ -7,14 +7,13 @@ namespace ERP.Application.Modules.Accounting.UseCases.ArAp;
 
 public sealed record CreateArEntryCommand(
     Guid     CompanyId,
-    Guid     CustomerId,
+    Guid     BusinessPartnerId,
     string   Reference,
     DateTime IssueDate,
     DateTime DueDate,
     decimal  Amount,
-    Guid?    SalesBillId       = null,
-    Guid?    BusinessPartnerId = null,
-    string   Currency          = "USD")
+    Guid?    SalesBillId = null,
+    string   Currency    = "USD")
     : IRequest<Result<Guid>>, ISubscriberScopedRequest;
 
 public sealed record ApplyArPaymentCommand(
@@ -32,14 +31,13 @@ public sealed record GetArAgingReportQuery(Guid CompanyId, DateTime AsOf)
 
 public sealed record CreateApEntryCommand(
     Guid     CompanyId,
-    Guid     SupplierId,
+    Guid     BusinessPartnerId,
     string   Reference,
     DateTime IssueDate,
     DateTime DueDate,
     decimal  Amount,
-    Guid?    PurchBillId       = null,
-    Guid?    BusinessPartnerId = null,
-    string   Currency          = "USD")
+    Guid?    PurchBillId = null,
+    string   Currency    = "USD")
     : IRequest<Result<Guid>>, ISubscriberScopedRequest;
 
 public sealed record ApplyApPaymentCommand(
@@ -67,7 +65,7 @@ public sealed record ArAgingReportDto(
 
 public sealed record ArAgingLineDto(
     Guid     ArEntryId,
-    Guid     CustomerId,
+    Guid     BusinessPartnerId,
     string   Reference,
     DateTime DueDate,
     decimal  Current,
@@ -89,7 +87,7 @@ public sealed record ApAgingReportDto(
 
 public sealed record ApAgingLineDto(
     Guid     ApEntryId,
-    Guid     SupplierId,
+    Guid     BusinessPartnerId,
     string   Reference,
     DateTime DueDate,
     decimal  Current,

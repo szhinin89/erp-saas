@@ -7,6 +7,7 @@ using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Inventory.Interfaces;
 using ERP.Domain.Configuration.Entities;
 using ERP.Domain.Configuration.Interfaces;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Sales.Interfaces;
 using ERP.Domain.Products.Interfaces;
 using ERP.Domain.Modules.Sales.Entities;
@@ -19,7 +20,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
     private readonly ISalesRepository _ventasRepository;
     private readonly ISriSettingsRepository _configSriRepository;
     private readonly IStockRepository _stockRepository;
-    private readonly ICustomerRepository _customerRepository;
+    private readonly IBusinessPartnerRepository _bpRepository;
     private readonly IWarehouseRepository _bodegaRepository;
     private readonly IProductRepository     _productRepository;
     private readonly ITaxRateRepository     _taxRateRepository;
@@ -34,7 +35,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         ISalesRepository ventasRepository,
         ISriSettingsRepository configSriRepository,
         IStockRepository stockRepository,
-        ICustomerRepository customerRepository,
+        IBusinessPartnerRepository bpRepository,
         IWarehouseRepository bodegaRepository,
         IProductRepository productRepository,
         ITaxRateRepository taxRateRepository,
@@ -48,7 +49,7 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         _ventasRepository    = ventasRepository;
         _configSriRepository = configSriRepository;
         _stockRepository     = stockRepository;
-        _customerRepository  = customerRepository;
+        _bpRepository        = bpRepository;
         _bodegaRepository    = bodegaRepository;
         _productRepository   = productRepository;
         _taxRateRepository   = taxRateRepository;
@@ -71,8 +72,8 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         var companyId = _currentCompany.CompanyId;
 
         _logger.LogInformation(
-            "Creando venta: tenant={SubscriberId}, cliente={ClienteId}, Warehouse={BodegaId}, ítems={ItemCount}",
-            subscriberId, command.CustomerId, command.WarehouseId, command.Items.Count);
+            "Creando venta: tenant={SubscriberId}, bp={BusinessPartnerId}, Warehouse={BodegaId}, ítems={ItemCount}",
+            subscriberId, command.BusinessPartnerId, command.WarehouseId, command.Items.Count);
 
         var preflight = await ValidateSalePreflightAsync(command, subscriberId, companyId, ct);
         if (!preflight.IsSuccess)
@@ -101,13 +102,10 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             Guid companyId,
             CancellationToken ct)
     {
-        var cliente = await _customerRepository.GetByIdAsync(subscriberId, command.CustomerId, ct);
+        var cliente = await _bpRepository.GetByIdAsync(command.BusinessPartnerId, ct);
         if (cliente is null || !cliente.IsActive)
             return Result<(Dictionary<Guid, ERP.Domain.Products.Entities.Product>, SriSettings)>.Failure(
                 "El cliente no existe o no está activo.");
-        if (cliente.CompanyId.HasValue && cliente.CompanyId != companyId)
-            return Result<(Dictionary<Guid, ERP.Domain.Products.Entities.Product>, SriSettings)>.Failure(
-                "El cliente no pertenece a la empresa operativa activa.");
 
         var warehouse = await _bodegaRepository.GetByIdAsync(subscriberId, command.WarehouseId, ct);
         if (warehouse is null || !warehouse.IsActive)
@@ -306,8 +304,8 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
         var totalDiscount = detalles.Sum(d => d.DiscountAmount);
         var factura = SalesBill.Create(
             subscriberId:          subscriberId,
-            branchId:          command.BranchId,
-            customerId:        command.CustomerId,
+            branchId:              command.BranchId,
+            businessPartnerId:     command.BusinessPartnerId,
             warehouseId:       command.WarehouseId,
             docType:           "01",
             estabCode:         configSri.EstabCode,
@@ -330,9 +328,6 @@ public sealed class CreateSaleCommandHandler : IRequestHandler<CreateSaleCommand
             createdBy:         userId,
             companyId:         companyId
         );
-
-        if (command.BusinessPartnerId.HasValue)
-            factura.SetBusinessPartner(command.BusinessPartnerId);
 
         foreach (var detalle in detalles)
         {

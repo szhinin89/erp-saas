@@ -72,7 +72,7 @@ public class GetProductFullReportHandler : IRequestHandler<GetProductFullReportQ
             product.Sizes.Where(s => s.IsActive).OrderBy(s => s.SortOrder).Select(s => new ProductSizeDto(s.Id, s.Name, s.SortOrder)).ToList(),
             product.Dimensions.Where(d => d.IsActive).Select(d => new ProductDimensionDto(d.Id, d.Name, d.Value, d.Unit)).ToList(),
             product.Barcodes.Where(b => b.IsActive).Select(b => new ProductBarcodeDto(b.Id, b.Code, (int)b.Type)).ToList(),
-            product.SupplierCodes.Where(s => s.IsActive).Select(s => new ProductSupplierCodeDto(s.Id, s.SupplierId, s.Code, s.IsDefault)).ToList(),
+            product.SupplierCodes.Where(s => s.IsActive).Select(s => new ProductSupplierCodeDto(s.Id, s.BusinessPartnerId, s.Code, s.IsDefault)).ToList(),
             product.Images.Where(i => i.IsActive).OrderBy(i => i.SortOrder).Select(i => new ProductImageDto(i.Id, i.Url, i.AltText, i.IsMain, i.IsEcommerce, i.SortOrder)).ToList(),
             product.Features.Where(f => f.IsActive).Select(f => new ProductFeatureDto(f.Id, f.Name, f.Value)).ToList(),
             product.HandlesTariff,

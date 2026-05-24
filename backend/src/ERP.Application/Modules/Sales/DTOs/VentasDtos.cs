@@ -12,7 +12,7 @@ public record SalesDetailDto(
 
 public record SalesBillDto(
     Guid      Id,
-    Guid      CustomerId,
+    Guid      BusinessPartnerId,
     string    CustomerName,
     Guid    WarehouseId,
     Guid    BranchId,
@@ -33,7 +33,7 @@ public record SalesBillDto(
 
 public record SalesBillDetailDto(
     Guid      Id,
-    Guid      CustomerId,
+    Guid      BusinessPartnerId,
     string    CustomerName,
     Guid    WarehouseId,
     Guid    BranchId,

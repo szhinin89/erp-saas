@@ -1,8 +1,8 @@
 using ERP.Application.Common;
 using ERP.Application.Common.Interfaces;
 using ERP.Domain.Branches.Entities;
+using ERP.Domain.MasterData.Entities;
 using ERP.Domain.Modules.Inventory.Entities;
-using ERP.Domain.Modules.Sales.Entities;
 using ERP.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -78,16 +78,12 @@ public sealed class SubscriberOnboardingService : ISubscriberOnboardingService
 
     // ── Step implementations ─────────────────────────────────────────────────
 
-    /// <summary>
-    /// Creates the "CONSUMIDOR FINAL" customer (CI 9999999999).
-    /// Required for SRI invoicing when the buyer is unidentified.
-    /// </summary>
     private async Task SeedConsumidorFinalAsync(Guid subscriberId, Guid actorId, CancellationToken ct)
     {
         var exists = await _platform
-            .Unfiltered(_db.Customers, PlatformQueryReason.Seeding)
-            .AnyAsync(c => c.SubscriberId == subscriberId
-                        && c.IdentificationNumber == ConsumidorFinalIdNumber, ct);
+            .Unfiltered(_db.BusinessPartners, PlatformQueryReason.Seeding)
+            .AnyAsync(b => b.SubscriberId == subscriberId
+                        && b.Identification.Number == ConsumidorFinalIdNumber, ct);
 
         if (exists)
         {
@@ -95,22 +91,17 @@ public sealed class SubscriberOnboardingService : ISubscriberOnboardingService
             return;
         }
 
-        var customer = Customer.Create(
-            subscriberId:            subscriberId,
+        var bp = BusinessPartner.Create(
+            subscriberId:        subscriberId,
             identificationType:  ConsumidorFinalIdType,
             identificationNumber: ConsumidorFinalIdNumber,
             legalName:           ConsumidorFinalName,
-            tradeName:           null,
-            addressLine:         null,
-            phone:               null,
-            email:               null,
-            notes:               "Default customer for SRI invoices without identified buyer.",
             createdBy:           actorId);
 
-        _db.Customers.Add(customer);
+        _db.BusinessPartners.Add(bp);
         await _db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Consumidor Final customer seeded for tenant {SubscriberId}.", subscriberId);
+        _logger.LogInformation("Consumidor Final seeded for tenant {SubscriberId}.", subscriberId);
     }
 
     /// <summary>

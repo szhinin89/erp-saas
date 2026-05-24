@@ -186,12 +186,12 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             s.Property(x => x.Id).HasColumnName("id");
             s.Property(x => x.SubscriberId).HasColumnName("subscriber_id").IsRequired();
             s.Property(x => x.ProductId).HasColumnName("product_id").IsRequired();
-            s.Property(x => x.SupplierId).HasColumnName("supplier_id").IsRequired();
+            s.Property(x => x.BusinessPartnerId).HasColumnName("business_partner_id").IsRequired();
             s.Property(x => x.Code).HasColumnName("code").HasMaxLength(100).IsRequired();
             s.Property(x => x.IsDefault).HasColumnName("is_default").IsRequired();
             s.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
             s.HasIndex(x => x.ProductId).HasDatabaseName("ix_product_supplier_codes_product_id");
-            s.HasIndex(x => new { x.SubscriberId, x.SupplierId }).HasDatabaseName("ix_product_supplier_codes_subscriber_supplier");
+            s.HasIndex(x => new { x.SubscriberId, x.BusinessPartnerId }).HasDatabaseName("ix_product_supplier_codes_subscriber_supplier");
             s.HasIndex(x => new { x.SubscriberId, x.Code }).HasDatabaseName("ix_product_supplier_codes_subscriber_code");
         });
 

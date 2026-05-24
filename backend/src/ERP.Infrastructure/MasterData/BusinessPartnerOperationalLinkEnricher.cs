@@ -36,14 +36,6 @@ public sealed class BusinessPartnerOperationalLinkEnricher : IBusinessPartnerOpe
             .Where(p => p.SubscriberId == subscriberId && bpIds.Contains(p.BusinessPartnerId))
             .ToListAsync(ct);
 
-        var customers = await _db.Customers.AsNoTracking()
-            .Where(c => c.SubscriberId == subscriberId && c.IsActive)
-            .ToListAsync(ct);
-
-        var suppliers = await _db.Suppliers.AsNoTracking()
-            .Where(s => s.SubscriberId == subscriberId && s.IsActive)
-            .ToListAsync(ct);
-
         var cpByBp = customerProfiles.ToDictionary(p => p.BusinessPartnerId);
         var spByBp = supplierProfiles.ToDictionary(p => p.BusinessPartnerId);
 
@@ -52,19 +44,10 @@ public sealed class BusinessPartnerOperationalLinkEnricher : IBusinessPartnerOpe
             cpByBp.TryGetValue(bp.Id, out var cp);
             spByBp.TryGetValue(bp.Id, out var sp);
 
-            var legacyCustomer = customers.FirstOrDefault(c =>
-                c.IdentificationType == bp.Identification.Type &&
-                c.IdentificationNumber == bp.Identification.Number);
-
-            var legacySupplier = suppliers.FirstOrDefault(s =>
-                s.Ruc == bp.Identification.Number);
-
             return BusinessPartnerDto.From(bp) with
             {
                 CustomerProfileId              = cp?.Id,
                 SupplierProfileId              = sp?.Id,
-                LegacyCustomerId               = legacyCustomer?.Id,
-                LegacySupplierId               = legacySupplier?.Id,
                 CustomerNotes                  = cp?.Notes,
                 DefaultTaxSupportCode          = sp?.DefaultTaxSupportCode,
                 DefaultRetentionVatCode        = sp?.DefaultRetentionVatCode,

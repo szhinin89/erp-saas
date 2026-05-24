@@ -58,7 +58,7 @@ public sealed record CreateProductCommand(
 ) : IRequest<Result<ProductDto>>, ICompanyScopedRequest;
 
 public record BarcodeInput(string Code, int Type);
-public record SupplierCodeInput(Guid SupplierId, string Code, bool IsDefault = false);
+public record SupplierCodeInput(Guid BusinessPartnerId, string Code, bool IsDefault = false);
 public record UnitConversionInput(Guid AlternateUnitId, decimal ConversionFactor);
 public record ColorInput(string Name, string? HexCode = null);
 public record SizeInput(string Name, int SortOrder = 0);

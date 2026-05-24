@@ -7,6 +7,7 @@ using ERP.Domain.Audit.Entities;
 using ERP.Domain.Audit.Interfaces;
 using ERP.Domain.Modules.Purchasing.Entities;
 using ERP.Domain.Modules.Purchasing.Enums;
+using ERP.Domain.MasterData.Interfaces;
 using ERP.Domain.Modules.Purchasing.Interfaces;
 using ERP.Domain.Modules.Expenses.Enums;
 using ERP.Domain.Modules.Expenses.Interfaces;
@@ -17,7 +18,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
     : IRequestHandler<ImportPurchaseSupplierNoteCommand, Result<SupplierPurchaseNoteDto>>
 {
     private readonly IPurchBillRepository        _compraRepo;
-    private readonly ISupplierRepository     _proveedorRepo;
+    private readonly IBusinessPartnerRepository  _bpRepo;
     private readonly IExpenseInvoiceRepository  _gastoRepo;
     private readonly IXmlFacturaParser       _parser;
     private readonly IFileStorage             _storage;
@@ -29,7 +30,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
 
     public ImportPurchaseSupplierNoteCommandHandler(
         IPurchBillRepository compraRepo,
-        ISupplierRepository proveedorRepo,
+        IBusinessPartnerRepository bpRepo,
         IExpenseInvoiceRepository gastoRepo,
         IXmlFacturaParser parser,
         IFileStorage storage,
@@ -39,8 +40,8 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
         IUnitOfWork unitOfWork,
         ILogger<ImportPurchaseSupplierNoteCommandHandler> logger)
     {
-        _compraRepo    = compraRepo;
-        _proveedorRepo = proveedorRepo;
+        _compraRepo = compraRepo;
+        _bpRepo     = bpRepo;
         _gastoRepo     = gastoRepo;
         _parser        = parser;
         _storage       = storage;
@@ -78,10 +79,10 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
             return Result<SupplierPurchaseNoteDto>.Failure(
                 $"Ya existe una nota de Supplier con la clave de acceso '{parsed.AccessKey}'.");
 
-        var Supplier = await _proveedorRepo.GetByRucAsync(subscriberId, parsed.SupplierRuc, ct);
+        var Supplier = await _bpRepo.GetByIdentificationAsync("RUC", parsed.SupplierRuc, ct);
         if (Supplier is null)
             return Result<SupplierPurchaseNoteDto>.Failure(
-                $"No hay Supplier registrado con RUC '{parsed.SupplierRuc}'. Cree el Supplier antes de importar la nota.");
+                $"No hay proveedor registrado con RUC '{parsed.SupplierRuc}'. Cree el proveedor antes de importar la nota.");
 
         PurchBill? compra = null;
         IReadOnlyList<PurchWarehouseAlloc> compraAsignaciones = Array.Empty<PurchWarehouseAlloc>();
@@ -90,9 +91,9 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
             compra = await _compraRepo.GetByIdAsync(subscriberId, command.PurchBillId.Value, ct);
             if (compra is null)
                 return Result<SupplierPurchaseNoteDto>.Failure("Factura de compra no encontrada.");
-            if (compra.SupplierId != Supplier.Id)
+            if (compra.BusinessPartnerId != Supplier.Id)
                 return Result<SupplierPurchaseNoteDto>.Failure(
-                    "El Supplier de la nota no coincide con el de la factura de compra.");
+                    "El proveedor de la nota no coincide con el de la factura de compra.");
             if (compra.Status != PurchaseStatus.Approved)
                 return Result<SupplierPurchaseNoteDto>.Failure(
                     "Solo se pueden vincular notas a una compra en estado IsApproved.");
@@ -106,9 +107,9 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
             var gasto = await _gastoRepo.GetByIdAsync(subscriberId, command.ExpenseInvoiceId.Value, ct);
             if (gasto is null)
                 return Result<SupplierPurchaseNoteDto>.Failure("Factura de gasto no encontrada.");
-            if (gasto.SupplierId != Supplier.Id)
+            if (gasto.BusinessPartnerId != Supplier.Id)
                 return Result<SupplierPurchaseNoteDto>.Failure(
-                    "El Supplier de la nota no coincide con el del gasto.");
+                    "El proveedor de la nota no coincide con el del gasto.");
             if (gasto.Status != ExpenseStatus.Approved)
                 return Result<SupplierPurchaseNoteDto>.Failure(
                     "Solo se pueden vincular notas a un gasto en estado IsApproved.");
@@ -196,7 +197,7 @@ public sealed class ImportPurchaseSupplierNoteCommandHandler
 
     private static SupplierPurchaseNoteDto ToDto(PurchNote n) => new(
         n.Id,
-        n.SupplierId,
+        n.BusinessPartnerId,
         n.PurchBillId,
         n.ExpenseInvoiceId,
         n.NoteType,
