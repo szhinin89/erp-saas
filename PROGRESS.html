@@ -901,8 +901,8 @@ body {
 
     <!-- Meta -->
     <div class="header-meta">
-      <strong id="h-version">v26 — Platform Control Plane + ERP Runtime</strong>
-      <span id="h-date">2026-05-23</span>
+      <strong id="h-version">v27 — Sales Greenfield + BusinessPartner Cutover</strong>
+      <span id="h-date">2026-05-25</span>
     </div>
   </div>
   <!-- Gradient progress strip -->
@@ -1099,21 +1099,21 @@ body {
     </div>
     <div class="kpi-card blue">
       <div class="kpi-label">Backend Foundation</div>
-      <div class="kpi-value blue">84%</div>
-      <div class="pbar thin"><div class="pbar-fill blue" style="width:84%"></div></div>
-      <div class="kpi-sub">.NET 10 · Clean Arch · AR/AP</div>
+      <div class="kpi-value blue">88%</div>
+      <div class="pbar thin"><div class="pbar-fill blue" style="width:88%"></div></div>
+      <div class="kpi-sub">.NET 10 · Clean Arch · AR/AP · Greenfield</div>
     </div>
     <div class="kpi-card blue">
       <div class="kpi-label">Frontend Foundation</div>
-      <div class="kpi-value blue" style="color:var(--cyan)">72%</div>
-      <div class="pbar thin"><div class="pbar-fill cyan" style="width:72%"></div></div>
-      <div class="kpi-sub">React 18 · Modules · Platform UI</div>
+      <div class="kpi-value blue" style="color:var(--cyan)">78%</div>
+      <div class="pbar thin"><div class="pbar-fill cyan" style="width:78%"></div></div>
+      <div class="kpi-sub">React 18 · Modules · Platform UI · Pipeline</div>
     </div>
     <div class="kpi-card amber">
       <div class="kpi-label">ERP Core</div>
-      <div class="kpi-value amber">63%</div>
-      <div class="pbar thin"><div class="pbar-fill amber" style="width:63%"></div></div>
-      <div class="kpi-sub">Ventas · Compras · AR/AP · KPIs</div>
+      <div class="kpi-value amber">75%</div>
+      <div class="pbar thin"><div class="pbar-fill amber" style="width:75%"></div></div>
+      <div class="kpi-sub">Ventas · Compras · Pipeline Comercial · KPIs</div>
     </div>
     <div class="kpi-card orange">
       <div class="kpi-label">Event-Driven</div>
@@ -1175,13 +1175,13 @@ body {
             <!-- Data polygon:
                  Axis 0 (top)=Governance 95%:     110, 110-76=34
                  Axis 1 (TR)=MultiTenant 90%:     110+72*0.866=172.4, 110-72*0.5=74
-                 Axis 2 (BR)=Backend 84%:         110+67.2*0.866=168.2, 110+67.2*0.5=143.6
-                 Axis 3 (bot)=Frontend 72%:       110, 110+57.6=167.6
+                 Axis 2 (BR)=Backend 88%:         110+70.4*0.866=171.0, 110+70.4*0.5=145.2
+                 Axis 3 (bot)=Frontend 78%:       110, 110+62.4=172.4
                  Axis 4 (BL)=Event-Driven 50%:   110-40*0.866=75.4, 110+40*0.5=130
                  Axis 5 (TL)=AI Foundation 35%:  110-28*0.866=85.7, 110-28*0.5=96
             -->
             <polygon
-              points="110,34 172.4,74 168.2,143.6 110,167.6 75.4,130 85.7,96"
+              points="110,34 172.4,74 171,145 110,172 75.4,130 85.7,96"
               fill="rgba(59,130,246,0.18)"
               stroke="rgba(59,130,246,0.7)"
               stroke-width="1.5"
@@ -1189,8 +1189,8 @@ body {
             <!-- Data dots -->
             <circle cx="110"   cy="34"   r="3.5" fill="var(--primary)"/>
             <circle cx="172.4" cy="74"   r="3.5" fill="var(--cyan)"/>
-            <circle cx="168.2" cy="143"  r="3.5" fill="var(--success)"/>
-            <circle cx="110"   cy="167"  r="3.5" fill="var(--cyan)"/>
+            <circle cx="171"   cy="145"  r="3.5" fill="var(--success)"/>
+            <circle cx="110"   cy="172"  r="3.5" fill="var(--cyan)"/>
             <circle cx="75.4"  cy="130"  r="3.5" fill="var(--orange)"/>
             <circle cx="85.7"  cy="96"   r="3.5" fill="var(--purple)"/>
             <!-- Labels -->
@@ -1203,16 +1203,16 @@ body {
             <!-- Pct labels on dots -->
             <text x="110"   y="31"  text-anchor="middle" font-size="8" fill="var(--primary)" font-weight="700">95%</text>
             <text x="180"   y="72"  text-anchor="start"  font-size="8" fill="var(--cyan)"    font-weight="700">90%</text>
-            <text x="176"   y="145" text-anchor="start"  font-size="8" fill="var(--success)" font-weight="700">84%</text>
-            <text x="110"   y="179" text-anchor="middle" font-size="8" fill="var(--cyan)"    font-weight="700">72%</text>
+            <text x="178"   y="147" text-anchor="start"  font-size="8" fill="var(--success)" font-weight="700">88%</text>
+            <text x="110"   y="184" text-anchor="middle" font-size="8" fill="var(--cyan)"    font-weight="700">78%</text>
             <text x="64"    y="132" text-anchor="end"    font-size="8" fill="var(--orange)"  font-weight="700">50%</text>
             <text x="74"    y="94"  text-anchor="end"    font-size="8" fill="var(--purple)"  font-weight="700">35%</text>
           </svg>
           <div class="radar-legend">
             <div class="rl-item"><div class="rl-dot" style="background:var(--primary)"></div>Governance (95%)</div>
             <div class="rl-item"><div class="rl-dot" style="background:var(--cyan)"></div>Multi-tenant (90%)</div>
-            <div class="rl-item"><div class="rl-dot" style="background:var(--success)"></div>Backend (84%)</div>
-            <div class="rl-item"><div class="rl-dot" style="background:var(--cyan)"></div>Frontend (72%)</div>
+            <div class="rl-item"><div class="rl-dot" style="background:var(--success)"></div>Backend (88%)</div>
+            <div class="rl-item"><div class="rl-dot" style="background:var(--cyan)"></div>Frontend (78%)</div>
             <div class="rl-item"><div class="rl-dot" style="background:var(--orange)"></div>Event-Driven (50%)</div>
             <div class="rl-item"><div class="rl-dot" style="background:var(--purple)"></div>AI Foundation (35%)</div>
           </div>
@@ -1231,32 +1231,32 @@ body {
         <div class="flex flex-col gap6">
           <div class="gv-row">
             <span class="gv-name">ERP.Domain</span>
-            <div class="gv-bar"><div class="pbar thin"><div class="pbar-fill green" style="width:76%"></div></div></div>
-            <span class="gv-val tc-green">76%</span>
+            <div class="gv-bar"><div class="pbar thin"><div class="pbar-fill green" style="width:83%"></div></div></div>
+            <span class="gv-val tc-green">83%</span>
             <span class="badge badge-success">Stable</span>
           </div>
           <div class="gv-row">
             <span class="gv-name">ERP.Application</span>
-            <div class="gv-bar"><div class="pbar thin"><div class="pbar-fill blue" style="width:76%"></div></div></div>
-            <span class="gv-val tc-blue">76%</span>
+            <div class="gv-bar"><div class="pbar thin"><div class="pbar-fill blue" style="width:83%"></div></div></div>
+            <span class="gv-val tc-blue">83%</span>
             <span class="badge badge-blue">In Progress</span>
           </div>
           <div class="gv-row">
             <span class="gv-name">ERP.Infrastructure</span>
-            <div class="gv-bar"><div class="pbar thin"><div class="pbar-fill blue" style="width:80%"></div></div></div>
-            <span class="gv-val tc-blue">80%</span>
+            <div class="gv-bar"><div class="pbar thin"><div class="pbar-fill blue" style="width:85%"></div></div></div>
+            <span class="gv-val tc-blue">85%</span>
             <span class="badge badge-success">Stable</span>
           </div>
           <div class="gv-row">
             <span class="gv-name">ERP.API</span>
-            <div class="gv-bar"><div class="pbar thin"><div class="pbar-fill cyan" style="width:78%"></div></div></div>
-            <span class="gv-val tc-cyan">78%</span>
+            <div class="gv-bar"><div class="pbar thin"><div class="pbar-fill cyan" style="width:85%"></div></div></div>
+            <span class="gv-val tc-cyan">85%</span>
             <span class="badge badge-blue">In Progress</span>
           </div>
           <div class="gv-row">
             <span class="gv-name">Frontend (React)</span>
-            <div class="gv-bar"><div class="pbar thin"><div class="pbar-fill cyan" style="width:72%"></div></div></div>
-            <span class="gv-val tc-cyan">72%</span>
+            <div class="gv-bar"><div class="pbar thin"><div class="pbar-fill cyan" style="width:78%"></div></div></div>
+            <span class="gv-val tc-cyan">78%</span>
             <span class="badge badge-blue">In Progress</span>
           </div>
           <div class="gv-row">
@@ -1348,9 +1348,9 @@ body {
         </div>
 
         <div class="tl-item">
-          <div class="tl-dot current">⟳</div>
+          <div class="tl-dot done">✓</div>
           <div class="tl-content">
-            <div class="tl-phase">Fase 3.5 — En curso · 2026-05-23</div>
+            <div class="tl-phase">Fase 3.5 — Completada · 2026-05-23</div>
             <div class="tl-title">Platform Control Plane + ERP Runtime Consolidation</div>
             <div class="tl-sub">Platform CP unificado en /api/platform · 7 controllers de plataforma · AR/AP Foundation · BusinessPartner Phase 2 · AccountingPeriod locking · Dashboard KPIs · CI hard-gates Platform · 9 índices perf</div>
             <div class="tl-tags">
@@ -1359,6 +1359,21 @@ body {
               <span class="badge badge-success">✓ BP Phase 2 FK</span>
               <span class="badge badge-success">✓ Period Locking</span>
               <span class="badge badge-success">✓ Dashboard KPIs</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="tl-item">
+          <div class="tl-dot current">⟳</div>
+          <div class="tl-content">
+            <div class="tl-phase">Fase 3.6 — En curso · 2026-05-24/25</div>
+            <div class="tl-title">Sales Greenfield Pipeline + BusinessPartner Cutover</div>
+            <div class="tl-sub">Commercial/Fiscal bounded contexts · Quote→Order→Invoice con Snowflake IDs · DocumentRelation cross-module · BusinessPartner full cutover (drop legacy customers/suppliers) · server-side pagination · 4 migrations · E2E tests</div>
+            <div class="tl-tags">
+              <span class="badge badge-success">✓ Domain Commercial/Fiscal</span>
+              <span class="badge badge-success">✓ Snowflake IDs</span>
+              <span class="badge badge-success">✓ BP Cutover completo</span>
+              <span class="badge badge-success">✓ E2E Pipeline</span>
               <span class="badge badge-blue">⟳ En curso</span>
             </div>
           </div>
@@ -1418,10 +1433,12 @@ body {
     <div class="mod-card">
       <div class="mod-head">
         <div class="mod-name">🧾 Ventas / SRI</div>
-        <div class="mod-pct tc-green">78%</div>
+        <div class="mod-pct tc-green">88%</div>
       </div>
-      <div class="pbar thin mb12"><div class="pbar-fill green" style="width:78%"></div></div>
+      <div class="pbar thin mb12"><div class="pbar-fill green" style="width:88%"></div></div>
       <div class="mod-tags">
+        <span class="badge badge-success">Cotizaciones</span>
+        <span class="badge badge-success">Pedidos</span>
         <span class="badge badge-success">Facturas</span>
         <span class="badge badge-success">NC / ND</span>
         <span class="badge badge-warning">Retenciones frontend</span>
@@ -1594,16 +1611,17 @@ body {
     </div>
 
     <div class="next-item"><span class="num">1</span><div class="desc"><strong>Validar XML contra XSD oficial SRI antes de firmar</strong><span>SriXmlFacturaBuilder genera XML v1.1.0. Agregar validación XSD en SriFacturaElectronicaRealService antes de llamar FirmarXmlAsync(). Probar en celcer.sri.gob.ec.</span></div><span class="prio prio-critico">CRÍTICO</span></div>
-    <div class="next-item"><span class="num">2</span><div class="desc"><strong>Frontend: Dashboard KPIs UI — conectar con /api/dashboard/kpis</strong><span>Backend listo: GET /api/dashboard/kpis (ventas MTD/YTD), /ar-aging, /ap-aging. Pendiente: página Dashboard con charts Recharts, aging buckets Current/1-30/31-60/61-90/>90d.</span></div><span class="prio prio-alta">ALTA</span></div>
-    <div class="next-item"><span class="num">3</span><div class="desc"><strong>Frontend: formulario de comprobante de retención</strong><span>Códigos SRI de retención, porcentajes. Backend ya implementado (WithholdingReceivedController).</span></div><span class="prio prio-alta">ALTA</span></div>
-    <div class="next-item"><span class="num">4</span><div class="desc"><strong>Personalizar menú en planes Business / Professional / Enterprise</strong><span>Plan starter incluye menú de referencia (9 grupos × 33 ítems). Pendiente: ajustar JSON en los demás planes desde Platform → Suscriptores → Menu Builder.</span></div><span class="prio prio-alta">ALTA</span></div>
-    <div class="next-item"><span class="num">5</span><div class="desc"><strong>Frontend: guía de remisión</strong><span>Entidad DeliveryGuide existe en backend; falta pantalla. Catálogo de transportistas ya implementado.</span></div><span class="prio prio-media">MEDIA</span></div>
-    <div class="next-item"><span class="num">6</span><div class="desc"><strong>Control de stock mínimo y punto de reorden + alertas</strong><span>Agregar campos MinimumStock y ReorderPoint a CurrentStock. Alertas en dashboard. StockReservation ya implementado.</span></div><span class="prio prio-media">MEDIA</span></div>
-    <div class="next-item"><span class="num">7</span><div class="desc"><strong>Frontend: AccountingPeriod — UI de cierre/reapertura de períodos</strong><span>Backend: AccountingPeriod.Close()/Reopen(), JournalEntry bloquea writes a períodos cerrados. Falta UI de gestión de períodos contables.</span></div><span class="prio prio-media">MEDIA</span></div>
-    <div class="next-item"><span class="num">8</span><div class="desc"><strong>Liquidación de compra (tipo 03) — backend + frontend</strong><span>No hay entidad ni backend aún. Requerido por la ficha técnica SRI.</span></div><span class="prio prio-media">MEDIA</span></div>
-    <div class="next-item"><span class="num">9</span><div class="desc"><strong>Configuración de tarifas SRI e IVA por empresa al onboarding</strong><span>Agregar al TenantOnboardingService: IVA 15%, IVA 0%, IVA 5% como TaxRates por defecto. También planilla de cuentas contables mínima.</span></div><span class="prio prio-media">MEDIA</span></div>
-    <div class="next-item"><span class="num">10</span><div class="desc"><strong>Completar traducciones Kichwa (qu.json)</strong><span>Nav keys añadidas. Verificar claves de módulos de ventas, compras y gastos que aún usan strings hardcoded.</span></div><span class="prio prio-baja">BAJA</span></div>
-    <div class="next-item"><span class="num">11</span><div class="desc"><strong>Particionamiento de tablas grandes (diferir hasta 1M+ filas)</strong><span>electronic_doc y stock_movement. No urgente en etapa actual. 9 índices compuestos ya agregados en a570937.</span></div><span class="prio prio-baja">BAJA</span></div>
+    <div class="next-item"><span class="num">2</span><div class="desc"><strong>Re-seed permisos sales.quotes.* / sales.orders.* en tenants existentes</strong><span>Tenants con perfil Facturador creados antes del greenfield no tienen permisos de cotizaciones/pedidos. Requiere migración manual o re-seed de AccessProfilePermission en cada tenant.</span></div><span class="prio prio-alta">ALTA</span></div>
+    <div class="next-item"><span class="num">3</span><div class="desc"><strong>Frontend: Dashboard KPIs UI — conectar con /api/dashboard/kpis</strong><span>Backend listo: GET /api/dashboard/kpis (ventas MTD/YTD), /ar-aging, /ap-aging. Pendiente: página Dashboard con charts Recharts, aging buckets Current/1-30/31-60/61-90/>90d.</span></div><span class="prio prio-alta">ALTA</span></div>
+    <div class="next-item"><span class="num">4</span><div class="desc"><strong>Frontend: formulario de comprobante de retención</strong><span>Códigos SRI de retención, porcentajes. Backend ya implementado (WithholdingReceivedController).</span></div><span class="prio prio-alta">ALTA</span></div>
+    <div class="next-item"><span class="num">5</span><div class="desc"><strong>Personalizar menú en planes Business / Professional / Enterprise</strong><span>Plan starter incluye menú de referencia (9 grupos × 33 ítems). Pendiente: ajustar JSON en los demás planes desde Platform → Suscriptores → Menu Builder.</span></div><span class="prio prio-alta">ALTA</span></div>
+    <div class="next-item"><span class="num">6</span><div class="desc"><strong>Frontend: guía de remisión</strong><span>Entidad DeliveryGuide existe en backend; falta pantalla. Catálogo de transportistas ya implementado.</span></div><span class="prio prio-media">MEDIA</span></div>
+    <div class="next-item"><span class="num">7</span><div class="desc"><strong>Control de stock mínimo y punto de reorden + alertas</strong><span>Agregar campos MinimumStock y ReorderPoint a CurrentStock. Alertas en dashboard. StockReservation ya implementado.</span></div><span class="prio prio-media">MEDIA</span></div>
+    <div class="next-item"><span class="num">8</span><div class="desc"><strong>Frontend: AccountingPeriod — UI de cierre/reapertura de períodos</strong><span>Backend: AccountingPeriod.Close()/Reopen(), JournalEntry bloquea writes a períodos cerrados. Falta UI de gestión de períodos contables.</span></div><span class="prio prio-media">MEDIA</span></div>
+    <div class="next-item"><span class="num">9</span><div class="desc"><strong>Liquidación de compra (tipo 03) — backend + frontend</strong><span>No hay entidad ni backend aún. Requerido por la ficha técnica SRI.</span></div><span class="prio prio-media">MEDIA</span></div>
+    <div class="next-item"><span class="num">10</span><div class="desc"><strong>Configuración de tarifas SRI e IVA por empresa al onboarding</strong><span>Agregar al TenantOnboardingService: IVA 15%, IVA 0%, IVA 5% como TaxRates por defecto. También planilla de cuentas contables mínima.</span></div><span class="prio prio-media">MEDIA</span></div>
+    <div class="next-item"><span class="num">11</span><div class="desc"><strong>Completar traducciones Kichwa (qu.json)</strong><span>Nav keys añadidas. Claves de cotizaciones/pedidos nuevas en qu.json — verificar cobertura completa.</span></div><span class="prio prio-baja">BAJA</span></div>
+    <div class="next-item"><span class="num">12</span><div class="desc"><strong>Particionamiento de tablas grandes (diferir hasta 1M+ filas)</strong><span>electronic_doc y stock_movement. No urgente en etapa actual. 9 índices compuestos ya agregados.</span></div><span class="prio prio-baja">BAJA</span></div>
   </div>
 
   <!-- ── SECCIONES S1–S14 ── -->
@@ -1679,7 +1697,7 @@ body {
       </div>
       <div class="sec-strip"><div class="sec-strip-fill" id="bar-s4" style="background:var(--warning)"></div></div>
       <div class="sec-body">
-        <div class="ci"><input type="checkbox" data-sec="s4" data-val="0.5" onchange="recalc()"><div class="ci-text"><strong>Listado de comprobantes emitidos (filtros fecha, estado, cliente)</strong><p class="note">Solo facturas de venta. Falta listado unificado para todos los tipos.</p></div><span class="ci-badge s-partial">Parcial</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s4" data-val="1" onchange="recalc()"><div class="ci-text"><strong>Listado de comprobantes emitidos (filtros fecha, estado, cliente)</strong><p class="note">VentasFacturasPage con filtros servidor. Además: /sales/quotes (QuotesListPage) y /sales/orders (SalesOrdersListPage) con paginación server-side. Pipeline completo visible.</p></div><span class="ci-badge s-done">Implementado</span></div>
         <div class="ci"><input type="checkbox" checked data-sec="s4" data-val="1" onchange="recalc()"><div class="ci-text"><strong>Visualización de detalle (datos, XML, RIDE)</strong><p class="note">Botón RIDE en VentasFacturasPage: GET /api/ventas/{id}/ride → descarga PDF. Para Autorizado.</p></div><span class="ci-badge s-done">Implementado</span></div>
         <div class="ci"><input type="checkbox" checked data-sec="s4" data-val="1" onchange="recalc()"><div class="ci-text"><strong>Reenvío de comprobante no autorizado (con corrección de errores)</strong><p class="note">Botón Reintentar en VentasFacturasPage para facturas en ErrorEnvio/Rechazado.</p></div><span class="ci-badge s-done">Implementado</span></div>
         <div class="ci"><input type="checkbox" data-sec="s4" data-val="0.5" onchange="recalc()"><div class="ci-text"><strong>Anulación de comprobante autorizado</strong><p class="note">Backend tiene anulación. Falta XML de baja firmado al SRI.</p></div><span class="ci-badge s-partial">Parcial</span></div>
@@ -1962,6 +1980,10 @@ body {
         <div class="ci"><input type="checkbox" checked data-sec="s17" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ Dashboard & KPIs — endpoints backend</strong><p class="note">GET /api/dashboard/kpis — ventas MTD/YTD, CxC/CxP pendiente y vencido, stock bajo. GET /api/dashboard/ar-aging y ap-aging. DashboardKpiReader con queries EF Core directas (sin N+1).</p></div><span class="ci-badge s-done">Implementado</span></div>
         <!-- PERFORMANCE INDEXES -->
         <div class="ci"><input type="checkbox" checked data-sec="s17" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ Performance Indexes — 9 índices compuestos</strong><p class="note">Nuevos índices en: sales_bill, purch_bill, purchase_document (y más) por (TenantId, fecha). Optimización de queries de alto volumen para reportes y listados.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <!-- BP FASE 8/9 + CUTOVER -->
+        <div class="ci"><input type="checkbox" checked data-sec="s17" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ BusinessPartner Fase 8 — Detail page + countryCode en DTO</strong><p class="note">Página de detalle de BusinessPartner con todos los campos. countryCode integrado en DTO y schema Zod. Ruta /master-data/business-partners/:id operativa.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s17" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ BusinessPartner Fase 9 — Paginación server-side + controles de página</strong><p class="note">PagedResult&lt;T&gt; en backend. Controles de paginación en lista de clientes y proveedores. Endpoints retornan totalCount, pageSize, currentPage.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s17" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ BusinessPartner Cutover completo — eliminación de Customer/Supplier legacy</strong><p class="note">Full cutover: entidades Customer/Supplier eliminadas del dominio, tablas droppadas (migración RemoveLegacyCustomerSupplier), toda operación CRUD unificada en BusinessPartner. Modelo de datos único.</p></div><span class="ci-badge s-done">Implementado</span></div>
         <!-- FRONTEND DASHBOARD PENDING -->
         <div class="ci"><input type="checkbox" data-sec="s17" data-val="0" onchange="recalc()"><div class="ci-text"><strong>Pendiente: Frontend Dashboard UI — charts AR/AP Aging + KPIs MTD/YTD</strong><p class="note">Backend /api/dashboard/kpis y /ar-aging /ap-aging listos. Falta pantalla React con Recharts que consuma estos endpoints y muestre aging buckets y KPIs.</p></div><span class="ci-badge s-pending">Pendiente</span></div>
         <!-- ACCOUNTING PERIOD UI PENDING -->
@@ -1994,6 +2016,37 @@ body {
         <div class="ci"><input type="checkbox" checked data-sec="s18" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ Documentación Platform — CLEAN_TARGET_MODEL, PLATFORM_CONTRACT_FINAL_REPORT, etc.</strong><p class="note">docs/platform/: CLEAN_TARGET_MODEL.md, PLATFORM_API_CONSISTENCY_REPORT.md, PLATFORM_CONTRACT_FINAL_REPORT.md, PLATFORM_DB_MAPPING_REPORT.md, PLATFORM_ENTITY_ALIGNMENT_MATRIX.md, PLATFORM_FRONTEND_DRIFT_REPORT.md, PLATFORM_SINGLE_SOURCE_OF_TRUTH.md, LEGACY_ALIAS_MAP.md, FRONTEND_CONSOLIDATION_REPORT.md.</p></div><span class="ci-badge s-done">Implementado</span></div>
         <!-- PENDING: PLATFORM_FINAL_CONSISTENCY_MAP -->
         <div class="ci"><input type="checkbox" data-sec="s18" data-val="0.5" onchange="recalc()"><div class="ci-text"><strong>Parcial: PLATFORM_FINAL_CONSISTENCY_MAP.md — archivo untracked pendiente de commit</strong><p class="note">Archivo docs/platform/PLATFORM_FINAL_CONSISTENCY_MAP.md existe pero no está committeado aún. Consolidar y commitear como cierre definitivo del refactor platform.</p></div><span class="ci-badge s-partial">Parcial</span></div>
+      </div>
+    </div>
+
+    <!-- S19 -->
+    <div class="sec-item open" data-section="s19">
+      <div class="sec-head" onclick="toggleSec('s19')">
+        <h4>19. Sales Greenfield — Commercial/Fiscal Pipeline + Snowflake IDs (2026-05-24)</h4>
+        <span class="sec-pct-badge" id="pct-s19">—</span>
+        <span class="sec-chevron">›</span>
+      </div>
+      <div class="sec-strip"><div class="sec-strip-fill" id="bar-s19" style="background:var(--success)"></div></div>
+      <div class="sec-body">
+        <!-- DOMAIN -->
+        <div class="ci"><input type="checkbox" checked data-sec="s19" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ Domain/Commercial — Quote + SalesOrder con Snowflake aggregates, status history y domain events</strong><p class="note">Entidades: Quote, QuoteDetail, QuoteStatusHistory, SalesOrder, SalesOrderDetail, SalesOrderStatusHistory. ISnowflakeIdGenerator + SnowflakeAggregateRoot. Eventos: QuoteCreatedEvent, SalesOrderCreatedEvent, SalesOrderConfirmedEvent.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s19" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ Domain/Fiscal — Invoice + InvoiceElectronic + InvoiceStatusHistory</strong><p class="note">Entidades: Invoice, InvoiceDetail, InvoiceElectronic, InvoiceStatusHistory. Eventos: InvoiceCreatedEvent, InvoiceAuthorizedEvent. IInvoiceRepository. Configuraciones EF Core separadas en Persistence/Configurations/Fiscal/.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s19" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ Domain/Integration — DocumentRelation cross-module (Quote→Order→Invoice)</strong><p class="note">DocumentRelation entity con DocumentModules + DocumentRelationTypes constants (QUOTE_TO_ORDER, ORDER_TO_INVOICE). IDocumentRelationRepository para trazabilidad inter-contexto.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <!-- INFRASTRUCTURE -->
+        <div class="ci"><input type="checkbox" checked data-sec="s19" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ Infrastructure/Ids — SnowflakeIdGenerator + SnowflakeOptions + tests</strong><p class="note">ISnowflakeIdGenerator implementado con worker/datacenter ID configurable. SnowflakeOptions vía appsettings. Tests: ERP.Infrastructure.Tests/Ids/SnowflakeIdGeneratorTests.cs. Registrado en DependencyInjection.cs.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s19" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ 4 migraciones EF Core greenfield + relax FK</strong><p class="note">SalesGreenfieldCommercialFoundation, SalesGreenfieldFiscalFoundation, RelaxSalesNoteOriginalBillFk, SalesGreenfieldSalesOrderFoundation. Snapshot actualizado.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <!-- APPLICATION -->
+        <div class="ci"><input type="checkbox" checked data-sec="s19" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ Use cases Commercial — CreateQuote, ApproveQuote, CancelQuote, ConvertQuoteToOrder, CreateSalesOrder, ConfirmSalesOrder, CancelSalesOrder + Queries</strong><p class="note">CQRS completo con validators FluentValidation. GetQuotesList, GetQuoteByPublicId, GetSalesOrdersList, GetSalesOrderByPublicId con paginación server-side. DTOs: QuoteDtos, SalesOrderDtos con mappers manuales.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s19" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ Fiscal/Integration — FiscalInvoiceSriBridge + SalesOriginalBillResolver + InvoiceAuthorizedEventHandler</strong><p class="note">Puente entre dominio Fiscal y servicios SRI existentes. SalesOriginalBillResolver para referencia en notas de crédito/débito. InvoiceAuthorizedEventHandler actualiza inventario al autorizar.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <!-- API -->
+        <div class="ci"><input type="checkbox" checked data-sec="s19" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ API — QuotesController + SalesOrdersController + InvoiceDocumentsController</strong><p class="note">Nuevos controllers con contratos en Contracts/Sales/CommercialApiContracts.cs. Permisos: sales.quotes.*, sales.orders.*, sales.invoices.*. Contracts API consolidados en Contracts/ por dominio. Muchos controllers legacy split en controladores especializados.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <!-- FRONTEND -->
+        <div class="ci"><input type="checkbox" checked data-sec="s19" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ Frontend — módulos cotizaciones + ordenes + InvoiceDetailPage + ventasFacturasMapper</strong><p class="note">modules/ventas/cotizaciones: QuotesListPage, CreateQuotePage, QuoteDetailPage + quoteService + useQuotes. modules/ventas/ordenes: SalesOrdersListPage, CreateSalesOrderPage, SalesOrderDetailPage + salesOrderService + useSalesOrders. InvoiceDetailPage con trazabilidad completa. ventasFacturasMapper.ts separa mapping del servicio.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <div class="ci"><input type="checkbox" checked data-sec="s19" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ i18n extendido (es/en/qu) — 146 nuevas claves por idioma</strong><p class="note">Claves para cotizaciones, pedidos, facturas del pipeline greenfield, estados del flujo, trazabilidad. Los tres idiomas (español, inglés y Kichwa) cubiertos en este batch.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <!-- E2E TESTS -->
+        <div class="ci"><input type="checkbox" checked data-sec="s19" data-val="1" onchange="recalc()"><div class="ci-text"><strong>✅ E2E — SalesCommercialPipelineEndToEndTests + SalesOrderInvoiceEndToEndTests + SalesCommercialCancelEndToEndTests</strong><p class="note">Pipeline completo: cotización→aprobar→pedido→confirmar→factura→validar/emitir. Factura directa walk-in. Cancelación de quotes y orders. Flujo canónico Cotización→Pedido→Factura validado end-to-end.</p></div><span class="ci-badge s-done">Implementado</span></div>
+        <!-- PENDING -->
+        <div class="ci"><input type="checkbox" data-sec="s19" data-val="0" onchange="recalc()"><div class="ci-text"><strong>Pendiente: Re-seed de permisos sales.quotes.* / sales.orders.* en tenants existentes</strong><p class="note">Tenants con perfil Facturador creados antes del seed greenfield no tienen permisos de cotizaciones/pedidos. Requiere migración manual o re-seed de AccessProfilePermission en cada tenant activo.</p></div><span class="ci-badge s-pending">Pendiente</span></div>
       </div>
     </div>
 
@@ -2801,7 +2854,7 @@ body {
 <div class="footer">
   <div>
     ERP SaaS · ZH Technologies ·
-    Actualizado: <strong id="footer-date">2026-05-23</strong> ·
+    Actualizado: <strong id="footer-date">2026-05-25</strong> ·
     <em>Al completar una tarea: marcar ítem y actualizar fecha.</em>
   </div>
   <div class="footer-stack">
@@ -2822,9 +2875,9 @@ body {
    PROJECT DATA — editar aquí para actualizar dashboard
 ═══════════════════════════════════════════════════════════ */
 const D = {
-  version: 'v26 — Platform Control Plane + ERP Runtime',
-  updated: '2026-05-23',
-  sections: ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15','s16','s17','s18'],
+  version: 'v27 — Sales Greenfield + BusinessPartner Cutover',
+  updated: '2026-05-25',
+  sections: ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15','s16','s17','s18','s19'],
 };
 
 /* ═══════════════════════════════════════════════════════════
