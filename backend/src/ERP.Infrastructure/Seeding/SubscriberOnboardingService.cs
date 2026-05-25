@@ -98,10 +98,13 @@ public sealed class SubscriberOnboardingService : ISubscriberOnboardingService
             legalName:           ConsumidorFinalName,
             createdBy:           actorId);
 
+        var cp = CustomerProfile.Create(subscriberId, bp.Id, actorId);
+
         _db.BusinessPartners.Add(bp);
+        _db.Set<CustomerProfile>().Add(cp);
         await _db.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Consumidor Final seeded for tenant {SubscriberId}.", subscriberId);
+        _logger.LogInformation("Consumidor Final seeded as active customer for tenant {SubscriberId}.", subscriberId);
     }
 
     /// <summary>
