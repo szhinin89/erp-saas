@@ -21,12 +21,10 @@
 | # | Documento | Para qué |
 |---|-----------|----------|
 | 1 | [CANONICAL-ROUTES.md](./CANONICAL-ROUTES.md) | Rutas API `/api/platform/*` y UI `/platform/*` |
-| 2 | [LEGACY_ALIAS_MAP.md](./LEGACY_ALIAS_MAP.md) | Qué existió antes y qué reemplazó (histórico + wire) |
+| 2 | [CLEAN_TARGET_MODEL.md](./CLEAN_TARGET_MODEL.md) | Mapa entidad → tabla → API → frontend |
 | 3 | [docs/IDENTITY.md](../IDENTITY.md) | JWT, login, first-run |
 | 4 | `backend/.../PlatformAuthConstants.cs` | Contrato auth backend |
 | 5 | `frontend/src/constants/platformAuth.ts` | Contrato auth frontend |
-
-Informes Phase 2–4 en `docs/platform/PHASE*.md` son **histórico**; no usar sus rutas como referencia de implementación.
 
 ---
 

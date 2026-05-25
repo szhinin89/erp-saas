@@ -27,7 +27,7 @@
 | **Platform (equipo — leer primero)** | [`docs/platform/TEAM-NAMING-GUIDE.md`](./docs/platform/TEAM-NAMING-GUIDE.md) | Naming, rutas, prohibiciones `SuperAdmin` |
 | **Platform docs** | [`docs/platform/README.md`](./docs/platform/README.md) | Índice control plane |
 | **Platform — rutas canónicas** | [`docs/platform/CANONICAL-ROUTES.md`](./docs/platform/CANONICAL-ROUTES.md) | API `/api/platform/*`, UI `/platform/*` |
-| **Platform — mapa legacy** | [`docs/platform/LEGACY_ALIAS_MAP.md`](./docs/platform/LEGACY_ALIAS_MAP.md) | Aliases históricos (no implementar) |
+| **Platform — modelo limpio** | [`docs/platform/CLEAN_TARGET_MODEL.md`](./docs/platform/CLEAN_TARGET_MODEL.md) | Entidad → API → frontend |
 | **SaaS comercial** | [`docs/SAAS-COMMERCIAL.md`](./docs/SAAS-COMMERCIAL.md) | Planes, billing |
 | **Base de datos** | [`docs/DATABASE.md`](./docs/DATABASE.md) | EF, RLS |
 | **ADRs** | [`docs/decisions/`](./docs/decisions/) | Decisiones arquitectura |

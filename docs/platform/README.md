@@ -6,7 +6,8 @@
 |-----------|-----|
 | [TEAM-NAMING-GUIDE.md](./TEAM-NAMING-GUIDE.md) | Naming, rutas, prohibiciones — **referencia diaria** |
 | [CANONICAL-ROUTES.md](./CANONICAL-ROUTES.md) | API `/api/platform/*` y UI `/platform/*` |
-| [LEGACY_ALIAS_MAP.md](./LEGACY_ALIAS_MAP.md) | Aliases históricos (no implementar) |
+| [CLEAN_TARGET_MODEL.md](./CLEAN_TARGET_MODEL.md) | Mapa entidad → tabla → API → frontend |
 | [CI_GUARD_RULES.md](./CI_GUARD_RULES.md) | Guards CI anti-regresión |
+| [PRODUCTION-READINESS.md](./PRODUCTION-READINESS.md) | Checklist pre-producción |
 
-Informes `PHASE*.md`, `ROUTE-MIGRATION.md`, etc. = histórico Phase 2–5; llevan banner de advertencia.
+Artefacto CI (generado): [API_USAGE_GRAPH.json](./API_USAGE_GRAPH.json) — no editar a mano; regenerar con `node tools/architecture/extract-api-usage-graph.mjs`.

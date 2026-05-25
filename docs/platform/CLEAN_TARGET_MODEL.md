@@ -8,7 +8,7 @@
 Domain Entity  →  DB table (snake_case plural)  →  API root  →  frontend module/facade
 ```
 
-## Mapa target (canónico)
+## Mapa canónico
 
 | Entidad | Tabla | API | Frontend |
 |---------|-------|-----|----------|
@@ -26,15 +26,16 @@ Domain Entity  →  DB table (snake_case plural)  →  API root  →  frontend m
 | Settings | _(KV)_ | `/api/platform/settings` | _(pendiente UI)_ |
 | Auth | _(session)_ | `/api/platform/auth/login` | `authService` / login |
 
-## Companion APIs (permitidas, no control plane UI)
+## Companion APIs (runtime, no control plane UI)
 
 | API | Uso |
 |-----|-----|
 | `GET /api/subscribers/entitlements/me` | Tenant runtime gating (post-login ERP) |
-| `GET /api/saas/billing/*` | Tenant self-service billing (`SaasBillingPage`) |
-| `POST /api/auth/switch-subscriber` | Impersonation platform → tenant runtime |
+| `GET /api/saas/billing/*` | Tenant self-service billing |
+| `POST /api/auth/switch-subscriber` | Impersonación platform → tenant runtime |
+| `GET/POST /api/companies/*` | Empresas operativas ERP (multiempresa tenant) |
 
-## Naming conventions target
+## Naming conventions
 
 | Capa | Convención | Ejemplo |
 |------|------------|---------|
@@ -44,25 +45,10 @@ Domain Entity  →  DB table (snake_case plural)  →  API root  →  frontend m
 | API segment | kebab-case plural English | `/api/platform/subscribers` |
 | Frontend service | camelCase + `Service` | `platformService` |
 | Frontend types | `Platform*` prefix | `PlatformSubscriber` |
-| UI routes | `/platform/*` (canónico); `/superadmin/*` redirect legacy |
-| JWT platform operator | literal legacy `SuperAdmin` | `PlatformAuthConstants` / `platformAuth.ts` |
-| Deployment flag JSON | `platformPanelEnabled` (+ alias `superAdminPanelEnabled`) | GET `/api/public/deployment` |
-| Nav menu flag JSON | `requirePlatformPanel` (+ alias `requirePlatformPanel`) | menú sesión / admin |
+| UI routes | `/platform/*` | `/platform/subscribers` |
+| JWT platform operator | `PlatformOperator` | `PlatformAuthConstants` / `platformAuth.ts` |
+| Deployment flag JSON | `platformPanelEnabled` | GET `/api/public/deployment` |
+| Nav menu flag JSON | `requirePlatformPanel` | menú sesión / admin |
+| sessionStorage ficha | `erp.saas.platform.detailSubscriberId` | `platformSubscriberDetailNav.ts` |
 
-## Acciones de convergencia
-
-| # | Acción | Estado |
-|---|--------|--------|
-| 1 | Renombrar archivos dominio `SaasPlan.cs` → `CommercialPlan.cs`, etc. | ✅ (2026-05-25) |
-| 2 | Deprecar `SubscribersController` para operadores globales | ✅ runtime-only |
-| 3 | Consolidar `companyService` → `platformService` | ✅ |
-| 4 | i18n `platform.*` | ✅ (2026-05-23) |
-| 5 | Retirar tablas `legacy_usage_*` y telemetría strangler | ✅ (2026-05-23) |
-| 6 | UI `/platform/*` + redirect `/superadmin/*` | ✅ (2026-05-23) |
-| 7 | Alias JSON API `platformPanelEnabled` / `requirePlatformPanel` | ✅ (2026-05-23) |
-| 8 | Renombrar namespace `PlatformSubscribers` → `PlatformSubscribers` | ⏳ backlog |
-
-## Validación target
-
-El Platform Control Plane es **válido operativamente** con drift **BAJO** documentado.  
-Pendiente no bloqueante: renames físicos de archivos dominio (item 1) y namespace Application (item 8).
+Ver también: [CANONICAL-ROUTES.md](./CANONICAL-ROUTES.md), [TEAM-NAMING-GUIDE.md](./TEAM-NAMING-GUIDE.md).
