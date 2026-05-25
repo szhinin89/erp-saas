@@ -12,13 +12,13 @@ namespace ERP.API.Controllers;
 
 /// <summary>
 /// Configuración de seguridad (matrices de delegación y permisos).
-/// Acceso restringido: solo operador platform.
+/// Acceso: Admin tenant (scope propio) y PlatformOperator.
 /// </summary>
 [ApiController]
 [AppFeature("Security API", "perm:security.api", "🧩", null, null, 989, IsVisibleInMenu = false)]
 [Route("api/[controller]")]
 [Authorize(Policy = "Session")]
-[Authorize(Roles = PlatformAuthorizationRoles.PlatformOperator)]
+[Authorize(Roles = $"Admin,{PlatformAuthorizationRoles.PlatformOperator}")]
 [Produces("application/json")]
 public class SecurityController : ControllerBase
 {

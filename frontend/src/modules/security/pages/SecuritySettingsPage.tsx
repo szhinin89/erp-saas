@@ -4,7 +4,7 @@ import { ZHCard } from '../../../components/zh/ZHCard';
 import { ZHPageNotice } from '../../../components/zh/ZHPageNotice';
 import { useAuthStore } from '../../../store/authStore';
 import { securityService, type SecurityAdminMatrix, type SecurityUser } from '../api/securityService';
-import { isJwtPlatformOperatorRole } from '../../../constants/platformAuth';
+import { isTenantAdminRole } from '../../../access/permissionUi';
 import { formatApiError } from '../../lib/formatApiError';
 import { useI18n } from '../../../i18n/i18n';
 import './SecuritySettingsPage.css';
@@ -44,10 +44,10 @@ export function SecuritySettingsPage() {
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [error, setError] = useState('');
 
-  const isPlatformOperator = isJwtPlatformOperatorRole(user?.role);
+  const isAdminUser = isTenantAdminRole(user?.role);
 
   useEffect(() => {
-    if (!isPlatformOperator) {
+    if (!isAdminUser) {
       setLoading(false);
       return;
     }
@@ -70,7 +70,7 @@ export function SecuritySettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [isPlatformOperator]);
+  }, [isAdminUser]);
 
   const rows = useMemo(() => {
     if (!matrix) return [];
@@ -121,7 +121,7 @@ export function SecuritySettingsPage() {
     }
   };
 
-  if (!isPlatformOperator) {
+  if (!isAdminUser) {
     return <NoAccessPage title={t('security.title')} />;
   }
 
